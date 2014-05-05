@@ -13,9 +13,6 @@ requirejs.config({
 });
 
 define(function (require, exports, module) {
-  console.log('DEBUG here def');
-
-  var sess = require('package/session');
   var bart = require('package/bart');
 
   return {};
