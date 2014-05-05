@@ -15,6 +15,12 @@ requirejs.config({
     nodeRequire: require
 });
 
+requirejs.onResourceLoad = function (context, map, depArray) {
+  console.log('DEBUG onResourceLoad');
+}
+
+
+
 //foo and bar are loaded according to requirejs
 //config, and if found, assumed to be an AMD module.
 //If they are not found via the requirejs config,

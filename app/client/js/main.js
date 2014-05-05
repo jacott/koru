@@ -8,12 +8,10 @@ requirejs.config({
   //the paths config could be for a directory.
   paths: {
     "package": '../package',
+    "test": '../test',
   }
 
 });
 
-define(function (require, exports, module) {
-  var bart = require('package/bart');
-
-  return {};
+define(['package/bart'], function (bart) {
 });
