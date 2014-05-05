@@ -28,7 +28,7 @@ requirejs.onResourceLoad = function (context, map, depArray) {
 //and if found, the module is assumed to be a
 //node-formatted module. Note: this synchronous
 //style of loading a module only works in Node.
-var bart = requirejs('package/bart/index');
+var bart = requirejs('package/bart/server');
 
 //Now export a value visible to Node.
 module.exports = function () {};

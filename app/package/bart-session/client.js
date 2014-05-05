@@ -1,6 +1,7 @@
 console.log('DEBUG bart-session 2');
 
 define(function () {
+  return connect;
 });
 
 connect();
@@ -10,7 +11,7 @@ function connect() {
   var location = window.document.location;
   console.log('DEBUG location',location);
 
-  var ws = new WebSocket(location.protocol.replace(/^http/,'ws')+'//' + location.host);
+  var ws = connect._ws = new WebSocket(location.protocol.replace(/^http/,'ws')+'//' + location.host);
   ws.onmessage = function (event) {
     updateStats(event.data);
   };
@@ -24,3 +25,7 @@ function connect() {
 
   console.log('DEBUG ws',ws);
 }
+
+connect.send = function (type, msg) {
+  connect._ws.send(type+':'+msg);
+};
