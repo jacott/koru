@@ -1,17 +1,15 @@
 define(function () {
-  var host = window.document.location.host.replace(/:.*/, '');
-  var ws = new WebSocket('ws://' + host + ':3000');
+  var location = window.document.location;
+  console.log('DEBUG location',location);
+
+  var ws = new WebSocket(location.protocol.replace(/^http/,'ws')+'//' + location.host);
   ws.onmessage = function (event) {
     updateStats(JSON.parse(event.data));
   };
 
   function updateStats(arg) {
     console.log('DEBUG ws: ',arg );
-
   }
 
   console.log('DEBUG ws',ws);
-
-  WS = ws;
-
 });
