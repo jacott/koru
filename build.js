@@ -1,13 +1,11 @@
 ({
   baseUrl: "app",
   paths: {
-    requireLib: "package/requirejs/main",
-    "package/session": "package/session/main",
-    "package/bart": "package/bart/main",
+    requireLib: "require.js",
   },
 
   include: 'requireLib',
 
-  name: "client/js/main",
+  name: "main",
   out: "build/index-build.js",
 })
