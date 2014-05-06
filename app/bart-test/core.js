@@ -1,18 +1,19 @@
 define(['./sinon', './stacktrace'], function(sinon, stacktrace) {
-  return {
+  var geddon = {
     sinon: sinon,
+
+    _testCases: {},
+
+    _init: function () {
+      this.testCount = this.skipCount = this.assertCount = 0;
+    },
+
     _u: {
       isElement: function(elm) {
         return elm != null && typeof elm === 'object' && typeof elm.isSameNode === 'function';
       },
       stacktrace: stacktrace,
     },
-
-    _tests: [],
-
-    testCount: 0,
-    skipCount: 0,
-    assertCount: 0,
 
     extractError: function (ex) {
       return ex.toString() + "\n" + stacktrace(ex).join("\n");
@@ -23,6 +24,10 @@ define(['./sinon', './stacktrace'], function(sinon, stacktrace) {
       return inspect(o).toString();
     },
   };
+
+  geddon._init();
+
+  return geddon;
 
   function inspect(o, i) {
     if (i <0 || o == null) return typeof o;

@@ -11,20 +11,20 @@ define(function(require) {
   top.assert = geddon.assert;
   top.refute = geddon.refute;
 
-  var totalTimer = Date.now();
-  var count = 0, skipCount = 0, errorCount = 0;
-  var timer = 0;
+  var count, skipCount, errorCount, timer;
 
   geddon.onEnd(function () {
-    console.log('TEST ', errorCount);
+    session.send('T<FIXME> FINISHED: ', errorCount ? 'FAILED' : 'PASSED');
+
+    geddon._init();
   });
 
-  geddon.onTestStart(function () {
+  geddon.onTestStart(function (test) {
     timer = Date.now();
   });
 
   geddon.onTestEnd(function (test) {
-    var result= "<FIXME>: ";
+    var result= "<FIXME>: <" + test.name + "> ";
     if (test.errors) {
       result += test.name + ' FAILED\n';
       ++errorCount;
@@ -44,12 +44,18 @@ define(function(require) {
       extraMsg += " (" + errorCount + " FAILED)";
 
     session.send('T', result + "Executed " + count + " of " + geddon.testCount  + extraMsg +
-                 " (" + (Date.now() - totalTimer) + " ms / " + (Date.now() - timer) + " ms)\n");
+                 " (" + (Date.now() - timer) + " ms)\n");
   });
 
-  top.setTimeout(function () {
-    geddon.start();
-  }, 1);
+  return {
+    run: function () {
+      count = skipCount = errorCount = 0;
 
-  return geddon;
+      geddon.start();
+    },
+
+    testCase: function () {
+      return geddon.testCase.apply(geddon, arguments);
+    },
+  };
 });

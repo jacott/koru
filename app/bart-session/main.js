@@ -1,4 +1,6 @@
 define(function () {
+  // FIXME add whenReady callback
+
   connect.send = function (type, msg) {
     connect._ws.send(type+msg);
   };
@@ -12,11 +14,25 @@ define(function () {
     var ws = connect._ws = new WebSocket(location.protocol.replace(/^http/,'ws')+'//' + location.host);
     ws.onmessage = function (event) {
 
-      var name = event.data.slice(1);
-      load(name);
+      var data = event.data.slice(1);
+      switch(event.data[0]) {
+      case 'R':
+        reload(data);
+        break;
+      case 'U':
+        unload(data);
+        break;
+      }
     };
 
-    function load(name) {
+    function unload(name) {
+      console.log('INFO: unload',name);
+
+      requirejs.undef(name);
+    }
+
+    function reload(name) {
+      unload(name);
       requirejs([name], function() {});
     }
   }

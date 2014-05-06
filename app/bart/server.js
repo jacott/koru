@@ -13,11 +13,14 @@ function cli(session) {
   rl.prompt();
 
   rl.on('line', function(line) {
-    var m = /^(\w+)\s+(.*)$/.exec(line);
-    if (m) switch(m[1].toLowerCase()) {
-    case 'load':
-      console.log('loading ', m[2]);
-      session.sendAll('L', m[2]);
+    var m = /^(\w+)\s+(.*)$/.exec(line) || [line, line];
+    if (line) switch(m[1].toLowerCase()) {
+    case 'run':
+      session.sendAll('R', 'cmd');
+      break;
+    case 'u':
+      console.log('unloading '+ m[2]);
+      session.sendAll('U', m[2]);
       break;
     default:
       console.log('Say what? I might have heard `' + line.trim() + '`');

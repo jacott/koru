@@ -1,21 +1,17 @@
 define(['./core'], function (geddon) {
-  var testCases = {},
-      sinon = geddon.sinon;
+  var sinon = geddon.sinon;
 
   geddon.testCase = function (name, option) {
-    var tc = new TestCase(name);
-    testCases[name] = tc;
-    if (typeof option === 'function')
-      option(tc);
-    else
-      tc.add(option);
+    var tc = new TestCase(name, null, option);
+    geddon._testCases[name] = tc;
 
     return tc;
   };
 
-  function TestCase (name, tc) {
+  function TestCase (name, tc, option) {
     this.name = name;
     this.tc = tc;
+    this.option = option;
   };
 
   TestCase.prototype = {
