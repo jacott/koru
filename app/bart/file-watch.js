@@ -3,7 +3,7 @@ var Path = require('path');
 var Fiber = require('fibers');
 var Future = require('fibers/future');
 
-define(['module', 'bart-session/server'], function(module, session) {
+define(['module', 'bart/session-server'], function(module, session) {
   var top = Path.resolve(Path.dirname(module.uri)+ '/..');
   console.log('DEBUG top',top);
 

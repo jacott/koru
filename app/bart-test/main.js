@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var core = require('bart/core');
-  var session = require('bart-session');
+  var session = require('bart/session');
 
   require("./assertions-methods");
   require("./callbacks");

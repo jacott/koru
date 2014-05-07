@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
-  var webserver = require('bart-webserver/server');
-  var session = require('bart-session/server');
+  var webserver = require('bart/web-server');
+  var session = require('bart/session-server');
 
   cli(session);
 });

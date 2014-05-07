@@ -10,8 +10,6 @@ requirejs.config({
 
   packages: [
     "bart",
-    "bart-session",
-    "bart-webserver",
     "bart-test",
   ],
 

@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
-  var server = require('bart-webserver/server').server;
+  var server = require('bart/web-server').server;
 
   var session = {
     wss: new WebSocketServer({server: server}),
