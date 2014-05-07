@@ -8,6 +8,12 @@ define(['./core'], function (geddon) {
     return tc;
   };
 
+  geddon.unloadTestcase = function (name) {
+    console.log('DEBUG unloadTestcase',name);
+
+    delete geddon._testCases[name];
+  };
+
   function TestCase (name, tc, option) {
     this.name = name;
     this.tc = tc;

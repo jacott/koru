@@ -13,6 +13,8 @@ define(['module', 'bart-session/server'], function(module, session) {
 
   function watch(dir) {
     var dirs = {};
+    console.log('DEBUG watch',dir);
+
     var watcher = fs.watch(dir, function (event, filename) {
       Fiber(function () {
         if (! filename.match(/^\w/)) return;

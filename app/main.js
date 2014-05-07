@@ -13,5 +13,6 @@ requirejs.config({
   ],
 });
 
-define(['bart', 'cmd'], function (bart) {
+define(['bart'], function (bart) {
+  require(['cmd'], function () {});
 });

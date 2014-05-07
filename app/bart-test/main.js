@@ -1,10 +1,14 @@
-define(function(require) {
+define(function(require, exports, module) {
+  var core = require('bart/core');
   var session = require('bart-session');
+
   require("./assertions-methods");
   require("./callbacks");
   require("./test-case");
   require("./runner");
   var geddon = require("./core");
+
+  core.onunload(module, 'reload');
 
   var top = window;
 
@@ -54,8 +58,9 @@ define(function(require) {
       geddon.start();
     },
 
-    testCase: function () {
-      return geddon.testCase.apply(geddon, arguments);
+    testCase: function (module, option) {
+      core.onunload(module, geddon.unloadTestcase);
+      return geddon.testCase(module.id, option);
     },
   };
 });

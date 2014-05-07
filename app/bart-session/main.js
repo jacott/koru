@@ -1,6 +1,8 @@
-define(function () {
+define(['module', 'bart/core'], function (module, core) {
   var waitFuncs = [];
   var ready = false;
+
+  core.onunload(module, 'reload');
 
   connect.send = function (type, msg) {
     if (ready) connect._ws.send(type+msg);
@@ -22,7 +24,7 @@ define(function () {
         reload(data);
         break;
       case 'U':
-        unload(data);
+        core.unload(data);
         break;
       }
     };
@@ -35,14 +37,8 @@ define(function () {
       ready = true;
     };
 
-    function unload(name) {
-      console.log('INFO: unload',name);
-
-      requirejs.undef(name);
-    }
-
     function reload(name) {
-      unload(name);
+      core.unload(name);
       requirejs([name], function() {});
     }
   }
