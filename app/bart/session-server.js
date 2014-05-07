@@ -1,8 +1,11 @@
+var core;
+
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
   var server = require('./web-server').server;
 
-  require('./core').onunload(module, 'reload');
+  core = require('./core');
+  core.onunload(module, 'reload');
 
   var session = {
     wss: new WebSocketServer({server: server}),
@@ -44,6 +47,7 @@ function sendAll(cmd, msg) {
 }
 
 function unload(id) {
+  core.unload(id);
   this.versionHash = Date.now();
   this.sendAll('U', this.versionHash + ':' + id);
 }

@@ -18,6 +18,7 @@
   "author": "Geoff Jacobsen <geoffj@obeya.co>",
   "dependencies": {
     "fibers": "1.0.1",
+    "kexec": "0.2.0",
     "requirejs": "2.1.11",
     "ws": "0.4.31",
     "send": "0.3.0",

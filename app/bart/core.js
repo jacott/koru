@@ -26,7 +26,7 @@
 
         var onunload = unloads[id];
 
-        console.log('INFO: unload',id, onunload);
+//        console.log('INFO: unload',id, onunload);
 
         if (onunload === 'reload')
           reload();
@@ -57,9 +57,9 @@
     }
 
     function reload() {
-      if (typeof process !== 'undefined' && process.hasOwnProperty('exit'))
-        process.exit(2);
-      else
+      if (typeof process !== 'undefined' && process.hasOwnProperty('exit')) {
+        require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
+      } else
         window.location.reload();
     }
   });

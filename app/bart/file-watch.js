@@ -3,9 +3,10 @@ var Path = require('path');
 var Fiber = require('fibers');
 var Future = require('fibers/future');
 
-define(['module', 'bart/session-server'], function(module, session) {
+define(['module', 'bart/core', 'bart/session-server'], function(module, core, session) {
   var top = Path.resolve(Path.dirname(module.uri)+ '/..');
-  console.log('DEBUG top',top);
+
+  core.onunload(module, 'reload');
 
   Fiber(function () {
     watch(top);
@@ -18,8 +19,8 @@ define(['module', 'bart/session-server'], function(module, session) {
     var watcher = fs.watch(dir, function (event, filename) {
       Fiber(function () {
         if (! filename.match(/^\w/)) return;
-        console.log('event is: ' + event + ' for ' + dir);
-        console.log('filename provided: ' + filename);
+        // console.log('event is: ' + event + ' for ' + dir);
+        // console.log('filename provided: ' + filename);
         var path = manage(dirs, dir, filename);
         if (path && path.match(/\.js$/))
           session.unload(path.slice(top.length + 1, - 3));
