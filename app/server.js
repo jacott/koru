@@ -25,8 +25,9 @@ requirejs.config({
 // }
 
 
+requirejs('bart/server');
 
-var bart = requirejs('bart/server');
+requirejs('bart/file-watch');
 
 //Now export a value visible to Node.
 module.exports = function () {};
