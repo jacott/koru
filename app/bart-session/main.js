@@ -1,8 +1,10 @@
 define(function () {
-  // FIXME add whenReady callback
+  var waitFuncs = [];
+  var ready = false;
 
   connect.send = function (type, msg) {
-    connect._ws.send(type+msg);
+    if (ready) connect._ws.send(type+msg);
+    else waitFuncs.push(type+msg);
   };
 
   connect();
@@ -23,6 +25,14 @@ define(function () {
         unload(data);
         break;
       }
+    };
+
+    ws.onopen = function (event) {
+      for(var i = 0; i < waitFuncs.length; ++i) {
+        ws.send(waitFuncs[i]);
+      }
+      waitFuncs = [];
+      ready = true;
     };
 
     function unload(name) {
