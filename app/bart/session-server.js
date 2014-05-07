@@ -1,11 +1,15 @@
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
-  var server = require('bart/web-server').server;
+  var server = require('./web-server').server;
+
+  require('./core').onunload(module, 'reload');
 
   var session = {
     wss: new WebSocketServer({server: server}),
     conns: {},
     sendAll: sendAll,
+    versionHash: Date.now(),
+    unload: unload,
   };
 
   init(session);
@@ -28,6 +32,7 @@ function init(session) {
     ws.on('message', function(data, flags) {
       console.log('DEBUG sessId', sessId, data);
     });
+    ws.send('X'+session.versionHash);
   });
 }
 
@@ -36,4 +41,9 @@ function sendAll(cmd, msg) {
   for(var key in conns) {
     conns[key].ws.send(cmd+msg, function () {});
   }
+}
+
+function unload(id) {
+  this.versionHash = Date.now();
+  this.sendAll('U', this.versionHash + ':' + id);
 }

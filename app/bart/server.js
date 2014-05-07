@@ -16,14 +16,8 @@ function cli(session) {
     var m = /^(\w+)\s+(.*)$/.exec(line) || [line, line];
     if (line) switch(m[1].toLowerCase()) {
     case 'run':
-      session.sendAll('R', 'cmd');
-      break;
-    case 'u':
-      console.log('unloading '+ m[2]);
-      session.sendAll('U', m[2]);
-      break;
-    default:
-      console.log('Say what? I might have heard `' + line.trim() + '`');
+      session.unload('cmd');
+      session.sendAll('L', 'cmd');
       break;
     }
     rl.prompt();

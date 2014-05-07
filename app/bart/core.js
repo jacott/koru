@@ -29,7 +29,7 @@
         console.log('INFO: unload',id, onunload);
 
         if (onunload === 'reload')
-          window.location.reload();
+          reload();
 
         if (deps) {
           depMap[id] = 'unloading';
@@ -48,10 +48,19 @@
       depMap: depMap,
 
       unloads: unloads,
+
+      reload: reload
     };
 
     function onunload(module, func) {
       unloads[module.id] = func;
+    }
+
+    function reload() {
+      if (typeof process !== 'undefined' && process.hasOwnProperty('exit'))
+        process.exit(2);
+      else
+        window.location.reload();
     }
   });
 })();

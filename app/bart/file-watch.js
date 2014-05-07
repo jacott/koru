@@ -22,7 +22,7 @@ define(['module', 'bart/session-server'], function(module, session) {
         console.log('filename provided: ' + filename);
         var path = manage(dirs, dir, filename);
         if (path && path.match(/\.js$/))
-          session.sendAll('U', path.slice(top.length + 1, - 3));
+          session.unload(path.slice(top.length + 1, - 3));
       }).run();
     });
     readdir(dir).forEach(function (filename) {

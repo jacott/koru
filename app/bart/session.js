@@ -1,6 +1,8 @@
 define(['module', 'bart/core'], function (module, core) {
   var waitFuncs = [];
   var ready = false;
+  var retryCount = 0;
+  var versionHash;
 
   core.onunload(module, 'reload');
 
@@ -13,18 +15,29 @@ define(['module', 'bart/core'], function (module, core) {
 
   return connect;
 
-  function connect() {
+  function url() {
     var location = window.document.location;
-    var ws = connect._ws = new WebSocket(location.protocol.replace(/^http/,'ws')+'//' + location.host);
+    return location.protocol.replace(/^http/,'ws')+'//' + location.host;
+  }
+
+  function connect() {
+    var ws = connect._ws = new WebSocket(url());
     ws.onmessage = function (event) {
 
       var data = event.data.slice(1);
       switch(event.data[0]) {
-      case 'R':
-        reload(data);
+      case 'X':
+        if (versionHash && versionHash !== data)
+          core.reload();
+        versionHash = data;
+        break;
+      case 'L':
+        loadId(data);
         break;
       case 'U':
-        core.unload(data);
+        var args = data.split(':');
+        versionHash = args[0];
+        core.unload(args[1]);
         break;
       }
     };
@@ -35,11 +48,21 @@ define(['module', 'bart/core'], function (module, core) {
       }
       waitFuncs = [];
       ready = true;
+      retryCount = 0;
     };
 
-    function reload(name) {
-      core.unload(name);
-      requirejs([name], function() {});
-    }
+    ws.onclose = function (event) {
+      ready = false;
+      ws = null;
+      retryCount = Math.min(40, retryCount * 1.5 + 1);
+
+      console.log('DEBUG retryCount',retryCount*500);
+
+      setTimeout(connect, retryCount*500);
+    };
+  }
+
+  function loadId(name) {
+    requirejs([name], function() {});
   }
 });
