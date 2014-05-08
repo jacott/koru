@@ -28,8 +28,15 @@ define(['module', 'bart/core'], function (module, core) {
       switch(event.data[0]) {
       case 'X':
         if (versionHash && versionHash !== data)
-          core.reload();
+          core.reload(); // FIXME we want to send queued messages first
         versionHash = data;
+        ws.send('X'+ core.engine);
+        for(var i = 0; i < waitFuncs.length; ++i) {
+          ws.send(waitFuncs[i]);
+        }
+        waitFuncs = [];
+        ready = true;
+        retryCount = 0;
         break;
       case 'L':
         loadId(data);
@@ -40,15 +47,6 @@ define(['module', 'bart/core'], function (module, core) {
         core.unload(args[1]);
         break;
       }
-    };
-
-    ws.onopen = function (event) {
-      for(var i = 0; i < waitFuncs.length; ++i) {
-        ws.send(waitFuncs[i]);
-      }
-      waitFuncs = [];
-      ready = true;
-      retryCount = 0;
     };
 
     ws.onclose = function (event) {

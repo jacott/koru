@@ -12,6 +12,7 @@ requirejs.config({
   ],
 });
 
-define(['bart'], function (bart) {
-  require(['cmd'], function () {});
+define(['bart/core', 'module', 'bart'], function (core, module, bart) {
+  core.onunload(module, 'reload');
+  require(['client-cmd'], function () {});
 });

@@ -18,7 +18,7 @@ define(function(require, exports, module) {
   var count, skipCount, errorCount, timer;
 
   geddon.onEnd(function () {
-    session.send('T<FIXME> FINISHED: ', errorCount ? 'FAILED' : 'PASSED');
+    session.send('TFINISHED:', errorCount ? 'FAILED' : 'PASSED');
 
     geddon._init();
   });
@@ -28,9 +28,9 @@ define(function(require, exports, module) {
   });
 
   geddon.onTestEnd(function (test) {
-    var result= "<FIXME>: <" + test.name + "> ";
+    var result= "<" + test.name + "> ";
     if (test.errors) {
-      result += test.name + ' FAILED\n';
+      result += ' FAILED\n';
       ++errorCount;
       var errors = test.errors;
       for(var i=0;i < errors.length; ++i) {

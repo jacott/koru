@@ -1,0 +1,9 @@
+#!/bin/bash
+set -em
+
+cd `dirname "$0"`/../app
+
+# export NODE_OPTIONS='--prof'
+# send SIGUSR1 to debug
+
+exec node server.js

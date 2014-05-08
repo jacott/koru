@@ -15,7 +15,22 @@
 
   define(['module'], function (module) {
     onunload(module, 'reload');
+
     return {
+      engine: (function(){
+        if (typeof navigator === 'undefined')
+          return 'Server';
+        var ua= navigator.userAgent, tem,
+            M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
+        if(/trident/i.test(M[1])){
+          tem=  /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
+          return 'IE '+(tem[1] || '');
+        }
+        M= M[2]? [M[1], M[2]]:[navigator.appName, navigator.appVersion, '-?'];
+        if((tem= ua.match(/version\/([\.\d]+)/i))!= null) M[2]= tem[1];
+        return M.join(' ');
+      })(),
+
       onunload: onunload,
       unload: function unload(id) {
         if (! requirejs.defined(id)) return;
@@ -57,6 +72,8 @@
     }
 
     function reload() {
+      console.log('=> Reloading');
+
       if (typeof process !== 'undefined' && process.hasOwnProperty('exit')) {
         require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
       } else

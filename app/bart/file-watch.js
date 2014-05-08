@@ -3,7 +3,7 @@ var Path = require('path');
 var Fiber = require('fibers');
 var Future = require('fibers/future');
 
-define(['module', 'bart/core', 'bart/session-server'], function(module, core, session) {
+define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function(module, core, fst, session) {
   var top = Path.resolve(Path.dirname(module.uri)+ '/..');
 
   core.onunload(module, 'reload');
@@ -26,7 +26,7 @@ define(['module', 'bart/core', 'bart/session-server'], function(module, core, se
           session.unload(path.slice(top.length + 1, - 3));
       }).run();
     });
-    readdir(dir).forEach(function (filename) {
+    fst.readdir(dir).forEach(function (filename) {
       if (! filename.match(/^\w/)) return;
       manage(dirs, dir, filename);
     });
@@ -36,7 +36,7 @@ define(['module', 'bart/core', 'bart/session-server'], function(module, core, se
 
   function manage(dirs, dir, filename) {
     var path = dir+'/'+filename;
-    var st = stat(path);
+    var st = fst.stat(path);
     if (st) {
       if (st.isDirectory()) {
         dirs[filename] = watch(path);
@@ -52,38 +52,3 @@ define(['module', 'bart/core', 'bart/session-server'], function(module, core, se
     return path;
   }
 });
-
-
-function stat(path) {
-  try {
-    return futureWrap(fs, fs.stat, [path]);
-  } catch (ex) {
-    if (ex.code === 'ENOENT')
-      return;
-
-    throw ex;
-  }
-}
-
-function readdir(path) {
-  return futureWrap(fs, fs.readdir, [path]);
-}
-
-
-function futureWrap(obj, func, args) {
-  var future = new Future;
-  var results;
-
-  var callback = function (error, data) {
-    if (error) {
-      future.throw(error);
-      return;
-    }
-    results = data;
-    future.return();
-  };
-  args.push(callback);
-  func.apply(obj, args);
-  future.wait();
-  return results;
-}

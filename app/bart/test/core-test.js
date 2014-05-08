@@ -1,8 +1,8 @@
-define(['module', 'bart-test'], function (module, bartTest) {
-  bartTest.testCase(module, {
+define(['module', 'bart-test'], function (module, geddon) {
+  geddon.testCase(module, {
     "test infrastructure": function () {
       console.log('DEBUG assert true and watched');
-      assert(true);
+      assert(false);
     },
 
     "test two": function () {
