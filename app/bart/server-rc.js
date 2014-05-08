@@ -11,25 +11,26 @@ function remoteControl(ws) {
 
 
   ws.on('close', function() {
+    session.testHandle = session.logHandle = null;
     console.log('DEBUG close rc ');
   });
   ws.on('message', function(data, flags) {
-    console.log('DEBUG message rc', data);
+    var args = data.split('\t');
+    console.log('DEBUG message rc args', args);
+    switch(args[0]) {
+    case 'T':
+      session.unload('client-cmd');
+      session.load('client-cmd');
+      break;
+    }
   });
   ws.send('X'+session.versionHash);
 
   function testHandle(engine, msg) {
-    var m = /^FINISHED:(.*)$/.exec(msg);
-    if (m) {
-      ws.send('E' + engine + (m[1] === 'FAILED' ? ':1' : ':0'));
-    } else {
-      ws.send('R' + engine + ':' + msg);
-    }
-    console.log('testHandle', m, engine+':'+msg);
+    ws.send(msg[0] + engine + '\x00' + msg.slice(1));
   }
 
   function logHandle(engine, msg) {
-    ws.send('L' + engine + ':' + msg);
-    console.log('logHandle', engine, msg);
+    ws.send('L' + engine + '\x00' + msg);
   }
 }

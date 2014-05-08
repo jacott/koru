@@ -3,7 +3,7 @@
  * MIT license
  */
 
-define(function () {
+define(['bart/util'], function (util) {
   var ANON_FUNCTION = 'anonymous',
       SERVER = typeof global === 'object' && global.hasOwnProperty('process');
 
@@ -35,12 +35,16 @@ define(function () {
       return stack;
     }
 
+    var lcn = window.location;
+
+    var originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host));
+
     for (var i = 0, j = lines.length; i < j; ++i) {
       if ((parts = chrome.exec(lines[i]))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).trim();
         if (m = /\.testCase\.(.*)/.exec(func)) {
-          func = "Test: " + m[1];
+          func = "Test: " + m[1].replace(/\[[^]*\]/, '');
         }
         line = parts[3];
         column = parts[4];
@@ -54,7 +58,9 @@ define(function () {
         continue;
       }
 
-      if (/\/(geddon|testacular\.js|karma.js)/.test(url)) {
+      url = url.replace(originRe, 'app');
+
+      if (/^app\/(bart-test\/|require.js)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;

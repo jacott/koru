@@ -1,3 +1,3 @@
-define(['bart-test', 'bart/test/core-test'], function (bt) {
+define(['bart-test', 'bart/core-test'], function (bt) {
   bt.run("infrastructure");
 });

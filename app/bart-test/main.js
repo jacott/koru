@@ -18,8 +18,7 @@ define(function(require, exports, module) {
   var count, skipCount, errorCount, timer;
 
   geddon.onEnd(function () {
-    session.send('TFINISHED:', errorCount ? 'FAILED' : 'PASSED');
-
+    session.send('TF', errorCount);
     geddon._init();
   });
 
@@ -28,27 +27,21 @@ define(function(require, exports, module) {
   });
 
   geddon.onTestEnd(function (test) {
-    var result= "<" + test.name + "> ";
     if (test.errors) {
-      result += ' FAILED\n';
       ++errorCount;
+
+      var result= test.name + "\x00";
       var errors = test.errors;
       for(var i=0;i < errors.length; ++i) {
         result += errors[i]+"\n";
       }
-      result += "\n: ";
+      result += "\n";
+      session.send('TE', result);
     }
 
     test.skipped ? ++skipCount : ++count;
-    var extraMsg = skipCount === 0 ? "" : " (skipped "+skipCount+")";
 
-    if (errorCount === 0)
-      extraMsg += " SUCCESS";
-    else
-      extraMsg += " (" + errorCount + " FAILED)";
-
-    session.send('T', result + "Executed " + count + " of " + geddon.testCount  + extraMsg +
-                 " (" + (Date.now() - timer) + " ms)\n");
+    session.send('TR', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
   return {
@@ -60,7 +53,7 @@ define(function(require, exports, module) {
 
     testCase: function (module, option) {
       core.onunload(module, geddon.unloadTestcase);
-      return geddon.testCase(module.id, option);
+      return geddon.testCase(module.id.replace(/-test$/, ''), option);
     },
   };
 });

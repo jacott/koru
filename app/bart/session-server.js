@@ -13,6 +13,7 @@ define(function (require, exports, module) {
     sendAll: sendAll,
     versionHash: Date.now(),
     unload: unload,
+    load: load,
   };
 
   init(session);
@@ -71,13 +72,12 @@ function sendAll(cmd, msg) {
   }
 }
 
+function load(id) {
+  this.sendAll('L', id);
+}
+
 function unload(id) {
   core.unload(id);
   this.versionHash = Date.now();
   this.sendAll('U', this.versionHash + ':' + id);
-
-  if (id === 'client-cmd')
-    this.sendAll('L', id);
-  else if (id === 'server-cmd')
-    require(['server-cmd'], function () {});
 }

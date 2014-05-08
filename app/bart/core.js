@@ -13,7 +13,7 @@
     }
   };
 
-  define(['module'], function (module) {
+  define(['module', './util'], function (module, util) {
     onunload(module, 'reload');
 
     return {
@@ -41,8 +41,6 @@
 
         var onunload = unloads[id];
 
-//        console.log('INFO: unload',id, onunload);
-
         if (onunload === 'reload')
           reload();
 
@@ -64,7 +62,9 @@
 
       unloads: unloads,
 
-      reload: reload
+      reload: reload,
+
+      util: util,
     };
 
     function onunload(module, func) {

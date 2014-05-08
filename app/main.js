@@ -14,5 +14,4 @@ requirejs.config({
 
 define(['bart/core', 'module', 'bart'], function (core, module, bart) {
   core.onunload(module, 'reload');
-  require(['client-cmd'], function () {});
 });

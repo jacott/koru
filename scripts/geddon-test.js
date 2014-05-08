@@ -17,6 +17,7 @@ if (ARGV[0] === 'emacs') {
 var runTime = Date.now();
 
 var exitCount = 0;
+var exitCode = 0;
 
 var WebSocket = require('ws');
 
@@ -37,10 +38,17 @@ function runTests() {
 }
 
 function exitProcess(key, code) {
-  write(['exit', code, " elapsed time: " + (Date.now() - runTime) + "ms.\n"]);
+  if (code) exitCode = code;
   ++exitCount;
-  if (Object.keys(result).length === exitCount)
-    process.exit(code);
+  if (Object.keys(result).length === exitCount) {
+    if (timer) {
+      clearTimeout(timer);
+      sendResults();
+    }
+    exitCount = 0;
+  }
+  write(['exit', key, (Date.now() - runTime) + ' ' + code]);
+  exitCount || process.exit(code);
 }
 
 function logEmacs(key, msg) {
@@ -57,7 +65,7 @@ function logError(key, msg) {
 }
 
 function writeEmacs(args) {
-  process.stdout.write(args.join('\0') + '\0\0e');
+  process.stdout.write(args.join('\0') + '\0\0e\n');
 }
 
 function writeTty(args) {
@@ -77,8 +85,7 @@ function sendResults() {
 }
 
 function addResult(key, value) {
-
-  result[key] = value;
+  result[key] = value.split("\x00")[1];
 
   if (! timer)
     timer = setTimeout(sendResults, 100);
@@ -86,40 +93,27 @@ function addResult(key, value) {
 
 }
 
-var EXECUTED_RE = /(.*): Executed (.*)(?:\n|$)/g;
+var EXECUTED_RE = /<(.*)> Executed (.*)(?:\n|$)/g;
 
 function processBuffer(buffer) {
   var data = buffer.slice(1).toString();
-  var idx = data.indexOf(':');
+  var idx = data.indexOf('\x00');
   if (idx !== -1) {
     var key = data.slice(0,idx);
     data = data.slice(idx+1);
   }
   switch(buffer.slice(0,1).toString()) {
-  case 'E': // Exit
+  case 'F': // Finish
     exitProcess(key, +data);
     break;
   case 'L': // Log
     log(key, data);
     break;
   case 'R': // Result
-    data = data.replace(EXECUTED_RE, function (_, m1, m2) {
-      var match = /(\d+) of (\d+) *(?:\((\d+) FAILED\))? *(?:\(skipped (\d+)\))?/.exec(m2);
-      if (! match) {
-        log(m1 + ": Executed " + m2);
-      } else {
-        match = match.slice(1,5);
-        for(var i=0;i < match.length;++i) {
-          if (match[i] == null)
-            match[i] = 0;
-        }
-
-        while (match.length < 4) match.push(0);
-        addResult(key, m1, "(" + match.join(" ") + ")");
-        return '';
-      }
-    });
-    data && logError(key, data);
+    addResult(key, data);
+    break;
+  case 'E':
+    logError(key, data);
     break;
   }
 }
