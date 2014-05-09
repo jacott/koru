@@ -31,11 +31,11 @@ function init(session) {
       return;
     }
     ++session.totalSessions;
-    console.log('DEBUG new client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
+    console.log('INFO new client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
     ws.on('close', function() {
       --session.totalSessions;
       if (sessId) delete session.conns[sessId];
-      console.log('DEBUG close client ', sessId);
+      console.log('INFO close client ', sessId);
     });
     var sessId = '' + (++sessCounter);
     session.conns[sessId] = {

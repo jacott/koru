@@ -54,8 +54,6 @@ define(['module', 'bart/core'], function (module, core) {
       ws = null;
       retryCount = Math.min(40, retryCount * 1.5 + 1);
 
-      console.log('DEBUG retryCount',retryCount*500);
-
       setTimeout(connect, retryCount*500);
     };
   }

@@ -1,4 +1,3 @@
-// SERVER ONLY
 define(['module', 'bart-test', 'bart/util'], function (module, geddon, util) {
   var test, v;
   geddon.testCase(module, {

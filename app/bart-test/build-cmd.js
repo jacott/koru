@@ -7,9 +7,6 @@ var stat = Future.wrap(fs.stat);
 define(function() {
   var topDir = requirejs.toUrl('').slice(0,-1);
 
-  console.log('DEBUG topDir',topDir);
-
-
   return {
     runTests: function(session, type, pattern, callback) {
 

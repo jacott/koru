@@ -21,7 +21,6 @@ define([
     });
     ws.on('message', function(data, flags) {
       var args = data.split('\t');
-      console.log('DEBUG message rc args', args);
       switch(args[0]) {
       case 'T':
         Fiber(function () {
@@ -31,7 +30,7 @@ define([
               if (mode !== 'server') count = session.totalSessions;
               if (mode !== 'client') ++count;
             }
-            console.log('DEBUG mode, count',mode, count);
+            // FIXME send client agent
 
             ws.send('X' + count);
           });

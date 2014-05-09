@@ -1,6 +1,4 @@
 define(['./core'], function (geddon) {
-  var sinon = geddon.sinon;
-
   geddon.start = function (runNextWrapper) {
     var tests = geddon._tests = [],
         promise,

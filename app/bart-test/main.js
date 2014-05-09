@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   core.onunload(module, 'reload');
 
-  var top = core.isServer() ? global : window;
+  var top = isServer ? global : window;
 
   top.assert = geddon.assert;
   top.refute = geddon.refute;
