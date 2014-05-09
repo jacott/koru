@@ -25,7 +25,7 @@ function init(session) {
   var sessCounter = 0;
   session.wss.on('connection', function(ws) {
     var ugr = ws.upgradeReq;
-    console.log('DEBUG new client ws:',ugr.headers, ugr.socket.remoteAddress);
+    console.log('DEBUG new client ws:',ugr.headers['user-agent'], ugr.socket.remoteAddress);
     if ((ugr.socket.remoteAddress === '127.0.0.1') && !ugr.headers.hasOwnProperty('user-agent')) {
       session.remoteControl(ws);
       return;

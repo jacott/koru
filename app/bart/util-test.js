@@ -18,4 +18,4 @@ define(['module', 'bart-test', 'bart/util'], function (module, geddon, util) {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
     },
   });
-})();
+});

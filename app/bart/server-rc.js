@@ -1,4 +1,5 @@
 var fs = require('fs');
+var Fiber = require('fibers');
 
 define([
   'module', 'bart/core', 'bart-test/build-cmd',
@@ -24,9 +25,11 @@ define([
       console.log('DEBUG message rc args', args);
       switch(args[0]) {
       case 'T':
-        session.unload('client-cmd');
-        buildCmd.oneClient(args[2]);
-        session.load('client-cmd');
+        Fiber(function () {
+          session.unload('client-cmd');
+          buildCmd(args[2]);
+          session.load('client-cmd');
+        }).run();
         break;
       }
     });

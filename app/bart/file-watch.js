@@ -1,10 +1,9 @@
 var fs = require('fs');
-var Path = require('path');
 var Fiber = require('fibers');
 var Future = require('fibers/future');
 
 define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function(module, core, fst, session) {
-  var top = Path.resolve(Path.dirname(module.uri)+ '/..');
+  var top = requirejs.toUrl('').slice(0,-1);
 
   core.onunload(module, 'reload');
 
@@ -14,7 +13,6 @@ define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function
 
   function watch(dir) {
     var dirs = {};
-    console.log('DEBUG watch',dir);
 
     var watcher = fs.watch(dir, function (event, filename) {
       Fiber(function () {
