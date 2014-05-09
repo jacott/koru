@@ -31,6 +31,14 @@
         return M.join(' ');
       })(),
 
+      isServer: function () {
+        return this.engine === 'Server';
+      },
+
+      isClient: function () {
+        return this.engine !== 'Server';
+      },
+
       onunload: onunload,
       unload: function unload(id) {
         if (! requirejs.defined(id)) return;

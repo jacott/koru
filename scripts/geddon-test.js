@@ -16,8 +16,8 @@ if (ARGV[0] === 'emacs') {
 
 var runTime = Date.now();
 
-var exitCount = 0;
 var exitCode = 0;
+var sessionCount = 0;
 
 var WebSocket = require('ws');
 
@@ -30,7 +30,7 @@ ws.on('message', function(data, flags) {
 });
 
 ws.on('close', function () {
-  exitProcess(1);
+  exitProcess('ALL FAILED', 1);
 });
 
 function runTests() {
@@ -39,16 +39,14 @@ function runTests() {
 
 function exitProcess(key, code) {
   if (code) exitCode = code;
-  ++exitCount;
-  if (Object.keys(result).length === exitCount) {
+  if (--sessionCount <= 0) {
     if (timer) {
       clearTimeout(timer);
       sendResults();
     }
-    exitCount = 0;
   }
   write(['exit', key, (Date.now() - runTime) + ' ' + code]);
-  exitCount || process.exit(code);
+  sessionCount || process.exit(code);
 }
 
 function logEmacs(key, msg) {
@@ -103,6 +101,12 @@ function processBuffer(buffer) {
     data = data.slice(idx+1);
   }
   switch(buffer.slice(0,1).toString()) {
+  case 'X':
+    sessionCount = +data;
+    log('Info', 'test runner count: ' + sessionCount);
+    if (! sessionCount)
+      exitProcess('ALL FAILED', 1);
+    break;
   case 'F': // Finish
     exitProcess(key, +data);
     break;

@@ -23,21 +23,24 @@ define(function (require, exports, module) {
 
 function init(session) {
   var sessCounter = 0;
+  session.totalSessions = 0;
   session.wss.on('connection', function(ws) {
     var ugr = ws.upgradeReq;
-    console.log('DEBUG new client ws:',ugr.headers['user-agent'], ugr.socket.remoteAddress);
     if ((ugr.socket.remoteAddress === '127.0.0.1') && !ugr.headers.hasOwnProperty('user-agent')) {
       session.remoteControl(ws);
       return;
     }
+    ++session.totalSessions;
+    console.log('DEBUG new client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
+    ws.on('close', function() {
+      --session.totalSessions;
+      if (sessId) delete session.conns[sessId];
+      console.log('DEBUG close client ', sessId);
+    });
     var sessId = '' + (++sessCounter);
     session.conns[sessId] = {
       ws: ws,
     };
-    ws.on('close', function() {
-      delete session.conns[sessId];
-      console.log('DEBUG close client ', sessId);
-    });
     var engine;
     ws.on('message', function(data, flags) {
       var type = data.slice(0,1);

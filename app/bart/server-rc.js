@@ -18,7 +18,6 @@ define([
 
     ws.on('close', function() {
       session.testHandle = session.logHandle = null;
-      console.log('DEBUG close rc ');
     });
     ws.on('message', function(data, flags) {
       var args = data.split('\t');
@@ -26,14 +25,23 @@ define([
       switch(args[0]) {
       case 'T':
         Fiber(function () {
-          session.unload('client-cmd');
-          buildCmd(args[2]);
-          session.load('client-cmd');
+          buildCmd.runTests(session, args[1], args[2], function (mode) {
+            var count = 0;
+            if (mode !== 'none') {
+              if (mode !== 'server') count = session.totalSessions;
+              if (mode !== 'client') ++count;
+            }
+            console.log('DEBUG mode, count',mode, count);
+
+            ws.send('X' + count);
+          });
         }).run();
         break;
       }
     });
-    ws.send('X'+session.versionHash);
+
+    remoteControl.testHandle = testHandle;
+    remoteControl.logHandle = logHandle;
 
     function testHandle(engine, msg) {
       ws.send(msg[0] + engine + '\x00' + msg.slice(1));

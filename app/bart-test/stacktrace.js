@@ -4,12 +4,14 @@
  */
 
 define(['bart/util'], function (util) {
+  var originRe, repl = '';
   var ANON_FUNCTION = 'anonymous',
       SERVER = typeof global === 'object' && global.hasOwnProperty('process');
 
-  var chrome = /^\s*at ([^\(]+)\(((?:file|http|https):.+):(\d+):(\d+)\)\s*$/i,
-      gecko = /^\s*(\S*|\[.+\])(?:\((.*?)\))?@((?:file|http|https):.+):(\d+)(?::(\d+))?\s*$/i,
-      node = /^\s*at /;
+  var chrome = /^\s*at ([^\(]+)\(((?:file|http|https):.+):(\d+):(\d+)\)\s*$/i;
+  var gecko = /^\s*(\S*|\[.+\])(?:\((.*?)\))?@((?:file|http|https):.+):(\d+)(?::(\d+))?\s*$/i;
+//      node = /^\s*at ([^\(]+)\((\/.+:.+):(\d+):(\d+)\)\s*$/i;
+  var node = /^\s*at ([^\(]+)?\((.*):(\d+):(\d+)\)\s*$/i;
 
   return function(ex) {
     if (!ex.stack) return;
@@ -20,27 +22,18 @@ define(['bart/util'], function (util) {
         notUs = ex.name === 'AssertionError',
         url, func, line, column;
 
-    if (SERVER) {
-      for(var i=0;i < lines.length;++i) {
-        line = lines[i];
-        if (! node.test(line)) continue;
-
-        if (/\/(geddon|testacular\.js|meteor-jasmine.js)/.test(line)) {
-          if (notUs) continue;
-
-        } else notUs = true;
-        stack.push(line);
+    if (originRe === undefined) {
+      if (SERVER) {
+        originRe = new RegExp(require('path').resolve(requirejs.toUrl('')+'/..')+'/');
+      } else {
+        repl = 'app';
+        var lcn = window.location;
+        originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host));
       }
-
-      return stack;
     }
 
-    var lcn = window.location;
-
-    var originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host));
-
-    for (var i = 0, j = lines.length; i < j; ++i) {
-      if ((parts = chrome.exec(lines[i]))) {
+    for (var i = 0; i < lines.length; ++i) {
+      if ((parts = (SERVER ? node : chrome).exec(lines[i]))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).trim();
         if (m = /\.testCase\.(.*)/.exec(func)) {
@@ -54,13 +47,14 @@ define(['bart/util'], function (util) {
         func = parts[1] || ANON_FUNCTION;
         line = parts[4];
         column = parts[5];
+
       } else {
         continue;
-      }
+      };
 
-      url = url.replace(originRe, 'app');
+      url = url.replace(originRe, repl);
 
-      if (/^app\/(bart-test\/|require.js)/.test(url)) {
+      if (/^(?:app\/(?:bart-test\/|require.js)|node_modules\/)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;

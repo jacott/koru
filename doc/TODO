@@ -1,0 +1,3 @@
+
+* Use https://github.com/ahyatt/emacs-websocket
+   to talk to server instead of geddon-test.js
