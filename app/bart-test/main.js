@@ -45,7 +45,8 @@ define(function(require, exports, module) {
   });
 
   return {
-    run: function () {
+    run: function (pattern) {
+      geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
       geddon.start();
