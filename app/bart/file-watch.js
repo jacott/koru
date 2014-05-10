@@ -17,11 +17,15 @@ define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function
     var watcher = fs.watch(dir, function (event, filename) {
       Fiber(function () {
         if (! filename.match(/^\w/)) return;
-        // console.log('event is: ' + event + ' for ' + dir);
-        // console.log('filename provided: ' + filename);
         var path = manage(dirs, dir, filename);
-        if (path && path.match(/\.js$/))
+        if (! path) return;
+
+        // FIXME need to deal with deleting obsolete compiled templates
+        // and just handle this better
+        if (path.slice(-3) === '.js' && path.slice(-8) !== '.html.js')
           session.unload(path.slice(top.length + 1, - 3));
+        else if (path.slice(-5) === '.html')
+          session.unload(path.slice(top.length + 1));
       }).run();
     });
     fst.readdir(dir).forEach(function (filename) {

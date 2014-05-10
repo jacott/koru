@@ -62,7 +62,7 @@ function init(session) {
         }
         break;
       }
-      console.log('DEBUG msg', type, sessId, data);
+      console.log('INFO', type, sessId, data);
     });
     ws.send('X'+session.versionHash);
   });

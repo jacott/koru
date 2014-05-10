@@ -1,15 +1,18 @@
 var fs = require('fs');
 var Path = require('path');
 var Future = require('fibers/future');
+
 define({
   mkdir: mkdir,
   mkdirp: mkdirp,
   readdir: readdir,
+  readFile: readFile,
   rename: rename,
   rmdir: rmdir,
   stat: stat,
   truncate: truncate,
   unlink: unlink,
+  writeFile: writeFile,
 });
 
 function stat(path) {
@@ -41,6 +44,14 @@ function rmdir(path) {
 
 function readdir(path) {
   return futureWrap(fs, fs.readdir, [path]);
+}
+
+function readFile(path, options) {
+  return futureWrap(fs, fs.readFile, [path, options]);
+}
+
+function writeFile(path, options) {
+  return futureWrap(fs, fs.writeFile, [path, options]);
 }
 
 function mkdir(dir) {

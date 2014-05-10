@@ -1,52 +1,32 @@
+var Path = require('path');
+var http = require('http');
+var express = require('express');
+var send = require('send');
+var parseurl = require('parseurl');
+
 define(function (require, exports, module) {
-  var Path = require('path');
-  var http = require('http');
-  var express = require('express');
-  var send = require('send');
-  var parseurl = require('parseurl');
+  var core = require('./core');
+  var fst = require('./fs-tools');
+
+  core.onunload(module, 'reload');
 
   var __dirname = Path.dirname(module.uri);
 
   var app = express();
 
-  // var root = Path.resolve(__dirname + '/..');
+  var root = Path.resolve(__dirname + '/..');
 
-  // app.use('/package', function(req, res, next) {
-  //   var path = parseurl(req).pathname;
-  //   var m = /^(\/[^/]+)(\/.*)?$/.exec(path);
-  //   if (! m) return error();
+  app.use(function(req, res, next) {
+    core.Fiber(function () {
+      var path = parseurl(req).pathname;
 
-  //   var pname = m[1];
-  //   if (! m[2]) {
-  //     var mjs = /^(.*)\.js$/.exec(pname);
-  //     if (! mjs) return error();
-  //     pname = mjs[1];
-  //     m[2] = '/client.js';
-  //   }
+      var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
+      if (! (m && compileTemplate(req, res, next, m[2], root+m[1])))
+        next();
+    }).run();
+  });
 
-  //   var path = pname+m[2];
-
-  //   console.log('DEBUG path, opts',path, root);
-
-
-  //   send(req, path, {root: root})
-  //     .on('error', error)
-  //     .on('directory', error)
-  //     .pipe(res);
-
-  //   function error(err) {
-  //     console.log('DEBUG err',err);
-
-  //     if (! err || 404 === err.status) {
-  //       res.statusCode = 404;
-  //       res.end('NOT FOUND');
-  //     } else {
-  //       next(err);
-  //     }
-  //   }
-  // });
-
-  app.use(express.static(__dirname + '/..'));
+  app.use(express.static(root));
 
   var server = http.createServer(app);
 
@@ -54,36 +34,30 @@ define(function (require, exports, module) {
 
   exports.app = app;
   exports.server = server;
+  exports.compilers = {};
 
-  // function pathtype(path) {
-  //   console.log('DEBUG pathtype', path);
+  function compileTemplate(req, res, next, type, path) {
+    var compiler = exports.compilers[type];
+    if (! compiler) return;
 
-  //   try {
-  //     var stat = futureWrap(fs, fs.stat, [path]);
-  //     return stat.isFile() ? 'file' : stat.isDirectory() ? 'dir' : 'other';
-  //   } catch (ex) {
-  //     if (ex.code === 'ENOENT')
-  //       return;
+    var outPath = path+'.js';
+    var paths = path.split('.build/');
+    path = paths.join('');
 
-  //     throw ex;
-  //   }
-  // }
+    var srcSt = fst.stat(path);
+    var jsSt = fst.stat(outPath);
 
-  // function futureWrap(obj, func, args) {
-  //   var future = new Future;
-  //   var results;
+    if (!jsSt) fst.mkdir(paths[0]+'.build');
 
-  //   var callback = function (error, data) {
-  //     if (error) {
-  //       future.throw(error);
-  //       return;
-  //     }
-  //     results = data;
-  //     future.return();
-  //   };
-  //   args.push(callback);
-  //   func.apply(obj, args);
-  //   future.wait();
-  //   return results;
-  // }
+    if (! (srcSt || jsSt)) return ! notFound(res); // not found
+
+    if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
+      compiler(type, path, outPath);
+    }
+  }
+
+  function notFound(res) {
+    res.statusCode = 404;
+    res.end('NOT FOUND');
+  }
 });

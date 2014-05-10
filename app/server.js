@@ -28,6 +28,6 @@ requirejs.config({
 module.exports = function () {};
 
 
-requirejs(['bart/file-watch', 'bart/server-rc'], function () {
+requirejs(['bart/server', 'bart/file-watch', 'bart/server-rc'], function () {
   console.log('=> Ready');
 });
