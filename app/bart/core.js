@@ -42,11 +42,11 @@
   define(['module', './util'], function (module, util) {
     onunload(module, 'reload');
 
-    return top.Bart = {
+    return {
       Fiber: Fiber,
 
-      debug: function (arg) {
-        this.logger('DEBUG', arg);
+      debug: function () {
+        this.logger('DEBUG', arguments);
       },
 
       logger: function () {

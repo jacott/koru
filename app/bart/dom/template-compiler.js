@@ -15,7 +15,7 @@ define(function(require, exports, module) {
     var html = fst.readFile(path).toString();
     var js = DomCompiler.toJavascript(html);
 
-    fst.writeFile(outPath, "define(['bart/dom'],function(Dom) {return function(){"+ js + "}})");
+    fst.writeFile(outPath, "define("+ js + ")");
   }
 });
 
@@ -30,12 +30,10 @@ var DomCompiler = {
     var template;
     var result = '';
     try {
-      var test;
       var parser = new htmlparser.Parser({
         onopentag: function(name, attrs){
           if (name === 'template') {
             name = attrs.name;
-            test = test || attrs.test;
             if (! name)
               throw new DomCompiler.Error("Template name is missing", parser.startIndex);
             if (! name.match(/^([A-Z]\w*\.?)+$/))
@@ -65,9 +63,6 @@ var DomCompiler = {
       });
       parser.write(code);
       parser.end();
-      if (test) {
-        result = test+' = function(){'+result+'};';
-      }
       return result;
     } catch (e) {
       throw e;
@@ -117,7 +112,7 @@ Template.prototype = {
   },
 
   toString: function () {
-    return "Dom.newTemplate(" + JSON.stringify(this.toHash()) + ");";
+    return JSON.stringify(this.toHash());
   },
 
   toHash: function () {

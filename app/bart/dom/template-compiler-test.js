@@ -21,7 +21,8 @@ isClient && define([
 
     "test rendering html template": function () {
       refute(Dom.Test);
-      testTpl();
+
+      Dom.newTemplate(testTpl);
       assert(Dom.Test.Foo);
 
       Dom.Test.Foo.$helpers({

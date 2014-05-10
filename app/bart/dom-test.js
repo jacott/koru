@@ -450,7 +450,8 @@ isClient && define(['module', 'bart-test/sinon', 'bart-test', './dom'], function
         Dom.newTemplate({name: "Foo.Bar.Baz"});
 
         var tpl = Dom.Foo.Bar;
-        assert.same(tpl.name, undefined);
+        assert.same(tpl.name, 'Bar');
+        assert.same(tpl._helpers, undefined);
         assert.same(Dom.lookupTemplate("Foo.Bar"), tpl);
 
 
@@ -464,6 +465,7 @@ isClient && define(['module', 'bart-test/sinon', 'bart-test', './dom'], function
         Dom.newTemplate({name: "Foo.Bar"});
 
         assert.same(Dom.Foo.Bar.name, 'Bar');
+        assert.equals(tpl._helpers, {});
         assert.same(Dom.Foo.Bar.Baz.name, 'Baz');
       },
     },

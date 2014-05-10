@@ -493,14 +493,15 @@ define([''], function() {
 
 
   function addTemplates(parent, options) {
-    if (options.name.match(/\./)) {
-      var names = options.name.split('.');
-      options.name = names.pop();
-      names.forEach(function (name) {
-        parent = parent[name] || (parent[name] =  new DomTemplate(parent));
+    var name = options.name;
+    if (name.match(/\./)) {
+      var names = name.split('.');
+      name = names.pop();
+      names.forEach(function (nm) {
+        parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }
-    parent[options.name] = parent = (parent[options.name] || new DomTemplate(parent)).$initOptions(options);
+    parent[name] = parent = (parent[name] || new DomTemplate(name, parent)).$initOptions(options);
     var nested = options.nested;
 
     if (! options.nested) return;
@@ -712,7 +713,8 @@ define([''], function() {
     return output;
   }
 
-  function DomTemplate(parent) {
+  function DomTemplate(name, parent) {
+    this.name = name;
     if (parent !== Dom)
       this.parent = parent;
   }
@@ -733,7 +735,6 @@ define([''], function() {
     },
 
     $initOptions: function (options) {
-      this.name = options.name;
       this.nodes = options.nodes;
       this._helpers = {};
       this._events = [];
