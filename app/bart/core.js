@@ -13,13 +13,15 @@
   var engine = typeof navigator === 'undefined' ? 'Server' : browserVersion(navigator.userAgent);
 
   if (engine === 'Server') {
-    global.isServer = true;
-    global.isClient = false;
+    var top = global;
+    top.isServer = true;
+    top.isClient = false;
     var Fiber = require('fibers');
 
   } else {
-    window.isServer = false;
-    window.isClient = true;
+    var top = window;
+    top.isServer = false;
+    top.isClient = true;
     var Fiber = function(func) {return {run: func}};
   }
 
@@ -40,8 +42,16 @@
   define(['module', './util'], function (module, util) {
     onunload(module, 'reload');
 
-    return {
+    return top.Bart = {
       Fiber: Fiber,
+
+      debug: function (arg) {
+        this.logger('DEBUG', arg);
+      },
+
+      logger: function () {
+        console.log.apply(console, arguments);
+      },
 
       engine: engine,
 

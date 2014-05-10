@@ -1,7 +1,7 @@
 {
   "name": "Bart",
   "homepage": "http://bart.obeya.co/",
-  "description": "Born Again Reactive Templates framework",
+  "description": "Bart is a: test-driven, reactive, fast, web app framework",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@dev.obeya.co:bart.git"
@@ -23,7 +23,8 @@
     "ws": "0.4.31",
     "send": "0.3.0",
     "parseurl": "1.0.1",
-    "express": "4.1.1"
+    "express": "4.1.1",
+    "less": "1.7.0"
   },
   "devDependencies": {
     "htmlparser2": "3.7.1",

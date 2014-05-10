@@ -3,5 +3,9 @@ define(['./main', 'bart/session-server'], function(bartTest, session) {
     session.remoteControl.testHandle('Server', cmd+msg);
   };
 
+  bartTest.logHandle = function (msg) {
+    session.remoteControl.logHandle('Server', msg);
+  };
+
   return bartTest;
 });

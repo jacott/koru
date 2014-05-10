@@ -16,10 +16,17 @@ define(function(require, exports, module) {
 
   var count, skipCount, errorCount, timer;
 
+  var origLogger = core.logger;
+
   var self = {
     run: function (pattern) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
+
+      core.logger = function () {
+        console.log.apply(console, arguments);
+        self.logHandle(geddon.inspect(arguments));
+      };
 
       geddon.start();
     },
@@ -31,6 +38,7 @@ define(function(require, exports, module) {
   };
 
   geddon.onEnd(function () {
+    core.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();
   });
@@ -48,7 +56,6 @@ define(function(require, exports, module) {
       for(var i=0;i < errors.length; ++i) {
         result += errors[i]+"\n";
       }
-      result += "\n";
       self.testHandle('E', result);
     }
 

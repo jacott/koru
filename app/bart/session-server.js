@@ -14,6 +14,7 @@ define(function (require, exports, module) {
     versionHash: Date.now(),
     unload: unload,
     load: load,
+    logHandle: function () {},
   };
 
   init(session);

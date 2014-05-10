@@ -17,7 +17,8 @@ define([
 
 
     ws.on('close', function() {
-      session.testHandle = session.logHandle = null;
+      session.testHandle = null;
+      session.logHandle = function() {};
     });
     ws.on('message', function(data, flags) {
       var args = data.split('\t');
