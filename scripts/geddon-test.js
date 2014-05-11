@@ -46,7 +46,7 @@ function exitProcess(key, code) {
     }
   }
   write(['exit', key, (Date.now() - runTime) + ' ' + code]);
-  sessionCount || process.exit(code);
+  sessionCount || process.exit(exitCode);
 }
 
 function logEmacs(key, msg) {
@@ -106,6 +106,8 @@ function processBuffer(buffer) {
     log('Info', 'test runner count: ' + sessionCount);
     if (! sessionCount)
       exitProcess('ALL FAILED', 1);
+    if (sessionCount < 2 && ARGV[0] === 'both')
+      exitCode = 1; // We don't have both a server and client so fail at end
     break;
   case 'F': // Finish
     exitProcess(key, +data);

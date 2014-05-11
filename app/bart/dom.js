@@ -1,4 +1,6 @@
-define([''], function() {
+define(['bart/util'], function(util) {
+  var extend = util.extend;
+
   var vendorStylePrefix = (function () {
     var style = document.documentElement.style;
     var styles = ['webkit', 'Moz',  'ms', 'o', ''];
@@ -483,14 +485,6 @@ define([''], function() {
       return currentElement = value;
     }
   };
-
-  function extend(obj, properties) {
-    for(var prop in properties) {
-      Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
-    }
-    return obj;
-  }
-
 
   function addTemplates(parent, options) {
     var name = options.name;

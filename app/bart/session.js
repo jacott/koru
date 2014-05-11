@@ -1,64 +1,27 @@
-define(['module', 'bart/core'], function (module, core) {
-  var waitFuncs = [];
-  var ready = false;
-  var retryCount = 0;
-  var versionHash;
+/*global define */
 
-  core.onunload(module, 'reload');
+define(function(require) {
+  var core = require('./core');
 
-  connect.send = function (type, msg) {
-    if (ready) connect._ws.send(type+msg);
-    else waitFuncs.push(type+msg);
+  var session = {
+    _commands: {},
+    provide: function (cmd, func) {
+      var old = this._commands[cmd];
+      this._commands[cmd] = func;
+      return old;
+    },
+
+    _onMessage: function(conn, data) {
+      var type = data.slice(0,1);
+      data = data.slice(1);
+      var func = this._commands[type];
+      if (func)
+        func.call(conn, data);
+      else
+        func || core.info('Unexpected websocket message: '+ type, conn.engine);
+    },
   };
 
-  connect();
+  return session;
 
-  return connect;
-
-  function url() {
-    var location = window.document.location;
-    return location.protocol.replace(/^http/,'ws')+'//' + location.host;
-  }
-
-  function connect() {
-    var ws = connect._ws = new WebSocket(url());
-    ws.onmessage = function (event) {
-
-      var data = event.data.slice(1);
-      switch(event.data[0]) {
-      case 'X':
-        if (versionHash && versionHash !== data)
-          core.reload(); // FIXME we want to send queued messages first
-        versionHash = data;
-        ws.send('X'+ core.engine);
-        for(var i = 0; i < waitFuncs.length; ++i) {
-          ws.send(waitFuncs[i]);
-        }
-        waitFuncs = [];
-        ready = true;
-        retryCount = 0;
-        break;
-      case 'L':
-        loadId(data);
-        break;
-      case 'U':
-        var args = data.split(':');
-        versionHash = args[0];
-        core.unload(args[1]);
-        break;
-      }
-    };
-
-    ws.onclose = function (event) {
-      ready = false;
-      ws = null;
-      retryCount = Math.min(40, retryCount * 1.5 + 1);
-
-      setTimeout(connect, retryCount*500);
-    };
-  }
-
-  function loadId(name) {
-    requirejs([name], function() {});
-  }
 });

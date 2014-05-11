@@ -1,3 +1,5 @@
+/*global require, define */
+
 var fs = require('fs');
 var Fiber = require('fibers');
 
@@ -10,15 +12,21 @@ define([
 
   session.remoteControl = remoteControl;
 
+  remoteControl.engine = 'Server';
+
   function remoteControl(ws) {
     var session = this;
-    session.testHandle = testHandle;
-    session.logHandle = logHandle;
+    var oldLogHandle = session.provide('L', logHandle);
+    var oldTestHandle = session.provide('T', testHandle);
+
+    // used by bart-test
+    remoteControl.testHandle = testHandle;
+    remoteControl.logHandle = logHandle;
 
 
     ws.on('close', function() {
-      session.testHandle = null;
-      session.logHandle = function() {};
+      session.provide('L', oldLogHandle);
+      session.provide('T', oldTestHandle);
     });
     ws.on('message', function(data, flags) {
       var args = data.split('\t');
@@ -40,15 +48,12 @@ define([
       }
     });
 
-    remoteControl.testHandle = testHandle;
-    remoteControl.logHandle = logHandle;
-
-    function testHandle(engine, msg) {
-      ws.send(msg[0] + engine + '\x00' + msg.slice(1));
+    function testHandle(msg) {
+      ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
     }
 
-    function logHandle(engine, msg) {
-      ws.send('L' + engine + '\x00' + msg);
+    function logHandle(msg) {
+      ws.send('L' + this.engine + '\x00' + msg);
     }
   }
 });
