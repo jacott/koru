@@ -61,7 +61,9 @@ define(function() {
 
       function findAll(dir) {
         var dirPath = Path.join(topDir, dir);
-        var filenames = readdir(dirPath).wait();
+        var filenames = readdir(dirPath).wait().filter(function (fn) {
+          return /^[\w-]*(?:-test\.js$|$)/.test(fn);
+        });
         var stats = filenames.map(function (filename) {
           return stat(Path.join(dirPath, filename));
         });

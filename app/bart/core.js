@@ -1,30 +1,6 @@
+/*global requirejs define isServer require navigator window global console process*/
+
 (function () {
-  function browserVersion(ua){
-    var tmp;
-    var M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
-    if(/trident/i.test(M[1])){
-      tmp=  /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
-      return 'IE '+(tmp[1] || '');
-    }
-    if((tmp= ua.match(/version\/([\.\d]+)/i))!= null) M[2]= tmp[1];
-    return M.slice(1).join(' ');
-  }
-
-  var engine = typeof navigator === 'undefined' ? 'Server' : browserVersion(navigator.userAgent);
-
-  if (engine === 'Server') {
-    var top = global;
-    top.isServer = true;
-    top.isClient = false;
-    var Fiber = require('fibers');
-
-  } else {
-    var top = window;
-    top.isServer = false;
-    top.isClient = true;
-    var Fiber = function(func) {return {run: func}};
-  }
-
   var depMap = {};
   var unloads = {};
 
@@ -42,8 +18,10 @@
   define(['module', './util'], function (module, util) {
     onunload(module, 'reload');
 
-    return top._bart_ = {
-      Fiber: Fiber,
+    return (isServer ? global : window)._bart_ = {
+      Fiber: isServer ? require('fibers') : function(func) {return {run: func}},
+
+      util: util,
 
       debug: function () {
         this.logger('DEBUG', Array.prototype.slice.call(arguments, 0));
@@ -56,10 +34,6 @@
       logger: function () {
         console.log.apply(console, arguments);
       },
-
-      engine: engine,
-
-      browserVersion: browserVersion,
 
       onunload: onunload,
       unload: function unload(id) {

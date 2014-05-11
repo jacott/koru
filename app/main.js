@@ -1,3 +1,5 @@
+/*global define, requirejs */
+
 requirejs.config({
   //By default load any module IDs from js/lib
 //  baseUrl: '',
@@ -12,6 +14,7 @@ requirejs.config({
   ],
 });
 
-define(['bart/core', 'module', 'bart'], function (core, module, bart) {
-  core.onunload(module, 'reload');
+
+define(['module', 'bart'], function (module, bart) {
+  bart.onunload(module, 'reload');
 });

@@ -25,6 +25,11 @@ define(function (require, exports, module) {
 
     session.provide('X', function (data) {this.engine = data});
     session.provide('L', function (data) {});
+    session.provide('E', function (data) {
+      session.remoteControl ?
+        session.remoteControl.logHandle.call(this, data) :
+        core.logger('INFO', this.engine, data);
+    });
 
     var sessCounter = 0;
     session.totalSessions = 0;

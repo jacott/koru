@@ -21,7 +21,7 @@ define(function (require, exports, module) {
     if (versionHash && versionHash !== data)
       core.reload(); // FIXME we want to send queued messages first
     versionHash = data;
-    ws.send('X'+ core.engine);
+    ws.send('X'+ core.util.engine);
     for(var i = 0; i < waitFuncs.length; ++i) {
       ws.send(waitFuncs[i]);
     }

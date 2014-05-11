@@ -1,17 +1,17 @@
 /**
- * Mostly stolen from https://raw.github.com/occ/TraceKit
+ * Originally stolen from https://raw.github.com/occ/TraceKit
  * MIT license
  */
 
-define(['bart/util'], function (util) {
-  var originRe, repl = '';
-  var ANON_FUNCTION = 'anonymous',
-      SERVER = typeof global === 'object' && global.hasOwnProperty('process');
+/*global define isServer window */
 
-  var chrome = /^\s*at ([^\(]+)\(((?:file|http|https):.+):(\d+):(\d+)\)\s*$/i;
+define(['require', 'bart/util-base'], function (require, util) {
+  var originRe, repl = '';
+  var ANON_FUNCTION = 'anonymous';
+
+  var node = /^\s*at (?:([^\(]+)?\()?(.*):(\d+):(\d+)\)?\s*$/i;
+  var chrome = /^\s*at (?:([^\(]+)\()?((?:file|http|https):.+):(\d+):(\d+)\)?\s*$/i;
   var gecko = /^\s*(\S*|\[.+\])(?:\((.*?)\))?@((?:file|http|https):.+):(\d+)(?::(\d+))?\s*$/i;
-//      node = /^\s*at ([^\(]+)\((\/.+:.+):(\d+):(\d+)\)\s*$/i;
-  var node = /^\s*at ([^\(]+)?\((.*):(\d+):(\d+)\)\s*$/i;
 
   return function(ex) {
     if (!ex.stack) return;
@@ -23,8 +23,8 @@ define(['bart/util'], function (util) {
         url, func, line, column;
 
     if (originRe === undefined) {
-      if (SERVER) {
-        originRe = new RegExp(require('path').resolve(requirejs.toUrl('')+'/..')+'/');
+      if (isServer) {
+        originRe = new RegExp(require('path').resolve(require.toUrl('')+'/..')+'/');
       } else {
         repl = 'app';
         var lcn = window.location;
@@ -33,7 +33,7 @@ define(['bart/util'], function (util) {
     }
 
     for (var i = 0; i < lines.length; ++i) {
-      if ((parts = (SERVER ? node : chrome).exec(lines[i]))) {
+      if ((parts = (isServer ? node : chrome).exec(lines[i]))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).trim();
         if (m = /\.testCase\.(.*)/.exec(func)) {

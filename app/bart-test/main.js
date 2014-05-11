@@ -1,3 +1,5 @@
+/*global define console isServer global window*/
+
 define(function(require, exports, module) {
   var core = require('bart/core');
 
@@ -27,6 +29,8 @@ define(function(require, exports, module) {
         console.log.apply(console, arguments);
         self.logHandle(geddon.inspect(arguments));
       };
+
+      console.clear && console.clear();
 
       geddon.start();
     },

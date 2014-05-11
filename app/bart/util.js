@@ -1,16 +1,10 @@
-define({
-  extend: function(obj, properties) {
-    for(var prop in properties) {
-      Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
-    }
-    return obj;
-  },
+/*global define */
 
-  regexEscape: function (s) {
-    return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-  },
-
-  newEscRegex: function (s) {
-    return new RegExp(this.regexEscape(s));
-  },
+define(['module', 'bart/util-base', 'bart/stacktrace'], function(module, util, stacktrace) {
+  return util.extend(util, {
+    extractError: function (ex) {
+      return ex.toString() + "\n" + stacktrace(ex).join("\n");
+    },
+    stacktrace: stacktrace,
+  });
 });
