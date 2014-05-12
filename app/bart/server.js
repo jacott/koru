@@ -1,4 +1,6 @@
 define(function (require, exports, module) {
-  var session = require('bart/session-server');
-  var htmlCompiler = require('bart/dom/template-compiler');
+  require('./core').onunload(module, 'reload');
+  var session = require('./session-server');
+  var htmlCompiler = require('./dom/template-compiler');
+  var cssCompiler = require('./css/compiler');
 });

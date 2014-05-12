@@ -27,7 +27,8 @@ define(function(require, exports, module) {
 
       core.logger = function (type) {
         origLogger.apply(core, arguments);
-        self.logHandle(type+": "+geddon.inspect(Array.prototype.slice.call(arguments, 1)));
+        var args = Array.prototype.slice.call(arguments, 1);
+        self.logHandle(type+": "+(type === 'DEBUG' ? geddon.inspect(args) : args.join(' ')));
       };
 
       console.clear && console.clear();

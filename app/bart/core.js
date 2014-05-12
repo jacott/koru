@@ -28,7 +28,11 @@
       },
 
       info: function () {
-        this.logger('INFO ' + Array.prototype.join.call(arguments, ' '));
+        this.logger('INFO', Array.prototype.join.call(arguments, ' '));
+      },
+
+      error: function () {
+        this.logger('ERROR', Array.prototype.join.call(arguments, ' '));
       },
 
       logger: function () {

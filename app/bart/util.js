@@ -6,7 +6,8 @@ define(function(require, exports, module) {
 
   return util.extend(util, {
     extractError: function (ex) {
-      return ex.toString() + "\n" + stacktrace(ex).join("\n");
+      var st = stacktrace(ex);
+      return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
     },
     stacktrace: stacktrace,
 

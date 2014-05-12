@@ -2,10 +2,26 @@ var fs = require('fs');
 var Fiber = require('fibers');
 var Future = require('fibers/future');
 
-define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function(module, core, fst, session) {
-  var top = requirejs.toUrl('').slice(0,-1);
+/*global define */
+
+define(function(require, exports, module) {
+  var core = require('./core');
+  var fst = require('./fs-tools');
+  var session = require('./session-server');
+  var top = require.toUrl('').slice(0,-1);
 
   core.onunload(module, 'reload');
+
+  exports.listeners = {
+    js: function (type, path) {
+      if (path.slice(-8) !== '.html.js')
+        session.unload(path.slice(top.length + 1, - 3));
+    },
+
+    html: function (type, path) {
+      session.unload(path.slice(top.length + 1));
+    }
+  };
 
   Fiber(function () {
     watch(top);
@@ -20,12 +36,10 @@ define(['module', 'bart/core', 'bart/fs-tools', 'bart/session-server'], function
         var path = manage(dirs, dir, filename);
         if (! path) return;
 
-        // FIXME need to deal with deleting obsolete compiled templates
-        // and just handle this better
-        if (path.slice(-3) === '.js' && path.slice(-8) !== '.html.js')
-          session.unload(path.slice(top.length + 1, - 3));
-        else if (path.slice(-5) === '.html')
-          session.unload(path.slice(top.length + 1));
+        var m = /\.(\w+)$/.exec(path);
+        var handler = m && exports.listeners[m[1]];
+
+        handler && handler(m[1], path, session);
       }).run();
     });
     fst.readdir(dir).forEach(function (filename) {
