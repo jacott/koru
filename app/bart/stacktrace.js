@@ -3,8 +3,6 @@
  * MIT license
  */
 
-/*global define isServer window */
-
 define(['require', 'bart/util-base'], function (require, util) {
   var originRe, repl = '';
   var ANON_FUNCTION = 'anonymous';

@@ -1,11 +1,9 @@
 var fs = require('fs');
-var Fiber = require('fibers');
 var Future = require('fibers/future');
-
-/*global define */
 
 define(function(require, exports, module) {
   var core = require('./core');
+  var Fiber = core.Fiber;
   var fst = require('./fs-tools');
   var session = require('./session-server');
   var top = require.toUrl('').slice(0,-1);

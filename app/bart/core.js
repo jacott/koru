@@ -1,5 +1,3 @@
-/*global requirejs define isServer require navigator window global console process*/
-
 (function () {
   var depMap = {};
   var unloads = {};

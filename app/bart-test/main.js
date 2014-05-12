@@ -1,5 +1,3 @@
-/*global define console isServer global window*/
-
 define(function(require, exports, module) {
   var core = require('bart/core');
 

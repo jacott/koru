@@ -1,5 +1,3 @@
-/*global define, require */
-
 var Path = require('path');
 var http = require('http');
 var express = require('express');

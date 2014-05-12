@@ -9,7 +9,6 @@ requirejs.config({
   baseUrl: __dirname,
 
   packages: [
-    "bart",
     "bart-test",
   ],
 

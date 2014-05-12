@@ -1,5 +1,3 @@
-/*global define */
-
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
   var core = require('./core');

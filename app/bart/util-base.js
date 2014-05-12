@@ -1,5 +1,3 @@
-/*global define navigator global require window */
-
 (function () {
   function browserVersion(ua){
     var tmp;
@@ -18,8 +16,6 @@
     var top = global;
     top.isServer = true;
     top.isClient = false;
-    var Fiber = require('fibers');
-
   } else {
     var top = window;
     top.isServer = false;

@@ -1,5 +1,3 @@
-/*global define*/
-
 define(['./sinon', 'bart/util'], function(sinon, util) {
   var geddon = {
     sinon: sinon,

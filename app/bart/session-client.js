@@ -55,7 +55,9 @@ define(function (require, exports, module) {
     ws.onclose = function (event) {
       ready = false;
       ws = conn = null;
-      retryCount = Math.min(40, retryCount * 1.5 + 1);
+      retryCount || _bart_.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
+      retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
+
 
       setTimeout(connect, retryCount*500);
     };

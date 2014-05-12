@@ -1,5 +1,3 @@
-/*global define */
-
 define(function(require) {
   var core = require('./core');
 

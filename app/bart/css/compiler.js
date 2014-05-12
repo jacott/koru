@@ -1,5 +1,3 @@
-/*global define require */
-
 var Path = require('path');
 var less = require("less");
 var Future = require('fibers/future');

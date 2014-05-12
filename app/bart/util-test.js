@@ -1,4 +1,3 @@
-/*global assert define*/
 define(['module', 'bart-test', './util'], function (module, geddon, util) {
   var test, v;
   geddon.testCase(module, {

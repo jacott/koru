@@ -1,5 +1,3 @@
-/*global define document */
-
 define(function(require, exports, module) {
   var core = require('bart/core');
   var session = require('bart/session');

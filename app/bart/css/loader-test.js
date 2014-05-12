@@ -1,4 +1,3 @@
-/*global define window isClient document assert refute*/
 isClient && define(function (require, exports, module) {
 
   var test, v;

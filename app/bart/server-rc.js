@@ -1,7 +1,4 @@
-/*global require, define */
-
 var fs = require('fs');
-var Fiber = require('fibers');
 
 define([
   'module', 'bart/core', 'bart-test/build-cmd',
@@ -32,7 +29,7 @@ define([
       var args = data.split('\t');
       switch(args[0]) {
       case 'T':
-        Fiber(function () {
+        core.Fiber(function () {
           buildCmd.runTests(session, args[1], args[2], function (mode) {
             var count = 0;
             if (mode !== 'none') {

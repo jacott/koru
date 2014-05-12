@@ -1,8 +1,6 @@
-/*global define isClient isServer */
-
 isServer && define(function (require, exports, module) {
   var test, v;
-  var Fiber = require('fibers');
+  var core = require('../core');
   var Future = require('fibers/future');
   var geddon = require('bart-test');
   var compiler = require('./compiler');
@@ -28,12 +26,14 @@ isServer && define(function (require, exports, module) {
     },
 
     "test queuing": function () {
-      v.compile = fw.listeners.less;
       v.session = {sendAll: test.stub()};
-      assert(v.compile);
+
+      v.compile = fw.listeners.less;
+      assert(v.compile, "Should be registered with file-watch");
+
       var path = require.toUrl("./compiler-test.less");
       var future = new Future();
-      var fb1 = Fiber(function () {
+      var fb1 = core.Fiber(function () {
         v.compile('less', path, v.session);
         future.return();
       });

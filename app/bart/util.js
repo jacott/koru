@@ -1,5 +1,3 @@
-/*global define */
-
 define(function(require, exports, module) {
   var util = require('./util-base');
   var stacktrace = require('./stacktrace');
