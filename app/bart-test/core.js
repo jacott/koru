@@ -18,6 +18,8 @@ define(['./sinon', 'bart/util'], function(sinon, util) {
     inspect: util.inspect,
 
     extractError: util.extractError,
+
+    util: util,
   };
 
   geddon._init();

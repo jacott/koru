@@ -2,6 +2,8 @@ define(['./core', './assertions'], function (geddon) {
   var gu = geddon._u;
   var ga = geddon.assertions;
 
+  var util = geddon.util;
+
   ga.add('same', {
     assert:  function (actual, expected) {
       return actual === expected;
@@ -53,7 +55,7 @@ define(['./core', './assertions'], function (geddon) {
   ga.add('near', {
     assert:  function (actual, expected, delta) {
       delta = this.delta = delta || 1;
-      return actual > expected-delta && actual < expected+delta;
+      return withinDelta(actual, expected, delta);
     },
 
     message: "{0} to be near {1} by delta {$delta}"
@@ -140,6 +142,34 @@ define(['./core', './assertions'], function (geddon) {
     },
     assertMessage: "Expected object's className to include '{1}' but was '{$names}'",
     refuteMessage: "Expected object's className not to include '{1}'",
+  });
+
+  ga.add('colorEqual', {
+    assert:  function (actual, expected, delta) {
+      this.delta = delta = delta || 0.0001;
+      this.actual = util.colorToArray(actual);
+      this.expected = util.colorToArray(expected);
+      return gu.deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
+        withinDelta(this.actual[3], this.expected[3], delta);
+    },
+
+    message: "'{0}' to equal '{1}'; {i$actual} !== {i$expected} within delta {$delta}"
+  });
+
+   ga.add('cssUnitNear', {
+    assert:  function (unit, actual, expected, delta) {
+      this.delta = delta = delta || 1;
+      if (typeof actual !== 'string' || ! actual || ! expected)
+        return actual === expected;
+      var ure = new RegExp(util.regexEscape(unit)+"$");
+      var exNum = typeof expected === 'number';
+      if (! (ure.test(actual) && (exNum || ure.test(expected)))) return false;
+      return withinDelta(+actual.slice(0, -unit.length),
+                         exNum ? expected : +expected.slice(0, -unit.length),
+                         delta);
+    },
+
+    message: "{i1} to be near {i2} within delta {$delta} with unit of {i0}"
   });
 
   // assert.dom
@@ -373,6 +403,10 @@ define(['./core', './assertions'], function (geddon) {
 
       message: "{0} to be called " + nth + ".\n{$calls}"
     });
+  }
+
+  function withinDelta(actual, expected, delta) {
+    return actual > expected-delta && actual < expected+delta;
   }
 
 });

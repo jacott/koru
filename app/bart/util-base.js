@@ -46,16 +46,18 @@
     },
 
     inspect: function (o) {
-      return inspect1(o).toString();
+      return inspect1(o, 4).toString().slice(0, 1000);
     },
   });
 
   function inspect1(o, i) {
-    if (i <0 || o == null) return typeof o;
+    if (i < 0 || o == null) return o === null ? 'null' : typeof o;
     switch(typeof o) {
     case 'function':
       return 'function ' + o.name;
     case 'object':
+      if (o.hasOwnProperty('outerHTML'))
+        return o.outerHTML;
       if (o instanceof Array)
         return "[" + o.map(function (o2) {
           return inspect1(o2, i-1);

@@ -29,9 +29,9 @@ define(['./core'], function (geddon) {
       } else {
         var arg = last[spec.substring(2)];
       }
-      if (arg != null) switch (spec.substring(0,1)) {
+      switch (spec.substring(0,1)) {
       case 'e':
-        result += escape(arg);
+        result += escape(arg||'');
         break;
       case 'i':
         try {result += geddon.inspect(arg);}

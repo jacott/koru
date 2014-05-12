@@ -25,14 +25,16 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      core.logger = function () {
-        console.log.apply(console, arguments);
-        self.logHandle(geddon.inspect(arguments));
+      core.logger = function (type) {
+        origLogger.apply(core, arguments);
+        self.logHandle(type+": "+geddon.inspect(Array.prototype.slice.call(arguments, 1)));
       };
 
       console.clear && console.clear();
 
-      geddon.start();
+      geddon.start(isServer ? function (runNext) {
+        core.Fiber(runNext).run();
+      } : undefined);
     },
 
     testCase: function (module, option) {
