@@ -17,7 +17,7 @@
     onunload(module, 'reload');
 
     return (isServer ? global : window)._bart_ = {
-      Fiber: isServer ? require('fibers') : function(func) {return {run: func}},
+      Fiber: util.Fiber,
 
       util: util,
 

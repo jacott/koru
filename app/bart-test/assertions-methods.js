@@ -61,6 +61,15 @@ define(['./core', './assertions'], function (geddon) {
     message: "{0} to be near {1} by delta {$delta}"
   });
 
+  ga.add('between', {
+    assert: function (sut, from, to) {
+      return sut >= from && sut <= to;
+    },
+
+    assertMessage: "Expected {0} to be between {1} and {2}",
+    refuteMessage: "Expected {0} not to be between {1} and {2}",
+  });
+
   function match(object, matcher) {
     if (matcher && typeof matcher.test === "function") {
       return matcher.test(object);
