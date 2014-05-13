@@ -17,6 +17,10 @@ define(function (require, exports, module) {
     else waitFuncs.push(type+msg);
   };
 
+  session.rpc = function () {
+
+  };
+
   session.provide('X', function (data) {
     var ws = this.ws;
     if (versionHash && versionHash !== data)
