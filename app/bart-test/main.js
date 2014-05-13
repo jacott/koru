@@ -19,6 +19,8 @@ define(function(require, exports, module) {
   var origLogger = core.logger;
 
   var self = {
+    geddon: geddon,
+
     run: function (pattern, tests) {
       console.clear && console.clear();
 
@@ -74,11 +76,11 @@ define(function(require, exports, module) {
     self.testHandle('R', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
-  return self;
-
   function endTest() {
     core.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();
   }
+
+  return self;
 });

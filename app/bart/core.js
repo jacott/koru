@@ -13,11 +13,13 @@
     }
   };
 
-  define(['module', './util'], function (module, util) {
+  define(['module', './util', './errors'], function (module, util, errors) {
     onunload(module, 'reload');
 
     return (isServer ? global : window)._bart_ = {
       Fiber: util.Fiber,
+
+      Error: errors.Error,
 
       util: util,
 
