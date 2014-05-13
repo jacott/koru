@@ -21,8 +21,8 @@
 
       util: util,
 
-      debug: function () {
-        this.logger('DEBUG', Array.prototype.slice.call(arguments, 0));
+      "\x64ebug": function () {
+        this.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
       },
 
       info: function () {

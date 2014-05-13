@@ -60,6 +60,9 @@
         }).join(", ") + "]";
 
       var r=[];
+      if (o instanceof Error) {
+        r.push(o.toString());
+      }
       for (var p in o){
         r.push(p.toString() + ": " + inspect1(o[p], i-1));
       }

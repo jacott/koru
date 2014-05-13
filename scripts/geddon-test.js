@@ -31,6 +31,7 @@ ws.on('message', function(data, flags) {
 
 ws.on('close', function () {
   exitProcess('ALL FAILED', 1);
+  process.exit(exitCode);
 });
 
 function runTests() {

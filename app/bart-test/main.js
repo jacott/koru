@@ -19,21 +19,30 @@ define(function(require, exports, module) {
   var origLogger = core.logger;
 
   var self = {
-    run: function (pattern) {
+    run: function (pattern, tests) {
+      console.clear && console.clear();
+
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
       core.logger = function (type) {
         origLogger.apply(core, arguments);
         var args = Array.prototype.slice.call(arguments, 1);
-        self.logHandle(type+": "+(type === 'DEBUG' ? geddon.inspect(args) : args.join(' ')));
+        self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args) : args.join(' ')));
       };
 
-      console.clear && console.clear();
-
-      geddon.start(isServer ? function (runNext) {
-        core.Fiber(runNext).run();
-      } : undefined);
+      require(tests, function () {
+        geddon.start(isServer ? function (runNext) {
+          core.Fiber(runNext).run();
+        } : undefined);
+      }, function(err) {
+        ++errorCount;
+        core.error(err.toString());
+        endTest();
+        tests.forEach(function (name) {
+          core.unload(name);
+        });
+      });
     },
 
     testCase: function (module, option) {
@@ -42,11 +51,7 @@ define(function(require, exports, module) {
     },
   };
 
-  geddon.onEnd(function () {
-    core.logger = origLogger;
-    self.testHandle('F', errorCount);
-    geddon._init();
-  });
+  geddon.onEnd(endTest);
 
   geddon.onTestStart(function (test) {
     timer = Date.now();
@@ -70,4 +75,10 @@ define(function(require, exports, module) {
   });
 
   return self;
+
+  function endTest() {
+    core.logger = origLogger;
+    self.testHandle('F', errorCount);
+    geddon._init();
+  }
 });

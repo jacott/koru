@@ -12,11 +12,11 @@ define(function() {
 
       if (type !== 'server') {
         session.unload('client-cmd');
-        var cTests = ['bart-test/client'];
+        var cTests = [];
       }
       if (type !== 'client') {
         session.unload('server-cmd');
-        var sTests = ['bart-test/server'];
+        var sTests = [];
       }
 
       if (pattern === '') {
@@ -32,10 +32,10 @@ define(function() {
 
       type = 'none';
 
-      if (cTests && cTests.length > 1)
+      if (cTests && cTests.length)
         type = 'client';
 
-      if (sTests && sTests.length > 1)
+      if (sTests && sTests.length)
         type = type === 'none' ? 'server' : 'both';
 
       callback(type);
@@ -46,17 +46,15 @@ define(function() {
       if (type !== 'server') {
         var cmdFn = requirejs.toUrl('../tmp/client-cmd.js');
         fs.writeFileSync(cmdFn,
-                         "define(" + JSON.stringify(cTests) + ",function(bt){bt.run("+
-                         JSON.stringify(pattern)+
+                         "define(['bart-test/client'],function(bt){bt.run("+
+                         JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
         fs.renameSync(cmdFn, requirejs.toUrl('client-cmd.js'));
         session.load('client-cmd');
       }
 
       if (type !== 'client') {
-        requirejs(sTests, function (bt) {
-          bt.run(pattern);
-        });
+        requirejs(['bart-test/server'], function (bt) {bt.run(pattern, sTests)});
       }
 
       function findAll(dir) {

@@ -25,6 +25,7 @@ define(function (require, exports, module) {
     session.provide('L', function (data) {});
     session.provide('E', function (data) {
       session.remoteControl ?
+        session.remoteControl.logHandle &&
         session.remoteControl.logHandle.call(this, data) :
         core.logger('INFO', this.engine, data);
     });
