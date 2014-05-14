@@ -4,12 +4,15 @@ define(function (require, exports, module) {
   var session = require('./session-client');
 
   window.addEventListener('error', function (ev) {
+    var badIds = env.discardIncompleteLoads().join("\n");
+    _bart_.debug('badIds', badIds);
+
     session.send('E', core.util.extractError({
       toString: function () {
         return ev.error.toString();
       },
       stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
-    }));
+    }) +  "\nWhile loading:\n" + badIds);
   });
 
   requirejs.onError = function (err) {

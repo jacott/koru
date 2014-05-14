@@ -34,30 +34,17 @@ define(function(require, exports, module) {
         self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args) : args.join(' ')));
       };
 
-      var loadTimeout = setTimeout(errorLoading, 4000);
-
       require(tests, function () {
-        if (! loadTimeout) return;
-        clearTimeout(loadTimeout);
-        loadTimeout = null;
-
         geddon.start(isServer ? function (runNext) {
           core.Fiber(runNext).run();
         } : undefined);
       }, errorLoading);
 
       function errorLoading(err) {
-        loadTimeout && clearTimeout(loadTimeout);
-        loadTimeout = null;
+        var badIds = env.discardIncompleteLoads();
         ++errorCount;
-        core.error('Test load failure: ', err ? err.toString() : 'Timed out loading tests! ');
+        core.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
         endTest();
-        var name = err && err.requireModules && err.requireModules[0];
-        name && env.unload(name);
-        tests.forEach(function (name) {
-          env.unload(name);
-        });
-        if (! err) env.reload();
       }
     },
 

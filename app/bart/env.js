@@ -11,6 +11,7 @@
    * Functions to call when module is unloaded
    */
   var unloads = {};
+  var loaded = {};
 
   requirejs.onResourceLoad = function (context, map, depArray) {
     if (depArray) for(var i = 0; i < depArray.length; ++i) {
@@ -21,6 +22,7 @@
 
       insertDependency(map.id, id);
     }
+    loaded[map.id] = true;
   };
 
   function insertDependency(dependant, provider) {
@@ -50,6 +52,7 @@
       onunload(id);
 
     delete unloads[id];
+    delete loaded[id];
     requirejs.undef(id);
   }
 
@@ -72,8 +75,28 @@
    * Dependency tracking and load/unload manager.
    * This module is also a requirejs loader plugin.
    */
-  define(['require'], function (require) {
+  define(['require', './util-base'], function (require, util) {
     var loaderPrefix = require.toUrl('./env!').slice(require.toUrl('').length);
+
+    if (isClient) {
+      var discardIncompleteLoads = function () {
+        var list = document.head.querySelectorAll('script[data-requiremodule]');
+        var badIds = [];
+        for(var i = 0; i < list.length; ++i) {
+          var elm = list[i];
+          var modId = elm.getAttribute('data-requiremodule');
+          if (modId && ! loaded.hasOwnProperty(modId)) {
+            unload(modId);
+            badIds.push("\tat app/"+modId+".js:1");
+          }
+        }
+        return badIds;
+      };
+    } else {
+      var discardIncompleteLoads = function () {
+        return []; // FIXME what should I do on sever side?
+      };
+    }
 
     return {
       onunload: onunload,
@@ -82,6 +105,8 @@
       providerMap: providerMap,
       unloads: unloads,
       insertDependency: insertDependency,
+      loaded: loaded,
+      discardIncompleteLoads: discardIncompleteLoads,
 
       /**
        * Converts path to related build path of compiled resource.
