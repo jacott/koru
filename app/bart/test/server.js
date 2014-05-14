@@ -1,4 +1,4 @@
-define(['./main', 'bart/session-server'], function(bartTest, session) {
+define(['./main', '../session-server'], function(bartTest, session) {
   bartTest.testHandle = function (cmd, msg) {
     session.remoteControl.testHandle(cmd+msg);
   };

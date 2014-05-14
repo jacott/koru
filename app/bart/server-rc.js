@@ -1,7 +1,7 @@
 var fs = require('fs');
 
 define([
-  'module', 'bart/core', 'bart-test/build-cmd',
+  'module', 'bart/core', 'bart/test/build-cmd',
   'bart/fs-tools', 'bart/session-server'
 ], function (module, core, buildCmd,
              fst, session) {
@@ -16,7 +16,7 @@ define([
     var oldLogHandle = session.provide('L', logHandle);
     var oldTestHandle = session.provide('T', testHandle);
 
-    // used by bart-test
+    // used by bart/test
     remoteControl.testHandle = testHandle;
     remoteControl.logHandle = logHandle;
 

@@ -46,7 +46,7 @@ define(function() {
       if (type !== 'server') {
         var cmdFn = requirejs.toUrl('../tmp/client-cmd.js');
         fs.writeFileSync(cmdFn,
-                         "define(['bart-test/client'],function(bt){bt.run("+
+                         "define(['bart/test/client'],function(bt){bt.run("+
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
         fs.renameSync(cmdFn, requirejs.toUrl('client-cmd.js'));
@@ -54,7 +54,7 @@ define(function() {
       }
 
       if (type !== 'client') {
-        requirejs(['bart-test/server'], function (bt) {bt.run(pattern, sTests)});
+        requirejs(['bart/test/server'], function (bt) {bt.run(pattern, sTests)});
       }
 
       function findAll(dir) {

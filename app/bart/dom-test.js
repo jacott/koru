@@ -1,4 +1,4 @@
-isClient && define(['module', 'bart-test/sinon', 'bart-test', './dom'], function (module, sinon, geddon, Dom) {
+isClient && define(['module', 'bart/test/sinon', 'bart/test', './dom'], function (module, sinon, geddon, Dom) {
   var test, v;
 
   geddon.testCase(module, {

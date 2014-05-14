@@ -1,4 +1,4 @@
-define(['./sinon', 'bart/util'], function(sinon, util) {
+define(['./sinon', '../util'], function(sinon, util) {
   var geddon = {
     sinon: sinon,
 

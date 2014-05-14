@@ -1,4 +1,4 @@
-define(['module', 'bart-test', 'bart/session'], function (module, geddon, session) {
+define(['module', 'bart/test', 'bart/session'], function (module, geddon, session) {
   var test, v;
   geddon.testCase(module, {
     setUp: function () {

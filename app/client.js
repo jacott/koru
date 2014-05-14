@@ -1,6 +1,6 @@
 requirejs.config({
   packages: [
-    "bart-test",
+    "bart/test",
   ],
 });
 

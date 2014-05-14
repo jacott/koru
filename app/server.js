@@ -9,7 +9,7 @@ requirejs.config({
   baseUrl: __dirname,
 
   packages: [
-    "bart-test",
+    "bart/test",
   ],
 
   //Pass the top-level main.js/index.js require

@@ -1,5 +1,5 @@
 isClient && define([
-  'module', 'bart-test', '../core', '../dom',
+  'module', 'bart/test', '../core', '../dom',
   'bart/html!./template-compiler-test'
 ], function (module, geddon, core, Dom,
              testTpl) {

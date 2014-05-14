@@ -2,7 +2,7 @@ isServer && define(function (require, exports, module) {
   var test, v;
   var core = require('../core');
   var Future = require('fibers/future');
-  var geddon = require('bart-test');
+  var geddon = require('bart/test');
   var compiler = require('./compiler');
   var fw = require('../file-watch');
   var fst = require('../fs-tools');

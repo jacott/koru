@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  var geddon = require('bart-test');
+  var geddon = require('bart/test');
   var Random = require('./random');
 
   geddon.testCase(module, {

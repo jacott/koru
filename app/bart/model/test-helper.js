@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var core = require('../core');
-  var bt = require('bart-test');
+  var bt = require('bart/test');
   var geddon = bt.geddon;
 
   var TH = core.util.reverseExtend({

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var env = require('bart/env');
-  var core = require('bart/core');
+  var env = require('../env');
+  var core = require('../core');
 
   require("./assertions-methods");
   require("./callbacks");

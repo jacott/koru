@@ -52,7 +52,7 @@ define(['require', 'bart/util-base'], function (require, util) {
 
       url = url.replace(originRe, repl);
 
-      if (/^(?:app\/(?:bart-test\/|require.js)|node_modules\/)/.test(url)) {
+      if (/^(?:app\/(?:bart\/test\/|require.js)|node_modules\/)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;
