@@ -1,4 +1,5 @@
-define(['bart/util'], function(util) {
+define(['bart/core'], function(core) {
+  var util = core.util;
   var extend = util.extend;
 
   var vendorStylePrefix = (function () {
@@ -881,7 +882,7 @@ define(['bart/util'], function(util) {
       event.stopImmediatePropagation();
       if (! (Dom.globalErrorCatch && Dom.globalErrorCatch(ex))) {
         if('stack' in ex)
-          console.log(ex.stack);
+          core.error(util.extractError(ex));
 
         throw ex;
       }
