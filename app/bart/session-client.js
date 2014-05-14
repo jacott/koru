@@ -1,6 +1,7 @@
-/*global define, window, WebSocket, setTimeout */
+/*global WebSocket, */
 
 define(function (require, exports, module) {
+  var env = require('./env');
   var core = require('./core');
   var session = require('./session');
 
@@ -19,7 +20,7 @@ define(function (require, exports, module) {
   session.provide('X', function (data) {
     var ws = this.ws;
     if (versionHash && versionHash !== data)
-      core.reload(); // FIXME we want to send queued messages first
+      env.reload(); // FIXME we want to send queued messages first
     versionHash = data;
     ws.send('X'+ core.util.engine);
     for(var i = 0; i < waitFuncs.length; ++i) {
@@ -33,7 +34,7 @@ define(function (require, exports, module) {
   session.provide('U', function (data) {
     var args = data.split(':');
     versionHash = args[0];
-    core.unload(args[1]);
+    env.unload(args[1]);
   });
 
   connect();

@@ -2,18 +2,18 @@
  Load compiled template from .build directory.
  The template-compiler will convert the html to js.
  */
-define({
-  load: function (name, req, onload, config) {
-    var idx = name.lastIndexOf('/');
+define(['require', './env'], function (require, env) {
+  var loaderPrefix = require.toUrl('./html!').slice(require.toUrl('').length);
 
-    if (idx === -1) {
-      name = '.build/' + name;
-    } else {
-      name = name.slice(0, ++idx) + '.build/' + name.slice(idx);
+  return {
+    load: function (name, req, onload, config) {
+      var provider = env.buildPath(name)+'.html';
+
+      env.insertDependency(loaderPrefix + name, provider);
+
+      req([provider], function (value) {
+        onload(value);
+      });
     }
-
-    req([name+'.html.js'], function (value) {
-      onload(value);
-    });
-  }
+  };
 });

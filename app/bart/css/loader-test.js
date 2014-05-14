@@ -2,7 +2,7 @@ isClient && define(function (require, exports, module) {
 
   var test, v;
   var geddon = require('bart-test');
-  var core = require('bart/core');
+  var env = require('../env');
   var session = require('bart/session');
 
   geddon.testCase(module, {
@@ -18,7 +18,7 @@ isClient && define(function (require, exports, module) {
       for(var i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
-      core.unload('bart/css/loader');
+      env.unload('bart/css/loader');
     },
 
     "test loading css": function (done) {

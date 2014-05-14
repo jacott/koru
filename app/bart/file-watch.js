@@ -2,6 +2,7 @@ var fs = require('fs');
 var Future = require('fibers/future');
 
 define(function(require, exports, module) {
+  var env = require('./env');
   var core = require('./core');
   var Fiber = core.Fiber;
   var fst = require('./fs-tools');
@@ -17,7 +18,7 @@ define(function(require, exports, module) {
     },
 
     html: function (type, path) {
-      session.unload(path.slice(top.length + 1));
+      session.unload(env.buildPath(path.slice(top.length + 1)));
     }
   };
 

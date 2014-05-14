@@ -4,7 +4,6 @@ requirejs.config({
   ],
 });
 
-
-define(['module', 'bart/client'], function (module, core) {
-  core.onunload(module, 'reload');
+define(['module', 'bart/env', 'bart/client'], function (module, env) {
+  env.onunload(module, 'reload');
 });

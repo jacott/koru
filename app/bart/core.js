@@ -1,92 +1,30 @@
-(function () {
-  var depMap = {};
-  var unloads = {};
+define(['module', './env', './util', './errors'], function (module, env, util, errors) {
+  env.onunload(module, 'reload');
 
-  requirejs.onResourceLoad = function (context, map, depArray) {
-    if (depArray) for(var i = 0; i < depArray.length; ++i) {
-      var row = depArray[i];
-      var id = row.id;
-      if (id === 'require' || id === 'exports' || id === 'module')
-        continue;
+  /**
+   * The session aware base of Bart.
+   * @export bart/core
+   */
+  return (isServer ? global : window)._bart_ = {
+    Error: errors.Error.bind(errors),
+    Fiber: util.Fiber,
+    onunload: env.onunload,
+    util: util,
 
-      (depMap[id] = depMap[id] || []).push(map.id);
-    }
+    "\x64ebug": function () {
+      this.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
+    },
+
+    info: function () {
+      this.logger('INFO', Array.prototype.join.call(arguments, ' '));
+    },
+
+    error: function () {
+      this.logger('ERROR', Array.prototype.join.call(arguments, ' '));
+    },
+
+    logger: function () {
+      console.log.apply(console, arguments);
+    },
   };
-
-  define(['module', './util', './errors'], function (module, util, errors) {
-    onunload(module, 'reload');
-
-    return (isServer ? global : window)._bart_ = {
-      Fiber: util.Fiber,
-
-      Error: errors.Error,
-
-      util: util,
-
-      "\x64ebug": function () {
-        this.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
-      },
-
-      info: function () {
-        this.logger('INFO', Array.prototype.join.call(arguments, ' '));
-      },
-
-      error: function () {
-        this.logger('ERROR', Array.prototype.join.call(arguments, ' '));
-      },
-
-      logger: function () {
-        console.log.apply(console, arguments);
-      },
-
-      onunload: onunload,
-      unload: function unload(id) {
-        if (! requirejs.defined(id)) return;
-
-        var deps = depMap[id];
-
-        if (deps === 'unloading') return;
-
-        var onunload = unloads[id];
-
-        if (onunload === 'reload')
-          reload();
-
-        if (deps) {
-          depMap[id] = 'unloading';
-          for(var i = 0; i < deps.length; ++i) {
-            unload(deps[i]);
-          }
-          delete depMap[id];
-        }
-
-        if (typeof onunload === 'function')
-          onunload(id);
-
-        requirejs.undef(id);
-      },
-
-      depMap: depMap,
-
-      unloads: unloads,
-
-      reload: reload,
-
-      util: util,
-    };
-
-    function onunload(module, func) {
-      unloads[module.id] = func;
-    }
-
-    function reload() {
-      console.log('=> Reloading');
-
-      if (typeof process !== 'undefined' && process.hasOwnProperty('exit')) {
-        require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
-      } else
-        window.location.reload();
-    }
-
-  });
-})();
+});

@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
+  var env = require('./env');
   var core = require('./core');
   var util = require('./util');
   var session = require('./session');
@@ -69,7 +70,7 @@ define(function (require, exports, module) {
   }
 
   function unload(id) {
-    core.unload(id);
+    env.unload(id);
     this.versionHash = Date.now();
     this.sendAll('U', this.versionHash + ':' + id);
   }

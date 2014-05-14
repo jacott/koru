@@ -1,0 +1,124 @@
+(function() {
+  // FIXME need this to work diferently in optimiser
+  var prefix  = typeof process === 'undefined' ? 'client-' : 'server-';
+
+  /**
+   * Map of module dependencies. Entries list what to unload when
+   * module unloaded. key is module.id.
+   */
+  var providerMap = {};
+  /**
+   * Functions to call when module is unloaded
+   */
+  var unloads = {};
+
+  requirejs.onResourceLoad = function (context, map, depArray) {
+    if (depArray) for(var i = 0; i < depArray.length; ++i) {
+      var row = depArray[i];
+      var id = row.id;
+      if (id === 'require' || id === 'exports' || id === 'module')
+        continue;
+
+      insertDependency(map.id, id);
+    }
+  };
+
+  function insertDependency(dependant, provider) {
+    (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
+  }
+
+  function unload(id) {
+    if (! requirejs.defined(id)) return;
+
+    var deps = providerMap[id];
+
+    if (deps === 'unloading') return;
+
+    var onunload = unloads[id];
+
+    if (onunload === 'reload') return reload();
+
+    if (deps) {
+      providerMap[id] = 'unloading';
+      for(var key in deps) {
+        unload(key);
+      }
+      delete providerMap[id];
+    }
+
+    if (typeof onunload === 'function')
+      onunload(id);
+
+    delete unloads[id];
+    requirejs.undef(id);
+  }
+
+  function onunload(module, func) {
+    unloads[module.id] = func;
+  }
+
+  function reload() {
+    console.log('=> Reloading');
+
+    if (isServer) {
+      require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
+    } else {
+      window.location.reload();
+      throw "reloading"; // no point continuing
+    }
+  }
+
+  /**
+   * Dependency tracking and load/unload manager.
+   * This module is also a requirejs loader plugin.
+   */
+  define(['require'], function (require) {
+    var loaderPrefix = require.toUrl('./env!').slice(require.toUrl('').length);
+
+    return {
+      onunload: onunload,
+      unload: unload,
+      reload: reload,
+      providerMap: providerMap,
+      unloads: unloads,
+      insertDependency: insertDependency,
+
+      /**
+       * Converts path to related build path of compiled resource.
+       * @param {string} path source path of resource.
+       *
+       * @returns build path for resource.
+       */
+      buildPath: function (path) {
+        var idx = path.lastIndexOf('/');
+        if (idx === -1)
+          return '.build/' + path;
+
+        return path.slice(0, ++idx) + '.build/' + path.slice(idx);
+      },
+
+      /**
+       * Load a module for the current env -- client or server -- and
+       * call {@unload} when ready.
+       *
+       * This function is used by requirejs to load a dependency of the
+       * format: bart/env!<name> as client-<name>.js
+       */
+      load: function (name, req, onload, config) {
+        var idx = name.lastIndexOf('/', name.length - 2) + 1;
+
+        if (idx === 0) {
+          var provider = prefix + name;
+        } else {
+          var provider = name.slice(0, idx) + prefix + name.slice(idx);
+        }
+
+        insertDependency(loaderPrefix + name, provider);
+
+        req([provider], function (value) {
+          onload(value);
+        });
+      },
+    };
+  });
+})();

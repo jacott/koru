@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  var env = require('bart/env');
   var core = require('bart/core');
 
   require("./assertions-methods");
@@ -33,18 +34,31 @@ define(function(require, exports, module) {
         self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args) : args.join(' ')));
       };
 
+      var loadTimeout = setTimeout(errorLoading, 4000);
+
       require(tests, function () {
+        if (! loadTimeout) return;
+        clearTimeout(loadTimeout);
+        loadTimeout = null;
+
         geddon.start(isServer ? function (runNext) {
           core.Fiber(runNext).run();
         } : undefined);
-      }, function(err) {
+      }, errorLoading);
+
+      function errorLoading(err) {
+        loadTimeout && clearTimeout(loadTimeout);
+        loadTimeout = null;
         ++errorCount;
-        core.error(err.toString());
+        core.error('Test load failure: ', err ? err.toString() : 'Timed out loading tests! ');
         endTest();
+        var name = err && err.requireModules && err.requireModules[0];
+        name && env.unload(name);
         tests.forEach(function (name) {
-          core.unload(name);
+          env.unload(name);
         });
-      });
+        if (! err) env.reload();
+      }
     },
 
     testCase: function (module, option) {

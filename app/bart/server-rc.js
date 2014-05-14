@@ -46,11 +46,19 @@ define([
     });
 
     function testHandle(msg) {
-      ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
+      try {
+        ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
+      } catch(ex) {
+        core.error(ex);
+      }
     }
 
     function logHandle(msg) {
-      ws.send('L' + this.engine + '\x00' + msg);
+      try {
+        ws.send('L' + this.engine + '\x00' + msg);
+      } catch(ex) {
+        core.error(ex);
+      }
     }
   }
 });
