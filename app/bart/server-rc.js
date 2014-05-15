@@ -2,7 +2,7 @@ var fs = require('fs');
 
 define([
   'module', 'bart/core', 'bart/test/build-cmd',
-  'bart/fs-tools', 'bart/session-server'
+  'bart/fs-tools', 'bart/session/server-main'
 ], function (module, core, buildCmd,
              fst, session) {
   core.onunload(module, 'reload');

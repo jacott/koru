@@ -1,4 +1,4 @@
-define(['bart/core', 'module', 'bart/session-server'], function (core, module, session) {
+define(['bart/core', 'module', 'bart/session/server-main'], function (core, module, session) {
   var readline = require('readline');
   var rl = readline.createInterface(process.stdin, process.stdout);
 

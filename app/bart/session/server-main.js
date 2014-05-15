@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
   var WebSocketServer = require('ws').Server;
-  var env = require('./env');
-  var core = require('./core');
-  var util = require('./util');
-  var session = require('./session');
-  var server = require('./web-server').server;
+  var env = require('../env');
+  var core = require('../core');
+  var util = require('../util');
+  var session = require('./main');
+  var server = require('../web-server').server;
 
   core.onunload(module, 'reload');
 

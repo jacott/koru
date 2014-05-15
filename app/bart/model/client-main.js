@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var core = require('bart/core');
   var util = core.util;
   var Random = require('../random');
-  var session = require('../session-client');
+  var session = require('../session/client-main');
 
   var env = {
     $save: function(force) {

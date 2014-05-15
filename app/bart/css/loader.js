@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var core = require('bart/core');
-  var session = require('bart/session');
+  var core = require('../core');
+  var session = require('../session/main');
 
   core.onunload(module, removeAllCss);
 

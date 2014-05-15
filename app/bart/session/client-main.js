@@ -1,9 +1,9 @@
 /*global WebSocket, */
 
 define(function (require, exports, module) {
-  var env = require('./env');
-  var core = require('./core');
-  var session = require('./session');
+  var env = require('../env');
+  var core = require('../core');
+  var session = require('./main');
 
   var waitFuncs = [];
   var ready = false;
@@ -15,10 +15,6 @@ define(function (require, exports, module) {
   session.send = function (type, msg) {
     if (ready) connect._ws.send(type+msg);
     else waitFuncs.push(type+msg);
-  };
-
-  session.rpc = function () {
-
   };
 
   session.provide('X', function (data) {

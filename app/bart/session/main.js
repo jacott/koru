@@ -1,8 +1,17 @@
 define(function(require) {
-  var core = require('./core');
+  var core = require('../core');
 
   var session = {
+    defineRpc: function (name, func) {
+      this._rpcs[name] = func;
+      return this;
+    },
+    _rpcs: {},
     _commands: {},
+
+    rpc: function () {
+    },
+
     provide: function (cmd, func) {
       var old = this._commands[cmd];
       this._commands[cmd] = func;

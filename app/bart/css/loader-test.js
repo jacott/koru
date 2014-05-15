@@ -1,9 +1,9 @@
 isClient && define(function (require, exports, module) {
 
   var test, v;
-  var geddon = require('bart/test');
+  var geddon = require('../test');
   var env = require('../env');
-  var session = require('bart/session');
+  var session = require('../session/main');
 
   geddon.testCase(module, {
     setUp: function () {

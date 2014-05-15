@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   var core = require('./core');
   var Fiber = core.Fiber;
   var fst = require('./fs-tools');
-  var session = require('./session-server');
+  var session = require('./session/server-main');
   var top = require.toUrl('').slice(0,-1);
 
   core.onunload(module, 'reload');

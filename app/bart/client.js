@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var env = require('./env');
   var core = require('./core');
-  var session = require('./session-client');
+  var session = require('./session/client-main');
 
   window.addEventListener('error', function (ev) {
     var badIds = env.discardIncompleteLoads().join("\n");
