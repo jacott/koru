@@ -5,7 +5,6 @@ define(function (require, exports, module) {
 
   window.addEventListener('error', function (ev) {
     var badIds = env.discardIncompleteLoads().join("\n");
-    _bart_.debug('badIds', badIds);
 
     session.send('E', core.util.extractError({
       toString: function () {

@@ -289,10 +289,10 @@ isClient && define(function (require, exports, module) {
         v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}}, {saveRpc: true});
       },
 
-      "//test findById": function () {
+      "test findById": function () {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
-        assert.same(doc.attributes, v.TestModel.findById(doc._id).attributes);
+        assert.same(v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
       "//test validator passing function": function () {

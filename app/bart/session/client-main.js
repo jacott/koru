@@ -3,6 +3,7 @@
 define(function (require, exports, module) {
   var env = require('../env');
   var core = require('../core');
+  var util = core.util;
   var session = require('./main');
 
   var waitFuncs = [];
@@ -12,10 +13,15 @@ define(function (require, exports, module) {
 
   core.onunload(module, 'reload');
 
-  session.send = function (type, msg) {
-    if (ready) connect._ws.send(type+msg);
-    else waitFuncs.push(type+msg);
-  };
+  util.extend(session, {
+    send: function (type, msg) {
+      if (ready) connect._ws.send(type+msg);
+      else waitFuncs.push(type+msg);
+    },
+    rpc: function (name /*, args */) {
+      this._rpcs[name].apply({}, util.slice(arguments, 1));
+    },
+  });
 
   session.provide('X', function (data) {
     var ws = this.ws;

@@ -132,8 +132,10 @@ define(function(require, exports, module) {
     defineFields: defineFields,
   };
 
-
-
+  env.session.defineRpc("save", function (modelName, id, params) {
+    var model = models[modelName];
+    model.docs[id] = new model(util.reverseExtend({_id: id}, params));
+  });
 
   util.extend(BaseModel, {
     define: function (name, properties, options) {
@@ -154,7 +156,7 @@ define(function(require, exports, module) {
       model.docs = {};
       model._fieldValidators = {};
       model._defaults = {};
-      return model;
+      return models[name] = model;
     },
 
     _destroyModel: function (name) {
@@ -273,12 +275,9 @@ define(function(require, exports, module) {
   }
 
   function reload() {
-    if (isServer) {
-      var doc = this.constructor.findById(this._id);
-      if (! doc) throw core.Error(404, 'Not found');
-      this.attributes = doc.attributes;
-    }
-
+    var doc = this.constructor.findById(this._id);
+    if (! doc) throw core.Error(404, 'Not found');
+    this.attributes = doc.attributes;
     this.changes = {};
     this._errors = null;
     this._cache = null;

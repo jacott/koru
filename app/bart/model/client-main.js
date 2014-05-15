@@ -20,6 +20,8 @@ define(function(require, exports, module) {
 
       return save(doc);
     },
+
+    session: session,
   };
 
   function save(doc) {
@@ -27,21 +29,17 @@ define(function(require, exports, module) {
 
     if(_id == null) {
       _id = (doc.changes && doc.changes._id) || Random.id();
-      session.rpc(remoteName(doc,'save'), _id, util.extend(doc.attributes,doc.changes),
+      session.rpc("save", doc.constructor.modelName, _id, util.extend(doc.attributes,doc.changes),
                   core.error);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
       // only call if at least one change
       // copy changes in case they are modified
-      session.rpc(remoteName(doc,'save'), doc._id, util.extend({},doc.changes), core.error);
+      session.rpc("save", doc.constructor.modelName, doc._id, util.extend({},doc.changes), core.error);
       break;
     }
 
     return doc.$reload();
-  }
-
-  function remoteName(doc,name) {
-    return doc.constructor.modelName + '.' + name;
   }
 
   return env;

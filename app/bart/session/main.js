@@ -9,9 +9,6 @@ define(function(require) {
     _rpcs: {},
     _commands: {},
 
-    rpc: function () {
-    },
-
     provide: function (cmd, func) {
       var old = this._commands[cmd];
       this._commands[cmd] = func;
