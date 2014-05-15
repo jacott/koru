@@ -73,8 +73,8 @@ define(function() {
             findAll(Path.join(dir, filenames[i]));
           } else if (filenames[i].match(/^\w.*-test\.js$/)) {
             var path = Path.join(dir,filenames[i].slice(0,-3));
-            cTests && !path.match(/\bserver-test$/i) && cTests.push(path);
-            sTests && !path.match(/\bclient-test$/i) && sTests.push(path);
+            cTests && !path.match(/\bserver\b/i) && cTests.push(path);
+            sTests && !path.match(/\bclient\b/i) && sTests.push(path);
           }
         }
       }
