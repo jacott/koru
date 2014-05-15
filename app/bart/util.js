@@ -18,6 +18,10 @@ define(function(require, exports, module) {
     },
     stacktrace: stacktrace,
 
+    slice: function (list, from, to) {
+      return Array.prototype.slice.call(list, from, to);
+    },
+
     colorToArray: colorToArray,
 
     setNestedHash: function (value, hash /*, keys */) {

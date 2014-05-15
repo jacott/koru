@@ -41,32 +41,39 @@
       return new RegExp(this.regexEscape(s));
     },
 
-    inspect: function (o) {
-      return inspect1(o, 4).toString().slice(0, 1000);
+    inspect: function (o, count) {
+      return inspect1(o, count || 4).toString().slice(0, 1000);
     },
   });
 
   function inspect1(o, i) {
-    if (i < 0 || o == null) return o === null ? 'null' : typeof o;
     switch(typeof o) {
+    case 'undefined':
+      return 'undefined';
     case 'function':
       return 'function ' + o.name;
     case 'object':
       if (o.hasOwnProperty('outerHTML'))
         return o.outerHTML;
-      if (o instanceof Array)
-        return "[" + o.map(function (o2) {
-          return inspect1(o2, i-1);
-        }).join(", ") + "]";
+      if (o instanceof Array) {
+        if (i)
+          return "[" + o.map(function (o2) {
+            return inspect1(o2, i-1);
+          }).join(", ") + "]";
+        return "[...]";
+      }
 
-      var r=[];
-      if (o instanceof Error) {
-        r.push(o.toString());
+      if (i) {
+        var r=[];
+        if (o instanceof Error) {
+          r.push(o.toString());
+        }
+        for (var p in o){
+          r.push(p.toString() + ": " + inspect1(o[p], i-1));
+        }
+        return "{" + r.join(", ") +"}";
       }
-      for (var p in o){
-        r.push(p.toString() + ": " + inspect1(o[p], i-1));
-      }
-      return "{" + r.join(", ") +"}";
+      return ("{...}");
     case 'String':
       return '"'+o+'"';
     default:
