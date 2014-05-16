@@ -63,7 +63,7 @@
   }
 
   function onunload(module, func) {
-    unloads[module.id] = func;
+    unloads[typeof module === 'string' ? module : module.id] = func;
   }
 
   function reload() {
