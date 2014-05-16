@@ -4,8 +4,8 @@ var Path = require('path');
 var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
-define(function() {
-  var topDir = requirejs.toUrl('').slice(0,-1);
+define(function(require) {
+  var topDir = require.toUrl('').slice(0,-1);
 
   return {
     runTests: function(session, type, pattern, callback) {
@@ -54,7 +54,7 @@ define(function() {
       }
 
       if (type !== 'client') {
-        requirejs(['bart/test/server'], function (bt) {bt.run(pattern, sTests)});
+        require(['./server'], function (bt) {bt.run(pattern, sTests)});
       }
 
       function findAll(dir) {

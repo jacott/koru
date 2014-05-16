@@ -19,11 +19,13 @@ define(function(require, exports, module) {
 
   var origLogger = core.logger;
 
+  var testRunCount = 0;
+
   var self = {
     geddon: geddon,
 
     run: function (pattern, tests) {
-      console.clear && console.clear();
+      console.log('*** test-start ' + ++testRunCount);
 
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;

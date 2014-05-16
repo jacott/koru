@@ -41,9 +41,14 @@ define(function (require, exports, module) {
 
     'test validators': function () {
       var fooStub = {};
+
       val.register('fooVal', fooStub);
 
       assert.same(val.validators('fooVal'),fooStub);
+
+      val.deregister('fooVal');
+
+      refute(val.validators('fooVal'));
     },
 
     'with permitParams': {

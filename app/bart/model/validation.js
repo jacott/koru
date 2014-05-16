@@ -88,6 +88,10 @@ define(['../core'], function(core) {
       validators[validator] = func;
     },
 
+    deregister: function (validator) {
+      delete validators[validator];
+    },
+
     addError: function (doc,field,message /* arguments */) {
       var errors = doc._errors || (doc._errors = {}),
           fieldErrors = errors[field] || (errors[field] = []);

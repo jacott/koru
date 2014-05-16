@@ -3,6 +3,7 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var Model = require('./main');
+  require('../b!./validator:required');
   var sinon = TH.sinon;
 
   TH.testCase(module, {
@@ -295,7 +296,7 @@ isClient && define(function (require, exports, module) {
         assert.same(v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
-      "//test validator passing function": function () {
+      "test validator passing function": function () {
         v.TestModel.defineFields({foo: {type: 'text', required: function (field, options) {
           assert.same(this, doc);
           assert.same(field, 'foo');
@@ -312,7 +313,7 @@ isClient && define(function (require, exports, module) {
         refute(doc.$isValid());
       },
 
-      "//test change": function () {
+      "test change": function () {
         v.TestModel.defineFields({foo: {type: 'has_many'}});
 
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
@@ -365,13 +366,13 @@ isClient && define(function (require, exports, module) {
         assert.same(doc.$reload().attributes.name, 'changed');
       },
 
-      "//test can override and save invalid doc": function () {
+      "test can override and save invalid doc": function () {
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
 
         foo.$save('force');
 
-        assert(v.TestModel.exists(foo._id));
+        assert(v.TestModel.findById(foo._id));
       },
 
       "//test must be valid save ": function () {

@@ -22,6 +22,97 @@ define(function(require, exports, module) {
       return Array.prototype.slice.call(list, from, to);
     },
 
+    /** Does not deep copy functions */
+    deepCopy: function (orig) {
+      switch(typeof orig) {
+      case 'string':
+      case 'number':
+      case 'boolean':
+      case 'undefined':
+      case 'function':
+        return orig;
+      }
+
+      if (orig === null) return orig;
+
+      switch(Object.prototype.toString.call(orig)) {
+      case "[object Date]":
+        return new Date(orig.getTime());
+      case "[object Array]":
+        return orig.map(function (item) {
+          return util.deepCopy(item);
+        });
+      }
+
+      var result = {};
+      for(var key in orig) {
+        result[key] = util.deepCopy(orig[key]);
+      }
+
+      return result;
+    },
+
+    humanize: function (name) {
+      name = this.uncapitalize(name);
+      return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(/([A-Z])/g, function (_, m1) {
+        return ' '+m1.toLowerCase();
+      });
+    },
+
+    initials: function (name, count) {
+      count = count || 3;
+
+      name = (name || '').split(' ');
+      var result = '';
+      for(var i=0;count > 1 && i < name.length -1;++i, --count) {
+        result += name[i].slice(0,1);
+      }
+      if (count > 0 && name.length > 0)
+        result += name[name.length-1].slice(0,1);
+
+      return result.toUpperCase();
+    },
+
+    dasherize: function (name) {
+      return this.humanize(name).replace(/[\s_]+/g,'-');
+    },
+
+    labelize: function (name) {
+      return this.capitalize(this.humanize(name));
+    },
+
+    sansId: function (name) {
+      return name.replace(/_ids?$/,'');
+    },
+
+    capitalize: function (value) {
+      if(value == null || value === '')
+        return '';
+
+      return value.substring(0,1).toUpperCase() + value.substring(1);
+    },
+
+    uncapitalize: function (value) {
+      if(value == null || value === '')
+        return '';
+
+      return value.substring(0,1).toLowerCase() + value.substring(1);
+    },
+
+    titleize: function (value) {
+      return this.capitalize(value.replace(/[-._%+A-Z]\w/g, function (w) {
+        return ' ' + util.capitalize(w.replace(/^[-._%+]/,''));
+      }).trim());
+    },
+
+
+    camelize: function (value) {
+      return value.replace(/[-._%+A-Z]\w/g, function (w) {
+        return util.capitalize(w.replace(/^[-._%+]/,''));
+      });
+    },
+
+
     colorToArray: colorToArray,
 
     setNestedHash: function (value, hash /*, keys */) {

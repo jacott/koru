@@ -73,7 +73,7 @@ define(function(require, exports, module) {
     $change: function (field) {
       if (field in this.changes)
         return this.changes[field];
-      return this.changes[field] = Apputil.deepCopy(this[field]);
+      return this.changes[field] = util.deepCopy(this[field]);
     },
 
     $remove: function () {
@@ -185,7 +185,7 @@ define(function(require, exports, module) {
     },
     has_many: function (model, field, options) {
       var name = field.replace(/_ids/,''),
-          bt = AppModel[typeof options.associated === 'string' ? options.associated : Apputil.capitalize(name)];
+          bt = models[typeof options.associated === 'string' ? options.associated : util.capitalize(name)];
       if (bt) {
         model.fieldTypeMap[field] = bt;
       }

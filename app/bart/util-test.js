@@ -33,6 +33,59 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
     },
 
+    "test deepCopy": function () {
+      assert.same(util.deepCopy(1), 1);
+      assert.same(util.deepCopy(true), true);
+      assert.same(util.deepCopy(null), null);
+      assert.same(util.deepCopy(undefined), undefined);
+      assert.same(util.deepCopy("a"), "a");
+
+      function func() {}
+      assert.same(util.deepCopy(func), func);
+
+      var orig = new Date(123);
+      assert.equals(util.deepCopy(orig), orig);
+      refute.same(util.deepCopy(orig), orig);
+
+
+      var orig = [1, "2", {three: [4, {five: 6}]}];
+
+      var result = util.deepCopy(orig);
+
+      assert.equals(orig, result);
+
+      result[2].three[1].five = 'changed';
+
+      assert.equals(orig, [1, "2", {three: [4, {five: 6}]}]);
+    },
+
+    "test camelize": function () {
+      assert.same(util.camelize(""), "");
+      assert.same(util.camelize("abc"), "abc");
+      assert.same(util.camelize("abc-def_xyz.qqq+foo%bar"), "abcDefXyzQqqFooBar");
+      assert.same(util.camelize("CarlySimon"), "CarlySimon");
+    },
+
+    "test titleize": function () {
+      assert.same(util.titleize(""), "");
+      assert.same(util.titleize("abc"), "Abc");
+      assert.same(util.titleize("abc-def_xyz.qqq+foo%bar"), "Abc Def Xyz Qqq Foo Bar");
+      assert.same(util.titleize("CarlySimon"), "Carly Simon");
+    },
+
+    "test humanize": function () {
+      assert.same(util.humanize('camelCaseCamel_id'), "camel case camel");
+      assert.same(util.humanize('Hyphens-and_underscores'), "hyphens and underscores");
+
+    },
+
+    "test initials": function () {
+      assert.same(util.initials(null, 2), "");
+      assert.same(util.initials("Sam THE BIG Man", 2), "SM");
+      assert.same(util.initials("Sam the BIG man"), "STM");
+      assert.same(util.initials("Prince"), "P");
+    },
+
     "test colorToArray": function () {
       assert.equals(util.colorToArray([1,2,3,0.5]), [1,2,3,0.5]);
       assert.equals(util.colorToArray("#ac3d4f"), [172, 61, 79, 1]);
