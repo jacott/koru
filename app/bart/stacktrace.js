@@ -59,7 +59,8 @@ define(['require', 'bart/util-base'], function (require, util) {
 
       func = (func || '').replace(/['"\[\]\(\)\{\}\s]+/g, ' ');
 
-      line = "    at " + func + " ("+ url + ":" + line;
+      // put a dash after at for the first line to help emacs identify it as significant
+      line = "    at " + (stack.length ? "" : "- ") + func + " ("+ url + ":" + line;
       column && (line += ":" + column);
 
       stack.push(line + ")");
