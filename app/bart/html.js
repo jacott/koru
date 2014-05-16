@@ -2,8 +2,9 @@
  Load compiled template from .build directory.
  The template-compiler will convert the html to js.
  */
-define(['require', './env'], function (require, env) {
-  var loaderPrefix = require.toUrl('./html!').slice(require.toUrl('').length);
+define(function (require, exports, module) {
+  var env = require('./env');
+  var loaderPrefix = module.id + "!";
 
   return {
     load: function (name, req, onload, config) {
@@ -13,7 +14,7 @@ define(['require', './env'], function (require, env) {
 
       req([provider], function (value) {
         onload(value);
-      });
+      }, onload.error);
     }
   };
 });

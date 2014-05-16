@@ -20,6 +20,12 @@
       if (id === 'require' || id === 'exports' || id === 'module')
         continue;
 
+      // If name is unnormalized then it wont match. We could try and
+      // ask the prefix to normalize it for us but that is not a
+      // normal plugin function. For now we'll just trust the
+      // (maybe) semi-unnormalized name.
+      if (row.unnormalized) id = row.prefix+"!"+row.name;
+
       insertDependency(map.id, id);
     }
     loaded[map.id] = true;
@@ -75,8 +81,9 @@
    * Dependency tracking and load/unload manager.
    * This module is also a requirejs loader plugin.
    */
-  define(['require', './util-base'], function (require, util) {
-    var loaderPrefix = require.toUrl('./env!').slice(require.toUrl('').length);
+  define(function (require, exports, module) {
+    var util = require('./util-base');
+    var loaderPrefix = module.id + "!";
 
     if (isClient) {
       var discardIncompleteLoads = function () {
@@ -142,7 +149,7 @@
 
         req([provider], function (value) {
           onload(value);
-        });
+        }, onload.error);
       },
     };
   });
