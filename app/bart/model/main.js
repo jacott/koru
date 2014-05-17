@@ -3,7 +3,9 @@ define(function(require, exports, module) {
   var util = core.util;
   var Val = require('./validation');
   var env = require('../env!./main'); // client-main or server-main
+  var session = require('../env!../session/main'); // client-main or server-main
   var Random = require('../random');
+  var Query = require('./query');
 
   var models = {};
   var modelObservers = {};
@@ -77,12 +79,22 @@ define(function(require, exports, module) {
     },
 
     $remove: function () {
-      var result = AppModel[modelName(this)].fencedRemove(this._id);
-      _support.callObserver('afterRemove', this);
-      return result;
+      var result = this.constructor.docs[this._id];
+      if (! result) return 0;
+      delete this.constructor.docs[this._id];
+      callObserver('afterRemove', this);
+      return 1;
     },
 
-    $reload: reload,
+    $reload: function () {
+      var doc = this.constructor.findById(this._id);
+      this.attributes = doc ? doc.attributes : {};
+      this.changes = {};
+      this._errors = null;
+      this._cache = null;
+      this.__arrayFields && (this.__arrayFields = undefined);
+      return this;
+    },
 
     $loadCopy: function () {
       return new this.constructor(this.attributes);
@@ -105,6 +117,16 @@ define(function(require, exports, module) {
     },
   };
 
+  function callObserver(type, doc) {
+    var observers = modelObservers[doc.constructor.modelName+'.'+type];
+    if (observers) {
+      for(var i=0;i < observers.length;++i) {
+        observers[i].call(doc, doc, type);
+      }
+    }
+  }
+
+
   var modelProperties = {
     create: function (attributes) {
       var model = new this();
@@ -113,9 +135,9 @@ define(function(require, exports, module) {
       return model;
     },
 
-  /**
-   * Build a new document. Does not copy _id from attributes.
-   */
+    /**
+     * Build a new document. Does not copy _id from attributes.
+     */
     build: function(attributes, allow_id) {
       var model = new this();
       if(attributes) {
@@ -130,12 +152,101 @@ define(function(require, exports, module) {
     },
 
     defineFields: defineFields,
+
+    isLocked: function(id) {
+      return (this._locks || (this._locks = {})).hasOwnProperty(id);
+    },
+
+    lock: function(id, func) {
+      if (this.isLocked(id))
+        func.call(this, id);
+      else {
+        this._locks[id] = true;
+        try {
+          func.call(this, id);
+        } finally {
+          delete this._locks[id];
+        }
+      }
+    },
+
+    addVersioning: function() {
+      var model = this,
+          proto = model.prototype;
+
+      model.hasVersioning = true;
+      Object.defineProperty(proto, '_version', versionProperty);
+
+      proto.$bumpVersion = _support.bumpVersion;
+      return this;
+    },
+
+    remote: function(funcs) {
+      var model = this,
+          prefix = model.modelName + '.',
+          methods = {};
+
+      for(var key in funcs) {methods[prefix + key] = _support.remote(key,funcs[key]);}
+      session.defineRpc(methods);
+
+      return model;
+    },
   };
 
-  env.session.defineRpc("save", function (modelName, id, params) {
-    var model = models[modelName];
-    model.docs[id] = new model(util.reverseExtend({_id: id}, params));
-  });
+  var versionProperty = {
+    get: function () {
+      return this.attributes._version;
+    },
+
+    set: function (value) {
+      this.attributes._version = value;
+    }
+  };
+
+  var _support = BaseModel._support = {
+    setupExtras: [],
+
+    performBumpVersion: function(model, _id, _version) {
+      new Query(model).on(_id).where({_version: _version}).inc("_version", 1).update();
+    },
+
+    bumpVersion: function () {
+      session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
+    },
+
+    performInsert: function (doc) {
+      var model = doc.constructor;
+
+      callObserver('beforeCreate', doc);
+      callObserver('beforeSave', doc);
+      model.hasVersioning && (doc.changes._version = 1);
+
+      env.insert(doc);
+      callObserver('afterCreate', doc);
+      callObserver('afterSave', doc);
+    },
+
+    performUpdate: function (doc) {
+      var model = doc.constructor;
+
+      var tdoc = new model(util.extend({}, doc.attributes));
+      tdoc.changes = doc.changes;
+
+      callObserver('beforeUpdate', tdoc);
+      callObserver('beforeSave', tdoc);
+
+      var st = new Query(model).on(doc._id);
+
+      model.hasVersioning && st.inc("_version", 1);
+
+      st.update(doc.changes);
+
+      callObserver('afterUpdate', tdoc);
+      callObserver('afterSave', tdoc);
+    },
+  };
+
+  env.init(BaseModel, models, _support);
 
   util.extend(BaseModel, {
     define: function (name, properties, options) {
@@ -156,6 +267,15 @@ define(function(require, exports, module) {
       model.docs = {};
       model._fieldValidators = {};
       model._defaults = {};
+
+      model.beforeCreate = beforeCreate;
+      model.afterCreate = afterCreate;
+      model.beforeUpdate = beforeUpdate;
+      model.afterUpdate = afterUpdate;
+      model.beforeSave = beforeSave;
+      model.afterSave = afterSave;
+      model.afterRemove = afterRemove;
+
       return models[name] = model;
     },
 
@@ -274,15 +394,43 @@ define(function(require, exports, module) {
     return model._fieldValidators[field] || (model._fieldValidators[field] = {});
   }
 
-  function reload() {
-    var doc = this.constructor.findById(this._id);
-    if (! doc) throw core.Error(404, 'Not found');
-    this.attributes = doc.attributes;
-    this.changes = {};
-    this._errors = null;
-    this._cache = null;
-    this.__arrayFields && (this.__arrayFields = undefined);
+  function beforeCreate(callback) {
+    registerObserver(this.modelName+'.beforeCreate', callback);
     return this;
+  };
+
+  function afterCreate(callback) {
+    registerObserver(this.modelName+'.afterCreate', callback);
+    return this;
+  };
+
+  function beforeUpdate(callback) {
+    registerObserver(this.modelName+'.beforeUpdate', callback);
+    return this;
+  };
+
+  function afterUpdate(callback) {
+    registerObserver(this.modelName+'.afterUpdate', callback);
+    return this;
+  };
+
+  function beforeSave(callback) {
+    registerObserver(this.modelName+'.beforeSave', callback);
+    return this;
+  };
+
+  function afterSave(callback) {
+    registerObserver(this.modelName+'.afterSave', callback);
+    return this;
+  };
+
+  function afterRemove(callback) {
+    registerObserver(this.modelName+'.afterRemove', callback);
+    return this;
+  };
+
+  function registerObserver(name, callback) {
+    (modelObservers[name] || (modelObservers[name] = [])).push(callback);
   }
 
   return BaseModel;

@@ -5,6 +5,8 @@ isClient && define(function (require, exports, module) {
   var Model = require('./main');
   require('../b!./validator:required');
   var sinon = TH.sinon;
+  var session = require('../session/main');
+
 
   TH.testCase(module, {
     setUp: function () {
@@ -13,12 +15,11 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      Model && TH.clearDB(); // remove old data (for Model building)
       Model._destroyModel('TestModel');
       v = null;
     },
 
-    '//with model lock': {
+    'with model lock': {
       setUp: function () {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
       },
@@ -38,9 +39,9 @@ isClient && define(function (require, exports, module) {
             TH.fail("should not reach here");
           });
         } catch (ex) {
-          v.ex = ex;
+          if (ex.message !== "catch me")
+            throw ex;
         }
-        assert.same(v.ex.message, "catch me");
 
         assert.isFalse(v.TestModel.isLocked("a"));
       },
@@ -52,7 +53,8 @@ isClient && define(function (require, exports, module) {
             throw new Error("catch me");
           });
         } catch (ex) {
-          assert.same(ex.message, "catch me");
+          if (ex.message !== "catch me")
+            throw ex;
         }
 
         assert.isFalse(v.TestModel.isLocked("a"));
@@ -70,7 +72,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    '//with observering': {
+    'with observering': {
       setUp: function () {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
         v.tc = v.TestModel.create({name: 'foo'});
@@ -183,7 +185,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    '//with versioning': {
+    'with versioning': {
       setUp: function () {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
       },
@@ -212,7 +214,6 @@ isClient && define(function (require, exports, module) {
 
         var tc = v.TestModel.create({name: 'foo'});
 
-        tc.$bumpVersion();
         tc.$bumpVersion();
 
         assert.same(tc.$reload()._version, 2);
@@ -273,16 +274,13 @@ isClient && define(function (require, exports, module) {
       assert.same(tsc.attributes,testAttrs);
     },
 
-    '//test remove': function () {
+    'test remove': function () {
       var TestModel = Model.define('TestModel', {}, {saveRpc: true});
       var sut = TestModel.create();
-      test.spy(TestModel, 'fencedRemove');
 
       sut.$remove();
 
-      assert.calledWith(TestModel.fencedRemove, sut._id);
-
-      assert.same(Model.TestModel.find().count(),0);
+      assert.same(TestModel.findById(sut._id), undefined);
     },
 
     'with TestModel': {
@@ -527,25 +525,23 @@ isClient && define(function (require, exports, module) {
         refute.isTrue(a.$equals(null));
       },
 
-      '//test create': function () {
-        this.spy(Model.TestModel.docs,'insert');
+      'test create': function () {
         var attrs = {name: 'testing'};
 
-        this.spy(App, "rpc");
+        this.spy(session, "rpc");
         var doc = v.TestModel.create(attrs);
         refute.same(doc.changes,doc.attributes);
         assert.equals(doc.changes,{});
 
         attrs._id = doc._id;
-        assert.calledOnceWith(Model.TestModel.docs.insert,attrs);
+        assert.same(doc.attributes, v.TestModel.findById(doc._id).attributes);
         if(isClient)
-          assert.calledOnceWith(App.rpc,'TestModel.save', doc._id,{_id: doc._id, name: "testing"});
+          assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id,{_id: doc._id, name: "testing"});
         else
-          refute.called(App.rpc);
-
+          refute.called(session.rpc);
       },
 
-      "//test $reload on removed doc": function () {
+      "test $reload on removed doc": function () {
         v.TestModel.defineFields({name: 'string'});
         var doc = v.TestModel.create({name: 'old'});
 
@@ -556,28 +552,26 @@ isClient && define(function (require, exports, module) {
         assert.equals(doc.attributes, {});
       },
 
-      '//test update': function () {
+      'test update': function () {
         v.TestModel.defineFields({name: 'string'});
         var doc = v.TestModel.create({name: 'old'});
 
-        this.spy(Model.TestModel,'fencedUpdate');
-        this.spy(Model.TestModel.docs,'update');
-        this.spy(App, "rpc");
+        this.spy(session, "rpc");
 
         doc.name = 'new';
         doc.$save();
-
 
         doc.$reload();
         assert.same(doc.name, 'new');
         assert.equals(doc.changes,{});
 
-        assert.calledOnceWith(Model.TestModel.fencedUpdate, doc._id, {$set: {name: 'new'}});
-        assert.calledOnceWith(Model.TestModel.docs.update,doc._id,{$set: {name: 'new'}});
+        assert.same(doc.attributes, v.TestModel.findById(doc._id).attributes);
+
+
         if(isClient)
-          assert.calledOnceWith(App.rpc,'TestModel.save', doc._id,{name: "new"});
+          assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id,{name: "new"});
         else
-          refute.called(App.rpc);
+          refute.called(session.rpc);
       },
 
       '//test afterCreate callback': function () {

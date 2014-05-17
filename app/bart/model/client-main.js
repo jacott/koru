@@ -22,6 +22,48 @@ define(function(require, exports, module) {
     },
 
     session: session,
+
+    init: function (BaseModel, models, _support) {
+      session.defineRpc("save", function (modelName, id, changes) {
+        try {
+          var model = models[modelName],
+              docs = model.docs,
+              doc = docs[id],
+              now = util.newDate();
+
+          // FIXME BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
+
+          if(doc) {
+            doc.changes = changes;
+            _support.performUpdate(doc);
+          } else {
+            // FIXME BaseModel._addUserIds(changes, model.userIds, this.userId);
+            // FIXME BaseModel._updateTimestamps(changes, model.createTimestamps, now);
+            changes._id = id;
+            doc = new model();
+            doc.attributes = doc.changes = changes;
+
+            _support.performInsert(doc, changes);
+          }
+        } catch(e) {
+          throw e;
+        }
+      });
+
+      session.defineRpc("bumpVersion", function(modelName, id, version) {
+        _support.performBumpVersion(models[modelName], id, version);
+      });
+
+      util.extend(_support, {
+        remote: function (name,func) {
+          return func;
+        },
+      });
+    },
+
+    insert: function (doc) {
+      doc.constructor.docs[doc._id] = doc;
+    },
   };
 
   function save(doc) {
@@ -29,7 +71,7 @@ define(function(require, exports, module) {
 
     if(_id == null) {
       _id = (doc.changes && doc.changes._id) || Random.id();
-      session.rpc("save", doc.constructor.modelName, _id, util.extend(doc.attributes,doc.changes),
+      session.rpc("save", doc.constructor.modelName, _id, util.extend({},doc.changes),
                   core.error);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
