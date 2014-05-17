@@ -22,6 +22,8 @@ define(function(require, exports, module) {
         });
       }
     },
+
+    sinon: geddon.sinon,
   }, bt);
 
   var ga = geddon.assertions;
