@@ -12,6 +12,17 @@ define(function(require, exports, module) {
       return obj;
     },
 
+    extendWithDelete: function(obj, properties) {
+      for(var prop in properties) {
+        var value = Object.getOwnPropertyDescriptor(properties,prop);
+        if (value.value === undefined)
+          delete obj[prop];
+        else
+          Object.defineProperty(obj,prop, value);
+      }
+      return obj;
+    },
+
     extractError: function (ex) {
       var st = stacktrace(ex);
       return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
@@ -112,6 +123,16 @@ define(function(require, exports, module) {
       });
     },
 
+    compareByName: function (a, b) {
+      return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+    },
+
+    compareByField: function (field) {
+      return function (a, b) {
+        var afield = a[field], bfield = b[field];
+        return a[field] === b[field] ? 0 : a[field] < b[field] ? -1 : 1;
+      };
+    },
 
     colorToArray: colorToArray,
 

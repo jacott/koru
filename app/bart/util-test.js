@@ -22,7 +22,14 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.same(sub.a,1);
       assert.same(sub.b,3);
       assert.same(sub.c,6);
+    },
 
+    "test extendWithDelete": function () {
+      var orig = {a: 1, b: 2, c: 3};
+      var changes = {a: 2, b: undefined, d: 4};
+
+      assert.same(util.extendWithDelete(orig, changes), orig);
+      assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
     "test regexEscape": function () {
@@ -84,6 +91,36 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.same(util.initials("Sam THE BIG Man", 2), "SM");
       assert.same(util.initials("Sam the BIG man"), "STM");
       assert.same(util.initials("Prince"), "P");
+    },
+
+    "test compareByName": function () {
+      var a = {name: "Bob"};
+      var b = {name: "Bob"};
+
+      assert.same(util.compareByName(a,b), 0);
+
+      b.name = 'Cary';
+      assert.same(util.compareByName(a,b), -1);
+
+      b.name = 'Arnold';
+      assert.same(util.compareByName(a,b), 1);
+    },
+
+    "test compareByField": function () {
+      var a = {f1: "Bob", f2: 1};
+      var b = {f1: "Bob", f2: 2};
+
+      assert.same(util.compareByField('f1')(a,b), 0);
+
+      b.f1 = 'Cary';
+      assert.same(util.compareByField('f1')(a,b), -1);
+
+      b.f1 = 'Arnold';
+      assert.same(util.compareByField('f1')(a,b), 1);
+
+      assert.same(util.compareByField('f2')(a,b), -1);
+
+      assert.same(util.compareByField('f2')(b,a), 1);
     },
 
     "test colorToArray": function () {
