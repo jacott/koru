@@ -1,6 +1,7 @@
 // FIXME should be both client and server
 isClient && define(function (require, exports, module) {
   var test, v;
+  var core = require('../core');
   var TH = require('./test-helper');
   var Model = require('./main');
   require('../b!./validator:required');
@@ -359,6 +360,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test must be valid save ": function () {
+        test.stub(core, 'info');
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
 
