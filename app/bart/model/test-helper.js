@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   var core = require('../core');
   var bt = require('bart/test');
+
+  var util = core.util;
   var geddon = bt.geddon;
 
   var TH = core.util.reverseExtend({
@@ -24,6 +26,18 @@ define(function(require, exports, module) {
     },
 
     sinon: geddon.sinon,
+    util: core.util,
+
+    login: function (id, func) {
+      var oldId = util.thread.userId;
+      try {
+        util.thread.userId = id;
+        func();
+      }
+      finally {
+        util.thread.userId = oldId;
+      }
+    },
   }, bt);
 
   var ga = geddon.assertions;

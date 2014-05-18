@@ -7,7 +7,6 @@ define(function(require, exports, module) {
   var Random = require('../random');
   var Query = require('./query');
 
-  var models = {};
   var modelObservers = {};
 
   function BaseModel(attributes) {
@@ -27,6 +26,7 @@ define(function(require, exports, module) {
     get _id() {return this.attributes._id;},
 
     $save: env.$save,
+    $$save: env.$$save,
 
     $isValid: function () {
       var doc = this,
@@ -56,7 +56,7 @@ define(function(require, exports, module) {
     },
 
     $assertValid: function () {
-      AppVal.allowIfValid(this.$isValid(), this);
+      Val.allowIfValid(this.$isValid(), this);
     },
 
     $equals: function (other) {
@@ -66,10 +66,6 @@ define(function(require, exports, module) {
 
     $isNewRecord: function () {
       return ! this.attributes._id;
-    },
-
-    $update: function (value, options) {
-      return AppModel[modelName(this)].docs.update(this._id, value, options);
     },
 
     $change: function (field) {
@@ -191,6 +187,19 @@ define(function(require, exports, module) {
 
       return model;
     },
+
+    definePrototypeMethod: function(name, func) {
+      var fullname = this.modelName+"."+name;
+      this.prototype[name] = function() {
+        for(var i=0;i < arguments.length;++i) {
+          var curr = arguments[i];
+          if (curr && curr._id) arguments[i] = curr._id;
+        }
+        return session.rpc.apply(session, [fullname, this._id].concat(util.slice(arguments)));
+      };
+      session.defineRpc(fullname, func);
+      return this;
+    },
   };
 
   var versionProperty = {
@@ -207,7 +216,7 @@ define(function(require, exports, module) {
     setupExtras: [],
 
     performBumpVersion: function(model, _id, _version) {
-      new Query(model).on(_id).where({_version: _version}).inc("_version", 1).update();
+      new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();
     },
 
     bumpVersion: function () {
@@ -235,7 +244,7 @@ define(function(require, exports, module) {
       callObserver('beforeUpdate', tdoc);
       callObserver('beforeSave', tdoc);
 
-      var st = new Query(model).on(doc._id);
+      var st = new Query(model).onId(doc._id);
 
       model.hasVersioning && st.inc("_version", 1);
 
@@ -246,7 +255,7 @@ define(function(require, exports, module) {
     },
   };
 
-  env.init(BaseModel, models, _support);
+  env.init(BaseModel, _support);
 
   util.extend(BaseModel, {
     define: function (name, properties, options) {
@@ -275,24 +284,41 @@ define(function(require, exports, module) {
       model.beforeSave = beforeSave;
       model.afterSave = afterSave;
       model.afterRemove = afterRemove;
+      model.fieldTypeMap = {};
 
-      return models[name] = model;
+      return BaseModel[name] = model;
     },
 
     _destroyModel: function (name) {
-      delete models[name];
+      delete BaseModel[name];
       ['before', 'after'].forEach(function (ba) {
         ['Create', 'Update', 'Save', 'Remove'].forEach(function (actn) {
           delete modelObservers[name +"." + ba + actn];
         });
       });
     },
+
+    _updateTimestamps: function (changes, timestamps, now) {
+      if (timestamps) {
+        for(var key in timestamps)  {
+          changes[key] = changes[key] || now;
+        }
+      }
+    },
+
+    _addUserIds: function (changes, userIds, user_id) {
+      if (userIds) {
+        for(var key in userIds)  {
+          changes[key] = user_id;
+        }
+      }
+    },
   });
 
   var typeMap = {
     belongs_to: function (model, field, options) {
       var name = field.replace(/_id/,''),
-          bt = AppModel[options.modelName || Apputil.capitalize(name)];
+          bt = BaseModel[options.modelName || util.capitalize(name)];
       if (bt) {
         model.fieldTypeMap[field] = bt;
         Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
@@ -305,7 +331,7 @@ define(function(require, exports, module) {
     },
     has_many: function (model, field, options) {
       var name = field.replace(/_ids/,''),
-          bt = models[typeof options.associated === 'string' ? options.associated : util.capitalize(name)];
+          bt = BaseModel[typeof options.associated === 'string' ? options.associated : util.capitalize(name)];
       if (bt) {
         model.fieldTypeMap[field] = bt;
       }
@@ -344,6 +370,13 @@ define(function(require, exports, module) {
 
       set: setValue(field),
     });
+  }
+
+  function belongsTo(model, name, field) {
+    return function () {
+      var value = this[field];
+      return value && this.$cacheRef(name)[value] || (this.$cacheRef(name)[value] = model.findById(value));
+    };
   }
 
   function getValue(field) {

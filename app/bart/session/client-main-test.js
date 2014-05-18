@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var geddon = require('bart/test');
   var session = require('./client-main');
+  var util = require('../util');
 
 
   geddon.testCase(module, {
@@ -21,6 +22,9 @@ define(function (require, exports, module) {
       session.rpc('foo.rpc', 1, 2, 3);
 
       assert.calledWith(v.stub, 1, 2, 3);
+
+      assert.same(v.stub.thisValues[0], util.thread);
+
     },
   });
 });

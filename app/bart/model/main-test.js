@@ -5,6 +5,7 @@ isClient && define(function (require, exports, module) {
   var Model = require('./main');
   require('../b!./validator:required');
   var sinon = TH.sinon;
+  var util = TH.util;
   var session = require('../session/main');
 
 
@@ -333,35 +334,19 @@ isClient && define(function (require, exports, module) {
         assert.equals(doc.attributes.foo, {bar: {baz: 'orig'}});
       },
 
-      "//test definePrototype": function () {
-        v.TestModel.definePrototype('fooBar', fooBar);
+      "test definePrototypeMethod": function () {
+        v.TestModel.definePrototypeMethod('fooBar', v.stub = test.stub());
 
         var baz = {_id: "123"};
         var called;
 
         var sut = v.TestModel.create();
-        TH.login(function () {
-          sut.fooBar(baz, "abc");
-        });
+        var rpcSpy = test.spy(session, 'rpc');
+        sut.fooBar(baz, "abc");
 
-        assert.isTrue(called);
+        assert.calledWith(rpcSpy, 'TestModel.fooBar', sut._id, "123", "abc");
 
-        function fooBar(id, baz_id, qux) {
-          assert.same(id, sut._id);
-
-          assert.same(baz_id, "123");
-          assert.same(qux, "abc");
-          assert.same(this.userId, TH.userId());
-          called = true;
-        }
-      },
-
-      "//test update shortCut": function () {
-        var doc = v.TestModel.create({name: 'testing'});
-
-        doc.$update({$set: {name: 'changed'}});
-
-        assert.same(doc.$reload().attributes.name, 'changed');
+        assert.calledWith(v.stub, sut._id, "123", "abc");
       },
 
       "test can override and save invalid doc": function () {
@@ -373,7 +358,7 @@ isClient && define(function (require, exports, module) {
         assert(v.TestModel.findById(foo._id));
       },
 
-      "//test must be valid save ": function () {
+      "test must be valid save ": function () {
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
 
@@ -387,24 +372,13 @@ isClient && define(function (require, exports, module) {
         assert.same(foo.$reload().bar, 'okay');
       },
 
-      '//test findIds': function () {
-        v.TestModel.defineFields({foo: 'text'});
-        var exp_ids = [1,2,3].map(function (num) {
-          return v.TestModel.docs.insert({foo: num});
-        });
-
-        assert.equals(v.TestModel.findIds().sort(), exp_ids.slice(0).sort());
-        assert.equals(v.TestModel.findIds({foo: {$gt: 1}}).sort(), exp_ids.slice(1,4).sort());
-        assert.equals(v.TestModel.findIds(null, {sort: {foo: -1}}), exp_ids.slice(0).reverse());
-      },
-
-      '//test timestamps': function () {
+      'test timestamps': function () {
         v.TestModel.defineFields({name: 'text', createdAt: 'timestamp', updatedAt: 'timestamp',});
 
         assert.equals(v.TestModel.createTimestamps, { createdAt: true });
         assert.equals(v.TestModel.updateTimestamps, { updatedAt: true });
 
-        var start = Date.now();
+        var start = util.dateNow();
 
         var doc = v.TestModel.create({name: 'testing'});
 
@@ -414,11 +388,15 @@ isClient && define(function (require, exports, module) {
 
         var oldCreatedAt = new Date(start - 1000);
 
-        v.TestModel.docs.update(doc._id, {$set: {createdAt: oldCreatedAt, updatedAt: oldCreatedAt}});
+        doc.createdAt = oldCreatedAt;
+        doc.updatedAt = oldCreatedAt;
+        doc.$$save();
 
-        doc.$reload();
+        doc.$reload()
 
-        start = Date.now();
+        ;
+
+        start = util.dateNow();
 
         doc.name = 'changed';
         doc.$save();
@@ -427,67 +405,44 @@ isClient && define(function (require, exports, module) {
 
         assert.same(+doc.createdAt, +oldCreatedAt);
         refute.same(+doc.updatedAt, +oldCreatedAt);
-        assert.between(+doc.updatedAt, start, Date.now());
+        assert.between(+doc.updatedAt, start, util.dateNow());
       },
 
-      "//test belongs_to auto": function () {
-        test.onEnd(function () {delete Model.Foo});
-        var findStub = test.stub();
-        findStub.withArgs("abc").returns({name: "qux"});
-        Model.Foo = {findById: findStub};
-        v.TestModel.defineFields({foo_id: {type: 'belongs_to'}});
+      "belongs_to": {
+        setUp: function () {
+          v.Foo = Model.define('Foo').defineFields({name: 'text'});
+          test.onEnd(function () {Model._destroyModel('Foo')});
+          v.foo = v.Foo.create({name: "qux"});
+        },
 
-        var sut = v.TestModel.build({foo_id: "abc"});
+        "test belongs_to auto": function () {
+          v.TestModel.defineFields({foo_id: {type: 'belongs_to'}});
 
-        assert.same(sut.foo.name, "qux");
-        assert.same(sut.foo.name, "qux");
+          var sut = v.TestModel.build({foo_id: v.foo._id});
 
-        assert.calledOnce(findStub);
+          var fooFind = test.spy(v.Foo, 'findById');
+
+          assert.same(sut.foo.name, "qux");
+          assert.same(sut.foo.name, "qux");
+
+          assert.calledOnce(fooFind);
+        },
+
+        "test belongs_to manual": function () {
+          v.TestModel.defineFields({baz_id: {type: 'belongs_to', modelName: 'Foo'}});
+
+          var sut = v.TestModel.build({baz_id: v.foo._id});
+
+          assert.same(sut.baz.name, "qux");
+        },
       },
 
-      "//test belongs_to manual": function () {
-        test.onEnd(function () {delete Model.Foo});
-        var findStub = test.stub();
-        findStub.withArgs("abc").returns({name: "qux"});
-        Model.Foo = {findById: findStub};
-        v.TestModel.defineFields({baz_id: {type: 'belongs_to', modelName: 'Foo'}});
-
-        var sut = v.TestModel.build({baz_id: "abc"});
-
-        assert.same(sut.baz.name, "qux");
-      },
-
-      "//test hasMany": function () {
-        var find = test.stub();
-
-        find.returns("fail")
-          .withArgs({$and: ["foreign_ref", "param"]}, {sort: 1}).returns("two args")
-          .withArgs("foreign_ref", {transform: null}).returns("options only")
-          .withArgs("foreign_ref").returns("no args");
-
-        function fooFinder() {
-          assert.same(this, sut);
-          return "foreign_ref";
-        }
-
-
-        // exercise
-        v.TestModel.hasMany('foos', {find: find}, fooFinder);
-
-        var sut = new v.TestModel();
-
-        assert.same(sut.foos(), "no args");
-        assert.same(sut.foos("param" ,{sort: 1}), "two args");
-        assert.same(sut.foos({}, {transform: null}), "options only");
-        assert.same(sut.foos(null, {transform: null}), "options only");
-      },
-
-      '//test user_id_on_create': function () {
+      'test user_id_on_create': function () {
         v.TestModel.defineFields({name: 'text', user_id: 'user_id_on_create'});
 
         assert.equals(v.TestModel.userIds, { user_id: 'create' });
 
-        TH.login(function () {
+        TH.login("u1234", function () {
           var doc = v.TestModel.create({name: 'testing'});
 
           assert(doc._id);
@@ -497,10 +452,10 @@ isClient && define(function (require, exports, module) {
             assert.same(doc.user_id, undefined);
             // but the saveRpc does
             var id;
-            App.rpc('TestModel.save', id = Random.id(), {name: 'testing'} );
-            assert.same(v.TestModel.findOne(id).user_id, TH.userId());
+            session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
+            assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
           } else {
-            assert.same(doc.user_id, TH.userId());
+            assert.same(doc.user_id, util.thread.userId);
           }
         });
       },
@@ -574,9 +529,9 @@ isClient && define(function (require, exports, module) {
           refute.called(session.rpc);
       },
 
-      '//test afterCreate callback': function () {
+      'test afterCreate callback': function () {
         var afterCreateStub = this.stub();
-        Model.TestModel.afterCreate(afterCreateStub);
+        v.TestModel.afterCreate(afterCreateStub);
 
         var attrs = {name: 'testing'};
 

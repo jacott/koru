@@ -9,7 +9,12 @@ define(function(require, exports, module) {
   Query.prototype = {
     constructor: Query,
 
-    on: function (id) {
+    onModel: function (model) {
+      this.model = model;
+      return this;
+    },
+
+    onId: function (id) {
       this.singleId = id;
       return this;
     },
@@ -22,6 +27,26 @@ define(function(require, exports, module) {
     where: function (conditions) {
       util.extend((this._conditions = this._conditions || {}), conditions);
       return this;
+    },
+
+    fields: function (/* fields... */) {
+      var _fields = this._fields = this._fields || {};
+      for(var i = 0; i < arguments.length; ++i) {
+        _fields[arguments[i]] = true;
+      }
+      return this;
+    },
+
+    findField: function(field) {
+      this.fields(field);
+
+      return this.map(function (doc) {
+        return doc[field];
+      });
+    },
+
+    findIds: function() {
+      return this.findField('_id');
     },
   };
 

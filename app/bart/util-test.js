@@ -202,7 +202,7 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
             var Fiber = requirejs('fibers');
             assert.same(util.thread, Fiber.current.appThread);
           }
-          assert.equals(util.thread, {dates: [undefined, 1370819436855], date: 1370819436978});
+          assert.equals(util.thread.dates, [undefined, 1370819436855]);
           return 987;
         }), 987);
 

@@ -28,24 +28,60 @@ isClient && define(function (require, exports, module) {
       assert.equals(new Query(v.TestModel).fetch().sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
 
-    "test on exists": function () {
+    "test forEach": function () {
+      var results = [];
+      new Query(v.TestModel).forEach(function (doc) {
+        results.push(doc);
+      });
+      assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
+    },
+
+    "test remove": function () {
+      assert.same(new Query(v.TestModel).remove(), 2);
+
+
+      assert.equals(new Query(v.TestModel).fetch(), []);
+    },
+
+    "test count": function () {
+      assert.same(new Query(v.TestModel).count(), 2);
+    },
+
+    'test findIds': function () {
+      new Query(v.TestModel).remove();
+      var exp_ids = [1,2,3].map(function (num) {
+        return v.TestModel.create({name: 'name'+num})._id;
+      });
+
+      assert.equals(new Query(v.TestModel).findIds().sort(), exp_ids.slice(0).sort());
+    },
+
+    "test onId exists": function () {
       var st = new Query(v.TestModel);
 
-      assert.same(st.on(v.foo._id), st);
+      assert.same(st.onId(v.foo._id), st);
 
       assert.equals(st.fetch(), [v.foo]);
     },
 
-    "test on does not exist": function () {
+    "test onModel": function () {
+      var st = new Query();
+
+      assert.same(st.onModel(v.TestModel).onId(v.foo._id), st);
+
+      assert.equals(st.fetch(), [v.foo]);
+    },
+
+    "test onId does not exist": function () {
       var st = new Query(v.TestModel);
 
-      assert.same(st.on("notfound"), st);
+      assert.same(st.onId("notfound"), st);
 
       assert.equals(st.fetch(), []);
     },
 
     "test update one": function () {
-      var st = new Query(v.TestModel).on(v.foo._id);
+      var st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.update({name: 'new name'}), 1);
 
@@ -55,7 +91,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test update deletes fields": function () {
-      var st = new Query(v.TestModel).on(v.foo._id);
+      var st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.update({name: 'new name', age: undefined}), 1);
 
@@ -63,7 +99,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test inc": function () {
-      var st = new Query(v.TestModel).on(v.foo._id);
+      var st = new Query(v.TestModel).onId(v.foo._id);
       assert.same(st.inc("age", 2), st);
 
       st.update({name: 'x'});
@@ -73,7 +109,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test where on fetch": function () {
-      var st = new Query(v.TestModel).on(v.foo._id);
+      var st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'foo'}), st);
 
@@ -82,8 +118,20 @@ isClient && define(function (require, exports, module) {
       assert.equals(st.where({name: 'bar'}).fetch(), []);
     },
 
+    "test where on forEach": function () {
+      var st = new Query(v.TestModel).onId(v.foo._id);
+
+      assert.same(st.where({name: 'foo'}), st);
+
+      st.forEach(v.stub = test.stub());
+      assert.calledOnce(v.stub);
+      assert.calledWith(v.stub, v.foo);
+
+      assert.equals(st.where({name: 'bar'}).fetch(), []);
+    },
+
     "test where on update": function () {
-      var st = new Query(v.TestModel).on(v.foo._id);
+      var st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'bar'}).update({name: 'new name'}), 0);
       assert.same(v.foo.name, 'foo');

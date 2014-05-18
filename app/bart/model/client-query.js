@@ -6,30 +6,65 @@ define(function(require, exports, module) {
       util.extend(Query.prototype, {
         fetch: function () {
           var results = [];
-          var where = this._conditions;
-          if (this.singleId) {
-            var doc = this.findOne(this.singleId);
-            doc && results.push(doc);
-          } else for(var id in this.model.docs) {
-            var doc = this.findOne(id);
-            doc && results.push(doc);
-          }
-
+          this.forEach(function (doc) {
+            results.push(doc);
+          });
           return results;
         },
 
-        update: function (changes) {
-          var docs = this.model.docs;
-          var doc = this.findOne(this.singleId);
-          if (! doc) return 0;
-          var attrs = doc.attributes;
-
-          if (this._incs) for (var field in this._incs) {
-            attrs[field] += this._incs[field];
+        forEach: function (func) {
+          var where = this._conditions;
+          if (this.singleId) {
+            var doc = this.findOne(this.singleId);
+            doc && func(doc);
+          } else for(var id in this.model.docs) {
+            var doc = this.findOne(id);
+            doc && func(doc);
           }
+        },
 
-          util.extendWithDelete(attrs, changes);
-          return 1;
+        map: function (func) {
+          var results = [];
+          this.forEach(function (doc) {
+            results.push(func(doc));
+          });
+          return results;
+        },
+
+        remove: function () {
+          var count = 0;
+          var docs = this.model.docs;
+          this.forEach(function (doc) {
+            ++count;
+            delete docs[doc._id];
+          });
+          return count;
+        },
+
+        count: function () {
+          var count = 0;
+          var docs = this.model.docs;
+          this.forEach(function (doc) {
+            ++count;
+          });
+          return count;
+        },
+
+        update: function (changes) {
+          var self = this;
+          var count = 0;
+          var docs = self.model.docs;
+          self.forEach(function (doc) {
+            ++count;
+            var attrs = doc.attributes;
+
+            if (self._incs) for (var field in self._incs) {
+              attrs[field] += self._incs[field];
+            }
+
+            util.extendWithDelete(attrs, changes);
+          });
+          return count;
         },
 
         findOne: function(id) {

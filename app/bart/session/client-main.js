@@ -19,7 +19,7 @@ define(function (require, exports, module) {
       else waitFuncs.push(type+msg);
     },
     rpc: function (name /*, args */) {
-      this._rpcs[name].apply({}, util.slice(arguments, 1));
+      this._rpcs[name].apply(util.thread, util.slice(arguments, 1));
     },
   });
 

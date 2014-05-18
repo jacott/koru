@@ -23,22 +23,22 @@ define(function(require, exports, module) {
 
     session: session,
 
-    init: function (BaseModel, models, _support) {
+    init: function (BaseModel, _support) {
       session.defineRpc("save", function (modelName, id, changes) {
         try {
-          var model = models[modelName],
+          var model = BaseModel[modelName],
               docs = model.docs,
               doc = docs[id],
               now = util.newDate();
 
-          // FIXME BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
+          BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
 
           if(doc) {
             doc.changes = changes;
             _support.performUpdate(doc);
           } else {
-            // FIXME BaseModel._addUserIds(changes, model.userIds, this.userId);
-            // FIXME BaseModel._updateTimestamps(changes, model.createTimestamps, now);
+            BaseModel._addUserIds(changes, model.userIds, this.userId);
+            BaseModel._updateTimestamps(changes, model.createTimestamps, now);
             changes._id = id;
             doc = new model();
             doc.attributes = doc.changes = changes;
@@ -51,7 +51,7 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
-        _support.performBumpVersion(models[modelName], id, version);
+        _support.performBumpVersion(BaseModel[modelName], id, version);
       });
 
       util.extend(_support, {
