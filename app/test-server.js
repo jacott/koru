@@ -8,6 +8,8 @@ requirejs.config({
   //use of node outside
   baseUrl: __dirname,
 
+  config: {"bart/env": {mode: 'test'}},
+
   packages: [
     "bart/test",
   ],

@@ -6,4 +6,7 @@ cd `dirname "$0"`/../app
 # export NODE_OPTIONS='--prof'
 # send SIGUSR1 to debug
 
-exec node server.js
+type=${1:-demo}
+shift
+
+exec node ${type}-server.js "$@"

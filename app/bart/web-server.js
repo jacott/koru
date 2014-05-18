@@ -4,6 +4,7 @@ var send = require('send');
 var parseurl = require('parseurl');
 
 define(function (require, exports, module) {
+  var env = require('./env');
   var core = require('./core');
   var fst = require('./fs-tools');
 
@@ -14,8 +15,8 @@ define(function (require, exports, module) {
   var root = Path.resolve(__dirname + '/..');
 
   var server = http.createServer(function (req, res) {
+    var path = parseurl(req).pathname;
     core.Fiber(function () {
-      var path = parseurl(req).pathname;
 
       var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
       if (! (m && compileTemplate(req, res, m[2], root+m[1])))
@@ -26,7 +27,13 @@ define(function (require, exports, module) {
     }).run();
 
     function sendDefault(err) {
-      send(req, '/demo-index.html', {root: root})
+      if (err && err.status === 404) {
+        if (path.match(/\.js$/)) {
+          error(err);
+          return;
+        }
+      }
+      send(req, '/'+env.mode+'-index.html', {root: root})
         .on('error', error)
         .pipe(res);
     }

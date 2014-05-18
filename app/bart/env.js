@@ -114,6 +114,7 @@
       insertDependency: insertDependency,
       loaded: loaded,
       discardIncompleteLoads: discardIncompleteLoads,
+      mode: module.config().mode,
 
       /**
        * Converts path to related build path of compiled resource.
