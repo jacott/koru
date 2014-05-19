@@ -38,6 +38,30 @@ define(function(require, exports, module) {
       return obj;
     },
 
+    /**
+     * includesAttributes will check each key in attrs against the
+     * list of docs. The first docs to have the key will be used in
+     * the equality check. In this changes can be tested by passing
+     * the arguments: includesAttributes(attrs, changes, doc)
+     */
+    includesAttributes: function (attrs/*, docs */) {
+      for(var key in attrs) {
+        var match = false;
+        for(var i = 1; i < arguments.length; ++i) {
+          var doc = arguments[i];
+          if (key in doc) {
+            if (doc[key] != attrs[key])
+              return false;
+            match = true;
+            break;
+          }
+        }
+        if (! match) return false;
+      }
+
+      return true;
+    },
+
     extractError: function (ex) {
       var st = stacktrace(ex);
       return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
@@ -46,6 +70,13 @@ define(function(require, exports, module) {
 
     slice: function (list, from, to) {
       return Array.prototype.slice.call(list, from, to);
+    },
+
+    mapField: function (list, fieldName) {
+      fieldName = fieldName || '_id';
+      return list && list.map(function (doc) {
+        return doc[fieldName];
+      });
     },
 
     /** Does not deep copy functions */

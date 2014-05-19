@@ -38,7 +38,7 @@ define(function(require, exports, module) {
           this.forEach(function (doc) {
             ++count;
             delete docs[doc._id];
-            model.notify(doc, 'remove');
+            model.notify(null, doc);
           });
           return count;
         },

@@ -41,12 +41,30 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.equals(changes, {a: 1, b: 2, d: undefined});
     },
 
+    "test includesAttributes": function () {
+      var changes = {b: '2'};
+      var doc = {a: '1', b: '3'};
+
+      assert.isTrue(util.includesAttributes({a: 1}, changes, doc, null));
+      assert.isTrue(util.includesAttributes({a: 1, b: '2'}, changes, doc, null));
+      assert.isFalse(util.includesAttributes({a: 1, b: '3'}, changes, doc, null));
+      assert.isFalse(util.includesAttributes({a: 2, b: '2'}, changes, doc, null));
+    },
+
     "test regexEscape": function () {
       assert.same(util.regexEscape('ab[12]\\w.*?\\b()'), 'ab\\[12\\]\\\\w\\.\\*\\?\\\\b\\(\\)');
     },
 
     "test newEscRegex": function () {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
+    },
+
+    "test mapField": function () {
+      assert.same(util.mapField(null), null);
+
+      assert.equals(util.mapField([]), []);
+      assert.equals(util.mapField([{_id: 1}, {_id: 2}]), [1, 2]);
+      assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
     },
 
     "test deepCopy": function () {

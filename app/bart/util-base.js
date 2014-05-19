@@ -53,6 +53,7 @@
     case 'function':
       return 'function ' + o.name;
     case 'object':
+      if (o === null) return 'null';
       if (o.hasOwnProperty('outerHTML'))
         return o.outerHTML;
       if (o instanceof Array) {

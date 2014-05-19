@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var util = core.util;
   var Random = require('../random');
   var session = require('../session/client-main');
+  var clientIndex = require('./client-index');
 
   var env = {
     $save: function(force) {
@@ -34,16 +35,12 @@ define(function(require, exports, module) {
           BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
 
           if(doc) {
-            doc.changes = changes;
-            _support.performUpdate(doc);
+            _support.performUpdate(doc, changes);
           } else {
             BaseModel._addUserIds(changes, model.userIds, this.userId);
             BaseModel._updateTimestamps(changes, model.createTimestamps, now);
             changes._id = id;
-            doc = new model();
-            doc.attributes = doc.changes = changes;
-
-            _support.performInsert(doc, changes);
+            _support.performInsert(new model(changes));
           }
         } catch(e) {
           throw e;
@@ -61,10 +58,14 @@ define(function(require, exports, module) {
       });
     },
 
+    setupModel: function (model) {
+      clientIndex(model);
+    },
+
     insert: function (doc) {
       var model = doc.constructor;
       model.docs[doc._id] = doc;
-      model.notify(doc, 'insert');
+      model.notify(doc, null);
     },
   };
 
@@ -73,13 +74,17 @@ define(function(require, exports, module) {
 
     if(_id == null) {
       _id = (doc.changes && doc.changes._id) || Random.id();
-      session.rpc("save", doc.constructor.modelName, _id, util.extend({},doc.changes),
+      session.rpc("save", doc.constructor.modelName, _id,
+                  doc.changes,
                   core.error);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
       // only call if at least one change
-      // copy changes in case they are modified
-      session.rpc("save", doc.constructor.modelName, doc._id, util.extend({},doc.changes), core.error);
+      var changes = doc.changes;
+      doc.changes = {}; // reset changes here for callbacks
+      session.rpc("save", doc.constructor.modelName, doc._id,
+                  changes,
+                  core.error);
       break;
     }
 

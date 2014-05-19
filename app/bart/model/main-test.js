@@ -80,16 +80,12 @@ isClient && define(function (require, exports, module) {
         v.tc = v.TestModel.create({name: 'foo'});
 
         v.obs = {};
-        v.TestModel.afterCreate(v.afterCreate = obCalled);
-        v.TestModel.afterUpdate(v.afterUpdate = obCalled);
-        v.TestModel.afterSave(v.afterSave = obCalled);
         v.TestModel.beforeCreate(v.beforeCreate = obCalled);
         v.TestModel.beforeUpdate(v.beforeUpdate = obCalled);
         v.TestModel.beforeSave(v.beforeSave = obCalled);
-        v.TestModel.afterRemove(v.afterRemove = obCalled);
 
-        function obCalled(doc, type) {
-          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
+        function obCalled(doc, changes, type) {
+          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, changes)]);
         }
       },
 
@@ -98,18 +94,16 @@ isClient && define(function (require, exports, module) {
         test.onEnd(function () {och.stop()});
         v.tc.$remove();
 
-        assert.calledOnceWith(v.onChange, sinon.match(function (doc) {
-          return doc.attributes === v.tc.attributes;
-        }), 'remove');
-
-        assert.equals(v.obs.afterRemove, [[{name: 'foo', _id: v.tc._id}, {}]]);
+        assert.calledOnceWith(v.onChange, null, sinon.match(function (doc) {
+          return doc && doc.attributes === v.tc.attributes;
+        }));
       },
 
       "test update calls": function () {
-        var och = v.TestModel.onChange(function (doc, changes) {
+        var och = v.TestModel.onChange(function (doc, was) {
           refute(v.docAttrs);
           v.docAttrs = util.extend({}, doc.attributes);
-          v.docChanges = util.extend({}, doc.changes);
+          v.docChanges = util.extend({}, was);
         });
         test.onEnd(function () {och.stop()});
 
@@ -120,13 +114,9 @@ isClient && define(function (require, exports, module) {
         assert.equals(v.docChanges, {name: 'foo'});
 
         assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
-        assert.equals(v.obs.afterUpdate, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
-
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
-        assert.equals(v.obs.afterSave, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
 
         refute(v.obs.beforeCreate);
-        refute(v.obs.afterCreate);
       },
 
       "test create calls": function () {
@@ -136,16 +126,12 @@ isClient && define(function (require, exports, module) {
         v.tc = v.TestModel.create({name: 'foo'});
         assert.calledOnceWith(v.onChange, sinon.match(function (doc) {
           return doc.attributes === v.tc.attributes;
-        }), 'insert');
+        }), null);
 
-        assert.equals(v.obs.beforeCreate, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
-        assert.equals(v.obs.afterCreate, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
-
-        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
-        assert.equals(v.obs.afterSave, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.beforeCreate, [[{name: 'foo', _id: v.tc._id}, {}]]);
+        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {}]]);
 
         refute(v.obs.beforeUpdate);
-        refute(v.obs.afterUpdate);
       },
     },
 
@@ -494,30 +480,6 @@ isClient && define(function (require, exports, module) {
           refute.called(session.rpc);
       },
 
-      'test afterCreate callback': function () {
-        var afterCreateStub = this.stub();
-        v.TestModel.afterCreate(afterCreateStub);
-
-        var attrs = {name: 'testing'};
-
-        var doc = v.TestModel.create(attrs);
-
-
-        refute.same(doc.changes,doc.attributes);
-        refute.same(doc.changes,attrs);
-
-        attrs._id = doc._id;
-        assert.calledOnce(afterCreateStub);
-
-        assert.equals(afterCreateStub.getCall(0).args[0].attributes,doc.attributes);
-
-        doc.name = 'new';
-        doc.$save();
-
-        assert.calledOnce(afterCreateStub);
-      },
-
-
       'test build': function () {
         var doc = v.TestModel.create();
         var copy = v.TestModel.build(doc.attributes);
@@ -542,6 +504,35 @@ isClient && define(function (require, exports, module) {
 
         assert.same(sut.notdefined,'set');
 
+      },
+
+      "test diffToNewOld": function () {
+        v.TestModel.defineFields({a: 'text', b: 'text'});
+        v.diff = function (nd, od, params) {
+          nd = nd && new v.TestModel(util.extend({_id: '123'}, nd));
+          od = nd ? od : od && new v.TestModel(util.extend({_id: '123'}, od));
+
+          return v.TestModel.diffToNewOld(nd, od, params).map(function (doc) {
+            return doc && {a: doc.a, b: doc.b};
+          });
+        };
+        assert.equals(v.diff(null, null), [null, null]);
+        assert.equals(v.diff({a: '1', b: 'b'}, null), [{a: '1', b: 'b'}, null]);
+        assert.equals(v.diff(null, {a: '1', b: 'b'}), [null, {a: '1', b: 'b'}]);
+        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}), [{a: '1', b: 'b'}, {a: '2', b: 'b'}]);
+
+
+        assert.equals(v.diff(null, null, {a: '1'}), [null, null]);
+        assert.equals(v.diff({a: '1', b: 'b'}, null, {a: '1'}), [{a: '1', b: 'b'}, null]);
+        assert.equals(v.diff(null, {a: '1', b: 'b'}, {a: '1'}), [null, {a: '1', b: 'b'}]);
+        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}, {a: '1'}), [{a: '1', b: 'b'}, null]);
+
+
+        assert.equals(v.diff({a: '2', b: 'b'}, null, {a: '1'}), [null, null]);
+        assert.equals(v.diff(null, {a: '2', b: 'b'}, {a: '1'}), [null, null]);
+        assert.equals(v.diff({a: '2', b: 'b'}, {a: '1'}, {a: '1'}), [null, {a: '1', b: 'b'}]);
+
+        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}, {b: 'b'}), [{a: '1', b: 'b'}, {a: '2', b: 'b'}]);
       },
 
     },

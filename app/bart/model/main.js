@@ -10,11 +10,13 @@ define(function(require, exports, module) {
 
   var modelObservers = {};
 
-  function BaseModel(attributes) {
+  var emptyObject = {};
+
+  function BaseModel(attributes, changes) {
     if(attributes.hasOwnProperty('_id')) {
       // existing record
       this.attributes = attributes;
-      this.changes = {};
+      this.changes = changes || {};
     } else {
       // new record
       this.attributes = {};
@@ -75,8 +77,12 @@ define(function(require, exports, module) {
       return this.changes[field] = util.deepCopy(this[field]);
     },
 
+    $update: function (changes) {
+      return new Query(this.constructor).onId(this._id).update(changes);
+    },
+
     $remove: function () {
-      return _support.performRemove(this);
+      return new Query(this.constructor).onId(this._id).remove();
     },
 
     $reload: function () {
@@ -110,11 +116,11 @@ define(function(require, exports, module) {
     },
   };
 
-  function callObserver(type, doc) {
+  function callObserver(type, doc, changes) {
     var observers = modelObservers[doc.constructor.modelName+'.'+type];
     if (observers) {
       for(var i=0;i < observers.length;++i) {
-        observers[i].call(doc, doc, type);
+        observers[i].call(doc, doc, changes, type);
       }
     }
   }
@@ -162,12 +168,22 @@ define(function(require, exports, module) {
     },
 
     beforeCreate: beforeCreate,
-    afterCreate: afterCreate,
     beforeUpdate: beforeUpdate,
-    afterUpdate: afterUpdate,
     beforeSave: beforeSave,
-    afterSave: afterSave,
-    afterRemove: afterRemove,
+
+    diffToNewOld: function (newDoc, oldDoc, params) {
+      if (oldDoc) {
+        if (params && ! util.includesAttributes(params, oldDoc, newDoc || emptyObject))
+          oldDoc = null;
+        else if (newDoc)
+          oldDoc = new this(newDoc.attributes, oldDoc);
+      }
+
+      if (newDoc && params && ! util.includesAttributes(params, newDoc))
+        newDoc = null;
+
+      return [newDoc, oldDoc];
+    },
 
     /**
      * Model extension methods
@@ -232,41 +248,26 @@ define(function(require, exports, module) {
       session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
     },
 
-    performRemove: function (doc) {
-      var model = doc.constructor;
-
-      var result = new Query(model).onId(doc._id).remove();
-
-      callObserver('afterRemove', doc);
-      return result;
-    },
-
     performInsert: function (doc) {
       var model = doc.constructor;
 
       callObserver('beforeCreate', doc);
       callObserver('beforeSave', doc);
-      model.hasVersioning && (doc.changes._version = 1);
+      model.hasVersioning && (doc.attributes._version = 1);
 
       env.insert(doc);
-      callObserver('afterCreate', doc);
-      callObserver('afterSave', doc);
     },
 
-    performUpdate: function (doc) {
+    performUpdate: function (doc, changes) {
       var model = doc.constructor;
 
-      callObserver('beforeUpdate', doc);
-      callObserver('beforeSave', doc);
-
+      callObserver('beforeUpdate', doc, changes);
+      callObserver('beforeSave', doc, changes);
       var st = new Query(model).onId(doc._id);
 
       model.hasVersioning && st.inc("_version", 1);
 
-      st.update(doc.changes);
-
-      callObserver('afterUpdate', doc);
-      callObserver('afterSave', doc);
+      st.update(changes);
     },
   };
 
@@ -278,8 +279,8 @@ define(function(require, exports, module) {
      */
     define: function (name, properties, options) {
       properties  = properties || {};
-      var model = function (attrs) {
-        BaseModel.call(this, attrs||{});
+      var model = function (attrs, changes) {
+        BaseModel.call(this, attrs||{}, changes);
       };
 
       model.prototype = Object.create(this.prototype, {
@@ -295,6 +296,7 @@ define(function(require, exports, module) {
       model._fieldValidators = {};
       model._defaults = {};
       makeSubject(model);
+      env.setupModel(model);
 
       model.fieldTypeMap = {};
 
@@ -444,33 +446,13 @@ define(function(require, exports, module) {
     return this;
   };
 
-  function afterCreate(callback) {
-    registerObserver(this.modelName+'.afterCreate', callback);
-    return this;
-  };
-
   function beforeUpdate(callback) {
     registerObserver(this.modelName+'.beforeUpdate', callback);
     return this;
   };
 
-  function afterUpdate(callback) {
-    registerObserver(this.modelName+'.afterUpdate', callback);
-    return this;
-  };
-
   function beforeSave(callback) {
     registerObserver(this.modelName+'.beforeSave', callback);
-    return this;
-  };
-
-  function afterSave(callback) {
-    registerObserver(this.modelName+'.afterSave', callback);
-    return this;
-  };
-
-  function afterRemove(callback) {
-    registerObserver(this.modelName+'.afterRemove', callback);
     return this;
   };
 
