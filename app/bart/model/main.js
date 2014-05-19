@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   var session = require('../env!../session/main'); // client-main or server-main
   var Random = require('../random');
   var Query = require('./query');
+  var makeSubject = require('../make-subject');
 
   var modelObservers = {};
 
@@ -75,11 +76,7 @@ define(function(require, exports, module) {
     },
 
     $remove: function () {
-      var result = this.constructor.docs[this._id];
-      if (! result) return 0;
-      delete this.constructor.docs[this._id];
-      callObserver('afterRemove', this);
-      return 1;
+      return _support.performRemove(this);
     },
 
     $reload: function () {
@@ -147,8 +144,6 @@ define(function(require, exports, module) {
       return this.docs[id];
     },
 
-    defineFields: defineFields,
-
     isLocked: function(id) {
       return (this._locks || (this._locks = {})).hasOwnProperty(id);
     },
@@ -165,6 +160,20 @@ define(function(require, exports, module) {
         }
       }
     },
+
+    beforeCreate: beforeCreate,
+    afterCreate: afterCreate,
+    beforeUpdate: beforeUpdate,
+    afterUpdate: afterUpdate,
+    beforeSave: beforeSave,
+    afterSave: afterSave,
+    afterRemove: afterRemove,
+
+    /**
+     * Model extension methods
+     */
+
+    defineFields: defineFields,
 
     addVersioning: function() {
       var model = this,
@@ -223,6 +232,15 @@ define(function(require, exports, module) {
       session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
     },
 
+    performRemove: function (doc) {
+      var model = doc.constructor;
+
+      var result = new Query(model).onId(doc._id).remove();
+
+      callObserver('afterRemove', doc);
+      return result;
+    },
+
     performInsert: function (doc) {
       var model = doc.constructor;
 
@@ -238,11 +256,8 @@ define(function(require, exports, module) {
     performUpdate: function (doc) {
       var model = doc.constructor;
 
-      var tdoc = new model(util.extend({}, doc.attributes));
-      tdoc.changes = doc.changes;
-
-      callObserver('beforeUpdate', tdoc);
-      callObserver('beforeSave', tdoc);
+      callObserver('beforeUpdate', doc);
+      callObserver('beforeSave', doc);
 
       var st = new Query(model).onId(doc._id);
 
@@ -250,14 +265,17 @@ define(function(require, exports, module) {
 
       st.update(doc.changes);
 
-      callObserver('afterUpdate', tdoc);
-      callObserver('afterSave', tdoc);
+      callObserver('afterUpdate', doc);
+      callObserver('afterSave', doc);
     },
   };
 
   env.init(BaseModel, _support);
 
   util.extend(BaseModel, {
+    /**
+     * Define a new model.
+     */
     define: function (name, properties, options) {
       properties  = properties || {};
       var model = function (attrs) {
@@ -276,14 +294,8 @@ define(function(require, exports, module) {
       model.docs = {};
       model._fieldValidators = {};
       model._defaults = {};
+      makeSubject(model);
 
-      model.beforeCreate = beforeCreate;
-      model.afterCreate = afterCreate;
-      model.beforeUpdate = beforeUpdate;
-      model.afterUpdate = afterUpdate;
-      model.beforeSave = beforeSave;
-      model.afterSave = afterSave;
-      model.afterRemove = afterRemove;
       model.fieldTypeMap = {};
 
       return BaseModel[name] = model;

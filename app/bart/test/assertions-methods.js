@@ -363,6 +363,7 @@ define(['./core', './assertions'], function (geddon) {
 
   ga.add('calledOnceWith', {
     assert:  function (spy /* arguments */) {
+      checkSpy(spy);
       var args = this.args = Array.prototype.slice.call(arguments, 1);
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
@@ -377,6 +378,7 @@ define(['./core', './assertions'], function (geddon) {
 
   ga.add('threw', {
     assert:  function (spy, something) {
+      checkSpy(spy);
       return spy.threw(something);
     },
 
@@ -386,6 +388,7 @@ define(['./core', './assertions'], function (geddon) {
   function delegate(meth) {
     ga.add(meth, {
       assert:  function (spy) {
+        checkSpy(spy);
         var args = this.args = Array.prototype.slice.call(arguments, 1);
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
@@ -403,6 +406,7 @@ define(['./core', './assertions'], function (geddon) {
     var meth = 'called' + nth;
     ga.add(meth, {
       assert:  function (spy) {
+        checkSpy(spy);
         var result = spy[meth];
         if (this._asserting === ! result) {
           this.calls = spy.printf("%C");
@@ -418,4 +422,8 @@ define(['./core', './assertions'], function (geddon) {
     return actual > expected-delta && actual < expected+delta;
   }
 
+  function checkSpy(spy) {
+    (spy && spy.hasOwnProperty('called')) ||
+      geddon.fail("Argument is not a spy/stub");
+  }
 });

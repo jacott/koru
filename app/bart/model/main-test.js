@@ -79,111 +79,73 @@ isClient && define(function (require, exports, module) {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
         v.tc = v.TestModel.create({name: 'foo'});
 
-        v.TestModel.afterCreate(v.afterCreate = test.stub());
-        v.TestModel.afterUpdate(v.afterUpdate = test.stub());
-        v.TestModel.afterSave(v.afterSave = test.stub());
-        v.TestModel.beforeCreate(v.beforeCreate = test.stub());
-        v.TestModel.beforeUpdate(v.beforeUpdate = test.stub());
-        v.TestModel.beforeSave(v.beforeSave = test.stub());
-        v.TestModel.afterRemove(v.afterRemove = test.stub());
+        v.obs = {};
+        v.TestModel.afterCreate(v.afterCreate = obCalled);
+        v.TestModel.afterUpdate(v.afterUpdate = obCalled);
+        v.TestModel.afterSave(v.afterSave = obCalled);
+        v.TestModel.beforeCreate(v.beforeCreate = obCalled);
+        v.TestModel.beforeUpdate(v.beforeUpdate = obCalled);
+        v.TestModel.beforeSave(v.beforeSave = obCalled);
+        v.TestModel.afterRemove(v.afterRemove = obCalled);
+
+        function obCalled(doc, type) {
+          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
+        }
       },
 
       "test remove calls": function () {
-        v.afterRemove.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          v.afterRemoveId = doc._id;
-        }));
-
+        var och = v.TestModel.onChange(v.onChange = test.stub());
+        test.onEnd(function () {och.stop()});
         v.tc.$remove();
 
-        assert.calledOnce(v.afterRemove);
-        assert.same(v.tc._id, v.afterRemoveId);
+        assert.calledOnceWith(v.onChange, sinon.match(function (doc) {
+          return doc.attributes === v.tc.attributes;
+        }), 'remove');
+
+        assert.equals(v.obs.afterRemove, [[{name: 'foo', _id: v.tc._id}, {}]]);
       },
 
       "test update calls": function () {
-        v.beforeSave.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'bar'});
-          v.beforeSaveId = doc._id;
-        }));
-
-        v.afterSave.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'bar'});
-          v.afterSaveId = doc._id;
-        }));
-
-        v.beforeUpdate.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'bar'});
-          v.beforeUpdateId = doc._id;
-        }));
-
-        v.afterUpdate.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'bar'});
-          v.afterUpdateId = doc._id;
-        }));
+        var och = v.TestModel.onChange(function (doc, changes) {
+          refute(v.docAttrs);
+          v.docAttrs = util.extend({}, doc.attributes);
+          v.docChanges = util.extend({}, doc.changes);
+        });
+        test.onEnd(function () {och.stop()});
 
         v.tc.name = 'bar';
         v.tc.$save();
 
-        assert.calledOnce(v.beforeUpdate);
-        assert.same(v.tc._id, v.beforeUpdateId);
+        assert.equals(v.docAttrs, {name: 'bar', _id: v.tc._id});
+        assert.equals(v.docChanges, {name: 'foo'});
 
-        assert.calledOnce(v.afterUpdate);
-        assert(v.tc._id, v.afterUpdateId);
+        assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
+        assert.equals(v.obs.afterUpdate, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
 
-        assert.calledOnce(v.beforeSave);
-        assert.same(v.tc._id, v.beforeSaveId);
+        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
+        assert.equals(v.obs.afterSave, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
 
-        assert.calledOnce(v.afterSave);
-        assert(v.tc._id, v.afterSaveId);
-
-        refute.called(v.afterCreate);
-        refute.called(v.beforeCreate);
+        refute(v.obs.beforeCreate);
+        refute(v.obs.afterCreate);
       },
 
       "test create calls": function () {
-        v.beforeSave.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'foo', _id: doc._id});
-          v.beforeSaveId = doc._id;
-        }));
-
-        v.afterSave.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'foo', _id: doc._id});
-          v.afterSaveId = doc._id;
-        }));
-
-        v.beforeCreate.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'foo', _id: doc._id});
-          v.beforeCreateId = doc._id;
-        }));
-
-        v.afterCreate.withArgs(sinon.match(function (doc) {
-          assert.equals(doc.attributes, {name: 'foo', _id: doc._id});
-          assert.equals(doc.changes, {name: 'foo', _id: doc._id});
-          v.afterCreateId = doc._id;
-        }));
+        var och = v.TestModel.onChange(v.onChange = test.stub());
+        test.onEnd(function () {och.stop()});
 
         v.tc = v.TestModel.create({name: 'foo'});
-        assert.calledOnce(v.beforeCreate);
-        assert.same(v.tc._id, v.beforeCreateId);
+        assert.calledOnceWith(v.onChange, sinon.match(function (doc) {
+          return doc.attributes === v.tc.attributes;
+        }), 'insert');
 
-        assert.calledOnce(v.afterCreate);
-        assert(v.tc._id, v.afterCreateId);
+        assert.equals(v.obs.beforeCreate, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.afterCreate, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
 
-        assert.calledOnce(v.beforeSave);
-        assert.same(v.tc._id, v.beforeSaveId);
+        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.afterSave, [[{name: 'foo', _id: v.tc._id}, {name: 'foo', _id: v.tc._id}]]);
 
-        assert.calledOnce(v.afterSave);
-        assert(v.tc._id, v.afterSaveId);
-
-        refute.called(v.afterUpdate);
-        refute.called(v.beforeUpdate);
+        refute(v.obs.beforeUpdate);
+        refute(v.obs.afterUpdate);
       },
     },
 
@@ -526,7 +488,8 @@ isClient && define(function (require, exports, module) {
 
 
         if(isClient)
-          assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id,{name: "new"});
+          // name is old because changes have been swapped with attributes
+          assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "old"});
         else
           refute.called(session.rpc);
       },

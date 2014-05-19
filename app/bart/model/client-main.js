@@ -62,7 +62,9 @@ define(function(require, exports, module) {
     },
 
     insert: function (doc) {
-      doc.constructor.docs[doc._id] = doc;
+      var model = doc.constructor;
+      model.docs[doc._id] = doc;
+      model.notify(doc, 'insert');
     },
   };
 

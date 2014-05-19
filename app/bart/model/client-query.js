@@ -33,10 +33,12 @@ define(function(require, exports, module) {
 
         remove: function () {
           var count = 0;
-          var docs = this.model.docs;
+          var model = this.model;
+          var docs = model.docs;
           this.forEach(function (doc) {
             ++count;
             delete docs[doc._id];
+            model.notify(doc, 'remove');
           });
           return count;
         },
@@ -53,7 +55,8 @@ define(function(require, exports, module) {
         update: function (changes) {
           var self = this;
           var count = 0;
-          var docs = self.model.docs;
+          var model = self.model;
+          var docs = model.docs;
           self.forEach(function (doc) {
             ++count;
             var attrs = doc.attributes;
@@ -62,7 +65,8 @@ define(function(require, exports, module) {
               attrs[field] += self._incs[field];
             }
 
-            util.extendWithDelete(attrs, changes);
+            util.swapWithDelete(attrs, changes);
+            model.notify(doc, changes);
           });
           return count;
         },
