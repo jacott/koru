@@ -220,8 +220,7 @@ define(['bart/core'], function(core) {
     },
 
     newTemplate: function (options) {
-      addTemplates(Dom, options);
-      return this;
+      return addTemplates(Dom, options);
     },
 
     lookupTemplate: function (name) {
@@ -499,10 +498,11 @@ define(['bart/core'], function(core) {
     parent[name] = parent = (parent[name] || new DomTemplate(name, parent)).$initOptions(options);
     var nested = options.nested;
 
-    if (! options.nested) return;
-    for(var i=0; i < nested.length; ++i) {
+    if (options.nested) for(var i=0; i < nested.length; ++i) {
       addTemplates(parent, nested[i]);
     }
+
+    return parent;
   }
 
   function DomCtx(template, parentCtx, data) {

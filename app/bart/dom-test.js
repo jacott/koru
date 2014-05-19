@@ -432,7 +432,7 @@ isClient && define(['module', 'bart/test/sinon', 'bart/test', './dom'], function
 
     "newTemplate": {
       "test simple": function () {
-        assert.same(Dom.newTemplate({name: "Foo", nodes: "nodes"}), Dom);
+        assert.same(Dom.newTemplate({name: "Foo", nodes: "nodes"}), Dom.Foo);
 
         var tpl = Dom.Foo;
         assert.same(tpl.name, "Foo");
