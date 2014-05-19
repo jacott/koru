@@ -62,7 +62,29 @@
   <template name="Lists">
     <div id="Lists">
       <h3>Todo Lists</h3>
+      <div id="lists">
+        {{each "lists" template="Row"}}
+        <template name="Row">
+          <div class="list" {{selected}}>
+            {{editing}}
+            <template name="Edit">
+              <div class="edit">
+                <input class="list-name-input" id="list-name-input" type="text" value="{{name}}">
+              </div>
+            </template>
+            <template name="Display">
+              <div class="display">
+                <a class="list-name" {{name_class}} href="{{href}}">
+                  {{name}}
+                </a>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+      <div id="createList">
+        <input type="text" id="new-list" placeholder="New list">
+      </div>
     </div>
   </template>
-
 </template>

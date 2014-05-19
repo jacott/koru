@@ -1,5 +1,7 @@
 define(function(require, exports, module) {
   var core = require('bart/core');
+  require('bart/ui/each');
+  var Model = require('bart/model');
 
   core.onunload(module, unload);
 
@@ -7,6 +9,21 @@ define(function(require, exports, module) {
   Dom.newTemplate(require('bart/html!ui/todos'));
 
   var Tpl = Dom.Todos;
+
+  Tpl.TagFilter.$helpers({
+    tags: function () {
+
+    },
+  });
+
+  Tpl.Lists.$helpers({
+    lists: function (callback) {
+      callback.render({
+        model: Model.List,
+      });
+    },
+  });
+
 
   document.body.appendChild(Tpl.TagFilter.$autoRender({}));
 
