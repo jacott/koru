@@ -32,6 +32,15 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
+    "test swapWithDelete": function () {
+      var orig = {a: 1, b: 2, c: 3};
+      var changes = {a: 2, b: undefined, d: 4};
+
+      assert.same(util.swapWithDelete(orig, changes), orig);
+      assert.equals(orig, {a:2, c: 3, d: 4});
+      assert.equals(changes, {a: 1, b: 2, d: undefined});
+    },
+
     "test regexEscape": function () {
       assert.same(util.regexEscape('ab[12]\\w.*?\\b()'), 'ab\\[12\\]\\\\w\\.\\*\\?\\\\b\\(\\)');
     },

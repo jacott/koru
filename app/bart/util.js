@@ -2,23 +2,38 @@ define(function(require, exports, module) {
   var util = require('./util-base');
   var stacktrace = require('./stacktrace');
 
+  var valueUndefined = {value: undefined};
+
   util.extend(util, {
     reverseExtend: function (obj, properties, exclude) {
       for(var prop in properties) {
         if (exclude && prop in exclude) continue;
         if (! (prop in obj))
-          Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+          Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties, prop));
       }
       return obj;
     },
 
     extendWithDelete: function(obj, properties) {
       for(var prop in properties) {
-        var value = Object.getOwnPropertyDescriptor(properties,prop);
+        var value = Object.getOwnPropertyDescriptor(properties, prop);
         if (value.value === undefined)
           delete obj[prop];
         else
           Object.defineProperty(obj,prop, value);
+      }
+      return obj;
+    },
+
+    swapWithDelete: function(obj, properties) {
+      for(var prop in properties) {
+        var nv = Object.getOwnPropertyDescriptor(properties, prop);
+        var ov = Object.getOwnPropertyDescriptor(obj, prop);
+        if (nv.value === undefined)
+          delete obj[prop];
+        else
+          Object.defineProperty(obj, prop, nv);
+        Object.defineProperty(properties, prop, ov ? ov : valueUndefined);
       }
       return obj;
     },
