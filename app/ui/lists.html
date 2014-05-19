@@ -1,0 +1,22 @@
+<template name="Lists">
+  <div id="lists">
+    {{each "lists" template="Row"}}
+    <template name="Row">
+      <div class="list" {{selected}}>
+        {{> Display}}
+        <template name="Edit">
+          <div class="edit">
+            <input class="list-name-input" id="list-name-input" type="text" value="{{name}}">
+          </div>
+        </template>
+        <template name="Display">
+          <div class="display">
+            <a class="list-name" {{name_class}} href="{{href}}">
+              {{name}}
+            </a>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+</template>

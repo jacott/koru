@@ -1,42 +1,19 @@
 define(function(require, exports, module) {
-  var core = require('bart/core');
-  require('bart/ui/each');
-  var Model = require('bart/model');
-
-  core.onunload(module, unload);
-
   var Dom = require('bart/dom');
-  Dom.newTemplate(require('bart/html!ui/todos'));
+  var route = require('bart/ui/route');
+  var Lists = require('./lists');
+  var TagFilter = require('./tag-filter');
 
-  var Tpl = Dom.Todos;
+  return {
+    start: function () {
+      // we may be reloading so remove old elements
+      Dom.removeId('tag-filter');
+      Dom.removeId('lists');
 
-  Tpl.TagFilter.$helpers({
-    tags: function () {
+      document.getElementById('top-tag-filter').appendChild(TagFilter.$autoRender({}));
+      document.getElementById('side-pane').insertBefore(Lists.$autoRender({}), document.getElementById('createList'));
 
+      route.replacePath(window.location);
     },
-  });
-
-  Tpl.Lists.$helpers({
-    lists: function (callback) {
-      callback.render({
-        model: Model.List,
-      });
-    },
-  });
-
-
-  document.body.appendChild(Tpl.TagFilter.$autoRender({}));
-
-  document.body.appendChild(Tpl.$autoRender({}));
-
-  document.body.appendChild(Tpl.Lists.$autoRender({}));
-
-  function unload() {
-    Dom.removeId('main-pane');
-    Dom.removeId('top-tag-filter');
-    Dom.removeId('Lists');
-
-    // reload
-    require(['./todos'], function () {});
-  }
+  };
 });

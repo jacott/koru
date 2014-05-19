@@ -2,8 +2,9 @@ requirejs.config({
   packages: ['bart/model'],
 });
 
-define(['module', 'bart/env', 'bart/session/client-main', 'bootstrap'], function (module, env) {
-  env.onunload(module, 'reload');
+define(['module', 'bart/env', 'ui/todos', 'bart/session/client-main', 'bootstrap'], function (module, env, todos) {
+  // reload me if unloaded
+  env.onunload(module, function () {require([module.id], function () {})});
 
-  require(['ui/todos'], function() {});
+  todos.start();
 });
