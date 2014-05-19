@@ -117,7 +117,7 @@ define(function(require, exports, module) {
 
     var sortFunc = options.sort;
     if (typeof sortFunc === 'string')
-      sortFunc = Apputil.compareByField(sortFunc);
+      sortFunc = util.compareByField(sortFunc);
 
     if (callback._renderDestroy) {
       callback._renderDestroy();
@@ -140,11 +140,10 @@ define(function(require, exports, module) {
     results.sort(sortFunc)
       .forEach(function (doc) {callback(doc)});
 
-    callback._observeHandle = model.observe(function (doc, old) {
-      if (params) {
-        if (old && ! util.includesAttributes(params, old)) old = null;
-        if (doc && ! util.includesAttributes(params, doc)) doc = null;
-      }
+    callback._observeHandle = model.onChange(function (doc, old) {
+      var docs = model.diffToNewOld(doc, old, params);
+      doc = docs[0];
+      old = docs[1];
 
       if (filter) {
         if (old && ! filter(old)) old = null;
@@ -152,7 +151,7 @@ define(function(require, exports, module) {
       }
 
       if (doc || old) {
-        callback(doc && new model(doc), old && new model(old), sortFunc);
+        callback(doc, old, sortFunc);
         changed && changed();
       }
     });
