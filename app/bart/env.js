@@ -115,6 +115,12 @@
       loaded: loaded,
       discardIncompleteLoads: discardIncompleteLoads,
       mode: module.config().mode,
+      userId: function () {
+        return util.thread.userId;
+      },
+      getLocation: function () {
+        return window.location;
+      },
 
       /**
        * Converts path to related build path of compiled resource.
