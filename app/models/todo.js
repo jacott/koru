@@ -8,8 +8,9 @@ define(function(require, exports, module) {
   model.defineFields({
     list_id: 'belongs_to',
     text: 'text',
-    timestamp: 'timestamp',
+    timestamp: 'number',
     tags: 'has-many',
+    done: 'boolean',
   });
 
   return model;

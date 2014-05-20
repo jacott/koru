@@ -2,7 +2,7 @@
   <div id="lists">
     {{each "lists" template="Row"}}
     <template name="Row">
-      <div class="list" {{selected}}>
+      <div id="{{listId}}" class="list">
         {{> Display}}
         <template name="Edit">
           <div class="edit">
@@ -19,4 +19,7 @@
       </div>
     </template>
   </div>
+  <template name="NewList">
+    <input type="text" id="new-list" placeholder="New list">
+  </template>
 </template>

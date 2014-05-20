@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var route = require('bart/ui/route');
   var Lists = require('./lists');
   var TagFilter = require('./tag-filter');
+  require('./item-list');
 
   return {
     start: function () {
