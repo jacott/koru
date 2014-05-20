@@ -17,6 +17,7 @@ define(function (require, exports, module) {
   var server = http.createServer(function (req, res) {
     var path = parseurl(req).pathname;
     core.Fiber(function () {
+      try {
 
       var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
       if (! (m && compileTemplate(req, res, m[2], root+m[1])))
@@ -24,6 +25,9 @@ define(function (require, exports, module) {
         .on('error', sendDefault)
         .on('directory', sendDefault)
         .pipe(res);
+      } catch(ex) {
+        core.error(core.util.extractError(ex));
+      }
     }).run();
 
     function sendDefault(err) {
@@ -67,7 +71,7 @@ define(function (require, exports, module) {
 
     if (!jsSt) fst.mkdir(paths[0]+'.build');
 
-    if (! (srcSt || jsSt)) return ! notFound(res); // not found
+    if (! srcSt) return ! notFound(res); // not found
 
     if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
       compiler(type, path, outPath);
