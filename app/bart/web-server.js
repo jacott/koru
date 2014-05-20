@@ -37,7 +37,7 @@ define(function (require, exports, module) {
           return;
         }
       }
-      send(req, '/'+env.mode+'-index.html', {root: root})
+      send(req, '/'+env.mode+'/index.html', {root: root})
         .on('error', error)
         .pipe(res);
     }

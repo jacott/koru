@@ -9,4 +9,4 @@ cd `dirname "$0"`/../app
 type=${1:-demo}
 shift
 
-exec node ${type}-server.js "$@"
+exec node ${type}/server.js "$@"

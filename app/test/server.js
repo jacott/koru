@@ -6,9 +6,11 @@ requirejs.config({
   //Useful if building a library that will
   //be used in node but does not require the
   //use of node outside
-  baseUrl: __dirname,
+  baseUrl: __dirname + '/..',
 
-  config: {"bart/env": {mode: 'test'}},
+  config: {
+    "bart/env": {mode: 'test'}
+  },
 
   packages: [
     "bart/test",

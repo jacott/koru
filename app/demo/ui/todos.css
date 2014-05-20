@@ -202,7 +202,7 @@ h3 {
 }
 
 #item-list .todo:hover .destroy {
-    background: url('/destroy.png') no-repeat 0 0;
+    background: url('/demo/destroy.png') no-repeat 0 0;
 }
 
 #item-list .todo .destroy:hover {
@@ -229,7 +229,7 @@ h3 {
     right: 4px;
     bottom: 0;
     width: 16px;
-    background: url("/close_16.png") no-repeat 0 center;
+    background: url("/demo/close_16.png") no-repeat 0 center;
 }
 
 #item-list .todo .item-tags .tag .remove:hover {

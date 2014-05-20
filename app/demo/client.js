@@ -1,5 +1,11 @@
 requirejs.config({
   packages: ['bart/model'],
+
+  baseUrl: "/demo",
+
+  paths: {
+    bart: '../bart',
+  },
 });
 
 define([

@@ -8,11 +8,17 @@ requirejs.config({
   //use of node outside
   baseUrl: __dirname,
 
-  config: {"bart/env": {mode: 'demo'}},
+  config: {
+    "bart/env": {mode: 'demo'},
+  },
 
   packages: [
     "bart/test",
   ],
+
+  paths: {
+    bart: '../bart',
+  },
 
   //Pass the top-level main.js/index.js require
   //function to requirejs so that node modules

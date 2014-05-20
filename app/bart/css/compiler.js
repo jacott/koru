@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   fw.listeners['less'] = compiler;
 
-  var topLen = require.toUrl("").length;
+  var topLen = Path.resolve(require.toUrl("")).length + 1;
 
   var queue = {};
   var sendPaths = {};
