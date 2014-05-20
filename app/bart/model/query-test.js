@@ -28,6 +28,10 @@ isClient && define(function (require, exports, module) {
       assert.equals(new Query(v.TestModel).fetch().sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
 
+    "test fetchOne": function () {
+      assert.equals(new Query(v.TestModel).where({name: 'foo'}).fetchOne(), v.foo);
+    },
+
     "test forEach": function () {
       var results = [];
       new Query(v.TestModel).forEach(function (doc) {

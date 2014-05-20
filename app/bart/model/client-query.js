@@ -12,6 +12,15 @@ define(function(require, exports, module) {
           return results;
         },
 
+        fetchOne: function () {
+          var result;
+          this.forEach(function (doc) {
+            result = doc;
+            return true;
+          });
+          return result;
+        },
+
         forEach: function (func) {
           var where = this._conditions;
           if (this.singleId) {
@@ -19,7 +28,8 @@ define(function(require, exports, module) {
             doc && func(doc);
           } else for(var id in this.model.docs) {
             var doc = this.findOne(id);
-            doc && func(doc);
+            if (doc && func(doc) === true)
+              break;
           }
         },
 
