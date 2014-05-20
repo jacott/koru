@@ -23,7 +23,8 @@
     "ws": "0.4.31",
     "send": "0.3.0",
     "parseurl": "1.0.1",
-    "less": "1.7.0"
+    "less": "1.7.0",
+    "mongodb": "1.4.4"
   },
   "devDependencies": {
     "htmlparser2": "3.7.1",
