@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Dom = require('../dom');
 
-  function AppRoute(path, template, parent, routeVar) {
+  function Route(path, template, parent, routeVar) {
     this.path = path || '';
     this.template = template;
     this.parent = parent;
@@ -11,10 +11,10 @@ define(function(require, exports, module) {
     this.routeVar = routeVar;
   };
 
-  AppRoute.history = window.history;
+  Route.history = window.history;
 
-  AppRoute.prototype = {
-    constructor: AppRoute,
+  Route.prototype = {
+    constructor: Route,
 
     addTemplate: function (template, options) {
       options = addCommon(this, template, options);
@@ -23,6 +23,12 @@ define(function(require, exports, module) {
 
       if (! ('onExit' in template))
         template.onExit = onExitFunc(template);
+    },
+
+    removeTemplate: function (template, options) {
+      var path = options.path;
+      if (path == null) path = templatePath(template);
+      delete this.routes[path];
     },
 
     addDialog: function (template, options) {
@@ -40,7 +46,7 @@ define(function(require, exports, module) {
       var path = templatePath(template);
       if (path in this.routes) throw new Error('Path already exists! ', path + " for template " + this.path);
 
-      return template.route = this.routes[path] = new AppRoute(path, template, this, routeVar);
+      return template.route = this.routes[path] = new Route(path, template, this, routeVar);
     },
 
     onBaseExit: function(page, location) {
@@ -79,8 +85,8 @@ define(function(require, exports, module) {
   var pageState = 'pushState';
   var excludes = {append: 1, href: 1, hash: 1, search: 1};
 
-  util.extend(AppRoute, {
-    root: new AppRoute(),
+  util.extend(Route, {
+    root: new Route(),
 
     _private: {
       get pageState() {return pageState},
@@ -115,10 +121,10 @@ define(function(require, exports, module) {
       pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
       pageRoute.pathname = pathname(page, pageRoute || {});
 
-      AppRoute.loadingArgs = [page, pageRoute];
+      Route.loadingArgs = [page, pageRoute];
 
       if (page && page.routeOptions && page.routeOptions.privatePage && ! env.userId()) {
-        AppRoute.replacePage(AppRoute.SignPage, {returnTo: AppRoute.loadingArgs});
+        Route.replacePage(Route.SignPage, {returnTo: Route.loadingArgs});
         return;
       }
 
@@ -149,7 +155,7 @@ define(function(require, exports, module) {
         } else {
           page = page.Index || page;
           var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
-          var title = document.title = page.title || AppRoute.title;
+          var title = document.title = page.title || Route.title;
           Dom.setTitle && Dom.setTitle(page.title);
 
           if (pageState &&
@@ -157,7 +163,7 @@ define(function(require, exports, module) {
               ! ('noPageHistory' in page)) {
             currentHref = href;
             currentTitle = title;
-            AppRoute.history[pageState](null, title, href);
+            Route.history[pageState](null, title, href);
           }
           currentPage = page;
         }
@@ -172,14 +178,14 @@ define(function(require, exports, module) {
       }
       finally {
         inGotoPage = false;
-        AppRoute.loadingArgs = null;
+        Route.loadingArgs = null;
         pageState = 'pushState';
         currentPageRoute = pageRoute;
       }
     },
 
     pushCurrent: function () {
-      AppRoute.history.pushState(null, currentTitle, currentHref);
+      Route.history.pushState(null, currentTitle, currentHref);
     },
 
     get currentPage() {
@@ -376,5 +382,5 @@ define(function(require, exports, module) {
     };
   }
 
-  return AppRoute;
+  return Route;
 });
