@@ -21,6 +21,8 @@ var sessionCount = 0;
 
 var WebSocket = require('ws');
 
+var typeCount = ARGV[0] === 'both' ? 2 : 1;
+
 var ws = new WebSocket('ws://localhost:3000/');
 ws.on('open', runTests);
 ws.on('message', function(data, flags) {
@@ -30,12 +32,16 @@ ws.on('message', function(data, flags) {
 });
 
 ws.on('close', function () {
-  exitProcess('ALL FAILED', 1);
+  exitProcess('ALL FAILED', -1);
   process.exit(exitCode);
 });
 
 function runTests() {
+  if (typeCount === 2)
+    ARGV[0] = 'client';
   ws.send('T\t'+ARGV.join('\t'));
+
+  ARGV[0] = 'server';
 }
 
 function exitProcess(key, code) {
@@ -47,7 +53,12 @@ function exitProcess(key, code) {
     }
   }
   write(['exit', key, (Date.now() - runTime) + ' ' + code]);
-  sessionCount || process.exit(exitCode);
+  if (sessionCount) return;
+  if (--typeCount) {
+    runTests();
+  } else {
+    process.exit(exitCode);
+  }
 }
 
 function logEmacs(key, msg) {
@@ -107,8 +118,6 @@ function processBuffer(buffer) {
     log('Info', 'test runner count: ' + sessionCount);
     if (! sessionCount)
       exitProcess('ALL FAILED', 1);
-    if (sessionCount < 2 && ARGV[0] === 'both')
-      exitCode = 1; // We don't have both a server and client so fail at end
     break;
   case 'F': // Finish
     exitProcess(key, +data);

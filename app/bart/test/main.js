@@ -25,6 +25,7 @@ define(function(require, exports, module) {
     geddon: geddon,
 
     run: function (pattern, tests) {
+      if (isClient) document.title = 'Running: ' + document.title;
       console.log('*** test-start ' + ++testRunCount);
 
       geddon.runArg = pattern;
@@ -80,6 +81,7 @@ define(function(require, exports, module) {
   });
 
   function endTest() {
+    if (isClient) document.title = document.title.replace(/Running: /, '');
     core.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();

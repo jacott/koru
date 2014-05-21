@@ -13,6 +13,7 @@ isClient && define(function (require, exports, module) {
         onGotoPath: Route._onGotoPath,
         origTile: Route.title,
       };
+      v.origTile = document.title;
       Route.title = "TestTitle";
       v.FooBar = {
         name: 'FooBar',
@@ -28,6 +29,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown: function () {
       Route.title = Route.title;
+      document.title = v.origTile;
       Route.root = v.root;
       Route._onGotoPath = v.onGotoPath;
       Route.gotoPage();
