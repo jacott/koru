@@ -71,8 +71,6 @@ define(function(require, exports, module) {
     },
 
     doneClass: function () {
-      _bart_.debug('this.done', this.done);
-
       Dom.setClass('done', this.done);
     },
   });

@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var core = require('bart/core');
   var util = core.util;
   var Val = require('./validation');
-  var env = require('../env!./main'); // client-main or server-main
+  var ModelEnv = require('../env!./main'); // client-main or server-main
   var session = require('../env!../session/main'); // client-main or server-main
   var Random = require('../random');
   var Query = require('./query');
@@ -28,8 +28,8 @@ define(function(require, exports, module) {
   BaseModel.prototype = {
     get _id() {return this.attributes._id;},
 
-    $save: env.$save,
-    $$save: env.$$save,
+    $save: ModelEnv.$save,
+    $$save: ModelEnv.$$save,
 
     $isValid: function () {
       var doc = this,
@@ -146,10 +146,6 @@ define(function(require, exports, module) {
       return model;
     },
 
-    findById: function (id) {
-      return this.docs[id];
-    },
-
     isLocked: function(id) {
       return (this._locks || (this._locks = {})).hasOwnProperty(id);
     },
@@ -244,10 +240,6 @@ define(function(require, exports, module) {
       new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();
     },
 
-    bumpVersion: function () {
-      session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
-    },
-
     performInsert: function (doc) {
       var model = doc.constructor;
 
@@ -255,7 +247,7 @@ define(function(require, exports, module) {
       callObserver('beforeSave', doc);
       model.hasVersioning && (doc.attributes._version = 1);
 
-      env.insert(doc);
+      ModelEnv.insert(doc);
     },
 
     performUpdate: function (doc, changes) {
@@ -271,13 +263,14 @@ define(function(require, exports, module) {
     },
   };
 
-  env.init(BaseModel, _support);
+  ModelEnv.init(BaseModel, _support, modelProperties);
 
   util.extend(BaseModel, {
     /**
      * Define a new model.
      */
     define: function (name, properties, options) {
+      if (name in BaseModel) throw new Error("Model '" + name + "' already defined");
       properties  = properties || {};
       var model = function (attrs, changes) {
         BaseModel.call(this, attrs||{}, changes);
@@ -292,23 +285,21 @@ define(function(require, exports, module) {
       util.extend(model, modelProperties);
       model.constructor = BaseModel;
       model.modelName = name;
-      model.docs = {};
       model._fieldValidators = {};
       model._defaults = {};
       makeSubject(model);
-      env.setupModel(model);
+      ModelEnv.setupModel(model);
 
       model.fieldTypeMap = {};
 
       return BaseModel[name] = model;
     },
 
-    _destroyModel: function (name) {
+    _destroyModel: function (name, drop) {
+      ModelEnv.destroyModel(BaseModel[name], drop);
       delete BaseModel[name];
-      ['before', 'after'].forEach(function (ba) {
-        ['Create', 'Update', 'Save', 'Remove'].forEach(function (actn) {
-          delete modelObservers[name +"." + ba + actn];
-        });
+      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove'].forEach(function (actn) {
+        delete modelObservers[name +"." + actn];
       });
     },
 

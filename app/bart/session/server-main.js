@@ -20,6 +20,10 @@ define(function (require, exports, module) {
       versionHash: Date.now(),
       unload: unload,
       load: load,
+      rpc: function (name /*, args */) {
+        this._rpcs[name].apply(util.thread, util.slice(arguments, 1));
+      },
+
     });
 
     session.provide('X', function (data) {this.engine = data});

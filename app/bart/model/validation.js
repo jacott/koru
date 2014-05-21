@@ -29,6 +29,10 @@ define(['../core'], function(core) {
       return truthy || accessDenied(message);
     },
 
+    check: function (values, types) {
+      this.allowAccessIf(typeof values === types);
+    },
+
     inspectErrors: function (doc) {
       var errs = doc._errors;
 

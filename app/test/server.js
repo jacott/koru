@@ -9,7 +9,9 @@ requirejs.config({
   baseUrl: __dirname + '/..',
 
   config: {
-    "bart/env": {mode: 'test'}
+    "bart/env": {mode: 'test'},
+
+    "bart/mongo/driver": {url: "mongodb://localhost:3004/bart"},
   },
 
   packages: [

@@ -1,10 +1,10 @@
-// FIXME turn on for server too
-isClient && define(function (require, exports, module) {
+define(function (require, exports, module) {
   var test, v;
-  var geddon = require('bart/test');
+  var geddon = require('../test');
   var Query = require('./query');
   var Model = require('./main');
   var util = require('../util');
+  var sinon = geddon.geddon.sinon;
 
   geddon.testCase(module, {
     setUp: function () {
@@ -20,7 +20,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      Model._destroyModel('TestModel');
+      Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
@@ -42,7 +42,6 @@ isClient && define(function (require, exports, module) {
 
     "test remove": function () {
       assert.same(new Query(v.TestModel).remove(), 2);
-
 
       assert.equals(new Query(v.TestModel).fetch(), []);
     },
@@ -99,7 +98,7 @@ isClient && define(function (require, exports, module) {
 
       assert.same(st.update({name: 'new name', age: undefined}), 1);
 
-      assert.equals(v.foo.attributes, {_id: 'foo123', name: 'new name'});
+      assert.equals(v.foo.$reload().attributes, {_id: 'foo123', name: 'new name'});
     },
 
     "test inc": function () {
@@ -107,6 +106,8 @@ isClient && define(function (require, exports, module) {
       assert.same(st.inc("age", 2), st);
 
       st.update({name: 'x'});
+
+      v.foo.$reload();
 
       assert.same(v.foo.name, 'x');
       assert.same(v.foo.age, 7);
@@ -129,7 +130,12 @@ isClient && define(function (require, exports, module) {
 
       st.forEach(v.stub = test.stub());
       assert.calledOnce(v.stub);
-      assert.calledWith(v.stub, v.foo);
+      assert.calledWith(v.stub, sinon.match(function (doc) {
+        if (doc._id === v.foo._id) {
+          assert.equals(doc.attributes, v.foo.attributes);
+          return true;
+        }
+      }));
 
       assert.equals(st.where({name: 'bar'}).fetch(), []);
     },
@@ -138,10 +144,12 @@ isClient && define(function (require, exports, module) {
       var st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'bar'}).update({name: 'new name'}), 0);
+      v.foo.$reload();
       assert.same(v.foo.name, 'foo');
 
       assert.same(st.where({name: 'foo'}).update({name: 'new name'}), 1);
 
+      v.foo.$reload();
       assert.same(v.foo.name, 'new name');
     },
   });

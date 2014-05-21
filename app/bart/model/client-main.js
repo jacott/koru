@@ -24,7 +24,13 @@ define(function(require, exports, module) {
 
     session: session,
 
-    init: function (BaseModel, _support) {
+    destroyModel: function (model, drop) {
+      model.docs = null;
+    },
+
+    init: function (BaseModel, _support, modelProperties) {
+      modelProperties.findById = findById;
+
       session.defineRpc("save", function (modelName, id, changes) {
         try {
           var model = BaseModel[modelName],
@@ -47,11 +53,16 @@ define(function(require, exports, module) {
         }
       });
 
+
       session.defineRpc("bumpVersion", function(modelName, id, version) {
         _support.performBumpVersion(BaseModel[modelName], id, version);
       });
 
       util.extend(_support, {
+        bumpVersion: function () {
+          session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
+        },
+
         remote: function (name,func) {
           return func;
         },
@@ -59,6 +70,7 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
+      model.docs = {};
       clientIndex(model);
     },
 
@@ -68,6 +80,10 @@ define(function(require, exports, module) {
       model.notify(doc, null);
     },
   };
+
+  function findById (id) {
+    return this.docs[id];
+  }
 
   function save(doc) {
     var _id = doc.attributes._id;

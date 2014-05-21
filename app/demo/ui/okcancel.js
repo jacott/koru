@@ -24,9 +24,6 @@ define(function(require, exports, module) {
       }
     };
 
-    _bart_.debug('events', events);
-
-
     return events;
   };
 });

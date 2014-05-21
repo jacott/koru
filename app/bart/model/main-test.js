@@ -1,5 +1,4 @@
-// FIXME should be both client and server
-isClient && define(function (require, exports, module) {
+define(function (require, exports, module) {
   var test, v;
   var core = require('../core');
   var TH = require('./test-helper');
@@ -17,7 +16,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      Model._destroyModel('TestModel');
+      Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
@@ -94,9 +93,7 @@ isClient && define(function (require, exports, module) {
         test.onEnd(function () {och.stop()});
         v.tc.$remove();
 
-        assert.calledOnceWith(v.onChange, null, sinon.match(function (doc) {
-          return doc && doc.attributes === v.tc.attributes;
-        }));
+        assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
       },
 
       "test update calls": function () {
@@ -241,7 +238,7 @@ isClient && define(function (require, exports, module) {
       "test findById": function () {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
-        assert.same(v.TestModel.findById(doc._id).attributes, doc.attributes);
+        assert[isClient ? 'same' : 'equals'](v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
       "test validator passing function": function () {
@@ -361,7 +358,7 @@ isClient && define(function (require, exports, module) {
       "belongs_to": {
         setUp: function () {
           v.Foo = Model.define('Foo').defineFields({name: 'text'});
-          test.onEnd(function () {Model._destroyModel('Foo')});
+          test.onEnd(function () {Model._destroyModel('Foo', 'drop')});
           v.foo = v.Foo.create({name: "qux"});
         },
 
@@ -397,16 +394,11 @@ isClient && define(function (require, exports, module) {
 
           assert(doc._id);
 
-          if (isServer) {
-            // save doesn't have a userId
-            assert.same(doc.user_id, undefined);
-            // but the saveRpc does
-            var id;
-            session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
-            assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
-          } else {
-            assert.same(doc.user_id, util.thread.userId);
-          }
+          assert.same(doc.user_id, util.thread.userId);
+
+          var id;
+          session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
+          assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
         });
       },
 
@@ -415,6 +407,8 @@ isClient && define(function (require, exports, module) {
             a = new v.TestModel(),
             b = new v.TestModel(),
             c = new OtherClass();
+
+        test.onEnd(function () {Model._destroyModel('OtherClass', 'drop')});
 
         refute.isTrue(a.$equals(b));
 
@@ -433,17 +427,17 @@ isClient && define(function (require, exports, module) {
       'test create': function () {
         var attrs = {name: 'testing'};
 
-        this.spy(session, "rpc");
+        isClient && this.spy(session, "rpc");
         var doc = v.TestModel.create(attrs);
         refute.same(doc.changes,doc.attributes);
         assert.equals(doc.changes,{});
 
         attrs._id = doc._id;
-        assert.same(doc.attributes, v.TestModel.findById(doc._id).attributes);
+
+        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
+
         if(isClient)
           assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id,{_id: doc._id, name: "testing"});
-        else
-          refute.called(session.rpc);
       },
 
       "test $reload on removed doc": function () {
@@ -461,7 +455,7 @@ isClient && define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'string'});
         var doc = v.TestModel.create({name: 'old'});
 
-        this.spy(session, "rpc");
+        isClient && this.spy(session, "rpc");
 
         doc.name = 'new';
         doc.$save();
@@ -470,14 +464,11 @@ isClient && define(function (require, exports, module) {
         assert.same(doc.name, 'new');
         assert.equals(doc.changes,{});
 
-        assert.same(doc.attributes, v.TestModel.findById(doc._id).attributes);
-
+        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
 
         if(isClient)
           // name is old because changes have been swapped with attributes
           assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "old"});
-        else
-          refute.called(session.rpc);
       },
 
       'test build': function () {
