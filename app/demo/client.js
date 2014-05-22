@@ -10,7 +10,7 @@ requirejs.config({
 
 define([
   'module', 'bart/env', 'bart/ui/route', 'ui/todos',
-  'bart/session/client-main', 'bootstrap'
+  'bart/session/client-main',
 ], function (module, env, Route, todos) {
   // reload me if unloaded
   env.onunload(module, function () {require([module.id], function () {})});

@@ -1,3 +1,4 @@
+var Fiber = require('fibers');
 var requirejs = require('requirejs');
 
 requirejs.config({
@@ -10,11 +11,11 @@ requirejs.config({
 
   config: {
     "bart/env": {mode: 'demo'},
+
+    "bart/mongo/driver": {url: "mongodb://localhost:3014/demo"},
   },
 
-  packages: [
-    "bart/test",
-  ],
+  packages: ['bart/model'],
 
   paths: {
     bart: '../bart',
@@ -34,6 +35,9 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['bart/env', 'bart/server', 'bart/file-watch', 'bart/server-rc'], function (env) {
-  console.log('=> Ready');
+requirejs(['bart/env', 'bootstrap', 'bart/server', 'bart/file-watch', 'bart/server-rc'], function (env, bootstrap) {
+  Fiber(function () {
+    bootstrap();
+    console.log('=> Ready');
+  }).run();
 });
