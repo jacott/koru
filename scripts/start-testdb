@@ -1,0 +1,13 @@
+#!/bin/bash
+set -em
+mkdir -p /tmp/demodb
+mongod --quiet --nojournal --smallfiles --port 3004 --dbpath /tmp/bartdb >/tmp/bartdb.log &
+mongod=$!
+
+function killKids {
+    kill $mongod 2>/dev/null
+}
+trap "killKids" SIGCHLD
+trap "killKids" 0
+
+mongo localhost:3004/test

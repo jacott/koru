@@ -10,6 +10,7 @@ define(function (require, exports, module) {
   var ready = false;
   var retryCount = 0;
   var versionHash;
+  var isSimulation = false;
 
   core.onunload(module, 'reload');
 
@@ -19,8 +20,19 @@ define(function (require, exports, module) {
       else waitFuncs.push(type+msg);
     },
     rpc: function (name /*, args */) {
-      this._rpcs[name].apply(util.thread, util.slice(arguments, 1));
+      var args = util.slice(arguments, 1);
+      if (isSimulation) {
+        this._rpcs[name].apply(util.thread, args);
+      } else try {
+        isSimulation = true;
+        session.send('M', name + JSON.stringify(args));
+        this._rpcs[name].apply(util.thread, args);
+      } finally {
+        isSimulation = false;
+      }
     },
+
+    get isSimulation() {return isSimulation},
   });
 
   session.provide('X', function (data) {

@@ -21,7 +21,7 @@ define(function (require, exports, module) {
       unload: unload,
       load: load,
       rpc: function (name /*, args */) {
-        this._rpcs[name].apply(util.thread, util.slice(arguments, 1));
+        session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
       },
 
     });
@@ -33,6 +33,14 @@ define(function (require, exports, module) {
         session.remoteControl.logHandle &&
         session.remoteControl.logHandle.call(this, data) :
         core.logger('INFO', this.engine, data);
+    });
+    session.provide('M', function (data) {
+      var index = data.indexOf('[');
+      var func = session._rpcs[data.slice(0,index).toString()];
+      if (! func) {
+        return core.info('unknown method: ' + data.slice(0,index).toString());
+      }
+      func.apply(util.thread, JSON.parse(data.slice(index).toString()));
     });
 
     var sessCounter = 0;
