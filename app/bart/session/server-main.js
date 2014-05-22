@@ -63,7 +63,13 @@ define(function (require, exports, module) {
         ws: ws,
       };
       ws.on('message', function (data, flags) {
-        session._onMessage(conn, data);
+        core.Fiber(function () {
+          try {
+            session._onMessage(conn, data);
+          } catch(ex) {
+            core.error(util.extractError(ex));
+          }
+        }).run();
       });
 
       ws.send('X'+session.versionHash);

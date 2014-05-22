@@ -58,13 +58,10 @@ define(function(require, exports, module) {
 
       session.defineRpc("save", function (modelName, id, changes) {
         try {
-          var model = BaseModel[modelName],
-              docs = model.docs,
-              doc = docs[id],
-              now = util.newDate();
-
-          Val.check(id, 'string');
+          Val.ensureString(id);
+          Val.ensureString(modelName);
           var model = BaseModel[modelName];
+          Val.allowIfFound(model);
           var doc = model.findById(id);
           if (! doc) {
             doc = new model();

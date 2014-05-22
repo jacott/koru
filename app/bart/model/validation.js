@@ -29,8 +29,8 @@ define(['../core'], function(core) {
       return truthy || accessDenied(message);
     },
 
-    check: function (values, types) {
-      this.allowAccessIf(typeof values === types);
+    ensureString: function (value) {
+      typeof value === 'string' || accessDenied('expected a string');
     },
 
     inspectErrors: function (doc) {
