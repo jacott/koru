@@ -46,7 +46,11 @@ define(function(require, exports, module) {
       function errorLoading(err) {
         var badIds = env.discardIncompleteLoads();
         ++errorCount;
-        core.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
+        if (err.originalError) err = err.originalError;
+        if (('stack' in err))
+          core.error(core.util.extractError(err));
+        else
+          core.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
         endTest();
       }
     },

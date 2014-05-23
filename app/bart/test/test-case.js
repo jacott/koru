@@ -28,10 +28,12 @@ define(['./core'], function (geddon) {
 
     onStartTestCase: function (func) {
       (this._onstc = this._onstc || []).push(func);
+      return this;
     },
 
     onEndTestCase: function (func) {
       (this._onetc = this._onetc || []).push(func);
+      return this;
     },
 
     startTestCase: function () {
