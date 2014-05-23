@@ -25,11 +25,15 @@ define(function (require, exports, module) {
         this._rpcs[name].apply(util.thread, args);
       } else try {
         isSimulation = true;
-        session.send('M', name + JSON.stringify(args));
+        session.sendM(name, args);
         this._rpcs[name].apply(util.thread, args);
       } finally {
         isSimulation = false;
       }
+    },
+
+    sendM: function (name, args) {
+      session.send('M', name + JSON.stringify(args));
     },
 
     get isSimulation() {return isSimulation},

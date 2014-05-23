@@ -17,16 +17,24 @@ define(['./core'], function (geddon) {
     else
       var _runNext = runNext;
 
+    var tcs = [];
     _runNext();
 
     function runNext(abort) {
       while(! abort) {
         var test = tests[next++];
         if (! test) {
+          for(var i = tcs.length-1; i !== -1; --i) {
+            tcs[i].endTestCase();
+          }
+          geddon.test = null;
           geddon.runCallBacks('end');
           return;
         }
 
+        if (! geddon.test || geddon.test.tc !== test.tc) {
+          newTestCase(test.tc);
+        }
         geddon.test = test;
         geddon.runCallBacks('testStart', test);
 
@@ -55,6 +63,19 @@ define(['./core'], function (geddon) {
         promise = null;
         abort = runTearDowns(test);
       }
+    }
+
+    function newTestCase(tc) {
+      var i = tc.tc ? newTestCase(tc.tc) : 0;
+      if (tcs[i] !== tc) {
+        for(var j = tcs.length -1; j >= i; --j) {
+          tcs[j].endTestCase();
+        }
+        tcs.length = i+1;
+        tcs[i] = tc;
+        tc.startTestCase();
+      }
+      return i+1;
     }
   };
 

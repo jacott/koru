@@ -1,14 +1,14 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var bt = require('../test');
-  var sinon = bt.geddon.sinon;
+  var TH = require('../model/test-helper');
+  var sinon = TH.sinon;
   var eachTpl = require('../html!./each-test');
   var Dom = require('../dom');
   var Model = require('../model/main');
   var each = require('./each');
   var util = require('../util');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

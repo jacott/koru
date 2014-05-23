@@ -26,6 +26,28 @@ define(['./core'], function (geddon) {
       return name ? ret + ' ' + name : ret;
     },
 
+    onStartTestCase: function (func) {
+      (this._onstc = this._onstc || []).push(func);
+    },
+
+    onEndTestCase: function (func) {
+      (this._onetc = this._onetc || []).push(func);
+    },
+
+    startTestCase: function () {
+      var onstc = this._onstc;
+      if (onstc) for(var i = 0; i < onstc.length; ++i) {
+        onstc[i].call(this);
+      }
+    },
+
+    endTestCase: function () {
+      var onetc = this._onetc;
+      if (onetc) for(var i = 0; i < onetc.length; ++i) {
+        onetc[i].call(this);
+      }
+    },
+
     runSetUp: function (test) {
       this.tc && this.tc.runSetUp(test);
       this.setUp && this.setUp.call(test);

@@ -1,12 +1,12 @@
 define(function (require, exports, module) {
   var test, v;
-  var geddon = require('../test');
+  var TH = require('./test-helper');
   var Query = require('./query');
   var Model = require('./main');
   var util = require('../util');
-  var sinon = geddon.geddon.sinon;
+  var sinon = TH.sinon;
 
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

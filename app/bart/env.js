@@ -122,6 +122,8 @@
         return window.location;
       },
 
+      nullFunc: function () {},
+
       /**
        * Converts path to related build path of compiled resource.
        * @param {string} path source path of resource.
