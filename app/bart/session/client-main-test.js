@@ -47,5 +47,21 @@ define(function (require, exports, module) {
         assert.isTrue(session.isSimulation);
       }
     },
+
+    "test rpc with callback": function () {
+      session.defineRpc('foo.rpc', rpcSimMethod);
+
+      session.rpc('foo.rpc', 'a');
+      assert.equals(v.args, ['a']);
+
+      session.rpc('foo.rpc', 'b', test.stub());
+      assert.equals(v.args, ['b']);
+
+      function rpcSimMethod() {
+        v.args = util.slice(arguments);
+      }
+
+    },
+
   });
 });

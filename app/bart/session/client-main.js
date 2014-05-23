@@ -20,7 +20,7 @@ define(function (require, exports, module) {
       else waitFuncs.push(type+msg);
     },
     rpc: function (name /*, args */) {
-      var args = util.slice(arguments, 1);
+      var args = util.slice(arguments, 1, (typeof arguments[arguments.length - 1] === 'function') ? -1 : arguments.length);
       if (isSimulation) {
         this._rpcs[name].apply(util.thread, args);
       } else try {
