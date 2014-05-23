@@ -40,7 +40,7 @@ define(function (require, exports, module) {
       if (! func) {
         return core.info('unknown method: ' + data.slice(0,index).toString());
       }
-      func.apply(util.thread, JSON.parse(data.slice(index).toString()));
+      func.apply(this, JSON.parse(data.slice(index).toString()));
     });
 
     var sessCounter = 0;

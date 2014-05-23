@@ -1,0 +1,34 @@
+isClient && define(function (require, exports, module) {
+  var test, v;
+  var bt = require('../test');
+  var session = require('../session/main');
+  var subscribe = require('./subscribe');
+
+  bt.testCase(module, {
+    setUp: function () {
+      test = this;
+      v = {};
+    },
+
+    tearDown: function () {
+      v = null;
+    },
+
+    "test subscribe": function () {
+      test.stub(session, 'sendP');
+      var handle = subscribe('foo', 123, 456, v.stub = test.stub());
+
+      assert.same(handle._id, subscribe._nextId);
+
+      assert.calledWith(session.sendP, 'foo|' + handle._id, [123, 456]);
+      assert(handle);
+
+      assert.equals(subscribe._subs[handle._id], [123, 456]);
+
+      handle.stop();
+      assert.calledWith(session.sendP, '|' + handle._id);
+
+      assert.isFalse(handle._id.toString() in subscribe._subs);
+    },
+  });
+});

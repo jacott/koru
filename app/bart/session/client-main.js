@@ -32,9 +32,8 @@ define(function (require, exports, module) {
       }
     },
 
-    sendM: function (name, args) {
-      session.send('M', name + JSON.stringify(args));
-    },
+    sendM: sendFunc('M'),
+    sendP: sendFunc('P'),
 
     get isSimulation() {return isSimulation},
   });
@@ -61,8 +60,6 @@ define(function (require, exports, module) {
 
   connect();
 
-  return session;
-
   function url() {
     var location = window.document.location;
     return location.protocol.replace(/^http/,'ws')+'//' + location.host;
@@ -85,4 +82,12 @@ define(function (require, exports, module) {
       setTimeout(connect, retryCount*500);
     };
   }
+
+  function sendFunc(code) {
+    return function (name, args) {
+      session.send(code, name + JSON.stringify(args));
+    };
+  }
+
+  return session;
 });

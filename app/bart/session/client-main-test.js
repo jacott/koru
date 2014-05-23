@@ -60,7 +60,12 @@ define(function (require, exports, module) {
       function rpcSimMethod() {
         v.args = util.slice(arguments);
       }
+    },
 
+    "test sendP": function () {
+      session.sendP('foo', [1, 2, 'bar']);
+
+      assert.calledWith(session.send, 'P', 'foo' + JSON.stringify([1, 2, 'bar']));
     },
 
   });

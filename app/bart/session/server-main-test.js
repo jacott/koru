@@ -17,11 +17,10 @@ isServer && define(function (require, exports, module) {
     "test rpc": function () {
       session.defineRpc('foo.rpc', rpcMethod);
 
-      var msg = session._commands['M'];
-      msg('foo.rpc'+JSON.stringify([1,2,3]));
+      session._onMessage(v.conn = test.stub(), 'Mfoo.rpc'+JSON.stringify([1,2,3]));
 
       assert.equals(v.args, [1, 2, 3]);
-      assert.same(v.thisValue, util.thread);
+      assert.same(v.thisValue, v.conn);
 
       function rpcMethod(one, two, three) {
         v.thisValue = this;
