@@ -3,7 +3,10 @@ define(function(require, exports, module) {
 
   var List = require('./list');
 
-  var model = Model.define('Todo');
+  var model = Model.define(module, {
+    authorize: function () {
+    },
+  });
 
   model.defineFields({
     list_id: 'belongs_to',
