@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var core = require('bart/core');
-  var util = core.util;
+  var core = require('../core');
+  var util = require('../util');
   var Val = require('./validation');
   var ModelEnv = require('../env!./main'); // client-main or server-main
   var session = require('../env!../session/main'); // client-main or server-main
@@ -269,7 +269,21 @@ define(function(require, exports, module) {
     /**
      * Define a new model.
      */
-    define: function (name, properties, options) {
+    define: function (module, name, properties, options) {
+      if (typeof module === 'string') {
+        options = properties;
+        properties = name;
+        name = module;
+      } else {
+        core.onunload(module, function () {
+          BaseModel._destroyModel(name);
+        });
+        if (typeof name !== 'string') {
+          options = properties;
+          properties = name;
+          name = util.capitalize(util.camelize(module.id.replace(/^.*\//, '')));
+        }
+      }
       if (name in BaseModel) throw new Error("Model '" + name + "' already defined");
       properties  = properties || {};
       var model = function (attrs, changes) {

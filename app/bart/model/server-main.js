@@ -26,6 +26,7 @@ define(function(require, exports, module) {
     },
 
     destroyModel: function (model, drop) {
+      if (! model) return;
       if (drop === 'drop')
         mongoDb.defaultDb.dropCollection(model.modelName);
       model.docs = null;

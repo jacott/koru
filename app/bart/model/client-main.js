@@ -25,6 +25,7 @@ define(function(require, exports, module) {
     session: session,
 
     destroyModel: function (model, drop) {
+      if (! model) return;
       model.docs = null;
     },
 

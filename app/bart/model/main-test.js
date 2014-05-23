@@ -528,7 +528,19 @@ define(function (require, exports, module) {
 
     },
 
-    'test define': function () {
+    "test define via module": function () {
+      test.stub(core, 'onunload');
+      var TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
+      assert.same(Model.TestModel, TestModel);
+
+      assert.calledWith(core.onunload, {id: '/foo/test-model'}, sinon.match.func);
+
+      core.onunload.yield();
+
+      refute(Model.TestModel);
+    },
+
+    'test define with name': function () {
       var TestModel = Model.define('TestModel', {t1: 123});
 
       var testAttrs = {_id: 123, name: 'orig name'};
