@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   function Connection(ws, sessId) {
     this.ws = ws;
     this.sessId = sessId;
+    this._subs = {};
   }
 
   Connection.prototype = {
@@ -19,6 +20,14 @@ define(function(require, exports, module) {
 
     removed: function (name, id) {
       this.ws.send('R'+name+'|'+id, env.nullFunc);
+    },
+
+    closed: function () {
+      var subs = this._subs;
+      if (subs) for(var key in subs) {
+        subs[key].stop();
+      }
+      this._subs = null;
     },
   };
 

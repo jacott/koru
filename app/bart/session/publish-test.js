@@ -12,7 +12,10 @@ isServer && define(function (require, exports, module) {
       publish("foo", v.stub = test.stub());
 
       assert.same(publish._pubs.foo, v.stub);
-      session._onMessage(v.conn = {ws: {send: v.send = test.stub()}}, 'Pfoo|a123'+JSON.stringify([1,2,3]));
+      session._onMessage(v.conn = {
+        ws: {send: v.send = test.stub()},
+        _subs: {},
+      }, 'Pfoo|a123'+JSON.stringify([1,2,3]));
       v.sub = v.stub.thisValues[0];
     },
 

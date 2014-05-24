@@ -26,6 +26,7 @@ define(function (require, exports, module) {
 
     // for testing
     _onConnection: onConnection,
+    get _sessCounter() {return sessCounter},
   });
 
   session.provide('X', function (data) {this.engine = data});
@@ -57,10 +58,14 @@ define(function (require, exports, module) {
     core.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
     ws.on('close', function() {
       --session.totalSessions;
-      if (sessId) delete session.conns[sessId];
+      if (sessId) {
+        var conn = session.conns[sessId];
+        conn && conn.closed();
+        delete session.conns[sessId];
+      }
       core.info('Close client', sessId);
     });
-    var sessId = '' + (++sessCounter);
+    var sessId = (++sessCounter).toString(16);
     var conn = session.conns[sessId] = new Connection(ws, sessId);
     ws.on('message', function (data, flags) {
       core.Fiber(function () {

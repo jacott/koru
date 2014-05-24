@@ -24,7 +24,7 @@ define(function(require, exports, module) {
     var index = data.indexOf('[');
     var nh = (index === -1 ? data : data.slice(0,index)).toString().split('|');
     var name = nh[0];
-    var subs = (this._subs = this._subs || {});
+    var subs = this._subs;
     var subId = nh[1];
     var sub = subs[nh[1]];
 

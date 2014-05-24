@@ -34,5 +34,21 @@ isServer && define(function (require, exports, module) {
 
       assert.calledWith(v.ws.send, 'RFoo|123', env.nullFunc);
     },
+
+    "test closed": function () {
+      v.conn._subs.t1 = {stop: v.t1 = test.stub()};
+      v.conn._subs.t2 = {stop: v.t2 = test.stub()};
+
+      v.conn.closed();
+
+      assert.called(v.t1);
+      assert.called(v.t2);
+
+      assert.isNull(v.conn._subs);
+
+      v.conn.closed();
+
+       assert.calledOnce(v.t1);
+    },
   });
 });
