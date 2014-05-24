@@ -66,6 +66,10 @@ define(function (require, exports, module) {
       session.sendP('foo', [1, 2, 'bar']);
 
       assert.calledWith(session.send, 'P', 'foo' + JSON.stringify([1, 2, 'bar']));
+
+      session.sendP('|12');
+
+      assert.calledWith(session.send, 'P', '|12');
     },
 
   });

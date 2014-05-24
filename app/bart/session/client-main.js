@@ -85,7 +85,7 @@ define(function (require, exports, module) {
 
   function sendFunc(code) {
     return function (name, args) {
-      session.send(code, name + JSON.stringify(args));
+      session.send(code, (args === undefined) ? name : name + JSON.stringify(args));
     };
   }
 

@@ -5,14 +5,24 @@ define(function(require, exports, module) {
   var nextId = 0;
   var subs = {};
 
+  session.provide('P', function (data) {
+    var nh = data.toString().split('|');
+    var handle = subs[nh[0]];
+    if (handle && handle.callback) handle.callback(nh[1]||null);
+  });
+
   function Subcribe(name /*, args..., callback */) {
-    var args = util.slice(arguments, 1, (typeof arguments[arguments.length - 1] === 'function') ? -1 : arguments.length);
     var handle = {
       stop: stopFunc,
-      _id: ++nextId,
+      _id: (++nextId).toString(16),
     };
-    subs[nextId] = args;
-    session.sendP(name + '|' + handle._id, args);
+    var callback = arguments[arguments.length - 1];
+    if (typeof callback === 'function')
+      handle.callback = callback;
+
+    handle.args = util.slice(arguments, 1, handle.callback ? -1 : arguments.length);
+    subs[handle._id] = handle;
+    session.sendP(name + '|' + handle._id, handle.args);
     return handle;
   };
 
