@@ -14,7 +14,7 @@ if (ARGV[0] === 'emacs') {
   var write = writeTty;
 }
 
-var runTime = Date.now();
+var runTime;
 
 var exitCode = 0;
 var sessionCount = 0;
@@ -37,6 +37,7 @@ ws.on('close', function () {
 });
 
 function runTests() {
+  runTime = Date.now();
   if (typeCount === 2)
     ARGV[0] = 'client';
   ws.send('T\t'+ARGV.join('\t'));
