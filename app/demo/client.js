@@ -10,10 +10,18 @@ requirejs.config({
 
 define([
   'module', 'bart/env', 'bart/ui/route', 'ui/todos',
-  'bart/session/client-main',
-], function (module, env, Route, todos) {
-  // reload me if unloaded
-  env.onunload(module, function () {require([module.id], function () {})});
+  'bart/session/subscribe', 'bart/dom',
+  'bart/session/client-main'
+], function (
+  module, env, Route, todos,
+  subscribe, Dom
+) {
+         // reload me if unloaded
+  env.onunload(module, function () {
+    subHandle && subHandle.stop();
+    subHandle = null;
+    require([module.id], function () {});
+  });
 
   Route.title = 'Todos';
 
@@ -21,5 +29,8 @@ define([
     Route.pageChanged();
   });
 
-  todos.start();
+  var subHandle = subscribe('all', function () {
+    Dom.removeClass(document.body, 'loading');
+    todos.start();
+  });
 });

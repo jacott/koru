@@ -67,7 +67,7 @@ define(function(require, exports, module) {
     },
 
     done: function () {
-      Dom.setBoolean('checked', this.done);
+      $.element.checked = !! this.done;
     },
 
     doneClass: function () {

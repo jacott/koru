@@ -18,6 +18,15 @@ body {
     color: #333333;
 }
 
+body.loading>* {
+  display: none;
+}
+
+body.loading:before {
+  content: "Loading...";
+  font-size: 2em;
+}
+
 body, input {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }

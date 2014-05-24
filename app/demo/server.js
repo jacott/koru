@@ -35,7 +35,7 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['bart/env', 'bootstrap', 'bart/server', 'bart/file-watch', 'bart/server-rc'], function (env, bootstrap) {
+requirejs(['bart/env', 'bootstrap', 'publish-all', 'bart/server', 'bart/file-watch', 'bart/server-rc'], function (env, bootstrap) {
   Fiber(function () {
     bootstrap();
     console.log('=> Ready');
