@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var session = require('../session/server-main');
   var Val = require('./validation');
   var mongoDb = require('../mongo/driver');
+  var Query = require('./query');
 
   var save;
 
@@ -35,6 +36,10 @@ define(function(require, exports, module) {
     init: function (BaseModel, _support, modelProperties) {
       modelProperties.findById = findById;
 
+      BaseModel.prototype.$remove =  function () {
+        return new Query(this.constructor).onId(this._id).remove();
+      };
+
       save = function (doc) {
         var model = doc.constructor;
         var _id = doc._id;
@@ -58,29 +63,37 @@ define(function(require, exports, module) {
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
-        try {
-          Val.ensureString(id);
-          Val.ensureString(modelName);
-          var model = BaseModel[modelName];
-          Val.allowIfFound(model);
-          var doc = model.findById(id);
-          if (! doc) {
-            doc = new model();
-            changes._id = id;
-          }
-
-          doc.changes = changes;
-          Val.allowAccessIf(doc.authorize);
-          doc.authorize(this.userId);
-          doc.$assertValid();
-          doc.$save();
-        } catch(e) {
-          throw e;
+        Val.ensureString(id);
+        Val.ensureString(modelName);
+        var model = BaseModel[modelName];
+        Val.allowIfFound(model);
+        var doc = model.findById(id);
+        if (! doc) {
+          doc = new model();
+          changes._id = id;
         }
+
+        doc.changes = changes;
+        Val.allowAccessIf(doc.authorize);
+        doc.authorize(this.userId);
+        doc.$assertValid();
+        doc.$save();
       });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
         _support.performBumpVersion(BaseModel[modelName], id, version);
+      });
+
+      session.defineRpc("remove", function (modelName, id) {
+        Val.ensureString(id);
+        Val.ensureString(modelName);
+        var model = BaseModel[modelName];
+        Val.allowIfFound(model);
+        var doc = model.findById(id);
+        Val.allowIfFound(doc);
+        Val.allowAccessIf(doc.authorize);
+        doc.authorize(this.userId, {remove: true});
+        doc.$remove();
       });
 
       util.extend(_support, {

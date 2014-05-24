@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var Random = require('../random');
   var session = require('../session/client-main');
   var clientIndex = require('./client-index');
+  var Query = require('./query');
 
   var env = {
     $save: function(force) {
@@ -32,28 +33,32 @@ define(function(require, exports, module) {
     init: function (BaseModel, _support, modelProperties) {
       modelProperties.findById = findById;
 
+      BaseModel.prototype.$remove =  function () {
+        session.rpc("remove", this.constructor.modelName, this._id,
+                    core.error);
+      };
+
       session.defineRpc("save", function (modelName, id, changes) {
-        try {
-          var model = BaseModel[modelName],
-              docs = model.docs,
-              doc = docs[id],
-              now = util.newDate();
+        var model = BaseModel[modelName],
+            docs = model.docs,
+            doc = docs[id],
+            now = util.newDate();
 
-          BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
+        BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
 
-          if(doc) {
-            _support.performUpdate(doc, changes);
-          } else {
-            BaseModel._addUserIds(changes, model.userIds, this.userId);
-            BaseModel._updateTimestamps(changes, model.createTimestamps, now);
-            changes._id = id;
-            _support.performInsert(new model(changes));
-          }
-        } catch(e) {
-          throw e;
+        if(doc) {
+          _support.performUpdate(doc, changes);
+        } else {
+          BaseModel._addUserIds(changes, model.userIds, this.userId);
+          BaseModel._updateTimestamps(changes, model.createTimestamps, now);
+          changes._id = id;
+          _support.performInsert(new model(changes));
         }
       });
 
+      session.defineRpc("remove", function (modelName, id) {
+        return new Query(BaseModel[modelName]).onId(id).remove();
+      });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
         _support.performBumpVersion(BaseModel[modelName], id, version);

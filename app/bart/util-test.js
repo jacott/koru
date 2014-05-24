@@ -41,6 +41,15 @@ define(['module', 'bart/test', './util'], function (module, geddon, util) {
       assert.equals(changes, {a: 1, b: 2, d: undefined});
     },
 
+    "test extractViaKeys": function () {
+      var keys = {a: 1, b: 2, c: 3};
+      var attrs = {a: 2, b: undefined, d: 4};
+
+      assert.equals(util.extractViaKeys(keys, attrs), {a: 2, b: undefined, c: undefined});
+      assert.equals(keys, {a: 1, b: 2, c: 3});
+      assert.equals(attrs, {a: 2, b: undefined, d: 4});
+    },
+
     "test includesAttributes": function () {
       var changes = {b: '2'};
       var doc = {a: '1', b: '3'};

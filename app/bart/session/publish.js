@@ -60,6 +60,15 @@ define(function(require, exports, module) {
       this.conn.ws.send('P'+this.id);
     },
 
+    sendUpdate: function (doc, changes) {
+      if (changes == null)
+        this.conn.added(doc.constructor.modelName, doc._id, doc.attributes);
+      else if (doc == null)
+        this.conn.removed(changes.constructor.modelName, changes._id);
+      else
+        this.conn.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+    },
+
     error: function (error) {
       if (error.errorType === 'BartError') {
         this.conn.ws.send('P'+this.id+'|'+error.error+'|'+error.reason);

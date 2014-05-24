@@ -39,6 +39,19 @@ define(function(require, exports, module) {
     },
 
     /**
+     * Use the keys or {keys} to extract the values from {attrs}.
+     *
+     * @returns new hash of extracted values.
+     */
+    extractViaKeys: function (keys, attrs) {
+      var result = {};
+      for(var key in keys) {
+        result[key] = attrs[key];
+      }
+      return result;
+    },
+
+    /**
      * includesAttributes will check each key in attrs against the
      * list of docs. The first docs to have the key will be used in
      * the equality check. In this changes can be tested by passing

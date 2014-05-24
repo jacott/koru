@@ -81,10 +81,6 @@ define(function(require, exports, module) {
       return new Query(this.constructor).onId(this._id).update(changes);
     },
 
-    $remove: function () {
-      return new Query(this.constructor).onId(this._id).remove();
-    },
-
     $reload: function () {
       var doc = this.constructor.findById(this._id);
       this.attributes = doc ? doc.attributes : {};

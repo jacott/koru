@@ -22,9 +22,6 @@ isClient && define(function (require, exports, module) {
       assert.same(handle.callback, v.stub);
       assert.equals(handle.args, [123, 456]);
 
-      _bart_.debug('handle._id', handle._id);
-
-
       session._onMessage({}, 'P'+handle._id);
 
       assert.calledWithExactly(v.stub, null);

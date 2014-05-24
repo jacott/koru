@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var session = require('../session/main');
   var util = require('../util');
+  require('./client-update');
 
   var nextId = 0;
   var subs = {};

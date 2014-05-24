@@ -69,5 +69,27 @@ isServer && define(function (require, exports, module) {
 
       refute('a123' in v.conn._subs);
     },
+
+    "test sendUpdate added": function () {
+      var stub = v.conn.added = test.stub();
+      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}});
+
+      assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+    },
+
+    "test sendUpdate changed": function () {
+      var stub = v.conn.changed = test.stub();
+      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}},
+                      {age: 5});
+
+      assert.calledWith(stub, 'Foo', 'id123', {age: 7});
+    },
+
+    "test sendUpdate removed": function () {
+      var stub = v.conn.removed = test.stub();
+      v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}});
+
+      assert.calledWith(stub, 'Foo', 'id123');
+    },
   });
 });
