@@ -39,8 +39,8 @@ define(function (require, exports, module) {
           special(m, req, res, error);
           return;
         }
-        var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
-        if (! (m && compileTemplate(req, res, m[2], root+m[1]))) {
+        var m = /^(.*\.build\/.*\.([^.]+))(\.\a+)$/.exec(path);
+        if (! (m && compileTemplate(req, res, m[2], root+m[1], m[3]))) {
           send(req, path, {root: root})
           .on('error', sendDefault)
           .on('directory', sendDefault)
@@ -79,11 +79,11 @@ define(function (require, exports, module) {
   exports.server = server;
   exports.compilers = {};
 
-  function compileTemplate(req, res, type, path) {
+  function compileTemplate(req, res, type, path, suffix) {
     var compiler = exports.compilers[type];
     if (! compiler) return;
 
-    var outPath = path+'.js';
+    var outPath = path+suffix;
     var paths = path.split('.build/');
     path = paths.join('');
 
