@@ -10,21 +10,42 @@ define(function (require, exports, module) {
 
   core.onunload(module, 'reload');
 
-  var __dirname = Path.dirname(module.uri);
+  var root = Path.resolve(require.toUrl(''));
+  var koruApp = Path.resolve(Path.dirname(module.uri)+'/..');
+  var nmRoot = koruApp+'/../node_modules';
 
-  var root = Path.resolve(__dirname + '/..');
+  var SPECIALS = {
+    "require.js": function (m, req, res, error) {
+      send(req, '/requirejs/require.js', {root: nmRoot})
+        .on('error', error)
+        .pipe(res);
+    },
+
+    koru: function (m, req, res, error) {
+      send(req, m[0], {root: koruApp})
+        .on('error', error)
+        .pipe(res);
+    },
+  };
+
 
   var server = http.createServer(function (req, res) {
     var path = parseurl(req).pathname;
     core.Fiber(function () {
       try {
-
-      var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
-      if (! (m && compileTemplate(req, res, m[2], root+m[1])))
-        send(req, path, {root: root})
-        .on('error', sendDefault)
-        .on('directory', sendDefault)
-        .pipe(res);
+        var m = /^\/([^/]+)(.*)$/.exec(path);
+        var special = m && SPECIALS[m[1]];
+        if (special) {
+          special(m, req, res, error);
+          return;
+        }
+        var m = /^(.*\.build\/.*\.([^.]+))\.js$/.exec(path);
+        if (! (m && compileTemplate(req, res, m[2], root+m[1]))) {
+          send(req, path, {root: root})
+          .on('error', sendDefault)
+          .on('directory', sendDefault)
+          .pipe(res);
+        }
       } catch(ex) {
         core.error(core.util.extractError(ex));
       }
@@ -53,7 +74,7 @@ define(function (require, exports, module) {
     }
   });
 
-  server.listen(3000);
+  server.listen(module.config().port || 3000);
 
   exports.server = server;
   exports.compilers = {};

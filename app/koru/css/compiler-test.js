@@ -6,6 +6,7 @@ isServer && define(function (require, exports, module) {
   var compiler = require('./compiler');
   var fw = require('../file-watch');
   var fst = require('../fs-tools');
+  var Path = require('path');
 
   geddon.testCase(module, {
     setUp: function () {
@@ -31,10 +32,11 @@ isServer && define(function (require, exports, module) {
       v.compile = fw.listeners.less;
       assert(v.compile, "Should be registered with file-watch");
 
-      var path = require.toUrl("./compiler-test.less");
+      var path =  Path.resolve(require.toUrl("./compiler-test.less"));
+      var top = Path.resolve(require.toUrl("."))+'/';
       var future = new Future();
       var fb1 = core.Fiber(function () {
-        v.compile('less', path, v.session);
+        v.compile('less', "compiler-test.less", top, v.session);
         future.return();
       });
       fb1.run();
@@ -44,7 +46,7 @@ isServer && define(function (require, exports, module) {
 
       assert.equals(compiler._queue, expected);
 
-      v.compile('less', path, v.session);
+      v.compile('less', "compiler-test.less", top, v.session);
 
       expected[path] = 'redo';
 

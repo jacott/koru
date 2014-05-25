@@ -20,7 +20,8 @@ define(function(require, exports, module) {
   exports._less = less;
   exports._queue = queue;
 
-  function compiler(type, path, session) {
+  function compiler(type, path, top, session) {
+    path = top + path;
     if (path in queue) {
       queue[path] = 'redo';
       return;

@@ -16,6 +16,7 @@
     "javascript"
   ],
   "author": "Geoff Jacobsen <geoffj@obeya.co>",
+  "main": "./lib/index",
   "dependencies": {
     "fibers": "1.0.1",
     "kexec": "0.2.0",
