@@ -1,13 +1,13 @@
 {
-  "name": "Bart",
-  "homepage": "http://bart.obeya.co/",
-  "description": "Bart is a: test-driven, reactive, fast, web app framework",
+  "name": "koru",
+  "homepage": "http://koru.obeya.co/",
+  "description": "Koru is a: test-driven, reactive, fast, web app framework",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@dev.obeya.co:bart.git"
+    "url": "git+ssh://git@dev.obeya.co:koru.git"
   },
   "bugs": {
-    "url": "https://bart.obeya.co/issues"
+    "url": "https://koru.obeya.co/issues"
   },
   "keywords": [
     "templates",

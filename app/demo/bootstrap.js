@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var List = require('models/list');
   var Todo = require('models/todo');
-  var Query = require('bart/model/query');
+  var Query = require('koru/model/query');
 
   return function() {
 

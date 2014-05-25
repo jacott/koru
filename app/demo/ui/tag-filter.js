@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
-  var Dom = require('bart/dom');
-  require('bart/ui/each');
-  var Query = require('bart/model/query');
+  var Dom = require('koru/dom');
+  require('koru/ui/each');
+  var Query = require('koru/model/query');
 
   var Todo =    require('models/todo');
 
-  var Tpl = Dom.newTemplate(require('bart/html!./tag-filter'));
+  var Tpl = Dom.newTemplate(require('koru/html!./tag-filter'));
   var Tag = Tpl.Tag;
 
   var $ = Dom.current;

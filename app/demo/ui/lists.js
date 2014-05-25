@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
   var List = require('models/list');
-  var Dom = require('bart/dom');
-  require('bart/ui/each');
-  var Route = require('bart/ui/route');
+  var Dom = require('koru/dom');
+  require('koru/ui/each');
+  var Route = require('koru/ui/route');
   var okcancel = require('./okcancel');
 
   var $ = Dom.current;
 
-  var Tpl = Dom.newTemplate(require('bart/html!./lists'));
+  var Tpl = Dom.newTemplate(require('koru/html!./lists'));
 
   Tpl.$helpers({
     lists: function (callback) {

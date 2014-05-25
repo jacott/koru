@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var Model = require('bart/model');
+  var Model = require('koru/model');
 
   var List = require('./list');
 

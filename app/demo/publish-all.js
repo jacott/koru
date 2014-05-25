@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  var publish = require('bart/session/publish');
+  var publish = require('koru/session/publish');
   var List = require('models/list');
-  var Query = require('bart/model/query');
+  var Query = require('koru/model/query');
   var Todo = require('models/todo');
 
   publish('all', function () {

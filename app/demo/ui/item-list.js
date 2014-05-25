@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
-  var env =     require('bart/env');
-  var util =    require('bart/util');
-  var Query =   require('bart/model/query');
-  var Dom =     require('bart/dom');
-  var Route =   require('bart/ui/route');
-                require('bart/ui/each');
+  var env =     require('koru/env');
+  var util =    require('koru/util');
+  var Query =   require('koru/model/query');
+  var Dom =     require('koru/dom');
+  var Route =   require('koru/ui/route');
+                require('koru/ui/each');
 
   var $ = Dom.current;
 
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
 
   env.onunload(module, onExit);
 
-  var Tpl = Dom.newTemplate(require('bart/html!./item-list'));
+  var Tpl = Dom.newTemplate(require('koru/html!./item-list'));
   var Tag = Tpl.Row.Tag;
 
   Tpl.$extend({

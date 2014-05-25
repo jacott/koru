@@ -1,17 +1,17 @@
 requirejs.config({
-  packages: ['bart/model'],
+  packages: ['koru/model'],
 
   baseUrl: "/demo",
 
   paths: {
-    bart: '../bart',
+    koru: '../koru',
   },
 });
 
 define([
-  'module', 'bart/env', 'bart/ui/route', 'ui/todos',
-  'bart/session/subscribe', 'bart/dom',
-  'bart/session/client-main'
+  'module', 'koru/env', 'koru/ui/route', 'ui/todos',
+  'koru/session/subscribe', 'koru/dom',
+  'koru/session/client-main'
 ], function (
   module, env, Route, todos,
   subscribe, Dom

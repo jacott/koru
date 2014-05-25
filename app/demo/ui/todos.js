@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var Dom = require('bart/dom');
-  var route = require('bart/ui/route');
+  var Dom = require('koru/dom');
+  var route = require('koru/ui/route');
   var Lists = require('./lists');
   var TagFilter = require('./tag-filter');
   require('./item-list');

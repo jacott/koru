@@ -10,15 +10,15 @@ requirejs.config({
   baseUrl: __dirname,
 
   config: {
-    "bart/env": {mode: 'demo'},
+    "koru/env": {mode: 'demo'},
 
-    "bart/mongo/driver": {url: "mongodb://localhost:3014/demo"},
+    "koru/mongo/driver": {url: "mongodb://localhost:3014/demo"},
   },
 
-  packages: ['bart/model'],
+  packages: ['koru/model'],
 
   paths: {
-    bart: '../bart',
+    koru: '../koru',
   },
 
   //Pass the top-level main.js/index.js require
@@ -35,7 +35,7 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['bart/env', 'bootstrap', 'publish-all', 'bart/server', 'bart/file-watch', 'bart/server-rc'], function (env, bootstrap) {
+requirejs(['koru/env', 'bootstrap', 'publish-all', 'koru/server', 'koru/file-watch', 'koru/server-rc'], function (env, bootstrap) {
   Fiber(function () {
     bootstrap();
     console.log('=> Ready');

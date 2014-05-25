@@ -1,7 +1,7 @@
 #!/bin/bash
 set -em
-mkdir -p /tmp/demodb
-mongod --quiet --nojournal --smallfiles --port 3004 --dbpath /tmp/bartdb >/tmp/bartdb.log &
+mkdir -p /tmp/testdb
+mongod --quiet --nojournal --smallfiles --port 3004 --dbpath /tmp/testdb >/tmp/testdb.log &
 mongod=$!
 
 function killKids {
