@@ -5,11 +5,12 @@ var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
 define(function(require) {
-  var topDir = require.toUrl('').slice(0,-1);
+  var env = require('../env');
+  var topDir = env.appDir;
+  var cmdFn = Path.resolve(topDir + '/../tmp/client-cmd.js');
 
   return {
     runTests: function(session, type, pattern, callback) {
-
       if (type !== 'server') {
         session.unload('client-cmd');
         var cTests = [];
@@ -44,7 +45,6 @@ define(function(require) {
         return;
 
       if (type !== 'server') {
-        var cmdFn = requirejs.toUrl('../tmp/client-cmd.js');
         fs.writeFileSync(cmdFn,
                          "define(['koru/test/client'],function(bt){bt.run("+
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+

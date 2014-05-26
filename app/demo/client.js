@@ -1,7 +1,7 @@
 requirejs.config({
   packages: ['koru/model'],
 
-  baseUrl: "/demo",
+  baseUrl: "/",
 
   paths: {
     koru: '../koru',

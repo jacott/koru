@@ -77,6 +77,13 @@
     }
   }
 
+  function appDir(require, module) {
+    if (isServer)
+      return require('path').resolve(module.config().appDir || require.toUrl('').slice(0,-1));
+
+    return require.toUrl('').slice(0,-1);
+  }
+
   /**
    * Dependency tracking and load/unload manager.
    * This module is also a requirejs loader plugin.
@@ -94,7 +101,7 @@
           var modId = elm.getAttribute('data-requiremodule');
           if (modId && ! loaded.hasOwnProperty(modId)) {
             unload(modId);
-            badIds.push("\tat app/"+modId+".js:1");
+            badIds.push("\tat "+modId+".js:1");
           }
         }
         return badIds;
@@ -114,7 +121,7 @@
       insertDependency: insertDependency,
       loaded: loaded,
       discardIncompleteLoads: discardIncompleteLoads,
-      mode: module.config().mode,
+      appDir: appDir(require, module),
       userId: function () {
         return util.thread.userId;
       },

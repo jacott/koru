@@ -9,7 +9,6 @@ define(function(require, exports, module) {
   core.onunload(module, 'reload');
 
   webServer.compilers['html'] = compiler;
-  webServer.compilers['bhtml'] = compiler;
 
   function compiler(type, path, outPath) {
     var html = fst.readFile(path).toString();

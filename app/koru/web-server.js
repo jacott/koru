@@ -7,49 +7,55 @@ define(function (require, exports, module) {
   var env = require('./env');
   var core = require('./core');
   var fst = require('./fs-tools');
+  var queue = require('./queue')();
 
   core.onunload(module, 'reload');
 
   var root = Path.resolve(require.toUrl(''));
-  var koruApp = Path.resolve(Path.dirname(module.uri)+'/..');
-  var nmRoot = koruApp+'/../node_modules';
+  var appDir = env.appDir;
+  var nmRoot = appDir+'/../node_modules';
 
   var SPECIALS = {
     "require.js": function (m, req, res, error) {
-      send(req, '/requirejs/require.js', {root: nmRoot})
-        .on('error', error)
-        .pipe(res);
+      return ['/requirejs/require.js', nmRoot];
     },
 
-    koru: function (m, req, res, error) {
-      send(req, m[0], {root: koruApp})
-        .on('error', error)
-        .pipe(res);
+    koru: function (m) {
+      return [m[0], appDir];
     },
   };
 
+  var server = http.createServer(requestListener);
 
-  var server = http.createServer(function (req, res) {
-    var path = parseurl(req).pathname;
-    core.Fiber(function () {
-      try {
-        var m = /^\/([^/]+)(.*)$/.exec(path);
-        var special = m && SPECIALS[m[1]];
-        if (special) {
-          special(m, req, res, error);
-          return;
-        }
-        var m = /^(.*\.build\/.*\.([^.]+))(\.\a+)$/.exec(path);
-        if (! (m && compileTemplate(req, res, m[2], root+m[1], m[3]))) {
-          send(req, path, {root: root})
+  server.listen(module.config().port || 3000);
+
+  exports.server = server;
+  exports.compilers = {};
+  exports.requestListener = requestListener;
+
+  function requestListener(req, res) {core.Fiber(function () {
+    try {
+      var path = parseurl(req).pathname;
+      var reqRoot = root;
+
+      var m = /^\/([^/]+)(.*)$/.exec(path);
+      var special = m && SPECIALS[m[1]];
+      if (special) {
+        var pr = special(m);
+        path = pr[0]; reqRoot = pr[1];
+      }
+
+      var m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
+
+      if (! (m && compileTemplate(req, res, m[2], reqRoot+m[1], m[3]))) {
+        send(req, path, {root: reqRoot})
           .on('error', sendDefault)
           .on('directory', sendDefault)
           .pipe(res);
-        }
-      } catch(ex) {
-        core.error(core.util.extractError(ex));
       }
-    }).run();
+    } catch(ex) {
+      core.error(core.util.extractError(ex));
+    }
 
     function sendDefault(err) {
       if (err && err.status === 404) {
@@ -58,45 +64,47 @@ define(function (require, exports, module) {
           return;
         }
       }
-      send(req, '/'+env.mode+'/index.html', {root: root})
+
+      send(req, '/index.html', {root: root})
         .on('error', error)
         .pipe(res);
     }
 
     function error(err) {
       if (! err || 404 === err.status) {
-        res.statusCode = 404;
-        res.end('NOT FOUND');
+        notFound(res);
       } else {
         res.statusCode = 500;
         res.end('Internal server error!');
       }
     }
-  });
 
-  server.listen(module.config().port || 3000);
-
-  exports.server = server;
-  exports.compilers = {};
+  }).run();}
 
   function compileTemplate(req, res, type, path, suffix) {
     var compiler = exports.compilers[type];
     if (! compiler) return;
 
-    var outPath = path+suffix;
-    var paths = path.split('.build/');
-    path = paths.join('');
+    return queue(path, function () {
+      var outPath = path+suffix;
+      var paths = path.split('.build/');
+      path = paths.join('');
 
-    var srcSt = fst.stat(path);
-    var jsSt = fst.stat(outPath);
+      var srcSt = fst.stat(path);
+      var jsSt = fst.stat(outPath);
 
-    if (!jsSt) fst.mkdir(paths[0]+'.build');
 
-    if (! srcSt) return ! notFound(res); // not found
+      if (!jsSt) fst.mkdir(paths[0]+'.build');
 
-    if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
-      compiler(type, path, outPath);
-    }
+      if (! srcSt) {
+        notFound(res); // not found
+        return true;
+      }
+
+      if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
+        compiler(type, path, outPath);
+      }
+    });
   }
 
   function notFound(res) {

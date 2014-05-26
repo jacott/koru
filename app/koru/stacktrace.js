@@ -22,11 +22,11 @@ define(['require', 'koru/util-base'], function (require, util) {
 
     if (originRe === undefined) {
       if (isServer) {
-        originRe = new RegExp(require('path').resolve(require.toUrl('')+'/..')+'/');
+        originRe = new RegExp(require('./env').appDir+'/');
       } else {
-        repl = 'app';
+        repl = '';
         var lcn = window.location;
-        originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host));
+        originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host+'/'));
       }
     }
 
@@ -52,7 +52,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
       url = url.replace(originRe, repl);
 
-      if (/^(?:app\/(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
+      if (/^(?:(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;

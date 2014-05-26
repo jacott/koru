@@ -1,11 +1,10 @@
 isClient && define(function (require, exports, module) {
-
   var test, v;
-  var geddon = require('../test');
+  var TH = require('../test');
   var env = require('../env');
   var session = require('../session/main');
 
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
@@ -37,7 +36,7 @@ isClient && define(function (require, exports, module) {
         });
         loader.callback = onload;
 
-        provide.yield("Lkoru/css/loader-test koru/css/loader-test2");
+        provide.yield("Lkoru/css/loader-test koru/css/.build/less-compiler-test.less");
       }));
 
       function onload(event) {
@@ -52,22 +51,22 @@ isClient && define(function (require, exports, module) {
         });
         assert.dom('head', function () {
           assert.dom('head>link[rel=stylesheet][href="/koru/css/loader-test.css"]', function () {
-            assert.same(v.links[0], this);
+            assert.same(v.links[1], this);
           });
-          assert.dom('head>link[rel=stylesheet][href="/koru/css/loader-test2.css"]');
+          assert.dom('head>link[rel=stylesheet][href="/koru/css/.build/less-compiler-test.less.css"]');
         });
 
         assert.dom('body', function () {
           var cstyle = window.getComputedStyle(this);
           assert.colorEqual(cstyle.backgroundColor, [230, 150, 90, 0.49], 0.01);
-          assert.cssUnitNear("px", cstyle.marginLeft, 314);
+          assert.colorEqual(cstyle.color, [204, 0, 0, 1]);
         });
 
 
         provide.yield("Ukoru/css/loader-test");
         assert.dom('head', function () {
           refute.dom('link[href="/koru/css/loader-test.css"]');
-          assert.dom('head>link[rel=stylesheet][href="/koru/css/loader-test2.css"]');
+          assert.dom('head>link[rel=stylesheet][href="/koru/css/.build/less-compiler-test.less.css"]');
         });
         done();
       }

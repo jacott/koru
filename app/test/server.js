@@ -1,4 +1,6 @@
+var Path = require('path');
 var requirejs = require('requirejs');
+
 
 requirejs.config({
   //Use node's special variable __dirname to
@@ -6,17 +8,19 @@ requirejs.config({
   //Useful if building a library that will
   //be used in node but does not require the
   //use of node outside
-  baseUrl: __dirname + '/..',
+  baseUrl: __dirname,
 
   config: {
-    "koru/env": {mode: 'test'},
+    "koru/env": {appDir: Path.resolve(__dirname + '/..')},
 
     "koru/mongo/driver": {url: "mongodb://localhost:3004/koru"},
   },
 
-  packages: [
-    "koru/test",
-  ],
+  packages: ["koru/test"],
+
+  paths: {
+    koru: '../koru',
+  },
 
   //Pass the top-level main.js/index.js require
   //function to requirejs so that node modules

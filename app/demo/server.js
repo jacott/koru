@@ -1,4 +1,5 @@
 var Fiber = require('fibers');
+var Path = require('path');
 var requirejs = require('requirejs');
 
 requirejs.config({
@@ -10,7 +11,7 @@ requirejs.config({
   baseUrl: __dirname,
 
   config: {
-    "koru/env": {mode: 'demo'},
+    "koru/env": {appDir: Path.resolve(__dirname + '/..')},
 
     "koru/mongo/driver": {url: "mongodb://localhost:3014/demo"},
   },

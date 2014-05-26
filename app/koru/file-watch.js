@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   var Fiber = core.Fiber;
   var fst = require('./fs-tools');
   var session = require('./session/server-main');
-  var top = require.toUrl('').slice(0,-1);
+  var top = env.appDir;
 
   core.onunload(module, 'reload');
 

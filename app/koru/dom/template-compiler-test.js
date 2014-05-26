@@ -1,13 +1,12 @@
-isClient && define([
-  'module', 'koru/test', '../core', '../dom',
-  'koru/html!./template-compiler-test'
-], function (module, geddon, core, Dom,
-             testTpl) {
+isClient && define(function(require, exports, module) {
+  var test, v;
+  var TH = require('../test');
+  var Dom = require('../dom');
+  var testTpl = require('../html!./template-compiler-test');
 
   var $ = Dom.current;
 
-  var test, v;
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
