@@ -20,6 +20,17 @@ isClient && define(function (require, exports, module) {
       env.unload('koru/css/loader');
     },
 
+    "test load all": function (done) {
+      require(['koru/css/loader'], done.wrap(function (loader) {
+        test.stub(session._commands, 'S', done.wrap(function (data) {
+          assert.same(data.split(' ').sort().join(' '),
+                      'Lkoru/css/.build/less-compiler-test.less.css koru/css/loader-test.css koru/css/loader-test2.css');
+          done();
+        }));
+        loader.loadAll('koru/css');
+      }));
+    },
+
     "test loading css": function (done) {
       refute.dom('head>link[rel=stylesheet]');
 

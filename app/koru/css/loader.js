@@ -6,7 +6,13 @@ define(function(require, exports, module) {
 
   session.provide('S', reloadCss);
 
-  window.reloadCss = reloadCss;
+  exports.reloadCss = reloadCss;
+  exports.loadAll = loadAll;
+  exports.removeAllCss = removeAllCss;
+
+  function loadAll(dir) {
+    session.send('S', 'LA'+dir);
+  }
 
   function removeAllCss() {
     var head = document.head;

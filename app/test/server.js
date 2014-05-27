@@ -36,6 +36,6 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['koru/env', 'koru/server', 'koru/file-watch', 'koru/server-rc'], function (env) {
+requirejs(['koru/env', 'koru/server', 'koru/css/less-watcher', 'koru/server-rc'], function (env) {
   console.log('=> Ready');
 });
