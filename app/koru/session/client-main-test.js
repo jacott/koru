@@ -1,11 +1,10 @@
 define(function (require, exports, module) {
   var test, v;
-  var geddon = require('../test');
+  var TH = require('../test');
   var session = require('./client-main');
   var util = require('../util');
 
-
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

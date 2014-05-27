@@ -39,7 +39,7 @@ define(function(require, exports, module) {
         findAll(Path.join(dir, filenames[i]), results);
       } else if (m = filenames[i].match(/^\w.*(less|css)$/)) {
         if (m[1] === 'less')
-          results.push(Path.join(dir, '.build', filenames[i]+'.css'));
+          results.push(Path.join(dir, '.build', filenames[i]));
         else
           results.push(Path.join(dir, filenames[i]));
       }

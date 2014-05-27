@@ -12,7 +12,7 @@ define(function (require, exports, module) {
 
   var root = Path.resolve(require.toUrl(''));
   var appDir = env.appDir;
-  var nmRoot = appDir+'/../node_modules';
+  var nmRoot = Path.resolve(appDir+'/../node_modules');
 
   var SPECIALS = {
     "require.js": function (m, req, res, error) {

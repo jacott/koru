@@ -145,8 +145,6 @@
         console.log.apply(console, arguments);
       },
 
-
-
       userId: function () {
         return util.thread.userId;
       },
