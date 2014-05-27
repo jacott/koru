@@ -4,7 +4,6 @@ var Future = require('fibers/future');
 
 define(function(require, exports, module) {
   var env = require('../env');
-  var core = require('../core');
   var fst = require('../fs-tools');
   var webServer = require('../web-server');
 
@@ -49,7 +48,7 @@ define(function(require, exports, module) {
     } catch (ex) {
       var fn = ex.filename || path;
       if (fn === 'input') fn = path;
-      core.error(core.util.extractError({
+      env.error(env.util.extractError({
         toString: function () {return "Less compiler error: " + ex.message},
         stack: "\tat "+ fn + ':' + ex.line + ':' + (ex.column + 1),
       })+"\n");

@@ -4,13 +4,12 @@ var Path = require('path');
 
 define(function(require, exports, module) {
   var env = require('./env');
-  var core = require('./core');
-  var Fiber = core.Fiber;
+  var Fiber = env.Fiber;
   var fst = require('./fs-tools');
   var session = require('./session/server-main');
   var top = env.appDir;
 
-  core.onunload(module, 'reload');
+  env.onunload(module, 'reload');
 
   exports.listeners = {
     js: function (type, path, top) {

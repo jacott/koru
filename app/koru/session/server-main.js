@@ -2,13 +2,12 @@ var WebSocketServer = require('ws').Server;
 
 define(function (require, exports, module) {
   var env = require('../env');
-  var core = require('../core');
   var util = require('../util');
   var session = require('./main');
   var server = require('../web-server').server;
   var Connection = require('./server-connection');
 
-  core.onunload(module, 'reload');
+  env.onunload(module, 'reload');
 
   var sessCounter = 0;
 
@@ -35,13 +34,13 @@ define(function (require, exports, module) {
     session.remoteControl ?
       session.remoteControl.logHandle &&
       session.remoteControl.logHandle.call(this, data) :
-      core.logger('INFO', this.engine, data);
+      env.logger('INFO', this.engine, data);
   });
   session.provide('M', function (data) {
     var index = data.indexOf('[');
     var func = session._rpcs[data.slice(0,index).toString()];
     if (! func) {
-      return core.info('unknown method: ' + data.slice(0,index).toString());
+      return env.info('unknown method: ' + data.slice(0,index).toString());
     }
     func.apply(this, JSON.parse(data.slice(index).toString()));
   });
@@ -55,7 +54,7 @@ define(function (require, exports, module) {
       return;
     }
     ++session.totalSessions;
-    core.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
+    env.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
     ws.on('close', function() {
       --session.totalSessions;
       if (sessId) {
@@ -63,16 +62,16 @@ define(function (require, exports, module) {
         conn && conn.closed();
         delete session.conns[sessId];
       }
-      core.info('Close client', sessId);
+      env.info('Close client', sessId);
     });
     var sessId = (++sessCounter).toString(16);
     var conn = session.conns[sessId] = new Connection(ws, sessId);
     ws.on('message', function (data, flags) {
-      core.Fiber(function () {
+      env.Fiber(function () {
         try {
           session._onMessage(conn, data);
         } catch(ex) {
-          core.error(util.extractError(ex));
+          env.error(util.extractError(ex));
         }
       }).run();
     });

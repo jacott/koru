@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
+  var env = require('../env');
   var Model = require('../model/main');
   var session = require('./client-main');
   var Query = require('../model/query');
   var ModelEnv = require('../model/client-main');
-  var core = require('koru/core');
 
   session.provide('A', modelUpdate(added));
   session.provide('C', modelUpdate(changed));
@@ -28,7 +28,7 @@ define(function(require, exports, module) {
     return function (data) {
       var index = data.indexOf('{');
       if (index === -1) {
-        core.Error('Unpected message format: '+ data);
+        env.Error('Unpected message format: '+ data);
         return;
       }
       var nh = data.slice(0,index).toString().split('|');

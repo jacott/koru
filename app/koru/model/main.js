@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var core = require('../core');
+  var env = require('../env');
   var util = require('../util');
   var Val = require('./validation');
   var ModelEnv = require('../env!./main'); // client-main or server-main
@@ -271,7 +271,7 @@ define(function(require, exports, module) {
         properties = name;
         name = module;
       } else {
-        core.onunload(module, function () {
+        env.onunload(module, function () {
           BaseModel._destroyModel(name);
         });
         if (typeof name !== 'string') {

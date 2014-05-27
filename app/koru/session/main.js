@@ -1,5 +1,5 @@
 define(function(require) {
-  var core = require('../core');
+  var env = require('../env');
 
   var session = {
     defineRpc: function (name, func) {
@@ -22,7 +22,7 @@ define(function(require) {
       if (func)
         func.call(conn, data);
       else
-        func || core.info('Unexpected websocket message: '+ type, conn.engine);
+        func || env.info('Unexpected websocket message: '+ type, conn.engine);
     },
   };
 

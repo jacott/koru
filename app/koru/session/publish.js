@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var session = require('../session/server-main');
-  var core = require('../core');
+  var env = require('../env');
 
   session.provide('P', subscribe);
 
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
     } else {
       var func = pubs[name];
       if (! func) {
-        return core.info('unknown method: ' + name);
+        return env.info('unknown method: ' + name);
       }
       sub = sub || new Sub(this, subId);
       subs[subId] = sub;

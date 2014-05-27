@@ -1,12 +1,11 @@
 define(function (require, exports, module) {
   var env = require('./env');
-  var core = require('./core');
   var session = require('./session/client-main');
 
   window.addEventListener('error', function (ev) {
     var badIds = env.discardIncompleteLoads().join("\n");
 
-    session.send('E', core.util.extractError({
+    session.send('E', env.util.extractError({
       toString: function () {
         return ev.error.toString();
       },
@@ -18,8 +17,8 @@ define(function (require, exports, module) {
     var name = err.requireModules && err.requireModules[0];
     name && env.unload(name);
 
-    session.send('E', core.util.extractError(err));
+    session.send('E', env.util.extractError(err));
   };
 
-  return core;
+  return env;
 });

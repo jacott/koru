@@ -1,4 +1,4 @@
-define(['../core'], function(core) {
+define(['../env'], function(env) {
   var validators = {};
 
   var Val = {
@@ -52,8 +52,8 @@ define(['../core'], function(core) {
 
     allowIfValid: function (truthy, doc) {
       if (! truthy) {
-        if (doc) core.info('INVALID ' + this.inspectErrors(doc));
-        var error = core.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
+        if (doc) env.info('INVALID ' + this.inspectErrors(doc));
+        var error = env.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
         error.doc = doc;
         error.toString = function () {
           return this.message;
@@ -65,7 +65,7 @@ define(['../core'], function(core) {
 
     allowIfFound: function (truthy) {
       if (! truthy) {
-        throw new core.Error(404, 'Not found');
+        throw new env.Error(404, 'Not found');
       }
     },
 
@@ -166,9 +166,9 @@ define(['../core'], function(core) {
   };
 
   function accessDenied(details) {
-    var error = new core.Error(403, "Access denied", details);
+    var error = new env.Error(403, "Access denied", details);
 
-    core.info('Access denied: ', details, core.util.extractError(error));
+    env.info('Access denied: ', details, env.util.extractError(error));
     throw error;
   }
 

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var core = require('koru/core');
-  var util = core.util;
+  var env = require('../env');
+  var util = env.util;
   var Random = require('../random');
   var session = require('../session/server-main');
   var Val = require('./validation');

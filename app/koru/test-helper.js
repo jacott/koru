@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
-  var core = require('./core');
+  var env = require('./env');
   var bt = require('./test');
 
-  var util = core.util;
+  var util = env.util;
   var geddon = bt.geddon;
 
-  var TH = core.util.reverseExtend({
+  var TH = env.util.reverseExtend({
     silenceLogger: function (func) {
-      var logger = geddon.test.stub(core, 'logger');
+      var logger = geddon.test.stub(env, 'logger');
       if (func) {
         try {
           func();
@@ -22,7 +22,7 @@ define(function(require, exports, module) {
     },
 
     sinon: geddon.sinon,
-    util: core.util,
+    util: env.util,
 
     login: function (id, func) {
       var oldId = util.thread.userId;

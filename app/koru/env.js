@@ -89,7 +89,9 @@
    * This module is also a requirejs loader plugin.
    */
   define(function (require, exports, module) {
-    var util = require('./util-base');
+    var util = require('./util');
+    var errors = require('./errors');
+
     var loaderPrefix = module.id + "!";
 
     if (isClient) {
@@ -112,7 +114,7 @@
       };
     }
 
-    return {
+    return (isServer ? global : window)._koru_ = {
       onunload: onunload,
       unload: unload,
       reload: reload,
@@ -122,6 +124,29 @@
       loaded: loaded,
       discardIncompleteLoads: discardIncompleteLoads,
       appDir: appDir(require, module),
+
+      Error: errors.Error.bind(errors),
+      Fiber: util.Fiber,
+      util: util,
+
+      "\x64ebug": function () {
+        this.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
+      },
+
+      info: function () {
+        this.logger('INFO', Array.prototype.join.call(arguments, ' '));
+      },
+
+      error: function () {
+        this.logger('ERROR', Array.prototype.join.call(arguments, ' '));
+      },
+
+      logger: function () {
+        console.log.apply(console, arguments);
+      },
+
+
+
       userId: function () {
         return util.thread.userId;
       },

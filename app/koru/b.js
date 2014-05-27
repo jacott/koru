@@ -1,10 +1,9 @@
 (function() {
   define(function (require, exports, module) {
     var env = require('./env');
-    var core = require('./core');
     var loaderPrefix = module.id + "!";
 
-    core.onunload(module, 'reload');
+    env.onunload(module, 'reload');
 
     return {
       /**

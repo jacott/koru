@@ -1,5 +1,5 @@
-define(['koru/core'], function(core) {
-  var util = core.util;
+define(['./env'], function(env) {
+  var util = env.util;
   var extend = util.extend;
 
   var vendorStylePrefix = (function () {
@@ -882,7 +882,7 @@ define(['koru/core'], function(core) {
       event.stopImmediatePropagation();
       if (! (Dom.globalErrorCatch && Dom.globalErrorCatch(ex))) {
         if('stack' in ex)
-          core.error(util.extractError(ex));
+          env.error(util.extractError(ex));
 
         throw ex;
       }

@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   var env = require('../env');
-  var core = require('../core');
 
   require("./assertions-methods");
   require("./callbacks");
@@ -8,7 +7,7 @@ define(function(require, exports, module) {
   require("./runner");
   var geddon = require("./core");
 
-  core.onunload(module, 'reload');
+  env.onunload(module, 'reload');
 
   var top = isServer ? global : window;
 
@@ -17,7 +16,7 @@ define(function(require, exports, module) {
 
   var count, skipCount, errorCount, timer;
 
-  var origLogger = core.logger;
+  var origLogger = env.logger;
 
   var testRunCount = 0;
 
@@ -33,15 +32,15 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      core.logger = function (type) {
-        origLogger.apply(core, arguments);
+      env.logger = function (type) {
+        origLogger.apply(env, arguments);
         var args = Array.prototype.slice.call(arguments, 1);
         self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 5) : args.join(' ')));
       };
 
       require(tests, function () {
         geddon.start(isServer ? function (runNext) {
-          core.Fiber(runNext).run();
+          env.Fiber(runNext).run();
         } : undefined);
       }, errorLoading);
 
@@ -50,15 +49,15 @@ define(function(require, exports, module) {
         ++errorCount;
         if (err.originalError) err = err.originalError;
         if (('stack' in err))
-          core.error(core.util.extractError(err));
+          env.error(env.util.extractError(err));
         else
-          core.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
+          env.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
         endTest();
       }
     },
 
     testCase: function (module, option) {
-      core.onunload(module, geddon.unloadTestcase);
+      env.onunload(module, geddon.unloadTestcase);
       return geddon.testCase(module.id.replace(/-test$/, ''), option);
     },
   };
@@ -88,7 +87,7 @@ define(function(require, exports, module) {
 
   function endTest() {
     if (isClient) document.title = document.title.replace(/Running: /, '');
-    core.logger = origLogger;
+    env.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();
   }

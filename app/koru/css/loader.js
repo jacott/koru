@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
-  var core = require('../core');
+  var env = require('../env');
   var session = require('../session/main');
 
-  core.onunload(module, removeAllCss);
+  env.onunload(module, removeAllCss);
 
   session.provide('S', reloadCss);
 

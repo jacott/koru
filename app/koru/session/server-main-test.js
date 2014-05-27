@@ -3,7 +3,7 @@ isServer && define(function (require, exports, module) {
   var bt = require('koru/test');
   var session = require('./server-main');
   var util = require('../util');
-  var core = require('../core');
+  var env = require('../env');
 
   bt.testCase(module, {
     setUp: function () {
@@ -35,7 +35,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test onclose": function () {
-      test.stub(core, 'info');
+      test.stub(env, 'info');
       session._onConnection(v.ws);
 
       var key = session._sessCounter.toString(16);

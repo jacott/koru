@@ -2,8 +2,7 @@
 
 define(function (require, exports, module) {
   var env = require('../env');
-  var core = require('../core');
-  var util = core.util;
+  var util = env.util;
   var session = require('./main');
 
   var waitFuncs = [];
@@ -12,7 +11,7 @@ define(function (require, exports, module) {
   var versionHash;
   var isSimulation = false;
 
-  core.onunload(module, 'reload');
+  env.onunload(module, 'reload');
 
   util.extend(session, {
     send: function (type, msg) {
@@ -43,7 +42,7 @@ define(function (require, exports, module) {
     if (versionHash && versionHash !== data)
       env.reload(); // FIXME we want to send queued messages first
     versionHash = data;
-    ws.send('X'+ core.util.engine);
+    ws.send('X'+ env.util.engine);
     for(var i = 0; i < waitFuncs.length; ++i) {
       ws.send(waitFuncs[i]);
     }

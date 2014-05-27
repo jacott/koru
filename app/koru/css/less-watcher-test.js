@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var core = require('../core');
+  var env = require('../env');
   var Future = require('fibers/future');
   var TH = require('../test');
   require('./less-watcher');
@@ -26,7 +26,7 @@ isServer && define(function (require, exports, module) {
       var path =  Path.resolve(require.toUrl("./compiler-test.less"));
       var top = Path.resolve(require.toUrl("."))+'/';
       var future = new Future();
-      var fb1 = core.Fiber(function () {
+      var fb1 = env.Fiber(function () {
         watcher('less', "compiler-test.less", top, v.session);
         future.return();
       });

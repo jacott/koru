@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  var core = require('../core');
+  var env = require('../env');
   var TH = require('./test-helper');
   var Model = require('./main');
   require('../b!./validator:required');
@@ -305,7 +305,7 @@ define(function (require, exports, module) {
       },
 
       "test must be valid save ": function () {
-        test.stub(core, 'info');
+        test.stub(env, 'info');
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
 
@@ -529,13 +529,13 @@ define(function (require, exports, module) {
     },
 
     "test define via module": function () {
-      test.stub(core, 'onunload');
+      test.stub(env, 'onunload');
       var TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
       assert.same(Model.TestModel, TestModel);
 
-      assert.calledWith(core.onunload, {id: '/foo/test-model'}, sinon.match.func);
+      assert.calledWith(env.onunload, {id: '/foo/test-model'}, sinon.match.func);
 
-      core.onunload.yield();
+      env.onunload.yield();
 
       refute(Model.TestModel);
     },

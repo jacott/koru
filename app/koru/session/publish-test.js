@@ -1,11 +1,11 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var bt = require('../test');
+  var env = require('../env');
+  var TH = require('../test');
   var publish = require('./publish');
   var session = require('../session/server-main');
-  var core = require('../core');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
@@ -58,7 +58,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test Koru error": function () {
-      v.sub.error(new core.Error(404, 'Not found'));
+      v.sub.error(new env.Error(404, 'Not found'));
 
       assert.calledWith(v.send, 'Pa123|404|Not found');
 

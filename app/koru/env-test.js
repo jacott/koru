@@ -19,5 +19,10 @@ define(function (require, exports, module) {
       else
         assert(isServer);
     },
+
+    "test isServer, isClient": function () {
+      assert.same(isClient, typeof process === 'undefined');
+      assert.same(isServer, typeof process !== 'undefined');
+    },
   });
 });

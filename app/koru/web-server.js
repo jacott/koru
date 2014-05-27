@@ -5,11 +5,10 @@ var parseurl = require('parseurl');
 
 define(function (require, exports, module) {
   var env = require('./env');
-  var core = require('./core');
   var fst = require('./fs-tools');
   var queue = require('./queue')();
 
-  core.onunload(module, 'reload');
+  env.onunload(module, 'reload');
 
   var root = Path.resolve(require.toUrl(''));
   var appDir = env.appDir;
@@ -33,7 +32,7 @@ define(function (require, exports, module) {
   exports.compilers = {};
   exports.requestListener = requestListener;
 
-  function requestListener(req, res) {core.Fiber(function () {
+  function requestListener(req, res) {env.Fiber(function () {
     try {
       var path = parseurl(req).pathname;
       var reqRoot = root;
@@ -54,7 +53,7 @@ define(function (require, exports, module) {
           .pipe(res);
       }
     } catch(ex) {
-      core.error(core.util.extractError(ex));
+      env.error(env.util.extractError(ex));
     }
 
     function sendDefault(err) {

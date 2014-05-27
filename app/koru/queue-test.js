@@ -1,8 +1,8 @@
 isServer && define(function (require, exports, module) {
   var test, v;
+  var env = require('./env');
   var TH = require('./test');
   var Queue = require('./queue');
-  var core = require('./core');
   var Future = require('fibers/future');
 
   TH.testCase(module, {
@@ -54,7 +54,7 @@ isServer && define(function (require, exports, module) {
 
 
       function letRun(func) {
-        core.Fiber(func).run();
+        env.Fiber(func).run();
         var f = new Future();
         setTimeout(function () {
           f.return(v.q1);
