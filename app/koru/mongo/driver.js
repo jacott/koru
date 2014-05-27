@@ -42,11 +42,10 @@ Connection.prototype = {
   },
 
   dropCollection: function (name) {
-    var db = this._db;
+    var future = new Future;
     try {
-      wait(function (future) {
-        db.dropCollection(name, future);
-      });
+      this._db.dropCollection(name, future.resolver());
+      return future.wait();
     } catch(ex) {
       if (ex.name !== 'MongoError' || ! ex.toString().match(/not found/))
         throw ex;
@@ -62,101 +61,78 @@ function Collection(col) {
   this._col = col;
 }
 
-function wait(func) {
-  var future = new Future;
-  func(callback);
-
-  return future.wait();
-
-  function callback(err, result) {
-    if (err) {
-      future.throw(err);
-    } else {
-      future.return(result);
-    }
-  }
-}
-
 Collection.prototype = {
   constructor: Collection,
 
   insert: function (doc) {
-    var col = this._col;
-    return wait(function (future) {
-      col.insert(doc, {safe: true}, future);
-    });
+    var future = new Future;
+    this._col.insert(doc, {safe: true}, future.resolver());
+
+    return future.wait();
   },
 
   update: function (query, changes, options) {
-    var col = this._col;
-    return wait(function (future) {
-      if (options)
-        col.update(query, changes, options, future);
-      else
-        col.update(query, changes, future);
-    });
+    var future = new Future;
+    if (options)
+      this._col.update(query, changes, options, future.resolver());
+    else
+      this._col.update(query, changes, future.resolver());
+
+    return future.wait();
   },
 
   count: function (query, options) {
-    var col = this._col;
-    return wait(function (future) {
-      if (options)
-        col.count(query, options, future);
-      else
-        col.count(query, future);
-    });
+    var future = new Future;
+    if (options)
+      this._col.count(query, options, future.resolver());
+    else
+      this._col.count(query, future.resolver());
+
+    return future.wait();
   },
 
   findOne: function (query, options) {
-    var col = this._col;
-    return wait(function (future) {
-      if (options)
-        col.findOne(query, options, future);
-      else
-        col.findOne(query, future);
-    });
+    var future = new Future;
+    if (options)
+      this._col.findOne(query, options, future.resolver());
+    else
+      this._col.findOne(query, future.resolver());
+
+    return future.wait();
   },
+
   find: function (query, options) {
-    var col = this._col;
-    return new Cursor(wait(function (future) {
-      if (options)
-        col.find(query, options, future);
-      else
-        col.find(query, future);
-    }));
+    var future = new Future;
+    if (options)
+      this._col.find(query, options, future.resolver());
+    else
+      this._col.find(query, future.resolver());
+    return new Cursor(future.wait());
   },
 
   remove: function (query, options) {
-    var col = this._col;
-    return wait(function (future) {
-      if (options)
-        col.remove(query, options, future);
-      else
-        col.remove(query, future);
-    });
+    var future = new Future;
+    if (options)
+      this._col.remove(query, options, future.resolver());
+    else
+      this._col.remove(query, future.resolver());
+
+    return future.wait();
   },
 };
 
 function Cursor(mcursor) {
   this.close = function () {
-    return wait(function (future) {
-      mcursor.close(future);
-    });
+    var future = new Future;
+    mcursor.close(future.resolver());
+    future.wait();
   };
 
   var future;
 
   this.next = function () {
     future = new Future;
-    mcursor.nextObject(nextCallback);
+    mcursor.nextObject(future.resolver());
     return future.wait();
   };
-
-  function nextCallback(err, doc) {
-    if (err) {
-      future.throw(err);
-    } else {
-      future.return(doc);
-    }
-  }
 }

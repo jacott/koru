@@ -59,8 +59,6 @@ isServer && define(function (require, exports, module) {
         sut.defaultDb.dropCollection('Foo');
       });
 
-      sut.closeDefaultDb();
-
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
 
