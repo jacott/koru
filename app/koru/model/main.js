@@ -142,6 +142,10 @@ define(function(require, exports, module) {
       return model;
     },
 
+    get query() {
+      return new Query(this);
+    },
+
     isLocked: function(id) {
       return (this._locks || (this._locks = {})).hasOwnProperty(id);
     },
