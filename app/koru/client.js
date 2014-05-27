@@ -20,5 +20,7 @@ define(function (require, exports, module) {
     session.send('E', env.util.extractError(err));
   };
 
+  session.connect();
+
   return env;
 });

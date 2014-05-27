@@ -6,7 +6,7 @@ define(function (require, exports, module) {
   var session = require('./main');
 
   var waitFuncs = [];
-  var ready = false;
+  var state = 'disconnected';
   var retryCount = 0;
   var versionHash;
   var isSimulation = false;
@@ -15,7 +15,7 @@ define(function (require, exports, module) {
 
   util.extend(session, {
     send: function (type, msg) {
-      if (ready) connect._ws.send(type+msg);
+      if (state === 'ready') connect._ws.send(type+msg);
       else waitFuncs.push(type+msg);
     },
     rpc: function (name /*, args */) {
@@ -43,11 +43,16 @@ define(function (require, exports, module) {
       env.reload(); // FIXME we want to send queued messages first
     versionHash = data;
     ws.send('X'+ env.util.engine);
+
+    for(var i = 0; i < session._onConnect.length; ++i) {
+      session._onConnect[i]();
+    }
+
     for(var i = 0; i < waitFuncs.length; ++i) {
       ws.send(waitFuncs[i]);
     }
     waitFuncs = [];
-    ready = true;
+    state = 'ready';
     retryCount = 0;
   });
   session.provide('L', function (data) {require([data], function() {})});
@@ -57,7 +62,15 @@ define(function (require, exports, module) {
     env.unload(args[1]);
   });
 
-  connect();
+  util.extend(session, {
+    _onConnect: [],
+    onConnect: function (func) {
+      this._onConnect.push(func);
+    },
+
+    connect: connect,
+  });
+
 
   function url() {
     var location = window.document.location;
@@ -72,9 +85,9 @@ define(function (require, exports, module) {
     ws.onmessage = function (event) {session._onMessage(conn, event.data)};
 
     ws.onclose = function (event) {
-      ready = false;
+      state = 'disconnected';
       ws = conn = null;
-      retryCount || _koru_.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
+      retryCount || env.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
       retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
 
 

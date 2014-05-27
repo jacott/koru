@@ -1,7 +1,9 @@
-isClient && define(['module', 'koru/test/sinon', 'koru/test', './dom'], function (module, sinon, geddon, Dom) {
+isClient && define(function (require, exports, module) {
   var test, v;
+  var TH = require('./test');
+  var Dom = require('./dom');
 
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
@@ -15,7 +17,7 @@ isClient && define(['module', 'koru/test/sinon', 'koru/test', './dom'], function
 
     "evalArgs": {
       "test constant": function () {
-        assert.equals(_private.evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
+        assert.equals(Dom._private.evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
       },
     },
 
@@ -140,7 +142,7 @@ isClient && define(['module', 'koru/test/sinon', 'koru/test', './dom'], function
         var data = {arg: 'me'};
         Dom.Foo.$render(data);
 
-        assert.calledWith(Dom.Bar.$created, sinon.match(function (ctx) {
+        assert.calledWith(Dom.Bar.$created, TH.match(function (ctx) {
           assert.same(ctx.data, data);
           return true;
         }));
@@ -231,7 +233,7 @@ isClient && define(['module', 'koru/test/sinon', 'koru/test', './dom'], function
       Dom.setClassBySuffix('discard', 'Avatar', elm);
       assert.same(elm.className, 'designMode discardAvatar');
 
-      _private.currentElement = elm;
+      Dom._private.currentElement = elm;
 
       Dom.setClassBySuffix('use', 'Mode');
       assert.same(elm.className, 'discardAvatar useMode');
@@ -256,7 +258,7 @@ isClient && define(['module', 'koru/test/sinon', 'koru/test', './dom'], function
       Dom.setClassByPrefix('design', 'mode-', elm);
       assert.same(elm.className, 'mode-design');
 
-      _private.currentElement = elm;
+      Dom._private.currentElement = elm;
 
       Dom.setClassByPrefix('discard', 'avatar-');
       assert.same(elm.className, 'mode-design avatar-discard');

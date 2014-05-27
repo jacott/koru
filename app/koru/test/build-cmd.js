@@ -46,7 +46,7 @@ define(function(require) {
 
       if (type !== 'server') {
         fs.writeFileSync(cmdFn,
-                         "define(['koru/test/client'],function(bt){bt.run("+
+                         "define(['koru/test/client'],function(TH){TH.run("+
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
         fs.renameSync(cmdFn, requirejs.toUrl('client-cmd.js'));
@@ -54,7 +54,7 @@ define(function(require) {
       }
 
       if (type !== 'client') {
-        require(['./server'], function (bt) {bt.run(pattern, sTests)});
+        require(['./server'], function (TH) {TH.run(pattern, sTests)});
       }
 
       function findAll(dir) {

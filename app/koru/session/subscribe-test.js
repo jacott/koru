@@ -1,10 +1,10 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var bt = require('../test');
+  var TH = require('../test');
   var session = require('../session/main');
   var subscribe = require('./subscribe');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

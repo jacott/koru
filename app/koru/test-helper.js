@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
   var env = require('./env');
-  var bt = require('./test');
+  var TH = require('./test');
 
   var util = env.util;
-  var geddon = bt.geddon;
+  var geddon = TH.geddon;
 
-  var TH = env.util.reverseExtend({
+  TH = env.util.reverseExtend({
     silenceLogger: function (func) {
       var logger = geddon.test.stub(env, 'logger');
       if (func) {
@@ -21,7 +21,6 @@ define(function(require, exports, module) {
       }
     },
 
-    sinon: geddon.sinon,
     util: env.util,
 
     login: function (id, func) {
@@ -34,7 +33,7 @@ define(function(require, exports, module) {
         util.thread.userId = oldId;
       }
     },
-  }, bt);
+  }, TH);
 
   var ga = geddon.assertions;
 

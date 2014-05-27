@@ -477,7 +477,7 @@ define(['./env'], function(env) {
   }
 
 
-  _private = {
+  Dom._private = {
     DomTemplate: DomTemplate,
     getValue: getValue,
     evalArgs: evalArgs,

@@ -1,9 +1,9 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var bt = require('koru/test');
+  var TH = require('../test');
   var sut = require('./driver');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

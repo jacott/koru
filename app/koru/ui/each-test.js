@@ -1,7 +1,6 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../model/test-helper');
-  var sinon = TH.sinon;
   var eachTpl = require('../html!./each-test');
   var Dom = require('../dom');
   var Model = require('../model/main');
@@ -197,8 +196,8 @@ isClient && define(function (require, exports, module) {
     "test simple adding and deleting": function () {
       assert.dom(v.Each.$render({}), function () {
         refute.dom('li');
-        assert.calledOnceWith(v.fooList, sinon.match.func, {template: "Row"},
-                              sinon.match(function (elm) {
+        assert.calledOnceWith(v.fooList, TH.match.func, {template: "Row"},
+                              TH.match(function (elm) {
           return elm._each;
         }));
 
@@ -270,7 +269,7 @@ isClient && define(function (require, exports, module) {
     "test update of helper": function () {
       assert.dom(v.Each.$render({}), function () {
         refute.dom('li');
-        assert.calledOnceWith(v.fooList, sinon.match.func);
+        assert.calledOnceWith(v.fooList, TH.match.func);
         assert.same(v.fooList.args[0][0].count, 1);
 
         v.fooList.yield({id: 1, name: 'r1'});

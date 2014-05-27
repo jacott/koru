@@ -1,6 +1,9 @@
-define(['module', 'koru/test', './util'], function (module, geddon, util) {
+define(function (require, exports, module) {
   var test, v;
-  geddon.testCase(module, {
+  var TH = require('./test');
+  var util = require('./util');
+
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

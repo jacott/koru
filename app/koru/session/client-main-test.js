@@ -16,6 +16,24 @@ define(function (require, exports, module) {
       delete session._rpcs['foo.bar'];
     },
 
+    "connect": {
+      setUp: function () {
+        v.origOnConnect = session._onConnect;
+        session._onConnect = [];
+      },
+
+      tearDown: function () {
+        session._onConnect = v.origOnConnect;
+      },
+
+
+      "test onConnect": function () {
+        session.onConnect(v.stub = test.stub);
+
+        assert.same(session._onConnect[0], v.stub);
+      },
+    },
+
     "test rpc": function () {
       session.defineRpc('foo.rpc', rpcSimMethod);
       session.defineRpc('foo.s2', rpcSimMethod2);

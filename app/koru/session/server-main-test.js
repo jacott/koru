@@ -1,19 +1,15 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var bt = require('koru/test');
+  var TH = require('./test-helper');
   var session = require('./server-main');
   var util = require('../util');
   var env = require('../env');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.ws = {
-        upgradeReq: {socket: {}, headers: {}},
-        on: test.stub(),
-        send: test.stub(),
-      };
+      v.ws = TH.mockWs();
     },
 
     tearDown: function () {
@@ -36,12 +32,9 @@ isServer && define(function (require, exports, module) {
 
     "test onclose": function () {
       test.stub(env, 'info');
-      session._onConnection(v.ws);
+      var conn = TH.sessionConnect(v.ws);
 
-      var key = session._sessCounter.toString(16);
-      var conn = session.conns[key];
-
-      assert.calledWith(v.ws.on, 'close', bt.geddon.sinon.match(function (func) {
+      assert.calledWith(v.ws.on, 'close', TH.match(function (func) {
         v.func = func;
         return typeof func === 'function';
       }));
@@ -51,9 +44,7 @@ isServer && define(function (require, exports, module) {
       v.func();
 
       assert.called(conn.closed);
-
-      refute(key in session.conns);
-
+      refute(conn.sessId in session.conns);
     },
   });
 });

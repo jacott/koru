@@ -10,4 +10,4 @@ function killKids {
 trap "killKids" SIGCHLD
 trap "killKids" 0
 
-mongo localhost:3004/test
+mongo localhost:3004/koru

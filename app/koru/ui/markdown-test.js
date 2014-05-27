@@ -1,10 +1,10 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var bt = require('koru/test');
+  var TH = require('../test');
   var Markdown = require('./markdown');
   var Dom = require('../dom');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

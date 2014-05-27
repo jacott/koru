@@ -1,9 +1,9 @@
 define(function (require, exports, module) {
   var test, v;
-  var geddon = require('koru/test');
+  var TH = require('./test');
   var Random = require('./random');
 
-  geddon.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

@@ -4,7 +4,6 @@ define(function (require, exports, module) {
   var Query = require('./query');
   var Model = require('./main');
   var util = require('../util');
-  var sinon = TH.sinon;
 
   TH.testCase(module, {
     setUp: function () {
@@ -130,7 +129,7 @@ define(function (require, exports, module) {
 
       st.forEach(v.stub = test.stub());
       assert.calledOnce(v.stub);
-      assert.calledWith(v.stub, sinon.match(function (doc) {
+      assert.calledWith(v.stub, TH.match(function (doc) {
         if (doc._id === v.foo._id) {
           assert.equals(doc.attributes, v.foo.attributes);
           return true;

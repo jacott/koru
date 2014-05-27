@@ -1,11 +1,11 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var bt = require('../test');
+  var TH = require('../test');
   var session = require('../session/server-main');
   var Connection = require('./server-connection');
   var env = require('../env');
 
-  bt.testCase(module, {
+  TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};

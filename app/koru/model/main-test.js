@@ -4,7 +4,6 @@ define(function (require, exports, module) {
   var TH = require('./test-helper');
   var Model = require('./main');
   require('../b!./validator:required');
-  var sinon = TH.sinon;
   var util = TH.util;
   var session = require('../session/main');
 
@@ -121,7 +120,7 @@ define(function (require, exports, module) {
         test.onEnd(function () {och.stop()});
 
         v.tc = v.TestModel.create({name: 'foo'});
-        assert.calledOnceWith(v.onChange, sinon.match(function (doc) {
+        assert.calledOnceWith(v.onChange, TH.match(function (doc) {
           return doc.attributes === v.tc.attributes;
         }), null);
 
@@ -533,7 +532,7 @@ define(function (require, exports, module) {
       var TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
       assert.same(Model.TestModel, TestModel);
 
-      assert.calledWith(env.onunload, {id: '/foo/test-model'}, sinon.match.func);
+      assert.calledWith(env.onunload, {id: '/foo/test-model'}, TH.match.func);
 
       env.onunload.yield();
 
