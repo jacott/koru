@@ -16,6 +16,7 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+
     "test rpc": function () {
       session.defineRpc('foo.rpc', rpcMethod);
 

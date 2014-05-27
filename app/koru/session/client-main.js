@@ -39,19 +39,11 @@ define(function (require, exports, module) {
 
   session.provide('X', function (data) {
     var ws = this.ws;
+    data = data.slice(1).toString();
     if (versionHash && versionHash !== data)
-      env.reload(); // FIXME we want to send queued messages first
+      env.reload();
     versionHash = data;
-    ws.send('X'+ env.util.engine);
 
-    for(var i = 0; i < session._onConnect.length; ++i) {
-      session._onConnect[i]();
-    }
-
-    for(var i = 0; i < waitFuncs.length; ++i) {
-      ws.send(waitFuncs[i]);
-    }
-    waitFuncs = [];
     state = 'ready';
     retryCount = 0;
   });
@@ -82,6 +74,18 @@ define(function (require, exports, module) {
     var conn = {
       ws: ws,
     };
+    ws.onopen = function (event) {
+      ws.send('X1'+ env.util.engine);
+      for(var i = 0; i < session._onConnect.length; ++i) {
+        session._onConnect[i]();
+      }
+
+      for(var i = 0; i < waitFuncs.length; ++i) {
+        ws.send(waitFuncs[i]);
+      }
+      waitFuncs = [];
+    };
+
     ws.onmessage = function (event) {session._onMessage(conn, event.data)};
 
     ws.onclose = function (event) {

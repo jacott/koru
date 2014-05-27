@@ -28,7 +28,7 @@ define(function (require, exports, module) {
     get _sessCounter() {return sessCounter},
   });
 
-  session.provide('X', function (data) {this.engine = data});
+  session.provide('X', function (data) {this.engine = data.slice(1)});
   session.provide('L', function (data) {});
   session.provide('E', function (data) {
     session.remoteControl ?
@@ -76,7 +76,7 @@ define(function (require, exports, module) {
       }).run();
     });
 
-    ws.send('X'+session.versionHash);
+    ws.send('X1'+session.versionHash);
   }
 
   function sendAll(cmd, msg) {
