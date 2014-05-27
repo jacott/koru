@@ -1,10 +1,12 @@
 define(function(require, exports, module) {
   var env = require('../env');
 
-  function Connection(ws, sessId) {
+  function Connection(ws, sessId, close) {
     this.ws = ws;
     this.sessId = sessId;
     this._subs = {};
+    this.close = close;
+    ws.on('close', close);
   }
 
   Connection.prototype = {

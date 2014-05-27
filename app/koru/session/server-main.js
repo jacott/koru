@@ -55,7 +55,9 @@ define(function (require, exports, module) {
     }
     ++session.totalSessions;
     env.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
-    ws.on('close', function() {
+    var sessId = (++sessCounter).toString(16);
+    var conn = session.conns[sessId] = new Connection(ws, sessId, function() {
+      ws.close();
       --session.totalSessions;
       if (sessId) {
         var conn = session.conns[sessId];
@@ -64,8 +66,6 @@ define(function (require, exports, module) {
       }
       env.info('Close client', sessId);
     });
-    var sessId = (++sessCounter).toString(16);
-    var conn = session.conns[sessId] = new Connection(ws, sessId);
     ws.on('message', function (data, flags) {
       env.Fiber(function () {
         try {

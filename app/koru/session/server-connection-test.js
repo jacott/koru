@@ -9,7 +9,9 @@ isServer && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      v.conn = new Connection(v.ws = {send: test.stub()}, 123);
+      v.conn = new Connection(v.ws = {
+        send: test.stub(), close: test.stub(), on: test.stub(),
+      }, 123);
 
     },
 
