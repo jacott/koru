@@ -37,13 +37,22 @@ define(function (require, exports, module) {
       env.logger('INFO', this.engine, data);
   });
   session.provide('M', function (data) {
-    var index = data.indexOf('[');
-    var func = session._rpcs[data.slice(0,index).toString()];
+    var index = data.indexOf('|');
+    if (index !== -1) {
+      var msgId = data.slice(0, index);
+
+      var aIdx = data.indexOf('[', index + 1);
+      var func = session._rpcs[data.slice(index + 1, aIdx).toString()];
+    }
     if (! func) {
       return env.info('unknown method: ' + data.slice(0,index).toString());
     }
-    // DEBUG FIXME catch ex and return and send to client
-    func.apply(this, JSON.parse(data.slice(index).toString()));
+    try {
+      var result = func.apply(this, JSON.parse(data.slice(aIdx).toString()));
+      this.ws.send('M'+msgId+'|r'+ (result ? JSON.stringify(result) : ''));
+    } catch(ex) {
+      this.ws.send('M'+msgId+'|e' + (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex));
+    }
   });
 
   session.wss.on('connection', onConnection);

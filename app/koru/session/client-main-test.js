@@ -35,6 +35,7 @@ define(function (require, exports, module) {
     },
 
     "test rpc": function () {
+      var fooId;
       session.defineRpc('foo.rpc', rpcSimMethod);
       session.defineRpc('foo.s2', rpcSimMethod2);
 
@@ -45,13 +46,22 @@ define(function (require, exports, module) {
       assert.equals(v.args, [1, 2, 3]);
       assert.same(v.thisValue, util.thread);
 
+      assert.same(session._msgId, fooId);
+
+      session.rpc('foo.s2');
+
+      assert.same(session._msgId, fooId+1);
+
       function rpcSimMethod(one, two, three) {
         v.thisValue = this;
         v.args = util.slice(arguments);
-        assert.calledWith(v.send, 'M', "foo.rpc"+JSON.stringify(v.args));
+        fooId = session._msgId;
+        assert.calledWith(v.send, 'M', fooId.toString(36)+"|foo.rpc"+JSON.stringify(v.args));
         v.send.reset();
         assert.isTrue(session.isSimulation);
         session.rpc('foo.s2', 'aaa');
+        assert.same(session._msgId, fooId);
+
         assert.isTrue(session.isSimulation);
         assert.same(v.s2Name, 'aaa');
         assert.same(v.s2This, util.thread);
@@ -71,8 +81,30 @@ define(function (require, exports, module) {
       session.rpc('foo.rpc', 'a');
       assert.equals(v.args, ['a']);
 
-      session.rpc('foo.rpc', 'b', test.stub());
+      session.rpc('foo.rpc', 'b', v.bstub = test.stub());
       assert.equals(v.args, ['b']);
+
+      session.rpc('foo.rpc', 'c', v.cstub = test.stub());
+      var msgId = session._msgId;
+
+      session._onMessage({}, 'M'+ msgId.toString(36) + '|e404,error Msg');
+
+      assert.calledWithExactly(v.cstub, TH.match(function (err) {
+        assert.same(err.error, 404);
+        assert.same(err.reason, 'error Msg');
+        return true;
+      }));
+
+      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r[1,2,3]');
+
+      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r[1,2,3]');
+
+      assert.calledOnce(v.bstub);
+
+      assert.calledWithExactly(v.bstub, null, TH.match(function (result) {
+        assert.equals(result, [1,2,3]);
+        return true;
+      }));
 
       function rpcSimMethod() {
         v.args = util.slice(arguments);

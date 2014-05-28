@@ -6,6 +6,7 @@ define(function (require, exports, module) {
   var session = require('./main');
 
   var waitFuncs = [];
+  var waitMs = [];
   var state = 'disconnected';
   var retryCount = 0;
   var versionHash;
@@ -14,25 +15,34 @@ define(function (require, exports, module) {
   env.onunload(module, 'reload');
 
   util.extend(session, {
+    _msgId: 0,
+
     send: function (type, msg) {
       if (state === 'ready') connect._ws.send(type+msg);
       else waitFuncs.push(type+msg);
     },
     rpc: function (name /*, args */) {
-      var args = util.slice(arguments, 1, (typeof arguments[arguments.length - 1] === 'function') ? -1 : arguments.length);
+      var func = arguments[arguments.length - 1];
+      if (typeof func !== 'function') func = null;
+      var args = util.slice(arguments, 1, func ? -1 : arguments.length);
+
       if (isSimulation) {
         this._rpcs[name].apply(util.thread, args);
+
       } else try {
         isSimulation = true;
-        session.sendM(name, args);
+        session.sendM(name, args, func);
         this._rpcs[name].apply(util.thread, args);
       } finally {
         isSimulation = false;
       }
     },
 
-    sendM: function (name, args) {
-      session.send('M', (args === undefined) ? name : name + JSON.stringify(args));
+    sendM: function (name, args, func) {
+      var msgId = (++session._msgId).toString(36);
+      var data = msgId+'|'+ (args === undefined ? name : name + JSON.stringify(args));
+      waitMs[msgId] = [data, func];
+      state === 'ready' && session.send('M', data);
     },
     sendP: sendFunc('P'),
 
@@ -46,6 +56,7 @@ define(function (require, exports, module) {
     connect: connect,
   });
 
+
   session.provide('X', function (data) {
     var ws = this.ws;
     data = data.slice(1).toString();
@@ -56,6 +67,29 @@ define(function (require, exports, module) {
     state = 'ready';
     retryCount = 0;
   });
+
+  session.provide('M', function (data) {
+    var index = data.indexOf('|');
+    if (index === -1) return env.error('bad M msg: ' + data);
+    var msgId = data.slice(0, index);
+    var args = waitMs[msgId];
+    if (! args) return;
+    delete waitMs[msgId];
+    if (! args[1]) return;
+    var type = data[index + 1];
+    index += 2;
+    if (type === 'e') {
+      var ei = data.indexOf(',', index);
+      if (ei === -1)
+        args[1](new Error(data.slice(index)));
+      else
+        args[1](new env.Error(+data.slice(index, ei), data.slice(ei+1)));
+      return;
+    }
+    data = data.slice(index);
+    args[1](null, data ? JSON.parse(data) : null);
+  });
+
   session.provide('L', function (data) {require([data], function() {})});
   session.provide('U', function (data) {
     var args = data.split(':');
