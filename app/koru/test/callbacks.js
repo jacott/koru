@@ -1,6 +1,7 @@
 define(['./core'], function (geddon) {
   var callbacks = {};
 
+  geddon.onStart = registerCallBack('start');
   geddon.onEnd = registerCallBack('end');
   geddon.onTestStart = registerCallBack('testStart');
   geddon.onTestEnd = registerCallBack('testEnd');

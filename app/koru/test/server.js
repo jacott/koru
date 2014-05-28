@@ -1,11 +1,11 @@
-define(['./main', '../session/server-main'], function(koruTest, session) {
-  koruTest.testHandle = function (cmd, msg) {
+define(['./main', '../session/server-main'], function(test, session) {
+  test.testHandle = function (cmd, msg) {
     session.remoteControl.testHandle(cmd+msg);
   };
 
-  koruTest.logHandle = function (msg) {
+  test.logHandle = function (msg) {
     session.remoteControl.logHandle(msg);
   };
 
-  return koruTest;
+  return test;
 });

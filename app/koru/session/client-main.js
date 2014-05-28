@@ -35,6 +35,13 @@ define(function (require, exports, module) {
     sendP: sendFunc('P'),
 
     get isSimulation() {return isSimulation},
+
+    _onConnect: [],
+    onConnect: function (func) {
+      this._onConnect.push(func);
+    },
+
+    connect: connect,
   });
 
   session.provide('X', function (data) {
@@ -54,16 +61,6 @@ define(function (require, exports, module) {
     env.unload(args[1]);
   });
 
-  util.extend(session, {
-    _onConnect: [],
-    onConnect: function (func) {
-      this._onConnect.push(func);
-    },
-
-    connect: connect,
-  });
-
-
   function url() {
     var location = window.document.location;
     return location.protocol.replace(/^http/,'ws')+'//' + location.host;
@@ -77,7 +74,7 @@ define(function (require, exports, module) {
     ws.onopen = function (event) {
       ws.send('X1'+ env.util.engine);
       for(var i = 0; i < session._onConnect.length; ++i) {
-        session._onConnect[i]();
+        session._onConnect[i].call(conn);
       }
 
       for(var i = 0; i < waitFuncs.length; ++i) {

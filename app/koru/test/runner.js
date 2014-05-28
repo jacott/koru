@@ -12,6 +12,8 @@ define(['./core'], function (geddon) {
         tc.add(tc.option);
     }
 
+    geddon.runCallBacks('start');
+
     if (runNextWrapper)
       var _runNext = function () {runNextWrapper(runNext)};
     else
