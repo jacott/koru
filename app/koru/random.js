@@ -1,8 +1,8 @@
-/*
- * From Meteor.com Random package.
- *
- */
-define(['./util-base'], function() {
+define(function() {
+  /**
+   * Original code from Meteor.com: meteor/packages/random/random.js
+   */
+
   // We use cryptographically strong PRNGs (crypto.getRandomBytes() on the server,
   // window.crypto.getRandomValues() in the browser) when available. If these
   // PRNGs fail, we fall back to the Alea PRNG, which is not cryptographically
