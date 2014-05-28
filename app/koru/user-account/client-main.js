@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var localStorage = require('../local-storage');
   var makeSubject = require('../make-subject');
   var SRP = require('../srp/srp');
+  var env = require('../env');
 
   session.onConnect(onConnect);
 
@@ -33,17 +34,29 @@ define(function(require, exports, module) {
       session.rpc('SRPBegin', request, function (err, result) {
         var response = srp.respondToChallenge(result);
         session.rpc('SRPLogin', response, function (err, result) {
+          if (srp.verifyConfirmation({HAMK: result.HAMK})) {
+            env.util.thread.userId = result.userId;
+            callback();
+          } else
+            callback('failure');
+        });
+      });
+    },
+
+    changePassword: function (email, oldPassword, newPassword, callback) {
+      var srp = new SRP.Client(oldPassword);
+      var request = srp.startExchange();
+      request.email = email;
+      session.rpc('SRPBegin', request, function (err, result) {
+        var response = srp.respondToChallenge(result);
+        response.newPassword = SRP.generateVerifier(newPassword);
+        session.rpc('SRPChangePassword', response, function (err, result) {
           if (srp.verifyConfirmation({HAMK: result.HAMK}))
             callback();
           else
             callback('failure');
         });
       });
-    },
-
-    changePassword: function (oldPassword, newPassword, callback) {
-      this._changePasswordCallback = callback;
-      session.send('VC', oldPassword+'\n'+newPassword);
     },
   };
 

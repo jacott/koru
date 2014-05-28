@@ -5,6 +5,8 @@ isClient && define(function (require, exports, module) {
   var session = require('../session/main');
   var localStorage = require('../local-storage');
   var SRP = require('../srp/srp');
+  var util = require('../util');
+  var env = require('../env');
 
   TH.testCase(module, {
     setUp: function () {
@@ -20,8 +22,69 @@ isClient && define(function (require, exports, module) {
       userAccount.state = null;
     },
 
+    "changePassword": {
+      setUp: function () {
+        userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = test.stub());
+
+        assert.calledWithExactly(
+          session.rpc, 'SRPBegin',
+          TH.match(function (request) {
+            v.request = request;
+            assert.same(request.email, 'foo@bar.co');
+            return ('A' in request);
+
+          }),
+          TH.match(function (callback) {
+            v.sutCallback = callback;
+            return true;
+          })
+        );
+
+      },
+
+      "test success": function () {
+        var verifier = SRP.generateVerifier('secret');
+        var srp = new SRP.Server(verifier);
+        var challenge = srp.issueChallenge({A: v.request.A});
+
+        session.rpc.reset();
+        v.sutCallback(null, challenge);
+
+        assert.calledWith(session.rpc, 'SRPChangePassword', TH.match(function (response) {
+          assert(SRP.checkPassword('new pw', response.newPassword));
+          if (response.M === srp.M) {
+            session.rpc.yield(null, {
+              HAMK: srp.HAMK,
+            });
+            return true;
+          }
+        }));
+
+        assert.calledWithExactly(v.callback);
+      },
+
+      "test failure": function () {
+        var verifier = SRP.generateVerifier('bad');
+        var srp = new SRP.Server(verifier);
+        var challenge = srp.issueChallenge({A: v.request.A});
+
+        session.rpc.reset();
+        v.sutCallback(null, challenge);
+
+        assert.calledWith(session.rpc, 'SRPChangePassword', TH.match(function (response) {
+          session.rpc.yield(null, {
+            HAMK: srp.HAMK,
+          });
+          return true;
+        }));
+
+        assert.calledWithExactly(v.callback, 'failure');
+      },
+    },
+
     "loginWithPassword": {
       setUp: function () {
+        v.oldUserId = util.thread.userId;
         userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = test.stub());
 
         assert.calledWithExactly(
@@ -38,6 +101,11 @@ isClient && define(function (require, exports, module) {
           })
         );
       },
+
+      tearDown: function () {
+        util.thread.userId = v.oldUserId;
+      },
+
 
       "test success": function () {
         var verifier = SRP.generateVerifier('secret');
@@ -59,6 +127,7 @@ isClient && define(function (require, exports, module) {
 
 
         assert.calledWithExactly(v.callback);
+        assert.same(util.thread.userId, 'uid123');
       },
 
       "test failure": function () {
@@ -78,63 +147,47 @@ isClient && define(function (require, exports, module) {
         }));
 
         assert.calledWithExactly(v.callback, 'failure');
+        assert.isTrue(util.thread.userId == null);
       },
     },
 
-    "test changePassword": function () {
-      test.stub(session, 'send');
-      userAccount.changePassword('oldpw', 'newpw', v.callback = test.stub());
+    "login with token": {
+      "test sending login token": function () {
+        test.stub(session, 'send');
+        assert.isTrue(session._onConnect.indexOf(userAccount._onConnect) !== -1);
 
-      assert.calledWith(session.send, 'VC', 'oldpw\nnewpw');
+        assert.same(userAccount.state, null);
 
-      assert.same(userAccount._changePasswordCallback, v.callback);
+        userAccount._onConnect();
+        refute.calledWith(session.send, 'VL');
 
-      session._onMessage({}, 'VCS');
-
-      assert.calledWith(v.callback, null);
-    },
-
-    "test failed changePassword": function () {
-      userAccount.changePassword('oldpw', 'newpw', v.callback = test.stub());
-      session._onMessage({}, 'VCF');
-
-      assert.calledWith(v.callback, 'failure');
-    },
-
-    "test sending login token": function () {
-      test.stub(session, 'send');
-      assert.isTrue(session._onConnect.indexOf(userAccount._onConnect) !== -1);
-
-      assert.same(userAccount.state, null);
-
-      userAccount._onConnect();
-      refute.calledWith(session.send, 'VL');
-
-      assert.same(userAccount.state, null);
+        assert.same(userAccount.state, null);
 
 
-      localStorage.setItem('koru.loginToken', 'tokenId|token123');
-      userAccount._onConnect();
+        localStorage.setItem('koru.loginToken', 'tokenId|token123');
+        userAccount._onConnect();
 
-      assert.same(userAccount.state, 'wait');
+        assert.same(userAccount.state, 'wait');
 
-      assert.calledWith(v.onChange, 'wait');
-      assert.calledWith(session.send, 'VL', 'tokenId|token123');
+        assert.calledWith(v.onChange, 'wait');
+        assert.calledWith(session.send, 'VL', 'tokenId|token123');
 
-      session._onMessage({}, 'VS');
+        session._onMessage({}, 'VS');
 
-      assert.same(userAccount.state, 'success');
-      assert.calledWith(v.onChange, 'success');
-    },
+        assert.same(userAccount.state, 'success');
+        assert.calledWith(v.onChange, 'success');
+      },
 
-    "test login failure": function () {
-      localStorage.setItem('koru.loginToken', 'tokenId|token123');
-      userAccount._onConnect();
+      "test login failure": function () {
+        test.stub(session, 'send');
+        localStorage.setItem('koru.loginToken', 'tokenId|token123');
+        userAccount._onConnect();
 
-      session._onMessage({}, 'VF');
+        session._onMessage({}, 'VF');
 
-      assert.same(userAccount.state, 'failure');
-      assert.calledWith(v.onChange, 'failure');
+        assert.same(userAccount.state, 'failure');
+        assert.calledWith(v.onChange, 'failure');
+      },
     },
   });
 });

@@ -287,7 +287,22 @@ define(function(require, exports, module) {
     };
   };
 
+  /**
+   * Assert that password matches verifier.
+   */
+  SRP.checkPassword = function (password, verifier) {
+    // Client -> Server
+    var csrp = new SRP.Client(password);
+    var request = csrp.startExchange();
 
+    // Server <- Client
+    var ssrp = new SRP.Server(verifier);
+    var challenge = ssrp.issueChallenge({A: request.A});
+
+    // Client -> Server
+    var response = csrp.respondToChallenge(challenge);
+    return response.M === ssrp.M;
+  };
 
   /////// INTERNAL
 

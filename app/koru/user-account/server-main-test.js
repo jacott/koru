@@ -15,14 +15,14 @@ isServer && define(function (require, exports, module) {
       test.stub(env, 'logger');
       v.conn = TH.sessionConnect(v.ws);
       env.logger.restore();
-      v.lu = userAccount.createUser({userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co', tokens: {abc: Date.now()+24*1000*60*60}});
+      v.lu = userAccount.createUserLogin({userId: 'uid111', password: 'secret', email: 'foo@bar.co', tokens: {abc: Date.now()+24*1000*60*60}});
     },
 
     tearDown: function () {
       test.stub(env, 'logger');
       v.conn.close();
       env.logger.restore();
-      Model.UserAccount.docs.remove({});
+      Model.UserLogin.docs.remove({});
       v = null;
     },
 
@@ -33,14 +33,19 @@ isServer && define(function (require, exports, module) {
         v.request.email = 'foo@bar.co';
       },
 
+
       "test success": function () {
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
 
+        assert.same(v.conn.userId, undefined);
+
         result = session._rpcs.SRPLogin.call(v.conn, response);
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+        assert.same(result.userId, 'uid111');
+        assert.same(v.conn.userId, 'uid111');
       },
 
       "test wrong password": function () {
@@ -49,9 +54,11 @@ isServer && define(function (require, exports, module) {
 
         var response = v.srp.respondToChallenge(result);
 
-        result = session._rpcs.SRPLogin.call(v.conn, response);
+        assert.exception(function () {
+          session._rpcs.SRPLogin.call(v.conn, response);
+        });
 
-        refute(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+        assert.same(v.conn.userId, undefined);
       },
 
       "test wrong email": function () {
@@ -62,28 +69,78 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test valid session login": function () {
-      session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
+    "changePassword": {
+      setUp: function () {
+        v.srp = new SRP.Client('secret');
+        v.request = v.srp.startExchange();
+        v.request.email = 'foo@bar.co';
+      },
 
-      assert.same(v.conn.userId, 'uid111');
+      "test success": function () {
+        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-      assert.calledWith(v.ws.send, 'VS');
+        var response = v.srp.respondToChallenge(result);
+        response.newPassword = SRP.generateVerifier('new pw');
+        result = session._rpcs.SRPChangePassword.call(v.conn, response);
+
+        assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+
+        assert(SRP.checkPassword('new pw', v.lu.$reload().srp));
+      },
+
+      "test wrong password": function () {
+        v.lu.$update({srp: 'wrong'});
+        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+
+        var response = v.srp.respondToChallenge(result);
+        response.newPassword = SRP.generateVerifier('new pw');
+
+        assert.exception(function () {
+          session._rpcs.SRPChangePassword.call(v.conn, response);
+        });
+
+        assert.same('wrong', v.lu.$reload().srp);
+      },
+
+      "test bad newPassword": function () {
+        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+
+        var response = v.srp.respondToChallenge(result);
+        response.newPassword = SRP.generateVerifier('new pw');
+        response.newPassword.bad = true;
+
+        assert.accessDenied(function () {
+          session._rpcs.SRPChangePassword.call(v.conn, response);
+        });
+
+        assert(SRP.checkPassword('secret', v.lu.$reload().srp));
+      },
     },
 
-    "test invalid session login": function () {
-      session._commands.V.call(v.conn, 'L'+v.lu._id+'|abcd');
+    "login with token": {
+      "test valid session login": function () {
+        session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
 
-      assert.same(v.conn.userId, undefined);
+        assert.same(v.conn.userId, 'uid111');
 
-      assert.calledWith(v.ws.send, 'VF');
-    },
+        assert.calledWith(v.ws.send, 'VS');
+      },
 
-    "test invalid userId": function () {
-      session._commands.V.call(v.conn, 'L1122|abc');
+      "test invalid session login": function () {
+        session._commands.V.call(v.conn, 'L'+v.lu._id+'|abcd');
 
-      assert.same(v.conn.userId, undefined);
+        assert.same(v.conn.userId, undefined);
 
-      assert.calledWith(v.ws.send, 'VF');
+        assert.calledWith(v.ws.send, 'VF');
+      },
+
+      "test invalid userId": function () {
+        session._commands.V.call(v.conn, 'L1122|abc');
+
+        assert.same(v.conn.userId, undefined);
+
+        assert.calledWith(v.ws.send, 'VF');
+      },
     },
   });
 });
