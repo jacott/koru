@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   var clientIndex = require('./client-index');
   var Query = require('./query');
 
-  var env = {
+  var modelEnv = {
     $save: function(force) {
       var doc = this;
       doc.$isValid();
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
 
       BaseModel.prototype.$remove =  function () {
         session.rpc("remove", this.constructor.modelName, this._id,
-                    env.error);
+                    env.globalCallback);
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
@@ -98,7 +98,7 @@ define(function(require, exports, module) {
       _id = (doc.changes && doc.changes._id) || Random.id();
       session.rpc("save", doc.constructor.modelName, _id,
                   doc.changes,
-                  env.error);
+                  env.globalCallback);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
       // only call if at least one change
@@ -106,12 +106,12 @@ define(function(require, exports, module) {
       doc.changes = {}; // reset changes here for callbacks
       session.rpc("save", doc.constructor.modelName, doc._id,
                   changes,
-                  env.error);
+                  env.globalCallback);
       break;
     }
 
     return doc.$reload();
   }
 
-  return env;
+  return modelEnv;
 });

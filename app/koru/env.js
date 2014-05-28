@@ -114,7 +114,7 @@
       };
     }
 
-    return (isServer ? global : window)._koru_ = {
+    var env = (isServer ? global : window)._koru_ = {
       onunload: onunload,
       unload: unload,
       reload: reload,
@@ -130,24 +130,29 @@
       util: util,
 
       "\x64ebug": function () {
-        this.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
+        env.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
       },
 
       info: function () {
-        this.logger('INFO', Array.prototype.join.call(arguments, ' '));
+        env.logger('INFO', Array.prototype.join.call(arguments, ' '));
       },
 
       error: function () {
-        this.logger('ERROR', Array.prototype.join.call(arguments, ' '));
+        env.logger('ERROR', Array.prototype.join.call(arguments, ' '));
       },
 
       logger: function () {
         console.log.apply(console, arguments);
       },
 
+      globalCallback: function (err, result) {
+        if (err) env.error(err);
+      },
+
       userId: function () {
         return util.thread.userId;
       },
+
       getLocation: function () {
         return window.location;
       },
@@ -191,5 +196,7 @@
         }, onload.error);
       },
     };
+
+    return env;
   });
 })();
