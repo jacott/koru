@@ -24,8 +24,12 @@ define(function(require, exports, module) {
       return this;
     },
 
-    where: function (conditions) {
-      util.extend((this._conditions = this._conditions || {}), conditions);
+    where: function (params, value) {
+      var _conditions = (this._conditions = this._conditions || {});
+      if (typeof params === 'string')
+        this._conditions[params] = value;
+      else
+        util.extend(_conditions, params);
       return this;
     },
 

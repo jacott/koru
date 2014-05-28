@@ -20,7 +20,7 @@ define(function (require, exports, module) {
     load: load,
     totalSessions: 0,
     rpc: function (name /*, args */) {
-      session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
+      return session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
     },
 
     // for testing
@@ -42,6 +42,7 @@ define(function (require, exports, module) {
     if (! func) {
       return env.info('unknown method: ' + data.slice(0,index).toString());
     }
+    // DEBUG FIXME catch ex and return and send to client
     func.apply(this, JSON.parse(data.slice(index).toString()));
   });
 

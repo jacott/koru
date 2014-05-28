@@ -31,7 +31,9 @@ define(function (require, exports, module) {
       }
     },
 
-    sendM: sendFunc('M'),
+    sendM: function (name, args) {
+      session.send('M', (args === undefined) ? name : name + JSON.stringify(args));
+    },
     sendP: sendFunc('P'),
 
     get isSimulation() {return isSimulation},

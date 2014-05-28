@@ -28,6 +28,7 @@ isServer && define(function (require, exports, module) {
       function rpcMethod(one, two, three) {
         v.thisValue = this;
         v.args = util.slice(arguments);
+        return 'result';
       }
     },
 

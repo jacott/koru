@@ -2,9 +2,10 @@ isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('../session/test-helper');
   var session = require('../session/main');
-  var main = require('./server-main');
+  var userAccount = require('./server-main');
   var Model = require('../model/main');
   var env = require('../env');
+  var SRP = require('../srp/srp');
 
   TH.testCase(module, {
     setUp: function () {
@@ -14,7 +15,7 @@ isServer && define(function (require, exports, module) {
       test.stub(env, 'logger');
       v.conn = TH.sessionConnect(v.ws);
       env.logger.restore();
-      v.lu = main.createUser({userId: 'uid111', email: 'foo@bar.co', tokens: {abc: Date.now()+24*1000*60*60}});
+      v.lu = userAccount.createUser({userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co', tokens: {abc: Date.now()+24*1000*60*60}});
     },
 
     tearDown: function () {
@@ -23,6 +24,42 @@ isServer && define(function (require, exports, module) {
       env.logger.restore();
       Model.UserAccount.docs.remove({});
       v = null;
+    },
+
+    "loginWithPassword": {
+      setUp: function () {
+        v.srp = new SRP.Client('secret');
+        v.request = v.srp.startExchange();
+        v.request.email = 'foo@bar.co';
+      },
+
+      "test success": function () {
+        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+
+        var response = v.srp.respondToChallenge(result);
+
+        result = session._rpcs.SRPLogin.call(v.conn, response);
+
+        assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+      },
+
+      "test wrong password": function () {
+        v.lu.$update({srp: 'wrong'});
+        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+
+        var response = v.srp.respondToChallenge(result);
+
+        result = session._rpcs.SRPLogin.call(v.conn, response);
+
+        refute(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+      },
+
+      "test wrong email": function () {
+        v.lu.$update({email: 'bad@bar.co'});
+        assert.exception(function () {
+          session._rpcs.SRPBegin.call(v.conn, v.request);
+        });
+      },
     },
 
     "test valid session login": function () {

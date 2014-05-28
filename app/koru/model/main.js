@@ -146,6 +146,10 @@ define(function(require, exports, module) {
       return new Query(this);
     },
 
+    findByField: function(field, value) {
+      return this.query.where(field, value).fetchOne();
+    },
+
     isLocked: function(id) {
       return (this._locks || (this._locks = {})).hasOwnProperty(id);
     },

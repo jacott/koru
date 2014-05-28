@@ -122,6 +122,16 @@ define(function (require, exports, module) {
       assert.equals(st.where({name: 'bar'}).fetch(), []);
     },
 
+    "test where with field, value": function () {
+      var st = new Query(v.TestModel).onId(v.foo._id);
+
+      assert.same(st.where('name', 'foo'), st);
+
+      assert.equals(st.fetch(), [v.foo]);
+
+      assert.equals(st.where('name', 'bar').fetch(), []);
+    },
+
     "test where on forEach": function () {
       var st = new Query(v.TestModel).onId(v.foo._id);
 
