@@ -14,7 +14,8 @@ define([
   'koru/session/client-main'
 ], function (
   module, env, Route, todos,
-  subscribe, Dom
+  subscribe, Dom,
+  session
 ) {
          // reload me if unloaded
   env.onunload(module, function () {
@@ -22,6 +23,8 @@ define([
     subHandle = null;
     require([module.id], function () {});
   });
+
+  session.connect();
 
   Route.title = 'Todos';
 
