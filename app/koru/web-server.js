@@ -20,7 +20,7 @@ define(function (require, exports, module) {
     },
 
     koru: function (m) {
-      return [m[0], appDir];
+      return [m[0], fst.stat(nmRoot+'/koru/app') ? nmRoot+'/koru/app' : appDir];
     },
   };
   var DEFAULT_PAGE = module.config().defaultPage || '/index.html';
