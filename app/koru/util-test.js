@@ -13,6 +13,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test indexOfRegex": function () {
+      var list = [{foo: 'a'}, {foo: 'b'}];
+      assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);
+      assert.same(util.indexOfRegex(list, /ab/, 'foo'), -1);
+      assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
+    },
+
     "test values": function () {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },

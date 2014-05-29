@@ -1,0 +1,20 @@
+<template name="Dialog">
+  <div class="Dialog">
+    {{content}}
+  </div>
+  <template name="Confirm">
+    <div class="Dialog Confirm">
+      <div class="dialogContainer">
+        <div {{classes}}>
+          <div>
+            {{content}}
+          </div>
+          <fieldset class="actions">
+            <button type="button" id="okay" name="okay">{{okay}}</button>
+            <button type="button" id="cancel" name="cancel">Cancel</button>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+  </template>
+</template>

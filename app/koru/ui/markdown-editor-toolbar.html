@@ -1,0 +1,21 @@
+<template name="MarkdownEditor.Toolbar">
+  <div class="mdToolbar">
+    <div>
+      <button name="bold" tabindex="-1" {{state}}>B</button>
+      <button name="italic" tabindex="-1" {{state}}>I</button>
+      <button name="underline" tabindex="-1" {{state}}>U</button>
+      <button name="link" tabindex="-1" {{link}}></button>
+    </div>
+  </div>
+
+  <template name="Link">
+    <form class="mdLink">
+      <label>
+        <span class="name">Enter link address</span>
+        <input type="text" value="{{value}}">
+      </label>
+      <button type="submit" name="apply">Apply</button>
+      <button name="cancel">Cancel</button>
+    </form>
+  </template>
+</template>

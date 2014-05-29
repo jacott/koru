@@ -20,6 +20,8 @@ define(function(require, exports, module) {
 
   var testRunCount = 0;
 
+  env._geddon_ = geddon; // helpful for errors finding test name
+
   var self = {
     geddon: geddon,
 

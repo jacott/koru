@@ -1,0 +1,22 @@
+<template name="Test.Form">
+  <div id="TestForm">
+  </div>
+
+  <template name="TestSelect">
+    <div id="TestSelect">
+      {{labelField "foo_id" id="fooId" selectList=fooList}}
+    </div>
+  </template>
+
+  <template name="TestRadio">
+    <div id="TestRadio">
+      {{labelField "foo_id" id="fooId" type="radio" selectList=fooList}}
+    </div>
+  </template>
+
+  <template name="TestMarkdownEditor">
+    <div id="TestMarkdownEditor">
+      {{labelField "name" id="nameId" type="markdownEditor" class="bar"}}
+    </div>
+  </template>
+</template>

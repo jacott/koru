@@ -1,0 +1,37 @@
+<template name="Form">
+  <template name="Button">
+    <button type="{{type}}" name="{{name}}">{{value}}</button>
+  </template>
+
+  <template name="LabelField">
+    <label>
+      <span class="name">{{label}}</span>
+      {{value}}
+    </label>
+  </template>
+  <template name="TextInput">
+    <input type="{{type}}" name="{{name}}" value="{{value}}" {{htmlOptions}}>
+  </template>
+
+  <template name="Select">
+    <select name="{{name}}" {{htmlOptions}}>
+    </select>
+  </template>
+
+  <template name="Radio">
+    <span class="errorField radioGroup" data-errorField="{{name}}" {{htmlOptions}}>
+    </span>
+    <template name="Button">
+      <label>
+        <input type="radio" name="{{name}}" value="{{value}}" {{checked}}>
+        <span>{{label}}</span>
+      </label>
+    </template>
+  </template>
+
+  <template name="OnOff">
+    <div data-field="{{name}}" class="{{classes}}">
+      <i></i><span>On</span><span>Off</span>
+    </div>
+  </template>
+</template>

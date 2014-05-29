@@ -1,99 +1,106 @@
-var $ = Koru.current;
-var Tpl = Koru.Dialog;
+define(function(require, exports, module) {
+  var Dom = require('../dom');
+  var Form = require('./form');
 
-var count = 0;
+  var Tpl = Dom.newTemplate(require('../html!./dialog'));
+  var $ = Dom.current;
 
-Tpl.$extend({
-  isOpen: function () {
-    return count !== 0;
-  },
+  var count = 0;
 
-  open: function (content) {
-    document.body.appendChild(Tpl.$autoRender({content: content}));
-  },
+  Tpl.$extend({
+    isOpen: function () {
+      return count !== 0;
+    },
 
-  close: function (elm) {
-    if (elm) {
-      if (typeof elm === 'string')
-      elm = document.getElementById(elm);
-      Koru.remove(Koru.getClosest(elm, '.Dialog'));
-      return;
-    }
+    open: function (content) {
+      document.body.appendChild(Tpl.$autoRender({content: content}));
+    },
 
-    var dialogs = document.getElementsByClassName('Dialog');
-    if (dialogs.length > 0) Koru.remove(dialogs[dialogs.length - 1]);
-  },
+    close: function (elm) {
+      if (elm) {
+        if (typeof elm === 'string')
+          elm = document.getElementById(elm);
+        Dom.remove(Dom.getClosest(elm, '.Dialog'));
+        return;
+      }
 
-  confirm: function (data) {
-    document.body.appendChild(Tpl.Confirm.$autoRender(data));
-  },
+      var dialogs = document.getElementsByClassName('Dialog');
+      if (dialogs.length > 0) Dom.remove(dialogs[dialogs.length - 1]);
+    },
 
-  $created: modalize,
+    confirm: function (data) {
+      document.body.appendChild(Tpl.Confirm.$autoRender(data));
+    },
 
-  $destroyed: cancelModalize,
-});
+    $created: modalize,
 
-Tpl.$helpers({
-   content: function () {
-     var content = this.content;
+    $destroyed: cancelModalize,
+  });
 
-     if (Koru.hasClass(content, 'dialogContainer'))
-       return content;
+  Tpl.$helpers({
+    content: function () {
+      var content = this.content;
 
-     var dc = document.createElement('div');
-     dc.className = 'dialogContainer';
+      if (Dom.hasClass(content, 'dialogContainer'))
+        return content;
 
-     if (Koru.hasClass(content, 'ui-dialog')) {
-       dc.appendChild(content);
-       return dc;
-     }
+      var dc = document.createElement('div');
+      dc.className = 'dialogContainer';
 
-     var dialog = document.createElement('div');
-     dialog.className = 'ui-dialog';
+      if (Dom.hasClass(content, 'ui-dialog')) {
+        dc.appendChild(content);
+        return dc;
+      }
 
-     dc.appendChild(dialog);
-     dialog.appendChild(content);
+      var dialog = document.createElement('div');
+      dialog.className = 'ui-dialog';
 
-     return dc;
-   },
-});
+      dc.appendChild(dialog);
+      dialog.appendChild(content);
 
-Tpl.Confirm.$helpers({
-  classes: function () {
-    $.element.setAttribute('class', 'ui-dialog '+ (this.classes || ''));
-  },
+      return dc;
+    },
+  });
 
-  content: function () {
-    var content = this.content;
-    if (typeof content === 'string')
-      return Koru.html(content);
-    else
-      return content.$autoRender(this.data || this);
-  },
-});
+  Tpl.Confirm.$helpers({
+    classes: function () {
+      $.element.setAttribute('class', 'ui-dialog '+ (this.classes || ''));
+    },
 
-Tpl.Confirm.$events({
-  'click button': function (event) {
-    var data = $.ctx.data;
-    Koru.remove(event.currentTarget);
-    data.callback && data.callback.call(data, this.name === 'okay');
-  },
-});
+    content: function () {
+      var content = this.content;
+      if (typeof content === 'string')
+        return Dom.html(content);
+      else
+        return content.$autoRender(this.data || this);
+    },
+  });
 
-Tpl.Confirm.$extend({
-  $created: modalize,
+  Tpl.Confirm.$events({
+    'click button': function (event) {
+      var data = $.ctx.data;
+      Dom.remove(event.currentTarget);
+      data.callback && data.callback.call(data, this.name === 'okay');
+    },
+  });
 
-  $destroyed: cancelModalize,
-});
+  Tpl.Confirm.$extend({
+    $created: modalize,
 
-function modalize(ctx, elm) {
-  ++count;
-  Koru.Form.modalize(elm, function (event) {
-    Koru.remove(elm);
+    $destroyed: cancelModalize,
+  });
+
+  function modalize(ctx, elm) {
+    ++count;
+    Form.modalize(elm, function (event) {
+      Dom.remove(elm);
     });
   }
 
-function cancelModalize() {
-  --count;
-  Koru.Form.cancelModalize();
-}
+  function cancelModalize() {
+    --count;
+    Dom.Form.cancelModalize();
+  }
+
+  return Tpl;
+});

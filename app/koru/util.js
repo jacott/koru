@@ -93,6 +93,17 @@ define(function(require, exports, module) {
       return result;
     },
 
+    indexOfRegex: function (list, value, fieldName) {
+      if (!list) return;
+      fieldName = fieldName || '_id';
+      for(var i=0; i < list.length; ++i) {
+        var row = list[i];
+        if (value.test(row[fieldName]))
+          return i;
+      }
+      return -1;
+    },
+
     mapField: function (list, fieldName) {
       fieldName = fieldName || '_id';
       return list && list.map(function (doc) {
