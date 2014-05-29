@@ -47,7 +47,7 @@ isClient && define(function (require, exports, module) {
         });
         loader.callback = onload;
 
-        provide.yield("Lkoru/css/loader-test koru/css/.build/less-compiler-test.less");
+        provide.yield("Lkoru/css/loader-test.css koru/css/.build/less-compiler-test.less");
       }));
 
       function onload(event) {
@@ -74,7 +74,7 @@ isClient && define(function (require, exports, module) {
         });
 
 
-        provide.yield("Ukoru/css/loader-test");
+        provide.yield("Ukoru/css/loader-test.css");
         assert.dom('head', function () {
           refute.dom('link[href="/koru/css/loader-test.css"]');
           assert.dom('head>link[rel=stylesheet][href="/koru/css/.build/less-compiler-test.less.css"]');

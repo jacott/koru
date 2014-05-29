@@ -27,7 +27,8 @@ define(function(require, exports, module) {
     var type = data[0];
     var head = document.head;
     data.slice(1).split(" ").forEach(function (name) {
-      name = '/'+name+'.css';
+      name = '/'+name;
+      if (name.slice(-4) !== '.css') name += '.css';
       var node = head.querySelector('head>link[href="'+name+'"]');
       node && head.removeChild(node);
 
