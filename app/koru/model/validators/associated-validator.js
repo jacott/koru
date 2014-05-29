@@ -33,14 +33,14 @@ define(function(require, exports, module) {
       var finder = finder || doc[scopeName+'Find'] || new Query(Model[modelName]);
 
       if (filter) {
-        finder.where({_id: value.slice(0)}); // stop from being clobbered
+        finder.where('_id', value.slice(0)); // stop from being clobbered
         value.length = 0;
 
         finder.fields('_id').forEach(function (assoc) {
           value.push(assoc._id);
         });
         value.sort();
-      } else if (finder.where({_id: value}).count() !== value.length) {
+      } else if (finder.where('_id', value).count() !== value.length) {
         this.addError(doc,field,'not_found');
       }
     },

@@ -23,7 +23,6 @@ define(function (require, exports, module) {
       return [m[0], appDir];
     },
   };
-
   var DEFAULT_PAGE = module.config().defaultPage || '/index.html';
 
   var server = http.createServer(requestListener);
@@ -49,7 +48,7 @@ define(function (require, exports, module) {
       var m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
       if (! (m && compileTemplate(req, res, m[2], reqRoot+m[1], m[3]))) {
-        send(req, path, {root: reqRoot})
+        send(req, path, {root: reqRoot, index: false})
           .on('error', sendDefault)
           .on('directory', sendDefault)
           .pipe(res);

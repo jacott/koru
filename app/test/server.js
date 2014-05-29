@@ -8,21 +8,15 @@ requirejs.config({
   //Useful if building a library that will
   //be used in node but does not require the
   //use of node outside
-  baseUrl: __dirname,
+  baseUrl: __dirname + '/..',
 
   config: {
-    "koru/env": {appDir: Path.resolve(__dirname + '/..')},
-
     "koru/mongo/driver": {url: "mongodb://localhost:3004/koru"},
 
     "koru/web-server": {port: 3000, defaultPage: '/test/index.html'},
   },
 
   packages: ["koru/test"],
-
-  paths: {
-    koru: '../koru',
-  },
 
   //Pass the top-level main.js/index.js require
   //function to requirejs so that node modules

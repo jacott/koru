@@ -1,5 +1,4 @@
-// FIXME make work for server too
-isClient && define(function (require, exports, module) {
+define(function (require, exports, module) {
   var test, v;
   var geddon = require('../../test');
   var validation = require('../validation');
@@ -34,7 +33,7 @@ isClient && define(function (require, exports, module) {
       assert.equals(doc.foo_ids, ["abc", "xyz"]);
 
       var query = forEach.thisValues[0];
-      assert.equals(query._conditions, {_id: ["xyz", "def", "abc"]});
+      assert.equals(query._wheres, {_id: ["xyz", "def", "abc"]});
       assert.equals(query._fields, {_id: true});
     },
 
@@ -58,6 +57,11 @@ isClient && define(function (require, exports, module) {
     },
 
     'test not found': function () {
+      test.stub(Query.prototype, 'count', function () {
+        assert.equals(this.wheres, undefined);
+        assert.same(this.model, Model.Foo);
+        return 0;
+      });
       var doc = {foo_ids: ["xyz"]};
       sut(doc,'foo_ids', true);
 
@@ -90,7 +94,7 @@ isClient && define(function (require, exports, module) {
 
       sut(doc,'foo_ids', {finder: fooFinder});
 
-      assert.calledWith(fooFinder.where, {_id: v.foo_ids});
+      assert.calledWith(fooFinder.where, '_id', v.foo_ids);
       refute(doc._errors);
     },
 
@@ -103,7 +107,7 @@ isClient && define(function (require, exports, module) {
 
       sut(doc,'foo_ids', true);
 
-      assert.calledWith(fooFinder.where, {_id: v.foo_ids});
+      assert.calledWith(fooFinder.where, '_id', v.foo_ids);
       refute(doc._errors);
     },
 
@@ -119,7 +123,7 @@ isClient && define(function (require, exports, module) {
       sut(doc,'bar_ids', 'Foo');
 
       var query = count.thisValues[0];
-      assert.equals(query._conditions, {_id: ["x", "y"]});
+      assert.equals(query._wheres, {_id: ["x", "y"]});
       assert.same(query.model, Model.Foo);
 
       query = count.thisValues[1];
@@ -139,7 +143,7 @@ isClient && define(function (require, exports, module) {
 
       var query = count.thisValues[0];
 
-      assert.equals(query._conditions, {_id: ["x", "y"]});
+      assert.equals(query._wheres, {_id: ["x", "y"]});
       assert.same(query.model, Model.Foo);
 
     },

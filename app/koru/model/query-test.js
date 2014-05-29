@@ -9,12 +9,12 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number'});
+      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', gender: 'text'});
 
-      v.TestModel.create({_id: 'foo123', name: 'foo', age: 5});
+      v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       v.foo = v.TestModel.findById('foo123');
 
-      v.TestModel.create({_id: 'bar456', name: 'bar', age: 10});
+      v.TestModel.create({_id: 'bar456', name: 'bar', age: 10, gender: 'm'});
       v.bar = v.TestModel.findById('bar456');
     },
 
@@ -97,7 +97,7 @@ define(function (require, exports, module) {
 
       assert.same(st.update({name: 'new name', age: undefined}), 1);
 
-      assert.equals(v.foo.$reload().attributes, {_id: 'foo123', name: 'new name'});
+      assert.equals(v.foo.$reload().attributes, {_id: 'foo123', name: 'new name', gender: 'm'});
     },
 
     "test inc": function () {
@@ -110,6 +110,16 @@ define(function (require, exports, module) {
 
       assert.same(v.foo.name, 'x');
       assert.same(v.foo.age, 7);
+    },
+
+    "test whereNot": function () {
+      var st = new Query(v.TestModel).where('gender', 'm');
+
+      assert.same(st.count(), 2);
+
+      st.whereNot('age', 5);
+
+      assert.equals(st.findField('age'), [10]);
     },
 
     "test where on fetch": function () {

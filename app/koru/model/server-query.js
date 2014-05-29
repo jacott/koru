@@ -19,7 +19,7 @@ define(function(require, exports, module) {
         },
 
         forEach: function (func) {
-          var where = this._conditions;
+          var where = this._wheres;
           if (this.singleId) {
             var doc = this.findOne(this.singleId);
             doc && func(doc);
@@ -53,8 +53,11 @@ define(function(require, exports, module) {
           return count;
         },
 
-        count: function () {
-          return this.model.docs.count(buildQuery(this));
+        count: function (max) {
+          if (max == null)
+            return this.model.docs.count(buildQuery(this));
+          else
+            return this.model.docs.count(buildQuery(this), {limit: max});
         },
 
         update: function (changes) {
@@ -94,8 +97,21 @@ define(function(require, exports, module) {
     if (id = id || query.singleId)
       result._id = id;
 
-    if (query._conditions)
-      util.extend(result, query._conditions);
+    if (query._wheres)
+      util.extend(result, query._wheres);
+
+    if (query._whereNots) {
+      var neg = {}, wn = query._whereNots;
+
+      for(var key in wn) {
+        var value = wn[key];
+        if (typeof value === 'object')
+          neg[key] = {$nin: wn[key]};
+        else
+          neg[key] = {$ne: wn[key]};
+      }
+      result = {$and: [result, neg]};
+    }
 
     return result;
   }

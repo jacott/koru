@@ -22,7 +22,8 @@ define(function(require, exports, module) {
         },
 
         forEach: function (func) {
-          var where = this._conditions;
+          var where = this._wheres;
+          var whereNot = this._whereNots;
           if (this.singleId) {
             var doc = this.findOne(this.singleId);
             doc && func(doc);
@@ -53,11 +54,12 @@ define(function(require, exports, module) {
           return count;
         },
 
-        count: function () {
+        count: function (max) {
           var count = 0;
           var docs = this.model.docs;
           this.forEach(function (doc) {
             ++count;
+            return count === max;
           });
           return count;
         },
@@ -85,7 +87,12 @@ define(function(require, exports, module) {
           var doc = this.model.docs[id];
           if (! doc) return;
           var attrs = doc.attributes;
-          var where = this._conditions;
+          var whereNot = this._whereNots;
+          if (whereNot) for(var field in whereNot) {
+            if (attrs[field] == whereNot[field])
+              return;
+          }
+          var where = this._wheres;
           if (where) for(var field in where) {
             if (attrs[field] != where[field])
               return;

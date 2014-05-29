@@ -25,12 +25,11 @@ define(function(require, exports, module) {
     },
 
     where: function (params, value) {
-      var _conditions = (this._conditions = this._conditions || {});
-      if (typeof params === 'string')
-        this._conditions[params] = value;
-      else
-        util.extend(_conditions, params);
-      return this;
+      return condition(this, '_wheres', params, value);
+    },
+
+    whereNot: function (params, value) {
+      return condition(this, '_whereNots', params, value);
     },
 
     fields: function (/* fields... */) {
@@ -55,6 +54,15 @@ define(function(require, exports, module) {
   };
 
   env.init(Query);
+
+  function condition(query, map, params, value) {
+    var conditions = (query[map] = query[map] || {});
+    if (typeof params === 'string')
+      conditions[params] = value;
+    else
+      util.extend(conditions, params);
+    return query;
+  }
 
   return Query;
 });

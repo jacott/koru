@@ -4,4 +4,4 @@ node_modules
 TAG*
 /tmp
 /build
-/app/test/client-cmd.js
+/app/client-cmd.js

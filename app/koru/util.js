@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   var valueUndefined = {value: undefined};
 
   util.extend(util, {
+    EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+
     reverseExtend: function (obj, properties, exclude) {
       for(var prop in properties) {
         if (exclude && prop in exclude) continue;
