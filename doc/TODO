@@ -1,2 +1,4 @@
+* SRP is CPU intensive and blocks node; consider handing off to worker thread on server
+
 * Use https://github.com/ahyatt/emacs-websocket
    to talk to server instead of geddon-test.js

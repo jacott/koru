@@ -106,7 +106,6 @@ isClient && define(function (require, exports, module) {
         util.thread.userId = v.oldUserId;
       },
 
-
       "test success": function () {
         var verifier = SRP.generateVerifier('secret');
         var srp = new SRP.Server(verifier);
@@ -120,6 +119,7 @@ isClient && define(function (require, exports, module) {
             session.rpc.yield(null, {
               userId: 'uid123',
               HAMK: srp.HAMK,
+              loginToken: 'tokenId|token123',
             });
             return true;
           }
@@ -128,9 +128,19 @@ isClient && define(function (require, exports, module) {
 
         assert.calledWithExactly(v.callback);
         assert.same(util.thread.userId, 'uid123');
+        assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
       },
 
-      "test failure": function () {
+      "test bad username": function () {
+        v.sutCallback('Xfailure');
+
+        assert.calledWith(v.callback, 'Xfailure');
+
+        refute.calledWith(session.rpc, 'SRPLogin');
+      },
+
+      "test bad password": function () {
+        var orig = util.thread.userId;
         var verifier = SRP.generateVerifier('bad');
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
@@ -147,7 +157,24 @@ isClient && define(function (require, exports, module) {
         }));
 
         assert.calledWithExactly(v.callback, 'failure');
-        assert.isTrue(util.thread.userId == null);
+        assert.same(util.thread.userId, orig);
+      },
+
+      "test bad final response": function () {
+        var orig = util.thread.userId;
+        var verifier = SRP.generateVerifier('secret');
+        var srp = new SRP.Server(verifier);
+        var challenge = srp.issueChallenge({A: v.request.A});
+
+        session.rpc.reset();
+        v.sutCallback(null, challenge);
+
+        assert.calledWith(session.rpc, 'SRPLogin', TH.match(function (response) {
+          return response.M === srp.M;
+        }));
+        session.rpc.yield('failure');
+
+        assert.calledWithExactly(v.callback, 'failure');
       },
     },
 

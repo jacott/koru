@@ -4,10 +4,34 @@ define(function(require, exports, module) {
   var env = require('../env');
   var SRP = require('../srp/srp');
   var Val = require('../model/validation');
+  var Random = require('../random');
+  var util = require('../util');
 
   session.provide('V', validateLoginToken);
 
-  var model = Model.define('UserLogin')
+  var model = Model.define('UserLogin', {
+    unexpiredTokens: function () {
+      var tokens = this.tokens;
+      var now = util.dateNow();
+      var keyVal = [];
+      for(var key in tokens) {
+        var time = tokens[key];
+        if (time > now) {
+          keyVal.push(time+'|'+key);
+        }
+      }
+      keyVal.sort();
+      var max = Math.min(10, keyVal.length);
+
+      var result = {};
+      for(var i = 1; i <= max; ++i) {
+        var pair = keyVal[keyVal.length - i].split('|');
+        result[pair[1]] = +pair[0];
+      }
+
+      return result;
+    },
+  })
   .defineFields({
     userId: 'text',
     email: 'text',
@@ -31,9 +55,16 @@ define(function(require, exports, module) {
   session.defineRpc('SRPLogin', function (response) {
     if (response.M !== this.$srp.M)
       throw new Error('failure');
+    var token = Random.id();
+    var doc = this.$srpUserAccount;
+    var tokens = doc.unexpiredTokens();
+    tokens[token] = Date.now()+180*24*1000*60*60;
+    doc.tokens = tokens;
+    doc.$$save();
     var result = {
       HAMK: this.$srp && this.$srp.HAMK,
-      userId: this.userId = this.$srpUserAccount.userId,
+      userId: this.userId = doc.userId,
+      loginToken: doc._id + '|' + token,
     };
     this.$srp = null;
     this.$srpUserAccount = null;
@@ -73,7 +104,7 @@ define(function(require, exports, module) {
 
     if (lu && lu.tokens[pair[1]]) {
       this.userId = lu.userId;
-      this.ws.send('VS');
+      this.ws.send('VS'+this.userId);
     } else {
       this.ws.send('VF');
     }
