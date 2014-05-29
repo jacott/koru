@@ -29,10 +29,11 @@ define(function (require, exports, module) {
   });
 
   session.provide('X', function (data) {this.engine = data.slice(1)});
-  session.provide('L', function (data) {});
+  session.provide('L', function (data) {
+    env.logger('INFO', this.engine, data);
+  });
   session.provide('E', function (data) {
-    session.remoteControl ?
-      session.remoteControl.logHandle &&
+    session.remoteControl && session.remoteControl.logHandle ?
       session.remoteControl.logHandle.call(this, data) :
       env.logger('INFO', this.engine, data);
   });

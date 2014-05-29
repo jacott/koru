@@ -18,6 +18,7 @@ define(function (require, exports, module) {
     name && env.unload(name);
 
     session.send('E', env.util.extractError(err));
+    throw err;
   };
 
   session.connect();
