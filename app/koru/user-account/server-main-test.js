@@ -109,6 +109,7 @@ isServer && define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         response.newPassword.bad = true;
 
+        test.stub(env, 'info');
         assert.accessDenied(function () {
           session._rpcs.SRPChangePassword.call(v.conn, response);
         });

@@ -24,6 +24,8 @@ define(function (require, exports, module) {
     },
   };
 
+  var DEFAULT_PAGE = module.config().defaultPage || '/index.html';
+
   var server = http.createServer(requestListener);
 
   server.listen(module.config().port || 3000);
@@ -64,7 +66,7 @@ define(function (require, exports, module) {
         }
       }
 
-      send(req, '/index.html', {root: root})
+      send(req, DEFAULT_PAGE, {root: root})
         .on('error', error)
         .pipe(res);
     }

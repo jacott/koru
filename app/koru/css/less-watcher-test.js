@@ -23,11 +23,9 @@ isServer && define(function (require, exports, module) {
       var watcher = fw.listeners.less;
       assert(watcher, "Should be registered with file-watch");
 
-      var path =  Path.resolve(require.toUrl("./compiler-test.less"));
-      var top = Path.resolve(require.toUrl("."))+'/';
       var future = new Future();
       var fb1 = env.Fiber(function () {
-        watcher('less', "compiler-test.less", top, v.session);
+        watcher('less', "compiler-test.less", env.appDir+'/koru/css/', v.session);
         future.return();
       });
       fb1.run();

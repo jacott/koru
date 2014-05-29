@@ -85,6 +85,10 @@ define(function(require, exports, module) {
       model.docs[doc._id] = doc;
       model.notify(doc, null);
     },
+
+    _insertAttrs: function (model, attrs) {
+      model.docs[attrs._id] = new model(attrs);
+    },
   };
 
   function findById (id) {

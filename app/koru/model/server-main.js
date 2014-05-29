@@ -121,6 +121,10 @@ define(function(require, exports, module) {
       model.docs.insert(doc.attributes);
       model.notify(doc, null);
     },
+
+    _insertAttrs: function (model, attrs) {
+      model.docs.insert(attrs);
+    },
   };
 
   function findById (id) {

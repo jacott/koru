@@ -4,7 +4,7 @@ var Path = require('path');
 var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
-define(function(require) {
+define(function(require, exports, module) {
   var env = require('../env');
   var topDir = env.appDir;
   var cmdFn = Path.resolve(topDir + '/../tmp/client-cmd.js');
@@ -22,7 +22,10 @@ define(function(require) {
 
       if (pattern === '') {
         // all
-        findAll('');
+
+        (module.config().testDirs || ['']).forEach(function (dir) {
+          findAll(dir);
+        });
       } else {
         // one
         var idx = pattern.indexOf(' ');

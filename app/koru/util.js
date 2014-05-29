@@ -85,6 +85,12 @@ define(function(require, exports, module) {
       return Array.prototype.slice.call(list, from, to);
     },
 
+    values: function (map) {
+      var result = [];
+      for(var key in map) result.push(map[key]);
+      return result;
+    },
+
     mapField: function (list, fieldName) {
       fieldName = fieldName || '_id';
       return list && list.map(function (doc) {

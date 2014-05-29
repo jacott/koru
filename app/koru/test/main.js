@@ -51,7 +51,7 @@ define(function(require, exports, module) {
         if (('stack' in err))
           env.error(env.util.extractError(err));
         else
-          env.error('Test load failure: ', err.toString() + "\nWhile loading:\n" + badIds.join("\n"));
+          env.error('Test load failure: ', err + "\nWhile loading:\n" + badIds.join("\n"));
         endTest();
       }
     },

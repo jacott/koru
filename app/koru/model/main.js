@@ -130,6 +130,12 @@ define(function(require, exports, module) {
       return model;
     },
 
+    _insertAttrs: function (attrs) {
+      if (! attrs._id) attrs._id = Random.id();
+      ModelEnv._insertAttrs(this, attrs);
+      return attrs._id;
+    },
+
     /**
      * Build a new document. Does not copy _id from attributes.
      */

@@ -14,6 +14,8 @@ requirejs.config({
     "koru/env": {appDir: Path.resolve(__dirname + '/..')},
 
     "koru/mongo/driver": {url: "mongodb://localhost:3004/koru"},
+
+    "koru/web-server": {port: 3000, defaultPage: '/test/index.html'},
   },
 
   packages: ["koru/test"],

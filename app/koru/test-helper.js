@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var env = require('./env');
-  var TH = require('./test');
+  var TH = require('./test/main');
 
   var util = env.util;
   var geddon = TH.geddon;

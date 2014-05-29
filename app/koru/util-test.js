@@ -13,6 +13,10 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test values": function () {
+      assert.equals(util.values({a: 1, b: 2}), [1,2]);
+    },
+
     'test extend': function () {
       var item = 5,
           sub={a: 1, b: 2},
