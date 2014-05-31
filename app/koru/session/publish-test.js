@@ -24,6 +24,16 @@ isServer && define(function (require, exports, module) {
       publish._destroy('foo');
     },
 
+    "test unknown publication": function () {
+      test.stub(env, 'info');
+      session._onMessage(v.conn = {
+        ws: {send: v.send = test.stub()},
+        _subs: {},
+      }, 'Pbar|a123'+JSON.stringify([1,2,3]));
+
+      assert.calledWith(v.send, 'Pa123|500|unknown publication: bar');
+    },
+
     "test publish": function () {
       assert('a123' in v.conn._subs);
 
@@ -55,6 +65,18 @@ isServer && define(function (require, exports, module) {
       v.sub.ready();
 
       assert.calledWith(v.send, 'Pa123');
+    },
+
+    "test setUserId": function () {
+      v.sub.setUserId('newid');
+
+      assert.calledWith(v.send, 'VSnewid');
+      assert.same(v.conn.userId, 'newid');
+    },
+
+    "test userId": function () {
+      v.conn.userId = 'foo';
+      assert.same(v.sub.userId, 'foo');
     },
 
     "test Koru error": function () {

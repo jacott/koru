@@ -4,9 +4,10 @@ define(function (require, exports, module) {
   var env = require('../env');
   var util = env.util;
   var session = require('./main');
+  var makeSubject = require('../make-subject');
 
   var waitFuncs = [];
-  var waitMs = [];
+  var waitMs = {};
   var state = 'disconnected';
   var retryCount = 0;
   var versionHash;
@@ -32,7 +33,7 @@ define(function (require, exports, module) {
       } else try {
         isSimulation = true;
         session.sendM(name, args, func);
-        this._rpcs[name].apply(util.thread, args);
+        this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
       } finally {
         isSimulation = false;
       }
@@ -41,6 +42,8 @@ define(function (require, exports, module) {
     sendM: function (name, args, func) {
       var msgId = (++session._msgId).toString(36);
       var data = msgId+'|'+ (args === undefined ? name : name + JSON.stringify(args));
+      for(var one in waitMs) {break;}
+      one || session.rpc.notify(true);
       waitMs[msgId] = [data, func];
       state === 'ready' && session.send('M', data);
     },
@@ -54,8 +57,17 @@ define(function (require, exports, module) {
     },
 
     connect: connect,
+
+    _forgetMs: function () {
+      waitMs = {};
+    }
   });
 
+  makeSubject(session.rpc);
+  session.rpc.waiting = function () {
+    for(var one in waitMs) {return true;}
+    return false;
+  };
 
   session.provide('X', function (data) {
     var ws = this.ws;
@@ -75,6 +87,8 @@ define(function (require, exports, module) {
     var args = waitMs[msgId];
     if (! args) return;
     delete waitMs[msgId];
+    for(var one in waitMs) {break;}
+    one || session.rpc.notify(false);
     if (! args[1]) return;
     var type = data[index + 1];
     index += 2;

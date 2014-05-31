@@ -23,6 +23,7 @@ define(function(require, exports, module) {
 
     handle.args = util.slice(arguments, 1, handle.callback ? -1 : arguments.length);
     subs[handle._id] = handle;
+    Subcribe.intercept(name, handle);
     session.sendP(name + '|' + handle._id, handle.args);
     return handle;
   };
@@ -32,6 +33,7 @@ define(function(require, exports, module) {
 
     get _subs() {return subs},
     get _nextId() {return nextId},
+    intercept: function () {},
   });
 
   function stopFunc() {

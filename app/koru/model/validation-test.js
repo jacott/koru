@@ -14,6 +14,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    'test msgFor': function () {
+      var doc = {_errors: {foo: [['too_long', 34]]}};
+
+      assert.same(val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
+    },
+
+
     "test validateName": function () {
       assert.equals(val.validateName(), ['is_required']);
       assert.equals(val.validateName(' ', 300), ['is_required']);

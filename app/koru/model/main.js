@@ -7,6 +7,7 @@ define(function(require, exports, module) {
   var Random = require('../random');
   var Query = require('./query');
   var makeSubject = require('../make-subject');
+  var registerObserveId = require('./register-observe-id');
 
   var modelObservers = {};
 
@@ -315,6 +316,8 @@ define(function(require, exports, module) {
       ModelEnv.setupModel(model);
 
       model.fieldTypeMap = {};
+
+      registerObserveId(model);
 
       return BaseModel[name] = model;
     },

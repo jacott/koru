@@ -9,11 +9,14 @@ define(function (require, exports, module) {
       test = this;
       v = {};
       v.send = test.stub(session, 'send');
+      session._forgetMs();
     },
 
     tearDown: function () {
+      session._forgetMs();
       v = null;
-      delete session._rpcs['foo.bar'];
+      delete session._rpcs['foo.rpc'];
+      delete session._rpcs['foo.s2'];
     },
 
     "connect": {
@@ -32,6 +35,14 @@ define(function (require, exports, module) {
 
         assert.same(session._onConnect[0], v.stub);
       },
+    },
+
+    "test server only rpc": function () {
+      refute.exception(function () {
+        session.rpc('foo.rpc', 1, 2, 3);
+      });
+
+      assert.called(v.send, 'M', session._msgId.toString(36)+"|foo.rpc"+JSON.stringify([1, 2, 3]));
     },
 
     "test rpc": function () {
@@ -109,6 +120,37 @@ define(function (require, exports, module) {
       function rpcSimMethod() {
         v.args = util.slice(arguments);
       }
+    },
+
+    "test rpc.onChange": function () {
+      var handle = session.rpc.onChange(v.ob = test.stub());
+      test.onEnd(function () {
+        handle.stop();
+      });
+
+      assert.isFalse(session.rpc.waiting());
+
+      session.sendM('foo.rpc', [1, 2]);
+
+      assert.calledOnceWith(v.ob, true);
+
+      session.sendM('foo.rpc');
+      assert.calledOnce(v.ob);
+
+      assert.isTrue(session.rpc.waiting());
+
+      v.ob.reset();
+
+      var msgId = session._msgId;
+      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r');
+
+      refute.called(v.ob);
+
+      session._onMessage({}, 'M'+ (msgId).toString(36) + '|r');
+
+      assert.calledWith(v.ob, false);
+
+      assert.isFalse(session.rpc.waiting());
     },
 
     "test sendP": function () {

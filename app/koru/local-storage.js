@@ -4,7 +4,7 @@ define({
   },
 
   getItem: function (key) {
-    return window.localStorage.setItem(key);
+    return window.localStorage.getItem(key);
   },
 
   removeItem: function (key) {

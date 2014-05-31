@@ -5,6 +5,8 @@ define(function(require, exports, module) {
 
   session.provide('P', subscribe);
 
+  env.onunload(module, 'reload');
+
   var pubs = {};
 
   function publish(name, func) {
@@ -35,7 +37,9 @@ define(function(require, exports, module) {
     } else {
       var func = pubs[name];
       if (! func) {
-        return env.info('unknown method: ' + name);
+        var msg = 'unknown publication: ' + name;
+        this.ws.send('P'+subId+'|500|'+msg);
+        return env.info(msg);
       }
       sub = sub || new Sub(this, subId);
       subs[subId] = sub;
@@ -83,6 +87,15 @@ define(function(require, exports, module) {
       delete this.conn._subs[this.id];
       this._stop && this._stop();
     },
+
+    setUserId: function (userId) {
+      this.conn.userId = userId;
+      this.conn.ws.send('VS'+this.userId);
+    },
+
+    get userId() {
+      return this.conn.userId;
+    }
   };
 
 
