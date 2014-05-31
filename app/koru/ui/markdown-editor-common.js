@@ -7,7 +7,6 @@ define(function(require, exports, module) {
 
   var $ = Dom.current;
 
-  var List = Tpl.List;
   var Input = Tpl.Input;
 
 
@@ -116,7 +115,7 @@ define(function(require, exports, module) {
         range.selectNode(span.firstChild, ch.length);
         setRange(range);
         ctx.mentionState = 3;
-        ctx.selectItem = List.selectItem({inputCtx: ctx, inputElm: this, span: span});
+        ctx.selectItem = Tpl.List.selectItem({inputCtx: ctx, inputElm: this, span: span});
         return;
       }
       switch(event.which) {

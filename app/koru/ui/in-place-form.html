@@ -1,0 +1,15 @@
+<template name="InPlaceForm">
+  <form>{{field}}<span class="errorMsg"></span>
+    <fieldset class="actions">
+      <button type="submit" name="apply">{{applyName}}</button>
+      <button type="button" name="cancel">Cancel</button>
+      {{deleteButton}}
+    </fieldset>
+  </form>
+  <template name="GenericShow">
+    <div class="{{classes}}">
+      <span class="label">{{label}}</span>
+      <button class="value ui-editable" name="{{name}}">{{value}}</button>
+    </div>
+  </template>
+</template>

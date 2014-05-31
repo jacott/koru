@@ -1,218 +1,226 @@
-var $ = Koru.current;
-var MarkdownEditor = Koru.MarkdownEditor;
-var List = MarkdownEditor.List;
+define(function(require, exports, module) {
+  var Dom   = require('../dom');
+  var env   = require('../env');
+  var util = require('../util');
+  var MarkdownEditor = require('./markdown-editor-common');
+  var Markdown = require('./markdown');
 
-var setRange = MarkdownEditor.setRange;
-var getRange = MarkdownEditor.getRange;
+  var Tpl = Dom.newTemplate(require('../html!./markdown-editor-mention'));
+  var $ = Dom.current;
 
-List.$extend({
-  $destroyed: function (ctx, elm) {
-    revertMention(ctx.data.inputElm);
-  },
+  var setRange = MarkdownEditor.setRange;
+  var getRange = MarkdownEditor.getRange;
 
-  selectItem: selectItem,
+  Tpl.$extend({
+    $destroyed: function (ctx, elm) {
+      revertMention(ctx.data.inputElm);
+    },
 
-  revertMention: revertMention,
-});
+    selectItem: selectItem,
 
-List.$helpers({
-  content: function () {
-    return this.span.textContent;
-  },
+    revertMention: revertMention,
+  });
 
-  list: function () {
-    var frag = document.createDocumentFragment();
-    this.inputCtx.data.options.atList(frag, this.span.textContent);
-    Koru.addClass(frag.firstChild, 'selected');
+  Tpl.$helpers({
+    content: function () {
+      return this.span.textContent;
+    },
 
-    Koru.setClass('empty', ! frag.firstChild, $.element.parentNode);
+    list: function () {
+      var frag = document.createDocumentFragment();
+      this.inputCtx.data.options.atList(frag, this.span.textContent);
+      Dom.addClass(frag.firstChild, 'selected');
 
-    return frag;
-  },
-});
+      Dom.setClass('empty', ! frag.firstChild, $.element.parentNode);
 
-List.$events({
-  'mouseover .mdList>div>*': function (event) {
-    Koru.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
-    Koru.addClass(this, 'selected');
-  },
+      return frag;
+    },
+  });
 
-  'mousedown .mdList>div>*': function (event) {
-    Koru.stopEvent();
-    $.ctx.mousedown = true;
-  },
+  Tpl.$events({
+    'mouseover .mdList>div>*': function (event) {
+      Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
+      Dom.addClass(this, 'selected');
+    },
 
-  'focusout': function (event) {
-    if ($.ctx.mousedown)
-      $.ctx.mousedown = null;
-    else
-      Koru.remove(this);
-  },
+    'mousedown .mdList>div>*': function (event) {
+      Dom.stopEvent();
+      $.ctx.mousedown = true;
+    },
 
-  'mouseup .mdList>div>*': function (event) {
-    $.ctx.mousedown = false;
-    acceptItem(event, this);
-  },
+    'focusout': function (event) {
+      if ($.ctx.mousedown)
+        $.ctx.mousedown = null;
+      else
+        Dom.remove(this);
+    },
 
-  'input .mdList>input': function (event) {
-    var data = $.ctx.data;
+    'mouseup .mdList>div>*': function (event) {
+      $.ctx.mousedown = false;
+      acceptItem(event, this);
+    },
 
-    data.span.textContent = this.value.replace(/ /g, ' ');
-    transformList(data, event.currentTarget);
-    $.ctx.updateAllTags();
-  },
+    'input .mdList>input': function (event) {
+      var data = $.ctx.data;
 
-  'keydown .mdList>input': function (event) {
-    switch(event.which) {
-    case 9: // tab
-      if (event.shiftKey) {
-        cancelList(event.currentTarget);
+      data.span.textContent = this.value.replace(/ /g, ' ');
+      transformList(data, event.currentTarget);
+      $.ctx.updateAllTags();
+    },
+
+    'keydown .mdList>input': function (event) {
+      switch(event.which) {
+      case 9: // tab
+        if (event.shiftKey) {
+          cancelList(event.currentTarget);
+          break;
+        }
+      case 13: // enter
+        var item = event.currentTarget.getElementsByClassName('selected')[0];
+        if (item)
+          acceptItem(event, item);
+        else
+          cancelList(event.currentTarget);
+        break;
+      case 38: // up
+      case 40: // down
+        Dom.stopEvent();
+        var elm = event.currentTarget.getElementsByClassName('selected')[0];
+        if (!elm) return;
+        var nextElm = event.which === 38 ? elm.previousElementSibling : elm.nextElementSibling;
+        if (nextElm) {
+          Dom.removeClass(elm, 'selected');
+          Dom.addClass(nextElm, 'selected');
+        }
+        break;
+      case 39: // right
+        if (this.selectionStart === this.value.length) {
+          cancelList(event.currentTarget);
+          collapseRange();
+        }
+        break;
+      case 37: // left
+        if (this.selectionStart === 0) {
+          cancelList(event.currentTarget);
+          collapseRange(true);
+        }
+        break;
+      case 8: // Backspace
+        if (! this.value) {
+          cancelList(event.currentTarget);
+          document.execCommand('delete', null, '');
+        }
         break;
       }
-    case 13: // enter
-      var item = event.currentTarget.getElementsByClassName('selected')[0];
-      if (item)
-        acceptItem(event, item);
-      else
+    },
+
+    'keyup .mdList>input': function (event) {
+      switch(event.which) {
+      case 27: // escape
+        // this is a keyup event so that it stops propagating the event
         cancelList(event.currentTarget);
-      break;
-    case 38: // up
-    case 40: // down
-      Koru.stopEvent();
-      var elm = event.currentTarget.getElementsByClassName('selected')[0];
-      if (!elm) return;
-      var nextElm = event.which === 38 ? elm.previousElementSibling : elm.nextElementSibling;
-      if (nextElm) {
-        Koru.removeClass(elm, 'selected');
-        Koru.addClass(nextElm, 'selected');
-      }
-      break;
-    case 39: // right
-      if (this.selectionStart === this.value.length) {
-        cancelList(event.currentTarget);
-        collapseRange();
-      }
-      break;
-    case 37: // left
-      if (this.selectionStart === 0) {
-        cancelList(event.currentTarget);
-        collapseRange(true);
-      }
-      break;
-    case 8: // Backspace
-      if (! this.value) {
-        cancelList(event.currentTarget);
-        document.execCommand('delete', null, '');
-      }
-      break;
+        break;
+      };
+    },
+  });
+
+  function acceptItem(event, item) {
+    Dom.stopEvent();
+    var data = $.ctx.data;
+
+    var id = item.getAttribute('data-id');
+    var nameELm = item.getElementsByClassName('name')[0];
+
+    revertMention(data.inputElm,
+                  '<span class="ln">'+
+                  Dom.escapeHTML((nameELm || item).textContent)+
+                  '</span>&nbsp;');
+
+    var button = data.inputElm.getElementsByClassName('ln')[0];
+
+    if (button) {
+      button.setAttribute('contenteditable', 'false');
+      button.className = '';
+      button.setAttribute('data-a', id);
     }
-  },
+    collapseRange();
 
-  'keyup .mdList>input': function (event) {
-    switch(event.which) {
-    case 27: // escape
-      // this is a keyup event so that it stops propagating the event
-      cancelList(event.currentTarget);
-      break;
-    };
-  },
-});
-
-function acceptItem(event, item) {
-  Koru.stopEvent();
-  var data = $.ctx.data;
-
-  var id = item.getAttribute('data-id');
-  var nameELm = item.getElementsByClassName('name')[0];
-
-  revertMention(data.inputElm,
-                '<span class="ln">'+
-                Koru.escapeHTML((nameELm || item).textContent)+
-                '</span>&nbsp;');
-
-  var button = data.inputElm.getElementsByClassName('ln')[0];
-
-  if (button) {
-    button.setAttribute('contenteditable', 'false');
-    button.className = '';
-    button.setAttribute('data-a', id);
+    Dom.remove(event.currentTarget);
   }
-  collapseRange();
 
-  Koru.remove(event.currentTarget);
-}
+  function cancelList(elm) {
+    Dom.stopEvent();
+    Dom.remove(elm);
+  }
 
-function cancelList(elm) {
-  Koru.stopEvent();
-  Koru.remove(elm);
-}
+  function revertMention(editorELm, button) {
+    var lm = editorELm.getElementsByClassName('lm')[0];
+    if (lm == null) return;
 
-function revertMention(editorELm, button) {
-  var lm = editorELm.getElementsByClassName('lm')[0];
-  if (lm == null) return;
+    var anchor = lm.firstChild.textContent;
+    var text = button || lm.textContent;
 
-  var anchor = lm.firstChild.textContent;
-  var text = button || lm.textContent;
+    var dest = lm.previousSibling;
+    if (dest) {
+      var destOffset = dest.length;
+      dest.textContent += ' '+anchor+lm.nextSibling.textContent;
 
-  var dest = lm.previousSibling;
-  if (dest) {
-    var destOffset = dest.length;
-    dest.textContent += ' '+anchor+lm.nextSibling.textContent;
+      var parent = lm.parentNode;
+      parent.removeChild(lm.nextSibling);
+      parent.removeChild(lm);
 
-    var parent = lm.parentNode;
-    parent.removeChild(lm.nextSibling);
-    parent.removeChild(lm);
-
-    var range = document.createRange();
-    range.setStart(dest, destOffset);
-    range.setEnd(dest, destOffset + 2);
-    setRange(range);
-    document.execCommand(button ? 'insertHTML' : 'insertText', false, text);
-    if (! button) {
-      range = getRange();
+      var range = document.createRange();
       range.setStart(dest, destOffset);
+      range.setEnd(dest, destOffset + 2);
       setRange(range);
+      document.execCommand(button ? 'insertHTML' : 'insertText', false, text);
+      if (! button) {
+        range = getRange();
+        range.setStart(dest, destOffset);
+        setRange(range);
+      }
+    }
+
+    var mdCtx = Dom.getCtx(editorELm);
+    if (mdCtx) {
+      mdCtx.selectItem = null;
+      mdCtx.mentionState = null;
     }
   }
 
-  var mdCtx = Koru.getCtx(editorELm);
-  if (mdCtx) {
-    mdCtx.selectItem = null;
-    mdCtx.mentionState = null;
+  function collapseRange(start) {
+    var sel = window.getSelection();
+    var range = sel.getRangeAt(0);
+    range.collapse(start);
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
-}
 
-function collapseRange(start) {
-  var sel = getSelection();
-  var range = sel.getRangeAt(0);
-  range.collapse(start);
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
+  function selectItem(data) {
+    var al = Tpl.$autoRender(data);
 
-function selectItem(data) {
-  var al = List.$autoRender(data);
+    transformList(data, al);
 
-  transformList(data, al);
+    var input = al.firstChild;
+    input.value = data.span.textContent;
+    data.span.style.opacity = "0";
 
-  var input = al.firstChild;
-  input.value = data.span.textContent;
-  data.span.style.opacity = "0";
+    data.inputElm.parentNode.appendChild(al);
+    input.selectionStart = input.selectionEnd = 1;
+    input.focus();
+    return al;
+  }
 
-  data.inputElm.parentNode.appendChild(al);
-  input.selectionStart = input.selectionEnd = 1;
-  input.focus();
-  return al;
-}
+  function transformList(data, al) {
+    var op = data.inputElm.parentNode.offsetParent;
 
-function transformList(data, al) {
-  var op = data.inputElm.parentNode.offsetParent;
+    var spbb = Dom.clonePosition(data.span, al, op);
+    var input = al.firstChild;
+    var st = input.style;
+    st.width = (spbb.width+2)+'px';
+    st.height = spbb.height+'px';
 
-  var spbb = Koru.clonePosition(data.span, al, op);
-  var input = al.firstChild;
-  var st = input.style;
-  st.width = (spbb.width+2)+'px';
-  st.height = spbb.height+'px';
-
-  return op;
-}
+    return op;
+  }
+  return Tpl;
+});

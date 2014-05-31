@@ -1,216 +1,225 @@
-var Tpl = Koru.InPlaceForm;
-var $ = Koru.current;
+define(function(require, exports, module) {
+  var Dom = require('../dom');
+  var Form = require('./form');
+  var util = require('../util');
+  var Dialog = require('./dialog');
 
-Tpl.$helpers({
-  field: function () {
-    var options = this;
+  var Tpl = Dom.newTemplate(require('../html!./in-place-form'));
+  var $ = Dom.current;
 
-    if (options.editTpl) return options.editTpl.$autoRender(options);
+  Tpl.$helpers({
+    field: function () {
+      var options = this;
 
-    var fieldOptions = {
-      type: options.type,
-    };
+      if (options.editTpl) return options.editTpl.$autoRender(options);
 
-    for(var key in options) {
-      var m = /^html-(.*)$/.exec(key);
-      if (m)
-        fieldOptions[m[1]] = options[key];
-    }
+      var fieldOptions = {
+        type: options.type,
+      };
 
-    var name = options.name || 'name';
-    var doc = options.doc;
-    if (! doc) {
-      doc = {};
-      doc[name] = options.value;
-    }
+      for(var key in options) {
+        var m = /^html-(.*)$/.exec(key);
+        if (m)
+          fieldOptions[m[1]] = options[key];
+      }
 
-    return Koru.Form.field(doc, name, fieldOptions);
-  },
+      var name = options.name || 'name';
+      var doc = options.doc;
+      if (! doc) {
+        doc = {};
+        doc[name] = options.value;
+      }
 
-  deleteButton: function () {
-    var elm = $.element;
+      return Dom.Form.field(doc, name, fieldOptions);
+    },
 
-    if (! this.deleteName)
-      return '';
+    deleteButton: function () {
+      var elm = $.element;
 
-    if (! elm.tagName !== 'BUTTON') {
-      elm =document.createElement('button');
-      elm.setAttribute('type', 'button');
-      elm.setAttribute('name', 'delete');
-      elm.textContent = this.deleteName;
-    }
+      if (! this.deleteName)
+        return '';
 
-    return elm;
-  },
+      if (! elm.tagName !== 'BUTTON') {
+        elm =document.createElement('button');
+        elm.setAttribute('type', 'button');
+        elm.setAttribute('name', 'delete');
+        elm.textContent = this.deleteName;
+      }
 
-  applyName: function () {
-    return this.applyName || 'Apply';
-  },
-});
+      return elm;
+    },
 
-Tpl.GenericShow.$helpers({
-  label: function () {
-    return Apputil.capitalize(Apputil.humanize(this.options.name));
-  },
-  name: function () {
-    return this.options.name;
-  },
+    applyName: function () {
+      return this.applyName || 'Apply';
+    },
+  });
 
-  classes: function () {
-    return this.options.name+"-field";
-  },
-  value: function () {
-    return this.doc[this.options.name];
-  },
-});
+  Tpl.GenericShow.$helpers({
+    label: function () {
+      return util.capitalize(util.humanize(this.options.name));
+    },
+    name: function () {
+      return this.options.name;
+    },
 
-Tpl.$events({
-  'submit': function (event) {
-    Koru.stopEvent();
+    classes: function () {
+      return this.options.name+"-field";
+    },
+    value: function () {
+      return this.doc[this.options.name];
+    },
+  });
 
-    var ctx = Koru.getCtx(this);
-    var widget = ctx._widget;
+  Tpl.$events({
+    'submit': function (event) {
+      Dom.stopEvent();
 
-    var input = this.firstChild;
+      var ctx = Dom.getCtx(this);
+      var widget = ctx._widget;
 
-    var value = input.value;
+      var input = this.firstChild;
 
-    widget._onSubmit && widget._onSubmit(value, this);
-  },
+      var value = input.value;
 
-  'keyup': function (event) {
-    if (event.which === 27) {
-      Koru.stopEvent();
-      Koru.getCtx(this)._widget.close();
-    }
-  },
+      widget._onSubmit && widget._onSubmit(value, this);
+    },
 
-  'click [name=delete]': function (event) {
-    Koru.stopEvent();
-    var ctx = Koru.getCtx(this);
-    var widget = ctx._widget;
+    'keyup': function (event) {
+      if (event.which === 27) {
+        Dom.stopEvent();
+        Dom.getCtx(this)._widget.close();
+      }
+    },
 
-    Koru.Dialog.confirm({
-      classes: 'warn cl',
-      okay: 'Delete',
-      content: ctx.data.deleteConfirmMsg || 'Are you sure you want to delete this?',
-      callback: function (confirmed) {
-        if (confirmed) {
-          widget._onDelete && widget._onDelete();
-        }
-      },
-    });
-  },
+    'click [name=delete]': function (event) {
+      Dom.stopEvent();
+      var ctx = Dom.getCtx(this);
+      var widget = ctx._widget;
 
-  'click [name=cancel]': function (event) {
-    Koru.stopEvent();
-    var ctx = Koru.getCtx(this);
-    var widget = ctx._widget;
-
-    widget.close();
-  },
-});
-
-
-Tpl.$extend({
-  $created: function (ctx, elm) {
-    var editTpl = ctx.data && ctx.data.editTpl;
-    if (editTpl && '$opened' in editTpl) {
-      editTpl.$opened(elm);
-    }
-  },
-  newWidget: function (options) {
-    return new Widget(options);
-  },
-
-  swapFor: function (elm, options) {
-    var widget = new Widget(options);
-    elm.parentNode.replaceChild(widget.element, elm);
-    widget.swap = elm;
-
-    var focus = widget.element.querySelector(Koru.INPUT_SELECTOR);
-    focus && focus.focus();
-
-    return widget;
-  },
-
-  autoRegister: function (template, func) {
-    template.$events({
-      'click .ui-editable': function (event) {
-        Koru.stopEvent();
-        var target = this;
-        if (Koru.matches(target, '.readOnly *')) return;
-        var ctx = Koru.getCtx(target);
-        ctx.options.value = (ctx.options.doc = ctx.data.doc)[ctx.options.name];
-        var widget = Tpl.swapFor(target, ctx.options);
-        widget.onSubmit(function (value, form) {
-          var doc = ctx.data.doc;
-          doc.$reload();
-          doc[ctx.options.name] = value;
-          if (func) {
-            Koru.addClass(form, 'submitting');
-            if (func.call(widget, doc, ctx.options.name, value, form) === 'exit')
-              return;
+      Dialog.confirm({
+        classes: 'warn cl',
+        okay: 'Delete',
+        content: ctx.data.deleteConfirmMsg || 'Are you sure you want to delete this?',
+        callback: function (confirmed) {
+          if (confirmed) {
+            widget._onDelete && widget._onDelete();
           }
-          if (! doc._errors) for(var noop in doc.changes) {
-            doc.$save();
-            break;
-          }
-          if (doc._errors) {
-            Koru.removeClass(form, 'submitting');
-            Koru.Form.renderErrors(doc, form);
-          } else {
-            widget.close(form);
-          }
-        });
-      },
-    });
-    return this;
-  },
+        },
+      });
+    },
+
+    'click [name=cancel]': function (event) {
+      Dom.stopEvent();
+      var ctx = Dom.getCtx(this);
+      var widget = ctx._widget;
+
+      widget.close();
+    },
+  });
+
+
+  Tpl.$extend({
+    $created: function (ctx, elm) {
+      var editTpl = ctx.data && ctx.data.editTpl;
+      if (editTpl && '$opened' in editTpl) {
+        editTpl.$opened(elm);
+      }
+    },
+    newWidget: function (options) {
+      return new Widget(options);
+    },
+
+    swapFor: function (elm, options) {
+      var widget = new Widget(options);
+      elm.parentNode.replaceChild(widget.element, elm);
+      widget.swap = elm;
+
+      var focus = widget.element.querySelector(Dom.INPUT_SELECTOR);
+      focus && focus.focus();
+
+      return widget;
+    },
+
+    autoRegister: function (template, func) {
+      template.$events({
+        'click .ui-editable': function (event) {
+          Dom.stopEvent();
+          var target = this;
+          if (Dom.matches(target, '.readOnly *')) return;
+          var ctx = Dom.getCtx(target);
+          ctx.options.value = (ctx.options.doc = ctx.data.doc)[ctx.options.name];
+          var widget = Tpl.swapFor(target, ctx.options);
+          widget.onSubmit(function (value, form) {
+            var doc = ctx.data.doc;
+            doc.$reload();
+            doc[ctx.options.name] = value;
+            if (func) {
+              Dom.addClass(form, 'submitting');
+              if (func.call(widget, doc, ctx.options.name, value, form) === 'exit')
+                return;
+            }
+            if (! doc._errors) for(var noop in doc.changes) {
+              doc.$save();
+              break;
+            }
+            if (doc._errors) {
+              Dom.removeClass(form, 'submitting');
+              Dom.Form.renderErrors(doc, form);
+            } else {
+              widget.close(form);
+            }
+          });
+        },
+      });
+      return this;
+    },
+  });
+
+  Dom.registerHelpers({
+    editInPlace: function (options) {
+      var elm = $.element;
+
+      if (elm.nodeType !== document.ELEMENT_NODE) {
+        var pTpl = $.ctx.template;
+        var tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
+        elm = tpl.$render();
+        var ctx = Dom.getCtx(elm);
+        options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
+      } else {
+        var ctx = Dom.getCtx(elm);
+      }
+
+      ctx.updateAllTags({doc: this, options: options});
+      ctx.options = options;
+      return elm;
+    },
+  });
+
+  function Widget(options) {
+    var element = this.element = Tpl.$autoRender(options);
+    var ctx = this.ctx = Dom.getCtx(element);
+    ctx._widget = this;
+  }
+
+  Widget.prototype = {
+    constructor: Widget,
+
+    onSubmit: function (func) {
+      this._onSubmit = func;
+    },
+
+    onDelete: function (func) {
+      this._onDelete = func;
+    },
+
+    close: function () {
+      if (this.swap) {
+        this.element.parentNode.replaceChild(this.swap, this.element);
+        this.swap = null;
+      }
+      Dom.remove(this.element);
+    },
+  };
+
+  return Tpl;
 });
-
-Koru.registerHelpers({
-  editInPlace: function (options) {
-    var elm = $.element;
-
-    if (elm.nodeType !== document.ELEMENT_NODE) {
-      var pTpl = $.ctx.template;
-      var tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
-      elm = tpl.$render();
-      var ctx = Koru.getCtx(elm);
-      options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
-    } else {
-      var ctx = Koru.getCtx(elm);
-    }
-
-    ctx.updateAllTags({doc: this, options: options});
-    ctx.options = options;
-    return elm;
-  },
-});
-
-function Widget(options) {
-  var element = this.element = Tpl.$autoRender(options);
-  var ctx = this.ctx = Koru.getCtx(element);
-  ctx._widget = this;
-}
-
-Widget.prototype = {
-  constructor: Widget,
-
-  onSubmit: function (func) {
-    this._onSubmit = func;
-  },
-
-  onDelete: function (func) {
-    this._onDelete = func;
-  },
-
-  close: function () {
-    if (this.swap) {
-      this.element.parentNode.replaceChild(this.swap, this.element);
-      this.swap = null;
-    }
-    Koru.remove(this.element);
-  },
-};

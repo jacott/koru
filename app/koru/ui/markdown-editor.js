@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
-  var Toolbar = require('./markdown-editor-toolbar');
+  require('./markdown-editor-toolbar');
+  require('./markdown-editor-mention');
 
   return require('./markdown-editor-common');
 });

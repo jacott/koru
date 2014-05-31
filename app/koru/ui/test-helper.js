@@ -19,6 +19,12 @@ define(function(require, exports, module) {
   var geddon = TH.geddon;
 
   TH.util.extend(TH, {
+    domTearDown: function () {
+      Dom.removeChildren(document.body);
+      document.body.className = '';
+      delete Dom.Test;
+    },
+
     createMockEvent: function(currentTarget, options) {
       return util.extend({}, {
         preventDefault: geddon.test.stub(),

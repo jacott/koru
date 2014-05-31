@@ -1,41 +1,50 @@
-var $ = Koru.current;
-var Tpl = Koru.Form.PageLink;
-var IGNORE = {append: true, search: true, value: true, link: true, template: true};
+define(function(require, exports, module) {
+  var Dom = require('../dom');
+  var Form = require('./form');
+  var util = require('../util');
+  var Dialog = require('./dialog');
+  var Route = require('./route');
 
-Tpl.$helpers({
-  attrs: function () {
-    var elm = $.element;
-    var data = $.ctx.data;
+  var Tpl = Dom.newTemplate(require('../html!./page-link'));
+  var $ = Dom.current;
 
-    var template = data.template;
-    if (template) {
-      data.link = Koru.lookupTemplate(data.template);
-    }
+  var IGNORE = {append: true, search: true, value: true, link: true, template: true};
 
-    for(var attr in data) {
-      if (! (attr in IGNORE))
-        elm.setAttribute(attr, data[attr]);
-    }
+  Tpl.$helpers({
+    attrs: function () {
+      var elm = $.element;
+      var data = $.ctx.data;
 
-    Koru.addClass(elm, 'link');
-  },
-});
+      var template = data.template;
+      if (template) {
+        data.link = Dom.lookupTemplate(data.template);
+      }
 
-Tpl.$events({
-  'click': function (event) {
-    Koru.stopEvent();
-    var data = $.data();
+      for(var attr in data) {
+        if (! (attr in IGNORE))
+          elm.setAttribute(attr, data[attr]);
+      }
 
-    var location = {};
+      Dom.addClass(elm, 'link');
+    },
+  });
 
-    if (data.append) location.append = data.append;
-    if (data.search) location.search = '?' + data.search;
-    AppRoute.gotoPath(data.link, location);
-  },
-});
+  Tpl.$events({
+    'click': function (event) {
+      Dom.stopEvent();
+      var data = $.data();
 
-Koru.registerHelpers({
-  pageLink: Koru.Form.pageLink = function (options) {
-    return Tpl.$autoRender(options);
-  },
+      var location = {};
+
+      if (data.append) location.append = data.append;
+      if (data.search) location.search = '?' + data.search;
+      Route.gotoPath(data.link, location);
+    },
+  });
+
+  Dom.registerHelpers({
+    pageLink: Dom.Form.pageLink = function (options) {
+      return Tpl.$autoRender(options);
+    },
+  });
 });
