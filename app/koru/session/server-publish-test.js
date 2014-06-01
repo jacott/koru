@@ -20,8 +20,8 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      v = null;
       publish._destroy('foo');
+      v = null;
     },
 
     "test unknown publication": function () {
@@ -44,6 +44,7 @@ isServer && define(function (require, exports, module) {
     "test onStop": function () {
       v.sub.onStop(v.onStop = test.stub());
 
+      // "P<name>|<pub-id>"; no name means stop
       session._onMessage(v.conn, 'P|a123');
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);

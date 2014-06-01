@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var session = require('../session/main');
   var util = require('../util');
   require('./client-update');
+  var publish = require('./publish');
 
   var nextId = 0;
   var subs = {};
@@ -13,19 +14,17 @@ define(function(require, exports, module) {
   });
 
   function Subcribe(name /*, args..., callback */) {
-    var handle = {
-      stop: stopFunc,
-      _id: (++nextId).toString(16),
-    };
+    var sub = new ClientSub((++nextId).toString(16));
     var callback = arguments[arguments.length - 1];
     if (typeof callback === 'function')
-      handle.callback = callback;
+      sub.callback = callback;
 
-    handle.args = util.slice(arguments, 1, handle.callback ? -1 : arguments.length);
-    subs[handle._id] = handle;
-    Subcribe.intercept(name, handle);
-    session.sendP(name + '|' + handle._id, handle.args);
-    return handle;
+    sub.args = util.slice(arguments, 1, sub.callback ? -1 : arguments.length);
+    subs[sub._id] = sub;
+    Subcribe.intercept(name, sub);
+    session.sendP(name + '|' + sub._id, sub.args);
+    publish._pubs[name].apply(sub, sub.args);
+    return sub;
   };
 
   util.extend(Subcribe, {
@@ -36,10 +35,27 @@ define(function(require, exports, module) {
     intercept: function () {},
   });
 
-  function stopFunc() {
-    session.sendP('|' + this._id);
-    delete subs[this._id];
+  function ClientSub(subId) {
+    this._id = subId;
+    this._matches = [];
   }
+
+  ClientSub.prototype = {
+    constructor: ClientSub,
+
+    stop: function () {
+      session.sendP('|' + this._id);
+      delete subs[this._id];
+      for(var i = 0; i < this._matches.length; ++i) {
+        this._matches[i].stop();
+      }
+      this._matches = [];
+    },
+
+    match: function (model, func) {
+      this._matches.push(publish._registerMatch(model, func));
+    },
+  };
 
   return Subcribe;
 });

@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var session = require('./client-main');
   var Query = require('../model/query');
   var ModelEnv = require('../model/client-main');
+  var publish = require('./publish');
 
   session.provide('A', modelUpdate(added));
   session.provide('C', modelUpdate(changed));
@@ -11,17 +12,24 @@ define(function(require, exports, module) {
 
   function added(model, id, attrs) {
     attrs._id = id;
-    ModelEnv.insert(new model(attrs));
+    var doc = new model(attrs);
+    publish._matches(doc) && ModelEnv.insert(doc);
   }
 
   function changed(model, id, attrs) {
     attrs._id = id;
-    new Query(model).onId(id).update(attrs);
+    var doc = model.findById(id);
+    publish._matches(doc) &&
+      new Query(model).onId(id).update(attrs);
   }
 
   function removed(data) {
     var nh = data.toString().split('|');
-    new Query(Model[nh[0]]).onId(nh[1]).remove();
+    var model = Model[nh[0]];
+    var id =  nh[1];
+    var doc = model.findById(id);
+    publish._matches(doc) &&
+      new Query(model).onId(id).remove();
   }
 
   function modelUpdate(func) {

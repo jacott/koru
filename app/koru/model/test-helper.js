@@ -17,7 +17,8 @@ define(function(require, exports, module) {
     matchModel: function (expect) {
       return TH.match(function (actual) {
         if (expect === actual) return true;
-        if (expect && actual && expect._id === actual._id) {
+        if (expect && actual && expect.constructor === actual.constructor &&
+            expect._id === actual._id) {
           assert.equals(actual.attributes, expect.attributes);
           return true;
         }
