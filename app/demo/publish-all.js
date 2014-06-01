@@ -21,7 +21,5 @@ define(function(require, exports, module) {
         sub.sendUpdate(doc);
       });
     });
-
-    sub.ready();
   });
 });

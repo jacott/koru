@@ -1,4 +1,37 @@
-* Subscriptions
+
+* Server side publish should batch sends to client
+   When mutilple subscriptions are interested in the same doc we
+   should only send once to client. We can have a feature in the
+   notify that allows the pub to register a callback if it wants to
+   send data to client. The callback is run once all observers are
+   notified.
+
+   We want to register it via the sessId so that only one callback is
+   registered per session.
+
+
+* setUserId needs to fixup any open subscriptions
+   Tricky when sub sets the userId
+
+* Need to fix reconnect sending messages and subscriptions
+
+* Server update multiple records
+   could do one fetch then one update then proceed similar to client.
+
+
+* SRP is CPU intensive and blocks node;
+   consider handing off to worker thread on server
+
+* Use https://github.com/ahyatt/emacs-websocket
+   to talk to server instead of geddon-test.js
+
+
+
+
+-------
+
+
+done * Subscriptions
 
    Like methods there should be something like the "simulation"
    methods. These things are used to test if a doc should be on the
@@ -27,18 +60,3 @@
          });
 
    This would help solve the "setUserId and "reconnect" issues below.
-
-* setUserId needs to fixup any open subscriptions
- Tricky when sub sets the userId
-
-* Need to fix reconnect sending messages and subscriptions
-
-* Server update multiple records
-   could do one fetch then one update then proceed similar to client.
-
-
-* SRP is CPU intensive and blocks node;
-   consider handing off to worker thread on server
-
-* Use https://github.com/ahyatt/emacs-websocket
-   to talk to server instead of geddon-test.js

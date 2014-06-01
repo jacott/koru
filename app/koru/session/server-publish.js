@@ -29,6 +29,7 @@ define(function(require, exports, module) {
       }
       sub = subs[subId] = new Sub(this, subId, func, JSON.parse(data.slice(index).toString()));
       sub.resubscribe();
+      subs[subId] && this.ws.send('P'+subId); // ready
     }
   }
 
@@ -44,10 +45,6 @@ define(function(require, exports, module) {
 
     onStop: function (func) {
       this._stop = func;
-    },
-
-    ready: function () {
-      this.conn.ws.send('P'+this.id);
     },
 
     sendUpdate: function (doc, changes) {

@@ -9,14 +9,20 @@ isServer && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      publish("foo", v.pubFunc = test.stub());
+      v.pubFunc = test.stub();
+      publish("foo", function () {
+        v.sub = this;
+        v.pubFunc.apply(this, arguments);
+      });
 
-      assert.same(publish._pubs.foo, v.pubFunc);
-      session._onMessage(v.conn = {
-        ws: {send: v.send = test.stub()},
-        _subs: {},
-      }, 'Pfoo|a123'+JSON.stringify([1,2,3]));
-      v.sub = v.pubFunc.thisValues[0];
+      v.callSub = function () {
+        session._onMessage(v.conn = {
+          ws: {send: v.send = test.stub()},
+          _subs: {},
+        }, 'Pfoo|a123'+JSON.stringify([1,2,3]));
+      };
+
+      v.callSub();
     },
 
     tearDown: function () {
@@ -38,7 +44,9 @@ isServer && define(function (require, exports, module) {
       assert('a123' in v.conn._subs);
 
       assert.calledWith(v.pubFunc, 1, 2, 3);
+
       assert.same(v.sub.conn, v.conn);
+      assert.calledWith(v.send, 'Pa123');
     },
 
     "test onStop": function () {
@@ -60,12 +68,6 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
       session._onMessage(v.conn, 'P|a123');
       assert.calledOnce(v.onStop);
-    },
-
-    "test ready": function () {
-      v.sub.ready();
-
-      assert.calledWith(v.send, 'Pa123');
     },
 
     "test setUserId": function () {
@@ -110,9 +112,15 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
     },
 
-    "test other error": function () {
-      v.sub.error(new Error('Foo error'));
+    "test error": function () {
+      v.pubFunc.reset();
+      v.pubFunc = function () {
+        this.error(new Error('Foo error'));
+      };
 
+      v.callSub();
+
+      assert.calledOnce(v.send);
       assert.calledWith(v.send, 'Pa123|500|Error: Foo error');
 
       refute('a123' in v.conn._subs);
