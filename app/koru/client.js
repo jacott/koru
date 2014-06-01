@@ -1,6 +1,7 @@
 define(function (require, exports, module) {
   var env = require('./env');
   var session = require('./session/client-main');
+  require('koru/user-account/client-main');
   require('koru/ui/helpers');
 
   window.addEventListener('error', function (ev) {

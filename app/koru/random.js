@@ -1,4 +1,4 @@
-define(function() {
+define(['./util-base'], function(require) {
   /**
    * Original code from Meteor.com: meteor/packages/random/random.js
    */
@@ -12,7 +12,7 @@ define(function() {
   // window.crypto.getRandomValues() or alea, the primitive is fraction and we use
   // that to construct hex string.
 
-  var nodeCrypto = isServer && require('crypto');
+  var nodeCrypto = isServer && requirejs('crypto');
 
   // see http://baagoe.org/en/wiki/Better_random_numbers_for_javascript
   // for a full discussion and Alea implementation.

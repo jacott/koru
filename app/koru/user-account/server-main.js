@@ -99,14 +99,14 @@ define(function(require, exports, module) {
   };
 
   function validateLoginToken(data) {
+    var conn = this;
     var pair = data.slice(1).toString().split('|');
     var lu = model.findById(pair[0]);
 
     if (lu && lu.tokens[pair[1]]) {
-      this.userId = lu.userId;
-      this.ws.send('VS'+this.userId);
+      conn.userId = lu.userId;
     } else {
-      this.ws.send('VF');
+      conn.ws.send('VF');
     }
   }
 });

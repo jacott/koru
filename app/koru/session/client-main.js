@@ -76,7 +76,6 @@ define(function (require, exports, module) {
       env.reload();
     versionHash = data;
 
-    state = 'ready';
     retryCount = 0;
   });
 
@@ -123,6 +122,8 @@ define(function (require, exports, module) {
     };
     ws.onopen = function (event) {
       ws.send('X1'+ env.util.engine);
+      state = 'ready';
+
       for(var i = 0; i < session._onConnect.length; ++i) {
         session._onConnect[i].call(conn);
       }

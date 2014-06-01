@@ -27,7 +27,8 @@ define(function(require, exports, module) {
         this.ws.send('P'+subId+'|500|'+msg);
         return env.info(msg);
       }
-      subs[subId] = new Sub(this, subId, func, JSON.parse(data.slice(index).toString()));
+      sub = subs[subId] = new Sub(this, subId, func, JSON.parse(data.slice(index).toString()));
+      sub.resubscribe();
     }
   }
 
@@ -36,7 +37,6 @@ define(function(require, exports, module) {
     this.id = subId;
     this._subscribe = subscribe;
     this._args = args;
-    subscribe.apply(this, args);
   }
 
   Sub.prototype = {

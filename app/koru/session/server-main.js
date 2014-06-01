@@ -77,15 +77,7 @@ define(function (require, exports, module) {
       }
       env.info('Close client', sessId);
     });
-    ws.on('message', function (data, flags) {
-      env.Fiber(function () {
-        try {
-          session._onMessage(conn, data);
-        } catch(ex) {
-          env.error(util.extractError(ex));
-        }
-      }).run();
-    });
+    ws.on('message', conn.onMessage.bind(conn));
 
     ws.send('X1'+session.versionHash);
   }

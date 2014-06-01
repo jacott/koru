@@ -1,16 +1,39 @@
 define(function(require, exports, module) {
   var env = require('../env');
+  var util = require('../util');
+  var session = require('./main');
 
   function Connection(ws, sessId, close) {
     this.ws = ws;
     this.sessId = sessId;
     this._subs = {};
     this.close = close;
+    this._last = null;
     ws.on('close', close);
   }
 
   Connection.prototype = {
     constructor: Connection,
+
+    onMessage: function (data, flags) {
+      var conn = this;
+      if (conn._last) {
+        conn._last = conn._last[1] = [data];
+        return;
+      }
+      var current = conn._last = [data];
+      env.Fiber(function () {
+        while(current) {
+          try {
+            session._onMessage(conn, current[0]);
+          } catch(ex) {
+            env.error(util.extractError(ex));
+          }
+          current = current[1];
+        }
+        conn._last = null;
+      }).run();
+    },
 
     added: function (name, id, attrs) {
       this.ws.send('A'+name+'|'+id+JSON.stringify(attrs), env.nullFunc);
@@ -34,11 +57,11 @@ define(function(require, exports, module) {
 
     set userId(userId) {
       this._userId = userId;
+      this.ws.send('VS'+userId);
       var subs = this._subs;
       for(var key in subs) {
         subs[key].resubscribe();
       }
-      this.ws.send('VS'+userId);
     },
 
     get userId() {return this._userId},

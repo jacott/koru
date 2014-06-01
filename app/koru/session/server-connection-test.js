@@ -19,6 +19,44 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "onMessage": {
+      setUp: function () {
+        test.stub(env, 'Fiber', function (func) {
+          return v.fiber = {run: test.stub(), func: func};
+        });
+        test.onEnd(function () {
+          delete session._commands.t;
+        });
+
+        session.provide('t', v.tStub = test.stub());
+      },
+
+      "test fiber": function () {
+        v.conn.onMessage('t123');
+
+        assert.equals(v.conn._last, ['t123']);
+
+        v.conn.onMessage('t456');
+
+        assert.equals(v.conn._last, ['t456']);
+
+        assert.calledOnce(env.Fiber);
+        assert.calledOnce(v.fiber.run);
+
+        refute.called(v.tStub);
+
+        var m123 = v.tStub.withArgs('123');
+        var m456 = v.tStub.withArgs('456');
+
+        v.fiber.func();
+
+        assert.called(m123);
+        assert.called(m456);
+
+        assert(m123.calledBefore(m456));
+      },
+    },
+
     "test set userId": function () {
       v.conn._subs = {s1: {resubscribe: v.s1 = test.stub()}, s2: {resubscribe: v.s2 = test.stub()}};
 
@@ -31,6 +69,7 @@ isServer && define(function (require, exports, module) {
       assert.called(v.s2);
 
       assert.calledWith(v.ws.send, 'VSu456');
+      assert(v.ws.send.calledBefore(v.s1));
     },
 
     "test added": function () {
