@@ -76,14 +76,20 @@ isServer && define(function (require, exports, module) {
     },
 
     "test resubscribe": function () {
-      v.pubFunc.reset();
-      v.sub.onStop(v.onStop = test.stub());
+      v.pubFunc = function () {
+        assert.same(this, v.sub);
+        assert.equals(env.util.slice(arguments), [1,2,3]);
+        assert.isTrue(this.isResubscribe);
+      };
+      v.sub.onStop(v.onStop = function () {
+        v.stopResub = this.isResubscribe;
+      });
 
       v.sub.resubscribe();
 
-      assert.calledWith(v.pubFunc, 1, 2, 3);
-      assert.same(v.pubFunc.thisValues[0], v.sub);
-      assert.called(v.onStop);
+      refute(v.sub.isResubscribe);
+
+      assert.isTrue(v.stopResub);
     },
 
     "test error on resubscribe": function () {

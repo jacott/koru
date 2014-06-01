@@ -77,12 +77,14 @@ define(function(require, exports, module) {
 
     resubscribe: function () {
       try {
+        this.isResubscribe = true;
         this._stop && this._stop();
         this._subscribe.apply(this, this._args);
       } catch(ex) {
         env.error(util.extractError(ex));
         this.error(new env.Error(500, 'Internal server error'));
       }
+      this.isResubscribe = false;
     },
 
     get userId() {
