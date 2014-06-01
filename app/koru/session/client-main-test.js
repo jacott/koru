@@ -35,6 +35,13 @@ define(function (require, exports, module) {
 
         assert.same(session._onConnect[0], v.stub);
       },
+
+      /**
+       * Ensure docs are tested against matches after subscriptions have returned.
+       * Any unwanted docs should be removed.
+       */
+      "//test reconnect": function () {
+      },
     },
 
     "test server only rpc": function () {

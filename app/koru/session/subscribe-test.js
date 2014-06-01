@@ -6,6 +6,7 @@ isClient && define(function (require, exports, module) {
   var publish = require('./publish');
   require('./client-update');
   var Model = require('../model/main');
+  var env = require('../env');
 
   TH.testCase(module, {
     setUp: function () {
@@ -21,6 +22,27 @@ isClient && define(function (require, exports, module) {
       publish._destroy('foo');
       v.sub && v.sub.stop();
       v = null;
+    },
+
+    "stop":{
+      /**
+       * Ensure when we stop that all docs in models (matching matches)
+       * are removed if not matched
+       */
+      "//test remove unwanted docs": function () {
+      },
+    },
+
+    /**
+     * sub.userId should mirror env.userId
+     */
+    "test userId": function () {
+      v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+      var origId = env.util.thread.userId;
+      test.onEnd(function () {env.util.thread.userId = origId});
+      env.util.thread.userId = 'test123';
+
+      assert.same(v.sub.userId, 'test123');
     },
 
     "test subscribe": function () {

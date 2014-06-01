@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   require('./client-update');
   var publish = require('./publish');
+  var env = require('../env');
 
   var nextId = 0;
   var subs = {};
@@ -42,6 +43,10 @@ define(function(require, exports, module) {
 
   ClientSub.prototype = {
     constructor: ClientSub,
+
+    get userId() {
+      return env.userId();
+    },
 
     stop: function () {
       session.sendP('|' + this._id);

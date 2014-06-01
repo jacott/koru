@@ -84,6 +84,19 @@ isServer && define(function (require, exports, module) {
       assert.called(v.onStop);
     },
 
+    "test error on resubscribe": function () {
+      test.stub(env, 'error');
+      v.pubFunc = function () {
+        throw new Error('foo error');
+      };
+
+      v.sub.resubscribe();
+
+      refute(v.sub.isResubscribe);
+      assert.calledWith(v.send, 'Pa123|500|Internal server error');
+      assert.calledWith(env.error, TH.match(/foo error/));
+    },
+
     "test userId": function () {
       v.conn.userId = 'foo';
       assert.same(v.sub.userId, 'foo');
