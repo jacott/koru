@@ -19,6 +19,20 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test set userId": function () {
+      v.conn._subs = {s1: {resubscribe: v.s1 = test.stub()}, s2: {resubscribe: v.s2 = test.stub()}};
+
+      v.conn.userId = 'u456';
+
+      assert.same(v.conn._userId, 'u456');
+      assert.same(v.conn.userId, 'u456');
+
+      assert.called(v.s1);
+      assert.called(v.s2);
+
+      assert.calledWith(v.ws.send, 'VSu456');
+    },
+
     "test added": function () {
       v.conn.added('Foo', '123', v.attrs = {name: 'bar', age: 5});
 

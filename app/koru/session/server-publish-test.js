@@ -9,14 +9,14 @@ isServer && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      publish("foo", v.stub = test.stub());
+      publish("foo", v.pubFunc = test.stub());
 
-      assert.same(publish._pubs.foo, v.stub);
+      assert.same(publish._pubs.foo, v.pubFunc);
       session._onMessage(v.conn = {
         ws: {send: v.send = test.stub()},
         _subs: {},
       }, 'Pfoo|a123'+JSON.stringify([1,2,3]));
-      v.sub = v.stub.thisValues[0];
+      v.sub = v.pubFunc.thisValues[0];
     },
 
     tearDown: function () {
@@ -37,7 +37,7 @@ isServer && define(function (require, exports, module) {
     "test publish": function () {
       assert('a123' in v.conn._subs);
 
-      assert.calledWith(v.stub, 1, 2, 3);
+      assert.calledWith(v.pubFunc, 1, 2, 3);
       assert.same(v.sub.conn, v.conn);
     },
 
@@ -69,10 +69,19 @@ isServer && define(function (require, exports, module) {
     },
 
     "test setUserId": function () {
-      v.sub.setUserId('newid');
+      v.sub.setUserId('u456');
+      assert.same(v.conn.userId, 'u456');
+    },
 
-      assert.calledWith(v.send, 'VSnewid');
-      assert.same(v.conn.userId, 'newid');
+    "test resubscribe": function () {
+      v.pubFunc.reset();
+      v.sub.onStop(v.onStop = test.stub());
+
+      v.sub.resubscribe();
+
+      assert.calledWith(v.pubFunc, 1, 2, 3);
+      assert.same(v.pubFunc.thisValues[0], v.sub);
+      assert.called(v.onStop);
     },
 
     "test userId": function () {

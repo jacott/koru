@@ -27,16 +27,16 @@ define(function(require, exports, module) {
         this.ws.send('P'+subId+'|500|'+msg);
         return env.info(msg);
       }
-      sub = sub || new Sub(this, subId);
-      subs[subId] = sub;
-
-      func.apply(sub, JSON.parse(data.slice(index).toString()));
+      subs[subId] = new Sub(this, subId, func, JSON.parse(data.slice(index).toString()));
     }
   }
 
-  function Sub(conn, subId) {
+  function Sub(conn, subId, subscribe, args) {
     this.conn = conn;
     this.id = subId;
+    this._subscribe = subscribe;
+    this._args = args;
+    subscribe.apply(this, args);
   }
 
   Sub.prototype = {
@@ -76,7 +76,11 @@ define(function(require, exports, module) {
 
     setUserId: function (userId) {
       this.conn.userId = userId;
-      this.conn.ws.send('VS'+this.userId);
+    },
+
+    resubscribe: function () {
+      this._stop && this._stop();
+      this._subscribe.apply(this, this._args);
     },
 
     get userId() {

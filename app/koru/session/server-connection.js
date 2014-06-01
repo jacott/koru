@@ -31,6 +31,17 @@ define(function(require, exports, module) {
       }
       this._subs = null;
     },
+
+    set userId(userId) {
+      this._userId = userId;
+      var subs = this._subs;
+      for(var key in subs) {
+        subs[key].resubscribe();
+      }
+      this.ws.send('VS'+userId);
+    },
+
+    get userId() {return this._userId},
   };
 
   return Connection;
