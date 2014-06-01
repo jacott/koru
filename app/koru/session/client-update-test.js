@@ -47,7 +47,7 @@ isClient && define(function (require, exports, module) {
       session._onMessage({}, 'CFoo|f333'+JSON.stringify(v.attrs = {age: 7}));
 
       assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
-      assert.equals(sam.attributes, {_id: 'f333', name: 'sam', age: 5});
+      assert.same(v.Foo.query.onId('f333').count(1), 0);
     },
 
     "test remove": function () {

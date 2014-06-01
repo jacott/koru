@@ -19,8 +19,11 @@ define(function(require, exports, module) {
   function changed(model, id, attrs) {
     attrs._id = id;
     var doc = model.findById(id);
-    publish._matches(doc) &&
-      new Query(model).onId(id).update(attrs);
+    var query = new Query(model).onId(id);
+    if (publish._matches(doc))
+      query.update(attrs);
+    else
+      query.remove();
   }
 
   function removed(data) {
