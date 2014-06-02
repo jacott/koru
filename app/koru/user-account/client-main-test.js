@@ -201,8 +201,13 @@ isClient && define(function (require, exports, module) {
 
         session._onMessage({}, 'VS');
 
-        assert.same(userAccount.state, 'success');
-        assert.calledWith(v.onChange, 'success');
+        assert.same(userAccount.state, 'change');
+        assert.calledWith(v.onChange, 'change');
+
+        session._onMessage({}, 'VC');
+
+        assert.same(userAccount.state, 'ready');
+        assert.calledWith(v.onChange, 'ready');
       },
 
       "test login failure": function () {

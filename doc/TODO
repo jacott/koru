@@ -1,3 +1,6 @@
+Issues and Ideas
+================
+
 
 * Client: On setUserId
    resubscribe and match all changed matchers. Maybe limit matchers to
@@ -6,7 +9,6 @@
 * Change when no existing record
    should request it via method fetchIdFromServer. The server will
    check if a matcher accepts the client.
-
 
 * Server side publish should batch sends to client
    When mutilple subscriptions are interested in the same doc we
@@ -18,9 +20,16 @@
    We want to register it via the sessId so that only one callback is
    registered per session.
 
+   More thoughts:
 
-* setUserId needs to fixup any open subscriptions
-   Tricky when sub sets the userId
+   notify should pass an extra arg: an Inform func which if called is passed a
+   callback to call after everyone notified.
+
+   This is used by the publish logic to actually send data to the
+   client. if two observers match the same doc then only one message
+   needs to be sent to client. Also fields can be filtered here.
+
+   The publish should only call the Inform func if not already called.
 
 * Need to fix reconnect sending messages and subscriptions
 

@@ -11,10 +11,12 @@ define(function(require, exports, module) {
     switch(data[0]) {
     case 'S':
       env.util.thread.userId = data.slice(1).toString();
-      setState('success');
+      setState('change');
       break;
     case 'F': setState('failure'); break;
-    case 'C': exports._changePasswordCallback(data[1] === 'S' ? null : 'failure'); break;
+    case 'C':
+      setState('ready');
+      break;
     }
   });
 

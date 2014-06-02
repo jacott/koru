@@ -62,6 +62,7 @@ define(function(require, exports, module) {
       for(var key in subs) {
         subs[key].resubscribe();
       }
+      this.ws.send('VC');
     },
 
     get userId() {return this._userId},

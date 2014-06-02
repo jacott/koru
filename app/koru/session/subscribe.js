@@ -4,9 +4,12 @@ define(function(require, exports, module) {
   require('./client-update');
   var publish = require('./publish');
   var env = require('../env');
+  var UserAccount = require('../user-account/client-main');
 
   var nextId = 0;
   var subs = {};
+
+  env.onunload(module, 'reload');
 
   session.provide('P', function (data) {
     var nh = data.toString().split('|');
@@ -14,17 +17,25 @@ define(function(require, exports, module) {
     if (handle && handle.callback) handle.callback(nh[1]||null);
   });
 
-  function Subcribe(name /*, args..., callback */) {
-    var sub = new ClientSub((++nextId).toString(16));
-    var callback = arguments[arguments.length - 1];
-    if (typeof callback === 'function')
-      sub.callback = callback;
+  UserAccount.onChange(function (state) {
+    if (state = 'change') {
+      var models = {};
+      for(var key in subs) {
+        subs[key].resubscribe(models);
+      }
+      publish._filterModels(models);
+    }
+  });
 
-    sub.args = util.slice(arguments, 1, sub.callback ? -1 : arguments.length);
+  function Subcribe(name /*, args..., callback */) {
+    var callback = arguments[arguments.length - 1];
+    var sub = new ClientSub(
+      (++nextId).toString(16), publish._pubs[name], util.slice(arguments, 1)
+    );
     subs[sub._id] = sub;
     Subcribe.intercept(name, sub);
     session.sendP(name + '|' + sub._id, sub.args);
-    publish._pubs[name].apply(sub, sub.args);
+    sub.resubscribe();
     return sub;
   };
 
@@ -36,9 +47,16 @@ define(function(require, exports, module) {
     intercept: function () {},
   });
 
-  function ClientSub(subId) {
+  function ClientSub(subId, subscribe, args) {
     this._id = subId;
     this._matches = [];
+    this._subscribe = subscribe;
+    var cb = args[args.length - 1];
+    if (typeof cb === 'function') {
+      this.callback = cb;
+      this.args = args.slice(0, -1);
+    } else
+      this.args = args;
   }
 
   ClientSub.prototype = {
@@ -48,19 +66,42 @@ define(function(require, exports, module) {
       return env.userId();
     },
 
+    resubscribe: function (models) {
+      var oldMatches = this._matches;
+      this._matches = [];
+      try {
+        this.isResubscribe = this._called;
+        this._subscribe.apply(this, this.args);
+      } catch(ex) {
+        env.error(util.extractError(ex));
+      }
+      this._called = true;
+      this.isResubscribe = false;
+
+      killMatches(oldMatches, models);
+    },
+
     stop: function () {
       session.sendP('|' + this._id);
       delete subs[this._id];
-      for(var i = 0; i < this._matches.length; ++i) {
-        this._matches[i].stop();
-      }
+      var models = {};
+      killMatches(this._matches, models);
       this._matches = [];
+      publish._filterModels(models);
     },
 
     match: function (model, func) {
       this._matches.push(publish._registerMatch(model, func));
     },
   };
+
+  function killMatches(matches, models) {
+    for(var i = 0; i < matches.length; ++i) {
+      var m = matches[i];
+      if (models) models[m.modelName] = true;
+      m.stop();
+    }
+  }
 
   return Subcribe;
 });

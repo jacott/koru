@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     this.conn = conn;
     this.id = subId;
     this._subscribe = subscribe;
-    this._args = args;
+    this.args = args;
   }
 
   Sub.prototype = {
@@ -77,13 +77,14 @@ define(function(require, exports, module) {
 
     resubscribe: function () {
       try {
-        this.isResubscribe = true;
+        this.isResubscribe = this._called;
         this._stop && this._stop();
-        this._subscribe.apply(this, this._args);
+        this._subscribe.apply(this, this.args);
       } catch(ex) {
         env.error(util.extractError(ex));
         this.error(new env.Error(500, 'Internal server error'));
       }
+      this._called = true;
       this.isResubscribe = false;
     },
 

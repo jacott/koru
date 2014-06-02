@@ -5,11 +5,13 @@ isClient && define(function (require, exports, module) {
   require('./dom-ext');
   var util = require('../util');
   var Model = require('../model/main');
+  var session = require('../session/client-main');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      test.stub(session, 'sendM');
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', foo_ids: 'has-many'});
     },
 

@@ -58,6 +58,8 @@ isServer && define(function (require, exports, module) {
     },
 
     "test set userId": function () {
+      var sendUid = v.ws.send.withArgs('VSu456');
+      var sendUidCompleted = v.ws.send.withArgs('VC');
       v.conn._subs = {s1: {resubscribe: v.s1 = test.stub()}, s2: {resubscribe: v.s2 = test.stub()}};
 
       v.conn.userId = 'u456';
@@ -68,8 +70,8 @@ isServer && define(function (require, exports, module) {
       assert.called(v.s1);
       assert.called(v.s2);
 
-      assert.calledWith(v.ws.send, 'VSu456');
-      assert(v.ws.send.calledBefore(v.s1));
+      assert(sendUid.calledBefore(v.s1));
+      assert(sendUidCompleted.calledAfter(v.s2));
     },
 
     "test added": function () {
