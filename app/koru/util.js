@@ -141,6 +141,10 @@ define(function(require, exports, module) {
       return result;
     },
 
+    isArray: function (arr) {
+      return Object.prototype.toString.call(arr) == "[object Array]";
+    },
+
     humanize: function (name) {
       name = this.uncapitalize(name);
       return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(/([A-Z])/g, function (_, m1) {

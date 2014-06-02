@@ -20,6 +20,13 @@ define(function (require, exports, module) {
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
     },
 
+    "test isArray": function () {
+      assert.isTrue(util.isArray([]));
+      assert.isFalse(util.isArray({}));
+      assert.isFalse(util.isArray());
+      assert.isFalse(util.isArray("[1,2]"));
+    },
+
     "test values": function () {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },

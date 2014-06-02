@@ -1,4 +1,13 @@
 
+* Client: On setUserId
+   resubscribe and match all changed matchers. Maybe limit matchers to
+   one model per subscription
+
+* Change when no existing record
+   should request it via method fetchIdFromServer. The server will
+   check if a matcher accepts the client.
+
+
 * Server side publish should batch sends to client
    When mutilple subscriptions are interested in the same doc we
    should only send once to client. We can have a feature in the

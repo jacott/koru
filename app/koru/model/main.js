@@ -8,6 +8,7 @@ define(function(require, exports, module) {
   var Query = require('./query');
   var makeSubject = require('../make-subject');
   var registerObserveId = require('./register-observe-id');
+  var registerObserveField = require('./register-observe-field');
 
   var modelObservers = {};
 
@@ -318,6 +319,7 @@ define(function(require, exports, module) {
       model.fieldTypeMap = {};
 
       registerObserveId(model);
+      registerObserveField(model);
 
       return BaseModel[name] = model;
     },
