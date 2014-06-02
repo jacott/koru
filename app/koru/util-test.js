@@ -89,6 +89,15 @@ define(function (require, exports, module) {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
     },
 
+    "test toMap": function () {
+      assert.equals(util.toMap(), {});
+      assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
+      assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]), {a: true, b: true});
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
+      assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1}, {foo: 'b', baz: 2}]), {a: 1, b: 2});
+    },
+
     "test mapField": function () {
       assert.same(util.mapField(null), null);
 

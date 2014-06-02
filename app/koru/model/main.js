@@ -245,7 +245,7 @@ define(function(require, exports, module) {
     }
   };
 
-  var _support = BaseModel._support = {
+  var _support = {
     setupExtras: [],
 
     performBumpVersion: function(model, _id, _version) {
@@ -277,7 +277,7 @@ define(function(require, exports, module) {
 
   ModelEnv.init(BaseModel, _support, modelProperties);
 
-  util.extend(BaseModel, {
+  util.extendNoEnum(BaseModel, {
     /**
      * Define a new model.
      */
@@ -323,6 +323,8 @@ define(function(require, exports, module) {
 
       return BaseModel[name] = model;
     },
+
+    _support: _support,
 
     _destroyModel: function (name, drop) {
       ModelEnv.destroyModel(BaseModel[name], drop);

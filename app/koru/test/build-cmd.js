@@ -22,8 +22,14 @@ define(function(require, exports, module) {
 
       if (pattern === '') {
         // all
-
-        (module.config().testDirs || ['']).forEach(function (dir) {
+        var config = module.config();
+        var exDirs = env.util.toMap(config.excludeDirs||[]);
+        (config.testDirs ||
+         readdir(topDir).wait().filter(function (fn) {
+           return stat(fn).wait().isDirectory() &&
+             (!(fn in exDirs));
+         })
+        ).forEach(function (dir) {
           findAll(dir);
         });
       } else {

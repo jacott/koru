@@ -104,6 +104,32 @@ define(function(require, exports, module) {
       return -1;
     },
 
+    toMap: function (/* keyName, valueName, lists */) {
+      var result = {};
+      var lc = 2;
+      if (arguments.length === 1) {
+        lc = 0;
+      } else {
+        var keyName = arguments[0];
+        var valueName = arguments[1];
+      }
+      for(;lc < arguments.length; ++lc) {
+        var list = arguments[lc];
+        if (!list) continue;
+
+        for(var i=0; i < list.length; ++i) {
+          if (keyName) {
+            result[list[i][keyName]] = ( valueName ?
+                                         ( valueName === true ? true : list[i][valueName] ) :
+                                         list[i] );
+          } else {
+            result[list[i]] = true;
+          }
+        }
+      }
+      return result;
+    },
+
     mapField: function (list, fieldName) {
       fieldName = fieldName || '_id';
       return list && list.map(function (doc) {

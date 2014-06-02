@@ -33,6 +33,15 @@
       return obj;
     },
 
+    extendNoEnum: function (obj, properties) {
+      for(var prop in properties) {
+        var desc = Object.getOwnPropertyDescriptor(properties,prop);
+        desc.enumerable = false;
+        Object.defineProperty(obj,prop,desc);
+      }
+      return obj;
+    },
+
     regexEscape: function (s) {
       return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     },
