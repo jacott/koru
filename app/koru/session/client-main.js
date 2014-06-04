@@ -64,7 +64,7 @@ define(function (require, exports, module) {
 
       stop: function () {
         state = 'closed';
-        connect._ws && connect._ws.stop();
+        connect._ws && connect._ws.close();
       },
 
       _forgetMs: function () {

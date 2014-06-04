@@ -58,7 +58,7 @@ isClient && define(function (require, exports, module) {
       session._onMessage({}, 'RFoo|f333');
 
       refute(v.Foo.findById('f222'));
-      assert(v.Foo.findById('f333'));
+      refute(v.Foo.findById('f333')); // doesn't matter if it doesn't match; it's gone
     },
   });
 });

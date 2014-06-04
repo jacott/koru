@@ -31,8 +31,7 @@ define(function(require, exports, module) {
     var model = Model[nh[0]];
     var id =  nh[1];
     var doc = model.findById(id);
-    publish._matches(doc) &&
-      new Query(model).onId(id).remove();
+    new Query(model).onId(id).remove();
   }
 
   function modelUpdate(func) {
