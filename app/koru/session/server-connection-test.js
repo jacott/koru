@@ -4,6 +4,7 @@ isServer && define(function (require, exports, module) {
   var session = require('../session/main');
   var Connection = require('./server-connection')(session);
   var env = require('../env');
+  var util = require('../util');
 
   TH.testCase(module, {
     setUp: function () {
@@ -28,7 +29,25 @@ isServer && define(function (require, exports, module) {
           delete session._commands.t;
         });
 
-        session.provide('t', v.tStub = test.stub());
+        v.tStub = test.stub();
+        session.provide('t', v.tFunc = function () {
+          v.tStub.apply(this, arguments);
+        });
+      },
+
+      "test thread vars": function () {
+        v.tStub = function () {
+          v.threadUserId = util.thread.userId;
+          v.threadConnection = util.thread.connection;
+        };
+
+        v.conn.userId = 'tcuid';
+
+        v.conn.onMessage('t123');
+        v.fiber.func();
+
+        assert.same(v.threadConnection, v.conn);
+        assert.same(v.threadUserId, 'tcuid');
       },
 
       "test fiber": function () {

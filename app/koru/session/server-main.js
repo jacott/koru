@@ -53,6 +53,7 @@ define(function (require, exports, module) {
         var result = func.apply(this, JSON.parse(data.slice(aIdx).toString()));
         this.ws.send('M'+msgId+'|r'+ (result ? JSON.stringify(result) : ''));
       } catch(ex) {
+        env.error(util.extractError(ex));
         this.ws.send('M'+msgId+'|e' + (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex));
       }
     });

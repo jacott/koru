@@ -23,6 +23,10 @@ define(function(require, exports, module) {
         }
         var current = conn._last = [data];
         env.Fiber(function () {
+          var thread = util.thread;
+          thread.userId = conn.userId;
+          thread.connection = conn;
+
           while(current) {
             try {
               session._onMessage(conn, current[0]);
@@ -57,6 +61,7 @@ define(function(require, exports, module) {
 
       set userId(userId) {
         this._userId = userId;
+        util.thread.userId = userId;
         this.ws.send('VS'+userId);
         var subs = this._subs;
         for(var key in subs) {
