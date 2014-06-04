@@ -16,7 +16,6 @@ define(function(require, exports, module) {
         var cTests = [];
       }
       if (type !== 'client') {
-        session.unload('server-cmd');
         var sTests = [];
       }
 

@@ -26,6 +26,8 @@ define(function(require) {
     },
   };
 
+  require('../env!./main')(session);
+
   return session;
 
 });

@@ -27,6 +27,20 @@ define(function (require, exports, module) {
       assert.isFalse(util.isArray("[1,2]"));
     },
 
+    "test removeItem": function () {
+      var foo = [1,2,3];
+
+      util.removeItem(foo, 2); assert.equals(foo, [1, 3]);
+
+      util.removeItem(foo, 4); assert.equals(foo, [1, 3]);
+
+      util.removeItem(foo, 1); assert.equals(foo, [3]);
+
+      util.removeItem(foo, 3); assert.equals(foo, []);
+
+      util.removeItem(foo); assert.equals(foo, []);
+    },
+
     "test values": function () {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },

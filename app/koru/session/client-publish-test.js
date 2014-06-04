@@ -4,7 +4,7 @@ isClient && define(function (require, exports, module) {
   var TH = require('./test-helper');
   var publish = require('./publish');
   var Model = require('../model/main');
-  var session = require('./client-main');
+  var session = require('./main');
 
   TH.testCase(module, {
     setUp: function () {

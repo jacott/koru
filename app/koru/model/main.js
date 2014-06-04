@@ -2,8 +2,8 @@ define(function(require, exports, module) {
   var env = require('../env');
   var util = require('../util');
   var Val = require('./validation');
-  var ModelEnv = require('../env!./main'); // client-main or server-main
-  var session = require('../env!../session/main'); // client-main or server-main
+  var ModelEnv = require('../env!./main');
+  var session = require('../session/main');
   var Random = require('../random');
   var Query = require('./query');
   var makeSubject = require('../make-subject');
@@ -152,6 +152,10 @@ define(function(require, exports, module) {
 
     get query() {
       return new Query(this);
+    },
+
+    exists: function (id) {
+      return new Query(this).onId(id).count(1) !== 0;
     },
 
     findByField: function(field, value) {

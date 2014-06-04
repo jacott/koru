@@ -1,7 +1,7 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test-helper');
-  var userAccount = require('./client-main');
+  var userAccount = require('./main');
   var session = require('../session/main');
   var localStorage = require('../local-storage');
   var SRP = require('../srp/srp');
@@ -179,6 +179,14 @@ isClient && define(function (require, exports, module) {
     },
 
     "login with token": {
+      setUp: function () {
+        userAccount.init();
+      },
+
+      tearDown: function () {
+        userAccount.stop();
+      },
+
       "test sending login token": function () {
         test.stub(session, 'send');
         assert.isTrue(session._onConnect.indexOf(userAccount._onConnect) !== -1);

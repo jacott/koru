@@ -1,4 +1,4 @@
-define(['./main', '../session/server-main'], function(test, session) {
+define(['./main', '../session/main'], function(test, session) {
   test.testHandle = function (cmd, msg) {
     session.remoteControl.testHandle(cmd+msg);
   };

@@ -2,7 +2,7 @@ var fs = require('fs');
 
 define([
   'module', 'koru/env', 'koru/test/build-cmd',
-  'koru/fs-tools', 'koru/session/server-main'
+  'koru/fs-tools', 'koru/session/main'
 ], function (module, env, buildCmd,
              fst, session) {
   env.onunload(module, 'reload');

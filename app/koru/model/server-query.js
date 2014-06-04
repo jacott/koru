@@ -3,93 +3,91 @@ define(function(require, exports, module) {
   var mongodb = require('../mongo/driver');
   var env = require('../env');
 
-  return {
-    init: function (Query) {
-      util.extend(Query.prototype, {
-        fetch: function () {
-          var results = [];
-          this.forEach(function (doc) {
-            results.push(doc);
-          });
-          return results;
-        },
+  return function (Query) {
+    util.extend(Query.prototype, {
+      fetch: function () {
+        var results = [];
+        this.forEach(function (doc) {
+          results.push(doc);
+        });
+        return results;
+      },
 
-        fetchOne: function () {
-          return this.findOne();
-        },
+      fetchOne: function () {
+        return this.findOne();
+      },
 
-        forEach: function (func) {
-          var where = this._wheres;
-          if (this.singleId) {
-            var doc = this.findOne(this.singleId);
-            doc && func(doc);
-          } else {
-            var model = this.model;
-            var cursor = model.docs.find(buildQuery(this));
-            for(var doc = cursor.next(); doc; doc = cursor.next()) {
-              if (func(new model(doc)) === true)
-                break;
-            }
+      forEach: function (func) {
+        var where = this._wheres;
+        if (this.singleId) {
+          var doc = this.findOne(this.singleId);
+          doc && func(doc);
+        } else {
+          var model = this.model;
+          var cursor = model.docs.find(buildQuery(this));
+          for(var doc = cursor.next(); doc; doc = cursor.next()) {
+            if (func(new model(doc)) === true)
+              break;
           }
-        },
+        }
+      },
 
-        map: function (func) {
-          var results = [];
-          this.forEach(function (doc) {
-            results.push(func(doc));
-          });
-          return results;
-        },
+      map: function (func) {
+        var results = [];
+        this.forEach(function (doc) {
+          results.push(func(doc));
+        });
+        return results;
+      },
 
-        remove: function () {
-          var count = 0;
-          var model = this.model;
-          var docs = model.docs;
-          this.forEach(function (doc) {
-            ++count;
-            docs.remove({_id: doc._id});
-            model.notify(null, doc);
-          });
-          return count;
-        },
+      remove: function () {
+        var count = 0;
+        var model = this.model;
+        var docs = model.docs;
+        this.forEach(function (doc) {
+          ++count;
+          docs.remove({_id: doc._id});
+          model.notify(null, doc);
+        });
+        return count;
+      },
 
-        count: function (max) {
-          if (max == null)
-            return this.model.docs.count(buildQuery(this));
-          else
-            return this.model.docs.count(buildQuery(this), {limit: max});
-        },
+      count: function (max) {
+        if (max == null)
+          return this.model.docs.count(buildQuery(this));
+        else
+          return this.model.docs.count(buildQuery(this), {limit: max});
+      },
 
-        update: function (changes) {
-          var model = this.model;
-          var docs = model.docs;
+      update: function (changes) {
+        var model = this.model;
+        var docs = model.docs;
 
-          var cmd = buildUpdate(this, changes);
+        var cmd = buildUpdate(this, changes);
 
-          var self = this;
-          var count = 0;
-          self.forEach(function (doc) {
-            ++count;
-            var attrs = doc.attributes;
+        var self = this;
+        var count = 0;
+        self.forEach(function (doc) {
+          ++count;
+          var attrs = doc.attributes;
 
-            if (self._incs) for (var field in self._incs) {
-              attrs[field] += self._incs[field];
-            }
+          if (self._incs) for (var field in self._incs) {
+            attrs[field] += self._incs[field];
+          }
 
-            util.swapWithDelete(attrs, changes);
-            docs.update({_id: doc._id}, cmd);
-            model.notify(doc, changes);
-          });
-          return count;
-        },
+          util.swapWithDelete(attrs, changes);
+          docs.update({_id: doc._id}, cmd);
+          model.notify(doc, changes);
+        });
+        return count;
+      },
 
-        findOne: function(id) {
-          var doc = this.model.docs.findOne(buildQuery(this, id));
-          if (! doc) return;
-          return new this.model(doc);
-        },
-      });
-    },
+      findOne: function(id) {
+        var doc = this.model.docs.findOne(buildQuery(this, id));
+        if (! doc) return;
+        return new this.model(doc);
+      },
+    });
   };
 
   function buildQuery(query, id) {

@@ -52,7 +52,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
       url = url.replace(originRe, repl);
 
-      if (/^(?:(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
+      if (/(?:(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;

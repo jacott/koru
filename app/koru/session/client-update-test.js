@@ -1,7 +1,7 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../model/test-helper');
-  var session = require('./client-main');
+  var session = require('./main');
   var Model = require('../model/main');
   var sut = require('./client-update');
   var publish = require('./publish');

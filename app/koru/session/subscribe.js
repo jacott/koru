@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   require('./client-update');
   var publish = require('./publish');
   var env = require('../env');
-  var UserAccount = require('../user-account/client-main');
+  var UserAccount = require('../user-account/main');
 
   var nextId = 0;
   var subs = {};

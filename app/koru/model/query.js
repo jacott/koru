@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var env = require('../env!./query'); // client-main or server-main
 
   function Query(model) {
     this.model = model;
@@ -53,8 +52,6 @@ define(function(require, exports, module) {
     },
   };
 
-  env.init(Query);
-
   function condition(query, map, params, value) {
     var conditions = (query[map] = query[map] || {});
     if (typeof params === 'string')
@@ -63,6 +60,8 @@ define(function(require, exports, module) {
       util.extend(conditions, params);
     return query;
   }
+
+  require('../env!./query')(Query);
 
   return Query;
 });

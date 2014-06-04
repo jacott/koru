@@ -1,11 +1,9 @@
 define(function(require, exports, module) {
-  var session = require('../session/client-main');
+  var session = require('../session/main');
   var localStorage = require('../local-storage');
   var makeSubject = require('../make-subject');
   var SRP = require('../srp/srp');
   var env = require('../env');
-
-  session.onConnect(onConnect);
 
   session.provide('V', function (data) {
     switch(data[0]) {
@@ -20,6 +18,10 @@ define(function(require, exports, module) {
     }
   });
 
+  env.onunload(module, function () {
+    exports.stop();
+  });
+
   function onConnect() {
     var token = localStorage.getItem('koru.loginToken');
     if (token) {
@@ -29,6 +31,14 @@ define(function(require, exports, module) {
   }
 
   exports = {
+    init: function () {
+      session.onConnect(onConnect);
+    },
+
+    stop: function () {
+      session.stopOnConnect(onConnect);
+    },
+
     state: null,
     _onConnect: onConnect,
 

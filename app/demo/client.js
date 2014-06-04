@@ -11,7 +11,7 @@ requirejs.config({
 define([
   'module', 'koru/env', 'koru/ui/route', 'ui/todos',
   'koru/session/subscribe', 'koru/dom',
-  'koru/session/client-main'
+  'koru/session/main'
 ], function (
   module, env, Route, todos,
   subscribe, Dom,

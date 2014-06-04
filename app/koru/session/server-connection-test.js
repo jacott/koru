@@ -1,8 +1,8 @@
 isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
-  var session = require('../session/server-main');
-  var Connection = require('./server-connection');
+  var session = require('../session/main');
+  var Connection = require('./server-connection')(session);
   var env = require('../env');
 
   TH.testCase(module, {

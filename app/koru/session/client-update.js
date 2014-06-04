@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var env = require('../env');
   var Model = require('../model/main');
-  var session = require('./client-main');
+  var session = require('./main');
   var Query = require('../model/query');
   var ModelEnv = require('../model/client-main');
   var publish = require('./publish');

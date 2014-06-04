@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
-  var session = require('./client-main');
+  var session = require('./main');
   var util = require('../util');
 
   TH.testCase(module, {

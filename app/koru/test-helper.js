@@ -99,6 +99,82 @@ define(function(require, exports, module) {
   });
 
 
+  ga.add('specificAttributesEqual', {
+    assert: function (actual, expected) {
+      if (! (actual && expected)) {
+        this.actual = actual;
+        this.expected = expected;
+        return ! this._asserting;
+      }
+      if (actual && actual.attributes)
+        actual = actual.attributes;
+
+      this.actual = actual;
+      this.expected = expected;
+
+      for(var key in expected) {
+        if (! gu.deepEqual(actual[key], expected[key])) {
+          this.diff = key;
+          return false;
+        }
+      }
+
+      return true;
+    },
+
+    message: "attribute {i$diff} in {i$actual} to equal the specified attributes: {i$expected}",
+  }),
+
+  ga.add('attributesEqual', {
+    assert: function (actual, expected, exclude) {
+      if (! (actual && expected)) {
+        this.actual = actual;
+        this.expected = expected;
+        return ! this._asserting;
+      }
+      if (! (actual instanceof Array)) actual = [actual];
+      if (! (expected instanceof Array)) expected = [expected];
+      if (actual[0] && actual[0].attributes) {
+        actual = actual.map(function (i) {
+          return i.attributes;
+        });
+      }
+      if (expected[0] && expected[0].attributes) {
+        expected = expected.map(function (i) {
+          return i.attributes;
+        });
+      }
+      actual = mapFields(actual, exclude);
+      expected = mapFields(expected, exclude);
+      this.actual = actual;
+      this.expected = expected;
+
+      return gu.deepEqual(actual, expected);
+    },
+
+    message: "attributes in {i$actual} to equal {i$expected}",
+  });
+
+  function mapFields(list, exclude) {
+    var result = {};
+    if (list.length === 0) return result;
+    var useId = (! exclude || exclude.indexOf('_id') === -1) && !! list[0]._id;
+    for(var i=0;i < list.length;++i) {
+      var row = list[i];
+      if (exclude) {
+        var attrs = {};
+        for(var key in row) {
+          if (exclude.indexOf(key) === -1) {
+            attrs[key] = row[key];
+          }
+        }
+      } else {
+        var attrs = row;
+      }
+      result[useId ? row._id : i] = attrs;
+    }
+    return result;
+  }
 
   return TH;
 });

@@ -7,7 +7,7 @@ isClient && define(function (require, exports, module) {
   require('./client-update');
   var Model = require('../model/main');
   var env = require('../env');
-  var UserAccount = require('../user-account/client-main');
+  var UserAccount = require('../user-account/main');
 
   TH.testCase(module, {
     setUp: function () {

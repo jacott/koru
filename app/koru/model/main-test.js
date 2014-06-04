@@ -234,6 +234,14 @@ define(function (require, exports, module) {
         v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}}, {saveRpc: true});
       },
 
+      "test exists": function () {
+        var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
+
+        assert.isTrue(v.TestModel.exists(doc._id));
+
+        assert.isFalse(v.TestModel.exists('bad'));
+      },
+
       "test query": function () {
         var query = v.TestModel.query;
 

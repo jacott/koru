@@ -87,6 +87,13 @@ define(function(require, exports, module) {
       return Array.prototype.slice.call(list, from, to);
     },
 
+    removeItem: function (list, item) {
+      var index = list.indexOf(item);
+      if (index !== -1)
+        list.splice(index, 1);
+      return list;
+    },
+
     values: function (map) {
       var result = [];
       for(var key in map) result.push(map[key]);

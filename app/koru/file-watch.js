@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   var env = require('./env');
   var Fiber = env.Fiber;
   var fst = require('./fs-tools');
-  var session = require('./session/server-main');
+  var session = require('./session/main');
   var top = env.appDir;
 
   env.onunload(module, 'reload');

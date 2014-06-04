@@ -7,11 +7,8 @@
 
     return {
       /**
-       * Load a module for the current env -- client or server -- and
-       * call {@unload} when ready.
-       *
-       * This function is used by requirejs to load a dependency of the
-       * format: koru/env!<name> as client-<name>.js
+       * FIXME get rid of this. move code into a function in env
+       * only validator is using this.
        */
       load: function (name, req, onload, config) {
         var parts = name.split(':');

@@ -26,7 +26,7 @@ define(function(require, exports, module) {
     },
 
     removeTemplate: function (template, options) {
-      var path = options.path;
+      var path = options && options.path;
       if (path == null) path = templatePath(template);
       delete this.routes[path];
     },
@@ -137,6 +137,7 @@ define(function(require, exports, module) {
             ex.location && this.replacePath(ex.location);
             return;
           }
+          env.error(util.extractError(ex));
           throw ex;
         }
       } else try {

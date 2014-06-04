@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var session = require('../session/server-main');
+  var session = require('../session/main');
   var Model = require('../model/main');
   var env = require('../env');
   var SRP = require('../srp/srp');
