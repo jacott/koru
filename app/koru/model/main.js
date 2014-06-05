@@ -79,6 +79,56 @@ define(function(require, exports, module) {
       return this.changes[field] = util.deepCopy(this[field]);
     },
 
+    /**
+     * Return a doc representing this doc before the supplied changes
+     * were made.
+     *
+     * If this method is called again with the same changes object
+     * then a cached version of the before doc is return.
+     */
+    $asBefore: function (changes) {
+      var cache = this.$cache.$asBefore || (this.$cache.$asBefore = []);
+      if (changes === cache[0]) return cache[1];
+
+      cache[0] = changes;
+
+      var simple = true;
+      for(var attr in changes) {
+        if (attr.indexOf(".") !== -1) {
+          simple = false;
+          break;
+        }
+      }
+
+      var attrs = this.attributes;
+
+      if (simple)
+        return cache[1] = new this.constructor(attrs, changes);
+
+      var cc = {};
+
+      for(var attr in changes) {
+        var index = attr.indexOf(".");
+
+        if (index === -1) {
+          Object.defineProperty(cc, attr, Object.getOwnPropertyDescriptor(changes, attr));
+        } else { // update part of attribute
+          var ov, parts = attr.split(".");
+          var curr = cc[parts[1]];
+          if (curr)
+            var copied = true;
+          else
+            curr = cc[parts[0]] = util.shallowCopy(attrs[parts[0]]) || {};
+          for(var i = 1; i < parts.length - 1; ++i) {
+            var part = parts[i];
+            curr = copied ? curr[part] || (curr[part] = {}) : curr[part] = util.shallowCopy(curr[part]) || {};
+          }
+          Object.defineProperty(curr, parts[i],  Object.getOwnPropertyDescriptor(changes, attr));
+        }
+      }
+      return cache[1] = new this.constructor(attrs, cc);
+    },
+
     $update: function (changes) {
       return new Query(this.constructor).onId(this._id).update(changes);
     },
@@ -191,28 +241,6 @@ define(function(require, exports, module) {
     beforeUpdate: beforeUpdate,
     beforeSave: beforeSave,
     beforeRemove: beforeRemove,
-
-    /**
-     * Convert a (doc, was) to a (newDoc, oldDoc) with optional includeList {params}
-     *
-     * doc is a model instance
-     * was is a map of changes to old values
-     *
-     * Returns [newDoc, oldDoc] after and before model instances
-     */
-    diffToNewOld: function (doc, was, params) {
-      if (was) {
-        if (params && ! util.includesAttributes(params, was, doc || emptyObject))
-          was = null;
-        else if (doc)
-          was = new this(doc.attributes, was);
-      }
-
-      if (doc && params && ! util.includesAttributes(params, doc))
-        doc = null;
-
-      return [doc, was];
-    },
 
     /**
      * Model extension methods

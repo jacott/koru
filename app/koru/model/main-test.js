@@ -277,6 +277,31 @@ define(function (require, exports, module) {
         refute(doc.$isValid());
       },
 
+      "test asBefore on objects": function () {
+        v.TestModel.defineFields({foo: {type: 'has_many'}, queen: 'text'});
+
+        var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val'}}});
+
+        var was = {"foo.bar.baz": "orig", queen: 'Mary'};
+        var old = doc.$asBefore(was);
+
+        assert.same(old.foo.bar.baz, "orig");
+        assert.same(old.queen, "Mary");
+
+        assert.same(doc.$asBefore(was), old);
+      },
+
+      "test asBefore on array": function () {
+        v.TestModel.defineFields({foo: {type: 'has_many'}});
+
+        var doc = new v.TestModel({_id: "123", foo: []});
+        var was = {"foo.1.bar": 3};
+
+        var old = doc.$asBefore(was);
+
+        assert.equals(old.foo, [, {bar: 3}]);
+      },
+
       "test change": function () {
         v.TestModel.defineFields({foo: {type: 'has_many'}});
 
@@ -515,36 +540,6 @@ define(function (require, exports, module) {
         assert.same(sut.notdefined,'set');
 
       },
-
-      "test diffToNewOld": function () {
-        v.TestModel.defineFields({a: 'text', b: 'text'});
-        v.diff = function (nd, od, params) {
-          nd = nd && new v.TestModel(util.extend({_id: '123'}, nd));
-          od = nd ? od : od && new v.TestModel(util.extend({_id: '123'}, od));
-
-          return v.TestModel.diffToNewOld(nd, od, params).map(function (doc) {
-            return doc && {a: doc.a, b: doc.b};
-          });
-        };
-        assert.equals(v.diff(null, null), [null, null]);
-        assert.equals(v.diff({a: '1', b: 'b'}, null), [{a: '1', b: 'b'}, null]);
-        assert.equals(v.diff(null, {a: '1', b: 'b'}), [null, {a: '1', b: 'b'}]);
-        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}), [{a: '1', b: 'b'}, {a: '2', b: 'b'}]);
-
-
-        assert.equals(v.diff(null, null, {a: '1'}), [null, null]);
-        assert.equals(v.diff({a: '1', b: 'b'}, null, {a: '1'}), [{a: '1', b: 'b'}, null]);
-        assert.equals(v.diff(null, {a: '1', b: 'b'}, {a: '1'}), [null, {a: '1', b: 'b'}]);
-        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}, {a: '1'}), [{a: '1', b: 'b'}, null]);
-
-
-        assert.equals(v.diff({a: '2', b: 'b'}, null, {a: '1'}), [null, null]);
-        assert.equals(v.diff(null, {a: '2', b: 'b'}, {a: '1'}), [null, null]);
-        assert.equals(v.diff({a: '2', b: 'b'}, {a: '1'}, {a: '1'}), [null, {a: '1', b: 'b'}]);
-
-        assert.equals(v.diff({a: '1', b: 'b'}, {a: '2'}, {b: 'b'}), [{a: '1', b: 'b'}, {a: '2', b: 'b'}]);
-      },
-
     },
 
     "test define via module": function () {

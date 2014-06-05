@@ -140,10 +140,10 @@ define(function(require, exports, module) {
     results.sort(sortFunc)
       .forEach(function (doc) {callback(doc)});
 
-    callback._observeHandle = model.onChange(function (doc, old) {
-      var docs = model.diffToNewOld(doc, old, params);
-      doc = docs[0];
-      old = docs[1];
+    callback._observeHandle = model.onChange(function (doc, was) {
+      var old = doc ? doc.$asBefore(was) : was;
+      if (doc && params && ! util.includesAttributes(params, doc)) doc = null;
+      if (old && params && ! util.includesAttributes(params, old)) old = null;
 
       if (filter) {
         if (old && ! filter(old)) old = null;

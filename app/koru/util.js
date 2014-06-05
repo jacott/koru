@@ -164,6 +164,36 @@ define(function(require, exports, module) {
       });
     },
 
+    /**
+     * Do a shallow copy of a type
+     */
+    shallowCopy: function (orig) {
+      switch(typeof orig) {
+      case 'string':
+      case 'number':
+      case 'boolean':
+      case 'undefined':
+      case 'function':
+        return orig;
+      }
+
+      if (orig === null) return orig;
+
+      switch(Object.prototype.toString.call(orig)) {
+      case "[object Date]":
+        return new Date(orig.getTime());
+      case "[object Array]":
+        return orig.slice();
+      }
+
+      var result = {};
+      for(var key in orig) {
+        Object.defineProperty(result, key, Object.getOwnPropertyDescriptor(orig, key));
+      }
+
+      return result;
+    },
+
     /** Does not deep copy functions */
     deepCopy: function (orig) {
       switch(typeof orig) {

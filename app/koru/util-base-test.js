@@ -24,5 +24,17 @@ define(function (require, exports, module) {
 
       assert.equals(Object.keys(foo), ['bar']);
     },
+
+    "test extend": function () {
+      var orig = {a: 1, b: 2};
+      var result = {};
+      assert.same(sut.extend(result, orig), result);
+
+      refute.same(result, orig);
+
+      assert.equals(result, orig);
+
+      assert.equals(sut.extend({a: 1}), {a: 1});
+    },
   });
 });

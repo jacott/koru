@@ -71,7 +71,7 @@ define(function (require, exports, module) {
       assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
-    "test applyChanges": function () {
+    "test applyChanges with objects": function () {
       var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
       var changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
 
@@ -84,6 +84,26 @@ define(function (require, exports, module) {
 
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'}, d: 4, new: {deep: {list: 'deeplist'}}});
       assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
+    },
+
+    "test applyChanges with empty array": function () {
+      var orig = {ar: []};
+      var changes = {"ar.1.foo": 3};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig, {ar: [, {foo: 3}]});
+      assert.equals(changes, {"ar.1.foo": undefined});
+    },
+
+    "test applyChanges with array": function () {
+      var orig = {ar: [{foo: 1}, {foo: 2}]};
+      var changes = {"ar.1.foo": 3};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig, {ar: [{foo: 1}, {foo: 3}]});
+      assert.equals(changes, {"ar.1.foo": 2});
     },
 
     "test extractViaKeys": function () {
@@ -128,6 +148,32 @@ define(function (require, exports, module) {
       assert.equals(util.mapField([]), []);
       assert.equals(util.mapField([{_id: 1}, {_id: 2}]), [1, 2]);
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
+    },
+
+    "test shallowCopy": function () {
+      assert.same(util.shallowCopy(1), 1);
+      assert.same(util.shallowCopy(true), true);
+      assert.same(util.shallowCopy(null), null);
+      assert.same(util.shallowCopy(undefined), undefined);
+      assert.same(util.shallowCopy("a"), "a");
+
+      function func() {}
+      assert.same(util.shallowCopy(func), func);
+
+      var orig = new Date(123);
+      assert.equals(util.shallowCopy(orig), orig);
+      refute.same(util.shallowCopy(orig), orig);
+
+
+      var orig = [1, "2", {three: [4, {five: 6}]}];
+
+      var result = util.shallowCopy(orig);
+
+      assert.equals(orig, result);
+
+      result[2].three = 'changed';
+
+      assert.equals(orig, [1, "2", {three: 'changed'}]);
     },
 
     "test deepCopy": function () {

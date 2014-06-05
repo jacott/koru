@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var util = require('../util');
   var Dom = require('../dom');
+  require('koru/ui/dom-ext');
 
   function Route(path, template, parent, routeVar) {
     this.path = path || '';
@@ -100,10 +101,10 @@ define(function(require, exports, module) {
 
     abortPage: function (location) {
       if (inGotoPage) {
-        var error = new Error('abortPage');
-        error.location = location;
-        error.abortPage = true;
-        throw error;
+        var abort = {};
+        abort.location = location;
+        abort.abortPage = true;
+        throw abort;
       }
 
       return this.replacePath.apply(this, arguments);
