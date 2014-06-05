@@ -50,8 +50,12 @@ define(function(require, exports, module) {
       return truthy || accessDenied(message);
     },
 
-    ensureString: function (value) {
-      typeof value === 'string' || accessDenied('expected a string');
+    ensureString: function (/* args */) {
+      ensureType('string', arguments);
+    },
+
+    ensureNumber: function (/* args */) {
+      ensureType('number', arguments);
     },
 
     inspectErrors: function (doc) {
@@ -219,6 +223,13 @@ define(function(require, exports, module) {
     }
 
     return output;
+  }
+
+  function ensureType(type, args) {
+    for(var i = 0; i < args.length; ++i) {
+      typeof args[i] === type || accessDenied('expected a ' + type);
+    }
+
   }
 
   return Val;

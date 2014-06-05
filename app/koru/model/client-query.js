@@ -76,7 +76,8 @@ define(function(require, exports, module) {
             attrs[field] += self._incs[field];
           }
 
-          util.swapWithDelete(attrs, changes);
+          var valueUndefined = {value: undefined};
+          util.applyChanges(attrs, changes);
           model.notify(doc, changes);
         });
         return count;

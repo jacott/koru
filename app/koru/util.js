@@ -27,18 +27,38 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    swapWithDelete: function(obj, properties) {
-      for(var prop in properties) {
-        var nv = Object.getOwnPropertyDescriptor(properties, prop);
-        var ov = Object.getOwnPropertyDescriptor(obj, prop);
-        if (nv.value === undefined)
-          delete obj[prop];
-        else
-          Object.defineProperty(obj, prop, nv);
-        Object.defineProperty(properties, prop, ov ? ov : valueUndefined);
+    applyChanges: function (attrs, changes) {
+      for(var attr in changes) {
+        var nv = Object.getOwnPropertyDescriptor(changes, attr);
+        var index = attr.indexOf(".");
+
+        if (index === -1) {
+          var ov = Object.getOwnPropertyDescriptor(attrs, attr);
+          if (nv.value === undefined)
+            delete attrs[attr];
+          else
+            Object.defineProperty(attrs, attr, nv);
+
+        } else { // update part of attribute
+          var ov, parts = attr.split(".");
+          var curr = attrs;
+          for(var i = 0; i < parts.length - 1; ++i) {
+            var part = parts[i];
+            curr = curr[part] || (curr[part] = {});
+          }
+          ov = Object.getOwnPropertyDescriptor(curr, parts[i]);
+          if (nv.value === undefined)
+            delete curr[parts[i]];
+          else
+            Object.defineProperty(curr, parts[i], nv);
+        }
+
+        Object.defineProperty(changes, attr, ov ? ov : valueUndefined);
       }
-      return obj;
+
+      return attrs;
     },
+
 
     /**
      * Use the keys or {keys} to extract the values from {attrs}.
@@ -176,6 +196,15 @@ define(function(require, exports, module) {
 
     isArray: function (arr) {
       return Object.prototype.toString.call(arr) == "[object Array]";
+    },
+
+    diff: function (a, b) {
+      var result = [];
+      for(var i = 0; i < a.length; ++i) {
+        var val = a[i];
+        b.indexOf(val) === -1 && result.push(val);
+      }
+      return result;
     },
 
     humanize: function (name) {

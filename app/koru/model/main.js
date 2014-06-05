@@ -114,6 +114,8 @@ define(function(require, exports, module) {
     },
   };
 
+  BaseModel._callObserver = callObserver;
+
   function callObserver(type, doc, changes) {
     var observers = modelObservers[doc.constructor.modelName+'.'+type];
     if (observers) {
@@ -154,8 +156,14 @@ define(function(require, exports, module) {
       return new Query(this);
     },
 
-    exists: function (id) {
-      return new Query(this).onId(id).count(1) !== 0;
+    exists: function (condition) {
+      var query = new Query(this);
+      if (typeof condition === 'string')
+        query.onId(condition);
+      else
+        query.where(condition);
+
+      return query.count(1) !== 0;
     },
 
     findByField: function(field, value) {
@@ -182,19 +190,28 @@ define(function(require, exports, module) {
     beforeCreate: beforeCreate,
     beforeUpdate: beforeUpdate,
     beforeSave: beforeSave,
+    beforeRemove: beforeRemove,
 
-    diffToNewOld: function (newDoc, oldDoc, params) {
-      if (oldDoc) {
-        if (params && ! util.includesAttributes(params, oldDoc, newDoc || emptyObject))
-          oldDoc = null;
-        else if (newDoc)
-          oldDoc = new this(newDoc.attributes, oldDoc);
+    /**
+     * Convert a (doc, was) to a (newDoc, oldDoc) with optional includeList {params}
+     *
+     * doc is a model instance
+     * was is a map of changes to old values
+     *
+     * Returns [newDoc, oldDoc] after and before model instances
+     */
+    diffToNewOld: function (doc, was, params) {
+      if (was) {
+        if (params && ! util.includesAttributes(params, was, doc || emptyObject))
+          was = null;
+        else if (doc)
+          was = new this(doc.attributes, was);
       }
 
-      if (newDoc && params && ! util.includesAttributes(params, newDoc))
-        newDoc = null;
+      if (doc && params && ! util.includesAttributes(params, doc))
+        doc = null;
 
-      return [newDoc, oldDoc];
+      return [doc, was];
     },
 
     /**
@@ -215,14 +232,13 @@ define(function(require, exports, module) {
     },
 
     remote: function(funcs) {
-      var model = this,
-          prefix = model.modelName + '.',
-          methods = {};
+      var prefix = this.modelName + '.';
 
-      for(var key in funcs) {methods[prefix + key] = _support.remote(key,funcs[key]);}
-      session.defineRpc(methods);
+      for(var key in funcs) {
+        session.defineRpc(prefix + key, _support.remote(key,funcs[key]));
+      }
 
-      return model;
+      return this;
     },
 
     definePrototypeMethod: function(name, func) {
@@ -330,12 +346,30 @@ define(function(require, exports, module) {
 
     _support: _support,
 
+    lookupDottedValue: function (key, attributes) {
+      var parts = key.split('.');
+      var val = attributes[parts[0]];
+      for(var i=1; val && i < parts.length;++i) {
+        val = val[parts[i]];
+      }
+      return val;
+    },
+
     _destroyModel: function (name, drop) {
-      ModelEnv.destroyModel(BaseModel[name], drop);
+      var model = BaseModel[name];
+      if (! model) return;
+
+      ModelEnv.destroyModel(model, drop);
+
       delete BaseModel[name];
+
       ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove'].forEach(function (actn) {
         delete modelObservers[name +"." + actn];
       });
+      if (model._observing) for(var i = 0; i < model._observing.length; ++i) {
+        delete modelObservers[model._observing[i]];
+      }
+      model._observing = null;
     },
 
     _updateTimestamps: function (changes, timestamps, now) {
@@ -467,22 +501,29 @@ define(function(require, exports, module) {
     return model._fieldValidators[field] || (model._fieldValidators[field] = {});
   }
 
-  function beforeCreate(callback) {
-    registerObserver(this.modelName+'.beforeCreate', callback);
+  function beforeCreate(subject, callback) {
+    registerObserver(this, subject, 'beforeCreate', callback);
     return this;
   };
 
-  function beforeUpdate(callback) {
-    registerObserver(this.modelName+'.beforeUpdate', callback);
+  function beforeUpdate(subject, callback) {
+    registerObserver(this, subject, 'beforeUpdate', callback);
     return this;
   };
 
-  function beforeSave(callback) {
-    registerObserver(this.modelName+'.beforeSave', callback);
+  function beforeSave(subject, callback) {
+    registerObserver(this, subject, 'beforeSave', callback);
     return this;
   };
 
-  function registerObserver(name, callback) {
+  function beforeRemove(subject, callback) {
+    registerObserver(this, subject, 'beforeRemove', callback);
+    return this;
+  };
+
+  function registerObserver(model, subject, name, callback) {
+    name = subject.modelName + "." + name;
+    (model._observing = model._observing || []).push(name);
     (modelObservers[name] || (modelObservers[name] = [])).push(callback);
   }
 

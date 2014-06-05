@@ -39,6 +39,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test exception": function () {
+        test.stub(env, 'error');
         v.run(function (one, two, three) {
           throw new env.Error(404, 'not found');
         });

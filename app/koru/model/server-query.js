@@ -75,7 +75,7 @@ define(function(require, exports, module) {
             attrs[field] += self._incs[field];
           }
 
-          util.swapWithDelete(attrs, changes);
+          util.applyChanges(attrs, changes);
           docs.update({_id: doc._id}, cmd);
           model.notify(doc, changes);
         });

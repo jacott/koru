@@ -49,6 +49,12 @@ define(function(require, exports, module) {
       return template.route = this.routes[path] = new Route(path, template, this, routeVar);
     },
 
+    removeBase: function (template) {
+      delete template.route;
+      var path = templatePath(template);
+      delete this.routes[path];
+    },
+
     onBaseExit: function(page, location) {
       var template = this.template;
       var onBaseExit = template && template.onBaseExit;

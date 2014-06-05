@@ -37,6 +37,7 @@ define(function(require, exports, module) {
       modelProperties.findById = findById;
 
       BaseModel.prototype.$remove =  function () {
+        BaseModel._callObserver('beforeRemove', this);
         return new Query(this.constructor).onId(this._id).remove();
       };
 

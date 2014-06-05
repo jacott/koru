@@ -45,6 +45,10 @@ define(function (require, exports, module) {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },
 
+    "test diff": function () {
+      assert.equals(util.diff([1,2,3], [2,4]), [1, 3]);
+    },
+
     'test extend': function () {
       var item = 5,
           sub={a: 1, b: 2},
@@ -67,13 +71,19 @@ define(function (require, exports, module) {
       assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
-    "test swapWithDelete": function () {
-      var orig = {a: 1, b: 2, c: 3};
-      var changes = {a: 2, b: undefined, d: 4};
+    "test applyChanges": function () {
+      var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+      var changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
 
-      assert.same(util.swapWithDelete(orig, changes), orig);
-      assert.equals(orig, {a:2, c: 3, d: 4});
-      assert.equals(changes, {a: 1, b: 2, d: undefined});
+      assert.same(util.applyChanges(orig, changes), orig);
+      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
+      assert.equals(changes, {a: 1, b: 2, d: undefined, "nest.bar": undefined});
+
+      var changes = {"nest.bar": 'new', "new.deep.list": 'deeplist'};
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'}, d: 4, new: {deep: {list: 'deeplist'}}});
+      assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
     },
 
     "test extractViaKeys": function () {

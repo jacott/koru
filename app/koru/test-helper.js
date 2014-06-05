@@ -76,6 +76,25 @@ define(function(require, exports, module) {
     refuteMessage: "Did not expect Invalid request",
   });
 
+  ga.add('modelErrors', {
+    assert: function (doc, expected) {
+      var result = {}, errors = doc._errors || {};
+
+      for(var field in errors) {
+        var msgs = errors[field].map(function (m) {
+          return m.join(', ');
+        });
+
+        result[field] = msgs.join('; ');
+      }
+
+      this.result = result;
+      return gu.deepEqual(result, expected);
+    },
+
+    message: "{i$result} to be {i1}",
+  });
+
   ga.add('validators', {
     assert: function (validators, expected) {
       this.actual = validators;

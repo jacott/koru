@@ -41,6 +41,16 @@ define(function (require, exports, module) {
       refute.accessDenied(function () {val.allowAccessIf(true);});
     },
 
+    "test ensureString": function () {
+      refute.accessDenied(function () {
+        val.ensureString("a", "b");
+      });
+
+      assert.accessDenied(function () {
+        val.ensureString("a", 2, "b");
+      });
+    },
+
     "test invalidRequest": function () {
       assert.invalidRequest(function () {val.allowIfValid(false);});
       refute.invalidRequest(function () {val.allowIfValid(true);});

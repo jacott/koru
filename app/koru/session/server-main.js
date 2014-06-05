@@ -40,15 +40,16 @@ define(function (require, exports, module) {
     });
     session.provide('M', function (data) {
       var index = data.indexOf('|');
-      if (index !== -1) {
-        var msgId = data.slice(0, index);
+      if (index === -1)
+        return env.info("badly formed M message: " + data);
 
-        var aIdx = data.indexOf('[', index + 1);
-        var func = session._rpcs[data.slice(index + 1, aIdx).toString()];
-      }
-      if (! func) {
-        return env.info('unknown method: ' + data.slice(0,index).toString());
-      }
+      var msgId = data.slice(0, index);
+
+      var aIdx = data.indexOf('[', index + 1);
+      var func = session._rpcs[data.slice(index + 1, aIdx).toString()];
+      if (! func)
+        return env.info('unknown method: ' + data.slice(index + 1, aIdx).toString());
+
       try {
         var result = func.apply(this, JSON.parse(data.slice(aIdx).toString()));
         this.ws.send('M'+msgId+'|r'+ (result ? JSON.stringify(result) : ''));

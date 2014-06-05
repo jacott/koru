@@ -78,9 +78,9 @@ define(function (require, exports, module) {
         v.tc = v.TestModel.create({name: 'foo'});
 
         v.obs = {};
-        v.TestModel.beforeCreate(v.beforeCreate = obCalled);
-        v.TestModel.beforeUpdate(v.beforeUpdate = obCalled);
-        v.TestModel.beforeSave(v.beforeSave = obCalled);
+        v.TestModel.beforeCreate(v.TestModel, v.beforeCreate = obCalled);
+        v.TestModel.beforeUpdate(v.TestModel, v.beforeUpdate = obCalled);
+        v.TestModel.beforeSave(v.TestModel, v.beforeSave = obCalled);
 
         function obCalled(doc, changes, type) {
           (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, changes)]);

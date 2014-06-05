@@ -3,8 +3,6 @@ define(function(require, exports, module) {
   var session = require('../session/main');
   var env = require('../env');
 
-  var testCase = TH.testCase;
-  var sendM;
   var geddon = TH.geddon;
 
   return TH.util.reverseExtend({

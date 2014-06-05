@@ -92,6 +92,23 @@ define(function (require, exports, module) {
       assert.same(v.foo.age, 5);
     },
 
+    "test update partial field": function () {
+      var handle = v.TestModel.onChange(v.ob = test.stub());
+      test.onEnd(function () {
+        handle.stop();
+      });
+      var st = new Query(v.TestModel).onId(v.foo._id);
+
+      st.update({"foo.bar": {baz: 'fnord', alice: 'rabbit', delme: 'please'}});
+
+      assert.calledWith(v.ob, TH.matchModel(v.foo.$reload()), {"foo.bar": undefined});
+      assert.same(v.foo.attributes.foo.bar.baz, 'fnord');
+
+      st.update({"foo.bar.alice": 'cat', "foo.bar.delme": undefined});
+      assert.calledWith(v.ob, TH.matchModel(v.foo.$reload()), {"foo.bar.alice": 'rabbit', "foo.bar.delme": 'please'});
+      assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'cat'});
+    },
+
     "test update deletes fields": function () {
       var st = new Query(v.TestModel).onId(v.foo._id);
 
