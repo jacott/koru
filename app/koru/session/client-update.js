@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var Model = require('../model/main');
   var session = require('./main');
   var Query = require('../model/query');
-  var ModelEnv = require('../model/client-main');
+  var ModelEnv = require('../model/main-client');
   var publish = require('./publish');
 
   session.provide('A', modelUpdate(added));

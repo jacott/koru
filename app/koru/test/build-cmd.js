@@ -7,12 +7,12 @@ var stat = Future.wrap(fs.stat);
 define(function(require, exports, module) {
   var env = require('../env');
   var topDir = env.appDir;
-  var cmdFn = Path.resolve(topDir + '/../tmp/client-cmd.js');
+  var cmdFn = Path.resolve(topDir + '/../tmp/cmd-client.js');
 
   return {
     runTests: function(session, type, pattern, callback) {
       if (type !== 'server') {
-        session.unload('client-cmd');
+        session.unload('cmd-client');
         var cTests = [];
       }
       if (type !== 'client') {
@@ -57,8 +57,8 @@ define(function(require, exports, module) {
                          "define(['koru/test/client'],function(TH){TH.run("+
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
-        fs.renameSync(cmdFn, requirejs.toUrl('client-cmd.js'));
-        session.load('client-cmd');
+        fs.renameSync(cmdFn, requirejs.toUrl('cmd-client.js'));
+        session.load('cmd-client');
       }
 
       if (type !== 'client') {

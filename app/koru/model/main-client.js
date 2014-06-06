@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var util = env.util;
   var Random = require('../random');
   var session = require('../session/main');
-  var clientIndex = require('./client-index');
+  var clientIndex = require('./index-client');
   var Query = require('./query');
 
   var modelEnv = {

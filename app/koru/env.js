@@ -1,6 +1,6 @@
 (function() {
   // FIXME need this to work diferently in optimiser
-  var prefix  = typeof process === 'undefined' ? 'client-' : 'server-';
+  var suffix  = typeof process === 'undefined' ? '-client' : '-server';
 
   /**
    * Map of module dependencies. Entries list what to unload when
@@ -21,10 +21,10 @@
         continue;
 
       // If name is unnormalized then it wont match. We could try and
-      // ask the prefix to normalize it for us but that is not a
+      // ask the suffix to normalize it for us but that is not a
       // normal plugin function. For now we'll just trust the
       // (maybe) semi-unnormalized name.
-      if (row.unnormalized) id = row.prefix+"!"+row.name;
+      if (row.unnormalized) id = row.suffix+"!"+row.name;
 
       insertDependency(map.id, id);
     }
@@ -178,16 +178,10 @@
        * call {@unload} when ready.
        *
        * This function is used by requirejs to load a dependency of the
-       * format: koru/env!<name> as client-<name>.js
+       * format: koru/env!<name> as <name>-client.js
        */
       load: function (name, req, onload, config) {
-        var idx = name.lastIndexOf('/', name.length - 2) + 1;
-
-        if (idx === 0) {
-          var provider = prefix + name;
-        } else {
-          var provider = name.slice(0, idx) + prefix + name.slice(idx);
-        }
+        var provider = name + suffix;
 
         insertDependency(loaderPrefix + name, provider);
 
