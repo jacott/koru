@@ -28,6 +28,8 @@ define(function(require, exports, module) {
   });
 
   function Subcribe(name /*, args..., callback */) {
+    if (! publish._pubs[name]) throw new Error("No client publish of " + name);
+
     var callback = arguments[arguments.length - 1];
     var sub = new ClientSub(
       (++nextId).toString(16), publish._pubs[name], util.slice(arguments, 1)
