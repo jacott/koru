@@ -12,11 +12,13 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
+      v.oldUserId = util.thread.userId;
       v.handle = userAccount.onChange(v.onChange = test.stub());
       test.stub(session, 'rpc');
     },
 
     tearDown: function () {
+      util.thread.userId = v.oldUserId;
       v.handle.stop();
       v = null;
       userAccount.state = null;
@@ -84,7 +86,6 @@ isClient && define(function (require, exports, module) {
 
     "loginWithPassword": {
       setUp: function () {
-        v.oldUserId = util.thread.userId;
         userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = test.stub());
 
         assert.calledWithExactly(
@@ -100,10 +101,6 @@ isClient && define(function (require, exports, module) {
             return true;
           })
         );
-      },
-
-      tearDown: function () {
-        util.thread.userId = v.oldUserId;
       },
 
       "test success": function () {
@@ -178,17 +175,34 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "login with token": {
+    "token login/logout": {
       setUp: function () {
+        test.stub(session, 'send');
         userAccount.init();
       },
 
       tearDown: function () {
         userAccount.stop();
+
+      },
+
+      "test logout": function () {
+        util.thread.userId = 'userId456';
+
+        userAccount.logout();
+        assert.calledWith(session.send, 'VX');
+
+        session._onMessage({}, 'VS');
+
+        assert.same(env.userId(), null);
+      },
+
+      "test logoutOtherClients": function () {
+        userAccount.logoutOtherClients();
+        assert.calledWith(session.send, 'VO');
       },
 
       "test sending login token": function () {
-        test.stub(session, 'send');
         assert.isTrue(session._onConnect.indexOf(userAccount._onConnect) !== -1);
 
         assert.same(userAccount.state, null);
@@ -207,10 +221,13 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.onChange, 'wait');
         assert.calledWith(session.send, 'VL', 'tokenId|token123');
 
-        session._onMessage({}, 'VS');
+        session._onMessage({}, 'VSuid123');
 
         assert.same(userAccount.state, 'change');
         assert.calledWith(v.onChange, 'change');
+
+        assert.same(env.userId(), 'uid123');
+
 
         session._onMessage({}, 'VC');
 
@@ -219,7 +236,6 @@ isClient && define(function (require, exports, module) {
       },
 
       "test login failure": function () {
-        test.stub(session, 'send');
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
         userAccount._onConnect();
 

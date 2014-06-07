@@ -32,7 +32,7 @@ define(function(require, exports, module) {
 
     var callback = arguments[arguments.length - 1];
     var sub = new ClientSub(
-      (++nextId).toString(16), publish._pubs[name], util.slice(arguments, 1)
+      (++nextId).toString(36), publish._pubs[name], util.slice(arguments, 1)
     );
     subs[sub._id] = sub;
     Subcribe.intercept(name, sub);

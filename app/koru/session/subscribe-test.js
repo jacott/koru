@@ -124,7 +124,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.pubFunc.thisValues[0], v.sub);
 
 
-      assert.same(v.sub._id, subscribe._nextId.toString(16));
+      assert.same(v.sub._id, subscribe._nextId.toString(36));
       assert.same(v.sub.callback, v.stub);
       assert.equals(v.sub.args, [123, 456]);
 

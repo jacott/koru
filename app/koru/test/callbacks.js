@@ -1,4 +1,4 @@
-define(['./core'], function (geddon) {
+define(['./core', '../env'], function (geddon, env) {
   var callbacks = {};
 
   geddon.onStart = registerCallBack('start');
@@ -17,8 +17,17 @@ define(['./core'], function (geddon) {
   geddon.runCallBacks = function(name, test) {
     var cbs = callbacks[name] || [];
 
+    var firstEx;
+
     for(var i=0;i < cbs.length;++i) {
-      cbs[i](test);
+      try {
+        cbs[i](test);
+      } catch(ex) {
+        firstEx = firstEx || ex;
+        env.error(env.util.extractError(ex));
+      }
     }
+
+    if (firstEx) throw firstEx;
   };
 });

@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   session.provide('V', function (data) {
     switch(data[0]) {
     case 'S':
-      env.util.thread.userId = data.slice(1).toString();
+      env.util.thread.userId = data.slice(1).toString() || null;
       setState('change');
       break;
     case 'F': setState('failure'); break;
@@ -63,6 +63,14 @@ define(function(require, exports, module) {
         function () {callback()}
       );
     },
+
+    logout: function () {
+      session.send('VX');
+    },
+
+    logoutOtherClients: function () {
+      session.send('VO');
+    },
   };
 
   makeSubject(exports);
@@ -76,7 +84,13 @@ define(function(require, exports, module) {
     var request = srp.startExchange();
     request.email = email;
     session.rpc('SRPBegin', request, function (err, result) {
-      if (err) {callback(err); return;}
+      if (err) {
+        if (callback)
+          callback(err);
+        else
+          env.error("Authentication error: " + err);
+        return;
+      }
       var response = srp.respondToChallenge(result);
       modifyResponse(response);
       session.rpc(method, response, function (err, result) {

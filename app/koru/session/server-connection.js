@@ -62,7 +62,7 @@ define(function(require, exports, module) {
       set userId(userId) {
         this._userId = userId;
         util.thread.userId = userId;
-        this.ws.send('VS'+userId);
+        this.ws.send('VS'+(userId || ''));
         var subs = this._subs;
         for(var key in subs) {
           subs[key].resubscribe();

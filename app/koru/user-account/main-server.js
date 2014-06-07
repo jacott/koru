@@ -100,13 +100,32 @@ define(function(require, exports, module) {
 
   function validateLoginToken(data) {
     var conn = this;
-    var pair = data.slice(1).toString().split('|');
-    var lu = model.findById(pair[0]);
+    var cmd = data[0];
+    switch(cmd) {
+    case 'L':
+      var pair = data.slice(1).toString().split('|');
+      var lu = model.findById(pair[0]);
 
-    if (lu && lu.tokens[pair[1]]) {
-      conn.userId = lu.userId;
-    } else {
-      conn.ws.send('VF');
+      if (lu && lu.tokens[pair[1]]) {
+        conn.userId = lu.userId; // will send a VS + VC. See server-connection
+      } else {
+        conn.ws.send('VF');
+      }
+      break;
+    case 'X': // logout me
+      conn.userId = null; // will send a VS + VC. See server-connection
+      break;
+    case 'O': // logoutOtherClients
+      if (conn.userId == null) return;
+      var conns = session.conns;
+      for(var sessId in conns) {
+        if (sessId === conn.sessId) continue;
+        var curr = conns[sessId];
+
+        if (curr.userId === conn.userId)
+          curr.userId = null;
+      }
+      break;
     }
   }
 });

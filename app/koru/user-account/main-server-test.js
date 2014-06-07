@@ -12,9 +12,8 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.ws = TH.mockWs();
-      test.stub(env, 'logger');
+      test.stub(env, 'info');
       v.conn = TH.sessionConnect(v.ws);
-      env.logger.restore();
       v.lu = userAccount.createUserLogin({
         userId: 'uid111', password: 'secret', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now()}});
@@ -136,7 +135,6 @@ isServer && define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         response.newPassword.bad = true;
 
-        test.stub(env, 'info');
         assert.accessDenied(function () {
           session._rpcs.SRPChangePassword.call(v.conn, response);
         });
@@ -146,6 +144,62 @@ isServer && define(function (require, exports, module) {
     },
 
     "login with token": {
+      tearDown: function () {
+        test.stub(env, 'logger');
+        v.conn2 && v.conn2.close();
+        v.conn3 && v.conn3.close();
+        v.connOther && v.connOther.close();
+        env.logger.restore();
+      },
+
+      "test logout": function () {
+        v.conn.userId = 'uid222';
+
+        session._commands.V.call(v.conn, 'X');
+
+        assert.same(v.conn.userId, null);
+
+        assert.calledWith(v.ws.send, 'VS');
+      },
+
+      "test logoutOtherClients": function () {
+        v.ws2 = TH.mockWs();
+        v.ws3 = TH.mockWs();
+        v.ws4 = TH.mockWs();
+
+        v.conn2 = TH.sessionConnect(v.ws2);
+        v.conn3 = TH.sessionConnect(v.ws3);
+        v.connOther = TH.sessionConnect(v.ws4);
+
+        v.conn.userId = 'uid111';
+        v.conn2.userId = 'uid111';
+        v.conn3.userId = 'uid111';
+        v.connOther.userId = 'uid444';
+
+        session._commands.V.call(v.conn, 'O');
+
+        assert.same(v.conn.userId, 'uid111');
+        assert.same(v.conn2.userId, null);
+        assert.same(v.conn3.userId, null);
+        assert.same(v.connOther.userId, 'uid444');
+
+        assert.calledWith(v.ws2.send, 'VS');
+        assert.calledWith(v.ws3.send, 'VS');
+        refute.calledWith(v.ws4.send, 'VS');
+      },
+
+      "test when not logged in logoutOtherClients does nothing": function () {
+        v.ws2 = TH.mockWs();
+        v.conn2 = TH.sessionConnect(v.ws2);
+        v.conn2.userId = 'uid111';
+
+        session._commands.V.call(v.conn, 'O');
+
+        assert.same(v.conn2.userId, 'uid111');
+
+        refute.calledWith(v.ws2.send, 'VS');
+      },
+
       "test valid session login": function () {
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
 

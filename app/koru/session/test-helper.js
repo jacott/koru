@@ -9,7 +9,7 @@ define(function(require, exports, module) {
     sessionConnect: function (ws) {
       session._onConnection(ws);
 
-      var key = session._sessCounter.toString(16);
+      var key = session._sessCounter.toString(36);
       return session.conns[key];
     },
 

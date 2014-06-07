@@ -69,7 +69,7 @@ define(function (require, exports, module) {
       }
       ++session.totalSessions;
       env.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
-      var sessId = (++sessCounter).toString(16);
+      var sessId = (++sessCounter).toString(36);
       var conn = session.conns[sessId] = new Connection(ws, sessId, function() {
         ws.close();
         --session.totalSessions;
