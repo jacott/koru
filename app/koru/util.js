@@ -27,6 +27,15 @@ define(function(require, exports, module) {
       return obj;
     },
 
+    lookupDottedValue: function (key, attributes) {
+      var parts = key.split('.');
+      var val = attributes[parts[0]];
+      for(var i=1; val && i < parts.length;++i) {
+        val = val[parts[i]];
+      }
+      return val;
+    },
+
     applyChanges: function (attrs, changes) {
       for(var attr in changes) {
         var nv = Object.getOwnPropertyDescriptor(changes, attr);

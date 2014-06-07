@@ -374,15 +374,6 @@ define(function(require, exports, module) {
 
     _support: _support,
 
-    lookupDottedValue: function (key, attributes) {
-      var parts = key.split('.');
-      var val = attributes[parts[0]];
-      for(var i=1; val && i < parts.length;++i) {
-        val = val[parts[i]];
-      }
-      return val;
-    },
-
     _destroyModel: function (name, drop) {
       var model = BaseModel[name];
       if (! model) return;

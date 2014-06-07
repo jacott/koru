@@ -71,6 +71,10 @@ define(function (require, exports, module) {
       assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
+    "test lookupDottedValue": function () {
+      assert.same(util.lookupDottedValue("foo.1.bar.baz", {a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
+    },
+
     "test applyChanges with objects": function () {
       var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
       var changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};

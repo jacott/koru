@@ -38,6 +38,26 @@ define(function(require, exports, module) {
 
   var ga = geddon.assertions;
 
+  ga.add('difference', {
+    assert: function (count, diffFunc, /* [query], */ func) {
+      if (diffFunc.modelName) {
+        var query = util.slice(arguments, 2, -1)[0];
+        func = arguments[arguments.length - 1];
+        var model = diffFunc;
+        diffFunc = function () {
+          query = query || model.query;
+          return query.count();
+        };
+      }
+      this.before = +diffFunc();
+      func();
+      this.after = +diffFunc();
+      return this.after - this.before === count;
+    },
+
+    message: "a difference of {0}. Before {$before}, after {$after}",
+  });
+
   ga.add('accessDenied', {
     assert: function (func) {
       var error;
