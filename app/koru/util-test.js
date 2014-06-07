@@ -356,6 +356,16 @@ define(function (require, exports, module) {
       assert.isTrue(result);
     },
 
+    "test parseEmailAddresses": function () {
+      assert.isNull(util.parseEmailAddresses("foo@bar baz"));
+      assert.isNull(util.parseEmailAddresses("foo@ba_r.com"));
 
+
+      assert.equals(util.parseEmailAddresses("foo@bar.baz.com fnord"),
+                    {addresses: ["foo@bar.baz.com"], remainder: "fnord"});
+
+      assert.equals(util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@obeya-test.co, "),
+                    {addresses: ["a b c <abc@def.com>", "foo-_+%bar@obeya-test.co"], remainder: "" });
+    },
   });
 });

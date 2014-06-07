@@ -374,6 +374,22 @@ define(function(require, exports, module) {
     newDate: function () {
       return new Date(util.dateNow());
     },
+
+    parseEmailAddresses: function (input) {
+      input = input || "";
+      var addresses = [];
+
+      var remainder = input.replace(
+          /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}|(\w *)+<[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}>)[,\s]*/ig,
+        function (_, m1) {
+          addresses.push(m1);
+          return "";
+        }
+      );
+
+      return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
+    },
+
   });
 
   if (isClient) {

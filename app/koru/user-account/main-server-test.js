@@ -14,8 +14,8 @@ isServer && define(function (require, exports, module) {
       v.ws = TH.mockWs();
       test.stub(env, 'info');
       v.conn = TH.sessionConnect(v.ws);
-      v.lu = userAccount.createUserLogin({
-        userId: 'uid111', password: 'secret', email: 'foo@bar.co',
+      v.lu = userAccount.model.create({
+        userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now()}});
     },
 
@@ -25,6 +25,22 @@ isServer && define(function (require, exports, module) {
       env.logger.restore();
       Model.UserLogin.docs.remove({});
       v = null;
+    },
+
+    "//test sendResetPasswordEmail": function () {
+
+    },
+
+    "test createUserLogin": function () {
+      var spy = test.spy(SRP, 'generateVerifier');
+      var lu = userAccount.createUserLogin({email: 'alice@obeya.co', userId: "uid1", password: 'test pw'});
+
+      assert.calledWith(spy, 'test pw');
+
+      assert.equals(lu.$reload().srp, spy.returnValues[0]);
+      assert.same(lu.email, 'alice@obeya.co');
+      assert.same(lu.userId, 'uid1');
+      assert.equals(lu.tokens, {});
     },
 
     "test too many unexpiredTokens": function () {

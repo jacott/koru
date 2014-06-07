@@ -88,13 +88,19 @@ define(function(require, exports, module) {
   });
 
   return {
+    model: model,
+
     createUserLogin: function (attrs) {
       return model.create({
         email: attrs.email,
         userId: attrs.userId,
-        tokens: attrs.tokens,
-        srp: SRP.generateVerifier(attrs.password),
+        tokens: {},
+        srp: attrs.password && SRP.generateVerifier(attrs.password),
       });
+    },
+
+    sendResetPasswordEmail: function () {
+
     },
   };
 
