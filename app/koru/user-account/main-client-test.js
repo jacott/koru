@@ -186,6 +186,9 @@ isClient && define(function (require, exports, module) {
 
       },
 
+      "//test resetPassword": function () {
+      },
+
       "test logout": function () {
         util.thread.userId = 'userId456';
 

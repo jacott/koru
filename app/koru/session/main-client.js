@@ -22,6 +22,7 @@ define(function (require, exports, module) {
         if (state === 'ready') connect._ws.send(type+msg);
         else waitFuncs.push(type+msg);
       },
+
       rpc: function (name /*, args */) {
         var func = arguments[arguments.length - 1];
         if (typeof func !== 'function') func = null;

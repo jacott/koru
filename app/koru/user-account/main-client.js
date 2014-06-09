@@ -64,6 +64,10 @@ define(function(require, exports, module) {
       );
     },
 
+    resetPassword: function () {
+
+    },
+
     logout: function () {
       session.send('VX');
     },
