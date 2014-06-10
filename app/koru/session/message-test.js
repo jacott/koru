@@ -15,85 +15,85 @@ define(function (require, exports, module) {
     },
 
     "test encode undefined": function () {
-      assert.equals(message.encode(undefined), v.ans = [1]);
+      assert.equals(message._encode(undefined), v.ans = [1]);
 
-      assert.same(message.decode(v.ans), undefined);
+      assert.same(message._decode(v.ans), undefined);
     },
 
     "test encode null": function () {
-      assert.equals(message.encode(null), v.ans = [2]);
+      assert.equals(message._encode(null), v.ans = [2]);
 
-      assert.same(message.decode(v.ans), null);
+      assert.same(message._decode(v.ans), null);
     },
 
     "test encode true": function () {
-      assert.equals(message.encode(true), v.ans = [3]);
+      assert.equals(message._encode(true), v.ans = [3]);
 
-      assert.same(message.decode(v.ans), true);
+      assert.same(message._decode(v.ans), true);
     },
 
     "test encode false": function () {
-      assert.equals(message.encode(false), v.ans = [4]);
+      assert.equals(message._encode(false), v.ans = [4]);
 
-      assert.same(message.decode(v.ans), false);
+      assert.same(message._decode(v.ans), false);
     },
 
     "test empty string": function () {
-      assert.equals(message.encode(''), v.ans = [5]);
+      assert.equals(message._encode(''), v.ans = [5]);
 
-      assert.same(message.decode(v.ans), '');
+      assert.same(message._decode(v.ans), '');
     },
 
     "test empty array": function () {
-      assert.equals(message.encode([]), v.ans = [6,0]);
+      assert.equals(message._encode([]), v.ans = [6,0]);
 
-      assert.equals(message.decode(v.ans), []);
+      assert.equals(message._decode(v.ans), []);
     },
 
     "test empty object": function () {
-      assert.equals(message.encode({}), v.ans = [7,0]);
+      assert.equals(message._encode({}), v.ans = [7,0]);
 
-      assert.equals(message.decode(v.ans), {});
+      assert.equals(message._decode(v.ans), {});
     },
 
     "test small string": function () {
-      assert.equals(message.encode('hé\xff\u20AC'),  v.ans = [136, 104, 195, 169, 195, 191, 226, 130, 172]);
+      assert.equals(message._encode('hé\xff\u20AC'),  v.ans = [136, 104, 195, 169, 195, 191, 226, 130, 172]);
 
-      assert.same(message.decode(v.ans), 'hé\xff\u20AC');
+      assert.same(message._decode(v.ans), 'hé\xff\u20AC');
     },
 
     "test big string": function () {
       var string = new Array(500).join("x");
 
-      assert.equals(message.decode(message.encode(string)).length, string.length);
+      assert.equals(message._decode(message._encode(string)).length, string.length);
     },
 
     "test small integer": function () {
-      assert.equals(message.encode(1), v.ans = [0x41]);
+      assert.equals(message._encode(1), v.ans = [0x41]);
 
-      assert.same(message.decode(v.ans), 1);
+      assert.same(message._decode(v.ans), 1);
     },
 
     "test other numbers": function () {
-      assert.same(message.decode(message.encode(64)), 64);
-      assert.same(message.decode(message.encode(-1)), -1);
+      assert.same(message._decode(message._encode(64)), 64);
+      assert.same(message._decode(message._encode(-1)), -1);
 
-      assert.equals(message.encode(-1.345e200), v.ans = [13, 233, 124, 29, 57, 187, 232, 23, 124]);
-      assert.equals(message.encode(-1.324e8), v.ans2 = [12, 248, 27, 188, 128]);
-      assert.equals(message.encode(-4561), v.ans3 = [11, 238, 47]);
-      assert.equals(message.encode(45123.4567), v.ans4 = [14, 26, 229, 75, 7]);
+      assert.equals(message._encode(-1.345e200), v.ans = [13, 233, 124, 29, 57, 187, 232, 23, 124]);
+      assert.equals(message._encode(-1.324e8), v.ans2 = [12, 248, 27, 188, 128]);
+      assert.equals(message._encode(-4561), v.ans3 = [11, 238, 47]);
+      assert.equals(message._encode(45123.4567), v.ans4 = [14, 26, 229, 75, 7]);
 
-      assert.same(message.decode(v.ans), -1.345e200);
-      assert.same(message.decode(v.ans2), -1.324e8);
-      assert.same(message.decode(v.ans3), -4561);
-      assert.same(message.decode(v.ans4), 45123.4567);
+      assert.same(message._decode(v.ans), -1.345e200);
+      assert.same(message._decode(v.ans2), -1.324e8);
+      assert.same(message._decode(v.ans3), -4561);
+      assert.same(message._decode(v.ans4), 45123.4567);
     },
 
     "test date": function () {
       var date = new Date(1402293586434);
-      assert.equals(message.encode(date), v.ans = [15, 66, 116, 103, 243, 96, 160, 32, 0]);
+      assert.equals(message._encode(date), v.ans = [15, 66, 116, 103, 243, 96, 160, 32, 0]);
 
-      assert.equals(message.decode(v.ans), date);
+      assert.equals(message._decode(v.ans), date);
     },
 
     "test binary": function () {
@@ -104,9 +104,9 @@ define(function (require, exports, module) {
         u8[i] = i;
       }
 
-      assert.equals(message.encode(u8), v.ans = [16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+      assert.equals(message._encode(u8), v.ans = [16, 0, 0, 0, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
-      var result = message.decode(v.ans);
+      var result = message._decode(v.ans);
       assert(result.constructor === Uint8Array);
       var ary = [];
       Array.prototype.push.apply(ary, result);
@@ -114,18 +114,18 @@ define(function (require, exports, module) {
     },
 
     "test populated array": function () {
-      assert.equals(message.encode([1 ,2, "hello"]), v.ans = [6, 0x41, 0x42, 133, 104, 101, 108, 108, 111, 0]);
+      assert.equals(message._encode([1 ,2, "hello"]), v.ans = [6, 0x41, 0x42, 133, 104, 101, 108, 108, 111, 0]);
 
-      assert.equals(message.decode(v.ans), [1 ,2, "hello"]);
+      assert.equals(message._decode(v.ans), [1 ,2, "hello"]);
     },
 
     "test nested arrays": function () {
       var orig = [1, 2, [true, null, [undefined, "hello"], 0], 5];
-      assert.equals(message.decode(message.encode(orig)), orig);
+      assert.equals(message._decode(message._encode(orig)), orig);
     },
 
     "test populated object": function () {
-      assert.equals(message.encode({foo: 'bar', baz: 'foo'}), v.ans = [
+      assert.equals(message._encode({foo: 'bar', baz: 'foo'}), v.ans = [
         8,                        // Dictionary
         102, 111, 111, 0xff,      // local entry 0x80: foo
         98, 97, 122, 0xff,        // local entry 0x81: baz
@@ -136,7 +136,7 @@ define(function (require, exports, module) {
         0
       ]);
 
-      assert.equals(message.decode(v.ans), {foo: 'bar', baz: 'foo'});
+      assert.equals(message._decode(v.ans), {foo: 'bar', baz: 'foo'});
     },
 
     "test addToDict": function () {
@@ -180,7 +180,7 @@ define(function (require, exports, module) {
       message.addToDict(dict, "foo");
       message.addToDict(dict, "bár\x00");
 
-      assert.equals(message.encodeDict(dict), v.ans = [8,
+      assert.equals(message.encodeDict(dict, [8]), v.ans = [8,
                                                102, 111, 111, 0xff,
                                                98, 195, 161, 114, 192, 128, 0xff,
                                                0]);
@@ -198,63 +198,35 @@ define(function (require, exports, module) {
       var bin = new Uint8Array([4,7,6,4]);
       var data = [1, bin, {foo: {bar: 'abc', baz: [-3.234e30, 63, 3e200]}, baz: true, a12: 1.23}, "", false, new Date(), null, NaN, undefined];
 
-      var result = message.decode(message.encode(data));
+      var result = message._decode(message._encode(data));
 
       assert.equals(result, data);
 
       assert.same(result[1][2], 6);
     },
 
-    "test add initial to encodeToBinary": function () {
-      var u8 = message.encodeToBinary({foo: 'bar'}, [77, 76]);
+    "test encode/decodeMessage": function () {
+      var u8 = message.encodeMessage("M", [1, 2, {foo: 'bar'}]);
       var data = [];
 
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
 
-      data.forEach.call(u8, function (b) {
-        data.push(b);
-      });
+      data.forEach.call(u8, function (b) {data.push(b)});
+      assert.equals(data, [77, 102, 111, 111, 255, 0, 65, 66, 7, 128, 0, 131, 98, 97, 114]);
 
-      assert.equals(data, [77, 76, 8, 102, 111, 111, 255, 0, 7, 128, 0, 131, 98, 97, 114, 0]);
+      assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     },
 
-    "test encodeToBinary": function () {
-      var u8 = message.encodeToBinary({foo: 'bar'});
+    "test encode empty message": function () {
+      var u8 = message.encodeMessage("P", []);
       var data = [];
 
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
 
-      data.forEach.call(u8, function (b) {
-        data.push(b);
-      });
+      data.forEach.call(u8, function (b) {data.push(b)});
+      assert.equals(data, [80, 0]);
 
-      assert.equals(data, [8, 102, 111, 111, 255, 0, 7, 128, 0, 131, 98, 97, 114, 0]);
-    },
-
-    "test no dict + initial encodeToBinary": function () {
-      var u8 = message.encodeToBinary([1,2], [77, 76]);
-      var data = [];
-
-      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
-
-      data.forEach.call(u8, function (b) {
-        data.push(b);
-      });
-
-      assert.equals(data, [77, 76, 6, 65, 66, 0]);
-    },
-
-    "test no dict, no intial encodeToBinary": function () {
-      var u8 = message.encodeToBinary([1,2]);
-      var data = [];
-
-      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
-
-      data.forEach.call(u8, function (b) {
-        data.push(b);
-      });
-
-      assert.equals(data, [6, 65, 66, 0]);
+      assert.equals(message.decodeMessage(u8.subarray(1)), []);
     },
   });
 });

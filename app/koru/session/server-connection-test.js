@@ -82,7 +82,7 @@ isServer && define(function (require, exports, module) {
 
       assert.calledWith(v.ws.send, TH.match(function (data) {
         assert.same(data[0], 'M'.charCodeAt(0));
-        assert.equals(message.decode(data.subarray(1)), [1,2,3]);
+        assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3]);
         return true;
       }, {binary: true, mask: true}));
     },

@@ -53,7 +53,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.stub, TH.match(function (data) {
         assert.same(data[0], 'M'.charCodeAt(0));
-        assert.equals(message.decode(data.subarray(1)), [1,2,3,4]);
+        assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3,4]);
         return true;
       }));
     },
@@ -119,7 +119,7 @@ define(function (require, exports, module) {
       session.rpc('foo.rpc', 'c', v.cstub = test.stub());
       var msgId = session._msgId;
 
-      session._onMessage({}, message.encodeToBinary([msgId.toString(36), 'e', '404,error Msg'], ['M'.charCodeAt(0)]));
+      session._onMessage({}, message.encodeMessage('M', [msgId.toString(36), 'e', '404,error Msg']));
 
       assert.calledWithExactly(v.cstub, TH.match(function (err) {
         assert.same(err.error, 404);
@@ -127,9 +127,9 @@ define(function (require, exports, module) {
         return true;
       }));
 
-      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r', [1,2,3]], ['M'.charCodeAt(0)]));
+      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r', [1,2,3]]));
 
-      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r', [1,2,3]], ['M'.charCodeAt(0)]));
+      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r', [1,2,3]]));
 
       assert.calledOnce(v.bstub);
 
@@ -163,11 +163,11 @@ define(function (require, exports, module) {
       v.ob.reset();
 
       var msgId = session._msgId;
-      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r'], ['M'.charCodeAt(0)]));
+      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r']));
 
       refute.called(v.ob);
 
-      session._onMessage({}, message.encodeToBinary([msgId.toString(36), 'r'], ['M'.charCodeAt(0)]));
+      session._onMessage({}, message.encodeMessage('M', [msgId.toString(36), 'r']));
 
       assert.calledWith(v.ob, false);
 

@@ -25,7 +25,7 @@ define(function (require, exports, module) {
       },
 
       sendBinary: function (type, msg) {
-        connect._ws.send(message.encodeToBinary(msg, [type.charCodeAt(0)]));
+        connect._ws.send(message.encodeMessage(type, msg));
       },
 
       rpc: function (name /*, args */) {
@@ -96,7 +96,7 @@ define(function (require, exports, module) {
     });
 
     session.provide('M', function (data) {
-      data = message.decode(data);
+      data = message.decodeMessage(data);
       var msgId = data[0];
       var args = waitMs[msgId];
       if (! args) return;

@@ -40,7 +40,7 @@ define(function (require, exports, module) {
         env.logger('INFO', this.engine, data);
     });
     session.provide('M', function (data) {
-      data = message.decode(data);
+      data = message.decodeMessage(data);
       var msgId = data[0];
       var func = session._rpcs[data[1]];
       try {

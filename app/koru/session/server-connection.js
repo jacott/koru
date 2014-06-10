@@ -43,7 +43,7 @@ define(function(require, exports, module) {
       },
 
       sendBinary: function (type, args) {
-        this.ws.send(message.encodeToBinary(args, [type.charCodeAt(0)]), binaryData);
+        this.ws.send(message.encodeMessage(type, args), binaryData);
       },
 
       added: function (name, id, attrs) {

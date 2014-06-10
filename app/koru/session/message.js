@@ -29,40 +29,48 @@ define(function(require, exports, module) {
   var forEachFunc = Array.prototype.forEach;
   var toStringFunc = Object.prototype.toString;
 
-  exports.encodeToBinary = function (object, initial) {
+  exports.encodeMessage = function (type, args) {
     var buffer = [];
     var dict = {};
-    encode(buffer, object, dict);
-    if (dict.index) {
-      dict = encodeDict(dict);
-      if (initial) {
-        var result = new Uint8Array(dict.length + buffer.length + initial.length);
-        result.set(initial, 0);
-        result.set(dict, initial.length);
-        result.set(buffer, initial.length + dict.length);
-      } else {
-        var result = new Uint8Array(dict.length + buffer.length);
-        result.set(dict, 0);
-        result.set(buffer, dict.length);
-      }
-      return result;
-    } else {
-      if (initial) {
-        var result = new Uint8Array(buffer.length + initial.length);
-        result.set(initial, 0);
-        result.set(buffer, initial.length );
-        return result;
-      }
-      return new Uint8Array(buffer);
-    }
+
+    args.forEach(function (o) {
+      encode(buffer, o, dict);
+    });
+
+    var last;
+    while((last = buffer.pop()) === 0) {}
+    if (last !== undefined)
+      buffer.push(last);
+
+    dict = encodeDict(dict, [type.charCodeAt(0)]);
+
+    var result = new Uint8Array(dict.length + buffer.length);
+    result.set(dict, 0);
+    result.set(buffer, dict.length);
+
+    return result;
   },
 
-  exports.encode =  function (object) {
+  exports.decodeMessage = function (u8) {
+    var dict = {};
+    var index = decodeDict(u8, 0, dict);
+
+    var len = u8.length;
+    var out = [];
+    for(;index < len; index = result[1]) {
+      var result = decode(u8, index, dict);
+      out.push(result[0]);
+    }
+
+    return out;
+  },
+
+  exports._encode =  function (object) {
     var buffer = [];
     var dict = {};
     encode(buffer, object, dict);
     if (dict.index)
-      return encodeDict(dict).concat(buffer);
+      return encodeDict(dict, [tDict]).concat(buffer);
     else
       return buffer;
   };
@@ -192,8 +200,7 @@ define(function(require, exports, module) {
   }
 
   exports.encodeDict = encodeDict;
-  function encodeDict(dict) {
-    var buffer = [tDict];
+  function encodeDict(dict, buffer) {
     var index = dict.index + 0x80;
     var c2k = dict.c2k;
     for(var i = 0x80; i < index; ++i) {
@@ -222,7 +229,7 @@ define(function(require, exports, module) {
     return dict.c2k[String.fromCharCode(code >> 8)][code % 0x100];
   }
 
-  exports.decode = function (object) {
+  exports._decode = function (object) {
     return decode(object, 0, {})[0];
   };
   function decode(buffer, index, dict) {

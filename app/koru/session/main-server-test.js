@@ -23,7 +23,7 @@ isServer && define(function (require, exports, module) {
           session.defineRpc('foo.rpc', rpcMethod);
 
           var data = ['123', 'foo.rpc', 1, 2, 3];
-          var buffer = message.encodeToBinary(data, ['M'.charCodeAt(0)]);
+          var buffer = message.encodeMessage('M', data);
 
           session._onMessage(v.conn = {ws: v.ws, sendBinary: test.stub()}, buffer);
         };
