@@ -14,7 +14,7 @@ isServer && define(function (require, exports, module) {
       v.conn = new Connection(v.ws = {
         send: test.stub(), close: test.stub(), on: test.stub(),
       }, 123);
-
+      test.stub(v.conn, 'sendBinary');
     },
 
     tearDown: function () {
@@ -78,6 +78,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test sendBinary": function () {
+      v.conn.sendBinary.restore();
       v.conn.sendBinary('M', [1,2,3]);
 
       assert.calledWith(v.ws.send, TH.match(function (data) {
@@ -107,19 +108,19 @@ isServer && define(function (require, exports, module) {
     "test added": function () {
       v.conn.added('Foo', '123', v.attrs = {name: 'bar', age: 5});
 
-      assert.calledWith(v.ws.send, 'AFoo|123'+JSON.stringify(v.attrs), env.nullFunc);
+      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', v.attrs]);
     },
 
     "test changed": function () {
       v.conn.changed('Foo', '123', v.attrs = {name: 'bar'});
 
-      assert.calledWith(v.ws.send, 'CFoo|123'+JSON.stringify(v.attrs), env.nullFunc);
+      assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', v.attrs]);
     },
 
     "test removed": function () {
       v.conn.removed('Foo', '123');
 
-      assert.calledWith(v.ws.send, 'RFoo|123', env.nullFunc);
+      assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123']);
     },
 
     "test closed": function () {

@@ -5,6 +5,7 @@ isClient && define(function (require, exports, module) {
   var Model = require('../model/main');
   var sut = require('./client-update');
   var publish = require('./publish');
+  var message = require('./message');
 
   TH.testCase(module, {
     setUp: function () {
@@ -26,11 +27,11 @@ isClient && define(function (require, exports, module) {
     },
 
     "test added": function () {
-      session._onMessage({}, 'AFoo|f123'+JSON.stringify(v.attrs = {name: 'sam', age: 5}));
+      session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'sam', age: 5}]));
 
       refute(v.Foo.findById('f123'));
 
-      session._onMessage({}, 'AFoo|f123'+JSON.stringify(v.attrs = {name: 'bob', age: 5}));
+      session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'bob', age: 5}]));
 
       var foo = v.Foo.findById('f123');
 
@@ -43,8 +44,8 @@ isClient && define(function (require, exports, module) {
       var bob = v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
 
-      session._onMessage({}, 'CFoo|f222'+JSON.stringify(v.attrs = {age: 7}));
-      session._onMessage({}, 'CFoo|f333'+JSON.stringify(v.attrs = {age: 7}));
+      session._onMessage({}, message.encodeMessage('C', ['Foo', 'f222', v.attrs = {age: 7}]));
+      session._onMessage({}, message.encodeMessage('C', ['Foo', 'f333', v.attrs = {age: 7}]));
 
       assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
       assert.same(v.Foo.query.onId('f333').count(1), 0);
@@ -54,8 +55,8 @@ isClient && define(function (require, exports, module) {
       var foo = v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
 
-      session._onMessage({}, 'RFoo|f222');
-      session._onMessage({}, 'RFoo|f333');
+      session._onMessage({}, message.encodeMessage('R', ['Foo', 'f222']));
+      session._onMessage({}, message.encodeMessage('R', ['Foo', 'f333']));
 
       refute(v.Foo.findById('f222'));
       refute(v.Foo.findById('f333')); // doesn't matter if it doesn't match; it's gone

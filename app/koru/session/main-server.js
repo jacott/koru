@@ -84,7 +84,7 @@ define(function (require, exports, module) {
     function sendAll(cmd, msg) {
       var conns = this.conns;
       for(var key in conns) {
-        conns[key].ws.send(cmd+msg, env.nullFunc);
+        conns[key].ws.send(cmd+msg);
       }
     }
 

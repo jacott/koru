@@ -111,12 +111,14 @@ define(function (require, exports, module) {
     },
 
     "test extractViaKeys": function () {
-      var keys = {a: 1, b: 2, c: 3};
-      var attrs = {a: 2, b: undefined, d: 4};
+      var keys = {a: 1, b: 2, c: 3, "e.1.f": 42};
+      var attrs = {a: 2, b: undefined, d: 4, e: [1, {f: 69}]};
 
-      assert.equals(util.extractViaKeys(keys, attrs), {a: 2, b: undefined, c: undefined});
-      assert.equals(keys, {a: 1, b: 2, c: 3});
-      assert.equals(attrs, {a: 2, b: undefined, d: 4});
+      assert.equals(util.extractViaKeys(keys, attrs), {a: 2, b: undefined, c: undefined, "e.1.f": 69});
+
+      // should not alter passed in arguments
+      assert.equals(keys, {a: 1, b: 2, c: 3, "e.1.f": 42});
+      assert.equals(attrs, {a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
     },
 
     "test includesAttributes": function () {

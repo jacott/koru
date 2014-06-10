@@ -47,15 +47,15 @@ define(function(require, exports, module) {
       },
 
       added: function (name, id, attrs) {
-        this.ws.send('A'+name+'|'+id+JSON.stringify(attrs), env.nullFunc);
+        this.sendBinary('A', [name, id, attrs]);
       },
 
       changed: function (name, id, attrs) {
-        this.ws.send('C'+name+'|'+id+JSON.stringify(attrs), env.nullFunc);
+        this.sendBinary('C', [name, id, attrs]);
       },
 
       removed: function (name, id) {
-        this.ws.send('R'+name+'|'+id, env.nullFunc);
+        this.sendBinary('R', [name, id]);
       },
 
       closed: function () {

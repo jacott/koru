@@ -77,7 +77,7 @@ define(function(require, exports, module) {
     extractViaKeys: function (keys, attrs) {
       var result = {};
       for(var key in keys) {
-        result[key] = attrs[key];
+        result[key] = (key.indexOf(".") !== -1) ? util.lookupDottedValue(key, attrs) : attrs[key];
       }
       return result;
     },

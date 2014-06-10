@@ -158,7 +158,7 @@ isClient && define(function (require, exports, module) {
 
         v.sub.match(v.Foo, v.match = test.stub());
 
-        session._onMessage({}, 'AFoo|f123'+JSON.stringify(v.attrs = {name: 'bob', age: 5}));
+        session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'bob', age: 5}]));
 
         assert.calledWith(v.match, TH.match(function (doc) {
           return doc._id === 'f123';

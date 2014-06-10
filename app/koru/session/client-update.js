@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var Query = require('../model/query');
   var ModelEnv = require('../model/main-client');
   var publish = require('./publish');
+  var message = require('./message');
 
   session.provide('A', modelUpdate(added));
   session.provide('C', modelUpdate(changed));
@@ -27,22 +28,17 @@ define(function(require, exports, module) {
   }
 
   function removed(data) {
-    var nh = data.toString().split('|');
-    var model = Model[nh[0]];
-    var id =  nh[1];
+    data = message.decodeMessage(data);
+    var model = Model[data[0]];
+    var id =  data[1];
     var doc = model.findById(id);
     new Query(model).onId(id).remove();
   }
 
   function modelUpdate(func) {
     return function (data) {
-      var index = data.indexOf('{');
-      if (index === -1) {
-        env.Error('Unpected message format: '+ data);
-        return;
-      }
-      var nh = data.slice(0,index).toString().split('|');
-      func.call(this, Model[nh[0]], nh[1], JSON.parse(data.slice(index).toString()));
+      data = message.decodeMessage(data);
+      func.call(this, Model[data[0]], data[1], data[2]);
     };
   }
 });
