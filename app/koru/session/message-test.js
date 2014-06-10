@@ -178,20 +178,20 @@ define(function (require, exports, module) {
       var dict = {};
 
       message.addToDict(dict, "foo");
-      message.addToDict(dict, "bár");
+      message.addToDict(dict, "bár\x00");
 
       assert.equals(message.encodeDict(dict), v.ans = [8,
                                                102, 111, 111, 0xff,
-                                               98, 195, 161, 114, 0xff,
+                                               98, 195, 161, 114, 192, 128, 0xff,
                                                0]);
 
       var dict = {};
 
-      assert.same(message.decodeDict(v.ans, 0, dict), 11);
+      assert.same(message.decodeDict(v.ans, 0, dict), 13);
 
-      assert.equals(dict.k2c["bár"], 0x81 << 8);
+      assert.equals(dict.k2c["bár\x00"], 0x81 << 8);
 
-      assert.same(message.getDictItem(dict, 0x81 << 8), "bár");
+      assert.same(message.getDictItem(dict, 0x81 << 8), "bár\x00");
     },
 
     "test mixed": function () {
