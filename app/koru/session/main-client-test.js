@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   var session = require('./main');
   var util = require('../util');
   var message = require('./message');
+  var clientSession = require('./main-client');
 
   TH.testCase(module, {
     setUp: function () {
@@ -58,8 +59,34 @@ define(function (require, exports, module) {
       }));
     },
 
-    "//test when not ready to sendBinary": function () {
+    "with stubbed session": {
+      setUp: function () {
+        v.sessStub = {
+          provide: test.stub(),
+        };
+        v.sess = clientSession(v.sessStub);
+        v.sess.newWs = test.stub().returns(v.ws = {
+          send: test.stub(),
+        });
+      },
 
+      "test when not ready to sendBinary": function () {
+        test.stub(message, 'encodeMessage', function (type, msg) {
+          return ['x', type, msg];
+        });
+        v.sess.sendBinary('P', [null]);
+        v.sess.sendBinary('M', [1]);
+
+        assert.equals(v.sess._waitFuncs, [['P', [null]], ['M', [1]]]);
+
+        v.sess.connect();
+
+        v.ws.onopen();
+
+        assert.calledWith(v.ws.send, 'X1'+util.engine);
+        assert.calledWith(v.ws.send, ["x", "P", [null]]);
+        assert.calledWith(v.ws.send, ["x", "M", [1]]);
+      },
     },
 
     "test server only rpc": function () {

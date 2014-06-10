@@ -26,7 +26,7 @@ define(function (require, exports, module) {
 
       sendBinary: function (type, msg) {
         if (state === 'ready') connect._ws.send(message.encodeMessage(type, msg));
-        else waitFuncs.push(message.encodeMessage(type, msg));
+        else waitFuncs.push([type, util.deepCopy(msg)]);
       },
 
       rpc: function (name /*, args */) {
@@ -79,9 +79,18 @@ define(function (require, exports, module) {
         } catch(ex) {}
       },
 
+      newWs: function (url) {
+        return new WebSocket(url);
+      },
+
+      // for testing
       _forgetMs: function () {
         waitMs = {};
-      }
+      },
+
+      get _waitFuncs() {
+        return waitFuncs;
+      },
     });
 
     makeSubject(session.rpc);
@@ -135,7 +144,7 @@ define(function (require, exports, module) {
     }
 
     function connect() {
-      var ws = connect._ws = new WebSocket(url());
+      var ws = connect._ws = session.newWs(url());
       ws.binaryType = 'arraybuffer';
       var conn = {
         ws: ws,
@@ -148,8 +157,13 @@ define(function (require, exports, module) {
           session._onConnect[i].call(conn);
         }
 
+        // TODO add global dictionary. We will need to receive
+        // dictionary before we can send queued
+        // messages. Alternatively we can clear the global dictionary
+        // so messages do not use it.
         for(var i = 0; i < waitFuncs.length; ++i) {
-          ws.send(waitFuncs[i]);
+          // encode here because we may have a different global dictionary
+          ws.send(message.encodeMessage.apply(message, waitFuncs[i]));
         }
         waitFuncs = [];
       };
