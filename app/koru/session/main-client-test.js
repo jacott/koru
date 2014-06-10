@@ -70,14 +70,15 @@ define(function (require, exports, module) {
         });
       },
 
-      "test when not ready to sendBinary": function () {
+      "test when not ready to send": function () {
         test.stub(message, 'encodeMessage', function (type, msg) {
           return ['x', type, msg];
         });
         v.sess.sendBinary('P', [null]);
         v.sess.sendBinary('M', [1]);
+        v.sess.send('S', 'Labc');
 
-        assert.equals(v.sess._waitFuncs, [['P', [null]], ['M', [1]]]);
+        assert.equals(v.sess._waitFuncs, [['P', [null]], ['M', [1]], 'SLabc']);
 
         v.sess.connect();
 
@@ -86,6 +87,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.ws.send, 'X1'+util.engine);
         assert.calledWith(v.ws.send, ["x", "P", [null]]);
         assert.calledWith(v.ws.send, ["x", "M", [1]]);
+        assert.calledWith(v.ws.send, 'SLabc');
       },
     },
 

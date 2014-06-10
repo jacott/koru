@@ -163,7 +163,8 @@ define(function (require, exports, module) {
         // so messages do not use it.
         for(var i = 0; i < waitFuncs.length; ++i) {
           // encode here because we may have a different global dictionary
-          ws.send(message.encodeMessage.apply(message, waitFuncs[i]));
+          var item = waitFuncs[i];
+          ws.send(typeof item === 'string' ? item : message.encodeMessage.apply(message, item));
         }
         waitFuncs = [];
       };
