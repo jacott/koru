@@ -7,6 +7,13 @@ define(function(require, exports, module) {
   publish('all', function () {
     var sub = this;
 
+    if (isClient) {
+      sub.match('List', function (doc) {return true});
+      sub.match('Todo', function (doc) {return true});
+
+      return;
+    }
+
     var handles = [];
 
     sub.onStop(function () {

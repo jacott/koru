@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var publish = require('./publish');
   var env = require('../env');
   var UserAccount = require('../user-account/main');
+  var message = require('./message');
 
   var nextId = 0;
   var subs = {};
@@ -12,9 +13,10 @@ define(function(require, exports, module) {
   env.onunload(module, 'reload');
 
   session.provide('P', function (data) {
-    var nh = data.toString().split('|');
-    var handle = subs[nh[0]];
-    if (handle && handle.callback) handle.callback(nh[1]||null);
+    data = message.decodeMessage(data);
+
+    var handle = subs[data[0]];
+    if (handle && handle.callback) handle.callback(data[1]||null);
   });
 
   UserAccount.onChange(function (state) {
@@ -36,7 +38,7 @@ define(function(require, exports, module) {
     );
     subs[sub._id] = sub;
     Subcribe.intercept(name, sub);
-    session.sendP(name + '|' + sub._id, sub.args);
+    session.sendP(sub._id, name, sub.args);
     sub.resubscribe();
     return sub;
   };
@@ -84,7 +86,7 @@ define(function(require, exports, module) {
     },
 
     stop: function () {
-      session.sendP('|' + this._id);
+      session.sendP(this._id);
       delete subs[this._id];
       var models = {};
       killMatches(this._matches, models);

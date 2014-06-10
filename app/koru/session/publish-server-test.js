@@ -4,6 +4,7 @@ isServer && define(function (require, exports, module) {
   var TH = require('../test');
   var publish = require('./publish');
   var session = require('../session/main');
+  var message = require('./message');
 
   TH.testCase(module, {
     setUp: function () {
@@ -17,9 +18,10 @@ isServer && define(function (require, exports, module) {
 
       v.callSub = function () {
         session._onMessage(v.conn = {
+          sendBinary: test.stub(),
           ws: {send: v.send = test.stub()},
           _subs: {},
-        }, 'Pfoo|a123'+JSON.stringify([1,2,3]));
+        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
       };
 
       v.callSub();
@@ -33,11 +35,11 @@ isServer && define(function (require, exports, module) {
     "test unknown publication": function () {
       test.stub(env, 'info');
       session._onMessage(v.conn = {
-        ws: {send: v.send = test.stub()},
+        sendBinary: test.stub(),
         _subs: {},
-      }, 'Pbar|a123'+JSON.stringify([1,2,3]));
+      }, message.encodeMessage('P', ['a123', 'bar', [1,2,3]]));
 
-      assert.calledWith(v.send, 'Pa123|500|unknown publication: bar');
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'unknown publication: bar']);
     },
 
     "test publish": function () {
@@ -46,17 +48,17 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.pubFunc, 1, 2, 3);
 
       assert.same(v.sub.conn, v.conn);
-      assert.calledWith(v.send, 'Pa123');
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123']);
     },
 
     "test onStop": function () {
       v.sub.onStop(v.onStop = test.stub());
 
-      // "P<name>|<pub-id>"; no name means stop
-      session._onMessage(v.conn, 'P|a123');
+      // "P", <pub-id>; no name means stop
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);
-      session._onMessage(v.conn, 'P|a123');
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.calledOnce(v.onStop);
     },
 
@@ -66,7 +68,7 @@ isServer && define(function (require, exports, module) {
       v.sub.stop();
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);
-      session._onMessage(v.conn, 'P|a123');
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.calledOnce(v.onStop);
     },
 
@@ -101,7 +103,7 @@ isServer && define(function (require, exports, module) {
       v.sub.resubscribe();
 
       refute(v.sub.isResubscribe);
-      assert.calledWith(v.send, 'Pa123|500|Internal server error');
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Internal server error']);
       assert.calledWith(env.error, TH.match(/foo error/));
     },
 
@@ -113,7 +115,7 @@ isServer && define(function (require, exports, module) {
     "test Koru error": function () {
       v.sub.error(new env.Error(404, 'Not found'));
 
-      assert.calledWith(v.send, 'Pa123|404|Not found');
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 404, 'Not found']);
 
       refute('a123' in v.conn._subs);
     },
@@ -126,8 +128,8 @@ isServer && define(function (require, exports, module) {
 
       v.callSub();
 
-      assert.calledOnce(v.send);
-      assert.calledWith(v.send, 'Pa123|500|Error: Foo error');
+      assert.calledOnce(v.conn.sendBinary);
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Error: Foo error']);
 
       refute('a123' in v.conn._subs);
     },

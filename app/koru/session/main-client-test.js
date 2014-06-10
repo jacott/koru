@@ -58,6 +58,10 @@ define(function (require, exports, module) {
       }));
     },
 
+    "//test when not ready to sendBinary": function () {
+
+    },
+
     "test server only rpc": function () {
       refute.exception(function () {
         session.rpc('foo.rpc', 1, 2, 3);
@@ -175,13 +179,13 @@ define(function (require, exports, module) {
     },
 
     "test sendP": function () {
-      session.sendP('foo', [1, 2, 'bar']);
+      session.sendP('id', 'foo', [1, 2, 'bar']);
 
-      assert.calledWith(session.send, 'P', 'foo' + JSON.stringify([1, 2, 'bar']));
+      assert.calledWith(session.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
 
-      session.sendP('|12');
+      session.sendP('12');
 
-      assert.calledWith(session.send, 'P', '|12');
+      assert.calledWith(session.sendBinary, 'P', ['12']);
     },
 
   });

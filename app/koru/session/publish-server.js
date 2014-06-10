@@ -3,18 +3,19 @@ define(function(require, exports, module) {
   var session = require('../session/main');
   var env = require('../env');
   var publish = require('./publish-base');
+  var message = require('./message');
 
   session.provide('P', subscribe);
 
   var pubs = publish._pubs;
 
   function subscribe(data) {
-    var index = data.indexOf('[');
-    var nh = (index === -1 ? data : data.slice(0,index)).toString().split('|');
-    var name = nh[0];
+    data = message.decodeMessage(data);
+
+    var subId = data[0];
+    var name = data[1];
     var subs = this._subs;
-    var subId = nh[1];
-    var sub = subs[nh[1]];
+    var sub = subs[subId];
 
     if (! name) {
       if (sub) {
@@ -24,12 +25,12 @@ define(function(require, exports, module) {
       var func = pubs[name];
       if (! func) {
         var msg = 'unknown publication: ' + name;
-        this.ws.send('P'+subId+'|500|'+msg);
+        this.sendBinary('P', [subId, 500, msg]);
         return env.info(msg);
       }
-      sub = subs[subId] = new Sub(this, subId, func, JSON.parse(data.slice(index).toString()));
+      sub = subs[subId] = new Sub(this, subId, func, data[2]);
       sub.resubscribe();
-      subs[subId] && this.ws.send('P'+subId); // ready
+      subs[subId] && this.sendBinary('P', [subId]); // ready
     }
   }
 
@@ -58,9 +59,9 @@ define(function(require, exports, module) {
 
     error: function (error) {
       if (error.errorType === 'KoruError') {
-        this.conn.ws.send('P'+this.id+'|'+error.error+'|'+error.reason);
+        this.conn.sendBinary('P', [this.id, error.error, error.reason]);
       } else {
-        this.conn.ws.send('P'+this.id+'|500|'+error.toString());
+        this.conn.sendBinary('P', [this.id, 500, error.toString()]);
       }
 
       delete this.conn._subs[this.id];

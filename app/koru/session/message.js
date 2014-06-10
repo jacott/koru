@@ -1,3 +1,5 @@
+if (! Uint8Array.prototype.hasOwnProperty('slice')) Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
+
 define(function(require, exports, module) {
   var util = require('../util');
 

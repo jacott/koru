@@ -25,7 +25,8 @@ define(function (require, exports, module) {
       },
 
       sendBinary: function (type, msg) {
-        connect._ws.send(message.encodeMessage(type, msg));
+        if (state === 'ready') connect._ws.send(message.encodeMessage(type, msg));
+        else waitFuncs.push(message.encodeMessage(type, msg));
       },
 
       rpc: function (name /*, args */) {
@@ -54,7 +55,9 @@ define(function (require, exports, module) {
         waitMs[msgId] = [data, func];
         state === 'ready' && session.sendBinary('M', data);
       },
-      sendP: sendFunc('P'),
+      sendP:function (id, name, args) {
+        session.sendBinary('P', util.slice(arguments));
+      },
 
       get isSimulation() {return isSimulation},
 
@@ -71,7 +74,9 @@ define(function (require, exports, module) {
 
       stop: function () {
         state = 'closed';
-        connect._ws && connect._ws.close();
+        try {
+          connect._ws && connect._ws.close();
+        } catch(ex) {}
       },
 
       _forgetMs: function () {
@@ -164,12 +169,6 @@ define(function (require, exports, module) {
         state = 'retry';
 
         setTimeout(connect, retryCount*500);
-      };
-    }
-
-    function sendFunc(code) {
-      return function (name, args) {
-        session.send(code, (args === undefined) ? name : name + JSON.stringify(args));
       };
     }
 
