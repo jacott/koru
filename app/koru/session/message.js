@@ -83,6 +83,8 @@ define(function(require, exports, module) {
       if (object === '')
         return buffer.push(tEmptyString);
 
+      // TODO add a hex string type and maybe an _id type (17 bytes [0-9a-zA-Z])
+
       var index = buffer.length;
       buffer.push(tSmString);
       utf16to8(buffer, object);
@@ -155,8 +157,12 @@ define(function(require, exports, module) {
       });
       return buffer.push(tTerm);
     case "[object Uint8Array]":
+      // TODO rather than copy the data into tmp buffer place a marker
+      // in buffer and store ref to object to later fast copy to
+      // result ArrayBuffer.
+
       buffer.push(tBinary);
-      tmpDv.setInt32(0, object.byteLength);
+      tmpDv.setUint32(0, object.byteLength);
       forEachFunc.call(tmpU8.subarray(0, 4), function (v) {
         buffer.push(v);
       });
@@ -295,7 +301,7 @@ define(function(require, exports, module) {
 
     case tBinary:
       tmpU8.set(buffer.slice(index, index + 4), 0);
-      var len = tmpDv.getInt32(0);
+      var len = tmpDv.getUint32(0);
       index += 4;
       return [new Uint8Array(buffer.slice(index, index + len)), index + len];
     }
