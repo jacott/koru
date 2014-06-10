@@ -3,12 +3,14 @@ define(function (require, exports, module) {
   var TH = require('../test');
   var session = require('./main');
   var util = require('../util');
+  var message = require('./message');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
       v.send = test.stub(session, 'send');
+      v.sendBinary = test.stub(session, 'sendBinary');
       session._forgetMs();
     },
 
@@ -44,12 +46,24 @@ define(function (require, exports, module) {
       },
     },
 
+    "test sendBinary": function () {
+      v.sendBinary.restore();
+      v.stub = test.stub(session.connect._ws, 'send');
+      session.sendBinary('M', [1,2,3,4]);
+
+      assert.calledWith(v.stub, TH.match(function (data) {
+        assert.same(data[0], 'M'.charCodeAt(0));
+        assert.equals(message.decode(data.subarray(1)), [1,2,3,4]);
+        return true;
+      }));
+    },
+
     "test server only rpc": function () {
       refute.exception(function () {
         session.rpc('foo.rpc', 1, 2, 3);
       });
 
-      assert.called(v.send, 'M', session._msgId.toString(36)+"|foo.rpc"+JSON.stringify([1, 2, 3]));
+      assert.called(v.sendBinary, 'M', session._msgId.toString(36)+"|foo.rpc"+JSON.stringify([1, 2, 3]));
     },
 
     "test rpc": function () {
@@ -74,7 +88,7 @@ define(function (require, exports, module) {
         v.thisValue = this;
         v.args = util.slice(arguments);
         fooId = session._msgId;
-        assert.calledWith(v.send, 'M', fooId.toString(36)+"|foo.rpc"+JSON.stringify(v.args));
+        assert.calledWith(v.sendBinary, 'M', [fooId.toString(36), "foo.rpc"].concat(v.args));
         v.send.reset();
         assert.isTrue(session.isSimulation);
         session.rpc('foo.s2', 'aaa');
@@ -93,7 +107,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test rpc with callback": function () {
+    "test callback rpc": function () {
       session.defineRpc('foo.rpc', rpcSimMethod);
 
       session.rpc('foo.rpc', 'a');
@@ -105,7 +119,7 @@ define(function (require, exports, module) {
       session.rpc('foo.rpc', 'c', v.cstub = test.stub());
       var msgId = session._msgId;
 
-      session._onMessage({}, 'M'+ msgId.toString(36) + '|e404,error Msg');
+      session._onMessage({}, message.encodeToBinary([msgId.toString(36), 'e', '404,error Msg'], ['M'.charCodeAt(0)]));
 
       assert.calledWithExactly(v.cstub, TH.match(function (err) {
         assert.same(err.error, 404);
@@ -113,9 +127,9 @@ define(function (require, exports, module) {
         return true;
       }));
 
-      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r[1,2,3]');
+      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r', [1,2,3]], ['M'.charCodeAt(0)]));
 
-      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r[1,2,3]');
+      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r', [1,2,3]], ['M'.charCodeAt(0)]));
 
       assert.calledOnce(v.bstub);
 
@@ -129,7 +143,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test rpc.onChange": function () {
+    "test onChange rpc": function () {
       var handle = session.rpc.onChange(v.ob = test.stub());
       test.onEnd(function () {
         handle.stop();
@@ -149,11 +163,11 @@ define(function (require, exports, module) {
       v.ob.reset();
 
       var msgId = session._msgId;
-      session._onMessage({}, 'M'+ (msgId-1).toString(36) + '|r');
+      session._onMessage({}, message.encodeToBinary([(msgId - 1).toString(36), 'r'], ['M'.charCodeAt(0)]));
 
       refute.called(v.ob);
 
-      session._onMessage({}, 'M'+ (msgId).toString(36) + '|r');
+      session._onMessage({}, message.encodeToBinary([msgId.toString(36), 'r'], ['M'.charCodeAt(0)]));
 
       assert.calledWith(v.ob, false);
 

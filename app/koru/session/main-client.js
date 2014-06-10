@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   var env = require('../env');
   var util = require('../util');
   var makeSubject = require('../make-subject');
+  var message = require('./message');
 
   env.onunload(module, 'reload');
 
@@ -21,6 +22,10 @@ define(function (require, exports, module) {
       send: function (type, msg) {
         if (state === 'ready') connect._ws.send(type+msg);
         else waitFuncs.push(type+msg);
+      },
+
+      sendBinary: function (type, msg) {
+        connect._ws.send(message.encodeToBinary(msg, [type.charCodeAt(0)]));
       },
 
       rpc: function (name /*, args */) {
@@ -42,11 +47,12 @@ define(function (require, exports, module) {
 
       sendM: function (name, args, func) {
         var msgId = (++session._msgId).toString(36);
-        var data = msgId+'|'+ (args === undefined ? name : name + JSON.stringify(args));
+        var data = [msgId, name];
+        args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
         for(var one in waitMs) {break;}
         one || session.rpc.notify(true);
         waitMs[msgId] = [data, func];
-        state === 'ready' && session.send('M', data);
+        state === 'ready' && session.sendBinary('M', data);
       },
       sendP: sendFunc('P'),
 
@@ -90,27 +96,25 @@ define(function (require, exports, module) {
     });
 
     session.provide('M', function (data) {
-      var index = data.indexOf('|');
-      if (index === -1) return env.error('bad M msg: ' + data);
-      var msgId = data.slice(0, index);
+      data = message.decode(data);
+      var msgId = data[0];
       var args = waitMs[msgId];
       if (! args) return;
       delete waitMs[msgId];
       for(var one in waitMs) {break;}
       one || session.rpc.notify(false);
       if (! args[1]) return;
-      var type = data[index + 1];
-      index += 2;
+      var type = data[1];
+      data = data[2];
       if (type === 'e') {
-        var ei = data.indexOf(',', index);
+        var ei = data.indexOf(',');
         if (ei === -1)
-          args[1](new Error(data.slice(index)));
+          args[1](new Error(data));
         else
-          args[1](new env.Error(+data.slice(index, ei), data.slice(ei+1)));
+          args[1](new env.Error(+data.slice(0, ei), data.slice(ei+1)));
         return;
       }
-      data = data.slice(index);
-      args[1](null, data ? JSON.parse(data) : null);
+      args[1](null, data);
     });
 
     session.provide('L', function (data) {require([data], function() {})});
@@ -127,6 +131,7 @@ define(function (require, exports, module) {
 
     function connect() {
       var ws = connect._ws = new WebSocket(url());
+      ws.binaryType = 'arraybuffer';
       var conn = {
         ws: ws,
       };
@@ -144,7 +149,9 @@ define(function (require, exports, module) {
         waitFuncs = [];
       };
 
-      ws.onmessage = function (event) {session._onMessage(conn, event.data)};
+      ws.onmessage = function (event) {
+        session._onMessage(conn, event.data);
+      };
 
       ws.onclose = function (event) {
         connect._ws = ws = conn = null;

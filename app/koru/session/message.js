@@ -29,6 +29,34 @@ define(function(require, exports, module) {
   var forEachFunc = Array.prototype.forEach;
   var toStringFunc = Object.prototype.toString;
 
+  exports.encodeToBinary = function (object, initial) {
+    var buffer = [];
+    var dict = {};
+    encode(buffer, object, dict);
+    if (dict.index) {
+      dict = encodeDict(dict);
+      if (initial) {
+        var result = new Uint8Array(dict.length + buffer.length + initial.length);
+        result.set(initial, 0);
+        result.set(dict, initial.length);
+        result.set(buffer, initial.length + dict.length);
+      } else {
+        var result = new Uint8Array(dict.length + buffer.length);
+        result.set(dict, 0);
+        result.set(buffer, dict.length);
+      }
+      return result;
+    } else {
+      if (initial) {
+        var result = new Uint8Array(buffer.length + initial.length);
+        result.set(initial, 0);
+        result.set(buffer, initial.length );
+        return result;
+      }
+      return new Uint8Array(buffer);
+    }
+  },
+
   exports.encode =  function (object) {
     var buffer = [];
     var dict = {};

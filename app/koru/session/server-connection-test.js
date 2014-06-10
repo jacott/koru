@@ -5,6 +5,7 @@ isServer && define(function (require, exports, module) {
   var Connection = require('./server-connection')(session);
   var env = require('../env');
   var util = require('../util');
+  var message = require('./message');
 
   TH.testCase(module, {
     setUp: function () {
@@ -74,6 +75,16 @@ isServer && define(function (require, exports, module) {
 
         assert(m123.calledBefore(m456));
       },
+    },
+
+    "test sendBinary": function () {
+      v.conn.sendBinary('M', [1,2,3]);
+
+      assert.calledWith(v.ws.send, TH.match(function (data) {
+        assert.same(data[0], 'M'.charCodeAt(0));
+        assert.equals(message.decode(data.subarray(1)), [1,2,3]);
+        return true;
+      }, {binary: true, mask: true}));
     },
 
     "test set userId": function () {

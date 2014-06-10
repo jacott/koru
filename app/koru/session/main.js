@@ -16,8 +16,15 @@ define(function(require) {
     },
 
     _onMessage: function(conn, data) {
-      var type = data.slice(0,1);
-      data = data.slice(1);
+      if (typeof data === 'string') {
+        var type = data[0];
+        data = data.slice(1);
+      } else {
+        data = new Uint8Array(data);
+        var type = String.fromCharCode(data[0]);
+        data = data.subarray(1);
+      }
+
       var func = this._commands[type];
       if (func)
         func.call(conn, data);

@@ -4,6 +4,7 @@ isServer && define(function (require, exports, module) {
   var session = require('./main');
   var util = require('../util');
   var env = require('../env');
+  var message = require('./message');
 
   TH.testCase(module, {
     setUp: function () {
@@ -21,7 +22,10 @@ isServer && define(function (require, exports, module) {
         v.run = function (rpcMethod) {
           session.defineRpc('foo.rpc', rpcMethod);
 
-          session._onMessage(v.conn = {ws: v.ws}, 'M123|foo.rpc'+JSON.stringify([1,2,3]));
+          var data = ['123', 'foo.rpc', 1, 2, 3];
+          var buffer = message.encodeToBinary(data, ['M'.charCodeAt(0)]);
+
+          session._onMessage(v.conn = {ws: v.ws, sendBinary: test.stub()}, buffer);
         };
       },
 
@@ -35,7 +39,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.args, [1, 2, 3]);
         assert.same(v.thisValue, v.conn);
 
-        assert.calledWith(v.ws.send, 'M123|r"result"');
+        assert.calledWith(v.conn.sendBinary, 'M', ['123', "r", "result"]);
       },
 
       "test exception": function () {
@@ -44,7 +48,7 @@ isServer && define(function (require, exports, module) {
           throw new env.Error(404, 'not found');
         });
 
-        assert.calledWith(v.ws.send, 'M123|e404,not found');
+        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', '404,not found']);
       },
     },
 

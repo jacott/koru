@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var env = require('../env');
   var util = require('../util');
+  var message = require('./message');
 
   return function (session) {
     function Connection(ws, sessId, close) {
@@ -11,6 +12,8 @@ define(function(require, exports, module) {
       this._last = null;
       ws.on('close', close);
     }
+
+    var binaryData = {binary: true};
 
     Connection.prototype = {
       constructor: Connection,
@@ -37,6 +40,10 @@ define(function(require, exports, module) {
           }
           conn._last = null;
         }).run();
+      },
+
+      sendBinary: function (type, args) {
+        this.ws.send(message.encodeToBinary(args, [type.charCodeAt(0)]), binaryData);
       },
 
       added: function (name, id, attrs) {

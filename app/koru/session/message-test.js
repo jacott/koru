@@ -204,5 +204,57 @@ define(function (require, exports, module) {
 
       assert.same(result[1][2], 6);
     },
+
+    "test add initial to encodeToBinary": function () {
+      var u8 = message.encodeToBinary({foo: 'bar'}, [77, 76]);
+      var data = [];
+
+      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
+
+      data.forEach.call(u8, function (b) {
+        data.push(b);
+      });
+
+      assert.equals(data, [77, 76, 8, 102, 111, 111, 255, 0, 7, 128, 0, 131, 98, 97, 114, 0]);
+    },
+
+    "test encodeToBinary": function () {
+      var u8 = message.encodeToBinary({foo: 'bar'});
+      var data = [];
+
+      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
+
+      data.forEach.call(u8, function (b) {
+        data.push(b);
+      });
+
+      assert.equals(data, [8, 102, 111, 111, 255, 0, 7, 128, 0, 131, 98, 97, 114, 0]);
+    },
+
+    "test no dict + initial encodeToBinary": function () {
+      var u8 = message.encodeToBinary([1,2], [77, 76]);
+      var data = [];
+
+      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
+
+      data.forEach.call(u8, function (b) {
+        data.push(b);
+      });
+
+      assert.equals(data, [77, 76, 6, 65, 66, 0]);
+    },
+
+    "test no dict, no intial encodeToBinary": function () {
+      var u8 = message.encodeToBinary([1,2]);
+      var data = [];
+
+      assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
+
+      data.forEach.call(u8, function (b) {
+        data.push(b);
+      });
+
+      assert.equals(data, [6, 65, 66, 0]);
+    },
   });
 });

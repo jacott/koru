@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   var env = require('../env');
   var util = require('../util');
   var server = require('../web-server').server;
+  var message = require('./message');
 
   return function (session) {
     var Connection = require('./server-connection')(session);
@@ -39,23 +40,18 @@ define(function (require, exports, module) {
         env.logger('INFO', this.engine, data);
     });
     session.provide('M', function (data) {
-      var index = data.indexOf('|');
-      if (index === -1)
-        return env.info("badly formed M message: " + data);
-
-      var msgId = data.slice(0, index);
-
-      var aIdx = data.indexOf('[', index + 1);
-      var func = session._rpcs[data.slice(index + 1, aIdx).toString()];
-      if (! func)
-        return env.info('unknown method: ' + data.slice(index + 1, aIdx).toString());
-
+      data = message.decode(data);
+      var msgId = data[0];
+      var func = session._rpcs[data[1]];
       try {
-        var result = func.apply(this, JSON.parse(data.slice(aIdx).toString()));
-        this.ws.send('M'+msgId+'|r'+ (result ? JSON.stringify(result) : ''));
+        if (! func)
+          throw new env.Error(404, 'unknown method: ' + data[1]);
+
+        var result = func.apply(this, data.slice(2));
+        this.sendBinary('M', [msgId, 'r', result]);
       } catch(ex) {
         env.error(util.extractError(ex));
-        this.ws.send('M'+msgId+'|e' + (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex));
+        this.sendBinary('M', [msgId, 'e', (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex)]);
       }
     });
 
