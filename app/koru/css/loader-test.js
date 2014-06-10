@@ -69,7 +69,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('body', function () {
           var cstyle = window.getComputedStyle(this);
-          assert.colorEqual(cstyle.backgroundColor, [230, 150, 90, 0.49], 0.01);
+          assert.colorEqual(cstyle.backgroundColor, [230, 150, 90, 0.49], 0.02);
           assert.colorEqual(cstyle.color, [204, 0, 0, 1]);
         });
 

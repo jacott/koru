@@ -196,7 +196,8 @@ define(function (require, exports, module) {
 
     "test mixed": function () {
       var bin = new Uint8Array([4,7,6,4]);
-      var data = [1, bin, {foo: {bar: 'abc', baz: [-3.234e30, 63, 3e200]}, baz: true, a12: 1.23}, "", false, new Date(), null, NaN, undefined];
+      var longStr = new Array(200).join('x');
+      var data = [1, bin, {foo: {bar: 'abc', baz: [-3.234e30, 63, 3e200]}, longStr: longStr, baz: true, a12: 1.23}, "", false, new Date(), null, NaN, undefined];
 
       var result = message.decodeMessage(message.encodeMessage('T',data).subarray(1));
 

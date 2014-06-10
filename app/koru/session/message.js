@@ -221,7 +221,7 @@ define(function(require, exports, module) {
     while(index < buffer.length && buffer[index] !== tTerm) {
       var pair = utf8to16(buffer, index);
       addToDict(dict, pair[0]);
-      index = pair[1] + 1;
+      index = pair[1];
     }
     return index + 1;
   }
@@ -349,7 +349,7 @@ define(function(require, exports, module) {
 					                         ((char3 & 0x3F) << 0));
 	      break;
       case 15:
-        return [out, i ];
+        return [out, i + 1];
 	    }
     }
 
