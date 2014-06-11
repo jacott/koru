@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   var Val = require('../model/validation');
   var Random = require('../random');
   var util = require('../util');
+  var Email = require('../email');
 
   session.provide('V', validateLoginToken);
 
@@ -37,6 +38,8 @@ define(function(require, exports, module) {
     email: 'text',
     srp: 'text',
     tokens: 'has-many',
+    resetToken: 'text',
+    resetTokenExpire: 'number',
   });
 
   env.onunload(module, function () {
@@ -87,7 +90,7 @@ define(function(require, exports, module) {
     return result;
   });
 
-  return {
+  util.extend(exports, {
     model: model,
 
     createUserLogin: function (attrs) {
@@ -99,10 +102,23 @@ define(function(require, exports, module) {
       });
     },
 
-    sendResetPasswordEmail: function () {
+    sendResetPasswordEmail: function (userId) {
+      var lu = model.findByField('userId', userId);
 
+      var rand = Random.create();
+
+      lu.resetToken = lu._id+'_'+Random.id()+rand.id();
+      lu.resetTokenExpire = Date.now() + 24*60*60*1000;
+      lu.$$save();
+
+      Email.send({
+        from: exports.emailConfig.from,
+        to: lu.email,
+        subject: 'How to reset your password on ' + exports.emailConfig.siteName,
+        text: exports.emailConfig.sendResetPasswordEmailText(lu),
+      });
     },
-  };
+  });
 
   function validateLoginToken(data) {
     var conn = this;

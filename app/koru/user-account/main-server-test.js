@@ -6,6 +6,7 @@ isServer && define(function (require, exports, module) {
   var Model = require('../model/main');
   var env = require('../env');
   var SRP = require('../srp/srp');
+  var Email = require('../email');
 
   TH.testCase(module, {
     setUp: function () {
@@ -27,8 +28,40 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
-    "//test sendResetPasswordEmail": function () {
+    "sendResetPasswordEmail": {
+      setUp: function () {
+        test.stub(Email, 'send');
+        v.emailConfig = userAccount.emailConfig;
+        userAccount.emailConfig = {
+          sendResetPasswordEmailText: function (lu) {
+            return "userid: " + lu.userId + " token: " + lu.resetToken;
+          },
 
+          from: 'Koru <koru@obeya.co>',
+          siteName: 'Koru',
+        };
+      },
+
+      tearDown: function () {
+        userAccount.emailConfig = v.emailConfig;
+      },
+
+      "test send": function () {
+        userAccount.sendResetPasswordEmail('uid111');
+
+        var token = v.lu.$reload().resetToken;
+        var tokenExp =  v.lu.$reload().resetTokenExpire;
+        assert(token && token.indexOf(v.lu._id+'_') === 0);
+
+        assert.between(tokenExp, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
+
+        assert.calledWith(Email.send, {
+          from: 'Koru <koru@obeya.co>',
+          to: 'foo@bar.co',
+          subject: 'How to reset your password on Koru',
+          text: 'userid: uid111 token: ' + v.lu.resetToken,
+        });
+      },
     },
 
     "test createUserLogin": function () {
