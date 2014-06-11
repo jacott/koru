@@ -27,7 +27,8 @@
     "less": "1.7.1",
     "mongodb": "1.4.5",
     "simplesmtp": "0.3.32",
-    "mailcomposer": "0.2.11"
+    "mailcomposer": "0.2.11",
+    "stream-buffers": "0.2.5"
   },
   "devDependencies": {
     "htmlparser2": "3.7.1",
