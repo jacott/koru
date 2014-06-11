@@ -1,4 +1,5 @@
 var Future = require('fibers/future');
+var fs = require('fs');
 
 isServer && define(function (require, exports, module) {
   var test, v;
@@ -43,14 +44,32 @@ isServer && define(function (require, exports, module) {
     "test found html": function () {
       v.req.url = '/koru/.build/web-server-test.html.js';
 
+      test.onEnd(function () {
+        webServer._replaceSend(webServer._send);
+      });
+
+      v.sendRet = {
+        pipe: function (res) {
+          v.future.return(res);
+        },
+      };
+
+      v.sendRet.on = test.stub().returns(v.sendRet);
+
+      webServer._replaceSend(v.send = function (req, path, options) {
+        assert.same(req, v.req);
+
+        assert.same(fs.readFileSync(options.root + path).toString(),
+                    'define({"name":"Test.WebServer","nodes":[{"name":"div","attrs":[],"children":[["","hello"]]}]})');
+
+        return v.sendRet;
+      });
       webServer.requestListener(v.req, v.res);
 
-      assert.same(v.future.wait(), undefined);
-      assert.calledWith(v.res.write, TH.match(function (data) {
-        return data.toString() === 'define({"name":"Test.WebServer","nodes":[{"name":"div","attrs":[],"children":[["","hello"]]}]})';
-      }));
+      assert.same(v.future.wait(), v.res);
 
-      assert.calledWith(v.res.setHeader, 'Content-Type', 'application/javascript');
+      assert.calledWith(v.sendRet.on, 'error', TH.match.func);
+      assert.calledWith(v.sendRet.on, 'directory', TH.match.func);
     },
   });
 });

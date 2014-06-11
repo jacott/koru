@@ -22,10 +22,12 @@
     "kexec": "0.2.0",
     "requirejs": "2.1.14",
     "ws": "0.4.31",
-    "send": "0.3.0",
+    "send": "0.4.2",
     "parseurl": "1.0.1",
-    "less": "1.7.0",
-    "mongodb": "1.4.4"
+    "less": "1.7.1",
+    "mongodb": "1.4.5",
+    "simplesmtp": "0.3.32",
+    "mailcomposer": "0.2.11"
   },
   "devDependencies": {
     "htmlparser2": "3.7.1",

@@ -33,6 +33,12 @@ define(function (require, exports, module) {
   exports.compilers = {};
   exports.requestListener = requestListener;
 
+  // testing
+  exports._send = send;
+  exports._replaceSend = function (value) {
+    send = value;
+  };
+
   function requestListener(req, res) {env.Fiber(function () {
     try {
       var path = parseurl(req).pathname;
