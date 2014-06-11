@@ -54,10 +54,12 @@ define(function(require, exports, module) {
           BaseModel._addUserIds(changes, model.userIds, util.thread.userId);
           BaseModel._updateTimestamps(changes, model.createTimestamps, now);
 
-          changes = util.extend(doc.attributes,changes);
+          changes = util.extend(doc.attributes, changes);
           _support.performInsert(doc);
         } else {
+          var copy = util.deepCopy(changes);
           _support.performUpdate(doc, changes);
+          util.applyChanges(doc.attributes, copy);
         }
 
         return doc;

@@ -503,6 +503,7 @@ define(function (require, exports, module) {
 
         doc.name = 'new';
         doc.$save();
+        assert.same(doc.name, 'new');
 
         doc.$reload();
         assert.same(doc.name, 'new');
