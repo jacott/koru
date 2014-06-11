@@ -7,6 +7,7 @@ isServer && define(function (require, exports, module) {
   var env = require('../env');
   var SRP = require('../srp/srp');
   var Email = require('../email');
+  var Val = require('../model/validation');
 
   TH.testCase(module, {
     setUp: function () {
@@ -18,6 +19,9 @@ isServer && define(function (require, exports, module) {
       v.lu = userAccount.model.create({
         userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now()}});
+
+      test.spy(Val, 'permitParams');
+      test.spy(Val, 'ensureString');
     },
 
     tearDown: function () {
@@ -33,8 +37,8 @@ isServer && define(function (require, exports, module) {
         test.stub(Email, 'send');
         v.emailConfig = userAccount.emailConfig;
         userAccount.emailConfig = {
-          sendResetPasswordEmailText: function (lu) {
-            return "userid: " + lu.userId + " token: " + lu.resetToken;
+          sendResetPasswordEmailText: function (userId, token) {
+            return "userid: " + userId + " token: " + token;
           },
 
           from: 'Koru <koru@obeya.co>',
@@ -49,9 +53,7 @@ isServer && define(function (require, exports, module) {
       "test send": function () {
         userAccount.sendResetPasswordEmail('uid111');
 
-        var token = v.lu.$reload().resetToken;
         var tokenExp =  v.lu.$reload().resetTokenExpire;
-        assert(token && token.indexOf(v.lu._id+'_') === 0);
 
         assert.between(tokenExp, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
 
@@ -59,7 +61,7 @@ isServer && define(function (require, exports, module) {
           from: 'Koru <koru@obeya.co>',
           to: 'foo@bar.co',
           subject: 'How to reset your password on Koru',
-          text: 'userid: uid111 token: ' + v.lu.resetToken,
+          text: 'userid: uid111 token: ' + v.lu._id+'_'+v.lu.resetToken,
         });
       },
     },
@@ -144,6 +146,41 @@ isServer && define(function (require, exports, module) {
       },
     },
 
+    "resetPassword": {
+      "test invalid resetToken": function () {
+        assert.exception(function () {
+          session._rpcs.resetPassword.call(v.conn, 'token', {identity: 'abc123'});
+        }, {error: 404, reason: 'Expired or invalid reset request'});
+
+        assert.exception(function () {
+          session._rpcs.resetPassword.call(v.conn, v.lu._id+'_badtoken', {identity: 'abc123'});
+        }, {error: 404, reason: 'Expired or invalid reset request'});
+      },
+
+      "test expired token": function () {
+        v.lu.resetToken = 'secretToken';
+        v.lu.resetTokenExpire = Date.now() -5;
+        v.lu.$$save();
+
+        assert.exception(function () {
+          session._rpcs.resetPassword.call(v.conn, v.lu._id+'_secretToken', {identity: 'abc123'});
+        }, {error: 404, reason: 'Expired or invalid reset request'});
+      },
+
+      "test success": function () {
+        v.lu.resetToken = 'secretToken';
+        v.lu.resetTokenExpire = Date.now() + 2000;
+        v.lu.$$save();
+        session._rpcs.resetPassword.call(v.conn, v.lu._id+'_secretToken', {identity: 'abc123'});
+
+        assert.calledWith(Val.ensureString, v.lu._id+'_secretToken');
+        assert.calledWith(Val.permitParams, {identity: 'abc123'}, { identity: true, salt: true, verifier: true });
+        assert.same(v.conn.userId, v.lu.userId);
+        v.lu.$reload();
+        assert.equals(v.lu.srp, {identity: 'abc123'});
+      },
+    },
+
     "changePassword": {
       setUp: function () {
         v.srp = new SRP.Client('secret');
@@ -158,9 +195,12 @@ isServer && define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         result = session._rpcs.SRPChangePassword.call(v.conn, response);
 
+        assert.calledWith(Val.permitParams, response.newPassword, { identity: true, salt: true, verifier: true });
+
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
-        assert(SRP.checkPassword('new pw', v.lu.$reload().srp));
+        v.lu.$reload();
+        assert.equals(response.newPassword, v.lu.srp);
       },
 
       "test wrong password": function () {

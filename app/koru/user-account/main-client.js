@@ -64,8 +64,8 @@ define(function(require, exports, module) {
       );
     },
 
-    resetPassword: function () {
-
+    resetPassword: function (key, secret, callback) {
+      session.rpc('resetPassword', key, SRP.generateVerifier(secret), callback);
     },
 
     logout: function () {

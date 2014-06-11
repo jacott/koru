@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Email = require('../email');
 
-  session.provide('V', validateLoginToken);
+  session.provide('V', onMessage);
 
   var model = Model.define('UserLogin', {
     unexpiredTokens: function () {
@@ -90,6 +90,20 @@ define(function(require, exports, module) {
     return result;
   });
 
+  session.defineRpc('resetPassword', function (token, passwordHash) {
+    Val.ensureString(token);
+    Val.permitParams(passwordHash, VERIFIER_SPEC);
+    var parts = token.split('_');
+    var lu = model.findById(parts[0]);
+    if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
+      lu.srp = passwordHash;
+      lu.$$save();
+      this.userId = lu.userId;
+      return;
+    }
+    throw new env.Error(404, 'Expired or invalid reset request');
+  });
+
   util.extend(exports, {
     model: model,
 
@@ -107,7 +121,7 @@ define(function(require, exports, module) {
 
       var rand = Random.create();
 
-      lu.resetToken = lu._id+'_'+Random.id()+rand.id();
+      lu.resetToken = Random.id()+rand.id();
       lu.resetTokenExpire = Date.now() + 24*60*60*1000;
       lu.$$save();
 
@@ -115,12 +129,12 @@ define(function(require, exports, module) {
         from: exports.emailConfig.from,
         to: lu.email,
         subject: 'How to reset your password on ' + exports.emailConfig.siteName,
-        text: exports.emailConfig.sendResetPasswordEmailText(lu),
+        text: exports.emailConfig.sendResetPasswordEmailText(lu.userId, lu._id + '_' + lu.resetToken),
       });
     },
   });
 
-  function validateLoginToken(data) {
+  function onMessage(data) {
     var conn = this;
     var cmd = data[0];
     switch(cmd) {

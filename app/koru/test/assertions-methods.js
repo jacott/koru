@@ -116,8 +116,24 @@ define(['./core', './assertions'], function (geddon) {
 
   ga.add('exception', {
     assert:  function (func, name, message) {
-      try {func();}
+      try {
+        this.message = (func() || '').toString();
+        this.name = 'but function did not throw';
+      }
       catch(ex) {
+        if (typeof name === 'object') {
+          var result = true;
+          this.name = ex.toString();
+          this.message = {};
+          for(var key in name) {
+            if (! ex.hasOwnProperty(key)) throw ex;
+            if (name[key] != ex[key]) {
+              this.message[key] = ex[key];
+              result = false;
+            }
+          }
+          return result;
+        }
         this.name = ex.name;
         this.message = ex.message;
         if (name && ex.name !== name) return false;
@@ -127,7 +143,7 @@ define(['./core', './assertions'], function (geddon) {
       return false;
     },
 
-    message: "an exception to be thrown: {i$name}, {i$message}"
+    message: "an exception to be thrown: {i$name} {i$message}"
   });
 
   ga.add("className", {

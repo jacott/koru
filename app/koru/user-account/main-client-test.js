@@ -186,7 +186,11 @@ isClient && define(function (require, exports, module) {
 
       },
 
-      "//test resetPassword": function () {
+      "test resetPassword": function () {
+        userAccount.resetPassword('the key', 'new password', v.callback = test.stub());
+        assert.calledWith(session.rpc, 'resetPassword', 'the key', TH.match(function (hash) {
+          return SRP.checkPassword('new password', hash);
+        }), v.callback);
       },
 
       "test logout": function () {
