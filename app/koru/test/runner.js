@@ -132,7 +132,11 @@ define(['./core'], function (geddon) {
     try {
       var cbs = test.__testEnd;
       if (cbs) for(var i=0;i < cbs.length;++i) {
-        cbs[i].call(test);
+        var func = cbs[i];
+        if (typeof func === 'function')
+          func.call(test);
+        else
+          func.stop();
       }
       test.tc.runTearDown(test);
     } catch(ex) {

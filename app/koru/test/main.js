@@ -27,6 +27,8 @@ define(function(require, exports, module) {
 
     match: geddon.sinon.match,
 
+    get test() {return geddon.test},
+
     run: function (pattern, tests) {
       if (isClient) document.title = 'Running: ' + document.title;
       console.log('*** test-start ' + ++testRunCount);

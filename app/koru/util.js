@@ -27,6 +27,23 @@ define(function(require, exports, module) {
       return obj;
     },
 
+    /**
+     * Fixes NaN === NaN (should be true) and
+     * -0 === +0 (should be false)
+     *  http://wiki.ecmascript.org/doku.php?id=harmony:egal
+     */
+    egal: egal,
+
+    /**
+     * Only for undefined, null, number, string, boolean, date, array
+     * and object. All the immutable types are compared with
+     * egal. Dates are compared via getTime. Array and Object
+     * enumerables with deepEqual.
+     *
+     * Any other types will always return false.
+     */
+    deepEqual: deepEqual,
+
     lookupDottedValue: function (key, attributes) {
       var parts = key.split('.');
       var val = attributes[parts[0]];
@@ -37,35 +54,53 @@ define(function(require, exports, module) {
     },
 
     applyChanges: function (attrs, changes) {
-      for(var attr in changes) {
-        var nv = Object.getOwnPropertyDescriptor(changes, attr);
-        var index = attr.indexOf(".");
-
-        if (index === -1) {
-          var ov = Object.getOwnPropertyDescriptor(attrs, attr);
-          if (nv.value === undefined)
-            delete attrs[attr];
-          else
-            Object.defineProperty(attrs, attr, nv);
-
-        } else { // update part of attribute
-          var ov, parts = attr.split(".");
-          var curr = attrs;
-          for(var i = 0; i < parts.length - 1; ++i) {
-            var part = parts[i];
-            curr = curr[part] || (curr[part] = {});
-          }
-          ov = Object.getOwnPropertyDescriptor(curr, parts[i]);
-          if (nv.value === undefined)
-            delete curr[parts[i]];
-          else
-            Object.defineProperty(curr, parts[i], nv);
-        }
-
-        Object.defineProperty(changes, attr, ov ? ov : valueUndefined);
+      for(var key in changes) {
+        var nv = Object.getOwnPropertyDescriptor(changes, key);
+        var ov = util.applyChange(attrs, key, nv);
+        if (deepEqual(nv.value, ov.value))
+          delete changes[key];
+        else
+          Object.defineProperty(changes, key, ov);
       }
 
       return attrs;
+    },
+
+    applyChange: function (attrs, key, nv) {
+      var index = key.indexOf(".");
+
+      if (index === -1) {
+        var ov = Object.getOwnPropertyDescriptor(attrs, key);
+        if (nv.value === undefined)
+          delete attrs[key];
+        else
+          Object.defineProperty(attrs, key, nv);
+
+      } else { // update part of attribute
+        var ov, parts = key.split(".");
+        var curr = attrs;
+        for(var i = 0; i < parts.length - 1; ++i) {
+          var part = parts[i];
+          if (isArray(curr)) {
+            part = +parts[i];
+            if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
+          }
+          curr = curr[part] || (curr[part] = {});
+        }
+        ov = Object.getOwnPropertyDescriptor(curr, parts[i]);
+        if (nv.value === undefined)
+          delete curr[parts[i]];
+        else {
+          if (isArray(curr)) {
+            part = +parts[i];
+            if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
+            curr[part] = nv.value;
+          } else {
+            Object.defineProperty(curr, parts[i], nv);
+          }
+        }
+      }
+      return ov ? ov : valueUndefined;
     },
 
 
@@ -233,9 +268,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    isArray: function (arr) {
-      return Object.prototype.toString.call(arr) == "[object Array]";
-    },
+    isArray: isArray,
 
     diff: function (a, b) {
       var result = [];
@@ -411,35 +444,80 @@ define(function(require, exports, module) {
     }});
   }
 
+  function egal(x, y) {
+    if (x === y) {
+      // 0 === -0, but they are not identical
+      return x !== 0 || 1 / x === 1 / y;
+    }
+
+    // NaN !== NaN, but they are identical.
+    // NaNs are the only non-reflexive value, i.e., if x !== x,
+    // then x is a NaN.
+    // isNaN is broken: it converts its argument to number, so
+    // isNaN("foo") => true
+    return x !== x && y !== y;
+  }
+
+  function isArray(arr) {
+    return Object.prototype.toString.call(arr) == "[object Array]";
+  }
+
+  function deepEqual(expected, actual) {
+    if (egal(expected, actual)) {
+      return true;
+    }
+
+    if (typeof expected !== 'object' || typeof actual !== 'object') return false;
+
+    if (expected.getTime && actual.getTime) return expected.getTime() === actual.getTime();
+
+    if (isArray(expected)) {
+      if (! isArray(actual)) return false;
+      var len = expected.length;
+      if (actual.length !== len) return false;
+      for(var i = 0; i < len; ++i) {
+        if (! deepEqual(expected[i], actual[i])) return false;
+      }
+      return true;
+    }
+
+    var ekeys = Object.keys(expected);
+
+    if (Object.keys(actual).length !== ekeys.length) return false;
+    return ekeys.every(function (key) {
+      return deepEqual(expected[key], actual[key]);
+    });
+  }
+
+  function colorToArray(color) {
+    if (typeof color !== 'string') return color;
+    var result = [];
+    var m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
+    if (m) {
+      for(var i = 1; i < 4; ++i) {
+        result.push(parseInt('0x'+m[i]));
+      }
+      result.push(m[4] ? Math.round(parseInt('0x'+m[i])*100/256)/100 : 1);
+      return result;
+    }
+    m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
+    if (m) {
+      for(var i = 1; i < 4; ++i) {
+        result.push(parseInt(m[i]));
+      }
+      result.push(m[4] ? parseFloat(m[i]) : 1);
+      return result;
+    }
+    m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
+    if (m) {
+      for(var i = 1; i < 4; ++i) {
+        result.push(parseInt('0x'+m[i]+m[i]));
+      }
+      result.push(1);
+      return result;
+    }
+  }
+
   return util;
+
 });
-
-
-function colorToArray(color) {
-  if (typeof color !== 'string') return color;
-  var result = [];
-  var m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
-  if (m) {
-    for(var i = 1; i < 4; ++i) {
-      result.push(parseInt('0x'+m[i]));
-    }
-    result.push(m[4] ? Math.round(parseInt('0x'+m[i])*100/256)/100 : 1);
-    return result;
-  }
-  m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
-  if (m) {
-    for(var i = 1; i < 4; ++i) {
-      result.push(parseInt(m[i]));
-    }
-    result.push(m[4] ? parseFloat(m[i]) : 1);
-    return result;
-  }
-  m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
-  if (m) {
-    for(var i = 1; i < 4; ++i) {
-      result.push(parseInt('0x'+m[i]+m[i]));
-    }
-    result.push(1);
-    return result;
-  }
-}

@@ -63,6 +63,38 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
+    "test egal": function () {
+      assert.isTrue(util.egal(null, null));
+      assert.isTrue(util.egal(NaN, NaN));
+      assert.isTrue(util.egal(-0, -0));
+      assert.isTrue(util.egal("str", "str"));
+      assert.isTrue(util.egal(0, 0));
+      assert.isTrue(util.egal(Infinity, Infinity));
+      assert.isTrue(util.egal(-Infinity, -Infinity));
+      assert.isTrue(util.egal(1, 1));
+      assert.isTrue(util.egal(true, true));
+
+      assert.isFalse(util.egal(true, false));
+      assert.isFalse(util.egal(null, undefined));
+      assert.isFalse(util.egal("", 0));
+      assert.isFalse(util.egal(0, -0));
+      assert.isFalse(util.egal(Infinity, -Infinity));
+      assert.isFalse(util.egal(NaN, 1));
+      assert.isFalse(util.egal(1, 2));
+      assert.isFalse(util.egal("a", "b"));
+    },
+
+    "test deepEqual": function () {
+      assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+
+      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
+      assert.isFalse(util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}}, {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+
+      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
+
+      assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
+    },
+
     "test extendWithDelete": function () {
       var orig = {a: 1, b: 2, c: 3};
       var changes = {a: 2, b: undefined, d: 4};
@@ -73,6 +105,17 @@ define(function (require, exports, module) {
 
     "test lookupDottedValue": function () {
       assert.same(util.lookupDottedValue("foo.1.bar.baz", {a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
+    },
+
+    "test applyChange with non numeric array index": function () {
+      // say "foo.bar.baz" instead of "foo.0.baz"
+      assert.exception(function () {
+        util.applyChange({a: [{b: [1]}]}, "a.0.b.x", {value: 2});
+      }, 'Error', "Non numeric index for array: 'x'");
+
+      assert.exception(function () {
+        util.applyChange({a: [{b: [1]}]}, "a.x.b.0", {value: 2});
+      }, 'Error', "Non numeric index for array: 'x'");
     },
 
     "test applyChanges with objects": function () {
@@ -88,6 +131,15 @@ define(function (require, exports, module) {
 
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'}, d: 4, new: {deep: {list: 'deeplist'}}});
       assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
+    },
+
+    "test already applied applyChanges": function () {
+      var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+      var changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(changes, {c: 3});
     },
 
     "test applyChanges with empty array": function () {

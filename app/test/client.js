@@ -9,7 +9,7 @@ requirejs.config({
 window.history.replaceState(null, document.title = 'Koru Test Mode', '/');
 
 define(function(require, exports, module) {
-  var env = require('koru/client');
+  var env = require('koru/env');
   var session = require('koru/session/main');
 
   env.onunload(module, 'reload');

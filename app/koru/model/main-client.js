@@ -81,11 +81,7 @@ define(function(require, exports, module) {
       clientIndex(model);
     },
 
-    insert: function (doc) {
-      var model = doc.constructor;
-      model.docs[doc._id] = doc;
-      model.notify(doc, null);
-    },
+    insert: Query.insert,
 
     _insertAttrs: function (model, attrs) {
       model.docs[attrs._id] = new model(attrs);

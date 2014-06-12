@@ -14,13 +14,13 @@ define(function(require, exports, module) {
   function added(model, id, attrs) {
     attrs._id = id;
     var doc = new model(attrs);
-    publish._matches(doc) && ModelEnv.insert(doc);
+    publish._matches(doc) && Query.insertFromServer(model, id, attrs);
   }
 
   function changed(model, id, attrs) {
     attrs._id = id;
     var doc = model.findById(id);
-    var query = new Query(model).onId(id);
+    var query = new Query(model).fromServer(id);
     if (publish._matches(doc))
       query.update(attrs);
     else
@@ -31,8 +31,7 @@ define(function(require, exports, module) {
     data = message.decodeMessage(data);
     var model = Model[data[0]];
     var id =  data[1];
-    var doc = model.findById(id);
-    new Query(model).onId(id).remove();
+    new Query(model).fromServer(id).remove();
   }
 
   function modelUpdate(func) {

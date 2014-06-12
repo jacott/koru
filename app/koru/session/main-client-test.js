@@ -96,7 +96,7 @@ define(function (require, exports, module) {
         session.rpc('foo.rpc', 1, 2, 3);
       });
 
-      assert.called(v.sendBinary, 'M', session._msgId.toString(36)+"|foo.rpc"+JSON.stringify([1, 2, 3]));
+      assert.calledWith(v.sendBinary, 'M', [session._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },
 
     "test rpc": function () {

@@ -50,10 +50,10 @@ define(function (require, exports, module) {
         var msgId = (++session._msgId).toString(36);
         var data = [msgId, name];
         args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
-        for(var one in waitMs) {break;}
-        one || session.rpc.notify(true);
+        session.rpc.waiting() || session.rpc.notify(true);
         waitMs[msgId] = [data, func];
         state === 'ready' && session.sendBinary('M', data);
+        return msgId;
       },
       sendP:function (id, name, args) {
         session.sendBinary('P', util.slice(arguments));
@@ -115,8 +115,7 @@ define(function (require, exports, module) {
       var args = waitMs[msgId];
       if (! args) return;
       delete waitMs[msgId];
-      for(var one in waitMs) {break;}
-      one || session.rpc.notify(false);
+      session.rpc.waiting() || session.rpc.notify(false);
       if (! args[1]) return;
       var type = data[1];
       data = data[2];

@@ -3,10 +3,12 @@ Issues and Ideas
 
 
 * Client: On setUserId
+   (is this already done?)
    resubscribe and match all changed matchers. Maybe limit matchers to
    one model per subscription
 
 * Change when no existing record
+   (do we need this?)
    should request it via method fetchIdFromServer. The server will
    check if a matcher accepts the client.
 
