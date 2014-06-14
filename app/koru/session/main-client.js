@@ -15,6 +15,7 @@ define(function (require, exports, module) {
     var retryCount = 0;
     var versionHash;
     var isSimulation = false;
+    var reconnTimeout;
 
     util.extend(session, {
       _msgId: 0,
@@ -61,6 +62,8 @@ define(function (require, exports, module) {
 
       get isSimulation() {return isSimulation},
 
+      get state() {return state},
+
       _onConnect: [],
       onConnect: function (func) {
         this._onConnect.push(func);
@@ -73,6 +76,8 @@ define(function (require, exports, module) {
       connect: connect,
 
       stop: function () {
+        reconnTimeout && clearTimeout(reconnTimeout);
+        reconnTimeout = null;
         state = 'closed';
         try {
           connect._ws && connect._ws.close();
@@ -88,9 +93,8 @@ define(function (require, exports, module) {
         waitMs = {};
       },
 
-      get _waitFuncs() {
-        return waitFuncs;
-      },
+      get _waitMs() {return waitMs},
+      get _waitFuncs() {return waitFuncs},
     });
 
     makeSubject(session.rpc);
@@ -138,7 +142,7 @@ define(function (require, exports, module) {
     });
 
     function url() {
-      var location = window.document.location;
+      var location = env.getLocation();
       return location.protocol.replace(/^http/,'ws')+'//' + location.host;
     }
 
@@ -148,8 +152,8 @@ define(function (require, exports, module) {
       var conn = {
         ws: ws,
       };
-      ws.onopen = function (event) {
-        ws.send('X1'+ env.util.engine);
+      ws.onopen = function () {
+        ws.send('X1');
         state = 'ready';
 
         for(var i = 0; i < session._onConnect.length; ++i) {
@@ -166,6 +170,14 @@ define(function (require, exports, module) {
           ws.send(typeof item === 'string' ? item : message.encodeMessage.apply(message, item));
         }
         waitFuncs = [];
+
+        Object.keys(waitMs).sort(function (a, b) {
+          if (a.length < b.length) return -1;
+          if (a.length > b.length) return 1;
+          return (a < b) ? -1 : a === b ? 0 : 1;
+        }).forEach(function (msgId) {
+          session.sendBinary('M', waitMs[msgId][0]);
+        });
       };
 
       ws.onmessage = function (event) {
@@ -182,7 +194,7 @@ define(function (require, exports, module) {
 
         state = 'retry';
 
-        setTimeout(connect, retryCount*500);
+        reconnTimeout = setTimeout(connect, retryCount*500);
       };
     }
 

@@ -1,221 +1,264 @@
 define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
-  var session = require('./main');
   var util = require('../util');
   var message = require('./message');
   var clientSession = require('./main-client');
+  var env = require('../env');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.send = test.stub(session, 'send');
-      v.sendBinary = test.stub(session, 'sendBinary');
-      session._forgetMs();
+      v.sess = clientSession({
+        provide: test.stub(),
+        _rpcs: {},
+      });
+      v.sess.newWs = test.stub().returns(v.ws = {
+        send: test.stub(),
+        close: test.stub(),
+      });
+      assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
+        v.recvM = function () {
+          func(message.encodeMessage('M', util.slice(arguments)).subarray(1));
+        };
+        return true;
+      }));
     },
 
     tearDown: function () {
-      session._forgetMs();
       v = null;
-      delete session._rpcs['foo.rpc'];
-      delete session._rpcs['foo.s2'];
     },
 
-    "connect": {
-      setUp: function () {
-        v.origOnConnect = session._onConnect;
-        session._onConnect = [];
-      },
+    "test connection cycle": function () {
+      v.sess.onConnect(v.onConStub = test.stub());
 
-      tearDown: function () {
-        session._onConnect = v.origOnConnect;
-      },
+      assert.same(v.sess._onConnect[0], v.onConStub);
 
+      test.stub(env, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
-      "test onConnect": function () {
-        session.onConnect(v.stub = test.stub);
+      v.sess.connect();         // connect
 
-        assert.same(session._onConnect[0], v.stub);
-      },
+      assert.calledWith(v.sess.newWs, 'wss://test.host:123');
+      refute.called(v.onConStub);
+      assert.same(v.sess.state, 'closed');
 
-      /**
-       * Ensure docs are tested against matches after subscriptions have returned.
-       * Any unwanted docs should be removed.
-       */
-      "//test reconnect": function () {
-      },
+      v.ws.onopen();            // connect success
+
+      assert.same(v.sess.state, 'ready');
+      assert.called(v.onConStub);
+
+      test.stub(window, 'setTimeout').returns('c123');
+      test.stub(window, 'clearTimeout');
+      test.stub(env, 'info');
+
+      v.ws.onclose({});         // remote close
+
+      assert.same(v.sess.state, 'retry');
+      assert.calledWith(setTimeout, v.sess.connect, 500);
+
+      v.sess.stop();            // local stop
+
+      assert.calledWith(clearTimeout, 'c123');
+      assert.same(v.sess.state, 'closed');
+      v.onConStub.reset();
+
+      v.sess.connect();         // reconnect
+      v.ws.onopen();            // success
+
+      assert.called(v.onConStub);
     },
 
-    "test sendBinary": function () {
-      v.sendBinary.restore();
-      v.stub = test.stub(session.connect._ws, 'send');
-      session.sendBinary('M', [1,2,3,4]);
+    "test before connected": function () {
+      test.stub(message, 'encodeMessage', function (type, msg) {
+        return ['x', type, msg];
+      });
+      v.sess.sendBinary('P', [null]);
+      v.sess.sendBinary('M', [1]);
+      v.sess.send('S', 'Labc');
 
-      assert.calledWith(v.stub, TH.match(function (data) {
-        assert.same(data[0], 'M'.charCodeAt(0));
-        assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3,4]);
-        return true;
-      }));
+      assert.equals(v.sess._waitFuncs, [['P', [null]], ['M', [1]], 'SLabc']);
+
+      v.sess.connect();
+      v.ws.onopen();
+
+      assert.calledWith(v.ws.send, 'X1');
+      assert.calledWith(v.ws.send, ["x", "P", [null]]);
+      assert.calledWith(v.ws.send, ["x", "M", [1]]);
+      assert.calledWith(v.ws.send, 'SLabc');
     },
 
-    "with stubbed session": {
-      setUp: function () {
-        v.sessStub = {
-          provide: test.stub(),
-        };
-        v.sess = clientSession(v.sessStub);
-        v.sess.newWs = test.stub().returns(v.ws = {
-          send: test.stub(),
-        });
-      },
 
-      "test when not ready to send": function () {
-        test.stub(message, 'encodeMessage', function (type, msg) {
-          return ['x', type, msg];
-        });
-        v.sess.sendBinary('P', [null]);
-        v.sess.sendBinary('M', [1]);
-        v.sess.send('S', 'Labc');
-
-        assert.equals(v.sess._waitFuncs, [['P', [null]], ['M', [1]], 'SLabc']);
-
+    /**
+     * Ensure docs are tested against matches after subscriptions have returned.
+     * Any unwanted docs should be removed.
+     */
+    "reconnect": {
+      "test replay messages": function () {
         v.sess.connect();
-
         v.ws.onopen();
+        v.sess.rpc("foo.bar", 1, 2);
+        v.sess.rpc("foo.baz", 1, 2);
+        v.sess.stop();
+        v.sendBinary = test.stub(v.sess, 'sendBinary');
+        v.recvM("1", 'r');
 
-        assert.calledWith(v.ws.send, 'X1'+util.engine);
-        assert.calledWith(v.ws.send, ["x", "P", [null]]);
-        assert.calledWith(v.ws.send, ["x", "M", [1]]);
-        assert.calledWith(v.ws.send, 'SLabc');
+        v.sess.connect(); v.ws.onopen();
+
+        assert.calledWith(v.sendBinary, 'M', ["2", "foo.baz", 1, 2]);
+        assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
       },
     },
 
-    "test server only rpc": function () {
-      refute.exception(function () {
-        session.rpc('foo.rpc', 1, 2, 3);
-      });
+    "open connection": {
+      setUp: function () {
+        v.sess.connect();
+        v.ws.onopen();
+        v.sendBinary = test.stub(v.sess, 'sendBinary');
+      },
 
-      assert.calledWith(v.sendBinary, 'M', [session._msgId.toString(36), "foo.rpc", 1, 2, 3]);
-    },
+      "test stop": function () {
+        v.sess.stop();
 
-    "test rpc": function () {
-      var fooId;
-      session.defineRpc('foo.rpc', rpcSimMethod);
-      session.defineRpc('foo.s2', rpcSimMethod2);
+        assert.calledOnce(v.ws.close);
+      },
 
-      assert.isFalse(session.isSimulation);
-      session.rpc('foo.rpc', 1, 2, 3);
-      assert.isFalse(session.isSimulation);
+      "test sendBinary": function () {
+        v.sendBinary.restore();
+        v.sess.sendBinary('M', [1,2,3,4]);
 
-      assert.equals(v.args, [1, 2, 3]);
-      assert.same(v.thisValue, util.thread);
+        assert.calledWith(v.ws.send, TH.match(function (data) {
+          if (data[0] === 'M'.charCodeAt(0)) {
+            assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3,4]);
+            return true;
+          }
+        }));
+      },
 
-      assert.same(session._msgId, fooId);
+      "test sendP": function () {
+        v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
-      session.rpc('foo.s2');
+        assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
 
-      assert.same(session._msgId, fooId+1);
+        v.sess.sendP('12');
 
-      function rpcSimMethod(one, two, three) {
-        v.thisValue = this;
-        v.args = util.slice(arguments);
-        fooId = session._msgId;
-        assert.calledWith(v.sendBinary, 'M', [fooId.toString(36), "foo.rpc"].concat(v.args));
-        v.send.reset();
-        assert.isTrue(session.isSimulation);
-        session.rpc('foo.s2', 'aaa');
-        assert.same(session._msgId, fooId);
+        assert.calledWith(v.sendBinary, 'P', ['12']);
+      },
 
-        assert.isTrue(session.isSimulation);
-        assert.same(v.s2Name, 'aaa');
-        assert.same(v.s2This, util.thread);
-        refute.called(v.send);
+      "test rpc": function () {
+        var fooId;
+        v.sess._rpcs['foo.rpc'] = rpcSimMethod;
+        v.sess._rpcs['foo.s2'] = rpcSimMethod2;
+
+        assert.isFalse(v.sess.isSimulation);
+        v.sess.rpc('foo.rpc', 1, 2, 3);
+        assert.isFalse(v.sess.isSimulation);
+
+        assert.equals(v.args, [1, 2, 3]);
+        assert.same(v.thisValue, util.thread);
+
+        assert.same(v.sess._msgId, fooId);
+
+        v.sess.rpc('foo.s2');
+
+        assert.same(v.sess._msgId, fooId+1);
+
+        function rpcSimMethod(one, two, three) {
+          v.thisValue = this;
+          v.args = util.slice(arguments);
+          fooId = v.sess._msgId;
+          assert.calledWith(v.sendBinary, 'M', [fooId.toString(36), "foo.rpc"].concat(v.args));
+          v.ws.send.reset();
+          assert.isTrue(v.sess.isSimulation);
+          v.sess.rpc('foo.s2', 'aaa');
+          assert.same(v.sess._msgId, fooId);
+
+          assert.isTrue(v.sess.isSimulation);
+          assert.same(v.s2Name, 'aaa');
+          assert.same(v.s2This, util.thread);
+          refute.called(v.ws.send);
+        }
+
+        function rpcSimMethod2(name) {
+          v.s2Name = name;
+          v.s2This = this;
+          assert.isTrue(v.sess.isSimulation);
+        }
+      },
+
+      "test server only rpc": function () {
+        refute.exception(function () {
+          v.sess.rpc('foo.rpc', 1, 2, 3);
+        });
+
+        assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
+      },
+
+      "test callback rpc": function () {
+        v.sess._rpcs['foo.rpc'] = rpcSimMethod;
+
+        v.sess.rpc('foo.rpc', 'a');
+        assert.equals(v.args, ['a']);
+
+        v.sess.rpc('foo.rpc', 'b', v.bstub = test.stub());
+        assert.equals(v.args, ['b']);
+
+        v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
+        var msgId = v.sess._msgId;
+
+        v.recvM(msgId.toString(36), 'e', '404,error Msg');
+
+        assert.calledWithExactly(v.cstub, TH.match(function (err) {
+          assert.same(err.error, 404);
+          assert.same(err.reason, 'error Msg');
+          return true;
+        }));
+
+        v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
+        v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
+
+        assert.calledOnce(v.bstub);
+
+        assert.calledWithExactly(v.bstub, null, TH.match(function (result) {
+          assert.equals(result, [1,2,3]);
+          return true;
+        }));
+
+        function rpcSimMethod() {
+          v.args = util.slice(arguments);
+        }
+      },
+
+      "test onChange rpc": function () {
+        var handle = v.sess.rpc.onChange(v.ob = test.stub());
+        test.onEnd(function () {
+          handle.stop();
+        });
+
+        assert.isFalse(v.sess.rpc.waiting());
+
+        v.sess.sendM('foo.rpc', [1, 2]);
+
+        assert.calledOnceWith(v.ob, true);
+
+        v.sess.sendM('foo.rpc');
+        assert.calledOnce(v.ob);
+
+        assert.isTrue(v.sess.rpc.waiting());
+
+        v.ob.reset();
+
+        var msgId = v.sess._msgId;
+        v.recvM((msgId - 1).toString(36), 'r');
+
+        refute.called(v.ob);
+
+        v.recvM(msgId.toString(36), 'r');
+
+        assert.calledWith(v.ob, false);
+
+        assert.isFalse(v.sess.rpc.waiting());
       }
-
-      function rpcSimMethod2(name) {
-        v.s2Name = name;
-        v.s2This = this;
-        assert.isTrue(session.isSimulation);
-      }
     },
-
-    "test callback rpc": function () {
-      session.defineRpc('foo.rpc', rpcSimMethod);
-
-      session.rpc('foo.rpc', 'a');
-      assert.equals(v.args, ['a']);
-
-      session.rpc('foo.rpc', 'b', v.bstub = test.stub());
-      assert.equals(v.args, ['b']);
-
-      session.rpc('foo.rpc', 'c', v.cstub = test.stub());
-      var msgId = session._msgId;
-
-      session._onMessage({}, message.encodeMessage('M', [msgId.toString(36), 'e', '404,error Msg']));
-
-      assert.calledWithExactly(v.cstub, TH.match(function (err) {
-        assert.same(err.error, 404);
-        assert.same(err.reason, 'error Msg');
-        return true;
-      }));
-
-      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r', [1,2,3]]));
-
-      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r', [1,2,3]]));
-
-      assert.calledOnce(v.bstub);
-
-      assert.calledWithExactly(v.bstub, null, TH.match(function (result) {
-        assert.equals(result, [1,2,3]);
-        return true;
-      }));
-
-      function rpcSimMethod() {
-        v.args = util.slice(arguments);
-      }
-    },
-
-    "test onChange rpc": function () {
-      var handle = session.rpc.onChange(v.ob = test.stub());
-      test.onEnd(function () {
-        handle.stop();
-      });
-
-      assert.isFalse(session.rpc.waiting());
-
-      session.sendM('foo.rpc', [1, 2]);
-
-      assert.calledOnceWith(v.ob, true);
-
-      session.sendM('foo.rpc');
-      assert.calledOnce(v.ob);
-
-      assert.isTrue(session.rpc.waiting());
-
-      v.ob.reset();
-
-      var msgId = session._msgId;
-      session._onMessage({}, message.encodeMessage('M', [(msgId - 1).toString(36), 'r']));
-
-      refute.called(v.ob);
-
-      session._onMessage({}, message.encodeMessage('M', [msgId.toString(36), 'r']));
-
-      assert.calledWith(v.ob, false);
-
-      assert.isFalse(session.rpc.waiting());
-    },
-
-    "test sendP": function () {
-      session.sendP('id', 'foo', [1, 2, 'bar']);
-
-      assert.calledWith(session.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
-
-      session.sendP('12');
-
-      assert.calledWith(session.sendBinary, 'P', ['12']);
-    },
-
   });
 });
