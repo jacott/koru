@@ -10,9 +10,12 @@ window.history.replaceState(null, document.title = 'Koru Test Mode', '/');
 
 define(function(require, exports, module) {
   var env = require('koru/env');
-  var session = require('koru/session');
+  require('koru/session/main-client');
 
   env.onunload(module, 'reload');
 
-  session.connect();
+  // load session with lowest priority
+  require(['koru/session'], function (session) {
+    session.connect();
+  });
 });

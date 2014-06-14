@@ -35,7 +35,7 @@
     (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
   }
 
-  function unload(id) {
+  function unload(id, error) {
     if (! requirejs.defined(id)) return;
 
     var deps = providerMap[id];
@@ -49,13 +49,13 @@
     if (deps) {
       providerMap[id] = 'unloading';
       for(var key in deps) {
-        unload(key);
+        unload(key, error);
       }
       delete providerMap[id];
     }
 
     if (typeof onunload === 'function')
-      onunload(id);
+      onunload(id, error);
 
     delete unloads[id];
     delete loaded[id];

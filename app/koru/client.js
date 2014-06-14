@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var env = require('./env');
   var session = require('./session/main');
-  require('koru/ui/helpers');
+  require('./ui/helpers');
 
   env.onunload(module, function () {
     window.removeEventListener('error', errorListener);
@@ -12,7 +12,7 @@ define(function (require, exports, module) {
 
   requirejs.onError = function (err) {
     var name = err.requireModules && err.requireModules[0];
-    name && env.unload(name);
+    name && env.unload(name, err);
 
     session.send('E', env.util.extractError(err));
     throw err;
