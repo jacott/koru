@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var env = require('../env');
   var publish = require('./publish-base');
-  var Model = require('../model/main');
+  var Model = require('../model/base');
 
   var modelMatches = {};
   var key = 0;

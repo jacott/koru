@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var session = require('../session/base');
-  var Model = require('../model/main');
+  var Model = require('../model/base');
   var env = require('../env');
   var SRP = require('../srp/srp');
   var Val = require('../model/validation');

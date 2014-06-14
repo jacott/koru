@@ -9,23 +9,11 @@ define(function(require, exports, module) {
   var makeSubject = require('../make-subject');
   var registerObserveId = require('./register-observe-id');
   var registerObserveField = require('./register-observe-field');
+  var BaseModel = require('./base');
 
   var modelObservers = {};
 
   var emptyObject = {};
-
-  function BaseModel(attributes, changes) {
-    if(attributes.hasOwnProperty('_id')) {
-      // existing record
-      this.attributes = attributes;
-      this.changes = changes || {};
-    } else {
-      // new record
-      this.attributes = {};
-      this.changes = attributes;
-      util.extend(this.changes, this.constructor._defaults);
-    }
-  }
 
   BaseModel.prototype = {
     get _id() {return this.attributes._id;},
