@@ -1,19 +1,20 @@
 define(function(require, exports, module) {
   var session = require('../session/base');
   var localStorage = require('../local-storage');
-  var makeSubject = require('../make-subject');
+  var login = require('./client-login');
   var SRP = require('../srp/srp');
   var env = require('../env');
 
   session.provide('V', function (data) {
     switch(data[0]) {
     case 'S':
-      env.util.thread.userId = data.slice(1).toString() || null;
-      setState('change');
+      login.setUserId(data.slice(1).toString() || null);
       break;
-    case 'F': setState('failure'); break;
+    case 'F':
+      login.failed();
+      break;
     case 'C':
-      setState('ready');
+      login.ready();
       break;
     }
   });
@@ -26,7 +27,7 @@ define(function(require, exports, module) {
     var token = localStorage.getItem('koru.loginToken');
     if (token) {
       session.send('VL', token);
-      setState('wait');
+      login.wait();
     }
   }
 
@@ -76,12 +77,6 @@ define(function(require, exports, module) {
       session.send('VO');
     },
   };
-
-  makeSubject(exports);
-
-  function setState(state) {
-    exports.notify(exports.state = state);
-  }
 
   function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
     var srp = new SRP.Client(password);

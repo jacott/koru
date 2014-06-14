@@ -7,7 +7,7 @@ isClient && define(function (require, exports, module) {
   require('./client-update');
   var Model = require('../model/main');
   var env = require('../env');
-  var UserAccount = require('../user-account/main');
+  var login = require('../user-account/client-login');
   var message = require('./message');
 
   TH.testCase(module, {
@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
 
         refute(v.sub.isResubscribe);
 
-        UserAccount.notify('change');
+        login.notify('change');
 
         refute(v.sub.isResubscribe);
 

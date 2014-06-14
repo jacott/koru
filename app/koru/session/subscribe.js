@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   require('./client-update');
   var publish = require('./publish');
   var env = require('../env');
-  var UserAccount = require('../user-account/main');
+  var login = require('../user-account/client-login');
   var message = require('./message');
 
   var nextId = 0;
@@ -19,7 +19,7 @@ define(function(require, exports, module) {
     if (handle && handle.callback) handle.callback(data[1]||null);
   });
 
-  UserAccount.onChange(function (state) {
+  login.onChange(function (state) {
     if (state = 'change') {
       var models = {};
       for(var key in subs) {
