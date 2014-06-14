@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var session = require('../session/base');
+  var session = require('../session/client-rpc');
   var localStorage = require('../local-storage');
   var login = require('./client-login');
   var SRP = require('../srp/srp');
@@ -33,11 +33,11 @@ define(function(require, exports, module) {
 
   exports = {
     init: function () {
-      session.onConnect(onConnect);
+      session.onConnect('01', onConnect);
     },
 
     stop: function () {
-      session.stopOnConnect(onConnect);
+      session.stopOnConnect('01', onConnect);
     },
 
     state: null,

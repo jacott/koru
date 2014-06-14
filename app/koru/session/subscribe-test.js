@@ -1,20 +1,44 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
-  var session = require('../session/base');
-  var subscribe = require('./subscribe');
+  var subscribeFactory = require('./subscribe');
   var publish = require('./publish');
   require('./client-update');
   var Model = require('../model/main');
   var env = require('../env');
   var login = require('../user-account/client-login');
   var message = require('./message');
+  var util = require('../util');
+
+  var subscribe;
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      test.stub(session, 'sendP');
+      subscribe = subscribeFactory(v.sess ={
+        provide: test.stub(),
+        _rpcs: {},
+        sendBinary: v.sendBinary = test.stub(),
+        state: 'ready',
+        onConnect: test.stub(),
+      });
+      assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
+        v.recvP = function () {
+          func(message.encodeMessage('P', util.slice(arguments)).subarray(1));
+        };
+        return true;
+      }));
+      ['A', 'C', 'R'].forEach(function (type) {
+        assert.calledWith(v.sess.provide, type, TH.match(function (func) {
+          v['recv'+type] = function () {
+            func(message.encodeMessage(type, util.slice(arguments)).subarray(1));
+          };
+          return true;
+        }));
+      });
+
+      test.spy(v.sess, 'sendP');
 
       v.pubFunc = test.stub();
       publish("foo", function () {
@@ -25,9 +49,46 @@ isClient && define(function (require, exports, module) {
     tearDown: function () {
       publish._destroy('foo');
       publish._destroy('foo2');
-      for(var key in subscribe._subs)
+      if (subscribe) for(var key in subscribe._subs)
         delete subscribe._subs[key];
       v = null;
+    },
+
+    "test sendP": function () {
+      v.sess.sendP('id', 'foo', [1, 2, 'bar']);
+
+      assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
+
+      v.sess.sendP('12');
+
+      assert.calledWith(v.sendBinary, 'P', ['12']);
+    },
+
+    "test resubscribe onConnect": function () {
+      assert.calledWith(v.sess.onConnect, "10", subscribe._onConnect);
+
+      publish("foo2", function () {});
+
+      var sub1 = subscribe("foo", 1 ,2);
+      var sub2 = subscribe("foo2", 3, 4);
+      var sub3 = subscribe("foo2", 5, 6);
+
+      v.sess.sendP.reset();
+
+      subscribe._onConnect();
+
+      assert.calledWith(v.sess.sendP, sub1._id, 'foo', [1, 2]);
+      assert.calledWith(v.sess.sendP, sub2._id, 'foo2', [3, 4]);
+      assert.calledWith(v.sess.sendP, sub3._id, 'foo2', [5, 6]);
+
+      // need to have an async behaviour in onConnect. say if
+      // onConnect returns 'wait' then the continue function will be used
+    },
+
+    "//test reconcile docs": function () {
+      // in addition waitMs we should be only reconcile once all rpcs
+      // and supsciptions have responded. Will need to recfactor the
+      // v.sess.rpc.notify logic
     },
 
     "filtering":{
@@ -129,17 +190,17 @@ isClient && define(function (require, exports, module) {
       assert.same(v.sub.callback, v.stub);
       assert.equals(v.sub.args, [123, 456]);
 
-      session._onMessage({}, message.encodeMessage('P', [v.sub._id]));
+      v.recvP(v.sub._id);
 
       assert.calledWithExactly(v.stub, null);
 
-      assert.calledWith(session.sendP, v.sub._id, 'foo', [123, 456]);
+      assert.calledWith(v.sess.sendP, v.sub._id, 'foo', [123, 456]);
       assert(v.sub);
 
       assert.same(subscribe._subs[v.sub._id], v.sub);
 
       v.sub.stop();
-      assert.calledWith(session.sendP, v.sub._id);
+      assert.calledWith(v.sess.sendP, v.sub._id);
 
       assert.isFalse(v.sub._id in subscribe._subs);
       v.sub = null;
@@ -158,7 +219,7 @@ isClient && define(function (require, exports, module) {
 
         v.sub.match(v.Foo, v.match = test.stub());
 
-        session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'bob', age: 5}]));
+        v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
         assert.calledWith(v.match, TH.match(function (doc) {
           return doc._id === 'f123';

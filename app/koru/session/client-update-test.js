@@ -3,15 +3,32 @@ isClient && define(function (require, exports, module) {
   var TH = require('../model/test-helper');
   var session = require('./main');
   var Model = require('../model/main');
-  var sut = require('./client-update');
+  var clientUpdate = require('./client-update');
   var publish = require('./publish');
   var message = require('./message');
   var Query = require('../model/query');
+  var util = require('../util');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      clientUpdate(v.sess = {
+        provide: test.stub(),
+        _rpcs: {},
+        sendBinary: v.sendBinary = test.stub(),
+        state: 'ready',
+        onConnect: test.stub(),
+      });
+      ['A', 'C', 'R'].forEach(function (type) {
+        assert.calledWith(v.sess.provide, type, TH.match(function (func) {
+          v['recv'+type] = function () {
+            func(message.encodeMessage(type, util.slice(arguments)).subarray(1));
+          };
+          return true;
+        }));
+      });
+
       v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
       v.matchFunc = test.stub(publish, '_matches', function (doc) {
         return doc.constructor === v.Foo &&
@@ -28,12 +45,12 @@ isClient && define(function (require, exports, module) {
     },
 
     "test added": function () {
-      session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'sam', age: 5}]));
+      v.recvA('Foo', 'f123', v.attrs = {name: 'sam', age: 5});
 
       refute(v.Foo.findById('f123'));
 
       var insertSpy = test.spy(Query, 'insertFromServer');
-      session._onMessage({}, message.encodeMessage('A', ['Foo', 'f123', v.attrs = {name: 'bob', age: 5}]));
+      v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
       var foo = v.Foo.findById('f123');
 
@@ -49,8 +66,8 @@ isClient && define(function (require, exports, module) {
 
       var fromServerSpy = test.spy(Query.prototype, 'fromServer');
 
-      session._onMessage({}, message.encodeMessage('C', ['Foo', 'f222', v.attrs = {age: 7}]));
-      session._onMessage({}, message.encodeMessage('C', ['Foo', 'f333', v.attrs = {age: 7}]));
+      v.recvC('Foo', 'f222', v.attrs = {age: 7});
+      v.recvC('Foo', 'f333', v.attrs = {age: 7});
 
       assert.calledWith(fromServerSpy, 'f222');
       assert.calledWith(fromServerSpy, 'f333');
@@ -65,8 +82,8 @@ isClient && define(function (require, exports, module) {
 
       var fromServerSpy = test.spy(Query.prototype, 'fromServer');
 
-      session._onMessage({}, message.encodeMessage('R', ['Foo', 'f222']));
-      session._onMessage({}, message.encodeMessage('R', ['Foo', 'f333']));
+      v.recvR('Foo', 'f222');
+      v.recvR('Foo', 'f333');
 
       assert.calledWith(fromServerSpy, 'f222');
       assert.calledWith(fromServerSpy, 'f333');

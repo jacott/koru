@@ -1,6 +1,8 @@
 Issues and Ideas
 ================
 
+* Fix providerMap for html! and b!
+   In fact replace b! with koru/validator!
 
 * Client: On setUserId
    (is this already done?)

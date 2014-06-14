@@ -140,7 +140,7 @@ define(['./core'], function (geddon) {
       }
       test.tc.runTearDown(test);
     } catch(ex) {
-      failed(test, ex);
+      test.success && failed(test, ex);
       return 'abort';
     } finally {
       geddon.runCallBacks('testEnd', test);

@@ -22,7 +22,7 @@ define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      Model._destroyModel('TestModel');
+      Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 

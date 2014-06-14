@@ -3,14 +3,12 @@
 define(function (require, exports, module) {
   var env = require('../env');
   var util = require('../util');
-  var makeSubject = require('../make-subject');
   var message = require('./message');
 
   env.onunload(module, 'reload');
 
   return function (session) {
-    var waitFuncs = [];
-    var waitMs = {};
+    var waitSends = [];
     var state = 'closed';
     var retryCount = 0;
     var versionHash;
@@ -18,59 +16,25 @@ define(function (require, exports, module) {
     var reconnTimeout;
 
     util.extend(session, {
-      _msgId: 0,
-
       send: function (type, msg) {
         if (state === 'ready') connect._ws.send(type+msg);
-        else waitFuncs.push(type+msg);
+        else waitSends.push(type+msg);
       },
 
       sendBinary: function (type, msg) {
         if (state === 'ready') connect._ws.send(message.encodeMessage(type, msg));
-        else waitFuncs.push([type, util.deepCopy(msg)]);
+        else waitSends.push([type, util.deepCopy(msg)]);
       },
-
-      rpc: function (name /*, args */) {
-        var func = arguments[arguments.length - 1];
-        if (typeof func !== 'function') func = null;
-        var args = util.slice(arguments, 1, func ? -1 : arguments.length);
-
-        if (isSimulation) {
-          this._rpcs[name].apply(util.thread, args);
-
-        } else try {
-          isSimulation = true;
-          session.sendM(name, args, func);
-          this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
-        } finally {
-          isSimulation = false;
-        }
-      },
-
-      sendM: function (name, args, func) {
-        var msgId = (++session._msgId).toString(36);
-        var data = [msgId, name];
-        args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
-        session.rpc.waiting() || session.rpc.notify(true);
-        waitMs[msgId] = [data, func];
-        state === 'ready' && session.sendBinary('M', data);
-        return msgId;
-      },
-      sendP:function (id, name, args) {
-        session.sendBinary('P', util.slice(arguments));
-      },
-
-      get isSimulation() {return isSimulation},
 
       get state() {return state},
 
-      _onConnect: [],
-      onConnect: function (func) {
-        this._onConnect.push(func);
+      _onConnect: {},
+      onConnect: function (priority, func) {
+        (this._onConnect[priority] || (this._onConnect[priority] = [])).push(func);
       },
 
-      stopOnConnect: function (func) {
-        var index = util.removeItem(this._onConnect, func);
+      stopOnConnect: function (priority, func) {
+        var index = util.removeItem(this._onConnect[priority] || [], func);
       },
 
       connect: connect,
@@ -89,19 +53,8 @@ define(function (require, exports, module) {
       },
 
       // for testing
-      _forgetMs: function () {
-        waitMs = {};
-      },
-
-      get _waitMs() {return waitMs},
-      get _waitFuncs() {return waitFuncs},
+      get _waitSends() {return waitSends},
     });
-
-    makeSubject(session.rpc);
-    session.rpc.waiting = function () {
-      for(var one in waitMs) {return true;}
-      return false;
-    };
 
     session.provide('X', function (data) {
       var ws = this.ws;
@@ -111,27 +64,6 @@ define(function (require, exports, module) {
       versionHash = data;
 
       retryCount = 0;
-    });
-
-    session.provide('M', function (data) {
-      data = message.decodeMessage(data);
-      var msgId = data[0];
-      var args = waitMs[msgId];
-      if (! args) return;
-      delete waitMs[msgId];
-      session.rpc.waiting() || session.rpc.notify(false);
-      if (! args[1]) return;
-      var type = data[1];
-      data = data[2];
-      if (type === 'e') {
-        var ei = data.indexOf(',');
-        if (ei === -1)
-          args[1](new Error(data));
-        else
-          args[1](new env.Error(+data.slice(0, ei), data.slice(ei+1)));
-        return;
-      }
-      args[1](null, data);
     });
 
     session.provide('L', function (data) {require([data], function() {})});
@@ -156,28 +88,22 @@ define(function (require, exports, module) {
         ws.send('X1');
         state = 'ready';
 
-        for(var i = 0; i < session._onConnect.length; ++i) {
-          session._onConnect[i].call(conn);
-        }
+        Object.keys(session._onConnect).sort().forEach(function (priority) {
+          session._onConnect[priority].forEach(function (func) {
+            func.call(conn);
+          });
+        });
 
         // TODO add global dictionary. We will need to receive
         // dictionary before we can send queued
         // messages. Alternatively we can clear the global dictionary
         // so messages do not use it.
-        for(var i = 0; i < waitFuncs.length; ++i) {
+        for(var i = 0; i < waitSends.length; ++i) {
           // encode here because we may have a different global dictionary
-          var item = waitFuncs[i];
+          var item = waitSends[i];
           ws.send(typeof item === 'string' ? item : message.encodeMessage.apply(message, item));
         }
-        waitFuncs = [];
-
-        Object.keys(waitMs).sort(function (a, b) {
-          if (a.length < b.length) return -1;
-          if (a.length > b.length) return 1;
-          return (a < b) ? -1 : a === b ? 0 : 1;
-        }).forEach(function (msgId) {
-          session.sendBinary('M', waitMs[msgId][0]);
-        });
+        waitSends = [];
       };
 
       ws.onmessage = function (event) {

@@ -1,26 +1,28 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var session = require('../session/base');
+  var sync = require('../session/sync');
   var env = require('../env');
 
   env.onunload(module, function () {
-    sessionOb && sessionOb.stop();
-    sessionOb = null;
+    syncOb && syncOb.stop();
+    syncOb = null;
   });
 
-  var sessionOb, recording;
+  var syncOb;
   var desc = {value: null};
 
   return function(Query) {
     var simDocs = {};
 
-    sessionOb && sessionOb.stop();
-    sessionOb = session.rpc.onChange(function (waiting) {
-      recording = waiting;
+    syncOb && syncOb.stop();
+    syncOb = sync.onChange(function (waiting) {
       waiting || Query.revertSimChanges();
     });
 
     util.extend(Query, {
+      _destroyModel: function (model) {
+        delete simDocs[model.modelName];
+      },
       get _simDocs() {return simDocs},
 
       revertSimChanges: function () {
@@ -28,6 +30,7 @@ define(function(require, exports, module) {
           var docs = simDocs[modelName];
           var model = docs[0];
           var modelDocs = model.docs;
+          if (! modelDocs) continue;
           docs = docs[1];
           for(var id in docs) {
             var doc = modelDocs[id];
@@ -55,7 +58,7 @@ define(function(require, exports, module) {
 
       insert: function (doc) {
         var model = doc.constructor;
-        if (recording) {
+        if (sync.waiting()) {
           simDocsFor(model)[doc._id] = 'new';
         }
         model.docs[doc._id] = doc;
@@ -64,7 +67,7 @@ define(function(require, exports, module) {
       },
 
       insertFromServer: function (model, id, attrs) {
-        if (recording) {
+        if (sync.waiting()) {
           var changes = fromServer(model, id, attrs);
           var doc = model.docs[id];
           if (doc && changes !== attrs) { // found existing
@@ -161,7 +164,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = this.model;
         var docs = model.docs;
-        if (recording && this._fromServer) {
+        if (sync.waiting() && this._fromServer) {
           if (fromServer(model, this.singleId, null) === null) {
             var doc = docs[this.singleId];
             delete docs[this.singleId];
@@ -171,7 +174,7 @@ define(function(require, exports, module) {
         }
         this.forEach(function (doc) {
           ++count;
-          if (recording) {
+          if (sync.waiting()) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
@@ -185,7 +188,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = self.model;
         var docs = model.docs;
-        if (recording && self._fromServer) {
+        if (sync.waiting() && self._fromServer) {
           changes = fromServer(model, self.singleId, changes);
           var doc = docs[self.singleId];
           if (doc) {
@@ -206,7 +209,7 @@ define(function(require, exports, module) {
           }
 
           var valueUndefined = {value: undefined};
-          recording && recordChange(model, attrs, changes);
+          sync.waiting() && recordChange(model, attrs, changes);
           util.applyChanges(attrs, changes);
           for(var key in changes) {
             model.notify(doc, changes);

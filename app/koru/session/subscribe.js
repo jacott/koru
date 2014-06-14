@@ -1,111 +1,125 @@
 define(function(require, exports, module) {
-  var session = require('../session/base');
   var util = require('../util');
-  require('./client-update');
   var publish = require('./publish');
   var env = require('../env');
   var login = require('../user-account/client-login');
   var message = require('./message');
 
-  var nextId = 0;
-  var subs = {};
-
   env.onunload(module, 'reload');
 
-  session.provide('P', function (data) {
-    data = message.decodeMessage(data);
+  return function(session) {
+    var nextId = 0;
+    var subs = {};
 
-    var handle = subs[data[0]];
-    if (handle && handle.callback) handle.callback(data[1]||null);
-  });
+    session.sendP = function (id, name, args) {
+      session.state === 'ready' && session.sendBinary('P', util.slice(arguments));
+    };
 
-  login.onChange(function (state) {
-    if (state = 'change') {
-      var models = {};
-      for(var key in subs) {
-        subs[key].resubscribe(models);
+    session.provide('P', function (data) {
+      data = message.decodeMessage(data);
+
+      var handle = subs[data[0]];
+      if (handle && handle.callback) handle.callback(data[1]||null);
+    });
+
+    login.onChange(function (state) {
+      if (state = 'change') {
+        var models = {};
+        for(var key in subs) {
+          subs[key].resubscribe(models);
+        }
+        publish._filterModels(models);
       }
-      publish._filterModels(models);
-    }
-  });
+    });
 
-  function Subcribe(name /*, args..., callback */) {
-    if (! publish._pubs[name]) throw new Error("No client publish of " + name);
-
-    var callback = arguments[arguments.length - 1];
-    var sub = new ClientSub(
-      (++nextId).toString(36), publish._pubs[name], util.slice(arguments, 1)
-    );
-    subs[sub._id] = sub;
-    Subcribe.intercept(name, sub);
-    session.sendP(sub._id, name, sub.args);
-    sub.resubscribe();
-    return sub;
-  };
-
-  util.extend(Subcribe, {
-    // test methods
-
-    get _subs() {return subs},
-    get _nextId() {return nextId},
-    intercept: function () {},
-  });
-
-  function ClientSub(subId, subscribe, args) {
-    this._id = subId;
-    this._matches = [];
-    this._subscribe = subscribe;
-    var cb = args[args.length - 1];
-    if (typeof cb === 'function') {
-      this.callback = cb;
-      this.args = args.slice(0, -1);
-    } else
-      this.args = args;
-  }
-
-  ClientSub.prototype = {
-    constructor: ClientSub,
-
-    get userId() {
-      return env.userId();
-    },
-
-    resubscribe: function (models) {
-      var oldMatches = this._matches;
-      this._matches = [];
-      try {
-        this.isResubscribe = this._called;
-        this._subscribe.apply(this, this.args);
-      } catch(ex) {
-        env.error(util.extractError(ex));
+    session.onConnect('10', Subcribe._onConnect = function () {
+      for(var id in subs) {
+        var sub = subs[id];
+        session.sendP(id, sub.name, sub.args);
       }
-      this._called = true;
-      this.isResubscribe = false;
+    });
 
-      killMatches(oldMatches, models);
-    },
+    function Subcribe(name /*, args..., callback */) {
+      if (! publish._pubs[name]) throw new Error("No client publish of " + name);
 
-    stop: function () {
-      session.sendP(this._id);
-      delete subs[this._id];
-      var models = {};
-      killMatches(this._matches, models);
+      var callback = arguments[arguments.length - 1];
+      var sub = new ClientSub(
+        (++nextId).toString(36), name, util.slice(arguments, 1)
+      );
+      subs[sub._id] = sub;
+      Subcribe.intercept(name, sub);
+      session.sendP(sub._id, name, sub.args);
+      sub.resubscribe();
+      return sub;
+    };
+
+    util.extend(Subcribe, {
+      // test methods
+
+      get _subs() {return subs},
+      get _nextId() {return nextId},
+      intercept: function () {},
+    });
+
+    function ClientSub(subId, name, args) {
+      this._id = subId;
       this._matches = [];
-      publish._filterModels(models);
-    },
-
-    match: function (model, func) {
-      this._matches.push(publish._registerMatch(model, func));
-    },
-  };
-
-  function killMatches(matches, models) {
-    for(var i = 0; i < matches.length; ++i) {
-      var m = matches[i];
-      if (models) models[m.modelName] = true;
-      m.stop();
+      this.name = name;
+      this._subscribe = publish._pubs[name];
+      var cb = args[args.length - 1];
+      if (typeof cb === 'function') {
+        this.callback = cb;
+        this.args = args.slice(0, -1);
+      } else
+        this.args = args;
     }
-  }
 
-  return Subcribe;
+    ClientSub.prototype = {
+      constructor: ClientSub,
+
+      get userId() {
+        return env.userId();
+      },
+
+      resubscribe: function (models) {
+        var oldMatches = this._matches;
+        this._matches = [];
+        try {
+          this.isResubscribe = this._called;
+          this._subscribe.apply(this, this.args);
+        } catch(ex) {
+          env.error(util.extractError(ex));
+        }
+        this._called = true;
+        this.isResubscribe = false;
+
+        killMatches(oldMatches, models);
+      },
+
+      stop: function () {
+        session.sendP(this._id);
+        delete subs[this._id];
+        var models = {};
+        killMatches(this._matches, models);
+        this._matches = [];
+        publish._filterModels(models);
+      },
+
+      match: function (model, func) {
+        this._matches.push(publish._registerMatch(model, func));
+      },
+    };
+
+    function killMatches(matches, models) {
+      for(var i = 0; i < matches.length; ++i) {
+        var m = matches[i];
+        if (models) models[m.modelName] = true;
+        m.stop();
+      }
+    }
+
+    require('./client-update')(session);
+
+    return Subcribe;
+  };
 });

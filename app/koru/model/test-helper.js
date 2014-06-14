@@ -1,7 +1,9 @@
 define(function(require, exports, module) {
+  var env = require('../env');
   var TH = require('../test-helper');
   var session = require('../session/base');
-  var env = require('../env');
+  var sync = require('../session/sync');
+  var Query = require('./query');
 
   var testCase = TH.testCase;
   var sendM;
@@ -34,6 +36,8 @@ define(function(require, exports, module) {
 
   function unstubSendM() {
     if (sendM) {
+      sync._resetCount();
+      Query.revertSimChanges();
       session.sendM = sendM;
       sendM = null;
     }

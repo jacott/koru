@@ -58,7 +58,7 @@ isClient && define(function (require, exports, module) {
       },
 
       tearDown: function () {
-        Model._destroyModel('TestModel');
+        Model._destroyModel('TestModel', 'drop');
       },
 
       "test sort by field name": function () {

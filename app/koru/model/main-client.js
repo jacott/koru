@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var util = env.util;
   var Random = require('../random');
-  var session = require('../session/base');
+  var session = require('../session/client-rpc');
   var clientIndex = require('./index-client');
   var Query = require('./query');
 
@@ -23,11 +23,10 @@ define(function(require, exports, module) {
       return save(doc);
     },
 
-    session: session,
-
     destroyModel: function (model, drop) {
       if (! model) return;
       model.docs = null;
+      Query._destroyModel(model);
     },
 
     init: function (BaseModel, _support, modelProperties) {

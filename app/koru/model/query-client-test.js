@@ -5,6 +5,7 @@ define(function (require, exports, module) {
   var session = require('../session/base');
   var Model = require('./main');
   var util = require('../util');
+  var sync = require('../session/sync');
 
   TH.testCase(module, {
     setUp: function () {
@@ -16,16 +17,13 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
+      sync._resetCount();
       v = null;
     },
 
     "recording": {
       setUp: function () {
-        mockWaitng();
-      },
-
-      tearDown: function () {
-        Query.revertSimChanges();
+        sync.inc();
       },
 
       "test client only updates": function () {
@@ -47,7 +45,7 @@ define(function (require, exports, module) {
 
         test.onEnd(v.TestModel.onChange(v.change = test.stub()));
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(v.foo.name, 'foo');
         assert.same(v.foo.age, 5);
@@ -62,7 +60,7 @@ define(function (require, exports, module) {
         v.TestModel.query.update({age: 2, name: 'another'});
         v.TestModel.query.fromServer(v.foo._id).update({name: 'baz'});
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.equals(v.foo.attributes, {_id: v.foo._id, age: 5, name: 'baz', nested: [{ary: ['m']}]});
       },
@@ -73,7 +71,7 @@ define(function (require, exports, module) {
         v.TestModel.query.update({age: 7, name: 'baz'});
         v.TestModel.query.fromServer(v.foo._id).update({age: 7, name: 'baz'});
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(v.foo.name, 'baz');
         assert.same(v.foo.age, 7);
@@ -97,7 +95,7 @@ define(function (require, exports, module) {
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['M', 'f']}]);
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.equals(v.foo.nested, [{ary: ['M', 'f']}]);
       },
@@ -106,7 +104,7 @@ define(function (require, exports, module) {
         var bar = v.TestModel.create({name: 'bar'});
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.calledWith(v.changed, null, TH.matchModel(bar));
       },
@@ -117,7 +115,7 @@ define(function (require, exports, module) {
         var bar = v.TestModel.create({name: 'baz', age: 7});
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, age: 7, name: 'baz'});
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(bar.name, 'baz');
         assert.same(bar.age, 7);
@@ -135,7 +133,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.changed, TH.matchModel(bar), {name: 'bar'});
 
         v.changed.reset();
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(bar.age, undefined);
         assert.same(bar.name, 'sam');
@@ -149,7 +147,7 @@ define(function (require, exports, module) {
         v.TestModel.query.onId(v.foo._id).remove();
         v.TestModel.query.fromServer(v.foo._id).remove();
 
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(v.TestModel.query.count(), 0);
 
@@ -164,7 +162,7 @@ define(function (require, exports, module) {
         assert.same(v.TestModel.query.count(), 0);
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        session.rpc.notify(false);
+        sync.dec();
 
         assert.same(v.TestModel.query.count(), 1);
 
@@ -184,7 +182,7 @@ define(function (require, exports, module) {
 
         assert.same(v.foo.$reload().name, 'Mary');
 
-        session.rpc.notify(false);
+        sync.dec();
         assert.same(v.TestModel.query.count(), 0);
 
         assert.calledWith(v.changed, null, TH.matchModel(v.foo));
@@ -206,20 +204,11 @@ define(function (require, exports, module) {
 
         v.changed.reset();
 
-        session.rpc.notify(false);
+        sync.dec();
 
         // Should notify at revert for other changes
         assert.calledWith(v.changed, TH.matchModel(v.foo), {age: 7});
       },
     },
   });
-
-  function mockWaitng() {
-    refute(session.rpc.waiting()); // won't work if already waiting
-    TH.test.stub(session.rpc, 'waiting').returns(true);
-    session.rpc.notify(true);
-    TH.test.onEnd(function () {
-      session.rpc.notify(false);
-    });
-  }
 });
