@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Val = require('./validation');
   var ModelEnv = require('../env!./main');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var Random = require('../random');
   var Query = require('./query');
   var makeSubject = require('../make-subject');

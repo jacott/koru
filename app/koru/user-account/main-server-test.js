@@ -1,7 +1,7 @@
 isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('../session/test-helper');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var userAccount = require('./main');
   var Model = require('../model/main');
   var env = require('../env');

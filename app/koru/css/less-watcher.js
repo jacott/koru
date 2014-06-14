@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var fw = require('../file-watch');
   var fst = require('../fs-tools');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var topDir = env.appDir;
 
   env.onunload(module, 'reload');

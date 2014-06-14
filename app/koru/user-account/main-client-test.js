@@ -2,7 +2,7 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test-helper');
   var userAccount = require('./main');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var localStorage = require('../local-storage');
   var SRP = require('../srp/srp');
   var util = require('../util');

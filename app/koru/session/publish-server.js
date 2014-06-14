@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var env = require('../env');
   var publish = require('./publish-base');
   var message = require('./message');

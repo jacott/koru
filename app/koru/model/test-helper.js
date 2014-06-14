@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var TH = require('../test-helper');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var env = require('../env');
 
   var testCase = TH.testCase;

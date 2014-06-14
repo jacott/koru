@@ -1,5 +1,5 @@
 requirejs.config({
-  packages: ['koru/model'],
+  packages: ['koru/model', 'koru/session'],
 
   baseUrl: "/",
 
@@ -11,7 +11,7 @@ requirejs.config({
 define([
   'module', 'koru/env', 'koru/ui/route', 'ui/todos',
   'koru/session/subscribe', 'koru/dom',
-  'koru/session/main', 'publish-all',
+  'koru/session', 'publish-all',
 ], function (
   module, env, Route, todos,
   subscribe, Dom,

@@ -2,7 +2,7 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
   var env = require('../env');
-  var session = require('../session/main');
+  var session = require('../session/base');
 
   TH.testCase(module, {
     setUp: function () {

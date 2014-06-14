@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var env = require('../env');
 
   env.onunload(module, function () {

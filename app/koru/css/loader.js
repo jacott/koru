@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var env = require('../env');
-  var session = require('../session/main');
+  var session = require('../session/base');
 
   env.onunload(module, removeAllCss);
 

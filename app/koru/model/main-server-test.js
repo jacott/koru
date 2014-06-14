@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var Model = require('./main');
-  var session = require('../session/main');
+  var session = require('../session/base');
 
   TH.testCase(module, {
     setUp: function () {

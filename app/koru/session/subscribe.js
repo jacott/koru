@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var session = require('../session/main');
+  var session = require('../session/base');
   var util = require('../util');
   require('./client-update');
   var publish = require('./publish');

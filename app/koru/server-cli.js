@@ -1,4 +1,4 @@
-define(['./env', 'module', 'koru/session/main'], function (env, module, session) {
+define(['./env', 'module', 'koru/session/base'], function (env, module, session) {
   var readline = require('readline');
   var rl = readline.createInterface(process.stdin, process.stdout);
 

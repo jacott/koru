@@ -1,7 +1,7 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var subscribe = require('./subscribe');
   var publish = require('./publish');
   require('./client-update');

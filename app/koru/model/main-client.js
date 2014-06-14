@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var util = env.util;
   var Random = require('../random');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var clientIndex = require('./index-client');
   var Query = require('./query');
 

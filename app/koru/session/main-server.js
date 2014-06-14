@@ -30,7 +30,9 @@ define(function (require, exports, module) {
       get _sessCounter() {return sessCounter},
     });
 
-    session.provide('X', function (data) {this.engine = data.slice(1)});
+    session.provide('X', function (data) {
+      // TODO ensure protocol version is compatible
+    });
     session.provide('L', function (data) {
       env.logger('INFO', this.engine, data);
     });
@@ -64,7 +66,6 @@ define(function (require, exports, module) {
         return;
       }
       ++session.totalSessions;
-      env.info('New client ws:',session.totalSessions, ugr.headers['user-agent'], ugr.socket.remoteAddress);
       var sessId = (++sessCounter).toString(36);
       var conn = session.conns[sessId] = new Connection(ws, sessId, function() {
         ws.close();
@@ -76,9 +77,11 @@ define(function (require, exports, module) {
         }
         env.info('Close client', sessId);
       });
+      conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
       ws.on('message', conn.onMessage.bind(conn));
 
       ws.send('X1'+session.versionHash);
+      env.info('New client ws:',session.totalSessions, conn.engine, ugr.socket.remoteAddress);
     }
 
     function sendAll(cmd, msg) {

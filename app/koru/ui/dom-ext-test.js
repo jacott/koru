@@ -5,7 +5,7 @@ isClient && define(function (require, exports, module) {
   require('./dom-ext');
   var util = require('../util');
   var Model = require('../model/main');
-  var session = require('../session/main');
+  var session = require('../session/base');
 
   TH.testCase(module, {
     setUp: function () {

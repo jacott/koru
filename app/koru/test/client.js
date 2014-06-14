@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var test = require('./main');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var localStorage = require('../local-storage');
 
   test.testHandle = function (cmd, msg) {

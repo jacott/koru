@@ -3,7 +3,7 @@ isServer && define(function (require, exports, module) {
   var env = require('../env');
   var TH = require('../test');
   var publish = require('./publish');
-  var session = require('../session/main');
+  var session = require('../session/base');
   var message = require('./message');
 
   TH.testCase(module, {

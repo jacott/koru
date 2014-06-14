@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var session = require('../session/main');
+  var session = require('../session/base');
   var localStorage = require('../local-storage');
   var makeSubject = require('../make-subject');
   var SRP = require('../srp/srp');

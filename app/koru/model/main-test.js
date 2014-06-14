@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   var Model = require('./main');
   require('../b!./validator:required');
   var util = TH.util;
-  var session = require('../session/main');
+  var session = require('../session/base');
 
 
   TH.testCase(module, {
