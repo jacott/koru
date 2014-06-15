@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var login = require('../user-account/client-login');
   var message = require('./message');
+  var sync = require('./sync');
 
   env.onunload(module, 'reload');
 
@@ -19,6 +20,11 @@ define(function(require, exports, module) {
       data = message.decodeMessage(data);
 
       var handle = subs[data[0]];
+      if (! handle) return;
+      if (handle.waiting) {
+        sync.dec();
+        handle.waiting = false;
+      }
       if (handle && handle.callback) handle.callback(data[1]||null);
     });
 
@@ -48,6 +54,8 @@ define(function(require, exports, module) {
       );
       subs[sub._id] = sub;
       Subcribe.intercept(name, sub);
+      sync.inc();
+      sub.waiting = true;
       session.sendP(sub._id, name, sub.args);
       sub.resubscribe();
       return sub;

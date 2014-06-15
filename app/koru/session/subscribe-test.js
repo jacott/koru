@@ -9,6 +9,7 @@ isClient && define(function (require, exports, module) {
   var login = require('../user-account/client-login');
   var message = require('./message');
   var util = require('../util');
+  var sync = require('./sync');
 
   var subscribe;
 
@@ -47,6 +48,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      sync._resetCount();
       publish._destroy('foo');
       publish._destroy('foo2');
       if (subscribe) for(var key in subscribe._subs)
@@ -80,15 +82,35 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.sess.sendP, sub1._id, 'foo', [1, 2]);
       assert.calledWith(v.sess.sendP, sub2._id, 'foo2', [3, 4]);
       assert.calledWith(v.sess.sendP, sub3._id, 'foo2', [5, 6]);
-
-      // need to have an async behaviour in onConnect. say if
-      // onConnect returns 'wait' then the continue function will be used
     },
 
-    "//test reconcile docs": function () {
-      // in addition waitMs we should be only reconcile once all rpcs
-      // and supsciptions have responded. Will need to recfactor the
-      // v.sess.rpc.notify logic
+    "test onChange rpc": function () {
+      test.onEnd(sync.onChange(v.ob = test.stub()));
+
+      assert.isFalse(sync.waiting());
+
+      var sub1 = subscribe("foo", 1 ,2);
+      assert.isTrue(sub1.waiting);
+
+      assert.calledOnceWith(v.ob, true);
+
+      var sub2 = subscribe("foo", 3, 4);
+      assert.calledOnce(v.ob);
+
+      assert.isTrue(sync.waiting());
+
+      v.ob.reset();
+
+      v.recvP(sub1._id);
+      assert.isFalse(sub1.waiting);
+
+      refute.called(v.ob);
+
+      v.recvP(sub2._id);
+
+      assert.calledWith(v.ob, false);
+
+      assert.isFalse(sync.waiting());
     },
 
     "filtering":{

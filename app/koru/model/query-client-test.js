@@ -21,6 +21,14 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "//test reconcile docs": function () {
+      assert.calledWith(v.sess.onConnect, "10", subscribe._onConnect);
+
+      // in addition waitMs we should be only reconcile once all rpcs
+      // and supsciptions have responded. Will need to recfactor the
+      // v.sess.rpc.notify logic
+    },
+
     "recording": {
       setUp: function () {
         sync.inc();
