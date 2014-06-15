@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var sync = require('../session/sync');
   var env = require('../env');
+  var sessState = require('../session/state');
 
   env.onunload(module, function () {
     syncOb && syncOb.stop();
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
     var simDocs = {};
 
     syncOb && syncOb.stop();
-    syncOb = sync.onChange(function (waiting) {
+    syncOb = sessState.pending.onChange(function (waiting) {
       waiting || Query.revertSimChanges();
     });
 
@@ -58,7 +58,7 @@ define(function(require, exports, module) {
 
       insert: function (doc) {
         var model = doc.constructor;
-        if (sync.waiting()) {
+        if (sessState.inSync()) {
           simDocsFor(model)[doc._id] = 'new';
         }
         model.docs[doc._id] = doc;
@@ -67,7 +67,7 @@ define(function(require, exports, module) {
       },
 
       insertFromServer: function (model, id, attrs) {
-        if (sync.waiting()) {
+        if (sessState.inSync()) {
           var changes = fromServer(model, id, attrs);
           var doc = model.docs[id];
           if (doc && changes !== attrs) { // found existing
@@ -85,7 +85,13 @@ define(function(require, exports, module) {
         model.docs[doc._id] = doc;
         model.notify(doc, null);
       },
+
+      _onConnect: function () {
+
+      },
     });
+
+    sessState.onConnect("50", Query._onConnect);
 
     util.extend(Query.prototype, {
       fromServer: function (id) {
@@ -164,7 +170,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = this.model;
         var docs = model.docs;
-        if (sync.waiting() && this._fromServer) {
+        if (sessState.inSync() && this._fromServer) {
           if (fromServer(model, this.singleId, null) === null) {
             var doc = docs[this.singleId];
             delete docs[this.singleId];
@@ -174,7 +180,7 @@ define(function(require, exports, module) {
         }
         this.forEach(function (doc) {
           ++count;
-          if (sync.waiting()) {
+          if (sessState.inSync()) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
@@ -188,7 +194,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = self.model;
         var docs = model.docs;
-        if (sync.waiting() && self._fromServer) {
+        if (sessState.inSync() && self._fromServer) {
           changes = fromServer(model, self.singleId, changes);
           var doc = docs[self.singleId];
           if (doc) {
@@ -209,7 +215,7 @@ define(function(require, exports, module) {
           }
 
           var valueUndefined = {value: undefined};
-          sync.waiting() && recordChange(model, attrs, changes);
+          sessState.inSync() && recordChange(model, attrs, changes);
           util.applyChanges(attrs, changes);
           for(var key in changes) {
             model.notify(doc, changes);

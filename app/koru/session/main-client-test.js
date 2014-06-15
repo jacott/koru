@@ -5,8 +5,7 @@ define(function (require, exports, module) {
   var message = require('./message');
   var clientSession = require('./main-client');
   var env = require('../env');
-  var sync = require('./sync');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -25,7 +24,7 @@ define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      sync._resetCount();
+      sessState._resetPendingCount();
       v = null;
     },
 
@@ -35,12 +34,12 @@ define(function (require, exports, module) {
       v.sess.connect();         // connect
 
       assert.calledWith(v.sess.newWs, 'wss://test.host:123');
-      refute.called(connectState.connected);
+      refute.called(sessState.connected);
 
       v.ready = true;
       v.ws.onopen();            // connect success
 
-      assert.calledWith(connectState.connected, TH.match(function (conn) {
+      assert.calledWith(sessState.connected, TH.match(function (conn) {
         return conn.ws === v.ws;
       }));
 
@@ -50,19 +49,19 @@ define(function (require, exports, module) {
 
       v.ws.onclose({});         // remote close
 
-      assert.called(connectState.retry);
+      assert.called(sessState.retry);
       assert.calledWith(setTimeout, v.sess.connect, 500);
 
       v.sess.stop();            // local stop
 
       assert.calledWith(clearTimeout, 'c123');
-      assert.called(connectState.close);
-      connectState.connected.reset();
+      assert.called(sessState.close);
+      sessState.connected.reset();
 
       v.sess.connect();         // reconnect
       v.ws.onopen();            // success
 
-      assert.called(connectState.connected);
+      assert.called(sessState.connected);
     },
 
     "test before connected": function () {

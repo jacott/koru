@@ -4,7 +4,7 @@ define(function (require, exports, module) {
   var env = require('../env');
   var util = require('../util');
   var message = require('./message');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   env.onunload(module, 'reload');
 
@@ -17,12 +17,12 @@ define(function (require, exports, module) {
 
     util.extend(session, {
       send: function (type, msg) {
-        if (connectState.isReady()) connect._ws.send(type+msg);
+        if (sessState.isReady()) connect._ws.send(type+msg);
         else waitSends.push(type+msg);
       },
 
       sendBinary: function (type, msg) {
-        if (connectState.isReady()) connect._ws.send(message.encodeMessage(type, msg));
+        if (sessState.isReady()) connect._ws.send(message.encodeMessage(type, msg));
         else waitSends.push([type, util.deepCopy(msg)]);
       },
 
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
       stop: function () {
         reconnTimeout && clearTimeout(reconnTimeout);
         reconnTimeout = null;
-        connectState.close();
+        sessState.close();
         try {
           connect._ws && connect._ws.close();
         } catch(ex) {}
@@ -75,7 +75,7 @@ define(function (require, exports, module) {
       };
       ws.onopen = function () {
         ws.send('X1');
-        connectState.connected(conn);
+        sessState.connected(conn);
 
         // TODO add global dictionary. We will need to receive
         // dictionary before we can send queued
@@ -98,10 +98,10 @@ define(function (require, exports, module) {
         retryCount || env.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
         retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
 
-        if (connectState.isClosed())
+        if (sessState.isClosed())
           return;
 
-        connectState.retry();
+        sessState.retry();
 
         reconnTimeout = setTimeout(connect, retryCount*500);
       };

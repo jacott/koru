@@ -9,6 +9,8 @@ define(function(require, exports, module) {
   var topDir = env.appDir;
   var cmdFn = Path.resolve(topDir + '/../tmp/cmd-client.js');
 
+  try {fs.mkdirSync(topDir+'/.build');} catch(ex) {}
+
   return {
     runTests: function(session, type, pattern, callback) {
       if (type !== 'server') {
@@ -53,12 +55,13 @@ define(function(require, exports, module) {
         return;
 
       if (type !== 'server') {
+        session.unload('/.build/cmd-client.js');
         fs.writeFileSync(cmdFn,
                          "define(['koru/test/client'],function(TH){TH.run("+
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
-        fs.renameSync(cmdFn, requirejs.toUrl('cmd-client.js'));
-        session.load('cmd-client');
+        fs.renameSync(cmdFn, topDir + '/.build/cmd-client.js');
+        session.load('/.build/cmd-client.js');
       }
 
       if (type !== 'client') {

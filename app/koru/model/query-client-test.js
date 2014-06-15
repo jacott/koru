@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   var session = require('../session/base');
   var Model = require('./main');
   var util = require('../util');
-  var sync = require('../session/sync');
+  var sessState = require('../session/state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -17,12 +17,29 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-      sync._resetCount();
+      Model._destroyModel('TestModel2', 'drop');
+      sessState._resetPendingCount();
       v = null;
     },
 
     "//test reconcile docs": function () {
-      assert.isTrue(session._onConnect['50'].indexOf(Query._onConnect) !== -1);
+      assert.isTrue(sessState._onConnect['50'].indexOf(Query._onConnect) !== -1);
+
+      var foo2 = Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+
+      v.TestModel2 = Model.define('TestModel2').defineFields({moe: 'text'});
+
+      var moe =  Query.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
+
+      Query._onConnect();
+
+      var simDocs = Query._simDocs;
+
+      assert(simDocs.TestModel);
+
+      assert.same(simDocs.TestModel.foo123, 'new');
+      // ...
+
 
       // in addition waitMs we should be only reconcile once all rpcs
       // and supsciptions have responded. Will need to recfactor the
@@ -31,7 +48,7 @@ define(function (require, exports, module) {
 
     "recording": {
       setUp: function () {
-        sync.inc();
+        sessState.incPending();
       },
 
       "test client only updates": function () {
@@ -53,7 +70,7 @@ define(function (require, exports, module) {
 
         test.onEnd(v.TestModel.onChange(v.change = test.stub()));
 
-        sync.dec();
+        sessState.decPending();
 
         assert.same(v.foo.name, 'foo');
         assert.same(v.foo.age, 5);
@@ -68,7 +85,7 @@ define(function (require, exports, module) {
         v.TestModel.query.update({age: 2, name: 'another'});
         v.TestModel.query.fromServer(v.foo._id).update({name: 'baz'});
 
-        sync.dec();
+        sessState.decPending();
 
         assert.equals(v.foo.attributes, {_id: v.foo._id, age: 5, name: 'baz', nested: [{ary: ['m']}]});
       },
@@ -79,7 +96,7 @@ define(function (require, exports, module) {
         v.TestModel.query.update({age: 7, name: 'baz'});
         v.TestModel.query.fromServer(v.foo._id).update({age: 7, name: 'baz'});
 
-        sync.dec();
+        sessState.decPending();
 
         assert.same(v.foo.name, 'baz');
         assert.same(v.foo.age, 7);
@@ -103,7 +120,7 @@ define(function (require, exports, module) {
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['M', 'f']}]);
 
-        sync.dec();
+        sessState.decPending();
 
         assert.equals(v.foo.nested, [{ary: ['M', 'f']}]);
       },
@@ -112,7 +129,7 @@ define(function (require, exports, module) {
         var bar = v.TestModel.create({name: 'bar'});
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        sync.dec();
+        sessState.decPending();
 
         assert.calledWith(v.changed, null, TH.matchModel(bar));
       },
@@ -123,7 +140,7 @@ define(function (require, exports, module) {
         var bar = v.TestModel.create({name: 'baz', age: 7});
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, age: 7, name: 'baz'});
 
-        sync.dec();
+        sessState.decPending();
 
         assert.same(bar.name, 'baz');
         assert.same(bar.age, 7);
@@ -141,7 +158,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.changed, TH.matchModel(bar), {name: 'bar'});
 
         v.changed.reset();
-        sync.dec();
+        sessState.decPending();
 
         assert.same(bar.age, undefined);
         assert.same(bar.name, 'sam');
@@ -155,7 +172,7 @@ define(function (require, exports, module) {
         v.TestModel.query.onId(v.foo._id).remove();
         v.TestModel.query.fromServer(v.foo._id).remove();
 
-        sync.dec();
+        sessState.decPending();
 
         assert.same(v.TestModel.query.count(), 0);
 
@@ -170,7 +187,7 @@ define(function (require, exports, module) {
         assert.same(v.TestModel.query.count(), 0);
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        sync.dec();
+        sessState.decPending();
 
         assert.same(v.TestModel.query.count(), 1);
 
@@ -190,7 +207,7 @@ define(function (require, exports, module) {
 
         assert.same(v.foo.$reload().name, 'Mary');
 
-        sync.dec();
+        sessState.decPending();
         assert.same(v.TestModel.query.count(), 0);
 
         assert.calledWith(v.changed, null, TH.matchModel(v.foo));
@@ -212,7 +229,7 @@ define(function (require, exports, module) {
 
         v.changed.reset();
 
-        sync.dec();
+        sessState.decPending();
 
         // Should notify at revert for other changes
         assert.calledWith(v.changed, TH.matchModel(v.foo), {age: 7});

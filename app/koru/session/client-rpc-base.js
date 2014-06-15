@@ -3,8 +3,7 @@ define(function(require, exports, module) {
   var message = require('./message');
   var env = require('../env');
   var makeSubject = require('../make-subject');
-  var sync = require('./sync');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   return function (session) {
     var waitMs = {};
@@ -37,8 +36,8 @@ define(function(require, exports, module) {
         var data = [msgId, name];
         args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
         waitMs[msgId] = [data, func];
-        sync.inc();
-        connectState.isReady() && session.sendBinary('M', data);
+        sessState.incPending();
+        sessState.isReady() && session.sendBinary('M', data);
         return msgId;
       },
 
@@ -52,7 +51,7 @@ define(function(require, exports, module) {
       get _onConnect() {return onConnect},
     });
 
-    connectState.onConnect("20", onConnect);
+    sessState.onConnect("20", onConnect);
 
     session.provide('M', function (data) {
       data = message.decodeMessage(data);
@@ -60,7 +59,7 @@ define(function(require, exports, module) {
       var args = waitMs[msgId];
       if (! args) return;
       delete waitMs[msgId];
-      sync.dec();
+      sessState.decPending();
       if (! args[1]) return;
       var type = data[1];
       data = data[2];

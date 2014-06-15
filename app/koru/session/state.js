@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var makeSubject = require('../make-subject');
 
   var state = 'closed';
+  var count = 0;
 
   util.extend(exports, {
     _onConnect: {},
@@ -45,6 +46,31 @@ define(function(require, exports, module) {
 
     get _state() {return state},
     set _state(value) {state = value},
+
+    inSync: function () {
+      return count !== 0;
+    },
+
+    pending: makeSubject({}),
+
+    incPending: function () {
+      if (++count === 1)
+        this.pending.notify(true);
+    },
+
+    decPending: function () {
+      if (--count === 0)
+        this.pending.notify(false);
+      else if (count === -1) {
+        count = 0;
+        throw new Error("Unexpected dec when no outstanding waits");
+      }
+    },
+
+    _resetPendingCount: function () {
+      count = 0;
+    },
+
   });
 
   makeSubject(exports);

@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var login = require('./client-login');
   var SRP = require('../srp/srp');
   var env = require('../env');
-  var connectState = require('../session/connect-state');
+  var sessState = require('../session/state');
 
   session.provide('V', function (data) {
     switch(data[0]) {
@@ -34,11 +34,11 @@ define(function(require, exports, module) {
 
   exports = {
     init: function () {
-      connectState.onConnect('01', onConnect);
+      sessState.onConnect('01', onConnect);
     },
 
     stop: function () {
-      connectState.stopOnConnect('01', onConnect);
+      sessState.stopOnConnect('01', onConnect);
     },
 
     state: null,

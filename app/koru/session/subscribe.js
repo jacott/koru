@@ -4,8 +4,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var login = require('../user-account/client-login');
   var message = require('./message');
-  var sync = require('./sync');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   env.onunload(module, 'reload');
 
@@ -14,7 +13,7 @@ define(function(require, exports, module) {
     var subs = {};
 
     session.sendP = function (id, name, args) {
-      connectState.isReady() && session.sendBinary('P', util.slice(arguments));
+      sessState.isReady() && session.sendBinary('P', util.slice(arguments));
     };
 
     session.provide('P', function (data) {
@@ -23,7 +22,7 @@ define(function(require, exports, module) {
       var handle = subs[data[0]];
       if (! handle) return;
       if (handle.waiting) {
-        sync.dec();
+        sessState.decPending();
         handle.waiting = false;
       }
       if (handle && handle.callback) handle.callback(data[1]||null);
@@ -39,7 +38,7 @@ define(function(require, exports, module) {
       }
     });
 
-    connectState.onConnect('10', Subcribe._onConnect = function () {
+    sessState.onConnect('10', Subcribe._onConnect = function () {
       for(var id in subs) {
         var sub = subs[id];
         session.sendP(id, sub.name, sub.args);
@@ -55,7 +54,7 @@ define(function(require, exports, module) {
       );
       subs[sub._id] = sub;
       Subcribe.intercept(name, sub);
-      sync.inc();
+      sessState.incPending();
       sub.waiting = true;
       session.sendP(sub._id, name, sub.args);
       sub.resubscribe();

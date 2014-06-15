@@ -9,8 +9,7 @@ isClient && define(function (require, exports, module) {
   var login = require('../user-account/client-login');
   var message = require('./message');
   var util = require('../util');
-  var sync = require('./sync');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   var subscribe;
 
@@ -49,7 +48,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      sync._resetCount();
+      sessState._resetPendingCount();
       publish._destroy('foo');
       publish._destroy('foo2');
       if (subscribe) for(var key in subscribe._subs)
@@ -69,7 +68,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test resubscribe onConnect": function () {
-      assert.calledWith(connectState.onConnect, "10", subscribe._onConnect);
+      assert.calledWith(sessState.onConnect, "10", subscribe._onConnect);
 
       publish("foo2", function () {});
 
@@ -87,9 +86,9 @@ isClient && define(function (require, exports, module) {
     },
 
     "test onChange rpc": function () {
-      test.onEnd(sync.onChange(v.ob = test.stub()));
+      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
 
       var sub1 = subscribe("foo", 1 ,2);
       assert.isTrue(sub1.waiting);
@@ -99,7 +98,7 @@ isClient && define(function (require, exports, module) {
       var sub2 = subscribe("foo", 3, 4);
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sync.waiting());
+      assert.isTrue(sessState.inSync());
 
       v.ob.reset();
 
@@ -112,7 +111,7 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
     },
 
     "filtering":{

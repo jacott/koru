@@ -5,8 +5,7 @@ define(function (require, exports, module) {
   var message = require('./message');
   var rpc = require('./client-rpc-base');
   var env = require('../env');
-  var sync = require('./sync');
-  var connectState = require('./connect-state');
+  var sessState = require('./state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -28,7 +27,7 @@ define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      sync._resetCount();
+      sessState._resetPendingCount();
       v = null;
     },
 
@@ -38,7 +37,7 @@ define(function (require, exports, module) {
      */
     "reconnect": {
       "test replay messages": function () {
-        assert.calledWith(connectState.onConnect, "20", v.sess._onConnect);
+        assert.calledWith(sessState.onConnect, "20", v.sess._onConnect);
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
         v.sess.state = 'retry';
@@ -97,9 +96,9 @@ define(function (require, exports, module) {
 
     "test onChange rpc": function () {
       v.ready = true;
-      test.onEnd(sync.onChange(v.ob = test.stub()));
+      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
 
       v.sess.sendM('foo.rpc', [1, 2]);
 
@@ -108,7 +107,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sync.waiting());
+      assert.isTrue(sessState.inSync());
 
       v.ob.reset();
 
@@ -121,7 +120,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
     },
 
 
@@ -210,9 +209,9 @@ define(function (require, exports, module) {
     },
 
     "test onChange rpc": function () {
-      test.onEnd(sync.onChange(v.ob = test.stub()));
+      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
 
       v.sess.sendM('foo.rpc', [1, 2]);
 
@@ -221,7 +220,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sync.waiting());
+      assert.isTrue(sessState.inSync());
 
       v.ob.reset();
 
@@ -234,7 +233,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sync.waiting());
+      assert.isFalse(sessState.inSync());
     }
   });
 });
