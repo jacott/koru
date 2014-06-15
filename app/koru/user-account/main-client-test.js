@@ -8,6 +8,7 @@ isClient && define(function (require, exports, module) {
   var util = require('../util');
   var env = require('../env');
   var login = require('./client-login');
+  var connectState = require('../session/connect-state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -211,7 +212,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test sending login token": function () {
-        assert.isTrue(session._onConnect['01'].indexOf(userAccount._onConnect) !== -1);
+        assert.isTrue(connectState._onConnect['01'].indexOf(userAccount._onConnect) !== -1);
 
         assert.same(login.state, null);
 

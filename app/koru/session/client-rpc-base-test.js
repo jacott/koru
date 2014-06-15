@@ -1,22 +1,23 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('./test-helper');
   var util = require('../util');
   var message = require('./message');
   var rpc = require('./client-rpc-base');
   var env = require('../env');
   var sync = require('./sync');
+  var connectState = require('./connect-state');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      TH.mockConnectState(v);
       v.sess = rpc({
         provide: test.stub(),
         _rpcs: {},
         sendBinary: v.sendBinary = test.stub(),
         state: 'ready',
-        onConnect: test.stub(),
       });
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function () {
@@ -37,7 +38,7 @@ define(function (require, exports, module) {
      */
     "reconnect": {
       "test replay messages": function () {
-        assert.calledWith(v.sess.onConnect, "20", v.sess._onConnect);
+        assert.calledWith(connectState.onConnect, "20", v.sess._onConnect);
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
         v.sess.state = 'retry';
@@ -95,6 +96,7 @@ define(function (require, exports, module) {
     },
 
     "test onChange rpc": function () {
+      v.ready = true;
       test.onEnd(sync.onChange(v.ob = test.stub()));
 
       assert.isFalse(sync.waiting());
@@ -124,6 +126,7 @@ define(function (require, exports, module) {
 
 
     "test rpc": function () {
+      v.ready = true;
       var fooId;
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
       v.sess._rpcs['foo.s2'] = rpcSimMethod2;
@@ -163,6 +166,7 @@ define(function (require, exports, module) {
     },
 
     "test server only rpc": function () {
+      v.ready = true;
       refute.exception(function () {
         v.sess.rpc('foo.rpc', 1, 2, 3);
       });

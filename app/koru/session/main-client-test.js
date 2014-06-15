@@ -1,11 +1,12 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('./test-helper');
   var util = require('../util');
   var message = require('./message');
   var clientSession = require('./main-client');
   var env = require('../env');
   var sync = require('./sync');
+  var connectState = require('./connect-state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -19,6 +20,8 @@ define(function (require, exports, module) {
         send: test.stub(),
         close: test.stub(),
       });
+      v.ready = false;
+      TH.mockConnectState(v);
     },
 
     tearDown: function () {
@@ -27,22 +30,19 @@ define(function (require, exports, module) {
     },
 
     "test connection cycle": function () {
-      v.sess.onConnect("9a", v.onConStub = test.stub());
-
-      assert.same(v.sess._onConnect["9a"][0], v.onConStub);
-
       test.stub(env, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
       v.sess.connect();         // connect
 
       assert.calledWith(v.sess.newWs, 'wss://test.host:123');
-      refute.called(v.onConStub);
-      assert.same(v.sess.state, 'closed');
+      refute.called(connectState.connected);
 
+      v.ready = true;
       v.ws.onopen();            // connect success
 
-      assert.same(v.sess.state, 'ready');
-      assert.called(v.onConStub);
+      assert.calledWith(connectState.connected, TH.match(function (conn) {
+        return conn.ws === v.ws;
+      }));
 
       test.stub(window, 'setTimeout').returns('c123');
       test.stub(window, 'clearTimeout');
@@ -50,19 +50,19 @@ define(function (require, exports, module) {
 
       v.ws.onclose({});         // remote close
 
-      assert.same(v.sess.state, 'retry');
+      assert.called(connectState.retry);
       assert.calledWith(setTimeout, v.sess.connect, 500);
 
       v.sess.stop();            // local stop
 
       assert.calledWith(clearTimeout, 'c123');
-      assert.same(v.sess.state, 'closed');
-      v.onConStub.reset();
+      assert.called(connectState.close);
+      connectState.connected.reset();
 
       v.sess.connect();         // reconnect
       v.ws.onopen();            // success
 
-      assert.called(v.onConStub);
+      assert.called(connectState.connected);
     },
 
     "test before connected": function () {
@@ -76,6 +76,7 @@ define(function (require, exports, module) {
       assert.equals(v.sess._waitSends, [['P', [null]], ['M', [1]], 'SLabc']);
 
       v.sess.connect();
+      v.ready = true;
       v.ws.onopen();
 
       assert.calledWith(v.ws.send, 'X1');
@@ -99,6 +100,7 @@ define(function (require, exports, module) {
       },
 
       "test sendBinary": function () {
+        v.ready = true;
         v.sendBinary.restore();
         v.sess.sendBinary('M', [1,2,3,4]);
 

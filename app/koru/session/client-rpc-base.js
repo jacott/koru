@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var env = require('../env');
   var makeSubject = require('../make-subject');
   var sync = require('./sync');
+  var connectState = require('./connect-state');
 
   return function (session) {
     var waitMs = {};
@@ -37,7 +38,7 @@ define(function(require, exports, module) {
         args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
         waitMs[msgId] = [data, func];
         sync.inc();
-        session.state === 'ready' && session.sendBinary('M', data);
+        connectState.isReady() && session.sendBinary('M', data);
         return msgId;
       },
 
@@ -51,7 +52,7 @@ define(function(require, exports, module) {
       get _onConnect() {return onConnect},
     });
 
-    session.onConnect("20", onConnect);
+    connectState.onConnect("20", onConnect);
 
     session.provide('M', function (data) {
       data = message.decodeMessage(data);

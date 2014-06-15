@@ -22,7 +22,7 @@ define(function (require, exports, module) {
     },
 
     "//test reconcile docs": function () {
-      assert.calledWith(v.sess.onConnect, "10", subscribe._onConnect);
+      assert.isTrue(session._onConnect['50'].indexOf(Query._onConnect) !== -1);
 
       // in addition waitMs we should be only reconcile once all rpcs
       // and supsciptions have responded. Will need to recfactor the

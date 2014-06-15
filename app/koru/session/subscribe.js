@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var login = require('../user-account/client-login');
   var message = require('./message');
   var sync = require('./sync');
+  var connectState = require('./connect-state');
 
   env.onunload(module, 'reload');
 
@@ -13,7 +14,7 @@ define(function(require, exports, module) {
     var subs = {};
 
     session.sendP = function (id, name, args) {
-      session.state === 'ready' && session.sendBinary('P', util.slice(arguments));
+      connectState.isReady() && session.sendBinary('P', util.slice(arguments));
     };
 
     session.provide('P', function (data) {
@@ -38,7 +39,7 @@ define(function(require, exports, module) {
       }
     });
 
-    session.onConnect('10', Subcribe._onConnect = function () {
+    connectState.onConnect('10', Subcribe._onConnect = function () {
       for(var id in subs) {
         var sub = subs[id];
         session.sendP(id, sub.name, sub.args);

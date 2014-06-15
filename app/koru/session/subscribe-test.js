@@ -10,6 +10,7 @@ isClient && define(function (require, exports, module) {
   var message = require('./message');
   var util = require('../util');
   var sync = require('./sync');
+  var connectState = require('./connect-state');
 
   var subscribe;
 
@@ -17,12 +18,12 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
+      TH.mockConnectState(v);
       subscribe = subscribeFactory(v.sess ={
         provide: test.stub(),
         _rpcs: {},
         sendBinary: v.sendBinary = test.stub(),
         state: 'ready',
-        onConnect: test.stub(),
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
         v.recvP = function () {
@@ -57,6 +58,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test sendP": function () {
+      v.ready = true;
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
       assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
@@ -67,7 +69,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test resubscribe onConnect": function () {
-      assert.calledWith(v.sess.onConnect, "10", subscribe._onConnect);
+      assert.calledWith(connectState.onConnect, "10", subscribe._onConnect);
 
       publish("foo2", function () {});
 
