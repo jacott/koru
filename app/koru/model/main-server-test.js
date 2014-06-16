@@ -32,5 +32,25 @@ define(function (require, exports, module) {
       assert.called(v.afterRemove);
       assert.calledWith(v.auth, "u123", {remove: true});
     },
+
+    "test addUniqueIndex": function () {
+      var TestModel = Model.define('TestModel');
+
+      var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
+
+      TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd');
+
+      assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1}, {unique: true});
+    },
+
+    "test addIndex": function () {
+      var TestModel = Model.define('TestModel');
+
+      var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
+
+      TestModel.addIndex('a', 'b', -1, 'c', 1, 'd');
+
+      assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
+    },
   });
 });

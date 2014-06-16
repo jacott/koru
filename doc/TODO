@@ -1,9 +1,6 @@
 Issues and Ideas
 ================
 
-* Fix providerMap for html! and b!
-   In fact replace b! with koru/validator!
-
 * Client: On setUserId
    (is this already done?)
    resubscribe and match all changed matchers. Maybe limit matchers to
@@ -35,13 +32,12 @@ Issues and Ideas
 
    The publish should only call the Inform func if not already called.
 
-* Need to fix reconnect sending messages and subscriptions
-
 * Server update multiple records
    could do one fetch then one update then proceed similar to client.
 
 
 * SRP is CPU intensive and blocks node;
+   is this true for server logic?
    consider handing off to worker thread on server
 
 * Use https://github.com/ahyatt/emacs-websocket
@@ -51,34 +47,3 @@ Issues and Ideas
 
 
 -------
-
-
-done * Subscriptions
-
-   Like methods there should be something like the "simulation"
-   methods. These things are used to test if a doc should be on the
-   client. Basically a map of ModelName => test. The test says yes or
-   no to a doc. So like publish but say
-     "vote(model, function(doc {...})"
-   Only one vote needs to pass. It could be both server and client. On
-   server it could be used filter fields as well. It could be part of
-   publish like say: "sub.vote". It would be cancelled when sub
-   stopped. The publish method could be called on both server and
-   client but conditional bits for server only like model observers.
-
-   Unlike methods the client side publish would be compulsory.
-
-         publish("Org", function(sub) {
-
-           sub.vote(Org, function(doc) {
-             return doc.admin_ids.indexOf(sub.userId) !== -1;
-           });
-
-           if (isClient) return;
-
-           // server stuff
-           ...
-           sub.ready();
-         });
-
-   This would help solve the "setUserId and "reconnect" issues below.

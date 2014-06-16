@@ -36,6 +36,9 @@ define(function(require, exports, module) {
     init: function (BaseModel, _support, modelProperties) {
       modelProperties.findById = findById;
 
+      modelProperties.addUniqueIndex = addUniqueIndex;
+      modelProperties.addIndex = addIndex;
+
       BaseModel.prototype.$remove =  function () {
         BaseModel._callObserver('beforeRemove', this);
         return new Query(this.constructor).onId(this._id).remove();
@@ -129,6 +132,26 @@ define(function(require, exports, module) {
       model.docs.insert(attrs);
     },
   };
+
+  function addUniqueIndex() {
+    this.docs.ensureIndex(buidlKeys(arguments), {unique : true});
+  }
+
+  function addIndex() {
+    this.docs.ensureIndex(buidlKeys(arguments));
+  }
+
+  function buidlKeys(args) {
+    var keys = {};
+    for(var i = 0; i < args.length; ++i) {
+      var name = args[i];
+      if (typeof args[i + 1] === 'number')
+        keys[name] = args[++i];
+      else
+        keys[name] = 1;
+    }
+    return keys;
+  }
 
   function findById (id) {
     var doc = this.docs.findOne({_id: id});

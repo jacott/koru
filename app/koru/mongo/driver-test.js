@@ -52,6 +52,16 @@ isServer && define(function (require, exports, module) {
         assert.same(v.foo.count({_id: "123"}), 1);
         assert.same(v.foo.count({name: "abc"}), 2);
       },
+
+      "test ensureIndex": function () {
+        var ensureIndex = test.stub(v.foo._col, 'ensureIndex', function () {
+          arguments[arguments.length -1](null, 'Tsuccess');
+        });
+
+        assert.same(v.foo.ensureIndex({name: -1}, {unique: true}), 'Tsuccess');
+
+        assert.calledWith(ensureIndex, {name: -1}, {unique: true});
+      },
     },
 
     "test defaultDb": function () {

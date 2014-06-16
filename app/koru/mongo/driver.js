@@ -119,6 +119,16 @@ Collection.prototype = {
 
     return future.wait();
   },
+
+  ensureIndex: function (keys, options) {
+     var future = new Future;
+    if (options)
+      this._col.ensureIndex(keys, options, future.resolver());
+    else
+      this._col.ensureIndex(keys, future.resolver());
+
+    return future.wait();
+  },
 };
 
 function Cursor(mcursor) {
