@@ -98,7 +98,7 @@ define(function (require, exports, module) {
       v.ready = true;
       test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
 
       v.sess.sendM('foo.rpc', [1, 2]);
 
@@ -107,7 +107,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 1);
 
       v.ob.reset();
 
@@ -120,7 +120,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
     },
 
 
@@ -211,7 +211,7 @@ define(function (require, exports, module) {
     "test onChange rpc": function () {
       test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
 
       v.sess.sendM('foo.rpc', [1, 2]);
 
@@ -220,7 +220,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 2);
 
       v.ob.reset();
 
@@ -233,7 +233,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
     }
   });
 });

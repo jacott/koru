@@ -212,7 +212,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test sending login token": function () {
-        assert.isTrue(sessState._onConnect['01'].indexOf(userAccount._onConnect) !== -1);
+        assert.same(sessState._onConnect['05'], userAccount._onConnect);
 
         assert.same(login.state, null);
 

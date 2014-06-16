@@ -9,36 +9,36 @@ define(function(require, exports, module) {
     _onConnect: {},
 
     onConnect: function (priority, func) {
-      (this._onConnect[priority] || (this._onConnect[priority] = [])).push(func);
+      if (priority in this._onConnect)
+        throw new Error("priority " + priority + " already taken for onConnect");
+      this._onConnect[priority] = func;
     },
 
     stopOnConnect: function (priority, func) {
-      var index = util.removeItem(this._onConnect[priority] || [], func);
+      delete this._onConnect[priority];
     },
 
     connected: function (conn) {
       state = 'ready';
       var onConnect = this._onConnect;
       Object.keys(onConnect).sort().forEach(function (priority) {
-        onConnect[priority].forEach(function (func) {
-          func.call(conn);
-        });
+        onConnect[priority].call(conn);
       });
       this.notify(true);
     },
 
     close: function () {
-      if (state !== 'closed') {
-        state = 'closed';
+      var was = state;
+      state = 'closed';
+      if (was === 'ready')
         this.notify(false);
-      }
     },
 
     retry: function () {
-      if (state !== 'retry') {
-        state = 'retry';
+      var was = state;
+      state = 'retry';
+      if (was === 'ready')
         this.notify(false);
-      }
     },
 
     isReady: function() {return state === 'ready'},
@@ -47,9 +47,7 @@ define(function(require, exports, module) {
     get _state() {return state},
     set _state(value) {state = value},
 
-    inSync: function () {
-      return count !== 0;
-    },
+    pendingCount: function() {return count},
 
     pending: makeSubject({}),
 

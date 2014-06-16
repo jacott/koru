@@ -1,5 +1,10 @@
 define(function(require, exports, module) {
   var util = require('../util');
+  var env = require('../env');
+
+  env.onunload(module, function () {
+    Query._unload && Query._unload();
+  });
 
   function Query(model) {
     this.model = model;

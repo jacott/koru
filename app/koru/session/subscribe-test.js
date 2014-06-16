@@ -88,7 +88,7 @@ isClient && define(function (require, exports, module) {
     "test onChange rpc": function () {
       test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
 
       var sub1 = subscribe("foo", 1 ,2);
       assert.isTrue(sub1.waiting);
@@ -98,7 +98,7 @@ isClient && define(function (require, exports, module) {
       var sub2 = subscribe("foo", 3, 4);
       assert.calledOnce(v.ob);
 
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 2);
 
       v.ob.reset();
 
@@ -111,7 +111,7 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
     },
 
     "filtering":{

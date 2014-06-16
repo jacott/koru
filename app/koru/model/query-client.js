@@ -2,36 +2,21 @@ define(function(require, exports, module) {
   var util = require('../util');
   var env = require('../env');
   var sessState = require('../session/state');
+  var Model = require('./base');
 
-  env.onunload(module, function () {
-    syncOb && syncOb.stop();
-    syncOb = null;
-  });
-
-  var syncOb;
   var desc = {value: null};
 
   return function(Query) {
+    var syncOb, stateOb;
     var simDocs = {};
 
-    syncOb && syncOb.stop();
-    syncOb = sessState.pending.onChange(function (waiting) {
-      waiting || Query.revertSimChanges();
-    });
-
     util.extend(Query, {
-      _destroyModel: function (model) {
-        delete simDocs[model.modelName];
-      },
-      get _simDocs() {return simDocs},
-
       revertSimChanges: function () {
         for (var modelName in simDocs) {
-          var docs = simDocs[modelName];
-          var model = docs[0];
-          var modelDocs = model.docs;
+          var model = Model[modelName];
+          var modelDocs = model && model.docs;
           if (! modelDocs) continue;
-          docs = docs[1];
+          var docs = simDocs[modelName];
           for(var id in docs) {
             var doc = modelDocs[id];
             var fields = docs[id];
@@ -58,7 +43,7 @@ define(function(require, exports, module) {
 
       insert: function (doc) {
         var model = doc.constructor;
-        if (sessState.inSync()) {
+        if (sessState.pendingCount()) {
           simDocsFor(model)[doc._id] = 'new';
         }
         model.docs[doc._id] = doc;
@@ -67,7 +52,7 @@ define(function(require, exports, module) {
       },
 
       insertFromServer: function (model, id, attrs) {
-        if (sessState.inSync()) {
+        if (sessState.pendingCount()) {
           var changes = fromServer(model, id, attrs);
           var doc = model.docs[id];
           if (doc && changes !== attrs) { // found existing
@@ -86,12 +71,19 @@ define(function(require, exports, module) {
         model.notify(doc, null);
       },
 
-      _onConnect: function () {
+      // for testing
+      _reset: reset,
 
+      _unload: unload,
+
+      _destroyModel: function (model) {
+        delete simDocs[model.modelName];
       },
+
+      get _simDocs() {return simDocs},
     });
 
-    sessState.onConnect("50", Query._onConnect);
+    reset();
 
     util.extend(Query.prototype, {
       fromServer: function (id) {
@@ -170,7 +162,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = this.model;
         var docs = model.docs;
-        if (sessState.inSync() && this._fromServer) {
+        if (sessState.pendingCount() && this._fromServer) {
           if (fromServer(model, this.singleId, null) === null) {
             var doc = docs[this.singleId];
             delete docs[this.singleId];
@@ -180,7 +172,7 @@ define(function(require, exports, module) {
         }
         this.forEach(function (doc) {
           ++count;
-          if (sessState.inSync()) {
+          if (sessState.pendingCount()) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
@@ -194,7 +186,7 @@ define(function(require, exports, module) {
         var count = 0;
         var model = self.model;
         var docs = model.docs;
-        if (sessState.inSync() && self._fromServer) {
+        if (sessState.pendingCount() && self._fromServer) {
           changes = fromServer(model, self.singleId, changes);
           var doc = docs[self.singleId];
           if (doc) {
@@ -215,7 +207,7 @@ define(function(require, exports, module) {
           }
 
           var valueUndefined = {value: undefined};
-          sessState.inSync() && recordChange(model, attrs, changes);
+          sessState.pendingCount() && recordChange(model, attrs, changes);
           util.applyChanges(attrs, changes);
           for(var key in changes) {
             model.notify(doc, changes);
@@ -231,14 +223,11 @@ define(function(require, exports, module) {
       var modelName = model.modelName;
       var docs = simDocs[modelName];
       if (! docs) return changes;
-      docs = docs[1];
-      var keys = docs && docs[id];
-      if (!keys) return changes; // no sim value
 
       if (! changes) {
         return docs[id] = 'new';
       }
-
+      var keys = docs[id];
       if (keys === 'new') {
         changes = util.deepCopy(changes);
         delete changes._id;
@@ -291,7 +280,35 @@ define(function(require, exports, module) {
     }
 
     function simDocsFor(model) {
-      return (simDocs[model.modelName] || (simDocs[model.modelName] = [model, {}]))[1];
+      return simDocs[model.modelName] || (simDocs[model.modelName] = {});
+    }
+
+    function reset() {
+      unload();
+
+      syncOb = sessState.pending.onChange(function (pending) {
+        pending || Query.revertSimChanges();
+      });
+
+      stateOb = sessState.onChange(function (ready) {
+        if (ready) {
+          sessState.pendingCount() || Query.revertSimChanges();
+
+        } else for(var name in Model) {
+          var model = Model[name];
+          if (! model) continue;
+          var docs = model.docs;
+          var sd = simDocs[name] = {};
+          for (var id in docs) {
+            sd[id] = 'new';
+          }
+        }
+      });
+    }
+
+    function unload() {
+      syncOb && syncOb.stop();
+      stateOb && stateOb.stop();
     }
   };
 });

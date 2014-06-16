@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var Query = require('./query');
+  var sut = require('./query-client');
   var session = require('../session/base');
   var Model = require('./main');
   var util = require('../util');
@@ -22,28 +23,50 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "//test reconcile docs": function () {
-      assert.isTrue(sessState._onConnect['50'].indexOf(Query._onConnect) !== -1);
+    "test reconcile docs": function () {
+      var stateOC = test.stub(sessState, 'onChange').returns(v.stateOb = {stop: test.stub()});
+      var syncOC = test.stub(sessState.pending, 'onChange').returns(v.syncOb = {stop: test.stub()});
 
-      var foo2 = Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+      function MockQuery() {}
+      sut(MockQuery);
+
+      test.spy(MockQuery, 'revertSimChanges');
+
+      assert.calledOnce(stateOC);
+      assert.calledOnce(syncOC);
+
+
+      assert.same(sessState._onConnect['01'], Query._onConnect);
+
+      var foo2 = MockQuery.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
 
       v.TestModel2 = Model.define('TestModel2').defineFields({moe: 'text'});
 
-      var moe =  Query.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
+      var moe =  MockQuery.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
 
-      Query._onConnect();
+      stateOC.yield(false);
 
-      var simDocs = Query._simDocs;
+      var simDocs = MockQuery._simDocs;
 
       assert(simDocs.TestModel);
 
       assert.same(simDocs.TestModel.foo123, 'new');
-      // ...
+      assert.same(simDocs.TestModel.foo2, 'new');
+      assert.same(simDocs.TestModel2.moe1, 'new');
 
+      var pending = true;
 
-      // in addition waitMs we should be only reconcile once all rpcs
-      // and supsciptions have responded. Will need to recfactor the
-      // v.sess.rpc.notify logic
+      test.stub(sessState, 'pendingCount', function () {
+        return pending;
+      });
+      stateOC.yield(true);
+
+      refute.called(MockQuery.revertSimChanges);
+
+      pending = false;
+
+      stateOC.yield(true);
+      assert.called(MockQuery.revertSimChanges);
     },
 
     "recording": {
@@ -56,7 +79,7 @@ define(function (require, exports, module) {
 
         assert.same(v.foo.name, 'bar');
 
-        var tmchanges = Query._simDocs.TestModel[1];
+        var tmchanges = Query._simDocs.TestModel;
 
         assert.equals(tmchanges[v.foo._id].name, 'foo');
 
@@ -107,7 +130,7 @@ define(function (require, exports, module) {
       "test nested structures": function () {
         v.TestModel.query.update({"nested.0.arg.0": 'f'});
 
-        var tmchanges = Query._simDocs.TestModel[1];
+        var tmchanges = Query._simDocs.TestModel;
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['m']}]);
 

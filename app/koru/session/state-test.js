@@ -16,44 +16,47 @@ define(function (require, exports, module) {
     tearDown: function () {
       sessState._onConnect = v.origOnConnect;
       sessState._state = v.origState;
+      sessState._resetPendingCount();
       v = null;
     },
 
-    "test notification": function () {
-      assert.isFalse(sessState.inSync());
+    "test pending": function () {
+      assert.same(sessState.pendingCount(), 0);
       test.onEnd(sessState.pending.onChange(v.change = test.stub()));
 
       sessState.incPending();
       assert.calledOnce(v.change);
       assert.calledWith(v.change, true);
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 1);
 
       sessState.incPending();
       assert.calledOnce(v.change);
 
       sessState.decPending();
       assert.calledOnce(v.change);
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 1);
 
       sessState.decPending();
       assert.calledWith(v.change, false);
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
 
       assert.exception(function () {
         sessState.decPending();
       });
 
-      assert.isFalse(sessState.inSync());
+      assert.same(sessState.pendingCount(), 0);
 
       v.change.reset();
       sessState.incPending();
-      assert.isTrue(sessState.inSync());
+      assert.same(sessState.pendingCount(), 1);
       assert.calledWith(v.change, true);
     },
 
-    "test connected": function () {
+    "test onConnect": function () {
       sessState.onConnect('22', v.conn22_1 = test.stub());
-      sessState.onConnect('22', v.conn22_2 = test.stub());
+      assert.exception(function () {
+        sessState.onConnect('22', v.conn22_2 = test.stub());
+      });
 
       sessState.onConnect('10', v.conn10_1 = test.stub());
 
@@ -64,9 +67,7 @@ define(function (require, exports, module) {
       assert.same(v.conn22_1.thisValues[0], v.conn);
 
       assert(v.conn22_1.calledAfter(v.conn10_1));
-      assert(v.conn22_2.calledAfter(v.conn22_1));
-
-      assert(v.onChange.calledAfter(v.conn22_2));
+      assert(v.onChange.calledAfter(v.conn22_1));
       assert.calledWith(v.onChange, true);
 
       assert.same(sessState._state, 'ready');
@@ -74,9 +75,9 @@ define(function (require, exports, module) {
       assert(sessState.isReady());
       refute(sessState.isClosed());
 
-      sessState.stopOnConnect('22', v.conn22_2);
+      sessState.stopOnConnect('22');
 
-      assert.equals(sessState._onConnect['22'], [v.conn22_1]);
+      assert.equals(sessState._onConnect['22'], undefined);
     },
 
     "test retry": function () {

@@ -34,11 +34,11 @@ define(function(require, exports, module) {
 
   exports = {
     init: function () {
-      sessState.onConnect('01', onConnect);
+      sessState.onConnect('05', onConnect);
     },
 
     stop: function () {
-      sessState.stopOnConnect('01', onConnect);
+      sessState.stopOnConnect('05');
     },
 
     state: null,
