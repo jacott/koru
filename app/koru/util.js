@@ -151,6 +151,11 @@ define(function(require, exports, module) {
       return Array.prototype.slice.call(list, from, to);
     },
 
+    isObjEmpty: function (obj) {
+      for(var noop in obj) {return false;}
+      return true;
+    },
+
     removeItem: function (list, item) {
       var index = list.indexOf(item);
       if (index !== -1)

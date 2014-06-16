@@ -213,7 +213,9 @@ define(function (require, exports, module) {
 
       assert.same(sessState.pendingCount(), 0);
 
+      assert.isFalse(v.sess.isRpcPending());
       v.sess.sendM('foo.rpc', [1, 2]);
+      assert.isTrue(v.sess.isRpcPending());
 
       assert.calledOnceWith(v.ob, true);
 
@@ -232,6 +234,7 @@ define(function (require, exports, module) {
       v.recvM(msgId.toString(36), 'r');
 
       assert.calledWith(v.ob, false);
+      assert.isFalse(v.sess.isRpcPending());
 
       assert.same(sessState.pendingCount(), 0);
     }

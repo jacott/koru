@@ -27,6 +27,11 @@ define(function (require, exports, module) {
       assert.isFalse(util.isArray("[1,2]"));
     },
 
+    "test isObjEmpty": function () {
+      assert.isTrue(util.isObjEmpty({}));
+      assert.isFalse(util.isObjEmpty({a: 1}));
+    },
+
     "test removeItem": function () {
       var foo = [1,2,3];
 

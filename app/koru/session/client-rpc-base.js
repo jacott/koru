@@ -41,6 +41,10 @@ define(function(require, exports, module) {
         return msgId;
       },
 
+      isRpcPending: function () {
+        return ! util.isObjEmpty(waitMs);
+      },
+
       // for testing
       _forgetMs: function () {
         waitMs = {};
