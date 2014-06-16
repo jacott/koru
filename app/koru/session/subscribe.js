@@ -28,8 +28,12 @@ define(function(require, exports, module) {
       if (handle && handle.callback) handle.callback(data[1]||null);
     });
 
-    login.onChange(function (state) {
-      if (state = 'change') {
+    var userId;
+
+    var loginOb = login.onChange(function (state) {
+      if (state === 'change') {
+        if (env.userId() === userId) return;
+        userId = env.userId();
         var models = {};
         for(var key in subs) {
           subs[key].resubscribe(models);
@@ -67,6 +71,17 @@ define(function(require, exports, module) {
       get _subs() {return subs},
       get _nextId() {return nextId},
       intercept: function () {},
+      unload: function () {
+        sessState.stopOnConnect('10');
+        loginOb && loginOb.stop();
+        loginOb = null;
+        session.unprovide('P');
+        delete session.sendP;
+        clientUpdate && clientUpdate.unload();
+        clientUpdate = null;
+        userId = null;
+      },
+      set _userId(value) {userId = value},
     });
 
     function ClientSub(subId, name, args) {
@@ -104,6 +119,10 @@ define(function(require, exports, module) {
         killMatches(oldMatches, models);
       },
 
+      error: function (err) {
+
+      },
+
       stop: function () {
         session.sendP(this._id);
         delete subs[this._id];
@@ -126,7 +145,7 @@ define(function(require, exports, module) {
       }
     }
 
-    require('./client-update')(session);
+    var clientUpdate = require('./client-update')(session);
 
     return Subcribe;
   };

@@ -94,7 +94,8 @@ define(['./core'], function (geddon) {
 
       if (promise.timeout) {
         clearTimeout(promise.timeout);
-        runNext(abort);
+        if (abort) runNext(abort);
+        else setTimeout(runNext, 0);
       }
     };
 

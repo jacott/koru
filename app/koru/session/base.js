@@ -15,6 +15,10 @@ define(function(require, exports, module) {
       return old;
     },
 
+    unprovide: function (cmd) {
+      delete this._commands[cmd];
+    },
+
     _onMessage: function(conn, data) {
       if (typeof data === 'string') {
         var type = data[0];

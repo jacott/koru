@@ -40,5 +40,13 @@ define(function(require, exports, module) {
         func.call(this, Model[data[0]], data[1], data[2]);
       };
     }
+
+    return {
+      unload: function () {
+        session.unprovide('A');
+        session.unprovide('C');
+        session.unprovide('R');
+      },
+    };
   };
 });
