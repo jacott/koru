@@ -32,6 +32,9 @@ define(function(require, exports, module) {
     var options = {
       syncImport: true,
       paths: [dir], // for @import
+      currentFileInfo: {
+        filename: '/'+path.substring(topLen),
+      },
     };
 
     var parser = new less.Parser(options);
@@ -40,9 +43,7 @@ define(function(require, exports, module) {
 
     try {
       parser.parse(src, future.resolver());
-      var ast = future.wait();
-
-      var css = ast.toCSS({
+      var css = future.wait().toCSS({
         sourceMap: true,
       });
     } catch (ex) {

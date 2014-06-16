@@ -20,6 +20,7 @@ isServer && define(function (require, exports, module) {
       var output = fst.readFile(require.toUrl("./.build/less-compiler-test.less.css"));
 
       assert.match(output, /body\s*{\s*color: #cc0000;[\s\S]*sourceMap/);
+      assert.match(output, /sourceMap.*less-compiler-test.less/);
     },
   });
 });
