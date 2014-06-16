@@ -2,11 +2,11 @@ var Path = require('path');
 var htmlparser = require("htmlparser2");
 
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var webServer = require('../web-server');
   var fst = require('../fs-tools');
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   webServer.compilers['html'] = compiler;
 

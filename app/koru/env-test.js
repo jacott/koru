@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
   var TH = require('./test');
-  var env = require('./env');
+  var koru = require('./main');
 
   TH.testCase(module, {
     setUp: function () {
@@ -15,7 +15,7 @@ define(function (require, exports, module) {
 
     "test getLocation": function () {
       if (isClient)
-        assert.same(env.getLocation(), window.location);
+        assert.same(koru.getLocation(), window.location);
       else
         assert(isServer);
     },

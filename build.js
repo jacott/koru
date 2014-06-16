@@ -6,6 +6,6 @@
 
   include: 'requireLib',
 
-  name: "main",
+  name: "koru/client",
   out: "build/index-build.js",
 })

@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var Model = require('../model/base');
   var Query = require('../model/query');
   var ModelEnv = require('../model/main-client');

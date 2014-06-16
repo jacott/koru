@@ -16,7 +16,7 @@ requirejs.config({
     "koru/web-server": {port: 3000, defaultPage: '/test/index.html'},
   },
 
-  packages: ["koru/test"],
+  packages: ["koru", "koru/test"],
 
   //Pass the top-level main.js/index.js require
   //function to requirejs so that node modules
@@ -32,6 +32,6 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['koru/env', 'koru/server', 'koru/css/less-watcher', 'koru/server-rc'], function (env) {
+requirejs(['koru', 'koru/server', 'koru/css/less-watcher', 'koru/server-rc'], function (koru) {
   console.log('=> Ready');
 });

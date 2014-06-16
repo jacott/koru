@@ -4,14 +4,14 @@ var send = require('send');
 var parseurl = require('parseurl');
 
 define(function (require, exports, module) {
-  var env = require('./env');
+  var koru = require('./main');
   var fst = require('./fs-tools');
   var queue = require('./queue')();
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   var root = Path.resolve(require.toUrl(''));
-  var appDir = env.appDir;
+  var appDir = koru.appDir;
   var nmRoot = Path.resolve(appDir+'/../node_modules');
 
   var SPECIALS = {
@@ -39,7 +39,7 @@ define(function (require, exports, module) {
     send = value;
   };
 
-  function requestListener(req, res) {env.Fiber(function () {
+  function requestListener(req, res) {koru.Fiber(function () {
     try {
       var path = parseurl(req).pathname;
       var reqRoot = root;
@@ -60,7 +60,7 @@ define(function (require, exports, module) {
           .pipe(res);
       }
     } catch(ex) {
-      env.error(env.util.extractError(ex));
+      koru.error(koru.util.extractError(ex));
     }
 
     function sendDefault(err) {

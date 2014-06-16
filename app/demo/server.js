@@ -11,12 +11,12 @@ requirejs.config({
   baseUrl: __dirname,
 
   config: {
-    "koru/env": {appDir: Path.resolve(__dirname + '/..')},
+    "koru": {appDir: Path.resolve(__dirname + '/..')},
 
     "koru/mongo/driver": {url: "mongodb://localhost:3014/demo"},
   },
 
-  packages: ['koru/model'],
+  packages: ['koru', 'koru/model'],
 
   paths: {
     koru: '../koru',
@@ -36,7 +36,7 @@ requirejs.config({
 //Now export a value visible to Node.
 module.exports = function () {};
 
-requirejs(['koru/env', 'bootstrap', 'publish-all', 'koru/server', 'koru/file-watch', 'koru/server-rc'], function (env, bootstrap) {
+requirejs(['koru', 'bootstrap', 'publish-all', 'koru/server', 'koru/file-watch', 'koru/server-rc'], function (koru, bootstrap) {
   Fiber(function () {
     bootstrap();
     console.log('=> Ready');

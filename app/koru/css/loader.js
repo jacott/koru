@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var session = require('../session/base');
 
-  env.onunload(module, removeAllCss);
+  koru.onunload(module, removeAllCss);
 
   session.provide('S', reloadCss);
 

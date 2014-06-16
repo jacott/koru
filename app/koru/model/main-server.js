@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var env = require('../env');
-  var util = env.util;
+  var koru = require('../main');
+  var util = koru.util;
   var Random = require('../random');
   var session = require('../session/base');
   var Val = require('./validation');
@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   var save;
 
-  var env = {
+  var koru = {
     $save: function(force) {
       var doc = this;
       doc.$isValid();
@@ -158,5 +158,5 @@ define(function(require, exports, module) {
     if (doc) return new this(doc);
   }
 
-  return env;
+  return koru;
 });

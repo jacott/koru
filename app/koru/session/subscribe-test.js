@@ -5,7 +5,7 @@ isClient && define(function (require, exports, module) {
   var publish = require('./publish');
   require('./client-update');
   var Model = require('../model/main');
-  var env = require('../env');
+  var koru = require('../main');
   var login = require('../user-account/client-login');
   var message = require('./message');
   var util = require('../util');
@@ -171,7 +171,7 @@ isClient && define(function (require, exports, module) {
       v.sub = subscribe('foo', 'x');
       v.pubFunc = function () {
         assert.same(this, v.sub);
-        assert.equals(env.util.slice(arguments), ['x']);
+        assert.equals(koru.util.slice(arguments), ['x']);
         assert.isTrue(this.isResubscribe);
       };
 
@@ -182,7 +182,7 @@ isClient && define(function (require, exports, module) {
 
     "test error on resubscribe": function () {
       v.sub = subscribe('foo', 'x');
-      test.stub(env, 'error');
+      test.stub(koru, 'error');
       v.pubFunc = function () {
         throw new Error('foo error');
       };
@@ -190,19 +190,19 @@ isClient && define(function (require, exports, module) {
       v.sub.resubscribe();
 
       refute(v.sub.isResubscribe);
-      assert.calledWith(env.error, TH.match(/foo error/));
+      assert.calledWith(koru.error, TH.match(/foo error/));
     },
 
 
 
     /**
-     * sub.userId should mirror env.userId
+     * sub.userId should mirror koru.userId
      */
     "test userId": function () {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
-      var origId = env.util.thread.userId;
-      test.onEnd(function () {env.util.thread.userId = origId});
-      env.util.thread.userId = 'test123';
+      var origId = koru.util.thread.userId;
+      test.onEnd(function () {koru.util.thread.userId = origId});
+      koru.util.thread.userId = 'test123';
 
       assert.same(v.sub.userId, 'test123');
     },

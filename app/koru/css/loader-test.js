@@ -1,7 +1,7 @@
 isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
-  var env = require('../env');
+  var koru = require('../main');
   var session = require('../session/base');
 
   TH.testCase(module, {
@@ -17,7 +17,7 @@ isClient && define(function (require, exports, module) {
       for(var i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
-      env.unload('koru/css/loader');
+      koru.unload('koru/css/loader');
     },
 
     "test load all": function (done) {

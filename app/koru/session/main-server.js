@@ -1,7 +1,7 @@
 var WebSocketServer = require('ws').Server;
 
 define(function (require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var server = require('../web-server').server;
   var message = require('./message');
@@ -9,7 +9,7 @@ define(function (require, exports, module) {
   return function (session) {
     var Connection = require('./server-connection')(session);
 
-    env.onunload(module, 'reload');
+    koru.onunload(module, 'reload');
 
     var sessCounter = 0;
 
@@ -34,12 +34,12 @@ define(function (require, exports, module) {
       // TODO ensure protocol version is compatible
     });
     session.provide('L', function (data) {
-      env.logger('INFO', this.engine, data);
+      koru.logger('INFO', this.engine, data);
     });
     session.provide('E', function (data) {
       session.remoteControl && session.remoteControl.logHandle ?
         session.remoteControl.logHandle.call(this, data) :
-        env.logger('INFO', this.engine, data);
+        koru.logger('INFO', this.engine, data);
     });
     session.provide('M', function (data) {
       data = message.decodeMessage(data);
@@ -47,12 +47,12 @@ define(function (require, exports, module) {
       var func = session._rpcs[data[1]];
       try {
         if (! func)
-          throw new env.Error(404, 'unknown method: ' + data[1]);
+          throw new koru.Error(404, 'unknown method: ' + data[1]);
 
         var result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
       } catch(ex) {
-        env.error(util.extractError(ex));
+        koru.error(util.extractError(ex));
         this.sendBinary('M', [msgId, 'e', (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex)]);
       }
     });
@@ -75,13 +75,13 @@ define(function (require, exports, module) {
           conn && conn.closed();
           delete session.conns[sessId];
         }
-        env.info('Close client', sessId);
+        koru.info('Close client', sessId);
       });
       conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
       ws.on('message', conn.onMessage.bind(conn));
 
       ws.send('X1'+session.versionHash);
-      env.info('New client ws:',session.totalSessions, conn.engine, ugr.socket.remoteAddress);
+      koru.info('New client ws:',session.totalSessions, conn.engine, ugr.socket.remoteAddress);
     }
 
     function sendAll(cmd, msg) {
@@ -96,7 +96,7 @@ define(function (require, exports, module) {
     }
 
     function unload(id) {
-      env.unload(id);
+      koru.unload(id);
       this.versionHash = Date.now();
       this.sendAll('U', this.versionHash + ':' + id);
     }

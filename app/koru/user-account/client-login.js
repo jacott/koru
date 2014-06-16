@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var makeSubject = require('../make-subject');
-  var env = require('../env');
+  var koru = require('../main');
 
   makeSubject(exports);
 
   util.extend(exports, {
     setUserId: function (id) {
-      env.util.thread.userId = id;
+      koru.util.thread.userId = id;
       setState('change');
     },
 

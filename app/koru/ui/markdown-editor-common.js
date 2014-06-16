@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var Dom   = require('../dom');
-  var env   = require('../env');
+  var koru   = require('../main');
   var util = require('../util');
   var Markdown = require('./markdown');
   var Tpl = Dom.newTemplate(require('../html!./markdown-editor'));

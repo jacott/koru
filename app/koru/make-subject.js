@@ -1,5 +1,5 @@
-define(['module', './env'], function(module, env) {
-  env.onunload(module, 'reload');
+define(['module', './main'], function(module, koru) {
+  koru.onunload(module, 'reload');
   return  function (subject, observeName, notifyName) {
     observeName = observeName || 'onChange';
     notifyName = notifyName || 'notify';

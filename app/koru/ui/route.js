@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var Dom = require('../dom');
   require('koru/ui/dom-ext');
@@ -130,7 +130,7 @@ define(function(require, exports, module) {
 
       Route.loadingArgs = [page, pageRoute];
 
-      if (page && page.routeOptions && page.routeOptions.privatePage && ! env.userId()) {
+      if (page && page.routeOptions && page.routeOptions.privatePage && ! koru.userId()) {
         Route.replacePage(Route.SignPage, {returnTo: Route.loadingArgs});
         return;
       }
@@ -144,7 +144,7 @@ define(function(require, exports, module) {
             ex.location && this.replacePath(ex.location);
             return;
           }
-          env.error(util.extractError(ex));
+          koru.error(util.extractError(ex));
           throw ex;
         }
       } else try {
@@ -223,7 +223,7 @@ define(function(require, exports, module) {
 
       } else {
         if (page == null)
-          page = env.getLocation();
+          page = koru.getLocation();
         else if (! ('pathname' in page))
           return this.gotoPage.apply(this, arguments);
 

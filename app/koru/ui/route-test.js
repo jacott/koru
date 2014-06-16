@@ -1,6 +1,6 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var env = require('../env');
+  var koru = require('../main');
   var TH = require('./test-helper');
   var Route = require('./route');
   var Dom = require('../dom');
@@ -24,7 +24,7 @@ isClient && define(function (require, exports, module) {
       Route.root = new Route();
       test.stub(Route.history, 'pushState');
       test.stub(Route.history, 'replaceState');
-      test.stub(env, 'userId').returns("123");
+      test.stub(koru, 'userId').returns("123");
     },
 
     tearDown: function () {
@@ -408,7 +408,7 @@ isClient && define(function (require, exports, module) {
         Route.SignPage = origSigninPage;
       });
       test.stub(Route, 'replacePage');
-      env.userId.restore();
+      koru.userId.restore();
 
       Route.root.addTemplate(v.FooBar, {privatePage: true});
 
@@ -445,7 +445,7 @@ isClient && define(function (require, exports, module) {
 
     "test gotoPath default": function () {
       Route.root.addTemplate(v.FooBar, {path: "foo-location"});
-      test.stub(env, 'getLocation').returns({pathname: "/foo-location/append-data"});
+      test.stub(koru, 'getLocation').returns({pathname: "/foo-location/append-data"});
 
       Route.gotoPath();
       assert.called(v.FooBar.onEntry);

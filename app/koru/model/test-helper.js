@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var TH = require('../test-helper');
   var session = require('../session/base');
   var sessState = require('../session/state');
@@ -30,7 +30,7 @@ define(function(require, exports, module) {
   function stubSendM() {
     if (session.hasOwnProperty('sendM')) {
       sendM = session.sendM;
-      session.sendM = env.nullFunc;
+      session.sendM = koru.nullFunc;
     }
   }
 

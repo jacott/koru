@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var env = require('../env');
+  var koru = require('../main');
   var sessState = require('../session/state');
   var Model = require('./base');
 

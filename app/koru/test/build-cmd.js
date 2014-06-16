@@ -5,8 +5,8 @@ var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
-  var env = require('../env');
-  var topDir = env.appDir;
+  var koru = require('../main');
+  var topDir = koru.appDir;
   var cmdFn = Path.resolve(topDir + '/../tmp/cmd-client.js');
 
   try {fs.mkdirSync(topDir+'/.build');} catch(ex) {}
@@ -24,7 +24,7 @@ define(function(require, exports, module) {
       if (pattern === '') {
         // all
         var config = module.config();
-        var exDirs = env.util.toMap(config.excludeDirs||[]);
+        var exDirs = koru.util.toMap(config.excludeDirs||[]);
         (config.testDirs ||
          readdir(topDir).wait().filter(function (fn) {
            return stat(fn).wait().isDirectory() &&

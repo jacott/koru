@@ -5,13 +5,13 @@ var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var fw = require('../file-watch');
   var fst = require('../fs-tools');
   var session = require('../session/base');
-  var topDir = env.appDir;
+  var topDir = koru.appDir;
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   fw.listeners['less'] = watcher;
 
@@ -51,7 +51,7 @@ define(function(require, exports, module) {
     path = top + path;
 
     var dir = Path.join(Path.dirname(path),  ".build");
-    var outPath = Path.join(dir, Path.basename(path)).slice(env.appDir.length + 1);
+    var outPath = Path.join(dir, Path.basename(path)).slice(koru.appDir.length + 1);
 
     session.sendAll('SL', outPath);
   }

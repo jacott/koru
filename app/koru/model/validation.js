@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var ResourceString = require('../resource-string');
   var format = require('../format');
@@ -77,8 +77,8 @@ define(function(require, exports, module) {
 
     allowIfValid: function (truthy, doc) {
       if (! truthy) {
-        if (doc) env.info('INVALID ' + this.inspectErrors(doc));
-        var error = env.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
+        if (doc) koru.info('INVALID ' + this.inspectErrors(doc));
+        var error = koru.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
         error.doc = doc;
         error.toString = function () {
           return this.message;
@@ -90,7 +90,7 @@ define(function(require, exports, module) {
 
     allowIfFound: function (truthy) {
       if (! truthy) {
-        throw new env.Error(404, 'Not found');
+        throw new koru.Error(404, 'Not found');
       }
     },
 
@@ -191,9 +191,9 @@ define(function(require, exports, module) {
   };
 
   function accessDenied(details) {
-    var error = new env.Error(403, "Access denied", details);
+    var error = new koru.Error(403, "Access denied", details);
 
-    env.info('Access denied: ', details, env.util.extractError(error));
+    koru.info('Access denied: ', details, koru.util.extractError(error));
     throw error;
   }
 

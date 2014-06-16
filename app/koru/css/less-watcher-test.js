@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var env = require('../env');
+  var koru = require('../main');
   var Future = require('fibers/future');
   var TH = require('../test');
   require('./less-watcher');
@@ -24,8 +24,8 @@ isServer && define(function (require, exports, module) {
       assert(watcher, "Should be registered with file-watch");
 
       var future = new Future();
-      var fb1 = env.Fiber(function () {
-        watcher('less', "compiler-test.less", env.appDir+'/koru/css/', v.session);
+      var fb1 = koru.Fiber(function () {
+        watcher('less', "compiler-test.less", koru.appDir+'/koru/css/', v.session);
         future.return();
       });
       fb1.run();

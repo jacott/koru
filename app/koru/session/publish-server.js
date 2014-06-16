@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var session = require('../session/base');
-  var env = require('../env');
+  var koru = require('../main');
   var publish = require('./publish-base');
   var message = require('./message');
 
@@ -26,7 +26,7 @@ define(function(require, exports, module) {
       if (! func) {
         var msg = 'unknown publication: ' + name;
         this.sendBinary('P', [subId, 500, msg]);
-        return env.info(msg);
+        return koru.info(msg);
       }
       sub = subs[subId] = new Sub(this, subId, func, data[2]);
       sub.resubscribe();
@@ -82,8 +82,8 @@ define(function(require, exports, module) {
         this._stop && this._stop();
         this._subscribe.apply(this, this.args);
       } catch(ex) {
-        env.error(util.extractError(ex));
-        this.error(new env.Error(500, 'Internal server error'));
+        koru.error(util.extractError(ex));
+        this.error(new koru.Error(500, 'Internal server error'));
       }
       this._called = true;
       this.isResubscribe = false;

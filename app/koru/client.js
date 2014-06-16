@@ -1,9 +1,9 @@
 define(function (require, exports, module) {
-  var env = require('./env');
+  var koru = require('./main');
   var session = require('./session/main');
   require('./ui/helpers');
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     window.removeEventListener('error', errorListener);
     requirejs.onError = null;
   });
@@ -12,16 +12,16 @@ define(function (require, exports, module) {
 
   requirejs.onError = function (err) {
     var name = err.requireModules && err.requireModules[0];
-    name && env.unload(name, err);
+    name && koru.unload(name, err);
 
-    session.send('E', env.util.extractError(err));
+    session.send('E', koru.util.extractError(err));
     throw err;
   };
 
   function errorListener(ev) {
-    var badIds = env.discardIncompleteLoads().join("\n");
+    var badIds = koru.discardIncompleteLoads().join("\n");
 
-    session.send('E', env.util.extractError({
+    session.send('E', koru.util.extractError({
       toString: function () {
         return ev.error.toString();
       },
@@ -29,5 +29,5 @@ define(function (require, exports, module) {
     }) +  "\nWhile loading:\n" + badIds);
   }
 
-  return env;
+  return koru;
 });

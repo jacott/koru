@@ -22,7 +22,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
     if (originRe === undefined) {
       if (isServer) {
-        originRe = new RegExp(require('./env').appDir+'/');
+        originRe = new RegExp(require('./main').appDir+'/');
       } else {
         repl = '';
         var lcn = window.location;

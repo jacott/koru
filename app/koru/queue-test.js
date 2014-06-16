@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var env = require('./env');
+  var koru = require('./main');
   var TH = require('./test');
   var Queue = require('./queue');
   var Future = require('fibers/future');
@@ -54,7 +54,7 @@ isServer && define(function (require, exports, module) {
 
 
       function letRun(func) {
-        env.Fiber(func).run();
+        koru.Fiber(func).run();
         var f = new Future();
         setTimeout(function () {
           f.return(v.q1);

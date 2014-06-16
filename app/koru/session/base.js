@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
 
   return {
     defineRpc: function (name, func) {
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       if (func)
         func.call(conn, data);
       else
-        func || env.info('Unexpected websocket message: '+ type, conn.engine);
+        func || koru.info('Unexpected websocket message: '+ type, conn.engine);
     },
   };
 });

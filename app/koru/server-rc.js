@@ -1,11 +1,11 @@
 var fs = require('fs');
 
 define([
-  'module', 'koru/env', 'koru/test/build-cmd',
+  'module', 'koru', 'koru/test/build-cmd',
   'koru/fs-tools', 'koru/session/base'
-], function (module, env, buildCmd,
+], function (module, koru, buildCmd,
              fst, session) {
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   session.remoteControl = remoteControl;
 
@@ -29,7 +29,7 @@ define([
       var args = data.split('\t');
       switch(args[0]) {
       case 'T':
-        env.Fiber(function () {
+        koru.Fiber(function () {
           buildCmd.runTests(session, args[1], args[2], function (mode) {
             var count = 0;
             if (mode !== 'none') {
@@ -49,7 +49,7 @@ define([
       try {
         ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
       } catch(ex) {
-        env.error(ex);
+        koru.error(ex);
       }
     }
 
@@ -57,7 +57,7 @@ define([
       try {
         ws.send('L' + this.engine + '\x00' + msg);
       } catch(ex) {
-        env.error(ex);
+        koru.error(ex);
       }
     }
   }

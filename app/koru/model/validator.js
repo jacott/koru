@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var util = require('../util');
   var val = require('./validation');
-  var env = require('../env');
+  var koru = require('../main');
   var validatorsPrefix = module.id.replace(/\/[^/]*$/, '/validators/');
   var loaderPrefix = module.id + "!";
 
@@ -18,7 +18,7 @@ define(function (require, exports, module) {
 
     function failure (err) {
       onload.error(err);
-      env.unload(parts[0]);
+      koru.unload(parts[0]);
     }
   };
 
@@ -31,15 +31,15 @@ define(function (require, exports, module) {
     require(normNames, function () {
       for(var i = 0; i < arguments.length; ++i) {
         var item = arguments[i];
-        env.insertDependency(dependantId, normNames[i]);
+        koru.insertDependency(dependantId, normNames[i]);
         if (typeof item === 'function') {
           var regName = util.camelize(modules[i]);
           val.register(regName, item.bind(val));
-          env.onunload(normNames[i], deregisterFunc(regName));
+          koru.onunload(normNames[i], deregisterFunc(regName));
         } else {
           for(var regName in item) {
             val.register(regName, item[regName].bind(val));
-            env.onunload(normNames[i], deregisterFunc(regName));
+            koru.onunload(normNames[i], deregisterFunc(regName));
           }
         }
       }

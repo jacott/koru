@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var Dom   = require('../dom');
-  var env   = require('../env');
+  var koru   = require('../main');
   var Route = require('./route');
   var Val   = require('../model/validation');
   var util = require('../util');
@@ -195,7 +195,7 @@ define(function(require, exports, module) {
           }
         }
         if (otherMsgs.length > 0) {
-          console.log('Unexpected errors: ', env._geddon_ && env._geddon_.test.name, JSON.stringify(otherMsgs));
+          console.log('Unexpected errors: ', koru._geddon_ && koru._geddon_.test.name, JSON.stringify(otherMsgs));
         }
 
         focus && focus.focus();

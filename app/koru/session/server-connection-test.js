@@ -3,7 +3,7 @@ isServer && define(function (require, exports, module) {
   var TH = require('../test');
   var session = require('../session/base');
   var Connection = require('./server-connection')(session);
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
 
@@ -23,7 +23,7 @@ isServer && define(function (require, exports, module) {
 
     "onMessage": {
       setUp: function () {
-        test.stub(env, 'Fiber', function (func) {
+        test.stub(koru, 'Fiber', function (func) {
           return v.fiber = {run: test.stub(), func: func};
         });
         test.onEnd(function () {
@@ -60,7 +60,7 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(v.conn._last, ['t456']);
 
-        assert.calledOnce(env.Fiber);
+        assert.calledOnce(koru.Fiber);
         assert.calledOnce(v.fiber.run);
 
         refute.called(v.tStub);

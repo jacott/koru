@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('./env');
+  var koru = require('./main');
 
   exports.both = function (name) {
     return exports.requiredBy(name) + exports.requires(name) +
@@ -8,7 +8,7 @@ define(function(require, exports, module) {
 
   exports.all = function () {
     var result = [];
-    var map = env.providerMap;
+    var map = koru.providerMap;
     for(var curr in map) {
       for (var key in map[curr]) {
         result.push('"'+key+'" -> "'+curr+'";');
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
 
   exports.requiredBy = function (name) {
     var result = [];
-    var map = env.providerMap;
+    var map = koru.providerMap;
     var done = {};
     var curr = map[name];
 
@@ -44,13 +44,13 @@ define(function(require, exports, module) {
 
   exports.requires = function (name) {
     var exclude = {
-      "koru/env": true,
+      "koru/main": true,
       "koru/util": true,
       "koru/util-base": true,
       "koru/test/main": true,
     };
     var result = [];
-    var map = env.providerMap;
+    var map = koru.providerMap;
     var inv = {};
     for (var sup in map) {
       var deps = map[sup];

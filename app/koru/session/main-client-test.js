@@ -4,7 +4,7 @@ define(function (require, exports, module) {
   var util = require('../util');
   var message = require('./message');
   var clientSession = require('./main-client');
-  var env = require('../env');
+  var koru = require('../main');
   var sessState = require('./state');
 
   TH.testCase(module, {
@@ -29,7 +29,7 @@ define(function (require, exports, module) {
     },
 
     "test connection cycle": function () {
-      test.stub(env, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
+      test.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
       v.sess.connect();         // connect
 
@@ -45,7 +45,7 @@ define(function (require, exports, module) {
 
       test.stub(window, 'setTimeout').returns('c123');
       test.stub(window, 'clearTimeout');
-      test.stub(env, 'info');
+      test.stub(koru, 'info');
 
       v.ws.onclose({});         // remote close
 

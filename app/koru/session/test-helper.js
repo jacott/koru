@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var TH = require('../test-helper');
   var session = require('../session/base');
-  var env = require('../env');
+  var koru = require('../main');
   var sessState = require('./state');
 
   var geddon = TH.geddon;

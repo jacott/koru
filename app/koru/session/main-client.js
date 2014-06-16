@@ -1,12 +1,12 @@
 /*global WebSocket, */
 
 define(function (require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
   var sessState = require('./state');
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   return function (session) {
     var waitSends = [];
@@ -49,7 +49,7 @@ define(function (require, exports, module) {
       var ws = this.ws;
       data = data.slice(1).toString();
       if (versionHash && versionHash !== data)
-        env.reload();
+        koru.reload();
       versionHash = data;
 
       retryCount = 0;
@@ -59,11 +59,11 @@ define(function (require, exports, module) {
     session.provide('U', function (data) {
       var args = data.split(':');
       versionHash = args[0];
-      env.unload(args[1]);
+      koru.unload(args[1]);
     });
 
     function url() {
-      var location = env.getLocation();
+      var location = koru.getLocation();
       return location.protocol.replace(/^http/,'ws')+'//' + location.host;
     }
 
@@ -95,7 +95,7 @@ define(function (require, exports, module) {
 
       ws.onclose = function (event) {
         connect._ws = ws = conn = null;
-        retryCount || env.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
+        retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
         retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
 
         if (sessState.isClosed())

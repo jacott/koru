@@ -4,9 +4,9 @@ var connect = Future.wrap(MongoClient.connect);
 
 
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
 
-  env.onunload(module, closeDefaultDb);
+  koru.onunload(module, closeDefaultDb);
 
   var defaultDb = null;
 

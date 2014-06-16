@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env =     require('koru/env');
+  var koru =     require('koru/main');
   var util =    require('koru/util');
   var Query =   require('koru/model/query');
   var Dom =     require('koru/dom');
@@ -13,7 +13,7 @@ define(function(require, exports, module) {
   var ListTpl = require('./lists');
   var okcancel = require('./okcancel');
 
-  env.onunload(module, onExit);
+  koru.onunload(module, onExit);
 
   var Tpl = Dom.newTemplate(require('koru/html!./item-list'));
   var Tag = Tpl.Row.Tag;

@@ -1,5 +1,5 @@
-define(['./env'], function(env) {
-  var util = env.util;
+define(['./main'], function(koru) {
+  var util = koru.util;
   var extend = util.extend;
 
   var vendorStylePrefix = (function () {
@@ -880,9 +880,9 @@ define(['./env'], function(env) {
     } catch(ex) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (! (env.globalErrorCatch && env.globalErrorCatch(ex))) {
+      if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
         if('stack' in ex)
-          env.error(util.extractError(ex));
+          koru.error(util.extractError(ex));
 
         throw ex;
       }

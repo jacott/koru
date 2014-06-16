@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
 
   require("./assertions-methods");
   require("./callbacks");
@@ -7,7 +7,7 @@ define(function(require, exports, module) {
   require("./runner");
   var geddon = require("./core");
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   var top = isServer ? global : window;
 
@@ -16,11 +16,11 @@ define(function(require, exports, module) {
 
   var count, skipCount, errorCount, timer;
 
-  var origLogger = env.logger;
+  var origLogger = koru.logger;
 
   var testRunCount = 0;
 
-  env._geddon_ = geddon; // helpful for errors finding test name
+  koru._geddon_ = geddon; // helpful for errors finding test name
 
   var self = {
     geddon: geddon,
@@ -36,34 +36,34 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      env.logger = function (type) {
-        origLogger.apply(env, arguments);
+      koru.logger = function (type) {
+        origLogger.apply(koru, arguments);
         var args = Array.prototype.slice.call(arguments, 1);
         self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 5) : args.join(' ')));
       };
 
       require(tests, function () {
         geddon.start(isServer ? function (runNext) {
-          env.Fiber(runNext).run();
+          koru.Fiber(runNext).run();
         } : undefined);
       }, errorLoading);
 
       function errorLoading(err) {
-        var badIds = env.discardIncompleteLoads();
+        var badIds = koru.discardIncompleteLoads();
         ++errorCount;
         var orig = err;
         if (err.originalError) err = err.originalError;
         if (('stack' in err))
-          env.error(env.util.extractError(err));
+          koru.error(koru.util.extractError(err));
         else {
-          env.error('Test load failure: ', orig + "\nWhile loading:\n" + badIds.join("\n"));
+          koru.error('Test load failure: ', orig + "\nWhile loading:\n" + badIds.join("\n"));
         }
         endTest();
       }
     },
 
     testCase: function (module, option) {
-      env.onunload(module, geddon.unloadTestcase);
+      koru.onunload(module, geddon.unloadTestcase);
       return geddon.testCase(module.id.replace(/-test$/, ''), option);
     },
   };
@@ -93,7 +93,7 @@ define(function(require, exports, module) {
 
   function endTest() {
     if (isClient) document.title = document.title.replace(/Running: /, '');
-    env.logger = origLogger;
+    koru.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();
   }

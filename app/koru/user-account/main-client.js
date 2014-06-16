@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var localStorage = require('../local-storage');
   var login = require('./client-login');
   var SRP = require('../srp/srp');
-  var env = require('../env');
+  var koru = require('../main');
   var sessState = require('../session/state');
 
   session.provide('V', function (data) {
@@ -20,7 +20,7 @@ define(function(require, exports, module) {
     }
   });
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     exports.stop();
   });
 
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
         'SRPLogin', email, password, callback,
         function() {},
         function (err, result) {
-          env.util.thread.userId = result.userId;
+          koru.util.thread.userId = result.userId;
           localStorage.setItem('koru.loginToken', result.loginToken);
           callback();
         }
@@ -88,7 +88,7 @@ define(function(require, exports, module) {
         if (callback)
           callback(err);
         else
-          env.error("Authentication error: " + err);
+          koru.error("Authentication error: " + err);
         return;
       }
       var response = srp.respondToChallenge(result);

@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
   var message = require('./message');
-  var env = require('../env');
+  var koru = require('../main');
   var makeSubject = require('../make-subject');
   var sessState = require('./state');
 
@@ -72,7 +72,7 @@ define(function(require, exports, module) {
         if (ei === -1)
           args[1](new Error(data));
         else
-          args[1](new env.Error(+data.slice(0, ei), data.slice(ei+1)));
+          args[1](new koru.Error(+data.slice(0, ei), data.slice(ei+1)));
         return;
       }
       args[1](null, data);

@@ -3,13 +3,13 @@ var Future = require('fibers/future');
 var Path = require('path');
 
 define(function(require, exports, module) {
-  var env = require('./env');
-  var Fiber = env.Fiber;
+  var koru = require('./main');
+  var Fiber = koru.Fiber;
   var fst = require('./fs-tools');
   var session = require('./session/base');
-  var top = env.appDir;
+  var top = koru.appDir;
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   exports.listeners = {
     js: function (type, path, top) {
@@ -18,7 +18,7 @@ define(function(require, exports, module) {
     },
 
     html: function (type, path) {
-      session.unload(env.buildPath(path));
+      session.unload(koru.buildPath(path));
     },
   };
 

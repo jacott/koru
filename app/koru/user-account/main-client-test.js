@@ -6,7 +6,7 @@ isClient && define(function (require, exports, module) {
   var localStorage = require('../local-storage');
   var SRP = require('../srp/srp');
   var util = require('../util');
-  var env = require('../env');
+  var koru = require('../main');
   var login = require('./client-login');
   var sessState = require('../session/state');
 
@@ -203,7 +203,7 @@ isClient && define(function (require, exports, module) {
 
         session._onMessage({}, 'VS');
 
-        assert.same(env.userId(), null);
+        assert.same(koru.userId(), null);
       },
 
       "test logoutOtherClients": function () {
@@ -235,7 +235,7 @@ isClient && define(function (require, exports, module) {
         assert.same(login.state, 'change');
         assert.calledWith(v.onChange, 'change');
 
-        assert.same(env.userId(), 'uid123');
+        assert.same(koru.userId(), 'uid123');
 
 
         session._onMessage({}, 'VC');

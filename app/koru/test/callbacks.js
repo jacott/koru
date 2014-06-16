@@ -1,4 +1,4 @@
-define(['./core', '../env'], function (geddon, env) {
+define(['./core', '../main'], function (geddon, koru) {
   var callbacks = {};
 
   geddon.onStart = registerCallBack('start');
@@ -24,7 +24,7 @@ define(['./core', '../env'], function (geddon, env) {
         cbs[i](test);
       } catch(ex) {
         firstEx = firstEx || ex;
-        env.error(env.util.extractError(ex));
+        koru.error(koru.util.extractError(ex));
       }
     }
 

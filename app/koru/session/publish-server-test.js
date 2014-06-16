@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var env = require('../env');
+  var koru = require('../main');
   var TH = require('../test');
   var publish = require('./publish');
   var session = require('../session/base');
@@ -33,7 +33,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test unknown publication": function () {
-      test.stub(env, 'info');
+      test.stub(koru, 'info');
       session._onMessage(v.conn = {
         sendBinary: test.stub(),
         _subs: {},
@@ -80,7 +80,7 @@ isServer && define(function (require, exports, module) {
     "test resubscribe": function () {
       v.pubFunc = function () {
         assert.same(this, v.sub);
-        assert.equals(env.util.slice(arguments), [1,2,3]);
+        assert.equals(koru.util.slice(arguments), [1,2,3]);
         assert.isTrue(this.isResubscribe);
       };
       v.sub.onStop(v.onStop = function () {
@@ -95,7 +95,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test error on resubscribe": function () {
-      test.stub(env, 'error');
+      test.stub(koru, 'error');
       v.pubFunc = function () {
         throw new Error('foo error');
       };
@@ -104,7 +104,7 @@ isServer && define(function (require, exports, module) {
 
       refute(v.sub.isResubscribe);
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Internal server error']);
-      assert.calledWith(env.error, TH.match(/foo error/));
+      assert.calledWith(koru.error, TH.match(/foo error/));
     },
 
     "test userId": function () {
@@ -113,7 +113,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test Koru error": function () {
-      v.sub.error(new env.Error(404, 'Not found'));
+      v.sub.error(new koru.Error(404, 'Not found'));
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 404, 'Not found']);
 

@@ -4,7 +4,7 @@ isServer && define(function (require, exports, module) {
   var session = require('../session/base');
   var userAccount = require('./main');
   var Model = require('../model/main');
-  var env = require('../env');
+  var koru = require('../main');
   var SRP = require('../srp/srp');
   var Email = require('../email');
   var Val = require('../model/validation');
@@ -14,7 +14,7 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.ws = TH.mockWs();
-      test.stub(env, 'info');
+      test.stub(koru, 'info');
       v.conn = TH.sessionConnect(v.ws);
       v.lu = userAccount.model.create({
         userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
@@ -25,9 +25,9 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      test.stub(env, 'logger');
+      test.stub(koru, 'logger');
       v.conn.close();
-      env.logger.restore();
+      koru.logger.restore();
       Model.UserLogin.docs.remove({});
       v = null;
     },
@@ -234,11 +234,11 @@ isServer && define(function (require, exports, module) {
 
     "login with token": {
       tearDown: function () {
-        test.stub(env, 'logger');
+        test.stub(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
         v.connOther && v.connOther.close();
-        env.logger.restore();
+        koru.logger.restore();
       },
 
       "test logout": function () {

@@ -1,6 +1,6 @@
 requirejs.config({
   packages: [
-    "koru/test", "koru/session",
+    "koru", "koru/test", "koru/session",
   ],
 
   baseUrl: '/',
@@ -9,10 +9,10 @@ requirejs.config({
 window.history.replaceState(null, document.title = 'Koru Test Mode', '/');
 
 define(function(require, exports, module) {
-  var env = require('koru/env');
+  var koru = require('koru');
   var session = require('koru/session/main');
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   session.connect();
 });

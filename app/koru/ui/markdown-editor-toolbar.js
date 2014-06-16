@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var Dom   = require('../dom');
-  var env   = require('../env');
+  var koru   = require('../main');
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor-common');
   var Markdown = require('./markdown');

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var env = require('../env');
-  var util = env.util;
+  var koru = require('../main');
+  var util = koru.util;
   var Random = require('../random');
   var session = require('../session/client-rpc');
   var clientIndex = require('./index-client');
@@ -34,7 +34,7 @@ define(function(require, exports, module) {
 
       BaseModel.prototype.$remove =  function () {
         session.rpc("remove", this.constructor.modelName, this._id,
-                    env.globalCallback);
+                    koru.globalCallback);
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
@@ -98,7 +98,7 @@ define(function(require, exports, module) {
       _id = (doc.changes && doc.changes._id) || Random.id();
       session.rpc("save", doc.constructor.modelName, _id,
                   doc.changes,
-                  env.globalCallback);
+                  koru.globalCallback);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
       // only call if at least one change
@@ -106,7 +106,7 @@ define(function(require, exports, module) {
       doc.changes = {}; // reset changes here for callbacks
       session.rpc("save", doc.constructor.modelName, doc._id,
                   changes,
-                  env.globalCallback);
+                  koru.globalCallback);
       break;
     }
 

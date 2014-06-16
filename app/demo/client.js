@@ -1,5 +1,5 @@
 requirejs.config({
-  packages: ['koru/model', 'koru/session'],
+  packages: ['koru', 'koru/model', 'koru/session'],
 
   baseUrl: "/",
 
@@ -9,16 +9,16 @@ requirejs.config({
 });
 
 define([
-  'module', 'koru/env', 'koru/ui/route', 'ui/todos',
+  'module', 'koru', 'koru/ui/route', 'ui/todos',
   'koru/session/subscribe', 'koru/dom',
   'koru/session', 'publish-all',
 ], function (
-  module, env, Route, todos,
+  module, koru, Route, todos,
   subscribe, Dom,
   session
 ) {
          // reload me if unloaded
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     subHandle && subHandle.stop();
     subHandle = null;
     require([module.id], function () {});

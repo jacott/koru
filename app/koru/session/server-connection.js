@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
 
@@ -25,7 +25,7 @@ define(function(require, exports, module) {
           return;
         }
         var current = conn._last = [data];
-        env.Fiber(function () {
+        koru.Fiber(function () {
           var thread = util.thread;
           thread.userId = conn.userId;
           thread.connection = conn;
@@ -34,7 +34,7 @@ define(function(require, exports, module) {
             try {
               session._onMessage(conn, current[0]);
             } catch(ex) {
-              env.error(util.extractError(ex));
+              koru.error(util.extractError(ex));
             }
             current = current[1];
           }

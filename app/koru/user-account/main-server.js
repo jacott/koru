@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var session = require('../session/base');
   var Model = require('../model/base');
-  var env = require('../env');
+  var koru = require('../main');
   var SRP = require('../srp/srp');
   var Val = require('../model/validation');
   var Random = require('../random');
@@ -42,7 +42,7 @@ define(function(require, exports, module) {
     resetTokenExpire: 'number',
   });
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     Model._destroyModel('UserLogin');
   });
 
@@ -101,7 +101,7 @@ define(function(require, exports, module) {
       this.userId = lu.userId;
       return;
     }
-    throw new env.Error(404, 'Expired or invalid reset request');
+    throw new koru.Error(404, 'Expired or invalid reset request');
   });
 
   util.extend(exports, {

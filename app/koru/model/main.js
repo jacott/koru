@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var env = require('../env');
+  var koru = require('../main');
   var util = require('../util');
   var Val = require('./validation');
   var ModelEnv = require('../env!./main');
@@ -323,7 +323,7 @@ define(function(require, exports, module) {
         properties = name;
         name = module;
       } else {
-        env.onunload(module, function () {
+        koru.onunload(module, function () {
           BaseModel._destroyModel(name);
         });
         if (typeof name !== 'string') {

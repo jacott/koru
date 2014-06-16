@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
   var TH = require('../test-helper');
-  var env = require('../env');
+  var koru = require('../main');
   var Route = require('./route');
   var util = require('../util');
   var Dom = require('../dom');
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     Route.history = TH._orig_history;
   });
 

@@ -3,16 +3,16 @@
  The template-compiler will convert the html to js.
  */
 define(function (require, exports, module) {
-  var env = require('./env');
+  var koru = require('./main');
   var loaderPrefix = module.id + "!";
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   return {
     load: function (name, req, onload, config) {
-      var provider = env.buildPath(name)+'.html';
+      var provider = koru.buildPath(name)+'.html';
 
-      env.insertDependency(loaderPrefix + name, provider);
+      koru.insertDependency(loaderPrefix + name, provider);
 
       req([provider], function (value) {
         onload(value);

@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var env = require('../env');
+  var koru = require('../main');
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     Query._unload && Query._unload();
   });
 

@@ -1,196 +1,31 @@
-(function() {
-  // FIXME need this to work diferently in optimiser
-  var suffix  = typeof process === 'undefined' ? '-client' : '-server';
+/**
+ * Dependency tracking and load/unload manager.
+ * This module is also a requirejs loader plugin.
+ */
+define(function (require, exports, module) {
+  var koru = require('./main');
 
-  /**
-   * Map of module dependencies. Entries list what to unload when
-   * module unloaded. key is module.id.
-   */
-  var providerMap = {};
-  /**
-   * Functions to call when module is unloaded
-   */
-  var unloads = {};
-  var loaded = {};
+  var suffix  = isClient ? '-client' : '-server';
+  var loaderPrefix = module.id + "!";
 
-  requirejs.onResourceLoad = function (context, map, depArray) {
-    if (depArray) for(var i = 0; i < depArray.length; ++i) {
-      var row = depArray[i];
-      var id = row.id;
-      if (id === 'require' || id === 'exports' || id === 'module')
-        continue;
+  var env = {
+    /**
+     * Load a module for the current koru -- client or server -- and
+     * call {@unload} when ready.
+     *
+     * This function is used by requirejs to load a dependency of the
+     * format: koru/env!<name> as <name>-client.js
+     */
+    load: function (name, req, onload, config) {
+      var provider = name + suffix;
 
-      // If name is unnormalized then it wont match. We could try and
-      // ask the suffix to normalize it for us but that is not a
-      // normal plugin function. For now we'll just trust the
-      // (maybe) semi-unnormalized name.
-      if (row.unnormalized) id = row.prefix+"!"+row.name;
+      koru.insertDependency(loaderPrefix + name, provider);
 
-      insertDependency(map.id, id);
-    }
-    loaded[map.id] = true;
+      req([provider], function (value) {
+        onload(value);
+      }, onload.error);
+    },
   };
 
-  function insertDependency(dependant, provider) {
-    (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
-  }
-
-  function unload(id, error) {
-    if (! requirejs.defined(id)) return;
-
-    var deps = providerMap[id];
-
-    if (deps === 'unloading') return;
-
-    var onunload = unloads[id];
-
-    if (onunload === 'reload') return reload();
-
-    if (deps) {
-      providerMap[id] = 'unloading';
-      for(var key in deps) {
-        unload(key, error);
-      }
-      delete providerMap[id];
-    }
-
-    if (typeof onunload === 'function')
-      onunload(id, error);
-
-    delete unloads[id];
-    delete loaded[id];
-    requirejs.undef(id);
-  }
-
-  function onunload(module, func) {
-    unloads[typeof module === 'string' ? module : module.id] = func;
-  }
-
-  function reload() {
-    console.log('=> Reloading');
-
-    if (isServer) {
-      require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
-    } else {
-      window.location.reload();
-      throw "reloading"; // no point continuing
-    }
-  }
-
-  function appDir(require, module) {
-    if (isServer)
-      return require('path').resolve(module.config().appDir || require.toUrl('').slice(0,-1));
-
-    return require.toUrl('').slice(0,-1);
-  }
-
-  /**
-   * Dependency tracking and load/unload manager.
-   * This module is also a requirejs loader plugin.
-   */
-  define(function (require, exports, module) {
-    var util = require('./util');
-    var errors = require('./errors');
-
-    var loaderPrefix = module.id + "!";
-
-    if (isClient) {
-      var discardIncompleteLoads = function () {
-        var list = document.head.querySelectorAll('script[data-requiremodule]');
-        var badIds = [];
-        for(var i = 0; i < list.length; ++i) {
-          var elm = list[i];
-          var modId = elm.getAttribute('data-requiremodule');
-          if (modId && ! loaded.hasOwnProperty(modId)) {
-            unload(modId);
-            badIds.push("\tat "+modId+".js:1");
-          }
-        }
-        return badIds;
-      };
-    } else {
-      var discardIncompleteLoads = function () {
-        return []; // FIXME what should I do on sever side?
-      };
-    }
-
-    var env = (isServer ? global : window)._koru_ = {
-      onunload: onunload,
-      unload: unload,
-      reload: reload,
-      providerMap: providerMap,
-      unloads: unloads,
-      insertDependency: insertDependency,
-      loaded: loaded,
-      discardIncompleteLoads: discardIncompleteLoads,
-      appDir: appDir(require, module),
-
-      Error: errors.Error.bind(errors),
-      Fiber: util.Fiber,
-      util: util,
-
-      "\x64ebug": function () {
-        env.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
-      },
-
-      info: function () {
-        env.logger('INFO', Array.prototype.join.call(arguments, ' '));
-      },
-
-      error: function () {
-        env.logger('ERROR', Array.prototype.join.call(arguments, ' '));
-      },
-
-      logger: function () {
-        console.log.apply(console, arguments);
-      },
-
-      globalCallback: function (err, result) {
-        if (err) env.error(err);
-      },
-
-      userId: function () {
-        return util.thread.userId;
-      },
-
-      getLocation: function () {
-        return window.location;
-      },
-
-      nullFunc: function () {},
-
-      /**
-       * Converts path to related build path of compiled resource.
-       * @param {string} path source path of resource.
-       *
-       * @returns build path for resource.
-       */
-      buildPath: function (path) {
-        var idx = path.lastIndexOf('/');
-        if (idx === -1)
-          return '.build/' + path;
-
-        return path.slice(0, ++idx) + '.build/' + path.slice(idx);
-      },
-
-      /**
-       * Load a module for the current env -- client or server -- and
-       * call {@unload} when ready.
-       *
-       * This function is used by requirejs to load a dependency of the
-       * format: koru/env!<name> as <name>-client.js
-       */
-      load: function (name, req, onload, config) {
-        var provider = name + suffix;
-
-        insertDependency(loaderPrefix + name, provider);
-
-        req([provider], function (value) {
-          onload(value);
-        }, onload.error);
-      },
-    };
-
-    return env;
-  });
-})();
+  return env;
+});

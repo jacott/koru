@@ -1,8 +1,8 @@
-define(['./env', 'module', 'koru/session/base'], function (env, module, session) {
+define(['./main', 'module', 'koru/session/base'], function (koru, module, session) {
   var readline = require('readline');
   var rl = readline.createInterface(process.stdin, process.stdout);
 
-  env.onunload(module, function () {
+  koru.onunload(module, function () {
     readline = null;
     rl.close();
     require([module.id], function () {});

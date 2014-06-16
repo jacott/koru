@@ -3,7 +3,7 @@ isServer && define(function (require, exports, module) {
   var TH = require('./test-helper');
   var session = require('./main');
   var util = require('../util');
-  var env = require('../env');
+  var koru = require('../main');
   var message = require('./message');
 
   TH.testCase(module, {
@@ -43,9 +43,9 @@ isServer && define(function (require, exports, module) {
       },
 
       "test exception": function () {
-        test.stub(env, 'error');
+        test.stub(koru, 'error');
         v.run(function (one, two, three) {
-          throw new env.Error(404, 'not found');
+          throw new koru.Error(404, 'not found');
         });
 
         assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', '404,not found']);
@@ -53,7 +53,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test onclose": function () {
-      test.stub(env, 'info');
+      test.stub(koru, 'info');
       var conn = TH.sessionConnect(v.ws);
 
       assert.calledWith(v.ws.on, 'close', TH.match(function (func) {

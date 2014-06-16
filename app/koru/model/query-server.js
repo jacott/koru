@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var mongodb = require('../mongo/driver');
-  var env = require('../env');
+  var koru = require('../main');
 
   return function (Query) {
     util.extend(Query.prototype, {

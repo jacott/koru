@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var publish = require('./publish');
-  var env = require('../env');
+  var koru = require('../main');
   var login = require('../user-account/client-login');
   var message = require('./message');
   var sessState = require('./state');
 
-  env.onunload(module, 'reload');
+  koru.onunload(module, 'reload');
 
   return function(session) {
     var nextId = 0;
@@ -32,8 +32,8 @@ define(function(require, exports, module) {
 
     var loginOb = login.onChange(function (state) {
       if (state === 'change') {
-        if (env.userId() === userId) return;
-        userId = env.userId();
+        if (koru.userId() === userId) return;
+        userId = koru.userId();
         var models = {};
         for(var key in subs) {
           subs[key].resubscribe(models);
@@ -101,7 +101,7 @@ define(function(require, exports, module) {
       constructor: ClientSub,
 
       get userId() {
-        return env.userId();
+        return koru.userId();
       },
 
       resubscribe: function (models) {
@@ -111,7 +111,7 @@ define(function(require, exports, module) {
           this.isResubscribe = this._called;
           this._subscribe.apply(this, this.args);
         } catch(ex) {
-          env.error(util.extractError(ex));
+          koru.error(util.extractError(ex));
         }
         this._called = true;
         this.isResubscribe = false;
