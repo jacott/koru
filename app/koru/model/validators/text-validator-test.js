@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   var test, doc;
   var geddon = require('../../test');
   var sut = require('../validation');
-  require('../../b!../validator:text');
+  require('../validator!text');
 
   geddon.testCase(module, {
     "normalize": {

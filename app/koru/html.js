@@ -6,6 +6,8 @@ define(function (require, exports, module) {
   var env = require('./env');
   var loaderPrefix = module.id + "!";
 
+  env.onunload(module, 'reload');
+
   return {
     load: function (name, req, onload, config) {
       var provider = env.buildPath(name)+'.html';

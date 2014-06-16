@@ -3,34 +3,50 @@ define(function (require, exports, module) {
   var val = require('./validation');
   var env = require('../env');
   var validatorsPrefix = module.id.replace(/\/[^/]*$/, '/validators/');
+  var loaderPrefix = module.id + "!";
 
-  return {
-    load: function (modules, dependantId, callback) {
-      var self = this;
-      var normNames = modules.map(function (name) {
-        return validatorsPrefix+name+"-validator";
-      });
+  exports.load = function (name, req, onload, config) {
+    var parts = name.split(':');
 
-      require(normNames, function () {
-        for(var i = 0; i < arguments.length; ++i) {
-          var item = arguments[i];
-          env.insertDependency(dependantId, normNames[i]);
-          if (typeof item === 'function') {
-            var regName = util.camelize(modules[i]);
-            val.register(regName, item.bind(val));
+    name = loaderPrefix + name;
+
+    loader(parts, name, function (err) {
+      if (err) failure(err);
+      else onload(exports);
+    });
+
+
+    function failure (err) {
+      onload.error(err);
+      env.unload(parts[0]);
+    }
+  };
+
+
+  function loader(modules, dependantId, callback) {
+    var normNames = modules.map(function (name) {
+      return validatorsPrefix+name+"-validator";
+    });
+
+    require(normNames, function () {
+      for(var i = 0; i < arguments.length; ++i) {
+        var item = arguments[i];
+        env.insertDependency(dependantId, normNames[i]);
+        if (typeof item === 'function') {
+          var regName = util.camelize(modules[i]);
+          val.register(regName, item.bind(val));
+          env.onunload(normNames[i], deregisterFunc(regName));
+        } else {
+          for(var regName in item) {
+            val.register(regName, item[regName].bind(val));
             env.onunload(normNames[i], deregisterFunc(regName));
-          } else {
-            for(var regName in item) {
-              val.register(regName, item[regName].bind(val));
-              env.onunload(normNames[i], deregisterFunc(regName));
-            }
           }
         }
+      }
 
-        callback(null, self);
-      }, callback);
-    },
-  };
+      callback(null);
+    });
+  }
 
   function deregisterFunc(regName) {
     return function () {

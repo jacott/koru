@@ -3,7 +3,7 @@ define(function (require, exports, module) {
   var env = require('../env');
   var TH = require('./test-helper');
   var Model = require('./main');
-  require('../b!./validator:required');
+  require('./validator!required');
   var util = TH.util;
   var session = require('../session/base');
 

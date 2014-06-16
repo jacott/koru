@@ -880,7 +880,7 @@ define(['./env'], function(env) {
     } catch(ex) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (! (Dom.globalErrorCatch && Dom.globalErrorCatch(ex))) {
+      if (! (env.globalErrorCatch && env.globalErrorCatch(ex))) {
         if('stack' in ex)
           env.error(util.extractError(ex));
 

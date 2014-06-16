@@ -24,7 +24,7 @@
       // ask the suffix to normalize it for us but that is not a
       // normal plugin function. For now we'll just trust the
       // (maybe) semi-unnormalized name.
-      if (row.unnormalized) id = row.suffix+"!"+row.name;
+      if (row.unnormalized) id = row.prefix+"!"+row.name;
 
       insertDependency(map.id, id);
     }
