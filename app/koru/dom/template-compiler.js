@@ -1,26 +1,7 @@
-var Path = require('path');
-var htmlparser = require("htmlparser2");
+var Path = require.nodeRequire('path');
+var htmlparser = require.nodeRequire("htmlparser2");
 
-define(function(require, exports, module) {
-  var koru = require('../main');
-  var webServer = require('../web-server');
-  var fst = require('../fs-tools');
-
-  koru.onunload(module, 'reload');
-
-  webServer.compilers['html'] = compiler;
-
-  function compiler(type, path, outPath) {
-    var html = fst.readFile(path).toString();
-    var js = DomCompiler.toJavascript(html);
-
-    fst.writeFile(outPath, "define("+ js + ")");
-  }
-});
-
-
-
-var DomCompiler = {
+var Compiler = {
   Error: function (message, point) {
     this.message = message;
     this.point = point;
@@ -34,14 +15,14 @@ var DomCompiler = {
           if (name === 'template') {
             name = attrs.name;
             if (! name)
-              throw new DomCompiler.Error("Template name is missing", parser.startIndex);
+              throw new Compiler.Error("Template name is missing", parser.startIndex);
             if (! name.match(/^([A-Z]\w*\.?)+$/))
-              throw new DomCompiler.Error("Template name must match the format: Foo(.Bar)*  " + name, parser.startIndex);
+              throw new Compiler.Error("Template name must match the format: Foo(.Bar)*  " + name, parser.startIndex);
             template = new Template(template, attrs.name);
 
           } else {
             if (! template)
-              throw new DomCompiler.Error("Out most element must be a template", parser.startIndex);
+              throw new Compiler.Error("Out most element must be a template", parser.startIndex);
 
             template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex));
           }
@@ -68,7 +49,6 @@ var DomCompiler = {
     }
   }
 };
-
 
 function Template(parent, name) {
   this.nested = [];
@@ -238,3 +218,5 @@ function quotenorm(token) {
   else
     return token;
 }
+
+define(Compiler);

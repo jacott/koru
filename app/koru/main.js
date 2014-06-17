@@ -13,6 +13,8 @@
   var unloads = {};
   var loaded = {};
 
+  function noopFunc(value) {return value}
+
   requirejs.onResourceLoad = function (context, map, depArray) {
     if (depArray) for(var i = 0; i < depArray.length; ++i) {
       var row = depArray[i];
@@ -20,12 +22,12 @@
       if (id === 'require' || id === 'exports' || id === 'module')
         continue;
 
-      // If name is unnormalized then it wont match. We could try and
-      // ask the suffix to normalize it for us but that is not a
-      // normal plugin function. For now we'll just trust the
-      // (maybe) semi-unnormalized name.
-      if (row.unnormalized) id = row.prefix+"!"+row.name;
-
+      // If name is unnormalized then it wont match. So we ask the
+      // prefix to normalize it for us if needed.
+      if (row.unnormalized) {
+        var plugin = require(row.prefix); // plugin will already be loaded
+        id = row.prefix+"!"+ (plugin.normalize ? plugin.normalize(row.name, noopFunc) : row.name);
+      }
       insertDependency(map.id, id);
     }
     loaded[map.id] = true;

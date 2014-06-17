@@ -2,13 +2,12 @@
  * Dependency tracking and load/unload manager.
  * This module is also a requirejs loader plugin.
  */
-define(function (require, exports, module) {
-  var koru = require('./main');
-
-  var suffix  = isClient ? '-client' : '-server';
+define(['require', 'module'], function (require, module) {
+  var koru, suffix = (typeof isServer !== 'undefined') && isServer ? '-server' : '-client';
+;
   var loaderPrefix = module.id + "!";
 
-  var env = {
+  return {
     /**
      * Load a module for the current koru -- client or server -- and
      * call {@unload} when ready.
@@ -17,15 +16,30 @@ define(function (require, exports, module) {
      * format: koru/env!<name> as <name>-client.js
      */
     load: function (name, req, onload, config) {
-      var provider = name + suffix;
+      if (! koru) {
+        require(['./main'], function (k) {
+          koru = k;
+          fetch();
+        });
+      } else
+        fetch();
 
-      koru.insertDependency(loaderPrefix + name, provider);
+      function fetch() {
+        var provider = name.substring(1) + suffix;
 
-      req([provider], function (value) {
-        onload(value);
-      }, onload.error);
+        koru.insertDependency(loaderPrefix + name, provider);
+
+        req([provider], function (value) {
+          onload(value);
+        }, onload.error);
+      }
     },
-  };
 
-  return env;
+    normalize: function (name, normalize) {
+      if (name[0] === ':') return name;
+      return ':'+normalize(name);
+    },
+
+    pluginBuilder: './env-builder',
+  };
 });

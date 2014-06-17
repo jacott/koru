@@ -1,11 +1,16 @@
 ({
   baseUrl: "app",
   paths: {
-    requireLib: "require.js",
+    requireLib: "require",
   },
 
-  include: 'requireLib',
+  packages: ['koru', 'koru/model', 'koru/session', 'koru/user-account', 'koru/session'],
 
-  name: "koru/client",
-  out: "build/index-build.js",
+  include: 'requireLib',
+//  optimize: 'none',
+
+  stubModules: ['koru/dom/template-compiler'],
+
+  name: "build-client",
+  out: "build/index.js",
 })

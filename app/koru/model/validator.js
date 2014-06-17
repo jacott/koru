@@ -22,6 +22,8 @@ define(function (require, exports, module) {
     }
   };
 
+  exports.pluginBuilder = './validator-builder';
+
 
   function loader(modules, dependantId, callback) {
     var normNames = modules.map(function (name) {

@@ -2,21 +2,31 @@
  Load compiled template from .build directory.
  The template-compiler will convert the html to js.
  */
-define(function (require, exports, module) {
-  var koru = require('./main');
+define(['require', 'module'], function (require, module) {
+  var koru;
   var loaderPrefix = module.id + "!";
-
-  koru.onunload(module, 'reload');
 
   return {
     load: function (name, req, onload, config) {
-      var provider = koru.buildPath(name)+'.html';
+      if (! koru) {
+        require(['./main'], function (k) {
+          koru = k;
+          fetch();
+        });
+      } else
+        fetch();
 
-      koru.insertDependency(loaderPrefix + name, provider);
+      function fetch() {
+        var provider = koru.buildPath(name)+'.html';
 
-      req([provider], function (value) {
-        onload(value);
-      }, onload.error);
-    }
+        koru.insertDependency(loaderPrefix + name, provider);
+
+        req([provider], function (value) {
+          onload(value);
+        }, onload.error);
+      }
+    },
+
+    pluginBuilder: './html-builder',
   };
 });
