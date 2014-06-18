@@ -1,4 +1,4 @@
-var Future = require('fibers/future'), wait = Future.wait;
+var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
 var fs = require('fs');
 var Path = require('path');
 var readdir = Future.wrap(fs.readdir);

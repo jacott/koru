@@ -1,6 +1,6 @@
 var Path = require('path');
-var less = require("less");
-var Future = require('fibers/future');
+var less = requirejs.nodeRequire("less");
+var Future = requirejs.nodeRequire('fibers/future');
 
 define(function(require, exports, module) {
   var koru = require('../main');

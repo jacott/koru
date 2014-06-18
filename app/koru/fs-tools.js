@@ -1,6 +1,6 @@
 var fs = require('fs');
 var Path = require('path');
-var Future = require('fibers/future');
+var Future = requirejs.nodeRequire('fibers/future');
 
 define({
   mkdir: mkdir,

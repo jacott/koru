@@ -1,4 +1,4 @@
-var WebSocketServer = require('ws').Server;
+var WebSocketServer = requirejs.nodeRequire('ws').Server;
 
 define(function (require, exports, module) {
   var koru = require('../main');

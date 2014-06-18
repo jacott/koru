@@ -1,4 +1,4 @@
-var Future = require('fibers/future');
+var Future = requirejs.nodeRequire('fibers/future');
 /**
  * Wait for turn in queue. Will block for earlier queued functions.
  *

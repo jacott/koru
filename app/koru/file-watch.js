@@ -1,5 +1,5 @@
 var fs = require('fs');
-var Future = require('fibers/future');
+var Future = requirejs.nodeRequire('fibers/future');
 var Path = require('path');
 
 define(function(require, exports, module) {

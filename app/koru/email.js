@@ -1,7 +1,7 @@
-var Future = require('fibers/future');
+var Future = requirejs.nodeRequire('fibers/future');
 var urlModule = require('url');
-var MailComposer = require('mailcomposer').MailComposer;
-var smtp = require('simplesmtp');
+var MailComposer = requirejs.nodeRequire('mailcomposer').MailComposer;
+var smtp = requirejs.nodeRequire('simplesmtp');
 
 define(function(require, exports, module) {
   var util = require('koru/util');

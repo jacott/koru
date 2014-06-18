@@ -16,7 +16,7 @@
     "javascript"
   ],
   "author": "Geoff Jacobsen <geoffj@obeya.co>",
-  "main": "./lib/index",
+  "main": "./app/server",
   "dependencies": {
     "fibers": "1.0.1",
     "kexec": "0.2.0",
@@ -28,11 +28,8 @@
     "mongodb": "1.4.5",
     "simplesmtp": "0.3.32",
     "mailcomposer": "0.2.11",
-    "stream-buffers": "0.2.5"
-  },
-  "devDependencies": {
-    "htmlparser2": "3.7.1",
-    "sinon": "1.9.1"
+    "stream-buffers": "0.2.5",
+    "htmlparser2": "3.7.1"
   },
   "engines": {
     "node": "~0.10"

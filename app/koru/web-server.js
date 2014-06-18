@@ -1,7 +1,7 @@
 var Path = require('path');
 var http = require('http');
-var send = require('send');
-var parseurl = require('parseurl');
+var send = requirejs.nodeRequire('send');
+var parseurl = requirejs.nodeRequire('parseurl');
 
 define(function (require, exports, module) {
   var koru = require('./main');
@@ -16,7 +16,7 @@ define(function (require, exports, module) {
 
   var SPECIALS = {
     "require.js": function (m, req, res, error) {
-      return ['/requirejs/require.js', nmRoot];
+      return [fst.stat(nmRoot+'/koru') ? '/koru/node_modules/requirejs/require.js' : '/requirejs/require.js', nmRoot];
     },
 
     koru: function (m) {

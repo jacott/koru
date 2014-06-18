@@ -1,5 +1,5 @@
-var Future = require('fibers/future');
-var MongoClient = require('mongodb').MongoClient;
+var Future = requirejs.nodeRequire('fibers/future');
+var MongoClient = requirejs.nodeRequire('mongodb').MongoClient;
 var connect = Future.wrap(MongoClient.connect);
 
 

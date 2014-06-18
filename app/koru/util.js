@@ -443,7 +443,7 @@ define(function(require, exports, module) {
     util.thread = {};
     util.Fiber = function(func) {return {run: func}};
   } else {
-    util.Fiber = requirejs('fibers');
+    util.Fiber = requirejs.nodeRequire('fibers');
     Object.defineProperty(util, 'thread', {get: function () {
       return util.Fiber.current ? (util.Fiber.current.appThread || (util.Fiber.current.appThread = {})) : {};
     }});
