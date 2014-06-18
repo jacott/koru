@@ -133,7 +133,7 @@ isServer && define(function (require, exports, module) {
 
         assert.exception(function () {
           session._rpcs.SRPLogin.call(v.conn, response);
-        });
+        }, {error: 403, reason: 'failure'});
 
         assert.same(v.conn.userId, undefined);
       },
@@ -142,7 +142,7 @@ isServer && define(function (require, exports, module) {
         v.lu.$update({email: 'bad@bar.co'});
         assert.exception(function () {
           session._rpcs.SRPBegin.call(v.conn, v.request);
-        });
+        }, {error: 403, reason: 'failure'});
       },
     },
 

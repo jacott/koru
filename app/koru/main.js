@@ -72,7 +72,7 @@
     console.log('=> Reloading');
 
     if (isServer) {
-      require('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
+      requirejs.nodeRequire('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
     } else {
       window.location.reload();
       throw "reloading"; // no point continuing

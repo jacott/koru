@@ -48,7 +48,7 @@ define(function(require, exports, module) {
 
   session.defineRpc('SRPBegin', function (request) {
     var doc = model.findByField('email', request.email);
-    if (! doc) throw new Error('failure');
+    if (! doc) throw new koru.Error(403, 'failure');
     var srp = new SRP.Server(doc.srp);
     this.$srp = srp;
     this.$srpUserAccount = doc;
@@ -57,7 +57,7 @@ define(function(require, exports, module) {
 
   session.defineRpc('SRPLogin', function (response) {
     if (response.M !== this.$srp.M)
-      throw new Error('failure');
+      throw new koru.Error(403, 'failure');
     var token = Random.id();
     var doc = this.$srpUserAccount;
     var tokens = doc.unexpiredTokens();

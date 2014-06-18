@@ -64,7 +64,7 @@ define(function (require, exports, module) {
 
     function url() {
       var location = koru.getLocation();
-      return location.protocol.replace(/^http/,'ws')+'//' + location.host;
+      return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
     }
 
     function connect() {

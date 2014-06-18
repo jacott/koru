@@ -33,7 +33,7 @@ define(function (require, exports, module) {
 
       v.sess.connect();         // connect
 
-      assert.calledWith(v.sess.newWs, 'wss://test.host:123');
+      assert.calledWith(v.sess.newWs, 'wss://test.host:123/ws');
       refute.called(sessState.connected);
 
       v.ready = true;

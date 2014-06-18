@@ -52,7 +52,7 @@ define(function (require, exports, module) {
         var result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
       } catch(ex) {
-        koru.error(util.extractError(ex));
+        ex.error || koru.error(util.extractError(ex));
         this.sendBinary('M', [msgId, 'e', (ex.error && ex.reason ? ex.error + ',' + ex.reason : ex)]);
       }
     });
