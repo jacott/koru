@@ -58,8 +58,6 @@ define(function() {
         return results;
       };
 
-      return uIndex;
-
       function deleteEntry(tidx, doc, count) {
         var value  = doc[fields[count]];
         if (! tidx) return true;
@@ -72,6 +70,8 @@ define(function() {
         for(var noop in tidx) return false;
         return true;
       }
+
+      return uIndex;
     };
 
     function pushResults(docs, results, index) {
