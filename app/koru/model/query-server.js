@@ -65,6 +65,8 @@ define(function(require, exports, module) {
 
         var cmd = buildUpdate(this, changes);
 
+        if (util.isObjEmpty(cmd)) return 0;
+
         var self = this;
         var count = 0;
         self.forEach(function (doc) {
@@ -103,10 +105,10 @@ define(function(require, exports, module) {
 
       for(var key in wn) {
         var value = wn[key];
-        if (typeof value === 'object')
-          neg[key] = {$nin: wn[key]};
+        if (util.isArray(value))
+          neg[key] = {$nin: value};
         else
-          neg[key] = {$ne: wn[key]};
+          neg[key] = {$ne: value};
       }
       result = {$and: [result, neg]};
     }

@@ -45,6 +45,7 @@ define(function(require, exports, module) {
       };
 
       save = function (doc) {
+        if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
         var _id = doc._id;
         var changes = doc.changes;

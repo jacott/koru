@@ -341,7 +341,7 @@ define(function (require, exports, module) {
 
       "test can override and save invalid doc": function () {
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
-        var foo = v.TestModel.build();
+        var foo = v.TestModel.build({bar: null});
 
         foo.$save('force');
 

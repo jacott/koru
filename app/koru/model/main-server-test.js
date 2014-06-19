@@ -15,6 +15,21 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test when no changes in save": function () {
+      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+
+      v.doc = TestModel.create({name: 'foo'});
+      test.onEnd(TestModel.onChange(v.onChange = test.stub()));
+      TestModel.beforeSave('TestModel', v.beforeSave = test.stub());
+
+      v.doc.$save();
+      TestModel.query.onId(v.doc._id).update({});
+
+      assert.same(v.doc.$reload().name, 'foo');
+      refute.called (v.onChange);
+      refute.called (v.beforeSave);
+    },
+
     'test removeRpc': function () {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
