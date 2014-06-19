@@ -36,6 +36,10 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test title": function () {
+      assert.same(v.origTile, 'Running: Koru Test Mode');
+    },
+
     "test focus": function () {
       var RootBar = {
         name: 'RootBar',

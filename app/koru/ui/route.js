@@ -12,6 +12,8 @@ define(function(require, exports, module) {
     this.routeVar = routeVar;
   };
 
+  Route.title = document.title;
+
   Route.history = window.history;
 
   Route.prototype = {
