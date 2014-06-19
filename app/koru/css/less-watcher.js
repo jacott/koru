@@ -19,7 +19,7 @@ define(function(require, exports, module) {
 
   function loadRequest(data) {
     if (data.slice(0,2).toString() === 'LA')
-      session.sendAll('SL', findAll(data.slice(2).toString(), []).join(' '));
+      this.send('SL', findAll(data.slice(2).toString(), []).join(' '));
   }
 
   function findAll(dir, results) {

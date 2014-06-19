@@ -19,11 +19,6 @@ define(function(require, exports, module) {
   exports._less = less;
   exports._queue = queue;
   exports.compile = compile;
-  exports.sendAll = sendAll;
-
-  function sendAll(dir, top, session) {
-
-  }
 
   function compile(type, path, outPath) {
     var dir = Path.dirname(path);
