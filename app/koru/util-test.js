@@ -246,6 +246,16 @@ define(function (require, exports, module) {
       assert.same(util.deepCopy(undefined), undefined);
       assert.same(util.deepCopy("a"), "a");
 
+      var u8 = new Uint8Array([1, 2, 3]);
+      var u8c = util.deepCopy(u8);
+      refute.same(u8, u8c);
+      assert.same(u8c.byteLength, 3);
+
+      assert.same(u8c[0], 1);
+      assert.same(u8c[1], 2);
+      assert.same(u8c[2], 3);
+
+
       function func() {}
       assert.same(util.deepCopy(func), func);
 

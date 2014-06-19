@@ -263,6 +263,10 @@ define(function(require, exports, module) {
         return orig.map(function (item) {
           return util.deepCopy(item);
         });
+      case "[object Uint8Array]":
+        var dst = new Uint8Array(new ArrayBuffer(orig.byteLength));
+        dst.set(orig);
+        return dst;
       }
 
       var result = {};
