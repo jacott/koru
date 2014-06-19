@@ -23,6 +23,24 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    /**
+     * This was causing a undefined exception
+     */
+    "test insertFromServer no matching simDoc": function () {
+      sessState.incPending();
+
+      Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+      assert(v.TestModel.exists({_id:'foo2'}));
+
+      Query.insert(new v.TestModel({_id: 'foo1', name: 'foo1'}));
+
+      Query.insertFromServer(v.TestModel, 'foo4', {name: 'foo3'});
+
+      assert(v.TestModel.exists({_id: 'foo4'}));
+
+      assert.equals(Object.keys(Query._simDocs.TestModel), ['foo1']);
+    },
+
     "test reconcile docs": function () {
       var stateOC = test.stub(sessState, 'onChange').returns(v.stateOb = {stop: test.stub()});
       var syncOC = test.stub(sessState.pending, 'onChange').returns(v.syncOb = {stop: test.stub()});
@@ -38,7 +56,7 @@ define(function (require, exports, module) {
 
       assert.same(sessState._onConnect['01'], Query._onConnect);
 
-      var foo2 = MockQuery.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+      MockQuery.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
 
       v.TestModel2 = Model.define('TestModel2').defineFields({moe: 'text'});
 

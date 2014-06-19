@@ -228,6 +228,7 @@ define(function(require, exports, module) {
         return docs[id] = 'new';
       }
       var keys = docs[id];
+      if (! keys) return changes;
       if (keys === 'new') {
         changes = util.deepCopy(changes);
         delete changes._id;
