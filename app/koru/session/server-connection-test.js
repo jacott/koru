@@ -77,6 +77,11 @@ isServer && define(function (require, exports, module) {
       },
     },
 
+    "test send": function () {
+      v.conn.send('X', 'FOO');
+      assert.calledWith(v.ws.send, 'XFOO');
+    },
+
     "test sendBinary": function () {
       v.conn.sendBinary.restore();
       v.conn.sendBinary('M', [1,2,3]);

@@ -42,6 +42,10 @@ define(function(require, exports, module) {
         }).run();
       },
 
+      send: function (type, data) {
+        this.ws.send(type + data);
+      },
+
       sendBinary: function (type, args) {
         this.ws.send(message.encodeMessage(type, args), binaryData);
       },
