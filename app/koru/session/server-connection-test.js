@@ -80,6 +80,22 @@ isServer && define(function (require, exports, module) {
     "test send": function () {
       v.conn.send('X', 'FOO');
       assert.calledWith(v.ws.send, 'XFOO');
+
+      test.stub(koru, 'error');
+      refute.exception(function () {
+        v.conn.ws.send = test.stub().throws(v.error = new Error('foo'));
+        v.conn.send('X', 'FOO');
+      });
+
+      assert.called(koru.error);
+
+      koru.error.reset();
+      v.conn.ws = null;
+      refute.exception(function () {
+        v.conn.send('X', 'FOO');
+      });
+
+      refute.called(koru.error);
     },
 
     "test sendBinary": function () {
@@ -91,6 +107,22 @@ isServer && define(function (require, exports, module) {
         assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3]);
         return true;
       }, {binary: true, mask: true}));
+
+      test.stub(koru, 'error');
+      refute.exception(function () {
+        v.conn.ws.send = test.stub().throws(v.error = new Error('foo'));
+        v.conn.sendBinary('X', ['FOO']);
+      });
+
+      assert.called(koru.error);
+
+      koru.error.reset();
+      v.conn.ws = null;
+      refute.exception(function () {
+        v.conn.sendBinary('X', ['FOO']);
+      });
+
+      refute.called(koru.error);
     },
 
     "test set userId": function () {
@@ -134,10 +166,12 @@ isServer && define(function (require, exports, module) {
 
       v.conn.closed();
 
+
       assert.called(v.t1);
       assert.called(v.t2);
 
       assert.isNull(v.conn._subs);
+      assert.isNull(v.conn.ws);
 
       v.conn.closed();
 

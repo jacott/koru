@@ -80,14 +80,14 @@ define(function (require, exports, module) {
       conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
       ws.on('message', conn.onMessage.bind(conn));
 
-      ws.send('X1'+session.versionHash);
+      conn.send('X1', session.versionHash);
       koru.info('New client ws:',session.totalSessions, conn.engine, ugr.socket.remoteAddress);
     }
 
     function sendAll(cmd, msg) {
       var conns = this.conns;
       for(var key in conns) {
-        conns[key].ws.send(cmd+msg);
+        conns[key].send(cmd, msg);
       }
     }
 

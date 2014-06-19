@@ -42,6 +42,16 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'unknown publication: bar']);
     },
 
+    "test session closing before subscribe": function () {
+      refute.exception(function () {
+        session._onMessage(v.conn = {
+          sendBinary: test.stub(),
+          // no ws
+          // no _subs
+        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
+      });
+    },
+
     "test publish": function () {
       assert('a123' in v.conn._subs);
 

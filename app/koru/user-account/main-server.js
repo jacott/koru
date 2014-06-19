@@ -145,7 +145,7 @@ define(function(require, exports, module) {
       if (lu && lu.tokens[pair[1]]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
       } else {
-        conn.ws.send('VF');
+        conn.send('VF');
       }
       break;
     case 'X': // logout me

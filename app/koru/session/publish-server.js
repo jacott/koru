@@ -15,6 +15,7 @@ define(function(require, exports, module) {
     var subId = data[0];
     var name = data[1];
     var subs = this._subs;
+    if (! subs) return; // we are closed
     var sub = subs[subId];
 
     if (! name) {

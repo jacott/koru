@@ -43,11 +43,19 @@ define(function(require, exports, module) {
       },
 
       send: function (type, data) {
-        this.ws.send(type + data);
+        try {
+          this.ws && this.ws.send(type + (data === undefined ? '' : data));
+        } catch(ex) {
+          koru.error(util.extractError(ex));
+        }
       },
 
       sendBinary: function (type, args) {
-        this.ws.send(message.encodeMessage(type, args), binaryData);
+        try {
+          this.ws && this.ws.send(message.encodeMessage(type, args), binaryData);
+        } catch(ex) {
+          koru.error(util.extractError(ex));
+        }
       },
 
       added: function (name, id, attrs) {
@@ -65,20 +73,22 @@ define(function(require, exports, module) {
       closed: function () {
         var subs = this._subs;
         if (subs) for(var key in subs) {
-          subs[key].stop();
+          try {subs[key].stop();}
+          catch(ex) {koru.error(util.extractError(ex));}
         }
         this._subs = null;
+        this.ws = null;
       },
 
       set userId(userId) {
         this._userId = userId;
         util.thread.userId = userId;
-        this.ws.send('VS'+(userId || ''));
+        this.send('VS', userId || '');
         var subs = this._subs;
         for(var key in subs) {
           subs[key].resubscribe();
         }
-        this.ws.send('VC');
+        this.send('VC');
       },
 
       get userId() {return this._userId},
