@@ -334,9 +334,7 @@ define(function(require, exports, module) {
       }
       if (name in BaseModel) throw new Error("Model '" + name + "' already defined");
       properties  = properties || {};
-      var model = function (attrs, changes) {
-        BaseModel.call(this, attrs||{}, changes);
-      };
+      var model = newModel(this, name);
 
       model.prototype = Object.create(this.prototype, {
         constructor: { value: model },
@@ -532,6 +530,13 @@ define(function(require, exports, module) {
     name = subject.modelName + "." + name;
     (model._observing = model._observing || []).push(name);
     (modelObservers[name] || (modelObservers[name] = [])).push(callback);
+  }
+
+  function newModel(baseModel, name) {
+    function Model(attrs, changes) {
+      BaseModel.call(this, attrs||{}, changes);
+    };
+    return Model;
   }
 
   return BaseModel;
