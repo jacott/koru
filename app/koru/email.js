@@ -39,7 +39,7 @@ define(function(require, exports, module) {
             auth: auth });
 
       } else {
-        var stream = url;
+        var stream = url || process.stdout;
         exports._pool = {
           sendMail: function (mc, callback) {
             mc.streamMessage();
@@ -53,8 +53,10 @@ define(function(require, exports, module) {
     /** private */
 
     _pool: {
-      // do nothing by default
-      sendMail: function (mc, callback) {callback()}
+      // throw exceptiion by default
+      sendMail: function (mc, callback) {
+        throw new Error('Email has not been initialized');
+      }
     },
 
     get _smtp() {

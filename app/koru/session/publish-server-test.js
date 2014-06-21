@@ -82,6 +82,15 @@ isServer && define(function (require, exports, module) {
       assert.calledOnce(v.onStop);
     },
 
+    "test when closed stop": function () {
+      v.sub.onStop(v.onStop = test.stub());
+      v.sub.conn._subs = null;
+      v.sub.conn.ws = null;
+
+      v.sub.stop();
+      assert.called(v.onStop);
+    },
+
     "test setUserId": function () {
       v.sub.setUserId('u456');
       assert.same(v.conn.userId, 'u456');

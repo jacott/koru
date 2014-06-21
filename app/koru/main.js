@@ -131,6 +131,15 @@
       discardIncompleteLoads: discardIncompleteLoads,
       appDir: appDir(require, module),
 
+      config: module.config(),
+      throwConfigMissing: function (name) {
+        throw new Error(module.id + ' config is missing for: ' + name);
+      },
+
+      throwConfigError: function (name, reason) {
+        throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
+      },
+
       Error: errors.Error.bind(errors),
       Fiber: util.Fiber,
       util: util,

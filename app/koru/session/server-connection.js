@@ -51,9 +51,12 @@ define(function(require, exports, module) {
       },
 
       sendBinary: function (type, args) {
+        var msg = message.encodeMessage(type, args);
         try {
-          this.ws && this.ws.send(message.encodeMessage(type, args), binaryData);
+          this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {
+          this.closed();
+
           koru.error(util.extractError(ex));
         }
       },
@@ -72,12 +75,12 @@ define(function(require, exports, module) {
 
       closed: function () {
         var subs = this._subs;
+        this._subs = null;
+        this.ws = null;
         if (subs) for(var key in subs) {
           try {subs[key].stop();}
           catch(ex) {koru.error(util.extractError(ex));}
         }
-        this._subs = null;
-        this.ws = null;
       },
 
       set userId(userId) {

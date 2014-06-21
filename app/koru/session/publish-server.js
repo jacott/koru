@@ -69,7 +69,7 @@ define(function(require, exports, module) {
     },
 
     stop: function () {
-      delete this.conn._subs[this.id];
+      if (this.conn._subs) delete this.conn._subs[this.id];
       this._stop && this._stop();
     },
 

@@ -284,6 +284,16 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test doc and old null": function () {
+      assert.dom(v.Each.$render({}), function () {
+        var callback = v.fooList.args[0][0];
+
+        refute.exception(function () {
+          callback(null, null);
+        });
+      });
+    },
+
     "test works with removeInserts": function () {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args[0][0];

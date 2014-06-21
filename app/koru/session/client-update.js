@@ -29,6 +29,7 @@ define(function(require, exports, module) {
 
     function removed(data) {
       data = message.decodeMessage(data);
+      koru._debugUpdates && console.log("Update: " + JSON.stringify(data));
       var model = Model[data[0]];
       var id =  data[1];
       new Query(model).fromServer(id).remove();
@@ -37,6 +38,7 @@ define(function(require, exports, module) {
     function modelUpdate(func) {
       return function (data) {
         data = message.decodeMessage(data);
+        koru._debugUpdates && console.log("Update: " + JSON.stringify(data));
         func.call(this, Model[data[0]], data[1], data[2]);
       };
     }

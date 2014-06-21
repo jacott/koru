@@ -478,6 +478,8 @@ define(function(require, exports, module) {
 
     if (typeof expected !== 'object' || typeof actual !== 'object') return false;
 
+    if (expected == null || actual == null) return false;
+
     if (expected.getTime && actual.getTime) return expected.getTime() === actual.getTime();
 
     if (isArray(expected)) {

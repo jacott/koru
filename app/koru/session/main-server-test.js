@@ -50,6 +50,15 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', '404,not found']);
       },
+
+      "test general exception": function () {
+        test.stub(koru, 'error');
+        v.run(function (one, two, three) {
+          throw new Error('Foo');
+        });
+
+        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 'Error: Foo']);
+      },
     },
 
     "test onclose": function () {

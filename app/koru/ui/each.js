@@ -88,6 +88,7 @@ define(function(require, exports, module) {
 
     function callback(doc, old, sort) {
       var id = (doc || old);
+      if (! id) return; // can't do anything if id can not be determined
       id = id._id || id.id;
       var elm = rows[id];
       if (elm) {

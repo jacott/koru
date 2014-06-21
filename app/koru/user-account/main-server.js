@@ -8,6 +8,8 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Email = require('../email');
 
+  var emailConfig;
+
   session.provide('V', onMessage);
 
   var model = Model.define('UserLogin', {
@@ -93,7 +95,7 @@ define(function(require, exports, module) {
   session.defineRpc('resetPassword', function (token, passwordHash) {
     Val.ensureString(token);
     Val.permitParams(passwordHash, VERIFIER_SPEC);
-    var parts = token.split('_');
+    var parts = token.split('-');
     var lu = model.findById(parts[0]);
     if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
       lu.srp = passwordHash;
@@ -117,6 +119,8 @@ define(function(require, exports, module) {
     },
 
     sendResetPasswordEmail: function (userId) {
+      emailConfig || configureEmail();
+
       var lu = model.findByField('userId', userId);
 
       var rand = Random.create();
@@ -126,13 +130,22 @@ define(function(require, exports, module) {
       lu.$$save();
 
       Email.send({
-        from: exports.emailConfig.from,
+        from: emailConfig.from,
         to: lu.email,
-        subject: 'How to reset your password on ' + exports.emailConfig.siteName,
-        text: exports.emailConfig.sendResetPasswordEmailText(lu.userId, lu._id + '_' + lu.resetToken),
+        subject: 'How to reset your password on ' + emailConfig.siteName,
+        text: emailConfig.sendResetPasswordEmailText(lu.userId, lu._id + '-' + lu.resetToken),
       });
     },
   });
+
+  function configureEmail() {
+    emailConfig = koru.config.userAccount && koru.config.userAccount.emailConfig || {};
+
+    if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
+    if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
+    if (! emailConfig.sendResetPasswordEmailText) koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
+    if (typeof emailConfig.sendResetPasswordEmailText !== 'function') koru.throwConfigError('userAccount.sendResetPasswordEmailText', 'must be of type function(userId, resetToken)');
+  }
 
   function onMessage(data) {
     var conn = this;

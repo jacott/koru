@@ -90,6 +90,14 @@ define(function (require, exports, module) {
     },
 
     "test deepEqual": function () {
+      assert.isTrue(util.deepEqual(null, null));
+      assert.isFalse(util.deepEqual(null, undefined));
+      assert.isFalse(util.deepEqual(null, ""));
+      assert.isTrue(util.deepEqual({}, {}));
+      assert.isFalse(util.deepEqual(0, -0));
+      assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
+
+
       assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 
       assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));

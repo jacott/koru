@@ -125,6 +125,14 @@ isServer && define(function (require, exports, module) {
       refute.called(koru.error);
     },
 
+    "test when closed sendBinary": function () {
+      v.conn.ws = null;
+      v.conn.sendBinary.restore();
+      refute.exception(function () {
+        v.conn.sendBinary('M', [1,2,3]);
+      });
+    },
+
     "test set userId": function () {
       var sendUid = v.ws.send.withArgs('VSu456');
       var sendUidCompleted = v.ws.send.withArgs('VC');
@@ -166,7 +174,6 @@ isServer && define(function (require, exports, module) {
 
       v.conn.closed();
 
-
       assert.called(v.t1);
       assert.called(v.t2);
 
@@ -175,7 +182,7 @@ isServer && define(function (require, exports, module) {
 
       v.conn.closed();
 
-       assert.calledOnce(v.t1);
+      assert.calledOnce(v.t1);
     },
   });
 });

@@ -2,8 +2,8 @@ isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('../session/test-helper');
   var session = require('../session/base');
-  var userAccount = require('./main');
   var Model = require('../model/main');
+  var userAccount = require('./main');
   var koru = require('../main');
   var SRP = require('../srp/srp');
   var Email = require('../email');
@@ -25,29 +25,31 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      userAccount.model.docs.remove({});
       test.stub(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
-      Model.UserLogin.docs.remove({});
       v = null;
     },
 
     "sendResetPasswordEmail": {
       setUp: function () {
         test.stub(Email, 'send');
-        v.emailConfig = userAccount.emailConfig;
-        userAccount.emailConfig = {
-          sendResetPasswordEmailText: function (userId, token) {
-            return "userid: " + userId + " token: " + token;
-          },
+        v.userAccountConfig = koru.config.userAccount;
+        koru.config.userAccount = {
+          emailConfig: {
+            sendResetPasswordEmailText: function (userId, token) {
+              return "userid: " + userId + " token: " + token;
+            },
 
-          from: 'Koru <koru@obeya.co>',
-          siteName: 'Koru',
+            from: 'Koru <koru@obeya.co>',
+            siteName: 'Koru',
+          },
         };
       },
 
       tearDown: function () {
-        userAccount.emailConfig = v.emailConfig;
+        koru.config.userAccount = v.userAccountConfig;
       },
 
       "test send": function () {
@@ -61,7 +63,7 @@ isServer && define(function (require, exports, module) {
           from: 'Koru <koru@obeya.co>',
           to: 'foo@bar.co',
           subject: 'How to reset your password on Koru',
-          text: 'userid: uid111 token: ' + v.lu._id+'_'+v.lu.resetToken,
+          text: 'userid: uid111 token: ' + v.lu._id+'-'+v.lu.resetToken,
         });
       },
     },
@@ -171,9 +173,9 @@ isServer && define(function (require, exports, module) {
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
         v.lu.$$save();
-        session._rpcs.resetPassword.call(v.conn, v.lu._id+'_secretToken', {identity: 'abc123'});
+        session._rpcs.resetPassword.call(v.conn, v.lu._id+'-secretToken', {identity: 'abc123'});
 
-        assert.calledWith(Val.ensureString, v.lu._id+'_secretToken');
+        assert.calledWith(Val.ensureString, v.lu._id+'-secretToken');
         assert.calledWith(Val.permitParams, {identity: 'abc123'}, { identity: true, salt: true, verifier: true });
         assert.same(v.conn.userId, v.lu.userId);
         v.lu.$reload();
