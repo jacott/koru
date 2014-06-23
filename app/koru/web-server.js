@@ -27,7 +27,7 @@ define(function (require, exports, module) {
 
   var server = http.createServer(requestListener);
 
-  server.listen(module.config().port || 3000);
+  server.listen(module.config().port || 3000, module.config().host);
 
   exports.server = server;
   exports.compilers = {};
