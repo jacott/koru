@@ -5,6 +5,8 @@ isServer && define(function (require, exports, module) {
   var publish = require('./publish');
   var session = require('../session/base');
   var message = require('./message');
+  var util = require('../util');
+  var match = require('./match');
 
   TH.testCase(module, {
     setUp: function () {
@@ -18,6 +20,7 @@ isServer && define(function (require, exports, module) {
 
       v.callSub = function () {
         session._onMessage(v.conn = {
+          match: match(),
           sendBinary: test.stub(),
           ws: {send: v.send = test.stub()},
           _subs: {},
@@ -153,6 +156,118 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
     },
 
+    "sendMatchUpdate": {
+      setUp: function () {
+        v.sub.match('Foo', v.m1 = function (doc) {
+          return doc.attributes.name === 'John';
+        });
+        v.docProto = {
+          $asBefore: function (changes) {
+            var old = util.deepCopy(this);
+            util.extend(old.attributes, changes);
+            return old;
+          },
+          constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 5}};
+      },
+
+      "test stop": function () {
+        v.sub.match('Bar', v.m2 = test.stub());
+
+        assert.equals(Object.keys(v.conn.match._models).sort(), ['Bar', 'Foo']);
+
+        v.sub.stop();
+        assert.equals(Object.keys(v.conn.match._models), []);
+        assert.equals(v.sub._matches, []);
+      },
+
+      "test added via add": function () {
+        var stub = v.conn.added = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+
+        v.sub.sendMatchUpdate(doc);
+
+        assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+      },
+
+      "test added via change": function () {
+        var stub = v.conn.added = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+        var was = {name: 'Sam'};
+
+        v.sub.sendMatchUpdate(doc, was);
+
+        assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+      },
+
+      "test change": function () {
+        var stub = v.conn.changed = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+        var was = {age: 7};
+
+        v.sub.sendMatchUpdate(doc, was);
+
+        assert.calledWith(stub, 'Foo', 'id123', {age: 5});
+      },
+
+      "test removed via change": function () {
+        var stub = v.conn.removed = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+        var was = {name: 'John'};
+        util.extend(doc.attributes, {name: 'Sam'});
+
+        v.sub.sendMatchUpdate(doc, was);
+
+        assert.calledWith(stub, 'Foo', 'id123');
+      },
+
+      "test removed via remove": function () {
+        var stub = v.conn.removed = test.stub();
+
+        var old = util.deepCopy(v.docProto);
+
+        v.sub.sendMatchUpdate(null, old, old);
+
+        assert.calledWith(stub, 'Foo', 'id123');
+      },
+
+      "test remove no match": function () {
+        var stub = v.conn.removed = test.stub();
+
+        var old = util.deepCopy(v.docProto);
+        util.extend(old.attributes, {name: 'Sam'});
+
+        v.sub.sendMatchUpdate(null, old);
+
+        refute.called(stub);
+      },
+
+      "test change no match": function () {
+        var stub = v.conn.changed = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+        doc.attributes.name = 'Sam';
+        var was = {age: 7};
+
+        v.sub.sendMatchUpdate(doc, was);
+
+        refute.called(stub);
+      },
+
+      "test add no match": function () {
+        var stub = v.conn.added = test.stub();
+
+        var doc = util.deepCopy(v.docProto);
+        doc.attributes.name = 'Sam';
+
+        v.sub.sendMatchUpdate(doc);
+        refute.called(stub);
+      },
+    },
+
     "test sendUpdate added": function () {
       var stub = v.conn.added = test.stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}});
@@ -163,7 +278,7 @@ isServer && define(function (require, exports, module) {
     "test sendUpdate changed": function () {
       var stub = v.conn.changed = test.stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}},
-                      {age: 5});
+                       {age: 5});
 
       assert.calledWith(stub, 'Foo', 'id123', {age: 7});
     },

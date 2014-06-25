@@ -30,7 +30,7 @@ isClient && define(function (require, exports, module) {
       });
 
       v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
-      v.matchFunc = test.stub(publish, '_matches', function (doc) {
+      v.matchFunc = test.stub(publish.match, 'has', function (doc) {
         return doc.constructor === v.Foo &&
           v.match(doc.attributes);
       });

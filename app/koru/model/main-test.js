@@ -280,12 +280,13 @@ define(function (require, exports, module) {
       "test asBefore on objects": function () {
         v.TestModel.defineFields({foo: {type: 'has_many'}, queen: 'text'});
 
-        var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val'}}});
+        var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val', buzz: 5}}});
 
-        var was = {"foo.bar.baz": "orig", queen: 'Mary'};
+        var was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary'};
         var old = doc.$asBefore(was);
 
         assert.same(old.foo.bar.baz, "orig");
+        assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, "Mary");
 
         assert.same(doc.$asBefore(was), old);

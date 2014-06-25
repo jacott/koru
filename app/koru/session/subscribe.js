@@ -132,17 +132,16 @@ define(function(require, exports, module) {
         publish._filterModels(models);
       },
 
-      match: function (model, func) {
-        this._matches.push(publish._registerMatch(model, func));
+      match: function (modelName, func) {
+        this._matches.push(publish.match.register(modelName, func));
       },
     };
 
     function killMatches(matches, models) {
-      for(var i = 0; i < matches.length; ++i) {
-        var m = matches[i];
+      matches.forEach(function (m) {
         if (models) models[m.modelName] = true;
         m.stop();
-      }
+      });
     }
 
     var clientUpdate = require('./client-update')(session);

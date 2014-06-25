@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
+  var match = require('./match');
 
   return function (session) {
     function Connection(ws, sessId, close) {
@@ -10,6 +11,8 @@ define(function(require, exports, module) {
       this._subs = {};
       this.close = close;
       this._last = null;
+      this.match = match();
+
       ws.on('close', close);
     }
 
@@ -55,6 +58,7 @@ define(function(require, exports, module) {
         try {
           this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {
+          _koru_.debug(module.id + ' sendBinary ex', this.ws.readyState, ex.toString());
           this.closed();
 
           koru.error(util.extractError(ex));

@@ -6,6 +6,7 @@ isServer && define(function (require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
+  var match = require('./match');
 
   TH.testCase(module, {
     setUp: function () {
@@ -19,6 +20,16 @@ isServer && define(function (require, exports, module) {
 
     tearDown: function () {
       v = null;
+    },
+
+    "test match": function () {
+      v.conn.match.register('Foo', v.m1 = test.stub().returns(true));
+
+      assert.isTrue(v.conn.match.has(v.foo = {constructor: {modelName: 'Foo'}, a: 1}));
+      assert.isFalse(v.conn.match.has(v.bar = {constructor: {modelName: 'Bar'}, a: 1}));
+
+      assert.calledWith(v.m1, v.foo);
+      refute.calledWith(v.m1, v.bar);
     },
 
     "onMessage": {

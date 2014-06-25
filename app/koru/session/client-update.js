@@ -14,14 +14,14 @@ define(function(require, exports, module) {
     function added(model, id, attrs) {
       attrs._id = id;
       var doc = new model(attrs);
-      publish._matches(doc) && Query.insertFromServer(model, id, attrs);
+      publish.match.has(doc) && Query.insertFromServer(model, id, attrs);
     }
 
     function changed(model, id, attrs) {
       attrs._id = id;
       var doc = model.findById(id);
       var query = new Query(model).fromServer(id);
-      if (publish._matches(doc))
+      if (publish.match.has(doc))
         query.update(attrs);
       else
         query.remove();

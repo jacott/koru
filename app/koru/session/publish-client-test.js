@@ -34,12 +34,12 @@ isClient && define(function (require, exports, module) {
 
       v.handles.push(v.F1.onChange(v.f1del = test.stub()));
 
-      v.handles.push(publish._registerMatch('F1', function (doc) {
+      v.handles.push(publish.match.register('F1', function (doc) {
         return doc.name === 'A';
       }));
 
 
-      v.handles.push(publish._registerMatch('F2', function (doc) {
+      v.handles.push(publish.match.register('F2', function (doc) {
         return doc.name === 'A2';
       }));
 
@@ -67,37 +67,37 @@ isClient && define(function (require, exports, module) {
     },
 
     "test false matches": function () {
-      v.handles.push(publish._registerMatch('Foo', function (doc) {
+      v.handles.push(publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
       }));
 
-      v.handles.push(publish._registerMatch('Foo', function (doc) {
+      v.handles.push(publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
       }));
 
 
-      assert.isFalse(publish._matches(v.doc));
+      assert.isFalse(publish.match.has(v.doc));
     },
 
 
     "test true matches": function () {
-      v.handles.push(publish._registerMatch('Foo', function (doc) {
+      v.handles.push(publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
       }));
 
-      v.handles.push(v.t = publish._registerMatch('Foo', function (doc) {
+      v.handles.push(v.t = publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return true;
       }));
 
 
-      assert.isTrue(publish._matches(v.doc));
+      assert.isTrue(publish.match.has(v.doc));
       v.t.stop();
 
-      assert.isFalse(publish._matches(v.doc));
+      assert.isFalse(publish.match.has(v.doc));
     },
   });
 });

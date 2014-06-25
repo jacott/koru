@@ -102,7 +102,7 @@ define(function(require, exports, module) {
           Object.defineProperty(cc, attr, Object.getOwnPropertyDescriptor(changes, attr));
         } else { // update part of attribute
           var ov, parts = attr.split(".");
-          var curr = cc[parts[1]];
+          var curr = cc[parts[0]];
           if (curr)
             var copied = true;
           else

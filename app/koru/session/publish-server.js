@@ -40,6 +40,7 @@ define(function(require, exports, module) {
     this.id = subId;
     this._subscribe = subscribe;
     this.args = args;
+    this._matches = [];
   }
 
   Sub.prototype = {
@@ -58,6 +59,21 @@ define(function(require, exports, module) {
         this.conn.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
     },
 
+    sendMatchUpdate: function (doc, changes) {
+      var conn = this.conn;
+      if (doc && conn.match.has(doc)) {
+        if (changes && conn.match.has(doc.$asBefore(changes)))
+          conn.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+        else
+          conn.added(doc.constructor.modelName, doc._id, doc.attributes);
+      } else if (changes && conn.match.has(doc ? doc.$asBefore(changes) : changes))
+        conn.removed((doc||changes).constructor.modelName, (doc||changes)._id);
+    },
+
+    match: function (modelName, func) {
+      this._matches.push(this.conn.match.register(modelName, func));
+    },
+
     error: function (error) {
       if (error.errorType === 'KoruError') {
         this.conn.sendBinary('P', [this.id, error.error, error.reason]);
@@ -71,6 +87,10 @@ define(function(require, exports, module) {
     stop: function () {
       if (this.conn._subs) delete this.conn._subs[this.id];
       this._stop && this._stop();
+      this._matches.forEach(function (m) {
+        m.stop();
+      });
+      this._matches = [];
     },
 
     setUserId: function (userId) {
