@@ -44,6 +44,14 @@ define(function(require, exports, module) {
      */
     deepEqual: deepEqual,
 
+    invert: function (map) {
+      var result = {};
+      for(var prop in map) {
+        result[map[prop]] = prop;
+      }
+      return result;
+    },
+
     lookupDottedValue: function (key, attributes) {
       var parts = key.split('.');
       var val = attributes[parts[0]];
@@ -88,16 +96,17 @@ define(function(require, exports, module) {
           curr = curr[part] || (curr[part] = {});
         }
         ov = Object.getOwnPropertyDescriptor(curr, parts[i]);
-        if (nv.value === undefined)
+        if (isArray(curr)) {
+          part = +parts[i];
+          if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
+          if (nv.value === undefined)
+            curr.splice(part, 1);
+          else
+            curr[part] = nv.value;
+        } else if (nv.value === undefined)
           delete curr[parts[i]];
         else {
-          if (isArray(curr)) {
-            part = +parts[i];
-            if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
-            curr[part] = nv.value;
-          } else {
-            Object.defineProperty(curr, parts[i], nv);
-          }
+          Object.defineProperty(curr, parts[i], nv);
         }
       }
       return ov ? ov : valueUndefined;
@@ -154,6 +163,12 @@ define(function(require, exports, module) {
     isObjEmpty: function (obj) {
       for(var noop in obj) {return false;}
       return true;
+    },
+
+    addItem: function (list, value) {
+      var pos = list.indexOf(value);
+      if (pos !== -1) return pos;
+      list.push(value);
     },
 
     removeItem: function (list, item) {
@@ -424,6 +439,10 @@ define(function(require, exports, module) {
 
     newDate: function () {
       return new Date(util.dateNow());
+    },
+
+    emailAddress: function (email, name) {
+      return name.replace(/[<>]/g, '') + " <" + email + ">";
     },
 
     parseEmailAddresses: function (input) {

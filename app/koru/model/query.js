@@ -29,7 +29,12 @@ define(function(require, exports, module) {
     },
 
     where: function (params, value) {
-      return condition(this, '_wheres', params, value);
+      if (typeof params === 'function') {
+        var funcs = this._whereFuncs || (this._whereFuncs = []);
+        funcs.push(params);
+        return this;
+      } else
+        return condition(this, '_wheres', params, value);
     },
 
     whereNot: function (params, value) {
@@ -40,6 +45,18 @@ define(function(require, exports, module) {
       var _fields = this._fields = this._fields || {};
       for(var i = 0; i < arguments.length; ++i) {
         _fields[arguments[i]] = true;
+      }
+      return this;
+    },
+
+    sort: function (/* fields... */) {
+      var _sort = this._sort = this._sort || {};
+      for(var i = 0; i < arguments.length; ++i) {
+        var val = arguments[i];
+        if (typeof val === 'string')
+          _sort[val] = 1;
+        else
+          _sort[arguments[i-1]] = val;
       }
       return this;
     },

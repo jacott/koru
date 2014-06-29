@@ -23,6 +23,14 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test fields": function () {
+      assert.equals(new Query(v.TestModel).fields('a', 'b').fields('c')._fields, {a: true, b:true, c: true});
+    },
+
+    "test sort": function () {
+      assert.equals(new Query(v.TestModel).sort('a', 'b', -1).sort('c')._sort, {a: 1, b: -1, c: 1});
+    },
+
     "test fetch": function () {
       assert.equals(new Query(v.TestModel).fetch().sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
@@ -127,6 +135,41 @@ define(function (require, exports, module) {
 
       assert.same(v.foo.name, 'x');
       assert.same(v.foo.age, 7);
+    },
+
+    "test addItem": function () {
+      v.TestModel.defineFields({cogs: 'has-many'});
+      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
+
+      assert.equals(v.foo.$reload().cogs, ['a']);
+
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": undefined});
+
+      v.onChange.reset();
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+
+      assert.equals(v.foo.$reload().cogs, ['a', 'b']);
+
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.1": undefined});
+
+      v.onChange.reset();
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+
+      assert.equals(v.foo.$reload().cogs, ['a', 'b']);
+
+      refute.called(v.onChange);
+    },
+
+    "test sort": function () {
+      v.TestModel.create({name: 'bar', age: 2});
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', 'age').fetch(), 'age'), [2, 10, 5]);
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age').fetch(), 'age'), [5, 2, 10]);
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age', -1).fetch(), 'age'), [5, 10, 2]);
     },
 
     "test whereNot": function () {

@@ -32,6 +32,19 @@ define(function (require, exports, module) {
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
 
+    "test addItem": function () {
+      var list = ['a', 'b'];
+
+      assert.same(util.addItem(list, 'b'), 1);
+      assert.same(util.addItem(list, 'a'), 0);
+
+      assert.equals(list, ['a', 'b']);
+
+      assert.same(util.addItem(list, 'aa'), undefined);
+
+      assert.equals(list, ['a', 'b', 'aa']);
+    },
+
     "test removeItem": function () {
       var foo = [1,2,3];
 
@@ -108,6 +121,10 @@ define(function (require, exports, module) {
       assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
     },
 
+    "test invert": function () {
+      assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
+    },
+
     "test extendWithDelete": function () {
       var orig = {a: 1, b: 2, c: 3};
       var changes = {a: 2, b: undefined, d: 4};
@@ -144,6 +161,15 @@ define(function (require, exports, module) {
 
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'}, d: 4, new: {deep: {list: 'deeplist'}}});
       assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
+    },
+
+    "test applyChange deleting array entry": function () {
+      var orig = {a: [1,2,3]};
+      var changes = {'a.1': undefined};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig.a, [1, 3]);
     },
 
     "test already applied applyChanges": function () {
@@ -435,6 +461,10 @@ define(function (require, exports, module) {
       assert.between(now, before, after);
 
       assert.isTrue(result);
+    },
+
+    "test emailAddress": function () {
+      assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
     },
 
     "test parseEmailAddresses": function () {

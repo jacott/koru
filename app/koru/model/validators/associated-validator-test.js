@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var geddon = require('../../test');
   var validation = require('../validation');
-  var sut = require('./associated-validator').method.bind(validation);
+  var sut = require('./associated-validator').bind(validation);
   var Model = require('../main');
   var Query = require('../query');
 

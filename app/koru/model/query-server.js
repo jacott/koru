@@ -25,6 +25,9 @@ define(function(require, exports, module) {
         } else {
           var model = this.model;
           var cursor = model.docs.find(buildQuery(this));
+          this._sort && cursor.sort(this._sort);
+
+          this._fields && cursor.fields(this._fields);
           for(var doc = cursor.next(); doc; doc = cursor.next()) {
             if (func(new model(doc)) === true)
               break;
@@ -59,22 +62,46 @@ define(function(require, exports, module) {
           return this.model.docs.count(buildQuery(this), {limit: max});
       },
 
-      update: function (changes) {
+      addItem: function (field, value) {
+        var self = this;
+        var count = 0;
+        var model = self.model;
+        var docs = model.docs;
+
+        self.forEach(function (doc) {
+          ++count;
+          var list = doc.attributes[field] || (doc.attributes[field] = []);
+          var index = util.addItem(list, value);
+
+          if (index) return 0;
+          var changes = {};
+          changes[field+"."+list.length - 1] = undefined;
+          var upd = {};
+          upd[field] = value;
+          docs.update({_id: doc._id}, {$addToSet: upd});
+          model.notify(doc, changes);
+        });
+        return count;
+      },
+
+      update: function (origChanges) {
+        origChanges = origChanges || {};
         var model = this.model;
         var docs = model.docs;
 
-        var cmd = buildUpdate(this, changes);
+        var cmd = buildUpdate(this, origChanges);
 
         if (util.isObjEmpty(cmd)) return 0;
 
         var self = this;
         var count = 0;
         self.forEach(function (doc) {
+          var changes = util.deepCopy(origChanges);
           ++count;
           var attrs = doc.attributes;
 
           if (self._incs) for (var field in self._incs) {
-            attrs[field] += self._incs[field];
+            changes[field] = attrs[field] + self._incs[field];
           }
 
           util.applyChanges(attrs, changes);
@@ -85,7 +112,9 @@ define(function(require, exports, module) {
       },
 
       findOne: function(id) {
-        var doc = this.model.docs.findOne(buildQuery(this, id));
+        var opts;
+        if (this._fields) opts = this._fields;
+        var doc = this.model.docs.findOne(buildQuery(this, id), opts);
         if (! doc) return;
         return new this.model(doc);
       },

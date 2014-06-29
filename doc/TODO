@@ -1,6 +1,9 @@
 Issues and Ideas
 ================
 
+* Lock doc by id before update
+   Do in query-server.js. lock waits if already locked.
+
 * Client: On setUserId
    (is this already done?)
    resubscribe and match all changed matchers. Maybe limit matchers to

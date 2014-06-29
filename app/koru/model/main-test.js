@@ -301,6 +301,11 @@ define(function (require, exports, module) {
         var old = doc.$asBefore(was);
 
         assert.equals(old.foo, [, {bar: 3}]);
+
+        doc.attributes.foo = [1, {bar: 3}];
+
+        old = doc.$asBefore({"foo.0": undefined});
+        assert.equals(old.foo, [{bar: 3}]);
       },
 
       "test change": function () {
@@ -429,6 +434,31 @@ define(function (require, exports, module) {
         },
       },
 
+      "test hasMany": function () {
+        var find = test.stub();
+
+        find.returns("fail")
+          .withArgs({$and: ["foreign_ref", "param"]}, {sort: 1}).returns("two args")
+          .withArgs("foreign_ref", {transform: null}).returns("options only")
+          .withArgs("foreign_ref").returns("no args");
+
+        function fooFinder() {
+          assert.same(this, sut);
+          return "foreign_ref";
+        }
+
+
+        // exercise
+        v.TestModel.hasMany('foos', {find: find}, fooFinder);
+
+        var sut = new v.TestModel();
+
+        assert.same(sut.foos(), "no args");
+        assert.same(sut.foos("param" ,{sort: 1}), "two args");
+        assert.same(sut.foos({}, {transform: null}), "options only");
+        assert.same(sut.foos(null, {transform: null}), "options only");
+      },
+
       'test user_id_on_create': function () {
         v.TestModel.defineFields({name: 'text', user_id: 'user_id_on_create'});
 
@@ -513,8 +543,7 @@ define(function (require, exports, module) {
         assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
 
         if(isClient)
-          // name is old because changes have been swapped with attributes
-          assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "old"});
+          assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "new"});
       },
 
       'test build': function () {

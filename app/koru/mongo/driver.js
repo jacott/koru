@@ -101,13 +101,8 @@ Collection.prototype = {
     return future.wait();
   },
 
-  find: function (query, options) {
-    var future = new Future;
-    if (options)
-      this._col.find(query, options, future.resolver());
-    else
-      this._col.find(query, future.resolver());
-    return new Cursor(future.wait());
+  find: function (/* args */) {
+    return new Cursor(this._col.find.apply(this._col, arguments));
   },
 
   remove: function (query, options) {
@@ -138,6 +133,8 @@ function Cursor(mcursor) {
     future.wait();
   };
 
+  this._mcursor = mcursor;
+
   var future;
 
   this.next = function () {
@@ -146,3 +143,17 @@ function Cursor(mcursor) {
     return future.wait();
   };
 }
+
+Cursor.prototype = {
+  constructor: Cursor,
+
+  sort: function (spec) {
+    this._mcursor.sort(spec);
+    return this;
+  },
+
+  fields: function (spec) {
+    this._mcursor.fields(spec);
+    return this;
+  },
+};

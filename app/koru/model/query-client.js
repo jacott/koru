@@ -115,11 +115,23 @@ define(function(require, exports, module) {
         if (this.singleId) {
           var doc = this.findOne(this.singleId);
           doc && func(doc);
-        } else for(var id in this.model.docs) {
-          // TODO use indexs to speed this up: say query.withIndex('abc', {params...}).
-          var doc = this.findOne(id);
-          if (doc && func(doc) === true)
-            break;
+        } else {
+          if (this._sort) {
+            var results = [];
+            var compare = sortFunc(this._sort);
+            for(var id in this.model.docs) {
+              // TODO use indexs to speed this up: say query.withIndex('abc', {params...}).
+              var doc = this.findOne(id);
+              doc && results.push(doc);
+            }
+            results.sort(compare).some(func);
+
+          } else for(var id in this.model.docs) {
+            // TODO use indexs to speed this up: say query.withIndex('abc', {params...}).
+            var doc = this.findOne(id);
+            if (doc && func(doc) === true)
+              break;
+          }
         }
       },
 
@@ -155,6 +167,9 @@ define(function(require, exports, module) {
           if (attrs[field] != where[field])
             return;
         }
+        var whereFunc = this._whereFuncs;
+        if (whereFunc && whereFunc.some(function (func) {return ! func(doc)}))
+          return;
         return doc;
       },
 
@@ -181,13 +196,33 @@ define(function(require, exports, module) {
         return count;
       },
 
-      update: function (changes) {
+      addItem: function (field, value) {
+        var self = this;
+        var count = 0;
+        var model = self.model;
+        var docs = model.docs;
+
+        self.forEach(function (doc) {
+          ++count;
+          var list = doc.attributes[field] || (doc.attributes[field] = []);
+          var index = util.addItem(list, value);
+
+          if (index) return 0;
+          var changes = {};
+          changes[field+"."+list.length - 1] = undefined;
+          model.notify(doc, changes);
+        });
+        return count;
+      },
+
+      update: function (origChanges) {
+        origChanges = origChanges || {};
         var self = this;
         var count = 0;
         var model = self.model;
         var docs = model.docs;
         if (sessState.pendingCount() && self._fromServer) {
-          changes = fromServer(model, self.singleId, changes);
+          var changes = fromServer(model, self.singleId, origChanges);
           var doc = docs[self.singleId];
           if (doc) {
             util.applyChanges(doc.attributes, changes);
@@ -199,11 +234,12 @@ define(function(require, exports, module) {
           return 1;
         }
         self.forEach(function (doc) {
+          var changes = util.deepCopy(origChanges);
           ++count;
           var attrs = doc.attributes;
 
           if (self._incs) for (var field in self._incs) {
-            attrs[field] += self._incs[field];
+            changes[field] = attrs[field] + self._incs[field];
           }
 
           var valueUndefined = {value: undefined};
@@ -310,6 +346,16 @@ define(function(require, exports, module) {
     function unload() {
       syncOb && syncOb.stop();
       stateOb && stateOb.stop();
+    }
+
+    function sortFunc(params) {
+      return function (a, b) {
+        for(var key in params) {
+          var aVal = a[key]; var bVal = b[key];
+          if (aVal !== bVal) return  (aVal < bVal) ? -params[key]  : params[key];
+        }
+        return 0;
+      };
     }
   };
 });

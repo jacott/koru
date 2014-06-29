@@ -23,6 +23,16 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test where func": function () {
+      assert.same(v.TestModel.query.where(function (doc) {
+        return doc.name !== 'foo';
+      }).count(), 0);
+
+      assert.same(v.TestModel.query.where(function (doc) {
+        return doc.name === 'foo';
+      }).count(), 1);
+    },
+
     /**
      * This was causing a undefined exception
      */

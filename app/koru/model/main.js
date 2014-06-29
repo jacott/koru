@@ -97,9 +97,13 @@ define(function(require, exports, module) {
 
       for(var attr in changes) {
         var index = attr.indexOf(".");
+        var desc = Object.getOwnPropertyDescriptor(changes, attr);
 
         if (index === -1) {
-          Object.defineProperty(cc, attr, Object.getOwnPropertyDescriptor(changes, attr));
+          if (desc.value === undefined)
+            delete cc[attr];
+          else
+            Object.defineProperty(cc, attr, desc);
         } else { // update part of attribute
           var ov, parts = attr.split(".");
           var curr = cc[parts[0]];
@@ -111,7 +115,13 @@ define(function(require, exports, module) {
             var part = parts[i];
             curr = copied ? curr[part] || (curr[part] = {}) : curr[part] = util.shallowCopy(curr[part]) || {};
           }
-          Object.defineProperty(curr, parts[i],  Object.getOwnPropertyDescriptor(changes, attr));
+          if (desc.value === undefined) {
+            if (util.isArray(curr) )
+              curr.splice(parts[i], 1);
+            else
+              delete curr[parts[i]];
+          } else
+            Object.defineProperty(curr, parts[i],  desc);
         }
       }
       return cache[1] = new this.constructor(attrs, cc);
@@ -347,6 +357,7 @@ define(function(require, exports, module) {
       model.modelName = name;
       model._fieldValidators = {};
       model._defaults = {};
+      model.hasMany = hasMany;
       makeSubject(model);
       ModelEnv.setupModel(model);
 
@@ -455,6 +466,18 @@ define(function(require, exports, module) {
     return function () {
       var value = this[field];
       return value && this.$cacheRef(name)[value] || (this.$cacheRef(name)[value] = model.findById(value));
+    };
+  }
+
+  function hasMany(name, model, finder) {
+    this.prototype[name] = function (constraints, options) {
+      var finderConstraint = finder.call(this);
+
+      if(constraints) for(var key in constraints) {
+        return model.find({$and: [finderConstraint, constraints]}, options);
+      }
+
+      return model.find(finderConstraint, options);
     };
   }
 

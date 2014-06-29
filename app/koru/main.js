@@ -45,6 +45,7 @@
     if (deps === 'unloading') return;
 
     var onunload = unloads[id];
+    delete unloads[id];
 
     if (onunload === 'reload') return reload();
 
@@ -59,7 +60,6 @@
     if (typeof onunload === 'function')
       onunload(id, error);
 
-    delete unloads[id];
     delete loaded[id];
     requirejs.undef(id);
   }
