@@ -173,9 +173,9 @@ define(function(require, exports, module) {
 
     removeItem: function (list, item) {
       var index = list.indexOf(item);
-      if (index !== -1)
-        list.splice(index, 1);
-      return list;
+      if (index === -1) return false;
+      list.splice(index, 1);
+      return true;
     },
 
     values: function (map) {

@@ -207,9 +207,28 @@ define(function(require, exports, module) {
           var list = doc.attributes[field] || (doc.attributes[field] = []);
           var index = util.addItem(list, value);
 
-          if (index) return 0;
+          if (index) return;
           var changes = {};
-          changes[field+"."+list.length - 1] = undefined;
+          changes[field+"."+(list.length - 1)] = undefined;
+          model.notify(doc, changes);
+        });
+        return count;
+      },
+
+      removeItem: function (field, value) {
+        var self = this;
+        var count = 0;
+        var model = self.model;
+        var docs = model.docs;
+
+        self.forEach(function (doc) {
+          ++count;
+          var list = doc.attributes[field];
+          if (! list || ! util.removeItem(list, value))
+            return;
+
+          var changes = {};
+          changes[field+"."+(list.length)] = value;
           model.notify(doc, changes);
         });
         return count;

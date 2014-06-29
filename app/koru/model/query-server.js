@@ -75,10 +75,32 @@ define(function(require, exports, module) {
 
           if (index) return 0;
           var changes = {};
-          changes[field+"."+list.length - 1] = undefined;
+          changes[field+"."+(list.length - 1)] = undefined;
           var upd = {};
           upd[field] = value;
           docs.update({_id: doc._id}, {$addToSet: upd});
+          model.notify(doc, changes);
+        });
+        return count;
+      },
+
+      removeItem: function (field, value) {
+        var self = this;
+        var count = 0;
+        var model = self.model;
+        var docs = model.docs;
+
+        self.forEach(function (doc) {
+          ++count;
+          var list = doc.attributes[field];
+          if (! list || ! util.removeItem(list, value))
+            return;
+
+          var changes = {};
+          changes[field+"."+list.length] = value;
+          var upd = {};
+          upd[field] = value;
+          docs.update({_id: doc._id}, {$pull: upd});
           model.notify(doc, changes);
         });
         return count;
