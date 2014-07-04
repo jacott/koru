@@ -76,58 +76,13 @@ define(function(require, exports, module) {
           return this.model.docs.count(buildQuery(this), {limit: max});
       },
 
-      addItem: function (field, value) {
-        var self = this;
-        var count = 0;
-        var model = self.model;
-        var docs = model.docs;
-
-        self.forEach(function (doc) {
-          ++count;
-          var list = doc.attributes[field] || (doc.attributes[field] = []);
-          var index = util.addItem(list, value);
-
-          if (index) return 0;
-          var changes = {};
-          changes[field+"."+(list.length - 1)] = undefined;
-          var upd = {};
-          upd[field] = value;
-          docs.update({_id: doc._id}, {$addToSet: upd});
-          model.notify(doc, changes);
-        });
-        return count;
-      },
-
-      removeItem: function (field, value) {
-        var self = this;
-        var count = 0;
-        var model = self.model;
-        var docs = model.docs;
-
-        self.forEach(function (doc) {
-          ++count;
-          var list = doc.attributes[field];
-          if (! list || ! util.removeItem(list, value))
-            return;
-
-          var changes = {};
-          changes[field+"."+list.length] = value;
-          var upd = {};
-          upd[field] = value;
-          docs.update({_id: doc._id}, {$pull: upd});
-          model.notify(doc, changes);
-        });
-        return count;
-      },
-
       update: function (origChanges) {
         origChanges = origChanges || {};
         var model = this.model;
         var docs = model.docs;
+        var items;
 
         var cmd = buildUpdate(this, origChanges);
-
-        if (util.isObjEmpty(cmd)) return 0;
 
         var self = this;
         var count = 0;
@@ -141,6 +96,41 @@ define(function(require, exports, module) {
           }
 
           util.applyChanges(attrs, changes);
+
+          if (items = self._addItems) {
+            var fields = {};
+            var atLeast1 = false;
+            for(var field in items) {
+              var list = attrs[field] || (attrs[field] = []);
+              items[field].forEach(function (item) {
+                if (util.addItem(list, item) == null) {
+                  atLeast1 = true;
+                  changes[field + "." + (list.length - 1)] = undefined;
+                }
+              });
+              if (atLeast1) fields[field] = {$each: items[field]};
+            }
+            if (atLeast1)
+              cmd.$addToSet = fields;
+          }
+
+          if (items = self._removeItems) {
+            var atLeast1 = false;
+            for(var field in items) {
+              var list = attrs[field];
+              items[field].forEach(function (item) {
+                if (list && util.removeItem(list, item)) {
+                  atLeast1 = true;
+                  changes[field + "." + list.length] = item;
+                }
+              });
+            }
+            if (atLeast1)
+              cmd.$pullAll = items;
+          }
+
+          if (util.isObjEmpty(cmd)) return 0;
+
           docs.update({_id: doc._id}, cmd);
           model.notify(doc, changes);
         });

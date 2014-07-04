@@ -28,6 +28,14 @@ define(function(require, exports, module) {
       return this;
     },
 
+    addItem: function (field, values) {
+      return buildList(this, '_addItems', field, values);
+    },
+
+    removeItem: function (field, values) {
+      return buildList(this, '_removeItems', field, values);
+    },
+
     where: function (params, value) {
       if (typeof params === 'function') {
         var funcs = this._whereFuncs || (this._whereFuncs = []);
@@ -86,6 +94,18 @@ define(function(require, exports, module) {
       conditions[params] = value;
     else
       util.extend(conditions, params);
+    return query;
+  }
+
+  function buildList(query, listName, field, values) {
+    var items = query[listName] || (query[listName] = {});
+    var list = items[field] || (items[field] = []);
+
+    if (util.isArray(values)) values.forEach(function (value) {
+      list.push(value);
+    });
+    else list.push(values);
+
     return query;
   }
 

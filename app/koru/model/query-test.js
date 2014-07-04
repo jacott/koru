@@ -152,28 +152,36 @@ define(function (require, exports, module) {
       v.TestModel.defineFields({cogs: 'has-many'});
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a').update();
       assert.equals(v.foo.$reload().cogs, ['a']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": undefined});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b').update();
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.1": undefined});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b').update();
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
       refute.called(v.onChange);
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a').update();
       assert.equals(v.foo.$reload().cogs, ['b']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.1": 'a'});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b');
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b').update();
       assert.equals(v.foo.$reload().cogs, []);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": 'b'});
+
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a').addItem('cogs', ['b', 'c']).update();
+      assert.equals(v.foo.$reload().cogs, ['a', 'b', 'c']);
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": undefined, "cogs.1": undefined, "cogs.2": undefined});
+
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', ['a', 'c']).removeItem('cogs', 'b').update();
+      assert.equals(v.foo.$reload().cogs, []);
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": 'b', "cogs.1": 'c', "cogs.2": 'a'});
     },
 
     "test sort": function () {

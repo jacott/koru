@@ -215,50 +215,13 @@ define(function(require, exports, module) {
         return count;
       },
 
-      addItem: function (field, value) {
-        var self = this;
-        var count = 0;
-        var model = self.model;
-        var docs = model.docs;
-
-        self.forEach(function (doc) {
-          ++count;
-          var list = doc.attributes[field] || (doc.attributes[field] = []);
-          var index = util.addItem(list, value);
-
-          if (index) return;
-          var changes = {};
-          changes[field+"."+(list.length - 1)] = undefined;
-          model.notify(doc, changes);
-        });
-        return count;
-      },
-
-      removeItem: function (field, value) {
-        var self = this;
-        var count = 0;
-        var model = self.model;
-        var docs = model.docs;
-
-        self.forEach(function (doc) {
-          ++count;
-          var list = doc.attributes[field];
-          if (! list || ! util.removeItem(list, value))
-            return;
-
-          var changes = {};
-          changes[field+"."+(list.length)] = value;
-          model.notify(doc, changes);
-        });
-        return count;
-      },
-
       update: function (origChanges) {
         origChanges = origChanges || {};
         var self = this;
         var count = 0;
         var model = self.model;
         var docs = model.docs;
+        var items;
         if (sessState.pendingCount() && self._fromServer) {
           var changes = fromServer(model, self.singleId, origChanges);
           var doc = docs[self.singleId];
@@ -280,9 +243,26 @@ define(function(require, exports, module) {
             changes[field] = attrs[field] + self._incs[field];
           }
 
-          var valueUndefined = {value: undefined};
           sessState.pendingCount() && recordChange(model, attrs, changes);
           util.applyChanges(attrs, changes);
+
+
+          if (items = self._addItems) for(var field in items) {
+            var list = attrs[field] || (attrs[field] = []);
+            items[field].forEach(function (item) {
+              if (util.addItem(list, item) == null)
+                changes[field + "." + (list.length - 1)] = undefined;
+            });
+          }
+
+          if (items = self._removeItems) for(var field in items) {
+            var list = attrs[field];
+            items[field].forEach(function (item) {
+              if (list && util.removeItem(list, item))
+                changes[field + "." + list.length] = item;
+            });
+          }
+
           for(var key in changes) {
             model.notify(doc, changes);
             break;
