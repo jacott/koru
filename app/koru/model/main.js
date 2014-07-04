@@ -127,8 +127,12 @@ define(function(require, exports, module) {
       return cache[1] = new this.constructor(attrs, cc);
     },
 
+    get $onThis() {
+      return new Query(this.constructor).onId(this._id);
+    },
+
     $update: function (changes) {
-      return new Query(this.constructor).onId(this._id).update(changes);
+      return this.$onThis.update(changes);
     },
 
     $reload: function () {
@@ -202,6 +206,11 @@ define(function(require, exports, module) {
 
     get query() {
       return new Query(this);
+    },
+
+    where: function () {
+      var query = this.query;
+      return query.where.apply(query, arguments);
     },
 
     exists: function (condition) {
@@ -407,12 +416,12 @@ define(function(require, exports, module) {
 
   var typeMap = {
     belongs_to: function (model, field, options) {
-      var name = field.replace(/_id/,''),
-          bt = BaseModel[options.modelName || util.capitalize(name)];
-      if (bt) {
-        model.fieldTypeMap[field] = bt;
-        Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
-      }
+      var name = field.replace(/_id/,'');
+      var btName = options.modelName || util.capitalize(name);
+      var bt = BaseModel[btName];
+      if (! bt) throw Error(btName + ' is not defined for field: ' + field);
+      model.fieldTypeMap[field] = bt;
+      Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
     },
     user_id_on_create: function(model, field, options) {
       typeMap.belongs_to.call(this, model, field, options);
@@ -470,15 +479,11 @@ define(function(require, exports, module) {
   }
 
   function hasMany(name, model, finder) {
-    this.prototype[name] = function (constraints, options) {
-      var finderConstraint = finder.call(this);
-
-      if(constraints) for(var key in constraints) {
-        return model.find({$and: [finderConstraint, constraints]}, options);
-      }
-
-      return model.find(finderConstraint, options);
-    };
+    Object.defineProperty(this.prototype, name, {get: function () {
+      var query = model.query;
+      finder.call(this, query);
+      return query;
+    }});
   }
 
   function getValue(field) {

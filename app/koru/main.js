@@ -144,6 +144,22 @@
       Fiber: util.Fiber,
       util: util,
 
+      setTimeout: function (func, duration) {
+        var fiber = util.Fiber(function () {
+          try {
+            func();
+          }
+          catch(ex) {
+            koru.error(util.extractError(ex));
+          }
+        });
+        return setTimeout(fiber.run.bind(fiber), duration);
+      },
+
+      clearTimeout: function (handle) {
+        return clearTimeout(handle);
+      },
+
       "\x64ebug": function () {
         koru.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
       },

@@ -294,6 +294,17 @@ define(function(require, exports, module) {
 
     isArray: isArray,
 
+    intersectp: function (list1, list2) {
+      var set = {};
+      list1.forEach(function (item) {
+        set[item]=true;
+      });
+
+      return list2.some(function (item) {
+        return item in set;
+      });
+    },
+
     diff: function (a, b) {
       var result = [];
       for(var i = 0; i < a.length; ++i) {
@@ -301,6 +312,16 @@ define(function(require, exports, module) {
         b.indexOf(val) === -1 && result.push(val);
       }
       return result;
+    },
+
+    union: function (args) {
+      var set = {};
+      for(var i = 0; i < arguments.length; ++i) {
+        arguments[i].forEach(function (elm) {
+          set[elm] = true;
+        });
+      }
+      return Object.keys(set);
     },
 
     humanize: function (name) {

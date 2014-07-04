@@ -17,6 +17,20 @@ define(function(require, exports, module) {
         return this.findOne();
       },
 
+      fetchIds: function () {
+        if (this.singleId) throw Error('fetchIds onId not supported');
+
+        var model = this.model;
+        var cursor = model.docs.find(buildQuery(this), {_id: 1});
+        this._sort && cursor.sort(this._sort);
+
+        var results = [];
+        for(var doc = cursor.next(); doc; doc = cursor.next()) {
+          results.push(doc._id);
+        }
+        return results;
+      },
+
       forEach: function (func) {
         var where = this._wheres;
         if (this.singleId) {
@@ -162,6 +176,14 @@ define(function(require, exports, module) {
           neg[key] = {$ne: value};
       }
       result = {$and: [result, neg]};
+    }
+
+    if (query._whereSomes) {
+      var ands = result['$and'];
+      if (! ands) result = {$and: ands = [result]};
+      var somes = query._whereSomes.map(function (ors) {
+        ands.push({$or: ors});
+      });
     }
 
     return result;

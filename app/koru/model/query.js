@@ -37,6 +37,12 @@ define(function(require, exports, module) {
         return condition(this, '_wheres', params, value);
     },
 
+    whereSome: function () {
+      var conditions = (this._whereSomes = this._whereSomes || []);
+      conditions.push(util.slice(arguments));
+      return this;
+    },
+
     whereNot: function (params, value) {
       return condition(this, '_whereNots', params, value);
     },

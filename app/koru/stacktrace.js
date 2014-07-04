@@ -7,8 +7,8 @@ define(['require', 'koru/util-base'], function (require, util) {
   var originRe, repl = '';
   var ANON_FUNCTION = 'anonymous';
 
-  var node = /^\s*at (?:([^\(]+)?\()?(.*):(\d+):(\d+)\)?\s*$/i;
-  var chrome = /^\s*at (?:([^\(]+)\()?((?:file|http|https):.+):(\d+):(\d+)\)?\s*$/i;
+  var node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;
+  var chrome = /^\s*at (?:(.+) \()?((?:file|http|https):.+):(\d+):(\d+)\)?\s*$/i;
   var gecko = /^\s*(\S*|\[.+\])(?:\((.*?)\))?@((?:file|http|https):.+):(\d+)(?::(\d+))?\s*$/i;
 
   return function(ex) {

@@ -47,6 +47,17 @@ define(function (require, exports, module) {
       assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
 
+    'test fetchIds': function () {
+      v.TestModel.query.remove();
+      var exp_ids = [1,2,3].map(function (num) {
+        return v.TestModel.create({age: num})._id;
+      });
+
+      assert.equals(v.TestModel.query.fetchIds().sort(), exp_ids.slice(0).sort());
+      assert.equals(v.TestModel.query.whereNot('age', 1).fetchIds().sort(), exp_ids.slice(1,4).sort());
+      assert.equals(v.TestModel.query.sort('age', -1).fetchIds(), exp_ids.slice(0).reverse());
+    },
+
     "test remove": function () {
       assert.same(new Query(v.TestModel).remove(), 2);
 
@@ -203,6 +214,15 @@ define(function (require, exports, module) {
       assert.equals(st.fetch(), [v.foo]);
 
       assert.equals(st.where('name', 'bar').fetch(), []);
+    },
+
+    "test whereSome": function () {
+      var ids = new Query(v.TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm').fetchIds().sort();
+      assert.equals(ids, ['bar456', 'foo123']);
+
+      var ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm').fetchIds();
+
+      assert.equals(ids, ['bar456']);
     },
 
     "test where on forEach": function () {

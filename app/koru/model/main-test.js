@@ -221,7 +221,7 @@ define(function (require, exports, module) {
     },
 
     'test remove': function () {
-      var TestModel = Model.define('TestModel', {}, {saveRpc: true});
+      var TestModel = Model.define('TestModel');
       var sut = TestModel.create();
 
       sut.$remove();
@@ -231,7 +231,7 @@ define(function (require, exports, module) {
 
     'with TestModel': {
       setUp: function () {
-        v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}}, {saveRpc: true});
+        v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}});
       },
 
       "test exists": function () {
@@ -246,6 +246,22 @@ define(function (require, exports, module) {
         var query = v.TestModel.query;
 
         assert.same(query.model, v.TestModel);
+      },
+
+      "test $onThis": function () {
+        var sut = v.TestModel.create();
+
+        var query = sut.$onThis;
+
+        assert.same(query.model, v.TestModel);
+        assert.same(query.singleId, sut._id);
+      },
+
+      "test where": function () {
+        var query = v.TestModel.where('t1', 123);
+
+        assert.same(query.model, v.TestModel);
+        assert.equals(query._wheres, {t1: 123});
       },
 
       "test findById": function () {
@@ -435,31 +451,27 @@ define(function (require, exports, module) {
       },
 
       "test hasMany": function () {
-        var find = test.stub();
-
-        find.returns("fail")
-          .withArgs({$and: ["foreign_ref", "param"]}, {sort: 1}).returns("two args")
-          .withArgs("foreign_ref", {transform: null}).returns("options only")
-          .withArgs("foreign_ref").returns("no args");
-
-        function fooFinder() {
-          assert.same(this, sut);
-          return "foreign_ref";
+        function fooFinder(query) {
+          v.doc = this;
+          v.query = query;
         }
 
-
         // exercise
-        v.TestModel.hasMany('foos', {find: find}, fooFinder);
+        v.TestModel.hasMany('foos', {query: v.expectQuery = {where: test.stub()}}, fooFinder);
 
-        var sut = new v.TestModel();
+        var sut = new v.TestModel({_id: 'sut123'});
 
-        assert.same(sut.foos(), "no args");
-        assert.same(sut.foos("param" ,{sort: 1}), "two args");
-        assert.same(sut.foos({}, {transform: null}), "options only");
-        assert.same(sut.foos(null, {transform: null}), "options only");
+        assert.same(sut.foos, v.query);
+        assert.same(v.query, v.expectQuery);
+        assert.same(v.doc, sut);
+
       },
 
       'test user_id_on_create': function () {
+        v.User = Model.define('User');
+        test.onEnd(function () {
+          Model._destroyModel('User', 'drop');
+        });
         v.TestModel.defineFields({name: 'text', user_id: 'user_id_on_create'});
 
         assert.equals(v.TestModel.userIds, { user_id: 'create' });

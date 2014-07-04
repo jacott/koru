@@ -80,6 +80,21 @@ isServer && define(function (require, exports, module) {
       assert.equals(lu.tokens, {});
     },
 
+    "test updateOrCreateUserLogin": function () {
+      var lu = userAccount.updateOrCreateUserLogin({email: 'alice@obeya.co', userId: "uid1", srp: 'test srp'});
+
+      assert.equals(lu.$reload().srp, 'test srp');
+      assert.same(lu.email, 'alice@obeya.co');
+      assert.same(lu.userId, 'uid1');
+      assert.equals(lu.tokens, {});
+
+      lu = userAccount.updateOrCreateUserLogin({email: 'bob@obeya.co', userId: "uid1", srp: 'new srp'});
+
+      assert.equals(lu.$reload().srp, 'new srp');
+      assert.same(lu.email, 'bob@obeya.co');
+      assert.same(lu.userId, 'uid1');
+    },
+
     "test too many unexpiredTokens": function () {
       var tokens = v.lu.tokens = {};
       for(var i = 0; i < 15; ++i) {

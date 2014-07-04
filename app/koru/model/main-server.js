@@ -135,7 +135,7 @@ define(function(require, exports, module) {
   };
 
   function addUniqueIndex() {
-    this.docs.ensureIndex(buidlKeys(arguments), {unique : true});
+    this.docs.ensureIndex(buidlKeys(arguments), {unique : true, sparse: true});
   }
 
   function addIndex() {

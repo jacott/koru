@@ -76,7 +76,7 @@ define(function(require, exports, module) {
     return result;
   });
 
-  var VERIFIER_SPEC = Val.permitSpec('identity', 'salt', 'verifier');
+  var VERIFIER_SPEC = exports.VERIFIER_SPEC = Val.permitSpec('identity', 'salt', 'verifier');
   session.defineRpc('SRPChangePassword', function (response) {
     if (response.M !== this.$srp.M)
       throw new Error('failure');
@@ -136,6 +136,18 @@ define(function(require, exports, module) {
         text: emailConfig.sendResetPasswordEmailText(lu.userId, lu._id + '-' + lu.resetToken),
       });
     },
+
+    updateOrCreateUserLogin: function (attrs) {
+      var lu = model.findByField('userId', attrs.userId);
+      if (! lu) return model.create({
+        email: attrs.email,
+        userId: attrs.userId,
+        tokens: {},
+        srp: attrs.srp,
+      });;
+      lu.$update({email: attrs.email, srp: attrs.srp});
+      return lu;
+    }
   });
 
   function configureEmail() {

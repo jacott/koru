@@ -100,6 +100,14 @@ define(function(require, exports, module) {
         return results;
       },
 
+      fetchIds: function () {
+        var results = [];
+        this.forEach(function (doc) {
+          results.push(doc._id);
+        });
+        return results;
+      },
+
       fetchOne: function () {
         var result;
         this.forEach(function (doc) {
@@ -157,19 +165,30 @@ define(function(require, exports, module) {
         var doc = this.model.docs[id];
         if (! doc) return;
         var attrs = doc.attributes;
-        var whereNot = this._whereNots;
-        if (whereNot) for(var field in whereNot) {
-          if (attrs[field] == whereNot[field])
+        var where;
+
+        if (where = this._whereNots) for(var field in where) {
+          if (attrs[field] == where[field])
             return;
         }
-        var where = this._wheres;
-        if (where) for(var field in where) {
+        if (where = this._wheres) for(var field in where) {
           if (attrs[field] != where[field])
             return;
         }
-        var whereFunc = this._whereFuncs;
-        if (whereFunc && whereFunc.some(function (func) {return ! func(doc)}))
+
+        if (this._whereFuncs && this._whereFuncs.some(function (func) {return ! func(doc)}))
           return;
+
+        if (this._whereSomes && this._whereSomes.some(function (ors) {
+          return ! ors.some(function (where) {
+            for(var field in where) {
+              if (attrs[field] != where[field])
+                return false;
+            }
+            return true;
+          });
+        })) return;
+
         return doc;
       },
 

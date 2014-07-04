@@ -63,6 +63,15 @@ define(function (require, exports, module) {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },
 
+    'test intersectp': function () {
+      assert(util.intersectp([1,4],[4,5]));
+      refute(util.intersectp([1,2],['a']));
+    },
+
+    "test union": function () {
+      assert.equals(util.union([1,2,3], [3, 4, 5], [3, 6]).sort(), [1, 2, 3, 4, 5, 6]);
+    },
+
     "test diff": function () {
       assert.equals(util.diff([1,2,3], [2,4]), [1, 3]);
     },
