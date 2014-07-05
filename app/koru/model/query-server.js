@@ -149,17 +149,23 @@ define(function(require, exports, module) {
 
   function buildQuery(query, id) {
     var result = {};
+    var fields;
     if (id = id || query.singleId)
       result._id = id;
 
-    if (query._wheres)
-      util.extend(result, query._wheres);
+    if (fields = query._wheres) for(var key in fields) {
+      var value = fields[key];
+      if (util.isArray(value))
+        result[key] = {$in: value};
+      else
+        result[key] = value;
+    }
 
-    if (query._whereNots) {
-      var neg = {}, wn = query._whereNots;
+    if (fields = query._whereNots) {
+      var neg = {};
 
-      for(var key in wn) {
-        var value = wn[key];
+      for(var key in fields) {
+        var value = fields[key];
         if (util.isArray(value))
           neg[key] = {$nin: value};
         else

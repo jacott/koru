@@ -29,17 +29,23 @@ define(function(require, exports, module) {
       var scopeName = util.uncapitalize(modelName);
     }
 
-    var finder = finder || doc[scopeName+'Find'] || new Query(Model[modelName]);
+    var finder = finder ||
+          doc[scopeName+'Find'] ||
+          function (values) {
+            return new Query(Model[modelName]).where('_id', values);
+          };
 
     if (filter) {
-      finder.where('_id', value.slice(0)); // stop from being clobbered
+      debugger;
+
+      var query = finder.call(doc, value.slice()); // stop from being clobbered
       value.length = 0;
 
-      finder.fields('_id').forEach(function (assoc) {
+      query.fields('_id').forEach(function (assoc) {
         value.push(assoc._id);
       });
       value.sort();
-    } else if (finder.where('_id', value).count() !== value.length) {
+    } else if (finder.call(doc, value).count() !== value.length) {
       this.addError(doc,field,'not_found');
     }
   };

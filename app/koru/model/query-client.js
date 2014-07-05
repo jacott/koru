@@ -118,8 +118,6 @@ define(function(require, exports, module) {
       },
 
       forEach: function (func) {
-        var where = this._wheres;
-        var whereNot = this._whereNots;
         if (this.singleId) {
           var doc = this.findOne(this.singleId);
           doc && func(doc);
@@ -165,14 +163,29 @@ define(function(require, exports, module) {
         var doc = this.model.docs[id];
         if (! doc) return;
         var attrs = doc.attributes;
-        var where;
+        var fields;
 
-        if (where = this._whereNots) for(var field in where) {
-          if (attrs[field] == where[field])
+        if (fields = this._whereNots) for(var key in fields) {
+          var value = fields[key];
+          var expected = attrs[key];
+          if (util.isArray(value)) {
+            if (value.some(function (item) {
+              return item == expected;
+            }))
+              return;
+          } else if (expected == value)
             return;
         }
-        if (where = this._wheres) for(var field in where) {
-          if (attrs[field] != where[field])
+
+        if (fields = this._wheres) for(var key in fields) {
+          var value = fields[key];
+          var expected = attrs[key];
+          if (util.isArray(value)) {
+            if (! value.some(function (item) {
+              return item == expected;
+            }))
+              return;
+          } else if (expected != value)
             return;
         }
 

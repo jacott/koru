@@ -86,28 +86,32 @@ define(function (require, exports, module) {
     },
 
     "test using scoped finder": function () {
-      var doc = {foo_ids: v.foo_ids = ['x', 'y']},
-          fooFinder = {};
+      var doc = {foo_ids: v.foo_ids = ['x', 'y']};
 
-      fooFinder.where = test.stub().returns(fooFinder);
-      fooFinder.count = test.stub().returns(2);
+      function fooFinder(values) {
+        v.values = values;
+        return {count: test.stub().returns(2)};
+      };
+
 
       sut(doc,'foo_ids', {finder: fooFinder});
 
-      assert.calledWith(fooFinder.where, '_id', v.foo_ids);
+      assert.equals(v.values, v.foo_ids);
       refute(doc._errors);
     },
 
     "test using scoped default": function () {
-      var doc = {foo_ids: v.foo_ids = ['x', 'y'], fooFind: {}},
-          fooFinder = doc.fooFind;
-
-      fooFinder.where = test.stub().returns(fooFinder);
-      fooFinder.count = test.stub().returns(2);
+      var doc = {
+        foo_ids: v.foo_ids = ['x', 'y'],
+        fooFind: function (values) {
+          v.values = values;
+          return {count: test.stub().returns(2)};
+        }
+      };
 
       sut(doc,'foo_ids', true);
 
-      assert.calledWith(fooFinder.where, '_id', v.foo_ids);
+      assert.equals(v.values, v.foo_ids);
       refute(doc._errors);
     },
 

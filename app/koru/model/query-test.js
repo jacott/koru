@@ -202,6 +202,24 @@ define(function (require, exports, module) {
       st.whereNot('age', 5);
 
       assert.equals(st.findField('age'), [10]);
+
+      var st = new Query(v.TestModel).where('gender', 'm');
+
+      st.whereNot('age', [5, 7]);
+
+      assert.equals(st.findField('age'), [10]);
+
+      assert.equals(st.whereNot('age', [5, 10]).findField('age'), []);
+    },
+
+    "test where with array": function () {
+      var st = new Query(v.TestModel).where('age', [5, 10]);
+
+      assert.equals(st.findField('age').sort(), [10, 5]);
+
+      var st = new Query(v.TestModel).where('age', [5, 7]);
+
+      assert.equals(st.findField('age'), [5]);
     },
 
     "test where on fetch": function () {
