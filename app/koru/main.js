@@ -65,7 +65,19 @@
   }
 
   function onunload(module, func) {
-    unloads[typeof module === 'string' ? module : module.id] = func;
+    var id = typeof module === 'string' ? module : module.id;
+    if (id in unloads) {
+      var oldFunc = unloads[id];
+      unloads[id] = unloadTwo(oldFunc, func);
+    } else
+      unloads[id] = func;
+  }
+
+  function unloadTwo(f1, f2) {
+    return function () {
+      f1();
+      f2();
+    };
   }
 
   function reload() {

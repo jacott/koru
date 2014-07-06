@@ -155,7 +155,7 @@ define(function(require, exports, module) {
 
     if (fields = query._wheres) for(var key in fields) {
       var value = fields[key];
-      if (util.isArray(value))
+      if (key[0] !== '$' && util.isArray(value))
         result[key] = {$in: value};
       else
         result[key] = value;
