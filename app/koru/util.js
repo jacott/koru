@@ -384,6 +384,12 @@ define(function(require, exports, module) {
       });
     },
 
+    hashToCss: function (hash) {
+      return Object.keys(hash).map(function (key) {
+        return key+":"+hash[key];
+      }).join(";");
+    },
+
     compareByName: function (a, b) {
       return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
     },

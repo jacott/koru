@@ -345,6 +345,11 @@ define(function (require, exports, module) {
       assert.same(util.initials("Prince"), "P");
     },
 
+    "test hashToCss": function () {
+      assert.same(util.hashToCss({foo: 1, bar: "two"}), "foo:1;bar:two");
+
+    },
+
     "test compareByName": function () {
       var a = {name: "Bob"};
       var b = {name: "Bob"};
