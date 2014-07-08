@@ -86,6 +86,11 @@ define(function(require, exports, module) {
     reset();
 
     util.extend(Query.prototype, {
+      withIndex: function (idx, params) {
+        this._index = idx(params);
+        return this;
+      },
+
       fromServer: function (id) {
         this.singleId = id;
         this._fromServer = true;
@@ -125,19 +130,12 @@ define(function(require, exports, module) {
           if (this._sort) {
             var results = [];
             var compare = sortFunc(this._sort);
-            for(var id in this.model.docs) {
-              // TODO use indexs to speed this up: say query.withIndex('abc', {params...}).
-              var doc = this.findOne(id);
-              doc && results.push(doc);
-            }
+            findMatching.call(this, function (doc) {
+              results.push(doc);
+            });
             results.sort(compare).some(func);
 
-          } else for(var id in this.model.docs) {
-            // TODO use indexs to speed this up: say query.withIndex('abc', {params...}).
-            var doc = this.findOne(id);
-            if (doc && func(doc) === true)
-              break;
-          }
+          } else findMatching.call(this, func);
         }
       },
 
@@ -283,8 +281,32 @@ define(function(require, exports, module) {
         });
         return count;
       },
-
     });
+
+    function findMatching(func) {
+      var idx = this._index;
+      if (this._index)
+        findByIndex(this, this._index, func);
+
+      else for(var id in this.model.docs) {
+        var doc = this.findOne(id);
+        if (doc && func(doc) === true)
+          break;
+      }
+    }
+
+    function findByIndex(query, idx, func) {
+      for(var key in idx) {
+        var value = idx[key];
+        if (typeof value === 'string') {
+          var doc = query.findOne(value);
+          if (doc && func(doc) === true)
+            return true;
+
+        } else if (findByIndex(query, value, func) === true)
+          return true;
+      }
+    }
 
     function fromServer(model, id, changes) {
       var modelName = model.modelName;

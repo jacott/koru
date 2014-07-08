@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var koru = require('../main');
-  var util = koru.util;
+  var util = require('../util');
   var Random = require('../random');
   var session = require('../session/base');
   var Val = require('./validation');
@@ -135,11 +135,20 @@ define(function(require, exports, module) {
   };
 
   function addUniqueIndex() {
-    this.docs.ensureIndex(buidlKeys(arguments), {unique : true, sparse: true});
+    ensureIndex(this, arguments, {unique : true, sparse: true});
+  }
+
+  function ensureIndex(model, args, opts) {
+    if (util.Fiber.current) ensureIndex();
+    else util.Fiber(ensureIndex).run();
+
+    function ensureIndex() {
+      model.docs.ensureIndex(buidlKeys(args), opts);
+    }
   }
 
   function addIndex() {
-    this.docs.ensureIndex(buidlKeys(arguments));
+    ensureIndex(this, arguments);
   }
 
   function buidlKeys(args) {

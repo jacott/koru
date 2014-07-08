@@ -5,6 +5,10 @@ define(function(require, exports, module) {
 
   return function (Query) {
     util.extend(Query.prototype, {
+      withIndex: function (idx, params) {
+        return this.where(params);
+      },
+
       fetch: function () {
         var results = [];
         this.forEach(function (doc) {

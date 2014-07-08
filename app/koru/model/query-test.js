@@ -23,6 +23,33 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "query withIndex": {
+      setUp: function () {
+        v.idx = v.TestModel.addUniqueIndex('gender', 'age', 'name');
+
+        v.TestModel.query.remove();
+
+        v.TestModel.create({_id: '1', name: 'n1', age: 1, gender: 'm'});
+        v.TestModel.create({_id: '2', name: 'n2', age: 1, gender: 'm'});
+        v.TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm'});
+        v.TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f'});
+      },
+
+      "test last": function () {
+        var result = v.TestModel.query.whereNot('_id', '1')
+              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+
+        assert.equals(result, ['2']);
+      },
+
+      "test only major": function () {
+        var result = v.TestModel.query.whereNot('_id', '1')
+              .withIndex(v.idx, {gender: 'm'}).fetchIds();
+
+        assert.equals(result.sort(), ['2', '3']);
+      },
+    },
+
     "test fields": function () {
       assert.equals(new Query(v.TestModel).fields('a', 'b').fields('c')._fields, {a: true, b:true, c: true});
     },
