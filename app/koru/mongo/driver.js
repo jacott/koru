@@ -115,6 +115,14 @@ Collection.prototype = {
     return future.wait();
   },
 
+  truncate: (function () {
+    var empty = {};
+    var nullf = function () {};
+    return function () {
+      this._col.remove(empty, nullf);
+    };
+  })(),
+
   ensureIndex: function (keys, options) {
      var future = new Future;
     if (options)
