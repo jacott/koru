@@ -95,15 +95,6 @@ define(function (require, exports, module) {
       assert.same(new Query(v.TestModel).count(), 2);
     },
 
-    'test findIds': function () {
-      new Query(v.TestModel).remove();
-      var exp_ids = [1,2,3].map(function (num) {
-        return v.TestModel.create({name: 'name'+num})._id;
-      });
-
-      assert.equals(new Query(v.TestModel).findIds().sort(), exp_ids.slice(0).sort());
-    },
-
     "test onId exists": function () {
       var st = new Query(v.TestModel);
 
@@ -228,25 +219,25 @@ define(function (require, exports, module) {
 
       st.whereNot('age', 5);
 
-      assert.equals(st.findField('age'), [10]);
+      assert.equals(st.fetchField('age'), [10]);
 
       var st = new Query(v.TestModel).where('gender', 'm');
 
       st.whereNot('age', [5, 7]);
 
-      assert.equals(st.findField('age'), [10]);
+      assert.equals(st.fetchField('age'), [10]);
 
-      assert.equals(st.whereNot('age', [5, 10]).findField('age'), []);
+      assert.equals(st.whereNot('age', [5, 10]).fetchField('age'), []);
     },
 
     "test where with array": function () {
       var st = new Query(v.TestModel).where('age', [5, 10]);
 
-      assert.equals(st.findField('age').sort(), [10, 5]);
+      assert.equals(st.fetchField('age').sort(), [10, 5]);
 
       var st = new Query(v.TestModel).where('age', [5, 7]);
 
-      assert.equals(st.findField('age'), [5]);
+      assert.equals(st.fetchField('age'), [5]);
     },
 
     "test where on fetch": function () {

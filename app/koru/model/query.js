@@ -75,7 +75,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    findField: function(field) {
+    fetchField: function(field) {
       this.fields(field);
 
       return this.map(function (doc) {
@@ -83,8 +83,8 @@ define(function(require, exports, module) {
       });
     },
 
-    findIds: function() {
-      return this.findField('_id');
+    fetchIds: function() {
+      return this.fetchField('_id');
     },
   };
 
