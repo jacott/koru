@@ -82,8 +82,8 @@ define(function (require, exports, module) {
         v.TestModel.beforeUpdate(v.TestModel, v.beforeUpdate = obCalled);
         v.TestModel.beforeSave(v.TestModel, v.beforeSave = obCalled);
 
-        function obCalled(doc, changes, type) {
-          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, changes)]);
+        function obCalled(doc, type) {
+          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
         }
       },
 
@@ -124,8 +124,8 @@ define(function (require, exports, module) {
           return doc.attributes === v.tc.attributes;
         }), null);
 
-        assert.equals(v.obs.beforeCreate, [[{name: 'foo', _id: v.tc._id}, {}]]);
-        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {}]]);
+        assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
 
         refute(v.obs.beforeUpdate);
       },

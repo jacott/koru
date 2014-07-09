@@ -168,11 +168,11 @@ define(function(require, exports, module) {
 
   BaseModel._callObserver = callObserver;
 
-  function callObserver(type, doc, changes) {
+  function callObserver(type, doc) {
     var observers = modelObservers[doc.constructor.modelName+'.'+type];
     if (observers) {
       for(var i=0;i < observers.length;++i) {
-        observers[i].call(doc, doc, changes, type);
+        observers[i].call(doc, doc, type);
       }
     }
   }
@@ -310,8 +310,15 @@ define(function(require, exports, module) {
     performInsert: function (doc) {
       var model = doc.constructor;
 
+      doc.changes = doc.attributes;
+      var attrs = doc.attributes = {};
+
       callObserver('beforeCreate', doc);
       callObserver('beforeSave', doc);
+
+
+      doc.attributes = doc.changes;
+      doc.changes = attrs;
       model.hasVersioning && (doc.attributes._version = 1);
 
       ModelEnv.insert(doc);
@@ -320,12 +327,15 @@ define(function(require, exports, module) {
     performUpdate: function (doc, changes) {
       var model = doc.constructor;
 
-      callObserver('beforeUpdate', doc, changes);
-      callObserver('beforeSave', doc, changes);
+      doc.changes = changes;
+
+      callObserver('beforeUpdate', doc);
+      callObserver('beforeSave', doc);
       var st = new Query(model).onId(doc._id);
 
       model.hasVersioning && st.inc("_version", 1);
 
+      doc.changes = {};
       st.update(changes);
     },
   };

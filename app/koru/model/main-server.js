@@ -63,6 +63,8 @@ define(function(require, exports, module) {
         } else {
           var copy = util.deepCopy(changes);
           _support.performUpdate(doc, changes);
+
+          // This a bit of a hack; should we bother?
           util.applyChanges(doc.attributes, copy);
         }
 
