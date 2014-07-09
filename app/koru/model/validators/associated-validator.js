@@ -36,8 +36,6 @@ define(function(require, exports, module) {
           };
 
     if (filter) {
-      debugger;
-
       var query = finder.call(doc, value.slice()); // stop from being clobbered
       value.length = 0;
 

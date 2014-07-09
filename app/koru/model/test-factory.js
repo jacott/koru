@@ -133,7 +133,7 @@ define(function(require, exports, module) {
     this.model = Model[modelName];
     if (! this.model) throw new Error('Model: "'+modelName+'" not found');
     this.options = options || {};
-    this.default_opts = util.extend({}, this.model._defaults, default_opts || {});
+    this.default_opts = util.extend(util.extend({}, this.model._defaults), default_opts || {});
   }
 
   util.extend(Builder.prototype, {
