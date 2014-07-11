@@ -83,7 +83,7 @@ define(function(require, exports, module) {
         }
 
         doc.changes = changes;
-        Val.allowAccessIf(doc.authorize);
+        Val.allowAccessIf(this.userId && doc.authorize);
         doc.authorize(this.userId);
         doc.$assertValid();
         doc.$save();
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
         Val.allowIfFound(model);
         var doc = model.findById(id);
         Val.allowIfFound(doc);
-        Val.allowAccessIf(doc.authorize);
+        Val.allowAccessIf(this.userId && doc.authorize);
         doc.authorize(this.userId, {remove: true});
         doc.$remove();
       });
@@ -110,8 +110,11 @@ define(function(require, exports, module) {
           _support.performBumpVersion(this.constructor, this._id,this._version);
         },
 
-        remote: function (name,func) {
-          return func;
+        remote: function (name, func) {
+          return function (/* arguments */) {
+            Val.allowAccessIf(this.userId);
+            return func.apply(this,arguments);
+          };
         },
       });
     },

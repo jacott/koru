@@ -3,16 +3,36 @@ define(function (require, exports, module) {
   var TH = require('./test-helper');
   var Model = require('./main');
   var session = require('../session/base');
+  var koru = require('../main');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      test.stub(koru, 'info');
     },
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
       v = null;
+    },
+
+    "test remote": function () {
+      var TestModel = Model.define('TestModel');
+
+      TestModel.remote({foo: v.foo = test.stub()});
+
+      assert.accessDenied(function () {
+        session._rpcs['TestModel.foo'].call({userId: null});
+      });
+
+      refute.called(v.foo);
+
+      session._rpcs['TestModel.foo'].call(v.conn = {userId: "uid"});
+
+      assert.calledOnce(v.foo);
+
+      assert.same(v.foo.thisValues[0], v.conn);
     },
 
     "test when no changes in save": function () {
@@ -30,6 +50,58 @@ define(function (require, exports, module) {
       refute.called (v.beforeSave);
     },
 
+    "test saveRpc new": function () {
+      var TestModel = Model.define('TestModel', {
+        authorize: v.auth = test.stub()
+      }).defineFields({name: 'text'});
+
+
+      TestModel.onChange(v.afterSave = test.stub());
+
+      assert.accessDenied(function () {
+        session._rpcs.save.call({userId: null}, "TestModel", "fooid", {name: 'bar'});
+      });
+
+      refute(TestModel.exists("fooid"));
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
+
+      v.doc = TestModel.findById("fooid");
+
+      assert.same(v.doc.name, 'bar');
+
+      assert.called(v.afterSave);
+      assert.calledWithExactly(v.auth, "u123");
+
+      assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
+    },
+
+    "test saveRpc existing": function () {
+      var TestModel = Model.define('TestModel', {
+        authorize: v.auth = test.stub()
+      }).defineFields({name: 'text'});
+
+
+      v.doc = TestModel.create({name: 'foo'});
+
+      TestModel.onChange(v.afterSave = test.stub());
+
+      assert.accessDenied(function () {
+        session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
+      });
+
+      assert.same(v.doc.$reload().name, 'foo');
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {name: 'bar'});
+
+      assert.same(v.doc.$reload().name, 'bar');
+
+      assert.called(v.afterSave);
+      assert.calledWithExactly(v.auth, "u123");
+
+      assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
+    },
+
     'test removeRpc': function () {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
@@ -39,6 +111,10 @@ define(function (require, exports, module) {
       v.doc = TestModel.create({name: 'foo'});
 
       TestModel.onChange(v.afterRemove = test.stub());
+
+      assert.accessDenied(function () {
+        session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
+      });
 
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
 
