@@ -164,6 +164,9 @@ define(function (require, exports, module) {
 
       assert.same(v.foo.name, 'x');
       assert.same(v.foo.age, 7);
+
+      st.inc("age").update();
+      assert.same(v.foo.$reload().age, 8);
     },
 
     "test addItem removeItem": function () {

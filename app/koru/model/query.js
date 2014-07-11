@@ -24,7 +24,7 @@ define(function(require, exports, module) {
     },
 
     inc: function (field, amount) {
-      (this._incs = this._incs || {})[field] = amount;
+      (this._incs = this._incs || {})[field] = amount || 1;
       return this;
     },
 
