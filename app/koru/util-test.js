@@ -361,6 +361,11 @@ define(function (require, exports, module) {
 
       b.name = 'Arnold';
       assert.same(util.compareByName(a,b), 1);
+
+      assert.same(util.compareByName(null, b), -1);
+      assert.same(util.compareByName(b, null), 1);
+      assert.same(util.compareByName(undefined, null), 0);
+
     },
 
     "test compareByField": function () {
@@ -374,10 +379,18 @@ define(function (require, exports, module) {
 
       b.f1 = 'Arnold';
       assert.same(util.compareByField('f1')(a,b), 1);
-
       assert.same(util.compareByField('f2')(a,b), -1);
-
       assert.same(util.compareByField('f2')(b,a), 1);
+
+
+      assert.same(util.compareByField('f2')(null,a), -1);
+      assert.same(util.compareByField('f2')(a, null), 1);
+      assert.same(util.compareByField('f2')(null, undefined), -1);
+
+      b.f2 = "2"; // string less than number
+      assert.same(util.compareByField('f2')(a,b), 1);
+      assert.same(util.compareByField('f2')(b,a), -1);
+
     },
 
     "test colorToArray": function () {

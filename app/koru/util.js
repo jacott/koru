@@ -4,6 +4,20 @@ define(function(require, exports, module) {
 
   var valueUndefined = {value: undefined};
 
+  var TYPEORDER = {
+    undefined: 0,
+    string: 1,
+    boolean: 2,
+    number: 3,
+    symbol: 4,
+    object: 5,
+    function: 6,
+  };
+
+  function typeorder(obj) {
+    return obj === null ? -1 : TYPEORDER[typeof obj];
+  }
+
   util.extend(util, {
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
@@ -391,13 +405,18 @@ define(function(require, exports, module) {
     },
 
     compareByName: function (a, b) {
-      return a.name === b.name ? 0 : a.name < b.name ? -1 : 1;
+      var aname = (a && a.name) || '';
+      var bname = (b && b.name) || '';
+      return aname === bname ? 0 : aname < bname ? -1 : 1;
     },
 
     compareByField: function (field) {
       return function (a, b) {
-        var afield = a[field], bfield = b[field];
-        return a[field] === b[field] ? 0 : a[field] < b[field] ? -1 : 1;
+        var afield = a && a[field], bfield = b && b[field];
+        var atype = typeorder(afield), btype = typeorder(bfield);
+        if (atype !== btype)
+          return atype < btype ? -1 : 1;
+        return afield === bfield ? 0 : afield < bfield ? -1 : 1;
       };
     },
 
