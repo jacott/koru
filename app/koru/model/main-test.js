@@ -234,6 +234,19 @@ define(function (require, exports, module) {
         v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}});
       },
 
+      "test _id": function () {
+        var doc = new v.TestModel({_id: "attrId"});
+
+        assert.same(doc._id, "attrId");
+
+        doc.changes._id = "chgId";
+        assert.same(doc._id, "attrId");
+
+
+        doc.attributes._id = null;
+        assert.same(doc._id, "chgId");
+      },
+
       "test exists": function () {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 

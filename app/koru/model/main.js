@@ -16,7 +16,7 @@ define(function(require, exports, module) {
   var emptyObject = {};
 
   BaseModel.prototype = {
-    get _id() {return this.attributes._id;},
+    get _id() {return this.attributes._id || this.changes._id;},
 
     $save: ModelEnv.$save,
     $$save: ModelEnv.$$save,
