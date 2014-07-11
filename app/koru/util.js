@@ -242,6 +242,28 @@ define(function(require, exports, module) {
       });
     },
 
+    findBy: function (list, value, fieldName) {
+      if (!list) return;
+      fieldName = fieldName || '_id';
+      for(var i=0; i < list.length; ++i) {
+        var row = list[i];
+        if (row[fieldName] === value)
+          return row;
+      }
+    },
+
+    indexOf: function (list, value, fieldName) {
+      if (!list) return;
+      fieldName = fieldName || '_id';
+      for(var i=0; i < list.length; ++i) {
+        var row = list[i];
+        if (row[fieldName] === value)
+          return i;
+      }
+      return -1;
+    },
+
+
     /**
      * Do a shallow copy of a type
      */

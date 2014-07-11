@@ -256,6 +256,28 @@ define(function (require, exports, module) {
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
     },
 
+    "test findBy": function () {
+      var list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
+      assert.same(util.findBy(list, 1), list[1]);
+      assert.same(util.findBy(list, 2), list[0]);
+      assert.same(util.findBy(list, 'a', 'foo'), list[0]);
+      assert.same(util.findBy(list, 'b', 'foo'), list[1]);
+    },
+
+    "test indexOf ": function () {
+      var data = [{_id: 1, age: 20}, {_id: 2, age: 30}];
+
+      // default field (_id)
+      assert.same(util.indexOf(data, 1), 0);
+      assert.same(util.indexOf(data, 2), 1);
+      assert.same(util.indexOf(data, 3), -1);
+
+      // explicit field (age)
+      assert.same(util.indexOf(data, 30, 'age'), 1);
+      assert.same(util.indexOf(data, 20, 'age'), 0);
+      assert.same(util.indexOf(data, 3, 'age'), -1);
+    },
+
     "test shallowCopy": function () {
       assert.same(util.shallowCopy(1), 1);
       assert.same(util.shallowCopy(true), true);
