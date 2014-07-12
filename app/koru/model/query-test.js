@@ -35,6 +35,10 @@ define(function (require, exports, module) {
         v.TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f'});
       },
 
+      "test no matches": function () {
+        assert.same(v.TestModel.query.withIndex(v.idx, {gender: 'x'}).count(), 0);
+      },
+
       "test last": function () {
         var result = v.TestModel.query.whereNot('_id', '1')
               .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();

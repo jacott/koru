@@ -87,7 +87,7 @@ define(function(require, exports, module) {
 
     util.extend(Query.prototype, {
       withIndex: function (idx, params) {
-        this._index = idx(params);
+        this._index = idx(params) || {};
         return this;
       },
 

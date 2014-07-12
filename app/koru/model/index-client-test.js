@@ -42,7 +42,12 @@ define(function (require, exports, module) {
       v.doc2.$update({id2: '4'});
 
       assert.equals(v.idx({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
+    },
 
+    "test null in data": function () {
+      var doc = v.TestModel.create({id1: '1', id2: null});
+
+      assert.same(v.idx({id1: '1', id2: null}), doc._id);
     },
 
     "test deleting": function () {

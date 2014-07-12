@@ -42,9 +42,8 @@ define(function() {
       var uIndex = function (keys) {
         var ret = idx;
         for(var i = 0; ret && i < len; ++i) {
-          var key = keys[fields[i]];
-          if (! key) return ret;
-          ret = ret[key];
+          if (! keys.hasOwnProperty(fields[i])) return ret;
+          ret = ret[keys[fields[i]]];
         }
         return ret;
       };
