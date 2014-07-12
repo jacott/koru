@@ -58,6 +58,12 @@ define(function(require, exports, module) {
       ensureType('number', arguments);
     },
 
+    ensureDate: function () {
+      for(var i = 0; i < arguments.length; ++i) {
+        (Object.prototype.toString.call(arguments[i]) === "[object Date]")  || accessDenied('expected a date');
+      }
+    },
+
     inspectErrors: function (doc) {
       var errs = doc._errors;
 
