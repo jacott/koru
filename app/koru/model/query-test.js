@@ -54,12 +54,27 @@ define(function (require, exports, module) {
       },
     },
 
+    "test arrays": function () {
+      v.multi = v.TestModel.create({age: [6,7,8]});
+
+      assert.equals(v.TestModel.where('age', [8, 9]).fetchIds(), [v.multi._id]);
+      assert.equals(v.TestModel.where('age', 7).fetchIds(), [v.multi._id]);
+
+      assert.equals(v.TestModel.where('age', [5, 9]).fetchIds(), [v.foo._id]);
+    },
+
     "test fields": function () {
       assert.equals(new Query(v.TestModel).fields('a', 'b').fields('c')._fields, {a: true, b:true, c: true});
     },
 
     "test sort": function () {
       assert.equals(new Query(v.TestModel).sort('a', 'b', -1).sort('c')._sort, {a: 1, b: -1, c: 1});
+
+      assert.equals(v.TestModel.query.sort('gender', 'age', -1).fetchIds(), [v.bar._id, v.foo._id]);
+      assert.same(v.TestModel.query.sort('gender', 'age', -1).fetchOne()._id, v.bar._id);
+
+      assert.equals(v.TestModel.query.sort('gender', 'age').fetchIds(), [v.foo._id, v.bar._id]);
+      assert.same(v.TestModel.query.sort('gender', 'age').fetchOne()._id, v.foo._id);
     },
 
     "test fetch": function () {

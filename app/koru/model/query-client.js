@@ -178,7 +178,23 @@ define(function(require, exports, module) {
         if (fields = this._wheres) for(var key in fields) {
           var value = fields[key];
           var expected = attrs[key];
-          if (util.isArray(value)) {
+
+          if (typeof expected === 'object') {
+            if (util.isArray(expected)) {
+              var found = false;
+              for(var i = 0; ! found && i < expected.length; ++i) {
+                var exv = expected[i];
+                if (util.isArray(value)) {
+                  if (value.some(function (item) {
+                    return item == exv;
+                  }))
+                    found = true;
+                } else if (exv == value)
+                  found = true;
+              }
+              if (! found) return;
+            }
+          } else if (util.isArray(value)) {
             if (! value.some(function (item) {
               return item == expected;
             }))

@@ -143,8 +143,15 @@ define(function(require, exports, module) {
 
       findOne: function(id) {
         var opts;
-        if (this._fields) opts = this._fields;
-        var doc = this.model.docs.findOne(buildQuery(this, id), opts);
+        if (this._sort && ! id) {
+          var cursor = this.model.docs.find(buildQuery(this, id));
+          cursor.sort(this._sort).limit(1);
+          this._fields && cursor.fields(this._fields);
+          var doc = cursor.next();
+        } else {
+          if (this._fields) opts = this._fields;
+          var doc = this.model.docs.findOne(buildQuery(this, id), opts);
+        }
         if (! doc) return;
         return new this.model(doc);
       },
