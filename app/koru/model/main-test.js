@@ -499,7 +499,10 @@ define(function (require, exports, module) {
           var id;
           session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
           assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
+
+          assert.same(v.TestModel.create({user_id: 'override'}).$reload().user_id, 'override');
         });
+
       },
 
       'test equality': function () {

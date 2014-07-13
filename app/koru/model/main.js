@@ -418,7 +418,7 @@ define(function(require, exports, module) {
     _addUserIds: function (changes, userIds, user_id) {
       if (userIds) {
         for(var key in userIds)  {
-          changes[key] = user_id;
+          changes[key] = changes[key] || user_id;
         }
       }
     },

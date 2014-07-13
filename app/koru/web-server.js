@@ -15,7 +15,7 @@ define(function (require, exports, module) {
   var nmRoot = Path.resolve(appDir+'/../node_modules');
 
   var SPECIALS = {
-    "require.js": function (m, req, res, error) {
+    "require.js": function (m) {
       return [fst.stat(nmRoot+'/koru') ? '/koru/node_modules/requirejs/require.js' : '/requirejs/require.js', nmRoot];
     },
 
@@ -23,6 +23,9 @@ define(function (require, exports, module) {
       return [m[0], fst.stat(nmRoot+'/koru/app') ? nmRoot+'/koru/app' : appDir];
     },
   };
+
+  var handlers = {};
+
   var DEFAULT_PAGE = module.config().defaultPage || '/index.html';
 
   var server = http.createServer(requestListener);
@@ -39,16 +42,34 @@ define(function (require, exports, module) {
     send = value;
   };
 
+  exports.registerHandler = function (key, func) {
+    if (key in handlers) throw new Error(key + ' already registered as a web-server hander');
+    handlers[key] = func;
+  };
+
+  exports.deregisterHandler = function (key) {
+    delete handlers[key];
+  };
+
+  exports.getHandler = function (key) {
+    return handlers[key];
+  };
+
   function requestListener(req, res) {koru.Fiber(function () {
     try {
       var path = parseurl(req).pathname;
       var reqRoot = root;
 
       var m = /^\/([^/]+)(.*)$/.exec(path);
-      var special = m && SPECIALS[m[1]];
-      if (special) {
-        var pr = special(m);
-        path = pr[0]; reqRoot = pr[1];
+      if (m) {
+        var special = SPECIALS[m[1]];
+        if (special) {
+          var pr = special(m);
+          path = pr[0]; reqRoot = pr[1];
+        } else if(special = handlers[m[1]]) {
+          special(req, res, m[2], error);
+          return;
+        }
       }
 
       var m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);

@@ -167,7 +167,7 @@ define(function(require, exports, module) {
       var pair = data.slice(1).toString().split('|');
       var lu = model.findById(pair[0]);
 
-      if (lu && lu.tokens[pair[1]]) {
+      if (lu && lu.unexpiredTokens()[pair[1]]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
       } else {
         conn.send('VF');
