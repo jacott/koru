@@ -201,13 +201,15 @@ define(function(require, exports, module) {
     },
 
     create: function () {
-      if (this._canSave === true)
-        var doc = this.model.create(this.attributes());
-      else if (this._canSave === 'force') {
+      if (this._canSave === true) {
+        var doc = this.model.build(this.attributes());
+        doc.$$save();
+      } else if (this._canSave === 'force') {
         var doc = this.model.build(this.attributes());
         doc.$save('force');
       } else
         var doc = this.insert();
+
 
       this._afterCreate && this._afterCreate.call(this, doc);
       return doc;

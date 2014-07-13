@@ -100,13 +100,14 @@ define(['./core', './format'], function (geddon) {
     return x !== x && y !== y;
   }
 
-  function deepEqual(expected, actual) {
+  function deepEqual(actual, expected, hint, hintField) {
     if (egal(expected, actual)) {
       return true;
     }
 
     // Elements are only equal if expected === actual
     if (gu.isElement(expected) || gu.isElement(actual)) {
+      if (hint) hint[hintField] = actual + " != " + expected;
       return false;
     }
 
@@ -114,19 +115,25 @@ define(['./core', './format'], function (geddon) {
     // undefined === undefined
     /*jsl: ignore*/
     if (expected == null || actual == null) {
+      if (hint && actual !== expected) hint[hintField] = actual + " != " + expected;
       return actual === expected;
     }
     /*jsl: end*/
 
     if (isDate(expected) || isDate(actual)) {
-      return isDate(expected) && isDate(actual) &&
-        expected.getTime() == actual.getTime();
+      if (isDate(expected) && isDate(actual) &&
+        expected.getTime() == actual.getTime())
+        return true;
+
+      if (hint) hint[hintField] = actual + " != " + expected;
+      return false;
     }
 
     var useCoercingEquality = typeof expected != "object" || typeof actual != "object";
 
     if (expected instanceof RegExp && actual instanceof RegExp) {
       if (expected.toString() != actual.toString()) {
+        if (hint) hint[hintField] = actual + " != " + expected;
         return false;
       }
 
@@ -139,8 +146,11 @@ define(['./core', './format'], function (geddon) {
 
     // Coerce and compare when primitives are involved
     if (useCoercingEquality) {
-      return expectedStr != "[object Array]" && actualStr != "[object Array]" &&
-        expected == actual;
+      if (expectedStr != "[object Array]" && actualStr != "[object Array]" &&
+        expected == actual) return true;
+
+      if (hint) hint[hintField] = actual + " != " + expected;
+      return false;
     }
 
     var expectedKeys = Object.keys(expected);
@@ -148,11 +158,16 @@ define(['./core', './format'], function (geddon) {
 
     if (isArguments(expected) || isArguments(actual)) {
       if (expected.length != actual.length) {
+        if (hint) hint[hintField] = actual + " != " + expected;
         return false;
       }
     } else {
-      if (typeof expected != typeof actual || expectedStr != actualStr ||
-          expectedKeys.length != actualKeys.length) {
+      if (typeof expected != typeof actual || expectedStr != actualStr) {
+        if (hint) hint[hintField] = actual + " != " + expected;
+        return false;
+      }
+      if (expectedKeys.length != actualKeys.length) {
+        if (hint) hint[hintField] = actualKeys + " != " + expectedKeys;
         return false;
       }
     }
@@ -161,8 +176,13 @@ define(['./core', './format'], function (geddon) {
 
     for (var i = 0, l = expectedKeys.length; i < l; i++) {
       key = expectedKeys[i];
-      if (!Object.prototype.hasOwnProperty.call(actual, key) ||
-          !deepEqual(expected[key], actual[key])) {
+      if (! Object.prototype.hasOwnProperty.call(actual, key)) {
+        if (hint) hint[hintField] = 'key = ' + key + ': ' + actual[key] + " != " + expected[key];
+        return false;
+      }
+      if (! deepEqual(actual[key], expected[key], hint, hintField)) {
+        if (hint) hint[hintField] = 'key = ' + key + ': ' + actual[key] + " != " + expected[key] +
+          '\n -> ' + (hint[hintField] || '');
         return false;
       }
     }

@@ -14,10 +14,10 @@ define(['./core', './assertions'], function (geddon) {
 
   ga.add('equals', {
     assert:  function (actual, expected) {
-      return gu.deepEqual(actual, expected);
+      return gu.deepEqual(actual, expected, this, 'diff');
     },
 
-    message: "{i0} to equal {i1}"
+    message: "{i0} to equal {i1}\nDiff at\n -> {i$diff}"
   });
 
   ga.add('isTrue', {
