@@ -80,8 +80,14 @@ define(function(require, exports, module) {
           return this.model.docs.count(buildQuery(this), {limit: max});
       },
 
-      update: function (origChanges) {
-        origChanges = origChanges || {};
+      update: function (origChanges, value) {
+        if (typeof origChanges === 'string') {
+          var changes = {};
+          changes[origChanges] = value;
+          origChanges = changes;
+        } else
+          origChanges = origChanges || {};
+
         var model = this.model;
         var docs = model.docs;
         var items;

@@ -242,8 +242,14 @@ define(function(require, exports, module) {
         return count;
       },
 
-      update: function (origChanges) {
-        origChanges = origChanges || {};
+      update: function (origChanges, value) {
+        if (typeof origChanges === 'string') {
+          var changes = {};
+          changes[origChanges] = value;
+          origChanges = changes;
+        } else
+          origChanges = origChanges || {};
+
         var self = this;
         var count = 0;
         var model = self.model;
