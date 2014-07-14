@@ -119,18 +119,23 @@ define(function(require, exports, module) {
           }
 
           if (items = self._removeItems) {
-            var atLeast1 = false;
+            var pulls = {};
             for(var field in items) {
+              var matches = [], match;
               var list = attrs[field];
               items[field].forEach(function (item) {
-                if (list && util.removeItem(list, item)) {
-                  atLeast1 = true;
-                  changes[field + "." + list.length] = item;
+                if (list && (match = util.removeItem(list, item)) !== undefined) {
+                  changes[field + "." + list.length] = match;
+                  matches.push(match);
                 }
               });
+              if (matches.length)
+                pulls[field] = matches.length === 1 ? matches[0] : {$in: matches};
             }
-            if (atLeast1)
-              cmd.$pullAll = items;
+            for (var field in pulls) {
+              cmd.$pull = pulls;
+              break;
+            }
           }
 
           if (util.isObjEmpty(cmd)) return 0;

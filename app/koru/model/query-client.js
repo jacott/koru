@@ -283,10 +283,11 @@ define(function(require, exports, module) {
           }
 
           if (items = self._removeItems) for(var field in items) {
-            var list = attrs[field];
+            var match, list = attrs[field];
             items[field].forEach(function (item) {
-              if (list && util.removeItem(list, item))
-                changes[field + "." + list.length] = item;
+              if (list && (match = util.removeItem(list, item)) !== undefined) {
+                changes[field + "." + list.length] = match;
+              }
             });
           }
 

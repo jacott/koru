@@ -224,6 +224,23 @@ define(function (require, exports, module) {
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": 'b', "cogs.1": 'c', "cogs.2": 'a'});
     },
 
+    "test removeItem object": function () {
+      v.TestModel.defineFields({cogs: 'has-many'});
+      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+
+      v.foo = v.TestModel.create({_id: 'foo2', cogs: [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]});
+
+      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', {x: 2}).update();
+      assert.equals(v.foo.$reload().cogs, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
+      refute.called(v.onChange);
+
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', [{id: 4}, {id: 5}]).removeItem('cogs', {x: 1}).update();
+      assert.equals(v.foo.$reload().cogs, []);
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": {x: 1}, "cogs.1": {id: 5, name: "bar"}, "cogs.2": {id: 4, name: "foo"}});
+    },
+
     "test sort": function () {
       v.TestModel.create({name: 'bar', age: 2});
 
