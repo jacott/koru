@@ -186,10 +186,28 @@ define(function(require, exports, module) {
     },
 
     removeItem: function (list, item) {
+      if (item != null && typeof item === 'object') {
+        for(var index = 0; index < list.length; ++index) {
+          var row = list[index];
+          var found = true;
+          for(var key in item) {
+            if (item[key] !== row[key]) {
+              found = false;
+              break;
+            }
+          }
+          if (found) {
+            list.splice(index, 1);
+            return row;
+          }
+        }
+        return;
+      }
+
       var index = list.indexOf(item);
-      if (index === -1) return false;
+      if (index === -1) return;
       list.splice(index, 1);
-      return true;
+      return item;
     },
 
     values: function (map) {

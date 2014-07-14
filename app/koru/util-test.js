@@ -48,15 +48,27 @@ define(function (require, exports, module) {
     "test removeItem": function () {
       var foo = [1,2,3];
 
-      util.removeItem(foo, 2); assert.equals(foo, [1, 3]);
+      assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
 
-      util.removeItem(foo, 4); assert.equals(foo, [1, 3]);
+      assert.same(util.removeItem(foo, 4), undefined); assert.equals(foo, [1, 3]);
 
       util.removeItem(foo, 1); assert.equals(foo, [3]);
 
       util.removeItem(foo, 3); assert.equals(foo, []);
 
       util.removeItem(foo); assert.equals(foo, []);
+
+      var bar = [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}];
+
+      assert.same(util.removeItem(bar, {name: 'bar', x: 1}), undefined);
+      assert.equals(bar, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
+
+
+      assert.equals(util.removeItem(bar, {name: 'bar'}), {id: 5, name: "bar"});
+      assert.equals(bar, [{id: 4, name: "foo"}, {x: 1}]);
+
+      assert.equals(util.removeItem(bar, {id: 4, name: 'foo'}), {id: 4, name: 'foo'});
+      assert.equals(bar, [{x: 1}]);
     },
 
     "test values": function () {
