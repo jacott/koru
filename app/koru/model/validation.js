@@ -64,6 +64,10 @@ define(function(require, exports, module) {
       }
     },
 
+    ensure: function (type/*, args */) {
+      ensureType(type, util.slice(arguments, 1));
+    },
+
     inspectErrors: function (doc) {
       var errs = doc._errors;
 

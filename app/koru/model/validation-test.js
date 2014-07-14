@@ -51,6 +51,16 @@ define(function (require, exports, module) {
       });
     },
 
+    "test ensure ": function () {
+      refute.accessDenied(function () {
+        val.ensure("string", "a", "b");
+      });
+
+      assert.accessDenied(function () {
+        val.ensure("number", 2, "b");
+      });
+    },
+
     "test ensureDate": function () {
       refute.accessDenied(function () {
         val.ensureDate(new Date(), new Date(2000, 1, 1));

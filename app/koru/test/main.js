@@ -39,7 +39,7 @@ define(function(require, exports, module) {
       koru.logger = function (type) {
         origLogger.apply(koru, arguments);
         var args = Array.prototype.slice.call(arguments, 1);
-        self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 5) : args.join(' ')));
+        self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
       };
 
       require(tests, function () {
