@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   var save;
 
-  var koru = {
+  var modelEnv = {
     $save: function(force) {
       var doc = this;
       doc.$isValid();
@@ -168,10 +168,10 @@ define(function(require, exports, module) {
     return keys;
   }
 
-  function findById (id) {
+  function findById(id) {
     var doc = this.docs.findOne({_id: id});
     if (doc) return new this(doc);
   }
 
-  return koru;
+  return modelEnv;
 });

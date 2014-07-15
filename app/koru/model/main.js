@@ -426,6 +426,8 @@ define(function(require, exports, module) {
         }
       }
     },
+
+    _modelProperties: modelProperties,
   });
 
   var typeMap = {
