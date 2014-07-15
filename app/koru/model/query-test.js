@@ -192,34 +192,34 @@ define(function (require, exports, module) {
       v.TestModel.defineFields({cogs: 'has-many'});
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a').update();
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
       assert.equals(v.foo.$reload().cogs, ['a']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": undefined});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b').update();
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.1": undefined});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b').update();
+      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
       refute.called(v.onChange);
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a').update();
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
       assert.equals(v.foo.$reload().cogs, ['b']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.1": 'a'});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b').update();
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, []);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": 'b'});
 
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a').addItem('cogs', ['b', 'c']).update();
+      v.TestModel.query.onId(v.foo._id).addItemAnd('cogs', 'a').addItem('cogs', ['b', 'c']);
       assert.equals(v.foo.$reload().cogs, ['a', 'b', 'c']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": undefined, "cogs.1": undefined, "cogs.2": undefined});
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', ['a', 'c']).removeItem('cogs', 'b').update();
+      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', ['a', 'c']).removeItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, []);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": 'b', "cogs.1": 'c', "cogs.2": 'a'});
     },
@@ -232,11 +232,11 @@ define(function (require, exports, module) {
 
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', {x: 2}).update();
+      v.TestModel.query.onId(v.foo._id).removeItem('cogs', {x: 2});
       assert.equals(v.foo.$reload().cogs, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
       refute.called(v.onChange);
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', [{id: 4}, {id: 5}]).removeItem('cogs', {x: 1}).update();
+      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', [{id: 4}, {id: 5}]).removeItem('cogs', {x: 1});
       assert.equals(v.foo.$reload().cogs, []);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.0": {x: 1}, "cogs.1": {id: 5, name: "bar"}, "cogs.2": {id: 4, name: "foo"}});
     },

@@ -213,6 +213,10 @@ define(function(require, exports, module) {
       return query.where.apply(query, arguments);
     },
 
+    onId: function (id) {
+      return this.query.onId(id);
+    },
+
     exists: function (condition) {
       var query = new Query(this);
       if (typeof condition === 'string')

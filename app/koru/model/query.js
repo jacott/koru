@@ -28,12 +28,20 @@ define(function(require, exports, module) {
       return this;
     },
 
-    addItem: function (field, values) {
+    addItemAnd: function (field, values) {
       return buildList(this, '_addItems', field, values);
     },
 
-    removeItem: function (field, values) {
+    removeItemAnd: function (field, values) {
       return buildList(this, '_removeItems', field, values);
+    },
+
+    addItem: function (field, values) {
+      return this.addItemAnd(field, values).update();
+    },
+
+    removeItem: function (field, values) {
+      return this.removeItemAnd(field, values).update();
     },
 
     where: function (params, value) {
