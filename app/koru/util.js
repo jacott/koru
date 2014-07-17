@@ -227,16 +227,16 @@ define(function(require, exports, module) {
       return -1;
     },
 
-    toMap: function (/* keyName, valueName, lists */) {
+    toMap: function (keyName, valueName /*, lists */) {
       var result = {};
-      var lc = 2;
       if (arguments.length === 1) {
-        lc = 0;
-      } else {
-        var keyName = arguments[0];
-        var valueName = arguments[1];
+        keyName && keyName.forEach(function (item) {
+          result[item] = true;
+        });
+        return result;
       }
-      for(;lc < arguments.length; ++lc) {
+      var lc = 2;
+      for(var lc = 2;lc < arguments.length; ++lc) {
         var list = arguments[lc];
         if (!list) continue;
 

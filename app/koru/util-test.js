@@ -253,6 +253,7 @@ define(function (require, exports, module) {
 
     "test toMap": function () {
       assert.equals(util.toMap(), {});
+      assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
       assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]), {a: true, b: true});
       assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
