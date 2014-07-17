@@ -35,6 +35,11 @@ define(function(require, exports, module) {
         return results;
       },
 
+      show: function (func) {
+        func(JSON.stringify(buildQuery(this)));
+        return this;
+      },
+
       forEach: function (func) {
         var where = this._wheres;
         if (this.singleId) {

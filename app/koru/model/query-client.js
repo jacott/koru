@@ -122,6 +122,11 @@ define(function(require, exports, module) {
         return result;
       },
 
+      show: function (func) {
+        func(this);
+        return this;
+      },
+
       forEach: function (func) {
         if (this.singleId) {
           var doc = this.findOne(this.singleId);
