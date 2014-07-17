@@ -103,8 +103,8 @@ define(function(require, exports, module) {
         this._stop && this._stop();
         this._subscribe.apply(this, this.args);
       } catch(ex) {
-        koru.error(util.extractError(ex));
-        this.error(new koru.Error(500, 'Internal server error'));
+        koru.info(util.extractError(ex));
+        this.error(ex);
       }
       this._called = true;
       this.isResubscribe = false;
