@@ -227,6 +227,15 @@ define(function(require, exports, module) {
       return -1;
     },
 
+    pick: function (map/*, fields */) {
+      var result = {};
+      for(var i = 1; i < arguments.length; ++i) {
+        var field = arguments[i];
+        result[field] = map[field];
+      }
+      return result;
+    },
+
     toMap: function (keyName, valueName /*, lists */) {
       var result = {};
       if (arguments.length === 1) {

@@ -251,6 +251,11 @@ define(function (require, exports, module) {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
     },
 
+    "test pick": function () {
+      assert.equals(util.pick(), {});
+      assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a:1, c: 3});
+    },
+
     "test toMap": function () {
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
