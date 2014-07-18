@@ -56,6 +56,7 @@ define(function(require, exports, module) {
               break;
           }
         }
+        return this;
       },
 
       map: function (func) {

@@ -6,7 +6,7 @@ isServer && define(function (require, exports, module) {
   var session = require('../session/base');
   var message = require('./message');
   var util = require('../util');
-  var match = require('./match');
+  var serverConnection = require('./server-connection');
 
   TH.testCase(module, {
     setUp: function () {
@@ -19,12 +19,9 @@ isServer && define(function (require, exports, module) {
       });
 
       v.callSub = function () {
-        session._onMessage(v.conn = {
-          match: match(),
-          sendBinary: test.stub(),
-          ws: {send: v.send = test.stub()},
-          _subs: {},
-        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
+        v.conn = new (serverConnection())({send: v.send = test.stub(), on: test.stub()}, 's123');
+        v.conn.sendBinary = test.stub();
+        session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
       };
 
       v.callSub();

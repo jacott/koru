@@ -51,23 +51,11 @@ define(function(require, exports, module) {
     },
 
     sendUpdate: function (doc, changes) {
-      if (changes == null)
-        this.conn.added(doc.constructor.modelName, doc._id, doc.attributes);
-      else if (doc == null)
-        this.conn.removed(changes.constructor.modelName, changes._id);
-      else
-        this.conn.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+      this.conn.sendUpdate(doc, changes);
     },
 
     sendMatchUpdate: function (doc, changes) {
-      var conn = this.conn;
-      if (doc && conn.match.has(doc)) {
-        if (changes && conn.match.has(doc.$asBefore(changes)))
-          conn.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
-        else
-          conn.added(doc.constructor.modelName, doc._id, doc.attributes);
-      } else if (changes && conn.match.has(doc ? doc.$asBefore(changes) : changes))
-        conn.removed((doc||changes).constructor.modelName, (doc||changes)._id);
+      this.conn.sendMatchUpdate(doc, changes);
     },
 
     match: function (modelName, func) {
@@ -103,8 +91,12 @@ define(function(require, exports, module) {
         this._stop && this._stop();
         this._subscribe.apply(this, this.args);
       } catch(ex) {
-        koru.info(util.extractError(ex));
-        this.error(ex);
+        if (ex.error) {
+          this.error(ex);
+        } else {
+          koru.error(util.extractError(ex));
+          this.error(new koru.Error(500, 'Internal server error'));
+        }
       }
       this._called = true;
       this.isResubscribe = false;

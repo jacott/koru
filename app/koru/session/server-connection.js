@@ -64,6 +64,25 @@ define(function(require, exports, module) {
         }
       },
 
+      sendUpdate: function (doc, changes) {
+        if (changes == null)
+          this.added(doc.constructor.modelName, doc._id, doc.attributes);
+        else if (doc == null)
+          this.removed(changes.constructor.modelName, changes._id);
+        else
+          this.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+      },
+
+      sendMatchUpdate: function (doc, changes) {
+        if (doc && this.match.has(doc)) {
+          if (changes && this.match.has(doc.$asBefore(changes)))
+            this.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+          else
+            this.added(doc.constructor.modelName, doc._id, doc.attributes);
+        } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes))
+          this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
+      },
+
       added: function (name, id, attrs) {
         this.sendBinary('A', [name, id, attrs]);
       },
