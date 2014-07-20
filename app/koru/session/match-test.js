@@ -35,7 +35,7 @@ define(function (require, exports, module) {
 
 
     "test true matches": function () {
-      v.handles.push(v.match.register('Foo', function (doc) {
+      v.handles.push(v.f = v.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
       }));
@@ -46,8 +46,13 @@ define(function (require, exports, module) {
       }));
 
 
+      assert(v.t.id);
+      refute.same(v.t.id, v.f.id);
+
       assert.isTrue(v.match.has(v.doc));
       v.t.stop();
+
+      assert.isNull(v.t.id);
 
       assert.isFalse(v.match.has(v.doc));
     },

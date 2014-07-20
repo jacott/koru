@@ -5,6 +5,27 @@ define(function(require, exports, module) {
     var models = {};
     var key = 0;
 
+
+    function StopFunc(id, modelName) {
+      this.id = id;
+      this.modelName = modelName;
+    }
+
+    StopFunc.prototype = {
+      constructor: StopFunc,
+
+      stop: function () {
+        if (! this.id) return;
+        var matchFuncs = models[this.modelName];
+        delete matchFuncs[this.id];
+        this.id = null;
+        for(var noop in matchFuncs) {
+          return;
+        }
+        delete models[this.modelName];
+      }
+    };
+
     return {
       get _models() { return models},
 
@@ -20,24 +41,8 @@ define(function(require, exports, module) {
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);
         (models[modelName] || (models[modelName] = {}))[id] = func;
-        return stopFunc(id, modelName);
+        return new StopFunc(id, modelName);
       },
     };
-
-    function stopFunc(id, modelName) {
-      return {
-        modelName: modelName,
-        stop: function () {
-          if (! id) return;
-          var matchFuncs = models[modelName];
-          delete matchFuncs[id];
-          id = null;
-          for(var noop in matchFuncs) {
-            return;
-          }
-          delete models[modelName];
-        }
-      };
-    }
   };
 });
