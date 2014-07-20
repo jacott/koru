@@ -22,6 +22,13 @@ define(function (require, exports, module) {
       assert.equals(v.TestModel.query.fields('age', 'name').fetch()[0].attributes, {_id: 'foo123', name: 'foo', age: 5});
     },
 
+    "test limit": function () {
+      v.TestModel.create({name: 'foo2'});
+      v.TestModel.create({name: 'foo3'});
+
+      assert.equals(v.TestModel.query.sort('name').limit(2).fetchField('name'), ['foo', 'foo2']);
+    },
+
     "test mongo code": function () {
       assert.same(v.TestModel.where({$or: [{name: 'foo'}, {age: 3}]}).count(), 1);
     },

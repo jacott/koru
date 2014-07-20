@@ -9,6 +9,11 @@ define(function(require, exports, module) {
         return this.where(params);
       },
 
+      limit: function (limit) {
+        this._limit = limit;
+        return this;
+      },
+
       fetch: function () {
         var results = [];
         this.forEach(function (doc) {
@@ -26,6 +31,7 @@ define(function(require, exports, module) {
 
         var model = this.model;
         var cursor = model.docs.find(buildQuery(this), {_id: 1});
+        this._limit && cursor.limit(this._limit);
         this._sort && cursor.sort(this._sort);
 
         var results = [];
@@ -48,6 +54,7 @@ define(function(require, exports, module) {
         } else {
           var model = this.model;
           var cursor = model.docs.find(buildQuery(this));
+          this._limit && cursor.limit(this._limit);
           this._sort && cursor.sort(this._sort);
 
           this._fields && cursor.fields(this._fields);
@@ -199,12 +206,20 @@ define(function(require, exports, module) {
         else
           neg[key] = {$ne: value};
       }
-      result = {$and: [result, neg]};
+      if (util.isObjEmpty(result))
+        result = neg;
+      else
+        result = {$and: [result, neg]};
     }
 
     if (query._whereSomes) {
       var ands = result['$and'];
-      if (! ands) result = {$and: ands = [result]};
+      if (! ands) {
+        if (util.isObjEmpty(result))
+          result = {$and: ands = []};
+        else
+          result = {$and: ands = [result]};
+      }
       var somes = query._whereSomes.map(function (ors) {
         ands.push({$or: ors});
       });
