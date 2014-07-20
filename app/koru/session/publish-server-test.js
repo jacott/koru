@@ -114,7 +114,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test error on resubscribe": function () {
-      test.stub(koru, 'info');
+      test.stub(koru, 'error');
       v.pubFunc = function () {
         throw new Error('foo error');
       };
@@ -122,8 +122,8 @@ isServer && define(function (require, exports, module) {
       v.sub.resubscribe();
 
       refute(v.sub.isResubscribe);
-      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Error: foo error']);
-      assert.calledWith(koru.info, TH.match(/foo error/));
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Internal server error']);
+      assert.calledWith(koru.error, TH.match(/foo error/));
     },
 
     "test userId": function () {
