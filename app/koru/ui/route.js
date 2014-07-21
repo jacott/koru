@@ -19,8 +19,13 @@ define(function(require, exports, module) {
   Route.prototype = {
     constructor: Route,
 
-    addTemplate: function (template, options) {
-      options = addCommon(this, template, options);
+    addTemplate: function (module, template, options) {
+      if (! ('exports' in module)) {
+        options = template;
+        template = module;
+        module = null;
+      }
+      options = addCommon(this, module, template, options);
       if (! ('onEntry' in template))
         template.onEntry = onEntryFunc(template, options);
 
@@ -34,8 +39,13 @@ define(function(require, exports, module) {
       delete this.routes[path];
     },
 
-    addDialog: function (template, options) {
-      options = addCommon(this, template, options);
+    addDialog: function (module, template, options) {
+      if (! ('exports' in module)) {
+        options = template;
+        template = module;
+        module = null;
+      }
+      options = addCommon(this, module, template, options);
 
       template.isDialog = true;
     },
@@ -44,7 +54,16 @@ define(function(require, exports, module) {
       this.routes[path] = template;
     },
 
-    addBase: function (template, routeVar) {
+    addBase: function (module, template, routeVar) {
+      if ('exports' in module) {
+        koru.onunload(module, function () {
+          this.removeBase(template);
+        }.bind(this));
+      } else {
+        routeVar = template;
+        template = module;
+        module = null;
+      }
       if ('route' in template) throw new Error(template.name + ' is already a route base');
       var path = templatePath(template);
       if (path in this.routes) throw new Error('Path already exists! ', path + " for template " + this.path);
@@ -71,7 +90,10 @@ define(function(require, exports, module) {
     },
   };
 
-  function addCommon(route, template, options) {
+  function addCommon(route, module, template, options) {
+    if (module) koru.onunload(module, function () {
+      route.removeTemplate(template, options);
+    });
     options = options || {};
     var path = options.path;
     if (path == null) path = templatePath(template);
