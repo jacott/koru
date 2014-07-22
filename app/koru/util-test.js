@@ -13,6 +13,20 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test pc": function () {
+      assert.same(util.pc('1.2345678'), '123.4568%');
+    },
+
+    "test px": function () {
+      assert.same(util.px('123.2345678'), '123px');
+    },
+
+    "test sansPx": function () {
+       assert.same(util.sansPx('123.23px'), 123.23);
+       assert.same(util.sansPx(), 0);
+       assert.same(util.sansPx(234), 234);
+    },
+
     "test indexOfRegex": function () {
       var list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);

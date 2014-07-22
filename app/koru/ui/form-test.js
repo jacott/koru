@@ -20,6 +20,13 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test elmId": function () {
+      var elmId = Dom._helpers.elmId;
+      assert.same(elmId.call({_id: 'fooId'}, "bar"), 'bar_fooId');
+
+      assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
+    },
+
     "modalize": {
       setUp: function () {
         document.body.appendChild(Dom.html(

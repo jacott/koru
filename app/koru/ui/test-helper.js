@@ -26,11 +26,11 @@ define(function(require, exports, module) {
     },
 
     createMockEvent: function(currentTarget, options) {
-      return util.extend({}, {
+      return util.extend(util.extend({}, {
         preventDefault: geddon.test.stub(),
         stopImmediatePropagation: geddon.test.stub(),
         currentTarget: currentTarget,
-      }, options || {});
+      }), options || {});
     },
 
     buildEvent: function (event, args) {

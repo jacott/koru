@@ -20,7 +20,7 @@ define(function(require, exports, module) {
     constructor: Route,
 
     addTemplate: function (module, template, options) {
-      if (! ('exports' in module)) {
+      if (module && ! ('exports' in module)) {
         options = template;
         template = module;
         module = null;
@@ -40,7 +40,7 @@ define(function(require, exports, module) {
     },
 
     addDialog: function (module, template, options) {
-      if (! ('exports' in module)) {
+      if (module && ! ('exports' in module)) {
         options = template;
         template = module;
         module = null;
@@ -55,14 +55,16 @@ define(function(require, exports, module) {
     },
 
     addBase: function (module, template, routeVar) {
-      if ('exports' in module) {
-        koru.onunload(module, function () {
-          this.removeBase(template);
-        }.bind(this));
-      } else {
-        routeVar = template;
-        template = module;
-        module = null;
+      if (module) {
+        if ('exports' in module) {
+          koru.onunload(module, function () {
+            this.removeBase(template);
+          }.bind(this));
+        } else {
+          routeVar = template;
+          template = module;
+          module = null;
+        }
       }
       if ('route' in template) throw new Error(template.name + ' is already a route base');
       var path = templatePath(template);
@@ -182,7 +184,8 @@ define(function(require, exports, module) {
         }
 
         if (! page) {
-          currentPage = null;
+          currentPage = currentHref = null;
+          currentTitle = Route.title;
           pageRoute = {};
         } else {
           page = page.Index || page;

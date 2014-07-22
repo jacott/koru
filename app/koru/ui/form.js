@@ -318,10 +318,7 @@ define(function(require, exports, module) {
     },
 
     elmId: function (prefix) {
-      if (prefix)
-        return prefix + '_' + this._id;
-      else
-        return AppClient.domId(this);
+      return (prefix || this.constructor.modelName) + '_' + this._id;
     },
 
     field: function (name, options) {

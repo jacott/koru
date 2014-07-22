@@ -453,6 +453,18 @@ define(function(require, exports, module) {
       }).join(";");
     },
 
+    px: function (value) {
+      return Math.round(value)+'px';
+    },
+
+    pc: function (value) {
+      return Math.round(value*1000000)/10000+'%';
+    },
+
+    sansPx: function (value) {
+      return value ? typeof value === 'string' ? +value.substring(0, value.length -2) : +value : 0;
+    },
+
     compareByName: function (a, b) {
       var aname = (a && a.name) || '';
       var bname = (b && b.name) || '';
