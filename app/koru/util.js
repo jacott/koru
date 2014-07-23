@@ -447,6 +447,10 @@ define(function(require, exports, module) {
       });
     },
 
+    niceFilename: function (name) {
+      return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g,'-');
+    },
+
     hashToCss: function (hash) {
       return Object.keys(hash).map(function (key) {
         return key+":"+hash[key];
@@ -567,6 +571,7 @@ define(function(require, exports, module) {
       return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
     },
 
+    TwoIndex: TwoIndex,
   });
 
   if (isClient) {
@@ -654,6 +659,43 @@ define(function(require, exports, module) {
       return result;
     }
   }
+
+  function TwoIndex() {
+    this.ids = Object.create(null);
+  }
+
+  TwoIndex.prototype = {
+    constructor: TwoIndex,
+
+    has: function (groupId, id) {
+      if (id === undefined) return groupId in this.ids;
+      var result = this.ids[groupId];
+      return !! (result && id in result);
+    },
+
+    get: function (groupId, id) {
+      var result = this.ids[groupId];
+      if (id === undefined) return result;
+      return result && result[id];
+    },
+
+    add: function (groupId, id, value) {
+      var result = this.ids[groupId];
+      if (! result) result = this.ids[groupId] = {};
+      return result[id] = value;
+    },
+
+    remove: function (groupId, id) {
+      if (id === undefined) delete this.ids[groupId];
+      var result = this.ids[groupId];
+      if (result) {
+        delete result[id];
+        for (var k in result) return;
+        delete this.ids[groupId];
+      }
+    },
+  };
+
 
   return util;
 
