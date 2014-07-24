@@ -27,6 +27,7 @@ define(function(require, exports, module) {
         return currentCtx.data;
       },
 
+      get event() {return currentEvent},
       get template() {return currentCtx.template},
       get ctx() {return currentCtx},
       get element() {return currentElement},
