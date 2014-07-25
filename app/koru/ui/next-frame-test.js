@@ -20,16 +20,16 @@ isClient && define(function (require, exports, module) {
 
       assert.same(nf, v.nf);
 
-      assert.isTrue(nf.isEmpty());
+      assert.isFalse(nf.isPendingNextFrame());
 
 
       nf.nextFrame(v.stub = test.stub());
 
-      assert.isFalse(nf.isEmpty());
+      assert.isTrue(nf.isPendingNextFrame());
 
-      nf.cancel();
+      nf.cancelNextFrame();
 
-      assert.isTrue(nf.isEmpty());
+      assert.isFalse(nf.isPendingNextFrame());
 
       refute.called(v.stub);
 
@@ -47,7 +47,7 @@ isClient && define(function (require, exports, module) {
       assert.called(v.s1);
       assert.called(v.s2);
 
-      assert.isTrue(nf.isEmpty());
+      assert.isFalse(nf.isPendingNextFrame());
 
       refute.called(v.cafStub);
     },
@@ -58,12 +58,12 @@ isClient && define(function (require, exports, module) {
       nf.nextFrame(v.s1 = test.stub());
       nf.nextFrame(v.s2 = test.stub());
 
-      nf.flush();
+      nf.flushNextFrame();
 
       assert.called(v.s1);
       assert.called(v.s2);
 
-      assert.isTrue(nf.isEmpty());
+      assert.isFalse(nf.isPendingNextFrame());
       assert.calledWith(v.cafStub, 123);
     },
   });

@@ -214,6 +214,7 @@ define(function(require, exports, module) {
   };
 
   uiUtil(Dom);
+  require('./ui/next-frame')(Dom);
 
   var matches = Dom._matchesFunc;
 

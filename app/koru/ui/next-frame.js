@@ -17,20 +17,20 @@ define(function(require, exports, module) {
         }
       },
 
-      flush: function () {
+      flushNextFrame: function () {
         if (! afHandle) return;
         window.cancelAnimationFrame(afHandle);
         run();
       },
 
-      cancel: function () {
+      cancelNextFrame: function () {
         if (! afHandle) return;
         window.cancelAnimationFrame(afHandle);
         queue = afHandle = null;
       },
 
-      isEmpty: function () {
-        return ! queue;
+      isPendingNextFrame: function () {
+        return queue != null;
       },
     });
 
