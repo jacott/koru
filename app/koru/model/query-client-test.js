@@ -23,6 +23,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test empty Query": function () {
+      var query = new Query();
+      assert.same(query.count(), 0);
+
+      assert.equals(query.fetch(), []);
+    },
+
     "test where func": function () {
       assert.same(v.TestModel.query.where(function (doc) {
         return doc.name !== 'foo';

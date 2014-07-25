@@ -184,24 +184,24 @@ define(function(require, exports, module) {
         }
 
         if (! page) {
-          currentPage = currentHref = null;
-          currentTitle = Route.title;
+          var href = null;
+          var title = document.title = Route.title;
           pageRoute = {};
         } else {
           page = page.Index || page;
           var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
           var title = document.title = page.title || Route.title;
           Dom.setTitle && Dom.setTitle(page.title);
-
-          if (pageState &&
-              (pageState !== 'pushState' || currentHref !== href) &&
-              ! ('noPageHistory' in page)) {
-            currentHref = href;
-            currentTitle = title;
-            Route.history[pageState](null, title, href);
-          }
-          currentPage = page;
         }
+
+        if (pageState &&
+            (pageState !== 'pushState' || currentHref !== href) &&
+            ! (page && ('noPageHistory' in page))) {
+          currentHref = href;
+          currentTitle = title;
+          Route.history[pageState](null, title, href);
+        }
+        currentPage = page;
       }
       catch(ex) {
         inGotoPage = false;

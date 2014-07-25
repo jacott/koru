@@ -154,6 +154,7 @@ define(function(require, exports, module) {
 
       count: function (max) {
         var count = 0;
+        if (! this.model) return 0;
         var docs = this.model.docs;
         this.forEach(function (doc) {
           ++count;
@@ -312,6 +313,7 @@ define(function(require, exports, module) {
     });
 
     function findMatching(func) {
+      if (! this.model) return;
       var idx = this._index;
       if (this._index)
         findByIndex(this, this._index, func);
