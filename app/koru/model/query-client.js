@@ -181,48 +181,46 @@ define(function(require, exports, module) {
             return;
         }
 
-        if (fields = this._wheres) for(var key in fields) {
-          var value = fields[key];
-          var expected = attrs[key];
-
-          if (typeof expected === 'object') {
-            if (util.isArray(expected)) {
-              var found = false;
-              for(var i = 0; ! found && i < expected.length; ++i) {
-                var exv = expected[i];
-                if (util.isArray(value)) {
-                  if (value.some(function (item) {
-                    return item == exv;
-                  }))
-                    found = true;
-                } else if (exv == value)
-                  found = true;
-              }
-              if (! found) return;
-            }
-          } else if (util.isArray(value)) {
-            if (! value.some(function (item) {
-              return item == expected;
-            }))
-              return;
-          } else if (expected != value)
-            return;
-        }
+        if (this._wheres && ! foundIn(this._wheres)) return;
 
         if (this._whereFuncs && this._whereFuncs.some(function (func) {return ! func(doc)}))
           return;
 
-        if (this._whereSomes && this._whereSomes.some(function (ors) {
-          return ! ors.some(function (where) {
-            for(var field in where) {
-              if (attrs[field] != where[field])
-                return false;
-            }
-            return true;
-          });
-        })) return;
+        if (this._whereSomes &&
+            ! this._whereSomes.some(function (ors) {
+              return ors.some(foundIn);
+            })) return;
 
         return doc;
+
+        function foundIn(fields) {
+          for(var key in fields) {
+            var value = fields[key];
+            var expected = attrs[key];
+
+            if (typeof expected === 'object') {
+              if (util.isArray(expected)) {
+                var found = false;
+                for(var i = 0; ! found && i < expected.length; ++i) {
+                  var exv = expected[i];
+                  if (util.isArray(value)) {
+                    if (value.some(function (item) {return item == exv}))
+                      found = true;
+                  } else if (exv == value)
+                    found = true;
+                }
+                if (! found) return false;
+              }
+            } else if (util.isArray(value)) {
+              if (value.every(function (item) {
+                return item != expected;
+              }))
+                return false;
+            } else if (expected != value)
+              return false;
+          }
+          return true;
+        }
       },
 
       remove: function () {

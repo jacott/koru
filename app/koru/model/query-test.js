@@ -306,6 +306,9 @@ define(function (require, exports, module) {
       var ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm').fetchIds();
 
       assert.equals(ids, ['bar456']);
+
+      assert.equals(v.TestModel.query.whereSome({age: [5, 10]}).fetchIds().sort(), ['bar456', 'foo123']);
+
     },
 
     "test where on forEach": function () {

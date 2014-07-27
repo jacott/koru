@@ -188,13 +188,7 @@ define(function(require, exports, module) {
     if (id = id || query.singleId)
       result._id = id;
 
-    if (fields = query._wheres) for(var key in fields) {
-      var value = fields[key];
-      if (key[0] !== '$' && util.isArray(value))
-        result[key] = {$in: value};
-      else
-        result[key] = value;
-    }
+    query._wheres && foundIn(query._wheres, result);
 
     if (fields = query._whereNots) {
       var neg = {};
@@ -221,11 +215,24 @@ define(function(require, exports, module) {
           result = {$and: ands = [result]};
       }
       var somes = query._whereSomes.map(function (ors) {
-        ands.push({$or: ors});
+        ands.push({$or: ors.map(function (fields) {
+          return foundIn(fields, {});
+        })});
       });
     }
 
     return result;
+
+    function foundIn(fields, result) {
+      for(var key in fields) {
+        var value = fields[key];
+        if (key[0] !== '$' && util.isArray(value))
+          result[key] = {$in: value};
+        else
+          result[key] = value;
+      }
+      return result;
+    }
   }
 
   function buildUpdate(query, changes) {
