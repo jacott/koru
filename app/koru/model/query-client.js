@@ -289,8 +289,10 @@ define(function(require, exports, module) {
           if (items = self._addItems) for(var field in items) {
             var list = attrs[field] || (attrs[field] = []);
             items[field].forEach(function (item) {
-              if (util.addItem(list, item) == null)
+              if (util.addItem(list, item) == null) {
+                sessState.pendingCount() && recordItemChange(model, attrs, field);
                 changes[field + "." + (list.length - 1)] = undefined;
+              }
             });
           }
 
@@ -298,6 +300,7 @@ define(function(require, exports, module) {
             var match, list = attrs[field];
             items[field].forEach(function (item) {
               if (list && (match = util.removeItem(list, item)) !== undefined) {
+                sessState.pendingCount() && recordItemChange(model, attrs, field);
                 changes[field + "." + list.length] = match;
               }
             });
@@ -397,6 +400,15 @@ define(function(require, exports, module) {
             keys[key] = util.deepCopy(attrs[key]);
         }
       }
+    }
+
+    function recordItemChange(model, attrs, key) {
+      var docs = simDocsFor(model);
+      var keys = docs[attrs._id] || (docs[attrs._id] = {});
+      var m = key.match(/^([^.]+)\./);
+      if (m) key=m[1];
+      if (! keys.hasOwnProperty(key))
+        keys[key] = util.deepCopy(attrs[key]);
     }
 
     function simDocsFor(model) {

@@ -58,6 +58,37 @@ define(function (require, exports, module) {
       assert.equals(Object.keys(Query._simDocs.TestModel), ['foo1']);
     },
 
+    "test updating array item": function () {
+      v.foo.$update({ary: ['a']});
+
+      sessState.incPending();
+
+      v.foo.$onThis.addItem('ary','b');
+
+      v.TestModel.query.fromServer(v.foo._id).update({'ary.1': 'b'});
+
+      assert.equals(v.foo.attributes.ary, ['a', 'b']);
+
+      sessState.decPending();
+
+      assert.equals(v.foo.attributes.ary, ['a', 'b']);
+    },
+
+    "test add item on undefined": function () {
+      sessState.incPending();
+      v.foo.$onThis.addItem('ary','b');
+
+      assert.equals(v.foo.attributes.ary, ['b']);
+
+      v.TestModel.query.fromServer(v.foo._id).update({'ary.0': 'b'});
+
+      sessState.decPending();
+
+      assert.equals(v.foo.attributes.ary, ['b']);
+    },
+
+
+
     "test reconcile docs": function () {
       var stateOC = test.stub(sessState, 'onChange').returns(v.stateOb = {stop: test.stub()});
       var syncOC = test.stub(sessState.pending, 'onChange').returns(v.syncOb = {stop: test.stub()});
