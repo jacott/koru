@@ -99,7 +99,7 @@ define(function(require, exports, module) {
     options = options || {};
     var path = options.path;
     if (path == null) path = templatePath(template);
-    if (path in route.routes) throw new Error('Path already exists! ', path + " for template " + this.path);
+    if (path in route.routes) throw new Error('Path already exists! ' + path + " for template " + this.path);
     route.routes[path] = template;
     template.route = route;
     template.subPath = path;

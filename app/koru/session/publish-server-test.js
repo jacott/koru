@@ -70,6 +70,8 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
       session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.calledOnce(v.onStop);
+
+      assert.calledWith(v.conn.sendBinary, 'P');
     },
 
     "test stop": function () {
@@ -80,6 +82,8 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
       session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.calledOnce(v.onStop);
+
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', false]);
     },
 
     "test when closed stop": function () {

@@ -227,11 +227,31 @@ isClient && define(function (require, exports, module) {
 
       assert.same(subscribe._subs[v.sub._id], v.sub);
 
+      var subId = v.sub._id;
       v.sub.stop();
-      assert.calledWith(v.sess.sendP, v.sub._id);
+      assert.calledWith(v.sess.sendP, subId);
 
-      assert.isFalse(v.sub._id in subscribe._subs);
+
+      assert.isFalse(subId in subscribe._subs);
+      assert.isNull(v.sub._id);
+
+      v.sess.sendP.reset();
+      v.sub.stop();
+      refute.called(v.sess.sendP);
+
       v.sub = null;
+    },
+
+    "test remote stop": function () {
+      v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+
+      v.sess.sendP.reset();
+
+      v.recvP(v.sub._id, false);
+
+      assert.isNull(v.sub._id);
+
+      refute.called(v.sess.sendP);
     },
 
     "match": {

@@ -26,6 +26,7 @@ define(function(require, exports, module) {
         handle.waiting = false;
       }
       if (handle && handle.callback) handle.callback(data[1]||null);
+      if (data[1] !== undefined) stopped(handle);
     });
 
     var userId;
@@ -120,22 +121,30 @@ define(function(require, exports, module) {
       },
 
       error: function (err) {
-
+        koru.error(err);
+        this.stop();
       },
 
       stop: function () {
+        if (! this._id) return;
         session.sendP(this._id);
-        delete subs[this._id];
-        var models = {};
-        killMatches(this._matches, models);
-        this._matches = [];
-        publish._filterModels(models);
+        stopped(this);
       },
 
       match: function (modelName, func) {
         this._matches.push(publish.match.register(modelName, func));
       },
     };
+
+    function stopped(sub) {
+      if (! sub._id) return;
+
+      delete subs[sub._id];
+      var models = {};
+      killMatches(sub._matches, models);
+      sub._matches = sub._id = sub.callback = null;
+      publish._filterModels(models);
+    }
 
     function killMatches(matches, models) {
       matches.forEach(function (m) {

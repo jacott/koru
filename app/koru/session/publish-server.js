@@ -20,7 +20,7 @@ define(function(require, exports, module) {
 
     if (! name) {
       if (sub) {
-        sub.stop();
+        stopped(sub);
       }
     } else {
       var func = pubs[name];
@@ -73,12 +73,8 @@ define(function(require, exports, module) {
     },
 
     stop: function () {
-      if (this.conn._subs) delete this.conn._subs[this.id];
-      this._stop && this._stop();
-      this._matches.forEach(function (m) {
-        m.stop();
-      });
-      this._matches = [];
+      this.conn.sendBinary('P', [this.id, false]);
+      stopped(this);
     },
 
     setUserId: function (userId) {
@@ -107,6 +103,14 @@ define(function(require, exports, module) {
     }
   };
 
+  function stopped(sub) {
+    if (sub.conn._subs) delete sub.conn._subs[sub.id];
+    sub._stop && sub._stop();
+    sub._matches.forEach(function (m) {
+      m.stop();
+    });
+    sub._matches = [];
+  }
 
   return publish;
 });
