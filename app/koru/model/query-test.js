@@ -194,7 +194,7 @@ define(function (require, exports, module) {
 
       v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
       assert.equals(v.foo.$reload().cogs, ['a']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-0": 'a'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'a'});
 
       v.onChange.reset();
       v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
@@ -213,15 +213,15 @@ define(function (require, exports, module) {
       v.onChange.reset();
       v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+0": 'b'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": 'b'});
 
       v.TestModel.query.onId(v.foo._id).addItemAnd('cogs', 'a').addItem('cogs', ['b', 'c']);
       assert.equals(v.foo.$reload().cogs, ['a', 'b', 'c']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-0": 'a', "cogs.$-1": 'b', "cogs.$-2": 'c'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'a', "cogs.$-2": 'b', "cogs.$-3": 'c'});
 
       v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', ['a', 'c']).removeItem('cogs', 'b');
       assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+0": 'b', "cogs.$+1": 'c', "cogs.$+2": 'a'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": 'a', "cogs.$+2": 'c', "cogs.$+3": 'b'});
     },
 
     "test 1st removeItem": function () {
@@ -232,9 +232,9 @@ define(function (require, exports, module) {
 
       v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
 
-      assert.calledWith(v.onChange, TH.matchModel(v.foo.$reload()), {"cogs.$+2": 'a'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo.$reload()), {"cogs.$+1": 'a'});
 
-      assert.equals(v.foo.$asBefore({"cogs.$+2": 'a'}).cogs, ['b', 'c', 'a']);
+      assert.equals(v.foo.$asBefore({"cogs.$+1": 'a'}).cogs, ['b', 'a', 'c']);
     },
 
     "test removeItem object": function () {
@@ -251,7 +251,7 @@ define(function (require, exports, module) {
 
       v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', [{id: 4}, {id: 5}]).removeItem('cogs', {x: 1});
       assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+0": {x: 1}, "cogs.$+1": {id: 5, name: "bar"}, "cogs.$+2": {id: 4, name: "foo"}});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": {id: 4, name: "foo"}, "cogs.$+2": {id: 5, name: "bar"}, "cogs.$+3": {x: 1}});
     },
 
     "test sort": function () {

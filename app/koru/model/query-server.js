@@ -120,6 +120,8 @@ define(function(require, exports, module) {
 
           util.applyChanges(attrs, changes);
 
+          var itemCount = 0;
+
           if (items = self._addItems) {
             var fields = {};
             var atLeast1 = false;
@@ -128,7 +130,7 @@ define(function(require, exports, module) {
               items[field].forEach(function (item) {
                 if (util.addItem(list, item) == null) {
                   atLeast1 = true;
-                  changes[field + ".$-" + (list.length - 1)] = item;
+                  changes[field + ".$-" + ++itemCount] = item;
                 }
               });
               if (atLeast1) fields[field] = {$each: items[field]};
@@ -144,7 +146,7 @@ define(function(require, exports, module) {
               var list = attrs[field];
               items[field].forEach(function (item) {
                 if (list && (match = util.removeItem(list, item)) !== undefined) {
-                  changes[field + ".$+" + list.length] = match;
+                  changes[field + ".$+" + ++itemCount] = match;
                   matches.push(match);
                 }
               });

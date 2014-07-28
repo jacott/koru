@@ -281,13 +281,14 @@ define(function(require, exports, module) {
           sessState.pendingCount() && recordChange(model, attrs, changes);
           util.applyChanges(attrs, changes);
 
+          var itemCount = 0;
 
           if (items = self._addItems) for(var field in items) {
             var list = attrs[field] || (attrs[field] = []);
             items[field].forEach(function (item) {
               if (util.addItem(list, item) == null) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
-                changes[field + ".$-" + (list.length - 1)] = item;
+                changes[field + ".$-" + ++itemCount] = item;
               }
             });
           }
@@ -297,7 +298,7 @@ define(function(require, exports, module) {
             items[field].forEach(function (item) {
               if (list && (match = util.removeItem(list, item)) !== undefined) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
-                changes[field + ".$+" + list.length] = match;
+                changes[field + ".$+" + ++itemCount] = match;
               }
             });
           }
