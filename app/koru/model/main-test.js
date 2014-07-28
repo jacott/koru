@@ -333,8 +333,39 @@ define(function (require, exports, module) {
 
         doc.attributes.foo = [1, {bar: 3}];
 
-        old = doc.$asBefore({"foo.0": undefined});
+        old = doc.$asBefore({"foo.$-0": 1});
         assert.equals(old.foo, [{bar: 3}]);
+      },
+
+      "test $asChanges": function () {
+        var beforeChange = {a: 1, b: 2, c: 3, "e.1.f": 42};
+        var doc = new v.TestModel({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+
+        var changes = doc.$asChanges(beforeChange);
+
+        assert.equals(changes, {a: 2, b: undefined, c: undefined, "e.1.f": 69});
+
+        // should not alter passed in arguments
+        assert.equals(beforeChange, {a: 1, b: 2, c: 3, "e.1.f": 42});
+        assert.equals(doc.attributes, {_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+      },
+
+      "test addItem $asChanges": function () {
+        var beforeChange = {"a.$-1": "a", "a.$-2": "b"};
+        var doc = new v.TestModel({id: "1", a: ["x", "a", "b"]});
+
+        var changes = doc.$asChanges(beforeChange);
+
+        assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
+      },
+
+      "test removeItem $asChanges": function () {
+        var beforeChange = {"a.$+1": "a", "a.$+2": "b"};
+        var doc = new v.TestModel({id: "1", a: ["x"]});
+
+        var changes = doc.$asChanges(beforeChange);
+
+        assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
       },
 
       "test change": function () {

@@ -4,8 +4,6 @@ define(function(require, exports, module) {
   var sessState = require('../session/state');
   var Model = require('./base');
 
-  var desc = {value: null};
-
   return function(Query) {
     var syncOb, stateOb;
     var simDocs = {};
@@ -289,7 +287,7 @@ define(function(require, exports, module) {
             items[field].forEach(function (item) {
               if (util.addItem(list, item) == null) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
-                changes[field + "." + (list.length - 1)] = undefined;
+                changes[field + ".$-" + (list.length - 1)] = item;
               }
             });
           }
@@ -299,7 +297,7 @@ define(function(require, exports, module) {
             items[field].forEach(function (item) {
               if (list && (match = util.removeItem(list, item)) !== undefined) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
-                changes[field + "." + list.length] = match;
+                changes[field + ".$+" + list.length] = match;
               }
             });
           }
@@ -374,8 +372,7 @@ define(function(require, exports, module) {
         if (! keys.hasOwnProperty(m)) {
           nc[key] = changes[key];
         }
-        desc.value = changes[key];
-        util.applyChange(keys, key, desc);
+        util.applyChange(keys, key, changes);
       }
 
       return nc;

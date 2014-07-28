@@ -236,16 +236,27 @@ define(function (require, exports, module) {
       assert.equals(changes, {"ar.1.foo": 2});
     },
 
-    "test extractViaKeys": function () {
-      var keys = {a: 1, b: 2, c: 3, "e.1.f": 42};
-      var attrs = {a: 2, b: undefined, d: 4, e: [1, {f: 69}]};
+    "test addItem applyChanges": function () {
+      var orig = {a: ["x"]};
+      var changes = {"a.$+1": "a", "a.$+2": "b"};
 
-      assert.equals(util.extractViaKeys(keys, attrs), {a: 2, b: undefined, c: undefined, "e.1.f": 69});
+      util.applyChanges(orig, changes);
 
-      // should not alter passed in arguments
-      assert.equals(keys, {a: 1, b: 2, c: 3, "e.1.f": 42});
-      assert.equals(attrs, {a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+      assert.equals(orig, {a: ["x", "a", "b"]});
+      assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
     },
+
+    "test removeItem applyChanges": function () {
+      var orig = {a: ["x", "a", "b"]};
+      var changes = {"a.$-1": "a", "a.$-2": "b"};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig, {a: ["x"]});
+      assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
+    },
+
+
 
     "test includesAttributes": function () {
       var changes = {b: '2'};

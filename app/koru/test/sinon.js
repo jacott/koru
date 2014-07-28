@@ -805,7 +805,8 @@ var sinon = (function (formatio) {
             for (prop in a) {
                 aLength += 1;
 
-                if (!deepEqual(a[prop], b[prop])) {
+              // GJ 28-jul-2014 Fix value undefined bug by testing presence of prop
+              if (!b.hasOwnProperty(prop) || !deepEqual(a[prop], b[prop])) {
                     return false;
                 }
             }

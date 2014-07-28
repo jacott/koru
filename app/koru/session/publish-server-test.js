@@ -164,6 +164,7 @@ isServer && define(function (require, exports, module) {
             util.extend(old.attributes, changes);
             return old;
           },
+          $asChanges: $asChanges,
           constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 5}};
       },
 
@@ -274,7 +275,8 @@ isServer && define(function (require, exports, module) {
 
     "test sendUpdate changed": function () {
       var stub = v.conn.changed = test.stub();
-      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}},
+      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', $asChanges: $asChanges,
+                        attributes: v.attrs = {name: 'John', age: 7}},
                        {age: 5});
 
       assert.calledWith(stub, 'Foo', 'id123', {age: 7});
@@ -287,4 +289,13 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(stub, 'Foo', 'id123');
     },
   });
+
+  function $asChanges(changes) {
+    var attrs = this.attributes;
+    var result = {};
+    for(var key in changes) {
+      result[key] = attrs[key];
+    }
+    return result;
+  }
 });

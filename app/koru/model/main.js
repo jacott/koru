@@ -115,16 +115,43 @@ define(function(require, exports, module) {
             var part = parts[i];
             curr = copied ? curr[part] || (curr[part] = {}) : curr[part] = util.shallowCopy(curr[part]) || {};
           }
-          if (desc.value === undefined) {
-            if (util.isArray(curr) )
-              curr.splice(parts[i], 1);
+          part = parts[i];
+          var m = part.match(/^\$([+\-])(\d+)/);
+          if (m) {
+            part = +m[2];
+            if (m[1] === '-')
+              curr.splice(part, 1);
             else
-              delete curr[parts[i]];
+              curr.splice(part, 0, desc.value);
+          } else if (desc.value === undefined) {
+            delete curr[parts[i]];
           } else
-            Object.defineProperty(curr, parts[i],  desc);
+            Object.defineProperty(curr, part,  desc);
         }
       }
       return cache[1] = new this.constructor(attrs, cc);
+    },
+
+    /**
+     * Use the {beforeChange} keys to extract the new values.
+     *
+     * @returns new hash of extracted values.
+     */
+    $asChanges: function (beforeChange) {
+      var attrs = this.attributes;
+      var result = {};
+      for(var key in beforeChange) {
+        var idx = key.lastIndexOf(".");
+        if (idx === -1) {
+          result[key] = attrs[key];
+        } else if (key[idx+1] !== '$') {
+          result[key] = util.lookupDottedValue(key, attrs);
+        } else {
+          result[key.slice(0, idx+2) + (key[idx+2] === '-' ? '+' : '-') + key.slice(idx+3)] = beforeChange[key];
+        }
+
+      }
+      return result;
     },
 
     get $onThis() {

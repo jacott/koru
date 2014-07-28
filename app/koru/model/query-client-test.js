@@ -87,8 +87,6 @@ define(function (require, exports, module) {
       assert.equals(v.foo.attributes.ary, ['b']);
     },
 
-
-
     "test reconcile docs": function () {
       var stateOC = test.stub(sessState, 'onChange').returns(v.stateOb = {stop: test.stub()});
       var syncOC = test.stub(sessState.pending, 'onChange').returns(v.syncOb = {stop: test.stub()});

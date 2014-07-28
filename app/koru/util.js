@@ -77,29 +77,31 @@ define(function(require, exports, module) {
 
     applyChanges: function (attrs, changes) {
       for(var key in changes) {
-        var nv = Object.getOwnPropertyDescriptor(changes, key);
-        var ov = util.applyChange(attrs, key, nv);
-        if (deepEqual(nv.value, ov.value))
-          delete changes[key];
-        else
-          Object.defineProperty(changes, key, ov);
+        util.applyChange(attrs, key, changes);
       }
 
       return attrs;
     },
 
-    applyChange: function (attrs, key, nv) {
+    applyChange: function (attrs, key, changes) {
       var index = key.indexOf(".");
 
+      var nv = Object.getOwnPropertyDescriptor(changes, key);
       if (index === -1) {
         var ov = Object.getOwnPropertyDescriptor(attrs, key);
+
+        if (ov && deepEqual(nv.value, ov.value))
+          delete changes[key];
+        else
+          Object.defineProperty(changes, key, ov || valueUndefined);
+
         if (nv.value === undefined)
           delete attrs[key];
         else
           Object.defineProperty(attrs, key, nv);
 
       } else { // update part of attribute
-        var ov, parts = key.split(".");
+        var parts = key.split(".");
         var curr = attrs;
         for(var i = 0; i < parts.length - 1; ++i) {
           var part = parts[i];
@@ -109,36 +111,42 @@ define(function(require, exports, module) {
           }
           curr = curr[part] || (curr[part] = {});
         }
-        ov = Object.getOwnPropertyDescriptor(curr, parts[i]);
-        if (isArray(curr)) {
-          part = +parts[i];
-          if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
-          if (nv.value === undefined)
-            curr.splice(part, 1);
+        part = parts[i];
+        var m = part.match(/^\$([+\-])(\d+)/);
+        if (m) {
+          if (m[1] === '-')
+            util.removeItem(curr, nv.value);
           else
-            curr[part] = nv.value;
-        } else if (nv.value === undefined)
-          delete curr[parts[i]];
-        else {
-          Object.defineProperty(curr, parts[i], nv);
+            util.addItem(curr, nv.value);
+
+          delete changes[key];
+          Object.defineProperty(changes, key.replace(/\.\$([+\-])(\d+)/, function (m, sign, idx) {
+            return ".$" + (sign === '-' ? '+' : '-') + idx;
+          }), nv);
+        } else {
+          if (isArray(curr)) {
+            part = +part;
+            if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
+            if (nv.value === undefined)
+              curr.splice(part, 1);
+            else
+              curr[part] = nv.value;
+          } else {
+            var ov = Object.getOwnPropertyDescriptor(curr, part);
+            if (ov && deepEqual(nv.value, ov.value))
+              delete changes[key];
+            else
+              Object.defineProperty(changes, key, ov || valueUndefined);
+            if (nv.value === undefined)
+              delete curr[parts[i]];
+            else {
+              Object.defineProperty(curr, parts[i], nv);
+            }
+          }
         }
       }
-      return ov ? ov : valueUndefined;
     },
 
-
-    /**
-     * Use the keys or {keys} to extract the values from {attrs}.
-     *
-     * @returns new hash of extracted values.
-     */
-    extractViaKeys: function (keys, attrs) {
-      var result = {};
-      for(var key in keys) {
-        result[key] = (key.indexOf(".") !== -1) ? util.lookupDottedValue(key, attrs) : attrs[key];
-      }
-      return result;
-    },
 
     /**
      * includesAttributes will check each key in attrs against the

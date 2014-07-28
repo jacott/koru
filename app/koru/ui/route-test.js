@@ -11,9 +11,9 @@ isClient && define(function (require, exports, module) {
       v = {
         root: Route.root,
         onGotoPath: Route._onGotoPath,
-        origTile: Route.title,
+        origTitle: Route.title,
       };
-      v.origTile = document.title;
+      v.origTitle = document.title;
       Route.title = "TestTitle";
       v.FooBar = {
         name: 'FooBar',
@@ -28,8 +28,8 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      Route.title = Route.title;
-      document.title = v.origTile;
+      Route.title = v.origTitle;
+      document.title = v.origTitle;
       Route.root = v.root;
       Route._onGotoPath = v.onGotoPath;
       Route.gotoPage();
@@ -37,7 +37,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test title": function () {
-      assert.same(v.origTile, 'Running: Koru Test Mode');
+      assert.same(v.origTitle, 'Running: Koru Test Mode');
     },
 
     "test focus": function () {

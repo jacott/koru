@@ -69,14 +69,15 @@ define(function(require, exports, module) {
           this.added(doc.constructor.modelName, doc._id, doc.attributes);
         else if (doc == null)
           this.removed(changes.constructor.modelName, changes._id);
-        else
-          this.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+        else {
+          this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes));
+        }
       },
 
       sendMatchUpdate: function (doc, changes) {
         if (doc && this.match.has(doc)) {
           if (changes && this.match.has(doc.$asBefore(changes)))
-            this.changed(doc.constructor.modelName, doc._id, util.extractViaKeys(changes, doc.attributes));
+            this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes));
           else
             this.added(doc.constructor.modelName, doc._id, doc.attributes);
         } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes))
