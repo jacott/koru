@@ -41,9 +41,9 @@ define(function (require, exports, module) {
     },
 
 
-    "publishes from server should not call afterSave": {
+    "publishes from server should not call afterLocalChange": {
       setUp: function () {
-        v.TestModel.afterSave(v.TestModel, v.stub = test.stub());
+        v.TestModel.afterLocalChange(v.TestModel, v.stub = test.stub());
       },
 
       "test insertFromServer": function () {

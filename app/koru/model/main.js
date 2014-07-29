@@ -208,7 +208,7 @@ define(function(require, exports, module) {
 
   function callAfterObserver(doc, was) {
     var model = (doc || was).constructor;
-    var observers = modelObservers[model.modelName+'.afterSave'];
+    var observers = modelObservers[model.modelName+'.afterLocalChange'];
     if (observers) {
       for(var i=0;i < observers.length;++i) {
         observers[i].call(model, doc, was);
@@ -292,7 +292,7 @@ define(function(require, exports, module) {
     beforeSave: beforeSave,
     beforeRemove: beforeRemove,
 
-    afterSave: afterSave,
+    afterLocalChange: afterLocalChange,
 
     /**
      * Model extension methods
@@ -443,7 +443,7 @@ define(function(require, exports, module) {
 
       delete BaseModel[name];
 
-      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterSave'].forEach(function (actn) {
+      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterLocalChange'].forEach(function (actn) {
         delete modelObservers[name +"." + actn];
       });
       if (model._observing) for(var i = 0; i < model._observing.length; ++i) {
@@ -611,8 +611,8 @@ define(function(require, exports, module) {
     return this;
   };
 
-  function afterSave(subject, callback) {
-    registerObserver(this, subject, 'afterSave', callback);
+  function afterLocalChange(subject, callback) {
+    registerObserver(this, subject, 'afterLocalChange', callback);
     return this;
   };
 

@@ -56,7 +56,7 @@ define(function (require, exports, module) {
       }).defineFields({name: 'text'});
 
 
-      TestModel.onChange(v.afterSave = test.stub());
+      TestModel.onChange(v.afterLocalChange = test.stub());
 
       assert.accessDenied(function () {
         session._rpcs.save.call({userId: null}, "TestModel", "fooid", {name: 'bar'});
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.name, 'bar');
 
-      assert.called(v.afterSave);
+      assert.called(v.afterLocalChange);
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
@@ -84,7 +84,7 @@ define(function (require, exports, module) {
 
       v.doc = TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.afterSave = test.stub());
+      TestModel.onChange(v.afterLocalChange = test.stub());
 
       assert.accessDenied(function () {
         session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
@@ -96,7 +96,7 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.$reload().name, 'bar');
 
-      assert.called(v.afterSave);
+      assert.called(v.afterLocalChange);
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
