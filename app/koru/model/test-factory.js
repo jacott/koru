@@ -190,6 +190,7 @@ define(function(require, exports, module) {
 
     insert: function () {
       var doc = this.model.findById(this.model._insertAttrs(this.attributes()));
+      Model._callAfterObserver(doc);
       this.model.notify(doc);
       return doc;
     },

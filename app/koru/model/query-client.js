@@ -45,6 +45,7 @@ define(function(require, exports, module) {
           simDocsFor(model)[doc._id] = 'new';
         }
         model.docs[doc._id] = doc;
+        Model._callAfterObserver(doc, null);
         model.notify(doc, null);
         return doc._id;
       },
@@ -239,6 +240,7 @@ define(function(require, exports, module) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
+          Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });
         return count;
@@ -304,6 +306,7 @@ define(function(require, exports, module) {
           }
 
           for(var key in changes) {
+            Model._callAfterObserver(doc, changes);
             model.notify(doc, changes);
             break;
           }

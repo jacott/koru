@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var mongodb = require('../mongo/driver');
   var koru = require('../main');
+  var Model = require('./base');
 
   return function (Query) {
     util.extend(Query.prototype, {
@@ -81,6 +82,7 @@ define(function(require, exports, module) {
         this.forEach(function (doc) {
           ++count;
           docs.remove({_id: doc._id});
+          Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });
         return count;
@@ -162,6 +164,7 @@ define(function(require, exports, module) {
           if (util.isObjEmpty(cmd)) return 0;
 
           docs.update({_id: doc._id}, cmd);
+          Model._callAfterObserver(doc, changes);
           model.notify(doc, changes);
         });
         return count;

@@ -193,13 +193,25 @@ define(function(require, exports, module) {
     },
   };
 
-  BaseModel._callObserver = callObserver;
+  BaseModel._callBeforeObserver = callBeforeObserver;
+  BaseModel._callAfterObserver = callAfterObserver;
 
-  function callObserver(type, doc) {
-    var observers = modelObservers[doc.constructor.modelName+'.'+type];
+  function callBeforeObserver(type, doc) {
+    var model = doc.constructor;
+    var observers = modelObservers[model.modelName+'.'+type];
     if (observers) {
       for(var i=0;i < observers.length;++i) {
-        observers[i].call(doc, doc, type);
+        observers[i].call(model, doc, type);
+      }
+    }
+  }
+
+  function callAfterObserver(doc, was) {
+    var model = (doc || was).constructor;
+    var observers = modelObservers[model.modelName+'.afterSave'];
+    if (observers) {
+      for(var i=0;i < observers.length;++i) {
+        observers[i].call(model, doc, was);
       }
     }
   }
@@ -280,6 +292,8 @@ define(function(require, exports, module) {
     beforeSave: beforeSave,
     beforeRemove: beforeRemove,
 
+    afterSave: afterSave,
+
     /**
      * Model extension methods
      */
@@ -344,8 +358,8 @@ define(function(require, exports, module) {
       doc.changes = doc.attributes;
       var attrs = doc.attributes = {};
 
-      callObserver('beforeCreate', doc);
-      callObserver('beforeSave', doc);
+      callBeforeObserver('beforeCreate', doc);
+      callBeforeObserver('beforeSave', doc);
 
 
       doc.attributes = doc.changes;
@@ -360,8 +374,8 @@ define(function(require, exports, module) {
 
       doc.changes = changes;
 
-      callObserver('beforeUpdate', doc);
-      callObserver('beforeSave', doc);
+      callBeforeObserver('beforeUpdate', doc);
+      callBeforeObserver('beforeSave', doc);
       var st = new Query(model).onId(doc._id);
 
       model.hasVersioning && st.inc("_version", 1);
@@ -429,7 +443,7 @@ define(function(require, exports, module) {
 
       delete BaseModel[name];
 
-      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove'].forEach(function (actn) {
+      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterSave'].forEach(function (actn) {
         delete modelObservers[name +"." + actn];
       });
       if (model._observing) for(var i = 0; i < model._observing.length; ++i) {
@@ -594,6 +608,11 @@ define(function(require, exports, module) {
 
   function beforeRemove(subject, callback) {
     registerObserver(this, subject, 'beforeRemove', callback);
+    return this;
+  };
+
+  function afterSave(subject, callback) {
+    registerObserver(this, subject, 'afterSave', callback);
     return this;
   };
 

@@ -7,7 +7,7 @@ define(function(require, exports, module) {
   var mongoDb = require('../mongo/driver');
   var Query = require('./query');
 
-  var save;
+  var save, _support, BaseModel;
 
   var modelEnv = {
     $save: function(force) {
@@ -33,14 +33,16 @@ define(function(require, exports, module) {
       model.docs = null;
     },
 
-    init: function (BaseModel, _support, modelProperties) {
+    init: function (_BaseModel, _baseSupport, modelProperties) {
+      BaseModel = _BaseModel;
+      _support = _baseSupport;
       modelProperties.findById = findById;
 
       modelProperties.addUniqueIndex = addUniqueIndex;
       modelProperties.addIndex = addIndex;
 
       BaseModel.prototype.$remove =  function () {
-        BaseModel._callObserver('beforeRemove', this);
+        BaseModel._callBeforeObserver('beforeRemove', this);
         return new Query(this.constructor).onId(this._id).remove();
       };
 
@@ -131,6 +133,7 @@ define(function(require, exports, module) {
     insert: function (doc) {
       var model = doc.constructor;
       model.docs.insert(doc.attributes);
+      BaseModel._callAfterObserver(doc, null);
       model.notify(doc, null);
     },
 

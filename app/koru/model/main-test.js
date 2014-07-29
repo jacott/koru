@@ -78,9 +78,12 @@ define(function (require, exports, module) {
         v.tc = v.TestModel.create({name: 'foo'});
 
         v.obs = {};
-        v.TestModel.beforeCreate(v.TestModel, v.beforeCreate = obCalled);
-        v.TestModel.beforeUpdate(v.TestModel, v.beforeUpdate = obCalled);
-        v.TestModel.beforeSave(v.TestModel, v.beforeSave = obCalled);
+        v.TestModel.beforeCreate(v.TestModel, obCalled);
+        v.TestModel.beforeUpdate(v.TestModel, obCalled);
+        v.TestModel.beforeSave(v.TestModel, obCalled);
+        v.TestModel.afterSave(v.TestModel, function (doc, was) {
+          (v.obs.afterSave = v.obs.afterSave || []).push([doc && util.extend({}, doc.attributes), was && util.extend({}, doc ? was : was.attributes)]);
+        });
 
         function obCalled(doc, type) {
           (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
@@ -88,11 +91,16 @@ define(function (require, exports, module) {
       },
 
       "test remove calls": function () {
-        var och = v.TestModel.onChange(v.onChange = test.stub());
-        test.onEnd(function () {och.stop()});
+        test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+        test.onEnd(v.TestModel.afterSave(v.TestModel, v.afterSave = test.stub()));
+
         v.tc.$remove();
 
         assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
+        assert.calledOnceWith(v.afterSave, null, TH.matchModel(v.tc));
+        assert(v.afterSave.calledBefore(v.onChange));
+
+        assert.equals(v.obs.afterSave, [[null, {name: 'foo', _id: v.tc._id}]]);
       },
 
       "test update calls": function () {
@@ -111,6 +119,7 @@ define(function (require, exports, module) {
 
         assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
+        assert.equals(v.obs.afterSave, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
 
         refute(v.obs.beforeCreate);
       },
@@ -126,6 +135,7 @@ define(function (require, exports, module) {
 
         assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
+        assert.equals(v.obs.afterSave, [[{name: 'foo', _id: v.tc._id}, null]]);
 
         refute(v.obs.beforeUpdate);
       },

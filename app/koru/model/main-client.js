@@ -6,6 +6,8 @@ define(function(require, exports, module) {
   var clientIndex = require('./index-client');
   var Query = require('./query');
 
+  var _support;
+
   var modelEnv = {
     $save: function(force) {
       var doc = this;
@@ -29,7 +31,8 @@ define(function(require, exports, module) {
       Query._destroyModel(model);
     },
 
-    init: function (BaseModel, _support, modelProperties) {
+    init: function (BaseModel, supportBase, modelProperties) {
+      _support = supportBase;
       modelProperties.findById = findById;
 
       BaseModel.prototype.$remove =  function () {
@@ -56,7 +59,7 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("remove", function (modelName, id) {
-        BaseModel._callObserver('beforeRemove', BaseModel[modelName].docs[id]);
+        BaseModel._callBeforeObserver('beforeRemove', BaseModel[modelName].docs[id]);
         return new Query(BaseModel[modelName]).onId(id).remove();
       });
 
