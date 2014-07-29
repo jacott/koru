@@ -40,6 +40,34 @@ define(function (require, exports, module) {
       }).count(), 1);
     },
 
+
+    "publishes from server should not call afterSave": {
+      setUp: function () {
+        v.TestModel.afterSave(v.TestModel, v.stub = test.stub());
+      },
+
+      "test insertFromServer": function () {
+        Query.insertFromServer(v.TestModel, 'foo2', {name: 'foo2'});
+
+        refute.called(v.stub);
+      },
+
+      "test update": function () {
+        v.TestModel.query.fromServer(v.foo._id).update({age: 7});
+
+        refute.called(v.stub);
+      },
+
+
+      "test remove": function () {
+        v.TestModel.query.fromServer(v.foo._id).remove();
+
+        refute.called(v.stub);
+      },
+    },
+
+
+
     /**
      * This was causing a undefined exception
      */

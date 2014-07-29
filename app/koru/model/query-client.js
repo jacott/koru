@@ -224,23 +224,24 @@ define(function(require, exports, module) {
 
       remove: function () {
         var count = 0;
-        var model = this.model;
+        var self = this;
+        var model = self.model;
         var docs = model.docs;
-        if (sessState.pendingCount() && this._fromServer) {
-          if (fromServer(model, this.singleId, null) === null) {
-            var doc = docs[this.singleId];
-            delete docs[this.singleId];
+        if (sessState.pendingCount() && self._fromServer) {
+          if (fromServer(model, self.singleId, null) === null) {
+            var doc = docs[self.singleId];
+            delete docs[self.singleId];
             model.notify(null, doc);
           }
           return 1;
         }
-        this.forEach(function (doc) {
+        self.forEach(function (doc) {
           ++count;
           if (sessState.pendingCount()) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
-          Model._callAfterObserver(null, doc);
+          self._fromServer || Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });
         return count;
@@ -306,7 +307,7 @@ define(function(require, exports, module) {
           }
 
           for(var key in changes) {
-            Model._callAfterObserver(doc, changes);
+            self._fromServer || Model._callAfterObserver(doc, changes);
             model.notify(doc, changes);
             break;
           }
