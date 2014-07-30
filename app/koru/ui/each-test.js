@@ -84,6 +84,7 @@ isClient && define(function (require, exports, module) {
       "test params and index": function () {
         v.Each.$helpers({
           fooList: function (callback) {
+            if (! v.spy) v.spy = test.spy(callback, 'setDefaultDestroy');
             return callback.render({
               model: v.TestModel,
               index: v.index,
@@ -95,6 +96,7 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom(v.Each.$render({major: '1'}), function () {
+          assert.called(v.spy);
           assert.dom('li', {count: 2});
           assert.dom('li:first-child', 'alice');
           assert.dom('li:nth-child(2)', 'bob');
@@ -128,6 +130,8 @@ isClient && define(function (require, exports, module) {
 
 
           Dom.getCtx(this).updateAllTags({major: '2'});
+
+          assert.calledTwice(v.spy);
 
           assert.called(v.oldCtx);
 

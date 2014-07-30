@@ -51,6 +51,7 @@ define(function(require, exports, module) {
                                  "' not found in template '" + ctpl.name + "'");
     }
 
+    callback.setDefaultDestroy = setDefaultDestroy;
     callback.render = callbackRender;
     callback.clear = function () {
       var parent = startEach.parentNode;
@@ -109,6 +110,19 @@ define(function(require, exports, module) {
     }
   }
 
+  function setDefaultDestroy() {
+    var callback = this;
+    if (callback._destroy) {
+      callback._destroy();
+    } else {
+      $.ctx.onDestroy(callback._destroy = function () {
+        callback._handle && callback._handle.stop();
+        callback._handle = null;
+        callback.clear();
+      });
+    }
+  }
+
   function callbackRender(options) {
     var callback = this;
     var model = options.model;
@@ -120,28 +134,17 @@ define(function(require, exports, module) {
     if (typeof sortFunc === 'string')
       sortFunc = util.compareByField(sortFunc);
 
-    if (callback._renderDestroy) {
-      callback._renderDestroy();
-    } else {
-      callback._renderDestroy = function () {
-        if (callback._observeHandle) {
-          callback._observeHandle.stop();
-          callback._observeHandle = null;
-        }
-        callback.clear();
-      };
-      $.ctx.onDestroy(callback._renderDestroy);
-    }
+    callback.setDefaultDestroy();
 
     params = params || {};
-    var results = options.index ? options.index.fetch(params) : new Query(model).where(params).fetch();
+    var results = options.index ? options.index.fetch(params) : model.where(params).fetch();
     if (filter) results = results.filter(function (doc) {
       return filter(doc);
     });
     results.sort(sortFunc)
       .forEach(function (doc) {callback(doc)});
 
-    callback._observeHandle = model.onChange(function (doc, was) {
+    callback._handle = model.onChange(function (doc, was) {
       var old = doc ? doc.$asBefore(was) : was;
       if (doc && params && ! util.includesAttributes(params, doc)) doc = null;
       if (old && params && ! util.includesAttributes(params, old)) old = null;
