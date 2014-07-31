@@ -107,13 +107,11 @@ define(function(require, exports, module) {
         } else { // update part of attribute
           var ov, parts = attr.split(".");
           var curr = cc[parts[0]];
-          if (curr)
-            var copied = true;
-          else
-            curr = cc[parts[0]] = util.shallowCopy(attrs[parts[0]]) || {};
+          if (! curr)
+            curr = cc[parts[0]] = util.deepCopy(attrs[parts[0]]) || {};
           for(var i = 1; i < parts.length - 1; ++i) {
             var part = parts[i];
-            curr = copied ? curr[part] || (curr[part] = {}) : curr[part] = util.shallowCopy(curr[part]) || {};
+            curr = curr[part] || (curr[part] = {});
           }
           part = parts[i];
           var m = part.match(/^\$([+\-])(\d+)/);
