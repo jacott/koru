@@ -378,9 +378,9 @@ define(function(require, exports, module) {
 
     diff: function (a, b) {
       var result = [];
-      for(var i = 0; i < a.length; ++i) {
+      if (a) for(var i = 0; i < a.length; ++i) {
         var val = a[i];
-        b.indexOf(val) === -1 && result.push(val);
+        (! b || b.indexOf(val) === -1) && result.push(val);
       }
       return result;
     },
