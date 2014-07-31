@@ -200,7 +200,7 @@ define(function(require, exports, module) {
 
       for(var key in fields) {
         var value = fields[key];
-        if (util.isArray(value))
+        if (Array.isArray(value))
           neg[key] = {$nin: value};
         else
           neg[key] = {$ne: value};
@@ -231,7 +231,7 @@ define(function(require, exports, module) {
     function foundIn(fields, result) {
       for(var key in fields) {
         var value = fields[key];
-        if (key[0] !== '$' && util.isArray(value))
+        if (key[0] !== '$' && Array.isArray(value))
           result[key] = {$in: value};
         else
           result[key] = value;

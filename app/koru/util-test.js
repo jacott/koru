@@ -34,13 +34,6 @@ define(function (require, exports, module) {
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
     },
 
-    "test isArray": function () {
-      assert.isTrue(util.isArray([]));
-      assert.isFalse(util.isArray({}));
-      assert.isFalse(util.isArray());
-      assert.isFalse(util.isArray("[1,2]"));
-    },
-
     "test isObjEmpty": function () {
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));

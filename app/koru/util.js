@@ -105,7 +105,7 @@ define(function(require, exports, module) {
         var curr = attrs;
         for(var i = 0; i < parts.length - 1; ++i) {
           var part = parts[i];
-          if (isArray(curr)) {
+          if (Array.isArray(curr)) {
             part = +parts[i];
             if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
           }
@@ -124,7 +124,7 @@ define(function(require, exports, module) {
             return ".$" + (sign === '-' ? '+' : '-') + idx;
           }), nv);
         } else {
-          if (isArray(curr)) {
+          if (Array.isArray(curr)) {
             part = +part;
             if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
             if (nv.value === undefined)
@@ -362,8 +362,6 @@ define(function(require, exports, module) {
 
       return result;
     },
-
-    isArray: isArray,
 
     intersectp: function (list1, list2) {
       var set = {};
@@ -606,10 +604,6 @@ define(function(require, exports, module) {
     return x !== x && y !== y;
   }
 
-  function isArray(arr) {
-    return Object.prototype.toString.call(arr) == "[object Array]";
-  }
-
   function deepEqual(expected, actual) {
     if (egal(expected, actual)) {
       return true;
@@ -621,8 +615,8 @@ define(function(require, exports, module) {
 
     if (expected.getTime && actual.getTime) return expected.getTime() === actual.getTime();
 
-    if (isArray(expected)) {
-      if (! isArray(actual)) return false;
+    if (Array.isArray(expected)) {
+      if (! Array.isArray(actual)) return false;
       var len = expected.length;
       if (actual.length !== len) return false;
       for(var i = 0; i < len; ++i) {

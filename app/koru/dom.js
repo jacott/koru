@@ -696,7 +696,7 @@ define(function(require, exports, module) {
       if (typeof node === 'string') {
         var elm = document.createTextNode(node);
 
-      } else if (node.shift) {
+      } else if (Array.isArray(node)) {
         var elm = addNodeEval(this, node, parent);
       } else {
         var elm = document.createElement(node.name);

@@ -110,7 +110,7 @@ define(function(require, exports, module) {
           var called = {}; // ensure only called once;
 
           if (oldValue != undefined) {
-            if (util.isArray(oldValue)) for(var i = 0; i < oldValue.length; ++i) {
+            if (Array.isArray(oldValue)) for(var i = 0; i < oldValue.length; ++i) {
               callObservers(called, doc, was, oldValue[i]);
             } else {
               callObservers(called, doc, was, oldValue);
@@ -118,7 +118,7 @@ define(function(require, exports, module) {
           }
 
           if (nowValue != undefined && nowValue !== oldValue) {
-            if (util.isArray(nowValue)) for(var i = 0; i < nowValue.length; ++i) {
+            if (Array.isArray(nowValue)) for(var i = 0; i < nowValue.length; ++i) {
               callObservers(called, doc, was, nowValue[i]);
             } else {
               callObservers(called, doc, was, nowValue);

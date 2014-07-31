@@ -171,8 +171,8 @@ define(function(require, exports, module) {
         this.expected = expected;
         return ! this._asserting;
       }
-      if (! (actual instanceof Array)) actual = [actual];
-      if (! (expected instanceof Array)) expected = [expected];
+      if (! Array.isArray(actual)) actual = [actual];
+      if (! Array.isArray(expected)) expected = [expected];
       if (actual[0] && actual[0].attributes) {
         actual = actual.map(function (i) {
           return i.attributes;

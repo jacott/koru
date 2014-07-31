@@ -171,7 +171,7 @@ define(function(require, exports, module) {
         if (fields = this._whereNots) for(var key in fields) {
           var value = fields[key];
           var expected = attrs[key];
-          if (util.isArray(value)) {
+          if (Array.isArray(value)) {
             if (value.some(function (item) {
               return item == expected;
             }))
@@ -198,11 +198,11 @@ define(function(require, exports, module) {
             var expected = attrs[key];
 
             if (typeof expected === 'object') {
-              if (util.isArray(expected)) {
+              if (Array.isArray(expected)) {
                 var found = false;
                 for(var i = 0; ! found && i < expected.length; ++i) {
                   var exv = expected[i];
-                  if (util.isArray(value)) {
+                  if (Array.isArray(value)) {
                     if (value.some(function (item) {return item == exv}))
                       found = true;
                   } else if (exv == value)
@@ -210,7 +210,7 @@ define(function(require, exports, module) {
                 }
                 if (! found) return false;
               }
-            } else if (util.isArray(value)) {
+            } else if (Array.isArray(value)) {
               if (value.every(function (item) {
                 return item != expected;
               }))

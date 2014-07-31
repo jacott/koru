@@ -143,7 +143,7 @@ define(function(require, exports, module) {
     },
 
     permitParams: function permitParams(changes, permitSpec, isIdAllowed, filter) {
-      if (changes instanceof Array) {
+      if (Array.isArray(changes)) {
         for(var i=0;i < changes.length;++i) {
           permitParams(changes[i], permitSpec, false, filter);
         }
@@ -161,7 +161,7 @@ define(function(require, exports, module) {
           var key = keys[i],
               ps = currPs[key];
 
-          if (ps instanceof Array) {
+          if (Array.isArray(ps)) {
             if (i+1 == keys.length) {
               permitParams(val, ps[0], false, filter);
             } else {
@@ -216,7 +216,7 @@ define(function(require, exports, module) {
         output[item] = true;
         break;
       case 'object':
-        if (item instanceof Array) {
+        if (Array.isArray(item)) {
           for(var j=0;j < item.length;++j) {
             var obj = item[j];
             for(var key in obj) {

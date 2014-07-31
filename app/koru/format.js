@@ -99,7 +99,7 @@ define(function(require, exports, module) {
     case 'function':
       return 'function ' + o.name;
     case 'object':
-      if (o instanceof Array)
+      if (Array.isArray(o))
         return "[" + o.map(function (o2) {
           return inspect(o2, i-1);
         }).join(", ") + "]";

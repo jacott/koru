@@ -8,7 +8,7 @@ define(function(require, exports, module) {
     var value = doc[field];
     if (! value) return;
 
-    if (! (value instanceof Array))
+    if (! Array.isArray(value))
       return this.addError(doc,field,'is_invalid');
 
     switch (typeof options) {

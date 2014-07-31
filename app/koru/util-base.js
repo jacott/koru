@@ -65,7 +65,7 @@
       if (o === null) return 'null';
       if (o.hasOwnProperty('outerHTML'))
         return o.outerHTML;
-      if (o instanceof Array) {
+      if (Array.isArray(0)) {
         if (i)
           return "[" + o.map(function (o2) {
             return inspect1(o2, i-1);

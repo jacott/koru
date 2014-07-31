@@ -8,7 +8,7 @@ define(function () {
 
     var scope = options.scope;
     if (scope) {
-      if (! (scope instanceof Array)) scope = [scope];
+      if (! Array.isArray(scope)) scope = [scope];
       scope = scope.forEach(function (f) {
         query.where(f, doc[f]);
       });

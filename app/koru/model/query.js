@@ -109,7 +109,7 @@ define(function(require, exports, module) {
     var items = query[listName] || (query[listName] = {});
     var list = items[field] || (items[field] = []);
 
-    if (util.isArray(values)) values.forEach(function (value) {
+    if (Array.isArray(values)) values.forEach(function (value) {
       list.push(value);
     });
     else list.push(values);
