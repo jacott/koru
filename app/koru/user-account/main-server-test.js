@@ -18,7 +18,7 @@ isServer && define(function (require, exports, module) {
       v.conn = TH.sessionConnect(v.ws);
       v.lu = userAccount.model.create({
         userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
-        tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now()}});
+        tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
       test.spy(Val, 'permitParams');
       test.spy(Val, 'ensureString');
@@ -136,7 +136,7 @@ isServer && define(function (require, exports, module) {
         assert.same(result.userId, 'uid111');
         var tparts = result.loginToken.split('|');
         assert.same(v.lu._id, tparts[0]);
-        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', tparts[1]].sort());
+        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', tparts[1], 'def'].sort());
         assert(v.ts = v.lu.tokens[tparts[1]]);
         assert.between(v.ts, Date.now()+179*24*1000*60*60, Date.now()+181*24*1000*60*60);
         assert.same(v.conn.userId, 'uid111');
@@ -259,12 +259,12 @@ isServer && define(function (require, exports, module) {
       },
 
       "test logout": function () {
-        v.conn.userId = 'uid222';
+        v.conn.userId = 'uid111';
 
-        session._commands.V.call(v.conn, 'X');
+        session._commands.V.call(v.conn, 'X' + v.lu._id+'|abc');
 
         assert.same(v.conn.userId, null);
-
+        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
       },
 
@@ -282,7 +282,7 @@ isServer && define(function (require, exports, module) {
         v.conn3.userId = 'uid111';
         v.connOther.userId = 'uid444';
 
-        session._commands.V.call(v.conn, 'O');
+        session._commands.V.call(v.conn, 'O' + v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
         assert.same(v.conn2.userId, null);
@@ -292,6 +292,9 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws2.send, 'VS');
         assert.calledWith(v.ws3.send, 'VS');
         refute.calledWith(v.ws4.send, 'VS');
+
+
+        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
       },
 
       "test when not logged in logoutOtherClients does nothing": function () {

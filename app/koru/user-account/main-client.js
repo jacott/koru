@@ -71,11 +71,12 @@ define(function(require, exports, module) {
     },
 
     logout: function () {
-      session.send('VX');
+      session.send('VX'+localStorage.getItem('koru.loginToken'));
+      localStorage.removeItem('koru.loginToken');
     },
 
     logoutOtherClients: function () {
-      session.send('VO');
+      session.send('VO'+localStorage.getItem('koru.loginToken'));
     },
   };
 

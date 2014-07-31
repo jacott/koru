@@ -195,20 +195,25 @@ isClient && define(function (require, exports, module) {
         }), v.callback);
       },
 
-      "test logout": function () {
+      "test logout ": function () {
         util.thread.userId = 'userId456';
+        localStorage.setItem('koru.loginToken', 'abc|def');
 
         userAccount.logout();
-        assert.calledWith(session.send, 'VX');
+        assert.calledWith(session.send, 'VX' + 'abc|def');
 
         session._onMessage({}, 'VS');
 
         assert.same(koru.userId(), null);
+        assert.same(localStorage.getItem('koru.loginToken'), undefined);
       },
 
       "test logoutOtherClients": function () {
+        localStorage.setItem('koru.loginToken', 'abc|def');
         userAccount.logoutOtherClients();
-        assert.calledWith(session.send, 'VO');
+        assert.calledWith(session.send, 'VO' + 'abc|def');
+
+        assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
       },
 
       "test sending login token": function () {

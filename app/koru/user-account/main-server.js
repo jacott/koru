@@ -174,10 +174,26 @@ define(function(require, exports, module) {
       }
       break;
     case 'X': // logout me
+      var token = getToken(data);
+      if (token) {
+        var mod = {};
+        mod['tokens.'+token] = '';
+        model.docs.update({userId: conn.userId}, {$unset: mod});
+      }
       conn.userId = null; // will send a VS + VC. See server-connection
       break;
     case 'O': // logoutOtherClients
       if (conn.userId == null) return;
+      var token = getToken(data);
+      if (token) {
+        var lu = model.findByField('userId', conn.userId);
+        if (lu) {
+          var mod = {};
+          if (token in lu.tokens)
+            mod[token] = lu.tokens[token];
+          model.docs.update({_id: lu._id}, {$set: {tokens: mod}});
+        }
+      }
       var conns = session.conns;
       for(var sessId in conns) {
         if (sessId === conn.sessId) continue;
@@ -188,5 +204,10 @@ define(function(require, exports, module) {
       }
       break;
     }
+  }
+
+  function getToken(data) {
+    var token = data.slice(1).toString().split('|')[1];
+    if (token.match(/^[\d\w]+$/)) return token;
   }
 });
