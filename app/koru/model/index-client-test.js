@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         id2: 'text',
       });
 
-      v.obSpy = test.spy(v.TestModel, 'onChange');
+      v.obSpy = test.spy(v.TestModel._indexUpdate, 'onChange');
       v.idx = v.TestModel.addUniqueIndex('id2', 'id1');
 
       v.doc1 = v.TestModel.create({id1: '3', id2: '4'});

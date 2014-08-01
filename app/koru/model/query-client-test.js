@@ -20,6 +20,7 @@ define(function (require, exports, module) {
       Model._destroyModel('TestModel', 'drop');
       Model._destroyModel('TestModel2', 'drop');
       sessState._resetPendingCount();
+      session.isUpdateFromServer = false;
       v = null;
     },
 
@@ -44,6 +45,7 @@ define(function (require, exports, module) {
     "publishes from server should not call afterLocalChange": {
       setUp: function () {
         v.TestModel.afterLocalChange(v.TestModel, v.stub = test.stub());
+        session.isUpdateFromServer = true;
       },
 
       "test insertFromServer": function () {
@@ -53,14 +55,14 @@ define(function (require, exports, module) {
       },
 
       "test update": function () {
-        v.TestModel.query.fromServer(v.foo._id).update({age: 7});
+        v.TestModel.query.onId(v.foo._id).update({age: 7});
 
         refute.called(v.stub);
       },
 
 
       "test remove": function () {
-        v.TestModel.query.fromServer(v.foo._id).remove();
+        v.TestModel.query.onId(v.foo._id).remove();
 
         refute.called(v.stub);
       },
@@ -93,7 +95,9 @@ define(function (require, exports, module) {
 
       v.foo.$onThis.addItem('ary','b');
 
-      v.TestModel.query.fromServer(v.foo._id).update({'ary.1': 'b'});
+      session.isUpdateFromServer = true;
+      v.TestModel.query.onId(v.foo._id).update({'ary.1': 'b'});
+      session.isUpdateFromServer = false;
 
       assert.equals(v.foo.attributes.ary, ['a', 'b']);
 
@@ -108,7 +112,9 @@ define(function (require, exports, module) {
 
       assert.equals(v.foo.attributes.ary, ['b']);
 
-      v.TestModel.query.fromServer(v.foo._id).update({'ary.0': 'b'});
+      session.isUpdateFromServer = true;
+      v.TestModel.query.onId(v.foo._id).update({'ary.0': 'b'});
+      session.isUpdateFromServer = false;
 
       sessState.decPending();
 
@@ -198,7 +204,9 @@ define(function (require, exports, module) {
       "test partial update match from server": function () {
         v.TestModel.query.update({age: 7, name: 'baz'});
         v.TestModel.query.update({age: 2, name: 'another'});
-        v.TestModel.query.fromServer(v.foo._id).update({name: 'baz'});
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).update({name: 'baz'});
+        session.isUpdateFromServer = false;
 
         sessState.decPending();
 
@@ -209,7 +217,9 @@ define(function (require, exports, module) {
         test.onEnd(v.TestModel.onChange(v.change = test.stub()));
 
         v.TestModel.query.update({age: 7, name: 'baz'});
-        v.TestModel.query.fromServer(v.foo._id).update({age: 7, name: 'baz'});
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).update({age: 7, name: 'baz'});
+        session.isUpdateFromServer = false;
 
         sessState.decPending();
 
@@ -230,8 +240,10 @@ define(function (require, exports, module) {
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['m']}]);
 
-        v.TestModel.query.fromServer(v.foo._id).update({"nested.0.ary.0": 'M'});
-        v.TestModel.query.fromServer(v.foo._id).update({"nested.0.ary.1": 'f'});
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).update({"nested.0.ary.0": 'M'});
+        v.TestModel.query.onId(v.foo._id).update({"nested.0.ary.1": 'f'});
+        session.isUpdateFromServer = false;
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['M', 'f']}]);
 
@@ -285,7 +297,9 @@ define(function (require, exports, module) {
         test.onEnd(v.TestModel.onChange(v.change = test.stub()));
 
         v.TestModel.query.onId(v.foo._id).remove();
-        v.TestModel.query.fromServer(v.foo._id).remove();
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).remove();
+        session.isUpdateFromServer = false;
 
         sessState.decPending();
 
@@ -297,7 +311,9 @@ define(function (require, exports, module) {
       "test client remove, server update": function () {
         v.TestModel.query.remove();
 
-        v.TestModel.query.fromServer(v.foo._id).update({name: 'sam'});
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).update({name: 'sam'});
+        session.isUpdateFromServer = false;
 
         assert.same(v.TestModel.query.count(), 0);
 
@@ -316,7 +332,9 @@ define(function (require, exports, module) {
         v.TestModel.query.onId(v.foo._id).update({name: 'Mary'});
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        v.TestModel.query.fromServer(v.foo._id).remove();
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).remove();
+        session.isUpdateFromServer = false;
 
         refute.called(v.changed);
 
@@ -333,11 +351,13 @@ define(function (require, exports, module) {
 
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
 
-        v.TestModel.query.fromServer(v.foo._id).update({age: 9});
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId(v.foo._id).update({age: 9});
 
         refute.called(v.changed);
 
-        v.TestModel.query.fromServer(v.foo._id).update({name: 'sam'});
+        v.TestModel.query.onId(v.foo._id).update({name: 'sam'});
+        session.isUpdateFromServer = false;
 
         // Should notify immediately if major key not in client changes
         assert.calledWith(v.changed, TH.matchModel(v.foo), {name: 'foo'});

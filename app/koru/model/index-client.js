@@ -1,5 +1,10 @@
-define(function() {
+define(function(require, exports, module) {
+  var util = require('koru/util');
+  var makeSubject = require('../make-subject');
+
   return function (model) {
+    model._indexUpdate = makeSubject({});
+
     model.addUniqueIndex = function () {
       var fields = arguments;
       var len = fields.length;
@@ -14,7 +19,6 @@ define(function() {
         return _tmpModel;
       }
 
-      model.onChange(onChange);
 
       var uIndex = function (keys) {
         var ret = idx;
@@ -41,6 +45,8 @@ define(function() {
           onChange(docs[id]);
         }
       };
+
+      uIndex.stop = model._indexUpdate.onChange(onChange).stop;
 
       function onChange(doc, old) {
         if (doc) {

@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var sessState = require('../session/state');
   var Model = require('./base');
+  var session = require('../session/main');
 
   return function(Query) {
     var syncOb, stateOb;
@@ -22,7 +23,7 @@ define(function(require, exports, module) {
               if (id in modelDocs) {
                 delete modelDocs[id];
 
-                model.notify(null, doc);
+                notify(model, null, doc);
               }
             } else {
               var newDoc = ! doc;
@@ -30,7 +31,7 @@ define(function(require, exports, module) {
                 var doc  = modelDocs[id] = new model({_id: id});
               util.applyChanges(doc.attributes, fields);
               for (var noop in fields) {
-                model.notify(doc, newDoc ? null : fields);
+                notify(model, doc, newDoc ? null : fields);
                 break;
               }
             }
@@ -45,8 +46,7 @@ define(function(require, exports, module) {
           simDocsFor(model)[doc._id] = 'new';
         }
         model.docs[doc._id] = doc;
-        Model._callAfterObserver(doc, null);
-        model.notify(doc, null);
+        notify(model, doc, null);
         return doc._id;
       },
 
@@ -57,7 +57,7 @@ define(function(require, exports, module) {
           if (doc && changes !== attrs) { // found existing
             util.applyChanges(doc.attributes, changes);
             for(var noop in changes) {
-              model.notify(doc, changes);
+              notify(model, doc, changes);
               break;
             }
             return doc._id;
@@ -67,7 +67,7 @@ define(function(require, exports, module) {
         attrs._id = id;
         var doc = new model(attrs);
         model.docs[doc._id] = doc;
-        model.notify(doc, null);
+        notify(model, doc, null);
       },
 
       // for testing
@@ -87,12 +87,6 @@ define(function(require, exports, module) {
     util.extend(Query.prototype, {
       withIndex: function (idx, params) {
         this._index = idx(params) || {};
-        return this;
-      },
-
-      fromServer: function (id) {
-        this.singleId = id;
-        this._fromServer = true;
         return this;
       },
 
@@ -227,11 +221,11 @@ define(function(require, exports, module) {
         var self = this;
         var model = self.model;
         var docs = model.docs;
-        if (sessState.pendingCount() && self._fromServer) {
+        if (sessState.pendingCount() && session.isUpdateFromServer) {
           if (fromServer(model, self.singleId, null) === null) {
             var doc = docs[self.singleId];
             delete docs[self.singleId];
-            model.notify(null, doc);
+            notify(model, null, doc);
           }
           return 1;
         }
@@ -241,8 +235,7 @@ define(function(require, exports, module) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
-          self._fromServer || Model._callAfterObserver(null, doc);
-          model.notify(null, doc);
+          notify(model, null, doc);
         });
         return count;
       },
@@ -260,13 +253,13 @@ define(function(require, exports, module) {
         var model = self.model;
         var docs = model.docs;
         var items;
-        if (sessState.pendingCount() && self._fromServer) {
+        if (sessState.pendingCount() && session.isUpdateFromServer) {
           var changes = fromServer(model, self.singleId, origChanges);
           var doc = docs[self.singleId];
           if (doc) {
             util.applyChanges(doc.attributes, changes);
             for(var noop in changes) {
-              model.notify(doc, changes);
+              notify(model, doc, changes);
               break;
             }
           }
@@ -307,14 +300,20 @@ define(function(require, exports, module) {
           }
 
           for(var key in changes) {
-            self._fromServer || Model._callAfterObserver(doc, changes);
-            model.notify(doc, changes);
+            notify(model, doc, changes);
             break;
           }
         });
         return count;
       },
     });
+
+    function notify(model, doc, changes) {
+      model._indexUpdate.notify(doc, changes);   // first: update indexes
+      session.isUpdateFromServer ||
+        Model._callAfterObserver(doc, changes);  // next:  changes originated here
+      model.notify(doc, changes);                // last:  Notify everything else
+    }
 
     function findMatching(func) {
       if (! this.model) return;

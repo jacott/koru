@@ -28,6 +28,31 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test onmessage": function () {
+      var ws = {};
+      v.sess = {
+        provide: test.stub(),
+        _onMessage: function (conn, data) {
+          v.actualConn = conn;
+          assert.same(data, v.data);
+        },
+      };
+      clientSession(v.sess);
+
+      v.sess.newWs = test.stub().returns(ws),
+
+      v.sess.connect();
+      assert.same(v.sess.connect._ws, ws);
+
+      assert(ws.onmessage);
+
+      var event = {data: v.data = "foo"};
+      ws.onmessage(event);
+
+      assert(v.actualConn);
+      assert.same(v.actualConn.ws, ws);
+    },
+
     "test connection cycle": function () {
       test.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
