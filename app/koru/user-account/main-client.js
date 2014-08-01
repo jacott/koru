@@ -29,6 +29,8 @@ define(function(require, exports, module) {
     if (token) {
       session.send('VL', token);
       login.wait();
+    } else {
+      login.ready();
     }
   }
 

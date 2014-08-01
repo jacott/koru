@@ -224,7 +224,7 @@ isClient && define(function (require, exports, module) {
         userAccount._onConnect();
         refute.calledWith(session.send, 'VL');
 
-        assert.same(login.state, null);
+        assert.same(login.state, 'ready');
 
 
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
@@ -247,6 +247,14 @@ isClient && define(function (require, exports, module) {
 
         assert.same(login.state, 'ready');
         assert.calledWith(v.onChange, 'ready');
+      },
+
+      "test no loginToken onConnect": function () {
+        test.stub(login, 'ready');
+
+        userAccount._onConnect();
+
+        assert.called(login.ready);
       },
 
       "test login failure": function () {
