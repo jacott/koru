@@ -264,7 +264,7 @@ define(function(require, exports, module) {
       return query.count(1) !== 0;
     },
 
-    findByField: function(field, value) {
+    findBy: function (field, value) {
       return this.query.where(field, value).fetchOne();
     },
 

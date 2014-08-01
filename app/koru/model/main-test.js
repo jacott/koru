@@ -293,10 +293,10 @@ define(function (require, exports, module) {
         assert[isClient ? 'same' : 'equals'](v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
-      "test findByField": function () {
+      "test findBy": function () {
         var doc = v.TestModel.create({foo: 'bar'});
 
-        assert[isClient ? 'same' : 'equals'](v.TestModel.findByField('foo', 'bar').attributes, doc.attributes);
+        assert[isClient ? 'same' : 'equals'](v.TestModel.findBy('foo', 'bar').attributes, doc.attributes);
       },
 
       "test validator passing function": function () {

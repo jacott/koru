@@ -49,7 +49,7 @@ define(function(require, exports, module) {
   });
 
   session.defineRpc('SRPBegin', function (request) {
-    var doc = model.findByField('email', request.email);
+    var doc = model.findBy('email', request.email);
     if (! doc) throw new koru.Error(403, 'failure');
     var srp = new SRP.Server(doc.srp);
     this.$srp = srp;
@@ -121,7 +121,7 @@ define(function(require, exports, module) {
     sendResetPasswordEmail: function (userId) {
       emailConfig || configureEmail();
 
-      var lu = model.findByField('userId', userId);
+      var lu = model.findBy('userId', userId);
 
       var rand = Random.create();
 
@@ -138,7 +138,7 @@ define(function(require, exports, module) {
     },
 
     updateOrCreateUserLogin: function (attrs) {
-      var lu = model.findByField('userId', attrs.userId);
+      var lu = model.findBy('userId', attrs.userId);
       if (! lu) return model.create({
         email: attrs.email,
         userId: attrs.userId,
@@ -186,7 +186,7 @@ define(function(require, exports, module) {
       if (conn.userId == null) return;
       var token = getToken(data);
       if (token) {
-        var lu = model.findByField('userId', conn.userId);
+        var lu = model.findBy('userId', conn.userId);
         if (lu) {
           var mod = {};
           if (token in lu.tokens)
