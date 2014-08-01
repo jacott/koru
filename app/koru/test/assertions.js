@@ -68,6 +68,7 @@ define(['./core', './format'], function (geddon, format) {
         geddon.assert(false, gu.format.apply(gu, [pass ? options.assertMessage : options.refuteMessage].concat(args)));
       }
       geddon.assert(true);
+      return pass ? assert : refute;
     };
   }
 

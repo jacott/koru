@@ -53,6 +53,7 @@ define(function(require, exports, module) {
       assert.dom(document.getElementById('confirmDialog'), function () {
         TH.click('[name=apply]');
       });
+      return this;
     },
 
     findDomEvent: function (template, type) {
@@ -77,6 +78,7 @@ define(function(require, exports, module) {
 
         this.trigger(node, 'input');
       }
+      return this;
     },
 
     keypress: function (elm, keycode, shift, ctrl, alt, meta) {
@@ -98,6 +100,7 @@ define(function(require, exports, module) {
                                  keycode, keycode);
       }
       elm.dispatchEvent (pressEvent);
+      return this;
     },
 
     change: function (node, value) {
@@ -112,6 +115,7 @@ define(function(require, exports, module) {
         node.value = value;
         this.trigger(node, 'change');
       }
+      return this;
     },
 
     trigger: function (node, event, args) {
@@ -150,6 +154,7 @@ define(function(require, exports, module) {
         else
           TH.trigger(node, 'click');
       }
+      return this;
     },
   });
 
