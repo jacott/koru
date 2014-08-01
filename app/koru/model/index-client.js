@@ -14,7 +14,35 @@ define(function() {
         return _tmpModel;
       }
 
-      model.onChange(function (doc, old) {
+      model.onChange(onChange);
+
+      var uIndex = function (keys) {
+        var ret = idx;
+        for(var i = 0; ret && i < len; ++i) {
+          if (! keys.hasOwnProperty(fields[i])) return ret;
+          ret = ret[keys[fields[i]]];
+        }
+        return ret;
+      };
+
+      uIndex.fetch = function (keys) {
+        var resultIndex = uIndex(keys) || {};
+
+        var docs = model.docs;
+        var results = [];
+        pushResults(docs, results, resultIndex);
+        return results;
+      };
+
+      uIndex.reload = function () {
+        idx = {};
+        var docs = model.docs;
+        for(var id in docs) {
+          onChange(docs[id]);
+        }
+      };
+
+      function onChange(doc, old) {
         if (doc) {
           if (old) {
             for(var i = 0; i < len; ++i) {
@@ -37,25 +65,7 @@ define(function() {
         } else if (old) {
           deleteEntry(idx, old, 0);
         }
-      });
-
-      var uIndex = function (keys) {
-        var ret = idx;
-        for(var i = 0; ret && i < len; ++i) {
-          if (! keys.hasOwnProperty(fields[i])) return ret;
-          ret = ret[keys[fields[i]]];
-        }
-        return ret;
-      };
-
-      uIndex.fetch = function (keys) {
-        var resultIndex = uIndex(keys) || {};
-
-        var docs = model.docs;
-        var results = [];
-        pushResults(docs, results, resultIndex);
-        return results;
-      };
+      }
 
       function deleteEntry(tidx, doc, count) {
         var value  = doc[fields[count]];

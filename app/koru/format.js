@@ -33,7 +33,7 @@ define(function(require, exports, module) {
         result += escape(arg);
         break;
       case 'i':
-        try {result += inspect(arg).toString;}
+        try {result += inspect(arg);}
         catch(ex) {result += arg;}
         break;
       default:
@@ -109,6 +109,8 @@ define(function(require, exports, module) {
         r.push(p.toString() + ": " + inspect(o[p], i-1));
       }
       return "{" + r.join(", ") +"}";
+    case 'string':
+      return '"'+o+'"';
     default:
       return o.toString();
     }

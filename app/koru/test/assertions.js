@@ -1,5 +1,6 @@
-define(['./core', './format'], function (geddon, format) {
+define(['./core', '../format'], function (geddon, format) {
   var gu = geddon._u;
+  gu.format = format;
 
   var toString = Object.prototype.toString;
 
@@ -50,9 +51,8 @@ define(['./core', './format'], function (geddon, format) {
     if (! options.refuteMessage)
       options.refuteMessage = 'Did not Expect ' + (options.message || 'success');
 
-
-    options.assertMessage = gu.format.compile(options.assertMessage);
-    options.refuteMessage = gu.format.compile(options.refuteMessage);
+    options.assertMessage = format.compile(options.assertMessage);
+    options.refuteMessage = format.compile(options.refuteMessage);
     return options;
   }
 
@@ -65,7 +65,7 @@ define(['./core', './format'], function (geddon, format) {
       if (pass === ! func.apply(sideAffects, args)) {
         args.push || (args = Array.prototype.slice.call(args, 0));
         args.push(sideAffects);
-        geddon.assert(false, gu.format.apply(gu, [pass ? options.assertMessage : options.refuteMessage].concat(args)));
+        geddon.assert(false, format.apply(null, [pass ? options.assertMessage : options.refuteMessage].concat(args)));
       }
       geddon.assert(true);
       return pass ? assert : refute;

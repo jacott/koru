@@ -73,5 +73,16 @@ define(function (require, exports, module) {
                                      .sort(util.compareByField('id1')), 'attributes'),
                     [v.doc3.attributes, v.doc2.attributes, v.doc1.attributes]);
     },
+
+    "test reload": function () {
+      var docs = v.idx({});
+      docs['x'] = 'junk';
+
+      v.idx.reload();
+
+      assert.equals(Object.keys(v.idx({})), ["2", "4"]);
+
+      assert.equals(util.mapField(v.idx.fetch({id2: '4'})).sort(), [v.doc1._id, v.doc3._id].sort());
+    },
   });
 });

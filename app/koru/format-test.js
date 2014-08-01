@@ -37,9 +37,16 @@ define(function (require, exports, module) {
          assert.equals(format.compile("abc{e$foo.bar.baz}"), ['abc','e$foo.bar.baz', '']);
       },
     },
+
     'when formatting': {
       'test constant': function () {
         assert.equals(format("no args"), "no args");
+      },
+
+      "test inspect": function () {
+        assert.same(format("{i0}, {i1}", "foo", {a: [3,4, bar]}), '"foo", {a: [3, 4, function bar]}');
+
+        function bar () {}
       },
 
       "test missing arg": function () {

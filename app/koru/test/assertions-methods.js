@@ -1,4 +1,4 @@
-define(['./core', './assertions'], function (geddon) {
+define(['./core', '../format', './assertions'], function (geddon, format) {
   var gu = geddon._u;
   var ga = geddon.assertions;
 
@@ -9,7 +9,7 @@ define(['./core', './assertions'], function (geddon) {
       return actual === expected;
     },
 
-    message: "'{i0}' to be the same as '{i1}'"
+    message: "{i0} to be the same as {i1}"
   });
 
   ga.add('equals', {
@@ -100,7 +100,7 @@ define(['./core', './assertions'], function (geddon) {
       return true;
     }
 
-    throw new Error("Matcher (" + gu.format("{i0}", matcher) + ") was not a " +
+    throw new Error("Matcher (" + format("{i0}", matcher) + ") was not a " +
                     "string, a number, a function, a boolean or an object");
   }
 
@@ -149,7 +149,7 @@ define(['./core', './assertions'], function (geddon) {
   ga.add("className", {
     assert: function (element, className) {
       if (typeof element.className == "undefined") {
-        return geddon.fail(gu.format("{2} Expected object to have className property", arguments[1]));
+        return geddon.fail(format("{2} Expected object to have className property", arguments[1]));
       }
 
       var expected = typeof className == "string" ? className.split(" ") : className;
@@ -165,8 +165,8 @@ define(['./core', './assertions'], function (geddon) {
 
       return true;
     },
-    assertMessage: "Expected object's className to include '{1}' but was '{$names}'",
-    refuteMessage: "Expected object's className not to include '{1}'",
+    assertMessage: "Expected object's className to include {i1} but was {i$names}",
+    refuteMessage: "Expected object's className not to include {i1}",
   });
 
   ga.add('colorEqual', {
@@ -178,7 +178,7 @@ define(['./core', './assertions'], function (geddon) {
         withinDelta(this.actual[3], this.expected[3], delta);
     },
 
-    message: "'{0}' to equal '{1}'; {i$actual} !== {i$expected} within delta {$delta}"
+    message: "{i0} to equal {i1}; {i$actual} !== {i$expected} within delta {$delta}"
   });
 
    ga.add('cssUnitNear', {
