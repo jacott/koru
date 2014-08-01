@@ -261,10 +261,11 @@ isClient && define(function (require, exports, module) {
         assert.dom('input', function () {
           var inbb = this.getBoundingClientRect();
 
-          assert.same(unbb.left, inbb.left);
-          assert.same(unbb.top, inbb.top);
-          assert.same(unbb.height, inbb.height);
-          assert.same(unbb.width + 2, inbb.width);
+          assert
+            .near(unbb.left, inbb.left, 0.1)
+            .near(unbb.top, inbb.top, 0.1)
+            .near(unbb.height, inbb.height, 0.1)
+            .near(unbb.width + 2, inbb.width, 0.1);
 
 
           v.input.style.marginTop = '10px';
@@ -277,10 +278,11 @@ isClient && define(function (require, exports, module) {
 
           inbb = this.getBoundingClientRect();
 
-          assert.same(unbb.left, inbb.left);
-          assert.same(unbb.top, inbb.top);
-          assert.same(unbb.height, inbb.height);
-          assert.same(unbb.width + 2, inbb.width);
+          assert
+            .near(unbb.left, inbb.left, 0.1)
+            .near(unbb.top, inbb.top, 0.1)
+            .near(unbb.height, inbb.height, 0.1)
+            .near(unbb.width + 2, inbb.width, 0.1);
         });
       });
     },
