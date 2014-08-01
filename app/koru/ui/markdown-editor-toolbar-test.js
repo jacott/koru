@@ -66,8 +66,8 @@ isClient && define(function (require, exports, module) {
 
           var inbb = this.getBoundingClientRect();
 
-          assert.same(inbb.left, v.lnbb.left);
-          assert.same(inbb.top, v.lnbb.bottom);
+          assert.near(inbb.left, v.lnbb.left, 0.1);
+          assert.near(inbb.top, v.lnbb.bottom, 0.1);
           assert.dom('input', {value: '/link.html'}, function () {
             TH.trigger(this, 'focusout');
           });
