@@ -585,6 +585,13 @@ define(function(require, exports, module) {
     util.Fiber = function(func) {return {run: func}};
   } else {
     util.Fiber = requirejs.nodeRequire('fibers');
+
+    // Fix fibers making future enumerable
+    var future = requirejs.nodeRequire('fibers/future');
+    delete Function.prototype.future;
+    Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
+
+
     Object.defineProperty(util, 'thread', {get: function () {
       return util.Fiber.current ? (util.Fiber.current.appThread || (util.Fiber.current.appThread = {})) : {};
     }});

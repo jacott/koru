@@ -19,6 +19,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test only models enumerable": function () {
+      for(var key in Model) {
+        assert.same(Model[key].constructor, Model);
+      }
+      assert(true);
+    },
+
     'with model lock': {
       setUp: function () {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});

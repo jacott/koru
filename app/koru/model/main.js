@@ -15,6 +15,10 @@ define(function(require, exports, module) {
 
   var emptyObject = {};
 
+  koru.onunload(module, function () {
+    koru.unload('koru/model/base');
+  });
+
   BaseModel.prototype = {
     get _id() {return this.attributes._id || this.changes._id;},
 
@@ -191,8 +195,8 @@ define(function(require, exports, module) {
     },
   };
 
-  BaseModel._callBeforeObserver = callBeforeObserver;
-  BaseModel._callAfterObserver = callAfterObserver;
+  Object.defineProperty(BaseModel, '_callBeforeObserver', {enumerable: false, value: callBeforeObserver});
+  Object.defineProperty(BaseModel, '_callAfterObserver', {enumerable: false, value: callAfterObserver});
 
   function callBeforeObserver(type, doc) {
     var model = doc.constructor;
