@@ -18,13 +18,13 @@ define(['module', './main'], function(module, koru) {
     subject[observeName] = function (func) {
       key === 0 && init && init.call(subject);
 
-      observers[++key] = func;
-      return stopFunc(key);
+      return observers[++key] = handle(key, func);
     };
 
     subject[notifyName] = function (first) {
       for(var i in observers) {
-        observers[i].apply(subject, arguments);
+        var handle = observers[i];
+        handle.function.apply(handle, arguments);
       }
 
       return first;
@@ -32,9 +32,10 @@ define(['module', './main'], function(module, koru) {
 
     return subject;
 
-    function stopFunc(cKey) {
+    function handle(cKey, func) {
       return {
         key: cKey,
+        function: func,
         stop: function () {
           delete observers[cKey];
           for(var i in observers) return;
