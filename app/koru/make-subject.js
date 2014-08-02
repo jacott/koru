@@ -34,6 +34,7 @@ define(['module', './main'], function(module, koru) {
 
     function stopFunc(cKey) {
       return {
+        key: cKey,
         stop: function () {
           delete observers[cKey];
           for(var i in observers) return;

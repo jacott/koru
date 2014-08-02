@@ -3,13 +3,27 @@ define(function(require, exports, module) {
   var makeSubject = require('../make-subject');
 
   return function (model) {
-    model._indexUpdate = makeSubject({});
+    model._indexUpdate = makeSubject({
+      indexes: {},
+      reloadAll: function () {
+        var indexes = this.indexes;
+        for(var key in indexes) {
+          indexes[key].reload();
+        }
+      },
+    });
+
+    model.addIndex = function () {
+      var fields = util.slice(arguments);
+      fields.push('_id');
+      return this.addUniqueIndex.apply(this, fields);
+    };
 
     model.addUniqueIndex = function () {
       var fields = arguments;
       var len = fields.length;
       var leadLen = len - 1;
-      var idx = {};
+      var idx;
 
       var _tmpModel = new model();
 
@@ -46,7 +60,10 @@ define(function(require, exports, module) {
         }
       };
 
-      uIndex.stop = model._indexUpdate.onChange(onChange).stop;
+      var handle = model._indexUpdate.onChange(onChange);
+      uIndex.stop = handle.stop;
+      model._indexUpdate.indexes[handle.key] = uIndex;
+      handle = null;
 
       function onChange(doc, old) {
         if (doc) {
@@ -85,6 +102,8 @@ define(function(require, exports, module) {
         for(var noop in tidx) return false;
         return true;
       }
+
+      uIndex.reload();
 
       return uIndex;
     };

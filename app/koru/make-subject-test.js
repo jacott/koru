@@ -17,7 +17,9 @@ define(function (require, exports, module) {
     "test observing": function () {
       v.foo.onFoo(v.stub1 = test.stub());
       var handle = v.foo.onFoo(v.stub2 = test.stub());
-      v.foo.onFoo(v.stub3 = test.stub());
+      var h2 = v.foo.onFoo(v.stub3 = test.stub());
+
+      assert.same(h2.key, handle.key+1);
 
       handle.stop();
 

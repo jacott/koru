@@ -84,5 +84,31 @@ define(function (require, exports, module) {
 
       assert.equals(util.mapField(v.idx.fetch({id2: '4'})).sort(), [v.doc1._id, v.doc3._id].sort());
     },
+
+    "test addIndex": function () {
+      var id1Idx = v.TestModel.addIndex('id1');
+
+      v.TestModel.create({id1: '2', id2: '5'});
+
+
+      var docs = id1Idx.fetch({id1: '2'});
+
+      assert.equals(util.mapField(docs, 'id2').sort(), ["2", "5"]);
+    },
+
+    "test reloadAll": function () {
+      var id1Idx = v.TestModel.addIndex('id1');
+
+      assert.same(Object.keys(v.TestModel._indexUpdate.indexes).length, 2);
+
+      id1Idx({})['x'] = 'junk';
+      v.idx({})['x'] = 'junk';
+
+      v.TestModel._indexUpdate.reloadAll();
+
+      assert.equals(Object.keys(v.idx({})), ["2", "4"]);
+
+      assert.equals(Object.keys(id1Idx({})), ["1", "2", "3"]);
+    },
   });
 });
