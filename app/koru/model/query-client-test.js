@@ -161,9 +161,10 @@ define(function (require, exports, module) {
 
       refute.called(MockQuery.revertSimChanges);
 
-      pending = false;
-
       stateOC.yield(true);
+      refute.called(MockQuery.revertSimChanges);
+
+      syncOC.yield(pending = false);
       assert.called(MockQuery.revertSimChanges);
     },
 

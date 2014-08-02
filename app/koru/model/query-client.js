@@ -422,10 +422,7 @@ define(function(require, exports, module) {
       });
 
       stateOb = sessState.onChange(function (ready) {
-        if (ready) {
-          sessState.pendingCount() || Query.revertSimChanges();
-
-        } else for(var name in Model) {
+        if (! ready) for(var name in Model) {
           var model = Model[name];
           if (! model) continue;
           var docs = model.docs;

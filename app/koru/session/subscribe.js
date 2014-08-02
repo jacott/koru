@@ -25,7 +25,10 @@ define(function(require, exports, module) {
         sessState.decPending();
         handle.waiting = false;
       }
-      if (handle && handle.callback) handle.callback(data[1]||null);
+      if (handle && handle.callback) {
+        handle.callback(data[1]||null);
+        handle.callback = null;
+      }
       if (data[1] !== undefined) stopped(handle);
     });
 
@@ -46,6 +49,8 @@ define(function(require, exports, module) {
     sessState.onConnect('10', Subcribe._onConnect = function () {
       for(var id in subs) {
         var sub = subs[id];
+        sessState.incPending();
+        sub.waiting = true;
         session.sendP(id, sub.name, sub.args);
       }
     });

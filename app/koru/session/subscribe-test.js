@@ -77,8 +77,15 @@ isClient && define(function (require, exports, module) {
       var sub3 = subscribe("foo2", 5, 6);
 
       v.sess.sendP.reset();
+      sub1.waiting = false;
+
+      var pendingCount = sessState.pendingCount();
 
       subscribe._onConnect();
+
+      assert.same(sessState.pendingCount(), pendingCount + 3);
+      assert.isTrue(sub1.waiting);
+
 
       assert.calledWith(v.sess.sendP, sub1._id, 'foo', [1, 2]);
       assert.calledWith(v.sess.sendP, sub2._id, 'foo2', [3, 4]);
@@ -90,7 +97,7 @@ isClient && define(function (require, exports, module) {
 
       assert.same(sessState.pendingCount(), 0);
 
-      var sub1 = subscribe("foo", 1 ,2);
+      var sub1 = subscribe("foo", 1 ,2, v.sub1CB = test.stub());
       assert.isTrue(sub1.waiting);
 
       assert.calledOnceWith(v.ob, true);
@@ -104,6 +111,9 @@ isClient && define(function (require, exports, module) {
 
       v.recvP(sub1._id);
       assert.isFalse(sub1.waiting);
+
+      assert.calledOnce(v.sub1CB);
+      assert.isNull(sub1.callback);
 
       refute.called(v.ob);
 
