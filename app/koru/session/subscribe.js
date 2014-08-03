@@ -63,7 +63,7 @@ define(function(require, exports, module) {
         (++nextId).toString(36), name, util.slice(arguments, 1)
       );
       subs[sub._id] = sub;
-      Subcribe.intercept(name, sub);
+      Subcribe.intercept(name, sub, callback);
       sessState.incPending();
       sub.waiting = true;
       session.sendP(sub._id, name, sub.args);
