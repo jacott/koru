@@ -63,13 +63,15 @@ define(function(require, exports, module) {
     },
 
     error: function (error) {
+      var id = this.id;
+      var conn = this.conn;
       if (error.errorType === 'KoruError') {
-        this.conn.sendBinary('P', [this.id, error.error, error.reason]);
+        conn.sendBinary('P', [id, error.error, error.reason]);
       } else {
-        this.conn.sendBinary('P', [this.id, 500, error.toString()]);
+        conn.sendBinary('P', [id, 500, error.toString()]);
       }
 
-      delete this.conn._subs[this.id];
+      if (conn._subs) delete conn._subs[id];
     },
 
     stop: function () {

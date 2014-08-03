@@ -143,7 +143,7 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
     },
 
-    "test error": function () {
+    "test error on subscribe": function () {
       v.pubFunc.reset();
       v.pubFunc = function () {
         this.error(new Error('Foo error'));
@@ -155,6 +155,19 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Error: Foo error']);
 
       refute('a123' in v.conn._subs);
+    },
+
+    "test error when conn closed": function () {
+      v.pubFunc.reset();
+      v.pubFunc = function () {
+        this.id = null;
+        this.conn._subs = null;
+        this.error(new Error('Foo error'));
+      };
+
+      refute.exception(function () {
+        v.callSub();
+      });
     },
 
     "sendMatchUpdate": {

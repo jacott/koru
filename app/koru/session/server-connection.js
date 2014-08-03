@@ -58,9 +58,9 @@ define(function(require, exports, module) {
         try {
           this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {
-          this.closed();
+          _koru_.info('sendBinary exception', ex);
 
-          koru.error(util.extractError(ex));
+          this.closed();
         }
       },
 
