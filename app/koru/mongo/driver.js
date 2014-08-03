@@ -52,6 +52,8 @@ Connection.prototype = {
     }
   },
 
+  collectionNames: genericDbFunc('collectionNames'),
+
   close: function () {
     return this._db.close();
   },
@@ -123,16 +125,33 @@ Collection.prototype = {
     };
   })(),
 
-  ensureIndex: function (keys, options) {
-     var future = new Future;
-    if (options)
-      this._col.ensureIndex(keys, options, future.resolver());
-    else
-      this._col.ensureIndex(keys, future.resolver());
-
-    return future.wait();
-  },
+  ensureIndex: genericColFunc('ensureIndex'),
+  dropAllIndexes: genericColFunc('dropAllIndexes'),
+  indexInformation: genericColFunc('indexInformation'),
+  rename: genericColFunc('rename'),
 };
+
+function genericDbFunc(cmd) {
+  return function () {
+    var future = new Future;
+
+    Array.prototype.push.call(arguments, future.resolver());
+
+    this._db[cmd].apply(this._db, arguments);
+    return future.wait();
+  };
+}
+
+function genericColFunc(cmd) {
+  return function () {
+    var future = new Future;
+
+    Array.prototype.push.call(arguments, future.resolver());
+
+    this._col[cmd].apply(this._col, arguments);
+    return future.wait();
+  };
+}
 
 function Cursor(mcursor) {
   this.close = function () {
@@ -168,5 +187,11 @@ Cursor.prototype = {
   fields: function (spec) {
     this._mcursor.fields(spec);
     return this;
+  },
+
+  forEach: function (func) {
+    for(var doc = this.next(); doc; doc = this.next()) {
+      func(doc);
+    }
   },
 };

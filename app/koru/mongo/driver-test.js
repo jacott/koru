@@ -13,6 +13,23 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test dropAllIndexes": function () {
+      _koru_.debug('defaultDb', Object.keys(Object.getPrototypeOf(sut.defaultDb._db)), sut.defaultDb.collectionNames());
+
+      var col =  sut.defaultDb.collection('Fooy');
+      test.onEnd(function () {
+        sut.defaultDb.dropCollection('Fooy');
+      });
+
+      assert.equals(col.indexInformation(), {});
+
+      col.ensureIndex({name: 1});
+      assert.equals(col.indexInformation().name_1, [["name", 1]]);
+
+      col.dropAllIndexes();
+      assert.same(col.indexInformation().name_1, undefined);
+    },
+
     "with collection": {
       setUp: function () {
         v.foo = sut.defaultDb.collection('Foo');
