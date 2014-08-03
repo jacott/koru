@@ -109,7 +109,8 @@ define(function(require, exports, module) {
             part = +parts[i];
             if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
           }
-          curr = curr[part] || (curr[part] = {});
+          curr = curr[part] ||
+            (curr[part] = parts[i+1].match(/^\$[+\-]\d+/) ? [] : {});
         }
         part = parts[i];
         var m = part.match(/^\$([+\-])(\d+)/);

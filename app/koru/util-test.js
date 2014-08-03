@@ -242,6 +242,14 @@ define(function (require, exports, module) {
       assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
     },
 
+    "test addItem to undefined sublist": function () {
+      var orig = {};
+      var changes = {"a.$+1": "x"};
+
+      util.applyChanges(orig, changes);
+      assert.equals(orig, {a: ["x"]});
+    },
+
     "test removeItem applyChanges": function () {
       var orig = {a: ["x", "a", "b"]};
       var changes = {"a.$-1": "a", "a.$-2": "b"};
