@@ -42,7 +42,15 @@ define(function (require, exports, module) {
     send = value;
   };
 
-  exports.registerHandler = function (key, func) {
+  exports.registerHandler = function (module, key, func) {
+    if (typeof module === 'string') {
+      func = key;
+      key = module;
+    } else {
+      koru.onunload(module, function () {
+        exports.deregisterHandler(key);
+      });
+    }
     if (key in handlers) throw new Error(key + ' already registered as a web-server hander');
     handlers[key] = func;
   };
