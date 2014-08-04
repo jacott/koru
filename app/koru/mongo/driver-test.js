@@ -14,8 +14,6 @@ isServer && define(function (require, exports, module) {
     },
 
     "test dropAllIndexes": function () {
-      _koru_.debug('defaultDb', Object.keys(Object.getPrototypeOf(sut.defaultDb._db)), sut.defaultDb.collectionNames());
-
       var col =  sut.defaultDb.collection('Fooy');
       test.onEnd(function () {
         sut.defaultDb.dropCollection('Fooy');
