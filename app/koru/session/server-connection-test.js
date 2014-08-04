@@ -119,21 +119,21 @@ isServer && define(function (require, exports, module) {
         return true;
       }, {binary: true, mask: true}));
 
-      test.stub(koru, 'error');
+      test.stub(koru, 'info');
       refute.exception(function () {
         v.conn.ws.send = test.stub().throws(v.error = new Error('foo'));
         v.conn.sendBinary('X', ['FOO']);
       });
 
-      assert.called(koru.error);
+      assert.called(koru.info);
 
-      koru.error.reset();
+      koru.info.reset();
       v.conn.ws = null;
       refute.exception(function () {
         v.conn.sendBinary('X', ['FOO']);
       });
 
-      refute.called(koru.error);
+      refute.called(koru.info);
     },
 
     "test when closed sendBinary": function () {
