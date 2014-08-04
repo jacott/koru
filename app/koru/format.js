@@ -28,16 +28,18 @@ define(function(require, exports, module) {
       } else {
         var arg = nested(spec.substring(2), last);
       }
-      if (arg != null) switch (spec.substring(0,1)) {
+      switch (spec.substring(0,1)) {
       case 'e':
-        result += escape(arg);
+        if (arg != null)
+          result += escape(arg);
         break;
       case 'i':
         try {result += inspect(arg);}
         catch(ex) {result += arg;}
         break;
       default:
-        result += arg;
+        if (arg != null)
+          result += arg;
       }
     }
 
@@ -94,7 +96,8 @@ define(function(require, exports, module) {
   };
 
   function inspect(o, i) {
-    if (i <0 || o == null) return typeof o;
+    if (o == null) return typeof o;
+    if (i === -1) return Object.prototype.toString.call(o);
     switch(typeof o) {
     case 'function':
       return 'function ' + o.name;
