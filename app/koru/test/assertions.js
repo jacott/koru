@@ -14,7 +14,7 @@ define(['./core', '../format'], function (geddon, format) {
     msg = msg || 'Expected truthness';
     if (__msg) {
       if (typeof __msg === 'function') __msg = __msg();
-      msg = __msg + ": " +msg;
+      msg = format("{i0} {1}", __msg, msg);
     }
     geddon.fail(msg);
   };
