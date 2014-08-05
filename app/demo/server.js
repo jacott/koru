@@ -1,6 +1,10 @@
-var Fiber = require('fibers');
-var Path = require('path');
 var requirejs = require('requirejs');
+
+var koruPath = '../koru';
+
+var config = require('./demo-config.js');
+
+var mainConfig = config['koru/main'];
 
 requirejs.config({
   //Use node's special variable __dirname to
@@ -9,17 +13,14 @@ requirejs.config({
   //be used in node but does not require the
   //use of node outside
   baseUrl: __dirname,
+  config: config,
 
-  config: {
-    "koru": {appDir: Path.resolve(__dirname + '/..')},
-
-    "koru/mongo/driver": {url: "mongodb://localhost:3014/demo"},
-  },
-
-  packages: ['koru', 'koru/model'],
+  packages: [
+    "koru", "koru/model", "koru/session", "koru/user-account",
+  ],
 
   paths: {
-    koru: '../koru',
+    koru: koruPath,
   },
 
   //Pass the top-level main.js/index.js require
@@ -28,17 +29,15 @@ requirejs.config({
   nodeRequire: require
 });
 
-// requirejs.onResourceLoad = function (context, map, depArray) {
-// }
-
-
-
-//Now export a value visible to Node.
-module.exports = function () {};
-
-requirejs(['koru', 'bootstrap', 'publish-all', 'koru/server', 'koru/file-watch', 'koru/server-rc'], function (koru, bootstrap) {
-  Fiber(function () {
+requirejs(['koru', 'bootstrap', 'publish-all', 'koru/server', 'koru/session'], function (koru, bootstrap) {
+  koru.Fiber(function () {
     bootstrap();
-    console.log('=> Ready');
+
+    requirejs(mainConfig.extraRequires || [], function (startup) {
+      koru.Fiber(function () {
+
+        console.log('=> Ready');
+      }).run();
+    });
   }).run();
 });

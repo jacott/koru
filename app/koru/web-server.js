@@ -10,13 +10,15 @@ define(function (require, exports, module) {
 
   koru.onunload(module, 'reload');
 
-  var root = Path.resolve(require.toUrl(''));
+  var root = require.toUrl('');
   var appDir = koru.appDir;
   var nmRoot = Path.resolve(appDir+'/../node_modules');
 
   var SPECIALS = {
     "require.js": function (m) {
-      return [fst.stat(nmRoot+'/koru') ? '/koru/node_modules/requirejs/require.js' : '/requirejs/require.js', nmRoot];
+      return ['require.js', module.config().requirejs ?
+              Path.join(appDir, module.config().requirejs) :
+              Path.join(nmRoot,'koru/node_modules/requirejs')];
     },
 
     koru: function (m) {

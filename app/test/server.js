@@ -13,7 +13,11 @@ requirejs.config({
   config: {
     "koru/mongo/driver": {url: "mongodb://localhost:3004/koru"},
 
-    "koru/web-server": {port: 3000, defaultPage: '/test/index.html'},
+    "koru/web-server": {
+      port: 3000,
+      defaultPage: '/test/index.html',
+      requirejs: '../node_modules/requirejs',
+    },
   },
 
   packages: ["koru", "koru/test"],
