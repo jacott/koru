@@ -36,10 +36,11 @@ define(function (require, exports, module) {
   exports.compilers = {};
   exports.requestListener = requestListener;
 
+  exports.send = send;
+  exports.parseurl = parseurl;
   // testing
-  exports._send = send;
   exports._replaceSend = function (value) {
-    send = value;
+    exports.send = send = value;
   };
 
   exports.registerHandler = function (module, key, func) {

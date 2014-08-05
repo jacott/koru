@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   require("./callbacks");
   require("./test-case");
   require("./runner");
-  var geddon = require("./core");
+  var geddon = koru._geddon = require("./core");
 
   koru.onunload(module, 'reload');
 

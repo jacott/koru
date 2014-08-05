@@ -5,6 +5,7 @@ var Future = requirejs.nodeRequire('fibers/future');
 define({
   mkdir: mkdir,
   mkdirp: mkdirp,
+  appendData: appendData,
   readdir: readdir,
   readFile: readFile,
   rename: rename,
@@ -23,6 +24,15 @@ function stat(path) {
       return;
 
     throw ex;
+  }
+}
+
+function appendData(path, data) {
+  var fd = futureWrap(fs, fs.open, [path, 'a', {mode: 0644}]);
+  try {
+    return futureWrap(fs, fs.write, [fd, data, 0, data.length, null]);
+  } finally {
+    futureWrap(fs, fs.close, [fd]);
   }
 }
 

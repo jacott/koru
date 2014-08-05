@@ -26,9 +26,11 @@ isServer && define(function (require, exports, module) {
           v.future.return(data);
         },
       };
+      v.origSend = webServer.send;
     },
 
     tearDown: function () {
+      webServer._replaceSend(v.orgSend);
       v = null;
     },
 
@@ -43,10 +45,6 @@ isServer && define(function (require, exports, module) {
 
     "test found html": function () {
       v.req.url = '/koru/.build/web-server-test.html.js';
-
-      test.onEnd(function () {
-        webServer._replaceSend(webServer._send);
-      });
 
       v.sendRet = {
         pipe: function (res) {
