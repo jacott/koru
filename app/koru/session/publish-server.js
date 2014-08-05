@@ -65,10 +65,12 @@ define(function(require, exports, module) {
     error: function (error) {
       var id = this.id;
       var conn = this.conn;
-      if (error.errorType === 'KoruError') {
-        conn.sendBinary('P', [id, error.error, error.reason]);
-      } else {
-        conn.sendBinary('P', [id, 500, error.toString()]);
+      if (conn.ws) {
+        if (error.errorType === 'KoruError') {
+          conn.sendBinary('P', [id, error.error, error.reason]);
+        } else {
+          conn.sendBinary('P', [id, 500, error.toString()]);
+        }
       }
 
       if (conn._subs) delete conn._subs[id];
@@ -89,6 +91,7 @@ define(function(require, exports, module) {
         this._stop && this._stop();
         this._subscribe.apply(this, this.args);
       } catch(ex) {
+        this.error("unexpected closed");
         if (ex.error) {
           this.error(ex);
         } else {
