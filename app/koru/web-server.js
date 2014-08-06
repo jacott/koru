@@ -12,17 +12,16 @@ define(function (require, exports, module) {
 
   var root = require.toUrl('');
   var appDir = koru.appDir;
-  var nmRoot = Path.resolve(appDir+'/../node_modules');
+  var koruParent = Path.join(koru.libDir, 'app');
+
 
   var SPECIALS = {
-    "require.js": function (m) {
-      return ['require.js', module.config().requirejs ?
-              Path.join(appDir, module.config().requirejs) :
-              Path.join(nmRoot,'koru/node_modules/requirejs')];
+    "index.js": function () {
+      return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/requirejs/require.js'), '/'];
     },
 
     koru: function (m) {
-      return [m[0], fst.stat(nmRoot+'/koru/app') ? nmRoot+'/koru/app' : appDir];
+      return [m[0], koruParent];
     },
   };
 
@@ -32,7 +31,9 @@ define(function (require, exports, module) {
 
   var server = http.createServer(requestListener);
 
-  server.listen(module.config().port || 3000, module.config().host);
+  exports.start = function () {
+    server.listen(module.config().port || 3000, module.config().host);
+  };
 
   exports.server = server;
   exports.compilers = {};
@@ -74,9 +75,11 @@ define(function (require, exports, module) {
       var m = /^\/([^/]+)(.*)$/.exec(path);
       if (m) {
         var special = SPECIALS[m[1]];
+
         if (special) {
           var pr = special(m);
           path = pr[0]; reqRoot = pr[1];
+
         } else if(special = handlers[m[1]]) {
           special(req, res, m[2], error);
           return;

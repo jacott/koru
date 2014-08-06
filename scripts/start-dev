@@ -6,7 +6,4 @@ cd `dirname "$0"`/../app
 # export NODE_OPTIONS='--prof'
 # send SIGUSR1 to debug
 
-type=${1:-demo}
-shift
-
-exec node ${type}/server.js "$@"
+exec node ../lib/koru.js "$@"

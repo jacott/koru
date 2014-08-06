@@ -91,13 +91,6 @@
     }
   }
 
-  function appDir(require, module) {
-    if (isServer)
-      return require('path').resolve(module.config().appDir || require.toUrl('').slice(0,-1));
-
-    return require.toUrl('').slice(0,-1);
-  }
-
   /**
    * Main koru module. Responsible for:
    *
@@ -141,7 +134,6 @@
       insertDependency: insertDependency,
       loaded: loaded,
       discardIncompleteLoads: discardIncompleteLoads,
-      appDir: appDir(require, module),
 
       config: module.config(),
       throwConfigMissing: function (name) {
@@ -216,6 +208,13 @@
         return path.slice(0, ++idx) + '.build/' + path.slice(idx);
       },
     };
+
+    if (isServer) {
+      koru.appDir = module.config().appDir || require.toUrl('').slice(0,-1);
+      koru.libDir = requirejs.nodeRequire('path').resolve(require.toUrl('.'), '../../..');
+    } else {
+      koru.appDir = require.toUrl('').slice(0,-1);
+    }
 
     return koru;
   });

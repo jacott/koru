@@ -6,6 +6,4 @@ define(function (require, exports, module) {
   var cssCompiler = require('./css/less-compiler');
 
   koru.onunload(module, 'reload');
-
-  return koru;
 });

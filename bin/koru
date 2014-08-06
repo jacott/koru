@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+// -*- js2 -*-
+
+require('../lib/koru.js');
