@@ -30,7 +30,7 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      webServer._replaceSend(v.orgSend);
+      webServer._replaceSend(v.origSend);
       v = null;
     },
 
