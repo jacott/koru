@@ -647,9 +647,9 @@ define(function(require, exports, module) {
     var m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
     if (m) {
       for(var i = 1; i < 4; ++i) {
-        result.push(parseInt('0x'+m[i]));
+        result.push(parseInt(m[i], 16));
       }
-      result.push(m[4] ? Math.round(parseInt('0x'+m[i])*100/256)/100 : 1);
+      result.push(m[4] ? Math.round(parseInt(m[i], 16)*100/256)/100 : 1);
       return result;
     }
     m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
@@ -663,7 +663,7 @@ define(function(require, exports, module) {
     m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
     if (m) {
       for(var i = 1; i < 4; ++i) {
-        result.push(parseInt('0x'+m[i]+m[i]));
+        result.push(parseInt(m[i]+m[i], 16));
       }
       result.push(1);
       return result;
