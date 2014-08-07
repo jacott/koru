@@ -1,0 +1,13 @@
+net:
+  bindIp: 127.0.0.1
+
+systemLog:
+  quiet: true
+  logAppend: false
+  verbosity: 0
+
+storage:
+  smallFiles: true
+  journal:
+    enabled: false
+  preallocDataFiles: false

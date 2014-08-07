@@ -1,9 +1,13 @@
 #!/bin/bash
-set -em
+set -e
 
-cd `dirname "$0"`/../app
+if [ "$MONGO_DIR" = "" ];then
+    . `dirname "$0"`/environ.sh
+fi
 
 # export NODE_OPTIONS='--prof'
 # send SIGUSR1 to debug
 
+fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh "$1"
+cd app
 exec node ../lib/koru.js "$@"

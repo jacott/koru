@@ -6,8 +6,7 @@ exports.server = function (cfg) {
     baseUrl: appDir,
 
     config: {
-      "koru/mongo/driver": {url: "mongodb://localhost:3004/koru"},
-
+      "koru/mongo/driver": {url: "mongodb://localhost:"+process.env['MONGO_PORT']+"/koru"},
       "koru/web-server": {
         port: 3000,
         defaultPage: 'test/index.html',

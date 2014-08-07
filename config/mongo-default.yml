@@ -1,0 +1,9 @@
+net:
+  bindIp: 127.0.0.1
+
+systemLog:
+  quiet: true
+  logAppend: true
+
+storage:
+  smallFiles: true
