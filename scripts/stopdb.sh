@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-if [ "$MONGO_DIR" = "" ];then
-    . `dirname "$0"`/environ.sh
-fi
+. `dirname "$0"`/environ.sh
 
 mongod --shutdown --dbpath $MONGO_DIR

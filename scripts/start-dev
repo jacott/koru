@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+branch="${1-demo}"
+
 if [ "$MONGO_DIR" = "" ];then
     . `dirname "$0"`/environ.sh
 fi
@@ -8,6 +10,8 @@ fi
 # export NODE_OPTIONS='--prof'
 # send SIGUSR1 to debug
 
-fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh "$1"
+
+fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
 cd app
+echo -e "starting ${branch}...\c"
 exec node ../lib/koru.js "$@"

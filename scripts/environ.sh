@@ -12,7 +12,7 @@ if [ ! -e "$tmpdir" ];then
     mkdir -p "$tmpdir"
 fi
 
-branch=$1
+branch=${branch-$1}
 . config/${branch}.cfg
 
 if [ "$LOG_DIR" = "" ];then
