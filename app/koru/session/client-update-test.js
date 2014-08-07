@@ -88,6 +88,16 @@ isClient && define(function (require, exports, module) {
       assert.same(v.Foo.query.onId('f333').count(1), 0);
     },
 
+    "test changing non existant doc": function () {
+      var remove = test.spy(Query.prototype, 'remove');
+
+      v.recvC('Foo', 'f222', v.attrs = {age: 7});
+      assert.called(remove);
+
+      assert.same(remove.thisValues[0].singleId, 'f222');
+
+    },
+
     "test remove": function () {
       var foo = v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});

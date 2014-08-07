@@ -23,9 +23,9 @@ define(function(require, exports, module) {
 
     function changed(model, id, attrs) {
       attrs._id = id;
-      var doc = model.findById(id);
       var query = new Query(model).onId(id);
-      if (publish.match.has(doc))
+      var doc = model.findById(id);
+      if (doc && publish.match.has(doc))
         query.update(attrs);
       else
         query.remove();
