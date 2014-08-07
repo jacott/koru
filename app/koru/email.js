@@ -2,6 +2,23 @@ var Future = requirejs.nodeRequire('fibers/future');
 var urlModule = require('url');
 var MailComposer = requirejs.nodeRequire('mailcomposer').MailComposer;
 var smtp = requirejs.nodeRequire('simplesmtp');
+var nodeUtil = require("util");
+var events = require("events");
+var stream = require('stream');
+
+function DebugStream() {
+  stream.Writable.call(this, {defaultEncoding: 'utf8'});
+}
+
+nodeUtil.inherits(DebugStream, stream.Writable);
+
+DebugStream.prototype._write = function(data, encoding, callback) {
+  console.log(data.toString().replace(/=([A-F0-9]{2})/g, function (_, hex) {
+    return String.fromCharCode(parseInt(hex, 16));
+  }).replace(/=\r\n/g, '').replace(/\r\n/g, '\n'));
+  callback();
+};
+
 
 define(function(require, exports, module) {
   var util = require('koru/util');
@@ -39,7 +56,7 @@ define(function(require, exports, module) {
             auth: auth });
 
       } else {
-        var stream = url || process.stdout;
+        var stream = url || new DebugStream();
         exports._pool = {
           sendMail: function (mc, callback) {
             mc.streamMessage();

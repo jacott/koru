@@ -3,8 +3,9 @@ isServer && define(function (require, exports, module) {
   var TH = require('./test');
   var Email = require('./email');
 
-  var streamBuffers = require('stream-buffers');
-  var smtp = require('simplesmtp');
+  var nodeUtil = requirejs.nodeRequire('util');
+  var stream = require('stream');
+  var smtp = requirejs.nodeRequire('simplesmtp');
 
   TH.testCase(module, {
     setUp: function () {
@@ -44,8 +45,19 @@ isServer && define(function (require, exports, module) {
     },
 
     "test initPool to stream": function () {
-      var stream = new streamBuffers.WritableStreamBuffer;
-      Email.initPool(stream);
+      function DebugStream() {
+        stream.Writable.call(this, {defaultEncoding: 'utf8'});
+      }
+
+      nodeUtil.inherits(DebugStream, stream.Writable);
+
+      var result = [];
+
+      DebugStream.prototype._write = function(data, encoding, callback) {
+        result.push(data.toString());
+        callback();
+      };
+      Email.initPool(new DebugStream());
       Email.send(v.options = {
         from: "foo@obeya.co",
         to: "bar@obeya.co",
@@ -53,12 +65,10 @@ isServer && define(function (require, exports, module) {
         text: "The text body",
       });
 
-      assert.match(stream.getContentsAsString("utf8").toString(), /Subject: The subject/);
+      assert.match(result.join(''), /Subject: The subject/);
     },
 
     "test initPool to url": function () {
-      var stream = new streamBuffers.WritableStreamBuffer;
-
       assert.same(Email._smtp, smtp);
 
       var createClientPool = test.stub(Email._smtp, 'createClientPool').returns('xCCP');

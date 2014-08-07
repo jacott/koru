@@ -28,7 +28,6 @@
     "mongodb": "1.4.5",
     "simplesmtp": "0.3.32",
     "mailcomposer": "0.2.11",
-    "stream-buffers": "0.2.5",
     "htmlparser2": "3.7.1"
   },
   "engines": {
