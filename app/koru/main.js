@@ -12,6 +12,7 @@
    */
   var unloads = {};
   var loaded = {};
+  var loadError = null;
 
   function noopFunc(value) {return value}
 
@@ -47,7 +48,7 @@
     var onunload = unloads[id];
     delete unloads[id];
 
-    if (onunload === 'reload') return reload();
+    if (! loadError && onunload === 'reload') return reload();
 
     if (deps) {
       providerMap[id] = 'unloading';
@@ -81,6 +82,7 @@
   }
 
   function reload() {
+    if (loadError) throw loadError;
     console.log('=> Reloading');
 
     if (isServer) {
@@ -106,16 +108,21 @@
     var loaderPrefix = module.id + "!";
 
     if (isClient) {
-      var discardIncompleteLoads = function () {
+      var discardIncompleteLoads = function (error) {
         var list = document.head.querySelectorAll('script[data-requiremodule]');
         var badIds = [];
-        for(var i = 0; i < list.length; ++i) {
-          var elm = list[i];
-          var modId = elm.getAttribute('data-requiremodule');
-          if (modId && ! loaded.hasOwnProperty(modId)) {
-            unload(modId);
-            badIds.push("\tat "+modId+".js:1");
+        loadError = error;
+        try {
+          for(var i = 0; i < list.length; ++i) {
+            var elm = list[i];
+            var modId = elm.getAttribute('data-requiremodule');
+            if (modId && ! loaded.hasOwnProperty(modId)) {
+              unload(modId, error);
+              badIds.push("\tat "+modId+".js:1");
+            }
           }
+        } finally {
+          loadError = null;
         }
         return badIds;
       };

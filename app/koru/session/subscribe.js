@@ -5,8 +5,14 @@ define(function(require, exports, module) {
   var login = require('../user-account/client-login');
   var message = require('./message');
   var sessState = require('./state');
+  var Trace = require('../trace');
 
   koru.onunload(module, 'reload');
+
+  var debug_subscribe = false;
+  Trace.debug_subscribe = function (value) {
+    debug_subscribe = value;
+  };
 
   return function(session) {
     var nextId = 0;
@@ -21,15 +27,7 @@ define(function(require, exports, module) {
 
       var handle = subs[data[0]];
       if (! handle) return;
-      if (handle.waiting) {
-        sessState.decPending();
-        handle.waiting = false;
-      }
-      if (handle && handle.callback) {
-        handle.callback(data[1]||null);
-        handle.callback = null;
-      }
-      if (data[1] !== undefined) stopped(handle);
+      handle._received(data[1]);
     });
 
     var userId;
@@ -49,8 +47,7 @@ define(function(require, exports, module) {
     sessState.onConnect('10', Subcribe._onConnect = function () {
       for(var id in subs) {
         var sub = subs[id];
-        sessState.incPending();
-        sub.waiting = true;
+        sub._wait();
         session.sendP(id, sub.name, sub.args);
       }
     });
@@ -64,8 +61,7 @@ define(function(require, exports, module) {
       );
       subs[sub._id] = sub;
       Subcribe.intercept(name, sub, callback);
-      sessState.incPending();
-      sub.waiting = true;
+      sub._wait();
       session.sendP(sub._id, name, sub.args);
       sub.resubscribe();
       return sub;
@@ -123,6 +119,26 @@ define(function(require, exports, module) {
         this.isResubscribe = false;
 
         killMatches(oldMatches, models);
+      },
+
+      _wait: function () {
+        if (! this.waiting) debugger;
+        debug_subscribe && koru.logger((this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
+        if (this.waiting) return;
+        sessState.incPending();
+        this.waiting = true;
+      },
+
+      _received: function (result) {
+        debug_subscribe && koru.logger((this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
+        if (! this.waiting) return;
+        sessState.decPending();
+        this.waiting = false;
+        if (this.callback) {
+          this.callback(result || null);
+          this.callback = null;
+        }
+        if (result !== undefined) stopped(this);
       },
 
       error: function (err) {

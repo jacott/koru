@@ -60,7 +60,7 @@
     case 'undefined':
       return 'undefined';
     case 'function':
-      return 'function ' + o.name;
+      return '=> ' + o.name;
     case 'object':
       if (o === null) return 'null';
       if (o.hasOwnProperty('outerHTML'))
@@ -83,8 +83,10 @@
         }
         return "{" + r.join(", ") +"}";
       }
-      return ("{...}");
-    case 'String':
+      for(var key in o) {
+        return ("{"+key+"="+o[key]+",...}");
+      }
+    case 'string':
       return '"'+o+'"';
     default:
       return o.toString();

@@ -20,7 +20,7 @@ define(function (require, exports, module) {
 
   function errorListener(ev) {
     if (ev.error === 'reloading') return;
-    var badIds = koru.discardIncompleteLoads().join("\n");
+    var badIds = koru.discardIncompleteLoads(ev.error).join("\n");
 
     session.send('E', koru.util.extractError({
       toString: function () {

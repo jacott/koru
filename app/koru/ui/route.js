@@ -3,6 +3,12 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Dom = require('../dom');
   require('koru/ui/dom-ext');
+  var Trace = require('../trace');
+
+  var debug_page = false;
+  Trace.debug_page = function (value) {
+    debug_page = value;
+  };
 
   function Route(path, template, parent, routeVar) {
     this.path = path || '';
@@ -153,6 +159,8 @@ define(function(require, exports, module) {
 
       pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
       pageRoute.pathname = pathname(page, pageRoute || {});
+
+      debug_page && koru.logger('DebugPage', util.inspect(pageRoute, 2));
 
       Route.loadingArgs = [page, pageRoute];
 

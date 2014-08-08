@@ -1,9 +1,25 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var makeSubject = require('../make-subject');
+  var koru = require('koru');
+  var Trace = require('../trace');
 
   var state = 'closed';
   var count = 0;
+
+  var debug_pending = false;
+
+  Trace.debug_pending = function (value) {
+    if (value) {
+      koru._incPendingStack = [];
+      koru._decPendingStack = [];
+      debug_pending = true;
+    } else {
+      delete koru._incPendingStack;
+      delete koru._decPendingStack;
+      debug_pending = false;
+    }
+  };
 
   util.extend(exports, {
     _onConnect: {},
@@ -52,19 +68,25 @@ define(function(require, exports, module) {
     pending: makeSubject({}),
 
     incPending: function () {
+      debug_pending && koru._incPendingStack.push(util.extractError(new Error(count)));
       if (++count === 1)
         this.pending.notify(true);
     },
 
     decPending: function () {
-      if (--count === 0)
+      debug_pending && koru._decPendingStack.push(util.extractError(new Error(count)));
+      if (--count === 0) {
+        if (debug_pending) {
+          koru.debug_pending(true);
+        }
         this.pending.notify(false);
-      else if (count === -1) {
+      } else if (count === -1) {
         count = 0;
         throw new Error("Unexpected dec when no outstanding waits");
       }
     },
 
+    // for test use only
     _resetPendingCount: function () {
       count = 0;
     },

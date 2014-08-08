@@ -6,12 +6,17 @@ define(function(require, exports, module) {
   var publish = require('./publish');
   var message = require('./message');
   var util = require('../util');
+  var Trace = require('../trace');
 
+  var debug_clientUpdate = false;
+  Trace.debug_clientUpdate = function (value) {
+    debug_clientUpdate = value;
+  };
 
   return function (session) {
-    session.provide('A', modelUpdate(added));
-    session.provide('C', modelUpdate(changed));
-    session.provide('R', modelUpdate(removed));
+    session.provide('A', modelUpdate(added, 'Add'));
+    session.provide('C', modelUpdate(changed, 'Upd'));
+    session.provide('R', modelUpdate(removed, 'Rem'));
 
     session.isUpdateFromServer = false;
 
@@ -35,10 +40,13 @@ define(function(require, exports, module) {
       new Query(model).onId(id).remove();
     }
 
-    function modelUpdate(func) {
+    function modelUpdate(func, type) {
       return function (data) {
         data = message.decodeMessage(data);
-        koru._debugUpdates && console.log("Update: " + util.inspect(data));
+        if (debug_clientUpdate) {
+          if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
+            koru.logger("Debug"+type, '< ' + util.inspect(data));
+        }
         try {
           session.isUpdateFromServer = true;
           func.call(this, Model[data[0]], data[1], data[2]);
