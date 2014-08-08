@@ -188,13 +188,13 @@ define(function(require, exports, module) {
       return true;
     },
 
-    addItem: function (list, value) {
-      var pos = list.indexOf(value);
+    addItem: function (list, item) {
+      var pos = util.itemIndex(list, item);
       if (pos !== -1) return pos;
-      list.push(value);
+      list.push(item);
     },
 
-    removeItem: function (list, item) {
+    itemIndex: function (list, item) {
       if (item != null && typeof item === 'object') {
         for(var index = 0; index < list.length; ++index) {
           var row = list[index];
@@ -206,15 +206,19 @@ define(function(require, exports, module) {
             }
           }
           if (found) {
-            list.splice(index, 1);
-            return row;
+            return index;
           }
         }
-        return;
+        return -1;
       }
 
-      var index = list.indexOf(item);
+      return list.indexOf(item);
+    },
+
+    removeItem: function (list, item) {
+      var index = util.itemIndex(list, item);
       if (index === -1) return;
+      item = list[index];
       list.splice(index, 1);
       return item;
     },

@@ -47,9 +47,13 @@ define(function (require, exports, module) {
 
       assert.equals(list, ['a', 'b']);
 
-      assert.same(util.addItem(list, 'aa'), undefined);
+      assert.same(util.addItem(list, {aa: 123}), undefined);
 
-      assert.equals(list, ['a', 'b', 'aa']);
+      assert.equals(list, ['a', 'b', {aa: 123}]);
+
+      assert.same(util.addItem(list, {aa: 123}), 2);
+
+      assert.equals(list, ['a', 'b', {aa: 123}]);
     },
 
     "test removeItem": function () {
