@@ -208,6 +208,6 @@ define(function(require, exports, module) {
 
   function getToken(data) {
     var token = data.slice(1).toString().split('|')[1];
-    if (token.match(/^[\d\w]+$/)) return token;
+    if (token && token.match(/^[\d\w]+$/)) return token;
   }
 });

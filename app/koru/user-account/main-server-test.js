@@ -258,13 +258,23 @@ isServer && define(function (require, exports, module) {
         koru.logger.restore();
       },
 
-      "test logout": function () {
+      "test logout with token": function () {
         v.conn.userId = 'uid111';
 
         session._commands.V.call(v.conn, 'X' + v.lu._id+'|abc');
 
         assert.same(v.conn.userId, null);
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
+        assert.calledWith(v.ws.send, 'VS');
+      },
+
+      "test logout without token": function () {
+        v.conn.userId = 'uid111';
+
+        session._commands.V.call(v.conn, 'X');
+
+        assert.same(v.conn.userId, null);
+        assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', 'def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
       },
 
