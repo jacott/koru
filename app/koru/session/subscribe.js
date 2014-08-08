@@ -114,6 +114,8 @@ define(function(require, exports, module) {
 
       resubscribe: function (models) {
         var oldMatches = this._matches;
+        this._stop && this._stop();
+        this._stop = null;
         this._matches = [];
         try {
           this.isResubscribe = this._called;
@@ -151,6 +153,10 @@ define(function(require, exports, module) {
         this.stop();
       },
 
+      onStop: function (func) {
+        this._stop = func;
+      },
+
       stop: function () {
         if (! this._id) return;
         session.sendP(this._id);
@@ -167,8 +173,9 @@ define(function(require, exports, module) {
 
       delete subs[sub._id];
       var models = {};
+      sub._stop && sub._stop();
       killMatches(sub._matches, models);
-      sub._matches = sub._id = sub.callback = null;
+      sub._stop = sub._matches = sub._id = sub.callback = null;
       publish._filterModels(models);
     }
 

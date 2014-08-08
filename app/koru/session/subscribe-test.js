@@ -291,6 +291,20 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test onStop": function () {
+        v.sub = subscribe('foo');
+
+        v.sub.onStop(v.onstop = test.stub());
+
+        v.sub.stop();
+
+        assert.called(v.onstop);
+
+        v.sub.stop();
+
+        assert.calledOnce(v.onstop);
+      },
+
       "test called on message": function () {
         v.sub = subscribe('foo');
 
@@ -311,6 +325,8 @@ isClient && define(function (require, exports, module) {
 
         v.sub = subscribe('foo');
 
+        v.sub.onStop(v.onstop = test.stub());
+
         v.pubFunc = function () {
           this.match("Baz", v.match);
           this.match("Bar", test.stub());
@@ -319,9 +335,13 @@ isClient && define(function (require, exports, module) {
         var models = {};
         v.sub.resubscribe(models);
 
+        assert.called(v.onstop);
+
         assert.equals(Object.keys(models).sort(), ["Bar", "Foo"]);
 
         v.sub.resubscribe(models = {});
+
+        assert.calledOnce(v.onstop);
 
         assert.equals(Object.keys(models).sort(), ["Bar", "Baz"]);
       },
