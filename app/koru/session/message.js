@@ -24,10 +24,6 @@ define(function(require, exports, module) {
   var tSmString = 0x80;
   var tSmNumber = 0x40;
 
-  var tmpAb = new ArrayBuffer(8);
-  var tmpDv = new DataView(tmpAb);
-  var tmpU8 = new Uint8Array(tmpAb);
-
   var forEachFunc = Array.prototype.forEach;
   var toStringFunc = Object.prototype.toString;
 
@@ -77,6 +73,10 @@ define(function(require, exports, module) {
       return buffer;
   };
   function encode(buffer, object, dict) {
+    var tmpAb = new ArrayBuffer(8);
+    var tmpDv = new DataView(tmpAb);
+    var tmpU8 = new Uint8Array(tmpAb);
+
     switch(typeof object) {
 
     case 'string':
@@ -251,6 +251,10 @@ define(function(require, exports, module) {
     return decode(object, 0, {})[0];
   };
   function decode(buffer, index, dict) {
+    var tmpAb = new ArrayBuffer(8);
+    var tmpDv = new DataView(tmpAb);
+    var tmpU8 = new Uint8Array(tmpAb);
+
     var byte = buffer[index++];
 
     switch(byte) {

@@ -82,11 +82,15 @@ define(function (require, exports, module) {
       assert.equals(message._encode(-1.324e8), v.ans2 = [12, 248, 27, 188, 128]);
       assert.equals(message._encode(-4561), v.ans3 = [11, 238, 47]);
       assert.equals(message._encode(45123.4567), v.ans4 = [14, 26, 229, 75, 7]);
+      assert.equals(message._encode(256), v.ans5 = [11, 1, 0]);
+
 
       assert.same(message._decode(v.ans), -1.345e200);
       assert.same(message._decode(v.ans2), -1.324e8);
       assert.same(message._decode(v.ans3), -4561);
       assert.same(message._decode(v.ans4), 45123.4567);
+      assert.same(message._decode([11, 0, 128]), 128);
+      assert.same(message._decode(v.ans5), 256);
     },
 
     "test date": function () {
