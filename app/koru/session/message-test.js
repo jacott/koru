@@ -206,6 +206,22 @@ define(function (require, exports, module) {
       assert.same(result[1][2], 6);
     },
 
+    "test unchanged encoding system": function () {
+      // ensure we still use the same encoding system as at this test
+      var msg = '62696e5f6964ff6f72646572ff0081368473617665865469636b6574916a4a394d696148746364674a7a6246766e07800091475374544a465848445a6d536b584d347a81000b01';
+      var len = msg.length / 2;
+
+      var ary = [];
+      for(var i = 0; i < len; ++i) {
+        ary.push(parseInt(msg.slice(i*2,i*2+2), 16));
+      }
+
+      var u8 = new Uint8Array(ary);
+
+      assert.same(message.toHex(u8).join(''), msg);
+      assert.equals(message.decodeMessage(u8), ["6", "save", "Ticket", "jJ9MiaHtcdgJzbFvn", {bin_id: "GStTJFXHDZmSkXM4z", order: 256}]);
+    },
+
     "test encode/decodeMessage": function () {
       var u8 = message.encodeMessage("M", [1, 2, {foo: 'bar'}]);
       var data = [];

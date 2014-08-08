@@ -232,6 +232,16 @@ define(function(require, exports, module) {
     return index + 1;
   }
 
+  exports.toHex = function (data) {
+    var result = [];
+    for(var i = 0; i < data.length; ++i) {
+      var ltr = data[i].toString(16);
+      if (ltr.length === 1) ltr = '0'+ltr;
+      result.push(ltr);
+    }
+    return result;
+  };
+
   exports.getDictItem = getDictItem;
   function getDictItem(dict, code) {
     return dict.c2k[String.fromCharCode(code >> 8)][code % 0x100];
