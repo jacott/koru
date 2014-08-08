@@ -17,9 +17,10 @@ define(function(require, exports, module) {
   return function(session) {
     var nextId = 0;
     var subs = {};
+    var ready = false;
 
     session.sendP = function (id, name, args) {
-      sessState.isReady() && session.sendBinary('P', util.slice(arguments));
+      ready && session.sendBinary('P', util.slice(arguments));
     };
 
     session.provide('P', function (data) {
@@ -44,7 +45,12 @@ define(function(require, exports, module) {
       }
     });
 
+    sessState.onChange(function (sessReady) {
+      if (! sessReady) ready = false;
+    });
+
     sessState.onConnect('10', Subcribe._onConnect = function () {
+      ready = true;
       for(var id in subs) {
         var sub = subs[id];
         sub._wait();
@@ -122,7 +128,6 @@ define(function(require, exports, module) {
       },
 
       _wait: function () {
-        if (! this.waiting) debugger;
         debug_subscribe && koru.logger((this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
         if (this.waiting) return;
         sessState.incPending();

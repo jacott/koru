@@ -22,7 +22,6 @@ isClient && define(function (require, exports, module) {
         provide: test.stub(),
         _rpcs: {},
         sendBinary: v.sendBinary = test.stub(),
-        state: 'ready',
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
         v.recvP = function () {
@@ -57,7 +56,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test sendP": function () {
-      v.ready = true;
+      subscribe._onConnect();
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
       assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
@@ -65,6 +64,26 @@ isClient && define(function (require, exports, module) {
       v.sess.sendP('12');
 
       assert.calledWith(v.sendBinary, 'P', ['12']);
+    },
+
+    "test wait for onConnect": function () {
+      var sub1 = subscribe("foo", 1 ,2);
+      refute.called(v.sendBinary);
+
+      subscribe._onConnect();
+
+      assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
+    },
+
+    "test not Ready": function () {
+      subscribe._onConnect();
+      sessState.notify(false);
+
+      var sub1 = subscribe("foo", 1 ,2);
+      refute.called(v.sendBinary);
+
+      subscribe._onConnect();
+      assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
     "test resubscribe onConnect": function () {
@@ -83,7 +102,7 @@ isClient && define(function (require, exports, module) {
 
       subscribe._onConnect();
 
-      assert.same(sessState.pendingCount(), pendingCount + 3);
+      assert.same(sessState.pendingCount(), pendingCount + 1);
       assert.isTrue(sub1.waiting);
 
 
