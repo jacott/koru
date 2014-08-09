@@ -51,8 +51,8 @@ define(function(require, exports, module) {
         'SRPLogin', email, password, callback,
         function() {},
         function (err, result) {
-          koru.util.thread.userId = result.userId;
           localStorage.setItem('koru.loginToken', result.loginToken);
+          login.setUserId(result.userId);
           callback();
         }
       );

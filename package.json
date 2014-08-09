@@ -2,6 +2,7 @@
   "name": "koru",
   "homepage": "http://koru.obeya.co/",
   "description": "Koru is a: test-driven, reactive, fast, web app framework",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+ssh://git@dev.obeya.co:koru.git"
