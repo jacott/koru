@@ -11,9 +11,11 @@ define(function (require, exports, module) {
   return function (session) {
     var waitSends = [];
     var retryCount = 0;
-    var versionHash;
     var isSimulation = false;
     var reconnTimeout;
+
+    if (typeof window.KORU_APP_VERSION === 'string')
+    session.versionHash = window.KORU_APP_VERSION;
 
     util.extend(session, {
       send: function (type, msg) {
@@ -48,9 +50,11 @@ define(function (require, exports, module) {
     session.provide('X', function (data) {
       var ws = this.ws;
       data = data.slice(1).toString();
-      if (versionHash && versionHash !== data)
+
+      if (session.versionHash && session.versionHash.replace(/,.*$/,'') !== data.replace(/,.*$/,'')) {
         koru.reload();
-      versionHash = data;
+      }
+      session.versionHash = data;
 
       retryCount = 0;
     });
@@ -58,7 +62,7 @@ define(function (require, exports, module) {
     session.provide('L', function (data) {require([data], function() {})});
     session.provide('U', function (data) {
       var args = data.split(':');
-      versionHash = args[0];
+      session.versionHash = args[0];
       koru.unload(args[1]);
     });
 

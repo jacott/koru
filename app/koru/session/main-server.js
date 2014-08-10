@@ -14,7 +14,7 @@ define(function (require, exports, module) {
     var sessCounter = 0;
 
     util.extend(session, {
-      wss: new WebSocketServer({server: server}),
+      wss: new (session._wssOverride || WebSocketServer)({server: server}),
       conns: {},
       sendAll: sendAll,
       versionHash: Date.now(),

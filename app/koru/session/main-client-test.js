@@ -28,6 +28,44 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test initial KORU_APP_VERSION": function () {
+      test.onEnd(function () {
+        delete window.KORU_APP_VERSION;
+      });
+
+      window.KORU_APP_VERSION = "hash,v1";
+
+       v.sess = clientSession({
+         provide: test.stub(),
+         _rpcs: {},
+       });
+
+      assert.same(v.sess.versionHash, "hash,v1");
+    },
+
+    "test version reconciliation": function () {
+      assert.same(v.sess.versionHash, undefined);
+
+      test.stub(koru, 'reload');
+      assert.calledWith(v.sess.provide, 'X', TH.match(function (func) {
+        return v.func = func;
+      }));
+
+      v.func('1hash,version');
+
+      refute.called(koru.reload);
+      assert.same(v.sess.versionHash, 'hash,version');
+
+      v.func('1hash,v2');
+
+      refute.called(koru.reload);
+      assert.same(v.sess.versionHash, 'hash,v2');
+
+      v.func('1hashdiff,v2');
+
+      assert.called(koru.reload);
+    },
+
     "test onmessage": function () {
       var ws = {};
       v.sess = {

@@ -5,6 +5,7 @@ isServer && define(function (require, exports, module) {
   var util = require('../util');
   var koru = require('../main');
   var message = require('./message');
+  var serverSession = require('./main-server');
 
   TH.testCase(module, {
     setUp: function () {
@@ -15,6 +16,33 @@ isServer && define(function (require, exports, module) {
 
     tearDown: function () {
       v = null;
+    },
+
+    "server setup": {
+      setUp: function () {
+        v.sess = serverSession({
+          _wssOverride: function () {
+            return v.ws;
+          },
+          provide: test.stub(),
+          _rpcs: {},
+        });
+      },
+
+      "test versionHash": function () {
+        assert.calledWith(v.ws.on, 'connection', TH.match(function (func) {
+          return v.func = func;
+        }));
+
+        assert.between(v.sess.versionHash, Date.now() - 2000, Date.now() + 2000);
+
+        v.sess.versionHash = 'hash,v1';
+
+        test.stub(koru, 'info');
+        v.func(v.ws);
+
+        assert.calledWith(v.ws.send, 'X1hash,v1');
+      },
     },
 
     "rpc": {
