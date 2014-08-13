@@ -15,7 +15,7 @@ define(function (require, exports, module) {
     var reconnTimeout;
 
     if (typeof window.KORU_APP_VERSION === 'string')
-    session.versionHash = window.KORU_APP_VERSION;
+      session.versionHash = window.KORU_APP_VERSION;
 
     util.extend(session, {
       send: function (type, msg) {

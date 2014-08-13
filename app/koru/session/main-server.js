@@ -17,7 +17,7 @@ define(function (require, exports, module) {
       wss: new (session._wssOverride || WebSocketServer)({server: server}),
       conns: {},
       sendAll: sendAll,
-      versionHash: Date.now(),
+      versionHash: process.env['KORU_APP_VERSION'] || Date.now(),
       unload: unload,
       load: load,
       totalSessions: 0,

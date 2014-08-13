@@ -12,6 +12,13 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.ws = TH.mockWs();
+      v.mockSess = {
+        _wssOverride: function () {
+          return v.ws;
+        },
+        provide: test.stub(),
+        _rpcs: {},
+      };
     },
 
     tearDown: function () {
@@ -20,13 +27,7 @@ isServer && define(function (require, exports, module) {
 
     "server setup": {
       setUp: function () {
-        v.sess = serverSession({
-          _wssOverride: function () {
-            return v.ws;
-          },
-          provide: test.stub(),
-          _rpcs: {},
-        });
+        v.sess = serverSession(v.mockSess);
       },
 
       "test versionHash": function () {
@@ -43,6 +44,18 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.ws.send, 'X1hash,v1');
       },
+    },
+
+    "test initial KORU_APP_VERSION": function () {
+      test.onEnd(function () {
+        delete process.env['KORU_APP_VERSION'];
+      });
+
+      process.env['KORU_APP_VERSION'] = "hash,v1";
+
+      v.sess = serverSession(v.mockSess);
+
+      assert.same(v.sess.versionHash, "hash,v1");
     },
 
     "rpc": {
