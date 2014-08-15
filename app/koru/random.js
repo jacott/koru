@@ -1,6 +1,11 @@
 define(['./util-base'], function(require) {
   /**
-   * Original code from Meteor.com: meteor/packages/random/random.js
+   * random.js
+   *
+   * Copyright (C) 2011--2014 Meteor Development Group
+   * License: MIT
+   *
+   * Based on code from Meteor.com: meteor/packages/random/random.js
    */
 
   // We use cryptographically strong PRNGs (crypto.getRandomBytes() on the server,

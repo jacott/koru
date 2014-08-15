@@ -5,7 +5,12 @@ define(function(require, exports, module) {
   var util = require('../util');
 
   /**
-   * Original code from Meteor.com: meteor/packages/srp/srp.js
+   * srp.js
+   *
+   * Copyright (C) 2011--2014 Meteor Development Group
+   * License: MIT
+   *
+   * Based on code from Meteor.com: meteor/packages/srp/srp.js
    */
 
   var SRP = exports;

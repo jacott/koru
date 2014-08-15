@@ -1,8 +1,3 @@
-/**
- * Originally stolen from https://raw.github.com/occ/TraceKit
- * MIT license
- */
-
 define(['require', 'koru/util-base'], function (require, util) {
   var originRe, repl = '';
   var ANON_FUNCTION = 'anonymous';
