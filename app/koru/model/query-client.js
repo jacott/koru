@@ -63,11 +63,27 @@ define(function(require, exports, module) {
             return doc._id;
           }
         }
+
         // otherwise new doc
-        attrs._id = id;
-        var doc = new model(attrs);
-        model.docs[doc._id] = doc;
-        notify(model, doc, null);
+        if (model.docs.hasOwnProperty(id)) {
+          // already exists; convert to update
+          var old = model.docs[id].attributes;
+          for(var key in old) {
+            if (attrs.hasOwnProperty(key)) {
+              if (util.deepEqual(old[key], attrs[key]))
+                delete attrs[key];
+            } else {
+              attrs[key] = undefined;
+            }
+          }
+          model.onId(id).update(attrs);
+        } else {
+          // insert doc
+          attrs._id = id;
+          var doc = new model(attrs);
+          model.docs[doc._id] = doc;
+          notify(model, doc, null);
+        }
       },
 
       // for testing

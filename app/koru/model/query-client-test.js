@@ -88,6 +88,18 @@ define(function (require, exports, module) {
       assert.equals(Object.keys(Query._simDocs.TestModel), ['foo1']);
     },
 
+    "test insertFromServer doc already exists": function () {
+      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      Query.insertFromServer(v.TestModel, v.foo._id, {name: 'foo new', nested: [{ary: ['f']}]});
+
+      assert.calledOnce(v.onChange);
+
+      assert.equals(v.onChange.args[0][0].attributes, {name: 'foo new', nested: [{ary: ['f']}]});
+      assert.equals(v.onChange.args[0][1], {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+
+      assert.same(v.foo.attributes, v.onChange.args[0][0].attributes);
+    },
+
     "test updating array item": function () {
       v.foo.$update({ary: ['a']});
 
