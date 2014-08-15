@@ -138,14 +138,15 @@ define(function(require, exports, module) {
 
       _received: function (result) {
         debug_subscribe && koru.logger((this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
+        if (result !== undefined) stopped(this);
         if (! this.waiting) return;
+
         sessState.decPending();
         this.waiting = false;
         if (this.callback) {
           this.callback(result || null);
           this.callback = null;
         }
-        if (result !== undefined) stopped(this);
       },
 
       error: function (err) {

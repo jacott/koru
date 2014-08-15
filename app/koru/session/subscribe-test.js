@@ -271,8 +271,10 @@ isClient && define(function (require, exports, module) {
       v.sub = null;
     },
 
-    "test remote stop": function () {
+    "test remote stop while waiting": function () {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+
+      assert(v.sub.waiting);
 
       v.sess.sendP.reset();
 
@@ -281,6 +283,33 @@ isClient && define(function (require, exports, module) {
       assert.isNull(v.sub._id);
 
       refute.called(v.sess.sendP);
+    },
+
+    "test remove stop": {
+      setUp: function () {
+        v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+      },
+
+      "while waiting": function () {
+        assert(v.sub.waiting);
+
+        v.sess.sendP.reset();
+        v.recvP(v.sub._id, false);
+
+        assert.isNull(v.sub._id);
+        refute.called(v.sess.sendP);
+      },
+
+      "while not waiting": function () {
+        v.recvP(v.sub._id);
+        refute(v.sub.waiting);
+
+        v.sess.sendP.reset();
+        v.recvP(v.sub._id, false);
+
+        assert.isNull(v.sub._id);
+        refute.called(v.sess.sendP);
+      },
     },
 
     "match": {
