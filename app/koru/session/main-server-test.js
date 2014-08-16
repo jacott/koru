@@ -58,6 +58,18 @@ isServer && define(function (require, exports, module) {
       assert.same(v.sess.versionHash, "hash,v1");
     },
 
+    "test heartbeat response": function () {
+      v.sess = serverSession(v.mockSess);
+
+      assert.calledWith(v.sess.provide, 'H', TH.match(function (func) {
+        return v.func = func;
+      }));
+
+      v.func.call({send: v.send = test.stub()}, 'H');
+
+      assert.calledWith(v.send, 'K');
+    },
+
     "rpc": {
       setUp: function () {
         v.run = function (rpcMethod) {

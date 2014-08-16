@@ -43,6 +43,8 @@ define(function (require, exports, module) {
         return new WebSocket(url);
       },
 
+      heartbeatInterval: 20000,
+
       // for testing
       get _waitSends() {return waitSends},
     });
@@ -59,6 +61,7 @@ define(function (require, exports, module) {
       retryCount = 0;
     });
 
+    session.provide('K', function () {}); // acK function
     session.provide('L', function (data) {require([data], function() {})});
     session.provide('U', function (data) {
       var args = data.split(':');
@@ -76,6 +79,7 @@ define(function (require, exports, module) {
       ws.binaryType = 'arraybuffer';
       var conn = {
         ws: ws,
+        _queueHeatBeat: queueHeatBeat,
       };
       ws.onopen = function () {
         ws.send('X1');
@@ -94,6 +98,14 @@ define(function (require, exports, module) {
       };
 
       ws.onmessage = function (event) {
+        heatbeatTime = util.dateNow() + session.heartbeatInterval;
+        if (! heartbeatTO) {
+          heartbeatTO = koru.setTimeout(queueHeatBeat, session.heartbeatInterval);
+          if (heartbeatAF) {
+            window.cancelAnimationFrame(heartbeatAF);
+            heartbeatAF = null;
+          }
+        }
         session._onMessage(conn, event.data);
       };
 
@@ -109,6 +121,29 @@ define(function (require, exports, module) {
 
         reconnTimeout = setTimeout(connect, retryCount*500);
       };
+
+      var heartbeatTO, heartbeatAF, heatbeatTime;
+
+      function queueHeatBeat() {
+        if (heartbeatAF) {
+          heatbeatTime = null;
+          heartbeatAF = null;
+          heartbeatTO = koru.setTimeout(queueHeatBeat, session.heartbeatInterval / 2);
+          ws.send('H');
+          return;
+        }
+        heartbeatTO = null;
+        if (heatbeatTime === null) {
+
+          ws.close();
+          return;
+        }
+        var now = util.dateNow();
+        if (now < heatbeatTime)
+          heartbeatTO = koru.setTimeout(queueHeatBeat, heatbeatTime - now);
+        else
+          heartbeatAF = window.requestAnimationFrame(queueHeatBeat);
+      }
     }
 
     return session;

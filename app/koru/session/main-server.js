@@ -33,6 +33,9 @@ define(function (require, exports, module) {
     session.provide('X', function (data) {
       // TODO ensure protocol version is compatible
     });
+    session.provide('H', function (data) {
+      this.send('K');
+    });
     session.provide('L', function (data) {
       koru.logger('INFO', this.engine, data);
     });

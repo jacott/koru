@@ -66,29 +66,122 @@ define(function (require, exports, module) {
       assert.called(koru.reload);
     },
 
-    "test onmessage": function () {
-      var ws = {};
-      v.sess = {
-        provide: test.stub(),
-        _onMessage: function (conn, data) {
-          v.actualConn = conn;
-          assert.same(data, v.data);
-        },
-      };
-      clientSession(v.sess);
+    "onmessage": {
+      setUp: function () {
+        v.ws = {send: test.stub()};
+        v.sess = {
+          provide: test.stub(),
+          _onMessage: function (conn, data) {
+            v.actualConn = conn;
+            assert.same(data, v.data);
+          },
+        };
+        clientSession(v.sess);
 
-      v.sess.newWs = test.stub().returns(ws),
+        v.sess.newWs = test.stub().returns(v.ws);
 
-      v.sess.connect();
-      assert.same(v.sess.connect._ws, ws);
+        v.rafStub = test.stub(window, 'requestAnimationFrame').returns(123);
+        v.cafStub = test.stub(window, 'cancelAnimationFrame');
 
-      assert(ws.onmessage);
+        v.stoStub = test.stub(koru, 'setTimeout').returns(456);
+        v.ctoStub = test.stub(koru, 'clearTimeout');
 
-      var event = {data: v.data = "foo"};
-      ws.onmessage(event);
+        v.sess.connect();
 
-      assert(v.actualConn);
-      assert.same(v.actualConn.ws, ws);
+        v.readyHeatbeat = function () {
+          util.withDateNow(util.dateNow(), function () {
+            var event = {data: v.data = "foo"};
+            v.ws.onmessage(event);
+            util.thread.date += 21000;
+            v.actualConn._queueHeatBeat();
+
+            return util.thread.date;
+          });
+        };
+      },
+
+      "test setup": function () {
+        assert.calledWith(v.sess.provide, 'K', TH.match.func);
+        assert.same(v.sess.connect._ws, v.ws);
+
+        assert(v.ws.onmessage);
+
+        var event = {data: v.data = "foo"};
+        v.ws.onmessage(event);
+
+        assert(v.actualConn);
+        assert.same(v.actualConn.ws, v.ws);
+      },
+
+      "test heartbeat when idle": function () {
+        util.withDateNow(util.dateNow(), function () {
+          var event = {data: v.data = "foo"};
+          v.ws.onmessage(event);
+
+          assert.same(v.sess.heartbeatInterval, 20000);
+
+          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 20000);
+
+          v.stoStub.reset();
+          util.thread.date += 15000;
+          v.ws.onmessage(event);
+
+          refute.called(v.stoStub);
+
+          util.thread.date += 7000;
+          v.actualConn._queueHeatBeat();
+
+          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 13000);
+
+          v.stoStub.reset();
+          refute.called(v.rafStub);
+
+          util.thread.date += 14000;
+          v.actualConn._queueHeatBeat();
+
+          assert.calledOnce(v.rafStub, v.actualConn._queueHeatBeat);
+          v.rafStub.reset();
+
+          v.actualConn._queueHeatBeat();
+
+          refute.called(v.rafStub);
+          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 10000);
+          v.stoStub.reset();
+
+          assert.calledOnce(v.ws.send);
+          assert.calledWith(v.ws.send, 'H');
+
+          util.thread.date += 1000;
+
+          v.ws.onmessage(event);
+          refute.called(v.stoStub);
+
+          v.actualConn._queueHeatBeat();
+          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 20000);
+        });
+      },
+
+      "test no response": function () {
+        v.time = v.readyHeatbeat();
+        v.actualConn._queueHeatBeat();
+
+        v.ws.close = test.stub();
+        v.actualConn._queueHeatBeat();
+
+        assert.called(v.ws.close);
+      },
+
+      "test cancel requestAnimationFrame": function () {
+        v.time = v.readyHeatbeat();
+
+        v.ws.onmessage({data: "foo"});
+
+        assert.calledOnce(v.cafStub);
+        assert.calledWith(v.cafStub, 123);
+
+        v.ws.onmessage({data: "foo"});
+        assert.calledOnce(v.cafStub);
+      },
     },
 
     "test connection cycle": function () {
