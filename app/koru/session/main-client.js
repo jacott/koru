@@ -31,12 +31,16 @@ define(function (require, exports, module) {
       connect: connect,
 
       stop: function () {
-        reconnTimeout && clearTimeout(reconnTimeout);
+        reconnTimeout && reconnTimeout();
         reconnTimeout = null;
         sessState.close();
         try {
           connect._ws && connect._ws.close();
         } catch(ex) {}
+        finally {
+          if (connect._ws)
+            connect._ws.onclose({wasClean: true});
+        }
       },
 
       newWs: function (url) {
@@ -100,17 +104,14 @@ define(function (require, exports, module) {
       ws.onmessage = function (event) {
         heatbeatTime = util.dateNow() + session.heartbeatInterval;
         if (! heartbeatTO) {
-          heartbeatTO = koru.setTimeout(queueHeatBeat, session.heartbeatInterval);
-          if (heartbeatAF) {
-            window.cancelAnimationFrame(heartbeatAF);
-            heartbeatAF = null;
-          }
+          heartbeatTO = koru.afTimeout(queueHeatBeat, session.heartbeatInterval);
         }
         session._onMessage(conn, event.data);
       };
 
       ws.onclose = function (event) {
-        connect._ws = ws = conn = null;
+        if (heartbeatTO) heartbeatTO();
+        heatbeatTime = heartbeatTO = connect._ws = ws = conn = null;
         retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
         retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
 
@@ -119,22 +120,14 @@ define(function (require, exports, module) {
 
         sessState.retry();
 
-        reconnTimeout = setTimeout(connect, retryCount*500);
+        reconnTimeout = koru.afTimeout(connect, retryCount*500);
       };
 
-      var heartbeatTO, heartbeatAF, heatbeatTime;
+      var heartbeatTO, heatbeatTime;
 
       function queueHeatBeat() {
-        if (heartbeatAF) {
-          heatbeatTime = null;
-          heartbeatAF = null;
-          heartbeatTO = koru.setTimeout(queueHeatBeat, session.heartbeatInterval / 2);
-          ws.send('H');
-          return;
-        }
         heartbeatTO = null;
         if (heatbeatTime === null) {
-
           try {
             ws.close();
           } finally {
@@ -145,10 +138,13 @@ define(function (require, exports, module) {
           return;
         }
         var now = util.dateNow();
-        if (now < heatbeatTime)
-          heartbeatTO = koru.setTimeout(queueHeatBeat, heatbeatTime - now);
-        else
-          heartbeatAF = window.requestAnimationFrame(queueHeatBeat);
+        if (now < heatbeatTime) {
+          heartbeatTO = koru.afTimeout(queueHeatBeat, heatbeatTime - now);
+        } else {
+          heatbeatTime = null;
+          heartbeatTO = koru.afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
+          ws.send('H');
+        }
       }
     }
 

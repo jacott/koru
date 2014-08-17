@@ -80,11 +80,7 @@ define(function (require, exports, module) {
 
         v.sess.newWs = test.stub().returns(v.ws);
 
-        v.rafStub = test.stub(window, 'requestAnimationFrame').returns(123);
-        v.cafStub = test.stub(window, 'cancelAnimationFrame');
-
-        v.stoStub = test.stub(koru, 'setTimeout').returns(456);
-        v.ctoStub = test.stub(koru, 'clearTimeout');
+        test.stub(koru, 'afTimeout').returns(v.afTimeoutStop = test.stub());
 
         v.sess.connect();
 
@@ -120,33 +116,26 @@ define(function (require, exports, module) {
 
           assert.same(v.sess.heartbeatInterval, 20000);
 
-          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 20000);
+          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 20000);
 
-          v.stoStub.reset();
+          koru.afTimeout.reset();
           util.thread.date += 15000;
           v.ws.onmessage(event);
 
-          refute.called(v.stoStub);
+          refute.called(koru.afTimeout);
 
           util.thread.date += 7000;
           v.actualConn._queueHeatBeat();
 
-          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 13000);
+          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 13000);
 
-          v.stoStub.reset();
-          refute.called(v.rafStub);
+          koru.afTimeout.reset();
 
           util.thread.date += 14000;
           v.actualConn._queueHeatBeat();
 
-          assert.calledOnce(v.rafStub, v.actualConn._queueHeatBeat);
-          v.rafStub.reset();
-
-          v.actualConn._queueHeatBeat();
-
-          refute.called(v.rafStub);
-          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 10000);
-          v.stoStub.reset();
+          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 10000);
+          koru.afTimeout.reset();
 
           assert.calledOnce(v.ws.send);
           assert.calledWith(v.ws.send, 'H');
@@ -154,16 +143,15 @@ define(function (require, exports, module) {
           util.thread.date += 1000;
 
           v.ws.onmessage(event);
-          refute.called(v.stoStub);
+          refute.called(koru.afTimeout);
 
           v.actualConn._queueHeatBeat();
-          assert.calledWith(v.stoStub, v.actualConn._queueHeatBeat, 20000);
+          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 20000);
         });
       },
 
       "test no response close fails": function () {
         v.time = v.readyHeatbeat();
-        v.actualConn._queueHeatBeat();
 
         v.ws.close = function () {
           throw new Error("close fail");
@@ -178,7 +166,6 @@ define(function (require, exports, module) {
 
       "test no response close succeeds": function () {
         v.time = v.readyHeatbeat();
-        v.actualConn._queueHeatBeat();
 
         v.ws.close = function () {
           v.ws.onclose({});
@@ -189,18 +176,6 @@ define(function (require, exports, module) {
 
         assert.calledOnce(v.ws.close);
         assert.calledOnce(v.ws.onclose);
-      },
-
-      "test cancel requestAnimationFrame": function () {
-        v.time = v.readyHeatbeat();
-
-        v.ws.onmessage({data: "foo"});
-
-        assert.calledOnce(v.cafStub);
-        assert.calledWith(v.cafStub, 123);
-
-        v.ws.onmessage({data: "foo"});
-        assert.calledOnce(v.cafStub);
       },
     },
 
@@ -219,18 +194,17 @@ define(function (require, exports, module) {
         return conn.ws === v.ws;
       }));
 
-      test.stub(window, 'setTimeout').returns('c123');
-      test.stub(window, 'clearTimeout');
+      test.stub(koru, 'afTimeout').returns(v.afTimeoutStop = test.stub());
       test.stub(koru, 'info');
 
       v.ws.onclose({});         // remote close
 
       assert.called(sessState.retry);
-      assert.calledWith(setTimeout, v.sess.connect, 500);
+      assert.calledWith(koru.afTimeout, v.sess.connect, 500);
 
       v.sess.stop();            // local stop
 
-      assert.calledWith(clearTimeout, 'c123');
+      assert.called(v.afTimeoutStop);
       assert.called(sessState.close);
       sessState.connected.reset();
 
