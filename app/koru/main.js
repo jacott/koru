@@ -156,14 +156,7 @@
       util: util,
 
       setTimeout: function (func, duration) {
-        var fiber = util.Fiber(function () {
-          try {
-            func();
-          }
-          catch(ex) {
-            koru.error(util.extractError(ex));
-          }
-        });
+        var fiber = util.Fiber(wrapFunc(func));
         return setTimeout(fiber.run.bind(fiber), duration);
       },
 
@@ -221,6 +214,33 @@
       koru.libDir = requirejs.nodeRequire('path').resolve(require.toUrl('.'), '../../..');
     } else {
       koru.appDir = require.toUrl('').slice(0,-1);
+
+      koru.afTimeout = function (func, duration) {
+        var af = null;
+        var timeout = window.setTimeout(function () {
+          timeout = null;
+          af = window.requestAnimationFrame(function () {
+            af = null;
+            wrapFunc(func)();
+          });
+        }, duration);
+
+        return function () {
+          if (timeout) window.clearTimeout(timeout);
+          if (af) window.cancelAnimationFrame(af);
+          af = timeout = null;
+        };
+      };
+    }
+
+    function wrapFunc(func) {
+      return function () {
+        try {
+          func();
+        } catch(ex) {
+          koru.error(util.extractError(ex));
+        }
+      };
     }
 
     return koru;
