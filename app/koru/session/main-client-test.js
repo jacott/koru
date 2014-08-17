@@ -161,14 +161,34 @@ define(function (require, exports, module) {
         });
       },
 
-      "test no response": function () {
+      "test no response close fails": function () {
         v.time = v.readyHeatbeat();
         v.actualConn._queueHeatBeat();
 
-        v.ws.close = test.stub();
+        v.ws.close = function () {
+          throw new Error("close fail");
+        };
+        test.spy(v.ws, 'onclose');
+        assert.exception(function () {
+          v.actualConn._queueHeatBeat();
+        }, "Error", "close fail");
+
+        assert.called(v.ws.onclose);
+      },
+
+      "test no response close succeeds": function () {
+        v.time = v.readyHeatbeat();
         v.actualConn._queueHeatBeat();
 
-        assert.called(v.ws.close);
+        v.ws.close = function () {
+          v.ws.onclose({});
+        };
+        test.spy(v.ws, 'close');
+        test.spy(v.ws, 'onclose');
+        v.actualConn._queueHeatBeat();
+
+        assert.calledOnce(v.ws.close);
+        assert.calledOnce(v.ws.onclose);
       },
 
       "test cancel requestAnimationFrame": function () {

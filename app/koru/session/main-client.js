@@ -135,7 +135,13 @@ define(function (require, exports, module) {
         heartbeatTO = null;
         if (heatbeatTime === null) {
 
-          ws.close();
+          try {
+            ws.close();
+          } finally {
+            if (ws) {
+              ws.onclose({code: 'Heartbeat fail'});
+            }
+          }
           return;
         }
         var now = util.dateNow();
