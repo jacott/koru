@@ -34,6 +34,21 @@ define(function(require, exports, module) {
 
       return result;
     },
+
+    makeToken: function () {
+      var token = Random.id();
+      var tokens = this.unexpiredTokens();
+      tokens[token] = Date.now()+180*24*1000*60*60;
+      this.tokens = tokens;
+      return token;
+    },
+
+    sendNewToken: function (conn) {
+      var token = this.makeToken();
+      this.$$save();
+      conn.send('VT', this._id + '|' + token);
+      conn.userId = this.userId;
+    },
   })
   .defineFields({
     userId: 'text',
@@ -60,11 +75,8 @@ define(function(require, exports, module) {
   session.defineRpc('SRPLogin', function (response) {
     if (response.M !== this.$srp.M)
       throw new koru.Error(403, 'failure');
-    var token = Random.id();
     var doc = this.$srpUserAccount;
-    var tokens = doc.unexpiredTokens();
-    tokens[token] = Date.now()+180*24*1000*60*60;
-    doc.tokens = tokens;
+    var token = doc.makeToken();
     doc.$$save();
     var result = {
       HAMK: this.$srp && this.$srp.HAMK,
@@ -99,8 +111,7 @@ define(function(require, exports, module) {
     var lu = model.findById(parts[0]);
     if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
       lu.srp = passwordHash;
-      lu.$$save();
-      this.userId = lu.userId;
+      lu.sendNewToken(this);
       return;
     }
     throw new koru.Error(404, 'Expired or invalid reset request');

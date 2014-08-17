@@ -195,6 +195,16 @@ isServer && define(function (require, exports, module) {
         assert.same(v.conn.userId, v.lu.userId);
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
+        assert.calledWith(v.ws.send, TH.match(function (data) {
+          var m = data.match(/^VT(.*)\|(.*)$/);
+          v.docId = m && m[1];
+          return v.token = m && m[2];
+
+        }));
+        assert.same(v.lu._id, v.docId);
+        assert.between(v.lu.tokens[v.token], Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
+
+        assert.calledWith(v.ws.send, 'VS' + v.lu.userId);
       },
     },
 

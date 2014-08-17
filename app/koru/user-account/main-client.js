@@ -8,6 +8,9 @@ define(function(require, exports, module) {
 
   session.provide('V', function (data) {
     switch(data[0]) {
+    case 'T':
+      localStorage.setItem('koru.loginToken', data.slice(1).toString());
+      break;
     case 'S':
       login.setUserId(data.slice(1).toString() || null);
       break;

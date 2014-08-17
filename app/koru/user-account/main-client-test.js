@@ -249,6 +249,12 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.onChange, 'ready');
       },
 
+      "test receiving token": function () {
+        session._onMessage({}, 'VTthe_token');
+
+        assert.same(localStorage.getItem('koru.loginToken'), 'the_token');
+      },
+
       "test no loginToken onConnect": function () {
         test.stub(login, 'ready');
 
