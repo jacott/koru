@@ -486,13 +486,14 @@ define(function(require, exports, module) {
       return aname === bname ? 0 : aname < bname ? -1 : 1;
     },
 
-    compareByField: function (field) {
+    compareByField: function (field, direction) {
+      direction = direction === -1 ? -1 : 1;
       return function (a, b) {
         var afield = a && a[field], bfield = b && b[field];
         var atype = typeorder(afield), btype = typeorder(bfield);
         if (atype !== btype)
-          return atype < btype ? -1 : 1;
-        return afield === bfield ? 0 : afield < bfield ? -1 : 1;
+          return atype < btype ? -direction : direction;
+        return afield === bfield ? 0 : afield < bfield ? -direction : direction;
       };
     },
 

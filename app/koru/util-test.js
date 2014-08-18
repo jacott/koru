@@ -453,6 +453,7 @@ define(function (require, exports, module) {
 
       b.f1 = 'Cary';
       assert.same(util.compareByField('f1')(a,b), -1);
+      assert.same(util.compareByField('f1', -1)(a,b), 1);
 
       b.f1 = 'Arnold';
       assert.same(util.compareByField('f1')(a,b), 1);
