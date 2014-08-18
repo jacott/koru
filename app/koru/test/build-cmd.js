@@ -21,6 +21,8 @@ define(function(require, exports, module) {
         var sTests = [];
       }
 
+      pattern = pattern || '';
+
       if (pattern === '') {
         // all
         var config = module.config();
