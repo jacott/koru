@@ -111,6 +111,7 @@ define(function(require, exports, module) {
     var lu = model.findById(parts[0]);
     if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
       lu.srp = passwordHash;
+      lu.resetToken = lu.resetTokenExpire = undefined;
       lu.sendNewToken(this);
       return;
     }

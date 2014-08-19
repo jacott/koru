@@ -203,6 +203,9 @@ isServer && define(function (require, exports, module) {
         }));
         assert.same(v.lu._id, v.docId);
         assert.between(v.lu.tokens[v.token], Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
+        assert.same(v.lu.resetToken, undefined);
+        assert.same(v.lu.resetTokenExpire, undefined);
+
 
         assert.calledWith(v.ws.send, 'VS' + v.lu.userId);
       },
