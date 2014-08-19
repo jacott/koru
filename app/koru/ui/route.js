@@ -198,6 +198,7 @@ define(function(require, exports, module) {
         } else {
           page = page.Index || page;
           var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+          if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
           var title = document.title = page.title || Route.title;
           Dom.setTitle && Dom.setTitle(page.title);
         }
@@ -247,29 +248,28 @@ define(function(require, exports, module) {
 
     gotoPath: function (page) {
       var pageRoute = {};
-      if (typeof page === 'string') {
-        var m = /^([^?#]*)(\?[^#]*)?(#.*)$/.exec(page);
-        if (m) {
-          pageRoute.pathname = page = m[1];
-          pageRoute.search = m[2];
-          pageRoute.hash = m[3];
-        }
-        pageRoute.pathname = page;
+      if (page == null)
+        page = koru.getLocation();
 
-      } else {
-        if (page == null)
-          page = koru.getLocation();
-        else if (! ('pathname' in page))
+      if (typeof page !== 'string') {
+        if (! ('pathname' in page))
           return this.gotoPage.apply(this, arguments);
 
-        if ('search' in page)
-          pageRoute.search = page.search;
-
-        if ('hash' in page)
-          pageRoute.hash = page.hash;
-
-        pageRoute.pathname = page = page.pathname;
+        if (page.pathname !== '/') {
+          page = '/#'+page.pathname+(page.search || '')+ (page.hash || '');
+        } else {
+          page = page.hash || '/';
+        }
       }
+
+
+      var m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) || /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
+      if (m) {
+        pageRoute.pathname = page = m[1] || '/';
+        if (m[2]) pageRoute.search = m[2];
+        if (m[3]) pageRoute.hash = m[3];
+      }
+      pageRoute.pathname = page;
 
       var parts = page.split('/');
       var root = this.root;
@@ -305,7 +305,7 @@ define(function(require, exports, module) {
         page = newPage;
 
       if (page === root)
-        throw new Error('Page not found');
+        throw new Error('Page not found: ' + util.inspect(pageRoute));
 
       this.gotoPage(page, pageRoute);
     },

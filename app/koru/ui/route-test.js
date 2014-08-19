@@ -147,7 +147,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar',
                                                          search: '?search=data', hash: '#tag'});
 
-        assert.calledWith(Route.history.pushState, null, "TestTitle", "/baz/an-id/root-bar?search=data#tag");
+        assert.calledWith(Route.history.pushState, null, "TestTitle", "/#baz/an-id/root-bar?search=data#tag");
         v.RootBar.onEntry.reset();
 
         Route.gotoPath(v.RootBar);
@@ -164,10 +164,10 @@ isClient && define(function (require, exports, module) {
           page.title = 'Root bar';
         };
         Route.gotoPage(v.RootBar, {bazId: "an-id", append: 'one/two'});
-        assert.calledWith(Route.history.pushState, null, 'Root bar', '/baz/an-id/root-bar/one/two');
+        assert.calledWith(Route.history.pushState, null, 'Root bar', '/#baz/an-id/root-bar/one/two');
 
         Route.gotoPage(v.RootBar, {bazId: "diff-id"});
-        assert.calledWith(Route.history.pushState, null, 'Root bar', '/baz/diff-id/root-bar');
+        assert.calledWith(Route.history.pushState, null, 'Root bar', '/#baz/diff-id/root-bar');
 
         assert.calledTwice(v.Baz.onBaseEntry);
 
@@ -177,7 +177,7 @@ isClient && define(function (require, exports, module) {
 
         Route.pushCurrent();
 
-        assert.calledWith(Route.history.pushState, null, 'Root bar', '/baz/diff-id/root-bar');
+        assert.calledWith(Route.history.pushState, null, 'Root bar', '/#baz/diff-id/root-bar');
       },
 
       "test loadingArgs": function () {
@@ -217,7 +217,7 @@ isClient && define(function (require, exports, module) {
       Route.root.addTemplate(RootBar);
       Route.gotoPage(RootBar, {append: "ap/this"});
 
-      assert.calledWith(Route.history.pushState, null, 'TestTitle', '/root-bar/ap/this');
+      assert.calledWith(Route.history.pushState, null, 'TestTitle', '/#root-bar/ap/this');
     },
 
     "test abort page change": function () {
@@ -265,7 +265,7 @@ isClient && define(function (require, exports, module) {
 
       Route.gotoPage(v.FooBar);
 
-      assert.calledWith(Route.history.pushState, null, "foo title", '/foo-bar');
+      assert.calledWith(Route.history.pushState, null, "foo title", '/#foo-bar');
     },
 
     "test replace history": function () {
@@ -273,7 +273,7 @@ isClient && define(function (require, exports, module) {
       Route.root.addTemplate(v.FooBar);
       Route.replacePath(v.FooBar);
 
-      assert.calledWith(Route.history.replaceState, null, "baz bar", '/foo-bar');
+      assert.calledWith(Route.history.replaceState, null, "baz bar", '/#foo-bar');
     },
 
     "test replacePage passes all args": function () {

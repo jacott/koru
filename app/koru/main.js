@@ -88,7 +88,7 @@
     if (isServer) {
       requirejs.nodeRequire('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
     } else {
-      window.location.reload();
+      window.location.reload(true);
       throw "reloading"; // no point continuing
     }
   }
