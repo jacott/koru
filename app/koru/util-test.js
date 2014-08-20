@@ -322,6 +322,10 @@ define(function (require, exports, module) {
       }), undefined);
     },
 
+    "test flatten": function () {
+      assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
+    },
+
     "test findBy": function () {
       var list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
       assert.same(util.findBy(list, 1), list[1]);

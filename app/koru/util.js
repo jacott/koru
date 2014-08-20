@@ -299,6 +299,16 @@ define(function(require, exports, module) {
       return result;
     },
 
+    flatten: function (ary, result) {
+      result = result || [];
+      ary.forEach(function (value) {
+        if (Array.isArray(value)) util.flatten(value, result);
+        else
+          result.push(value);
+      });
+      return result;
+    },
+
     findBy: function (list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
