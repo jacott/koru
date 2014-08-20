@@ -299,13 +299,19 @@ define(function(require, exports, module) {
       return result;
     },
 
-    flatten: function (ary, result) {
-      result = result || [];
-      ary.forEach(function (value) {
-        if (Array.isArray(value)) util.flatten(value, result);
-        else
-          result.push(value);
-      });
+    flatten: function (ary, level) {
+      var result = [];
+
+      function internal(a, l) {
+        a.forEach(function (value) {
+          if (l && Array.isArray(value))
+            internal(value, l - 1);
+          else
+            result.push(value);
+        });
+      }
+
+      internal(ary, level === true ? 1 : level || -1);
       return result;
     },
 

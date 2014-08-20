@@ -324,6 +324,7 @@ define(function (require, exports, module) {
 
     "test flatten": function () {
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
+      assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8], true), [1, 2, 6, [4], 7, 8]);
     },
 
     "test findBy": function () {
