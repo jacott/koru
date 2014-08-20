@@ -289,6 +289,11 @@ define(function (require, exports, module) {
       assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a:1, c: 3});
     },
 
+    "test mapToSearchStr": function () {
+      assert.same(util.mapToSearchStr({'a +b': 'q[a]', foo: 'bar'}), "a%20%2Bb=q%5Ba%5D&foo=bar");
+
+    },
+
     "test toMap": function () {
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
@@ -305,6 +310,16 @@ define(function (require, exports, module) {
       assert.equals(util.mapField([]), []);
       assert.equals(util.mapField([{_id: 1}, {_id: 2}]), [1, 2]);
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
+    },
+
+    "test find ": function () {
+      assert.same(util.find([1,8,7,3], function (value, idx) {
+        return value > 5 && idx === 2;
+      }), 7);
+
+      assert.same(util.find([1,8,7,3], function (value, idx) {
+        return false;
+      }), undefined);
     },
 
     "test findBy": function () {

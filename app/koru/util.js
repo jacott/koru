@@ -249,6 +249,12 @@ define(function(require, exports, module) {
       return result;
     },
 
+    mapToSearchStr: function (map) {
+      return Object.keys(map).map(function (key) {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(map[key]);
+      }).join('&');
+    },
+
     toMap: function (keyName, valueName /*, lists */) {
       var result = {};
       if (arguments.length === 1) {
@@ -280,6 +286,17 @@ define(function(require, exports, module) {
       return list && list.map(function (doc) {
         return doc[fieldName];
       });
+    },
+
+    find: function (ary, func) {
+      var result;
+      ary.some(function (value) {
+        if (func.apply(this, arguments)) {
+          result = value;
+          return true;
+        }
+      });
+      return result;
     },
 
     findBy: function (list, value, fieldName) {
