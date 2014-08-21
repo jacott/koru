@@ -96,6 +96,7 @@ define(function (require, exports, module) {
       }
     } catch(ex) {
       koru.error(koru.util.extractError(ex));
+      error(ex);
     }
 
     function sendDefault(err) {

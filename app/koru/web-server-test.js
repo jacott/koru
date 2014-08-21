@@ -5,6 +5,7 @@ isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test');
   var webServer = require('./web-server');
+  var koru = require('koru/main');
 
   TH.testCase(module, {
     setUp: function () {
@@ -41,6 +42,31 @@ isServer && define(function (require, exports, module) {
 
       assert.same(v.future.wait(), "NOT FOUND");
       assert.same(v.res.statusCode, 404);
+    },
+
+    "test exception": function () {
+      test.stub(koru, 'error');
+      webServer.registerHandler('foo', function (req, res, error) {
+        v.res.called = true;
+        v.req.called = true;
+        throw new Error("Foo");
+      });
+
+      test.onEnd(function () {
+        webServer.deregisterHandler('foo');
+      });
+
+      v.req.url = '/foo/bar';
+
+      test.spy(v.res, 'end');
+
+      webServer.requestListener(v.req, v.res);
+
+      assert.same(v.res.statusCode, 500);
+      assert.calledWith(v.res.end, 'Internal server error!');
+
+      assert.isTrue(v.res.called);
+      assert.isTrue(v.req.called);
     },
 
     "test found html": function () {
