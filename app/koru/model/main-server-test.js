@@ -17,6 +17,17 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test invalid findById": function () {
+      var TestModel = Model.define('TestModel');
+
+      assert.same(TestModel.findById(null), undefined);
+
+
+      assert.exception(function () {
+        TestModel.findById({});
+      }, 'Error', 'invalid id: [object Object]');
+    },
+
     "test remote": function () {
       var TestModel = Model.define('TestModel');
 

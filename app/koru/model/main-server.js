@@ -172,6 +172,8 @@ define(function(require, exports, module) {
   }
 
   function findById(id) {
+    if (! id) return;
+    if (typeof id !== 'string') throw new Error('invalid id: '+ id);
     var doc = this.docs.findOne({_id: id});
     if (doc) return new this(doc);
   }
