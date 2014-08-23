@@ -195,134 +195,8 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test html": function () {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      document.body.appendChild(elm);
-
-      document.body.appendChild(Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
-
-      assert.dom('#top', function () {
-        assert.same(elm, this);
-
-        assert.dom('>.foo', function () { // doubles as a test for assert.dom directChild
-          assert.dom('>.bar>button#sp', 'Hello');
-        });
-      });
-
-      assert.dom('body', function () {
-        assert.dom('section#s123.bar', 'Goodbye', function () {
-          assert.dom('span', 'Goodbye');
-        });
-      });
-    },
-
     "test escapeHTML": function () {
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
-    },
-
-    "test setClassBySuffix": function () {
-      var elm = {className: ''};
-
-      Dom.setClassBySuffix('use', 'Mode', elm);
-      assert.same(elm.className, 'useMode');
-
-      Dom.setClassBySuffix('design', 'Mode', elm);
-      assert.same(elm.className, 'designMode');
-
-      Dom.setClassBySuffix('discard', 'Avatar', elm);
-      assert.same(elm.className, 'designMode discardAvatar');
-
-      Dom._private.currentElement = elm;
-
-      Dom.setClassBySuffix('use', 'Mode');
-      assert.same(elm.className, 'discardAvatar useMode');
-
-      Dom.setClassBySuffix(null, 'Avatar');
-      assert.same(elm.className, 'useMode');
-
-      Dom.setClassBySuffix('devMode prod', 'Mode', elm);
-      Dom.setClassBySuffix('devMode prod', 'Mode', elm);
-      assert.same(elm.className, 'devMode prodMode');
-
-      Dom.setClassBySuffix('', 'Mode', elm);
-      assert.same(elm.className, '');
-    },
-
-    "test setClassByPrefix": function () {
-      var elm = {className: ''};
-
-      Dom.setClassByPrefix('use', 'mode-', elm);
-      assert.same(elm.className, 'mode-use');
-
-      Dom.setClassByPrefix('design', 'mode-', elm);
-      assert.same(elm.className, 'mode-design');
-
-      Dom._private.currentElement = elm;
-
-      Dom.setClassByPrefix('discard', 'avatar-');
-      assert.same(elm.className, 'mode-design avatar-discard');
-
-      Dom.setClassByPrefix('use', 'mode-');
-      assert.same(elm.className, 'avatar-discard mode-use');
-
-      Dom.setClassByPrefix(null, 'avatar-');
-      assert.same(elm.className, 'mode-use');
-      Dom.setClassByPrefix('dev mode-prod', 'mode-');
-      assert.same(elm.className, 'mode-dev mode-prod');
-
-      Dom.setClassByPrefix('', 'mode-', elm);
-      assert.same(elm.className, '');
-    },
-
-    "test classList": function () {
-      var elm = document.createElement('div');
-
-      refute(Dom.hasClass(null, 'foo'));
-      refute(Dom.hasClass(elm, 'foo'));
-
-      Dom.addClass(elm, 'foo');
-      assert(Dom.hasClass(elm, 'foo'));
-
-      Dom.addClass(null, 'foo');
-      Dom.addClass(elm, 'foo');
-      Dom.addClass(elm, 'bar');
-      assert(Dom.hasClass(elm, 'foo'));
-      assert(Dom.hasClass(elm, 'bar'));
-
-      Dom.removeClass(null, 'bar');
-      Dom.removeClass(elm, 'bar');
-      assert(Dom.hasClass(elm, 'foo'));
-      refute(Dom.hasClass(elm, 'bar'));
-
-      // test toggle
-      assert(Dom.toggleClass(elm, 'bar'));
-      assert(Dom.hasClass(elm, 'bar'));
-
-      refute(Dom.toggleClass(elm, 'bar'));
-      refute(Dom.hasClass(elm, 'bar'));
-    },
-
-    "test parentOf": function () {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      assert.same(Dom.parentOf(elm, elm.querySelector('.bar')), elm);
-      assert.same(Dom.parentOf(elm.querySelector('.bar'), elm), null);
-    },
-
-    "test searchUpFor": function () {
-      var top = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      assert.isNull(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return elm === top;
-      }, 'bar'));
-      assert.same(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return Dom.hasClass(elm, 'bar');
-      }, 'bar'), top.firstChild.firstChild);
-
-      assert.same(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
-        return Dom.hasClass(elm, 'bar');
-      }), top.firstChild.firstChild);
     },
 
     "test $getClosest": function () {
@@ -725,6 +599,67 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "DomCtx": {
+      "test onAnimationEnd": function () {
+        var Tpl = Dom.newTemplate({
+          name: "Foo",
+          nodes:[{name: "div"}],
+        });
+
+        document.body.appendChild(v.elm = Dom.Foo.$render({}));
+
+        test.stub(document.body, 'addEventListener');
+        test.stub(document.body, 'removeEventListener');
+
+        // Repeatable
+        Dom.getMyCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
+        assert.calledWith(document.body.addEventListener, Dom.animationEndEventName, TH.match(function (arg) {
+          return v.animationEndFunc = arg;
+        }), true);
+
+        // Element removed
+        document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
+        Dom.getMyCtx(v.elm2).onAnimationEnd(v.stub2 = test.stub());
+
+        // Set twice
+        document.body.appendChild(v.elm3 = Dom.Foo.$render({}));
+        Dom.getMyCtx(v.elm3).onAnimationEnd(v.stub3old = test.stub());
+        Dom.getMyCtx(v.elm3).onAnimationEnd(v.stub3 = test.stub());
+
+
+        // Cancelled before called
+        document.body.appendChild(v.elm4 = Dom.Foo.$render({}));
+        Dom.getMyCtx(v.elm4).onAnimationEnd(v.stub4 = test.stub());
+        Dom.getMyCtx(v.elm4).onAnimationEnd();
+
+        // Body listener only set once
+        assert.calledOnce(document.body.addEventListener);
+
+        // fire events...
+
+        // should repeat fire
+        document.body.addEventListener.yield(v.event = {target: v.elm});
+        assert.calledWith(v.stub, Dom.getMyCtx(v.elm), v.event);
+        document.body.addEventListener.yield({target: v.elm});
+        assert.calledTwice(v.stub);
+        refute.called(v.stub2);
+
+        Dom.remove(v.elm);
+
+        // only last func fires
+        document.body.addEventListener.yield(v.event = {target: v.elm3});
+        refute.called(v.stub3old);
+        assert.called(v.stub3);
+
+        // stil one listener
+        refute.called(document.body.removeEventListener);
+
+        // should remove body listener since last element
+        Dom.remove(v.elm2);
+        assert.calledWith(document.body.removeEventListener, Dom.animationEndEventName, v.animationEndFunc, true);
+      },
+    },
+
     "$render": {
       "test autostop": function () {
         Dom.newTemplate({
@@ -835,12 +770,6 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(Dom.Foo.$render({user: {initials: 'fb'}}), 'fb');
       },
-    },
-
-    "test INPUT_SELECTOR, WIDGET_SELECTOR": function () {
-      assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
-      assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"],button,a');
-
     },
   });
 });

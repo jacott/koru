@@ -325,7 +325,38 @@ define(function(require, exports, module) {
         activeElement.focus();
       }
     },
+
+    onAnimationEnd: function (func, repeat) {
+      if (! this._animationEnd) {
+        if(++animationEndCount === 1)
+          document.body.addEventListener(Dom.animationEndEventName, animationEnd, true);
+        this.onDestroy(removeOnAnmiationEnd);
+      } else if (! func) {
+        removeOnAnmiationEnd.call(this);
+      }
+      this._animationEnd = func;
+      this._animationEndRepeat = func && repeat === 'repeat';
+    },
   };
+
+  var animationEndCount = 0;
+  function animationEnd(event) {
+    var ctx = event.target._koru;
+    var func = ctx && ctx._animationEnd;
+
+    if (! func) return;
+    if (! ctx._animationEndRepeat)
+      removeOnAnmiationEnd.call(ctx);
+
+    func(ctx, event);
+  }
+
+  function removeOnAnmiationEnd() {
+    if (! this._animationEnd) return;
+    this._animationEnd = null;
+    if (--animationEndCount === 0)
+      document.body.removeEventListener(Dom.animationEndEventName, animationEnd, true);
+  }
 
   function updateNode (node, data) {
     currentElement = node[0];

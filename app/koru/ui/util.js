@@ -248,6 +248,12 @@ define(function(require, exports, module) {
       INPUT_SELECTOR: 'input,textarea,select,select>option,[contenteditable="true"]',
     });
 
+    switch(vendorFuncPrefix) {
+    case 'webkit': Dom.animationEndEventName = 'webkitAnimationEnd'; break;
+    case 'ms': Dom.animationEndEventName = 'MSAnimationEnd'; break;
+    default: Dom.animationEndEventName = 'animationend';
+    }
+
     if (vendorStylePrefix === 'ms') {
       (function () {
         var m = /\bMSIE (\d+)/.exec(navigator.userAgent);
