@@ -22,6 +22,23 @@ define(function (require, exports, module) {
         test.stub(window, 'cancelAnimationFrame');
       },
 
+      "test zero timeout": function () {
+        koru.afTimeout(v.stub = test.stub());
+
+        refute.called(setTimeout);
+        assert.calledWith(window.requestAnimationFrame, TH.match.func);
+
+        window.requestAnimationFrame.yield();
+        assert.called(v.stub);
+      },
+
+      "test -ve timeout": function () {
+        koru.afTimeout(v.stub = test.stub(), -3);
+
+        refute.called(setTimeout);
+        assert.calledWith(window.requestAnimationFrame);
+      },
+
       "test running": function () {
         var stop = koru.afTimeout(v.stub = test.stub(), 1234);
 

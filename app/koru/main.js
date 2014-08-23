@@ -217,13 +217,18 @@
 
       koru.afTimeout = function (func, duration) {
         var af = null;
-        var timeout = window.setTimeout(function () {
+        if (duration && duration > 0)
+          var timeout = window.setTimeout(inner, duration);
+        else
+          inner();
+
+        function inner() {
           timeout = null;
           af = window.requestAnimationFrame(function () {
             af = null;
             wrapFunc(func)();
           });
-        }, duration);
+        }
 
         return function () {
           if (timeout) window.clearTimeout(timeout);
