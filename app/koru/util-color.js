@@ -1,32 +1,30 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
 
-  var backgroundColorOptions = {};
-  var backgroundBorderColorOptions = {};
+  var contrastColors = {};
+  var boarderColors = {};
 
-  return {
+  exports = {
     hex2rgb: hex2rgb,
 
     backgroundColorStyle: function (color) {
-      color = color || '#ffffff';
-      var options = backgroundColorOptions[color];
-      if (options) return options;
-      return backgroundColorOptions[color] = util.hashToCss({
-        'background-color': color,
-        color: contrastColor(color, '#4d4d4d'),
-      });
+      var style = {};
+      exports.setBackgroundColorStyle(style, color);
+      return util.hashToCss(style);
     },
 
-    backgroundAndBoarderColorStyle: function (color) {
+    setBackgroundColorStyle: function (style, color) {
       color = color || '#ffffff';
-      var options = backgroundBorderColorOptions[color];
-      if (options) return options;
-      var contrast = contrastColor(color, '#4d4d4d');
-      return backgroundBorderColorOptions[color] = util.hashToCss({
-        'background-color': color,
-        color: contrast,
-        'border-color': fade(contrast, 30),
-      });
+      style['background-color'] = color;
+      style.color = contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d'));
+    },
+
+    setBackgroundAndBoarderColorStyle: function (style, color) {
+      color = color || '#ffffff';
+
+      exports.setBackgroundColorStyle(style, color);
+      var cc = contrastColors[color];
+      style['border-color'] = boarderColors[cc] || (boarderColors[color] = fade(cc, 30));
     },
 
     colorOnLight: function (color) {
@@ -132,4 +130,6 @@ define(function(require, exports, module) {
   function lab2xyz(x) {
     return x > .206893034 ? x * x * x : (x - 4 / 29) / 7.787037;
   }
+
+  return exports;
 });

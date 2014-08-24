@@ -19,6 +19,24 @@ define(function (require, exports, module) {
       assert.equals(uColor.hex2rgb('foo'), {r: 0, g: 0, b: 0});
     },
 
+    "test setBackgroundAndBoarderColorStyle": function () {
+
+      var style = {foo: 123};
+
+      uColor.setBackgroundAndBoarderColorStyle(style, '#717a1d');
+
+      assert.equals(style, {foo: 123, "background-color": "#717a1d", color: "#fcfcfc", "border-color": "rgba(252,252,252,0.3)"});
+    },
+
+    "test setBackgroundColorStyle": function () {
+
+      var style = {foo: 123};
+
+      uColor.setBackgroundColorStyle(style, '#717a1d');
+
+      assert.equals(style, {foo: 123, "background-color": "#717a1d", color: "#fcfcfc"});
+    },
+
     "test backgroundColorStyle": function () {
       assert.same(uColor.backgroundColorStyle('#11aadd'), "background-color:#11aadd;color:#040404");
 
