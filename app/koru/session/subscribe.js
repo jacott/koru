@@ -65,8 +65,9 @@ define(function(require, exports, module) {
       var sub = new ClientSub(
         (++nextId).toString(36), name, util.slice(arguments, 1)
       );
+      if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
+        return sub;
       subs[sub._id] = sub;
-      Subcribe.intercept(name, sub, callback);
       sub._wait();
       session.sendP(sub._id, name, sub.args);
       sub.resubscribe();
@@ -78,7 +79,6 @@ define(function(require, exports, module) {
 
       get _subs() {return subs},
       get _nextId() {return nextId},
-      intercept: function () {},
       unload: function () {
         sessState.stopOnConnect('10');
         loginOb && loginOb.stop();
