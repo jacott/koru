@@ -331,24 +331,32 @@ define(function(require, exports, module) {
         if(++animationEndCount === 1)
           document.body.addEventListener(Dom.animationEndEventName, animationEnd, true);
         this.onDestroy(removeOnAnmiationEnd);
-      } else if (! func) {
-        removeOnAnmiationEnd.call(this);
+      } else {
+        if (func !== 'cancel')
+          var old = this._animationEnd;
+
+        if (! func || func === 'cancel') {
+          removeOnAnmiationEnd.call(this);
+          func = null;
+        }
       }
       this._animationEnd = func;
       this._animationEndRepeat = func && repeat === 'repeat';
+      old && old(this, this.element());
     },
   };
 
   var animationEndCount = 0;
   function animationEnd(event) {
-    var ctx = event.target._koru;
+    var target = event.target;
+    var ctx = target._koru;
     var func = ctx && ctx._animationEnd;
 
     if (! func) return;
     if (! ctx._animationEndRepeat)
       removeOnAnmiationEnd.call(ctx);
 
-    func(ctx, event);
+    func(ctx, target);
   }
 
   function removeOnAnmiationEnd() {
