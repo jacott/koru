@@ -27,16 +27,20 @@ define(function(require, exports, module) {
     var type = data[0];
     var head = document.head;
     data.slice(1).split(" ").forEach(function (name) {
-      name = '/'+name;
-      if (name.slice(-4) !== '.css') name += '.css';
-      var node = head.querySelector('head>link[href="'+name+'"]');
+
+      if (name.slice(-4) !== '.css') {
+        var idx = name.lastIndexOf("/");
+        if (idx === -1) return;
+        name = name.slice(0, idx) + "/.build" + name.slice(idx) + '.css';
+      }
+      var node = head.querySelector('head>link[href="/'+name+'"]');
       node && head.removeChild(node);
 
       if (type === 'L') {
         node = document.createElement('link');
         node.rel = 'stylesheet';
         node.async = true;
-        node.href = name;
+        node.href = '/'+name;
         if (exports.callback)
           node.onload = exports.callback;
 

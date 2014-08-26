@@ -1,0 +1,3 @@
+@import "less-compiler-test-imp2.lessimport";
+
+@colorRed: darken(#f00, 10%);

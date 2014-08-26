@@ -14,7 +14,6 @@ define(function(require, exports, module) {
   return {
     runTests: function(session, type, pattern, callback) {
       if (type !== 'server') {
-        session.unload('cmd-client');
         var cTests = [];
       }
       if (type !== 'client') {

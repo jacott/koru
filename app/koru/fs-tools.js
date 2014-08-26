@@ -1,10 +1,16 @@
 var fs = require('fs');
 var Path = require('path');
-var Future = requirejs.nodeRequire('fibers/future');
+var Fiber = requirejs.nodeRequire('fibers');
+var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+
+var readdir_w = Future.wrap(fs.readdir);
+var stat_w = Future.wrap(fs.stat);
+var unlink_w = Future.wrap(fs.unlink);
+var utimes_w = Future.wrap(fs.utimes);
 
 define({
   mkdir: mkdir,
-  mkdirp: mkdirp,
+  mkdir_p: mkdir_p,
   appendData: appendData,
   readdir: readdir,
   readFile: readFile,
@@ -14,6 +20,25 @@ define({
   truncate: truncate,
   unlink: unlink,
   writeFile: writeFile,
+  setMtime: function (path, time) {
+    time = new Date(time);
+    utimes_w(path, time, time).wait();
+  },
+
+  rm_r: function (dir) {
+    stat(dir) && rm_rf_w(dir).wait();
+  },
+
+  rm_f: function (file) {
+    try {
+      unlink(file);
+      return true;
+    } catch(ex) {
+      if (ex.code !== 'ENOENT')
+        throw ex;
+      return false;
+    }
+  },
 });
 
 function stat(path) {
@@ -26,6 +51,36 @@ function stat(path) {
     throw ex;
   }
 }
+
+var rm_rf_w = Future.wrap(function (dir, callback) {
+  Fiber(function () {
+    try {
+      var filenames = readdir_w(dir).wait();
+
+      var stats = filenames.map(function (filename) {
+        return stat_w(Path.join(dir, filename));
+      });
+
+      wait(stats);
+
+      for(var i = 0; i < filenames.length; ++i) {
+        var fn = Path.join(dir, filenames[i]);
+
+        filenames[i] =
+          stats[i].get().isDirectory() ?
+          rm_rf_w(fn) : unlink_w(fn);
+      }
+
+      wait(filenames);
+
+      fs.rmdir(dir, callback);
+    } catch(ex) {
+      callback(ex);
+      return;
+    }
+  }).run();
+});
+
 
 function appendData(path, data) {
   var fd = futureWrap(fs, fs.open, [path, 'a', {mode: 0644}]);
@@ -75,7 +130,7 @@ function mkdir(dir) {
   }
 }
 
-function mkdirp(path) {
+function mkdir_p(path) {
   path = Path.resolve(path);
   var idx = 0;
   while((idx = path.indexOf('/', idx+1)) !== -1) {

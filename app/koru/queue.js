@@ -18,6 +18,7 @@ define(function(require, exports, module) {
 
       add: function (func) {
         if (this.running) {
+          this.isPending = true;
           if (this.queued == null)  {
             this.queued = 1;
             this.runNext = 1;
@@ -30,10 +31,11 @@ define(function(require, exports, module) {
           future.wait();
         }
 
+        this.isPending = false;
         this.running = true;
 
         try {
-          var result = func();
+          var result = func(this);
         } catch(ex) {
           var error = ex;
         }
@@ -42,7 +44,10 @@ define(function(require, exports, module) {
           if (future) {
             delete this.futures[this.runNext];
             ++this.runNext;
+
             future.return();
+          } else {
+            delete queues[this.name];
           }
         } else {
           delete queues[this.name];

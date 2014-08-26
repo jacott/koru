@@ -24,7 +24,7 @@ isClient && define(function (require, exports, module) {
       require(['koru/css/loader'], done.wrap(function (loader) {
         test.stub(session._commands, 'S', done.wrap(function (data) {
           assert.same(data.split(' ').sort().join(' '),
-                      'Lkoru/css/.build/less-compiler-test.less koru/css/loader-test.css koru/css/loader-test2.css');
+                      'Lkoru/css/less-compiler-test.less koru/css/loader-test.css koru/css/loader-test2.css');
           done();
         }));
         loader.loadAll('koru/css');
@@ -47,7 +47,7 @@ isClient && define(function (require, exports, module) {
         });
         loader.callback = onload;
 
-        provide.yield("Lkoru/css/loader-test.css koru/css/.build/less-compiler-test.less");
+        provide.yield("Lkoru/css/loader-test.css koru/css/less-compiler-test.less");
       }));
 
       function onload(event) {

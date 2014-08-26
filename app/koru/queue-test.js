@@ -16,11 +16,13 @@ isServer && define(function (require, exports, module) {
     },
 
     "test queing": function () {
-      var q2 = new Future();
-      var q3 = new Future();
+      var q2 = new Future;
+      var q3 = new Future;
+      var fooFin = new Future;
       var results = [];
       var queue = Queue();
-      queue('foo', function () {
+      queue('foo', function (fooQueue) {
+        assert.isFalse(fooQueue.isPending);
         letRun(function () {
           queue('foo', function () {
             letRun(function () {
@@ -31,6 +33,7 @@ isServer && define(function (require, exports, module) {
                   queue('bar', function () {
                     throw 'ex bar';
                   });
+
                   results.push('not me');
                 });
               } catch(ex) {
@@ -46,12 +49,18 @@ isServer && define(function (require, exports, module) {
             q2.return();
           });
         });
+        assert.isTrue(fooQueue.isPending);
         results.push(1);
       });
       q2.wait();
       q3.wait();
       assert.equals(results, [1, 'bar', 2, 3, 'ex bar']);
 
+      queue('foo', function () {
+        v.fooNew = true;
+      });
+
+      assert.isTrue(v.fooNew);
 
       function letRun(func) {
         koru.Fiber(func).run();
