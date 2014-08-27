@@ -195,7 +195,7 @@ define(function(require, exports, module) {
           }
         }
         if (otherMsgs.length > 0) {
-          console.log('Unexpected errors: ', koru._geddon_ && koru._geddon_.test.name, JSON.stringify(otherMsgs));
+          koru.unexpectedError && koru.unexpectedError('Save invalid', JSON.stringify(otherMsgs));
         }
 
         focus && focus.focus();

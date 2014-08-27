@@ -12,6 +12,6 @@ define({
     invalid_format: "not valid",
     not_unique: "must be unique",
     not_in_list: "please select from the list",
-    unexpected_error: "An unexpected error has occurred",
+    unexpected_error: "An unexpected error has occurred: {0}",
   },
 });
