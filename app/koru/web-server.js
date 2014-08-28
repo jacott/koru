@@ -88,7 +88,7 @@ define(function (require, exports, module) {
 
       var m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
-      if (! (m && compileTemplate(req, res, m[2], reqRoot+m[1], m[3]))) {
+      if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
         send(req, path, {root: reqRoot, index: false})
           .on('error', sendDefault)
           .on('directory', sendDefault)

@@ -6,6 +6,7 @@ isServer && define(function (require, exports, module) {
   var TH = require('./test');
   var webServer = require('./web-server');
   var koru = require('koru/main');
+  var fst = require('./fs-tools');
 
   TH.testCase(module, {
     setUp: function () {
@@ -28,6 +29,21 @@ isServer && define(function (require, exports, module) {
         },
       };
       v.origSend = webServer.send;
+
+      v.replaceSend = function (func) {
+        v.sendRet = {
+          pipe: function (res) {
+            v.future.return(res);
+          },
+        };
+
+        v.sendRet.on = test.stub().returns(v.sendRet);
+
+        webServer._replaceSend(v.send = function () {
+          func && func.apply(this, arguments);
+          return v.sendRet;
+        });
+      };
     },
 
     tearDown: function () {
@@ -38,10 +54,32 @@ isServer && define(function (require, exports, module) {
     "test not found html": function () {
       v.req.url = '/koru/.build/notFound.html.js';
 
+      v.replaceSend();
+
       webServer.requestListener(v.req, v.res);
 
       assert.same(v.future.wait(), "NOT FOUND");
       assert.same(v.res.statusCode, 404);
+    },
+
+    "test compilation no build": function () {
+      test.stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});
+      test.stub(fst, 'mkdir');
+      var foo = webServer.compilers.foo = test.stub();
+      test.onEnd(function () {
+        delete webServer.compilers.foo;
+      });
+
+      v.req.url = '/koru/.build/web-server-test.foo.bar';
+
+      v.replaceSend();
+
+      webServer.requestListener(v.req, v.res);
+
+      assert.calledWith(fst.mkdir, koru.appDir+"/koru/.build");
+
+      assert.calledWith(foo, 'foo', koru.appDir+"/koru/web-server-test.foo",
+                        koru.appDir+"/koru/.build/web-server-test.foo.bar");
     },
 
     "test exception": function () {
@@ -60,6 +98,8 @@ isServer && define(function (require, exports, module) {
 
       test.spy(v.res, 'end');
 
+      v.replaceSend();
+
       webServer.requestListener(v.req, v.res);
 
       assert.same(v.res.statusCode, 500);
@@ -72,22 +112,13 @@ isServer && define(function (require, exports, module) {
     "test found html": function () {
       v.req.url = '/koru/.build/web-server-test.html.js';
 
-      v.sendRet = {
-        pipe: function (res) {
-          v.future.return(res);
-        },
-      };
-
-      v.sendRet.on = test.stub().returns(v.sendRet);
-
-      webServer._replaceSend(v.send = function (req, path, options) {
+      v.replaceSend(function (req, path, options) {
         assert.same(req, v.req);
 
         assert.same(fs.readFileSync(options.root + path).toString(),
                     'define({"name":"Test.WebServer","nodes":[{"name":"div","attrs":[],"children":[["","hello"]]}]})');
-
-        return v.sendRet;
       });
+
       webServer.requestListener(v.req, v.res);
 
       assert.same(v.future.wait(), v.res);
