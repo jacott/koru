@@ -177,7 +177,10 @@
       },
 
       logger: function () {
-        console.log.apply(console, arguments);
+        var args = util.slice(arguments);
+        args.unshift(new Date().toISOString());
+
+        console.log.apply(console, args);
       },
 
       globalCallback: function (err, result) {

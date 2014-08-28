@@ -78,13 +78,13 @@ define(function (require, exports, module) {
           conn && conn.closed();
           delete session.conns[sessId];
         }
-        koru.info('Close client', sessId);
+        koru.info('Close client', sessId, session.totalSessions);
       });
       conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
       ws.on('message', conn.onMessage.bind(conn));
 
       conn.send('X1', session.versionHash);
-      koru.info('New client ws:',session.totalSessions, conn.engine, ugr.socket.remoteAddress);
+      koru.info('New client ws:', sessId, session.totalSessions, conn.engine, ugr.socket.remoteAddress);
     }
 
     function sendAll(cmd, msg) {
