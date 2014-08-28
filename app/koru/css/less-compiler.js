@@ -44,6 +44,7 @@ define(function(require, exports, module) {
     } catch (ex) {
       var fn = ex.filename || path;
       if (fn === 'input') fn = path;
+      if (fn[0] === '/') fn = fn.slice(1);
       koru.error(koru.util.extractError({
         toString: function () {return "Less compiler error: " + ex.message},
         stack: "\tat "+ fn + ':' + ex.line + ':' + (ex.column + 1),

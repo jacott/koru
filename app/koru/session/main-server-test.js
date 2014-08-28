@@ -30,6 +30,36 @@ isServer && define(function (require, exports, module) {
         v.sess = serverSession(v.mockSess);
       },
 
+      "test unload client only": function () {
+        test.stub(requirejs, 'defined');
+        test.stub(koru, 'unload');
+        test.stub(v.sess, 'sendAll');
+
+        v.sess.versionHash = '1234';
+
+        v.sess.unload('foo');
+
+        refute.called(koru.unload);
+
+        assert.calledWith(v.sess.sendAll, 'U', '1234:foo');
+      },
+
+      "test unload server": function () {
+        test.stub(requirejs, 'defined').withArgs('foo').returns(true);
+        test.stub(koru, 'unload');
+        test.stub(v.sess, 'sendAll');
+
+        v.sess.versionHash = '1234';
+
+        v.sess.unload('foo');
+
+        assert.calledWith(koru.unload, 'foo');
+
+        refute.same(v.sess.versionHash, '1234');
+
+        assert.calledWith(v.sess.sendAll, 'U', v.sess.versionHash+':foo');
+      },
+
       "test versionHash": function () {
         assert.calledWith(v.ws.on, 'connection', TH.match(function (func) {
           return v.func = func;

@@ -99,8 +99,10 @@ define(function (require, exports, module) {
     }
 
     function unload(id) {
-      koru.unload(id);
-      this.versionHash = Date.now();
+      if (requirejs.defined(id)) {
+        koru.unload(id);
+        this.versionHash = Date.now();
+      }
       this.sendAll('U', this.versionHash + ':' + id);
     }
 
