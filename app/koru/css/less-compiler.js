@@ -46,7 +46,7 @@ define(function(require, exports, module) {
       if (fn === 'input') fn = path;
       koru.error(koru.util.extractError({
         toString: function () {return "Less compiler error: " + ex.message},
-        stack: "\tat ."+ fn + ':' + ex.line + ':' + (ex.column + 1),
+        stack: "\tat "+ fn + ':' + ex.line + ':' + (ex.column + 1),
       })+"\n");
       return;
     }

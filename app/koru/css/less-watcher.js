@@ -58,7 +58,7 @@ define(function(require, exports, module) {
 
           if (m = filenames[i].match(/^\w.*(less|css)$/)) {
             if (m[1] === 'less')
-              extractInfo(fn, true);
+              extractInfo(fn);
             else
               loads[fn] = true;
           } else if (stats[i].get().isDirectory()) {
@@ -79,7 +79,27 @@ define(function(require, exports, module) {
     return results;
   }
 
-  function extractInfo(srcName, isLess) {
+  function extractInfo(srcName, fromName) {
+    if (srcName[0] !== '.') {
+      var fullname = Path.join(topDir, srcName);
+      try {
+        var src = fst.readFile(fullname);
+      } catch(ex) {
+      }
+    }
+    if (! src) {
+      fullname = Path.resolve(topDir, Path.dirname(fromName), srcName);
+      try {
+        src = fst.readFile(fullname);
+        srcName = fullname.slice(topDirLen);
+      } catch(ex) {
+        if (ex.code === 'ENOENT') {
+          ex.message = "ENOENT @import '" + srcName + "' from '" + fromName + '"';
+          throw ex;
+        }
+      }
+    }
+
     var fullname = Path.join(topDir, srcName);
     var src = fst.readFile(fullname);
 
@@ -93,16 +113,17 @@ define(function(require, exports, module) {
 
       delete sources[srcName];
 
-      isLess && delete loads[srcName];
+      fromName || delete loads[srcName];
 
       return;
     };
 
-    if (isLess) {
+    if (fromName) {
+      var st = fst.stat(fullname);
+    } else {
       var st = fst.stat(buildName(fullname));
       loads[srcName] = true;
-    } else
-      var st = fst.stat(fullname);
+    }
 
     st = st && +st.mtime;
 
@@ -122,7 +143,7 @@ define(function(require, exports, module) {
       var deps = imports[imp];
       if (! deps)  {
         imports[imp] = deps = {};
-        var imt = extractInfo(imp);
+        var imt = extractInfo(imp, srcName);
 
       } else {
         var imt = sources[imp].mtime;
@@ -137,10 +158,10 @@ define(function(require, exports, module) {
     }
 
     if (st && provs.mtime && st > provs.mtime ) {
-      if (isLess) {
-        fst.rm_f(buildName(fullname));
-      } else
+      if (fromName) {
         provs.mtime = st; // propagate most recent time
+      } else
+        fst.rm_f(buildName(fullname));
     }
 
 
@@ -161,7 +182,7 @@ define(function(require, exports, module) {
     if (! loadDirs.hasOwnProperty(prefix)) return;
 
     queue(path, function (queue) {
-      extractInfo(path, type === 'less');
+      extractInfo(path, type === 'less' ? null : path);
       if (queue.isPending) return;
       if (type === 'less')
         session.sendAll('SL', path);
