@@ -568,6 +568,10 @@ define(function(require, exports, module) {
       }
     },
 
+    get $fullname() {
+      return (this.parent ? this.parent.$fullname + "." : "") + this.name;
+    },
+
     $helpers: function (properties) {
       extend(this._helpers, properties);
       return this;
