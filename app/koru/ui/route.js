@@ -72,8 +72,10 @@ define(function(require, exports, module) {
           module = null;
         }
       }
+
+      var path = template.$path || (template.$path = templatePath(template));
+
       if ('route' in template) throw new Error(template.name + ' is already a route base');
-      var path = templatePath(template);
       if (path in this.routes) throw new Error('Path already exists! ', path + " for template " + this.path);
 
       return template.route = this.routes[path] = new Route(path, template, this, routeVar);
@@ -81,8 +83,7 @@ define(function(require, exports, module) {
 
     removeBase: function (template) {
       delete template.route;
-      var path = templatePath(template);
-      delete this.routes[path];
+      delete this.routes[template.$path];
     },
 
     onBaseExit: function(page, location) {
@@ -206,10 +207,10 @@ define(function(require, exports, module) {
         if (pageState &&
             (pageState !== 'pushState' || currentHref !== href) &&
             ! (page && ('noPageHistory' in page))) {
-          currentHref = href;
-          currentTitle = title;
           Route.history[pageState](null, title, href);
         }
+        currentHref = href;
+        currentTitle = title;
         currentPage = page;
       }
       catch(ex) {
@@ -234,6 +235,14 @@ define(function(require, exports, module) {
 
     get currentPage() {
       return currentPage;
+    },
+
+    get currentHref() {
+      return currentHref;
+    },
+
+    get currentTitle() {
+      return currentTitle;
     },
 
     pageChanged: function () {

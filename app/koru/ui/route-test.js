@@ -301,11 +301,18 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWithExactly(Route.gotoPath);
 
+      v.FooBar.onEntry.returns('thehref');
+      v.FooBar.title = 'foo bar';
+
       Route.gotoPath.restore();
       Route.gotoPath('/foo-bar');
 
       refute.called(Route.history.pushState);
       refute.called(Route.history.replaceState);
+
+      assert.same(Route.currentPage, v.FooBar);
+      assert.same(Route.currentHref, '/#thehref');
+      assert.same(Route.currentTitle, 'foo bar');
     },
 
     "test replacePage always changes history": function () {
@@ -328,6 +335,7 @@ isClient && define(function (require, exports, module) {
         name: 'Baz',
         onBaseEntry: test.stub(),
         onBaseExit: test.stub(),
+        $path: 'bazpath',
       };
 
       var Fnord = {
@@ -362,7 +370,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Fnord.route.path, 'fnord');
       assert.same(Fnord.route.parent, Baz.route);
 
-      Route.gotoPath('baz//fnord/foo-bar');
+      Route.gotoPath('bazpath//fnord/foo-bar');
 
       assert.called(v.FooBar.onEntry);
       assert.called(Baz.onBaseEntry);
@@ -386,7 +394,7 @@ isClient && define(function (require, exports, module) {
 
       Route.gotoPage(v.FooBar);
 
-      var loc = {pathname: "/baz/fnord/foo-bar"};
+      var loc = {pathname: "/bazpath/fnord/foo-bar"};
 
       assert.calledWith(BazBar.onExit, v.FooBar, loc);
       assert.calledWith(v.FooBar.onEntry, v.FooBar, loc);
@@ -402,7 +410,7 @@ isClient && define(function (require, exports, module) {
 
       Route.gotoPath('/short-cut/12345');
 
-      assert.calledWith(BazBar.onEntry, BazBar, {append: '12345', pathname: "/baz/baz/12345"});
+      assert.calledWith(BazBar.onEntry, BazBar, {append: '12345', pathname: "/bazpath/baz/12345"});
     },
 
     "test privatePage": function () {
