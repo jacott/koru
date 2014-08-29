@@ -87,7 +87,7 @@ define(function(require, exports, module) {
     'keyup': function (event) {
       if (event.which === 27) {
         Dom.stopEvent();
-        Dom.getCtx(this)._widget.close();
+        cancel(this);
       }
     },
 
@@ -110,10 +110,7 @@ define(function(require, exports, module) {
 
     'click [name=cancel]': function (event) {
       Dom.stopEvent();
-      var ctx = Dom.getCtx(this);
-      var widget = ctx._widget;
-
-      widget.close();
+      cancel(this);
     },
   });
 
@@ -199,6 +196,13 @@ define(function(require, exports, module) {
     var element = this.element = Tpl.$autoRender(options);
     var ctx = this.ctx = Dom.getCtx(element);
     ctx._widget = this;
+  }
+
+  function cancel(elm) {
+    var ctx = Dom.getCtx(elm);
+    var data = ctx.data;
+    data && data.doc && data.doc.$reload();
+    ctx._widget.close();
   }
 
   Widget.prototype = {

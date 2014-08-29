@@ -135,7 +135,7 @@ isClient && define(function (require, exports, module) {
     "test swap escape": function () {
       v.parent.appendChild(v.elm = document.createElement('span'));
 
-      var widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo'}});
+      var widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = test.stub()}});
 
       assert.same(widget.swap, v.elm);
 
@@ -153,6 +153,7 @@ isClient && define(function (require, exports, module) {
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
 
+      assert.called(v.reload);
     },
 
     "test swap close": function () {
