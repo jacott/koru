@@ -38,14 +38,14 @@ isClient && define(function (require, exports, module) {
       Dom.newTemplate({name: "Foo.Bar"});
 
       test.stub(Route, 'gotoPath');
-      document.body.appendChild(Dom._helpers.pageLink({id: "foo", value: "foo bar", template: "Foo.Bar", append: "1234"}));
+      document.body.appendChild(Dom._helpers.pageLink({id: "foo", value: "foo bar", var_fooId: 'foo123', template: "Foo.Bar", append: "1234"}));
 
-      assert.dom('#foo', function () {
+      assert.dom('#foo:not([var_fooId])', function () {
         refute(this.getAttribute('append'));
         TH.click(this);
       });
 
-      assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {append: "1234"});
+      assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {append: "1234", fooId: 'foo123'});
     },
 
     "test search": function () {

@@ -21,8 +21,8 @@ define(function(require, exports, module) {
       }
 
       for(var attr in data) {
-        if (! (attr in IGNORE))
-          elm.setAttribute(attr, data[attr]);
+        if ((attr in IGNORE) || /^var_/.test(attr)) continue;
+        elm.setAttribute(attr, data[attr]);
       }
 
       Dom.addClass(elm, 'link');
@@ -36,8 +36,13 @@ define(function(require, exports, module) {
 
       var location = {};
 
+      for (var attr in data) {
+        if (/^var_/.test(attr)) location[attr.slice(4)] = data[attr];
+      }
+
       if (data.append) location.append = data.append;
       if (data.search) location.search = '?' + data.search;
+
       Route.gotoPath(data.link, location);
     },
   });
