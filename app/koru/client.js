@@ -14,8 +14,9 @@ define(function (require, exports, module) {
     var name = err.requireModules && err.requireModules[0];
     name && koru.unload(name, err);
 
-    session.send('E', koru.util.extractError(err));
-    throw err;
+    err = koru.util.extractError(err);
+    session.send('E', err);
+    koru.error(err);
   };
 
   function errorListener(ev) {
