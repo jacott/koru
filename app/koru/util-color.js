@@ -7,6 +7,10 @@ define(function(require, exports, module) {
   exports = {
     hex2rgb: hex2rgb,
 
+    rgb2hex: function (rgb) {
+      return "#"+ byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b);
+    },
+
     backgroundColorStyle: function (color) {
       var style = {};
       exports.setBackgroundColorStyle(style, color);
@@ -25,6 +29,57 @@ define(function(require, exports, module) {
       exports.setBackgroundColorStyle(style, color);
       var cc = contrastColors[color];
       style['border-color'] = boarderColors[cc] || (boarderColors[color] = fade(cc, 30));
+    },
+
+    rgb2hsl: function (rgb) {
+      if (typeof rgb === 'string')
+        rgb = hex2rgb(rgb);
+
+      var r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+      var max = Math.max(r, g, b), min = Math.min(r, g, b);
+      var h, s, l = (max + min) / 2;
+
+      if (max == min) {
+        h = s = 0;
+      } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch(max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+
+      return {h: h, s: s, l: l};
+    },
+
+    hsl2rgb: function (hsl) {
+      var r, g, b;
+      var h = hsl.h, s = hsl.s, l = hsl.l;
+
+      if (s == 0) {
+        r = g = b = l;
+
+      } else {
+        function hue2rgb(p, q, t) {
+          if(t < 0) t += 1;
+          if(t > 1) t -= 1;
+          if(t < 1/6) return p + (q - p) * 6 * t;
+          if(t < 1/2) return q;
+          if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+
+      return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
     },
 
     colorOnLight: function (color) {
@@ -119,6 +174,10 @@ define(function(require, exports, module) {
       xyz2hex(3.2404542 * x - 1.5371385 * y - .4985314 * z)+
       xyz2hex(-.969266 * x + 1.8760108 * y + .041556 * z)+
       xyz2hex(.0556434 * x - .2040259 * y + 1.0572252 * z);
+  }
+
+  function byte2hex(byte) {
+    return byte < 0x10 ? "0"+byte.toString(16) : byte.toString(16);
   }
 
   function xyz2hex(r) {
