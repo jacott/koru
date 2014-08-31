@@ -273,7 +273,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         if (selectNode != null) {
           var html;
           try {
-            html = selectNode[0].innerHTML;
+            html = formatHTML(selectNode[0].innerHTML);
           } catch(e) {
             html = selectNode[0].toString();
           }
@@ -432,6 +432,33 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
       message: "{0} to be called " + nth + ".\n{$calls}"
     });
+  }
+
+  function formatHTML(html) {
+    var re = /([^<]*)([^>]*>)/g, m;
+
+    var result = '';
+    var indent = '';
+
+    function add(str) {
+      result += "\n" + indent + str;
+    }
+
+    while(m = re.exec(html)) {
+      if (/\S/.test(m[1])) add(m[1]);
+      switch(m[2][1]) {
+      case '!':
+        add(m[2]); break;
+      case '/':
+        indent = indent.slice(0, -2);
+        add(m[2]); break;
+      default:
+        add(m[2]);
+        indent += '  ';
+      }
+    }
+
+    return result;
   }
 
   function withinDelta(actual, expected, delta) {
