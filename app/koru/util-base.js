@@ -63,6 +63,7 @@
       return '=> ' + o.name;
     case 'object':
       if (o === null) return 'null';
+      if (o.constructor === RegExp) return o.toString();
       if (o.hasOwnProperty('outerHTML'))
         return o.outerHTML;
       if (Array.isArray(o)) {
