@@ -777,9 +777,17 @@ isClient && define(function (require, exports, module) {
           name: "Foo",
           nodes:[{
             name:"div",
-            children:[['', 'user.initials']],
+            children:[{
+              name:"h1",
+              attrs:[],
+              children:[['', 'user.name']]
+            },{
+              name:"label",
+              attrs:[["=", "class", "search"]],
+              children:[['', 'user.initials']],
+            }]
           }, {
-            name: "h1",
+            name: "h2",
             children:[['', 'user.name']],
           }],
         });
@@ -789,7 +797,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('h1', 'Foo', function () {
           v.data.user.name = 'Bar';
-          assert.isTrue(Dom.getCtx(elm).updateElement(this.firstChild));
+          Dom.getCtx(elm).updateElement(this);
           assert.dom(this, 'Bar');
         });
       },

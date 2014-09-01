@@ -327,17 +327,19 @@ define(function(require, exports, module) {
     },
 
     updateElement: function (elm) {
-      var node;
-      this.evals.some(function (eval) {
-        if (elm === eval[0]) {
-          node = eval;
-          return true;
-        }
-      });
-      if (! node) return false;
-
-      updateNode(node, this.data);
-      return true;
+      var prevCtx = currentCtx;
+      var prevElm = currentElement;
+      currentCtx = this;
+      try {
+        this.evals.forEach(function (eval) {
+          if (Dom.parentOf(elm, eval[0])) {
+            updateNode(eval, currentCtx.data);
+          }
+        });
+      } finally {
+        currentElement = prevElm;
+        currentCtx = prevCtx;
+      }
     },
 
     onAnimationEnd: function (func, repeat) {
