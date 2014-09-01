@@ -223,6 +223,11 @@ define(function(require, exports, module) {
         }
       },
 
+      getUpDownByClass: function (elm, upClass, downClass) {
+        elm = Dom.getClosestClass(elm, upClass);
+        return elm && elm.getElementsByClassName(downClass)[0];
+      },
+
       matches: function (elm, selector) {
         return matches.call(elm, selector);
       },

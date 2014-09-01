@@ -772,6 +772,29 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.Foo.Bar.$fullname, 'Foo.Bar');
       },
 
+      "test updateElement": function () {
+        Dom.newTemplate({
+          name: "Foo",
+          nodes:[{
+            name:"div",
+            children:[['', 'user.initials']],
+          }, {
+            name: "h1",
+            children:[['', 'user.name']],
+          }],
+        });
+
+        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo'}});
+        document.body.appendChild(elm);
+
+        assert.dom('h1', 'Foo', function () {
+          v.data.user.name = 'Bar';
+          assert.isTrue(Dom.getCtx(elm).updateElement(this.firstChild));
+          assert.dom(this, 'Bar');
+        });
+      },
+
+
       "test body": function () {
         Dom.newTemplate({
           name: "Foo",

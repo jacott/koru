@@ -326,6 +326,20 @@ define(function(require, exports, module) {
       }
     },
 
+    updateElement: function (elm) {
+      var node;
+      this.evals.some(function (eval) {
+        if (elm === eval[0]) {
+          node = eval;
+          return true;
+        }
+      });
+      if (! node) return false;
+
+      updateNode(node, this.data);
+      return true;
+    },
+
     onAnimationEnd: function (func, repeat) {
       if (! this._animationEnd) {
         if(++animationEndCount === 1)
