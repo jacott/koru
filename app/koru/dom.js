@@ -579,6 +579,12 @@ define(function(require, exports, module) {
         this.$created && this.$created(currentCtx, frag);
         currentCtx.data === undefined || currentCtx.updateAllTags(currentCtx.data);
         return frag;
+      } catch(ex) {
+        // clean up what we can
+        try {
+          Dom.destroyData(frag);
+        } catch(ex2) {}
+        throw ex;
       } finally {
         currentCtx = prevCtx;
       }

@@ -697,6 +697,33 @@ isClient && define(function (require, exports, module) {
         refute.called(stub1);
       },
 
+      "test cleanup on exception": function () {
+        Dom.newTemplate({
+          name: "Foo",
+          nodes: [{
+            name:"div",
+            children: [" ",["","bar"]," "],
+          }],
+        });
+
+        Dom.Foo.$helpers({
+          bar: function () {
+            throw new Error('bang');
+          },
+        });
+
+        test.spy(Dom, 'destroyData');
+
+        assert.exception(function () {
+          Dom.Foo.$render({});
+        }, 'Error', 'bang');
+
+        assert.calledWith(Dom.destroyData, TH.match(function (elm) {
+          return elm.tagName === 'DIV';
+        }));
+
+      },
+
 
       "test no frag if only one child node": function () {
         Dom.newTemplate({
