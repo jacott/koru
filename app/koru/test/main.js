@@ -30,7 +30,10 @@ define(function(require, exports, module) {
     get test() {return geddon.test},
 
     run: function (pattern, tests) {
-      if (isClient) document.title = 'Running: ' + document.title;
+      if (isClient) {
+        document.title = 'Running: ' + document.title;
+        window.onbeforeunload = warnFullPageReload;
+      }
       console.log('*** test-start ' + ++testRunCount);
 
       geddon.runArg = pattern;
@@ -92,10 +95,19 @@ define(function(require, exports, module) {
   });
 
   function endTest() {
-    if (isClient) document.title = document.title.replace(/Running: /, '');
+    if (isClient) {
+      document.title = document.title.replace(/Running: /, '');
+      window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {
+        window.onbeforeunload = null;
+      }, 1);
+    }
     koru.logger = origLogger;
     self.testHandle('F', errorCount);
     geddon._init();
+  }
+
+  function warnFullPageReload() {
+    return "Some tests Did a full page reload";
   }
 
   return self;
