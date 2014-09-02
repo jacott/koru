@@ -533,16 +533,21 @@ define(function(require, exports, module) {
   DomTemplate.prototype = {
     constructor: DomTemplate,
 
-    $ctx: function (ctx) {
-      if (typeof ctx === 'string') ctx = document.getElementById(ctx);
-      if (! ctx)
-        ctx = currentCtx;
-      else if ('_koru' in ctx)
-        ctx = ctx._koru;
+    $ctx: function (origin) {
+      if (typeof origin === 'string') origin = document.getElementById(origin);
+      if (! origin)
+        origin = currentCtx;
+      else if ('nodeType' in origin)
+        origin = Dom.getCtx(origin);
 
-      for(; ctx; ctx = ctx.parentCtx) {
-        if (ctx.template === this) return ctx;
+      for(; origin; origin = origin.parentCtx) {
+        if (origin.template === this) return origin;
       }
+    },
+
+    $data: function (origin) {
+      var ctx = this.$ctx(origin);
+      return ctx && ctx.data;
     },
 
     $initOptions: function (options) {

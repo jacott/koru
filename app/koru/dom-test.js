@@ -44,7 +44,11 @@ isClient && define(function (require, exports, module) {
           name: "Bar.Baz",
           nodes:[{
             name:"input",
-            attrs:[["=","type",'text'], ["=", 'value', ['', 'initials']]]
+            attrs:[["=","type",'text'], ["=", 'value', ['', 'initials']]],
+            children: [{
+              name: 'article',
+              attrs: [['=', 'id', 'BazArticle']],
+            }],
           }],
         });
       },
@@ -78,6 +82,8 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('#FooId');
         assert.same(Dom.Foo.$ctx('FooId'), elm._koru);
+        assert.same(Dom.Foo.$data('FooId'), elm._koru.data);
+        assert.same(Dom.Foo.$data(elm.querySelector('#BazArticle')), elm._koru.data);
 
         assert.same(Dom.getCtxById('FooId'), elm._koru);
       },
