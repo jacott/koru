@@ -54,7 +54,7 @@ define(function(require, exports, module) {
     if (__elidePoint && __elidePoint.stack) {
       ex = __elidePoint;
       ex.message = message;
-      var lines = __elidePoint.stack.stack.split(/\n\s+at\s/).slice(2);
+      var lines = __elidePoint.stack.split(/\n\s+at\s/).slice(2);
       lines[0] = message;
 
       ex.stack = lines.join("\n    at ");
@@ -67,7 +67,7 @@ define(function(require, exports, module) {
   };
 
   function getElideFromStack() {
-    geddon._elidePoint = geddon._elidePoint || new Error('');
+    geddon.__elidePoint = geddon.__elidePoint || new Error('');
     return this;
   }
 
