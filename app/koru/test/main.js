@@ -5,7 +5,9 @@ define(function(require, exports, module) {
   require("./callbacks");
   require("./test-case");
   require("./runner");
-  var geddon = koru._geddon = require("./core");
+  var geddon = require("./core");
+
+  koru._geddon_ = geddon; // helpful for errors finding test name
 
   koru.onunload(module, 'reload');
 
@@ -19,8 +21,6 @@ define(function(require, exports, module) {
   var origLogger = koru.logger;
 
   var testRunCount = 0;
-
-  koru._geddon_ = geddon; // helpful for errors finding test name
 
   var self = {
     geddon: geddon,
