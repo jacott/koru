@@ -107,7 +107,7 @@ define(function(require, exports, module) {
   }
 
   function warnFullPageReload() {
-    return "Some tests Did a full page reload";
+    self.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   }
 
   return self;

@@ -48,9 +48,9 @@ define(function(require, exports, module) {
 
     setColor: function (node, value) {
       TH.click(node);
-      assert(document.getElementById('ColorPicker'));
+      assert.elideFromStack(document.getElementById('ColorPicker'));
       Dom.ColorPicker._cp.setHex(value);
-      assert.dom(document.getElementById('confirmDialog'), function () {
+      assert.elideFromStack.dom(document.getElementById('confirmDialog'), function () {
         TH.click('[name=apply]');
       });
       return this;
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
         args[args.length -1 ] = function () {
           TH.input(this, value);
         };
-        assert.dom.apply(assert, args);
+        assert.elideFromStack.dom.apply(assert, args);
       } else {
         if ('value' in node)
           node.value = value;
@@ -110,7 +110,7 @@ define(function(require, exports, module) {
         args[args.length -1 ] = function () {
           TH.change(this, value);
         };
-        assert.dom.apply(assert, args);
+        assert.elideFromStack.dom.apply(assert, args);
       } else {
         node.value = value;
         this.trigger(node, 'change');
@@ -120,11 +120,11 @@ define(function(require, exports, module) {
 
     trigger: function (node, event, args) {
       if (typeof node === 'string') {
-        assert.dom(node, function () {
+        assert.elideFromStack.dom(node, function () {
           TH.trigger(this, event, args);
         });
       } else {
-        assert(node,'node not found');
+        assert.elideFromStack(node,'node not found');
 
         if (typeof event === 'string') {
           if (event === 'mousewheel')
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
         args.push(function () {
           TH.click(this);
         });
-        assert.dom.apply(assert, args);
+        assert.elideFromStack.dom.apply(assert, args);
       } else {
         if (node.click)
           node.click(); // supported by form controls cross-browser; most native way
@@ -156,6 +156,7 @@ define(function(require, exports, module) {
       }
       return this;
     },
+
   });
 
   return TH;

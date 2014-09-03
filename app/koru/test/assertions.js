@@ -1,13 +1,21 @@
-define(['./core', '../format'], function (geddon, format) {
+define(function(require, exports, module) {
+  var util = require('koru/util');
+  var geddon = require('./core');
+  var format = require('../format');
+
   var gu = geddon._u;
   gu.format = format;
 
   var toString = Object.prototype.toString;
 
+  var __elidePoint;
+
   var assert = geddon.assert = function (truth, msg) {
     ++geddon.assertCount;
     var __msg = geddon.__msg;
+    __elidePoint = geddon.__elidePoint;
     geddon.__msg = null;
+    geddon.__elidePoint = null;
 
     if (truth) return truth;
 
@@ -28,6 +36,9 @@ define(['./core', '../format'], function (geddon, format) {
     return this;
   };
 
+  Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});
+  Object.defineProperty(refute, 'elideFromStack', {get: getElideFromStack});
+
   refute.msg = assert.msg;
 
   geddon.assertions = {
@@ -39,10 +50,26 @@ define(['./core', '../format'], function (geddon, format) {
   };
 
   geddon.fail = function (message) {
-    var ex = new Error(message && message.toString() || 'no message');
+    message = message ? message.toString() : 'no message';
+    if (__elidePoint && __elidePoint.stack) {
+      ex = __elidePoint;
+      ex.message = message;
+      var lines = __elidePoint.stack.stack.split(/\n\s+at\s/).slice(2);
+      lines[0] = message;
+
+      ex.stack = lines.join("\n    at ");
+    } else {
+      var ex = new Error(message);
+    }
     ex.name = "AssertionError";
+
     throw ex;
   };
+
+  function getElideFromStack() {
+    geddon._elidePoint = geddon._elidePoint || new Error('');
+    return this;
+  }
 
   function compileOptions(options) {
     if (! options.assertMessage)
