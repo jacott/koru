@@ -290,7 +290,7 @@ define(function(require, exports, module) {
 
     find: function (ary, func) {
       var result;
-      ary.some(function (value) {
+      Array.prototype.some.call(ary, function (value) {
         if (func.apply(this, arguments)) {
           result = value;
           return true;
