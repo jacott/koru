@@ -65,6 +65,7 @@ define(function(require, exports, module) {
       },
 
       html: function (html, tagName) {
+        if (typeof html === 'object' && ('nodeType' in html)) return html;
         tagName = tagName || 'div';
         if (typeof html === 'string') {
           var elm = document.createElement(tagName);
@@ -80,7 +81,9 @@ define(function(require, exports, module) {
           case "id": id = value; break;
 
           case "class": case "className": className = value; break;
-          case "content": case "html": content = Dom.html(value); break;
+          case "content": case "html":
+            content = typeof value === 'string' ? Dom.html(value) : value;
+            break;
           case "textContent": case "text": content = value.toString(); break;
 
           case "tag": case "tagName": tagName = value; break;
@@ -103,6 +106,10 @@ define(function(require, exports, module) {
 
         if (typeof content === "string")
           elm.textContent = content;
+        else if (Array.isArray(content))
+          content.forEach(function (item) {
+            elm.appendChild(Dom.html(item));
+          });
         else
           content && elm.appendChild(content);
 

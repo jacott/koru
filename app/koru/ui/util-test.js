@@ -35,6 +35,12 @@ isClient && define(function (require, exports, module) {
           assert.dom('span', 'Goodbye');
         });
       });
+
+      assert.same(Dom.html(elm), elm);
+
+      var nested = Dom.html({content: ['<div>hello</div>', elm]});
+      assert.same(nested.firstChild.nextSibling, elm);
+      assert.same(nested.firstChild.textContent, 'hello');
     },
 
 
