@@ -60,7 +60,7 @@ isClient && define(function (require, exports, module) {
     "test control toggle": function () {
       assert.dom(v.list, function () {
         assert.dom('div', 'row 2', function () {
-          Dom.selectRange(this, {});
+          Dom.selectRange(this, {ctrlKey: true});
         });
 
         assert.dom('div', 'row 4', function () {
@@ -69,10 +69,10 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('div', 'row 3', function () {
           assert.className(this, 'selected');
-          Dom.selectRange(this);
+          Dom.selectRange(this, {ctrlKey: true});
           assert.same(v.selected.length, 2);
 
-          Dom.selectRange(this, {ctrlKey: true});
+          Dom.selectRange(this);
           assert.same(v.selected.length, 1);
           assert.same(v.selected[0], this);
         });

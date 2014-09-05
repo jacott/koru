@@ -11,11 +11,7 @@ define(function(require, exports, module) {
     var selected = parent.getElementsByClassName(selectClass);
 
     if (event.ctrlKey) {
-      var on = ! Dom.hasClass(row, selectClass);
-      while(selected.length) {
-        Dom.removeClass(selected[0], selectClass);
-      }
-      Dom.setClass(selectClass, on, row);
+      Dom.toggleClass(row, selectClass);
     } else if (event.shiftKey) {
       var elm = row.nextSibling;
       while(elm && ! Dom.hasClass(elm, selectClass))
@@ -33,7 +29,11 @@ define(function(require, exports, module) {
       }
       Dom.addClass(row, selectClass);
     } else {
-      Dom.toggleClass(row, selectClass);
+      var on = ! Dom.hasClass(row, selectClass);
+      while(selected.length) {
+        Dom.removeClass(selected[0], selectClass);
+      }
+      Dom.setClass(selectClass, on, row);
     }
 
     row = (Dom.hasClass(row, selectClass) ? row : selected[0]);
