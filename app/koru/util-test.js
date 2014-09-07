@@ -440,6 +440,7 @@ define(function (require, exports, module) {
       assert.same(util.initials("Sam THE BIG Man", 2), "SM");
       assert.same(util.initials("Sam the BIG man"), "STM");
       assert.same(util.initials("Prince"), "P");
+      assert.same(util.initials("Princetui", 3, 'abrv'), "PRN");
     },
 
     "test hashToCss": function () {

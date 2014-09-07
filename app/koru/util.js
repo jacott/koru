@@ -438,7 +438,7 @@ define(function(require, exports, module) {
       });
     },
 
-    initials: function (name, count) {
+    initials: function (name, count, abvr) {
       count = count || 3;
 
       name = (name || '').split(' ');
@@ -448,6 +448,9 @@ define(function(require, exports, module) {
       }
       if (count > 0 && name.length > 0)
         result += name[name.length-1].slice(0,1);
+
+      if (result.length < 2 && abvr)
+        result += name[0].slice(1).replace(/[aeiou]*/ig, '').slice(0, count - 1);
 
       return result.toUpperCase();
     },
