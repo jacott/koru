@@ -201,7 +201,7 @@ define(function(require, exports, module) {
   };
 
   function accessDenied(details) {
-    var error = new koru.Error(403, "Access denied", details);
+    var error = new koru.Error(403, "Access denied: user ", koru.userId(), details);
 
     koru.info('Access denied: ', details, koru.util.extractError(error));
     throw error;

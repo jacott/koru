@@ -324,7 +324,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
                 selectNode = elm = ef;
               }
             }
-            if ('parent' in options) {
+            if (options.parent) {
               if (typeof options.parent === 'number') {
                 elm = elm[0];
                 for(var num = options.parent; elm && num > 0;--num) {
