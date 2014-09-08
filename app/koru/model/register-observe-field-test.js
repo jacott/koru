@@ -48,6 +48,16 @@ define(function (require, exports, module) {
         assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {toys: ['robot']});
       },
 
+      "test add/remove to observered field": function () {
+        v.doc.$onThis.addItem('toys', 'woody');
+
+        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$-1': 'woody'});
+
+        v.doc.$onThis.removeItem('toys', 'woody');
+
+        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$+1': 'woody'});
+      },
+
       "test updating other field": function () {
         v.doc.toys = v.attrs = ['woody', 'buzz'];
         v.doc.$$save();
