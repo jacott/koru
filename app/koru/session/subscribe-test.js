@@ -66,6 +66,16 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.sendBinary, 'P', ['12']);
     },
 
+    "test filterModels": function () {
+      test.stub(publish, '_filterModels');
+
+      var sub1 = subscribe("foo", 1 ,2);
+
+      sub1.filterModels('fuz', 'bar');
+
+      assert.calledWith(publish._filterModels, {fuz: true, bar: true});
+    },
+
     "test wait for onConnect": function () {
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);

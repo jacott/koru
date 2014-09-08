@@ -158,6 +158,14 @@ define(function(require, exports, module) {
         this._stop = func;
       },
 
+      filterModels: function () {
+        var models = {};
+        Array.prototype.forEach.call(arguments, function (mn) {
+          models[mn] = true;
+        });
+        publish._filterModels(models);
+      },
+
       stop: function () {
         if (! this._id) return;
         session.sendP(this._id);
