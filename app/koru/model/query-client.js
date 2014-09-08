@@ -241,7 +241,7 @@ define(function(require, exports, module) {
           if (fromServer(model, self.singleId, null) === null) {
             var doc = docs[self.singleId];
             delete docs[self.singleId];
-            notify(model, null, doc);
+            doc && notify(model, null, doc);
           }
           return 1;
         }

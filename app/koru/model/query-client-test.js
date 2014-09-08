@@ -359,6 +359,15 @@ define(function (require, exports, module) {
         assert.calledWith(v.changed, null, TH.matchModel(v.foo));
       },
 
+      "test remote removed non existant": function () {
+        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        session.isUpdateFromServer = true;
+        v.TestModel.query.onId('noDoc').remove();
+        session.isUpdateFromServer = false;
+
+        refute.called(v.changed);
+      },
+
       "test notification of different fields": function () {
         v.TestModel.query.update({age: 7});
 
