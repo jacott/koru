@@ -21,8 +21,10 @@ define(function(require, exports, module) {
     Ctx: DomCtx,
     current: {
       data: function (elm) {
-        if (elm)
-          return Dom.getCtx(elm).data;
+        if (elm) {
+          var ctx = Dom.getCtx(elm);
+          return ctx && ctx.data;
+        }
 
         return currentCtx.data;
       },

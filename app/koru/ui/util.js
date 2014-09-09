@@ -206,6 +206,10 @@ define(function(require, exports, module) {
         }
       },
 
+      mapToData: function (list) {
+        return Array.prototype.map.call(list, convertToData);
+      },
+
       getClosest: function (elm, selector) {
         while(elm && elm.nodeType !== DOCUMENT_NODE) {
           if (matches.call(elm, selector)) return elm;
@@ -275,6 +279,11 @@ define(function(require, exports, module) {
           }
         }
       })();
+    }
+
+    function convertToData(elm) {
+      var ctx = elm && Dom.getCtx(elm);
+      return ctx && ctx.data;
     }
   };
 });

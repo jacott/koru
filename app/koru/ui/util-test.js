@@ -43,6 +43,18 @@ isClient && define(function (require, exports, module) {
       assert.same(nested.firstChild.textContent, 'hello');
     },
 
+    "test mapToData": function () {
+      var elm = Dom.html({});
+
+      'one two three'.split(' ').forEach(function (data) {
+        var child = Dom.html({});
+        Dom.setCtx(child, {data: data});
+        elm.appendChild(child);
+      });
+
+      assert.equals(Dom.mapToData(elm.children), ['one', 'two', 'three']);
+    },
+
 
     "test setClassBySuffix": function () {
       var elm = {className: ''};
