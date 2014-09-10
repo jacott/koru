@@ -71,6 +71,19 @@ define(function(require, exports, module) {
       return this.changes[field] = util.deepCopy(this[field]);
     },
 
+    $hasChanged: function (field, changes) {
+      changes = changes || this.changes;
+
+      if (field in changes) return true;
+
+      var len = field.length;
+
+      for(var key in changes) {
+        if (key.length > len && key[len] === "." && key.slice(0, len)  === field) return true;
+      }
+      return false;
+    },
+
     /**
      * Return a doc representing this doc before the supplied changes
      * were made.

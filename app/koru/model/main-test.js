@@ -264,6 +264,23 @@ define(function (require, exports, module) {
         assert.same(doc._id, "chgId");
       },
 
+      "test $hasChanged": function () {
+        v.TestModel.defineFields({name: 'text'});
+        var doc = new v.TestModel({_id: "attrId"});
+
+        assert.isFalse(doc.$hasChanged('name'));
+
+        doc.name = 'new name';
+
+        assert.isTrue(doc.$hasChanged('name'));
+
+        assert.isFalse(doc.$hasChanged('na'));
+
+        assert.isTrue(doc.$hasChanged('age', {"age.$+1": 0}));
+        assert.isFalse(doc.$hasChanged('age.bob', {age: 5, "age.bob$+1": 0}));
+        assert.isTrue(doc.$hasChanged('age.bob', {age: 5, "age.bob.$+1": 0}));
+      },
+
       "test exists": function () {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
