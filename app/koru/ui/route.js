@@ -425,6 +425,7 @@ define(function(require, exports, module) {
       if (options.focus) {
         Dom.focus(template._renderedPage, options.focus);
       }
+      options.afterRendered && options.afterRendered(template._renderedPage, pageRoute);
     };
   }
 

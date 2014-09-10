@@ -29,7 +29,8 @@
     "mongodb": "1.4.5",
     "simplesmtp": "0.3.32",
     "mailcomposer": "0.2.11",
-    "htmlparser2": "3.7.1"
+    "htmlparser2": "3.7.1",
+    "autoprefixer-core": "3.0.1"
   },
   "engines": {
     "node": "~0.10"

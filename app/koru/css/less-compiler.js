@@ -1,6 +1,7 @@
 var Path = require('path');
 var less = requirejs.nodeRequire("less");
 var Future = requirejs.nodeRequire('fibers/future');
+var autoprefixer = requirejs.nodeRequire("autoprefixer-core")({browsers: ['> 5%', 'last 2 versions']});
 
 define(function(require, exports, module) {
   var koru = require('../main');
@@ -41,6 +42,7 @@ define(function(require, exports, module) {
       var css = future.wait().toCSS({
         sourceMap: true,
       });
+      css = autoprefixer.process(css).css;
     } catch (ex) {
       var fn = ex.filename || path;
       if (fn === 'input') fn = path;
