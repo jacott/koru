@@ -93,6 +93,12 @@ isServer && define(function (require, exports, module) {
       assert.equals(lu.$reload().srp, 'new srp');
       assert.same(lu.email, 'bob@obeya.co');
       assert.same(lu.userId, 'uid1');
+
+      lu = userAccount.updateOrCreateUserLogin({email: 'bob@obeya.com', userId: "uid1"});
+
+      assert.equals(lu.$reload().srp, 'new srp');
+      assert.same(lu.email, 'bob@obeya.com');
+      assert.same(lu.userId, 'uid1');
     },
 
     "test too many unexpiredTokens": function () {

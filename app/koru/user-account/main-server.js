@@ -157,7 +157,11 @@ define(function(require, exports, module) {
         tokens: {},
         srp: attrs.srp,
       });;
-      lu.$update({email: attrs.email, srp: attrs.srp});
+
+      var update = {email: attrs.email};
+
+      if (attrs.srp) update.srp = attrs.srp;
+      lu.$update(update);
       return lu;
     }
   });
