@@ -34,6 +34,15 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPath, '/foo/bar');
     },
 
+    "test use template name": function () {
+      var tpl = Dom.newTemplate({name: "Foo.Bar"});
+      tpl.title = 'template title';
+
+      document.body.appendChild(Dom._helpers.pageLink({id: "foo", var_fooId: 'foo123', template: "Foo.Bar", append: "1234"}));
+
+      assert.dom('#foo', 'template title');
+    },
+
     "test append": function () {
       Dom.newTemplate({name: "Foo.Bar"});
 

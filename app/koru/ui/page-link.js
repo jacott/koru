@@ -11,6 +11,11 @@ define(function(require, exports, module) {
   var IGNORE = {append: true, search: true, value: true, link: true, template: true};
 
   Tpl.$helpers({
+    content: function () {
+      if ('value' in this) return this.value;
+      return this.link && this.link.title;
+    },
+
     attrs: function () {
       var elm = $.element;
       var data = $.ctx.data;
