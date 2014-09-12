@@ -301,7 +301,11 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWithExactly(Route.gotoPath);
 
-      v.FooBar.onEntry.returns('thehref');
+      v.FooBar.onEntry = function () {
+        assert.same(Route.targetPage, v.FooBar);
+
+        return 'thehref';
+      };
       v.FooBar.title = 'foo bar';
 
       Route.gotoPath.restore();
@@ -310,6 +314,7 @@ isClient && define(function (require, exports, module) {
       refute.called(Route.history.pushState);
       refute.called(Route.history.replaceState);
 
+      assert.same(Route.targetPage, v.FooBar);
       assert.same(Route.currentPage, v.FooBar);
       assert.same(Route.currentHref, '/#thehref');
       assert.same(Route.currentTitle, 'foo bar');

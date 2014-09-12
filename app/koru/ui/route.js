@@ -120,6 +120,7 @@ define(function(require, exports, module) {
 
   var inGotoPage = false;
   var currentPage = null;
+  var targetPage = null;
   var currentPageRoute = {};
   var currentTitle, currentHref;
   var pageState = 'pushState';
@@ -169,6 +170,8 @@ define(function(require, exports, module) {
         Route.replacePage(Route.SignPage, {returnTo: Route.loadingArgs});
         return;
       }
+
+      targetPage = page;
 
       if (page && page.isDialog) {
         try {
@@ -231,6 +234,10 @@ define(function(require, exports, module) {
 
     pushCurrent: function () {
       Route.history.pushState(null, currentTitle, currentHref);
+    },
+
+    get targetPage() {
+      return targetPage;
     },
 
     get currentPage() {
