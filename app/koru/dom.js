@@ -175,6 +175,10 @@ define(function(require, exports, module) {
       return this;
     },
 
+    fragEnd: function (fragStart) {
+      return fragStart._koruEnd;
+    },
+
     /**
      * Remove an element and provide a function that inserts it into its original position
      * @param element {Element} The element to be temporarily removed

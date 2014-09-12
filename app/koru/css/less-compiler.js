@@ -14,11 +14,9 @@ define(function(require, exports, module) {
 
   var topLen = Path.resolve(koru.appDir).length + 1;
 
-  var queue = {};
   var sendPaths = {};
 
   exports._less = less;
-  exports._queue = queue;
   exports.compile = compile;
 
   function compile(type, path, outPath) {

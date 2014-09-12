@@ -34,11 +34,13 @@ define(function(require, exports, module) {
   function findAll(dir) {
     if (dir.match(/(^[./]|[./]\.)/)) throw new koru.Error(500, 'Illegal directory name');
 
-
     loadDirs.hasOwnProperty(dir) || queue(dir, function (isNew, result) {
-      loadDirs[dir] = true;
+      if (loadDirs[dir]) return;
+
       var prefixLen = dir.length + 1;
       findAll1(dir);
+
+      loadDirs[dir] = true;
 
       function findAll1(dir) {
         var m;
@@ -146,7 +148,7 @@ define(function(require, exports, module) {
         var imt = extractInfo(imp, srcName);
 
       } else {
-        var imt = sources[imp].mtime;
+        var imt = sources[imp] && sources[imp].mtime;
       }
 
       if (st && imt && imt > st) {

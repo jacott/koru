@@ -509,6 +509,8 @@ isClient && define(function (require, exports, module) {
       var elm = document.createComment('start');
       elm._koruEnd = document.createComment('end');
 
+      assert.same(Dom.fragEnd(elm), elm._koruEnd);
+
       parent.appendChild(elm);
       [1,2,3].forEach(function (i) {
         parent.appendChild(document.createElement('p'));
