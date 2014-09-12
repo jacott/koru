@@ -13,7 +13,11 @@ define(function(require, exports, module) {
     },
 
     open: function (content) {
-      document.body.appendChild(Tpl.$autoRender({content: content}));
+      var elm = Tpl.$autoRender({content: content});
+      document.body.appendChild(elm);
+
+      var focus = elm.querySelector(Dom.INPUT_SELECTOR);
+      focus && focus.focus();
     },
 
     close: function (elm) {
