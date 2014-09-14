@@ -26,60 +26,69 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mousedown button': function (event) {Dom.stopEvent()},
     'click button': function (event) {Dom.stopEvent()},
-
-    'mouseup button': function (event) {
+    'mousedown button': function (mde) {
       Dom.stopEvent();
-      if (! $.ctx.data.active) {
-        return;
-      }
 
-      var data = $.ctx.data;
-      var name = this.getAttribute('name');
+      var toolbar = mde.currentTarget;
 
-      if (name === 'link') {
-        if (data.link) {
-          Link.cancel(data.link);
+      var button = this;
+      Dom.onMouseUp(function (event) {
+        if (! Dom.parentOf(event.target, button)) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (! $.ctx.data.active) {
           return;
         }
 
-        var a = getTag('A');
-        if (a) {
-          var range = document.createRange();
-          range.selectNode(a);
-          setRange(range);
+        var data = $.ctx.data;
+        var name = button.getAttribute('name');
+
+        if (name === 'link') {
+          if (data.link) {
+            Link.cancel(data.link);
+            return;
+          }
+
+          var a = getTag('A');
+          if (a) {
+            var range = document.createRange();
+            range.selectNode(a);
+            setRange(range);
+          }
+
+          var range = getRange();
+          if (range === null) return;
+
+          data.link = Link.$autoRender({
+            toolbar: toolbar, range: range,
+            elm: a, value: a ? a.getAttribute('href') : 'http://',
+            inputElm: data.inputElm,
+          });
+          var parent = toolbar.parentNode;
+          var op = parent.offsetParent;
+          var abb = getCaretRect(range) || data.inputElm;
+          abb = Dom.clonePosition(abb, data.link, op, data.inputElm.childNodes.length ? 'Bl' : 'tl');
+          parent.appendChild(data.link);
+
+          var ibb = parent.getBoundingClientRect();
+          var lbb = data.link.getBoundingClientRect();
+
+          if (lbb.right > ibb.right) {
+            data.link.style.left = '';
+            data.link.style.right = '0';
+          }
+
+          var lnp = data.link.getElementsByTagName('input')[0];
+
+          lnp.focus();
+          lnp.select();
+        } else {
+          document.execCommand(name, false);
         }
-
-        var range = getRange();
-        if (range === null) return;
-
-        data.link = Link.$autoRender({
-          toolbar: event.currentTarget, range: range,
-          elm: a, value: a ? a.getAttribute('href') : 'http://',
-          inputElm: data.inputElm,
-        });
-        var parent = event.currentTarget.parentNode;
-        var op = parent.offsetParent;
-        var abb = getCaretRect(range) || data.inputElm;
-        abb = Dom.clonePosition(abb, data.link, op, data.inputElm.childNodes.length ? 'Bl' : 'tl');
-        parent.appendChild(data.link);
-
-        var ibb = parent.getBoundingClientRect();
-        var lbb = data.link.getBoundingClientRect();
-
-        if (lbb.right > ibb.right) {
-          data.link.style.left = '';
-          data.link.style.right = '0';
-        }
-
-        var lnp = data.link.getElementsByTagName('input')[0];
-
-        lnp.focus();
-        lnp.select();
-      } else {
-        document.execCommand(name, false);
-      }
+      });
     },
   });
 

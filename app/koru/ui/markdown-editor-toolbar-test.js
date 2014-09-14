@@ -118,6 +118,13 @@ isClient && define(function (require, exports, module) {
         });
       });
 
+      TH.trigger('[name=bold]', 'mouseup');
+
+      assert.dom('.mdEditor', function () {
+        assert.msg('"Hello" should stil be bold if no mousedown')
+          .same(this.value, '**Hello** *world* [the link](/link.html)');
+      });
+
       TH.trigger('[name=bold]', 'mousedown');
       TH.trigger('[name=bold]', 'mouseup');
 

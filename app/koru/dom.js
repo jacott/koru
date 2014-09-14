@@ -217,6 +217,8 @@ define(function(require, exports, module) {
       }
       return null; // need null for IE
     },
+
+    onMouseUp: onMouseUp,
   };
 
   uiUtil(Dom);
@@ -674,6 +676,24 @@ define(function(require, exports, module) {
     }
 
     eventTypes[selector||':TOP'] = func;
+  }
+
+  function onMouseUp(func, elm) {
+    document.addEventListener('mouseup', omu, true);
+
+    var ctx = currentCtx;
+
+    function omu(event) {
+      document.removeEventListener('mouseup', omu, true);
+
+      var orig = currentCtx;
+      currentCtx = ctx;
+      try {
+        func(event);
+      } finally {
+        currentCtx = orig;
+      }
+    }
   }
 
   function onEvent(event) {
