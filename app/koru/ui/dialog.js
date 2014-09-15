@@ -12,12 +12,14 @@ define(function(require, exports, module) {
       return count !== 0;
     },
 
-    open: function (content) {
+    open: function (content, nofocus) {
       var elm = Tpl.$autoRender({content: content});
       document.body.appendChild(elm);
 
-      var focus = elm.querySelector(Dom.INPUT_SELECTOR);
-      focus && focus.focus();
+      if (! nofocus) {
+        var focus = elm.querySelector(Dom.INPUT_SELECTOR);
+        focus && focus.focus();
+      }
     },
 
     close: function (elm) {

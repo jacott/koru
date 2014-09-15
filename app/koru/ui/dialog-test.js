@@ -20,16 +20,18 @@ isClient && define(function (require, exports, module) {
       assert.dom('.Dialog', function () {
         assert.dom('form#Foo', function () {
           assert.dom('input', function () {
-            assert.same(document.activeElement, this);
+            assert.same(document.activeElement, v.input = this);
           });
         });
       });
 
       assert.isTrue(Dialog.isOpen());
 
-      Dialog.open(Dom.html('<div id="Nested"></div>'));
+      Dialog.open(Dom.html('<div id="Nested"><input></div>'), 'nofocus');
 
-      assert.dom('#Nested');
+      assert.dom('#Nested', function () {
+        assert.same(document.activeElement, v.input);
+      });
 
       assert.isTrue(Dialog.isOpen());
 
