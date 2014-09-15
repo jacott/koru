@@ -6,7 +6,9 @@ requirejs.config({
   baseUrl: '/',
 });
 
-window.history.replaceState(null, document.title = 'Koru Test Mode', '/');
+window.history.replaceState(null, '', '/');
+
+document.title = 'Koru Test Mode';
 
 define(function(require, exports, module) {
   var koru = require('koru');

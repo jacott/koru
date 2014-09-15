@@ -197,23 +197,23 @@ define(function(require, exports, module) {
 
         if (! page) {
           var href = null;
-          var title = document.title = Route.title;
+          var title = Route.title;
           pageRoute = {};
         } else {
           page = page.Index || page;
           var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
           if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
-          var title = document.title = page.title || Route.title;
-          Dom.setTitle && Dom.setTitle(page.title);
+          var title = page.title || Route.title;
         }
 
         if (pageState &&
             (pageState !== 'pushState' || currentHref !== href) &&
             ! (page && ('noPageHistory' in page))) {
-          Route.history[pageState](null, title, href);
+          Route.history[pageState](null, '', href);
         }
         currentHref = href;
-        currentTitle = title;
+        currentTitle = document.title = title;
+        Dom.setTitle && Dom.setTitle(title);
         currentPage = page;
       }
       catch(ex) {
@@ -233,7 +233,7 @@ define(function(require, exports, module) {
     },
 
     pushCurrent: function () {
-      Route.history.pushState(null, currentTitle, currentHref);
+      Route.history.pushState(null, '', currentHref);
     },
 
     get targetPage() {
