@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var val = require('./validation');
+  var koru = require('../../koru');
 
   TH.testCase(module, {
     setUp: function () {
@@ -77,15 +78,39 @@ define(function (require, exports, module) {
     },
 
     'test validators': function () {
-      var fooStub = {};
+      var fooStub = function () {
+        v.val = this;
+      };
+      var barStub = {
+        bar1: function () {v.bar1 = this},
+        bar2: function () {},
+      };
 
-      val.register('fooVal', fooStub);
+      var myunload = test.stub(koru, 'onunload').withArgs('mymod');
 
-      assert.same(val.validators('fooVal'),fooStub);
+      val.register('mymod', {fooVal: fooStub, bar: barStub});
+
+      var func = val.validators('fooVal');
+
+      func();
+
+      assert.same(v.val, val);
 
       val.deregister('fooVal');
 
       refute(val.validators('fooVal'));
+
+      assert.called(myunload);
+
+      func = val.validators('bar1');
+
+      func();
+
+      assert.same(v.bar1, val);
+
+      myunload.yield();
+
+      refute(val.validators('bar1'));
     },
 
     'with permitParams': {

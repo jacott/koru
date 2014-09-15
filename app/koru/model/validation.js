@@ -123,12 +123,30 @@ define(function(require, exports, module) {
       return validators[validator];
     },
 
-    register: function (validator,func) {
-      validators[validator] = func;
+    register: function (module, map) {
+      var registered = [];
+      for (var regName in map) {
+        var item = map[regName];
+        if (typeof item === 'function') {
+          validators[regName] = item.bind(this);
+          registered.push(regName);
+        } else {
+          for(var regName in item) {
+            validators[regName] = item[regName].bind(this);
+            registered.push(regName);
+          }
+        }
+      }
+
+      koru.onunload(module, function () {
+        registered.forEach(function (key) {
+          delete validators[key];
+        });
+      });
     },
 
-    deregister: function (validator) {
-      delete validators[validator];
+    deregister: function (key) {
+      delete validators[key];
     },
 
     addError: function (doc,field,message /* arguments */) {

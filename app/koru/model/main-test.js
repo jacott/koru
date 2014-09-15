@@ -3,7 +3,9 @@ define(function (require, exports, module) {
   var koru = require('../main');
   var TH = require('./test-helper');
   var Model = require('./main');
-  require('./validator!required');
+  var val = require('./validation');
+
+  val.register(module, {required: require('./validators/required-validator')});
   var util = TH.util;
   var session = require('../session/base');
 
