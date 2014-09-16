@@ -10,22 +10,6 @@ define(function(require, exports, module) {
   var save, _support, BaseModel;
 
   var modelEnv = {
-    $save: function(force) {
-      var doc = this;
-      doc.$isValid();
-      if (force === 'force' || !doc._errors)
-        return save(doc);
-
-      return false;
-    },
-
-    $$save: function() {
-      var doc = this;
-      doc.$assertValid();
-
-      return save(doc);
-    },
-
     destroyModel: function (model, drop) {
       if (! model) return;
       if (drop === 'drop')
@@ -46,7 +30,7 @@ define(function(require, exports, module) {
         return new Query(this.constructor).onId(this._id).remove();
       };
 
-      save = function (doc) {
+      modelEnv.save = save = function (doc) {
         if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
         var _id = doc._id;

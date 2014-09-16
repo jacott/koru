@@ -22,8 +22,23 @@ define(function(require, exports, module) {
   BaseModel.prototype = {
     get _id() {return this.attributes._id || this.changes._id;},
 
-    $save: ModelEnv.$save,
-    $$save: ModelEnv.$$save,
+    $save: function(force) {
+      var doc = this;
+      switch(force) {
+      case 'assert': doc.$assertValid(); break;
+      case 'force': break;
+      default:
+        if (! doc.$isValid())
+          return false;
+      }
+      ModelEnv.save(doc);
+
+      return doc;
+    },
+
+    $$save: function() {
+      return this.$save('assert');
+    },
 
     $isValid: function () {
       var doc = this,

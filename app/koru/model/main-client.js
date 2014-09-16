@@ -9,21 +9,7 @@ define(function(require, exports, module) {
   var _support;
 
   var modelEnv = {
-    $save: function(force) {
-      var doc = this;
-      doc.$isValid();
-      if (force === 'force' || !doc._errors)
-        return save(doc);
-
-      return false;
-    },
-
-    $$save: function() {
-      var doc = this;
-      doc.$assertValid();
-
-      return save(doc);
-    },
+    save: save,
 
     destroyModel: function (model, drop) {
       if (! model) return;
