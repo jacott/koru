@@ -44,8 +44,16 @@ define(function(require, exports, module) {
       return this;
     },
 
-    newTemplate: function (options) {
-      return addTemplates(Dom, options);
+    newTemplate: function (module, options) {
+      if (arguments.length === 1)
+        return addTemplates(Dom, module);
+
+
+      var tpl = addTemplates(Dom, options);
+      koru.onunload(module, function () {
+        delete (tpl.parent || Dom)[tpl.name];
+      });
+      return tpl;
     },
 
     lookupTemplate: function (name) {
