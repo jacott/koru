@@ -156,7 +156,7 @@ define(function(require, exports, module) {
 
       if (doc || old) {
         callback(doc, old, sortFunc);
-        changed && changed();
+        changed && changed(doc, was);
       }
     });
   }

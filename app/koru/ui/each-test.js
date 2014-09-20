@@ -102,16 +102,17 @@ isClient && define(function (require, exports, module) {
           assert.dom('li:nth-child(2)', 'bob');
           refute.called(v.changedStub);
 
-          v.TestModel.create({id1: '1', id2: '2', name: 'barny'});
+          var barney = v.TestModel.create({id1: '1', id2: '2', name: 'barny'});
           assert.dom('li', {count: 3});
           assert.dom('li:nth-child(2)', 'barny');
           assert.calledOnce(v.changedStub);
+          assert.calledWithExactly(v.changedStub, TH.matchModel(barney), null);
           v.changedStub.reset();
 
           v.doc1.$update({name: 'aalan'});
           assert.dom('li', {count: 3});
           assert.dom('li:nth-child(1)', 'aalan');
-          assert.called(v.changedStub);
+          assert.calledWith(v.changedStub, TH.matchModel(v.doc1), {name: "bob"});
 
           v.doc1.$update({id2: '3'});
           assert.dom('li', {count: 2});

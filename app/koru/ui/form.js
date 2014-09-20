@@ -326,21 +326,29 @@ define(function(require, exports, module) {
     },
 
     labelField: function (name, options) {
+      options = options || {};
+      var data = options.hasOwnProperty('data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
         name: name,
-        value: field(this, name, options),
-        label: (options && options.label) ||  util.capitalize(util.humanize(name)),
+        options: options,
+        value: field(data, name, options),
+        label: options.label ||  util.capitalize(util.humanize(name)),
       });
     },
 
     displayField: function (name, options) {
+      options = options || {};
+      var data = options.hasOwnProperty('data') ? options.data : this;
+
       var value = document.createElement('span');
       value.className = 'value';
-      value.textContent = this[name];
+      value.textContent = data[name];
+
       return Tpl.LabelField.$autoRender({
         name: name,
         value: value,
-        label: (options && options.label) ||  util.capitalize(util.humanize(name)),
+        options: options,
+        label: options.label ||  util.capitalize(util.humanize(name)),
       });
     },
 
@@ -357,7 +365,17 @@ define(function(require, exports, module) {
 
   Tpl.OnOff.$helpers({
     classes: function () {
-      return this.doc[this.name] ? 'on onOff' : 'onOff';
+      var on = this.doc[this.name];
+      if (this.options && this.options.hasOwnProperty('on')) on = on === this.options.on;
+      return on ? 'on onOff' : 'onOff';
+    },
+
+    on: function () {
+      return this.options.onLabel || 'On';
+    },
+
+    off: function () {
+      return this.options.offLabel || 'Off';
     },
   });
 
@@ -365,7 +383,11 @@ define(function(require, exports, module) {
     'click': function (event) {
       var data = $.ctx.data;
       Dom.toggleClass(this, 'on');
-      data.doc[data.name] = ! data.doc[data.name];
+      var on = Dom.hasClass(this, 'on');
+      if (data.options && data.options.hasOwnProperty('on')) {
+        on = on ? data.options.on : data.options.off;
+      }
+      data.doc[data.name] = on;
     },
   });
 
