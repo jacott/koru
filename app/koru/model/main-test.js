@@ -525,8 +525,16 @@ define(function (require, exports, module) {
           assert.calledOnce(fooFind);
         },
 
-        "test belongs_to manual": function () {
+        "test belongs_to manual name": function () {
           v.TestModel.defineFields({baz_id: {type: 'belongs_to', modelName: 'Foo'}});
+
+          var sut = v.TestModel.build({baz_id: v.foo._id});
+
+          assert.same(sut.baz.name, "qux");
+        },
+
+        "test belongs_to manual model": function () {
+          v.TestModel.defineFields({baz_id: {type: 'belongs_to', model: v.Foo}});
 
           var sut = v.TestModel.build({baz_id: v.foo._id});
 

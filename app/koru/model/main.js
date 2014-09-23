@@ -504,9 +504,12 @@ define(function(require, exports, module) {
   var typeMap = {
     belongs_to: function (model, field, options) {
       var name = field.replace(/_id/,'');
-      var btName = options.modelName || util.capitalize(name);
-      var bt = BaseModel[btName];
-      if (! bt) throw Error(btName + ' is not defined for field: ' + field);
+      var bt = options.model;
+      if (! bt) {
+        var btName = options.modelName || util.capitalize(name);
+        var bt = BaseModel[btName];
+        if (! bt) throw Error(btName + ' is not defined for field: ' + field);
+      }
       model.fieldTypeMap[field] = bt;
       Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
     },
