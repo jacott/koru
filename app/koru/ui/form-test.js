@@ -122,6 +122,25 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test passing data arg": function () {
+      var TestData = v.Form.TestData;
+
+      TestData.$helpers({
+        myData: function () {
+          return {
+            foo: 'hello foo',
+            fooField: 'the field',
+          };
+        },
+      });
+
+      assert.dom(TestData.$render({}), function () {
+        assert.dom('#fooId:not([data])', {value: 'hello foo'});
+        assert.dom('#fieldId', {value: 'the field'});
+        assert.dom('.value', 'hello foo');
+      });
+    },
+
     "SelectList": {
       setUp: function () {
         v.list = [["1", "item 1"], ["2", "item 2"]];

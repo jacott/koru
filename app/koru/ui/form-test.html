@@ -8,6 +8,15 @@
     </div>
   </template>
 
+  <template name="TestData">
+    <div id="TestData">
+      {{labelField "foo" id="fooId" data=myData}}
+      {{field "fooField" data=myData id="fieldId"}}
+
+      {{displayField "foo" data=myData}}
+    </div>
+  </template>
+
   <template name="TestRadio">
     <div id="TestRadio">
       {{labelField "foo_id" id="fooId" type="radio" selectList=fooList}}

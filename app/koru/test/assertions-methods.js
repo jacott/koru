@@ -214,15 +214,15 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         }
       },
 
-      assertMessage: "Expected to find {$htmlClue}",
-      refuteMessage: "Expected not to find {$htmlClue}",
+      assertMessage: "Expected {$htmlClue}",
+      refuteMessage: "Did not Expect {$htmlClue}",
     });
 
     ga.add('dom', {
       assert:  select,
 
-      assertMessage: "Expected to find {$htmlClue}",
-      refuteMessage: "Expected not to find {$htmlClue}",
+      assertMessage: "Expected {$htmlClue}",
+      refuteMessage: "Did not Expect {$htmlClue}",
     });
 
     function filter(elms, func) {
@@ -293,14 +293,14 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               options = {text: options};
             }
             if (options.count != null && options.count !== elm.length) {
-              this.htmlClue = "count:" + options.count + " == "+  elm.length +" for '" + this.htmlClue;
+              this.htmlClue = "count: " +  elm.length + " to be " + options.count + " for '" + this.htmlClue;
               return false;
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
               var ef = filter(elm, function (i) {return options.value === i.value});
               if (ef.length === 0) {
-                this.htmlClue = 'value: "' + options.value + '" == "' + (elm.length ? elm[0].value : '') + '" for ' + this.htmlClue;
+                this.htmlClue = 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '" for ' + this.htmlClue;
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -309,7 +309,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if(typeof options.text === 'string') {
               var ef = filter(elm, function (i) {return options.text === i.textContent.trim()});
               if (ef.length === 0) {
-                this.htmlClue = 'text: "' + options.text + '" == "' + text(elm) + '" for ' + this.htmlClue;
+                this.htmlClue = 'text "' + text(elm) + '" to be "' + options.text + '" for ' + this.htmlClue;
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -318,7 +318,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if(typeof options.text === 'object') {
               var ef = filter(elm, function (i) {return options.text.test(i.textContent.trim())});
               if (ef.length === 0) {
-                this.htmlClue = 'RegExp ' + options.text + ' does not match "' + text(elm) + '" for ' + this.htmlClue;
+                this.htmlClue = 'text "' + text(elm) + '" to match ' + options.text + ' for ' + this.htmlClue;
                 return false;
               } else {
                 selectNode = elm = ef;

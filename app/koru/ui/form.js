@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   var Tpl = Dom.newTemplate(require('../html!./form'));
   var $ = Dom.current;
 
-  var IGNORE = {type: true, label: true, includeBlank: true, selectList: true, value: true};
+  var IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};
 
   var DEFAULT_HELPERS = {
     value: function () {
@@ -322,7 +322,8 @@ define(function(require, exports, module) {
     },
 
     field: function (name, options) {
-      return field(this, name, options);
+      var data = (options && options.hasOwnProperty('data')) ? options.data : this;
+      return field(data, name, options);
     },
 
     labelField: function (name, options) {
