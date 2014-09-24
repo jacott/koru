@@ -191,6 +191,11 @@ define(function(require, exports, module) {
       }
     },
 
+    field: function (name) {
+      if (name in this.options) return this.options[name];
+      return this.default_opts[name];
+    },
+
     insert: function () {
       var doc = this.model.findById(this.model._insertAttrs(this.attributes()));
       isClient && this.model._indexUpdate.notify(doc);
