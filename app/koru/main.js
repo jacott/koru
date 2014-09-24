@@ -38,12 +38,7 @@
     (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
   }
 
-  var baseDirLen = require.toUrl('').length;
-
   function unload(id, error) {
-    if (id.length > baseDirLen && id[0] === '/')
-      id = id.slice(baseDirLen);
-
     if (! requirejs.defined(id)) return;
 
     var deps = providerMap[id];
@@ -159,6 +154,12 @@
       Error: errors.Error.bind(errors),
       Fiber: util.Fiber,
       util: util,
+
+      absId: function (require, id) {
+        id = require.toUrl(id);
+
+        return id.slice(require.toUrl('').length);
+      },
 
       setTimeout: function (func, duration) {
         var fiber = util.Fiber(wrapFunc(func));

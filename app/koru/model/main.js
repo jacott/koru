@@ -16,7 +16,7 @@ define(function(require, exports, module) {
   var emptyObject = {};
 
   koru.onunload(module, function () {
-    koru.unload('koru/model/base');
+    koru.unload(koru.absId(require, './base'));
   });
 
   BaseModel.prototype = {
