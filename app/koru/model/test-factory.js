@@ -140,7 +140,10 @@ define(function(require, exports, module) {
     addRef: function(ref, doc) {
       var refId = ref+'_id';
       if (! this.options.hasOwnProperty(refId)) {
-        doc = doc || (doc === undefined && last[ref]) || Factory['create'+util.capitalize(ref)]();
+        var modelName = this.model.fieldTypeMap[refId].modelName;
+        doc = doc ||
+          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
+          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
         this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
       }
       return this;
