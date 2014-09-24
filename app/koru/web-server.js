@@ -16,14 +16,17 @@ define(function (require, exports, module) {
 
 
   var SPECIALS = {
-    "index.js": function () {
-      return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/requirejs/require.js'), '/'];
-    },
+    "index.js": indexjs,
+    "require.js": indexjs,
 
     koru: function (m) {
       return [m[0], koruParent];
     },
   };
+
+  function indexjs() {
+    return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/requirejs/require.js'), '/'];
+  }
 
   var handlers = {};
 
