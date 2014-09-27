@@ -203,6 +203,16 @@ define(function(require, exports, module) {
       };
     },
 
+    parentOf: document.body.contains ? function (parent, elm) {
+      return parent && parent.contains(elm) ? parent : null;
+    } : function (parent, elm) {
+      while(elm && elm.nodeType !== DOCUMENT_NODE) {
+        if (parent === elm) return parent;
+        elm = elm.parentNode;
+      }
+      return null;
+    },
+
     getClosestCtx: function (elm, selector) {
       return this.getCtx(this.getClosest(elm, selector));
     },

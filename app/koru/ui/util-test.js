@@ -138,13 +138,6 @@ isClient && define(function (require, exports, module) {
       refute(Dom.hasClass(elm, 'bar'));
     },
 
-    "test parentOf": function () {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      assert.same(Dom.parentOf(elm, elm.querySelector('.bar')), elm);
-      assert.same(Dom.parentOf(elm.querySelector('.bar'), elm), null);
-    },
-
     "test getUpDownByClass": function () {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div><div class="dest"></div></div></div>');
 

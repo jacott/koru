@@ -190,14 +190,6 @@ define(function(require, exports, module) {
         focus && focus.focus();
       },
 
-      parentOf: function (parent, elm) {
-        while(elm && elm.nodeType !== DOCUMENT_NODE) {
-          if (parent === elm) return parent;
-          elm = elm.parentNode;
-        }
-        return null;
-      },
-
       forEach: function (elm, querySelector, func) {
         if (! elm) return;
         var elms = elm.querySelectorAll(querySelector);

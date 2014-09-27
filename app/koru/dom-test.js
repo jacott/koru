@@ -206,6 +206,13 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
     },
 
+    "test parentOf": function () {
+      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+
+      assert.same(Dom.parentOf(elm, elm.querySelector('.bar')), elm);
+      assert.same(Dom.parentOf(elm.querySelector('.bar'), elm), null);
+    },
+
     "test $getClosest": function () {
       document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar"><button type="button" id="sp"></button></div></div></div>'));
 
