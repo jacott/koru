@@ -185,7 +185,7 @@ define(function(require, exports, module) {
 
       focus: function (elm, selector) {
         if (!elm) return;
-        if (typeof selector !== 'string') selector = "input,textarea";
+        if (typeof selector !== 'string') selector = Dom.INPUT_SELECTOR;
         var focus = elm.querySelector(selector);
         focus && focus.focus();
       },

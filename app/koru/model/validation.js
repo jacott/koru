@@ -255,7 +255,7 @@ define(function(require, exports, module) {
 
   function ensureType(type, args) {
     for(var i = 0; i < args.length; ++i) {
-      typeof args[i] === type || accessDenied('expected a ' + type);
+      typeof args[i] === type || accessDenied('expected a ' + type + ' for argument ' + i);
     }
 
   }

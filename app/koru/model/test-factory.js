@@ -119,9 +119,9 @@ define(function(require, exports, module) {
     return new Date(now);
   }
 
-  function generateName(prefix) {
+  function generateName(prefix, space) {
     if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
-    return prefix + ' ' + ++nameGen[prefix];
+    return prefix + (space == null ? ' ' : space) + ++nameGen[prefix];
   }
 
   /**
