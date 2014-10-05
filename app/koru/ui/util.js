@@ -159,14 +159,14 @@ define(function(require, exports, module) {
           elm.className = classes;
       },
 
-      setClassByPrefix: function (name, suffix, elm) {
+      setClassByPrefix: function (name, prefix, elm) {
         elm = elm || Dom.element;
         if (!elm) return;
 
-        var classes = elm.className.replace(new RegExp('\\s*'+suffix+'\\S*', 'g'), '').replace(/(^ | $)/g,'');
+        var classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '').replace(/(^ | $)/g,'');
 
         if (name)
-          elm.className = (classes.length ? classes + ' ' : '') + suffix + name;
+          elm.className = (classes.length ? classes + ' ' : '') + prefix + name;
         else
           elm.className = classes;
       },

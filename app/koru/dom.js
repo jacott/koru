@@ -586,7 +586,9 @@ define(function(require, exports, module) {
     $autoRender: function (data, parentCtx) {
       var tpl = this;
       var elm = tpl.$render(data, parentCtx);
+
       if (tpl._events.length > 0) {
+        if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE) throw new Error("attempt to attach events to document fragment: " + tpl.$fullname);
         tpl.$attachEvents(elm);
         Dom.getCtx(elm).onDestroy(function () {
           tpl.$detachEvents(elm);
