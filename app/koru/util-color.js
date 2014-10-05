@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
 
+  var colorClass = {};
   var contrastColors = {};
   var boarderColors = {};
 
@@ -93,17 +94,20 @@ define(function(require, exports, module) {
     },
 
     colorClass: function (color) {
-      color = hex2lab(color);
-      var l = color.l;
+      var cc = colorClass[color];
+      if (cc) return cc;
+
+      cc = hex2lab(color);
+      var l = cc.l;
 
       if (l < 50) {
-        color = 'dark';
+        cc = 'dark';
       } else {
-        color = 'light';
+        cc = 'light';
       }
-      if (l <= 20 || l >= 75) color = 'very ' + color;
+      if (l <= 20 || l >= 75) cc = 'very' + cc;
 
-      return color;
+      return colorClass[color] = cc;
     },
 
     contrastColor: contrastColor,
