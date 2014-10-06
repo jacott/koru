@@ -200,9 +200,9 @@ isServer && define(function (require, exports, module) {
 
         var doc = util.deepCopy(v.docProto);
 
-        v.sub.sendMatchUpdate(doc);
+        v.sub.sendMatchUpdate(doc, null, 'filter');
 
-        assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+        assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
       },
 
       "test added via change": function () {
@@ -222,9 +222,9 @@ isServer && define(function (require, exports, module) {
         var doc = util.deepCopy(v.docProto);
         var was = {age: 7};
 
-        v.sub.sendMatchUpdate(doc, was);
+        v.sub.sendMatchUpdate(doc, was, 'filter');
 
-        assert.calledWith(stub, 'Foo', 'id123', {age: 5});
+        assert.calledWith(stub, 'Foo', 'id123', {age: 5}, 'filter');
       },
 
       "test removed via change": function () {
@@ -285,18 +285,18 @@ isServer && define(function (require, exports, module) {
 
     "test sendUpdate added": function () {
       var stub = v.conn.added = test.stub();
-      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}});
+      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}}, null, 'filter');
 
-      assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+      assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
     },
 
     "test sendUpdate changed": function () {
       var stub = v.conn.changed = test.stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', $asChanges: $asChanges,
                         attributes: v.attrs = {name: 'John', age: 7}},
-                       {age: 5});
+                       {age: 5}, 'filter');
 
-      assert.calledWith(stub, 'Foo', 'id123', {age: 7});
+      assert.calledWith(stub, 'Foo', 'id123', {age: 7}, 'filter');
     },
 
     "test sendUpdate removed": function () {

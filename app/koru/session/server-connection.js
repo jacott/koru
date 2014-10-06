@@ -64,32 +64,32 @@ define(function(require, exports, module) {
         }
       },
 
-      sendUpdate: function (doc, changes) {
+      sendUpdate: function (doc, changes, filter) {
         if (changes == null)
-          this.added(doc.constructor.modelName, doc._id, doc.attributes);
+          this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
         else if (doc == null)
           this.removed(changes.constructor.modelName, changes._id);
         else {
-          this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes));
+          this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
         }
       },
 
-      sendMatchUpdate: function (doc, changes) {
+      sendMatchUpdate: function (doc, changes, filter) {
         if (doc && this.match.has(doc)) {
           if (changes && this.match.has(doc.$asBefore(changes)))
-            this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes));
+            this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
           else
-            this.added(doc.constructor.modelName, doc._id, doc.attributes);
+            this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
         } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes))
           this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
       },
 
-      added: function (name, id, attrs) {
-        this.sendBinary('A', [name, id, attrs]);
+      added: function (name, id, attrs, filter) {
+        this.sendBinary('A', [name, id, filterAtts(attrs, filter)]);
       },
 
-      changed: function (name, id, attrs) {
-        this.sendBinary('C', [name, id, attrs]);
+      changed: function (name, id, attrs, filter) {
+        this.sendBinary('C', [name, id, filterAtts(attrs, filter)]);
       },
 
       removed: function (name, id) {
@@ -119,6 +119,19 @@ define(function(require, exports, module) {
 
       get userId() {return this._userId},
     };
+
+    function filterAtts(attrs, filter) {
+      if (! filter) return attrs;
+
+      var result = {};
+
+      for(var key in attrs) {
+        if (! filter.hasOwnProperty(key))
+          result[key] = attrs[key];
+      }
+
+      return result;
+    }
 
     return Connection;
   };

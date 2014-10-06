@@ -50,12 +50,12 @@ define(function(require, exports, module) {
       this._stop = func;
     },
 
-    sendUpdate: function (doc, changes) {
-      this.conn.sendUpdate(doc, changes);
+    sendUpdate: function (doc, changes, filter) {
+      this.conn.sendUpdate(doc, changes, filter);
     },
 
-    sendMatchUpdate: function (doc, changes) {
-      this.conn.sendMatchUpdate(doc, changes);
+    sendMatchUpdate: function (doc, changes, filter) {
+      this.conn.sendMatchUpdate(doc, changes, filter);
     },
 
     match: function (modelName, func) {

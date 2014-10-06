@@ -165,12 +165,20 @@ isServer && define(function (require, exports, module) {
       v.conn.added('Foo', '123', v.attrs = {name: 'bar', age: 5});
 
       assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', v.attrs]);
+
+      v.conn.added('Foo', '123', v.attrs = {name: 'fbar', age: 5}, {age: 1});
+
+      assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', {name: 'fbar'}]);
     },
 
     "test changed": function () {
       v.conn.changed('Foo', '123', v.attrs = {name: 'bar'});
 
       assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', v.attrs]);
+
+      v.conn.changed('Foo', '123', v.attrs = {name: 'fbar', age: 2}, {name: 1});
+
+      assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', {age: 2}]);
     },
 
     "test removed": function () {
