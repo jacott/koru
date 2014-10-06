@@ -133,6 +133,12 @@ define(function(require, exports, module) {
       return true;
     }
 
+    if (typeof expected === 'object') {
+      if (expected.hasOwnProperty('test') && typeof expected.or === 'function') {
+        return expected.test(actual);
+      }
+    }
+
     // Elements are only equal if expected === actual
     if (gu.isElement(expected) || gu.isElement(actual)) {
       setHint();

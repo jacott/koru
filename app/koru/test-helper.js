@@ -140,7 +140,7 @@ define(function(require, exports, module) {
       for(var key in expected) {
         var val = validators[key];
         this.key = key;
-        this.actual = val.slice(1,2);
+        this.actual = val && val.slice(1,2);
         this.expected = expected[key];
         if (! (val && gu.deepEqual(val.slice(1,2), expected[key]))) return false;
       }
