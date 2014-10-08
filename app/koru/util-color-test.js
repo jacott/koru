@@ -73,7 +73,7 @@ define(function (require, exports, module) {
       assert.same(uColor.colorClass('#717a1d'), 'dark');
       assert.same(uColor.colorClass('#111a1d'), 'verydark');
 
-      assert.same(uColor.colorClass('#717a9d'), 'light');
+      assert.same(uColor.colorClass('#819a9d'), 'light');
       assert.same(uColor.colorClass('#11fafd'), 'verylight');
     },
 

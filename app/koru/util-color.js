@@ -100,12 +100,12 @@ define(function(require, exports, module) {
       cc = hex2lab(color);
       var l = cc.l;
 
-      if (l < 50) {
+      if (l < 60) {
         cc = 'dark';
       } else {
         cc = 'light';
       }
-      if (l <= 20 || l >= 75) cc = 'very' + cc;
+      if (l <= 30 || l >= 75) cc = 'very' + cc;
 
       return colorClass[color] = cc;
     },
