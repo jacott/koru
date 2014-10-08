@@ -85,7 +85,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.Dialog.Confirm .dialogContainer .ui-dialog.small', function () {
         assert.dom('h1', 'This is the message');
-        assert.dom('fieldset', function () {
+        assert.dom('.actions', function () {
           assert.dom('button#okay[name=okay]', 'Foo', function () {
             TH.click(this);
           });
@@ -117,7 +117,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.Dialog.Confirm .dialogContainer .ui-dialog', function () {
         assert.dom('span', 'bla');
-        assert.dom('fieldset', function () {
+        assert.dom('.actions', function () {
           assert.dom('button#cancel[name=cancel]', 'Cancel', function () {
             TH.click(this);
           });
