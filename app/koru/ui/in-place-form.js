@@ -8,6 +8,17 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   Tpl.$helpers({
+    htmlAttrs: function () {
+      var options = this;
+      var elm = $.element;
+
+      for(var key in options) {
+        var m = /^html-form-(.*)$/.exec(key);
+        if (m)
+          elm.setAttribute(m[1], options[key]);
+      }
+    },
+
     field: function () {
       var options = this;
 
@@ -18,9 +29,9 @@ define(function(require, exports, module) {
       };
 
       for(var key in options) {
-        var m = /^html-(.*)$/.exec(key);
-        if (m)
-          fieldOptions[m[1]] = options[key];
+        var m = /^html-(form-)?(.*)$/.exec(key);
+        if (m && !m[1])
+          fieldOptions[m[2]] = options[key];
       }
 
       var name = options.name || 'name';

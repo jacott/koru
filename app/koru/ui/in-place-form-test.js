@@ -46,9 +46,11 @@ isClient && define(function (require, exports, module) {
     "test render": function () {
       var sut = Dom.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
-        name: 'foo', "html-id": 'My_foo', 'html-maxLength': 4});
+        name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
 
       assert.dom(sut, function () {
+        assert.same(this.id, "MyFormId");
+
         assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', function () {
           assert.same(this.value, 'abc');
         });
