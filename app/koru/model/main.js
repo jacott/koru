@@ -578,11 +578,7 @@ define(function(require, exports, module) {
 
   function getValue(field) {
     return function () {
-      var value = this.changes[field];
-      if(value === undefined) {
-        return this.attributes[field];
-      }
-      return value;
+      return this.changes.hasOwnProperty(field) ? this.changes[field] : this.attributes[field];
     };
   }
 

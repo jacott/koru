@@ -237,6 +237,11 @@ define(function (require, exports, module) {
       assert.equals(tsc.changes,{other: 'new other'});
 
       assert.same(tsc.attributes,testAttrs);
+
+      tsc.name = undefined;
+
+      assert.same(tsc.name, undefined);
+
     },
 
     'test remove': function () {
