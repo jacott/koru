@@ -41,30 +41,40 @@ define(function (require, exports, module) {
     },
 
     'boolean': {
-      "test set true": function () {
-        var doc;
+      "test trueOnly": function () {
+        var doc = {isSet: false};
 
+        sut.validators('boolean')(doc,'isSet', 'trueOnly');
+        refute(doc._errors);
+
+        assert.same(doc.isSet, undefined);
+
+        doc = {isSet: true};
+
+        sut.validators('boolean')(doc,'isSet', 'trueOnly');
+        refute(doc._errors);
+
+        assert.same(doc.isSet, true);
+      },
+
+      "test set true": function () {
         ['trUe  ', 'T', ' 1', 'on'].forEach(function (val) {
-          doc = {isSet: val};
+          var doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
           refute(doc._errors);
 
           assert.same(doc.isSet, true, 'for val "'+val+'"');
         });
-
       },
 
       "test set false": function () {
-        var doc;
-
         [' FALSE  ', 'f', ' 0', 'off'].forEach(function (val) {
-          doc = {isSet: val};
+          var doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
           refute(doc._errors);
 
           assert.same(doc.isSet, false, 'for val "'+val+'"');
         });
-
       },
 
       "test if null": function () {

@@ -57,7 +57,7 @@ define(function () {
       doc[field] = val;
     },
 
-    boolean: function (doc, field) {
+    boolean: function (doc, field, boolType) {
       var val = doc[field];
 
       if (val != null) {
@@ -73,7 +73,10 @@ define(function () {
           }
         }
 
-        if (val === false || val === true)
+
+        if (! val && boolType === 'trueOnly')
+          doc[field] = undefined;
+        else if (val === false || val === true)
           doc[field] = val;
         else
           this.addError(doc,field,'not_a_boolean');
