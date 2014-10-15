@@ -73,7 +73,7 @@ define(function(require, exports, module) {
         }
       }
 
-      if (conn._subs) delete conn._subs[id];
+      stopped(this);
     },
 
     stop: function () {
@@ -91,7 +91,6 @@ define(function(require, exports, module) {
         this._stop && this._stop();
         this._subscribe.apply(this, this.args);
       } catch(ex) {
-        this.error("unexpected closed");
         if (ex.error) {
           this.error(ex);
         } else {

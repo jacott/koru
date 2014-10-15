@@ -123,11 +123,15 @@ isServer && define(function (require, exports, module) {
         throw new Error('foo error');
       };
 
+      v.sub._stop = test.stub();
+
       v.sub.resubscribe();
 
       refute(v.sub.isResubscribe);
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Internal server error']);
       assert.calledWith(koru.error, TH.match(/foo error/));
+
+      assert.calledTwice(v.sub._stop);
     },
 
     "test userId": function () {
