@@ -32,6 +32,10 @@ isClient && define(function(require, exports, module) {
         attrs: function () {
           $.element.setAttribute('data-x', 'x123');
         },
+
+        dotted: function (arg) {
+          $.element.setAttribute('data-dotted', arg);
+        },
       });
 
       Dom.Test.Foo.Bar.$helpers({
@@ -40,13 +44,15 @@ isClient && define(function(require, exports, module) {
         }
       });
 
-      var elm = Dom.Test.Foo.$autoRender({name: 'Adam'});
+      var elm = Dom.Test.Foo.$autoRender({name: 'Adam', arg: {has: {parts: 'success'}}});
 
       document.body.appendChild(elm);
 
       assert.dom('div#Foo', function () {
         assert.same(this.className, 'e1 e2');
         assert.dom('span#barId', 'Adam');
+        assert.same(this.getAttribute('data-x'), 'x123');
+        assert.same(this.getAttribute('data-dotted'), 'success');
       });
     },
   });

@@ -1,6 +1,9 @@
 Issues and Ideas
 ================
 
+* Refactor Val.permitSpec
+   make object with add method and validation methods
+
 * Tidy up model callbacks
    replace ".before..." with nested hashmaps
 

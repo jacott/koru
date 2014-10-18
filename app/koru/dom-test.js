@@ -854,7 +854,7 @@ isClient && define(function (require, exports, module) {
             name:"div",
             children:[{
               name:"h1",
-              attrs:[],
+              attrs:[['', 'foo', '.user.name']],
               children:[['', 'user.name']]
             },{
               name:"label",
@@ -867,10 +867,18 @@ isClient && define(function (require, exports, module) {
           }],
         });
 
+        Dom.Foo.$helpers({
+          foo: function (arg) {
+            Dom.current.element.setAttribute('data-foo', arg);
+          },
+        });
+
         var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo'}});
         document.body.appendChild(elm);
 
         assert.dom('h1', 'Foo', function () {
+          assert.same(this.getAttribute('data-foo'), 'Foo');
+
           v.data.user.name = 'Bar';
           Dom.getCtx(elm).updateElement(this);
           assert.dom(this, 'Bar');

@@ -484,12 +484,23 @@ define(function(require, exports, module) {
     case 'function':
       return func.apply(data, evalArgs(data, args));
     case 'string':
-      if (func[0] === '"')
-        return func.slice(1);
+      switch(func[0]) {
+      case '"': return func.slice(1);
+      case '.':
+        var parts = func.split('.');
+        func = parts[1];
+      }
+
       if (func === 'this') return data;
+
       var value = data && data[func];
       if (value === undefined) {
         value = currentCtx.template._helpers[func] || Dom._helpers[func];
+      }
+      if (parts) {
+        for(var i = 2; value !== undefined && i < parts.length; ++i) {
+          value = value[parts[i]];
+        }
       }
       if (value !== undefined) {
         if (typeof value === 'function')

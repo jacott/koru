@@ -167,6 +167,7 @@ function extractAttrs(attrs) {
   tokens.forEach(function (token) {
     if (typeof token === 'string') {
       result.push(justOne(extractBraces(token[0] === '"' ? token.slice(1) : token)));
+
     } else {
       token[2] = justOne(extractBraces(token[2][0] === '"' ? token[2].slice(1) : token[2]));
       result.push(token);
@@ -182,7 +183,18 @@ function justOne(nodes) {
 
   for(var i=0; i < nodes.length; ++i) {
     var row = nodes[i];
-    if (row) return row[0];
+    if (row) {
+      row = row[0];
+      if (typeof row === 'string' || row.length < 3) return row;
+      for(var j = 0; j < row.length; ++j) {
+        var part = row[j];
+        if (part.indexOf('.') !== -1) {
+          row[j] = '.' + part;
+        }
+      }
+
+      return row;
+    }
   }
 }
 
