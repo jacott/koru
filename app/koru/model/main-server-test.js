@@ -142,6 +142,10 @@ define(function (require, exports, module) {
 
       TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd');
 
+      refute.called(ensureIndex);
+
+      Model.ensureIndexes();
+
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1}, {sparse: true, unique: true});
     },
 
@@ -151,6 +155,10 @@ define(function (require, exports, module) {
       var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
 
       TestModel.addIndex('a', 'b', -1, 'c', 1, 'd');
+
+      refute.called(ensureIndex);
+
+      Model.ensureIndexes();
 
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
     },

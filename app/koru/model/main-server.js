@@ -9,12 +9,17 @@ define(function(require, exports, module) {
 
   var save, _support, BaseModel;
 
+  var uniqueIndexes = {}, indexes = {};
+
   var modelEnv = {
     destroyModel: function (model, drop) {
       if (! model) return;
       if (drop === 'drop')
         mongoDb.defaultDb.dropCollection(model.modelName);
       model.docs = null;
+
+      delete uniqueIndexes[model.modelName];
+      delete indexes[model.modelName];
     },
 
     init: function (_BaseModel, _baseSupport, modelProperties) {
@@ -24,6 +29,46 @@ define(function(require, exports, module) {
 
       modelProperties.addUniqueIndex = addUniqueIndex;
       modelProperties.addIndex = addIndex;
+
+      function addUniqueIndex() {
+        prepareIndex(uniqueIndexes, this, arguments);
+      }
+
+      function ensureIndex(model, args, opts) {
+        if (util.Fiber.current) ensureIndex();
+        else util.Fiber(ensureIndex).run();
+
+        function ensureIndex() {
+          model.docs.ensureIndex(buidlKeys(args), opts);
+        }
+      }
+
+      function addIndex() {
+        prepareIndex(indexes, this, arguments);
+      }
+
+      function prepareIndex(type, model, args) {
+        var name = model.modelName;
+        var queue = type[name] || (type[name] = []);
+        queue.push(args);
+      }
+
+      function _ensureIndexes(type, options) {
+        for(var name in type) {
+          var queue = type[name];
+          var model = BaseModel[name];
+          queue.forEach(function (args) {
+            ensureIndex(model, args, options);
+          });
+        }
+      }
+
+      function ensureIndexes () {
+        _ensureIndexes(uniqueIndexes, {unique : true, sparse: true});
+        _ensureIndexes(indexes);
+      }
+
+      Object.defineProperty(BaseModel, 'ensureIndexes', {enumerable: false, value: ensureIndexes});
 
       BaseModel.prototype.$remove =  function () {
         BaseModel._callBeforeObserver('beforeRemove', this);
@@ -125,23 +170,6 @@ define(function(require, exports, module) {
       model.docs.insert(attrs);
     },
   };
-
-  function addUniqueIndex() {
-    ensureIndex(this, arguments, {unique : true, sparse: true});
-  }
-
-  function ensureIndex(model, args, opts) {
-    if (util.Fiber.current) ensureIndex();
-    else util.Fiber(ensureIndex).run();
-
-    function ensureIndex() {
-      model.docs.ensureIndex(buidlKeys(args), opts);
-    }
-  }
-
-  function addIndex() {
-    ensureIndex(this, arguments);
-  }
 
   function buidlKeys(args) {
     var keys = {};
