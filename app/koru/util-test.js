@@ -226,6 +226,16 @@ define(function (require, exports, module) {
       assert.equals(changes, {"ar.1.foo": undefined});
     },
 
+    "test change array": function () {
+      var orig = {ar: []};
+      var changes = {"ar.0": 'new'};
+
+      util.applyChanges(orig, changes);
+
+      assert.equals(orig, {ar: ["new"]});
+      assert.equals(changes, {"ar.0": undefined});
+    },
+
     "test applyChanges with array": function () {
       var orig = {ar: [{foo: 1}, {foo: 2}]};
       var changes = {"ar.1.foo": 3};

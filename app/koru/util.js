@@ -125,6 +125,11 @@ define(function(require, exports, module) {
             return ".$" + (sign === '-' ? '+' : '-') + idx;
           }), nv);
         } else {
+          var ov = Object.getOwnPropertyDescriptor(curr, part);
+          if (ov && deepEqual(nv.value, ov.value))
+            delete changes[key];
+          else
+            Object.defineProperty(changes, key, ov || valueUndefined);
           if (Array.isArray(curr)) {
             part = +part;
             if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
@@ -133,11 +138,6 @@ define(function(require, exports, module) {
             else
               curr[part] = nv.value;
           } else {
-            var ov = Object.getOwnPropertyDescriptor(curr, part);
-            if (ov && deepEqual(nv.value, ov.value))
-              delete changes[key];
-            else
-              Object.defineProperty(changes, key, ov || valueUndefined);
             if (nv.value === undefined)
               delete curr[parts[i]];
             else {
