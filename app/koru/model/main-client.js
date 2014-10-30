@@ -45,7 +45,6 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("remove", function (modelName, id) {
-        BaseModel._callBeforeObserver('beforeRemove', BaseModel[modelName].docs[id]);
         return new Query(BaseModel[modelName]).onId(id).remove();
       });
 

@@ -247,6 +247,7 @@ define(function(require, exports, module) {
         }
         self.forEach(function (doc) {
           ++count;
+          Model._callBeforeObserver('beforeRemove', doc);
           if (sessState.pendingCount()) {
             recordChange(model, doc.attributes);
           }

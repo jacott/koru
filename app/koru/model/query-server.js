@@ -81,6 +81,7 @@ define(function(require, exports, module) {
         var docs = model.docs;
         this.forEach(function (doc) {
           ++count;
+          Model._callBeforeObserver('beforeRemove', doc);
           docs.remove({_id: doc._id});
           Model._callAfterObserver(null, doc);
           model.notify(null, doc);

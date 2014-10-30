@@ -71,7 +71,6 @@ define(function(require, exports, module) {
       Object.defineProperty(BaseModel, 'ensureIndexes', {enumerable: false, value: ensureIndexes});
 
       BaseModel.prototype.$remove =  function () {
-        BaseModel._callBeforeObserver('beforeRemove', this);
         return new Query(this.constructor).onId(this._id).remove();
       };
 

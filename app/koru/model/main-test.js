@@ -103,7 +103,7 @@ define(function (require, exports, module) {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
         test.onEnd(v.TestModel.afterLocalChange(v.TestModel, v.afterLocalChange = test.stub()));
 
-        v.tc.$remove();
+        v.tc.$onThis.remove();
 
         assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
         assert.calledOnceWith(v.afterLocalChange, null, TH.matchModel(v.tc));
