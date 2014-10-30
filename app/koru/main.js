@@ -58,8 +58,12 @@
       delete providerMap[id];
     }
 
-    if (typeof onunload === 'function')
-      onunload(id, error);
+    if (onunload !== undefined) {
+      if (typeof onunload === 'function')
+        onunload(id, error);
+      else if (onunload !== 'reload')
+        onunload.forEach(function (f) {f(id, error)});
+    }
 
     delete loaded[id];
     requirejs.undef(id);
@@ -67,18 +71,22 @@
 
   function onunload(module, func) {
     var id = typeof module === 'string' ? module : module.id;
-    if (id in unloads) {
-      var oldFunc = unloads[id];
-      unloads[id] = unloadTwo(oldFunc, func);
-    } else
-      unloads[id] = func;
-  }
+    var oldFunc = unloads[id];
+    if (func === 'reload' || oldFunc === 'reload') {
+      unloads[id] = 'reload';
+      return;
+    }
+    var len = arguments.length;
+    if (oldFunc === undefined)
+      oldFunc = unloads[id] = len > 2 ? [func] : func;
+    else if (typeof oldFunc === 'function')
+      oldFunc = unloads[id] = [oldFunc, func];
+    else
+      oldFunc.push(func);
 
-  function unloadTwo(f1, f2) {
-    return function () {
-      f1();
-      f2();
-    };
+    if (len > 2) for(var i = 0; i < len; ++i) {
+      oldFunc.push(arguments[i]);
+    }
   }
 
   function reload() {
