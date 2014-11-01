@@ -93,6 +93,9 @@ define(function (require, exports, module) {
         v.TestModel.afterLocalChange(v.TestModel, function (doc, was) {
           (v.obs.afterLocalChange = v.obs.afterLocalChange || []).push([doc && util.extend({}, doc.attributes), was && util.extend({}, doc ? was : was.attributes)]);
         });
+        v.TestModel.whenFinally(v.TestModel, function (doc, ex) {
+          (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
+        });
 
         function obCalled(doc, type) {
           (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
@@ -113,12 +116,11 @@ define(function (require, exports, module) {
       },
 
       "test update calls": function () {
-        var och = v.TestModel.onChange(function (doc, was) {
+        test.onEnd(v.TestModel.onChange(function (doc, was) {
           refute(v.docAttrs);
           v.docAttrs = util.extend({}, doc.attributes);
           v.docChanges = util.extend({}, was);
-        });
-        test.onEnd(function () {och.stop()});
+        }).stop);
 
         v.tc.name = 'bar';
         v.tc.$save();
@@ -129,13 +131,14 @@ define(function (require, exports, module) {
         assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'}]]);
         assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id}, {name: 'foo'}]]);
+        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
+
 
         refute(v.obs.beforeCreate);
       },
 
       "test create calls": function () {
-        var och = v.TestModel.onChange(v.onChange = test.stub());
-        test.onEnd(function () {och.stop()});
+        test.onEnd(v.TestModel.onChange(v.onChange = test.stub()).stop);
 
         v.tc = v.TestModel.create({name: 'foo'});
         assert.calledOnceWith(v.onChange, TH.match(function (doc) {
@@ -145,8 +148,31 @@ define(function (require, exports, module) {
         assert.equals(v.obs.beforeCreate, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.beforeSave, [[{}, {name: 'foo', _id: v.tc._id}]]);
         assert.equals(v.obs.afterLocalChange, [[{name: 'foo', _id: v.tc._id}, null]]);
+        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
 
         refute(v.obs.beforeUpdate);
+      },
+
+      "test create exception": function () {
+        v.TestModel.beforeCreate(v.TestModel, function () {throw v.ex = new Error("tex")});
+
+        assert.exception(function () {
+          v.tc = v.TestModel.create({name: 'foo'});
+        }, 'Error', 'tex');
+
+        assert.equals(v.obs.whenFinally, [[TH.match(function (x) {return x.name === 'foo'}),
+                                           v.ex]]);
+      },
+
+      "test update exception": function () {
+        v.TestModel.beforeUpdate(v.TestModel, function () {throw v.ex = new Error("tex")});
+
+        assert.exception(function () {
+          v.tc.name = 'bar';
+          v.tc.$save();
+        }, 'Error', 'tex');
+
+        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), v.ex]]);
       },
     },
 

@@ -246,6 +246,20 @@ define(function(require, exports, module) {
     }
   }
 
+  function callWhenFinally(doc, ex) {
+    var model = doc.constructor;
+    var observers = modelObservers[model.modelName+'.whenFinally'];
+    if (observers) {
+      for(var i=0;i < observers.length;++i) {
+        try {
+          observers[i].call(model, doc, ex);
+        } catch(ex1) {
+          ex = ex || ex1;
+        }
+      }
+    }
+  }
+
 
   var modelProperties = {
     create: function (attributes) {
@@ -323,6 +337,7 @@ define(function(require, exports, module) {
     beforeRemove: beforeRemove,
 
     afterLocalChange: afterLocalChange,
+    whenFinally: whenFinally,
 
     /**
      * Model extension methods
@@ -388,15 +403,23 @@ define(function(require, exports, module) {
       doc.changes = doc.attributes;
       var attrs = doc.attributes = {};
 
-      callBeforeObserver('beforeCreate', doc);
-      callBeforeObserver('beforeSave', doc);
+      try {
+        var ex;
+        callBeforeObserver('beforeCreate', doc);
+        callBeforeObserver('beforeSave', doc);
 
 
-      doc.attributes = doc.changes;
-      doc.changes = attrs;
-      model.hasVersioning && (doc.attributes._version = 1);
+        doc.attributes = doc.changes;
+        doc.changes = attrs;
+        model.hasVersioning && (doc.attributes._version = 1);
 
-      ModelEnv.insert(doc);
+        ModelEnv.insert(doc);
+      } catch(ex1) {
+        ex = ex1;
+      } finally {
+        callWhenFinally(doc, ex);
+      }
+      if (ex) throw ex;
     },
 
     performUpdate: function (doc, changes) {
@@ -404,14 +427,22 @@ define(function(require, exports, module) {
 
       doc.changes = changes;
 
-      callBeforeObserver('beforeUpdate', doc);
-      callBeforeObserver('beforeSave', doc);
-      var st = new Query(model).onId(doc._id);
+      try {
+        var ex;
+        callBeforeObserver('beforeUpdate', doc);
+        callBeforeObserver('beforeSave', doc);
+        var st = new Query(model).onId(doc._id);
 
-      model.hasVersioning && st.inc("_version", 1);
+        model.hasVersioning && st.inc("_version", 1);
 
-      doc.changes = {};
-      st.update(changes);
+        doc.changes = {};
+        st.update(changes);
+      } catch(ex1) {
+        ex = ex1;
+      } finally {
+        callWhenFinally(doc, ex);
+      }
+      if (ex) throw ex;
     },
   };
 
@@ -642,6 +673,11 @@ define(function(require, exports, module) {
 
   function afterLocalChange(subject, callback) {
     registerObserver(this, subject, 'afterLocalChange', callback);
+    return this;
+  };
+
+  function whenFinally(subject, callback) {
+    registerObserver(this, subject, 'whenFinally', callback);
     return this;
   };
 
