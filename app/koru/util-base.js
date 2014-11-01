@@ -70,6 +70,7 @@
       if (o.constructor === RegExp) return o.toString();
       if (o.hasOwnProperty('outerHTML'))
         return o.outerHTML;
+      if (o.constructor === Date) return "<"+o.toGMTString()+">";
       if (Array.isArray(o)) {
         if (i)
           return "[" + o.map(function (o2) {
