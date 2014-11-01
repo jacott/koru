@@ -36,5 +36,9 @@ define(function (require, exports, module) {
 
       assert.equals(sut.extend({a: 1}), {a: 1});
     },
+
+    "test last": function () {
+      assert.same(sut.last([1, 4]), 4);
+    },
   });
 });

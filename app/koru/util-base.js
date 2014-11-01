@@ -42,6 +42,10 @@
       return obj;
     },
 
+    last: function (ary) {
+      return ary[ary.length -1];
+    },
+
     regexEscape: function (s) {
       return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     },
