@@ -21,5 +21,12 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.stub, '10 20\n');
     },
+
+
+    "test sleep": function () {
+      var date = Date.now();
+      sUtil.sleep(10);
+      assert(Date.now()-date >= 10);
+    },
   });
 });

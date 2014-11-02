@@ -17,4 +17,12 @@ define({
     future.wait();
     return code;
   },
+
+  sleep: function (ms) {
+    var future = new Future;
+    setTimeout(function() {
+      future.return();
+    }, ms);
+    return future.wait();
+  },
 });
