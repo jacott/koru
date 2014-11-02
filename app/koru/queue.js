@@ -47,15 +47,20 @@ define(function(require, exports, module) {
 
             future.return();
           } else {
-            queues && delete queues[this.name];
+            finish(this);
           }
         } else {
-          queues && delete queues[this.name];
+          finish(this);
         }
         if (error) throw error;
         return result;
       }
     };
+
+    function finish(queue) {
+      queue.running = false;
+      queues && delete queues[queue.name];
+    }
 
     if (queues)
       return function (name, func) {

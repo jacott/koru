@@ -19,6 +19,8 @@ isServer && define(function (require, exports, module) {
       var single = Queue('single');
       single.add(v.func = test.stub());
       assert.called(v.func);
+      single.add(v.func = test.stub());
+      assert.called(v.func);
     },
 
     "test queing": function () {
