@@ -15,6 +15,12 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test single": function () {
+      var single = Queue('single');
+      single.add(v.func = test.stub());
+      assert.called(v.func);
+    },
+
     "test queing": function () {
       var q2 = new Future;
       var q3 = new Future;

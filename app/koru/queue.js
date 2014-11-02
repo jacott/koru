@@ -5,8 +5,8 @@ var Future = requirejs.nodeRequire('fibers/future');
  * Server only
  */
 define(function(require, exports, module) {
-  return function () {
-    var queues = {};
+  return function (type) {
+    var queues = type === 'single' ? null : {};
 
     function Queue(name) {
       this.name = name;
@@ -47,19 +47,21 @@ define(function(require, exports, module) {
 
             future.return();
           } else {
-            delete queues[this.name];
+            queues && delete queues[this.name];
           }
         } else {
-          delete queues[this.name];
+          queues && delete queues[this.name];
         }
         if (error) throw error;
         return result;
       }
     };
 
-
-    return function (name, func) {
-      return (queues[name] || (queues[name] = new Queue(name))).add(func);
-    };
+    if (queues)
+      return function (name, func) {
+        return (queues[name] || (queues[name] = new Queue(name))).add(func);
+      };
+    else
+      return new Queue();
   };
 });
