@@ -197,7 +197,12 @@ define(function(require, exports, module) {
     },
 
     insert: function () {
-      var doc = this.model.findById(this.model._insertAttrs(this.attributes()));
+      var id = this.model._insertAttrs(this.attributes());
+      var doc = this.model.findById(id);
+      if (! doc) {
+        doc = this.model.findById(id);
+        throw Error("Factory insert failed! " + this.model.modelName + ": " + id + ", " + !! doc);
+      }
       isClient && this.model._indexUpdate.notify(doc);
       Model._callAfterObserver(doc);
       this.model.notify(doc);
