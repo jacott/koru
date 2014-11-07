@@ -1,0 +1,15 @@
+<template name="Test.InPlaceForm">
+  <ul id="InPlaceFormTest">
+    {{editInPlace name="autoShowEdit"}}
+    <template name="Show_autoShowEdit">
+      <div>
+        <button name="autoShowEdit" class="ui-editable showTpl">{{doc.autoShowEdit}}</button>
+      </div>
+    </template>
+    <template name="Edit_autoShowEdit">
+      <div>
+        <input name="autoShowEdit" class="editTpl" value="{{doc.autoShowEdit}}">
+      </div>
+    </template>
+  </ul>
+</template>

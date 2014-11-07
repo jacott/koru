@@ -193,12 +193,13 @@ define(function(require, exports, module) {
         elm = tpl.$render();
         var ctx = Dom.getCtx(elm);
         options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
+        ctx.options = options;
       } else {
         var ctx = Dom.getCtx(elm);
       }
 
       ctx.updateAllTags({doc: this, options: options});
-      ctx.options = options;
+
       return elm;
     },
   });

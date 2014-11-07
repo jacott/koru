@@ -2,14 +2,16 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var Dom = require('../dom');
-  require('./in-place-form');
+  var sut = require('./in-place-form');
   var util = require('../util');
+  var ipfTpl = require('../html!./in-place-form-test');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
       document.body.appendChild(v.parent = document.createElement('div'));
+      v.Ipf = Dom.newTemplate(util.deepCopy(ipfTpl));
     },
 
     tearDown: function () {
@@ -58,6 +60,25 @@ isClient && define(function (require, exports, module) {
         assert.dom('fieldset', function () {
           assert.dom('button[name=apply]', 'Save');
         });
+      });
+    },
+
+    "test custom Show/Edit templates": function () {
+      sut.autoRegister(v.Ipf);
+      var doc = {autoShowEdit: 'bar'};
+      document.body.appendChild(v.Ipf.$autoRender(doc));
+
+      assert.dom('#InPlaceFormTest', function () {
+        assert.dom('[name=autoShowEdit].ui-editable.showTpl', 'bar');
+
+        doc.autoShowEdit = 'foo';
+
+        // this was stopping custom edit template from showing
+        Dom.getMyCtx(this).updateAllTags();
+
+        TH.click('[name=autoShowEdit].ui-editable.showTpl', 'foo');
+
+        assert.dom('input.editTpl', {value: 'foo'});
       });
     },
 
