@@ -251,8 +251,34 @@ define(function(require, exports, module) {
 
     mapToSearchStr: function (map) {
       return Object.keys(map).map(function (key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(map[key]);
+        return util.encodeURIComponent(key) + '=' + util.encodeURIComponent(map[key]);
       }).join('&');
+    },
+
+    searchStrToMap: function (query) {
+    var result = {};
+      query.split('&').forEach(function (item) {
+        var parts = item.split('=', 2);
+        result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);
+      });
+      return result;
+    },
+
+    encodeURIComponent: function (value) {
+      if (value == null || value === '') return '';
+
+      var result = encodeURIComponent(value);
+      // Fix the mismatch between OAuth's  RFC3986's and Javascript
+      return result.replace(/\!/g, "%21")
+        .replace(/\'/g, "%27")
+        .replace(/\(/g, "%28")
+        .replace(/\)/g, "%29")
+        .replace(/\*/g, "%2A");
+    },
+
+    decodeURIComponent: function (value) {
+      if (! value) return null;
+      return decodeURIComponent(value.replace(/\+/g, " "));
     },
 
     toMap: function (keyName, valueName /*, lists */) {

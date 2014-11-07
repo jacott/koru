@@ -301,7 +301,23 @@ define(function (require, exports, module) {
 
     "test mapToSearchStr": function () {
       assert.same(util.mapToSearchStr({'a +b': 'q[a]', foo: 'bar'}), "a%20%2Bb=q%5Ba%5D&foo=bar");
+    },
 
+    "test encodeURIComponent": function () {
+      assert.same(util.encodeURIComponent(0), '0');
+      assert.same(util.encodeURIComponent(), '');
+      assert.same(util.encodeURIComponent(null), '');
+
+      assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"), '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
+    },
+
+    "test decodeURIComponent": function () {
+      assert.same(util.decodeURIComponent(''), null);
+      assert.same(util.decodeURIComponent('%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
+    },
+
+    "test searchStrToMap": function () {
+      assert.equals(util.searchStrToMap("a%20%2Bb=q%5Ba%5D&foo=bar"), {'a +b': 'q[a]', foo: 'bar'});
     },
 
     "test toMap": function () {
