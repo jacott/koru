@@ -281,6 +281,10 @@ define(function(require, exports, module) {
       return decodeURIComponent(value.replace(/\+/g, " "));
     },
 
+    forEach: function (list, func) {
+      Array.prototype.forEach.call(list, func);
+    },
+
     toMap: function (keyName, valueName /*, lists */) {
       var result = {};
       if (arguments.length === 1) {

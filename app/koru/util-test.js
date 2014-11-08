@@ -320,6 +320,14 @@ define(function (require, exports, module) {
       assert.equals(util.searchStrToMap("a%20%2Bb=q%5Ba%5D&foo=bar"), {'a +b': 'q[a]', foo: 'bar'});
     },
 
+    "test forEach": function () {
+      util.forEach(v.list = [1,2,3], v.stub = test.stub());
+
+      assert.calledWith(v.stub, 1, 0, v.list);
+      assert.calledWith(v.stub, 2, 1, v.list);
+      assert.calledWith(v.stub, 3, 2, v.list);
+    },
+
     "test toMap": function () {
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
