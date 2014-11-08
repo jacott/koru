@@ -499,6 +499,7 @@ define(function(require, exports, module) {
       }
       if (parts) {
         for(var i = 2; value !== undefined && i < parts.length; ++i) {
+          data = value;
           value = value[parts[i]];
         }
       }

@@ -854,7 +854,7 @@ isClient && define(function (require, exports, module) {
             name:"div",
             children:[{
               name:"h1",
-              attrs:[['', 'foo', '.user.name']],
+              attrs:[['', 'foo', '.user.nameFunc']],
               children:[['', 'user.name']]
             },{
               name:"label",
@@ -873,11 +873,14 @@ isClient && define(function (require, exports, module) {
           },
         });
 
-        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo'}});
+        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc: function () {
+          return this.name;
+        }}});
         document.body.appendChild(elm);
 
         assert.dom('h1', 'Foo', function () {
-          assert.same(this.getAttribute('data-foo'), 'Foo');
+          assert.msg('should set this correctly when calling nested function')
+            .same(this.getAttribute('data-foo'), 'Foo');
 
           v.data.user.name = 'Bar';
           Dom.getCtx(elm).updateElement(this);
