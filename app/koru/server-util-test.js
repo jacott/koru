@@ -22,6 +22,14 @@ define(function (require, exports, module) {
       assert.calledWith(v.stub, '10 20\n');
     },
 
+    "test collecting stdout stderr": function () {
+      var out = {};
+      assert.same(sUtil.system('bash', ['-c', 'echo stdout && echo >&2 stderr && sleep 0.01 && echo more'], out), 0);
+
+      assert.same(out.stdout, 'stdout\nmore\n');
+      assert.same(out.stderr, 'stderr\n');
+    },
+
 
     "test sleep": function () {
       var date = Date.now();

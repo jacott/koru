@@ -6,7 +6,17 @@ define({
     var code;
     var proc = spawn(cmd, args);
 
-    outFunc && proc.stdout.on('data', outFunc);
+    switch(typeof outFunc) {
+    case 'function':
+      proc.stdout.on('data', outFunc);
+      break;
+    case 'object':
+      if (outFunc != null) {
+        collectData(proc, outFunc, 'stdout');
+        collectData(proc, outFunc, 'stderr');
+      }
+      break;
+    }
 
     var future = new Future;
     proc.on('close', function (c) {
@@ -26,3 +36,11 @@ define({
     return future.wait();
   },
 });
+
+
+function collectData(proc, out, stream) {
+  out[stream] = '';
+  proc[stream].on('data', function (data) {
+    out[stream] += data.toString();
+  });
+}
