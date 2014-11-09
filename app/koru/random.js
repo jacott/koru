@@ -1,4 +1,4 @@
-define(['./util-base'], function(require) {
+define(['./util'], function(util) {
   /**
    * random.js
    *
@@ -198,6 +198,20 @@ define(['./util-base'], function(require) {
 
   Random.create = function () {
     return new RandomGenerator(arguments);
+  };
+
+  var _id = Random.id.bind(Random);
+
+  Random.id = function () {
+    var thread = util.thread;
+    if ('_randomId' in thread)
+      return thread._randomId();
+    return _id();
+  };
+
+  Random.threadSeed = function () {
+    var rand = new RandomGenerator(arguments);
+    util.thread._randomId = rand.id.bind(rand);
   };
 
   return Random;

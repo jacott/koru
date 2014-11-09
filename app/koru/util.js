@@ -664,7 +664,7 @@ define(function(require, exports, module) {
     Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
 
 
-    Object.defineProperty(util, 'thread', {get: function () {
+    Object.defineProperty(util, 'thread', {configurable: true, get: function () {
       return util.Fiber.current ? (util.Fiber.current.appThread || (util.Fiber.current.appThread = {})) : {};
     }});
   }
