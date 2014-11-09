@@ -133,6 +133,12 @@ define(function(require, exports, module) {
       return true;
     }
 
+    if (expected == null || actual == null) {
+      if (actual === expected) return true;
+      setHint();
+      return false;
+    }
+
     if (typeof expected === 'object') {
       if (expected.hasOwnProperty('test') && typeof expected.or === 'function') {
         return expected.test(actual);
@@ -144,16 +150,6 @@ define(function(require, exports, module) {
       setHint();
       return false;
     }
-
-    // null and undefined only pass for null === null and
-    // undefined === undefined
-    /*jsl: ignore*/
-    if (expected == null || actual == null) {
-      if (actual === expected) return true;
-      setHint();
-      return false;
-    }
-    /*jsl: end*/
 
     if (isDate(expected) || isDate(actual)) {
       if (isDate(expected) && isDate(actual) &&

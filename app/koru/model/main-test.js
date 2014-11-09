@@ -696,13 +696,15 @@ define(function (require, exports, module) {
       },
 
       'test setFields': function () {
-        v.TestModel.defineFields({a: 'text', d: 'text', notme: 'text'});
+        v.TestModel.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
         var sut = new v.TestModel();
 
 
-        var result = sut.$setFields(['a','d','notdefined','_id'],{a: 'aa',d: 'dd', notdefined: 'set', notme: 'nm', '_id': 'noset'});
+        var result = sut.$setFields(['a','d','notdefined','_id', '_version'],{
+          a: 'aa',d: 'dd', notdefined: 'set', notme: 'nm', _id: 'noset', _version: 5,
+        });
 
-        assert.same(result,sut);
+        assert.same(result, sut);
 
         assert.equals(sut.changes,{a: 'aa',d: 'dd'});
 

@@ -208,7 +208,7 @@ define(function(require, exports, module) {
 
     $setFields: function (fields,options) {
       for(var i = 0,field;field = fields[i];++i) {
-        if(field != '_id' && options.hasOwnProperty(field)) {
+        if (field[0] !== '_' && options.hasOwnProperty(field)) {
           this[field] = options[field];
         }
       }
