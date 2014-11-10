@@ -30,6 +30,12 @@ define(function (require, exports, module) {
       assert.same(out.stderr, 'stderr\n');
     },
 
+    "test system stdin": function () {
+      var io = {stdin: 'hello\tworld\n'};
+      assert.same(sUtil.system('cat', ['-vet'], io), 0);
+
+      assert.same(io.stdout, 'hello^Iworld$\n');
+    },
 
     "test sleep": function () {
       var date = Date.now();

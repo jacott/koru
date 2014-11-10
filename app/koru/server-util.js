@@ -11,9 +11,13 @@ define({
       proc.stdout.on('data', outFunc);
       break;
     case 'object':
-      if (outFunc != null) {
+      if (outFunc !== null) {
         collectData(proc, outFunc, 'stdout');
         collectData(proc, outFunc, 'stderr');
+        if (outFunc.stdin) {
+          proc.stdin.write(outFunc.stdin);
+        }
+        proc.stdin.end();
       }
       break;
     }
