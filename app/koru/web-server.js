@@ -7,6 +7,7 @@ define(function (require, exports, module) {
   var koru = require('./main');
   var fst = require('./fs-tools');
   var queue = require('./queue')();
+  var util = require('./util');
 
   koru.onunload(module, 'reload');
 
@@ -44,6 +45,11 @@ define(function (require, exports, module) {
 
   exports.send = send;
   exports.parseurl = parseurl;
+
+  exports.parseUrlParams = function (req) {
+    return util.searchStrToMap((typeof req === 'string' ? req : req.url).split('?', 2)[1]);
+  };
+
   // testing
   exports._replaceSend = function (value) {
     exports.send = send = value;
