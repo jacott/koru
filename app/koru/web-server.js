@@ -45,6 +45,7 @@ define(function (require, exports, module) {
 
   exports.send = send;
   exports.parseurl = parseurl;
+  exports.notFound = notFound;
 
   exports.parseUrlParams = function (req) {
     return util.searchStrToMap((typeof req === 'string' ? req : req.url).split('?', 2)[1]);
