@@ -19,6 +19,7 @@ define({
   stat: stat,
   truncate: truncate,
   unlink: unlink,
+  link: link,
   writeFile: writeFile,
   setMtime: function (path, time) {
     time = new Date(time);
@@ -101,6 +102,10 @@ function truncate(path, len) {
 
 function unlink(path) {
   return futureWrap(fs, fs.unlink, [path]);
+}
+
+function link(from, to) {
+  return futureWrap(fs, fs.link, [from, to]);
 }
 
 function rmdir(path) {
