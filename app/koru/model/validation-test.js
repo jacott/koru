@@ -196,7 +196,7 @@ define(function (require, exports, module) {
         }, val.permitSpec('name', 'age', {size: [{deep: ['val']}]}), true, 'filter');
 
         assert.equals(v.changes, {'size.deep.val': 2,  name: 'okay'});
-
+        refute.called(koru.info);
       },
     },
   });

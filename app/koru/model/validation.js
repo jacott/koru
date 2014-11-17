@@ -168,55 +168,62 @@ define(function(require, exports, module) {
         return true;
       }
       for(var chg in changes) {
-        if (chg.match(/[^a-zA-Z0-9._]/))
-          accessDenied('Bad key: ' + chg);
-
-        var keys = chg.split('.'),
-            val = changes[chg],
-            currPs = permitSpec;
-
         try {
+          if (filter) {
+            var old_suppressAccessDenied = util.thread.suppressAccessDenied;
+            util.thread.suppressAccessDenied = true;
+          }
+          if (chg.match(/[^a-zA-Z0-9._]/))
+            accessDenied('Bad key: ' + chg);
 
-        for(var i=0;i < keys.length;++i) {
-          var key = keys[i],
-              ps = currPs[key];
+          var keys = chg.split('.'),
+              val = changes[chg],
+              currPs = permitSpec;
 
-          if (Array.isArray(ps)) {
-            if (i+1 == keys.length) {
-              permitParams(val, ps[0], false, filter);
-            } else {
-              key = keys[++i];
-              key.match(/\D/) && accessDenied('Bad complex key format: ' + chg);
 
+          for(var i=0;i < keys.length;++i) {
+            var key = keys[i],
+                ps = currPs[key];
+
+            if (Array.isArray(ps)) {
               if (i+1 == keys.length) {
                 permitParams(val, ps[0], false, filter);
               } else {
-                currPs = ps[0];
+                key = keys[++i];
+                key.match(/\D/) && accessDenied('Bad complex key format: ' + chg);
+
+                if (i+1 == keys.length) {
+                  permitParams(val, ps[0], false, filter);
+                } else {
+                  currPs = ps[0];
+                }
               }
-            }
-          } else if (chg === '_id') {
-            if (isIdAllowed || ps)
-              Val.ensureString(val);
-            else
-              accessDenied('_id is not allowed');
-          } else if (ps) {
-            if (i+1 !== keys.length) {
-              currPs = ps;
+            } else if (chg === '_id') {
+              if (isIdAllowed || ps)
+                Val.ensureString(val);
+              else
+                accessDenied('_id is not allowed');
+            } else if (ps) {
+              if (i+1 !== keys.length) {
+                currPs = ps;
+              } else {
+                (ps === true && Val.allowIfSimple(val)) ||
+                  typeof val === 'object' && permitParams(val, ps, false, filter) ||
+                  accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
+              }
             } else {
-              (ps === true && Val.allowIfSimple(val)) ||
-                typeof val === 'object' && permitParams(val, ps, false, filter) ||
-                accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
+              accessDenied('unknown key =>' + key);
             }
-          } else {
-            accessDenied('unknown key =>' + key);
           }
-        }
         } catch(ex) {
           if (filter && ex.error === 403) {
             delete changes[chg];
           } else {
             throw ex;
           }
+        } finally {
+          if (filter)
+            util.thread.suppressAccessDenied = old_suppressAccessDenied;
         }
       }
       return true;
@@ -230,7 +237,7 @@ define(function(require, exports, module) {
   function accessDenied(details) {
     var error = new koru.Error(403, "Access denied", details);
 
-    koru.info('Access denied: user ' + koru.userId() + ": " + details, koru.util.extractError(error));
+    util.thread.suppressAccessDenied || koru.info('Access denied: user ' + koru.userId() + ": " + details, koru.util.extractError(error));
     throw error;
   }
 
