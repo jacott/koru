@@ -7,21 +7,6 @@ define(function(require, exports, module) {
   var gu = geddon._u;
 
   TH = koru.util.reverseExtend({
-    silenceLogger: function (func) {
-      var logger = geddon.test.stub(koru, 'logger');
-      if (func) {
-        try {
-          func();
-        } finally {
-          logger.restore();
-        }
-      } else {
-        geddon.test.onEnd(function () {
-          logger.restore();
-        });
-      }
-    },
-
     util: koru.util,
 
     login: function (id, func) {
@@ -79,8 +64,10 @@ define(function(require, exports, module) {
         func.call();
       } catch(e) {error = e;}
       if (error) {
-        if (error.error === 403 && error.reason === "Access denied")
+        if (error.error === 403 && error.reason === "Access denied") {
+          this.details = error.details;
           return true;
+        }
 
         throw error;
       }
@@ -88,7 +75,7 @@ define(function(require, exports, module) {
     },
 
     assertMessage: "Expected AccessDenied",
-    refuteMessage: "Did not expect AccessDenied",
+    refuteMessage: "Did not expect AccessDenied: {$details}",
   });
 
   ga.add('invalidRequest', {

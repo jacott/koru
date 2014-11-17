@@ -175,6 +175,8 @@ define(function(require, exports, module) {
             val = changes[chg],
             currPs = permitSpec;
 
+        try {
+
         for(var i=0;i < keys.length;++i) {
           var key = keys[i],
               ps = currPs[key];
@@ -192,21 +194,28 @@ define(function(require, exports, module) {
                 currPs = ps[0];
               }
             }
-          } else if (key === '_id') {
+          } else if (chg === '_id') {
             if (isIdAllowed || ps)
-              Val.allowIfSimple(val);
-            else if (filter)
-              delete currPs[key];
+              Val.ensureString(val);
             else
               accessDenied('_id is not allowed');
           } else if (ps) {
-            (ps === true && Val.allowIfSimple(val)) ||
-              typeof val === 'object' && permitParams(val, ps, false, filter) ||
-              accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
-          } else if (filter) {
-            delete currPs[key];
+            if (i+1 !== keys.length) {
+              currPs = ps;
+            } else {
+              (ps === true && Val.allowIfSimple(val)) ||
+                typeof val === 'object' && permitParams(val, ps, false, filter) ||
+                accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
+            }
           } else {
             accessDenied('unknown key =>' + key);
+          }
+        }
+        } catch(ex) {
+          if (filter && ex.error === 403) {
+            delete changes[chg];
+          } else {
+            throw ex;
           }
         }
       }

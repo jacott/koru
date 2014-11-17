@@ -8,7 +8,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      TH.silenceLogger();
+      test.stub(koru, 'info');
     },
 
     tearDown: function () {
@@ -187,6 +187,16 @@ define(function (require, exports, module) {
       'test wrong type': function () {
         refutePermitted({name: 'nm', size: {width: 123, height: 456, deep: 'wt'}},
                         val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
+      },
+
+      "test filtering": function () {
+        val.permitParams(v.changes = {
+          'size.dump.val': 3, 'size.deep.bad': 1, 'size.deep.val': 2, junk: 'hello', name: 'okay',
+          age: {a: 12},
+        }, val.permitSpec('name', 'age', {size: [{deep: ['val']}]}), true, 'filter');
+
+        assert.equals(v.changes, {'size.deep.val': 2,  name: 'okay'});
+
       },
     },
   });
