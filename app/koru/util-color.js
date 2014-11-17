@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   var contrastColors = {};
   var boarderColors = {};
 
+  var tmpStyle = {};
+
   exports = {
     hex2rgb: hex2rgb,
 
@@ -13,14 +15,14 @@ define(function(require, exports, module) {
     },
 
     backgroundColorStyle: function (color) {
-      var style = {};
-      exports.setBackgroundColorStyle(style, color);
-      return util.hashToCss(style);
+      exports.setBackgroundColorStyle(tmpStyle, color);
+      return 'background-color:'+tmpStyle.backgroundColor +
+        ";color:"+tmpStyle.color;
     },
 
     setBackgroundColorStyle: function (style, color) {
       color = color || '#ffffff';
-      style['background-color'] = color;
+      style.backgroundColor = color;
       style.color = contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d'));
     },
 
@@ -29,7 +31,7 @@ define(function(require, exports, module) {
 
       exports.setBackgroundColorStyle(style, color);
       var cc = contrastColors[color];
-      style['border-color'] = boarderColors[cc] || (boarderColors[color] = fade(cc, 30));
+      style.borderColor = boarderColors[cc] || (boarderColors[color] = fade(cc, 30));
     },
 
     rgb2hsl: function (rgb) {

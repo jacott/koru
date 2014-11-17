@@ -43,7 +43,7 @@ define(function (require, exports, module) {
 
       uColor.setBackgroundAndBoarderColorStyle(style, '#717a1d');
 
-      assert.equals(style, {foo: 123, "background-color": "#717a1d", color: "#fcfcfc", "border-color": "rgba(252,252,252,0.3)"});
+      assert.equals(style, {foo: 123, "backgroundColor": "#717a1d", color: "#fcfcfc", "borderColor": "rgba(252,252,252,0.3)"});
     },
 
     "test setBackgroundColorStyle": function () {
@@ -52,7 +52,7 @@ define(function (require, exports, module) {
 
       uColor.setBackgroundColorStyle(style, '#717a1d');
 
-      assert.equals(style, {foo: 123, "background-color": "#717a1d", color: "#fcfcfc"});
+      assert.equals(style, {foo: 123, "backgroundColor": "#717a1d", color: "#fcfcfc"});
     },
 
     "test backgroundColorStyle": function () {
