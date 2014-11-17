@@ -256,13 +256,14 @@ define(function(require, exports, module) {
       INPUT_SELECTOR: 'input,textarea,select,select>option,[contenteditable="true"]',
     });
 
-    switch(vendorFuncPrefix) {
-    case 'webkit': Dom.animationEndEventName = 'webkitAnimationEnd'; break;
-    case 'ms': Dom.animationEndEventName = 'MSAnimationEnd'; break;
-    default: Dom.animationEndEventName = 'animationend';
-    }
+      Dom.animationEndEventName = 'animationend';
 
-    if (vendorStylePrefix === 'ms') {
+    switch(vendorFuncPrefix) {
+    case 'webkit':
+      Dom.animationEndEventName = 'webkitAnimationEnd';
+      break;
+    case 'ms':
+      Dom.animationEndEventName = 'MSAnimationEnd';
       (function () {
         var m = /\bMSIE (\d+)/.exec(navigator.userAgent);
         if (m) {
@@ -271,6 +272,39 @@ define(function(require, exports, module) {
           }
         }
       })();
+      break;
+    case 'moz':
+      (function(){
+        // polyfill for focusin, focusout
+        var w = window,
+            d = w.document;
+
+        if( w.onfocusin === undefined ){
+          d.addEventListener('focus'    ,addPolyfill    ,true);
+          d.addEventListener('blur'     ,addPolyfill    ,true);
+          d.addEventListener('focusin'  ,removePolyfill ,true);
+          d.addEventListener('focusout' ,removePolyfill ,true);
+        }
+        function addPolyfill(e){
+          var type = e.type === 'focus' ? 'focusin' : 'focusout';
+          var event = new w.CustomEvent(type, { bubbles:true, cancelable:false });
+          event.c1Generated = true;
+          e.target.dispatchEvent( event );
+        }
+        function removePolyfill(e){
+          if(!e.c1Generated){ // focus after focusin, so chrome will the first time trigger tow times focusin
+            d.removeEventListener('focus'    ,addPolyfill    ,true);
+            d.removeEventListener('blur'     ,addPolyfill    ,true);
+            d.removeEventListener('focusin'  ,removePolyfill ,true);
+            d.removeEventListener('focusout' ,removePolyfill ,true);
+          }
+          setTimeout(function(){
+            d.removeEventListener('focusin'  ,removePolyfill ,true);
+            d.removeEventListener('focusout' ,removePolyfill ,true);
+          });
+        }
+      })();
+      break;
     }
 
     function convertToData(elm) {
