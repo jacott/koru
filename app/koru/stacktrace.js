@@ -1,10 +1,10 @@
 define(['require', 'koru/util-base'], function (require, util) {
-  var originRe, repl = '';
+  var originRe;
   var ANON_FUNCTION = 'anonymous';
 
   var node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;
-  var chrome = /^\s*at (?:(.+) \()?((?:file|http|https):.+):(\d+):(\d+)\)?\s*$/i;
-  var gecko = /^\s*(\S*|\[.+\])(?:\((.*?)\))?@((?:file|http|https):.+):(\d+)(?::(\d+))?\s*$/i;
+  var chrome = /^\s*at (?:(.+) \()?((?:file|http|https):\/\/.+):(\d+):(\d+)\)?\s*$/i;
+  var gecko = /^(.*)@((?:file|http|https):\/\/.+):(\d+):(\d+)$/i;
 
   return function(ex) {
     if (!ex.stack) return;
@@ -19,7 +19,6 @@ define(['require', 'koru/util-base'], function (require, util) {
       if (isServer) {
         originRe = new RegExp(require('./main').appDir+'/');
       } else {
-        repl = '';
         var lcn = window.location;
         originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host+'/'));
       }
@@ -36,16 +35,21 @@ define(['require', 'koru/util-base'], function (require, util) {
         column = parts[4];
 
       } else if ((parts = gecko.exec(lines[i]))) {
-        url = parts[3];
-        func = parts[1] || ANON_FUNCTION;
-        line = parts[4];
-        column = parts[5];
+        url = parts[2];
+        func = (parts[1] || ANON_FUNCTION).replace(/\/</, '').replace(/[\[\]]/g, '');
+        // if (m = /test @ (.*)/.exec(func)) {
+        //   func = "Test: " + m[1].replace(/\[[^]*\]/, '');
+        // }
+        line = parts[3];
+        column = parts[4];
 
       } else {
         continue;
       };
 
-      url = url.replace(originRe, repl);
+      url = url.replace(originRe, '');
+
+      if (url === 'index.js') continue;
 
       if (/(?:(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
         if (notUs) continue;
