@@ -216,7 +216,12 @@ define(function(require, exports, module) {
 
   function setRange(range) {
     var sel = window.getSelection();
-    sel.removeAllRanges();
+		try {
+			sel.removeAllRanges();
+		} catch (ex) {
+			document.body.createTextRange().select();
+			document.selection.empty();
+		}
     sel.addRange(range);
   }
 

@@ -2,7 +2,8 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./markdown-editor-test-helper');
   var Dom = require('../dom');
-  require('./markdown-editor');
+  var MarkdownEditor = require('./markdown-editor');
+  var koru = require('../main');
 
   TH.testCase(module, {
     setUp: function () {
@@ -59,6 +60,8 @@ isClient && define(function (require, exports, module) {
         TH.trigger(v.link, 'mousedown');
         TH.trigger(v.link, 'mouseup');
 
+        test.stub(koru, 'afTimeout');
+
         assert.dom('.mdLink', function () {
           // css settings
           this.style.position = 'absolute';
@@ -73,6 +76,13 @@ isClient && define(function (require, exports, module) {
           });
         });
 
+        assert.calledOnce(koru.afTimeout);
+        document.activeElement.blur();
+
+        assert.dom('.mdLink');
+        koru.afTimeout.yield();
+        refute.dom('.mdLink');
+
         assert.dom('i', 'world', function () {
           v.setCaret(this, 3);
           this.parentNode.focus();
@@ -81,7 +91,6 @@ isClient && define(function (require, exports, module) {
           assert.className(v.italic, 'on');
           refute.className(v.link, 'on');
         });
-        refute.dom('.mdLink');
       });
     },
 
@@ -135,7 +144,7 @@ isClient && define(function (require, exports, module) {
 
     "test adding link with selection": function () {
       assert.dom('b', 'Hello', function () {
-        v.setCaret(this);
+        v.setCaret(this, 2, true);
         TH.trigger(this, 'keyup');
       });
 
@@ -150,10 +159,54 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'submit');
       });
       assert.dom('.mdEditor>.input', function () {
-        assert.dom('a[href="http://new.link.co/foo"]', 'http://new.link.co/foo');
+        assert.dom('a[href="http://new.link.co/foo"]', 'He');
         assert.same(this, document.activeElement);
         assert.dom('a', {count: 2});
       });
+    },
+
+    "test adding link no selection": function () {
+      assert.dom('b', 'Hello', function () {
+        v.setCaret(this, 2);
+        TH.trigger(this, 'keyup');
+      });
+
+      TH.trigger('[name=link]', 'mousedown');
+      TH.trigger('[name=link]', 'mouseup');
+
+      assert.dom('.mdLink', function () {
+        assert.dom('label>.name+input', {value: 'http://'}, function () {
+          this.focus();
+          TH.input(this, 'http://new.link.co/foo');
+        });
+        TH.trigger(this, 'submit');
+      });
+      assert.dom('.mdEditor>.input', function () {
+        if (Dom.vendorPrefix === 'moz') {
+          // broken for mozilla see https://bugzilla.mozilla.org/show_bug.cgi?id=895510
+          refute.dom('a[href="http://new.link.co/foo"]');
+
+        } else {
+          assert.dom('b', 'Hehttp://new.link.co/foollo', function () {
+            assert.dom('a[href="http://new.link.co/foo"]', 'http://new.link.co/foo');
+          });
+          assert.same(this, document.activeElement);
+          assert.dom('a', {count: 2});
+        }
+      });
+    },
+
+
+    "test adding link no caret": function () {
+      window.getSelection().removeAllRanges();
+      assert.dom('b', 'Hello', function () {
+        TH.trigger(this, 'keyup');
+      });
+
+      TH.trigger('[name=link]', 'mousedown');
+      TH.trigger('[name=link]', 'mouseup');
+
+      refute.dom('.mdLink');
     },
 
     "test canceling link": function () {
@@ -185,20 +238,6 @@ isClient && define(function (require, exports, module) {
           assert.same(this, document.activeElement);
         });
       });
-
-
-    },
-
-    "test adding link no selection": function () {
-      window.getSelection().removeAllRanges();
-      assert.dom('b', 'Hello', function () {
-        TH.trigger(this, 'keyup');
-      });
-
-      TH.trigger('[name=link]', 'mousedown');
-      TH.trigger('[name=link]', 'mouseup');
-
-      refute.dom('.mdLink');
     },
   });
 });

@@ -8,15 +8,15 @@ define(function (require, exports, module) {
   TH.initMarkdownEditor = function (v) {
     v.tpl = Dom.newTemplate(util.deepCopy(markdownEditorTpl));
 
-    v.setCaret = function (elm, offset) {
+    v.setCaret = function (elm, offset, nocollapse) {
       var range = document.createRange();
       range.selectNode(elm);
       offset && range.setEnd(elm.firstChild, offset);
-      range.collapse(! offset);
+      nocollapse || range.collapse(! offset);
       var sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
-      return range;
+      return sel.getRangeAt(0);
     };
   };
 

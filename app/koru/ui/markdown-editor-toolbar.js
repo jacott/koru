@@ -117,8 +117,12 @@ define(function(require, exports, module) {
     },
 
     'focusout': function (event) {
-      if ($.ctx.mousedown || Dom.parentOf(this, event.relatedTarget)) return;
-      Dom.remove(this);
+      var ctx = $.ctx;
+      var elm = this;
+      koru.afTimeout(function () {
+        if (ctx.mousedown || Dom.parentOf(elm, document.activeElement)) return;
+        Dom.remove(elm);
+      });
     },
 
     'keyup': function (event) {
