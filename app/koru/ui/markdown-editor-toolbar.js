@@ -15,6 +15,8 @@ define(function(require, exports, module) {
   var getTag = MarkdownEditor.getTag;
   var getCaretRect = MarkdownEditor.getCaretRect;
 
+  var execCommand = MarkdownEditor.execCommand;
+
   Tpl.$helpers({
     state: function () {
       Dom.setClass('on', this.active && document.queryCommandState($.element.getAttribute('name')));
@@ -86,7 +88,7 @@ define(function(require, exports, module) {
           lnp.focus();
           lnp.select();
         } else {
-          document.execCommand(name, false);
+          execCommand(name);
         }
       });
     },
@@ -101,7 +103,7 @@ define(function(require, exports, module) {
       var data = $.ctx.data;
       data.inputElm.focus();
       setRange(data.range);
-      document.execCommand(value ? 'createLink' : 'unlink', false, value);
+      execCommand(value ? 'createLink' : 'unlink', value);
       Dom.getCtx(data.toolbar).updateAllTags();
       Dom.remove(event.currentTarget);
     },

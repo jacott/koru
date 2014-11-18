@@ -13,6 +13,8 @@ define(function(require, exports, module) {
   var IGNORE_OPTIONS = {"class": true, type: true, atList: true};
 
   Tpl.$extend({
+    execCommand: execCommand,
+
     clear: function (elm) {
       if (! Dom.hasClass(elm, 'mdEditor'))
         elm = elm.parentNode;
@@ -105,7 +107,7 @@ define(function(require, exports, module) {
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
         var ch = String.fromCharCode(event.which);
-        document.execCommand('insertText', null, ch);
+        execCommand('insertText', ch);
         var range = getRange();
         var tnode = range.startContainer;
         tnode.textContent = '@';
@@ -122,12 +124,14 @@ define(function(require, exports, module) {
       case 64:
         if (event.shiftKey) {
           var range = getRange();
-          var text = range.startContainer.textContent;
-          if (range.startOffset !== 0 && text[range.startOffset - 1].match(/\S/)) return;
+          if (range.startContainer.nodeType === document.TEXT_NODE) {
+            var text = range.startContainer.textContent;
+            if (range.startOffset !== 0 && text[range.startOffset - 1].match(/\S/)) return;
+          }
           Dom.stopEvent();
           ctx.mentionState = 1;
 
-          document.execCommand('insertText', null, ' @ ');
+          execCommand('insertText', ' @ ');
           var range = getRange();
           range.setStart(range.startContainer, range.startOffset - 2);
           range.deleteContents();
@@ -179,7 +183,7 @@ define(function(require, exports, module) {
         var index = util.indexOfRegex(items, /html/, 'type');
         if (index !== -1) {
           var md = Markdown.fromHtml(Dom.html('<div>'+event.clipboardData.getData(items[index].type)+'</div>'));
-          if (document.execCommand('insertHTML', null, Markdown.toHtml(md, 'div').innerHTML) || document.execCommand('insertText', null, md))
+          if (execCommand('insertHTML', Markdown.toHtml(md, 'div').innerHTML) || execCommand('insertText', md))
             Dom.stopEvent();
         }
       }
@@ -204,6 +208,10 @@ define(function(require, exports, module) {
     return Dom.searchUpFor(start, function (elm) {
       return elm.tagName === tag;
     }, 'mdEditor');
+  }
+
+  function execCommand (cmd, value) {
+    return document.execCommand(cmd, false, value);
   }
 
   function setRange(range) {

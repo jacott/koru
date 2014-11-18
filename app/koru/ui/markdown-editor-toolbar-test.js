@@ -133,7 +133,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test adding link": function () {
+    "test adding link with selection": function () {
       assert.dom('b', 'Hello', function () {
         v.setCaret(this);
         TH.trigger(this, 'keyup');

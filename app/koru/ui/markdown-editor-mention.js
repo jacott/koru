@@ -10,6 +10,7 @@ define(function(require, exports, module) {
 
   var setRange = MarkdownEditor.setRange;
   var getRange = MarkdownEditor.getRange;
+  var execCommand = MarkdownEditor.execCommand;
 
   Tpl.$extend({
     $destroyed: function (ctx, elm) {
@@ -108,7 +109,7 @@ define(function(require, exports, module) {
       case 8: // Backspace
         if (! this.value) {
           cancelList(event.currentTarget);
-          document.execCommand('delete', null, '');
+          execCommand('delete');
         }
         break;
       }
@@ -173,7 +174,7 @@ define(function(require, exports, module) {
       range.setStart(dest, destOffset);
       range.setEnd(dest, destOffset + 2);
       setRange(range);
-      document.execCommand(button ? 'insertHTML' : 'insertText', false, text);
+      execCommand(button ? 'insertHTML' : 'insertText', text);
       if (! button) {
         range = getRange();
         range.setStart(dest, destOffset);

@@ -119,7 +119,7 @@ isClient && define(function (require, exports, module) {
 
         assert.called(Dom.stopEvent);
 
-        assert.calledWith(insertText, 'insertText', null, '**bold**');
+        assert.calledWith(insertText, 'insertText', false, '**bold**');
       },
 
       "test insertHTML": function () {
@@ -131,7 +131,7 @@ isClient && define(function (require, exports, module) {
         assert.called(Dom.stopEvent);
 
         refute.called(insertText);
-        assert.calledWith(insertHTML, 'insertHTML', null, '<b>bold</b>');
+        assert.calledWith(insertHTML, 'insertHTML', false, '<b>bold</b>');
       },
     },
 
