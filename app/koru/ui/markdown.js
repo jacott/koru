@@ -130,7 +130,7 @@ define(function(require, exports, module) {
     switch(html.nodeType) {
     case document.TEXT_NODE:
       spaceIfNeeded(html.textContent);
-      output.push(html.textContent.replace(/ /g, ' ').replace(/([^\w*])([\\_*[])/, '$1\\$2'));
+      output.push(html.textContent.replace(/\xa0/g, ' ').replace(/([^\w*])([\\_*[])/, '$1\\$2'));
       break;
     case document.ELEMENT_NODE:
       switch(html.tagName) {

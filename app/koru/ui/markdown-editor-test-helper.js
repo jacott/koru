@@ -8,16 +8,22 @@ define(function (require, exports, module) {
   TH.initMarkdownEditor = function (v) {
     v.tpl = Dom.newTemplate(util.deepCopy(markdownEditorTpl));
 
-    v.setCaret = function (elm, offset, nocollapse) {
+    v.setCaret = function (elm, offset, end) {
       var range = document.createRange();
       range.selectNode(elm);
-      offset && range.setEnd(elm.firstChild, offset);
-      nocollapse || range.collapse(! offset);
+      if (offset != null) {
+        if (end != null)
+          range.setStart(elm.firstChild, offset);
+        range.setEnd(elm.firstChild, end == null ? offset : end);
+      }
+      if (end == null)
+        range.collapse(offset == null);
       var sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
       return sel.getRangeAt(0);
     };
+
   };
 
   return TH;

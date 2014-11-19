@@ -29,6 +29,7 @@ isClient && define(function (require, exports, module) {
       v.range.setStart(v.input.firstChild, v.input.firstChild.textContent.length);
       v.range.collapse(true);
       v.input.focus();
+      TH.trigger(v.input, 'focusin');
 
       v.sel.removeAllRanges();
       v.sel.addRange(v.range);
@@ -37,6 +38,29 @@ isClient && define(function (require, exports, module) {
     tearDown: function () {
       TH.domTearDown();
       v = null;
+    },
+
+    "test button mode": function () {
+      v.fooFunc = function (frag, text) {
+        if (text === 'g') {
+          frag.appendChild(v.div1 = Dom.html({text: 'Geoff Jacobsen', "data-id": "g1"}));
+        }
+      };
+
+      assert.dom('#TestMarkdownEditor', function () {
+        TH.trigger('[name=mention]', 'mousedown');
+        TH.trigger('[name=mention]', 'mouseup');
+
+        assert.dom('.mdMention:not(.inline) input', function () {
+          TH.input(this, 'g');
+
+          TH.trigger(this, 'keydown', {which: 13});
+        });
+
+        assert.dom('.input', function () {
+          assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1) ');
+        });
+      });
     },
 
     "test typing @g": function () {
@@ -51,7 +75,7 @@ isClient && define(function (require, exports, module) {
 
         assert.same(v.lm.textContent, '@');
       });
-      refute.dom('#TestMarkdownEditor>.mdList');
+      refute.dom('#TestMarkdownEditor>.mdMention');
 
       assert.dom(v.input, function () {
         Dom.stopEvent.reset();
@@ -62,7 +86,7 @@ isClient && define(function (require, exports, module) {
         assert.same(v.lm.lastChild.textContent, 'g');
       });
 
-      assert.dom('.mdEditor>.mdList', function () {
+      assert.dom('.mdEditor>.mdMention', function () {
         assert.dom('input', {value: 'g'}, function () {
           assert.same(document.activeElement, this);
         });
@@ -116,15 +140,15 @@ isClient && define(function (require, exports, module) {
 
       "test empty": function () {
         TH.input('input', 'jjg');
-        assert.dom('.mdList>div:not(.empty)');
+        assert.dom('.mdMention.inline>div:not(.empty)');
         TH.input('input', 'jjgx');
-        assert.dom('.mdList>div.empty');
+        assert.dom('.mdMention.inline>div.empty');
         TH.input('input', 'jjg');
-        assert.dom('.mdList>div:not(.empty)');
+        assert.dom('.mdMention.inline>div:not(.empty)');
       },
 
       "test input and click": function () {
-        assert.dom('.mdList', function () {
+        assert.dom('.mdMention', function () {
           assert.dom('>div>div', {count: 3});
           assert.dom('>div>div:first-child.selected', function () {
             assert.same(this, v.div1);
@@ -146,7 +170,7 @@ isClient && define(function (require, exports, module) {
           });
         });
 
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
 
         assert.dom('.mdEditor>.input', function () {
           assert.same(document.activeElement, this);
@@ -160,20 +184,20 @@ isClient && define(function (require, exports, module) {
       },
 
       "test focusout aborts list": function () {
-        assert.dom('.mdList', function () {
-          TH.trigger('.mdList>div>*', 'mousedown');
+        assert.dom('.mdMention', function () {
+          TH.trigger('.mdMention>div>*', 'mousedown');
           assert.isTrue(Dom.getCtx(this).mousedown);
           TH.trigger(this, 'focusout');
           assert.isNull(Dom.getCtx(this).mousedown);
         });
 
-        assert.dom('.mdList');
+        assert.dom('.mdMention');
 
-        assert.dom('.mdList', function () {
+        assert.dom('.mdMention', function () {
           TH.trigger(this, 'focusout');
         });
 
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
       },
 
       "test tab": function () {
@@ -187,7 +211,7 @@ isClient && define(function (require, exports, module) {
       "test shift tab": function () {
         TH.trigger('input', 'keydown', {which: 9, shiftKey: true});
 
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
 
         assert.dom(v.input, function () {
           assert.same(Markdown.fromHtml(this), 'hello @g');
@@ -211,7 +235,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test keydown, keyup, enter ": function () {
-        assert.dom('.mdList', function () {
+        assert.dom('.mdMention', function () {
           assert.dom('input', function () {
             TH.trigger(this, 'keydown', {which: 40});
             refute.className(v.div1, 'selected');
@@ -240,7 +264,7 @@ isClient && define(function (require, exports, module) {
           });
         });
 
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
 
         assert.dom(v.input, function () {
           refute.dom('.lm');
@@ -259,7 +283,7 @@ isClient && define(function (require, exports, module) {
       var ln = document.getElementsByClassName('ln')[0];
       var unbb = ln.getBoundingClientRect();
 
-      assert.dom('.mdList', function () {
+      assert.dom('.mdMention', function () {
         // css settings
         this.style.position = 'absolute';
         this.border = 'none';
@@ -303,7 +327,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test deleting @": function () {
-        assert.dom('.mdList>input', function () {
+        assert.dom('.mdMention>input', function () {
           TH.input(this, '');
           TH.trigger(this, 'keydown', {which: 8});
         });
@@ -314,11 +338,11 @@ isClient && define(function (require, exports, module) {
 
           assert.same(Markdown.fromHtml(this), 'hello ');
         });
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
       },
 
       "test arrow left": function () {
-        assert.dom('.mdList>input', function () {
+        assert.dom('.mdMention>input', function () {
           TH.input(this, '');
           TH.trigger(this, 'keydown', {which: 37});
         });
@@ -330,11 +354,11 @@ isClient && define(function (require, exports, module) {
           document.execCommand('insertText', null, 'w');
           assert.same(Markdown.fromHtml(this), 'hello w@');
         });
-        refute.dom('.mdList');
+        refute.dom('.mdMention');
       },
 
       "test escape pressed": function () {
-        TH.trigger('.mdList>input', 'keyup', {which: 27});
+        TH.trigger('.mdMention>input', 'keyup', {which: 27});
 
         assert.dom(v.input, function () {
           assert.same(Markdown.fromHtml(this), 'hello @h');
@@ -356,7 +380,7 @@ isClient && define(function (require, exports, module) {
         TH.keypress(this, 'h');
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
     "test @ not after space": function () {
@@ -366,7 +390,7 @@ isClient && define(function (require, exports, module) {
         TH.keypress(this, 'h');
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
     "test arrow right": function () {
@@ -375,13 +399,13 @@ isClient && define(function (require, exports, module) {
         TH.keypress(this, 'h');
       });
 
-      assert.dom('.mdList>input', function () {
+      assert.dom('.mdMention>input', function () {
         TH.input(this, 'henry');
         this.selectionStart = this.selectionEnd = 4;
         TH.trigger(this, 'keydown', {which: 39});
       });
 
-      assert.dom('.mdList>input', function () {
+      assert.dom('.mdMention>input', function () {
         this.selectionStart = this.selectionEnd = 5;
         TH.trigger(this, 'keydown', {which: 39});
       });
@@ -394,10 +418,10 @@ isClient && define(function (require, exports, module) {
         assert.same(Markdown.fromHtml(this), 'hello @henryw');
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
-    "test .ln removed removes mdList": function () {
+    "test .ln removed removes mdMention": function () {
       assert.dom(v.input, function () {
         TH.keypress(this, '@', true);
         TH.keypress(this, 'h');
@@ -407,7 +431,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
     "test clear": function () {
@@ -426,10 +450,10 @@ isClient && define(function (require, exports, module) {
         assert.className(this, 'empty');
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
-    "test removing editor removes mdList": function () {
+    "test removing editor removes mdMention": function () {
       assert.dom(v.input, function () {
         TH.keypress(this, '@', true);
         TH.keypress(this, 'h');
@@ -439,7 +463,7 @@ isClient && define(function (require, exports, module) {
         Dom.remove(this);
       });
 
-      refute.dom('.mdList');
+      refute.dom('.mdMention');
     },
 
     "test button events don't propagate": function () {
@@ -453,13 +477,13 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test removing mdList": function () {
+    "test removing mdMention": function () {
       assert.dom(v.input, function () {
         TH.keypress(this, '@', true);
         TH.keypress(this, 'h');
       });
 
-      assert.dom('.mdList', function () {
+      assert.dom('.mdMention', function () {
         Dom.remove(this);
       });
 

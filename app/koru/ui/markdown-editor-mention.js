@@ -15,6 +15,7 @@ define(function(require, exports, module) {
   Tpl.$extend({
     $destroyed: function (ctx, elm) {
       revertMention(ctx.data.inputElm);
+      ctx.data.close && ctx.data.close();
     },
 
     selectItem: selectItem,
@@ -23,13 +24,16 @@ define(function(require, exports, module) {
   });
 
   Tpl.$helpers({
+    inlineClass: function () {
+      Dom.setClass('inline', this.span);
+    },
     content: function () {
-      return this.span.textContent;
+      return this.value;
     },
 
     list: function () {
       var frag = document.createDocumentFragment();
-      this.inputCtx.data.options.atList(frag, this.span.textContent);
+      this.inputCtx.data.options.atList(frag, this.value);
       Dom.addClass(frag.firstChild, 'selected');
 
       Dom.setClass('empty', ! frag.firstChild, $.element.parentNode);
@@ -39,12 +43,12 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mouseover .mdList>div>*': function (event) {
+    'mouseover .mdMention>div>*': function (event) {
       Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
       Dom.addClass(this, 'selected');
     },
 
-    'mousedown .mdList>div>*': function (event) {
+    'mousedown .mdMention>div>*': function (event) {
       Dom.stopEvent();
       $.ctx.mousedown = true;
     },
@@ -56,20 +60,23 @@ define(function(require, exports, module) {
         Dom.remove(this);
     },
 
-    'mouseup .mdList>div>*': function (event) {
+    'mouseup .mdMention>div>*': function (event) {
       $.ctx.mousedown = false;
       acceptItem(event, this);
     },
 
-    'input .mdList>input': function (event) {
+    'input .mdMention>input': function (event) {
       var data = $.ctx.data;
+      data.value = this.value;
 
-      data.span.textContent = this.value.replace(/ /g, ' ');
-      transformList(data, event.currentTarget);
+      if (data.span) {
+        data.span.textContent = data.value.replace(/ /g, '\xa0');
+        transformList(data, event.currentTarget);
+      }
       $.ctx.updateAllTags();
     },
 
-    'keydown .mdList>input': function (event) {
+    'keydown .mdMention>input': function (event) {
       switch(event.which) {
       case 9: // tab
         if (event.shiftKey) {
@@ -115,7 +122,7 @@ define(function(require, exports, module) {
       }
     },
 
-    'keyup .mdList>input': function (event) {
+    'keyup .mdMention>input': function (event) {
       switch(event.which) {
       case 27: // escape
         // this is a keyup event so that it stops propagating the event
@@ -132,10 +139,17 @@ define(function(require, exports, module) {
     var id = item.getAttribute('data-id');
     var nameELm = item.getElementsByClassName('name')[0];
 
-    revertMention(data.inputElm,
-                  '<span class="ln">'+
-                  Dom.escapeHTML((nameELm || item).textContent)+
-                  '</span>&nbsp;');
+    var text = '<span class="ln">'+
+          Dom.escapeHTML((nameELm || item).textContent)+
+          '</span>&nbsp;';
+
+    if (data.span) {
+      revertMention(data.inputElm, text);
+    } else {
+      setRange(data.range);
+      data.inputElm.focus();
+      execCommand('insertHTML', text);
+    }
 
     var button = data.inputElm.getElementsByClassName('ln')[0];
 
@@ -145,7 +159,7 @@ define(function(require, exports, module) {
       button.setAttribute('data-a', id);
     }
     collapseRange();
-
+    data.inputElm = null;
     Dom.remove(event.currentTarget);
   }
 
@@ -155,6 +169,8 @@ define(function(require, exports, module) {
   }
 
   function revertMention(editorELm, button) {
+    if (! editorELm) return;
+
     var lm = editorELm.getElementsByClassName('lm')[0];
     if (lm == null) return;
 
@@ -164,7 +180,7 @@ define(function(require, exports, module) {
     var dest = lm.previousSibling;
     if (dest) {
       var destOffset = dest.length;
-      dest.textContent += ' '+anchor+lm.nextSibling.textContent;
+      dest.textContent += '\xa0'+anchor+lm.nextSibling.textContent;
 
       var parent = lm.parentNode;
       parent.removeChild(lm.nextSibling);
@@ -200,12 +216,13 @@ define(function(require, exports, module) {
   }
 
   function selectItem(data) {
+    data.value = data.span.textContent;
     var al = Tpl.$autoRender(data);
 
     transformList(data, al);
 
     var input = al.firstChild;
-    input.value = data.span.textContent;
+    input.value = data.value;
     data.span.style.opacity = "0";
 
     data.inputElm.parentNode.appendChild(al);

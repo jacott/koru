@@ -13,6 +13,7 @@ define(function(require, exports, module) {
   var setRange = MarkdownEditor.setRange;
   var getRange = MarkdownEditor.getRange;
   var getTag = MarkdownEditor.getTag;
+  var selectElm = MarkdownEditor.selectElm;
   var getCaretRect = MarkdownEditor.getCaretRect;
 
   var execCommand = MarkdownEditor.execCommand;
@@ -41,11 +42,11 @@ define(function(require, exports, module) {
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        if (! $.ctx.data.active) {
-          return;
-        }
+        var tbCtx = $.ctx;
 
-        var data = $.ctx.data;
+        if (! tbCtx.data.active) return;
+
+        var data = tbCtx.data;
         var name = button.getAttribute('name');
 
         var formFunc = actionForms[name];
@@ -56,7 +57,11 @@ define(function(require, exports, module) {
             return;
           }
 
-          data.form = formFunc(data, toolbar, button, event);
+          data.form = formFunc(data, function () {
+            tbCtx.updateAllTags();
+            data.form = null;
+          }, button, event);
+
           if (! data.form) return;
 
           var parent = toolbar.parentNode;
@@ -84,18 +89,23 @@ define(function(require, exports, module) {
   });
 
   var actionForms = {
-    link: function (data, toolbar) {
-      var a = getTag('A');
-      if (a) {
-        var range = document.createRange();
-        range.selectNode(a);
-        setRange(range);
-      }
-
+    mention: function (data, close) {
       var range = getRange();
 
+      return range && MarkdownEditor.List.$autoRender({
+        inputCtx: $.ctx,
+        close: close, range: range,
+        value: range.toString(),
+        inputElm: data.inputElm
+      });
+    },
+
+    link: function (data, close) {
+      var a = getTag('A');
+      var range = selectElm(a) || getRange();
+
       return range && Link.$autoRender({
-        toolbar: toolbar, range: range,
+        close: close, range: range,
         elm: a, value: a ? a.getAttribute('href') : 'http://',
         inputElm: data.inputElm,
       });
@@ -112,7 +122,7 @@ define(function(require, exports, module) {
       setRange(data.range);
       data.inputElm.focus();
       execCommand(value ? 'createLink' : 'unlink', value);
-      Dom.getCtx(data.toolbar).updateAllTags();
+      data.close && data.close();
       Dom.remove(event.currentTarget);
     },
 
@@ -157,9 +167,7 @@ define(function(require, exports, module) {
     },
 
     $destroyed: function (ctx) {
-      var tbctx = Dom.getCtx(ctx.data.toolbar);
-      if (tbctx)
-        tbctx.data.form = null;
+      ctx.data.close && ctx.data.close();
     },
   });
 

@@ -59,6 +59,7 @@ define(function(require, exports, module) {
     getRange: getRange,
     setRange: setRange,
     getTag: getTag,
+    selectElm: selectElm,
     getCaretRect: getCaretRect,
   });
 
@@ -131,7 +132,7 @@ define(function(require, exports, module) {
           Dom.stopEvent();
           ctx.mentionState = 1;
 
-          execCommand('insertText', ' @ ');
+          execCommand('insertText', '\xa0@\xa0');
           var range = getRange();
           range.setStart(range.startContainer, range.startOffset - 2);
           range.deleteContents();
@@ -208,6 +209,15 @@ define(function(require, exports, module) {
     return Dom.searchUpFor(start, function (elm) {
       return elm.tagName === tag;
     }, 'mdEditor');
+  }
+
+  function selectElm(elm) {
+    if (elm) {
+      var range = document.createRange();
+      range.selectNode(elm);
+      setRange(range);
+      return range;
+    }
   }
 
   function execCommand (cmd, value) {

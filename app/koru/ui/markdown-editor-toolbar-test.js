@@ -12,7 +12,13 @@ isClient && define(function (require, exports, module) {
 
       TH.initMarkdownEditor(v);
 
-      document.body.appendChild(v.tpl.$autoRender({content: v.origText = '**Hello** *world* [the link](/link.html)'}));
+      v.fooFunc = test.stub();
+      document.body.appendChild(v.tpl.$autoRender({
+        content: v.origText = '**Hello** *world* [the link](/link.html)',
+        foos: function() {
+          return function (frag, text) {v.fooFunc(frag, text)};
+        }
+      }));
     },
 
     tearDown: function () {
@@ -142,9 +148,36 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test mention button": function () {
+      assert.dom('b', 'Hello', function () {
+        v.setCaret(this, 0);
+        TH.trigger(this, 'keyup');
+      });
+
+      TH.trigger('[name=mention]', 'mousedown');
+      TH.trigger('[name=mention]', 'mouseup');
+
+      assert.dom('.mdMention', function () {
+        assert.dom('input', {value: ''});
+        TH.trigger(this, 'focusout');
+      });
+
+      assert.dom('b', 'Hello', function () {
+        v.setCaret(this, 0, 5);
+        TH.trigger(this, 'keyup');
+      });
+
+      TH.trigger('[name=mention]', 'mousedown');
+      TH.trigger('[name=mention]', 'mouseup');
+
+      assert.dom('.mdMention:not(.inline)', function () {
+        assert.dom('input', {value: 'Hello'});
+      });
+    },
+
     "test adding link with selection": function () {
       assert.dom('b', 'Hello', function () {
-        v.setCaret(this, 2, true);
+        v.setCaret(this, 0, 2);
         TH.trigger(this, 'keyup');
       });
 
