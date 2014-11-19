@@ -722,6 +722,8 @@ define(function(require, exports, module) {
       currentCtx = ctx;
       try {
         func(event);
+      } catch(ex) {
+        handleException(ex);
       } finally {
         currentCtx = orig;
       }
@@ -769,15 +771,18 @@ define(function(require, exports, module) {
     } catch(ex) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
-        if('stack' in ex)
-          koru.error(util.extractError(ex));
-
-        throw ex;
-      }
+      handleException(ex);
     } finally {
       currentEvent = null;
       currentCtx = null;
+    }
+  }
+
+  function handleException(ex) {
+    if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
+      koru.unhandledException(ex);
+
+      throw ex;
     }
   }
 

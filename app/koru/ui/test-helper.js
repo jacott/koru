@@ -99,7 +99,7 @@ define(function(require, exports, module) {
                                  ctrl, alt, shift, meta,
                                  keycode, keycode);
       }
-      elm.dispatchEvent (pressEvent);
+      dispatchEvent(elm ,pressEvent);
       return this;
     },
 
@@ -133,7 +133,7 @@ define(function(require, exports, module) {
         }
 
         if (document.createEvent) {
-          node.dispatchEvent(event);
+          dispatchEvent(node, event);
         } else {
           node.fireEvent("on" + event.__name, event);
         }
@@ -158,6 +158,20 @@ define(function(require, exports, module) {
     },
 
   });
+
+  function dispatchEvent(elm, event) {
+    var old_unhandledException = koru.unhandledException;
+    var evex;
+    koru.unhandledException = unhandledException;
+    try {
+      elm.dispatchEvent (event);
+      if (evex) throw evex;
+    } finally {
+      koru.unhandledException = old_unhandledException;
+    }
+
+    function unhandledException(ex) {evex = ex}
+  }
 
   return TH;
 });

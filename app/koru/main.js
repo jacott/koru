@@ -190,6 +190,10 @@
         koru.logger('ERROR', Array.prototype.join.call(arguments, ' '));
       },
 
+      unhandledException: function (ex) {
+        koru.error(util.extractError(ex));
+      },
+
       logger: function () {
         var args = util.slice(arguments);
         args.unshift(new Date().toISOString());
