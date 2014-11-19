@@ -130,7 +130,10 @@ isClient && define(function (require, exports, module) {
             assert.same(this, v.div1);
           });
 
-          TH.input('input', 'jjg');
+          assert.dom('input', function () {
+            this.focus();
+            TH.input(this, 'jjg');
+          });
 
           assert.dom('>div>div', {count: 2});
           assert.dom('>div>div:first-child.selected', function () {
@@ -144,6 +147,10 @@ isClient && define(function (require, exports, module) {
         });
 
         refute.dom('.mdList');
+
+        assert.dom('.mdEditor>.input', function () {
+          assert.same(document.activeElement, this);
+        });
 
         assert.dom(v.input, function () {
           refute.dom('.lm');
