@@ -48,7 +48,7 @@ isClient && define(function (require, exports, module) {
             v.setCaret(this, 1);
             Dom.getCtx(this).updateAllTags();
             refute.className(v.link, 'on');
-            v.lnbb = this.getBoundingClientRect();
+            v.lnbb = v.link.getBoundingClientRect();
 
             TH.trigger(this, 'keyup');
             refute.className(v.italic, 'on');

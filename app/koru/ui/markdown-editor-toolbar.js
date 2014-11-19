@@ -48,42 +48,31 @@ define(function(require, exports, module) {
         var data = $.ctx.data;
         var name = button.getAttribute('name');
 
-        if (name === 'link') {
-          if (data.link) {
-            Link.cancel(data.link);
+        var formFunc = actionForms[name];
+
+        if (formFunc) {
+          if (data.form) {
+            Link.cancel(data.form);
             return;
           }
 
-          var a = getTag('A');
-          if (a) {
-            var range = document.createRange();
-            range.selectNode(a);
-            setRange(range);
-          }
+          data.form = formFunc(data, toolbar, button, event);
+          if (! data.form) return;
 
-          var range = getRange();
-          if (range === null) return;
-
-          data.link = Link.$autoRender({
-            toolbar: toolbar, range: range,
-            elm: a, value: a ? a.getAttribute('href') : 'http://',
-            inputElm: data.inputElm,
-          });
           var parent = toolbar.parentNode;
           var op = parent.offsetParent;
-          var abb = getCaretRect(range) || data.inputElm;
-          abb = Dom.clonePosition(abb, data.link, op, data.inputElm.childNodes.length ? 'Bl' : 'tl');
-          parent.appendChild(data.link);
+          var abb = Dom.clonePosition(button, data.form, op, 'Bl');
+          parent.appendChild(data.form);
 
           var ibb = parent.getBoundingClientRect();
-          var lbb = data.link.getBoundingClientRect();
+          var lbb = data.form.getBoundingClientRect();
 
           if (lbb.right > ibb.right) {
-            data.link.style.left = '';
-            data.link.style.right = '0';
+            data.form.style.left = '';
+            data.form.style.right = '0';
           }
 
-          var lnp = data.link.getElementsByTagName('input')[0];
+          var lnp = data.form.getElementsByTagName('input')[0];
 
           lnp.focus();
           lnp.select();
@@ -94,6 +83,25 @@ define(function(require, exports, module) {
     },
   });
 
+  var actionForms = {
+    link: function (data, toolbar) {
+      var a = getTag('A');
+      if (a) {
+        var range = document.createRange();
+        range.selectNode(a);
+        setRange(range);
+      }
+
+      var range = getRange();
+
+      return range && Link.$autoRender({
+        toolbar: toolbar, range: range,
+        elm: a, value: a ? a.getAttribute('href') : 'http://',
+        inputElm: data.inputElm,
+      });
+    },
+  };
+
 
   Link.$events({
     'submit': function (event) {
@@ -101,8 +109,8 @@ define(function(require, exports, module) {
       var value = this.getElementsByTagName('input')[0].value;
 
       var data = $.ctx.data;
-      data.inputElm.focus();
       setRange(data.range);
+      data.inputElm.focus();
       execCommand(value ? 'createLink' : 'unlink', value);
       Dom.getCtx(data.toolbar).updateAllTags();
       Dom.remove(event.currentTarget);
@@ -151,7 +159,7 @@ define(function(require, exports, module) {
     $destroyed: function (ctx) {
       var tbctx = Dom.getCtx(ctx.data.toolbar);
       if (tbctx)
-        tbctx.data.link = null;
+        tbctx.data.form = null;
     },
   });
 
