@@ -73,6 +73,24 @@ isClient && define(function (require, exports, module) {
       assert.isNull(MarkdownEditor.getTag('A'));
     },
 
+    "test bold, italic, underline": function () {
+      v.ec = test.stub(document, 'execCommand');
+
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.trigger(this, 'keydown', {which: 66, ctrlKey: true});
+        TH.trigger(this, 'keydown', {which: 66, ctrlKey: false});
+        assert.calledOnceWith(v.ec, 'bold');
+
+        TH.trigger(this, 'keydown', {which: 73, ctrlKey: true});
+        assert.calledWith(v.ec, 'italic');
+
+        TH.trigger(this, 'keydown', {which: 85, ctrlKey: true});
+        assert.calledWith(v.ec, 'underline');
+      });
+    },
+
     "paste": {
       setUp: function () {
         v.ec = test.stub(document, 'execCommand');

@@ -89,14 +89,34 @@ define(function(require, exports, module) {
     },
   });
 
+  var COMMANDS = {
+    66: 'bold',
+    73: 'italic',
+    85: 'underline',
+  };
+
   Input.$events({
     'click button': function (event) {
       Dom.stopEvent();
     },
     keydown: function (event) {
-      if (event.which === 229) return;
+      switch(event.which) {
+      case 229: case 16:
+        return;
 
-      if (event.which !== 16 && $.ctx.mentionState != null && $.ctx.mentionState < 3 &&
+      default:
+        if (event.ctrlKey) {
+          var command = COMMANDS[event.which];
+          if (command) {
+            Dom.stopEvent();
+            execCommand(command);
+            return;
+          }
+        }
+        break;
+      }
+
+      if ($.ctx.mentionState != null && $.ctx.mentionState < 3 &&
           ++$.ctx.mentionState > 2) {
         // we had a non printable key pressed; abort mention
         Tpl.List.revertMention(this);
