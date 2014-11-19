@@ -33,14 +33,15 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=italic]', 'I', function () {v.italic = this});
           assert.dom('button[name=link]', '', function () {v.link = this});
         });
+
         assert.dom('>.input', function () {
+          v.setCaret(this, 0);
           assert.dom('b', 'Hello', function () {
-            v.setCaret(this, 2);
             Dom.getCtx(this).updateAllTags();
-            refute.className(v.bold, 'on');
             TH.trigger(this, 'mousedown');
             TH.trigger(this, 'mouseup');
             assert.className(v.bold, 'on');
+            refute.className(v.italic, 'on');
           });
           assert.dom('i', 'world', function () {
             v.setCaret(this, 1);
@@ -61,6 +62,7 @@ isClient && define(function (require, exports, module) {
             assert.className(v.link, 'on');
           });
         });
+
 
         refute.dom('.mdLink');
         TH.trigger(v.link, 'mousedown');

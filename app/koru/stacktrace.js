@@ -4,7 +4,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
   var node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;
   var chrome = /^\s*at (?:(.+) \()?((?:file|http|https):\/\/.+):(\d+):(\d+)\)?\s*$/i;
-  var gecko = /^(.*)@((?:file|http|https):\/\/.+):(\d+):(\d+)$/i;
+  var geckoSafari =  /^(?:(.*)@)?((?:file|http|https):\/\/.+):(\d+):(\d+)$/i;
 
   return function(ex) {
     if (!ex.stack) return;
@@ -34,12 +34,9 @@ define(['require', 'koru/util-base'], function (require, util) {
         line = parts[3];
         column = parts[4];
 
-      } else if ((parts = gecko.exec(lines[i]))) {
+      } else if ((parts = geckoSafari.exec(lines[i]))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).replace(/\/</, '').replace(/[\[\]]/g, '');
-        // if (m = /test @ (.*)/.exec(func)) {
-        //   func = "Test: " + m[1].replace(/\[[^]*\]/, '');
-        // }
         line = parts[3];
         column = parts[4];
 

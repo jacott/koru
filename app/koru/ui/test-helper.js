@@ -33,16 +33,14 @@ define(function(require, exports, module) {
       }), options || {});
     },
 
-    buildEvent: function (event, args) {
-      if (document.createEvent) {
-        var e = document.createEvent("Event");
-        e.initEvent(event, true, true);
-        util.extend(e, args);
+    buildEvent: function (name, mods) {
+      if (window.CustomEvent) {
+        var e = new window.CustomEvent(name, { bubbles: true, cancelable: true});
       } else {
         var e = document.createEventObject();
-        e.__name = event;
-        util.extend(e, args);
+        e.__name = name;
       }
+      if (mods) util.extend(e, mods);
       return e;
     },
 

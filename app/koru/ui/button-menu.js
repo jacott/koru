@@ -44,7 +44,8 @@ define(function(require, exports, module) {
       var ctx = Dom.getCtx(menu);
       ctx.listElm = document.createElement('div');
       Dom.addClass(ctx.listElm, 'dropMenu');
-      menu.insertBefore(list.firstElementChild, menu.firstElementChild);
+
+      menu.insertBefore(list.firstChild, menu.firstElementChild);
       ctx.listElm.appendChild(list);
       ctx.onDestroy(function () {
         Dom.remove(ctx.listElm);

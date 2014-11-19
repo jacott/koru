@@ -116,7 +116,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test wiried": function () {
-        TH.trigger(v.input, 'paste', v.event);
+        TH.trigger(v.input, 'paste');
 
         assert.called(v.slot[2]);
       },
