@@ -174,7 +174,8 @@ define(function(require, exports, module) {
       range.setStart(dest, destOffset);
       range.setEnd(dest, destOffset + 2);
       setRange(range);
-      editorELm.focus();
+      editorELm.focus(); // otherwise ?security violation? in Firefox
+
       execCommand(button ? 'insertHTML' : 'insertText', text);
       if (! button) {
         range = getRange();
