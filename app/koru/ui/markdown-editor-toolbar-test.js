@@ -217,7 +217,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'submit');
       });
       assert.dom('.mdEditor>.input', function () {
-        if (Dom.vendorPrefix === 'moz') {
+        if (Dom.vendorPrefix === 'moz' || Dom.vendorPrefix === 'ms') {
           // broken for mozilla see https://bugzilla.mozilla.org/show_bug.cgi?id=895510
           refute.dom('a[href="http://new.link.co/foo"]');
 

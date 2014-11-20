@@ -5,6 +5,7 @@ isClient && define(function (require, exports, module) {
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor');
   var Markdown = require('./markdown');
+  var koru = require('koru');
 
   TH.testCase(module, {
     setUp: function () {
@@ -57,7 +58,7 @@ isClient && define(function (require, exports, module) {
             assert.dom('b' ,'Hello');
             assert.dom('i' ,'world', function () {
               v.setCaret(this, 2);
-              document.execCommand('insertText', false, ' foo ');
+              MarkdownEditor.insert(' foo ');
             });
             TH.trigger(this, 'focusout');
             refute.className(this.parentNode, 'focus');
@@ -93,11 +94,11 @@ isClient && define(function (require, exports, module) {
 
     "paste": {
       setUp: function () {
-        v.ec = test.stub(document, 'execCommand');
+        v.ec = test.stub(MarkdownEditor, 'insert');
         v.event = {
           clipboardData: {
             items: [{type: 'text/html'}],
-            getData: test.stub().withArgs('text/html').returns('<b>bold</b>'),
+            getData: test.stub().withArgs('text/html').returns('<b>bold</b> world'),
           },
         };
 
@@ -109,6 +110,9 @@ isClient && define(function (require, exports, module) {
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
         v.input = document.body.getElementsByClassName('input')[0];
+
+        v.matchHtml = TH.match(function (arg) {return typeof arg !== 'string' && 'nodeType' in arg});
+        v.matchText = TH.match(function (arg) {return typeof arg === 'string'});
       },
 
       tearDown: function () {
@@ -130,45 +134,57 @@ isClient && define(function (require, exports, module) {
       },
 
       "test no insertHTML": function () {
-        var insertHTML = v.ec.withArgs('insertHTML').returns(false);
-        var insertText = v.ec.withArgs('insertText').returns(true);
+        var insertHTML = v.ec.withArgs(v.matchHtml).returns(false);
+        var insertText = v.ec.withArgs(v.matchText).returns(true);
 
         v.paste(v.event);
 
         assert.called(Dom.stopEvent);
 
-        assert.calledWith(insertText, 'insertText', false, '**bold**');
+        assert.calledWith(insertText, '**bold** world');
       },
 
       "test insertHTML": function () {
-        var insertHTML = v.ec.withArgs('insertHTML').returns(true);
-        var insertText = v.ec.withArgs('insertText').returns(true);
+        var insertHTML = v.ec.withArgs(v.matchHtml).returns(true);
+        var insertText = v.ec.withArgs(v.matchText).returns(true);
 
         v.paste(v.event);
 
         assert.called(Dom.stopEvent);
 
         refute.called(insertText);
-        assert.calledWith(insertHTML, 'insertHTML', false, '<b>bold</b>');
+        assert.calledWith(insertHTML, TH.match(function (elm) {
+          return elm.firstChild.outerHTML === '<b>bold</b>';
+        }));
       },
     },
 
     "test empty class": function () {
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
+      test.stub(koru, 'afTimeout');
+
       assert.dom('#TestMarkdownEditor', function () {
         assert.dom('.mdEditor.empty>.input[contenteditable=true]', '', function () {
           this.innerHTML = '<b>Brave <i>new</i> World</b>';
-          TH.trigger(this, 'input');
+          TH.trigger(this, 'keydown');
+          koru.afTimeout.yield();
 
           assert.same(Markdown.fromHtml(this), "**Brave _new_ World**");
           refute.className(this.parentNode, 'empty');
 
-          TH.input(this, ' ');
+          input(this, ' ');
           refute.className(this.parentNode, 'empty');
 
-          TH.input(this, '');
+          input(this, '');
+
           assert.className(this.parentNode, 'empty');
+
+          function input(node, value) {
+            TH.trigger(node, 'keydown');
+            TH.input(node, value);
+            koru.afTimeout.yield();
+          }
         });
       });
     },

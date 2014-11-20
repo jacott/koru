@@ -64,8 +64,10 @@ isClient && define(function (require, exports, module) {
       },
 
       "test links": function () {
-        assert.same(v.c('Hello @[Josiah<JG>](j2)'), 'Hello <span data-a="j2" contenteditable="false">Josiah&lt;JG&gt;</span>');
-        assert.same(v.c('#[Foo **bar**](s1)'), '<span data-h="s1" contenteditable="false">Foo <b>bar</b></span>');
+        assert.same(v.c('Hello @[Josiah<JG>](j2)').replace(/contenteditable="false" data-a="j2"/, 'data-a="j2" contenteditable="false"'),
+                    'Hello <span data-a="j2" contenteditable="false">Josiah&lt;JG&gt;</span>');
+        assert.same(v.c('#[Foo **bar**](s1)').replace(/contenteditable="false" data-h="s1"/, 'data-h="s1" contenteditable="false"'),
+                    '<span data-h="s1" contenteditable="false">Foo <b>bar</b></span>');
       },
 
 

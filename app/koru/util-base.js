@@ -60,42 +60,46 @@
   });
 
   function inspect1(o, i) {
-    switch(typeof o) {
-    case 'undefined':
-      return 'undefined';
-    case 'function':
-      return '=> ' + o.name;
-    case 'object':
-      if (o === null) return 'null';
-      if (o.constructor === RegExp) return o.toString();
-      if (o.hasOwnProperty('outerHTML'))
-        return o.outerHTML;
-      if (o.constructor === Date) return "<"+o.toGMTString()+">";
-      if (Array.isArray(o)) {
-        if (i)
-          return "[" + o.map(function (o2) {
-            return inspect1(o2, i-1);
-          }).join(", ") + "]";
-        return "[...]";
-      }
+    try {
+      switch(typeof o) {
+      case 'undefined':
+        return 'undefined';
+      case 'function':
+        return '=> ' + o.name;
+      case 'object':
+        if (o === null) return 'null';
+        if (o.constructor === RegExp) return o.toString();
+        if ('outerHTML' in o)
+          return o.outerHTML;
+        if (o.constructor === Date) return "<"+o.toGMTString()+">";
+        if (Array.isArray(o)) {
+          if (i)
+            return "[" + o.map(function (o2) {
+              return inspect1(o2, i-1);
+            }).join(", ") + "]";
+          return "[...]";
+        }
 
-      if (i) {
-        var r=[];
-        if (o instanceof Error) {
-          r.push(o.toString());
+        if (i) {
+          var r=[];
+          if (o instanceof Error) {
+            r.push(o.toString());
+          }
+          for (var p in o){
+            r.push(p.toString() + ": " + inspect1(o[p], i-1));
+          }
+          return "{" + r.join(", ") +"}";
         }
-        for (var p in o){
-          r.push(p.toString() + ": " + inspect1(o[p], i-1));
+        for(var key in o) {
+          return ("{"+key+"="+o[key]+",...}");
         }
-        return "{" + r.join(", ") +"}";
+      case 'string':
+        return '"'+o+'"';
+      default:
+        return o.toString();
       }
-      for(var key in o) {
-        return ("{"+key+"="+o[key]+",...}");
-      }
-    case 'string':
-      return '"'+o+'"';
-    default:
-      return o.toString();
+    } catch(ex) {
+      return '??';
     }
   }
 })();

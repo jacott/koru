@@ -139,16 +139,16 @@ define(function(require, exports, module) {
     var id = item.getAttribute('data-id');
     var nameELm = item.getElementsByClassName('name')[0];
 
-    var text = '<span class="ln">'+
-          Dom.escapeHTML((nameELm || item).textContent)+
-          '</span>&nbsp;';
+    var frag = document.createDocumentFragment();
+    frag.appendChild(Dom.html({tag: 'span', class: 'ln', text: (nameELm || item).textContent}));
+    frag.appendChild(document.createTextNode('\xa0'));
 
     if (data.span) {
-      revertMention(data.inputElm, text);
+      revertMention(data.inputElm, frag);
     } else {
       setRange(data.range);
       data.inputElm.focus();
-      execCommand('insertHTML', text);
+      MarkdownEditor.insert(frag);
     }
 
     var button = data.inputElm.getElementsByClassName('ln')[0];
@@ -175,7 +175,6 @@ define(function(require, exports, module) {
     if (lm == null) return;
 
     var anchor = lm.firstChild.textContent;
-    var text = button || lm.textContent;
 
     var dest = lm.previousSibling;
     if (dest) {
@@ -192,7 +191,8 @@ define(function(require, exports, module) {
       setRange(range);
       editorELm.focus(); // otherwise ?security violation? in Firefox
 
-      execCommand(button ? 'insertHTML' : 'insertText', text);
+      MarkdownEditor.insert(button || lm.textContent);
+
       if (! button) {
         range = getRange();
         range.setStart(dest, destOffset);

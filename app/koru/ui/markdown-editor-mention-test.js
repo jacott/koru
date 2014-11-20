@@ -2,8 +2,10 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./markdown-editor-test-helper');
   var Dom = require('../dom');
-  require('./markdown-editor');
+  var MarkdownEditor = require('./markdown-editor');
   var Markdown = require('./markdown');
+
+  var insert = MarkdownEditor.insert;
 
   TH.testCase(module, {
     setUp: function () {
@@ -110,7 +112,7 @@ isClient && define(function (require, exports, module) {
 
     "test @ after div": function () {
       assert.dom(v.input, function () {
-        document.execCommand('insertText', null, "\n");
+        insert("\n");
         TH.keypress(this, '@', true);
         TH.keypress(this, 'g');
 
@@ -219,7 +221,7 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
           refute.dom('.lm');
 
-          document.execCommand('insertText', null, 'w');
+          insert('w');
           assert.same(Markdown.fromHtml(this), 'hello w');
         });
       },
@@ -351,7 +353,7 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
           refute.dom('.lm');
 
-          document.execCommand('insertText', null, 'w');
+          insert('w');
           assert.same(Markdown.fromHtml(this), 'hello w@');
         });
         refute.dom('.mdMention');
@@ -366,7 +368,7 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
           refute.dom('.lm');
 
-          document.execCommand('insertText', null, 'w');
+          insert('w');
           assert.same(Markdown.fromHtml(this), 'hello w');
         });
       },
@@ -384,7 +386,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test @ not after space": function () {
-      document.execCommand('insertText', null, '.');
+      insert('.');
       assert.dom(v.input, function () {
         TH.keypress(this, '@', true);
         TH.keypress(this, 'h');
@@ -414,7 +416,7 @@ isClient && define(function (require, exports, module) {
         refute.dom('.ln');
         refute.dom('.lm');
 
-        document.execCommand('insertText', null, 'w');
+        insert('w');
         assert.same(Markdown.fromHtml(this), 'hello @henryw');
       });
 

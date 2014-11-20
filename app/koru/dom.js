@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var util = require('./util');
   var koru = require('./main');
-  var uiUtil = require('./ui/util');
+  var Dom = require('./ui/util');
 
   var extend = util.extend;
 
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
 
   var currentCtx, currentElement, currentEvent;
 
-  var Dom = {
+  util.extend(Dom, {
     set _disable_focusout(value) {return _disable_focusout = value},
     get _disable_focusout() {return _disable_focusout},
     Ctx: DomCtx,
@@ -203,7 +203,7 @@ define(function(require, exports, module) {
       };
     },
 
-    parentOf: document.body.contains ? function (parent, elm) {
+    parentOf: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
       return parent && parent.contains(elm) ? parent : null;
     } : function (parent, elm) {
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
@@ -237,14 +237,11 @@ define(function(require, exports, module) {
     },
 
     onMouseUp: onMouseUp,
-  };
+  });
 
-  uiUtil(Dom);
   require('./ui/next-frame')(Dom);
 
   var matches = Dom._matchesFunc;
-
-
 
   Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
 

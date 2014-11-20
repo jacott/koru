@@ -12,8 +12,37 @@ define(function(require, exports, module) {
 
   var IGNORE_OPTIONS = {"class": true, type: true, atList: true};
 
+  if (Dom.vendorPrefix === 'ms') {
+    var insert = function (arg) {
+      var range = window.getSelection().getRangeAt(0);
+      document.execCommand("ms-beginUndoUnit");
+      if (typeof arg === 'string')
+        arg = document.createTextNode(arg);
+      range.insertNode(arg);
+      document.execCommand("ms-endUndoUnit");
+      return true;
+    };
+  } else {
+    var insert = function (arg) {
+      if (typeof arg === 'string') {
+        return document.execCommand('insertText', 0, arg);
+      }
+
+      if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
+        var t = document.createElement('div');
+        t.appendChild(arg);
+        t = t.innerHTML;
+      } else {
+        var t = arg.outerHTML;
+      }
+      return document.execCommand("insertHTML", 0, t);
+    };
+  }
+
   Tpl.$extend({
     execCommand: execCommand,
+
+    insert: insert,
 
     clear: function (elm) {
       if (! Dom.hasClass(elm, 'mdEditor'))
@@ -80,8 +109,6 @@ define(function(require, exports, module) {
 
       if (content)
         elm.appendChild(Markdown.toHtml(content));
-
-      ctx.br = document.createElement('br');
     },
 
     $destroyed: function (ctx) {
@@ -100,6 +127,16 @@ define(function(require, exports, module) {
       Dom.stopEvent();
     },
     keydown: function (event) {
+      var input = this;
+      koru.afTimeout(function () {
+        var mdEditor = input.parentNode;
+        var isEmpty = ! (input.firstChild && input.firstChild.textContent);
+
+
+        if (! Dom.hasClass(mdEditor, 'empty') === isEmpty)
+          Dom.setClass('empty', isEmpty, mdEditor);
+      });
+
       switch(event.which) {
       case 229: case 16:
         return;
@@ -125,10 +162,11 @@ define(function(require, exports, module) {
 
     keypress: function (event) {
       var ctx = $.ctx;
+
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
         var ch = String.fromCharCode(event.which);
-        execCommand('insertText', ch);
+        insert(ch);
         var range = getRange();
         var tnode = range.startContainer;
         tnode.textContent = '@';
@@ -152,7 +190,7 @@ define(function(require, exports, module) {
           Dom.stopEvent();
           ctx.mentionState = 1;
 
-          execCommand('insertText', '\xa0@\xa0');
+          insert('\xa0@\xa0');
           var range = getRange();
           range.setStart(range.startContainer, range.startOffset - 2);
           range.deleteContents();
@@ -172,9 +210,6 @@ define(function(require, exports, module) {
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
       }
-      if (this.lastChild && ctx.br !== this.lastChild) {
-        this.appendChild(ctx.br);
-      }
       var etb = this.querySelectorAll('[data-a]:not([contenteditable])');
       for(var i = 0; i < etb.length; ++i) {
         etb[i].setAttribute('contenteditable', 'false');
@@ -186,25 +221,13 @@ define(function(require, exports, module) {
       updateToolbar($.ctx.data);
     },
 
-    'input': function (event) {
-      var ctx = $.ctx;
-      var input = this;
-      var mdEditor = input.parentNode;
-      if (ctx.br === input.firstChild) {
-        input.removeChild(ctx.br);
-      }
-      var isEmpty = ! input.firstChild;
-      if (! Dom.hasClass(mdEditor, 'empty') === isEmpty)
-        Dom.setClass('empty', isEmpty, mdEditor);
-    },
-
     'paste': function (event) {
       if ('clipboardData' in event) {
         var items = event.clipboardData.items;
         var index = util.indexOfRegex(items, /html/, 'type');
         if (index !== -1) {
           var md = Markdown.fromHtml(Dom.html('<div>'+event.clipboardData.getData(items[index].type)+'</div>'));
-          if (execCommand('insertHTML', Markdown.toHtml(md, 'div').innerHTML) || execCommand('insertText', md))
+          if (Tpl.insert(Markdown.toHtml(md)) || Tpl.insert(md))
             Dom.stopEvent();
         }
       }
@@ -282,7 +305,6 @@ define(function(require, exports, module) {
       return null;
     }
   }
-
 
   Dom.registerHelpers({
     markdownEditor: function (content, options) {
