@@ -344,9 +344,8 @@ define(function(require, exports, module) {
         currentElement = prevElm;
         currentCtx = prevCtx;
       }
-      if (document.activeElement !== activeElement) {
+      activeElement && document.activeElement !== activeElement &&
         activeElement.focus();
-      }
     },
 
     updateElement: function (elm) {
