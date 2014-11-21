@@ -8,6 +8,7 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var topDir = koru.appDir;
   var cmdFn = Path.resolve(topDir + '/../tmp/cmd-client.js');
+  var util = require('../util');
 
   try {fs.mkdirSync(topDir+'/.build');} catch(ex) {}
 
@@ -26,12 +27,11 @@ define(function(require, exports, module) {
         // all
         var config = module.config();
         var exDirs = koru.util.toMap(config.excludeDirs||[]);
-        (config.testDirs ||
+        util.forEach(config.testDirs ||
          readdir(topDir).wait().filter(function (fn) {
            return stat(fn).wait().isDirectory() &&
              (!(fn in exDirs));
-         })
-        ).forEach(function (dir) {
+         }), function (dir) {
           findAll(dir);
         });
       } else {

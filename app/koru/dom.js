@@ -275,7 +275,7 @@ define(function(require, exports, module) {
     if (name.match(/\./)) {
       var names = name.split('.');
       name = names.pop();
-      names.forEach(function (nm) {
+      util.forEach(names, function (nm) {
         parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }
@@ -353,7 +353,7 @@ define(function(require, exports, module) {
       var prevElm = currentElement;
       currentCtx = this;
       try {
-        this.evals.forEach(function (eval) {
+        util.forEach(this.evals, function (eval) {
           if (Dom.parentOf(elm, eval[0])) {
             updateNode(eval, currentCtx.data);
           }

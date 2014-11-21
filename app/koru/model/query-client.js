@@ -298,7 +298,7 @@ define(function(require, exports, module) {
 
           if (items = self._addItems) for(var field in items) {
             var list = attrs[field] || (attrs[field] = []);
-            items[field].forEach(function (item) {
+            util.forEach(items[field], function (item) {
               if (util.addItem(list, item) == null) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
                 changes[field + ".$-" + ++itemCount] = item;
@@ -308,7 +308,7 @@ define(function(require, exports, module) {
 
           if (items = self._removeItems) for(var field in items) {
             var match, list = attrs[field];
-            items[field].forEach(function (item) {
+            util.forEach(items[field], function (item) {
               if (list && (match = util.removeItem(list, item)) !== undefined) {
                 sessState.pendingCount() && recordItemChange(model, attrs, field);
                 changes[field + ".$+" + ++itemCount] = match;

@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   var koru = require('../main');
+  var util = require('../util');
 
   require("./assertions-methods");
   require("./callbacks");
@@ -41,7 +42,7 @@ define(function(require, exports, module) {
 
       koru.logger = function (type) {
         origLogger.apply(koru, arguments);
-        var args = Array.prototype.slice.call(arguments, 1);
+        var args = util.slice(arguments, 1);
         self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
       };
 

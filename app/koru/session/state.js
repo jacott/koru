@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     connected: function (conn) {
       state = 'ready';
       var onConnect = this._onConnect;
-      Object.keys(onConnect).sort().forEach(function (priority) {
+      util.forEach(Object.keys(onConnect).sort(), function (priority) {
         onConnect[priority].call(conn);
       });
       this.notify(true);

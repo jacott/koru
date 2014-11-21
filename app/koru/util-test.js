@@ -323,9 +323,26 @@ define(function (require, exports, module) {
     "test forEach": function () {
       util.forEach(v.list = [1,2,3], v.stub = test.stub());
 
-      assert.calledWith(v.stub, 1, 0, v.list);
-      assert.calledWith(v.stub, 2, 1, v.list);
-      assert.calledWith(v.stub, 3, 2, v.list);
+      assert.calledWith(v.stub, 1, 0);
+      assert.calledWith(v.stub, 2, 1);
+      assert.calledWith(v.stub, 3, 2);
+    },
+
+    "test append": function () {
+      var list1 = [1, 2, 3];
+
+      assert.same(util.append(list1, [4, 3]), list1);
+      assert.equals(list1, [1, 2, 3, 4, 3]);
+
+      var args = testArgs(1, 2);
+
+      util.append(args, [4, 5]);
+
+      assert.same(args[3], 5);
+
+      function testArgs() {
+        return arguments;
+      }
     },
 
     "test toMap": function () {

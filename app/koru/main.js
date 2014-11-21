@@ -179,7 +179,7 @@
       },
 
       "\x64ebug": function () {
-        koru.logger('\x44EBUG', Array.prototype.slice.call(arguments, 0));
+        koru.logger('\x44EBUG', util.slice(arguments, 0));
       },
 
       info: function () {

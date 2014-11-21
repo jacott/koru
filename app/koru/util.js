@@ -18,6 +18,8 @@ define(function(require, exports, module) {
     return obj === null ? -1 : TYPEORDER[typeof obj];
   }
 
+  var slice = Array.prototype.slice;
+
   util.extend(util, {
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
@@ -39,6 +41,32 @@ define(function(require, exports, module) {
           Object.defineProperty(obj,prop, value);
       }
       return obj;
+    },
+
+    forEach: function forEach(list, func) {
+      var len = list.length;
+      for(var i = 0; i < len; ++i) {
+        func(list[i], i);
+      }
+    },
+
+    map: function mymap(list, func) {
+      var len = list.length;
+      var result = new Array(len);
+      for(var i = 0; i < len; ++i) {
+        result[i] = func(list[i], i);
+      }
+      return result;
+    },
+
+    append: function (list, append) {
+      var len = append.length;
+      var dl = list.length;
+      list.length = dl + len;
+      for(var i = 0; i < len; ++i) {
+        list[dl+i] = append[i];
+      }
+      return list;
     },
 
     /**
@@ -180,7 +208,7 @@ define(function(require, exports, module) {
     stacktrace: stacktrace,
 
     slice: function (list, from, to) {
-      return Array.prototype.slice.call(list, from, to);
+      return slice.call(list, from, to);
     },
 
     isObjEmpty: function (obj) {
@@ -250,14 +278,14 @@ define(function(require, exports, module) {
     },
 
     mapToSearchStr: function (map) {
-      return Object.keys(map).map(function (key) {
+      return util.map(Object.keys(map), function (key) {
         return util.encodeURIComponent(key) + '=' + util.encodeURIComponent(map[key]);
       }).join('&');
     },
 
     searchStrToMap: function (query) {
     var result = {};
-      query.split('&').forEach(function (item) {
+      util.forEach(query.split('&'), function (item) {
         var parts = item.split('=', 2);
         result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);
       });
@@ -281,14 +309,10 @@ define(function(require, exports, module) {
       return decodeURIComponent(value.replace(/\+/g, " "));
     },
 
-    forEach: function (list, func) {
-      Array.prototype.forEach.call(list, func);
-    },
-
     toMap: function (keyName, valueName /*, lists */) {
       var result = {};
       if (arguments.length === 1) {
-        keyName && keyName.forEach(function (item) {
+        keyName && util.forEach(keyName, function (item) {
           result[item] = true;
         });
         return result;
@@ -313,7 +337,7 @@ define(function(require, exports, module) {
 
     mapField: function (list, fieldName) {
       fieldName = fieldName || '_id';
-      return list && list.map(function (doc) {
+      return list && util.map(list, function (doc) {
         return doc[fieldName];
       });
     },
@@ -333,7 +357,7 @@ define(function(require, exports, module) {
       var result = [];
 
       function internal(a, l) {
-        a.forEach(function (value) {
+        util.forEach(a, function (value) {
           if (l && Array.isArray(value))
             internal(value, l - 1);
           else
@@ -414,7 +438,7 @@ define(function(require, exports, module) {
       case "[object Date]":
         return new Date(orig.getTime());
       case "[object Array]":
-        return orig.map(function (item) {
+        return util.map(orig, function (item) {
           return util.deepCopy(item);
         });
       case "[object Uint8Array]":
@@ -433,7 +457,7 @@ define(function(require, exports, module) {
 
     intersectp: function (list1, list2) {
       var set = {};
-      list1.forEach(function (item) {
+      util.forEach(list1, function (item) {
         set[item]=true;
       });
 
@@ -454,7 +478,7 @@ define(function(require, exports, module) {
     union: function (args) {
       var set = {};
       for(var i = 0; i < arguments.length; ++i) {
-        arguments[i].forEach(function (elm) {
+        util.forEach(arguments[i], function (elm) {
           set[elm] = true;
         });
       }
@@ -529,7 +553,7 @@ define(function(require, exports, module) {
     },
 
     hashToCss: function (hash) {
-      return Object.keys(hash).map(function (key) {
+      return util.map(Object.keys(hash), function (key) {
         return key+":"+hash[key];
       }).join(";");
     },

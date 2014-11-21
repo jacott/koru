@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
     createList: function (number, creator /* arguments */) {
       var list = [],
-          args = Array.prototype.slice.call(arguments, 2);
+          args = util.slice(arguments, 2);
 
       var func = typeof args[0] === 'function' ? args.shift() : null;
 

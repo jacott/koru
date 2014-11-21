@@ -55,7 +55,6 @@ isClient && define(function (require, exports, module) {
       assert.equals(Dom.mapToData(elm.children), ['one', 'two', 'three']);
     },
 
-
     "test setClassBySuffix": function () {
       var elm = {className: ''};
 

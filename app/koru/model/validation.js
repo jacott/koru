@@ -153,7 +153,7 @@ define(function(require, exports, module) {
       var errors = doc._errors || (doc._errors = {}),
           fieldErrors = errors[field] || (errors[field] = []);
 
-      fieldErrors.push(Array.prototype.slice.call(arguments, 2));
+      fieldErrors.push(util.slice(arguments, 2));
     },
 
     permitDoc: function (doc, permitSpec, filter) {

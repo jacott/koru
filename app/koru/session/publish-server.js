@@ -110,7 +110,7 @@ define(function(require, exports, module) {
   function stopped(sub) {
     if (sub.conn._subs) delete sub.conn._subs[sub.id];
     sub._stop && sub._stop();
-    sub._matches.forEach(function (m) {
+    util.forEach(sub._matches, function (m) {
       m.stop();
     });
     sub._matches = [];

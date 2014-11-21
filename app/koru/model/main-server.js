@@ -57,7 +57,7 @@ define(function(require, exports, module) {
         for(var name in type) {
           var queue = type[name];
           var model = BaseModel[name];
-          queue.forEach(function (args) {
+          util.forEach(queue, function (args) {
             ensureIndex(model, args, options);
           });
         }

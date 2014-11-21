@@ -90,9 +90,9 @@ define(function(require, exports, module) {
           args = arguments;
 
       if (pass === ! func.apply(sideAffects, args)) {
-        args.push || (args = Array.prototype.slice.call(args, 0));
+        args.push || (args = util.slice(args, 0));
         args.push(sideAffects);
-        geddon.assert(false, format.apply(null, [pass ? options.assertMessage : options.refuteMessage].concat(args)));
+        geddon.assert(false, format.apply(null, util.append([pass ? options.assertMessage : options.refuteMessage], args)));
       }
       geddon.assert(true);
       return pass ? assert : refute;

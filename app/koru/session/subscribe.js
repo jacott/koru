@@ -160,7 +160,7 @@ define(function(require, exports, module) {
 
       filterModels: function () {
         var models = {};
-        Array.prototype.forEach.call(arguments, function (mn) {
+        util.forEach(arguments, function (mn) {
           models[mn] = true;
         });
         publish._filterModels(models);

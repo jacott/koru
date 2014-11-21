@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var Dom = require('../dom');
   var Form = require('./form');
+  var util = require('../util');
 
   var Tpl = Dom.newTemplate(require('../html!./complete-list'));
   var $ = Dom.current;
@@ -10,7 +11,7 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     $created: function (ctx, elm) {
-      ctx.data.forEach(function (row) {
+      util.forEach(ctx.data, function (row) {
         elm.appendChild(Row.$render(row));
       });
       Dom.addClass(elm.firstChild, 'selected');

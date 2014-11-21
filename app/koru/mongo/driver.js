@@ -2,9 +2,11 @@ var Future = requirejs.nodeRequire('fibers/future');
 var MongoClient = requirejs.nodeRequire('mongodb').MongoClient;
 var connect = Future.wrap(MongoClient.connect);
 
+var util;
 
 define(function(require, exports, module) {
   var koru = require('../main');
+  util = require('../util');
 
   koru.onunload(module, closeDefaultDb);
 
@@ -135,7 +137,7 @@ function genericDbFunc(cmd) {
   return function () {
     var future = new Future;
 
-    Array.prototype.push.call(arguments, future.resolver());
+    util.append(arguments, future.resolver());
 
     this._db[cmd].apply(this._db, arguments);
     return future.wait();

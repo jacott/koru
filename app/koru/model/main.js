@@ -373,7 +373,7 @@ define(function(require, exports, module) {
           var curr = arguments[i];
           if (curr && curr._id) arguments[i] = curr._id;
         }
-        return session.rpc.apply(session, [fullname, this._id].concat(util.slice(arguments)));
+        return session.rpc.apply(session, util.append([fullname, this._id], arguments));
       };
       session.defineRpc(fullname, func);
       return this;
@@ -504,7 +504,7 @@ define(function(require, exports, module) {
 
       delete BaseModel[name];
 
-      ['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterLocalChange'].forEach(function (actn) {
+      util.forEach(['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterLocalChange'], function (actn) {
         delete modelObservers[name +"." + actn];
       });
       if (model._observing) for(var i = 0; i < model._observing.length; ++i) {

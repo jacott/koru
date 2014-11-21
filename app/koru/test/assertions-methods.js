@@ -380,7 +380,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add('calledOnceWith', {
     assert:  function (spy /* arguments */) {
       checkSpy(spy);
-      var args = this.args = Array.prototype.slice.call(arguments, 1);
+      var args = this.args = util.slice(arguments, 1);
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
         this.spy = arguments[0].printf("%n");
@@ -405,7 +405,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     ga.add(meth, {
       assert:  function (spy) {
         checkSpy(spy);
-        var args = this.args = Array.prototype.slice.call(arguments, 1);
+        var args = this.args = util.slice(arguments, 1);
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");

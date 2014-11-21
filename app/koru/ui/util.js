@@ -105,7 +105,7 @@ define(function(require, exports, module) {
       if (typeof content === "string")
         elm.textContent = content;
       else if (Array.isArray(content))
-        content.forEach(function (item) {
+        util.forEach(content, function (item) {
           elm.appendChild(Dom.html(item));
         });
       else
@@ -191,13 +191,19 @@ define(function(require, exports, module) {
     forEach: function (elm, querySelector, func) {
       if (! elm) return;
       var elms = elm.querySelectorAll(querySelector);
-      for(var i = 0; i < elms.length; ++i) {
+      var len = elms.length;
+      for(var i = 0; i < len; ++i) {
         func(elms[i]);
       }
     },
 
     mapToData: function (list) {
-      return Array.prototype.map.call(list, convertToData);
+      var len = list.length;
+      var result = [];
+      for(var i = 0; i < len; ++i) {
+        result.push(convertToData(list[i]));
+      }
+      return result;
     },
 
     getClosest: function (elm, selector) {

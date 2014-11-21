@@ -341,7 +341,7 @@ define(function(require, exports, module) {
 
     var ret = util.extend({}, _defaults);
 
-    ['N', 'g', 'k'].forEach(function (p) {
+    util.forEach(['N', 'g', 'k'], function (p) {
       if (options[p]) {
         if (typeof options[p] === "string")
           ret[p] = new BigInteger(options[p], 16);

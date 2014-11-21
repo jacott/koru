@@ -24,14 +24,13 @@ define(function(require, exports, module) {
   var tSmString = 0x80;
   var tSmNumber = 0x40;
 
-  var forEachFunc = Array.prototype.forEach;
   var toStringFunc = Object.prototype.toString;
 
   exports.encodeMessage = function (type, args) {
     var buffer = [];
     var dict = {};
 
-    args.forEach(function (o) {
+    util.forEach(args, function (o) {
       encode(buffer, o, dict);
     });
 
@@ -112,7 +111,7 @@ define(function(require, exports, module) {
       tmpDv.setInt32(0, object);
       if (tmpDv.getInt32(0) === object) {
         buffer.push(tInt32);
-        return forEachFunc.call(tmpU8.subarray(0, 4), function (v) {
+        return util.forEach(tmpU8.subarray(0, 4), function (v) {
           buffer.push(v);
         });
       }
@@ -121,7 +120,7 @@ define(function(require, exports, module) {
       tmpDv.setInt32(0, object*10000);
       if (tmpDv.getInt32(0) === object*10000) {
         buffer.push(tDec4);
-        return forEachFunc.call(tmpU8.subarray(0, 4), function (v) {
+        return util.forEach(tmpU8.subarray(0, 4), function (v) {
           buffer.push(v);
         });
       }
@@ -129,7 +128,7 @@ define(function(require, exports, module) {
       tmpDv.setFloat64(0, object);
 
       buffer.push(tFloat64);
-      return forEachFunc.call(tmpU8, function (v) {
+      return util.forEach(tmpU8, function (v) {
         buffer.push(v);
       });
 
@@ -147,12 +146,12 @@ define(function(require, exports, module) {
     case "[object Date]":
       buffer.push(tDate);
       tmpDv.setFloat64(0, object.getTime());
-      return forEachFunc.call(tmpU8, function (v) {
+      return util.forEach(tmpU8, function (v) {
         buffer.push(v);
       });
     case "[object Array]":
       buffer.push(tArray);
-      object.forEach(function (o) {
+      util.forEach(object, function (o) {
         encode(buffer, o, dict);
       });
       return buffer.push(tTerm);
@@ -163,10 +162,10 @@ define(function(require, exports, module) {
 
       buffer.push(tBinary);
       tmpDv.setUint32(0, object.byteLength);
-      forEachFunc.call(tmpU8.subarray(0, 4), function (v) {
+      util.forEach(tmpU8.subarray(0, 4), function (v) {
         buffer.push(v);
       });
-      return forEachFunc.call(object, function (v) {
+      return util.forEach(object, function (v) {
         buffer.push(v);
       });
     }

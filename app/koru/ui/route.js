@@ -333,7 +333,7 @@ define(function(require, exports, module) {
       if (! search) return result;
 
 
-      search.slice(1).split('&').forEach(function (pair) {
+      util.forEach(search.slice(1).split('&'), function (pair) {
         var items = pair.split('=');
         result[items[0]] = items[1];
       });

@@ -34,7 +34,7 @@ define(function(require, exports, module) {
       sendM: function (name, args, func) {
         var msgId = (++session._msgId).toString(36);
         var data = [msgId, name];
-        args && args.forEach(function (arg) {data.push(util.deepCopy(arg))});
+        args && util.forEach(args, function (arg) {data.push(util.deepCopy(arg))});
         waitMs[msgId] = [data, func];
         sessState.incPending();
         sessState.isReady() && session.sendBinary('M', data);
@@ -79,11 +79,13 @@ define(function(require, exports, module) {
     });
 
     function onConnect () {
-      Object.keys(waitMs).sort(function (a, b) {
+      var list = Object.keys(waitMs).sort(function (a, b) {
         if (a.length < b.length) return -1;
         if (a.length > b.length) return 1;
         return (a < b) ? -1 : a === b ? 0 : 1;
-      }).forEach(function (msgId) {
+      });
+
+      util.forEach(list, function (msgId) {
         session.sendBinary('M', waitMs[msgId][0]);
       });
     }

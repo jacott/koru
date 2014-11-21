@@ -141,8 +141,8 @@ define(function(require, exports, module) {
     if (filter) results = results.filter(function (doc) {
       return filter(doc);
     });
-    results.sort(sortFunc)
-      .forEach(function (doc) {callback(doc)});
+
+    util.forEach(results.sort(sortFunc), function (doc) {callback(doc)});
 
     callback._handle = model.onChange(function (doc, was) {
       var old = doc ? doc.$asBefore(was) : was;

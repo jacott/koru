@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     function run() {
       var q = queue;
       queue = afHandle = null;
-      q.forEach(execOne);
+      util.forEach(q, execOne);
     }
 
     function execOne(func) {

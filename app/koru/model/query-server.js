@@ -130,7 +130,7 @@ define(function(require, exports, module) {
             var atLeast1 = false;
             for(var field in items) {
               var list = attrs[field] || (attrs[field] = []);
-              items[field].forEach(function (item) {
+              util.forEach(items[field], function (item) {
                 if (util.addItem(list, item) == null) {
                   atLeast1 = true;
                   changes[field + ".$-" + ++itemCount] = item;
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
             for(var field in items) {
               var matches = [], match;
               var list = attrs[field];
-              items[field].forEach(function (item) {
+              util.forEach(items[field], function (item) {
                 if (list && (match = util.removeItem(list, item)) !== undefined) {
                   changes[field + ".$+" + ++itemCount] = match;
                   matches.push(match);

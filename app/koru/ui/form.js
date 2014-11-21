@@ -298,7 +298,7 @@ define(function(require, exports, module) {
         includeBlank = '';
       elm.appendChild(optionFunc('', includeBlank));
     }
-    sl.forEach(function (row) {
+    util.forEach(sl, function (row) {
       var rowValue = getValue(row);
       elm.appendChild(optionFunc(rowValue, getContent(row), rowValue == value));
     });
