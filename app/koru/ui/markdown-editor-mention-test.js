@@ -68,7 +68,7 @@ isClient && define(function (require, exports, module) {
     "test typing @g": function () {
       assert.dom(v.input, function () {
         assert.same(Markdown.fromHtml(v.range.startContainer.parentNode), 'hello ');
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', "shift");
         assert.called(Dom.stopEvent);
         assert.same(v.sel, window.getSelection());
         v.lm = v.sel.getRangeAt(0).startContainer.parentNode;
@@ -76,13 +76,15 @@ isClient && define(function (require, exports, module) {
         assert.className(v.lm, 'lm');
 
         assert.same(v.lm.textContent, '@');
+        assert.same(this.innerHTML.replace(/&nbsp;/, ' '), 'hello <span class="lm">@</span>');
+
       });
       refute.dom('#TestMarkdownEditor>.mdMention');
 
       assert.dom(v.input, function () {
         Dom.stopEvent.reset();
         TH.trigger(this, 'keydown', {which: 16}); // shift should not matter
-        TH.trigger(v.lm, 'keypress', {which: 'g'.charCodeAt(0)});
+        TH.keypress(v.lm, 'g');
         assert.called(Dom.stopEvent);
         assert.same(v.lm.textContent, '@g');
         assert.same(v.lm.lastChild.textContent, 'g');
@@ -97,7 +99,7 @@ isClient && define(function (require, exports, module) {
 
     "test @ followed by -> ->": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         assert.same(Markdown.fromHtml(this), 'hello @');
         TH.trigger(this, 'keydown', {which: 39});
         TH.trigger(this, 'keydown', {which: 39});
@@ -113,7 +115,7 @@ isClient && define(function (require, exports, module) {
     "test @ after div": function () {
       assert.dom(v.input, function () {
         insert("\n");
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'g');
 
         assert.dom('span.lm>span.ln');
@@ -135,7 +137,7 @@ isClient && define(function (require, exports, module) {
         };
 
         assert.dom(v.input, function () {
-          TH.keypress(this, '@', true);
+          TH.keypress(this, '@', 'shift');
           TH.keypress(this, 'g');
         });
       },
@@ -278,7 +280,7 @@ isClient && define(function (require, exports, module) {
 
     "test input box sizing": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
       });
 
@@ -323,7 +325,7 @@ isClient && define(function (require, exports, module) {
     "keydown": {
       setUp: function () {
         assert.dom(v.input, function () {
-          TH.keypress(this, '@', true);
+          TH.keypress(this, '@', 'shift');
           TH.keypress(this, 'h');
         });
       },
@@ -376,7 +378,7 @@ isClient && define(function (require, exports, module) {
 
     "test @ not last keypress": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.trigger(this, 'keydown', {which: 40});
         TH.trigger(this, 'keydown', {which: 72});
         TH.keypress(this, 'h');
@@ -388,7 +390,7 @@ isClient && define(function (require, exports, module) {
     "test @ not after space": function () {
       insert('.');
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
       });
 
@@ -397,7 +399,7 @@ isClient && define(function (require, exports, module) {
 
     "test arrow right": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
       });
 
@@ -425,7 +427,7 @@ isClient && define(function (require, exports, module) {
 
     "test .ln removed removes mdMention": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
         assert.dom('.ln', function () {
           Dom.remove(this);
@@ -443,7 +445,7 @@ isClient && define(function (require, exports, module) {
         refute.className(this, 'empty');
 
         assert.dom(v.input, function () {
-          TH.keypress(this, '@', true);
+          TH.keypress(this, '@', 'shift');
           TH.keypress(this, 'h');
         });
 
@@ -457,7 +459,7 @@ isClient && define(function (require, exports, module) {
 
     "test removing editor removes mdMention": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
       });
 
@@ -481,7 +483,7 @@ isClient && define(function (require, exports, module) {
 
     "test removing mdMention": function () {
       assert.dom(v.input, function () {
-        TH.keypress(this, '@', true);
+        TH.keypress(this, '@', 'shift');
         TH.keypress(this, 'h');
       });
 

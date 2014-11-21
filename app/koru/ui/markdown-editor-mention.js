@@ -14,7 +14,11 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     $destroyed: function (ctx, elm) {
-      revertMention(ctx.data.inputElm);
+      try {
+        revertMention(ctx.data.inputElm);
+      } catch(ex) {
+        koru.unhandledException(ex);
+      }
       ctx.data.close && ctx.data.close();
     },
 
@@ -178,10 +182,12 @@ define(function(require, exports, module) {
 
     var dest = lm.previousSibling;
     if (dest) {
+      if (! lm.nextSibling) return;
+
       var destOffset = dest.length;
+      var parent = lm.parentNode;
       dest.textContent += '\xa0'+anchor+lm.nextSibling.textContent;
 
-      var parent = lm.parentNode;
       parent.removeChild(lm.nextSibling);
       parent.removeChild(lm);
 

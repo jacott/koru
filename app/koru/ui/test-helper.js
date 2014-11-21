@@ -80,26 +80,37 @@ define(function(require, exports, module) {
       return this;
     },
 
-    keypress: function (elm, keycode, shift, ctrl, alt, meta) {
+    keypress: function (elm, keycode, modifiers) {
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
+      modifiers = modifiers || '';
+
 
       var pressEvent = document.createEvent ("KeyboardEvent");  //https://developer.mozilla.org/en/DOM/event.initKeyEvent
 
+
+
       if ('initKeyboardEvent' in pressEvent) {
-        pressEvent.initKeyboardEvent("keypress", true, true, window,
-                                     null, null,
-                                     ctrl, alt, shift, meta);
+        if (Dom.vendorPrefix === 'ms')
+          pressEvent.initKeyboardEvent("keypress", true, true, window,
+                                       keycode, null, modifiers, false, "");
+        else {
+          pressEvent.initKeyboardEvent("keypress", true, true, window,
+                                       keycode, null,  has(/ctrl/), has(/alt/), has(/shift/), has(/meta/));
+        }
+
         // Chromium Hack
         Object.defineProperty(pressEvent, 'which', {get : function() {return keycode}});
 
       } else {
         // firefox
         pressEvent.initKeyEvent ("keypress", true, true, window,
-                                 ctrl, alt, shift, meta,
+                                 has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
                                  keycode, keycode);
       }
       dispatchEvent(elm ,pressEvent);
       return this;
+
+      function has(re) {return !! modifiers.match(re)};
     },
 
     change: function (node, value) {

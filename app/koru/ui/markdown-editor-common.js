@@ -18,8 +18,21 @@ define(function(require, exports, module) {
       document.execCommand("ms-beginUndoUnit");
       if (typeof arg === 'string')
         arg = document.createTextNode(arg);
-      range.insertNode(arg);
+
+      try {
+        range.insertNode(arg);
+      } catch(ex) {
+        return false;
+      }
       document.execCommand("ms-endUndoUnit");
+
+      var range = getRange();
+      if (arg.nodeType === document.TEXT_NODE && range.startContainer.nodeType === document.TEXT_NODE) {
+        range = document.createRange();
+        range.selectNode(arg);
+        range.collapse(false);
+        setRange(range);
+      }
       return true;
     };
   } else {
