@@ -14,12 +14,13 @@ define(function(require, exports, module) {
 
   if (Dom.vendorPrefix === 'ms') {
     var insert = function (arg) {
-      var range = window.getSelection().getRangeAt(0);
+      var range = getRange();
       document.execCommand("ms-beginUndoUnit");
       if (typeof arg === 'string')
         arg = document.createTextNode(arg);
 
       try {
+        range.collapsed || range.deleteContents();
         range.insertNode(arg);
       } catch(ex) {
         return false;
@@ -56,6 +57,21 @@ define(function(require, exports, module) {
     execCommand: execCommand,
 
     insert: insert,
+
+    moveLeft: function (select) {
+      var range = getRange();
+      var node = range.startContainer;
+      if (node.nodeType === document.TEXT_NODE && range.startOffset !== 0) {
+        range.setStart(node, range.startOffset - 1);
+      } else {
+        var node = range.startContainer.childNodes[range.startOffset - 1];
+        if (node.nodeType !== document.TEXT_NODE) return; // we don't handle nested elms
+        range.setStart(node, node.textContent.length -1);
+      }
+      select || range.collapse(true);
+
+      setRange(range);
+    },
 
     clear: function (elm) {
       if (! Dom.hasClass(elm, 'mdEditor'))
@@ -179,15 +195,9 @@ define(function(require, exports, module) {
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
         var ch = String.fromCharCode(event.which);
-        insert(ch);
         var range = getRange();
-        var tnode = range.startContainer;
-        tnode.textContent = '@';
         var span = Dom.html({tag: 'span', "class": 'ln', text: ch});
-        tnode.parentNode.appendChild(span);
-        range.selectNode(span.firstChild, ch.length);
-        range.selectNode(span.firstChild, ch.length);
-        setRange(range);
+        range.insertNode(span);
         ctx.mentionState = 3;
         ctx.selectItem = Tpl.List.selectItem({inputCtx: ctx, inputElm: this, span: span});
         return;
@@ -196,23 +206,16 @@ define(function(require, exports, module) {
       case 64:
         if (event.shiftKey) {
           var range = getRange();
-          if (range.startContainer.nodeType === document.TEXT_NODE) {
-            var text = range.startContainer.textContent;
-            if (range.startOffset !== 0 && text[range.startOffset - 1].match(/\S/)) return;
+          if (range.startOffset !== 0) {
+            if (range.startContainer.nodeType === document.TEXT_NODE) {
+              var text = range.startContainer.textContent;
+              text = text[range.startOffset - 1];
+            } else {
+              var text = range.startContainer.childNodes[range.startOffset - 1].textContent;
+            }
+            if (text.match(/\S/)) return;
           }
-          Dom.stopEvent();
           ctx.mentionState = 1;
-
-          insert('\xa0@\xa0');
-          var range = getRange();
-          range.setStart(range.startContainer, range.startOffset - 2);
-          range.deleteContents();
-          var span = Dom.html({tag: 'span', "class": 'lm', text: '@'});
-          range.insertNode(span);
-          range.setStart(span.firstChild, 1);
-          range.setEnd(span.firstChild, 1);
-          span.previousSibling.textContent = span.previousSibling.textContent.slice(0, -1);
-          setRange(range);
           return;
         }
         break;

@@ -108,18 +108,19 @@ define(function(require, exports, module) {
       case 39: // right
         if (this.selectionStart === this.value.length) {
           cancelList(event.currentTarget);
-          collapseRange();
+          collapseRange(false);
         }
         break;
       case 37: // left
         if (this.selectionStart === 0) {
           cancelList(event.currentTarget);
-          collapseRange(true);
+          MarkdownEditor.moveLeft();
         }
         break;
       case 8: // Backspace
         if (! this.value) {
           cancelList(event.currentTarget);
+          MarkdownEditor.moveLeft('select');
           execCommand('delete');
         }
         break;
@@ -162,7 +163,7 @@ define(function(require, exports, module) {
       button.className = '';
       button.setAttribute('data-a', id);
     }
-    collapseRange();
+    collapseRange(false);
     data.inputElm = null;
     Dom.remove(event.currentTarget);
   }
@@ -175,35 +176,30 @@ define(function(require, exports, module) {
   function revertMention(editorELm, button) {
     if (! editorELm) return;
 
-    var lm = editorELm.getElementsByClassName('lm')[0];
-    if (lm == null) return;
-
-    var anchor = lm.firstChild.textContent;
-
-    var dest = lm.previousSibling;
-    if (dest) {
-      if (! lm.nextSibling) return;
-
-      var destOffset = dest.length;
-      var parent = lm.parentNode;
-      dest.textContent += '\xa0'+anchor+lm.nextSibling.textContent;
-
-      parent.removeChild(lm.nextSibling);
-      parent.removeChild(lm);
-
-      var range = document.createRange();
-      range.setStart(dest, destOffset);
-      range.setEnd(dest, destOffset + 2);
-      setRange(range);
-      editorELm.focus(); // otherwise ?security violation? in Firefox
-
-      MarkdownEditor.insert(button || lm.textContent);
-
-      if (! button) {
-        range = getRange();
+    var ln = editorELm.getElementsByClassName('ln')[0];
+    if (ln) {
+      var dest = ln.previousSibling;
+      var parent = ln.parentNode;
+      parent && parent.removeChild(ln);
+      if (dest) {
+        var destOffset = dest.length;
+        var range = document.createRange();
         range.setStart(dest, destOffset);
+        range.collapse(true);
         setRange(range);
+        editorELm.focus();
+        if (! button) {
+          ln.textContent && MarkdownEditor.insert(ln.textContent);
+          var range = getRange();
+          range.setStart(dest, destOffset);
+          setRange(range);
+        } else {
+          MarkdownEditor.moveLeft('select');
+          MarkdownEditor.insert(button);
+        }
       }
+    } else {
+      editorELm.focus();
     }
 
     var mdCtx = Dom.getCtx(editorELm);
