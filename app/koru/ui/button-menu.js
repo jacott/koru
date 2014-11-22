@@ -31,6 +31,7 @@ define(function(require, exports, module) {
   Tpl.$extend({
     $destroyed: function (ctx) {
       Dom.remove(ctx.listElm);
+      ctx.hideMenu && ctx.hideMenu();
     },
   });
 
@@ -47,11 +48,6 @@ define(function(require, exports, module) {
 
       menu.insertBefore(list.firstChild, menu.firstElementChild);
       ctx.listElm.appendChild(list);
-      ctx.onDestroy(function () {
-        Dom.remove(ctx.listElm);
-        ctx.listElm = null;
-        ctx.hideMenu && ctx.hideMenu();
-      });
 
       return menu;
     },
@@ -67,11 +63,11 @@ define(function(require, exports, module) {
       menu.appendChild(ctx.listElm);
       var callback = function (event) {
         if (event.type === 'mousedown' && Dom.parentOf(menu, event.target)) return;
-        ctx.hideMenu();
+        hideMenu();
       };
       document.addEventListener('mousedown', callback, true);
 
-      ctx.hideMenu = function () {
+      var hideMenu = ctx.hideMenu = function () {
         ctx.hideMenu = null;
         ctx.listElm && ctx.listElm.parentNode === menu && menu.removeChild(ctx.listElm);
         document.removeEventListener('mousedown', callback, true);
