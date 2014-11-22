@@ -32,7 +32,7 @@ define(function(require, exports, module) {
           var href = hypherlinks[hlidx][2];
           if (mention) {
             elm.setAttribute('data-'+ (mention === '@' ? 'a' : 'h'), href);
-            elm.setAttribute('contenteditable', 'false');
+            elm.setAttribute('contenteditable', 'true');
           } else {
             elm.setAttribute('href', href);
           }
