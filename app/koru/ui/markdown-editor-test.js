@@ -88,7 +88,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.ec, 'italic');
 
         TH.trigger(this, 'keydown', {which: 85, ctrlKey: true});
-        assert.calledWith(v.ec, 'underline');
+        assert.calledWith(v.ec, 'noop');
       });
     },
 

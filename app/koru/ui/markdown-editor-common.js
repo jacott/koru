@@ -148,7 +148,7 @@ define(function(require, exports, module) {
   var COMMANDS = {
     66: 'bold',
     73: 'italic',
-    85: 'underline',
+    85: 'noop',
   };
 
   Input.$events({
