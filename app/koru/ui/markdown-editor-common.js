@@ -239,12 +239,15 @@ define(function(require, exports, module) {
 
     'paste': function (event) {
       if ('clipboardData' in event) {
-        var items = event.clipboardData.items;
-        var index = util.indexOfRegex(items, /html/, 'type');
-        if (index !== -1) {
-          var md = Markdown.fromHtml(Dom.html('<div>'+event.clipboardData.getData(items[index].type)+'</div>'));
-          if (Tpl.insert(Markdown.toHtml(md)) || Tpl.insert(md))
-            Dom.stopEvent();
+        var types = event.clipboardData.types;
+        if (types) for(var i = 0; i < types.length; ++i) {
+          var type = types[i];
+          if (/html/.test(type)) {
+            var md = Markdown.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
+            if (Tpl.insert(Markdown.toHtml(md)) || Tpl.insert(md))
+              Dom.stopEvent();
+            return;
+          }
         }
       }
     },

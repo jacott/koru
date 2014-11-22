@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
         v.ec = test.stub(MarkdownEditor, 'insert');
         v.event = {
           clipboardData: {
-            items: [{type: 'text/html'}],
+            types: ['text/plain', 'text/html'],
             getData: test.stub().withArgs('text/html').returns('<b>bold</b> world'),
           },
         };
