@@ -8,12 +8,12 @@ define(function(require, exports, module) {
     fromHtml: function (html) {
       output = []; needspace = false;
       html && outputChildNodes(html, '*');
-      var result = output.join('');
+      var result = output.join('').trim();
       output = null;
       return result;
     },
 
-    toHtml: function (md, wrapper) {
+    toHtml: function (md, wrapper, editable) {
       md = md || '';
       var hypherlinks = MarkdownBase.findHyperLinks(md);
       var mdlen = md.length;
@@ -32,7 +32,7 @@ define(function(require, exports, module) {
           var href = hypherlinks[hlidx][2];
           if (mention) {
             elm.setAttribute('data-'+ (mention === '@' ? 'a' : 'h'), href);
-            elm.setAttribute('contenteditable', 'true');
+            if (editable) elm.setAttribute('contenteditable', 'true');
           } else {
             elm.setAttribute('href', href);
           }

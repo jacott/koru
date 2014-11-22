@@ -56,18 +56,18 @@ isClient && define(function (require, exports, module) {
 
     "toHtml": {
       setUp: function () {
-        v.c = function (text) {
+        v.c = function (text, editable) {
           var elm = document.createElement('div');
-          elm.appendChild(Markdown.toHtml(text));
+          elm.appendChild(Markdown.toHtml(text, null, editable));
           return elm.innerHTML;
         };
       },
 
       "test links": function () {
-        assert.same(v.c('Hello @[Josiah<JG>](j2)').replace(/contenteditable="true" data-a="j2"/, 'data-a="j2" contenteditable="true"'),
+        assert.same(v.c('Hello @[Josiah<JG>](j2)', true).replace(/contenteditable="true" data-a="j2"/, 'data-a="j2" contenteditable="true"'),
                     'Hello <span data-a="j2" contenteditable="true">Josiah&lt;JG&gt;</span>');
-        assert.same(v.c('#[Foo **bar**](s1)').replace(/contenteditable="true" data-h="s1"/, 'data-h="s1" contenteditable="true"'),
-                    '<span data-h="s1" contenteditable="true">Foo <b>bar</b></span>');
+        assert.same(v.c('#[Foo **bar**](s1)'),
+                    '<span data-h="s1">Foo <b>bar</b></span>');
       },
 
 

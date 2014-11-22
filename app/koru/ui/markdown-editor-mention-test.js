@@ -63,7 +63,7 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.mdEditor:not(.empty)>.input', function () {
-          assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1) ');
+          assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1)');
           this.innerHTML = '';
         });
       });
@@ -71,7 +71,7 @@ isClient && define(function (require, exports, module) {
 
     "test typing @g": function () {
       assert.dom(v.input, function () {
-        assert.same(Markdown.fromHtml(v.range.startContainer.parentNode), 'hello ');
+        assert.same(Markdown.fromHtml(v.range.startContainer.parentNode), 'hello');
         pressAt(this);
         refute.called(Dom.stopEvent);
       });
@@ -202,7 +202,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger('input', 'keydown', {which: 9});
 
         assert.dom('.input', function () {
-          assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1) ');
+          assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1)');
         });
       },
 
@@ -331,7 +331,7 @@ isClient && define(function (require, exports, module) {
         assert.dom(v.input, function () {
           refute.dom('.ln');
 
-          assert.same(Markdown.fromHtml(this), 'hello ');
+          assert.same(Markdown.fromHtml(this), 'hello');
         });
         refute.dom('.mdMention');
       },

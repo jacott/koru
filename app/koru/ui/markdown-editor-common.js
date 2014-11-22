@@ -147,7 +147,7 @@ define(function(require, exports, module) {
       var content = ctx.data.content;
 
       if (content)
-        elm.appendChild(Markdown.toHtml(content));
+        elm.appendChild(Markdown.toHtml(content, null, 'editable'));
     },
 
     $destroyed: function (ctx) {
@@ -191,6 +191,17 @@ define(function(require, exports, module) {
           ++$.ctx.mentionState > 2) {
         // we had a non printable key pressed; abort mention
         Tpl.List.revertMention(this);
+      }
+    },
+
+    input: function (event) {
+      var lec = this.lastElementChild;
+      if (! lec) return;
+      var lt = lec && lec.nextSibling;
+
+      if (! (lt && lt.nodeType === document.TEXT_NODE && lt.textContent)) {
+        var sp = document.createTextNode('\xa0');
+        this.insertBefore(sp, lt);
       }
     },
 
