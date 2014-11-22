@@ -58,6 +58,16 @@ define(function(require, exports, module) {
 
     insert: insert,
 
+    checkEmpty: function (mdEditor) {
+      var input = mdEditor.getElementsByClassName('input')[0];
+      if (input) {
+        var isEmpty = ! (input.firstChild && input.firstChild.textContent);
+
+        if (! Dom.hasClass(mdEditor, 'empty') === isEmpty)
+          Dom.setClass('empty', isEmpty, mdEditor);
+      }
+    },
+
     moveLeft: function (select) {
       var range = getRange();
       var node = range.startContainer;
@@ -156,14 +166,9 @@ define(function(require, exports, module) {
       Dom.stopEvent();
     },
     keydown: function (event) {
-      var input = this;
+      var mdEditor = this.parentNode;
       koru.afTimeout(function () {
-        var mdEditor = input.parentNode;
-        var isEmpty = ! (input.firstChild && input.firstChild.textContent);
-
-
-        if (! Dom.hasClass(mdEditor, 'empty') === isEmpty)
-          Dom.setClass('empty', isEmpty, mdEditor);
+        Tpl.checkEmpty(mdEditor);
       });
 
       switch(event.which) {

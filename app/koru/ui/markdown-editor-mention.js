@@ -65,8 +65,9 @@ define(function(require, exports, module) {
     },
 
     'mouseup .mdMention>div>*': function (event) {
-      $.ctx.mousedown = false;
+      var ctx = $.ctx;
       acceptItem(event, this);
+      ctx.mousedown = false;
     },
 
     'input .mdMention>input': function (event) {

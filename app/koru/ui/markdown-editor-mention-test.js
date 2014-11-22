@@ -53,14 +53,18 @@ isClient && define(function (require, exports, module) {
         TH.trigger('[name=mention]', 'mousedown');
         TH.trigger('[name=mention]', 'mouseup');
 
+        assert.dom('.mdEditor', function () {
+          Dom.addClass(this, 'empty');
+        });
+
         assert.dom('.mdMention:not(.inline) input', function () {
           TH.input(this, 'g');
-
           TH.trigger(this, 'keydown', {which: 13});
         });
 
-        assert.dom('.input', function () {
+        assert.dom('.mdEditor:not(.empty)>.input', function () {
           assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1) ');
+          this.innerHTML = '';
         });
       });
     },
