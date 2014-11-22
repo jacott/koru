@@ -177,7 +177,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(v.input, function () {
           refute.dom('.ln');
-          assert.dom('[data-a="j3"][contenteditable=false]', 'Josiah<JG>');
+          assert.dom('[data-a="j3"][contenteditable=true]', 'Josiah<JG>');
         });
       },
 
@@ -265,7 +265,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(v.input, function () {
           refute.dom('.ln');
-          assert.dom('[data-a="g2"][contenteditable=false]', 'Gordon Snow');
+          assert.dom('[data-a="g2"][contenteditable=true]', 'Gordon Snow');
         });
       },
     },

@@ -160,7 +160,7 @@ define(function(require, exports, module) {
     var button = data.inputElm.getElementsByClassName('ln')[0];
 
     if (button) {
-      button.setAttribute('contenteditable', 'false');
+      button.setAttribute('contenteditable', 'true');
       button.className = '';
       button.setAttribute('data-a', id);
     }

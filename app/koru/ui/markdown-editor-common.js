@@ -175,6 +175,16 @@ define(function(require, exports, module) {
       case 229: case 16:
         return;
 
+      case 8:
+        var range = getRange();
+        var sc = range.startContainer;
+        if (sc.nodeType === document.TEXT_NODE) sc = sc.parentNode;
+        if (sc.getAttribute('data-a')) {
+          range.selectNode(sc);
+          setRange(range);
+          return;
+        }
+
       default:
         if (event.ctrlKey) {
           var command = COMMANDS[event.which];
@@ -197,6 +207,14 @@ define(function(require, exports, module) {
     keypress: function (event) {
       var ctx = $.ctx;
 
+      var range = getRange();
+      var sc = range.startContainer;
+      if (sc.nodeType === document.TEXT_NODE) sc = sc.parentNode;
+      if (sc.getAttribute('data-a')) {
+        Dom.stopEvent();
+        return;
+      }
+
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
         var ch = String.fromCharCode(event.which);
@@ -210,7 +228,6 @@ define(function(require, exports, module) {
       switch(event.which) {
       case 64:
         if (event.shiftKey) {
-          var range = getRange();
           if (range.startOffset !== 0) {
             if (range.startContainer.nodeType === document.TEXT_NODE) {
               var text = range.startContainer.textContent;
