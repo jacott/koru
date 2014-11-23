@@ -47,10 +47,11 @@ define(function(require, exports, module) {
 
     setColor: function (node, value) {
       TH.click(node);
-      assert.elideFromStack(document.getElementById('ColorPicker'));
-      Dom.ColorPicker._cp.setHex(value);
-      assert.elideFromStack.dom(document.getElementById('confirmDialog'), function () {
-        TH.click('[name=apply]');
+      assert.elideFromStack.dom(document.body, function () {
+        assert.dom('#ColorPicker', function () {
+          TH.input('input[name=hex]', value);
+          TH.click('[name=apply]');
+        });
       });
       return this;
     },

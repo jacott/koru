@@ -6,12 +6,26 @@ define(function(require, exports, module) {
   var boarderColors = {};
 
   var tmpStyle = {};
+  var RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
+  var HEX_RE = /^#(..)(..)(..)(..)?$/;
 
   exports = {
     hex2rgb: hex2rgb,
 
-    rgb2hex: function (rgb) {
-      return "#"+ byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b);
+    toRGB: function (input) {
+      if (typeof input === 'string') {
+        var match = input.match(RGBA_RE);
+        if (match)
+          return {r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]), a: match[4] ? parseFloat(match[4]) : 1};
+        else
+          return hex2rgb(input, 'validate');
+      }
+      return null;
+    },
+
+    rgb2hex: function (rgb, prefix) {
+      if (prefix == null) prefix = '#';
+      return prefix + rgb2hex(rgb);
     },
 
     backgroundColorStyle: function (color) {
@@ -22,8 +36,8 @@ define(function(require, exports, module) {
 
     setBackgroundColorStyle: function (style, color) {
       color = color || '#ffffff';
-      style.backgroundColor = color;
-      style.color = contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d'));
+      style.backgroundColor = hex2Style(color);
+      style.color = hex2Style(contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d')));
     },
 
     setBackgroundAndBoarderColorStyle: function (style, color) {
@@ -115,10 +129,16 @@ define(function(require, exports, module) {
     contrastColor: contrastColor,
 
     fade: fade,
+
+    hex2Style: hex2Style,
+
+    alphaHexToFrac: alphaHexToFrac,
+
+    alphaFracToHex: alphaFracToHex,
   };
 
   function fade(color, amount) {
-    var match = /^#(..)(..)(..)$/.exec(color),
+    var match = HEX_RE.exec(color),
         result = 'rgba(';
 
     for(var i = 1; i<4; ++i) {
@@ -126,6 +146,19 @@ define(function(require, exports, module) {
     }
 
     return result + (amount/100) + ')';
+  }
+
+  function hex2Style(color) {
+    if (color.length === 7) return color;
+
+    var match = HEX_RE.exec(color),
+        result = 'rgba(';
+
+    for(var i = 1; i<4; ++i) {
+      result += parseInt(match[i], 16) + ',';
+    }
+
+    return result + alphaHexToFrac(match[4]) + ')';
   }
 
   function contrastColor(color,dark,light) {
@@ -145,9 +178,37 @@ define(function(require, exports, module) {
     return lab2hex(color);
   }
 
-  function hex2rgb(color) {
-    var match = /^#(..)(..)(..)$/.exec(color) || ['', '00', '00', '00'];
-    return {r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16)};
+  function hex2rgb(color, validate) {
+    var match = /^#?(..)(..)(..)(..)?$/.exec(color);
+    if (! match) {
+        if (validate) return null;
+        match =['', '00', '00', '00'];
+    }
+    return {r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16),
+            a: match[4] ? alphaHexToFrac(match[4]) : 1};
+  }
+
+  function rgb2hex(rgb) {
+    var a = rgb.a;
+    if (a != null)
+      a =byte2hex(alphaFracToHex(rgb.a));
+
+    if (a === 'ff' || a == null)
+      a = '';
+    return byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b)+a;
+  }
+
+  function alphaHexToFrac(a) {
+    a = (typeof a === 'string' ? parseInt(a, 16)*10000 : a) - 1280000;
+    if (a > 0) a = a*128/127;
+    return Math.round((a+1280000)/256)/10000;
+  }
+
+  function alphaFracToHex(frac) {
+    var a = (frac * 2560000) - 1280000;
+    if (a > 0) a = a*127/128;
+    a = Math.round(a/10000) + 128;
+    return byte2hex(a);
   }
 
   function hex2lab(color) {
@@ -183,6 +244,7 @@ define(function(require, exports, module) {
   }
 
   function byte2hex(byte) {
+    if (byte == null) return '';
     return byte < 0x10 ? "0"+byte.toString(16) : byte.toString(16);
   }
 
