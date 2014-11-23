@@ -22,6 +22,10 @@ define(function(require, exports, module) {
   BaseModel.prototype = {
     get _id() {return this.attributes._id || this.changes._id;},
 
+    $inspect: function () {
+      return "{Model: " + this.constructor.modelName + "_" + this._id + "  " + this.name + "}";
+    },
+
     $save: function(force) {
       var doc = this;
       switch(force) {

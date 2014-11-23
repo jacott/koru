@@ -1,4 +1,6 @@
 define(function(require, exports, module) {
+  var util = require('./util');
+
   format.compile = compile;
   format.escape = escape;
 
@@ -34,7 +36,7 @@ define(function(require, exports, module) {
           result += escape(arg);
         break;
       case 'i':
-        try {result += inspect(arg);}
+        try {result += util.inspect(arg);}
         catch(ex) {result += arg;}
         break;
       default:
@@ -95,28 +97,5 @@ define(function(require, exports, module) {
     return escapes[chr];
   };
 
-  function inspect(o, i) {
-    if (o == null) return typeof o;
-    if (i === -1) return Object.prototype.toString.call(o);
-    switch(typeof o) {
-    case 'function':
-      return 'function ' + o.name;
-    case 'object':
-      if (Array.isArray(o))
-        return "[" + o.map(function (o2) {
-          return inspect(o2, i-1);
-        }).join(", ") + "]";
-
-      var r=[];
-      for (var p in o){
-        r.push(p.toString() + ": " + inspect(o[p], i-1));
-      }
-      return "{" + r.join(", ") +"}";
-    case 'string':
-      return '"'+o+'"';
-    default:
-      return o.toString();
-    }
-  }
   return format;
 });

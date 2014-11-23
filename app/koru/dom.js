@@ -743,10 +743,13 @@ define(function(require, exports, module) {
           } else
             later[key] = true;
         }
-        else if (matches.call(elm, key)) {
-          if (fire(event, elm, eventTypes[key])) return;
-        } else if (matches.call(elm, key.replace(/,/g, ' *,')+' *'))
-          later[key] = true;
+        else if (elm && elm.nodeType !== TEXT_NODE) {
+          if (matches.call(elm, key)) {
+            if (fire(event, elm, eventTypes[key])) return;
+          } else if (matches.call(elm, key.replace(/,/g, ' *,')+' *')) {
+            later[key] = true;
+          }
+        }
       }
 
       for(var key in later) {
