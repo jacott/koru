@@ -1,5 +1,5 @@
 define(function () {
-  var colorRe = /^#[0-9a-f]{3}([0-9a-f]{3})?$/;
+  var colorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
     normalize: function (doc,field, options) {

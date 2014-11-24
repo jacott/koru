@@ -229,18 +229,18 @@ define(function (require, exports, module) {
 
     'color': {
       'test valid': function () {
-        var colors = ['#acb', '#000', '#000000', '#12ab34', '#fff', '#ffffff'],
+        var colors = ['#000000', '#12ab3487', '#123456', '#ffffff'],
             doc = {color: ''};
 
         for(var i=0,item;item=colors[i];++i) {
           doc.color = item;
           sut.validators('color')(doc,'color');
-          refute(doc._errors);
+          refute.msg('should be valid: '+item)(doc._errors);
         }
       },
 
       'test invalid': function () {
-        var colors = ['#ac', '#0000', '#0000001', '#12ab3g', 'fff', '#Ffffff'],
+        var colors = ['#ac', '#0000', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
         for(var i=0,item;item=colors[i];++i) {
