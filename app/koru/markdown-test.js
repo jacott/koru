@@ -15,7 +15,7 @@ define(function (require, exports, module) {
 
 
     "test getMentionIds": function () {
-      var md = "Hello @[Bob](123), how is @[Sally](567)";
+      var md = "Hello @[Bob](123), how is @[Sally](567) but this is a [link](bad)";
       assert.equals(markdown.getMentionIds(md), ['123', '567']);
     },
   });
