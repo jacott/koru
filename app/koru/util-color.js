@@ -7,7 +7,7 @@ define(function(require, exports, module) {
 
   var tmpStyle = {};
   var RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
-  var HEX_RE = /^#(..)(..)(..)(..)?$/;
+  var HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
 
   exports = {
     hex2rgb: hex2rgb,
@@ -38,6 +38,7 @@ define(function(require, exports, module) {
       color = color || '#ffffff';
       style.backgroundColor = hex2Style(color);
       style.color = hex2Style(contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d')));
+      return style;
     },
 
     setBackgroundAndBoarderColorStyle: function (style, color) {
@@ -179,7 +180,7 @@ define(function(require, exports, module) {
   }
 
   function hex2rgb(color, validate) {
-    var match = /^#?(..)(..)(..)(..)?$/.exec(color);
+    var match = HEX_RE.exec(color);
     if (! match) {
         if (validate) return null;
         match =['', '00', '00', '00'];
