@@ -1,5 +1,6 @@
 define(function () {
-  var colorRe = /^#([0-9a-f]{2}){3,4}?$/;
+  var colorRe = /^#([0-9a-f]{2}){3}?$/;
+  var alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
     normalize: function (doc,field, options) {
@@ -14,9 +15,9 @@ define(function () {
       }
     },
 
-    color: function (doc,field) {
+    color: function (doc,field, alpha) {
       var val = doc[field];
-      if (val && ! colorRe.test(val))
+      if (val && ! (alpha === 'alpha' ? alphaColorRe : colorRe).test(val))
         this.addError(doc,field,'is_invalid');
     },
 

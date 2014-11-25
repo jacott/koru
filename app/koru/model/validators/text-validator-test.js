@@ -228,8 +228,19 @@ define(function (require, exports, module) {
     },
 
     'color': {
-      'test valid': function () {
+      'test valid alpha': function () {
         var colors = ['#000000', '#12ab3487', '#123456', '#ffffff'],
+            doc = {color: ''};
+
+        for(var i=0,item;item=colors[i];++i) {
+          doc.color = item;
+          sut.validators('color')(doc,'color', 'alpha');
+          refute.msg('should be valid: '+item)(doc._errors);
+        }
+      },
+
+      'test valid non-alpha': function () {
+        var colors = ['#000000', '#12ab34', '#123456', '#ffffff'],
             doc = {color: ''};
 
         for(var i=0,item;item=colors[i];++i) {
@@ -239,8 +250,21 @@ define(function (require, exports, module) {
         }
       },
 
-      'test invalid': function () {
+      'test invalid alpha': function () {
         var colors = ['#ac', '#0000', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
+            doc = {color: ''};
+
+        for(var i=0,item;item=colors[i];++i) {
+          doc.color = item;
+          doc._errors = {};
+          sut.validators('color')(doc,'color');
+
+          assert.equals(doc._errors['color'],[['is_invalid']]);
+        }
+      },
+
+      'test invalid nonalpha': function () {
+        var colors = ['#ac', '#0000', '#11223344', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
         for(var i=0,item;item=colors[i];++i) {
