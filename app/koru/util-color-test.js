@@ -13,6 +13,11 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test hex2Style": function () {
+      assert.equals(uColor.hex2Style('#x'), "rgba(0,0,0,0)");
+      assert.equals(uColor.hex2Style('#FF001180'), "rgba(255,0,17,0.5)");
+    },
+
     "test toRGB": function () {
       assert.equals(uColor.toRGB('rgba(100, 3, 45, .75)'), {r: 100, g: 3, b: 45, a: 0.75});
       assert.equals(uColor.toRGB('rgb(100,3, 45)'), {r: 100, g: 3, b: 45, a: 1});

@@ -151,8 +151,8 @@ define(function(require, exports, module) {
   function hex2Style(color) {
     if (color.length === 7) return color;
 
-    var match = HEX_RE.exec(color),
-        result = 'rgba(';
+    var match = HEX_RE.exec(color) || ['', '00', '00', '00', '00'];
+    var result = 'rgba(';
 
     for(var i = 1; i<4; ++i) {
       result += parseInt(match[i], 16) + ',';
