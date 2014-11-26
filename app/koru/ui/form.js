@@ -227,7 +227,7 @@ define(function(require, exports, module) {
       var events = {};
       for(var i=0;i < fields.length;++i) {
         var field = fields[i];
-        if (action === 'change' && field.match(/color/i)) {
+        if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
           events['click [name=' + field + ']'] = changeColorEvent(template, field);
         } else {
           events[action + ' [name=' + field + ']'] = changeFieldEvent(template, field);
