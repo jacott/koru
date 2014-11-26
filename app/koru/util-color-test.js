@@ -55,12 +55,14 @@ define(function (require, exports, module) {
       assert.same(uColor.alphaFracToHex(0.9961), 'fe');
       assert.same(uColor.alphaFracToHex(0.0039), '01');
       assert.same(uColor.alphaFracToHex(0), '00');
+      assert.same(uColor.alphaFracToHex(0.01), '03');
       assert.same(uColor.alphaFracToHex(1), 'ff');
     },
 
     "test rgb2hex": function () {
       assert.equals(uColor.rgb2hex({r: 17, g: 170, b: 221}), '#11aadd');
       assert.equals(uColor.rgb2hex({r: 17, g: 170, b: 221, a: .3}, ''), '11aadd4d');
+      assert.equals(uColor.rgb2hex({r: 255, g: 0, b: 128, a: .01}, ''), 'ff008003');
     },
 
     "test rgb2hsl": function () {

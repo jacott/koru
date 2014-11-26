@@ -192,7 +192,7 @@ define(function(require, exports, module) {
   function rgb2hex(rgb) {
     var a = rgb.a;
     if (a != null)
-      a =byte2hex(alphaFracToHex(rgb.a));
+      a = alphaFracToHex(rgb.a);
 
     if (a === 'ff' || a == null)
       a = '';
