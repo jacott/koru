@@ -140,7 +140,9 @@ define(function(require, exports, module) {
     addRef: function(ref, doc) {
       var refId = ref+'_id';
       if (! this.options.hasOwnProperty(refId)) {
-        var modelName = this.model.fieldTypeMap[refId].modelName;
+        var model = this.model.fieldTypeMap[refId];
+        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
+        var modelName = model.modelName;
         doc = doc ||
           (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
           (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();

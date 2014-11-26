@@ -418,7 +418,10 @@ define(function(require, exports, module) {
       Dom.stopEvent();
       var doc = $.data();
 
-      Dom.ColorPicker.choose(doc[field], function (result) {
+      var validator = doc.constructor._fieldValidators[field];
+      var alpha = (validator && validator.color && validator.color[1] === 'alpha');
+
+      Dom.ColorPicker.choose(doc[field], alpha, function (result) {
         if (result) {
           doc[field] = result;
           Tpl.saveChanges(doc, document.getElementById(formId));
