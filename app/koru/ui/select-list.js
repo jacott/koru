@@ -14,7 +14,7 @@ define(function(require, exports, module) {
 
       var events = {};
 
-      events['mousedown ' + (options.selector || 'li')] = actionItem(options.onChoose);
+      events['click ' + (options.selector || 'li')] = actionItem(options.onChoose);
       list.$events(events);
 
       events = null;
@@ -23,7 +23,8 @@ define(function(require, exports, module) {
         var ctx = $.ctx;
 
         if (ctx.listElm) {
-          if (event.type === 'mousedown') Dom.remove(ctx.listElm);
+          if (event.type === 'mousedown' && !Dom.parentOf(ctx.listElm, event.target))
+            Dom.remove(ctx.listElm);
         } else {
           var button = this;
           button.appendChild(ctx.listElm = list.$autoRender());

@@ -39,7 +39,7 @@ isClient && define(function (require, exports, module) {
 
           assert.dom('#TestList', function () {
             assert.dom('li:first-child', function () {
-              TH.trigger(this, 'mousedown');
+              TH.click(this);
               assert.same(v.elm, this);
             });
 
@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('#TestButton', function () {
           TH.trigger(this, 'mousedown');
           TH.trigger(this, 'mouseup');
-          TH.trigger('li.disabled', 'mousedown');
+          TH.click('li.disabled');
         });
 
         refute(v.currentTarget);
@@ -119,7 +119,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'mouseup');
         assert.dom('#TestList', function () {
           assert.dom('ul', function () {
-            TH.trigger(this, 'mousedown');
+            TH.click(this);
             assert.same(v.elm, this);
           });
         });
