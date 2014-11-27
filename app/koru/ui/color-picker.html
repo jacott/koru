@@ -2,11 +2,26 @@
   <div id="ColorPicker" class="Dialog Confirm" {{alphaClass}}>
     <div class="dialogContainer">
       <div class="ui-dialog">
+        <fieldset class="palette">
+          {{palette "ff0000"}}
+          {{palette "ff8000"}}
+          {{palette "ffff00"}}
+          {{palette "00ff00"}}
+          {{palette "00ffff"}}
+          {{palette "0080ff"}}
+          {{palette "0000ff"}}
+          {{palette "8000ff"}}
+          {{palette "ff00ff"}}
+          {{palette "000000"}}
+          {{palette "ffffff"}}
+        </fieldset>
         <fieldset>
           {{> ColorPart part="h" max="360"}}
           {{> ColorPart part="s" max="100"}}
           {{> ColorPart part="l" max="100"}}
           {{> ColorPart part="a" max="100"}}
+        </fieldset>
+        <fieldset>
           <label>
             #RRGGBB{{alphaLabel}} <input name="hex" {{hexValue}} {{setBackgroundColor hexColorHash}} {{maxlength}}>
             <span class="errorMsg">{{error}}</span>

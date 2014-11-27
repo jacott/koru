@@ -23,6 +23,12 @@ define(function(require, exports, module) {
       Dom.stopEvent();
       close(event.currentTarget, 'cancel');
     },
+
+    'click [data-color]': function (event) {
+      Dom.stopEvent();
+
+      Tpl.setColor($.ctx, this.getAttribute('data-color'), $.ctx.data.color.a);
+    },
   });
 
   function hsl2hex(hsl, prefix) {
@@ -41,6 +47,13 @@ define(function(require, exports, module) {
   }
 
   Tpl.$helpers({
+    palette: function (color) {
+      if ($.element.nodeType === document.ELEMENT_NODE) return;
+
+      var elm = Dom.html({tag: 'button', "data-color": color});
+      elm.style.backgroundColor = '#'+color;
+      return elm;
+    },
     hexValue: function () {
       var elm = $.element;
       if (document.activeElement !== elm)
@@ -69,14 +82,16 @@ define(function(require, exports, module) {
   });
 
   Tpl.$extend({
-    setColor: function (ctx, hex) {
+    setColor: function (ctx, hex, alpha) {
       var hsla = hex2hsl(hex);
       var data = ctx.data;
       data.error = ! hsla;
       if (hsla) {
         data.color = hsla;
-        if (! data.alpha) hsla.a = 1;
-
+        if (! data.alpha)
+          hsla.a = 1;
+        else if (alpha != null)
+          hsla.a = alpha;
       }
       ctx.updateAllTags();
     },
@@ -195,7 +210,8 @@ define(function(require, exports, module) {
       var num = +this.value;
       if (num !== num) return;
       var cpCtx = ctx.parentCtx;
-      cpCtx.data.color[data.part] = num / data.max;
+
+      cpCtx.data.color[data.part] = Math.max(0, Math.min(num / data.max, 1));
       cpCtx.updateAllTags();
     },
   });

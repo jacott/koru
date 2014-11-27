@@ -15,6 +15,20 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test standard palette": function () {
+      sut.choose('#fffa1387', 'alpha', v.cb = test.stub());
+
+      assert.dom('[data-color="ffff00"]', function () {
+        assert.same(this.style.backgroundColor, 'rgb(255, 255, 0)');
+        TH.click(this);
+      });
+      assert.dom('[name=hex]', {value: 'ffff0087'});
+
+
+      TH.click('[data-color="00ffff"]');
+      assert.dom('[name=hex]', {value: '00ffff87'});
+    },
+
     "test hue slider": function () {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
@@ -39,11 +53,19 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, '#00ffff87');
     },
 
-    "test sturation input": function () {
+    "test saturation input": function () {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
       assert.dom('.colorPart.s', function () {
         assert.dom('input', {value: '100'});
+        TH.input('input', '-50');
+        assert.dom('.handle', function () {
+          assert.cssNear(this, 'left', 0, 0.1,'%');
+        });
+        TH.input('input', '150');
+        assert.dom('.handle', function () {
+          assert.cssNear(this, 'left', 100, 0.1,'%');
+        });
         TH.input('input', '50');
         assert.dom('.handle', function () {
           assert.cssNear(this, 'left', 50, 0.1,'%');
