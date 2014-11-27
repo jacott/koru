@@ -170,6 +170,26 @@ define(function(require, exports, module) {
 
   });
 
+  var ga = TH.geddon.assertions;
+
+  // assert.cssNear
+  ga.add('cssNear', {
+    assert: function (elm,styleAttr, expected, delta, unit) {
+      delta = this.delta = delta  || 1;
+      unit = this.unit = unit || 'px';
+      var actual = this.actual = elm.style[styleAttr];
+
+      if(!actual || actual.length < unit.length+1) return false;
+      actual = actual.slice(0,-unit.length);
+
+      return actual > expected-delta && actual < expected+delta;
+    },
+
+    assertMessage: "Expected css({1}) {$actual} to be near {2}{$unit} by delta {$delta}",
+    refuteMessage: "Expected css({1}) {$actual} not to be near {2}{$unit} by delta {$delta}",
+  });
+
+
   function dispatchEvent(elm, event) {
     var old_unhandledException = koru.unhandledException;
     var evex;

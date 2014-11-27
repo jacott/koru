@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   Tpl.$events({
     'input [name=hex]': function (event) {
-      Tpl.setColor($.ctx, hex2hsl(this.value));
+      Tpl.setColor($.ctx, this.value);
     },
     'click [name=apply]': function (event) {
       event.preventDefault();
@@ -41,8 +41,10 @@ define(function(require, exports, module) {
   }
 
   Tpl.$helpers({
-    hexColor: function () {
-      return hsl2hex(this.color, '');
+    hexValue: function () {
+      var elm = $.element;
+      if (document.activeElement !== elm)
+        elm.value = hsl2hex(this.color, '');
     },
 
     hexColorHash: function () {
@@ -67,7 +69,8 @@ define(function(require, exports, module) {
   });
 
   Tpl.$extend({
-    setColor: function (ctx, hsla) {
+    setColor: function (ctx, hex) {
+      var hsla = hex2hsl(hex);
       var data = ctx.data;
       data.error = ! hsla;
       if (hsla) {
@@ -101,19 +104,12 @@ define(function(require, exports, module) {
 
   function close(elm, cancel) {
     var ctx = Dom.getMyCtx(elm);
-    var data = ctx.data;
     if (ctx) {
-      var color = data.color;
-      if (color && ! data.alpha) color.a = 1;
-      if (color || cancel)
-        data.callback(cancel ? null : hsl2hex(color));
-      else {
-        data.error = 'Color is invalid';
-        ctx.updateAllTags();
-        return;
-      }
+      var data = ctx.data;
+
+      data.callback(cancel ? null : hsl2hex(data.color));
+      Dom.remove(elm);
     }
-    Dom.remove(elm);
   }
 
   var BG_STYLES = {
@@ -147,6 +143,12 @@ define(function(require, exports, module) {
       return this.part.toUpperCase();
     },
 
+    value: function () {
+      var elm = $.element;
+      if (elm !== document.activeElement)
+        elm.value  = Math.round($.ctx.parentCtx.data.color[this.part]*this.max) || '0';
+    },
+
     partClass: function () {
       Dom.addClass($.element, this.part);
     },
@@ -173,15 +175,28 @@ define(function(require, exports, module) {
       }
 
       var elm = Slider.$autoRender({pos: hsla[part], callback: function (pos, ctx, slider) {
-        var value =  Math.round(pos*256);
-        elm.parentNode.parentNode.lastElementChild.value = value;
-
+        document.activeElement.blur();
+        data.error = null;
+        hsla = data.color;
         hsla[part] = pos;
         cpCtx.updateAllTags();
       }});
 
       setSliderBG(elm, part, data.color);
       return elm;
+    },
+  });
+
+  ColorPart.$events({
+    'input input': function (event) {
+      Dom.stopEvent();
+      var ctx = $.ctx;
+      var data = ctx.data;
+      var num = +this.value;
+      if (num !== num) return;
+      var cpCtx = ctx.parentCtx;
+      cpCtx.data.color[data.part] = num / data.max;
+      cpCtx.updateAllTags();
     },
   });
 

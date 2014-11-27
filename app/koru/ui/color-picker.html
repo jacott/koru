@@ -3,12 +3,12 @@
     <div class="dialogContainer">
       <div class="ui-dialog">
         <fieldset>
-          {{> ColorPart part="h"}}
-          {{> ColorPart part="s"}}
-          {{> ColorPart part="l"}}
-          {{> ColorPart part="a"}}
+          {{> ColorPart part="h" max="360"}}
+          {{> ColorPart part="s" max="100"}}
+          {{> ColorPart part="l" max="100"}}
+          {{> ColorPart part="a" max="100"}}
           <label>
-            Hex #RRGGBB{{alphaLabel}} <input name="hex" value="{{hexColor}}" {{setBackgroundColor hexColorHash}} {{maxlength}}>
+            #RRGGBB{{alphaLabel}} <input name="hex" {{hexValue}} {{setBackgroundColor hexColorHash}} {{maxlength}}>
             <span class="errorMsg">{{error}}</span>
           </label>
         </fieldset>
@@ -23,7 +23,7 @@
   <template name="ColorPart">
     <label class="colorPart" {{partClass}}>
       <div>{{slider}}</div>
-      {{name}} <input value="{{value}}" maxlength="3">
+      {{name}} <input type="number" min="0" max="{{max}}" {{value}} maxlength="3">
     </label>
   </template>
 </template>

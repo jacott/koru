@@ -25,10 +25,8 @@ define(function(require, exports, module) {
       var data = ctx.data;
       ctx.cancel = cancel;
 
-      var origX = event.clientX;
       var width = slider.clientWidth;
-      var origPos = data.pos;
-      var xMin = origX - (width * origPos);
+      var xMin = event.clientX - (width * data.pos);
       var x, af = null;
 
       Dom.addClass(slider, 'ui-dragging');
@@ -54,7 +52,7 @@ define(function(require, exports, module) {
 
       function draw() {
         af = null;
-        data.pos = Math.max(Math.min(width, x - xMin), 0)/ width;
+        data.pos = Math.max(Math.min(width, x - xMin), 0) / width;
 
         handleStyle.left = data.pos*100+'%';
 
