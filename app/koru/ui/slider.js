@@ -12,24 +12,39 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mousedown .slider>.handle': function (event) {
+    'mousedown .slider': function (event) {
       Dom.stopEvent();
 
       document.addEventListener('mousemove', adjust, true);
       document.addEventListener('mouseup', cancel, true);
 
-      var slider = this.parentNode;
-      var handleStyle = this.style;
-      handleStyle.willChange = 'left';
       var ctx = $.ctx;
       var data = ctx.data;
       ctx.cancel = cancel;
 
+      var x = event.clientX;
+
+      var slider = this;
       var width = slider.clientWidth;
-      var xMin = event.clientX - (width * data.pos);
-      var x, af = null;
+
+      var handle = event.target;
+
+      if (handle === slider) {
+        handle = slider.firstElementChild;
+        var bbox = slider.getBoundingClientRect();
+
+        data.pos = (x - bbox.left) / width;
+      }
+
+      var handleStyle = handle.style;
+      handleStyle.willChange = 'left';
+
+      var xMin = x - (width * data.pos);
+      var af = null;
 
       Dom.addClass(slider, 'ui-dragging');
+
+      draw();
 
       function adjust(event) {
         x = event.clientX;
