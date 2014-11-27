@@ -566,9 +566,8 @@ define(function(require, exports, module) {
       return Math.round(value*1000000)/10000+'%';
     },
 
-    sansPx: function (value) {
-      return value ? typeof value === 'string' ? +value.substring(0, value.length -2) : +value : 0;
-    },
+    sansPx: sansSuffix.bind(2),
+    sansPc: sansSuffix.bind(1),
 
     compareByName: function (a, b) {
       var aname = (a && a.name) || '';
@@ -801,7 +800,9 @@ define(function(require, exports, module) {
     },
   };
 
+  function sansSuffix (value) {
+    return value ? typeof value === 'string' ? +value.substring(0, value.length - this) : +value : 0;
+  }
 
   return util;
-
 });

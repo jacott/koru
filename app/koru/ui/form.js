@@ -7,6 +7,8 @@ define(function(require, exports, module) {
   var MarkdownEditor = require('./markdown-editor');
 
   var Tpl = Dom.newTemplate(require('../html!./form'));
+  var OnOff = Tpl.OnOff;
+  var Slider = Tpl.Slider;
   var $ = Dom.current;
 
   var IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};
@@ -364,7 +366,7 @@ define(function(require, exports, module) {
     },
   });
 
-  Tpl.OnOff.$helpers({
+  OnOff.$helpers({
     classes: function () {
       var on = this.doc[this.name];
       if (this.options && this.options.hasOwnProperty('on')) on = on === this.options.on;
@@ -380,7 +382,7 @@ define(function(require, exports, module) {
     },
   });
 
-  Tpl.OnOff.$events({
+  OnOff.$events({
     'click': function (event) {
       var data = $.ctx.data;
       Dom.toggleClass(this, 'on');
@@ -406,7 +408,7 @@ define(function(require, exports, module) {
     case 'markdownEditor':
       return MarkdownEditor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
     case 'onOff':
-      return Tpl.OnOff.$autoRender({name: name, doc: doc, options: options});
+      return OnOff.$autoRender({name: name, doc: doc, options: options});
     default:
       return Tpl.TextInput.$autoRender({type: options.type || 'text', name: name, doc: doc, options: options});
     }

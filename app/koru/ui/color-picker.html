@@ -1,0 +1,29 @@
+<template name="ColorPicker">
+  <div id="ColorPicker" class="Dialog Confirm" {{alphaClass}}>
+    <div class="dialogContainer">
+      <div class="ui-dialog">
+        <fieldset>
+          {{> ColorPart part="h"}}
+          {{> ColorPart part="s"}}
+          {{> ColorPart part="l"}}
+          {{> ColorPart part="a"}}
+          <label>
+            Hex #RRGGBB{{alphaLabel}} <input name="hex" value="{{hexColor}}" {{setBackgroundColor hexColorHash}} {{maxlength}}>
+            <span class="errorMsg">{{error}}</span>
+          </label>
+        </fieldset>
+        <fieldset class="actions">
+          <button type="submit" name="apply" {{disabled}}>Apply</button>
+          <button type="button" name="cancel">Cancel</button>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+
+  <template name="ColorPart">
+    <label class="colorPart" {{partClass}}>
+      <div>{{slider}}</div>
+      {{name}} <input value="{{value}}" maxlength="3">
+    </label>
+  </template>
+</template>
