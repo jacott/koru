@@ -164,6 +164,11 @@ define(function(require, exports, module) {
       return elm && elm._koru;
     },
 
+    updateElement: function (elm) {
+      var ctx = Dom.getCtx(elm);
+      ctx && ctx.updateElement(elm);
+    },
+
     replaceElement: function (newElm, oldElm, noRemove) {
       var ast = oldElm._koruEnd;
       if (ast) {

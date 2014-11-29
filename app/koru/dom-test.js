@@ -900,6 +900,30 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(Dom.Foo.$render({user: {initials: 'fb'}}), 'fb');
       },
+
+      "test updateElement": function () {
+        Dom.newTemplate({
+          name: "Foo",
+          nodes:[{
+            name:"div",
+            children:[['', 'name'], {
+              name:"p",
+              children:[['', 'name']],
+            }],
+          }],
+        });
+
+        var data = {name: 'foo'};
+
+        assert.dom(Dom.Foo.$render(data), function () {
+          assert.dom('p', 'foo', function () {
+            data.name = 'bar';
+            Dom.updateElement(this);
+            assert.same(this.textContent, 'bar');
+          });
+          assert.same(this.textContent, 'foobar');
+        });
+      },
     },
   });
 
