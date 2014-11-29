@@ -12,6 +12,7 @@ isClient && define(function (require, exports, module) {
       v = {};
       v.List = Dom.newTemplate(util.deepCopy(selectListTpl));
       assert.same(Dom.Form.SelectList, SelectList);
+      v.result = false;
     },
 
     tearDown: function () {
@@ -25,6 +26,7 @@ isClient && define(function (require, exports, module) {
           onChoose: function (elm, event) {
             v.currentTarget = event.currentTarget;
             v.elm = elm;
+            return v.result;
           },
         });
       },
@@ -51,6 +53,19 @@ isClient && define(function (require, exports, module) {
           TH.trigger(this, 'mousedown');
           TH.trigger(this, 'mouseup');
           assert.dom('#TestList');
+        });
+      },
+
+      "test autoClose": function () {
+        renderButton();
+        assert.dom('#TestButton', function () {
+          TH.trigger(this, 'mousedown');
+          TH.trigger(this, 'mouseup');
+
+          v.result = true;
+
+          TH.click('li:first-child');
+          refute.dom('#TestList');
         });
       },
 
