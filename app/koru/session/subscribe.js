@@ -112,6 +112,10 @@ define(function(require, exports, module) {
         return koru.userId();
       },
 
+      isStopped: function () {
+        return ! this._id;
+      },
+
       resubscribe: function (models) {
         var oldMatches = this._matches;
         this._stop && this._stop();

@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var sut = require('./slider');

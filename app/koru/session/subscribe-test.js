@@ -269,7 +269,7 @@ isClient && define(function (require, exports, module) {
       var subId = v.sub._id;
       v.sub.stop();
       assert.calledWith(v.sess.sendP, subId);
-
+      assert.isTrue(v.sub.isStopped());
 
       assert.isFalse(subId in subscribe._subs);
       assert.isNull(v.sub._id);

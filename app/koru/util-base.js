@@ -54,8 +54,8 @@
       return new RegExp(this.regexEscape(s));
     },
 
-    inspect: function (o, count) {
-      return inspect1(o, count || 4).toString().slice(0, 1000);
+    inspect: function (o, count, len) {
+      return inspect1(o, count || 4).toString().slice(0, len || 1000);
     },
   });
 
