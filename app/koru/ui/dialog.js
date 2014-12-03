@@ -85,8 +85,8 @@ define(function(require, exports, module) {
   Tpl.Confirm.$events({
     'click button': function (event) {
       var data = $.ctx.data;
+      data.callback && data.callback.call(data, this.name === 'okay', event.currentTarget);
       Dom.remove(event.currentTarget);
-      data.callback && data.callback.call(data, this.name === 'okay');
     },
   });
 

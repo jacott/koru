@@ -74,8 +74,9 @@ isClient && define(function (require, exports, module) {
           },
         },
         okay: 'Foo',
-        callback: function (result) {
+        callback: function (result, form) {
           assert.same(this, data);
+          assert.same(form, v.form);
           v.result = result;
         }
       };
@@ -83,11 +84,14 @@ isClient && define(function (require, exports, module) {
 
       assert.same(v.data, data);
 
-      assert.dom('.Dialog.Confirm .dialogContainer .ui-dialog.small', function () {
-        assert.dom('h1', 'This is the message');
-        assert.dom('.actions', function () {
-          assert.dom('button#okay[name=okay]', 'Foo', function () {
-            TH.click(this);
+      assert.dom('.Dialog.Confirm', function () {
+        v.form = this;
+        assert.dom('.dialogContainer .ui-dialog.small', function () {
+          assert.dom('h1', 'This is the message');
+          assert.dom('.actions', function () {
+            assert.dom('button#okay[name=okay]', 'Foo', function () {
+              TH.click(this);
+            });
           });
         });
       });
