@@ -26,6 +26,42 @@ isClient && define(function (require, exports, module) {
       login.state = null;
     },
 
+    "test secureCall": function () {
+      userAccount.secureCall('fooBar', 'email@obeya.co', 'secret', [1, 2], v.callback = test.stub());
+
+      assert.calledWithExactly(
+        session.rpc, 'SRPBegin',
+        TH.match(function (request) {
+          v.request = request;
+          assert.same(request.email, 'email@obeya.co');
+          return ('A' in request);
+
+        }),
+        TH.match(function (callback) {
+          v.sutCallback = callback;
+          return true;
+        })
+      );
+
+      var verifier = SRP.generateVerifier('secret');
+      var srp = new SRP.Server(verifier);
+      var challenge = srp.issueChallenge({A: v.request.A});
+
+      session.rpc.reset();
+      v.sutCallback(null, challenge);
+
+      assert.calledWith(session.rpc, 'fooBar', TH.match(function (response) {
+        assert.equals(response.payload, [1, 2]);
+
+        if (response.M === srp.M) {
+          session.rpc.yield(null, {
+            HAMK: srp.HAMK,
+          });
+          return true;
+        }
+      }));
+    },
+
     "changePassword": {
       setUp: function () {
         userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = test.stub());

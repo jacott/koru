@@ -83,6 +83,12 @@ define(function(require, exports, module) {
     logoutOtherClients: function () {
       session.send('VO'+localStorage.getItem('koru.loginToken'));
     },
+
+    secureCall: function (method, email, password, payload, callback) {
+      SRPCall(method, email, password, callback, function (response) {
+        response.payload = payload;
+      });
+    },
   };
 
   function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
@@ -100,10 +106,13 @@ define(function(require, exports, module) {
       var response = srp.respondToChallenge(result);
       modifyResponse(response);
       session.rpc(method, response, function (err, result) {
-        if (! err && srp.verifyConfirmation({HAMK: result.HAMK})) {
-          responseFunc(err, result);
+        if (! responseFunc) {
+          callback && callback(err, result);
+
+        } else if (! err && srp.verifyConfirmation({HAMK: result.HAMK})) {
+          responseFunc && responseFunc(err, result);
         } else
-          callback(err || 'failure');
+          callback && callback(err || 'failure');
       });
     });
   }

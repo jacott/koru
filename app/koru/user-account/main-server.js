@@ -73,8 +73,7 @@ define(function(require, exports, module) {
   });
 
   session.defineRpc('SRPLogin', function (response) {
-    if (response.M !== this.$srp.M)
-      throw new koru.Error(403, 'failure');
+    exports.assertResponse(this, response);
     var doc = this.$srpUserAccount;
     var token = doc.makeToken();
     doc.$$save();
@@ -90,8 +89,8 @@ define(function(require, exports, module) {
 
   var VERIFIER_SPEC = exports.VERIFIER_SPEC = Val.permitSpec('identity', 'salt', 'verifier');
   session.defineRpc('SRPChangePassword', function (response) {
-    if (response.M !== this.$srp.M)
-      throw new Error('failure');
+    exports.assertResponse(this, response);
+
     Val.permitParams(response.newPassword, VERIFIER_SPEC);
 
     this.$srpUserAccount.$update({srp: response.newPassword});
@@ -163,7 +162,12 @@ define(function(require, exports, module) {
       if (attrs.srp) update.srp = attrs.srp;
       lu.$update(update);
       return lu;
-    }
+    },
+
+    assertResponse: function (conn, response) {
+      if (response && conn.$srp && response.M === conn.$srp.M) return;
+      throw new koru.Error(403, 'failure');
+    },
   });
 
   function configureEmail() {
