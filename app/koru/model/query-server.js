@@ -54,11 +54,11 @@ define(function(require, exports, module) {
           doc && func(doc);
         } else {
           var model = this.model;
-          var cursor = model.docs.find(buildQuery(this));
-          this._limit && cursor.limit(this._limit);
-          this._sort && cursor.sort(this._sort);
-
-          this._fields && cursor.fields(this._fields);
+          var options = {};
+          if (this._limit) options.limit = this._limit;
+          if (this._sort) options.sort = this._sort;
+          if (this._fields) options.fields = this._fields;
+          var cursor = model.docs.find(buildQuery(this), options);
           for(var doc = cursor.next(); doc; doc = cursor.next()) {
             if (func(new model(doc)) === true)
               break;
@@ -174,9 +174,10 @@ define(function(require, exports, module) {
       findOne: function(id) {
         var opts;
         if (this._sort && ! id) {
-          var cursor = this.model.docs.find(buildQuery(this, id));
-          cursor.sort(this._sort).limit(1);
-          this._fields && cursor.fields(this._fields);
+          var options = {limit: 1};
+          if (this._sort) options.sort = this._sort;
+          if (this._fields) options.fields = this._fields;
+          var cursor = this.model.docs.find(buildQuery(this, id), options);
           var doc = cursor.next();
         } else {
           if (this._fields) opts = this._fields;

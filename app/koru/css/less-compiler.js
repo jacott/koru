@@ -23,35 +23,33 @@ define(function(require, exports, module) {
     var dir = Path.dirname(path);
 
     var src = fst.readFile(path).toString();
-    var options = {
+    var future = new Future;
+
+    less.render(src, {
       syncImport: true,
       paths: [dir], // for @import
       currentFileInfo: {
         filename: '/'+path.substring(topLen),
       },
-    };
+      sourceMap: {
+        sourceMapFileInline: true,
+      },
+    }, function (error, output) {
+      if (error) {
+        var fn = error.filename || path;
+        if (fn === 'input') fn = path;
+        koru.error(koru.util.extractError({
+          toString: function () {return "Less compiler error: " + error.message},
+          stack: "\tat "+ fn + ':' + error.line + ':' + (error.column + 1),
+        })+"\n");
+        future.return(null);
+      } else {
+        future.return(autoprefixer.process(output.css).css);
+      }
+    });
 
-    var parser = new less.Parser(options);
-    var future = new Future;
-    var sourceMap = null;
+    var css = future.wait();
 
-    try {
-      parser.parse(src, future.resolver());
-      var css = future.wait().toCSS({
-        sourceMap: true,
-      });
-      css = autoprefixer.process(css).css;
-    } catch (ex) {
-      var fn = ex.filename || path;
-      if (fn === 'input') fn = path;
-      if (fn[0] === '/') fn = fn.slice(1);
-      koru.error(koru.util.extractError({
-        toString: function () {return "Less compiler error: " + ex.message},
-        stack: "\tat "+ fn + ':' + ex.line + ':' + (ex.column + 1),
-      })+"\n");
-      return;
-    }
-
-    fst.writeFile(outPath, css);
+    css && fst.writeFile(outPath, css);
   }
 });

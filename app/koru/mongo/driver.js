@@ -54,8 +54,6 @@ Connection.prototype = {
     }
   },
 
-  collectionNames: genericDbFunc('collectionNames'),
-
   close: function () {
     return this._db.close();
   },
@@ -183,11 +181,6 @@ Cursor.prototype = {
 
   limit: function (value) {
     this._mcursor.limit(value);
-    return this;
-  },
-
-  fields: function (spec) {
-    this._mcursor.fields(spec);
     return this;
   },
 
