@@ -28,9 +28,7 @@ define(function(require, exports, module) {
     less.render(src, {
       syncImport: true,
       paths: [dir], // for @import
-      currentFileInfo: {
-        filename: '/'+path.substring(topLen),
-      },
+      filename: '/'+path.substring(topLen),
       sourceMap: {
         sourceMapFileInline: true,
       },
@@ -38,6 +36,7 @@ define(function(require, exports, module) {
       if (error) {
         var fn = error.filename || path;
         if (fn === 'input') fn = path;
+        if (fn[0] === '/') fn = fn.slice(1);
         koru.error(koru.util.extractError({
           toString: function () {return "Less compiler error: " + error.message},
           stack: "\tat "+ fn + ':' + error.line + ':' + (error.column + 1),
