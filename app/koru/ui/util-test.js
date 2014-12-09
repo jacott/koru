@@ -43,6 +43,21 @@ isClient && define(function (require, exports, module) {
       assert.same(nested.firstChild.textContent, 'hello');
     },
 
+    "test childElementIndex": function () {
+      var elm = Dom.html({});
+      var child;
+      elm.appendChild(child = document.createElement('b'));
+      assert.same(Dom.childElementIndex(child), 0);
+
+      elm.appendChild(child = document.createElement('b'));
+      assert.same(Dom.childElementIndex(child), 1);
+
+      elm.appendChild(document.createTextNode('text'));
+
+      elm.appendChild(child = document.createElement('b'));
+      assert.same(Dom.childElementIndex(child), 2);
+    },
+
     "test mapToData": function () {
       var elm = Dom.html({});
 

@@ -246,6 +246,12 @@ define(function(require, exports, module) {
       return null;
     },
 
+    childElementIndex: function (child) {
+      var i = 0;
+      while( (child = child.previousElementSibling) != null ) i++;
+      return i;
+    },
+
     transformTranslate: function (elm , x, y) {
       elm.style[vendorTransform] = elm.style[vendorTransform].replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
     },
