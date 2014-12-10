@@ -176,19 +176,8 @@ define(function(require, exports, module) {
         var doc = this.model.docs[id];
         if (! doc) return;
         var attrs = doc.attributes;
-        var fields;
 
-        if (fields = this._whereNots) for(var key in fields) {
-          var value = fields[key];
-          var expected = attrs[key];
-          if (Array.isArray(value)) {
-            if (value.some(function (item) {
-              return item == expected;
-            }))
-              return;
-          } else if (expected == value)
-            return;
-        }
+        if (this._whereNots && foundIn(this._whereNots)) return;
 
         if (this._wheres && ! foundIn(this._wheres)) return;
 
@@ -213,19 +202,19 @@ define(function(require, exports, module) {
                 for(var i = 0; ! found && i < expected.length; ++i) {
                   var exv = expected[i];
                   if (Array.isArray(value)) {
-                    if (value.some(function (item) {return item == exv}))
+                    if (value.some(function (item) {return util.deepEqual(item, exv)}))
                       found = true;
-                  } else if (exv == value)
+                  } else if (util.deepEqual(exv, value))
                     found = true;
                 }
                 if (! found) return false;
               }
             } else if (Array.isArray(value)) {
               if (value.every(function (item) {
-                return item != expected;
+                return ! util.deepEqual(item, expected);
               }))
                 return false;
-            } else if (expected != value)
+            } else if (! util.deepEqual(expected, value))
               return false;
           }
           return true;
@@ -334,11 +323,11 @@ define(function(require, exports, module) {
 
     function findMatching(func) {
       if (! this.model) return;
-      var idx = this._index;
-      if (this._index)
+
+      if (this._index) {
         findByIndex(this, this._index, func);
 
-      else for(var id in this.model.docs) {
+      } else for(var id in this.model.docs) {
         var doc = this.findOne(id);
         if (doc && func(doc) === true)
           break;

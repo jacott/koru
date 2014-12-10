@@ -23,6 +23,17 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test un/match array element": function () {
+      v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
+
+      assert.same(v.TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
+      assert.same(v.TestModel.where('aoo', {a: 1, b: 1}).count(), 0);
+
+      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 1}).count(), 2);
+      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
+
+    },
+
     "query withIndex": {
       setUp: function () {
         v.idx = v.TestModel.addUniqueIndex('gender', 'age', 'name');
