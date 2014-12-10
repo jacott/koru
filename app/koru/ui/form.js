@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     if (Dom.getClosestClass(event.target, 'anyModal')) return;
     if (event.type === 'keyup') {
       if (event.which === 27) {
-        if (! Dom.parentOf(elm, event.target))
+        if (! Dom.contains(elm, event.target))
           return modalize.func.call(this, event);
 
         switch (event.target.tagName) {
@@ -48,7 +48,7 @@ define(function(require, exports, module) {
         if (event.target.getAttribute('contenteditable') === 'true') return;
         return modalize.func.call(this, event);
       }
-    } else if (! Dom.parentOf(elm, event.target))
+    } else if (! Dom.contains(elm, event.target))
       return modalize.func.call(this, event);
   };
 

@@ -208,7 +208,7 @@ define(function(require, exports, module) {
       };
     },
 
-    parentOf: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
+    contains: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
       return parent && parent.contains(elm) ? parent : null;
     } : function (parent, elm) {
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
@@ -359,7 +359,7 @@ define(function(require, exports, module) {
       currentCtx = this;
       try {
         util.forEach(this.evals, function (eval) {
-          if (Dom.parentOf(elm, eval[0])) {
+          if (Dom.contains(elm, eval[0])) {
             updateNode(eval, currentCtx.data);
           }
         });

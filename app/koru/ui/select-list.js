@@ -25,7 +25,7 @@ define(function(require, exports, module) {
         ctx = $.ctx;
 
         if (ctx.listElm) {
-          if (event.type === 'mousedown' && !Dom.parentOf(ctx.listElm, event.target))
+          if (event.type === 'mousedown' && !Dom.contains(ctx.listElm, event.target))
             Dom.remove(ctx.listElm);
         } else {
           button = this;
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
       function callback(event) {
         if (event) {
           if (event.type === 'mousedown') {
-            if (Dom.parentOf(button, event.target)) return;
+            if (Dom.contains(button, event.target)) return;
           } else if (event.which !== 9 && event.which !== 27) {
             return;
           }

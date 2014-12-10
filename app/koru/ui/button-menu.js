@@ -62,7 +62,7 @@ define(function(require, exports, module) {
     } else {
       menu.appendChild(ctx.listElm);
       var callback = function (event) {
-        if (event.type === 'mousedown' && Dom.parentOf(menu, event.target)) return;
+        if (event.type === 'mousedown' && Dom.contains(menu, event.target)) return;
         hideMenu();
       };
       document.addEventListener('mousedown', callback, true);

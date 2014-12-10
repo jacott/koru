@@ -37,7 +37,7 @@ define(function(require, exports, module) {
 
       var button = this;
       Dom.onMouseUp(function (event) {
-        if (! Dom.parentOf(event.target, button)) return;
+        if (! Dom.contains(event.target, button)) return;
 
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -139,7 +139,7 @@ define(function(require, exports, module) {
       var ctx = $.ctx;
       var elm = this;
       koru.afTimeout(function () {
-        if (ctx.mousedown || Dom.parentOf(elm, document.activeElement)) return;
+        if (ctx.mousedown || Dom.contains(elm, document.activeElement)) return;
         Dom.remove(elm);
       });
     },
