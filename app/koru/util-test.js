@@ -139,7 +139,7 @@ define(function (require, exports, module) {
 
     "test deepEqual": function () {
       assert.isTrue(util.deepEqual(null, null));
-      assert.isFalse(util.deepEqual(null, undefined));
+      assert.isTrue(util.deepEqual(null, undefined));
       assert.isFalse(util.deepEqual(null, ""));
       assert.isTrue(util.deepEqual({}, {}));
       assert.isFalse(util.deepEqual(0, -0));

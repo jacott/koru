@@ -711,7 +711,8 @@ define(function(require, exports, module) {
       return true;
     }
 
-    if (typeof expected !== 'object' || typeof actual !== 'object') return false;
+    if (typeof expected !== 'object' || typeof actual !== 'object')
+      return expected === undefined || actual === undefined ? expected == actual : false;
 
     if (expected == null || actual == null) return false;
 
