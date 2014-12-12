@@ -236,21 +236,11 @@ define(function(require, exports, module) {
       Route.history.pushState(null, '', currentHref);
     },
 
-    get targetPage() {
-      return targetPage;
-    },
-
-    get currentPage() {
-      return currentPage;
-    },
-
-    get currentHref() {
-      return currentHref;
-    },
-
-    get currentTitle() {
-      return currentTitle;
-    },
+    get targetPage() {return targetPage},
+    get currentPage() {return currentPage},
+    get currentPageRoute() {return currentPageRoute},
+    get currentHref() {return currentHref},
+    get currentTitle() {return currentTitle},
 
     pageChanged: function () {
       pageState = null;

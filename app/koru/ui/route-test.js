@@ -303,7 +303,8 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWithExactly(Route.gotoPath);
 
-      v.FooBar.onEntry = function () {
+      v.FooBar.onEntry = function (page, pageRoute) {
+        v.pageRoute = pageRoute;
         assert.same(Route.targetPage, v.FooBar);
 
         return 'thehref';
@@ -318,6 +319,7 @@ isClient && define(function (require, exports, module) {
 
       assert.same(Route.targetPage, v.FooBar);
       assert.same(Route.currentPage, v.FooBar);
+      assert.same(Route.currentPageRoute, v.pageRoute);
       assert.same(Route.currentHref, '/#thehref');
       assert.same(Route.currentTitle, 'foo bar');
     },
