@@ -4,21 +4,24 @@ define(function(require, exports, module) {
   var Query = require('../model/query');
   var util = require('../util');
 
+  function each(startEach, data, func, options) {
+    var each = startEach._each;
+    if (! each) {
+      startEach = createEach(startEach, func, options);
+      each = startEach._each;
+    }
+    each.call(data, options);
+
+    return startEach;
+  }
+
   Dom.registerHelpers({
     each: function (func, options) {
-      var startEach = $.element;
-      var each = startEach._each;
-      if (! each) {
-        startEach = createEach(func, options);
-        each = startEach._each;
-      }
-      each.call(this, options);
-
-      return startEach;
+      return each($.element, this, func, options);
     },
   });
 
-  function createEach(func, options) {
+  function createEach(insertPoint, func, options) {
     var eachCtx = $.ctx;
     var ctpl = $.template;
     var helper = ctpl._helpers[func];
@@ -31,7 +34,7 @@ define(function(require, exports, module) {
 
     var startEach = document.createComment('start');
     var endEach = startEach._koruEnd = document.createComment('end');
-    $.element.parentNode.insertBefore(endEach, $.element.nextSibling);
+    insertPoint.parentNode.insertBefore(endEach, insertPoint.nextSibling);
 
     var rows = {};
     options = options || {};
@@ -160,4 +163,6 @@ define(function(require, exports, module) {
       }
     });
   }
+
+  return each;
 });
