@@ -321,11 +321,14 @@ define(function (require, exports, module) {
     },
 
     "test forEach": function () {
-      util.forEach(v.list = [1,2,3], v.stub = test.stub());
+      var results = [];
+      var last = util.forEach(v.list = [1,2,3], function (val, index) {
+        results.push(val+"."+index);
+        if (index === 1) return 'break';
+      });
 
-      assert.calledWith(v.stub, 1, 0);
-      assert.calledWith(v.stub, 2, 1);
-      assert.calledWith(v.stub, 3, 2);
+      assert.equals(results, ['1.0', '2.1']);
+      assert.same(last, 1);
     },
 
     "test append": function () {

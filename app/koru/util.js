@@ -46,8 +46,9 @@ define(function(require, exports, module) {
     forEach: function forEach(list, func) {
       var len = list.length;
       for(var i = 0; i < len; ++i) {
-        func(list[i], i);
+        if (func(list[i], i) === 'break') break;
       }
+      return i;
     },
 
     map: function mymap(list, func) {
