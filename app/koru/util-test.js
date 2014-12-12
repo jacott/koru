@@ -353,6 +353,8 @@ define(function (require, exports, module) {
       assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
       assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
       assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1}, {foo: 'b', baz: 2}]), {a: 1, b: 2});
+      assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]), {foo: "bar", a: 1});
+      assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]), {1: "a", bar: "foo"});
     },
 
     "test mapField": function () {

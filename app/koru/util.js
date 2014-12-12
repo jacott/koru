@@ -323,8 +323,8 @@ define(function(require, exports, module) {
         if (!list) continue;
 
         for(var i=0; i < list.length; ++i) {
-          if (keyName) {
-            result[list[i][keyName]] = ( valueName ?
+          if (keyName != null) {
+            result[list[i][keyName]] = ( valueName != null ?
                                          ( valueName === true ? true : list[i][valueName] ) :
                                          list[i] );
           } else {
