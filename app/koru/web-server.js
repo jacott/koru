@@ -2,6 +2,7 @@ var Path = require('path');
 var http = require('http');
 var send = requirejs.nodeRequire('send');
 var parseurl = requirejs.nodeRequire('parseurl');
+var Future = requirejs.nodeRequire('fibers/future');
 
 define(function (require, exports, module) {
   var koru = require('./main');
@@ -36,7 +37,7 @@ define(function (require, exports, module) {
   var server = http.createServer(requestListener);
 
   exports.start = function () {
-    server.listen(module.config().port || 3000, module.config().host);
+    Future.wrap(server.listen).call(server, module.config().port || 3000, module.config().host).wait();
   };
 
   exports.server = server;
