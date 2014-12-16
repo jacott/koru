@@ -15,7 +15,7 @@ define(function (require, exports, module) {
     },
 
     "test setTimeout": function () {
-      test.stub(isServer ? global : window, 'setTimeout');
+      test.stub(isServer ? global : window, 'setTimeout').returns(123);
       test.stub(util, 'Fiber').returns({run: function () {
         util.Fiber.yield();
       }});

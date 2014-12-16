@@ -12,7 +12,7 @@ define(function(require, exports, module) {
 
   try {fs.mkdirSync(topDir+'/.build');} catch(ex) {}
 
-  return {
+  return exports = {
     runTests: function(session, type, pattern, callback) {
       if (type !== 'server') {
         var cTests = [];
@@ -66,7 +66,16 @@ define(function(require, exports, module) {
       }
 
       if (type !== 'client') {
-        require(['./server'], function (TH) {TH.run(pattern, sTests)});
+        var dest = require.toUrl('test/server-ready.js');
+        if (requirejs.defined('test/server-ready')) {
+          exports.serverReady = new Future;
+          fs.unlinkSync(dest);
+          exports.serverReady.wait();
+        } else {
+          try {fs.unlinkSync(dest);} catch (ex) {}
+        }
+        fs.symlinkSync(require.toUrl('./server-ready-prep.js'), dest);
+        require(['./server', 'test/server-ready'], function (TH) {TH.run(pattern, sTests)});
       }
 
       function findAll(dir) {

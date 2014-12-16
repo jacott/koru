@@ -1,10 +1,13 @@
 var fs = require('fs');
+var Future = requirejs.nodeRequire('fibers/future');
+var vm = require('vm');
 
-define([
-  'module', 'koru', 'koru/test/build-cmd',
-  'koru/fs-tools', 'koru/session/base'
-], function (module, koru, buildCmd,
-             fst, session) {
+define(function(require, exports, module) {
+  var util = require('koru/util');
+  var koru = require('./main');
+  var session = require('./session');
+  var buildCmd = require('./test/build-cmd');
+
   koru.onunload(module, 'reload');
 
   session.remoteControl = remoteControl;
@@ -15,6 +18,8 @@ define([
     var session = this;
     var oldLogHandle = session.provide('L', logHandle);
     var oldTestHandle = session.provide('T', testHandle);
+
+    koru._INTERCEPT = intercept;
 
     // used by koru/test
     remoteControl.testHandle = testHandle;
@@ -42,6 +47,21 @@ define([
           });
         }).run();
         break;
+      case 'I':
+        switch(args[1]) {
+        case 'cont':
+          continueIntercept();
+          break;
+        case 'script':
+          try {
+            vm.createScript(args[2], '\ninput', true);
+            console.log(util.inspect(interceptObj(args[2])));
+          } catch(ex) {
+            console.log(util.extractError(ex));
+          }
+          break;
+        }
+        break;
       }
     });
 
@@ -59,6 +79,25 @@ define([
       } catch(ex) {
         koru.error(ex);
       }
+    }
+
+    var future, interceptObj;
+
+    function intercept(obj) {
+      interceptObj = obj;
+      ws.send('I' + util.extractError(new Error("interrupt")));
+      future = new Future;
+      try {
+        return future.wait();
+      } finally {
+        future = null;
+      }
+    }
+
+    function continueIntercept(arg) {
+      _koru_.debug('CONT', !! future);
+
+      if (future) future.return(arg);
     }
   }
 });
