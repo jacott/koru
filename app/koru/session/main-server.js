@@ -66,8 +66,8 @@ define(function (require, exports, module) {
       var ugr = ws.upgradeReq;
 
       var remoteAddress = ugr.socket.remoteAddress;
-      if (remoteAddress === '127.0.0..1')
-        remoteAddress = ugr.headers['X-Real-IP'] || remoteAddress;
+      if (remoteAddress === '127.0.0.1')
+        remoteAddress = ugr.headers['x-real-ip'] || remoteAddress;
 
       if (remoteAddress === '127.0.0.1' && ugr.url === '/rc') {
         session.remoteControl(ws);
@@ -92,7 +92,7 @@ define(function (require, exports, module) {
       ws.on('message', conn.onMessage.bind(conn));
 
       conn.send('X1', session.versionHash);
-      koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress, conn.remotePort);
+      koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
     }
 
     function sendAll(cmd, msg) {
