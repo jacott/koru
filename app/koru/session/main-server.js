@@ -64,7 +64,12 @@ define(function (require, exports, module) {
 
     function onConnection(ws) {
       var ugr = ws.upgradeReq;
-      if ((ugr.socket.remoteAddress === '127.0.0.1') && !ugr.headers.hasOwnProperty('user-agent')) {
+
+      var remoteAddress = ugr.socket.remoteAddress;
+      if (remoteAddress === '127.0.0..1')
+        remoteAddress = ugr.headers['X-Real-IP'] || remoteAddress;
+
+      if (remoteAddress === '127.0.0.1' && ugr.url === '/rc') {
         session.remoteControl(ws);
         return;
       }
@@ -81,10 +86,13 @@ define(function (require, exports, module) {
         koru.info('Close client', sessId, session.totalSessions);
       });
       conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
+      conn.remoteAddress = remoteAddress;
+      conn.remotePort = ugr.socket.remotePort;
+
       ws.on('message', conn.onMessage.bind(conn));
 
       conn.send('X1', session.versionHash);
-      koru.info('New client ws:', sessId, session.totalSessions, conn.engine, ugr.socket.remoteAddress);
+      koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress, conn.remotePort);
     }
 
     function sendAll(cmd, msg) {
