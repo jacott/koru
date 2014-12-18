@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       if (func)
         func.call(conn, data);
       else
-        func || koru.info('Unexpected websocket message: '+ type, conn.engine);
+        koru.info('Unexpected websocket message: '+ type, conn.sessId);
     },
   };
 });
