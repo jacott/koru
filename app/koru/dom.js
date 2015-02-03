@@ -66,6 +66,10 @@ define(function(require, exports, module) {
       return node;
     },
 
+    modifierKey: function (event) {
+      return event.ctrlKey || event.shiftKey || event.metaKey || event.altKey;
+    },
+
     stopEvent: function () {
       currentEvent = null;
     },
