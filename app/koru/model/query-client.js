@@ -23,7 +23,7 @@ define(function(require, exports, module) {
               if (id in modelDocs) {
                 delete modelDocs[id];
 
-                notify(model, null, doc);
+                notify(model, null, doc, true);
               }
             } else {
               var newDoc = ! doc;
@@ -31,7 +31,7 @@ define(function(require, exports, module) {
                 var doc  = modelDocs[id] = new model({_id: id});
               util.applyChanges(doc.attributes, fields);
               for (var noop in fields) {
-                notify(model, doc, newDoc ? null : fields);
+                notify(model, doc, newDoc ? null : fields, true);
                 break;
               }
             }
@@ -57,7 +57,7 @@ define(function(require, exports, module) {
           if (doc && changes !== attrs) { // found existing
             util.applyChanges(doc.attributes, changes);
             for(var noop in changes) {
-              notify(model, doc, changes);
+              notify(model, doc, changes, true);
               break;
             }
             return doc._id;
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
           attrs._id = id;
           var doc = new model(attrs);
           model.docs[doc._id] = doc;
-          notify(model, doc, null);
+          notify(model, doc, null, true);
         }
       },
 
@@ -226,11 +226,11 @@ define(function(require, exports, module) {
         var self = this;
         var model = self.model;
         var docs = model.docs;
-        if (sessState.pendingCount() && session.isUpdateFromServer) {
+        if (sessState.pendingCount() && self.isFromServer) {
           if (fromServer(model, self.singleId, null) === null) {
             var doc = docs[self.singleId];
             delete docs[self.singleId];
-            doc && notify(model, null, doc);
+            doc && notify(model, null, doc, self.isFromServer);
           }
           return 1;
         }
@@ -241,7 +241,7 @@ define(function(require, exports, module) {
             recordChange(model, doc.attributes);
           }
           delete docs[doc._id];
-          notify(model, null, doc);
+          notify(model, null, doc, self.isFromServer);
         });
         return count;
       },
@@ -259,13 +259,13 @@ define(function(require, exports, module) {
         var model = self.model;
         var docs = model.docs;
         var items;
-        if (sessState.pendingCount() && session.isUpdateFromServer) {
+        if (sessState.pendingCount() && self.isFromServer) {
           var changes = fromServer(model, self.singleId, origChanges);
           var doc = docs[self.singleId];
           if (doc) {
             util.applyChanges(doc.attributes, changes);
             for(var noop in changes) {
-              notify(model, doc, changes);
+              notify(model, doc, changes, self.isFromServer);
               break;
             }
           }
@@ -306,7 +306,7 @@ define(function(require, exports, module) {
           }
 
           for(var key in changes) {
-            notify(model, doc, changes);
+            notify(model, doc, changes, self.isFromServer);
             break;
           }
         });
@@ -314,9 +314,9 @@ define(function(require, exports, module) {
       },
     });
 
-    function notify(model, doc, changes) {
+    function notify(model, doc, changes, isFromServer) {
       model._indexUpdate.notify(doc, changes);   // first: update indexes
-      session.isUpdateFromServer ||
+      isFromServer ||
         Model._callAfterObserver(doc, changes);  // next:  changes originated here
       model.notify(doc, changes);                // last:  Notify everything else
     }

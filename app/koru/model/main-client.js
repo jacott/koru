@@ -19,7 +19,15 @@ define(function(require, exports, module) {
 
     init: function (BaseModel, supportBase, modelProperties) {
       _support = supportBase;
-      modelProperties.findById = findById;
+
+      util.extend(modelProperties, {
+        findById: findById,
+        get serverQuery() {
+          var query = new Query(this);
+          query.isFromServer = true;
+          return query;
+        }
+      });
 
       BaseModel.prototype.$remove =  function () {
         session.rpc("remove", this.constructor.modelName, this._id,

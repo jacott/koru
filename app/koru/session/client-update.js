@@ -28,7 +28,7 @@ define(function(require, exports, module) {
 
     function changed(model, id, attrs) {
       attrs._id = id;
-      var query = new Query(model).onId(id);
+      var query = model.serverQuery.onId(id);
       var doc = model.findById(id);
       if (doc && publish.match.has(doc))
         query.update(attrs);
@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     }
 
     function removed(model, id) {
-      new Query(model).onId(id).remove();
+      model.serverQuery.onId(id).remove();
     }
 
     function modelUpdate(func, type) {
@@ -47,12 +47,7 @@ define(function(require, exports, module) {
           if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
             koru.logger("Debug"+type, '< ' + util.inspect(data));
         }
-        try {
-          session.isUpdateFromServer = true;
-          func.call(this, Model[data[0]], data[1], data[2]);
-        } finally {
-          session.isUpdateFromServer = false;
-        }
+        func.call(this, Model[data[0]], data[1], data[2]);
       };
     }
 
