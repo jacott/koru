@@ -139,7 +139,7 @@ define(function(require, exports, module) {
   });
 
 
-  ga.add('specificAttributesEqual', {
+  ga.add('specificAttributes', {
     assert: function (actual, expected) {
       if (! (actual && expected)) {
         this.actual = actual;
