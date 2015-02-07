@@ -64,6 +64,8 @@ define(function(require, exports, module) {
       }
     },
 
+    ensureArray: ensureType,
+
     ensure: function (type/*, args */) {
       ensureType(type, util.slice(arguments, 1));
     },

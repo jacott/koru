@@ -71,6 +71,7 @@ define(function(require, exports, module) {
           exports.serverReady = new Future;
           fs.unlinkSync(dest);
           exports.serverReady.wait();
+          exports.serverReady = null;
         } else {
           try {fs.unlinkSync(dest);} catch (ex) {}
         }
