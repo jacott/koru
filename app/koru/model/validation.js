@@ -208,7 +208,7 @@ define(function(require, exports, module) {
             } else if (ps) {
               if (i+1 !== keys.length) {
                 currPs = ps;
-              } else {
+              } else if (ps !== '*') {
                 (ps === true && Val.allowIfSimple(val)) ||
                   typeof val === 'object' && permitParams(val, ps, false, filter) ||
                   accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
@@ -261,7 +261,11 @@ define(function(require, exports, module) {
           }
         } else {
           for(var key in item) {
-            output[key] = convertPermitSpec(item[key]);
+            var list = item[key];
+            if (Array.isArray(list))
+              output[key] = convertPermitSpec(list);
+            else
+              output[key] = list;
           }
         }
         break;

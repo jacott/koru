@@ -189,6 +189,10 @@ define(function (require, exports, module) {
                         val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
       },
 
+      "test wildcard": function () {
+        assertPermitted({name: 'text', age: {abc: 123}}, val.permitSpec('name', {age: '*'}));
+      },
+
       "test filtering": function () {
         val.permitParams(v.changes = {
           'size.dump.val': 3, 'size.deep.bad': 1, 'size.deep.val': 2, junk: 'hello', name: 'okay',
