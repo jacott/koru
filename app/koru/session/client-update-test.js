@@ -79,11 +79,17 @@ isClient && define(function (require, exports, module) {
     },
 
     "test changed": function () {
-      var bob = v.Foo.create({_id: 'f222', name: 'bob', age: 5});
+      v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
+
+      var bob = v.Foo.docs.f222;
+
+      bob.$cache.foo = 1;
 
       v.recvC('Foo', 'f222', v.attrs = {age: 7});
       v.recvC('Foo', 'f333', v.attrs = {age: 7});
+
+      assert.same(bob._cache, null);
 
       assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
       assert.same(v.Foo.query.onId('f333').count(1), 0);

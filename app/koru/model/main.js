@@ -202,7 +202,6 @@ define(function(require, exports, module) {
       this.changes = {};
       this._errors = null;
       this._cache = null;
-      this.__arrayFields && (this.__arrayFields = undefined);
       return this;
     },
 
@@ -379,7 +378,7 @@ define(function(require, exports, module) {
         }
         return session.rpc.apply(session, util.append([fullname, this._id], arguments));
       };
-      session.defineRpc(fullname, func);
+      func && session.defineRpc(fullname, func);
       return this;
     },
   };
