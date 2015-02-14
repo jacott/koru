@@ -664,6 +664,23 @@ define(function (require, exports, module) {
         assert.equals(doc.attributes, {});
       },
 
+      "test $clearChanges": function () {
+        var doc = new v.TestModel({_id: 't1', name: 'foo'});
+
+        var changes = doc.changes;
+        doc.$clearChanges();
+
+        assert.same(doc.changes, changes);
+
+        doc.changes.name = 'bar';
+
+        doc.$clearChanges();
+
+        refute.same(doc.changes, changes);
+
+        assert(util.isObjEmpty(doc.changes));
+      },
+
       'test update': function () {
         v.TestModel.defineFields({name: 'string'});
         var doc = v.TestModel.create({name: 'old'});

@@ -205,6 +205,10 @@ define(function(require, exports, module) {
       return this;
     },
 
+    $clearChanges: function () {
+      util.isObjEmpty(this.changes) || (this.changes = {});
+    },
+
     $loadCopy: function () {
       return new this.constructor(this.attributes);
     },
