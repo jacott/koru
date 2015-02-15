@@ -72,7 +72,7 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: "http://foo/bar http://xyz a,http://foo"}));
 
       assert.dom('.mdEditor', function () {
-        assert.same(this.value, '<a href="http://foo/bar">http://foo/bar</a> <a href="http://xyz">http://xyz</a> a,http://foo');
+        assert.same(this.value, "[http://foo/bar](http://foo/bar) [http://xyz](http://xyz) a,http://foo");
       });
     },
 

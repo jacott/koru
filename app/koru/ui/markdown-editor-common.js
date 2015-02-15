@@ -119,7 +119,7 @@ define(function(require, exports, module) {
         var value = Markdown.fromHtml(data.inputElm);
         if (! value) return value;
 
-        value = value.replace(/(^|\s)(https?:\/\/\S+)/g, '$1<a href="$2">$2</a>');
+        value = value.replace(/(^|\s)(https?:\/\/\S+)/g, '$1[$2]($2)');
         if (value[value.length -1] === "\n")
           return value.slice(0, -1);
         return value;
