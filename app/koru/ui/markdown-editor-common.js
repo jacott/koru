@@ -118,6 +118,8 @@ define(function(require, exports, module) {
       Object.defineProperty(elm, 'value', {get: function () {
         var value = Markdown.fromHtml(data.inputElm);
         if (! value) return value;
+
+        value = value.replace(/(^|\s)(https?:\/\/\S+)/g, '$1<a href="$2">$2</a>');
         if (value[value.length -1] === "\n")
           return value.slice(0, -1);
         return value;
