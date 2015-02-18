@@ -46,9 +46,8 @@ define(function(require, exports, module) {
     forEach: function forEach(list, func) {
       var len = list.length;
       for(var i = 0; i < len; ++i) {
-        if (func(list[i], i) === 'break') break;
+        func(list[i], i);
       }
-      return i;
     },
 
     map: function mymap(list, func) {
@@ -343,15 +342,13 @@ define(function(require, exports, module) {
       });
     },
 
-    find: function (ary, func) {
+    find: function (list, func) {
+      var len = list.length;
       var result;
-      Array.prototype.some.call(ary, function (value) {
-        if (func.apply(this, arguments)) {
-          result = value;
-          return true;
-        }
-      });
-      return result;
+      for(var i = 0; i < len; ++i) {
+        result = list[i];
+        if (func(result, i)) return result;
+      }
     },
 
     flatten: function (ary, level) {

@@ -322,13 +322,11 @@ define(function (require, exports, module) {
 
     "test forEach": function () {
       var results = [];
-      var last = util.forEach(v.list = [1,2,3], function (val, index) {
+      util.forEach(v.list = [1,2,3], function (val, index) {
         results.push(val+"."+index);
-        if (index === 1) return 'break';
       });
 
-      assert.equals(results, ['1.0', '2.1']);
-      assert.same(last, 1);
+      assert.equals(results, ['1.0', '2.1', '3.2']);
     },
 
     "test append": function () {
