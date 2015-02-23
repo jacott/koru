@@ -14,7 +14,7 @@ define(function (require, exports, module) {
     var sessCounter = 0;
 
     util.extend(session, {
-      wss: new (session._wssOverride || WebSocketServer)({server: server}),
+      wss: new (session._wssOverride || WebSocketServer)({server: server, perMessageDeflate: false}),
       conns: {},
       sendAll: sendAll,
       versionHash: process.env['KORU_APP_VERSION'] || Date.now(),
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
         remoteAddress = ugr.headers['x-real-ip'] || remoteAddress;
 
       if (remoteAddress === '127.0.0.1' && ugr.url === '/rc') {
-        session.remoteControl(ws);
+        session.remoteControl && session.remoteControl(ws);
         return;
       }
       ++session.totalSessions;
