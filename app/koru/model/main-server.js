@@ -1,3 +1,5 @@
+var Weak = requirejs.nodeRequire('weak');
+
 define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
@@ -26,7 +28,8 @@ define(function(require, exports, module) {
       BaseModel = _BaseModel;
       _support = _baseSupport;
       modelProperties.findById = findById;
-
+      modelProperties._$setWeakDoc = setWeakDoc;
+      modelProperties._$getWeakDoc = getWeakDoc;
       modelProperties.addUniqueIndex = addUniqueIndex;
       modelProperties.addIndex = addIndex;
 
@@ -150,6 +153,11 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
+      model._$wm = {};
+      model._$removeWeakDoc = function(doc, force) {
+        delete model._$wm[doc._id];
+      };
+
       var docs;
       Object.defineProperty(model, 'docs', {
         get: function () {
@@ -161,12 +169,14 @@ define(function(require, exports, module) {
     insert: function (doc) {
       var model = doc.constructor;
       model.docs.insert(doc.attributes);
+      model._$setWeakDoc(doc.attributes);
       BaseModel._callAfterObserver(doc, null);
       model.notify(doc, null);
     },
 
     _insertAttrs: function (model, attrs) {
       model.docs.insert(attrs);
+      model._$setWeakDoc(attrs);
     },
   };
 
@@ -185,8 +195,21 @@ define(function(require, exports, module) {
   function findById(id) {
     if (! id) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
-    var doc = this.docs.findOne({_id: id});
+    var doc = this._$getWeakDoc(id);
+    if (! doc) {
+      doc = this.docs.findOne({_id: id});
+      doc && this._$setWeakDoc(doc);
+    }
     if (doc) return new this(doc);
+  }
+
+  function getWeakDoc(id) {
+    var ref = this._$wm[id];
+    return ref && Weak.get(ref);
+  }
+
+  function setWeakDoc(doc) {
+    this._$wm[doc._id] = Weak(doc, this._$removeWeakDoc);
   }
 
   return modelEnv;

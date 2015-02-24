@@ -14,4 +14,4 @@ fi
 fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
 cd app
 echo -e "starting ${branch}...\c"
-exec node ../lib/koru.js "$@"
+exec node --harmony-collections ../lib/koru.js "$@"

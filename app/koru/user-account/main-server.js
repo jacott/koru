@@ -197,8 +197,8 @@ define(function(require, exports, module) {
       var token = getToken(data);
       if (token) {
         var mod = {};
-        mod['tokens.'+token] = '';
-        model.docs.update({userId: conn.userId}, {$unset: mod});
+        mod['tokens.'+token] = undefined;
+        model.where({userId: conn.userId}).update(mod);
       }
       conn.userId = null; // will send a VS + VC. See server-connection
       break;
@@ -211,7 +211,7 @@ define(function(require, exports, module) {
           var mod = {};
           if (token in lu.tokens)
             mod[token] = lu.tokens[token];
-          model.docs.update({_id: lu._id}, {$set: {tokens: mod}});
+          model.where({_id: lu._id}).update('tokens', mod);
         }
       }
       var conns = session.conns;

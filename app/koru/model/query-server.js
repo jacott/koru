@@ -83,6 +83,7 @@ define(function(require, exports, module) {
           ++count;
           Model._callBeforeObserver('beforeRemove', doc);
           docs.remove({_id: doc._id});
+          model._$removeWeakDoc(doc, 'force');
           Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });
@@ -165,6 +166,7 @@ define(function(require, exports, module) {
           if (util.isObjEmpty(cmd)) return 0;
 
           docs.update({_id: doc._id}, cmd);
+          model._$setWeakDoc(doc.attributes);
           Model._callAfterObserver(doc, changes);
           model.notify(doc, changes);
         });

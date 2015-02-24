@@ -202,8 +202,7 @@ define(function(require, exports, module) {
       var id = this.model._insertAttrs(this.attributes());
       var doc = this.model.findById(id);
       if (! doc) {
-        doc = this.model.findById(id);
-        throw Error("Factory insert failed! " + this.model.modelName + ": " + id + ", " + !! doc);
+        throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
       }
       isClient && this.model._indexUpdate.notify(doc);
       Model._callAfterObserver(doc);
