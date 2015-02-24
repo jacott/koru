@@ -64,14 +64,18 @@ isServer && define(function (require, exports, module) {
     "test onStop": function () {
       v.sub.onStop(v.onStop = test.stub());
 
+      refute(v.sub.stopped);
+
       // "P", <pub-id>; no name means stop
       session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);
+
       session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
       assert.calledOnce(v.onStop);
 
       assert.calledWith(v.conn.sendBinary, 'P');
+      assert.isTrue(v.sub.stopped);
     },
 
     "test stop": function () {

@@ -114,6 +114,7 @@ define(function(require, exports, module) {
       m.stop();
     });
     sub._matches = [];
+    sub.stopped = true;
   }
 
   return publish;
