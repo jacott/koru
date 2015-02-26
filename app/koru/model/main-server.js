@@ -1,5 +1,3 @@
-var Weak = requirejs.nodeRequire('weak');
-
 define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
@@ -8,6 +6,7 @@ define(function(require, exports, module) {
   var Val = require('./validation');
   var mongoDb = require('../mongo/driver');
   var Query = require('./query');
+  var WeakIdMap = require('../weak-id-map');
 
   var save, _support, BaseModel;
 
@@ -153,9 +152,9 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
-      model._$wm = {};
+      model._$wm = new WeakIdMap();
       model._$removeWeakDoc = function(doc, force) {
-        delete model._$wm[doc._id];
+        model._$wm.delete(doc._id);
       };
 
       var docs;
@@ -204,12 +203,11 @@ define(function(require, exports, module) {
   }
 
   function getWeakDoc(id) {
-    var ref = this._$wm[id];
-    return ref && Weak.get(ref);
+    return this._$wm.get(id);
   }
 
   function setWeakDoc(doc) {
-    this._$wm[doc._id] = Weak(doc, this._$removeWeakDoc);
+    this._$wm.set(doc);
   }
 
   return modelEnv;
