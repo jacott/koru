@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var message = require('./message');
   var match = require('./match');
 
-  return function (session) {
+  exports = function (session) {
     function Connection(ws, sessId, close) {
       this.ws = ws;
       this.sessId = sessId;
@@ -54,7 +54,7 @@ define(function(require, exports, module) {
       },
 
       sendBinary: function (type, args) {
-        var msg = message.encodeMessage(type, args);
+        var msg = arguments.length === 1 ? type : message.encodeMessage(type, args);
         try {
           this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {
@@ -76,20 +76,25 @@ define(function(require, exports, module) {
 
       sendMatchUpdate: function (doc, changes, filter) {
         if (doc && this.match.has(doc)) {
-          if (changes && this.match.has(doc.$asBefore(changes)))
+          if (changes && this.match.has(doc.$asBefore(changes))) {
             this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
-          else
+            return 'changed';
+          } else {
             this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
-        } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes))
+            return 'added';
+          }
+        } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes)) {
           this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
+          return 'removed';
+        }
       },
 
       added: function (name, id, attrs, filter) {
-        this.sendBinary('A', [name, id, filterAtts(attrs, filter)]);
+        this.sendBinary('A', [name, id, filterAttrs(attrs, filter)]);
       },
 
       changed: function (name, id, attrs, filter) {
-        this.sendBinary('C', [name, id, filterAtts(attrs, filter)]);
+        this.sendBinary('C', [name, id, filterAttrs(attrs, filter)]);
       },
 
       removed: function (name, id) {
@@ -120,19 +125,38 @@ define(function(require, exports, module) {
       get userId() {return this._userId},
     };
 
-    function filterAtts(attrs, filter) {
-      if (! filter) return attrs;
-
-      var result = {};
-
-      for(var key in attrs) {
-        if (! filter.hasOwnProperty(key))
-          result[key] = attrs[key];
-      }
-
-      return result;
-    }
-
     return Connection;
   };
+
+  function filterAttrs(attrs, filter) {
+    if (! filter) return attrs;
+
+    var result = {};
+
+    for(var key in attrs) {
+      if (! filter.hasOwnProperty(key))
+        result[key] = attrs[key];
+    }
+
+    return result;
+  }
+
+  exports.filterAttrs = filterAttrs;
+
+  exports.encodeAdded = function (name, id, attrs, filter) {
+    return message.encodeMessage('A', [name, id, filterAttrs(attrs, filter)]);
+  };
+
+  exports.encodeChanged = function (name, id, attrs, filter) {
+    return message.encodeMessage('C', [name, id, filterAttrs(attrs, filter)]);
+  };
+
+  exports.encodeRemoved = function (name, id) {
+    return message.encodeMessage('R', [name, id]);
+  };
+
+
+
+
+  return exports;
 });

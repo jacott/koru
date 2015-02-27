@@ -134,6 +134,10 @@ isServer && define(function (require, exports, module) {
       });
 
       refute.called(koru.info);
+
+      v.conn.ws = {send: test.stub()};
+      v.conn.sendBinary('OneArg');
+      assert.calledWith(v.conn.ws.send, 'OneArg', {binary: true});
     },
 
     "test when closed sendBinary": function () {
@@ -159,6 +163,44 @@ isServer && define(function (require, exports, module) {
 
       assert(sendUid.calledBefore(v.s1));
       assert(sendUidCompleted.calledAfter(v.s2));
+    },
+
+    "test sendMatchUpdate": function () {
+      v.doc = {
+        constructor: {modelName: 'Foo'},
+        _id: 'f123',
+        attributes: {name: 'x'},
+        $asBefore: test.stub().withArgs('changes')
+          .returns(v.before = {constructor: {modelName: 'Foo'}, _id: 'f123', attributes: {name: 'y'}}),
+        $asChanges: test.stub().withArgs('changes')
+          .returns(v.changes= {changes: true}),
+      };
+      refute(v.conn.sendMatchUpdate(v.doc));
+      refute.called(v.conn.sendBinary);
+      v.conn.match.register('Foo', function (doc) {
+        return v.func(doc);
+      });
+
+      // added
+      v.func = function (doc) {return v.doc === doc};
+      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'added');
+      assert.calledWith(v.doc.$asBefore, 'changes');
+      assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
+
+      // changed
+      v.conn.sendBinary.reset();
+      v.doc.$asBefore.reset();
+      v.func = function (doc) {return v.doc === doc || doc === v.before};
+      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'changed');
+      assert.calledWith(v.doc.$asBefore, 'changes');
+      assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
+
+      // removed
+      v.doc.$asBefore.reset();
+      v.conn.sendBinary.reset();
+      v.func = function (doc) {return doc === v.before};
+      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'removed');
+      assert.calledOnceWith(v.conn.sendBinary, 'R', ['Foo', 'f123']);
     },
 
     "test added": function () {
