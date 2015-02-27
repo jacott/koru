@@ -95,8 +95,6 @@ define(function(require, exports, module) {
     }
 
     function continueIntercept(arg) {
-      _koru_.debug('CONT', !! future);
-
       if (future) future.return(arg);
     }
   }

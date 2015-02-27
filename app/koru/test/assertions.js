@@ -141,7 +141,9 @@ define(function(require, exports, module) {
 
     if (typeof expected === 'object') {
       if (expected.hasOwnProperty('test') && typeof expected.or === 'function') {
-        return expected.test(actual);
+        if (expected.test(actual)) return true;
+        setHint(actual, expected.message);
+        return false;
       }
     }
 

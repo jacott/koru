@@ -258,6 +258,9 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
     function select(elm, options, body /* arguments */) {
       var msg, old = selectNode, orig = elm;
+      function setClue(self, msg) {
+        self.htmlClue = msg + ' for ' + self.htmlClue;
+      }
       try {
         if (typeof elm === "string") {
           msg = elm;
@@ -293,14 +296,14 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               options = {text: options};
             }
             if (options.count != null && options.count !== elm.length) {
-              this.htmlClue = "count: " +  elm.length + " to be " + options.count + " for '" + this.htmlClue;
+              setClue(this, "count: " +  elm.length + " to be " + options.count);
               return false;
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
               var ef = filter(elm, function (i) {return options.value === i.value});
               if (ef.length === 0) {
-                this.htmlClue = 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '" for ' + this.htmlClue;
+                setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -309,7 +312,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if(typeof options.text === 'string') {
               var ef = filter(elm, function (i) {return options.text === i.textContent.trim()});
               if (ef.length === 0) {
-                this.htmlClue = 'text "' + text(elm) + '" to be "' + options.text + '" for ' + this.htmlClue;
+                setClue(this, 'text "' + text(elm) + '" to be "' + options.text + '"');
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -318,7 +321,19 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if(typeof options.text === 'object') {
               var ef = filter(elm, function (i) {return options.text.test(i.textContent.trim())});
               if (ef.length === 0) {
-                this.htmlClue = 'text "' + text(elm) + '" to match ' + options.text + ' for ' + this.htmlClue;
+                setClue(this, 'text "' + text(elm) + '" to match ' + options.text);
+                return false;
+              } else {
+                selectNode = elm = ef;
+              }
+            }
+            if(options.hasOwnProperty('data')) {
+              var hint = {};
+              var ef = filter(elm, function (i) {
+                return i._koru && gu.deepEqual(i._koru.data, options.data, hint, 'i');
+              });
+              if (ef.length === 0) {
+                setClue(this, "data equality; got " + hint.i);
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -347,7 +362,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if (elm.length === 0) return false;
             var ef = filter(elm, function (i) {return options === i.textContent.trim()});
             if (ef.length === 0) {
-              this.htmlClue = '"' + options + '"; found "' + text(elm) + '" for ' + this.htmlClue;
+              setClue(this, '"' + options + '"; found "' + text(elm) + '"');
               return false;
             } else {
               selectNode = elm = ef;
