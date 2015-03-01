@@ -20,7 +20,7 @@ define(function(require, exports, module) {
         var args = util.slice(arguments, 1, func ? -1 : arguments.length);
 
         if (isSimulation) {
-          this._rpcs[name].apply(util.thread, args);
+          this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
 
         } else try {
           isSimulation = true;

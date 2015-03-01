@@ -161,6 +161,7 @@ define(function (require, exports, module) {
         v.s2Name = name;
         v.s2This = this;
         assert.isTrue(v.sess.isSimulation);
+        refute.exception(function () {v.sess.rpc('foo.remote')});
       }
     },
 
