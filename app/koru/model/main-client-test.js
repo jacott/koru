@@ -31,5 +31,13 @@ define(function (require, exports, module) {
 
       assert.called(v.afterRemove);
     },
+
+    "test create returns same as findById": function () {
+      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+
+      var doc = TestModel.create({name: 'foo'});
+      assert.same(doc, TestModel.findById(doc._id));
+
+    },
   });
 });

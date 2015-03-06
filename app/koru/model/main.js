@@ -270,10 +270,10 @@ define(function(require, exports, module) {
 
   var modelProperties = {
     create: function (attributes) {
-      var model = new this();
-      util.extend(model.changes, attributes);
-      model.$save();
-      return model;
+      var doc = new this();
+      util.extend(doc.changes, util.deepCopy(attributes));
+      doc.$save();
+      return isServer ? doc : doc.constructor.findById(doc._id);
     },
 
     _insertAttrs: function (attrs) {
@@ -286,12 +286,12 @@ define(function(require, exports, module) {
      * Build a new document. Does not copy _id from attributes.
      */
     build: function(attributes, allow_id) {
-      var model = new this();
+      var doc = new this();
       if(attributes) {
-        util.extend(model.changes, attributes);
-        allow_id || delete model.changes._id;
+        util.extend(doc.changes, util.deepCopy(attributes));
+        allow_id || delete doc.changes._id;
       }
-      return model;
+      return doc;
     },
 
     get query() {
@@ -625,7 +625,7 @@ define(function(require, exports, module) {
       if (value === this.attributes[field]) {
         if (this.changes.hasOwnProperty(field)) {
           if (value === undefined && this.constructor._defaults[field] !== undefined)
-            this.changes[field] = this.constructor._defaults[field];
+            this.changes[field] = util.deepCopy(this.constructor._defaults[field]);
           else
             delete this.changes[field];
 

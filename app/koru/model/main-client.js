@@ -8,7 +8,7 @@ define(function(require, exports, module) {
 
   var _support;
 
-  var modelEnv = {
+  var ModelEnv = {
     save: save,
 
     destroyModel: function (model, drop) {
@@ -105,9 +105,8 @@ define(function(require, exports, module) {
                   koru.globalCallback);
       break;
     }
-
-    return doc.$reload();
+    doc.$reload();
   }
 
-  return modelEnv;
+  return ModelEnv;
 });

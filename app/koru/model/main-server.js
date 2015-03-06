@@ -12,7 +12,7 @@ define(function(require, exports, module) {
 
   var uniqueIndexes = {}, indexes = {};
 
-  var modelEnv = {
+  var ModelEnv = {
     destroyModel: function (model, drop) {
       if (! model) return;
       if (drop === 'drop')
@@ -76,7 +76,7 @@ define(function(require, exports, module) {
         return new Query(this.constructor).onId(this._id).remove();
       };
 
-      modelEnv.save = save = function (doc) {
+      ModelEnv.save = save = function (doc) {
         if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
         var _id = doc._id;
@@ -99,8 +99,6 @@ define(function(require, exports, module) {
           // This a bit of a hack; should we bother?
           util.applyChanges(doc.attributes, copy);
         }
-
-        return doc;
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
@@ -210,5 +208,5 @@ define(function(require, exports, module) {
     this._$wm.set(doc);
   }
 
-  return modelEnv;
+  return ModelEnv;
 });
