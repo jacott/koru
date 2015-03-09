@@ -178,9 +178,7 @@
         return clearTimeout(handle);
       },
 
-      "\x64ebug": function () {
-        koru.logger('\x44EBUG', util.slice(arguments, 0));
-      },
+      "\x64ebug": logDebug,
 
       info: function () {
         koru.logger('INFO', Array.prototype.join.call(arguments, ' '));
@@ -228,6 +226,14 @@
 
         return path.slice(0, ++idx) + '.build/' + path.slice(idx);
       },
+    };
+
+    function logDebug() {
+      koru.logger('\x44EBUG', util.slice(arguments, 0));
+    }
+
+    logDebug.inspect = function () {
+      koru.logger('\x44EBUG ' + util.inspect(arguments));
     };
 
     if (isServer) {
