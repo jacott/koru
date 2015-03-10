@@ -546,24 +546,30 @@ define(function(require, exports, module) {
       if (! bt) {
         var btName = options.modelName || util.capitalize(name);
         var bt = BaseModel[btName];
-        if (! bt) throw Error(btName + ' is not defined for field: ' + field);
       }
-      model.fieldTypeMap[field] = bt;
+      mapFieldType(model, field, bt, btName);
       Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
     },
+
     user_id_on_create: function(model, field, options) {
       typeMap.belongs_to.call(this, model, field, options);
       model.userIds = model.userIds || {};
       model.userIds[field] = 'create';
     },
-    has_many: function (model, field, options) {
-      var name = field.replace(/_ids/,''),
-          bt = BaseModel[typeof options.associated === 'string' ? options.associated : util.capitalize(name)];
-      if (bt) {
-        model.fieldTypeMap[field] = bt;
-      }
-    },
 
+    has_many: function (model, field, options) {
+      var bt = options.model;
+      if (! bt) {
+        var name = options.modelName ||
+              (options.associated &&
+               (typeof options.associated === 'string' ?
+                options.associated : options.associated.modelName)) ||
+              util.capitalize(util.sansId(field));
+
+        bt = BaseModel[name];
+      }
+      mapFieldType(model, field, bt, name);
+    },
 
     timestamp: function(model, field) {
       if (/create/i.test(field)) {
@@ -575,6 +581,11 @@ define(function(require, exports, module) {
       }
     },
   };
+
+  function mapFieldType(model, field, bt, name) {
+    if (! bt) throw Error(name + ' is not defined for field: ' + field);
+    model.fieldTypeMap[field] = bt;
+  }
 
   function defineFields(fields) {
     var proto = this.prototype;

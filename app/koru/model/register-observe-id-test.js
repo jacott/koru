@@ -7,9 +7,9 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      v.TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'has_many'});
-      v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
       v.obs = [];
+      v.TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'object'});
+      v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
     },
 
     tearDown: function () {

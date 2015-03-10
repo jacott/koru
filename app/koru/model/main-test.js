@@ -374,7 +374,7 @@ define(function (require, exports, module) {
       },
 
       "test asBefore on objects": function () {
-        v.TestModel.defineFields({foo: {type: 'has_many'}, queen: 'text'});
+        v.TestModel.defineFields({foo: {type: 'object'}, queen: 'text'});
 
         var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
@@ -393,7 +393,7 @@ define(function (require, exports, module) {
       },
 
       "test asBefore on array": function () {
-        v.TestModel.defineFields({foo: {type: 'has_many'}});
+        v.TestModel.defineFields({foo: {type: 'object'}});
 
         var doc = new v.TestModel({_id: "123", foo: []});
         var was = {"foo.1.bar": 3};
@@ -440,7 +440,7 @@ define(function (require, exports, module) {
       },
 
       "test change": function () {
-        v.TestModel.defineFields({foo: {type: 'has_many'}});
+        v.TestModel.defineFields({foo: {type: 'object'}});
 
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
