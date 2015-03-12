@@ -3,7 +3,6 @@ define(function(require, exports, module) {
 
   var Dom = {
     html: function (html, tagName) {
-      if (typeof html === 'object' && ('nodeType' in html)) return html;
       tagName = tagName || 'div';
       if (typeof html === 'string') {
         var elm = document.createElement(tagName);
@@ -11,8 +10,17 @@ define(function(require, exports, module) {
         return elm.firstChild;
       }
 
-      var id, className, content, attrs = {};
+      if ('nodeType' in html) return html;
 
+      if (Array.isArray(html)) {
+        var elm = document.createDocumentFragment();
+        util.forEach(html, function (item) {
+          elm.appendChild(Dom.html(item));
+        });
+        return elm;
+      }
+
+      var id, className, content, attrs = {};
       for(var key in html) {
         var value = html[key];
         switch(key) {

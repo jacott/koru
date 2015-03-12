@@ -33,6 +33,12 @@ define(function(require, exports, module) {
 
   }
 
+  function copyArray(from, to) {
+    util.forEach(from, function (elm) {
+      to.push(elm.cloneNode(true));
+    });
+  }
+
   var ELEMENT_NODE = 1;
   var TEXT_NODE = 3;
   var DOCUMENT_NODE = 9;
@@ -52,6 +58,23 @@ define(function(require, exports, module) {
     appendChild: function (node) {
       node.parentNode = this;
       this.childNodes.push(node);
+    },
+
+    cloneNode: function (deep) {
+      var copy = new this.constructor;
+
+      if (deep && copy.nodeType === DOCUMENT_NODE) {
+        var to = copy.childNodes;
+        to.pop();
+        util.forEach(this.childNodes, function (elm) {
+          elm = elm.cloneNode(true);
+          if (elm.tagName === 'BODY')
+            copy.body = elm;
+          to.push(elm);
+        });
+      }
+
+      return copy;
     },
 
     get firstChild() {
@@ -135,7 +158,16 @@ define(function(require, exports, module) {
   function DocumentFragment() {
     common(this, DOCUMENT_FRAGMENT_NODE);
   }
-  buildNodeType(DocumentFragment, {});
+  buildNodeType(DocumentFragment, {
+    cloneNode: function (deep) {
+      var copy = new DocumentFragment();
+
+      deep && copyArray(this.childNodes, copy.childNodes);
+      return copy;
+    },
+  });
+
+  var NOCLOSE = util.toMap("BR HR INPUT LINK".split(' '));
 
   function DocumentElement(tag) {
     common(this, ELEMENT_NODE);
@@ -143,6 +175,12 @@ define(function(require, exports, module) {
     this.attributes = {};
   }
   buildNodeType(DocumentElement, {
+    cloneNode: function (deep) {
+      var copy = new DocumentElement(this.tagName);
+      copy.attributes = util.deepCopy(this.attributes);
+      deep && copyArray(this.childNodes, copy.childNodes);
+      return copy;
+    },
     set id(value) {this.setAttribute('id', value)},
     get id() {return this.getAttribute('id')},
     set className(value) {this.setAttribute('class', value)},
@@ -159,6 +197,9 @@ define(function(require, exports, module) {
         }
         open = open.join(' ');
       }
+
+      if (! this.childNodes.length && NOCLOSE.hasOwnProperty(this.tagName))
+        return "<"+open+">";
 
       return "<"+open+">"+this.innerHTML+"</"+tn+">";
     },
@@ -203,6 +244,9 @@ define(function(require, exports, module) {
     this.wholeText = value;
   }
   buildNodeType(TextNode, {
+    cloneNode: function (deep) {
+      return new TextNode(this.wholeText);
+    },
     get textContent() {return this.wholeText},
     set textContent(value) {this.wholeText = value},
     get innerHTML() {return escapeHTML(this.wholeText)},
@@ -211,6 +255,7 @@ define(function(require, exports, module) {
 
   function buildNodeType(func, proto) {
     func.prototype = Object.create(Document.prototype, {});
+    func.prototype.constructor = func;
     util.extend(func.prototype, proto);
   }
 

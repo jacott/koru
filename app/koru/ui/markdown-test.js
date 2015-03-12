@@ -76,6 +76,11 @@ isClient && define(function (require, exports, module) {
           assert.same(this.tagName, 'SPAN');
           assert.dom('i', "world");
         });
+
+        assert.dom(document.createElement('pre'), function () {
+          Markdown.toHtml("hello _world_", this);
+          assert.dom('i', "world");
+        });
       },
 
       "test simple italic": function () {

@@ -24,6 +24,13 @@ define(function (require, exports, module) {
                   '<div>hello <span>cruel</span> world</div>');
 
       assert.same(Dom.html('<div id="d123" class="foo">bar</div>').outerHTML, '<div id="d123" class="foo">bar</div>');
+
+      var frag = Dom.html(['one', {text: 'two'}, 'three']);
+      assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
+      var div = document.createElement('div');
+      div.appendChild(frag);
+      assert.same(div.innerHTML, 'one<div>two</div>three');
+
     },
 
     "test escapeHTML": function () {

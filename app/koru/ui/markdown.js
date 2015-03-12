@@ -19,7 +19,7 @@ define(function(require, exports, module) {
       var mdlen = md.length;
       var index = 0;
       var lookfor = [];
-      var frag = wrapper ? document.createElement(wrapper) : document.createDocumentFragment();
+      var frag = wrapper ? (typeof wrapper === 'string' ? document.createElement(wrapper) : wrapper) : document.createDocumentFragment();
       var elm = frag;
       var token, mention;
       var hlidx =  0;
