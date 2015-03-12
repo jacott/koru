@@ -10,6 +10,7 @@ define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      document.body.textContent = '';
       v = null;
     },
 
@@ -38,10 +39,22 @@ define(function (require, exports, module) {
 
       var top = document.createElement('section');
 
+      elm.id = "top123";
+      elm.className = "un deux trois";
+
       top.appendChild(df);
 
-      assert.same(top.innerHTML, '<div>hello world<foo alt="baz" bold="bold">bar</foo></div>');
+      assert.same(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
 
+      assert.same(top.textContent, 'hello worldbar');
+    },
+
+    "test innerHTML": function () {
+      var elm = document.createElement('div');
+      elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>';
+      assert.same(elm.innerHTML, v.exp);
+      assert.same(elm.firstChild.id, "top123");
+      assert.same(elm.firstChild.firstChild.textContent, 'hello world');
     },
   });
 });

@@ -16,7 +16,7 @@ define(function (require, exports, module) {
 
     "test simple": function () {
       var dom = sut.toHtml('Hello @[Josiah<JG>](j2) **bold**');
-      assert.same(dom.outerHTML, 'Hello <span data-a="j2">Josiah<JG></span> <b>bold</b>');
+      assert.same(dom.outerHTML, 'Hello <span data-a="j2">Josiah&lt;JG&gt;</span> <b>bold</b>');
     },
   });
 });

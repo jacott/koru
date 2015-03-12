@@ -15,24 +15,16 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test html": function () {
+    "test html string": function () {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
-
-      document.body.appendChild(Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
 
       assert.dom('#top', function () {
         assert.same(elm, this);
 
         assert.dom('>.foo', function () { // doubles as a test for assert.dom directChild
           assert.dom('>.bar>button#sp', 'Hello');
-        });
-      });
-
-      assert.dom('body', function () {
-        assert.dom('section#s123.bar', 'Goodbye', function () {
-          assert.dom('span', 'Goodbye');
         });
       });
 
@@ -122,34 +114,6 @@ isClient && define(function (require, exports, module) {
 
       Dom.setClassByPrefix('', 'mode-', elm);
       assert.same(elm.className, '');
-    },
-
-    "test classList": function () {
-      var elm = document.createElement('div');
-
-      refute(Dom.hasClass(null, 'foo'));
-      refute(Dom.hasClass(elm, 'foo'));
-
-      Dom.addClass(elm, 'foo');
-      assert(Dom.hasClass(elm, 'foo'));
-
-      Dom.addClass(null, 'foo');
-      Dom.addClass(elm, 'foo');
-      Dom.addClass(elm, 'bar');
-      assert(Dom.hasClass(elm, 'foo'));
-      assert(Dom.hasClass(elm, 'bar'));
-
-      Dom.removeClass(null, 'bar');
-      Dom.removeClass(elm, 'bar');
-      assert(Dom.hasClass(elm, 'foo'));
-      refute(Dom.hasClass(elm, 'bar'));
-
-      // test toggle
-      assert(Dom.toggleClass(elm, 'bar'));
-      assert(Dom.hasClass(elm, 'bar'));
-
-      refute(Dom.toggleClass(elm, 'bar'));
-      refute(Dom.hasClass(elm, 'bar'));
     },
 
     "test getUpDownByClass": function () {
