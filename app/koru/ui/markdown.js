@@ -35,6 +35,7 @@ define(function(require, exports, module) {
             if (editable) elm.setAttribute('contenteditable', 'true');
           } else {
             elm.setAttribute('href', href);
+            elm.setAttribute('target', '_blank');
           }
           index += href.length + 3;
           if (index === mdlen) break;

@@ -102,18 +102,20 @@ isClient && define(function (require, exports, module) {
 
       "test hyperlink": function () {
         assert.same(v.c('[l1](/l1) text [O][b\n]eya](http://obeya.co)[link2](/a)'),
-                    '<a href="/l1">l1</a> text [O]<a href="http://obeya.co">b<br>]eya</a><a href="/a">link2</a>');
+                    '<a href="/l1" target="_blank">l1</a> text [O]'+
+                    '<a href="http://obeya.co" target="_blank">b<br>]eya</a>'+
+                    '<a href="/a" target="_blank">link2</a>');
       },
 
       "test underscores in link text": function () {
         assert.same(v.c('[Obeya_Limited_link](http://obeya.co) click it'),
-                    '<a href="http://obeya.co">Obeya_Limited_link</a> click it');
+                    '<a href="http://obeya.co" target="_blank">Obeya_Limited_link</a> click it');
 
         assert.same(v.c('[Obeya **Limited**](http://obeya.co) link'),
-                    '<a href="http://obeya.co">Obeya <b>Limited</b></a> link');
+                    '<a href="http://obeya.co" target="_blank">Obeya <b>Limited</b></a> link');
 
         assert.same(v.c('[Obeya \\**Limited**](http://obeya.co) link'),
-                    '<a href="http://obeya.co">Obeya **Limited**</a> link');
+                    '<a href="http://obeya.co" target="_blank">Obeya **Limited**</a> link');
       },
 
       "test complex": function () {
