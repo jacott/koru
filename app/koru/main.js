@@ -69,6 +69,22 @@
     requirejs.undef(id);
   }
 
+  function revertonunload(module, func) {
+    var id = typeof module === 'string' ? module : module.id;
+
+    var oldFunc = unloads[id];
+    if (oldFunc === func) {
+      delete unloads[id];
+    }
+    if (Array.isArray(oldFunc)) {
+      var i = oldFunc.indexOf(func);
+      if (i !== -1)
+        oldFunc.splice(i, 1);
+      if (oldFunc.length === 0)
+        delete unloads[id];
+    }
+  }
+
   function onunload(module, func) {
     var id = typeof module === 'string' ? module : module.id;
     var oldFunc = unloads[id];
@@ -142,6 +158,7 @@
 
     var koru = (isServer ? global : window)._koru_ = {
       onunload: onunload,
+      revertonunload: revertonunload,
       unload: unload,
       reload: reload,
       providerMap: providerMap,
