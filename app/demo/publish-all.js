@@ -14,6 +14,11 @@ define(function(require, exports, module) {
       return;
     }
 
+    if (! sub.userId) {
+      sub.setUserId("_guest");
+      return;
+    }
+
     var handles = [];
 
     sub.onStop(function () {

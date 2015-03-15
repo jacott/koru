@@ -5,15 +5,6 @@ var net = require('net'),
 
 var ARGV = process.argv.slice(2);
 
-if (ARGV[0] === 'emacs') {
-  ARGV.shift();
-  var log = logEmacs;
-  var write = writeEmacs;
-} else {
-  var log = logTty;
-  var write = writeTty;
-}
-
 var runTime;
 
 var exitCode = 0;
@@ -23,7 +14,7 @@ var WebSocket = require('ws');
 
 var typeCount = ARGV[0] === 'both' ? 2 : 1;
 
-var ws = new WebSocket('ws://localhost:3000/');
+var ws = new WebSocket('ws://localhost:3000/rc');
 ws.on('open', runTests);
 ws.on('message', function(data, flags) {
   // flags.binary will be set if a binary data is received
@@ -62,26 +53,13 @@ function exitProcess(key, code) {
   }
 }
 
-function logEmacs(key, msg) {
-  msg = msg && msg.trim();
-  msg.length &&  write(['log', key, msg]);
-}
-
-function logTty(key, msg) {
+function log(key, msg) {
   write(['log', key, msg]);
-}
-
-function logError(key, msg) {
-  write(['error',key, msg]);
-}
-
-function writeEmacs(args) {
-  process.stdout.write(args.join('\0') + '\0\0e\n');
 }
 
 var lastMsg;
 
-function writeTty(args) {
+function write(args) {
   switch (args[0]) {
   case 'exit':
     process.stdout.write("\n" + args.join(" ") + ' - ' +
@@ -149,7 +127,7 @@ function processBuffer(buffer) {
     addResult(key, data);
     break;
   case 'E':
-    logError(key, data);
+    write(['error', key, data]);
     break;
   }
 }

@@ -66,10 +66,10 @@ define(function (require, exports, module) {
       var ugr = ws.upgradeReq;
 
       var remoteAddress = ugr.socket.remoteAddress;
-      if (remoteAddress === '127.0.0.1')
+      if (/127\.0\.0\.1/.test(remoteAddress))
         remoteAddress = ugr.headers['x-real-ip'] || remoteAddress;
 
-      if (remoteAddress === '127.0.0.1' && ugr.url === '/rc') {
+      if (/127\.0\.0\.1/.test(remoteAddress) && ugr.url === '/rc') {
         session.remoteControl && session.remoteControl(ws);
         return;
       }

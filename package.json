@@ -21,7 +21,7 @@
   "dependencies": {
     "fibers": "1.0.5",
     "weak": "0.4.0",
-    "kexec": "0.2.0",
+    "kexec": "1.2.0",
     "requirejs": "2.1.16",
     "ws": "0.7.1",
     "send": "0.10.1",
