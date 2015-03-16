@@ -154,6 +154,12 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar'});
       },
 
+      "test hash encoded": function () {
+        Route.gotoPath('/baz/an-id/root-bar%23tag');
+        assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar',
+                                                         hash: '#tag'});
+      },
+
       "test gotoPage, pushCurrent": function () {
         var orig = Dom.setTitle;
         Dom.setTitle = test.stub();

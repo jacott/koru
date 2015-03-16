@@ -266,6 +266,8 @@ define(function(require, exports, module) {
         } else {
           page = page.hash || '/';
         }
+      } else {
+        page = decodeURIComponent(page);
       }
 
 
