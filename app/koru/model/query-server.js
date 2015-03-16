@@ -15,6 +15,11 @@ define(function(require, exports, module) {
         return this;
       },
 
+      batchSize: function (size) {
+        this._batchSize = size;
+        return this;
+      },
+
       fetch: function () {
         var results = [];
         this.forEach(function (doc) {
@@ -31,9 +36,8 @@ define(function(require, exports, module) {
         if (this.singleId) throw Error('fetchIds onId not supported');
 
         var model = this.model;
-        var cursor = model.docs.find(buildQuery(this), {_id: 1});
-        this._limit && cursor.limit(this._limit);
-        this._sort && cursor.sort(this._sort);
+        var cursor = model.docs.find(buildQuery(this), {fields: {_id: 1}});
+        applyCursorOptions(this, cursor);
 
         var results = [];
         for(var doc = cursor.next(); doc; doc = cursor.next()) {
@@ -55,10 +59,9 @@ define(function(require, exports, module) {
         } else {
           var model = this.model;
           var options = {};
-          if (this._limit) options.limit = this._limit;
-          if (this._sort) options.sort = this._sort;
           if (this._fields) options.fields = this._fields;
           var cursor = model.docs.find(buildQuery(this), options);
+          applyCursorOptions(this, cursor);
           for(var doc = cursor.next(); doc; doc = cursor.next()) {
             if (func(new model(doc)) === true)
               break;
@@ -190,6 +193,12 @@ define(function(require, exports, module) {
       },
     });
   };
+
+  function applyCursorOptions(query, cursor) {
+    query._batchSize && cursor.batchSize(query._batchSize);
+    query._limit && cursor.limit(query._limit);
+    query._sort && cursor.sort(query._sort);
+  }
 
   function buildQuery(query, id) {
     var result = {};

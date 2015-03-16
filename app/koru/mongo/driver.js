@@ -184,6 +184,11 @@ Cursor.prototype = {
     return this;
   },
 
+  batchSize: function (value) {
+    this._mcursor.batchSize(value);
+    return this;
+  },
+
   forEach: function (func) {
     for(var doc = this.next(); doc; doc = this.next()) {
       func(doc);
