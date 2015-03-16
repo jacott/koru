@@ -30,7 +30,7 @@ define(function(require, exports, module) {
         case "content": case "html":
           content = typeof value === 'string' ? Dom.html(value) : value;
           break;
-        case "textContent": case "text": content = value.toString(); break;
+        case "textContent": case "text": content = ''+value; break;
 
         case "tag": case "tagName": tagName = value; break;
         default:

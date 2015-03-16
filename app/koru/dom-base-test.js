@@ -15,6 +15,10 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test undefined textConent": function () {
+      assert.same(Dom.html({text: undefined}).outerHTML, '<div>undefined</div>');
+    },
+
     "test html": function () {
       document.body.appendChild(v.result = Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
 
@@ -30,7 +34,6 @@ define(function (require, exports, module) {
       var div = document.createElement('div');
       div.appendChild(frag);
       assert.same(div.innerHTML, 'one<div>two</div>three');
-
     },
 
     "test escapeHTML": function () {
