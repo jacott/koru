@@ -27,6 +27,7 @@ define(function(require, exports, module) {
       BaseModel = _BaseModel;
       _support = _baseSupport;
       modelProperties.findById = findById;
+      modelProperties.findAttrsById = findAttrsById;
       modelProperties._$setWeakDoc = setWeakDoc;
       modelProperties._$getWeakDoc = getWeakDoc;
       modelProperties.addUniqueIndex = addUniqueIndex;
@@ -189,7 +190,7 @@ define(function(require, exports, module) {
     return keys;
   }
 
-  function findById(id) {
+  function findAttrsById(id) {
     if (! id) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
     var doc = this._$getWeakDoc(id);
@@ -197,6 +198,11 @@ define(function(require, exports, module) {
       doc = this.docs.findOne({_id: id});
       doc && this._$setWeakDoc(doc);
     }
+    return doc;
+  }
+
+  function findById(id) {
+    var doc = this.findAttrsById(id);
     if (doc) return new this(doc);
   }
 

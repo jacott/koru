@@ -22,6 +22,7 @@ define(function(require, exports, module) {
 
       util.extend(modelProperties, {
         findById: findById,
+        findAttrsById: findAttrsById,
         get serverQuery() {
           var query = new Query(this);
           query.isFromServer = true;
@@ -85,6 +86,11 @@ define(function(require, exports, module) {
 
   function findById (id) {
     return this.docs[id];
+  }
+
+  function findAttrsById(id) {
+    var doc = this.docs[id];
+    return doc && doc.attributes;
   }
 
   function save(doc) {
