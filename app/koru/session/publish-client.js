@@ -12,6 +12,7 @@ define(function(require, exports, module) {
       for(var name in models) {
         var mm = this.match._models[name] || {};
         var model = Model[name];
+        if (! model) continue;
         var docs = model.docs;
         for (var id in docs) {
           var doc = docs[id];

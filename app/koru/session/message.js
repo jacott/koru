@@ -34,11 +34,6 @@ define(function(require, exports, module) {
       encode(buffer, o, dict);
     });
 
-    var last;
-    while((last = buffer.pop()) === 0) {}
-    if (last !== undefined)
-      buffer.push(last);
-
     dict = encodeDict(dict, [type.charCodeAt(0)]);
 
     var result = new Uint8Array(dict.length + buffer.length);

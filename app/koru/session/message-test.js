@@ -233,7 +233,7 @@ define(function (require, exports, module) {
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
 
       data.forEach.call(u8, function (b) {data.push(b)});
-      assert.equals(data, [77, 102, 111, 111, 255, 0, 65, 66, 7, 128, 0, 131, 98, 97, 114]);
+      assert.equals(data, [77, 102, 111, 111, 255, 0, 65, 66, 7, 128, 0, 131, 98, 97, 114, 0]);
 
       assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     },
