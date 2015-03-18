@@ -650,12 +650,15 @@ define(function(require, exports, module) {
     },
 
     $events: function (events) {
-      for(var key in events) {
-        var func = events[key];
-        var m = /^(\S+)(.*)/.exec(key);
-        if (! m) throw new Error("invalid event spec: " + key);
-        this._events.push([m[1], m[2].trim(), events[key]]);
-      }
+      for(var key in events)
+        this.$event(key, events[key]);
+      return this;
+    },
+
+    $event: function (key, func) {
+      var m = /^(\S+)(.*)/.exec(key);
+      if (! m) throw new Error("invalid event spec: " + key);
+      this._events.push([m[1], m[2].trim(), func]);
       return this;
     },
 

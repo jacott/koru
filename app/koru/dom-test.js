@@ -296,9 +296,8 @@ isClient && define(function (require, exports, module) {
           v.spanCall();
           v.stop && Dom[v.stop].call(Dom);
         },
-
-        'click button': v.buttonCall = test.stub(),
       });
+      Dom.Foo.$event('click button', v.buttonCall = test.stub());
 
       document.body.appendChild(Dom.Foo.$render({}));
 
