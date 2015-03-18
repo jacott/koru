@@ -81,24 +81,32 @@ define(function(require, exports, module) {
     },
   });
 
+  function submit(event) {
+    Dom.stopEvent();
+
+    var ctx = Dom.getCtx(this);
+    var widget = ctx._widget;
+
+    var input = this.firstChild;
+
+    var value = input.value;
+
+    widget._onSubmit && widget._onSubmit(value, this);
+  }
+
   Tpl.$events({
-    'submit': function (event) {
-      Dom.stopEvent();
-
-      var ctx = Dom.getCtx(this);
-      var widget = ctx._widget;
-
-      var input = this.firstChild;
-
-      var value = input.value;
-
-      widget._onSubmit && widget._onSubmit(value, this);
-    },
+    'submit': submit,
 
     'keyup': function (event) {
-      if (event.which === 27) {
+      switch (event.which) {
+      case 27:
         Dom.stopEvent();
         cancel(this);
+        break;
+      case 13:
+        if (event.ctrlKey || event.shiftKey)
+          submit.call(this, event);
+        break;
       }
     },
 

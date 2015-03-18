@@ -105,6 +105,31 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
     },
 
+    "test ctrl+enter event": function () {
+      var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
+      widget.onSubmit(v.clickStub = function (arg) {
+        assert.same(this, widget);
+        v.arg = arg;
+      });
+
+      v.parent.appendChild(widget.element);
+
+      assert.dom(widget.element, function () {
+        TH.input('input', 'new text');
+        TH.trigger('input', 'keyup', {which: 13});
+        refute.same(v.arg, 'new text');
+        TH.trigger('input', 'keyup', {which: 13, ctrlKey: true});
+      });
+
+      assert.same(v.arg, 'new text');
+
+      test.spy(Dom.InPlaceForm, '$detachEvents');
+
+      Dom.remove(widget.element);
+
+      assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
+    },
+
     "test delete event": function () {
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
       widget.onDelete(v.clickStub = function () {
