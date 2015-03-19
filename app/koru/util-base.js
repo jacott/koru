@@ -81,6 +81,8 @@
             }).join(", ") + "]";
           return "[...]";
         }
+        if (typeof o.test === 'function' && typeof o.or === 'function')
+          return ''+o;
 
         if (i) {
           var r=[];

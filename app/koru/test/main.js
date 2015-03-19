@@ -23,6 +23,15 @@ define(function(require, exports, module) {
 
   var testRunCount = 0;
 
+  geddon.sinon.match.near = function (expected, delta) {
+    delta = delta  || 1;
+    var match = geddon.sinon.match(function near(actual) {
+      return actual > expected-delta && actual < expected+delta;
+    });
+    match.message = "match.near(" + expected + ", delta=" + delta + ")";
+    return match;
+  };
+
   var self = {
     geddon: geddon,
 
