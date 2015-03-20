@@ -76,7 +76,7 @@ define(function(require, exports, module) {
               attrs[key] = undefined;
             }
           }
-          model.onId(id).update(attrs);
+          model.serverQuery.onId(id).update(attrs);
         } else {
           // insert doc
           attrs._id = id;
