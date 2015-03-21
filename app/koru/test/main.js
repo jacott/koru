@@ -23,14 +23,20 @@ define(function(require, exports, module) {
 
   var testRunCount = 0;
 
-  geddon.sinon.match.near = function (expected, delta) {
-    delta = delta  || 1;
-    var match = geddon.sinon.match(function near(actual) {
-      return actual > expected-delta && actual < expected+delta;
-    });
-    match.message = "match.near(" + expected + ", delta=" + delta + ")";
-    return match;
-  };
+  util.extend(geddon.sinon.match, {
+    near: function (expected, delta) {
+      delta = delta  || 1;
+      return geddon.sinon.match(function matchNear(actual) {
+        return actual > expected-delta && actual < expected+delta;
+      }, "match.near(" + expected + ", delta=" + delta + ")");
+    },
+
+    field: function (name, value) {
+      return geddon.sinon.match(function matchField(actual) {
+        return actual && geddon._u.deepEqual(actual[name], value);
+      }, "match.field(" + name + ", " + value + ")");
+    },
+  });
 
   var self = {
     geddon: geddon,
