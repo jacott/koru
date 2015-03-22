@@ -696,6 +696,10 @@ define(function(require, exports, module) {
       nativeOnOff(parent, nativeOff, selector, this._events);
       return this;
     },
+
+    $inspect: function () {
+      return "DomTemplate:" + this.name;
+    },
   };
 
   function nativeOn(parent, eventType, selector, func) {

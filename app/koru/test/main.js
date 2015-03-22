@@ -38,6 +38,14 @@ define(function(require, exports, module) {
     },
   });
 
+  geddon.sinon.format = function () {
+    var result = [];
+    util.forEach(arguments, function (arg) {
+      result.push(util.inspect(arg));
+    });
+    return result.join(', ');
+  };
+
   var self = {
     geddon: geddon,
 
