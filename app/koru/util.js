@@ -212,7 +212,7 @@ define(function(require, exports, module) {
     },
 
     isObjEmpty: function (obj) {
-      for(var noop in obj) {return false;}
+      if (obj) for(var noop in obj) {return false;}
       return true;
     },
 

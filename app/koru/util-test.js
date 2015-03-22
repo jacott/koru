@@ -35,6 +35,7 @@ define(function (require, exports, module) {
     },
 
     "test isObjEmpty": function () {
+      assert.isTrue(util.isObjEmpty());
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
