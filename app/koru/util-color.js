@@ -122,7 +122,7 @@ define(function(require, exports, module) {
       } else {
         cc = 'light';
       }
-      if (l <= 30 || l >= 75) cc = 'very' + cc;
+      if (l <= 40 || l >= 85) cc = 'very' + cc;
 
       return colorClass[color] = cc;
     },
