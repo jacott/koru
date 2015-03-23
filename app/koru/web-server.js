@@ -9,6 +9,7 @@ define(function (require, exports, module) {
   var fst = require('./fs-tools');
   var queue = require('./queue')();
   var util = require('./util');
+  var IdleCheck = require('./idle-check').singleton;
 
   koru.onunload(module, 'reload');
 
@@ -38,6 +39,10 @@ define(function (require, exports, module) {
 
   exports.start = function () {
     Future.wrap(server.listen).call(server, module.config().port || 3000, module.config().host).wait();
+  };
+
+  exports.stop = function () {
+    server.close();
   };
 
   exports.server = server;
@@ -78,7 +83,10 @@ define(function (require, exports, module) {
     return handlers[key];
   };
 
+  var count = 0;
+
   function requestListener(req, res) {koru.Fiber(function () {
+    IdleCheck.inc();
     try {
       var path = parseurl(req).pathname;
       var reqRoot = root;
@@ -108,6 +116,8 @@ define(function (require, exports, module) {
     } catch(ex) {
       koru.error(koru.util.extractError(ex));
       error(ex);
+    } finally {
+      IdleCheck.dec();
     }
 
     function sendDefault(err) {

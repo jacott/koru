@@ -7,6 +7,7 @@ isServer && define(function (require, exports, module) {
   var webServer = require('./web-server');
   var koru = require('koru/main');
   var fst = require('./fs-tools');
+  var IdleCheck = require('./idle-check').singleton;
 
   TH.testCase(module, {
     setUp: function () {
@@ -66,6 +67,28 @@ isServer && define(function (require, exports, module) {
       assert.same(v.future.wait(), "NOT FOUND");
       assert.same(v.res.statusCode, 404);
     },
+
+    "test waitIdle": function () {
+      webServer.registerHandler('foox', function (req, res, error) {
+        assert.called(IdleCheck.inc);
+        refute.called(IdleCheck.dec);
+        IdleCheck.waitIdle(function () {
+          v.res.end('success');
+        });
+      });
+      test.onEnd(function () {webServer.deregisterHandler('foox')});
+
+      v.req.url = '/foox/bar';
+      test.spy(IdleCheck, 'inc');
+      test.spy(IdleCheck, 'dec');
+
+      v.replaceSend();
+
+      webServer.requestListener(v.req, v.res);
+      assert.same(v.future.wait(), 'success');
+      assert.called(IdleCheck.dec);
+    },
+
 
     "test compilation no build": function () {
       test.stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});

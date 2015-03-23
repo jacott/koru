@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var message = require('./message');
   var match = require('./match');
+  var IdleCheck = require('../idle-check').singleton;
 
   exports = function (session) {
     function Connection(ws, sessId, close) {
@@ -29,6 +30,7 @@ define(function(require, exports, module) {
         }
         var current = conn._last = [data];
         koru.Fiber(function () {
+          IdleCheck.inc();
           var thread = util.thread;
           thread.userId = conn.userId;
           thread.connection = conn;
@@ -42,6 +44,7 @@ define(function(require, exports, module) {
             current = current[1];
           }
           conn._last = null;
+          IdleCheck.dec();
         }).run();
       },
 

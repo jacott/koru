@@ -7,6 +7,7 @@ isServer && define(function (require, exports, module) {
   var util = require('../util');
   var message = require('./message');
   var match = require('./match');
+  var IdleCheck = require('../idle-check').singleton;
 
   TH.testCase(module, {
     setUp: function () {
@@ -45,6 +46,21 @@ isServer && define(function (require, exports, module) {
         session.provide('t', v.tFunc = function () {
           v.tStub.apply(this, arguments);
         });
+      },
+
+      "test waitIdle": function () {
+        test.spy(IdleCheck, 'inc');
+        test.spy(IdleCheck, 'dec');
+        test.stub(session, '_onMessage', function (conn) {
+          assert.called(IdleCheck.inc);
+          refute.called(IdleCheck.dec);
+          v.success = true;
+        });
+        v.conn.onMessage('t123');
+        refute.called(IdleCheck.inc);
+        v.fiber.func();
+        assert.called(IdleCheck.dec);
+        assert(v.success);
       },
 
       "test thread vars": function () {

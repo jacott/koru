@@ -5,6 +5,7 @@ define(function (require, exports, module) {
   var util = require('../util');
   var server = require('../web-server').server;
   var message = require('./message');
+  var IdleCheck = require('../idle-check').singleton;
 
   return function (session) {
     var Connection = require('./server-connection')(session);
@@ -24,10 +25,15 @@ define(function (require, exports, module) {
       rpc: function (name /*, args */) {
         return session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
       },
+      stop: function (func) {
+        this.wss.close();
+        IdleCheck.waitIdle(func);
+      },
 
       // for testing
       _onConnection: onConnection,
       get _sessCounter() {return sessCounter},
+      get _Connection() {return Connection},
     });
 
     session.provide('X', function (data) {
