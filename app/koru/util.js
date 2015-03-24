@@ -44,6 +44,7 @@ define(function(require, exports, module) {
     },
 
     forEach: function forEach(list, func) {
+      if (! list) return;
       var len = list.length;
       for(var i = 0; i < len; ++i) {
         func(list[i], i);

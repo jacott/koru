@@ -21,6 +21,54 @@ define(function (require, exports, module) {
       assert.same(val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
     },
 
+    "test check": function () {
+      var spec = {foo: 'string'};
+      refute(val.check('dfsfd', spec));
+      assert(val.check({foo: ''}, spec));
+      refute(val.check({bar: ''}, spec));
+
+      // types
+      var spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: '*', numberAry: ['number']};
+      assert(val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any: function () {}}, spec));
+
+      refute(val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
+      refute(val.check({foo: 'x', bar: {baz: 'x'}, 'as if': new Date()}, spec));
+      refute(val.check({foo: 'x', bar: {baz: 1}, 'as if': 123}, spec));
+
+      // nested type
+      var spec = {foo: 'string', bar: {baz: 'string', fnord: [{abc: 'string'}]}};
+      refute(val.check({foo: '', bar: {baz: 1}}, spec));
+      refute(val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 3}]}}, spec));
+      assert(val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 'bb'}]}}, spec));
+
+      // test multiple specs
+      assert(val.check({foo: '', bar: 1}, {foo: 'string'}, {bar: 'number'}));
+      assert(val.check({foo: ''}, {foo: 'string'}, {bar: 'number'}));
+      assert(val.check({foo: ''}, {foo: 'string'}, {foo: 'number'}));
+      refute(val.check({foo: '', bar: 1, baz: ''}, {foo: 'string'}, {bar: 'number'}));
+      refute.msg('should not match sub field')(val.check({foo: {bar: 1}}, {foo: {sub: 'string'}}, {bar: 'number'}));
+    },
+
+    "test assertCheck": function () {
+      assert.accessDenied(function () {
+        val.assertCheck(1, 'string');
+      });
+      val.assertCheck(1, 'number');
+    },
+
+    "test assertDocChanges": function () {
+      test.spy(val, 'assertCheck');
+      var existing = {changes: {name: 'new name'}, $isNewRecord: function () {return false}};
+      val.assertDocChanges(existing, {name: 'string'});
+
+      assert.calledWithExactly(val.assertCheck, existing.changes, {name: 'string'});
+
+      var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord: function () {return true}};
+      val.assertDocChanges(newDoc, {name: 'string'});
+
+      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {_id: 'string'});
+    },
+
 
     "test validateName": function () {
       assert.equals(val.validateName(), ['is_required']);

@@ -322,6 +322,8 @@ define(function (require, exports, module) {
     },
 
     "test forEach": function () {
+      util.forEach(null, v.stub = test.stub());
+      refute.called(v.stub);
       var results = [];
       util.forEach(v.list = [1,2,3], function (val, index) {
         results.push(val+"."+index);

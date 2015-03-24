@@ -6,6 +6,8 @@ define(function(require, exports, module) {
 
   var validators = {};
 
+  var ID_SPEC = {_id: 'string'};
+
   var Val = {
     Error: {
       msgFor: function (doc, field, other_error) {
@@ -21,6 +23,68 @@ define(function(require, exports, module) {
           return null;
       },
 
+    },
+
+    check: function (obj, spec, optSpec) {
+      try {
+        check1(obj, spec);
+        return true;
+      } catch(ex) {
+        if (ex === false) {
+          return false;
+        }
+        throw ex;
+      }
+      function check1(obj, subSpec) {
+        if (typeof subSpec === 'string') {
+          if (obj == null) return;
+          switch(subSpec) {
+          case '*':
+            return;
+          case 'date':
+            if (isDate(obj)) return;
+            break;
+          default:
+            if (typeof obj === subSpec)
+              return;
+          }
+          throw false;
+
+
+        } else if (Array.isArray(subSpec)) {
+          Val.allowAccessIf(Array.isArray(obj), 'expected arrary');
+          subSpec = subSpec[0];
+          util.forEach(obj, function (item) {
+            check1(item, subSpec);
+          });
+        } else if (obj != null && typeof obj === 'object' &&
+                   Val.allowAccessIf(Object.getPrototypeOf(obj) === Object.prototype)) {
+          for(var key in obj) {
+            if (subSpec.hasOwnProperty(key)) {
+              var type = subSpec[key];
+              check1(obj[key], subSpec[key]);
+            } else if (subSpec === spec && optSpec && optSpec.hasOwnProperty(key)) {
+              var type = optSpec[key];
+              check1(obj[key], optSpec[key]);
+            } else {
+              throw false;
+            }
+          }
+        } else {
+          throw false;
+        }
+      }
+    },
+
+    assertCheck: function () {
+      this.check.apply(this, arguments) || accessDenied('spec does not match');
+    },
+
+    assertDocChanges: function (doc, spec) {
+      if (doc.$isNewRecord())
+        this.assertCheck(doc.changes, spec, ID_SPEC);
+      else
+        this.assertCheck(doc.changes, spec);
     },
 
     denyAccessIf: function (falsey) {
@@ -60,7 +124,7 @@ define(function(require, exports, module) {
 
     ensureDate: function () {
       for(var i = 0; i < arguments.length; ++i) {
-        (Object.prototype.toString.call(arguments[i]) === "[object Date]")  || accessDenied('expected a date');
+        isDate(arguments[i])  || accessDenied('expected a date');
       }
     },
 
@@ -158,10 +222,16 @@ define(function(require, exports, module) {
       fieldErrors.push(util.slice(arguments, 2));
     },
 
+    /**
+     * @deprecated Use assertDocChanges
+     */
     permitDoc: function (doc, permitSpec, filter) {
       this.permitParams(doc.changes, permitSpec, doc.$isNewRecord(), filter);
     },
 
+    /**
+     * @deprecated Use assertCheck
+     */
     permitParams: function permitParams(changes, permitSpec, isIdAllowed, filter) {
       if (Array.isArray(changes)) {
         for(var i=0;i < changes.length;++i) {
@@ -231,15 +301,19 @@ define(function(require, exports, module) {
       return true;
     },
 
+    /**
+     * @deprecated Use assertCheck instead
+     */
     permitSpec: function (/* arguments */) {
       return convertPermitSpec(typeof arguments[0] === 'object' && typeof arguments[0].length === 'number' ? arguments[0] : arguments);
     },
   };
 
-  function accessDenied(details) {
+  function accessDenied(details, nolog) {
     var error = new koru.Error(403, "Access denied", details);
 
-    util.thread.suppressAccessDenied || koru.info('Access denied: user ' + koru.userId() + ": " + details, koru.util.extractError(error));
+    if (! nolog && ! util.thread.suppressAccessDenied)
+      koru.info('Access denied: user ' + koru.userId() + ": " + details, koru.util.extractError(error));
     throw error;
   }
 
@@ -280,6 +354,10 @@ define(function(require, exports, module) {
       typeof args[i] === type || accessDenied('expected a ' + type + ' for argument ' + i);
     }
 
+  }
+
+  function isDate(value) {
+    return Object.prototype.toString.call(value) === "[object Date]";
   }
 
   return Val;
