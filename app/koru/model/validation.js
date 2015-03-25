@@ -78,6 +78,35 @@ define(function(require, exports, module) {
         this.assertCheck(doc.changes, spec);
     },
 
+    matchFields: function (fieldSpec, name) {
+      var m = match(function (doc) {
+        delete doc._errors;
+        for (var field in doc) {
+          if (! fieldSpec.hasOwnProperty(field)) {
+            Val.addError(doc, '', 'unexpected_field', field);
+            return false;
+          }
+        }
+
+        for (var field in fieldSpec) {
+          var spec = fieldSpec[field];
+          var value = doc[field];
+          if (value != null && ! Val.check(value, spec.type)) {
+            Val.addError(doc, field, 'wrong_type');
+            continue;
+          }
+
+          for(var name in spec) {
+            var validator = validators[name];
+            validator && validator(doc, field, spec[name]);
+          }
+        }
+        return ! doc._errors;
+      }, name || {toString: function () {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
+      m.$spec = fieldSpec;
+      return m;
+    },
+
     denyAccessIf: function (falsey) {
       this.allowAccessIf(! falsey);
     },
@@ -125,21 +154,26 @@ define(function(require, exports, module) {
       ensureType(type, util.slice(arguments, 1));
     },
 
-    inspectErrors: function (doc) {
+    errorsToString: function (doc) {
       var errs = doc._errors;
 
-      if(errs) {
-        var result = [];
-        for(var field in errs) {
-          var msgs = errs[field].map(function (m) {
-            return m.join(', ');
-          });
+      if (! errs) return;
 
-          result.push(field + ': ' + msgs.join('; '));
-        }
-        return doc.constructor.modelName + ": Errors: " + result.join(', ');
+      var result = [];
+      for(var field in errs) {
+        var msgs = errs[field].map(function (m) {
+          return util.inspect(m);
+        });
+
+        result.push(field + ': ' + msgs.join('; '));
       }
-      return doc.constructor.modelName + ": No errors";
+      return result.join(', ');
+    },
+
+    inspectErrors: function (doc) {
+      var errs = this.errorsToString(doc);
+
+      return doc.constructor.modelName + (errs ? ": Errors: " + errs : ": No errors");
     },
 
     allowIfValid: function (truthy, doc) {

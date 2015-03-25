@@ -18,7 +18,7 @@ define(function(require, exports, module) {
   };
 
   function toString() {
-    return this.message;
+    return ''+this.message;
   }
 
   util.forEach('string number boolean undefined function'.split(' '), function (t) {

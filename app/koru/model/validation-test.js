@@ -169,6 +169,22 @@ define(function (require, exports, module) {
       refute(val.validators('bar1'));
     },
 
+    "test matchFields": function () {
+      val.register('mymodule', {divByx: function (doc, field, x) {
+        if (doc[field] % x !== 0)
+          this.addError(doc, field, 'is_invalid');
+      }});
+      test.onEnd(function () {val.register('mymodule')});
+
+      var matcher = val.matchFields({foo: {type: 'number', divByx: 2}});
+      var doc = {foo: 4};
+      assert.isTrue(matcher.$test(doc));
+      refute(doc.hasOwnProperty('_errors'));
+      doc.foo = 1;
+      assert.isFalse(matcher.$test(doc));
+      assert.modelErrors(doc, {foo: 'is_invalid'});
+    },
+
     'with permitParams': {
       "test permitDoc": function () {
         var stub = test.stub(val, 'permitParams');

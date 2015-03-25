@@ -705,33 +705,33 @@ define(function(require, exports, module) {
     return x !== x && y !== y;
   }
 
-  function deepEqual(expected, actual) {
-    if (egal(expected, actual)) {
+  function deepEqual(actual, expected) {
+    if (egal(actual, expected)) {
       return true;
     }
 
-    if (typeof expected !== 'object' || typeof actual !== 'object')
-      return expected === undefined || actual === undefined ? expected == actual : false;
+    if (typeof actual !== 'object' || typeof expected !== 'object')
+      return actual === undefined || expected === undefined ? actual == expected : false;
 
-    if (expected == null || actual == null) return false;
+    if (actual == null || expected == null) return false;
 
-    if (expected.getTime && actual.getTime) return expected.getTime() === actual.getTime();
+    if (actual.getTime && expected.getTime) return actual.getTime() === expected.getTime();
 
-    if (Array.isArray(expected)) {
-      if (! Array.isArray(actual)) return false;
-      var len = expected.length;
-      if (actual.length !== len) return false;
+    if (Array.isArray(actual)) {
+      if (! Array.isArray(expected)) return false;
+      var len = actual.length;
+      if (expected.length !== len) return false;
       for(var i = 0; i < len; ++i) {
-        if (! deepEqual(expected[i], actual[i])) return false;
+        if (! deepEqual(actual[i], expected[i])) return false;
       }
       return true;
     }
 
-    var ekeys = Object.keys(expected);
+    var ekeys = Object.keys(actual);
 
-    if (Object.keys(actual).length !== ekeys.length) return false;
+    if (Object.keys(expected).length !== ekeys.length) return false;
     return ekeys.every(function (key) {
-      return deepEqual(expected[key], actual[key]);
+      return deepEqual(actual[key], expected[key]);
     });
   }
 
