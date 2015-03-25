@@ -88,10 +88,10 @@ define(function(require, exports, module) {
      */
     deepEqual: deepEqual,
 
-    invert: function (map) {
+    invert: function (map, func) {
       var result = {};
       for(var prop in map) {
-        result[map[prop]] = prop;
+        result[map[prop]] = func ? func(prop) : prop;
       }
       return result;
     },

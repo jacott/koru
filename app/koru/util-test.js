@@ -164,6 +164,7 @@ define(function (require, exports, module) {
 
     "test invert": function () {
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
+      assert.equals(util.invert({a: 1, b: 2}, function (x) {return x+x}), {'1': "aa", '2': "bb"});
     },
 
     "test extendWithDelete": function () {
