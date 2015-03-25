@@ -3,6 +3,7 @@ define(function (require, exports, module) {
   var TH = require('./test-helper');
   var val = require('./validation');
   var koru = require('../../koru');
+  var match = require('../match');
 
   TH.testCase(module, {
     setUp: function () {
@@ -27,9 +28,16 @@ define(function (require, exports, module) {
       assert(val.check({foo: ''}, spec));
       refute(val.check({bar: ''}, spec));
 
+      // using match
+      var spec = match(function (value) {return value % 3 === 1});
+      assert(val.check(1, spec));
+      refute(val.check(2, spec));
+      assert(val.check(4, spec));
+
       // types
-      var spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: '*', numberAry: ['number']};
+      var spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
       assert(val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any: function () {}}, spec));
+
 
       refute(val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
       refute(val.check({foo: 'x', bar: {baz: 'x'}, 'as if': new Date()}, spec));

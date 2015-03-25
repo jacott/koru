@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var ResourceString = require('../resource-string');
   var format = require('../format');
+  var match = require('../match');
 
   var validators = {};
 
@@ -37,17 +38,8 @@ define(function(require, exports, module) {
       }
       function check1(obj, subSpec) {
         if (typeof subSpec === 'string') {
-          if (obj == null) return;
-          switch(subSpec) {
-          case '*':
+          if (match[subSpec] && match[subSpec].$test(obj))
             return;
-          case 'date':
-            if (isDate(obj)) return;
-            break;
-          default:
-            if (typeof obj === subSpec)
-              return;
-          }
           throw false;
 
 
@@ -57,8 +49,7 @@ define(function(require, exports, module) {
           util.forEach(obj, function (item) {
             check1(item, subSpec);
           });
-        } else if (obj != null && typeof obj === 'object' &&
-                   Val.allowAccessIf(Object.getPrototypeOf(obj) === Object.prototype)) {
+        } else if (match.baseObject.$test(subSpec)) {
           for(var key in obj) {
             if (subSpec.hasOwnProperty(key)) {
               var type = subSpec[key];
@@ -70,7 +61,7 @@ define(function(require, exports, module) {
               throw false;
             }
           }
-        } else {
+        } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
           throw false;
         }
       }
@@ -124,7 +115,7 @@ define(function(require, exports, module) {
 
     ensureDate: function () {
       for(var i = 0; i < arguments.length; ++i) {
-        isDate(arguments[i])  || accessDenied('expected a date');
+        match.date.$test(arguments[i])  || accessDenied('expected a date');
       }
     },
 
@@ -354,10 +345,6 @@ define(function(require, exports, module) {
       typeof args[i] === type || accessDenied('expected a ' + type + ' for argument ' + i);
     }
 
-  }
-
-  function isDate(value) {
-    return Object.prototype.toString.call(value) === "[object Date]";
   }
 
   return Val;
