@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test');
   var util = require('./util');
+  var match = require('./match');
 
   TH.testCase(module, {
     setUp: function () {
@@ -146,6 +147,10 @@ define(function (require, exports, module) {
       assert.isFalse(util.deepEqual(0, -0));
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
 
+      var matcher = match(function (v) {return v % 2 === 0});
+      assert.isTrue(util.deepEqual([1, 2, null], [1, matcher, match.any]));
+      assert.isFalse(util.deepEqual([1, 1], [1, matcher]));
+      assert.isFalse(util.deepEqual([2, 2], [1, matcher]));
 
       assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 

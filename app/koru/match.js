@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var util = require('./util');
+  var util = require('./util-base');
 
   function match(test, message) {
     return new Match(test, message);
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
     return ''+this.message;
   }
 
-  util.forEach('string number boolean undefined function'.split(' '), function (t) {
+  'string number boolean undefined function'.split(' ').forEach(function (t) {
     match[t] = match(function (value) {
       return typeof value === t;
     }, 'match.'+t);

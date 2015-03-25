@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var util = require('./util-base');
   var stacktrace = require('./stacktrace');
+  var match = require('./match');
 
   var valueUndefined = {value: undefined};
 
@@ -709,6 +710,9 @@ define(function(require, exports, module) {
     if (egal(actual, expected)) {
       return true;
     }
+
+    if (match.match.$test(expected) && expected.$test(actual))
+      return true;
 
     if (typeof actual !== 'object' || typeof expected !== 'object')
       return actual === undefined || expected === undefined ? actual == expected : false;
