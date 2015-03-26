@@ -219,7 +219,7 @@ define(function(require, exports, module) {
         fieldElm.parentNode.insertBefore(msgElm, fieldElm.nextElementSibling);
       }
 
-      Dom.addClass(fieldElm, 'error');
+      Dom.setClass('error', msg, fieldElm);
       msgElm.textContent = msg;
       return fieldElm;
     },
