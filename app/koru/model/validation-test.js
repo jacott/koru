@@ -27,6 +27,7 @@ define(function (require, exports, module) {
       refute(val.check('dfsfd', spec));
       assert(val.check({foo: ''}, spec));
       refute(val.check({bar: ''}, spec));
+      refute(val.check('x', ['stirng']));
 
       // using match
       var spec = match(function (value) {return value % 3 === 1});

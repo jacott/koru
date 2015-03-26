@@ -44,7 +44,7 @@ define(function(require, exports, module) {
 
 
         } else if (Array.isArray(subSpec)) {
-          Val.allowAccessIf(Array.isArray(obj), 'expected arrary');
+          if (! Array.isArray(obj)) throw false;
           subSpec = subSpec[0];
           util.forEach(obj, function (item) {
             check1(item, subSpec);
