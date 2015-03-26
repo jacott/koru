@@ -56,13 +56,16 @@ define(function(require, exports, module) {
 
     callback.setDefaultDestroy = setDefaultDestroy;
     callback.render = callbackRender;
-    callback.clear = function () {
+    callback.clear = function (func) {
       var parent = startEach.parentNode;
       if (! parent) return;
       for(var key in rows) {
-        Dom.remove(rows[key]);
+        var row = rows[key];
+        if (! func || func(row)) {
+          delete rows[key];
+          Dom.remove(row);
+        }
       }
-      rows = callback.rows = {};
     };
     callback.count = 0;
     callback.rows = rows;

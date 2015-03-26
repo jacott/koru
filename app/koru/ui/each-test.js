@@ -254,6 +254,13 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('li', {count: 3});
 
+        callback.clear(function (row) {
+          return row.textContent === 'r2';
+        });
+
+        assert.dom('li', {count: 2});
+        refute.dom('li', 'r2');
+
         callback.clear();
 
         refute.dom('li');
