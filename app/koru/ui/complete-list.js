@@ -34,7 +34,7 @@ define(function(require, exports, module) {
       };
       var elm = v.input;
       elm.parentNode.insertBefore(v.completeList, elm.nextSibling);
-      elm.addEventListener('blur', close);
+      options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
     },
   });

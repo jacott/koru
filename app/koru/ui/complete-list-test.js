@@ -118,6 +118,12 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'blur');
       });
       refute.dom('ul');
+
+      assert.dom('[name=name]', function () {
+        Dom.Form.completeList({noBlur: true, input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
+        TH.trigger(this, 'blur');
+      });
+      assert.dom('ul');
     },
   });
 });
