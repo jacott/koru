@@ -929,6 +929,17 @@ isClient && define(function (require, exports, module) {
         });
       },
     },
+
+    "test inputValue helper": function () {
+      var elm = Dom._private.currentElement = {};
+      Dom._helpers.inputValue('foo');
+
+      assert.same(elm.value, 'foo');
+
+      Dom._helpers.inputValue();
+
+      assert.same(elm.value, '');
+    },
   });
 
   function trigger(elm, event, args) {

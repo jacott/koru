@@ -37,7 +37,11 @@ define(function(require, exports, module) {
 
     get element() {return currentElement},
 
-    _helpers: {},
+    _helpers: {
+      inputValue: function (value) {
+        Dom.current.element.value = value || '';
+      },
+    },
 
     registerHelpers: function (helpers) {
       extend(this._helpers, helpers);
