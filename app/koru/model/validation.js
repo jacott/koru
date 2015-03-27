@@ -179,7 +179,7 @@ define(function(require, exports, module) {
     allowIfValid: function (truthy, doc) {
       if (! truthy) {
         if (doc) koru.info('INVALID ' + this.inspectErrors(doc));
-        var error = koru.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
+        var error = new koru.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
         error.doc = doc;
         error.toString = function () {
           return this.message;

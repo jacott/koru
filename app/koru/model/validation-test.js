@@ -131,6 +131,9 @@ define(function (require, exports, module) {
 
     "test invalidRequest": function () {
       assert.invalidRequest(function () {val.allowIfValid(false);});
+      assert.exception(function () {
+        val.allowIfValid(false);
+      }, 'Error', 'Invalid request [400]');
       refute.invalidRequest(function () {val.allowIfValid(true);});
     },
 
