@@ -220,7 +220,7 @@ define(function(require, exports, module) {
       }
 
       Dom.setClass('error', msg, fieldElm);
-      msgElm.textContent = msg;
+      msgElm.textContent = msg || '';
       return fieldElm;
     },
 

@@ -234,5 +234,21 @@ isClient && define(function (require, exports, module) {
         },
       },
     },
+
+    "test renderError": function () {
+      var form = Dom.html({content: [{name: 'foo'},{name: 'bar'}]});
+
+      Form.renderError(form, 'foo', 'foo msg');
+      Form.renderError(form, 'bar', 'bar msg');
+
+      assert.dom(form, function () {
+        assert.dom('[name=bar].error+.errorMsg', 'bar msg');
+        assert.dom('[name=foo].error+.errorMsg', 'foo msg');
+
+        Form.renderError(form, 'bar', false);
+
+        assert.dom('[name=bar]:not(.error)+.errorMsg', '');
+      });
+    },
   });
 });

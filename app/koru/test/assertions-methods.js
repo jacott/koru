@@ -450,7 +450,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   function formatHTML(html) {
-    var re = /([^<]*)([^>]*>)/g, m;
+    var re = /([^<]*)(<([^\s>]+)[^>]*>)/g, m;
 
     var result = '';
     var indent = '';
@@ -469,7 +469,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         add(m[2]); break;
       default:
         add(m[2]);
-        indent += '  ';
+        if (! /(input|br|hr|img)/.test(m[3]))
+          indent += '  ';
       }
     }
 
