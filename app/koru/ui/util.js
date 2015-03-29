@@ -2,17 +2,18 @@ define(function(require, exports, module) {
   var util = require('koru/util');
   var Dom = require('../dom-base');
 
+  var vendorTransform;
   var vendorStylePrefix = (function () {
     var style = document.documentElement.style;
     var styles = ['webkit', 'Moz',  'ms', 'o', ''];
     for(var i = 0; i < styles.length; ++i) {
       if (styles[i]+'Transform' in style) break;
     }
+    vendorTransform = ('transform' in style) || ! vendorStylePrefix ? 'transform' : vendorStylePrefix + 'Transform';
     return styles[i];
   })();
 
   var vendorFuncPrefix = vendorStylePrefix.toLowerCase();
-  var vendorTransform = vendorStylePrefix ? vendorStylePrefix + 'Transform' : 'transform';
 
   var matches = document.documentElement[vendorFuncPrefix+'MatchesSelector'] || document.documentElement.matchesSelector;
 
@@ -134,7 +135,7 @@ define(function(require, exports, module) {
       if (! elm) return null;
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
         if (func(elm)) return elm;
-        if (Dom.hasClass(elm, stopClass)) return null;
+        if (stopClass && Dom.hasClass(elm, stopClass)) return null;
         elm = elm.parentNode;
       }
       return null;
