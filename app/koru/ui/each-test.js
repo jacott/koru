@@ -317,6 +317,7 @@ isClient && define(function (require, exports, module) {
           var start = this.firstChild.nextSibling;
           Dom.removeInserts(start);
           assert.same(start.nextSibling, start._koruEnd);
+          assert.same(callback.startEach, start);
           assert.same(start._koruEnd.nodeType, document.COMMENT_NODE);
         }});
         refute.dom('li');

@@ -69,6 +69,7 @@ define(function(require, exports, module) {
     };
     callback.count = 0;
     callback.rows = rows;
+    callback.startEach = startEach;
 
     startEach._each = each;
 
