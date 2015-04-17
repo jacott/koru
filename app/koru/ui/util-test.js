@@ -15,6 +15,16 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test wheelDelta": function () {
+      assert.same(Dom.wheelDelta({wheelDelta: 50}), 1);
+      assert.same(Dom.wheelDelta({deltaY: -50}), 1);
+      assert.same(Dom.wheelDelta({deltaX: -50}), 1);
+
+      assert.same(Dom.wheelDelta({wheelDelta: -50}), -1);
+      assert.same(Dom.wheelDelta({deltaY: 50}), -1);
+      assert.same(Dom.wheelDelta({deltaX: 50}), -1);
+    },
+
     "test html string": function () {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 

@@ -24,6 +24,10 @@ define(function(require, exports, module) {
 
     MOUSEWHEEL_EVENT: vendorFuncPrefix === 'moz' ? 'wheel' : 'mousewheel',
 
+    wheelDelta: function (event) {
+      return Math.max(-1, Math.min(1, event.wheelDelta || -(event.deltaY || event.deltaX)));
+    },
+
     clonePosition: function (from, to, offsetParent, where) {
       where = where || 'tl';
 
