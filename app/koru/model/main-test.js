@@ -735,6 +735,14 @@ define(function (require, exports, module) {
         assert.same(sut.notdefined,'set');
 
       },
+
+      "test toId": function () {
+        var doc = new v.TestModel({_id: 'theId'});
+
+        assert.same(v.TestModel.toId(doc), 'theId');
+        assert.same(v.TestModel.toId('astring'), 'astring');
+
+      },
     },
 
     "test define via module": function () {

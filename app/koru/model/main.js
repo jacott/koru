@@ -192,8 +192,9 @@ define(function(require, exports, module) {
       return new Query(this.constructor).onId(this._id);
     },
 
-    $update: function (changes) {
-      return this.$onThis.update(changes);
+    $update: function () {
+      var query = this.$onThis;
+      return query.update.apply(query, arguments);
     },
 
     $reload: function () {
@@ -292,6 +293,11 @@ define(function(require, exports, module) {
         allow_id || delete doc.changes._id;
       }
       return doc;
+    },
+
+    toId: function (doc) {
+      if (! doc || typeof doc === 'string') return doc;
+      return doc._id;
     },
 
     get query() {
