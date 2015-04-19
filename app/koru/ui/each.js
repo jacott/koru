@@ -35,6 +35,7 @@ define(function(require, exports, module) {
     var startEach = document.createComment('start');
     var endEach = startEach._koruEnd = document.createComment('end');
     insertPoint.parentNode.insertBefore(endEach, insertPoint.nextSibling);
+    insertPoint.parentNode.insertBefore(startEach, endEach);
 
     var rows = {};
     options = options || {};

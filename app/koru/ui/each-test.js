@@ -354,5 +354,22 @@ isClient && define(function (require, exports, module) {
         assert.dom('li+li', 'r2');
       });
     },
+
+    "test initial insert with sort": function () {
+      v.Each.$helpers({
+        fooList: function (callback) {
+          // -1 will force search list to look until start comment reached
+          callback({id: 'x', value: 'init'}, null, function (a, b) {return -1});
+        },
+      });
+
+      assert.dom(v.Each.$render({major: '1'}), function () {
+        assert.dom('li', function () {
+          assert.same(this.previousSibling.nodeValue, 'start');
+          assert.same(this.nextSibling.nodeValue, 'end');
+          assert.same(this.previousSibling._koruEnd, this.nextSibling);
+        });
+      });
+    },
   });
 });
