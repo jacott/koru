@@ -575,6 +575,12 @@ define(function(require, exports, module) {
       return aname === bname ? 0 : aname < bname ? -1 : 1;
     },
 
+    compareByOrder: function (a, b) {
+      a = (a && a.order) || 0;
+      b = (b && b.order) || 0;
+      return a === b ? 0 : a < b ? -1 : 1;
+    },
+
     compareByField: function (field, direction) {
       direction = direction === -1 ? -1 : 1;
       return function (a, b) {

@@ -529,6 +529,24 @@ define(function (require, exports, module) {
 
     },
 
+    "test compareByOrder": function () {
+      var a = {order: 300};
+      var b = {order: 300};
+
+      assert.same(util.compareByOrder(a,b), 0);
+
+      b.order = 400;
+      assert.same(util.compareByOrder(a,b), -1);
+
+      b.order = 200;
+      assert.same(util.compareByOrder(a,b), 1);
+
+      assert.same(util.compareByOrder(null, b), -1);
+      assert.same(util.compareByOrder(b, null), 1);
+      assert.same(util.compareByOrder(undefined, null), 0);
+
+    },
+
     "test compareByField": function () {
       var a = {f1: "Bob", f2: 1};
       var b = {f1: "Bob", f2: 2};
