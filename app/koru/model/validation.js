@@ -38,6 +38,7 @@ define(function(require, exports, module) {
       }
       function check1(obj, subSpec) {
         if (typeof subSpec === 'string') {
+          if (obj === undefined) return;
           if (match[subSpec] && match[subSpec].$test(obj))
             return;
           throw false;

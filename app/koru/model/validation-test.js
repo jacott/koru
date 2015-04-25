@@ -26,6 +26,7 @@ define(function (require, exports, module) {
       var spec = {foo: 'string'};
       refute(val.check('dfsfd', spec));
       assert(val.check({foo: ''}, spec));
+      assert(val.check({foo: undefined}, spec));
       refute(val.check({bar: ''}, spec));
       refute(val.check('x', ['stirng']));
 
