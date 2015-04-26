@@ -45,6 +45,12 @@ define(function(require, exports, module) {
           ps.top = '';
         }
       }
+      var width = window.innerWidth;
+      if (ppos.right > width) {
+        ps.right = '0';
+        ps.left = '';
+      }
+
     },
   };
 });
