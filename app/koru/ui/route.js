@@ -153,7 +153,11 @@ define(function(require, exports, module) {
 
     replacePage: function () {
       pageState = 'replaceState';
-      return this.gotoPage.apply(this, arguments);
+      try {
+        return this.gotoPage.apply(this, arguments);
+      } finally {
+        pageState = 'pushState';
+      }
     },
 
     gotoPage: function (page, pageRoute) {
@@ -227,20 +231,20 @@ define(function(require, exports, module) {
       finally {
         inGotoPage = false;
         Route.loadingArgs = null;
-        pageState = 'pushState';
         currentPageRoute = pageRoute;
       }
     },
 
     recordHistory: function (page, href) {
+      if (! pageState || (page && ('noPageHistory' in page)))
+          return;
       if (currentHref === href)
-        pageState = 'replaceState';
-      if (pageState &&
-          ! (page && ('noPageHistory' in page))) {
-        if (pageState === 'pushState')
-          ++pageCount;
-        Route.history[pageState](pageCount, null, href);
+        var cmd = 'replaceState';
+      else {
+        cmd = pageState;
+        ++pageCount;
       }
+      Route.history[cmd](pageCount, null, href);
     },
 
     setTitle: function (title) {
@@ -261,12 +265,20 @@ define(function(require, exports, module) {
     pageChanged: function (state) {
       pageCount = state || 0;
       pageState = null;
-      return this.gotoPath();
+      try {
+        return this.gotoPath();
+      } finally {
+        pageState = 'pushState';
+      }
     },
 
     replacePath: function () {
       pageState = 'replaceState';
-      return this.gotoPath.apply(this, arguments);
+      try {
+        return this.gotoPath.apply(this, arguments);
+      } finally {
+        pageState = 'pushState';
+      }
     },
 
     gotoPath: function (page) {

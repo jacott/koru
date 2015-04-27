@@ -289,23 +289,30 @@ isClient && define(function (require, exports, module) {
       Route.root.addTemplate(v.FooBar);
       Route.replacePath(v.FooBar);
 
-      assert.calledWith(Route.history.replaceState, 0, null, '/#foo-bar');
+      assert.calledWith(Route.history.replaceState, 1, null, '/#foo-bar');
+      assert.same(Route.pageState, 'pushState');
     },
 
     "test replacePage passes all args": function () {
-      test.stub(Route, 'gotoPage');
+      test.stub(Route, 'gotoPage', function () {
+        v.pageState = Route.pageState;
+      });
 
       Route.replacePage(1, 2,3);
-      assert.same(Route.pageState, 'replaceState');
 
+      assert.same(v.pageState, 'replaceState');
+      assert.same(Route.pageState, 'pushState');
       assert.calledWith(Route.gotoPage, 1, 2, 3);
     },
 
     "test replacePath passes all args": function () {
-      test.stub(Route, 'gotoPath');
+      test.stub(Route, 'gotoPath', function () {
+        v.pageState = Route.pageState;
+      });
 
       Route.replacePath(1, 2,3);
-      assert.same(Route.pageState, 'replaceState');
+      assert.same(v.pageState, 'replaceState');
+      assert.same(Route.pageState, 'pushState');
 
       assert.calledWith(Route.gotoPath, 1, 2, 3);
     },
@@ -316,6 +323,9 @@ isClient && define(function (require, exports, module) {
       Route.pageChanged();
 
       assert.calledWithExactly(Route.gotoPath);
+      refute.called(Route.history.pushState);
+      refute.called(Route.history.replaceState);
+      assert.same(Route.pageState, 'pushState');
 
       v.FooBar.onEntry = function (page, pageRoute) {
         v.pageRoute = pageRoute;
@@ -328,8 +338,6 @@ isClient && define(function (require, exports, module) {
       Route.gotoPath.restore();
       Route.gotoPath('/foo-bar');
 
-      refute.called(Route.history.pushState);
-      refute.called(Route.history.replaceState);
 
       assert.same(Route.targetPage, v.FooBar);
       assert.same(Route.currentPage, v.FooBar);
