@@ -125,13 +125,13 @@ define(function(require, exports, module) {
   var currentTitle, currentHref;
   var pageState = 'pushState';
   var excludes = {append: 1, href: 1, hash: 1, search: 1};
+  var pageCount = 0;
 
   util.extend(Route, {
     root: new Route(),
 
-    _private: {
-      get pageState() {return pageState},
-    },
+    get pageState() {return pageState},
+    get pageCount() {return pageCount},
 
     abortPage: function (location) {
       if (inGotoPage) {
@@ -142,6 +142,11 @@ define(function(require, exports, module) {
       }
 
       return this.replacePath.apply(this, arguments);
+    },
+
+    _reset: function () {
+      Route.replacePage();
+      pageCount = 0;
     },
 
     pathname: pathname,
@@ -206,15 +211,10 @@ define(function(require, exports, module) {
           var title = page.title || Route.title;
         }
 
-        if (pageState &&
-            (pageState !== 'pushState' || currentHref !== href) &&
-            ! (page && ('noPageHistory' in page))) {
-          Route.history[pageState](null, '', href);
-        }
+        Route.recordHistory(page, href);
         currentHref = href;
-        currentTitle = document.title = title;
-        Dom.setTitle && Dom.setTitle(title);
         currentPage = page;
+        Route.setTitle(title);
       }
       catch(ex) {
         inGotoPage = false;
@@ -232,8 +232,24 @@ define(function(require, exports, module) {
       }
     },
 
+    recordHistory: function (page, href) {
+      if (currentHref === href)
+        pageState = 'replaceState';
+      if (pageState &&
+          ! (page && ('noPageHistory' in page))) {
+        if (pageState === 'pushState')
+          ++pageCount;
+        Route.history[pageState](pageCount, null, href);
+      }
+    },
+
+    setTitle: function (title) {
+      currentTitle = document.title = title;
+      Dom.setTitle && Dom.setTitle(title);
+    },
+
     pushCurrent: function () {
-      Route.history.pushState(null, '', currentHref);
+      Route.history.pushState(++pageCount, null, currentHref);
     },
 
     get targetPage() {return targetPage},
@@ -242,7 +258,8 @@ define(function(require, exports, module) {
     get currentHref() {return currentHref},
     get currentTitle() {return currentTitle},
 
-    pageChanged: function () {
+    pageChanged: function (state) {
+      pageCount = state || 0;
       pageState = null;
       return this.gotoPath();
     },

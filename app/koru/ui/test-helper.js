@@ -20,6 +20,7 @@ define(function(require, exports, module) {
 
   TH.util.extend(TH, {
     domTearDown: function () {
+      Route._reset();
       Dom.removeChildren(document.body);
       document.body.className = '';
       delete Dom.Test;
