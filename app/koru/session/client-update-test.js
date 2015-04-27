@@ -46,18 +46,16 @@ isClient && define(function (require, exports, module) {
 
     "test isFromServer": function () {
       test.stub(Query.prototype, 'remove', function () {
+        assert.isTrue(v.sess.isUpdateFromServer);
         assert.isTrue(this.isFromServer);
       });
 
-      try {
-        v.recvC('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
-      } catch(ex) {}
+      v.recvC('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
+      assert.isFalse(v.sess.isUpdateFromServer);
       assert.calledOnce(Query.prototype.remove);
 
-      try {
-        v.recvR('Foo', 'f123');
-      } catch(ex) {}
+      v.recvR('Foo', 'f123');
 
       assert.calledTwice(Query.prototype.remove);
     },

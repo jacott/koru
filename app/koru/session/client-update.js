@@ -18,8 +18,6 @@ define(function(require, exports, module) {
     session.provide('C', modelUpdate(changed, 'Upd'));
     session.provide('R', modelUpdate(removed, 'Rem'));
 
-    session.isUpdateFromServer = false;
-
     function added(model, id, attrs) {
       attrs._id = id;
       var doc = new model(attrs);
@@ -48,7 +46,12 @@ define(function(require, exports, module) {
           if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
             koru.logger("Debug"+type, '< ' + util.inspect(data));
         }
-        func.call(this, Model[data[0]], data[1], data[2]);
+        session.isUpdateFromServer = true;
+        try {
+          func.call(this, Model[data[0]], data[1], data[2]);
+        } finally {
+          session.isUpdateFromServer = false;
+        }
       };
     }
 
