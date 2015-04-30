@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var koru = require('koru');
   var Trace = require('../trace');
 
-  var state = 'closed';
+  var state = 'startup';
   var count = 0;
 
   var debug_pending = false;
@@ -53,7 +53,7 @@ define(function(require, exports, module) {
     retry: function () {
       var was = state;
       state = 'retry';
-      if (was === 'ready')
+      if (was !== 'retry')
         this.notify(false);
     },
 

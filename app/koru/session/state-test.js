@@ -10,7 +10,7 @@ define(function (require, exports, module) {
       v.origOnConnect = sessState._onConnect;
       sessState._onConnect = {};
       v.origState = sessState._state;
-      sessState._state = 'closed';
+      sessState._state = 'startup';
     },
 
     tearDown: function () {
@@ -80,7 +80,7 @@ define(function (require, exports, module) {
       assert.equals(sessState._onConnect['22'], undefined);
     },
 
-    "test retry": function () {
+    "test retry startup": function () {
       test.onEnd(sessState.onChange(v.onChange = test.stub()));
 
       sessState.retry();
@@ -92,7 +92,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test retry": function () {
+    "test retry ready": function () {
       test.onEnd(sessState.onChange(v.onChange = test.stub()));
 
       sessState._state = 'ready';
