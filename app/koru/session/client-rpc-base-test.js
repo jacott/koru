@@ -17,7 +17,7 @@ define(function (require, exports, module) {
         _rpcs: {},
         sendBinary: v.sendBinary = test.stub(),
         state: 'ready',
-      });
+      }, sessState);
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function () {
           func(message.encodeMessage('M', util.slice(arguments)).subarray(1));

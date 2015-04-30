@@ -1,8 +1,13 @@
 define(function(require) {
   var koru = require('../main');
-  var session = require('./base');
+  var base = require('./base');
 
-  require('../env!./main')(session);
+  function Constructor(QueryEnv, base) {
+    QueryEnv(base);
+    return base;
+  }
 
-  return session;
+  exports = Constructor(require('../env!./main'), base);
+  exports.__init__ = Constructor;
+  return exports;
 });

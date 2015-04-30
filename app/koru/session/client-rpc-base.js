@@ -3,9 +3,8 @@ define(function(require, exports, module) {
   var message = require('./message');
   var koru = require('../main');
   var makeSubject = require('../make-subject');
-  var sessState = require('./state');
 
-  return function (session) {
+  return function (session, sessState) {
     var waitMs = {};
     var isSimulation = false;
 
