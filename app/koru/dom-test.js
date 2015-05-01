@@ -183,7 +183,9 @@ isClient && define(function (require, exports, module) {
           testMe: function () {
             assert.same(this, Dom.current.data());
             assert.same(this, v.x);
-            assert.same(Dom.current.ctx, Dom.getCtx(Dom.current.element));
+            assert.same(Dom.current.isElement(), v.isElement);
+            v.isElement || assert.same(Dom.current.ctx, Dom.getCtx(Dom.current.element));
+
 
             v.data = Dom.current.data(v.elm);
 
@@ -196,9 +198,15 @@ isClient && define(function (require, exports, module) {
         v.elm = Dom.html({});
         v.elm._koru = {data: data};
 
+        v.isElement = false;
+
         var foo = Dom.Foo.$render(v.x = {x: 1});
 
         assert.same(v.data, data);
+
+        v.isElement = true;
+
+        Dom.getMyCtx(foo).updateAllTags(v.x = {x: 2});
       },
     },
 

@@ -33,6 +33,9 @@ define(function(require, exports, module) {
       get template() {return currentCtx.template},
       get ctx() {return currentCtx},
       get element() {return currentElement},
+      isElement: function () {
+        return currentElement.nodeType === 1;
+      },
     },
 
     get element() {return currentElement},
