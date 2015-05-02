@@ -154,9 +154,9 @@ define(function(require, exports, module) {
           if (m) {
             part = +m[2];
             if (m[1] === '-')
-              curr.splice(part, 1);
+              util.removeItem(curr, desc.value);
             else
-              curr.splice(part, 0, desc.value);
+              util.addItem(curr, desc.value);
           } else if (desc.value === undefined) {
             delete curr[parts[i]];
           } else

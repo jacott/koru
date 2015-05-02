@@ -399,6 +399,15 @@ define(function (require, exports, module) {
         assert.same(doc.$asBefore(was), old);
       },
 
+      "test asBefore on arrays": function () {
+        v.TestModel.defineFields({foo: {type: 'object'}});
+
+        var doc = new v.TestModel({_id: 'f123', foo: ['f123']});
+        var was = {'foo.$-1': 'f123'};
+        var old = doc.$asBefore(was);
+        assert.equals(old.foo, []);
+      },
+
       "test asBefore on array": function () {
         v.TestModel.defineFields({foo: {type: 'object'}});
 

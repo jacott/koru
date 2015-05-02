@@ -245,7 +245,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.onChange, TH.matchModel(v.foo.$reload()), {"cogs.$+1": 'a'});
 
-      assert.equals(v.foo.$asBefore({"cogs.$+1": 'a'}).cogs, ['b', 'a', 'c']);
+      assert.equals(v.foo.$asBefore({"cogs.$+1": 'a'}).cogs, ['b', 'c', 'a']);
     },
 
     "test removeItem object": function () {
