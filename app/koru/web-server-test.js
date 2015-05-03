@@ -110,9 +110,30 @@ isServer && define(function (require, exports, module) {
                         koru.appDir+"/koru/.build/web-server-test.foo.bar");
     },
 
+    "test error": function () {
+      webServer.registerHandler('foo', function (req, res, path, error) {
+        v.res.called = true;
+        v.req.called = true;
+        error(406, 'my message');
+      });
+
+      test.onEnd(function () {
+        webServer.deregisterHandler('foo');
+      });
+
+      v.req.url = '/foo/bar';
+      test.spy(v.res, 'end');
+      v.replaceSend();
+
+      webServer.requestListener(v.req, v.res);
+      assert.same(v.res.statusCode, 406);
+
+      assert.calledWith(v.res.end, 'my message');
+    },
+
     "test exception": function () {
       test.stub(koru, 'error');
-      webServer.registerHandler('foo', function (req, res, error) {
+      webServer.registerHandler('foo', function (req, res, path, error) {
         v.res.called = true;
         v.req.called = true;
         throw new Error("Foo");

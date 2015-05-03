@@ -133,9 +133,12 @@ define(function (require, exports, module) {
         .pipe(res);
     }
 
-    function error(err) {
+    function error(err, msg) {
       if (! err || 404 === err.status) {
         notFound(res);
+      } else if (typeof err === 'number') {
+        res.statusCode = err;
+        res.end(msg || '');
       } else {
         res.statusCode = 500;
         res.end('Internal server error!');
