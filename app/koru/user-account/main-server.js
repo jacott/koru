@@ -120,6 +120,20 @@ define(function(require, exports, module) {
   util.extend(exports, {
     model: model,
 
+    veryifyClearPassword: function (email, password) {
+      var doc = model.findBy('email', email);
+      if (! doc) return;
+
+      var C = new SRP.Client(password);
+      var S = new SRP.Server(doc.srp);
+
+      var request = C.startExchange();
+      var challenge = S.issueChallenge(request);
+      var response = C.respondToChallenge(challenge);
+
+      if (S.M === response.M) return doc;
+    },
+
     createUserLogin: function (attrs) {
       return model.create({
         email: attrs.email,

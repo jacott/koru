@@ -122,6 +122,11 @@ isServer && define(function (require, exports, module) {
       assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '), 't0 t1 t2 t3 t4');
     },
 
+    "test veryifyClearPassword": function () {
+      var doc = userAccount.veryifyClearPassword('foo@bar.co', 'secret');
+      assert.equals(doc && doc._id, v.lu._id);
+    },
+
     "loginWithPassword": {
       setUp: function () {
         v.srp = new SRP.Client('secret');
