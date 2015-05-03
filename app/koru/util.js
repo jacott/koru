@@ -286,7 +286,8 @@ define(function(require, exports, module) {
     },
 
     searchStrToMap: function (query) {
-    var result = {};
+      var result = {};
+      if (! query) return result;
       util.forEach(query.split('&'), function (item) {
         var parts = item.split('=', 2);
         result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);

@@ -325,6 +325,8 @@ define(function (require, exports, module) {
 
     "test searchStrToMap": function () {
       assert.equals(util.searchStrToMap("a%20%2Bb=q%5Ba%5D&foo=bar"), {'a +b': 'q[a]', foo: 'bar'});
+      assert.equals(util.searchStrToMap(null), {});
+
     },
 
     "test forEach": function () {
