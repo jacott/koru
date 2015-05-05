@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   var Query = require('./query');
   var WeakIdMap = require('../weak-id-map');
 
-  var save, _support, BaseModel;
+  var _support, BaseModel;
 
   var uniqueIndexes = {}, indexes = {};
 
@@ -77,7 +77,7 @@ define(function(require, exports, module) {
         return new Query(this.constructor).onId(this._id).remove();
       };
 
-      ModelEnv.save = save = function (doc) {
+      ModelEnv.save = function (doc) {
         if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
         var _id = doc._id;
@@ -100,6 +100,10 @@ define(function(require, exports, module) {
           // This a bit of a hack; should we bother?
           util.applyChanges(doc.attributes, copy);
         }
+      };
+
+      ModelEnv.put = function (doc, updates) {
+        session.rpc('put', doc.constructor.modelName, doc._id, updates);
       };
 
       session.defineRpc("save", function (modelName, id, changes) {

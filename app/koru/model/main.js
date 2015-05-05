@@ -40,6 +40,11 @@ define(function(require, exports, module) {
       return doc;
     },
 
+    $put: function (updates) {
+      ModelEnv.put(this, updates);
+      return this;
+    },
+
     $$save: function() {
       return this.$save('assert');
     },
@@ -231,6 +236,35 @@ define(function(require, exports, module) {
     },
   };
 
+  session.defineRpc("put", function (modelName, id, updates) {
+    Val.assertCheck([modelName, id], ['string']);
+    var model = BaseModel[modelName];
+    Val.allowIfFound(model);
+    var doc = model.findById(id);
+    Val.allowIfFound(doc);
+
+    var parts = _support.validatePut(doc, updates);
+    var changes = parts[0], pSum = parts[1];
+    var query = doc.$onThis;
+    for (var key in pSum) {
+      var p = pSum[key];
+      for (key in p) {
+        var m = key.match(/^(.*)\.\$([+-])\d+$/);
+        if (m) {
+          if (m[2] === '+')
+            query.addItemAnd(m[1], p[key]);
+          else
+            query.removeItemAnd(m[1], p[key]);
+        } else {
+          changes[key] = p[key];
+        }
+      }
+    }
+    doc.changes = {};
+    query.update(changes);
+  });
+
+
   Object.defineProperty(BaseModel, '_callBeforeObserver', {enumerable: false, value: callBeforeObserver});
   Object.defineProperty(BaseModel, '_callAfterObserver', {enumerable: false, value: callAfterObserver});
 
@@ -405,6 +439,28 @@ define(function(require, exports, module) {
 
   var _support = {
     setupExtras: [],
+
+    validatePut: function (doc, updates) {
+      var userId = koru.userId();
+      Val.allowAccessIf(userId && doc.authorize);
+      var changes = {};
+      var partials = {};
+      for (var key in updates) {
+        var pos = key.indexOf(".");
+        if (pos === -1)
+          changes[key] = updates[key];
+        else {
+          var mainKey = key.slice(0, pos);
+          var section = partials[mainKey] || (partials[mainKey] = {});
+          section[key] = updates[key];
+        }
+      }
+      doc.changes = changes;
+      doc.authorizePut(userId, partials);
+      doc.$assertValid();
+
+      return [changes, partials];
+    },
 
     performBumpVersion: function(model, _id, _version) {
       new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();

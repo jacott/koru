@@ -628,7 +628,6 @@ define(function (require, exports, module) {
 
           assert.same(v.TestModel.create({user_id: 'override'}).$reload().user_id, 'override');
         });
-
       },
 
       'test equality': function () {
@@ -715,6 +714,47 @@ define(function (require, exports, module) {
 
         if(isClient)
           assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "new"});
+      },
+
+      "test put": function () {
+        test.stub(koru, 'userId').returns('u123');
+        v.TestModel.defineFields({name: 'string', array: 'has-many', deep: 'object'});
+        v.TestModel.prototype.authorizePut = v.auth = test.stub();
+        var doc = v.TestModel.create({name: 'old', array: ['zero', 'three'], deep: {a: 1}});
+
+        isClient && this.spy(session, "rpc");
+
+        doc.$put({
+          name: 'new',
+          'array.$+1': 'one', 'array.$+2': 'two',
+          'array.$-3': 'three',
+          'deep.nested': {value: 123}});
+
+        assert.equals(doc.changes, {});
+
+        assert.calledWith(v.auth, 'u123', {array: {"array.$+1": "one", "array.$+2": "two", "array.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
+        assert.equals(v.auth.thisValues[0], TH.matchModel(doc));
+        if (isClient) {
+          assert.calledTwice(v.auth);
+          assert.equals(v.auth.thisValues[1], TH.matchModel(doc));
+          assert(v.auth.calledBefore(session.rpc));
+        }
+
+        doc.$reload();
+
+        assert.same(doc.name, 'new');
+        assert.equals(doc.array, ['zero', 'one', 'two']);
+        assert.equals(doc.deep, {a: 1, nested: {value: 123}});
+
+        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
+
+        if(isClient)
+          assert.calledOnceWith(session.rpc,'put', 'TestModel', doc._id, {
+            name: 'new',
+            'array.$+1': 'one', 'array.$+2': 'two',
+            'array.$-3': 'three',
+            'deep.nested': {value: 123}
+          });
       },
 
       'test build': function () {
