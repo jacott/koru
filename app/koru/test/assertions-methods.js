@@ -118,12 +118,12 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     assert:  function (func, name, message) {
       try {
         this.message = (func() || '').toString();
-        this.name = 'but function did not throw';
+        this.name = 'none was thrown';
       }
       catch(ex) {
         if (typeof name === 'object') {
           var result = true;
-          this.name = ex.toString();
+          this.name = 'Got ' + ex.toString();
           this.message = {};
           for(var key in name) {
             if (! ex.hasOwnProperty(key)) throw ex;
@@ -132,10 +132,11 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               result = false;
             }
           }
+          this.message = util.inspect(this.message);
           return result;
         }
-        this.name = ex.name;
-        this.message = ex.message;
+        this.name = 'Got ' + ex.name;
+        this.message = util.inspect(ex.message);
         if (name && ex.name !== name) return false;
         if (message && ex.message !== message)  return false;
         return true;
@@ -143,7 +144,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return false;
     },
 
-    message: "an exception to be thrown: {i$name} {i$message}"
+    assertMessage: "Expected an exception: {$name} {$message}",
+    refuteMessage: "Did not expect exception: {$name} {$message}",
   });
 
   ga.add("className", {
