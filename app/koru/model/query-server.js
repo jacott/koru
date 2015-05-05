@@ -148,6 +148,7 @@ define(function(require, exports, module) {
 
           if (items = self._removeItems) {
             var pulls = {};
+            var dups = {};
             for(var field in items) {
               var matches = [], match;
               var list = attrs[field];
@@ -157,8 +158,13 @@ define(function(require, exports, module) {
                   matches.push(match);
                 }
               });
-              if (matches.length)
-                pulls[field] = matches.length === 1 ? matches[0] : {$in: matches};
+              if (matches.length) {
+                var upd = matches.length === 1 ? matches[0] : {$in: matches};
+                if (fields && fields.hasOwnProperty(field))
+                  dups[field] = upd;
+                else
+                  pulls[field] = upd;
+              }
             }
             for (var field in pulls) {
               cmd.$pull = pulls;
@@ -169,6 +175,8 @@ define(function(require, exports, module) {
           if (util.isObjEmpty(cmd)) return 0;
 
           docs.update({_id: doc._id}, cmd);
+          util.isObjEmpty(dups) || docs.update({_id: doc._id}, {$pull: dups});
+
           model._$setWeakDoc(doc.attributes);
           Model._callAfterObserver(doc, changes);
           model.notify(doc, changes);

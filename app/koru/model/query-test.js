@@ -230,9 +230,9 @@ define(function (require, exports, module) {
       assert.equals(v.foo.$reload().cogs, ['a', 'b', 'c']);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'a', "cogs.$-2": 'b', "cogs.$-3": 'c'});
 
-      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', ['a', 'c']).removeItem('cogs', 'b');
-      assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": 'a', "cogs.$+2": 'c', "cogs.$+3": 'b'});
+      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', ['a', 'c']).addItemAnd('cogs', 'f').removeItem('cogs', 'b');
+      assert.equals(v.foo.$reload().cogs, ['f']);
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'f', "cogs.$+2": 'a', "cogs.$+3": 'c', "cogs.$+4": 'b'});
     },
 
     "test 1st removeItem": function () {
