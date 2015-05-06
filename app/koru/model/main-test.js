@@ -732,7 +732,7 @@ define(function (require, exports, module) {
           });
         },
 
-        "test success": function () {
+        "test authorizePut function": function () {
           v.TestModel.prototype.authorizePut = v.auth = test.stub();
 
           v.doc.$put({
@@ -766,6 +766,43 @@ define(function (require, exports, module) {
               'array.$-3': 'three',
               'deep.nested': {value: 123}
             });
+        },
+
+        "test authorizePut object": function () {
+          v.TestModel.prototype.authorizePut = {
+            array: v.array = test.stub(),
+            deep: function (doc, updates) {
+              updates['deep.nested'].value = 444;
+            },
+          },
+          v.TestModel.prototype.authorize = v.auth = test.stub();
+
+          v.doc.$put({
+            name: 'new',
+            'array.$+1': 'one', 'array.$+2': 'two',
+            'array.$-3': 'three',
+            'deep.nested': {value: 123}});
+
+          assert.calledWith(v.auth, 'u123', {
+            put: {
+              array: v.arrayUpdates = {"array.$+1": "one", "array.$+2": "two", "array.$-3": "three"},
+              deep: {"deep.nested": {value: 444}}
+            }
+          });
+          assert.equals(v.auth.thisValues[0], TH.matchModel(v.doc));
+          if (isClient) {
+            assert.calledTwice(v.auth);
+            assert.same(v.array.callCount, 2);
+            assert.equals(v.auth.thisValues[1], TH.matchModel(v.doc));
+            assert(v.auth.calledBefore(session.rpc));
+          }
+          assert.calledWith(v.array, TH.matchModel(v.doc), v.arrayUpdates);
+
+          v.doc.$reload();
+
+          assert.same(v.doc.name, 'new');
+          assert.equals(v.doc.array, ['zero', 'one', 'two']);
+          assert.equals(v.doc.deep, {a: 1, nested: {value: 444}});
         },
       },
 

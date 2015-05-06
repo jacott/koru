@@ -456,7 +456,17 @@ define(function(require, exports, module) {
         }
       }
       doc.changes = changes;
-      doc.authorizePut(userId, partials);
+      if (typeof doc.authorizePut === 'function')
+        doc.authorizePut(userId, partials);
+      else {
+        doc.authorize && doc.authorize(userId, {put: partials});
+        for (var key in partials) {
+          var validator = doc.authorizePut[key];
+          Val.allowAccessIf(validator, 'no validator for ' + key);
+          validator(doc, partials[key]);
+        }
+
+      }
       doc.$assertValid();
 
       return [changes, partials];
