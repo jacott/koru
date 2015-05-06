@@ -442,7 +442,7 @@ define(function(require, exports, module) {
 
     validatePut: function (doc, updates) {
       var userId = koru.userId();
-      Val.allowAccessIf(userId && doc.authorize);
+      Val.allowAccessIf(userId && doc.authorizePut);
       var changes = {};
       var partials = {};
       for (var key in updates) {
