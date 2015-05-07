@@ -186,7 +186,7 @@ define(function (require, exports, module) {
       v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
       var msgId = v.sess._msgId;
 
-      v.recvM(msgId.toString(36), 'e', '404,error Msg');
+      v.recvM(msgId.toString(36), 'e', '404', 'error Msg');
 
       assert.calledWithExactly(v.cstub, TH.match(function (err) {
         assert.same(err.error, 404);

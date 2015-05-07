@@ -65,16 +65,14 @@ define(function(require, exports, module) {
       sessState.decPending();
       if (! args[1]) return;
       var type = data[1];
-      data = data[2];
       if (type === 'e') {
-        var ei = data.indexOf(',');
-        if (ei === -1)
-          args[1](new Error(data));
+        if (data.length === 3)
+          args[1](new Error(data[2]));
         else
-          args[1](new koru.Error(+data.slice(0, ei), data.slice(ei+1)));
+          args[1](new koru.Error(+data[2], data[3]));
         return;
       }
-      args[1](null, data);
+      args[1](null, data[2]);
     });
 
     function onConnect () {

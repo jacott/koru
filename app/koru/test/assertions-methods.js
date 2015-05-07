@@ -123,16 +123,18 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       catch(ex) {
         if (typeof name === 'object') {
           var result = true;
-          this.name = 'Got ' + ex.toString();
           this.message = {};
           for(var key in name) {
             if (! ex.hasOwnProperty(key)) throw ex;
-            if (name[key] != ex[key]) {
+            if (! gu.deepEqual(name[key], ex[key])) {
               this.message[key] = ex[key];
               result = false;
             }
           }
-          this.message = util.inspect(this.message);
+          if (this._asserting !== result) {
+            this.name = 'Got ' + ex.toString() + '\n  expected: ' + util.inspect(name) + '\n  got mismatch for: ';
+            this.message = util.inspect(this.message);
+          }
           return result;
         }
         this.name = 'Got ' + ex.name;

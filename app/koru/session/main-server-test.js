@@ -138,10 +138,11 @@ isServer && define(function (require, exports, module) {
       "test exception": function () {
         test.stub(koru, 'error');
         v.run(function (one, two, three) {
-          throw new koru.Error(404, 'not found');
+          throw v.error = new koru.Error(404, {foo: 'not found'});
         });
 
-        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', '404,not found']);
+        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 404, {foo: 'not found'}]);
+        assert.same(v.error.message, '{foo: "not found"} [404]');
       },
 
       "test general exception": function () {

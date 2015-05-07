@@ -7,7 +7,9 @@
  * MIT License
  */
 
-define(function () {
+define(function(require) {
+  var util = require('koru/util');
+
   // http://davidshariff.com/blog/javascript-inheritance-patterns/
   var inherits = function (child, parent) {
     var tmp = function () {};
@@ -74,10 +76,16 @@ define(function () {
 
       // This is what gets displayed at the top of a stack trace. Current
       // format is "[404]" (if no reason is set) or "File not found [404]"
-      if (self.reason)
-        self.message = self.reason + ' [' + self.error + ']';
-      else
-        self.message = '[' + self.error + ']';
+
+      Object.defineProperty(self, 'message', {get: function () {
+        var code = '[' + this.error + ']';
+        if (this.reason == null) return code;
+        code = ' ' + code;
+        if (typeof this.reason === 'string')
+          return this.reason + code;
+        else
+          return util.inspect(this.reason) + code;
+      }});
     }),
   };
 });
