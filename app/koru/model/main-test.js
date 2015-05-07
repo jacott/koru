@@ -732,6 +732,12 @@ define(function (require, exports, module) {
           });
         },
 
+        "test simple": function () {
+          v.TestModel.prototype.authorizePut = test.stub();
+          v.doc.$put('name', 'changed');
+          assert.same(v.doc.$reload().name, 'changed');
+        },
+
         "test authorizePut function": function () {
           v.TestModel.prototype.authorizePut = v.auth = test.stub();
 

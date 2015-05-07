@@ -40,7 +40,13 @@ define(function(require, exports, module) {
       return doc;
     },
 
-    $put: function (updates) {
+    $put: function (updates, value) {
+      if (arguments.length === 2) {
+        var key = updates;
+        updates = {};
+        updates[key] = value;
+      }
+
       ModelEnv.put(this, updates);
       return this;
     },
