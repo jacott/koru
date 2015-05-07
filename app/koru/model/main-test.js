@@ -97,8 +97,11 @@ define(function (require, exports, module) {
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
         });
 
-        function obCalled(doc, type) {
-          (v.obs[type] = v.obs[type] || []).push([util.extend({}, doc.attributes), util.extend({}, doc.changes)]);
+        function obCalled(doc, type, partials) {
+          var args = [util.extend({}, doc.attributes), util.extend({}, doc.changes)];
+          if (partials !== undefined)
+            args.push(util.extend({}, partials));
+          (v.obs[type] = v.obs[type] || []).push(args);
         }
       },
 
@@ -135,6 +138,24 @@ define(function (require, exports, module) {
 
 
         refute(v.obs.beforeCreate);
+      },
+
+      "test $put": function () {
+          test.stub(koru, 'userId').returns('u123');
+        v.TestModel.prototype.authorizePut = {x: test.stub()};
+
+        v.tc.name = 'bar';
+        v.tc.changes['x.y'] = 'abc';
+
+        v.tc.$put(v.tc.changes);
+
+        assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'},
+                                            {x: {'x.y': "abc"}}]]);
+        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'},
+                                          {x: {'x.y': "abc"}}]]);
+        assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id, x: {y: 'abc'}}, {name: 'foo',
+                                                                               'x.y': undefined}]]);
+        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
       },
 
       "test create calls": function () {

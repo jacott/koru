@@ -251,24 +251,35 @@ define(function(require, exports, module) {
 
     var parts = _support.validatePut(doc, updates);
     var changes = parts[0], pSum = parts[1];
-    var query = doc.$onThis;
-    for (var key in pSum) {
-      util.extend(changes, pSum[key]);
+    try {
+      var ex;
+
+      callBeforeObserver('beforeUpdate', doc, pSum);
+      callBeforeObserver('beforeSave', doc, pSum);
+      var query = doc.$onThis;
+      for (var key in pSum) {
+        util.extend(changes, pSum[key]);
+      }
+      doc.changes = {};
+      query.put(changes);
+    } catch(ex1) {
+      ex = ex1;
+    } finally {
+      callWhenFinally(doc, ex);
     }
-    doc.changes = {};
-    query.put(changes);
+    if (ex) throw ex;
   });
 
 
   Object.defineProperty(BaseModel, '_callBeforeObserver', {enumerable: false, value: callBeforeObserver});
   Object.defineProperty(BaseModel, '_callAfterObserver', {enumerable: false, value: callAfterObserver});
 
-  function callBeforeObserver(type, doc) {
+  function callBeforeObserver(type, doc, partials) {
     var model = doc.constructor;
     var observers = modelObservers[model.modelName+'.'+type];
     if (observers) {
       for(var i=0;i < observers.length;++i) {
-        observers[i].call(model, doc, type);
+        observers[i].call(model, doc, type, partials);
       }
     }
   }
