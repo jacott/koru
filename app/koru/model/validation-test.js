@@ -174,6 +174,20 @@ define(function (require, exports, module) {
       refute(val.validators('bar1'));
     },
 
+    "test validateField": function () {
+      val.register('mymodule', {addIt: function (doc, field, x) {
+        doc[field] += x;
+        doc._errors = 'set';
+      }});
+      test.onEnd(function () {val.register('mymodule')});
+      var doc = {age: 10};
+
+      val.validateField(doc, 'age', {type: 'number', addIt: 5});
+
+      assert.same(doc._errors, 'set');
+      assert.same(doc.age, 15);
+    },
+
     "test matchFields": function () {
       val.register('mymodule', {divByx: function (doc, field, x) {
         if (doc[field] % x !== 0)

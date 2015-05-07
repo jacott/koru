@@ -26,7 +26,11 @@ define(function(require, exports, module) {
 
     },
 
-    check: function (obj, spec, optSpec) {
+    check: function (obj, spec, optSpec, error) {
+      if (arguments.length === 3 && typeof optSpec === 'function') {
+        error = optSpec;
+        optSpec = undefined;
+      }
       try {
         check1(obj, spec);
         return true;
@@ -41,11 +45,11 @@ define(function(require, exports, module) {
           if (obj === undefined) return;
           if (match[subSpec] && match[subSpec].$test(obj))
             return;
-          throw false;
+          bad(obj, subSpec);
 
 
         } else if (Array.isArray(subSpec)) {
-          if (! Array.isArray(obj)) throw false;
+          if (! Array.isArray(obj)) bad(obj, subSpec);
           subSpec = subSpec[0];
           util.forEach(obj, function (item) {
             check1(item, subSpec);
@@ -59,17 +63,22 @@ define(function(require, exports, module) {
               var type = optSpec[key];
               check1(obj[key], optSpec[key]);
             } else {
-              throw false;
+              bad(obj, subSpec, key);
             }
           }
         } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
-          throw false;
+          bad(obj, subSpec);
         }
+      }
+
+      function bad() {
+        error && error.apply(this, arguments);
+        throw false;
       }
     },
 
-    assertCheck: function () {
-      this.check.apply(this, arguments) || accessDenied('spec does not match');
+    assertCheck: function (obj, spec, optSpec) {
+      this.check.call(this, obj, spec, optSpec) || accessDenied('spec does not match');
     },
 
     assertDocChanges: function (doc, spec) {
@@ -89,23 +98,27 @@ define(function(require, exports, module) {
           }
         }
 
-        for (var field in fieldSpec) {
-          var spec = fieldSpec[field];
-          var value = doc[field];
-          if (value != null && ! Val.check(value, spec.type)) {
-            Val.addError(doc, field, 'wrong_type');
-            continue;
-          }
+        for (var field in fieldSpec)
+          Val.validateField(doc, field, fieldSpec[field]);
 
-          for(var name in spec) {
-            var validator = validators[name];
-            validator && validator(doc, field, spec[name]);
-          }
-        }
         return ! doc._errors;
       }, name || {toString: function () {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
+    },
+
+    validateField: function (doc, field, spec) {
+      var value = doc[field];
+      if (value != null && ! Val.check(value, spec.type)) {
+        Val.addError(doc, field, 'wrong_type', spec.type);
+        return;
+      }
+
+      for(var name in spec) {
+        var validator = validators[name];
+        validator && validator(doc, field, spec[name]);
+      }
+
     },
 
     denyAccessIf: function (falsey) {
