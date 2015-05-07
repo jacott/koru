@@ -96,6 +96,23 @@ define(function(require, exports, module) {
       fetchIds: function() {
         return this.fetchField('_id');
       },
+
+      put: function (updates) {
+        var query = this;
+        var trans = {};
+        for (var key in updates) {
+          var m = key.match(/^(.*)\.\$([+-])\d+$/);
+          if (m) {
+            if (m[2] === '+')
+              query.addItemAnd(m[1], updates[key]);
+            else
+              query.removeItemAnd(m[1], updates[key]);
+          } else {
+            trans[key] = updates[key];
+          }
+        }
+        return query.update(trans);
+      },
     };
 
     function condition(query, map, params, value) {

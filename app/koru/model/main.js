@@ -253,21 +253,10 @@ define(function(require, exports, module) {
     var changes = parts[0], pSum = parts[1];
     var query = doc.$onThis;
     for (var key in pSum) {
-      var p = pSum[key];
-      for (key in p) {
-        var m = key.match(/^(.*)\.\$([+-])\d+$/);
-        if (m) {
-          if (m[2] === '+')
-            query.addItemAnd(m[1], p[key]);
-          else
-            query.removeItemAnd(m[1], p[key]);
-        } else {
-          changes[key] = p[key];
-        }
-      }
+      util.extend(changes, pSum[key]);
     }
     doc.changes = {};
-    query.update(changes);
+    query.put(changes);
   });
 
 
