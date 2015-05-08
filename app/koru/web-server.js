@@ -137,8 +137,15 @@ define(function (require, exports, module) {
       if (! err || 404 === err.status) {
         notFound(res);
       } else if (typeof err === 'number') {
-        res.statusCode = err;
-        res.end(msg || '');
+        var attrs = {};
+        msg = msg || '';
+        if (typeof msg !== 'string') {
+          msg = JSON.stringify(msg);
+          attrs['Content-Type'] = 'application/json';
+        }
+        attrs['Content-Length'] = msg.length;
+        res.writeHead(err, attrs);
+        res.end(msg);
       } else {
         res.statusCode = 500;
         res.end('Internal server error!');

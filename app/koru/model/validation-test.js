@@ -60,10 +60,16 @@ define(function (require, exports, module) {
     },
 
     "test assertCheck": function () {
-      assert.accessDenied(function () {
+      assert.exception(function () {
         val.assertCheck(1, 'string');
-      });
+      }, {error: 400, reason: 'is_invalid'});
       val.assertCheck(1, 'number');
+      assert.exception(function () {
+        val.assertCheck({name: 1}, {name: 'string'});
+      }, {error: 400, reason: {name: [['is_invalid']]}});
+      assert.exception(function () {
+        val.assertCheck({_id: 'abc'}, {name: 'string'});
+      }, {error: 400, reason: {_id: [['is_invalid']]}});
     },
 
     "test assertDocChanges": function () {
@@ -133,8 +139,11 @@ define(function (require, exports, module) {
     "test invalidRequest": function () {
       assert.invalidRequest(function () {val.allowIfValid(false);});
       assert.exception(function () {
-        val.allowIfValid(false);
-      }, 'Error', 'Invalid request [400]');
+        val.allowIfValid(false, 'foo');
+      }, {error: 400, reason: {foo: [['is_invalid']]}});
+      assert.exception(function () {
+        val.allowIfValid(false, {_errors: {x: 123}});
+      }, {error: 400, reason: {x: 123}});
       refute.invalidRequest(function () {val.allowIfValid(true);});
     },
 

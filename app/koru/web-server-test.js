@@ -25,6 +25,7 @@ isServer && define(function (require, exports, module) {
         once: test.stub(),
         emit: test.stub(),
         write: test.stub(),
+        writeHead: test.stub(),
         end: function (data) {
           v.future.return(data);
         },
@@ -110,25 +111,43 @@ isServer && define(function (require, exports, module) {
                         koru.appDir+"/koru/.build/web-server-test.foo.bar");
     },
 
-    "test error": function () {
-      webServer.registerHandler('foo', function (req, res, path, error) {
-        v.res.called = true;
-        v.req.called = true;
-        error(406, 'my message');
-      });
+    "error": {
+      setUp: function () {
+        webServer.registerHandler('foo', function (req, res, path, error) {
+          v.res.called = true;
+          v.req.called = true;
+          error(406, v.msg);
+        });
+        v.req.url = '/foo/bar';
+        test.spy(v.res, 'end');
+        v.replaceSend();
+      },
 
-      test.onEnd(function () {
+      tearDown: function () {
         webServer.deregisterHandler('foo');
-      });
+      },
 
-      v.req.url = '/foo/bar';
-      test.spy(v.res, 'end');
-      v.replaceSend();
+      "test string": function () {
+        v.msg = 'my message';
 
-      webServer.requestListener(v.req, v.res);
-      assert.same(v.res.statusCode, 406);
+        webServer.requestListener(v.req, v.res);
+        assert.calledWith(v.res.writeHead, 406, {
+          'Content-Length': 10,
+        });
 
-      assert.calledWith(v.res.end, 'my message');
+        assert.calledWith(v.res.end, 'my message');
+      },
+
+      "test json": function () {
+        v.msg = {json: 'object'};
+
+        webServer.requestListener(v.req, v.res);
+        assert.calledWith(v.res.end, JSON.stringify(v.msg));
+        assert.calledWith(v.res.writeHead, 406, {
+          'Content-Type': 'application/json',
+          'Content-Length': 17,
+        });
+      },
     },
 
     "test exception": function () {

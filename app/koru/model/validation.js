@@ -40,34 +40,34 @@ define(function(require, exports, module) {
         }
         throw ex;
       }
-      function check1(obj, subSpec) {
+      function check1(obj, subSpec, name) {
         if (typeof subSpec === 'string') {
           if (obj === undefined) return;
           if (match[subSpec] && match[subSpec].$test(obj))
             return;
-          bad(obj, subSpec);
+          bad(name, obj, subSpec);
 
 
         } else if (Array.isArray(subSpec)) {
-          if (! Array.isArray(obj)) bad(obj, subSpec);
+          if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
           util.forEach(obj, function (item) {
-            check1(item, subSpec);
+            check1(item, subSpec, name);
           });
         } else if (match.baseObject.$test(subSpec)) {
           for(var key in obj) {
             if (subSpec.hasOwnProperty(key)) {
               var type = subSpec[key];
-              check1(obj[key], subSpec[key]);
+              check1(obj[key], subSpec[key], name ? name+'.'+key : key);
             } else if (subSpec === spec && optSpec && optSpec.hasOwnProperty(key)) {
               var type = optSpec[key];
-              check1(obj[key], optSpec[key]);
+              check1(obj[key], optSpec[key], name ? name+'.'+key : key);
             } else {
-              bad(obj, subSpec, key);
+              bad(name ? name+'.'+key : key, obj, subSpec);
             }
           }
         } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
-          bad(obj, subSpec);
+          bad(name, obj, subSpec);
         }
       }
 
@@ -78,7 +78,14 @@ define(function(require, exports, module) {
     },
 
     assertCheck: function (obj, spec, optSpec) {
-      this.check.call(this, obj, spec, optSpec) || accessDenied('spec does not match');
+      this.check.call(this, obj, spec, optSpec, function (name) {
+        if (name) {
+          var reason = {}; reason[name] = [['is_invalid']];
+        } else {
+          var reason = 'is_invalid';
+        }
+        throw new koru.Error(400, reason);
+      });
     },
 
     assertDocChanges: function (doc, spec) {
@@ -121,8 +128,8 @@ define(function(require, exports, module) {
 
     },
 
-    denyAccessIf: function (falsey) {
-      this.allowAccessIf(! falsey);
+    denyAccessIf: function (falsey, message) {
+      this.allowAccessIf(! falsey, message);
     },
 
     /** Simple is not objects {} or functions */
@@ -192,20 +199,28 @@ define(function(require, exports, module) {
 
     allowIfValid: function (truthy, doc) {
       if (! truthy) {
-        if (doc) koru.info('INVALID ' + this.inspectErrors(doc));
-        var error = new koru.Error(400, 'Invalid request' + (doc ? ": " + Val.inspectErrors(doc) : ''));
-        error.doc = doc;
-        error.toString = function () {
-          return this.message;
-        };
-        throw error;
+        if (doc) {
+          if (doc._errors)
+            var reason = doc._errors;
+          else {
+            var reason = {}; reason[doc] = [['is_invalid']];
+          }
+        } else {
+          var reason = 'is_invalid';
+        }
+          throw new koru.Error(400, reason);
       }
       return truthy;
     },
 
-    allowIfFound: function (truthy) {
+    allowIfFound: function (truthy, field) {
       if (! truthy) {
-        throw new koru.Error(404, 'Not found');
+        if (field) {
+          var reason = {}; reason[field] = [['not_found']];
+        } else {
+          reason = 'Not found';
+        }
+        throw new koru.Error(404, reason);
       }
     },
 

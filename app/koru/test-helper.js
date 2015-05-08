@@ -85,7 +85,7 @@ define(function(require, exports, module) {
         func.call();
       } catch(e) {error = e;}
       if (error) {
-        if (error.error === 400 && error.reason.match(/^Invalid request/))
+        if (error.error === 400)
           return true;
 
         throw error;
