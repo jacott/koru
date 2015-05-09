@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   var Model = require('./main');
   var session = require('../session/base');
   var koru = require('../main');
+  var Val = require('./validation');
 
   TH.testCase(module, {
     setUp: function () {
@@ -75,6 +76,8 @@ define(function (require, exports, module) {
 
       refute(TestModel.exists("fooid"));
 
+      test.spy(Val, 'assertCheck');
+
       session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
 
       v.doc = TestModel.findById("fooid");
@@ -85,6 +88,9 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
+
+      assert.calledWith(Val.assertCheck, "fooid", "string", {baseName: "_id"});
+      assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
     },
 
     "test saveRpc existing": function () {

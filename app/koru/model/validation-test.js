@@ -51,12 +51,13 @@ define(function (require, exports, module) {
       refute(val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 3}]}}, spec));
       assert(val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 'bb'}]}}, spec));
 
-      // test multiple specs
-      assert(val.check({foo: '', bar: 1}, {foo: 'string'}, {bar: 'number'}));
-      assert(val.check({foo: ''}, {foo: 'string'}, {bar: 'number'}));
-      assert(val.check({foo: ''}, {foo: 'string'}, {foo: 'number'}));
-      refute(val.check({foo: '', bar: 1, baz: ''}, {foo: 'string'}, {bar: 'number'}));
-      refute.msg('should not match sub field')(val.check({foo: {bar: 1}}, {foo: {sub: 'string'}}, {bar: 'number'}));
+      // test altSpec
+      assert(val.check({foo: '', bar: 1}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
+      assert(val.check({foo: ''}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
+      assert(val.check({foo: ''}, {foo: 'string'}, {altSpec: {foo: 'number'}}));
+      refute(val.check({foo: '', bar: 1, baz: ''}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
+      refute.msg('should not match sub field')(val.check({foo: {bar: 1}}, {foo: {sub: 'string'}},
+                                                         {altSpec: {bar: 'number'}}));
     },
 
     "test assertCheck": function () {
@@ -82,7 +83,11 @@ define(function (require, exports, module) {
       var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord: function () {return true}};
       val.assertDocChanges(newDoc, {name: 'string'});
 
-      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {_id: 'string'});
+      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'string'}});
+
+      val.assertDocChanges(newDoc, {name: 'string'}, {_id: 'any'});
+
+      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'any'}});
     },
 
 

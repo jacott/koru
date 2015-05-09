@@ -107,8 +107,8 @@ define(function(require, exports, module) {
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
-        Val.ensureString(id);
-        Val.ensureString(modelName);
+        Val.assertCheck(id, 'string', {baseName: '_id'});
+        Val.assertCheck(modelName, 'string', {baseName: 'modelName'});
         var model = BaseModel[modelName];
         Val.allowIfFound(model);
         var doc = model.findById(id);

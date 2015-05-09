@@ -26,13 +26,14 @@ define(function(require, exports, module) {
 
     },
 
-    check: function (obj, spec, optSpec, error) {
-      if (arguments.length === 3 && typeof optSpec === 'function') {
-        error = optSpec;
-        optSpec = undefined;
+    check: function (obj, spec, options) {
+      if (arguments.length === 3 && options) {
+        var error = options.onError;
+        var altSpec = options.altSpec;
+        var name = options.baseName;
       }
       try {
-        check1(obj, spec);
+        check1(obj, spec, name);
         return true;
       } catch(ex) {
         if (ex === false) {
@@ -59,9 +60,9 @@ define(function(require, exports, module) {
             if (subSpec.hasOwnProperty(key)) {
               var type = subSpec[key];
               check1(obj[key], subSpec[key], name ? name+'.'+key : key);
-            } else if (subSpec === spec && optSpec && optSpec.hasOwnProperty(key)) {
-              var type = optSpec[key];
-              check1(obj[key], optSpec[key], name ? name+'.'+key : key);
+            } else if (subSpec === spec && altSpec && altSpec.hasOwnProperty(key)) {
+              var type = altSpec[key];
+              check1(obj[key], altSpec[key], name ? name+'.'+key : key);
             } else {
               bad(name ? name+'.'+key : key, obj, subSpec);
             }
@@ -77,20 +78,22 @@ define(function(require, exports, module) {
       }
     },
 
-    assertCheck: function (obj, spec, optSpec) {
-      this.check.call(this, obj, spec, optSpec, function (name) {
-        if (name) {
-          var reason = {}; reason[name] = [['is_invalid']];
-        } else {
-          var reason = 'is_invalid';
-        }
-        throw new koru.Error(400, reason);
-      });
+    assertCheck: function (obj, spec, options) {
+      if (! options || ! options.hasOwnProperty('onError'))
+        options = util.extend({onError: function (name) {
+          if (name) {
+            var reason = {}; reason[name] = [['is_invalid']];
+          } else {
+            var reason = 'is_invalid';
+          }
+          throw new koru.Error(400, reason);
+        }}, options);
+      this.check.call(this, obj, spec, options);
     },
 
-    assertDocChanges: function (doc, spec) {
+    assertDocChanges: function (doc, spec, new_spec) {
       if (doc.$isNewRecord())
-        this.assertCheck(doc.changes, spec, ID_SPEC);
+        this.assertCheck(doc.changes, spec, {altSpec : new_spec || ID_SPEC});
       else
         this.assertCheck(doc.changes, spec);
     },
