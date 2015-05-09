@@ -87,11 +87,11 @@ define(function(require, exports, module) {
     return result;
   });
 
-  var VERIFIER_SPEC = exports.VERIFIER_SPEC = Val.permitSpec('identity', 'salt', 'verifier');
+  var VERIFIER_SPEC = exports.VERIFIER_SPEC = {identity: 'string', salt: 'string', verifier: 'string'};
   session.defineRpc('SRPChangePassword', function (response) {
     exports.assertResponse(this, response);
 
-    Val.permitParams(response.newPassword, VERIFIER_SPEC);
+    Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
     this.$srpUserAccount.$update({srp: response.newPassword});
 
@@ -105,7 +105,7 @@ define(function(require, exports, module) {
 
   session.defineRpc('resetPassword', function (token, passwordHash) {
     Val.ensureString(token);
-    Val.permitParams(passwordHash, VERIFIER_SPEC);
+    Val.assertCheck(passwordHash, VERIFIER_SPEC);
     var parts = token.split('-');
     var lu = model.findById(parts[0]);
     if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {

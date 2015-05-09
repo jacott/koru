@@ -2,8 +2,9 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var val = require('./validation');
-  var koru = require('../../koru');
+  var koru = require('../main');
   var match = require('../match');
+  var util = require('../util');
 
   TH.testCase(module, {
     setUp: function () {
@@ -58,6 +59,27 @@ define(function (require, exports, module) {
       refute(val.check({foo: '', bar: 1, baz: ''}, {foo: 'string'}, {altSpec: {bar: 'number'}}));
       refute.msg('should not match sub field')(val.check({foo: {bar: 1}}, {foo: {sub: 'string'}},
                                                          {altSpec: {bar: 'number'}}));
+
+      // test onError, filter and baseName
+
+      var data = {foo: {a: 1, b: 2, c: '3'}};
+      assert(val.check(data, v.spec = {foo: {a: 'number', b: 'string'}}, {
+        baseName: 'x',
+        onError: function (name, obj, spec, key) {
+          if (key === 'c') {
+            assert.same(name, 'x.foo.c');
+            assert.same(obj, data.foo);
+            assert.same(spec, v.spec.foo);
+            delete obj[key];
+            return true;
+          }
+        },
+        filter: function (obj, key, spec, name) {
+          obj[key] = 'hello there';
+        },
+      }));
+
+      assert.equals(data, {foo: {a: 1, b: 'hello there'}});
     },
 
     "test assertCheck": function () {
@@ -217,108 +239,5 @@ define(function (require, exports, module) {
       assert.isFalse(matcher.$test(doc));
       assert.modelErrors(doc, {foo: 'is_invalid'});
     },
-
-    'with permitParams': {
-      "test permitDoc": function () {
-        var stub = test.stub(val, 'permitParams');
-        var doc = {$isNewRecord: function () {return 'isNewRecordCalled'}, changes: 'changesArg'};
-        val.permitDoc(doc, 'params', 'filter');
-
-        assert.calledWithExactly(stub, doc.changes, 'params', 'isNewRecordCalled', 'filter');
-      },
-
-      'with nested arrays': {
-        setUp: function () {
-          test.ps = val.permitSpec('baz', [{things: ['heading', [{items: ['name']}]]}]);
-        },
-
-        "test change to null": function () {
-          assertPermitted({name: null, }, val.permitSpec('name'));
-        },
-
-        'test okay full change': function () {
-          assertPermitted({'things': [{items: [{name: 'foo'},{name: 'bar'}]}]}, test.ps);
-        },
-
-        'test okay diff changes': function () {
-          assert.equals(test.ps, {baz: true, things: [{heading: true, items: [{name: true}]}]});
-
-          assertPermitted({'things.0.heading': 'head', 'things.0.items.0.name': 'foo'}, test.ps);
-        },
-
-        'test okay substructure': function () {
-          assertPermitted({'things.1': {items: [{name: 'foo'},{name: 'bar'}]}}, test.ps);
-        },
-
-        'test bad full change': function () {
-          refutePermitted({'things': [{items: [{name: 'foo'},{names: 'bar'}]}]}, test.ps);
-        },
-
-        'test bad diff changes': function () {
-          refutePermitted({'things.0.heading': 'head', 'things.0.items.0.named': 'foo'}, test.ps);
-
-          refutePermitted({'things.0.heading': 'head', 'things.0.items.0a.name': 'foo'}, test.ps);
-        },
-
-        'test bad substructure': function () {
-          refutePermitted({'things.1': {items: [{name: 'foo'},{names: 'bar'}]}}, test.ps);
-        },
-      },
-
-      'test none allowed': function () {
-        refutePermitted({abc: '123'},val.permitSpec());
-      },
-
-      'test only string of number': function () {
-        refutePermitted({name: {nau: 'ghty'}, size: {width: 123, height: 456, deep: {val: 'a'}}},
-                        val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
-      },
-
-      'test okay string': function () {
-        assertPermitted({name: 'text', size: {width: 123, height: 456, deep: {val: 'a'}}},
-                        val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
-      },
-
-      'test okay number': function () {
-        assertPermitted({name: 1234, size: {width: 123, height: 456, deep: {val: 'a'}}},
-                        val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
-      },
-
-      'test nearly okay': function () {
-        refutePermitted({name: 'nm', size: {width: 123, height: 456, deep: {val: 'a', bad: 1}}},
-                        val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
-      },
-
-      'test wrong type': function () {
-        refutePermitted({name: 'nm', size: {width: 123, height: 456, deep: 'wt'}},
-                        val.permitSpec('name', {size: [{deep: ['val']}, 'width', 'height']}));
-      },
-
-      "test wildcard": function () {
-        assertPermitted({name: 'text', age: {abc: 123}}, val.permitSpec('name', {age: '*'}));
-      },
-
-      "test filtering": function () {
-        val.permitParams(v.changes = {
-          'size.dump.val': 3, 'size.deep.bad': 1, 'size.deep.val': 2, junk: 'hello', name: 'okay',
-          age: {a: 12},
-        }, val.permitSpec('name', 'age', {size: [{deep: ['val']}]}), true, 'filter');
-
-        assert.equals(v.changes, {'size.deep.val': 2,  name: 'okay'});
-        refute.called(koru.info);
-      },
-    },
   });
-
-  function assertPermitted(params, spec) {
-    refute.accessDenied(function () {
-      val.permitParams(params, spec);
-    });
-  }
-
-  function refutePermitted(params, spec) {
-    assert.accessDenied(function () {
-      val.permitParams(params, spec);
-    });
-  }
 });

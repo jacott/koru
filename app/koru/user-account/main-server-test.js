@@ -20,7 +20,7 @@ isServer && define(function (require, exports, module) {
         userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
-      test.spy(Val, 'permitParams');
+      test.spy(Val, 'assertCheck');
       test.spy(Val, 'ensureString');
     },
 
@@ -202,7 +202,7 @@ isServer && define(function (require, exports, module) {
         session._rpcs.resetPassword.call(v.conn, v.lu._id+'-secretToken', {identity: 'abc123'});
 
         assert.calledWith(Val.ensureString, v.lu._id+'-secretToken');
-        assert.calledWith(Val.permitParams, {identity: 'abc123'}, { identity: true, salt: true, verifier: true });
+        assert.calledWith(Val.assertCheck, {identity: 'abc123'}, { identity: 'string', salt: 'string', verifier: 'string' });
         assert.same(v.conn.userId, v.lu.userId);
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
@@ -236,7 +236,7 @@ isServer && define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         result = session._rpcs.SRPChangePassword.call(v.conn, response);
 
-        assert.calledWith(Val.permitParams, response.newPassword, { identity: true, salt: true, verifier: true });
+        assert.calledWith(Val.assertCheck, response.newPassword, {identity: 'string', salt: 'string', verifier: 'string'});
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
@@ -265,9 +265,9 @@ isServer && define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         response.newPassword.bad = true;
 
-        assert.accessDenied(function () {
+        assert.exception(function () {
           session._rpcs.SRPChangePassword.call(v.conn, response);
-        });
+        }, {error: 400});
 
         assert(SRP.checkPassword('secret', v.lu.$reload().srp));
       },

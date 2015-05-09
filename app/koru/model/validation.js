@@ -31,6 +31,7 @@ define(function(require, exports, module) {
         var error = options.onError;
         var altSpec = options.altSpec;
         var name = options.baseName;
+        var filter = options.filter;
       }
       try {
         check1(obj, spec, name);
@@ -52,19 +53,26 @@ define(function(require, exports, module) {
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
-          util.forEach(obj, function (item) {
-            check1(item, subSpec, name);
+          util.forEach(obj, function (item, index) {
+            check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.$test(subSpec)) {
           for(var key in obj) {
-            if (subSpec.hasOwnProperty(key)) {
-              var type = subSpec[key];
-              check1(obj[key], subSpec[key], name ? name+'.'+key : key);
-            } else if (subSpec === spec && altSpec && altSpec.hasOwnProperty(key)) {
-              var type = altSpec[key];
-              check1(obj[key], altSpec[key], name ? name+'.'+key : key);
-            } else {
-              bad(name ? name+'.'+key : key, obj, subSpec);
+            try {
+              if (subSpec.hasOwnProperty(key)) {
+                var type = subSpec[key];
+                check1(obj[key], subSpec[key], name ? name+'.'+key : key);
+              } else if (subSpec === spec && altSpec && altSpec.hasOwnProperty(key)) {
+                var type = altSpec[key];
+                check1(obj[key], altSpec[key], name ? name+'.'+key : key);
+              } else {
+                bad(name ? name+'.'+key : key, obj, subSpec, key);
+              }
+            } catch(ex) {
+              if (filter && ex === false) {
+                filter(obj, key, subSpec, name);
+              } else
+                throw ex;
             }
           }
         } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
@@ -73,12 +81,14 @@ define(function(require, exports, module) {
       }
 
       function bad() {
-        error && error.apply(this, arguments);
+        if (error && error.apply(this, arguments))
+          return;
         throw false;
       }
     },
 
     assertCheck: function (obj, spec, options) {
+      var error;
       if (! options || ! options.hasOwnProperty('onError'))
         options = util.extend({onError: function (name) {
           if (name) {
@@ -86,9 +96,10 @@ define(function(require, exports, module) {
           } else {
             var reason = 'is_invalid';
           }
-          throw new koru.Error(400, reason);
+          error = new koru.Error(400, reason);
         }}, options);
-      this.check.call(this, obj, spec, options);
+      if ( !this.check.call(this, obj, spec, options))
+        throw error;
     },
 
     assertDocChanges: function (doc, spec, new_spec) {
@@ -277,92 +288,6 @@ define(function(require, exports, module) {
           fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(util.slice(arguments, 2));
-    },
-
-    /**
-     * @deprecated Use assertDocChanges
-     */
-    permitDoc: function (doc, permitSpec, filter) {
-      this.permitParams(doc.changes, permitSpec, doc.$isNewRecord(), filter);
-    },
-
-    /**
-     * @deprecated Use assertCheck
-     */
-    permitParams: function permitParams(changes, permitSpec, isIdAllowed, filter) {
-      if (Array.isArray(changes)) {
-        for(var i=0;i < changes.length;++i) {
-          permitParams(changes[i], permitSpec, false, filter);
-        }
-        return true;
-      }
-      for(var chg in changes) {
-        try {
-          if (filter) {
-            var old_suppressAccessDenied = util.thread.suppressAccessDenied;
-            util.thread.suppressAccessDenied = true;
-          }
-          if (chg.match(/[^a-zA-Z0-9._]/))
-            accessDenied('Bad key: ' + chg);
-
-          var keys = chg.split('.'),
-              val = changes[chg],
-              currPs = permitSpec;
-
-
-          for(var i=0;i < keys.length;++i) {
-            var key = keys[i],
-                ps = currPs[key];
-
-            if (Array.isArray(ps)) {
-              if (i+1 == keys.length) {
-                permitParams(val, ps[0], false, filter);
-              } else {
-                key = keys[++i];
-                key.match(/\D/) && accessDenied('Bad complex key format: ' + chg);
-
-                if (i+1 == keys.length) {
-                  permitParams(val, ps[0], false, filter);
-                } else {
-                  currPs = ps[0];
-                }
-              }
-            } else if (chg === '_id') {
-              if (isIdAllowed || ps)
-                Val.ensureString(val);
-              else
-                accessDenied('_id is not allowed');
-            } else if (ps) {
-              if (i+1 !== keys.length) {
-                currPs = ps;
-              } else if (ps !== '*') {
-                (ps === true && Val.allowIfSimple(val)) ||
-                  typeof val === 'object' && permitParams(val, ps, false, filter) ||
-                  accessDenied('bad Key, Value => ' + key + ", " + JSON.stringify(val));
-              }
-            } else {
-              accessDenied('unknown key =>' + key);
-            }
-          }
-        } catch(ex) {
-          if (filter && ex.error === 403) {
-            delete changes[chg];
-          } else {
-            throw ex;
-          }
-        } finally {
-          if (filter)
-            util.thread.suppressAccessDenied = old_suppressAccessDenied;
-        }
-      }
-      return true;
-    },
-
-    /**
-     * @deprecated Use assertCheck instead
-     */
-    permitSpec: function (/* arguments */) {
-      return convertPermitSpec(typeof arguments[0] === 'object' && typeof arguments[0].length === 'number' ? arguments[0] : arguments);
     },
   };
 
