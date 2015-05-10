@@ -114,7 +114,7 @@ define(function(require, exports, module) {
         delete doc._errors;
         for (var field in doc) {
           if (! fieldSpec.hasOwnProperty(field)) {
-            Val.addError(doc, '', 'unexpected_field', field);
+            Val.addError(doc, field, 'unexpected_field');
             return false;
           }
         }

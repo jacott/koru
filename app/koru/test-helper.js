@@ -103,7 +103,11 @@ define(function(require, exports, module) {
 
       for(var field in errors) {
         var msgs = errors[field].map(function (m) {
-          return m.join(', ');
+          if (m.length === 1)
+            return m[0];
+          return m.map(function (n) {
+            return typeof n === 'object' ? util.inspect(n) : n;
+          }).join(', ');
         });
 
         result[field] = msgs.join('; ');
