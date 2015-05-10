@@ -469,7 +469,7 @@ define(function(require, exports, module) {
         for (var key in partials) {
           var validator = doc.authorizePut[key];
           Val.allowAccessIf(validator, 'no validator for ' + key);
-          validator(doc, partials[key]);
+          validator(doc, partials[key], key);
         }
 
       }

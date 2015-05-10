@@ -798,8 +798,8 @@ define(function (require, exports, module) {
         "test authorizePut object": function () {
           v.TestModel.prototype.authorizePut = {
             array: v.array = test.stub(),
-            deep: function (doc, updates) {
-              updates['deep.nested'].value = 444;
+            deep: function (doc, updates, key) {
+              updates[key+'.nested'].value = 444;
             },
           },
           v.TestModel.prototype.authorize = v.auth = test.stub();
@@ -823,7 +823,7 @@ define(function (require, exports, module) {
             assert.equals(v.auth.thisValues[1], TH.matchModel(v.doc));
             assert(v.auth.calledBefore(session.rpc));
           }
-          assert.calledWith(v.array, TH.matchModel(v.doc), v.arrayUpdates);
+          assert.calledWith(v.array, TH.matchModel(v.doc), v.arrayUpdates, 'array');
 
           v.doc.$reload();
 
