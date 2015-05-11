@@ -251,6 +251,8 @@ define(function (require, exports, module) {
       doc = {bar: 3};
       assert.isFalse(matcher.$test(doc));
       assert.modelErrors(doc, {bar: 'unexpected_field'});
+
+      assert.msg("null doc should be false").isFalse(matcher.$test(null));
     },
   });
 });

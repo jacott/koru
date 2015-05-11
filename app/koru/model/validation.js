@@ -113,6 +113,7 @@ define(function(require, exports, module) {
 
     matchFields: function (fieldSpec, name) {
       var m = match(function (doc) {
+        if (! doc) return false;
         delete doc._errors;
         for (var field in doc) {
           if (! fieldSpec.hasOwnProperty(field)) {
