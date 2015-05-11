@@ -90,8 +90,10 @@ define(function(require, exports, module) {
     assertCheck: function (obj, spec, options) {
       var error;
       if (! options || ! options.hasOwnProperty('onError'))
-        options = util.extend({onError: function (name) {
-          if (name) {
+        options = util.extend({onError: function (name, obj) {
+          if (obj && obj._errors) {
+            var reason = obj._errors;
+          } else if (name) {
             var reason = {}; reason[name] = [['is_invalid']];
           } else {
             var reason = 'is_invalid';

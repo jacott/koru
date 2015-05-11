@@ -93,6 +93,15 @@ define(function (require, exports, module) {
       assert.exception(function () {
         val.assertCheck({_id: 'abc'}, {name: 'string'});
       }, {error: 400, reason: {_id: [['is_invalid']]}});
+
+      val.register('mymodule', {valAbc: function (doc, field) {
+        this.addError(doc, field, 'is_abc');
+      }});
+      test.onEnd(function () {val.register('mymodule')});
+
+      assert.exception(function () {
+        val.assertCheck({name: 'abc'}, val.matchFields({name: {type: 'string', valAbc: true}}));
+      }, {error: 400, reason: {name: [['is_abc']]}});
     },
 
     "test assertDocChanges": function () {
