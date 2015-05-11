@@ -916,6 +916,21 @@ define(function (require, exports, module) {
 
       tsc.withDef = undefined;
       assert.same(tsc.withDef, 0);
-    }
+    },
+
+    "test splitUpdateKeys": function () {
+      var changes = {}, partials = {};
+      var updates = {
+        single: 1,
+        'anotherSingle': 'a',
+        'multi.part': 2,
+        'multi.also.here': 3,
+        'added.$+1': 4,
+      };
+      Model.splitUpdateKeys(changes, partials, updates);
+
+      assert.equals(changes, {single: 1, anotherSingle: "a"});
+      assert.equals(partials, {multi: {"multi.part": 2, "multi.also.here": 3}, added: {"added.$+1": 4}});
+    },
   });
 });

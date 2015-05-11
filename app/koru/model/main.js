@@ -451,16 +451,7 @@ define(function(require, exports, module) {
       Val.allowAccessIf(userId && doc.authorizePut);
       var changes = {};
       var partials = {};
-      for (var key in updates) {
-        var pos = key.indexOf(".");
-        if (pos === -1)
-          changes[key] = updates[key];
-        else {
-          var mainKey = key.slice(0, pos);
-          var section = partials[mainKey] || (partials[mainKey] = {});
-          section[key] = updates[key];
-        }
-      }
+      BaseModel.splitUpdateKeys(changes, partials, updates);
       doc.changes = changes;
       if (typeof doc.authorizePut === 'function')
         doc.authorizePut(userId, partials);
@@ -615,6 +606,19 @@ define(function(require, exports, module) {
     },
 
     _modelProperties: modelProperties,
+
+    splitUpdateKeys: function (changes, partials, updates) {
+      for (var key in updates) {
+        var pos = key.indexOf(".");
+        if (pos === -1)
+          changes[key] = updates[key];
+        else {
+          var mainKey = key.slice(0, pos);
+          var section = partials[mainKey] || (partials[mainKey] = {});
+          section[key] = updates[key];
+        }
+      }
+    },
   });
 
   var typeMap = {
