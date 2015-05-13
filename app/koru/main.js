@@ -246,11 +246,13 @@
     };
 
     function logDebug() {
-      koru.logger('\x44EBUG', util.slice(arguments, 0));
+      var args = util.slice(arguments, 0);
+      args.unshift('\x44EBUG');
+      koru.logger.apply(koru, args);
     }
 
     logDebug.inspect = function () {
-      koru.logger('\x44EBUG ' + util.inspect(arguments));
+      koru.logger('\x44EBUG ' + util.map(arguments, function (arg) {return util.inspec(arg)}).join(', '));
     };
 
     if (isServer) {
