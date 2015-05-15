@@ -8,11 +8,11 @@ var ARGV = process.argv.slice(2);
 var runTime;
 
 var exitCode = 0;
-var sessionCount = 0;
-
 var WebSocket = require('ws');
 
-var typeCount = ARGV[0] === 'both' ? 2 : 1;
+var sessionCount = ARGV[0] === 'both' ? 2 : 1;
+
+ARGV.push(ARGV[0] === 'server' ? 0 : 1);
 
 var ws = new WebSocket('ws://localhost:3000/rc');
 ws.on('open', runTests);
@@ -28,29 +28,18 @@ ws.on('close', function () {
 });
 
 function runTests() {
-  runTime = Date.now();
-  if (typeCount === 2)
-    ARGV[0] = 'client';
   ws.send('T\t'+ARGV.join('\t'));
-
-  ARGV[0] = 'server';
 }
 
 function exitProcess(key, code) {
+  if (timer) {
+    clearTimeout(timer);
+    sendResults();
+  }
   if (code) exitCode = code;
-  if (--sessionCount <= 0) {
-    if (timer) {
-      clearTimeout(timer);
-      sendResults();
-    }
-  }
   write(['exit', key, (Date.now() - runTime) + ' ' + code]);
-  if (sessionCount) return;
-  if (--typeCount) {
-    runTests();
-  } else {
-    process.exit(exitCode);
-  }
+  if (--sessionCount) return;
+  process.exit(exitCode);
 }
 
 function log(key, msg) {
@@ -109,10 +98,8 @@ function processBuffer(buffer) {
   }
   switch(buffer.slice(0,1).toString()) {
   case 'X':
-    sessionCount = +data;
-    log('Info', 'test runner count: ' + sessionCount);
-    if (! sessionCount)
-      exitProcess('ALL FAILED', 1);
+    console.log('test runner: ' + data);
+    runTime = Date.now();
     break;
   case 'F': // Finish
     if (recvdResult)

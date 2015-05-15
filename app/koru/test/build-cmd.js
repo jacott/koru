@@ -50,8 +50,6 @@ define(function(require, exports, module) {
       if (sTests && sTests.length)
         type = type === 'none' ? 'server' : 'both';
 
-      callback(type);
-
       if (type === 'none')
         return;
 
@@ -62,7 +60,6 @@ define(function(require, exports, module) {
                          JSON.stringify(pattern)+","+JSON.stringify(cTests)+
                          ")})");
         fs.renameSync(cmdFn, topDir + '/.build/cmd-client.js');
-        session.load('/.build/cmd-client.js');
       }
 
       if (type !== 'client') {
@@ -76,8 +73,16 @@ define(function(require, exports, module) {
           try {fs.unlinkSync(dest);} catch (ex) {}
         }
         fs.symlinkSync(require.toUrl('./server-ready-prep.js'), dest);
-        require(['./server', 'test/server-ready'], function (TH) {TH.run(pattern, sTests)});
       }
+
+      callback(type, {
+        server: function () {
+          require(['./server', 'test/server-ready'], function (TH) {TH.run(pattern, sTests)});
+        },
+        client: function (conn) {
+          conn.send('L', '/.build/cmd-client.js');
+        }
+      });
 
       function findAll(dir) {
         var dirPath = Path.join(topDir, dir);

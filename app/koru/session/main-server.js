@@ -6,6 +6,7 @@ define(function (require, exports, module) {
   var server = require('../web-server').server;
   var message = require('./message');
   var IdleCheck = require('../idle-check').singleton;
+  var makeSubject = require('../make-subject');
 
   return function (session) {
     var Connection = require('./server-connection')(session);
@@ -35,6 +36,8 @@ define(function (require, exports, module) {
       get _sessCounter() {return sessCounter},
       get _Connection() {return Connection},
     });
+
+    makeSubject(session.countNotify = {});
 
     session.provide('X', function (data) {
       // TODO ensure protocol version is compatible
@@ -87,11 +90,12 @@ define(function (require, exports, module) {
       var sessId = (++sessCounter).toString(36);
       var conn = session.conns[sessId] = new Connection(ws, sessId, function() {
         ws.close();
-        --session.totalSessions;
-        if (sessId) {
-          var conn = session.conns[sessId];
-          conn && conn.closed();
+        var conn = session.conns[sessId];
+        if (conn) {
+          --session.totalSessions;
+          conn.closed();
           delete session.conns[sessId];
+          session.countNotify.notify(conn, false);
         }
         koru.info('Close client', sessId, session.totalSessions);
       });
@@ -103,6 +107,7 @@ define(function (require, exports, module) {
 
       conn.send('X1', session.versionHash);
       koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
+      session.countNotify.notify(conn, true);
     }
 
     function sendAll(cmd, msg) {
