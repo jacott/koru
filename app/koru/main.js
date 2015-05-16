@@ -257,7 +257,7 @@
     }
 
     logDebug.inspect = function () {
-      koru.logger('\x44EBUG ' + util.map(arguments, function (arg) {return util.inspec(arg)}).join(', '));
+      koru.logger('\x44EBUG ' + util.map(arguments, function (arg) {return util.inspect(arg)}).join(', '));
     };
 
     if (isServer) {
