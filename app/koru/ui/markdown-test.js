@@ -3,6 +3,7 @@ isClient && define(function (require, exports, module) {
   var TH = require('../test');
   var Markdown = require('./markdown');
   var Dom = require('../dom');
+  var koru = require('../main');
 
   TH.testCase(module, {
     setUp: function () {
@@ -34,6 +35,7 @@ isClient && define(function (require, exports, module) {
 
         assert.same(v.c('<div><a href="http://obeya.co">Obeya **Limited**</a> link</div>'),
                     '[Obeya \\**Limited**](http://obeya.co) link');
+
       },
 
       "test simple nesting": function () {
@@ -101,10 +103,12 @@ isClient && define(function (require, exports, module) {
       },
 
       "test hyperlink": function () {
-        assert.same(v.c('[l1](/l1) text [O][b\n]eya](http://obeya.co)[link2](/a)'),
+        test.stub(koru, 'getHashOrigin').returns('http://getobeya.com/');
+        assert.same(v.c('[l1](/l1) text [O][b\n]eya](http://obeya.co)[link2](/a)[int](http://getobeya.com/#int/ernal)'),
                     '<a href="/l1" target="_blank">l1</a> text [O]'+
                     '<a href="http://obeya.co" target="_blank">b<br>]eya</a>'+
-                    '<a href="/a" target="_blank">link2</a>');
+                    '<a href="/a" target="_blank">link2</a>'+
+                    '<a href="/#int/ernal">int</a>');
       },
 
       "test underscores in link text": function () {

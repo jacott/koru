@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var MarkdownBase = require('../markdown');
+  var koru = require('../main');
 
   var output, needspace;
 
@@ -34,8 +35,18 @@ define(function(require, exports, module) {
             elm.setAttribute('data-'+ (mention === '@' ? 'a' : 'h'), href);
             if (editable) elm.setAttribute('contenteditable', 'true');
           } else {
-            elm.setAttribute('href', href);
-            elm.setAttribute('target', '_blank');
+            if (isClient) {
+              var prefix = koru.getHashOrigin()+'#';
+              if (href.indexOf(prefix) === 0) {
+                elm.setAttribute('href', href.slice(prefix.length - 2));
+              } else {
+                prefix = null;
+              }
+            }
+            if (! prefix) {
+              elm.setAttribute('href', href);
+              elm.setAttribute('target', '_blank');
+            }
           }
           index += href.length + 3;
           if (index === mdlen) break;

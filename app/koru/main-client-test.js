@@ -13,6 +13,12 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test getHashOrigin": function () {
+      test.stub(koru, 'getLocation').returns({protocol: 'p', host: 'h', pathname: 'n'});
+
+      assert.same(koru.getHashOrigin(), 'p//hn');
+    },
+
     "afTimeout": {
       setUp: function () {
         test.stub(window, 'setTimeout').returns(7766);

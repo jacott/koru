@@ -228,6 +228,11 @@
         return window.location;
       },
 
+      getHashOrigin: function () {
+        var l = this.getLocation();
+        return l.protocol+'//'+l.host+l.pathname;
+      },
+
       nullFunc: function () {},
 
       /**
