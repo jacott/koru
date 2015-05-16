@@ -12,7 +12,7 @@ isClient && define(function (require, exports, module) {
       v = {};
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./select-menu-test'));
 
-      document.body.appendChild(v.TestTpl.$autoRender({}));
+      document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
       v.result = false;
       v.popup = function (customize, pos) {
         assert.dom('#TestSelectMenu [name=select]', function () {
@@ -60,11 +60,12 @@ isClient && define(function (require, exports, module) {
       },
 
       "test above": function () {
+        v.testSelectMenu.style.marginTop = '300px';
         v.popup(null, 'above');
         assert.dom('body>#GlassPane>#SelectMenu', function () {
           var bbox = v.button.getBoundingClientRect();
           assert.same(this.style.top, '');
-          assert.cssNear(this, 'bottom', bbox.top, 2, 'px');
+          assert.cssNear(this, 'bottom', window.innerHeight - bbox.top, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       },
@@ -97,10 +98,6 @@ isClient && define(function (require, exports, module) {
       },
 
       "test no room above": function () {
-        assert.dom('#TestSelectMenu [name=select]', function () {
-          this.style.position = 'absolute';
-          this.style.top = (window.innerHeight * .75)+'px';
-        });
         v.popup(function () {
           $.element.style.height = (window.innerHeight * .2)+'px';
         }, 'above');

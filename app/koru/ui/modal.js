@@ -35,6 +35,7 @@ define(function(require, exports, module) {
     },
 
     append: function (pos, glassPane, origin) {
+      var height = window.innerHeight;
       var ctx = Dom.getMyCtx(glassPane);
       exports._init(ctx, glassPane);
       var popup = glassPane.firstChild;
@@ -42,13 +43,12 @@ define(function(require, exports, module) {
       var bbox = origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
       if (pos === 'above') {
-        ps.bottom = bbox.top + 'px';
+        ps.bottom = (height - bbox.top) + 'px';
       } else {
         ps.top = (bbox.top + bbox.height) + 'px';
       }
       document.body.appendChild(glassPane);
       var ppos = popup.getBoundingClientRect();
-      var height = window.innerHeight;
       if (pos === 'above') {
         if (ppos.top < 0) {
           ps.bottom = '';
