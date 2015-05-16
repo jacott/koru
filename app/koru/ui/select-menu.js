@@ -7,9 +7,9 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   Tpl.$extend({
-    popup: function (elm, options) {
+    popup: function (elm, options, pos) {
       Dom.removeId('GlassPane');
-      Modal.appendBelow(Tpl.$autoRender(options), elm);
+      Modal.append(pos, Tpl.$autoRender(options), elm);
     },
 
     close: function (ctx, elm) {

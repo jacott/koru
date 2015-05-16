@@ -26,18 +26,39 @@ define(function(require, exports, module) {
       }
     },
 
+    appendAbove: function (glassPane, origin) {
+      return this.append('above', glassPane, origin);
+    },
+
     appendBelow: function (glassPane, origin) {
+      return this.append('below', glassPane, origin);
+    },
+
+    append: function (pos, glassPane, origin) {
       var ctx = Dom.getMyCtx(glassPane);
       exports._init(ctx, glassPane);
       var popup = glassPane.firstChild;
       var ps = popup.style;
       var bbox = origin.getBoundingClientRect();
-      ps.top = (bbox.top + bbox.height) + 'px';
       ps.left = bbox.left + 'px';
+      if (pos === 'above') {
+        ps.bottom = bbox.top + 'px';
+      } else {
+        ps.top = (bbox.top + bbox.height) + 'px';
+      }
       document.body.appendChild(glassPane);
       var ppos = popup.getBoundingClientRect();
       var height = window.innerHeight;
-      if (ppos.bottom > height) {
+      if (pos === 'above') {
+        if (ppos.top < 0) {
+          ps.bottom = '';
+          if (ppos.height + bbox.top + bbox.height > height) {
+            ps.top = '0';
+          } else {
+            ps.top = (bbox.top + bbox.height) + 'px';
+          }
+        }
+      } else if (ppos.bottom > height) {
         if (ppos.height >= bbox.top) {
           ps.top = '0';
         } else {

@@ -14,7 +14,7 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(v.TestTpl.$autoRender({}));
       v.result = false;
-      v.popup = function (customize) {
+      v.popup = function (customize, pos) {
         assert.dom('#TestSelectMenu [name=select]', function () {
           sut.popup(this, {
             customize: function () {
@@ -26,7 +26,7 @@ isClient && define(function (require, exports, module) {
               v.currentTarget = event.currentTarget;
               v.elm = elm;
               return v.result;
-            }});
+            }}, pos);
           v.button = this;
         });
       };
@@ -59,6 +59,16 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test above": function () {
+        v.popup(null, 'above');
+        assert.dom('body>#GlassPane>#SelectMenu', function () {
+          var bbox = v.button.getBoundingClientRect();
+          assert.same(this.style.top, '');
+          assert.cssNear(this, 'bottom', bbox.top, 2, 'px');
+          assert.cssNear(this, 'left', bbox.left, 2, 'px');
+        });
+      },
+
       "test full height": function () {
         v.popup(function () {
           $.element.style.height = (window.innerHeight + 200)+'px';
@@ -83,6 +93,21 @@ isClient && define(function (require, exports, module) {
           assert.same(this.style.top, '');
           assert.cssNear(this, 'bottom', (window.innerHeight - bbox.top), 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
+        });
+      },
+
+      "test no room above": function () {
+        assert.dom('#TestSelectMenu [name=select]', function () {
+          this.style.position = 'absolute';
+          this.style.top = (window.innerHeight * .75)+'px';
+        });
+        v.popup(function () {
+          $.element.style.height = (window.innerHeight * .2)+'px';
+        }, 'above');
+        assert.dom('#SelectMenu', function () {
+          var bbox = v.button.getBoundingClientRect();
+          assert.same(this.style.bottom, '');
+          assert.cssNear(this, 'top', (bbox.top + bbox.height), 2, 'px');
         });
       },
     },
