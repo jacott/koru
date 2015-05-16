@@ -138,6 +138,8 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('#SelectMenu');
           TH.trigger(this, 'mousedown');
+          assert.dom('#SelectMenu');
+          TH.trigger('#GlassPane', 'mousedown');
           refute.dom('#SelectMenu');
         });
       },
@@ -178,9 +180,8 @@ isClient && define(function (require, exports, module) {
       },
 
       "test clicking off list closes list": function () {
-        assert.dom('#TestSelectMenu>br', function () {
-          TH.trigger(this, 'mousedown');
-        });
+        assert.dom('#TestSelectMenu>br');
+        TH.trigger('#GlassPane', 'mousedown');
         refute.dom('#SelectMenu');
       },
 

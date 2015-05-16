@@ -4,11 +4,11 @@ define(function(require, exports, module) {
 
   return exports = {
     _init: function(ctx, glassPane) {
-      window.addEventListener('keydown', callback, true);
-      window.addEventListener('mousedown', callback, true);
+      glassPane.addEventListener('keydown', callback, true);
+      glassPane.addEventListener('mousedown', callback, true);
       ctx.onDestroy(function () {
-        window.removeEventListener('keydown', callback, true);
-        window.removeEventListener('mousedown', callback, true);
+        glassPane.removeEventListener('keydown', callback, true);
+        glassPane.removeEventListener('mousedown', callback, true);
       });
 
       var popup = glassPane.firstChild;
