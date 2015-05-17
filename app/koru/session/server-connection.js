@@ -7,14 +7,24 @@ define(function(require, exports, module) {
 
   exports = function (session) {
     function Connection(ws, sessId, close) {
-      this.ws = ws;
-      this.sessId = sessId;
-      this._subs = {};
-      this.close = close;
-      this._last = null;
-      this.match = match();
+      var conn = this;
+      conn.ws = ws;
+      conn.sessId = sessId;
+      conn._subs = {};
+      conn.close = function () {
+        var subs = conn._subs;
+        conn._subs = null;
+        conn.ws = null;
+        if (subs) for(var key in subs) {
+          try {subs[key].stop();}
+          catch(ex) {koru.error(util.extractError(ex));}
+        }
+        close();
+      };
+      conn._last = null;
+      conn.match = match();
 
-      ws.on('close', close);
+      ws.on('close', function () {conn.close()});
     }
 
     var binaryData = {binary: true};
@@ -53,6 +63,7 @@ define(function(require, exports, module) {
           this.ws && this.ws.send(type + (data === undefined ? '' : data));
         } catch(ex) {
           koru.error(util.extractError(ex));
+          this.close();
         }
       },
 
@@ -63,7 +74,7 @@ define(function(require, exports, module) {
         } catch(ex) {
           koru.info('sendBinary exception', ex);
 
-          this.closed();
+          this.close();
         }
       },
 
@@ -102,16 +113,6 @@ define(function(require, exports, module) {
 
       removed: function (name, id) {
         this.sendBinary('R', [name, id]);
-      },
-
-      closed: function () {
-        var subs = this._subs;
-        this._subs = null;
-        this.ws = null;
-        if (subs) for(var key in subs) {
-          try {subs[key].stop();}
-          catch(ex) {koru.error(util.extractError(ex));}
-        }
       },
 
       set userId(userId) {

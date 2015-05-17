@@ -93,7 +93,6 @@ define(function (require, exports, module) {
         var conn = session.conns[sessId];
         if (conn) {
           --session.totalSessions;
-          conn.closed();
           delete session.conns[sessId];
           session.countNotify.notify(conn, false);
         }

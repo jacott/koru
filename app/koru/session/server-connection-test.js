@@ -15,7 +15,7 @@ isServer && define(function (require, exports, module) {
       v = {};
       v.conn = new Connection(v.ws = {
         send: test.stub(), close: test.stub(), on: test.stub(),
-      }, 123);
+      }, 123, v.sessClose = test.stub());
       test.stub(v.conn, 'sendBinary');
     },
 
@@ -114,14 +114,17 @@ isServer && define(function (require, exports, module) {
         v.conn.send('X', 'FOO');
       });
 
+      assert.called(v.sessClose);
       assert.called(koru.error);
 
+      v.sessClose.reset();
       koru.error.reset();
       v.conn.ws = null;
       refute.exception(function () {
         v.conn.send('X', 'FOO');
       });
 
+      refute.called(v.sessClose);
       refute.called(koru.error);
     },
 
@@ -249,7 +252,7 @@ isServer && define(function (require, exports, module) {
       v.conn._subs.t1 = {stop: v.t1 = test.stub()};
       v.conn._subs.t2 = {stop: v.t2 = test.stub()};
 
-      v.conn.closed();
+      v.conn.close();
 
       assert.called(v.t1);
       assert.called(v.t2);
@@ -257,7 +260,7 @@ isServer && define(function (require, exports, module) {
       assert.isNull(v.conn._subs);
       assert.isNull(v.conn.ws);
 
-      v.conn.closed();
+      v.conn.close();
 
       assert.calledOnce(v.t1);
     },

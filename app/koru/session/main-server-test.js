@@ -164,11 +164,11 @@ isServer && define(function (require, exports, module) {
         return typeof func === 'function';
       }));
 
-      test.spy(conn, 'closed');
+      test.spy(conn, 'close');
 
       v.func();
 
-      assert.called(conn.closed);
+      assert.called(conn.close);
       refute(conn.sessId in session.conns);
     },
   });
