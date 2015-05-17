@@ -1,0 +1,181 @@
+isClient && define(function (require, exports, module) {
+  var test, v;
+  var TH = require('./test-helper');
+  var sut = require('./calendar');
+  var Dom = require('../dom');
+  var Each = require('./each');
+  var $ = Dom.current;
+  var util = require('../util');
+
+  TH.testCase(module, {
+    setUp: function () {
+      test = this;
+      v = {};
+      v.TestTpl = Dom.newTemplate(module, require('koru/html!./calendar-test'));
+      v.open = function (date) {
+        util.withDateNow(date, function () {
+          assert.dom('#TestCalendar [name=testField]', function () {
+            this.focus();
+            TH.trigger(this, 'focusin');
+          });
+        });
+      };
+
+      sut.register(v.TestTpl, 'input.date');
+
+      document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
+    },
+
+    tearDown: function () {
+      TH.domTearDown();
+      v = null;
+    },
+
+    "test click opens": function () {
+      assert.dom('#TestCalendar [name=testField]', function () {
+        TH.input(this, '2014-10-5');
+        TH.click(this);
+        v.ctx = Dom.getMyCtx(this);
+        TH.click(this);
+        assert.same(Dom.getMyCtx(this), v.ctx);
+
+      });
+      assert.dom('.Calendar', {count: 1}, function () {
+        assert.dom('header span', 'October 2014');
+        assert.dom('td.select.current', '5');
+        assert.same(v.ctx._koruCalendar, this);
+        Dom.remove(this);
+      });
+      assert.same(v.ctx._koruCalendar, null);
+      assert.dom('#TestCalendar [name=testField]', function () {
+        TH.click(this);
+        Dom.remove(this);
+      });
+
+      refute.dom('.Calendar');
+    },
+
+    "test change Month": function () {
+      v.open(new Date(2015, 0, 31));
+      assert.dom('body>.Calendar', function () {
+        assert.dom('header', function () {
+          TH.click('[name=previous]');
+          assert.dom('span', 'December 2014');
+        });
+        assert.dom('td.select.current', '31');
+        TH.click('header [name=next]');
+        assert.dom('td.select.current', '31');
+        TH.click('[name=next]');
+        assert.dom('span', 'February 2015');
+        assert.dom('td.select.current', '28');
+      });
+    },
+
+    "test pick date": function () {
+      v.open(new Date(2015, 11, 31));
+      assert.dom('body>.Calendar td', '25', function () {
+        test.spy(Dom, 'stopEvent');
+        TH.trigger(document.body.lastChild, 'mousedown');
+        assert.called(Dom.stopEvent);
+        TH.click(this);
+      });
+      assert.dom('[name=testField]', function () {
+        assert.same(document.activeElement, this);
+        assert.same(this.value, '2015-12-25');
+      });
+      refute.dom('.Calendar');
+    },
+
+    "test rendering": function () {
+      v.open(new Date(2015, 2, 23));
+      assert.dom('body>.Calendar', function () {
+        assert.cssNear(this, 'left', 62);
+        assert.cssNear(this, 'top', 49);
+        assert.dom('header', function () {
+          assert.dom('span', 'March 2015');
+        });
+        assert.dom('table>tbody', function () {
+          assert.dom('tr:first-child.dow', 'MoTuWeThFrSaSu', function () {
+            assert.dom('td', {count: 7});
+          });
+          assert.dom('tr:nth-child(2)', function () {
+            assert.dom('td:first-child.previous:not(.select)', '23');
+            assert.dom('td:last-child.current', '1');
+          });
+          assert.dom('tr:nth-child(4)', function () {
+            assert.dom('td:first-child.current', '9');
+            assert.dom('td:last-child.current', '15');
+          });
+          assert.dom('tr:nth-child(6)', function () {
+            assert.dom('td:nth-child(1).current.today.select', '23');
+          });
+          assert.dom('tr:last-child', function () {
+            assert.dom('td:first-child.current', '30');
+            assert.dom('td:last-child.next', '5');
+          });
+        });
+
+        Dom.getCtx(this).updateAllTags(new Date(2015,4,10));
+        assert.dom('header', function () {
+          assert.dom('span', 'May 2015');
+        });
+        assert.dom('table>tbody', function () {
+          assert.dom('tr:last-child', function () {
+            assert.dom('td:first-child.current', '25');
+            assert.dom('td:last-child.current', '31');
+          });
+          assert.dom('td.select.current', '10');
+        });
+
+        Dom.getCtx(this).updateAllTags(new Date(2015,5,7));
+        assert.dom('header', function () {
+          assert.dom('span', 'June 2015');
+        });
+        assert.dom('table>tbody', function () {
+          assert.dom('tr:nth-child(2)', function () {
+            assert.dom('td:first-child.current', '1');
+            assert.dom('td:last-child.current.select', '7');
+          });
+        });
+      });
+    },
+
+    "test focusout": function () {
+      v.open(new Date(2013-01-02));
+      TH.trigger('[name=testField]', 'focusout');
+
+      refute.dom('.Calendar');
+    },
+
+    "test up down escape": function () {
+      function keydown(code) {TH.trigger(v.input, 'keydown', {which: code})}
+
+      assert.dom('[name=testField]', function () {
+        TH.input(this, '2013-01-01');
+        TH.click(this);
+        v.input = this;
+        keydown(38);
+        assert.same(this.value, '2012-12-31');
+      });
+      assert.dom('.Calendar', function () {
+        assert.dom('span', 'December 2012');
+        assert.dom('td.select', '31');
+        keydown(38);
+        assert.dom('td.select', '30');
+        keydown(40);
+        keydown(40);
+        keydown(40);
+        assert.same(v.input.value, '2013-01-02');
+        assert.dom('td.select', '2');
+        assert.dom('span', 'January 2013');
+      });
+      test.spy(Dom, 'stopEvent');
+      keydown(27);
+      assert.dom('.Calendar');
+      assert.called(Dom.stopEvent);
+      TH.trigger(v.input, 'keyup', {which: 27}); // stop propigation on up
+      refute.dom('.Calendar');
+      assert.calledTwice(Dom.stopEvent);
+    },
+  });
+});

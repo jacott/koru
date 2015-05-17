@@ -3,15 +3,15 @@ define(function(require, exports, module) {
   var Dom = require('../dom');
 
   return exports = {
-    _init: function(ctx, glassPane) {
-      glassPane.addEventListener('keydown', callback, true);
-      glassPane.addEventListener('mousedown', callback, true);
+    _init: function(ctx, container) {
+      container.addEventListener('keydown', callback, true);
+      container.addEventListener('mousedown', callback, true);
       ctx.onDestroy(function () {
-        glassPane.removeEventListener('keydown', callback, true);
-        glassPane.removeEventListener('mousedown', callback, true);
+        container.removeEventListener('keydown', callback, true);
+        container.removeEventListener('mousedown', callback, true);
       });
 
-      var popup = glassPane.firstChild;
+      var popup = container.firstChild;
 
       function callback(event) {
         if (event) {
@@ -22,23 +22,31 @@ define(function(require, exports, module) {
           }
         }
 
-        Dom.remove(glassPane);
+        Dom.remove(container);
       }
     },
 
-    appendAbove: function (glassPane, origin) {
-      return this.append('above', glassPane, origin);
+    appendAbove: function (container, origin, popup) {
+      return this.append('above', container, origin, popup);
     },
 
-    appendBelow: function (glassPane, origin) {
-      return this.append('below', glassPane, origin);
+    appendBelow: function (container, origin, popup) {
+      return this.append('below', container, origin, popup);
     },
 
-    append: function (pos, glassPane, origin) {
+    append: function (pos, container, origin, popup) {
       var height = window.innerHeight;
-      var ctx = Dom.getMyCtx(glassPane);
-      exports._init(ctx, glassPane);
-      var popup = glassPane.firstChild;
+      var isNested = ! popup;
+      if (isNested) {
+        popup = container.firstChild;
+      } else {
+        container = popup;
+      }
+      if (isNested) {
+        var ctx = Dom.getMyCtx(container);
+        exports._init(ctx, container);
+      }
+
       var ps = popup.style;
       var bbox = origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
@@ -47,7 +55,7 @@ define(function(require, exports, module) {
       } else {
         ps.top = (bbox.top + bbox.height) + 'px';
       }
-      document.body.appendChild(glassPane);
+      document.body.appendChild(container);
       var ppos = popup.getBoundingClientRect();
       if (pos === 'above') {
         if (ppos.top < 0) {

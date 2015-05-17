@@ -672,6 +672,15 @@ define(function (require, exports, module) {
       assert.isTrue(result);
     },
 
+    "test dateInputFormat": function () {
+      assert.same(util.dateInputFormat(new Date("2015-1-15")), "2015-01-15");
+    },
+
+    "test twoDigits": function () {
+      assert.same(util.twoDigits(9), '09');
+      assert.same(util.twoDigits(10), '10');
+    },
+
     "test emailAddress": function () {
       assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
     },

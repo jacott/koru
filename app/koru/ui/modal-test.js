@@ -2,6 +2,7 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var sut = require('./modal');
+  var Dom = require('../dom');
 
   TH.testCase(module, {
     setUp: function () {
@@ -30,6 +31,24 @@ isClient && define(function (require, exports, module) {
       sut.appendAbove('gp', 'origin');
 
       assert.calledWith(sut.append, 'above', 'gp', 'origin');
+    },
+
+    "test popup": function () {
+      test.spy(sut, '_init');
+      var page = Dom.html({content: ['text', {tag: 'input'}]});
+      document.body.appendChild(page);
+      var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
+      assert.dom('input', function () {
+        sut.appendBelow(document.body, this, popup);
+      });
+      assert.dom('body', function () {
+        assert.dom('>.popup', function () {
+          assert.cssNear(this, 'left', 21);
+          assert.cssNear(this, 'top', 19);
+        });
+      });
+      refute.called(sut._init);
+      debugger;
     },
   });
 });

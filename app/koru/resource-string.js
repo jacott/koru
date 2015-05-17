@@ -6,6 +6,7 @@ define({
     must_be_less_than: "must be less than {0}",
     must_be_greater_than: "must be greater than {0}",
     not_a_number: "not numeric",
+    not_a_date: "not a valid date: yyyy-mm-dd",
     too_long: "{0} characters is the maximum allowed",
     is_required: "can't be blank",
     is_invalid: "not valid",

@@ -1,0 +1,17 @@
+<template name="Calendar">
+  <div class="Calendar">
+    <header>
+      <button name="previous"></button>
+      <span>{{monthName}} {{getFullYear}}</span>
+      <button name="next"></button>
+    </header>
+    <table>
+      <tbody>
+        <tr class="dow">
+          <td>Mo</td><td>Tu</td><td>We</td><td>Th</td><td>Fr</td><td>Sa</td><td>Su</td>
+        </tr>
+        {{dates}}
+      </tbody>
+    </table>
+  </div>
+</template>

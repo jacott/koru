@@ -660,6 +660,15 @@ define(function(require, exports, module) {
       return new Date(util.dateNow());
     },
 
+    dateInputFormat: function (date) {
+      if (date && date.constructor === Date)
+        return date.getFullYear() + '-' + twoDigits(date.getMonth()+1) +
+        '-' + twoDigits(date.getDate());
+      return '';
+    },
+
+    twoDigits: twoDigits,
+
     emailAddress: function (email, name) {
       return name.replace(/[<>]/g, '') + " <" + email + ">";
     },
@@ -813,6 +822,12 @@ define(function(require, exports, module) {
 
   function sansSuffix (value) {
     return value ? typeof value === 'string' ? +value.substring(0, value.length - this) : +value : 0;
+  }
+
+  function twoDigits(num) {
+    if (num < 10)
+      return '0'+num;
+    return ''+num;
   }
 
   return util;
