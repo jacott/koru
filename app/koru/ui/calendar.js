@@ -100,7 +100,7 @@ define(function(require, exports, module) {
   }
 
   Tpl.$extend({
-    register: function (template, css) {
+    register: function (template, css, options) {
       if (css)
         css = ' '+css;
       else
@@ -143,32 +143,34 @@ define(function(require, exports, module) {
         this.value = util.dateInputFormat(date);
         ctx.updateAllTags(date);
       });
+
+      function open(event) {
+        var ctx = Dom.getMyCtx(this);
+        if (! ctx) ctx = Dom.setCtx(this);
+        Dom.remove(ctx._koruCalendar);
+
+        var date = Date.parse(this.value);
+
+        if (date !== date) date = util.dateNow();
+        date = new Date(date);
+        var popup = Tpl.$autoRender(date);
+        ctx._koruCalendar = popup;
+        ctx.onDestroy(function () {
+          Dom.remove(ctx._koruCalendar);
+        });
+        var cCtx = Dom.getMyCtx(popup);
+        cCtx._input = this;
+
+        cCtx.onDestroy(function () {
+          ctx._koruCalendar = null;
+        });
+
+        options && options.customize && options.customize(popup, this);
+
+        Modal.appendBelow(document.body, this, popup);
+      }
     },
   });
-
-  function open(event) {
-    var ctx = Dom.getMyCtx(this);
-    if (! ctx) ctx = Dom.setCtx(this);
-    Dom.remove(ctx._koruCalendar);
-
-    var date = Date.parse(this.value);
-
-    if (date !== date) date = util.dateNow();
-    date = new Date(date);
-    var popup = Tpl.$autoRender(date);
-    ctx._koruCalendar = popup;
-    ctx.onDestroy(function () {
-      Dom.remove(ctx._koruCalendar);
-    });
-    var cCtx = Dom.getMyCtx(popup);
-    cCtx._input = this;
-
-    cCtx.onDestroy(function () {
-      ctx._koruCalendar = null;
-    });
-
-    Modal.appendBelow(document.body, this, popup);
-  }
 
   return Tpl;
 });

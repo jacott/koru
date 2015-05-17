@@ -21,7 +21,9 @@ isClient && define(function (require, exports, module) {
         });
       };
 
-      sut.register(v.TestTpl, 'input.date');
+      sut.register(v.TestTpl, 'input.date', {customize: function (cal) {
+        cal.style.position = 'absolute';
+      }});
 
       document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
     },
@@ -31,9 +33,20 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test no options": function () {
+      TH.click('[name=other]');
+      refute.dom('#Calendar');
+      Dom.remove(v.testSelectMenu);
+      sut.register(v.TestTpl, '[name=other]');
+      document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
+
+      TH.click('[name=other]');
+      assert.dom('.Calendar');
+    },
+
     "test click opens": function () {
       assert.dom('#TestCalendar [name=testField]', function () {
-        TH.input(this, '2014-10-5');
+        TH.input(this, '2014-10-05');
         TH.click(this);
         v.ctx = Dom.getMyCtx(this);
         TH.click(this);
@@ -88,9 +101,14 @@ isClient && define(function (require, exports, module) {
 
     "test rendering": function () {
       v.open(new Date(2015, 2, 23));
+      assert.dom('input.date', function () {
+        v.ibox = this.getBoundingClientRect();
+      });
       assert.dom('body>.Calendar', function () {
-        assert.cssNear(this, 'left', 62);
-        assert.cssNear(this, 'top', 49);
+        assert.same(this.style.position, 'absolute');
+
+        assert.cssNear(this, 'left', v.ibox.left);
+        assert.cssNear(this, 'top', v.ibox.top + v.ibox.height);
         assert.dom('header', function () {
           assert.dom('span', 'March 2015');
         });
