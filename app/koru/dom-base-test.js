@@ -22,7 +22,7 @@ define(function (require, exports, module) {
     "test html": function () {
       document.body.appendChild(v.result = Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
 
-      assert.same(v.result.outerHTML, '<section class="bar" id="s123"><span>Goodbye</span></section>');
+      assert.sameHtml(v.result.outerHTML, '<section class="bar" id="s123"><span>Goodbye</span></section>');
 
       assert.same(Dom.html({html: ["hello ", {tag: 'span', text: 'cruel'}, ' world']}).outerHTML,
                   '<div>hello <span>cruel</span> world</div>');

@@ -173,6 +173,60 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     refuteMessage: "Expected object's className not to include {i1}",
   });
 
+  if (isServer) {
+    geddon.assert.sameHtml = geddon.assert.same;
+    geddon.refute.sameHtml = geddon.refute.same;
+  } else {
+    ga.add('sameHtml', {
+      assert: function (actual, expected) {
+        var aElm = document.createElement('div');
+        var bElm = document.createElement('div');
+        aElm.innerHTML = actual;
+        bElm.innerHTML = expected;
+        return compare(aElm, bElm);
+
+        function compare(aElm, bElm) {
+          if (aElm.nodeType === document.TEXT_NODE || bElm.nodeType === document.TEXT_NODE) {
+            if (aElm.nodeType !== bElm.nodeType)
+              return false;
+
+            return aElm.textContent === bElm.textContent;
+          }
+
+          if (aElm.tagName !== bElm.tagName) return false;
+
+          var anodes = aElm.childNodes;
+          var alen = anodes.length;
+          var bnodes = bElm.childNodes;
+          var blen = bnodes.length;
+          if (alen !== blen) return false;
+
+          if (! gu.deepEqual(attrsToList(aElm), attrsToList(bElm)))
+            return false;
+
+          for(var i = 0; i < alen; ++i) {
+            if (! compare(anodes[i], bnodes[i]))
+              return false;
+          }
+          return true;
+        }
+
+        function attrsToList(node) {
+          var result = [];
+          util.forEach(node.attributes, function (a) {
+            result.push([a.name, a.value]);
+          });
+          result.sort(function (a, b) {
+            a = a[0]; b=b[0];
+            return a === b ? 0 : a < b ? -1 : 1;
+          });
+          return result;
+        }
+      },
+      message: "{i0} to be the same as {i1}",
+    });
+  }
+
   ga.add('colorEqual', {
     assert:  function (actual, expected, delta) {
       this.delta = delta = delta || 0.0001;

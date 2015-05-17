@@ -673,7 +673,7 @@ define(function (require, exports, module) {
     },
 
     "test dateInputFormat": function () {
-      assert.same(util.dateInputFormat(new Date("2015-1-15")), "2015-01-15");
+      assert.same(util.dateInputFormat(new Date(2015, 0, 15)), "2015-01-15");
     },
 
     "test twoDigits": function () {

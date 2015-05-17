@@ -40,11 +40,12 @@ isClient && define(function (require, exports, module) {
       var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
       assert.dom('input', function () {
         sut.appendBelow(document.body, this, popup);
+        v.ibox = this.getBoundingClientRect();
       });
       assert.dom('body', function () {
         assert.dom('>.popup', function () {
-          assert.cssNear(this, 'left', 21);
-          assert.cssNear(this, 'top', 19);
+          assert.cssNear(this, 'left', v.ibox.left);
+          assert.cssNear(this, 'top', v.ibox.top + v.ibox.height);
         });
       });
       refute.called(sut._init);

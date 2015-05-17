@@ -48,7 +48,7 @@ define(function (require, exports, module) {
 
       top.appendChild(df);
 
-      assert.same(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
+      assert.sameHtml(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
 
       assert.same(top.textContent, 'hello worldbar');
     },
