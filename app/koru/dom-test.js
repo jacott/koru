@@ -59,6 +59,22 @@ isClient && define(function (require, exports, module) {
         delete Dom.Bar;
       },
 
+      "test setCtx": function () {
+        var elm = Dom.Foo.$render({});
+        assert.dom(elm, function () {
+          v.pCtx = Dom.getMyCtx(this);
+          this.appendChild(Dom.html({class: 'ins'}));
+          assert.dom('.ins', function () {
+            v.iCtx = Dom.setCtx(this);
+            assert.same(v.iCtx.parentCtx, v.pCtx);
+            assert.same(Dom.getMyCtx(this), v.iCtx);
+            v.nCtx = Dom.setCtx(this, new Dom.Ctx());
+            assert.same(v.nCtx.parentCtx, undefined);
+            assert.same(Dom.getMyCtx(this), v.nCtx);
+          });
+        });
+      },
+
       "test find ctx": function () {
         Dom.Bar.$helpers({
           myFunc: function () {

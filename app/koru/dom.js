@@ -234,6 +234,9 @@ define(function(require, exports, module) {
     },
 
     setCtx: function (elm, ctx) {
+      if (! ctx) {
+        ctx = new DomCtx(null, Dom.getCtx(elm));
+      }
       elm._koru = ctx;
       return ctx;
     },
