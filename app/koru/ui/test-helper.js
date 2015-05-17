@@ -198,7 +198,8 @@ define(function(require, exports, module) {
     try {
       elm.dispatchEvent (event);
       if (evex) {
-        throw new Error("event Dispatch error: " + evex);
+        koru.error(util.extractError(evex));
+        throw new Error("event Dispatch => " + evex);
       }
     } finally {
       koru.unhandledException = old_unhandledException;

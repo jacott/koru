@@ -88,9 +88,9 @@ define(function(require, exports, module) {
     destroyData: function (elm) {
       var ctx = elm && elm._koru;
       if (ctx) {
-        if (ctx._onDestroy) {
-          var list = ctx._onDestroy;
-          ctx._onDestroy = null;
+        if (ctx.__onDestroy) {
+          var list = ctx.__onDestroy;
+          ctx.__onDestroy = null;
           for(var i = 0; i < list.length; ++i) {
             var row = list[i];
             if (typeof row === 'function')
@@ -318,7 +318,7 @@ define(function(require, exports, module) {
 
     onDestroy: function (obj) {
       if (! obj) return;
-      var list = this._onDestroy || (this._onDestroy = []);
+      var list = this.__onDestroy || (this.__onDestroy = []);
       list.push(obj);
       return this;
     },
@@ -381,21 +381,21 @@ define(function(require, exports, module) {
     },
 
     onAnimationEnd: function (func, repeat) {
-      if (! this._animationEnd) {
+      if (! this.animationEnd) {
         if(++animationEndCount === 1)
           document.body.addEventListener(Dom.animationEndEventName, animationEnd, true);
         this.onDestroy(removeOnAnmiationEnd);
       } else {
         if (func !== 'cancel')
-          var old = this._animationEnd;
+          var old = this.animationEnd;
 
         if (! func || func === 'cancel') {
           removeOnAnmiationEnd.call(this);
           func = null;
         }
       }
-      this._animationEnd = func;
-      this._animationEndRepeat = func && repeat === 'repeat';
+      this.animationEnd = func;
+      this.animationEndRepeat = func && repeat === 'repeat';
       old && old(this, this.element());
     },
   };
@@ -404,18 +404,18 @@ define(function(require, exports, module) {
   function animationEnd(event) {
     var target = event.target;
     var ctx = target._koru;
-    var func = ctx && ctx._animationEnd;
+    var func = ctx && ctx.animationEnd;
 
     if (! func) return;
-    if (! ctx._animationEndRepeat)
+    if (! ctx.animationEndRepeat)
       removeOnAnmiationEnd.call(ctx);
 
     func(ctx, target);
   }
 
   function removeOnAnmiationEnd() {
-    if (! this._animationEnd) return;
-    this._animationEnd = null;
+    if (! this.animationEnd) return;
+    this.animationEnd = null;
     if (--animationEndCount === 0)
       document.body.removeEventListener(Dom.animationEndEventName, animationEnd, true);
   }
@@ -710,10 +710,10 @@ define(function(require, exports, module) {
   };
 
   function nativeOn(parent, eventType, selector, func) {
-    var events = parent._koru._events;
+    var events = parent._koru.__events;
 
     if (! events) {
-      events = parent._koru._events = {};
+      events = parent._koru.__events = {};
     }
 
     var eventTypes = events[eventType];
@@ -753,7 +753,7 @@ define(function(require, exports, module) {
     if (_disable_focusout && event.type == 'focusout') return;
     currentEvent = event;
     currentCtx = event.currentTarget._koru;
-    var eventTypes = currentCtx._events[event.type];
+    var eventTypes = currentCtx.__events[event.type];
 
     var later = {};
     var elm = event.target;
@@ -817,7 +817,7 @@ define(function(require, exports, module) {
   }
 
   function nativeOff(parent, eventType, selector, func) {
-    var events = parent._koru._events;
+    var events = parent._koru.__events;
 
     if (events) {
       var eventTypes = events[eventType];
