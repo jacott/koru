@@ -7,6 +7,12 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
+      v.assertThrows =  function (m, v, msg) {
+        var aMsg;
+        try {m.$throwTest(new Date());}
+        catch(ex) {aMsg = ex;}
+        assert.elideFromStack.same(aMsg, msg);
+      };
     },
 
     tearDown: function () {
@@ -32,6 +38,46 @@ define(function (require, exports, module) {
       assert.same(''+sut.match, 'match.match');
     },
 
+    "test match.equal": function () {
+      var me = sut.equal([1,sut.any]);
+      assert.isTrue(me.$test([1,'x']));
+      assert.isTrue(me.$test([1, null]));
+      assert.isFalse(me.$test([1]));
+      assert.isFalse(me.$test([1, 1, null]));
+      assert.isFalse(me.$test([2, 1]));
+      v.assertThrows(me, [3], 'match.equal');
+    },
+
+    "test match.regExp": function () {
+      var mr = sut.regExp(/^ab*c$/i);
+
+      assert.isTrue(mr.$test("abbbc"));
+      assert.isFalse(mr.$test("abbbcd"));
+    },
+
+    "test match.has": function () {
+      var mi = sut.has({a: 0, b: 2});
+
+      assert.isTrue(mi.$test('a'));
+      assert.isTrue(mi.$test('b'));
+      assert.isFalse(mi.$test('c'));
+    },
+
+    "test match.or": function () {
+      var mor = sut.or(sut.number, sut.string, sut.boolean, 'mymatch');
+
+      assert.same(mor.message, 'mymatch');
+
+      assert.isTrue(mor.$test(1));
+      assert.isTrue(mor.$test(0));
+      assert.isTrue(mor.$test(''));
+      assert.isTrue(mor.$test(false));
+      assert.isFalse(mor.$test([]));
+      assert.isFalse(mor.$test({}));
+      assert.isFalse(mor.$test(null));
+      v.assertThrows(mor, new Date(), 'mymatch');
+    },
+
     "test matching": function () {
       assert.isTrue(sut.string.$test(''));
       assert.isFalse(sut.string.$test(1));
@@ -47,6 +93,7 @@ define(function (require, exports, module) {
       assert.isTrue(sut.date.$test(new Date));
       assert.isFalse(sut.date.$test(''));
       assert.isFalse(sut.date.$test({}));
+      assert.isFalse(sut.date.$test(new Date('invalid')));
 
       assert.isTrue(sut.any.$test());
       assert.isTrue(sut.any.$test({}));
