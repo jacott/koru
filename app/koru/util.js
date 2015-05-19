@@ -345,6 +345,14 @@ define(function(require, exports, module) {
       });
     },
 
+    idNameListToMap: function (list) {
+      var result = {};
+      util.forEach(list, function (item) {
+        result[item[0]] = item[1];
+      });
+      return result;
+    },
+
     find: function (list, func) {
       var len = list.length;
       var result;
@@ -484,6 +492,11 @@ define(function(require, exports, module) {
         });
       }
       return Object.keys(set);
+    },
+
+    pluralize: function (name, value) {
+      if (value === 1) return name;
+      return name+'s';
     },
 
     humanize: function (name) {

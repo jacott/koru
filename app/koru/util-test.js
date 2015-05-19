@@ -377,6 +377,10 @@ define(function (require, exports, module) {
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
     },
 
+    "test idNameListToMap": function () {
+      assert.equals(util.idNameListToMap([['a', 'a a'], ['b', 'b b']]), {a: "a a", b: "b b"});
+    },
+
     "test find ": function () {
       assert.same(util.find([1,8,7,3], function (value, idx) {
         return value > 5 && idx === 2;
@@ -497,7 +501,11 @@ define(function (require, exports, module) {
     "test humanize": function () {
       assert.same(util.humanize('camelCaseCamel_id'), "camel case camel");
       assert.same(util.humanize('Hyphens-and_underscores'), "hyphens and underscores");
+    },
 
+    "test pluralize": function () {
+      assert.same(util.pluralize('day', 1), 'day');
+      assert.same(util.pluralize('day', 2), 'days');
     },
 
     "test initials": function () {
