@@ -43,5 +43,20 @@ define(function (require, exports, module) {
       assert(doc._errors);
       assert.equals(doc._errors['state'],[['not_in_list']]);
     },
+
+    "test in set": function () {
+      var doc = {state: 'open'};
+      sut(doc,'state', {in: {open: '', closed: 'anything'}});
+      refute(doc._errors);
+
+      sut(doc,'state', {in: {o: 1, closed: 1}});
+      assert(doc._errors);
+      assert.equals(doc._errors['state'],[['not_in_list']]);
+
+      doc = {state: 123};
+      sut(doc,'state', {in: {123: 1, closed: 1}});
+      assert(doc._errors);
+      assert.equals(doc._errors['state'],[['not_in_list']]);
+    },
   });
 });
