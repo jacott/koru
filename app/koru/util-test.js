@@ -684,6 +684,16 @@ define(function (require, exports, module) {
       assert.same(util.dateInputFormat(new Date(2015, 0, 15)), "2015-01-15");
     },
 
+    "test yyyymmddToDate": function () {
+      assert.equals(util.yyyymmddToDate(' 2015-5-04  '), new Date(2015, 4, 4));
+      assert.equals(util.yyyymmddToDate('1969 04 09'), new Date(1969, 3, 9));
+      assert.equals(util.yyyymmddToDate('1999-12-31'), new Date(1999, 11, 31));
+      assert.equals(util.yyyymmddToDate('2011/02/6'), new Date(2011, 1, 6));
+      assert.equals(util.yyyymmddToDate('2011-02/6'), undefined);
+      assert.equals(util.yyyymmddToDate('2011/11/32'), undefined);
+      assert.equals(util.yyyymmddToDate('2011/13/3'), undefined);
+    },
+
     "test twoDigits": function () {
       assert.same(util.twoDigits(9), '09');
       assert.same(util.twoDigits(10), '10');

@@ -680,6 +680,20 @@ define(function(require, exports, module) {
       return '';
     },
 
+    yyyymmddToDate: function (value) {
+      var m = /^\s*(\d\d\d\d)([\s-/])(\d\d?)\2(\d\d?)\s*$/.exec(value);
+      if (! m) return;
+      var year = +m[1];
+      var month = +m[3] - 1;
+      var date = +m[4];
+      var res = new Date(year, month, date);
+
+      if (res.getFullYear() === year &&
+          res.getMonth() === month &&
+          res.getDate() === date)
+        return res;
+    },
+
     twoDigits: twoDigits,
 
     emailAddress: function (email, name) {
