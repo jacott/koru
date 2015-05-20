@@ -70,6 +70,11 @@ define(function (require, exports, module) {
       "test nested objects": function () {
         assert.equals(format("{1}abc{e$foo.bar.baz}", 1, 2, {foo: {bar: {baz: "<fnord>"}}}), "2abc&lt;fnord&gt;");
       },
+
+      "test using this": function () {
+        assert.equals(format.call({foo: 'bar'}, "{$foo}", 1), "bar");
+        assert.equals(format.call({foo: 'bar'}, "{$foo}", {foo: 'fuz'}), "fuz");
+      },
     },
   });
 });

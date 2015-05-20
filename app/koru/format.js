@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   var util = require('./util');
+  var match = require('./match');
 
   format.compile = compile;
   format.escape = escape;
@@ -13,6 +14,9 @@ define(function(require, exports, module) {
         len = fmt.length,
         last = arguments[arguments.length -1],
         lit =fmt[0];
+
+    if (last === fmt || ! match.object.$test(last))
+      last = this;
 
     for(var i =0, lit = fmt[0];
         i < len;
@@ -28,7 +32,7 @@ define(function(require, exports, module) {
       if (argIndex != null && argIndex === argIndex) {
         var arg = arguments[argIndex+1];
       } else {
-        var arg = nested(spec.substring(2), last);
+        var arg = nested(spec.substring(2), last, this);
       }
       switch (spec.substring(0,1)) {
       case 'e':
