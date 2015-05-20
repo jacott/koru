@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var Val   = require('../model/validation');
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor');
+  var format = require('../format');
 
   var Tpl = Dom.newTemplate(require('../html!./form'));
   var OnOff = Tpl.OnOff;
@@ -310,6 +311,10 @@ define(function(require, exports, module) {
   errorMsg.className = 'errorMsg';
 
   Dom.registerHelpers({
+    format: function () {
+      return format.apply(this, arguments);
+    },
+
     errorMsg: function () {
       var elm = Dom.current.element;
       return Dom.hasClass(elm, 'errorMsg') ? elm : errorMsg.cloneNode(true);

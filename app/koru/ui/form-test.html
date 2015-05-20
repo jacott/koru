@@ -2,6 +2,11 @@
   <div id="TestForm">
   </div>
 
+  <template name="TestFormat">
+    <div id="{{format 'FOO_{$foo}_{0}' 'bar'}}">
+    </div>
+  </template>
+
   <template name="TestSelect">
     <div id="TestSelect">
       {{labelField "foo_id" id="fooId" selectList=fooList}}

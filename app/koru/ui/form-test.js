@@ -122,6 +122,14 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test format": function () {
+      document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
+
+      assert.dom('body>div', function () {
+        assert.same(this.id, 'FOO_fuz_bar');
+      });
+    },
+
     "test passing data arg": function () {
       var TestData = v.Form.TestData;
 

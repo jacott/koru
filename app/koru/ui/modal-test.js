@@ -49,7 +49,6 @@ isClient && define(function (require, exports, module) {
         });
       });
       refute.called(sut._init);
-      debugger;
     },
   });
 });
