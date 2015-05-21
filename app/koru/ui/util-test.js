@@ -25,6 +25,15 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.wheelDelta({deltaX: 50}), -1);
     },
 
+    "test getClosest": function () {
+      document.body.appendChild(Dom.html({class: 'foo', content: [{tag: 'span', text: 'hello'}]}));
+
+      assert.dom('span', function () {
+        assert.same(Dom.getClosest(this.firstChild, '.foo>span'), this);
+        assert.same(Dom.getClosest(this.firstChild, '.foo'), this.parentNode);
+      });
+    },
+
     "test html string": function () {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 

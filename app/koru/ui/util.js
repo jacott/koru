@@ -129,8 +129,11 @@ define(function(require, exports, module) {
     },
 
     getClosest: function (elm, selector) {
+      if (elm && elm.nodeType !== document.ELEMENT_NODE)
+        elm = elm.parentNode;
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
-        if (matches.call(elm, selector)) return elm;
+        if (matches.call(elm, selector))
+          return elm;
         elm = elm.parentNode;
       }
     },
