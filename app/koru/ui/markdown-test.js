@@ -65,6 +65,11 @@ isClient && define(function (require, exports, module) {
         };
       },
 
+      "test non links": function () {
+        // bug in prod 21 may 2015"
+        assert.same(v.c("\\[x] - \\[x]@[ab](c)"), '[x] - [x]<span data-a="c">ab</span>');
+      },
+
       "test links": function () {
         assert.same(v.c('Hello @[Josiah<JG>](j2)', true).replace(/contenteditable="true" data-a="j2"/, 'data-a="j2" contenteditable="true"'),
                     'Hello <span data-a="j2" contenteditable="true">Josiah&lt;JG&gt;</span>');

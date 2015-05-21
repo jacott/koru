@@ -16,7 +16,7 @@ define(function(require, exports, module) {
 
     toHtml: function (md, wrapper, editable) {
       md = md || '';
-      var hypherlinks = MarkdownBase.findHyperLinks(md);
+      var hyperlinks = MarkdownBase.findHyperLinks(md);
       var mdlen = md.length;
       var index = 0;
       var lookfor = [];
@@ -24,13 +24,14 @@ define(function(require, exports, module) {
       var elm = frag;
       var token, mention;
       var hlidx =  0;
-      var hlStart = hypherlinks.length ? hypherlinks[0][0] : mdlen;
+      var hlStart = hyperlinks.length ? hyperlinks[0][0] : mdlen;
+
       var hlEnd = null;
       while (index < mdlen) {
 
         // End of <a> textContent
         if (hlEnd === index) {
-          var href = hypherlinks[hlidx][2];
+          var href = hyperlinks[hlidx][2];
           if (mention) {
             elm.setAttribute('data-'+ (mention === '@' ? 'a' : 'h'), href);
             if (editable) elm.setAttribute('contenteditable', 'true');
@@ -53,14 +54,14 @@ define(function(require, exports, module) {
           elm = elm.parentNode;
           hlEnd = null;
           mention = null;
-          hlStart = ++hlidx < hypherlinks.length ? hypherlinks[hlidx][0] : mdlen;
+          hlStart = ++hlidx < hyperlinks.length ? hyperlinks[hlidx][0] : mdlen;
         }
 
         // Start of <a> textContent
         if (hlStart === index) {
           var link = document.createElement(mention ? 'span' : 'a');
           ++index;
-          hlEnd = hlStart + hypherlinks[hlidx][1].length + 1;
+          hlEnd = hlStart + hyperlinks[hlidx][1].length + 1;
           elm.appendChild(link);
           elm = link;
         }
@@ -115,7 +116,7 @@ define(function(require, exports, module) {
       return frag;
 
       function textContent() {
-        var len = (hlEnd || hlStart);
+        var len = Math.min(hlEnd || hlStart, mdlen);
         for(var i = index + 1; i < len && ! md[i].match(/[\\*_\n]/); ++i) {}
 
         var atHash = false;
