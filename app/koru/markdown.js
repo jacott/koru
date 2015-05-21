@@ -1,12 +1,12 @@
 define({
   getMentionIds: function (md) {
-    var hypherlinks = this.findHyperLinks(md, '@');
+    var hyperlinks = this.findHyperLinks(md, '@');
 
-    for(var i = 0; i < hypherlinks.length; ++i) {
-      hypherlinks[i] = hypherlinks[i][2];
+    for(var i = 0; i < hyperlinks.length; ++i) {
+      hyperlinks[i] = hyperlinks[i][2];
     }
 
-    return hypherlinks;
+    return hyperlinks;
   },
 
   findHyperLinks: function(md, prefix) {
@@ -15,7 +15,15 @@ define({
     var result = [];
     var pLen = prefix && prefix.length;
     while ((m = re.exec(md)) !== null) {
+      if (m.index > 0 && md[m.index - 1] === '\\') {
+        re.lastIndex = m.index + m[0].indexOf(']');
+        if (re.lastIndex <= m.index)
+          break;
+
+        continue;
+      }
       re2.lastIndex = 0;
+
       if (pLen && md.slice(m.index - pLen, m.index) !== prefix) continue;
 
       var nest = 1;
