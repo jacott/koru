@@ -321,15 +321,24 @@ define(function(require, exports, module) {
         return result;
       }
       var lc = 2;
+      if (valueName == null)
+        var func = function (curr) {return curr};
+      else switch(typeof(valueName)) {
+      case 'string':
+      case 'number':
+        var func = function (curr) {return curr[valueName]};
+        break;
+      case 'function':
+        var func = valueName;
+        break;
+      }
       for(var lc = 2;lc < arguments.length; ++lc) {
         var list = arguments[lc];
         if (!list) continue;
 
         for(var i=0; i < list.length; ++i) {
           if (keyName != null) {
-            result[list[i][keyName]] = ( valueName != null ?
-                                         ( valueName === true ? true : list[i][valueName] ) :
-                                         list[i] );
+            result[list[i][keyName]] = func ? func(list[i], i) : valueName;
           } else {
             result[list[i]] = true;
           }
