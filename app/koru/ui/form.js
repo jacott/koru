@@ -215,13 +215,28 @@ define(function(require, exports, module) {
 
       var msgElm = fieldElm.nextElementSibling;
       if (! (msgElm && Dom.hasClass(msgElm, 'errorMsg'))) {
-        msgElm = document.createElement('span');
+        msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
         fieldElm.parentNode.insertBefore(msgElm, fieldElm.nextElementSibling);
+        var ms = msgElm.style;
+      } else {
+        var ms = msgElm.style;
+        ms.marginTop = ms.marginLeft = ms.height = ms.width = '';
       }
-
       Dom.setClass('error', msg, fieldElm);
+      Dom.removeClass(msgElm, 'animate');
       msgElm.textContent = msg || '';
+      if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
+        var fpos = fieldElm.getBoundingClientRect();
+        var mpos = msgElm.getBoundingClientRect();
+        ms.position = 'absolute';
+        ms.marginTop = (fpos.top-mpos.top-mpos.height)+'px';
+        ms.marginLeft = (fpos.left-mpos.left)+'px';
+        ms.width = mpos.width+'px';
+        ms.height = mpos.height+'px';
+      }
+      Dom.setClass('animate', msg, msgElm);
+
       return fieldElm;
     },
 

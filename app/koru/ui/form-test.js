@@ -258,5 +258,26 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=bar]:not(.error)+.errorMsg', '');
       });
     },
+
+    "test errorTop renderError": function () {
+      var form = Dom.html({content: ['hello world', '<br>', {name: 'foo'},
+                                     {name: 'bar', style: 'margin-left:25px', class: 'errorTop'}]});
+      document.body.appendChild(form);
+
+      Form.renderError(form, 'foo', 'foo msg');
+      Form.renderError(form, 'bar', 'bar msg');
+
+      assert.dom(form, function () {
+        assert.dom('[name=bar].error+.errorMsg.animate', 'bar msg', function () {
+          assert.cssNear(this, 'marginLeft', 25, 2);
+          assert.cssNear(this, 'marginTop', -15, 2);
+        });
+        assert.dom('[name=foo].error+.errorMsg', 'foo msg');
+
+        Form.renderError(form, 'bar', false);
+
+        assert.dom('[name=bar]:not(.error)+.errorMsg', '');
+      });
+    },
   });
 });
