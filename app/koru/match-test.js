@@ -9,7 +9,10 @@ define(function (require, exports, module) {
       v = {};
       v.assertThrows =  function (m, v, msg) {
         var aMsg;
-        try {m.$throwTest(new Date());}
+        try {
+          m.$throwTest(v);
+          assert.msg("failed")(false);
+        }
         catch(ex) {aMsg = ex;}
         assert.elideFromStack.same(aMsg, msg);
       };
@@ -46,6 +49,7 @@ define(function (require, exports, module) {
       assert.isFalse(me.$test([1, 1, null]));
       assert.isFalse(me.$test([2, 1]));
       v.assertThrows(me, [3], 'match.equal');
+      assert.isTrue(me.$throwTest([1, null]));
     },
 
     "test match.regExp": function () {
@@ -76,6 +80,22 @@ define(function (require, exports, module) {
       assert.isFalse(mor.$test({}));
       assert.isFalse(mor.$test(null));
       v.assertThrows(mor, new Date(), 'mymatch');
+    },
+
+    "test match.and": function () {
+      var mand = sut.and(sut.object, sut.baseObject, sut.equal({a: sut.number}), 'mymatch');
+
+      assert.same(mand.message, 'mymatch');
+
+      assert.isTrue(mand.$test({a: 1}));
+      assert.isTrue(mand.$test({a: 0}));
+      assert.isFalse(mand.$test(new Date()));
+      assert.isFalse(mand.$test({a: 'x'}));
+      assert.isFalse(mand.$test(null));
+      v.assertThrows(mand, new Date(), 'match.baseObject');
+      v.assertThrows(mand, 1, 'match.object');
+      v.assertThrows(mand, {b: 'x'}, 'match.equal');
+      v.assertThrows(mand, {a: 'x'}, 'match.equal');
     },
 
     "test matching": function () {

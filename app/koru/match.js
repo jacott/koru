@@ -16,7 +16,7 @@ define(function(require, exports, module) {
     toString: toString,
     $inspect: toString,
     $throwTest: function (value) {
-      if (! this.$test(value, this.message)) {
+      if (! this.$test(value, 'throw')) {
         throw this.message;
       }
       return true;
@@ -69,6 +69,19 @@ define(function(require, exports, module) {
           return match.$test(value);
         });
       }, name || 'match.or');
+    },
+    and: function () {
+      var len = arguments.length;
+      if (typeof arguments[len-1] === 'string')
+        var name = arguments[--len];
+      var args = util.slice(arguments, 0, len);
+      return match(function (value, msg) {
+        var mthd = msg ? '$throwTest' : '$test';
+
+        return args.every(function (match) {
+          return match[mthd](value, msg);
+        });
+      }, name || 'match.and');
     }
   });
 
