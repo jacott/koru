@@ -98,6 +98,22 @@ define(function (require, exports, module) {
       v.assertThrows(mand, {a: 'x'}, 'match.equal');
     },
 
+    "test match.tuple": function () {
+      var mtup = sut.tuple([sut.object, sut.number, sut.equal({a: sut.number})]);
+
+      assert.same(mtup.message, 'match.tuple');
+
+      assert.isTrue(mtup.$test([new Date(), 1, {a: 1}]));
+      assert.isTrue(mtup.$test([{}, 0, {a: 0}]));
+      assert.isFalse(mtup.$test(new Date()));
+      assert.isFalse(mtup.$test([{}, 1, {a: 'x'}]));
+      v.assertThrows(mtup, [new Date(), 'a', 1], 'match.number');
+      v.assertThrows(mtup, [1, 2, 3], 'match.object');
+      v.assertThrows(mtup, [{}, 1, {b: 'x'}], 'match.equal');
+      v.assertThrows(mtup, [1, {a: 'x'}], 'match.tuple');
+      v.assertThrows(mtup, {}, 'match.tuple');
+    },
+
     "test matching": function () {
       assert.isTrue(sut.string.$test(''));
       assert.isFalse(sut.string.$test(1));

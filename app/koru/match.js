@@ -82,7 +82,28 @@ define(function(require, exports, module) {
           return match[mthd](value, msg);
         });
       }, name || 'match.and');
-    }
+    },
+    tuple: function (array, name) {
+      var len = array.length;
+      return match(function (value, msg) {
+        var mthd = msg ? '$throwTest' : '$test';
+
+        if (! Array.isArray(value) || value.length !== len)
+          return false;
+
+        for(var i = 0; i < len; ++i) {
+          var sm = array[i];
+          if (mthd in sm) {
+            if (! sm[mthd](value[i], msg))
+              return false;
+          } else {
+            if (! util.deepEqual(value[i], sm))
+              return false;
+          }
+        }
+        return true;
+      }, name || 'match.tuple');
+    },
   });
 
   return match;
