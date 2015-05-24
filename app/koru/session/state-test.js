@@ -1,23 +1,19 @@
 define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
-  var sessState = require('./state');
+  var defaultSessState = require('./state');
+
+  var sessState;
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.origOnConnect = sessState._onConnect;
-      sessState._onConnect = {};
-      v.origState = sessState._state;
-      sessState._state = 'startup';
+      sessState = new defaultSessState.__init__();
     },
 
     tearDown: function () {
-      sessState._onConnect = v.origOnConnect;
-      sessState._state = v.origState;
-      sessState._resetPendingCount();
-      v = null;
+      v = sessState = null;
     },
 
     "test pending": function () {
@@ -71,6 +67,9 @@ define(function (require, exports, module) {
       assert.calledWith(v.onChange, true);
 
       assert.same(sessState._state, 'ready');
+
+      sessState.onConnect('40', v.lateConn = test.stub());
+      assert.called(v.lateConn);
 
       assert(sessState.isReady());
       refute(sessState.isClosed());

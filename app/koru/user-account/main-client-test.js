@@ -255,11 +255,7 @@ isClient && define(function (require, exports, module) {
       "test sending login token": function () {
         assert.same(sessState._onConnect['05'], userAccount._onConnect);
 
-        assert.same(login.state, null);
-
-        userAccount._onConnect();
         refute.calledWith(session.send, 'VL');
-
         assert.same(login.state, 'ready');
 
 
