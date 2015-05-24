@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var Dom = require('../dom');
   require('koru/ui/dom-ext');
   var Trace = require('../trace');
+  var makeSubject = require('../make-subject');
 
   var debug_page = false;
   Trace.debug_page = function (value) {
@@ -17,6 +18,8 @@ define(function(require, exports, module) {
     this.routes = {};
     this.routeVar = routeVar;
   };
+
+  makeSubject(Route);
 
   Route.title = document.title;
 
@@ -176,7 +179,7 @@ define(function(require, exports, module) {
       Route.loadingArgs = [page, pageRoute];
 
       if (page && page.routeOptions && page.routeOptions.privatePage && ! koru.userId()) {
-        Route.replacePage(Route.SignPage, {returnTo: Route.loadingArgs});
+        Route.replacePage(Route.SignInPage, {returnTo: Route.loadingArgs});
         return;
       }
 
@@ -245,6 +248,7 @@ define(function(require, exports, module) {
         ++pageCount;
       }
       Route.history[cmd](pageCount, null, href);
+      Route.notify(page, href);
     },
 
     setTitle: function (title) {

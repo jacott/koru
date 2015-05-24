@@ -160,11 +160,13 @@ isClient && define(function (require, exports, module) {
                                                          hash: '#tag'});
       },
 
-      "test gotoPage, pushCurrent, recordHistory": function () {
+      "test gotoPage, pushCurrent, recordHistory, notify": function () {
         var orig = Dom.setTitle;
         Dom.setTitle = test.stub();
+        var onChange = Route.onChange(v.routeChanged = test.stub());
         test.onEnd(function () {
           Dom.setTitle = orig;
+          onChange.stop();
         });
         v.RootBar.onEntry = function (page) {
           page.title = 'Root bar';
@@ -172,6 +174,7 @@ isClient && define(function (require, exports, module) {
         Route.gotoPage(v.RootBar, {bazId: "an-id", append: 'one/two'});
         assert.calledWith(Route.history.pushState, 1, null, '/#baz/an-id/root-bar/one/two');
         assert.same(document.title, 'Root bar');
+        assert.calledWith(v.routeChanged, v.RootBar, '/#baz/an-id/root-bar/one/two');
 
         Route.gotoPage(v.RootBar, {bazId: "diff-id"});
         assert.calledWith(Route.history.pushState, 2, null, '/#baz/diff-id/root-bar');
@@ -445,10 +448,10 @@ isClient && define(function (require, exports, module) {
     },
 
     "test privatePage": function () {
-      var origSigninPage = Route.SignPage;
-      Route.SignPage = "mySign in page";
+      var origSigninPage = Route.SignInPage;
+      Route.SignInPage = "mySign in page";
       test.onEnd(function () {
-        Route.SignPage = origSigninPage;
+        Route.SignInPage = origSigninPage;
       });
       test.stub(Route, 'replacePage');
       koru.userId.restore();
@@ -459,7 +462,7 @@ isClient && define(function (require, exports, module) {
 
       refute.called(v.FooBar.onEntry);
 
-      assert.calledWith(Route.replacePage, Route.SignPage, {returnTo: [v.FooBar, {myArgs: '123', pathname: '/foo-bar'}]});
+      assert.calledWith(Route.replacePage, Route.SignInPage, {returnTo: [v.FooBar, {myArgs: '123', pathname: '/foo-bar'}]});
     },
 
     "test addTemplate": function () {
