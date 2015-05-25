@@ -160,6 +160,86 @@ isClient && define(function (require, exports, module) {
                                                          hash: '#tag'});
       },
 
+      "waitForPage": {
+        setUp: function () {
+          test.spy(Route, 'onChange');
+          test.stub(koru, 'setTimeout').returns(123);
+          test.stub(koru, 'clearTimeout');
+          v.resolve = test.stub(); v.reject = test.stub();
+          v.MyPromise = function(func) {this.func = func};
+          TH.stubProperty(window, 'Promise', v.MyPromise);
+        },
+
+        "test already on page": function () {
+          var promise = Route.waitForPage(v.RootBar);
+          assert.same(promise.constructor, v.MyPromise);
+
+          Route.gotoPage(v.RootBar);
+          promise.func(v.resolve, v.reject);
+
+          assert.calledWith(v.resolve, v.RootBar, '/#baz/root-bar');
+          refute.called(v.reject);
+          refute.called(Route.onChange);
+          refute.called(koru.setTimeout);
+        },
+
+        "test timeout": function () {
+          var promise = Route.waitForPage(v.FooBar, 150);
+
+          promise.func(v.resolve, v.reject);
+
+          assert.calledWith(koru.setTimeout, TH.match.func, 150);
+          assert.calledWith(Route.onChange, TH.match.func);
+          refute.called(v.resolve);
+          refute.called(v.reject);
+          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+
+          koru.setTimeout.yield();
+
+          assert.called(stopSpy);
+          refute.called(v.resolve);
+          assert.calledWith(v.reject, TH.match.field('message', 'Timed out waiting for: FooBar after 150ms'));
+        },
+
+        "test wrong page": function () {
+          var promise = Route.waitForPage(v.FooBar);
+
+          promise.func(v.resolve, v.reject);
+
+          assert.calledWith(koru.setTimeout, TH.match.func, 2000);
+          assert.calledWith(Route.onChange, TH.match.func);
+          refute.called(v.resolve);
+          refute.called(v.reject);
+          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+
+          Route.gotoPage(v.RootBar);
+
+          assert.calledWith(koru.clearTimeout, 123);
+          assert.called(stopSpy);
+          refute.called(v.resolve);
+          assert.calledWith(v.reject, TH.match.field('message', 'expected page: FooBar, got: RootBar'));
+        },
+
+        "test page changed": function () {
+          var promise = Route.waitForPage(v.RootBar);
+
+          promise.func(v.resolve, v.reject);
+
+          assert.calledWith(koru.setTimeout, TH.match.func, 2000);
+          assert.calledWith(Route.onChange, TH.match.func);
+          refute.called(v.resolve);
+          refute.called(v.reject);
+          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+
+          Route.gotoPage(v.RootBar);
+
+          assert.calledWith(koru.clearTimeout, 123);
+          assert.called(stopSpy);
+          refute.called(v.reject);
+          assert.calledWith(v.resolve, v.RootBar, '/#baz/root-bar');
+        },
+      },
+
       "test gotoPage, pushCurrent, recordHistory, notify": function () {
         var orig = Dom.setTitle;
         Dom.setTitle = test.stub();

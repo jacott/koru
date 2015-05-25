@@ -136,6 +136,30 @@ define(function(require, exports, module) {
     get pageState() {return pageState},
     get pageCount() {return pageCount},
 
+    waitForPage: function (expectPage, duration) {
+      duration = duration || 2000;
+      return new Promise(function (resolve, reject) {
+        if (currentPage === expectPage) {
+          resolve(currentPage, currentHref);
+          return;
+        }
+        var timeout = koru.setTimeout(function () {
+          handle.stop();
+          reject(new Error('Timed out waiting for: ' + (expectPage && expectPage.name) +
+                           ' after ' + duration + 'ms'));
+        }, duration);
+        var handle = Route.onChange(function (actualPage, href) {
+          handle.stop();
+          koru.clearTimeout(timeout);
+          if (actualPage === expectPage)
+            resolve(actualPage, href);
+          else
+            reject(new Error('expected page: ' + (expectPage && expectPage.name) +
+                             ', got: ' + (actualPage && actualPage.name)));
+        });
+      });
+    },
+
     abortPage: function (location) {
       if (inGotoPage) {
         var abort = {};
@@ -239,6 +263,7 @@ define(function(require, exports, module) {
     },
 
     recordHistory: function (page, href) {
+      if (! Route.history) return;
       if (! pageState || (page && ('noPageHistory' in page)))
           return;
       if (currentHref === href)

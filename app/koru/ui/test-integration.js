@@ -5,27 +5,11 @@ define(function(require, exports, module) {
   var Route = require('./route');
 
   var queueHead, queueTail;
-  var serverMsg, syncMsg;
+  var syncMsg;
 
   var helper = {};
 
-  function received(msg) {
-    serverMsg = null;
-    var actions = queueHead;
-    queueHead = queueHead.next;
-    if (! queueHead) queueTail = null;
-    try {
-      assert.same(msg[0], syncMsg);
-      syncMsg = false;
-      var nextMsg = actions.func.call(helper, msg[1], send);
-      if (nextMsg !== undefined) send(nextMsg);
-    } catch(ex) {
-      handleError(ex);
-    }
-
-  }
-
-  function send(msg, initial) {
+  function send(msg) {
     if (typeof msg === 'string')
       msg = [msg];
     assert.elideFromStack(Array.isArray(msg) && typeof msg[0] == 'string', "invalid server message");
@@ -33,16 +17,19 @@ define(function(require, exports, module) {
     syncMsg = msg[0];
     session.sendBinary('i', ['ok', msg]);
 
-    initial || queueHead ||
-      exitScript();
+    queueHead || exitScript();
   }
 
   session.provide('i', function (data) {
     data = message.decodeMessage(data);
-    if (queueHead)
-      received(data);
-    else
-      serverMsg = data;
+    queueHead ||
+      handleError(new Error('unexpected server message: ' + util.inpect(data)));
+
+    var actions = queueHead;
+    queueHead = queueHead.next;
+    if (! queueHead) queueTail = null;
+    syncMsg = false;
+    actions.func.call(helper, data);
   });
 
   function Client(func) {
@@ -51,49 +38,39 @@ define(function(require, exports, module) {
     queueHead = queueTail = null;
     exits = [];
 
-    function script(firstMsg) {
-      send(util.slice(arguments), 'initial');
-      var sp = {
-        then: function (func) {
-          var entry = {func: func};
-          if (queueTail)
-            queueTail.next = entry;
-          else
-            queueHead = entry;
-          queueTail = entry;
+    var script = {
+      tellServer: function (msg) {
+          return new Promise(function (resolve, reject) {
+            var entry = {func: function (data) {
+              try {
+                if (data[0] === msg)
+                  resolve(data[1]);
+                else
+                  reject('unexpect server message: '+data[0]);
+              } catch(ex) {
+                reject(ex);
+              }
+            }};
+            if (queueTail)
+              queueTail.next = entry;
+            else
+              queueHead = entry;
+            queueTail = entry;
 
-          return this;
+            send(msg);
+          });
         },
-      };
 
-      return sp;
-    }
-
-
-    script.onExit = function (func) {
-      exits.push(func);
+      onExit: function (func) {
+        exits.push(func);
+      },
     };
 
-    script.waitForPage = function (page, func) {
-      if (Route.currentPage === page)
-        return func(page, Route.currentHref);
-      pageWait = page;
-      pageWaitFunc = func;
-      return 'waiting';
-    };
-
-    var pageWait, pageWaitFunc;
-    script.onExit(Route.onChange(function (page, href) {
-      if (pageWait && page === pageWait) {
-        var func = pageWaitFunc;
-        pageWaitFunc = pageWait = null;
-        func(page, href);
-      }
-    }));
 
     try {
-      func(script);
-      serverMsg && received(serverMsg);
+      var promise = func(script);
+      if (promise.then)
+        promise.then(null, handleError);
     } catch(ex) {
       handleError(ex);
     }
@@ -107,6 +84,8 @@ define(function(require, exports, module) {
   var exits;
 
   function exitScript(ex) {
+    _koru_.debug('XX');
+
     util.forEach(exits, function (exit) {
       exit.stop ? exit.stop() : exit();
     });
