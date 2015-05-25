@@ -3,6 +3,8 @@ define(function(require, exports, module) {
   var session = require('../session');
   var message = require('../session/message');
   var Route = require('./route');
+  var Dom = require('../dom');
+  var koru = require('koru');
 
   var queueHead, queueTail;
   var syncMsg;
@@ -39,6 +41,25 @@ define(function(require, exports, module) {
     exits = [];
 
     var script = {
+      waitForClassChange: function (elm, classname, hasClass, duration) {
+        if (typeof elm === 'string')
+          elm = document.querySelector(elm);
+        duration = duration || 2000;
+        return new Promise(function (resolve, reject) {
+          var observer = new window.MutationObserver(function (mutations) {
+            if (Dom.hasClass(elm, classname) === hasClass) {
+              observer.disconnect();
+              koru.clearTimeout(timeout);
+              resolve(elm, classname, ! hasClass);
+            }
+          });
+          observer.observe(elm, {attributes: true});
+          var timeout = koru.setTimeout(function () {
+            observer.disconnect();
+            reject(new Error('Timed out waiting for element to change' + util.inspect(elm)));
+          }, duration);
+        });
+      },
       tellServer: function (msg) {
           return new Promise(function (resolve, reject) {
             var entry = {func: function (data) {
@@ -84,8 +105,6 @@ define(function(require, exports, module) {
   var exits;
 
   function exitScript(ex) {
-    _koru_.debug('XX');
-
     util.forEach(exits, function (exit) {
       exit.stop ? exit.stop() : exit();
     });
