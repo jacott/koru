@@ -16,8 +16,8 @@ define(function(require, exports, module) {
     destroyModel: function (model, drop) {
       if (! model) return;
       if (drop === 'drop')
-        mongoDb.defaultDb.dropCollection(model.modelName);
-      model.docs = null;
+        model.db.dropCollection(model.modelName);
+      model.db = model.docs = null;
 
       delete uniqueIndexes[model.modelName];
       delete indexes[model.modelName];
@@ -160,11 +160,14 @@ define(function(require, exports, module) {
         model._$wm.delete(doc._id);
       };
 
-      var docs;
-      Object.defineProperty(model, 'docs', {
-        get: function () {
-          return docs = docs || mongoDb.defaultDb.collection(model.modelName);
-        }
+      var docs, db;
+      util.extend(model, {
+        get docs() {
+          return docs = docs || this.db.collection(model.modelName);
+        },
+        get db() {
+          return db = db || mongoDb.defaultDb;
+        },
       });
     },
 
