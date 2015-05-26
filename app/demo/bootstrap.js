@@ -7,15 +7,16 @@ define(function(require, exports, module) {
 
     if (new Query(List).findOne()) return;
     var data = [
-      {name: "Meteor Principles",
+      {name: "Koru Principles",
        contents: [
-         ["Data on the Wire", "Simplicity", "Better UX", "Fun"],
+         ["Development scales", "Better UX", "Fun"],
          ["One Language", "Simplicity", "Fun"],
          ["Database Everywhere", "Simplicity"],
          ["Latency Compensation", "Better UX"],
          ["Full Stack Reactivity", "Better UX", "Fun"],
-         ["Embrace the Ecosystem", "Fun"],
-         ["Simplicity Equals Productivity", "Simplicity", "Fun"]
+         ["Performance is vital", "Better UX", "Fun"],
+         ["TDD is first class", "Fun"],
+         ["Versatility Equals Productivity", "Simplicity", "Fun"]
        ]
       },
       {name: "Languages",
