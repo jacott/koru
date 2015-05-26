@@ -359,7 +359,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
-              var ef = filter(elm, function (i) {return options.value === i.value});
+              var ef = filter(elm, function (i) {return gu.deepEqual(i.value, options.value)});
               if (ef.length === 0) {
                 setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;
