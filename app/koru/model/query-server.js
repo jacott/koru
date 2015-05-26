@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var mongodb = require('../mongo/driver');
   var koru = require('../main');
   var Model = require('./base');
+  var Future = requirejs.nodeRequire('fibers/future');
 
   return function (Query) {
     util.extend(Query.prototype, {
@@ -30,6 +31,27 @@ define(function(require, exports, module) {
 
       fetchOne: function () {
         return this.findOne();
+      },
+
+      waitForOne: function (timeout) {
+        timeout = timeout || 2000;
+        var query = this;
+        var future = new Future;
+        try {
+          var handle = this.model.onChange(function () {
+            var doc = query.fetchOne();
+            if (doc) future.return(doc);
+          });
+          var doc = this.fetchOne();
+          if (doc) return doc;
+          var timer = koru.setTimeout(function () {
+            future.return();
+          }, timeout);
+          return future.wait();
+        } finally {
+          handle.stop();
+          timer && koru.clearTimeout(timer);
+        }
       },
 
       fetchIds: function () {
