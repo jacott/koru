@@ -38,7 +38,7 @@ define(function(require, exports, module) {
             geddon.fail(cm[1]);
 
           if (func) {
-            var response = func();
+            var response = func.apply(this, cm[1]);
 
             v.conn.sendBinary('i', [when, response]);
           }

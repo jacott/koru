@@ -61,26 +61,27 @@ define(function(require, exports, module) {
         });
       },
       tellServer: function (msg) {
-          return new Promise(function (resolve, reject) {
-            var entry = {func: function (data) {
-              try {
-                if (data[0] === msg)
-                  resolve(data[1]);
-                else
-                  reject('unexpect server message: '+data[0]);
-              } catch(ex) {
-                reject(ex);
-              }
-            }};
-            if (queueTail)
-              queueTail.next = entry;
-            else
-              queueHead = entry;
-            queueTail = entry;
+        var args = util.slice(arguments);
+        return new Promise(function (resolve, reject) {
+          var entry = {func: function (data) {
+            try {
+              if (data[0] === msg)
+                resolve(data[1]);
+              else
+                reject('unexpect server message: '+data[0]);
+            } catch(ex) {
+              reject(ex);
+            }
+          }};
+          if (queueTail)
+            queueTail.next = entry;
+          else
+            queueHead = entry;
+          queueTail = entry;
 
-            send(msg);
-          });
-        },
+          send(args);
+        });
+      },
 
       onExit: function (func) {
         exits.push(func);
