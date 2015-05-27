@@ -49,7 +49,7 @@ isServer && define(function (require, exports, module) {
         text: "The text body",
       });
 
-      assert.same(logCount, 3);
+      assert.same(logCount, 4);
       assert.equals(JSON.parse(v.info.message), {from: "foo@obeya.co", to: ["bar@obeya.co"]});
 
     },
