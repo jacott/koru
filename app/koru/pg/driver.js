@@ -79,16 +79,16 @@ Client.prototype = {
   query: function (text, params) {
     var future = new Future;
     return this.withConn(function (conn) {
-      conn.query(text, params, wait(future));
+      conn.query(text, params, wait(future, text));
       return future.wait().rows;
     });
   },
 
-  collection: function (name) {
-    return new Collection(name, this);
+  table: function (name) {
+    return new Table(name, this);
   },
 
-  dropCollection: function (name) {
+  dropTable: function (name) {
     this.queryOne('DROP TABLE IF EXISTS "' + name + '"');
   },
 
@@ -137,17 +137,13 @@ function mapType(col, value) {
   return col + ' ' + type;
 }
 
-function Collection(name, client) {
+function Table(name, client) {
   this._name = name;
   this._client = client;
 }
 
-function getColQuery(name) {
-  return "SELECT * FROM information_schema.columns WHERE table_name = '" + name + "'";
-}
-
-Collection.prototype = {
-  constructor: Collection,
+Table.prototype = {
+  constructor: Table,
 
   _ensureTable: function () {
     if (this._ready === true) return;
@@ -184,77 +180,130 @@ Collection.prototype = {
     });
   },
 
-  insert: function (params) {
-    this._ensureTable();
-    var needCols = {};
-    var cols = Object.keys(params);
-    var values = new Array(cols.length);
-    var colMap = this._colMap;
-
-    util.forEach(cols, function (col, i) {
-      var value = params[col];
-      values[i] = value;
-
-      if (! colMap.hasOwnProperty(col)) {
-        needCols[col] = mapType(col, params[col]);
-      }
-    });
-
-    var ins = 'INSERT INTO "'+this._name+'" ('+cols.join(',')+') values (' +
-          cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
-
-    if (util.isObjEmpty(needCols)) {
-      return this._client.withConn(function (client) {
-        return this.queryOne(ins, values);
-      });
-    }
-
+  addColumns: function (needCols) {
+    var table = this;
     var prefix = 'ALTER TABLE "'+this._name+'" ADD COLUMN ';
     var colQuery = getColQuery(this._name);
+    var client = table._client;
 
-    var col = this;
+    client.query(Object.keys(needCols).map(function (col) {
+      return prefix + needCols[col];
+    }).join(';'));
 
-    return this._client.transaction(function () {
-      this.query(Object.keys(needCols).map(function (col) {
-        return prefix + needCols[col];
-      }).join(';'));
+    table._columns = client.query(colQuery);
+    table._colMap = util.toMap('column_name', null, table._columns);
 
-      col._columns = this.query(colQuery);
-      col._colMap = util.toMap('column_name', null, col._columns);
-      return this.queryOne(ins, values);
-    });
   },
 
-  update: function (query, params) {
+  insert: function (params) {
     this._ensureTable();
-    return 2;
+    params = toColumns(this, params);
+
+    var sql = 'INSERT INTO "'+this._name+'" ('+params.cols.join(',')+') values (' +
+          params.cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
+
+    return performTransaction(this, sql, params);
+  },
+
+  update: function (where, params) {
+    this._ensureTable();
+
+    var sql = 'UPDATE "'+this._name+'" SET ';
+
+    var set = toColumns(this, params.$set);
+    sql += set.cols.map(function (col, i) {
+      return col+'=$'+(i+1);
+    }).join(',');
+
+    where = this.where(where, set.values);
+
+    if (where)
+      sql += ' WHERE '+where.join(',');
+
+    return performTransaction(this, sql, set);
+  },
+
+  where: function (where, whereValues) {
+    var whereSql = [];
+    var count = whereValues.length;
+    for (var key in  where) {
+      ++count;
+      var value = where[key];
+      whereSql.push('"'+key+'"=$'+count);
+      whereValues.push(value);
+    }
+    if (whereSql.length)
+      return whereSql;
   },
 
   query: function (where) {
     this._ensureTable();
-    var whereSql = [];
-    var whereValues = [];
-    var count = 0;
-    for (var key in  where) {
-      ++count;
-      var value = where[key];
-      whereSql = '"'+key+'"=$'+count;
-      whereValues.push(value);
-    }
+    var sql = 'Select * FROM "'+this._name+'"';
 
-    var query = 'Select * FROM "'+this._name+'"';
+    var values = [];
 
-    if (count === 0)
-      return this._client.query(query);
+    where = this.where(where, values);
+    if (where)
+      return this._client.query(sql+' WHERE '+where.join(','), values);
+    return this._client.query(sql);
+  },
 
-    return this._client.query(query+' WHERE '+whereSql.join(','), whereValues);
+  queryOne: function (where) {
+    this._ensureTable();
+    var sql = 'Select * FROM "'+this._name+'"';
+    var limit = " LIMIT 1";
 
+    var values = [];
+
+    where = this.where(where, values);
+    if (where)
+      return this._client.queryOne(sql+' WHERE '+where.join(',')+limit, values);
+    return this._client.queryOne(sql+limit);
   },
 };
 
-function wait(future) {
+function getColQuery(name) {
+  return "SELECT * FROM information_schema.columns WHERE table_name = '" + name + "'";
+}
+
+function toColumns(table, params) {
+  var needCols = {};
+  var cols = Object.keys(params);
+  var values = new Array(cols.length);
+  var colMap = table._colMap;
+
+  util.forEach(cols, function (col, i) {
+    var value = params[col];
+    values[i] = value;
+
+    if (! colMap.hasOwnProperty(col)) {
+      needCols[col] = mapType(col, params[col]);
+    }
+  });
+
+  return {needCols: needCols, cols: cols, values: values};
+}
+
+function performTransaction(table, sql, params) {
+  if (util.isObjEmpty(params.needCols)) {
+    return table._client.withConn(function () {
+      return this.queryOne(sql, params.values);
+    });
+  }
+
+  return table._client.transaction(function () {
+    table.addColumns(params.needCols);
+    return this.queryOne(sql, params.values);
+  });
+}
+
+function wait(future, text) {
   return function (err, result) {
-    if (err) future.throw(err);
+    if (err) {
+      if (err.message)
+        err.message += '\n'+text;
+      future.throw(err);
+    }
     else future.return(result);
   };
 }

@@ -10,7 +10,6 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      sut.stop();
       v = null;
     },
 
@@ -31,25 +30,29 @@ isServer && define(function (require, exports, module) {
       assert.equals(db.queryOne('select 1+1 as a'), {a: 2});
     },
 
-    "with collection": {
+    "with table": {
       setUp: function () {
-        v.foo = sut.defaultDb.collection('Foo');
+        v.foo = sut.defaultDb.table('Foo');
 
         v.foo.insert({_id: "123", name: 'abc'});
         v.foo.insert({_id: "456", name: 'abc'});
       },
 
       tearDown: function () {
-        sut.defaultDb.dropCollection('Foo');
+        sut.defaultDb.dropTable('Foo');
       },
 
       "test query all": function () {
         assert.equals(v.foo.query({}), [{_id: "123", name: "abc"}, {_id: "456", name: "abc"}]);
       },
 
-      "//test update": function () {
-        assert.same(v.foo.update({name: 'abc'}, {$set: {name: 'def'}}), 2);
-        assert.equals(v.foo.query({}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
+      "test update": function () {
+        v.foo.update({name: 'abc'}, {$set: {name: 'def'}});
+        assert.equals(v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
+        v.foo.update({_id: '123'}, {$set: {name: 'zzz'}});
+        assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz"}]);
+        assert.equals(v.foo.queryOne({_id: "123"}), {_id: "123", name: "zzz"});
+        assert.equals(v.foo.queryOne({_id: "456"}), {_id: "456", name: "def"});
       },
     },
   });
