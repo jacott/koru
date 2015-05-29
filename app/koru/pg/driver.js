@@ -2,12 +2,13 @@ var Future = requirejs.nodeRequire('fibers/future');
 var pgCursor = requirejs.nodeRequire('pg-cursor');
 var pg = requirejs.nodeRequire('pg');
 
-var util, makeSubject;
+var util, makeSubject, match;
 
 define(function(require, exports, module) {
   var koru = require('../main');
   util = require('../util');
   makeSubject = require('../make-subject');
+  match = require('../match');
 
   koru.onunload(module, closeDefaultDb);
 
@@ -84,8 +85,8 @@ Client.prototype = {
     });
   },
 
-  table: function (name) {
-    return new Table(name, this);
+  table: function (name, schema) {
+    return new Table(name, schema, this);
   },
 
   dropTable: function (name) {
@@ -125,21 +126,24 @@ Client.prototype = {
   },
 };
 
-function mapType(col, value) {
-  var type;
-  switch(typeof(value)) {
-  case 'string':
-    type = 'text'; break;
-  case 'number':
-    type = 'integer';
-    break;
-  }
-  return col + ' ' + type;
-}
-
-function Table(name, client) {
-  this._name = name;
-  this._client = client;
+function Table(name, schema, client) {
+  var table = this;
+  table._name = name;
+  table._client = client;
+  Object.defineProperty(table, 'schema', {
+    get: function () {
+      return schema;
+    },
+    set: function (value) {
+      while (table._ready && table._ready !== true) {
+        table._ensureTable();
+      }
+      schema = value;
+      if (table._ready) {
+        updateSchema(table, schema);
+      }
+    },
+  });
 }
 
 Table.prototype = {
@@ -162,37 +166,29 @@ Table.prototype = {
     }
 
     var subject = this._ready = makeSubject({});
-    var colQuery = getColQuery(this._name);
-    this._columns = this._client.query(colQuery);
+
+    readColumns(this);
+    var schema = this.schema;
     if (this._columns.length === 0) {
-      this._client.query('CREATE TABLE IF NOT EXISTS "'+this._name+'" (_id varchar(17))');
-      this._columns = this._client.query(colQuery);
+      var fields = ['_id varchar(17)'];
+      if (schema) {
+        for (var col in schema)
+          fields.push(jsFieldToPg(col, schema[col]));
+      }
+      this._client.query('CREATE TABLE IF NOT EXISTS "'+this._name+'" ('+fields.join(',')+')');
+      readColumns(this);
+    } else if (schema) {
+      updateSchema(this, schema);
     }
-    this._colMap = util.toMap('column_name', null, this._columns);
     this._ready = true;
     subject.notify();
   },
 
   transaction: function (func) {
-    var col = this;
-    return col._client.transaction(function () {
-      return func.call(col);
-    });
-  },
-
-  addColumns: function (needCols) {
     var table = this;
-    var prefix = 'ALTER TABLE "'+this._name+'" ADD COLUMN ';
-    var colQuery = getColQuery(this._name);
-    var client = table._client;
-
-    client.query(Object.keys(needCols).map(function (col) {
-      return prefix + needCols[col];
-    }).join(';'));
-
-    table._columns = client.query(colQuery);
-    table._colMap = util.toMap('column_name', null, table._columns);
-
+    return table._client.transaction(function () {
+      return func.call(table);
+    });
   },
 
   insert: function (params) {
@@ -212,7 +208,7 @@ Table.prototype = {
 
     var set = toColumns(this, params.$set);
     sql += set.cols.map(function (col, i) {
-      return col+'=$'+(i+1);
+      return '"'+col+'"=$'+(i+1);
     }).join(',');
 
     where = this.where(where, set.values);
@@ -262,10 +258,6 @@ Table.prototype = {
   },
 };
 
-function getColQuery(name) {
-  return "SELECT * FROM information_schema.columns WHERE table_name = '" + name + "'";
-}
-
 function toColumns(table, params) {
   var needCols = {};
   var cols = Object.keys(params);
@@ -285,16 +277,100 @@ function toColumns(table, params) {
 }
 
 function performTransaction(table, sql, params) {
-  if (util.isObjEmpty(params.needCols)) {
+  if (table.schema || util.isObjEmpty(params.needCols)) {
     return table._client.withConn(function () {
       return this.queryOne(sql, params.values);
     });
   }
 
   return table._client.transaction(function () {
-    table.addColumns(params.needCols);
+    addColumns(table, params.needCols);
     return this.queryOne(sql, params.values);
   });
+}
+
+function mapType(col, value) {
+  var type = typeof(value);
+  switch(type) {
+  case 'object':
+    if (match.date.$test(value))
+      type = 'timestamp';
+    break;
+  case 'number':
+    if (value === Math.floor(value))
+      type = 'integer';
+    else
+      type = 'double precision';
+    break;
+  }
+  return jsFieldToPg(col, type);
+}
+
+function jsFieldToPg(col, colSchema) {
+  var defaultVal = '';
+  if (typeof colSchema === 'string')
+    var type = colSchema;
+  else {
+    var type = colSchema.type;
+    if(colSchema.default)
+      defaultVal = ' DEFAULT ' +colSchema.default;
+  }
+
+  switch(type) {
+  case 'string':
+    type = 'text';
+    break;
+  case 'number':
+    type = 'double precision';
+    break;
+  case 'belongs_to':
+    type = 'varchar(17)';
+    break;
+  case 'has_many':
+    type = 'varchar(17) ARRAY';
+    break;
+  case 'color':
+    type = 'varchar(9)';
+    break;
+  case 'has_many':
+  case 'object':
+  case 'baseObject':
+    type = 'jsonb';
+    break;
+  }
+  return '"' + col + '" ' + type + defaultVal;
+}
+
+function updateSchema(table, schema) {
+  var needCols = {};
+  var colMap = table._colMap;
+  for (var col in schema) {
+    colMap.hasOwnProperty(col) ||
+      (needCols[col] = jsFieldToPg(col, schema[col]));
+  }
+
+  util.isObjEmpty(needCols) ||
+    table.transaction(function () {
+      addColumns(table, needCols);
+    });
+}
+
+function addColumns(table, needCols) {
+  var prefix = 'ALTER TABLE "'+table._name+'" ADD COLUMN ';
+  var client = table._client;
+
+  client.query(Object.keys(needCols).map(function (col) {
+    return prefix + needCols[col];
+  }).join(';'));
+
+  readColumns(table);
+}
+
+function readColumns(table) {
+  var colQuery = "SELECT * FROM information_schema.columns WHERE table_name = '" +
+        table._name + "'";
+  table._columns = table._client.query(colQuery);
+  table._colMap = util.toMap('column_name', null, table._columns);
 }
 
 function wait(future, text) {
