@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var Random = require('../random');
   var session = require('../session/base');
   var Val = require('./validation');
-  var mongoDb = require('../mongo/driver');
+  var driver = require('../config!DBDriver');
   var Query = require('./query');
   var WeakIdMap = require('../weak-id-map');
 
@@ -16,7 +16,7 @@ define(function(require, exports, module) {
     destroyModel: function (model, drop) {
       if (! model) return;
       if (drop === 'drop')
-        model.db.dropCollection(model.modelName);
+        model.db.dropTable(model.modelName);
       model.db = model.docs = null;
 
       delete uniqueIndexes[model.modelName];
@@ -163,10 +163,10 @@ define(function(require, exports, module) {
       var docs, db;
       util.extend(model, {
         get docs() {
-          return docs = docs || this.db.collection(model.modelName);
+          return docs = docs || this.db.table(model.modelName);
         },
         get db() {
-          return db = db || mongoDb.defaultDb;
+          return db = db || driver.defaultDb;
         },
       });
     },

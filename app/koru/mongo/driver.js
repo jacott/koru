@@ -39,11 +39,11 @@ function Connection(db) {
 Connection.prototype = {
   constructor: Connection,
 
-  collection: function (name) {
+  table: function (name) {
     return new Collection(this._db.collection(name));
   },
 
-  dropCollection: function (name) {
+  dropTable: function (name) {
     var future = new Future;
     try {
       this._db.dropCollection(name, future.resolver());

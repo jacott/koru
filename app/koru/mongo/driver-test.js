@@ -14,9 +14,9 @@ isServer && define(function (require, exports, module) {
     },
 
     "test dropAllIndexes": function () {
-      var col =  sut.defaultDb.collection('Fooy');
+      var col =  sut.defaultDb.table('Fooy');
       test.onEnd(function () {
-        sut.defaultDb.dropCollection('Fooy');
+        sut.defaultDb.dropTable('Fooy');
       });
 
       assert.equals(col.indexInformation(), {});
@@ -28,16 +28,16 @@ isServer && define(function (require, exports, module) {
       assert.same(col.indexInformation().name_1, undefined);
     },
 
-    "with collection": {
+    "with table": {
       setUp: function () {
-        v.foo = sut.defaultDb.collection('Foo');
+        v.foo = sut.defaultDb.table('Foo');
 
         v.foo.insert({_id: "123", name: 'abc'});
         v.foo.insert({_id: "456", name: 'abc'});
       },
 
       tearDown: function () {
-        sut.defaultDb.dropCollection('Foo');
+        sut.defaultDb.dropTable('Foo');
       },
 
 
@@ -81,27 +81,27 @@ isServer && define(function (require, exports, module) {
 
     "test defaultDb": function () {
       test.onEnd(function () {
-        sut.defaultDb.dropCollection('Foo');
+        sut.defaultDb.dropTable('Foo');
       });
 
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
 
-      var foo = db.collection('Foo');
+      var foo = db.table('Foo');
       foo.insert({_id: "foo123", name: 'foo name'});
 
       assert.equals(foo.findOne({_id: "foo123"}), {_id: "foo123", name: 'foo name'});
     },
 
-    "test collection": function () {
+    "test table": function () {
       var db = sut.connect("mongodb://localhost:3004/koru");
       test.onEnd(function () {
-        db.dropCollection('foo');
+        db.dropTable('foo');
         db.close();
       });
       assert(db);
 
-      var foo = db.collection('Foo');
+      var foo = db.table('Foo');
       var id = foo.insert({_id: "foo123", name: 'foo name'})[0]._id;
       assert.same(id, "foo123");
 

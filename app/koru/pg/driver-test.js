@@ -55,6 +55,19 @@ isServer && define(function (require, exports, module) {
         }, {code: '42703'});
       },
 
+      "test transaction rollback": function () {
+        try {
+          v.foo.transaction(function () {
+            v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
+            assert.equals(v.foo.queryOne({_id: '123'}).name, 'eee');
+            throw 'abort';
+          });
+        } catch(ex) {
+          if (ex !== 'abort') throw ex;
+        }
+        assert.equals(v.foo.queryOne({_id: '123'}).name, 'abc');
+      },
+
       "test update schema": function () {
         v.foo.schema = {
           name: 'text',
@@ -78,6 +91,20 @@ isServer && define(function (require, exports, module) {
 
       tearDown: function () {
         sut.defaultDb.dropTable('Foo');
+      },
+
+      "test transaction rollback": function () {
+        try {
+          v.foo.transaction(function () {
+            v.foo.update({_id: '123'}, {$set: {foo: 'eee'}});
+            assert.equals(v.foo.queryOne({_id: '123'}).foo, 'eee');
+            throw 'abort';
+          });
+        } catch(ex) {
+          if (ex !== 'abort') throw ex;
+        }
+        assert.msg('should not  have a foo column')
+          .equals(v.foo.queryOne({_id: '123'}), {_id: '123', name: 'abc'});
       },
 
       "test query all": function () {

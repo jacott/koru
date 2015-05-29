@@ -78,10 +78,8 @@ Client.prototype = {
   },
 
   query: function (text, params) {
-    var future = new Future;
     return this.withConn(function (conn) {
-      conn.query(text, params, wait(future, text));
-      return future.wait().rows;
+      return query(conn, text, params).rows;
     });
   },
 
@@ -101,6 +99,7 @@ Client.prototype = {
         return func.call(this, tx.conn);
       } else {
         var conn = getConn(this._url);
+        query(conn[0], 'BEGIN');
         tx = {
           count: 1,
           conn: conn[0],
@@ -110,21 +109,27 @@ Client.prototype = {
         return func.call(this, tx.conn);
       }
     } catch(ex) {
-      tx.rollback = true;
+      if (tx) tx.rollback = true;
       throw ex;
     } finally {
       if (tx && --tx.count === 0) {
         try {
           var done = tx.done;
-          tx.conn.query(tx.rollback ? 'ROLLBACK' : 'COMMIT');
+          query(tx.conn, tx.rollback ? 'ROLLBACK' : 'COMMIT');
         } finally {
-          util.thread._$pg_transaction = null;
+          this._weakMap.set(util.thread, null);
           done();
         }
       }
     }
   },
 };
+
+function query(conn, text, params) {
+  var future = new Future;
+  conn.query(text, params, wait(future, text));
+  return future.wait();
+}
 
 function Table(name, schema, client) {
   var table = this;
@@ -170,7 +175,7 @@ Table.prototype = {
     readColumns(this);
     var schema = this.schema;
     if (this._columns.length === 0) {
-      var fields = ['_id varchar(17)'];
+      var fields = ['_id varchar(17) PRIMARY KEY'];
       if (schema) {
         for (var col in schema)
           fields.push(jsFieldToPg(col, schema[col]));
