@@ -141,6 +141,10 @@ define(function(require, exports, module) {
       });
 
       util.extend(_support, {
+        resetDocs: function (model) {
+          if (_resetDocs.hasOwnProperty(model.modelName))
+            _resetDocs[model.modelName]();
+        },
         bumpVersion: function () {
           _support.performBumpVersion(this.constructor, this._id,this._version);
         },
@@ -160,10 +164,12 @@ define(function(require, exports, module) {
         model._$wm.delete(doc._id);
       };
 
+      _resetDocs[model] = function () {docs = null};
+
       var docs, db;
       util.extend(model, {
         get docs() {
-          return docs = docs || this.db.table(model.modelName);
+          return docs = docs || this.db.table(model.modelName, model.$fields);
         },
         get db() {
           return db = db || driver.defaultDb;
@@ -184,6 +190,8 @@ define(function(require, exports, module) {
       model._$setWeakDoc(attrs);
     },
   };
+
+  var _resetDocs = {};
 
   function buidlKeys(args) {
     var keys = {};

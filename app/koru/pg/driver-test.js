@@ -10,6 +10,7 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      v.foo && sut.defaultDb.dropTable('Foo');
       v = null;
     },
 
@@ -26,8 +27,26 @@ isServer && define(function (require, exports, module) {
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
 
-      assert.equals(db.query('select 1 as a; select 2 as b'), [{a: 1}, {b: 2}]);
-      assert.equals(db.queryOne('select 1+1 as a'), {a: 2});
+      assert.equals(db.query('select 1 as a; select 2 as b').rows, [{a: 1}, {b: 2}]);
+      assert.equals(db.findOne('select 1+1 as a'), {a: 2});
+    },
+
+    "test Array": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        bar_ids: 'has_many',
+      });
+
+      v.foo.insert({_id: '123', bar_ids: ["1","2","3"]});
+      assert.equals(v.foo.findOne({}).bar_ids, ['1', '2', '3']);
+    },
+
+    "test Array in jsonb": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        bar_ids: 'object',
+      });
+
+      v.foo.insert({_id: '123', bar_ids: ["1",{a: v.date = new Date()}]});
+      assert.equals(v.foo.findOne({}).bar_ids, ['1', {a: v.date.toISOString()}]);
     },
 
     "Static table": {
@@ -39,10 +58,6 @@ isServer && define(function (require, exports, module) {
 
         v.foo.insert({_id: "123", name: 'abc'});
         v.foo.insert({_id: "456", name: 'def'});
-      },
-
-      tearDown: function () {
-        sut.defaultDb.dropTable('Foo');
       },
 
       "test query all": function () {
@@ -58,14 +73,14 @@ isServer && define(function (require, exports, module) {
       "test transaction rollback": function () {
         try {
           v.foo.transaction(function () {
-            v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
-            assert.equals(v.foo.queryOne({_id: '123'}).name, 'eee');
+            var x = v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
+            assert.equals(v.foo.findOne({_id: '123'}).name, 'eee');
             throw 'abort';
           });
         } catch(ex) {
           if (ex !== 'abort') throw ex;
         }
-        assert.equals(v.foo.queryOne({_id: '123'}).name, 'abc');
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
       },
 
       "test update schema": function () {
@@ -77,7 +92,7 @@ isServer && define(function (require, exports, module) {
         v.foo.update({name: 'abc'}, {$set: {name: 'eee'}});
         assert.equals(v.foo.query({name: 'eee'}), [{_id: "123", name: "eee", age: 10, createdAt: null}]);
         v.foo.update({_id: '123'}, {$set: {createdAt: v.createdAt = new Date()}});
-        assert.equals(v.foo.queryOne({_id: "123"}).createdAt, v.createdAt);
+        assert.equals(v.foo.findOne({_id: "123"}).createdAt, v.createdAt);
       },
     },
 
@@ -85,26 +100,22 @@ isServer && define(function (require, exports, module) {
       setUp: function () {
         v.foo = sut.defaultDb.table('Foo');
 
-        v.foo.insert({_id: "123", name: 'abc'});
+        assert.same(v.foo.insert({_id: "123", name: 'abc'}), 1);
         v.foo.insert({_id: "456", name: 'abc'});
-      },
-
-      tearDown: function () {
-        sut.defaultDb.dropTable('Foo');
       },
 
       "test transaction rollback": function () {
         try {
           v.foo.transaction(function () {
-            v.foo.update({_id: '123'}, {$set: {foo: 'eee'}});
-            assert.equals(v.foo.queryOne({_id: '123'}).foo, 'eee');
+            assert.same(v.foo.update({_id: '123'}, {$set: {foo: 'eee'}}), 1);
+            assert.equals(v.foo.findOne({_id: '123'}).foo, 'eee');
             throw 'abort';
           });
         } catch(ex) {
           if (ex !== 'abort') throw ex;
         }
         assert.msg('should not  have a foo column')
-          .equals(v.foo.queryOne({_id: '123'}), {_id: '123', name: 'abc'});
+          .equals(v.foo.findOne({_id: '123'}), {_id: '123', name: 'abc'});
       },
 
       "test query all": function () {
@@ -112,12 +123,25 @@ isServer && define(function (require, exports, module) {
       },
 
       "test update": function () {
-        v.foo.update({name: 'abc'}, {$set: {name: 'def'}});
+        assert.same(v.foo.update({name: 'abc'}, {$set: {name: 'def'}}), 2);
+
         assert.equals(v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
-        v.foo.update({_id: '123'}, {$set: {name: 'zzz', age: 7}});
+        assert.same(v.foo.update({_id: '123'}, {$set: {name: 'zzz', age: 7}}), 1);
+
         assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz", age: 7}]);
-        assert.equals(v.foo.queryOne({_id: "123"}), {_id: "123", name: "zzz", age: 7});
-        assert.equals(v.foo.queryOne({_id: "456"}), {_id: "456", name: "def", age: null});
+        assert.equals(v.foo.findOne({_id: "123"}), {_id: "123", name: "zzz", age: 7});
+        assert.equals(v.foo.findOne({_id: "456"}), {_id: "456", name: "def", age: null});
+      },
+
+      "test remove": function () {
+        assert.same(v.foo.remove({_id: '123'}), 1);
+
+
+        assert.equals(v.foo.find({}), [{_id: "456", name: "abc"}]);
+
+        v.foo.remove({});
+
+        assert.equals(v.foo.find({}), []);
       },
     },
   });

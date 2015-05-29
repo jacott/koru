@@ -2,10 +2,10 @@ var Future = requirejs.nodeRequire('fibers/future');
 var pgCursor = requirejs.nodeRequire('pg-cursor');
 var pg = requirejs.nodeRequire('pg');
 
-var util, makeSubject, match;
+var koru, util, makeSubject, match;
 
 define(function(require, exports, module) {
-  var koru = require('../main');
+  koru = require('../main');
   util = require('../util');
   makeSubject = require('../make-subject');
   match = require('../match');
@@ -73,13 +73,13 @@ Client.prototype = {
     }
   },
 
-  queryOne: function (text, params) {
-    return this.query(text, params)[0];
+  findOne: function (text, params) {
+    return this.query(text, params).rows[0];
   },
 
   query: function (text, params) {
     return this.withConn(function (conn) {
-      return query(conn, text, params).rows;
+      return query(conn, text, params);
     });
   },
 
@@ -88,7 +88,7 @@ Client.prototype = {
   },
 
   dropTable: function (name) {
-    this.queryOne('DROP TABLE IF EXISTS "' + name + '"');
+    this.findOne('DROP TABLE IF EXISTS "' + name + '"');
   },
 
   transaction: function (func) {
@@ -127,7 +127,7 @@ Client.prototype = {
 
 function query(conn, text, params) {
   var future = new Future;
-  conn.query(text, params, wait(future, text));
+  conn.query(text, params, wait(future));
   return future.wait();
 }
 
@@ -200,7 +200,9 @@ Table.prototype = {
     this._ensureTable();
     params = toColumns(this, params);
 
-    var sql = 'INSERT INTO "'+this._name+'" ('+params.cols.join(',')+') values (' +
+    var sql = 'INSERT INTO "'+this._name+'" ('+params.cols.map(function (col) {
+      return '"'+col+'"';
+    }).join(',')+') values (' +
           params.cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
 
     return performTransaction(this, sql, params);
@@ -239,29 +241,44 @@ Table.prototype = {
 
   query: function (where) {
     this._ensureTable();
-    var sql = 'Select * FROM "'+this._name+'"';
+    var sql = 'SELECT * FROM "'+this._name+'"';
 
     var values = [];
 
     where = this.where(where, values);
     if (where)
-      return this._client.query(sql+' WHERE '+where.join(','), values);
-    return this._client.query(sql);
+      return this._client.query(sql+' WHERE '+where.join(','), values).rows;
+    return this._client.query(sql).rows;
   },
 
-  queryOne: function (where) {
+  findOne: function (where) {
     this._ensureTable();
-    var sql = 'Select * FROM "'+this._name+'"';
+    var sql = 'SELECT * FROM "'+this._name+'"';
     var limit = " LIMIT 1";
 
     var values = [];
 
     where = this.where(where, values);
     if (where)
-      return this._client.queryOne(sql+' WHERE '+where.join(',')+limit, values);
-    return this._client.queryOne(sql+limit);
+      return this._client.findOne(sql+' WHERE '+where.join(',')+limit, values);
+    return this._client.findOne(sql+limit);
+  },
+
+  remove: function (where) {
+    this._ensureTable();
+
+    var sql = 'DELETE FROM "'+this._name+'"';
+
+    var values = [];
+
+    where = this.where(where, values);
+    if (where)
+      return this._client.query(sql+' WHERE '+where.join(','), values).rowCount;
+    return this._client.query(sql).rowCount;
   },
 };
+
+Table.prototype.find = Table.prototype.query;
 
 function toColumns(table, params) {
   var needCols = {};
@@ -271,9 +288,20 @@ function toColumns(table, params) {
 
   util.forEach(cols, function (col, i) {
     var value = params[col];
-    values[i] = value;
+    var desc = colMap[col];
+    if (desc) {
+      switch (desc.data_type) {
+      case 'jsonb':
+      case 'json':
+        value = wrapJsonType(value);
+        break;
+      }
+      values[i] = value;
+    } else {
+      values[i] = value;
+    }
 
-    if (! colMap.hasOwnProperty(col)) {
+    if (! desc) {
       needCols[col] = mapType(col, params[col]);
     }
   });
@@ -281,20 +309,27 @@ function toColumns(table, params) {
   return {needCols: needCols, cols: cols, values: values};
 }
 
+function wrapJsonType(value) {
+  value = JSON.stringify(value);
+  return {toPostgres: toPostgres};
+
+  function toPostgres() {return value}
+}
+
 function performTransaction(table, sql, params) {
   if (table.schema || util.isObjEmpty(params.needCols)) {
     return table._client.withConn(function () {
-      return this.queryOne(sql, params.values);
+      return this.query(sql, params.values).rowCount;
     });
   }
 
   return table._client.transaction(function () {
     addColumns(table, params.needCols);
-    return this.queryOne(sql, params.values);
+    return this.query(sql, params.values).rowCount;
   });
 }
 
-function mapType(col, value) {
+function mapType(col, value, desc) {
   var type = typeof(value);
   switch(type) {
   case 'object':
@@ -337,7 +372,6 @@ function jsFieldToPg(col, colSchema) {
   case 'color':
     type = 'varchar(9)';
     break;
-  case 'has_many':
   case 'object':
   case 'baseObject':
     type = 'jsonb';
@@ -374,15 +408,14 @@ function addColumns(table, needCols) {
 function readColumns(table) {
   var colQuery = "SELECT * FROM information_schema.columns WHERE table_name = '" +
         table._name + "'";
-  table._columns = table._client.query(colQuery);
+  table._columns = table._client.query(colQuery).rows;
   table._colMap = util.toMap('column_name', null, table._columns);
 }
 
-function wait(future, text) {
+function wait(future) {
   return function (err, result) {
     if (err) {
-      if (err.message)
-        err.message += '\n'+text;
+      koru.error(util.inspect(err));
       future.throw(err);
     }
     else future.return(result);

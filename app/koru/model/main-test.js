@@ -740,8 +740,8 @@ define(function (require, exports, module) {
       "put": {
         setUp: function () {
           test.stub(koru, 'userId').returns('u123');
-          v.TestModel.defineFields({name: 'string', array: 'has-many', deep: 'object'});
-          v.doc = v.TestModel.create({name: 'old', array: ['zero', 'three'], deep: {a: 1}});
+          v.TestModel.defineFields({name: 'string', myAry: 'varchar(17) ARRAY', deep: 'object'});
+          v.doc = v.TestModel.create({name: 'old', myAry: ['zero', 'three'], deep: {a: 1}});
 
           isClient && this.spy(session, "rpc");
         },
@@ -764,13 +764,13 @@ define(function (require, exports, module) {
 
           v.doc.$put({
             name: 'new',
-            'array.$+1': 'one', 'array.$+2': 'two',
-            'array.$-3': 'three',
+            'myAry.$+1': 'one', 'myAry.$+2': 'two',
+            'myAry.$-3': 'three',
             'deep.nested': {value: 123}});
 
           assert.equals(v.doc.changes, {});
 
-          assert.calledWith(v.auth, 'u123', {array: {"array.$+1": "one", "array.$+2": "two", "array.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
+          assert.calledWith(v.auth, 'u123', {myAry: {"myAry.$+1": "one", "myAry.$+2": "two", "myAry.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
           assert.equals(v.auth.thisValues[0], TH.matchModel(v.doc));
           if (isClient) {
             assert.calledTwice(v.auth);
@@ -781,7 +781,7 @@ define(function (require, exports, module) {
           v.doc.$reload();
 
           assert.same(v.doc.name, 'new');
-          assert.equals(v.doc.array, ['zero', 'one', 'two']);
+          assert.equals(v.doc.myAry, ['zero', 'one', 'two']);
           assert.equals(v.doc.deep, {a: 1, nested: {value: 123}});
 
           assert[isClient ? 'same' : 'equals'](v.doc.attributes, v.TestModel.findById(v.doc._id).attributes);
@@ -789,15 +789,15 @@ define(function (require, exports, module) {
           if(isClient)
             assert.calledOnceWith(session.rpc,'put', 'TestModel', v.doc._id, {
               name: 'new',
-              'array.$+1': 'one', 'array.$+2': 'two',
-              'array.$-3': 'three',
+              'myAry.$+1': 'one', 'myAry.$+2': 'two',
+              'myAry.$-3': 'three',
               'deep.nested': {value: 123}
             });
         },
 
         "test authorizePut object": function () {
           v.TestModel.prototype.authorizePut = {
-            array: v.array = test.stub(),
+            myAry: v.myAry = test.stub(),
             deep: function (doc, updates, key) {
               updates[key+'.nested'].value = 444;
             },
@@ -806,29 +806,29 @@ define(function (require, exports, module) {
 
           v.doc.$put({
             name: 'new',
-            'array.$+1': 'one', 'array.$+2': 'two',
-            'array.$-3': 'three',
+            'myAry.$+1': 'one', 'myAry.$+2': 'two',
+            'myAry.$-3': 'three',
             'deep.nested': {value: 123}});
 
           assert.calledWith(v.auth, 'u123', {
             put: {
-              array: v.arrayUpdates = {"array.$+1": "one", "array.$+2": "two", "array.$-3": "three"},
+              myAry: v.myAryUpdates = {"myAry.$+1": "one", "myAry.$+2": "two", "myAry.$-3": "three"},
               deep: {"deep.nested": {value: 444}}
             }
           });
           assert.equals(v.auth.thisValues[0], TH.matchModel(v.doc));
           if (isClient) {
             assert.calledTwice(v.auth);
-            assert.same(v.array.callCount, 2);
+            assert.same(v.myAry.callCount, 2);
             assert.equals(v.auth.thisValues[1], TH.matchModel(v.doc));
             assert(v.auth.calledBefore(session.rpc));
           }
-          assert.calledWith(v.array, TH.matchModel(v.doc), v.arrayUpdates, 'array');
+          assert.calledWith(v.myAry, TH.matchModel(v.doc), v.myAryUpdates, 'myAry');
 
           v.doc.$reload();
 
           assert.same(v.doc.name, 'new');
-          assert.equals(v.doc.array, ['zero', 'one', 'two']);
+          assert.equals(v.doc.myAry, ['zero', 'one', 'two']);
           assert.equals(v.doc.deep, {a: 1, nested: {value: 444}});
         },
       },

@@ -63,6 +63,7 @@ define(function(require, exports, module) {
       });
 
       util.extend(_support, {
+        resetDocs: function () {},
         bumpVersion: function () {
           session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
         },

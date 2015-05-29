@@ -671,6 +671,8 @@ define(function(require, exports, module) {
 
   function defineFields(fields) {
     var proto = this.prototype;
+    var $fields = this.$fields;
+    if (! $fields) $fields = this.$fields = {};
     for(var field in fields) {
       var options = fields[field];
       if (! options.type) options = {type: options};
@@ -679,8 +681,10 @@ define(function(require, exports, module) {
       setUpValidators(this, field, options);
 
       if (options['default'] !== undefined) this._defaults[field] = options['default'];
+      $fields[field] = options;
       defineField(proto,field);
     }
+    _support.resetDocs(this);
     return this;
   };
 
