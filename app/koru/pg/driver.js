@@ -68,6 +68,26 @@ Client.prototype = {
     var conn = getConn(this._url);
     try {
       return func.call(this, conn[0]);
+    } catch(ex) {
+      var msg = new Error(ex.message);
+      if (ex.severity) msg.severity = ex.severity;
+      if (ex.code) msg.code = ex.code;
+      if (ex.detail) msg.detail = ex.detail;
+      if (ex.hint) msg.hint = ex.hint;
+      if (ex.position) msg.position = ex.position;
+      if (ex.internalPosition) msg.internalPosition = ex.internalPosition;
+      if (ex.internalQuery) msg.internalQuery = ex.internalQuery;
+      if (ex.where) msg.where = ex.where;
+      if (ex.schema) msg.schema = ex.schema;
+      if (ex.table) msg.table = ex.table;
+      if (ex.column) msg.column = ex.column;
+      if (ex.dataType) msg.dataType = ex.dataType;
+      if (ex.constraint) msg.constraint = ex.constraint;
+      if (ex.file) msg.file = ex.file;
+      if (ex.line) msg.line = ex.line;
+      if (ex.routine) msg.routine = ex.routine;
+      throw msg;
+
     } finally {
       conn[1]();
     }
@@ -240,45 +260,44 @@ Table.prototype = {
   },
 
   query: function (where) {
-    this._ensureTable();
-    var sql = 'SELECT * FROM "'+this._name+'"';
-
-    var values = [];
-
-    where = this.where(where, values);
-    if (where)
-      return this._client.query(sql+' WHERE '+where.join(','), values).rows;
-    return this._client.query(sql).rows;
+    return queryWhere(this, 'SELECT * FROM "'+this._name+'"', where).rows;
   },
 
   findOne: function (where) {
-    this._ensureTable();
-    var sql = 'SELECT * FROM "'+this._name+'"';
-    var limit = " LIMIT 1";
+    return queryWhere(this, 'SELECT * FROM "'+this._name+'"',
+                      where, ' LIMIT 1').rows[0];
+  },
 
-    var values = [];
+  exists: function (where) {
+    return queryWhere(this, 'SELECT EXISTS (SELECT 1 FROM "'+this._name+'"',
+                      where, ')').rows[0].exists;
+  },
 
-    where = this.where(where, values);
-    if (where)
-      return this._client.findOne(sql+' WHERE '+where.join(',')+limit, values);
-    return this._client.findOne(sql+limit);
+  count: function (where) {
+    return +queryWhere(this, 'SELECT count(*) FROM "'+this._name+'"',
+                      where).rows[0].count;
   },
 
   remove: function (where) {
-    this._ensureTable();
-
-    var sql = 'DELETE FROM "'+this._name+'"';
-
-    var values = [];
-
-    where = this.where(where, values);
-    if (where)
-      return this._client.query(sql+' WHERE '+where.join(','), values).rowCount;
-    return this._client.query(sql).rowCount;
+    return queryWhere(this, 'DELETE FROM "'+this._name+'"', where).rowCount;
   },
 };
 
 Table.prototype.find = Table.prototype.query;
+
+function queryWhere(table, sql, where, suffix) {
+  table._ensureTable();
+
+  var values = [];
+  where = table.where(where, values);
+  if (where) {
+    sql = sql+' WHERE '+where.join(',');
+    if (suffix) sql += suffix;
+    return table._client.query(sql, values);
+  }
+  if (suffix) sql += suffix;
+  return table._client.query(sql);
+}
 
 function toColumns(table, params) {
   var needCols = {};
@@ -415,7 +434,6 @@ function readColumns(table) {
 function wait(future) {
   return function (err, result) {
     if (err) {
-      koru.error(util.inspect(err));
       future.throw(err);
     }
     else future.return(result);

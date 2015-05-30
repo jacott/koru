@@ -125,6 +125,12 @@ define(function (require, exports, module) {
       assert.same(new Query(v.TestModel).count(), 2);
     },
 
+    "test exisits": function () {
+      assert.same(new Query(v.TestModel).exists(), true);
+      assert.same(new Query(v.TestModel).where({_id: 'notfound'}).exists(), false);
+      assert.same(new Query(v.TestModel).exists({_id: v.foo._id}), true);
+    },
+
     "test onId exists": function () {
       var st = new Query(v.TestModel);
 

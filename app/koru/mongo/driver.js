@@ -93,6 +93,10 @@ Collection.prototype = {
     return future.wait();
   },
 
+  exists: function (query) {
+    return this.count(query, {limit: 1}) !== 0;
+  },
+
   findOne: function (query, options) {
     var future = new Future;
     if (options)

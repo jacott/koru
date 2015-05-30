@@ -360,7 +360,7 @@ define(function(require, exports, module) {
       else
         query.where(condition);
 
-      return query.count(1) !== 0;
+      return query.exists();
     },
 
     findBy: function (field, value) {

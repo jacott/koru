@@ -122,6 +122,10 @@ define(function(require, exports, module) {
           return this.model.docs.count(buildQuery(this), {limit: max});
       },
 
+      exists: function () {
+        return this.model.docs.exists(buildQuery(this));
+      },
+
       update: function (origChanges, value) {
         if (typeof origChanges === 'string') {
           var changes = {};

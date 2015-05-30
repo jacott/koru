@@ -173,6 +173,10 @@ define(function(require, exports, module) {
           return count;
         },
 
+        exists: function () {
+          return this.count(1) === 1;
+        },
+
         findOne: function(id) {
           var doc = this.model.docs[id];
           if (! doc) return;

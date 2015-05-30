@@ -68,6 +68,11 @@ isServer && define(function (require, exports, module) {
         assert.same(v.foo.count({name: "abc"}), 2);
       },
 
+      "test exists": function () {
+        assert.isTrue(v.foo.exists({name: 'abc'}));
+        assert.isFalse(v.foo.exists({name: 'abcx'}));
+      },
+
       "test ensureIndex": function () {
         var ensureIndex = test.stub(v.foo._col, 'ensureIndex', function () {
           arguments[arguments.length -1](null, 'Tsuccess');

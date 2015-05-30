@@ -133,6 +133,15 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.findOne({_id: "456"}), {_id: "456", name: "def", age: null});
       },
 
+      "test count": function () {
+        assert.same(v.foo.count({name: 'abc'}), 2);
+      },
+
+      "test exists": function () {
+        assert.isTrue(v.foo.exists({name: 'abc'}));
+        assert.isFalse(v.foo.exists({name: 'abcx'}));
+      },
+
       "test remove": function () {
         assert.same(v.foo.remove({_id: '123'}), 1);
 
