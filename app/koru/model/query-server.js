@@ -200,8 +200,7 @@ define(function(require, exports, module) {
 
           if (util.isObjEmpty(cmd)) return 0;
 
-          docs.update({_id: doc._id}, cmd);
-          util.isObjEmpty(dups) || docs.update({_id: doc._id}, {$pull: dups});
+          docs.koruUpdate(doc, cmd, dups);
 
           model._$setWeakDoc(doc.attributes);
           Model._callAfterObserver(doc, changes);

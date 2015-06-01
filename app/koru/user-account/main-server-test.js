@@ -2,12 +2,12 @@ isServer && define(function (require, exports, module) {
   var test, v;
   var TH = require('../session/test-helper');
   var session = require('../session/base');
-  var Model = require('../model/main');
   var userAccount = require('./main');
   var koru = require('../main');
   var SRP = require('../srp/srp');
   var Email = require('../email');
   var Val = require('../model/validation');
+  var Model = require('../model/main');
 
   TH.testCase(module, {
     setUp: function () {

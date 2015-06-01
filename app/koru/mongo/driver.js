@@ -73,6 +73,11 @@ Collection.prototype = {
     return future.wait();
   },
 
+  koruUpdate: function (doc, changes, dups) {
+    this.update({_id: doc._id}, changes);
+    util.isObjEmpty(dups) || this.update({_id: doc._id}, {$pull: dups});
+  },
+
   update: function (query, changes, options) {
     var future = new Future;
     if (options)

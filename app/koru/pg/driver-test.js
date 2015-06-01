@@ -29,7 +29,7 @@ isServer && define(function (require, exports, module) {
       db.query('CREATE TABLE "Foo" (_id varchar(17) PRIMARY KEY, "foo" jsonb)');
       db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', ['123', JSON.stringify({a: 1})]);
       db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', ['456', JSON.stringify([1])]);
-      db.query('BEGIN;declare c1 cursor for select * from "Foo"');
+      db.query('BEGIN;declare xc1 cursor for select * from "Foo"');
       db.query('COMMIT');
 
       assert.same(db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', [''])[0].exists, true);
@@ -114,6 +114,17 @@ isServer && define(function (require, exports, module) {
 
         v.foo.insert({_id: "123", name: 'abc'});
         v.foo.insert({_id: "456", name: 'def'});
+      },
+
+      "test ensureIndex": function () {
+        v.foo.ensureIndex({name: -1}, {unique: true});
+
+        v.foo.insert({_id: '1', name: "Foo"});
+        assert.exception(function () {
+          v.foo.insert({_id: '2', name: "Foo"});
+        }, {sqlState: '23505'});
+
+        v.foo.ensureIndex({name: -1}, {unique: true});
       },
 
       "test query all": function () {

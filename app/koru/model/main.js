@@ -406,6 +406,8 @@ define(function(require, exports, module) {
       Object.defineProperty(proto, '_version', versionProperty);
 
       proto.$bumpVersion = _support.bumpVersion;
+      model.$fields._version = {type: 'integer', $system: true};
+      _support.resetDocs(model);
       return this;
     },
 

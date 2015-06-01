@@ -20,6 +20,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
+//      v.TestModel && v.TestModel.docs._client.query('truncate "TestModel"');
       v = null;
     },
 
@@ -27,12 +28,11 @@ define(function (require, exports, module) {
       v.TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
 
-      assert.same(v.TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
-      assert.same(v.TestModel.where('aoo', {a: 1, b: 1}).count(), 0);
+      assert.same(v.TestModel.where('aoo', [{a: 1, b: 3}]).count(), 1);
+      assert.same(v.TestModel.where('aoo', [{a: 1, b: 1}]).count(), 0);
 
-      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 1}).count(), 2);
-      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
-
+      assert.same(v.TestModel.query.whereNot('aoo', [{a: 1, b: 3}]).count(), 1);
+      assert.same(v.TestModel.query.whereNot('aoo', [{a: 1, b: 1}]).count(), 2);
     },
 
     "query withIndex": {
@@ -169,6 +169,8 @@ define(function (require, exports, module) {
     },
 
     "test update partial field": function () {
+      v.TestModel.defineFields({foo: 'object'});
+
       var handle = v.TestModel.onChange(v.ob = test.stub());
       test.onEnd(function () {
         handle.stop();
@@ -186,6 +188,7 @@ define(function (require, exports, module) {
     },
 
     "test put": function () {
+      v.TestModel.defineFields({foo: 'jsonb', x: 'integer[]'});
       var st = new Query(v.TestModel).onId(v.foo._id);
 
       st.put({name: 'new Name', 'foo.bar.baz': 123, 'x.$+1': 11, 'x.$+2': 22});
@@ -221,7 +224,7 @@ define(function (require, exports, module) {
     },
 
     "test addItem removeItem": function () {
-      v.TestModel.defineFields({cogs: 'has-many'});
+      v.TestModel.defineFields({cogs: 'text[]'});
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
       v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
@@ -257,7 +260,7 @@ define(function (require, exports, module) {
     },
 
     "test 1st removeItem": function () {
-      v.TestModel.defineFields({cogs: 'has-many'});
+      v.TestModel.defineFields({cogs: 'text[]'});
       v.TestModel.query.onId(v.foo._id).update({cogs: ['a', 'b', 'c']});
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
@@ -270,7 +273,7 @@ define(function (require, exports, module) {
     },
 
     "test removeItem object": function () {
-      v.TestModel.defineFields({cogs: 'has-many'});
+      v.TestModel.defineFields({cogs: 'jsonb'});
       test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
 
       v.foo = v.TestModel.create({_id: 'foo2', cogs: [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]});

@@ -12,7 +12,7 @@ define(function(require, exports, module) {
     list_id: 'belongs_to',
     text: 'text',
     timestamp: 'number',
-    tags: 'has-many',
+    tags: 'text[]',
     done: 'boolean',
   });
 

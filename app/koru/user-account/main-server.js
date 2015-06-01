@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var session = require('../session/base');
-  var Model = require('../model/base');
+  var Model = require('../model/main');
   var koru = require('../main');
   var SRP = require('../srp/srp');
   var Val = require('../model/validation');
@@ -54,7 +54,7 @@ define(function(require, exports, module) {
     userId: 'text',
     email: 'text',
     srp: 'text',
-    tokens: 'has-many',
+    tokens: 'object',
     resetToken: 'text',
     resetTokenExpire: 'number',
   });

@@ -12,7 +12,7 @@ isClient && define(function (require, exports, module) {
       test = this;
       v = {};
       test.stub(session, 'sendM');
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', foo_ids: 'has-many'});
+      v.TestModel = Model.define('TestModel').defineFields({name: 'text', foo_ids: 'integer[]'});
     },
 
     tearDown: function () {

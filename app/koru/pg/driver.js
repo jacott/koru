@@ -49,6 +49,7 @@ define(function(require, exports, module) {
 
 function aryToSqlStr(value) {
   if (! value) return value;
+
   return '{'+value.map(function (v) {
     return JSON.stringify(v);
   }).join(',')+'}';
@@ -274,6 +275,51 @@ Table.prototype = {
     return performTransaction(this, sql, params);
   },
 
+  koruUpdate: function (doc, changes) {
+    doc = doc.attributes;
+    var params = {};
+    for (var key in changes) {
+      var sc = changes[key];
+      for (key in  sc) {
+        var di = key.indexOf('.');
+        if (di === -1)
+          params[key] = doc[key];
+        else {
+          key = key.substring(0, di);
+          if (! params.hasOwnProperty(key))
+            params[key] = doc[key];
+        }
+      }
+    }
+    var sql = 'UPDATE "'+this._name+'" SET ';
+    var set = toColumns(this, params);
+    sql += set.cols.map(function (col, i) {
+      return '"'+col+'"=$'+(i+1);
+    }).join(',');
+
+    set.values.push(doc._id);
+
+    sql += ' WHERE _id=$'+set.values.length;
+
+    return performTransaction(this, sql, set);
+  },
+
+  ensureIndex: function (keys, options) {
+    var cols = Object.keys(keys);
+    var name = this._name+'_'+cols.join('_');
+    cols = cols.map(function (col) {
+      return '"'+col+(keys[col] === -1 ? '" DESC' : '"');
+    });
+    var unique = options.unique ? 'UNIQUE ' : '';
+    try {
+      this._client.query("CREATE "+unique+"INDEX \""+
+                         name+'" ON "'+this._name+'" ('+cols.join(',')+")");
+    } catch(ex) {
+      if (ex.sqlState !== '42P07')
+        throw ex;
+    }
+  },
+
   update: function (where, params) {
     this._ensureTable();
 
@@ -305,42 +351,67 @@ Table.prototype = {
         case '$and':
           var parts = [];
           util.forEach(where[key], function (w) {
-            parts.push(where1(w));
+            parts.push('('+where1(w)+')');
           });
           whereSql.push('('+parts.join(key === '$or' ? ' OR ' :  ' AND ')+')');
           continue;
-        case '$and':
-
         }
+        var qkey = '"'+key+'"';
         ++count;
         var value = where[key];
         if (value && typeof value === 'object') {
-          for(var vk in value) {
-            switch(vk) {
-            case '$in':
-              --count;
-              value = value[vk];
-              switch (table._colMap[key].data_type) {
-              case 'ARRAY':
-                whereSql.push('"'+key+'" && $'+ (++count));
+          switch (table._colMap[key].data_type) {
+          case 'ARRAY':
+            for(var vk in value) {
+              switch(vk) {
+              case '$in':
+                value = value[vk];
+                whereSql.push(qkey+' && $'+ count);
                 whereValues.push(aryToSqlStr(value));
                 break;
-              default:
+              }
+              break;
+            }
+            break;
+
+          case 'json':
+          case 'jsonb':
+            for(var vk in value) {
+              switch(vk) {
+              case '$in':
+                whereSql.push(qkey+' @> $'+ count);
+                whereValues.push(JSON.stringify(value[vk]));
+                break;
+              case '$nin':
+                whereSql.push('('+qkey+' IS NULL OR NOT ('+qkey+' @> $'+ count+'))');
+                whereValues.push(JSON.stringify(value[vk]));
+                break;
+              }
+              break;
+            }
+            break;
+          default:
+            for(var vk in value) {
+              switch(vk) {
+              case '$in':
+              case '$nin':
+                --count;
+                value = value[vk];
                 var param = [];
                 util.forEach(value, function (v) {
                   param.push('$'+(++count));
                   whereValues.push(v);
                 });
-                whereSql.push('"'+key+'" in ('+param.join(',')+')');
+                whereSql.push(qkey+(vk === '$in' ? ' IN (' : ' NOT IN (')+param.join(',')+')');
+                break;
+
+              case '$ne':
+                whereSql.push(qkey+'<>$'+count);
+                whereValues.push(value[vk]);
+                break;
               }
               break;
-
-            case '$ne':
-              whereSql.push('"'+key+'"<>$'+count);
-              whereValues.push(value[value[vk]]);
-              break;
             }
-            break;
           }
         } else {
           switch (table._colMap[key].data_type) {
@@ -348,8 +419,13 @@ Table.prototype = {
             whereSql.push('$'+count+' = ANY ("'+key+'")');
             whereValues.push(value);
             break;
+          case 'json':
+          case 'jsonb':
+            whereSql.push(qkey+'=$'+count);
+            whereValues.push(JSON.stringify(value));
+            break;
           default:
-            whereSql.push('"'+key+'"=$'+count);
+            whereSql.push(qkey+'=$'+count);
             whereValues.push(value);
           }
         }
@@ -429,7 +505,13 @@ function initCursor(cursor) {
   var tx = client._weakMap.get(util.thread);
   cursor._name = 'c'+(++cursorCount).toString(36);
   var sql = cursor._sql;
+  if (cursor._sort) {
+    sql += ' ORDER BY '+Object.keys(cursor._sort).map(function (k) {
+      return '"'+k+(cursor._sort[k] === -1 ? '" DESC' : '"');
+    }).join(',');
+  }
   if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
+
   if (tx && tx.transaction) {
     cursor._inTran = true;
     client.query('DECLARE '+cursor._name+' CURSOR FOR '+sql, cursor._values);
@@ -500,6 +582,7 @@ function queryWhere(table, sql, where, suffix) {
   where = table.where(where, values);
   sql = sql+' WHERE '+where;
   if (suffix) sql += suffix;
+
   return table._client.query(sql, values);
 }
 
@@ -511,6 +594,7 @@ function toColumns(table, params) {
 
   util.forEach(cols, function (col, i) {
     var value = params[col];
+    if (value === undefined) value = null;
     var desc = colMap[col];
     if (desc) {
       switch (desc.data_type) {
@@ -586,6 +670,7 @@ function jsFieldToPg(col, colSchema) {
     type = 'double precision';
     break;
   case 'belongs_to':
+  case 'user_id_on_create':
     type = 'varchar(17)';
     break;
   case 'has_many':
