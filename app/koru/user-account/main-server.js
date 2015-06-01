@@ -53,7 +53,7 @@ define(function(require, exports, module) {
   .defineFields({
     userId: 'text',
     email: 'text',
-    srp: 'text',
+    srp: 'object',
     tokens: 'object',
     resetToken: 'text',
     resetTokenExpire: 'number',
@@ -120,7 +120,7 @@ define(function(require, exports, module) {
   util.extend(exports, {
     model: model,
 
-    veryifyClearPassword: function (email, password) {
+    verifyClearPassword: function (email, password) {
       var doc = model.findBy('email', email);
       if (! doc) return;
 
