@@ -1,8 +1,20 @@
 var Future = requirejs.nodeRequire('fibers/future');
-var pgCursor = requirejs.nodeRequire('pg-cursor');
-var pg = requirejs.nodeRequire('pg');
-
+var pg = require('pg-native'); // app installs this
+var poolModule = requirejs.nodeRequire('generic-pool');
+var pgTypes = requirejs.nodeRequire('pg-types');
 var koru, util, makeSubject, match;
+
+var pools = {};
+var clientCount = 0;
+var cursorCount = 0;
+var CONFIG = {
+  types: pgTypes,
+};
+
+// timestamp without zone
+pgTypes.setTypeParser(1114, 'text', function (value) {
+  return new Date(value+'Z');
+});
 
 define(function(require, exports, module) {
   koru = require('../main');
@@ -15,15 +27,14 @@ define(function(require, exports, module) {
   var defaultDb = null;
 
   function closeDefaultDb() {
-    defaultDb && defaultDb.close();
+    defaultDb && defaultDb.end();
     defaultDb = null;
   }
 
   return {
     get defaultDb() {
       if (defaultDb) return defaultDb;
-
-      return defaultDb = this.connect(module.config().url);
+      return defaultDb = new Client(module.config().url);
     },
 
     get defaults() {return pg.defaults},
@@ -33,23 +44,67 @@ define(function(require, exports, module) {
     connect: function (url) {
       return new Client(url);
     },
-
-    stop: function () {
-      pg.end();
-    },
   };
 });
 
-function getConn(url) {
-  var future = new Future;
-  pg.connect(url, function (err, client, done) {
-    if (err) future.throw(err);
-    else future.return([client, done]);
+function aryToSqlStr(value) {
+  if (! value) return value;
+  return '{'+value.map(function (v) {
+    return JSON.stringify(v);
+  }).join(',')+'}';
+}
+
+function getConn(client) {
+  var tx = client._weakMap.get(util.thread);
+  if (! tx) {
+    var pool = fetchPool(client);
+    var future = new Future;
+    pool.acquire(wait(future));
+    client._weakMap.set(util.thread, tx = future.wait());
+  }
+  ++tx.count;
+
+  return tx.conn;
+}
+
+function releaseConn(client) {
+  var tx = client._weakMap.get(util.thread);
+  if (tx && --tx.count === 0) {
+    fetchPool(client).release(tx);
+    client._weakMap.set(util.thread, null);
+  }
+}
+
+function fetchPool(client) {
+  var pool = pools[client._id];
+  if (pool) return pool;
+  return pools[client._id] = poolModule.Pool({
+    name: 'pg-driver',
+    create: function (callback) {
+      var tx = {
+        conn: new pg(CONFIG),
+        count: 0,
+      };
+      var future = new Future;
+      tx.conn.connect(client._url, wait(future));
+      future.wait();
+      callback(null, tx);
+    },
+    destroy: function (tx) {
+      var future = new Future;
+      tx.conn.end(wait(future));
+      future.wait();
+    },
+    max: 10,
+    min: 0,
+    idleTimeoutMillis : 30000,
+    reapIntervalMillis: 20000,
+    log: false,
   });
-  return future.wait();
 }
 
 function Client(url) {
+  this._id = (++clientCount).toString(36);
   this._url = url;
   this._weakMap = new WeakMap;
 }
@@ -61,35 +116,22 @@ Client.prototype = {
     return "Pg:" + this._url;
   },
 
+  end: function () {
+    var pool = pools[this._id];
+    if (pool) {
+      pool.drain();
+    }
+    delete pools[this._id];
+  },
+
   withConn: function(func) {
     var tx = this._weakMap.get(util.thread);
     if (tx)
       return func.call(this, tx.conn);
-    var conn = getConn(this._url);
     try {
-      return func.call(this, conn[0]);
-    } catch(ex) {
-      var msg = new Error(ex.message);
-      if (ex.severity) msg.severity = ex.severity;
-      if (ex.code) msg.code = ex.code;
-      if (ex.detail) msg.detail = ex.detail;
-      if (ex.hint) msg.hint = ex.hint;
-      if (ex.position) msg.position = ex.position;
-      if (ex.internalPosition) msg.internalPosition = ex.internalPosition;
-      if (ex.internalQuery) msg.internalQuery = ex.internalQuery;
-      if (ex.where) msg.where = ex.where;
-      if (ex.schema) msg.schema = ex.schema;
-      if (ex.table) msg.table = ex.table;
-      if (ex.column) msg.column = ex.column;
-      if (ex.dataType) msg.dataType = ex.dataType;
-      if (ex.constraint) msg.constraint = ex.constraint;
-      if (ex.file) msg.file = ex.file;
-      if (ex.line) msg.line = ex.line;
-      if (ex.routine) msg.routine = ex.routine;
-      throw msg;
-
+      return func.call(this, getConn(this));
     } finally {
-      conn[1]();
+      releaseConn(this);
     }
   },
 
@@ -108,47 +150,51 @@ Client.prototype = {
   },
 
   dropTable: function (name) {
-    this.findOne('DROP TABLE IF EXISTS "' + name + '"');
+    this.query('DROP TABLE IF EXISTS "' + name + '"');
   },
 
   transaction: function (func) {
+    getConn(this); // ensure connection
     var tx = this._weakMap.get(util.thread);
     try {
-      if (tx) {
-        tx.count++;
+      if (tx.transaction)
         return func.call(this, tx.conn);
-      } else {
-        var conn = getConn(this._url);
-        query(conn[0], 'BEGIN');
-        tx = {
-          count: 1,
-          conn: conn[0],
-          done: conn[1],
-        };
-        this._weakMap.set(util.thread, tx);
+
+      try {
+        tx.transaction = 'COMMIT';
+        query(tx.conn, 'BEGIN');
         return func.call(this, tx.conn);
+      } catch(ex) {
+        tx.transaction = 'ROLLBACK';
+        if (ex !== 'abort')
+          throw ex;
+      } finally {
+        var command = tx.transaction;
+        tx.transaction = null;
+        query(tx.conn, command);
       }
-    } catch(ex) {
-      if (tx) tx.rollback = true;
-      throw ex;
     } finally {
-      if (tx && --tx.count === 0) {
-        try {
-          var done = tx.done;
-          query(tx.conn, tx.rollback ? 'ROLLBACK' : 'COMMIT');
-        } finally {
-          this._weakMap.set(util.thread, null);
-          done();
-        }
-      }
+      releaseConn(this);
     }
   },
 };
 
 function query(conn, text, params) {
   var future = new Future;
-  conn.query(text, params, wait(future));
-  return future.wait();
+  if (params)
+    conn.query(text, params, wait(future));
+  else
+    conn.query(text, wait(future));
+  try {
+    return future.wait();
+  } catch(ex) {
+    var msg = new Error(ex.message);
+    var fields = conn.pq.$resultErrorFields();
+    for (var field in fields) {
+      msg[field] = fields[field];
+    }
+    throw msg;
+  }
 }
 
 function Table(name, schema, client) {
@@ -241,62 +287,220 @@ Table.prototype = {
     where = this.where(where, set.values);
 
     if (where)
-      sql += ' WHERE '+where.join(',');
+      sql += ' WHERE '+where;
 
     return performTransaction(this, sql, set);
   },
 
   where: function (where, whereValues) {
-    var whereSql = [];
+    var table = this;
     var count = whereValues.length;
-    for (var key in  where) {
-      ++count;
-      var value = where[key];
-      whereSql.push('"'+key+'"=$'+count);
-      whereValues.push(value);
+    return where1(where);
+
+    function where1(where) {
+      var whereSql = [];
+      for (var key in  where) {
+        if (key[0] === '$') switch(key) {
+        case '$or':
+        case '$and':
+          var parts = [];
+          util.forEach(where[key], function (w) {
+            parts.push(where1(w));
+          });
+          whereSql.push('('+parts.join(key === '$or' ? ' OR ' :  ' AND ')+')');
+          continue;
+        case '$and':
+
+        }
+        ++count;
+        var value = where[key];
+        if (value && typeof value === 'object') {
+          for(var vk in value) {
+            switch(vk) {
+            case '$in':
+              --count;
+              value = value[vk];
+              switch (table._colMap[key].data_type) {
+              case 'ARRAY':
+                whereSql.push('"'+key+'" && $'+ (++count));
+                whereValues.push(aryToSqlStr(value));
+                break;
+              default:
+                var param = [];
+                util.forEach(value, function (v) {
+                  param.push('$'+(++count));
+                  whereValues.push(v);
+                });
+                whereSql.push('"'+key+'" in ('+param.join(',')+')');
+              }
+              break;
+
+            case '$ne':
+              whereSql.push('"'+key+'"<>$'+count);
+              whereValues.push(value[value[vk]]);
+              break;
+            }
+            break;
+          }
+        } else {
+          switch (table._colMap[key].data_type) {
+          case 'ARRAY':
+            whereSql.push('$'+count+' = ANY ("'+key+'")');
+            whereValues.push(value);
+            break;
+          default:
+            whereSql.push('"'+key+'"=$'+count);
+            whereValues.push(value);
+          }
+        }
+      }
+      if (whereSql.length)
+        return whereSql.join(' AND ');
     }
-    if (whereSql.length)
-      return whereSql;
   },
 
   query: function (where) {
-    return queryWhere(this, 'SELECT * FROM "'+this._name+'"', where).rows;
+    return queryWhere(this, 'SELECT * FROM "'+this._name+'"', where);
   },
 
-  findOne: function (where) {
-    return queryWhere(this, 'SELECT * FROM "'+this._name+'"',
-                      where, ' LIMIT 1').rows[0];
+  findOne: function (where, fields) {
+    return queryWhere(this, 'SELECT '+selectFields(this, fields)+' FROM "'+this._name+'"',
+                      where, ' LIMIT 1')[0];
+  },
+
+  find: function (where, options) {
+    var table = this;
+    var sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
+
+    if (util.isObjEmpty(where))
+      return new Cursor(this, sql);
+
+    var values = [];
+    where = table.where(where, values);
+    sql = sql+' WHERE '+where;
+    return new Cursor(this, sql, values);
   },
 
   exists: function (where) {
     return queryWhere(this, 'SELECT EXISTS (SELECT 1 FROM "'+this._name+'"',
-                      where, ')').rows[0].exists;
+                      where, ')')[0].exists;
   },
 
   count: function (where) {
     return +queryWhere(this, 'SELECT count(*) FROM "'+this._name+'"',
-                      where).rows[0].count;
+                      where)[0].count;
   },
 
   remove: function (where) {
-    return queryWhere(this, 'DELETE FROM "'+this._name+'"', where).rowCount;
+    queryWhere(this, 'DELETE FROM "'+this._name+'"', where);
+    return +getConn(this._client).pq.$cmdTuples();
   },
 };
 
-Table.prototype.find = Table.prototype.query;
+function selectFields(table, fields) {
+  if (! fields) return '*';
+  var add;
+  var result = ['_id'];
+  for (var col in fields) {
+    if (add === undefined) {
+      add = !! fields[col];
+    } else if (add !== !! fields[col])
+      throw new Error('fields must be all true or all false');
+    if (col !== '_id' && add) {
+      result.push('"'+col+'"');
+    }
+  }
+  if (! add) for(var col in table._colMap) {
+    if (col === '_id') continue;
+    fields.hasOwnProperty(col) || result.push('"'+col+'"');
+  }
+  return result.join(',');
+}
+
+function Cursor(table, sql, values) {
+  this.table = table;
+  this._sql = sql;
+  this._values = values;
+}
+
+function initCursor(cursor) {
+  if (cursor._name) return;
+  var client = cursor.table._client;
+  var tx = client._weakMap.get(util.thread);
+  cursor._name = 'c'+(++cursorCount).toString(36);
+  var sql = cursor._sql;
+  if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
+  if (tx && tx.transaction) {
+    cursor._inTran = true;
+    client.query('DECLARE '+cursor._name+' CURSOR FOR '+sql, cursor._values);
+  } else client.transaction(function () {
+    getConn(client); // so cursor is valid outside transaction
+    client.query('DECLARE '+cursor._name+' CURSOR WITH HOLD FOR '+sql, cursor._values);
+  });
+}
+
+Cursor.prototype = {
+  constructor: Cursor,
+
+  close: function () {
+    if (this._name) {
+      try {
+        this.table._client.query('CLOSE '+this._name);
+      } finally {
+        this._name = null;
+        if (this._inTran) {
+          this._inTran = null;
+        } else {
+          releaseConn(this.table._client);
+        }
+      }
+    }
+  },
+
+  next: function (count) {
+    initCursor(this);
+    var c = count === undefined ? 1 : count;
+    var result = this.table._client.query('FETCH '+c+' '+this._name);
+    return count === undefined ? result[0] : result;
+  },
+
+  sort: function (spec) {
+    this._sort = spec;
+    return this;
+  },
+
+  limit: function (value) {
+    this._limit = value;
+    return this;
+  },
+
+  batchSize: function (value) {
+    this._batchSize = value;
+    // FIXME do we need this for fetch
+    return this;
+  },
+
+  forEach: function (func) {
+    for(var doc = this.next(); doc; doc = this.next()) {
+      func(doc);
+    }
+  },
+};
+
 
 function queryWhere(table, sql, where, suffix) {
   table._ensureTable();
 
+  if (util.isObjEmpty(where)) {
+    if (suffix) sql += suffix;
+    return table._client.query(sql);
+  }
+
   var values = [];
   where = table.where(where, values);
-  if (where) {
-    sql = sql+' WHERE '+where.join(',');
-    if (suffix) sql += suffix;
-    return table._client.query(sql, values);
-  }
+  sql = sql+' WHERE '+where;
   if (suffix) sql += suffix;
-  return table._client.query(sql);
+  return table._client.query(sql, values);
 }
 
 function toColumns(table, params) {
@@ -310,15 +514,19 @@ function toColumns(table, params) {
     var desc = colMap[col];
     if (desc) {
       switch (desc.data_type) {
+      case 'ARRAY':
+        value = aryToSqlStr(value);
+        break;
       case 'jsonb':
       case 'json':
-        value = wrapJsonType(value);
+        value = JSON.stringify(value);
+        break;
+      case 'timestamp without time zone':
+        value = value && value.toISOString();
         break;
       }
-      values[i] = value;
-    } else {
-      values[i] = value;
     }
+    values[i] = value;
 
     if (! desc) {
       needCols[col] = mapType(col, params[col]);
@@ -328,23 +536,18 @@ function toColumns(table, params) {
   return {needCols: needCols, cols: cols, values: values};
 }
 
-function wrapJsonType(value) {
-  value = JSON.stringify(value);
-  return {toPostgres: toPostgres};
-
-  function toPostgres() {return value}
-}
-
 function performTransaction(table, sql, params) {
   if (table.schema || util.isObjEmpty(params.needCols)) {
-    return table._client.withConn(function () {
-      return this.query(sql, params.values).rowCount;
+    return table._client.withConn(function (conn) {
+      this.query(sql, params.values);
+      return +conn.pq.$cmdTuples();
     });
   }
 
-  return table._client.transaction(function () {
+  return table._client.transaction(function (conn) {
     addColumns(table, params.needCols);
-    return this.query(sql, params.values).rowCount;
+    this.query(sql, params.values);
+      return +conn.pq.$cmdTuples();
   });
 }
 
@@ -427,7 +630,7 @@ function addColumns(table, needCols) {
 function readColumns(table) {
   var colQuery = "SELECT * FROM information_schema.columns WHERE table_name = '" +
         table._name + "'";
-  table._columns = table._client.query(colQuery).rows;
+  table._columns = table._client.query(colQuery);
   table._colMap = util.toMap('column_name', null, table._columns);
 }
 

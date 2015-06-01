@@ -73,7 +73,7 @@
           return o.outerHTML;
         if (o.$inspect)
           return o.$inspect();
-        if (o.constructor === Date) return "<"+o.toGMTString()+">";
+        if (o.constructor === Date) return "<"+o.toISOString()+">";
         if (Array.isArray(o)) {
           if (i)
             return "[" + o.map(function (o2) {

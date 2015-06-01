@@ -24,6 +24,7 @@ define(function (require, exports, module) {
     },
 
     "test un/match array element": function () {
+      v.TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
 
       assert.same(v.TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
@@ -66,12 +67,14 @@ define(function (require, exports, module) {
     },
 
     "test arrays": function () {
-      v.multi = v.TestModel.create({age: [6,7,8]});
+      v.TestModel.defineFields({ages: 'integer[]'});
+      v.foo.$update('ages', [5]);
+      v.multi = v.TestModel.create({ages: [6,7,8]});
 
-      assert.equals(v.TestModel.where('age', [8, 9]).fetchIds(), [v.multi._id]);
-      assert.equals(v.TestModel.where('age', 7).fetchIds(), [v.multi._id]);
+      assert.equals(v.TestModel.where('ages', [8, 9]).fetchIds(), [v.multi._id]);
+      assert.equals(v.TestModel.where('ages', 7).fetchIds(), [v.multi._id]);
 
-      assert.equals(v.TestModel.where('age', [5, 9]).fetchIds(), [v.foo._id]);
+      assert.equals(v.TestModel.where('ages', [5, 9]).fetchIds(), [v.foo._id]);
     },
 
     "test fields": function () {

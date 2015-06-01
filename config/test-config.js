@@ -10,7 +10,7 @@ exports.server = function (cfg) {
         DBDriver: "koru/pg/driver",
       },
       "koru/mongo/driver": {url: "mongodb://localhost:"+process.env['MONGO_PORT']+"/koru"},
-      "koru/pg/driver": {url: "/var/run/postgresql korutest"},
+      "koru/pg/driver": {url: "host=/var/run/postgresql dbname=korutest"},
       "koru/web-server": {
         port: 3000,
         defaultPage: 'test/index.html',

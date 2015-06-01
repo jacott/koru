@@ -164,7 +164,7 @@ define(function(require, exports, module) {
         model._$wm.delete(doc._id);
       };
 
-      _resetDocs[model] = function () {docs = null};
+      _resetDocs[model.modelName] = function () {docs = null};
 
       var docs, db;
       util.extend(model, {
