@@ -3,7 +3,6 @@ isServer && define(function (require, exports, module) {
   var TH = require('../test');
   var sut = require('./driver');
   var util = require('../util');
-
   var mf = TH.match.field;
 
   TH.testCase(module, {
@@ -75,11 +74,13 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.findOne({_id: 'one0'},{name: true}), {_id: 'one0', name: 'one'});
         assert.equals(v.foo.findOne({_id: 'one0'},{version: false, age: false}), {
           _id: 'one0', name: 'one', createdAt: TH.match.date});
-        assert.equals(v.foo.find({_id: 'one0'},{fields: {name: true, age: true}}).next(), {
-          _id: 'one0', name: 'one', age: 10});
-        assert.exception(function () {
-          v.foo.find({}, {fields: {age: true, name: false}});
-        }, 'Error', "fields must be all true or all false");
+        v.foo.transaction(function () {
+          assert.equals(v.foo.find({_id: 'one0'},{fields: {name: true, age: true}}).next(), {
+            _id: 'one0', name: 'one', age: 10});
+          assert.exception(function () {
+            v.foo.find({}, {fields: {age: true, name: false}});
+          }, 'Error', "fields must be all true or all false");
+        });
       },
 
       "test cursor next": function () {

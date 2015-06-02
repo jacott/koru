@@ -62,8 +62,12 @@ define(function(require, exports, module) {
         applyCursorOptions(this, cursor);
 
         var results = [];
-        for(var doc = cursor.next(); doc; doc = cursor.next()) {
-          results.push(doc._id);
+        try {
+          for(var doc = cursor.next(); doc; doc = cursor.next()) {
+            results.push(doc._id);
+          }
+        } finally {
+          cursor.close();
         }
         return results;
       },
@@ -83,11 +87,16 @@ define(function(require, exports, module) {
           var options = {};
           if (this._fields) options.fields = this._fields;
           var cursor = model.docs.find(buildQuery(this), options);
-          applyCursorOptions(this, cursor);
-          for(var doc = cursor.next(); doc; doc = cursor.next()) {
-            if (func(new model(doc)) === true)
-              break;
+          try {
+            applyCursorOptions(this, cursor);
+            for(var doc = cursor.next(); doc; doc = cursor.next()) {
+              if (func(new model(doc)) === true)
+                break;
+            }
+          } finally {
+            cursor.close();
           }
+
         }
         return this;
       },
@@ -216,7 +225,11 @@ define(function(require, exports, module) {
           if (this._sort) options.sort = this._sort;
           if (this._fields) options.fields = this._fields;
           var cursor = this.model.docs.find(buildQuery(this, id), options);
-          var doc = cursor.next();
+          try {
+            var doc = cursor.next();
+          } finally {
+            cursor.close();
+          }
         } else {
           if (this._fields) opts = this._fields;
           var doc = this.model.docs.findOne(buildQuery(this, id), opts);

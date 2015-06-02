@@ -1,5 +1,5 @@
 var Future = requirejs.nodeRequire('fibers/future');
-var MongoClient = requirejs.nodeRequire('mongodb').MongoClient;
+var MongoClient = require('mongodb').MongoClient;
 var connect = Future.wrap(MongoClient.connect);
 
 var util;
@@ -199,8 +199,12 @@ Cursor.prototype = {
   },
 
   forEach: function (func) {
-    for(var doc = this.next(); doc; doc = this.next()) {
-      func(doc);
+    try {
+      for(var doc = this.next(); doc; doc = this.next()) {
+        func(doc);
+      }
+    } finally {
+      this.close();
     }
   },
 };

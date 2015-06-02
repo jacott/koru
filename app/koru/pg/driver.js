@@ -1,8 +1,8 @@
 var Future = requirejs.nodeRequire('fibers/future');
 var pg = require('pg-native'); // app installs this
-var poolModule = requirejs.nodeRequire('generic-pool');
-var pgTypes = requirejs.nodeRequire('pg-types');
-var koru, util, makeSubject, match;
+var pgTypes = requirejs.nodeRequire('pg-native/node_modules/pg-types');
+
+var koru, util, makeSubject, match, Pool;
 
 var pools = {};
 var clientCount = 0;
@@ -21,6 +21,7 @@ define(function(require, exports, module) {
   util = require('../util');
   makeSubject = require('../make-subject');
   match = require('../match');
+  Pool = require('../pool-server');
 
   koru.onunload(module, closeDefaultDb);
 
@@ -58,10 +59,7 @@ function aryToSqlStr(value) {
 function getConn(client) {
   var tx = client._weakMap.get(util.thread);
   if (! tx) {
-    var pool = fetchPool(client);
-    var future = new Future;
-    pool.acquire(wait(future));
-    client._weakMap.set(util.thread, tx = future.wait());
+    client._weakMap.set(util.thread, tx = fetchPool(client).acquire());
   }
   ++tx.count;
 
@@ -76,31 +74,30 @@ function releaseConn(client) {
   }
 }
 
+var conns = 0;
+
 function fetchPool(client) {
   var pool = pools[client._id];
   if (pool) return pool;
-  return pools[client._id] = poolModule.Pool({
-    name: 'pg-driver',
+  return pools[client._id] = new Pool({
+    name: client._id,
     create: function (callback) {
+      ++conns;
       var tx = {
         conn: new pg(CONFIG),
         count: 0,
       };
-      var future = new Future;
-      tx.conn.connect(client._url, wait(future));
-      future.wait();
-      callback(null, tx);
+      tx.conn.connect(client._url, function (err) {
+        callback(err, tx);
+      });
     },
     destroy: function (tx) {
-      var future = new Future;
-      tx.conn.end(wait(future));
-      future.wait();
+      --conns;
+      _koru_.debug('destroy', conns);
+
+      tx.conn.end();
     },
-    max: 10,
-    min: 0,
-    idleTimeoutMillis : 30000,
-    reapIntervalMillis: 20000,
-    log: false,
+    idleTimeoutMillis: 5*1000,
   });
 }
 
@@ -468,8 +465,12 @@ Table.prototype = {
   },
 
   remove: function (where) {
-    queryWhere(this, 'DELETE FROM "'+this._name+'"', where);
-    return +getConn(this._client).pq.$cmdTuples();
+    var table = this;
+    return table._client.withConn(function (conn) {
+      queryWhere(table, 'DELETE FROM "'+table._name+'"', where);
+
+      return +conn.pq.$cmdTuples();
+    });
   },
 };
 
@@ -563,8 +564,12 @@ Cursor.prototype = {
   },
 
   forEach: function (func) {
-    for(var doc = this.next(); doc; doc = this.next()) {
-      func(doc);
+    try {
+      for(var doc = this.next(); doc; doc = this.next()) {
+        func(doc);
+      }
+    } finally {
+      this.close();
     }
   },
 };
