@@ -21,6 +21,12 @@ define(function(require, exports, module) {
     acquire: function () {
       var v = this._private;
       if (v.draining) throw new Error('The pool is closed for draining');
+      var head = fetchHead(v, 'idle');
+      if (head) {
+        ++v.count;
+        return head.conn;
+      }
+
       if (v.count === v.max) {
         var future = new Future;
         addTail(v, 'wait', {future: future});
@@ -29,9 +35,6 @@ define(function(require, exports, module) {
       }
 
       ++v.count;
-
-      var head = fetchHead(v, 'idle');
-      if (head) return head.conn;
 
       var future = new Future;
       v.create(function (err, conn) {
@@ -52,7 +55,7 @@ define(function(require, exports, module) {
 
       var wait = fetchHead(v, 'wait');
 
-      var now = Date.now();
+      var now = util.dateNow();
       addTail(v, 'idle', {conn: conn, at: now+v.idleTimeoutMillis});
       if (! v.idleTimeout) {
         if (wait) {
@@ -73,7 +76,7 @@ define(function(require, exports, module) {
       function clearIdle() {
         v.idleTimeout = null;
 
-        var now = Date.now();
+        var now = util.dateNow();
         while(v.idleHead) {
           if (v.idleHead.at <= now) {
             --v.count;
