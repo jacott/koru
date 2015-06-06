@@ -13,6 +13,7 @@
   var unloads = {};
   var loaded = {};
   var loadError = null;
+  var koru;
 
   function noopFunc(value) {return value}
 
@@ -106,15 +107,7 @@
   }
 
   function reload() {
-    if (loadError) throw loadError;
-    console.log('=> Reloading');
-
-    if (isServer) {
-      requirejs.nodeRequire('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
-    } else {
-      window.location.reload(true);
-      throw "reloading"; // no point continuing
-    }
+    koru.reload();
   }
 
   /**
@@ -131,41 +124,16 @@
 
     var loaderPrefix = module.id + "!";
 
-    if (isClient) {
-      var discardIncompleteLoads = function (error) {
-        var list = document.head.querySelectorAll('script[data-requiremodule]');
-        var badIds = [];
-        loadError = error;
-        try {
-          for(var i = 0; i < list.length; ++i) {
-            var elm = list[i];
-            var modId = elm.getAttribute('data-requiremodule');
-            if (modId && ! loaded.hasOwnProperty(modId)) {
-              unload(modId, error);
-              badIds.push("\tat "+modId+".js:1");
-            }
-          }
-        } finally {
-          loadError = null;
-        }
-        return badIds;
-      };
-    } else {
-      var discardIncompleteLoads = function () {
-        return []; // FIXME what should I do on sever side?
-      };
-    }
-
-    var koru = (isServer ? global : window)._koru_ = {
+    koru = {
       onunload: onunload,
       revertonunload: revertonunload,
       unload: unload,
-      reload: reload,
       providerMap: providerMap,
       unloads: unloads,
       insertDependency: insertDependency,
       loaded: loaded,
-      discardIncompleteLoads: discardIncompleteLoads,
+      get loadError() {return loadError},
+      set loadError(value) {loadError = value},
 
       config: module.config(),
       throwConfigMissing: function (name) {
@@ -184,11 +152,6 @@
         id = require.toUrl(id);
 
         return id.slice(require.toUrl('').length);
-      },
-
-      setTimeout: function (func, duration) {
-        var fiber = util.Fiber(wrapFunc(func));
-        return setTimeout(fiber.run.bind(fiber), duration);
       },
 
       clearTimeout: function (handle) {
@@ -259,45 +222,6 @@
     logDebug.inspect = function () {
       koru.logger('\x44EBUG ' + util.map(arguments, function (arg) {return util.inspect(arg)}).join(', '));
     };
-
-    if (isServer) {
-      koru.appDir = module.config().appDir || require.toUrl('').slice(0,-1);
-      koru.libDir = requirejs.nodeRequire('path').resolve(require.toUrl('.'), '../../..');
-    } else {
-      koru.appDir = require.toUrl('').slice(0,-1);
-
-      koru.afTimeout = function (func, duration) {
-        var af = null;
-        if (duration && duration > 0)
-          var timeout = window.setTimeout(inner, duration);
-        else
-          inner();
-
-        function inner() {
-          timeout = null;
-          af = window.requestAnimationFrame(function () {
-            af = null;
-            wrapFunc(func)();
-          });
-        }
-
-        return function () {
-          if (timeout) window.clearTimeout(timeout);
-          if (af) window.cancelAnimationFrame(af);
-          af = timeout = null;
-        };
-      };
-    }
-
-    function wrapFunc(func) {
-      return function () {
-        try {
-          func();
-        } catch(ex) {
-          koru.error(util.extractError(ex));
-        }
-      };
-    }
 
     return koru;
   });

@@ -26,7 +26,7 @@ define(function (require, exports, module) {
 
       assert.same(token, setTimeout.returnValues[0]);
 
-      assert.calledWith(util.Fiber, TH.match.func);
+      if (isServer) assert.calledWith(util.Fiber, TH.match.func);
 
       refute.called(v.stub);
 

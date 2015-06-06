@@ -727,23 +727,6 @@ define(function(require, exports, module) {
     TwoIndex: TwoIndex,
   });
 
-  if (isClient) {
-    util.thread = {};
-    util.Fiber = function(func) {return {run: func}};
-  } else {
-    util.Fiber = requirejs.nodeRequire('fibers');
-
-    // Fix fibers making future enumerable
-    var future = requirejs.nodeRequire('fibers/future');
-    delete Function.prototype.future;
-    Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
-
-
-    Object.defineProperty(util, 'thread', {configurable: true, get: function () {
-      return util.Fiber.current ? (util.Fiber.current.appThread || (util.Fiber.current.appThread = {})) : {};
-    }});
-  }
-
   function egal(x, y) {
     if (x === y) {
       // 0 === -0, but they are not identical

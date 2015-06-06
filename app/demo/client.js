@@ -1,1 +1,4 @@
-define(['ui/todos'], {});
+define(function(require) {
+  require('koru/main-client');
+  require('ui/todos');
+});
