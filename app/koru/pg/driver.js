@@ -84,7 +84,7 @@ function fetchPool(client) {
 
       tx.conn.finish();
     },
-    idleTimeoutMillis: 5*1000,
+    idleTimeoutMillis: 30*1000,
   });
 }
 
