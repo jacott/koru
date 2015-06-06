@@ -1,20 +1,11 @@
 var Future = requirejs.nodeRequire('fibers/future');
-var pg = require('pg-native'); // app installs this
-var pgTypes = requirejs.nodeRequire('pg-native/node_modules/pg-types');
+var Libpq = require('pg-libpq'); // app installs this
 
 var koru, util, makeSubject, match, Pool;
 
 var pools = {};
 var clientCount = 0;
 var cursorCount = 0;
-var CONFIG = {
-  types: pgTypes,
-};
-
-// timestamp without zone
-pgTypes.setTypeParser(1114, 'text', function (value) {
-  return new Date(value+'Z');
-});
 
 define(function(require, exports, module) {
   koru = require('../main');
@@ -37,8 +28,6 @@ define(function(require, exports, module) {
       if (defaultDb) return defaultDb;
       return defaultDb = new Client(module.config().url);
     },
-
-    get defaults() {return pg.defaults},
 
     closeDefaultDb: closeDefaultDb,
 
@@ -84,18 +73,16 @@ function fetchPool(client) {
     create: function (callback) {
       ++conns;
       var tx = {
-        conn: new pg(CONFIG),
+        conn: new Libpq(client._url,
+                        function (err) {callback(err, tx)}),
         count: 0,
       };
-      tx.conn.connect(client._url, function (err) {
-        callback(err, tx);
-      });
     },
     destroy: function (tx) {
       --conns;
       _koru_.debug('destroy', conns);
 
-      tx.conn.end();
+      tx.conn.finish();
     },
     idleTimeoutMillis: 5*1000,
   });
@@ -180,17 +167,14 @@ Client.prototype = {
 function query(conn, text, params) {
   var future = new Future;
   if (params)
-    conn.query(text, params, wait(future));
+    conn.execParams(text, params, wait(future));
   else
-    conn.query(text, wait(future));
+    conn.exec(text, wait(future));
   try {
     return future.wait();
   } catch(ex) {
     var msg = new Error(ex.message);
-    var fields = conn.pq.$resultErrorFields();
-    for (var field in fields) {
-      msg[field] = fields[field];
-    }
+    msg.sqlState = ex.sqlState;
     throw msg;
   }
 }
@@ -467,9 +451,7 @@ Table.prototype = {
   remove: function (where) {
     var table = this;
     return table._client.withConn(function (conn) {
-      queryWhere(table, 'DELETE FROM "'+table._name+'"', where);
-
-      return +conn.pq.$cmdTuples();
+      return queryWhere(table, 'DELETE FROM "'+table._name+'"', where);
     });
   },
 };
@@ -628,15 +610,13 @@ function toColumns(table, params) {
 function performTransaction(table, sql, params) {
   if (table.schema || util.isObjEmpty(params.needCols)) {
     return table._client.withConn(function (conn) {
-      this.query(sql, params.values);
-      return +conn.pq.$cmdTuples();
+      return this.query(sql, params.values);
     });
   }
 
   return table._client.transaction(function (conn) {
     addColumns(table, params.needCols);
-    this.query(sql, params.values);
-      return +conn.pq.$cmdTuples();
+    return this.query(sql, params.values);
   });
 }
 

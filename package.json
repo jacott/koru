@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "mongodb": "1.4.31",
-    "pg-native": "1.8.1"
+    "pg-libpq": "0.2.0"
   },
   "engines": {
     "node": ">=0.12"

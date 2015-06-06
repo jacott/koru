@@ -10,6 +10,8 @@ fi
 # export NODE_OPTIONS='--prof'
 # send SIGUSR1 to debug
 
+# export UV_THREADPOOL_SIZE=8
+
 
 fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
 cd app

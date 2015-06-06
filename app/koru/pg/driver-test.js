@@ -33,7 +33,7 @@ isServer && define(function (require, exports, module) {
 
       assert.same(db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', [''])[0].exists, true);
       assert.equals(db.query('select 1+1 as a')[0], {a: 2});
-      assert.equals(db.query('select 1 as a; select 2 as b'), [{a: 1}, {b: 2}]);
+      assert.equals(db.query('select 1 as a; select 2 as b'), [{b: 2}]);
     },
 
     "test Array insert": function () {
