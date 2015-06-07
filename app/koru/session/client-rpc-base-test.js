@@ -60,10 +60,13 @@ define(function (require, exports, module) {
     },
 
     "test callback rpc": function () {
+      test.stub(koru, 'globalCallback');
+
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
 
       v.sess.rpc('foo.rpc', 'a');
       assert.equals(v.args, ['a']);
+
 
       v.sess.rpc('foo.rpc', 'b', v.bstub = test.stub());
       assert.equals(v.args, ['b']);
@@ -88,6 +91,12 @@ define(function (require, exports, module) {
         assert.equals(result, [1,2,3]);
         return true;
       }));
+
+      v.sess.rpc('foo.rpc', 'x');
+      msgId = v.sess._msgId;
+
+      v.recM(msgId.toString(36), 'e', '404,global cb');
+      assert.calledOnceWith(koru.globalCallback, 404, 'global cb');
 
       function rpcSimMethod() {
         v.args = util.slice(arguments);

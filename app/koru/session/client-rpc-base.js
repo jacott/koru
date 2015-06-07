@@ -63,16 +63,16 @@ define(function(require, exports, module) {
       if (! args) return;
       delete waitMs[msgId];
       sessState.decPending();
-      if (! args[1]) return;
       var type = data[1];
       if (type === 'e') {
+        var callback = args[1] || koru.globalCallback;
         if (data.length === 3)
-          args[1](new Error(data[2]));
+          callback(new Error(data[2]));
         else
-          args[1](new koru.Error(+data[2], data[3]));
+          callback(new koru.Error(+data[2], data[3]));
         return;
       }
-      args[1](null, data[2]);
+      args[1] && args[1](null, data[2]);
     });
 
     function onConnect () {
