@@ -80,8 +80,6 @@ function fetchPool(client) {
     },
     destroy: function (tx) {
       --conns;
-      _koru_.debug('destroy', conns);
-
       tx.conn.finish();
     },
     idleTimeoutMillis: 30*1000,

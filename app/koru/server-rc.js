@@ -120,21 +120,21 @@ define(function(require, exports, module) {
     function testHandle(msg) {
       try {
         ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
+        if (msg[0] === 'F') {
+          var cs = clients[this.engine];
+          if (cs && cs[1]) {
+            cs[1] = false;
+            --testRunCount;
+            if (--testClientCount === 0 && testExec.server) {
+              testWhenReady();
+              return;
+            }
+          }
+          if (testClientCount || testExec.server) return;
+          ws.send('Z');
+        }
       } catch(ex) {
         koru.error(ex);
-      }
-      if (msg[0] === 'F') {
-        var cs = clients[this.engine];
-        if (cs && cs[1]) {
-          cs[1] = false;
-          --testRunCount;
-          if (--testClientCount === 0 && testExec.server) {
-            testWhenReady();
-            return;
-          }
-        }
-        if (testClientCount || testExec.server) return;
-        ws.send('Z');
       }
     }
 
@@ -142,7 +142,7 @@ define(function(require, exports, module) {
       try {
         ws.send('L' + this.engine + '\x00' + msg);
       } catch(ex) {
-        koru.error(ex);
+        // ignore since it will just come back to us
       }
     }
 
