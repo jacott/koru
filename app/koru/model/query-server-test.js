@@ -57,7 +57,7 @@ define(function (require, exports, module) {
       "test late arrival": function () {
         koru.setTimeout(function () {
           v.foo.$update('age', 6);
-        }, 50);
+        }, 20);
         test.spy(koru, 'setTimeout');
 
         assert.same(v.TestModel.onId(v.foo._id).where('age', 6).waitForOne().attributes.age, 6);

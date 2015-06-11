@@ -82,6 +82,33 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(ensureIndex, {name: -1}, {unique: true});
       },
+
+      "test transaction rollback": function () {
+        try {
+          v.foo.transaction(function (tran) {
+            v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
+            tran.onAbort(v.onAbort = test.stub());
+            tran.onAbort(v.onAbort2 = test.stub());
+            assert.equals(v.foo.findOne({_id: '123'}).name, 'eee');
+            throw 'abort';
+          });
+        } catch(ex) {
+          if (ex !== 'abort') throw ex;
+        }
+        assert.called(v.onAbort);
+        assert.called(v.onAbort2);
+        // mongo can't rollback
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'eee');
+
+        // ensure transaction commit works
+
+        v.foo.transaction(function (tran) {
+          tran.onAbort(v.onAbort = test.stub());
+          v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+        });
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
+        refute.called(v.onAbort);
+      },
     },
 
     "test defaultDb": function () {

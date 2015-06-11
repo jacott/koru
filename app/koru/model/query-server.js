@@ -209,11 +209,16 @@ define(function(require, exports, module) {
 
           if (util.isObjEmpty(cmd)) return 0;
 
-          docs.koruUpdate(doc, cmd, dups);
+          docs.transaction(function (tran) {
+            docs.koruUpdate(doc, cmd, dups);
 
-          model._$setWeakDoc(doc.attributes);
-          Model._callAfterObserver(doc, changes);
-          model.notify(doc, changes);
+            model._$setWeakDoc(doc.attributes);
+            tran.onAbort(function () {
+              model._$wm.delete(doc);
+            });
+            Model._callAfterObserver(doc, changes);
+            model.notify(doc, changes);
+          });
         });
         return count;
       },

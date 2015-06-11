@@ -61,6 +61,7 @@ Connection.prototype = {
 
 function Collection(col) {
   this._col = col;
+  this._weakMap = new WeakMap;
 }
 
 Collection.prototype = {
@@ -138,6 +139,42 @@ Collection.prototype = {
   dropAllIndexes: genericColFunc('dropAllIndexes'),
   indexInformation: genericColFunc('indexInformation'),
   rename: genericColFunc('rename'),
+
+  transaction: function (func) {
+    var tx = this._weakMap.get(util.thread);
+    if (! tx) {
+      tx = {
+        onAbort: function (func) {
+          if (! tx._onAborts) tx._onAborts = [func];
+          else
+            tx._onAborts.push(func);
+        },
+      };
+      this._weakMap.set(util.thread, tx);
+    }
+    if (tx.transaction)
+      return func.call(this, tx);
+
+    try {
+      tx.transaction = 'COMMIT';
+      return func.call(this, tx);
+    } catch(ex) {
+      tx.transaction = 'ROLLBACK';
+      if (ex !== 'abort')
+        throw ex;
+    } finally {
+      var command = tx.transaction;
+      tx.transaction = null;
+      var onAborts = tx._onAborts;
+      if (onAborts) {
+        tx._onAborts = null;
+        if (command == 'ROLLBACK')
+          onAborts.forEach(function (f) {
+            f();
+          });
+      }
+    }
+  },
 };
 
 function genericDbFunc(cmd) {

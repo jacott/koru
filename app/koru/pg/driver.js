@@ -14,6 +14,8 @@ define(function(require, exports, module) {
   match = require('../match');
   Pool = require('../pool-server');
 
+  koru.onunload(module, 'reload');
+
   koru.onunload(module, closeDefaultDb);
 
   var defaultDb = null;
@@ -72,11 +74,7 @@ function fetchPool(client) {
     name: client._id,
     create: function (callback) {
       ++conns;
-      var tx = {
-        conn: new Libpq(client._url,
-                        function (err) {callback(err, tx)}),
-        count: 0,
-      };
+      new Connection(client, callback);
     },
     destroy: function (tx) {
       --conns;
@@ -84,6 +82,19 @@ function fetchPool(client) {
     },
     idleTimeoutMillis: 30*1000,
   });
+}
+
+function Connection(client, callback) {
+  var self = this;
+  var conn = self.conn = new Libpq(client._url, function (err) {
+    callback(err, self);
+  });
+  self.count = 0;
+  self.onAbort = function (func) {
+    if (! self._onAborts) self._onAborts = [func];
+    else
+      self._onAborts.push(func);
+  };
 }
 
 function Client(url) {
@@ -141,12 +152,12 @@ Client.prototype = {
     var tx = this._weakMap.get(util.thread);
     try {
       if (tx.transaction)
-        return func.call(this, tx.conn);
+        return func.call(this, tx);
 
       try {
         tx.transaction = 'COMMIT';
         query(tx.conn, 'BEGIN');
-        return func.call(this, tx.conn);
+        return func.call(this, tx);
       } catch(ex) {
         tx.transaction = 'ROLLBACK';
         if (ex !== 'abort')
@@ -155,6 +166,14 @@ Client.prototype = {
         var command = tx.transaction;
         tx.transaction = null;
         query(tx.conn, command);
+        var onAborts = tx._onAborts;
+        if (onAborts) {
+          tx._onAborts = null;
+          if (command == 'ROLLBACK')
+            onAborts.forEach(function (f) {
+              f();
+            });
+        }
       }
     } finally {
       releaseConn(this);
@@ -237,8 +256,8 @@ Table.prototype = {
 
   transaction: function (func) {
     var table = this;
-    return table._client.transaction(function () {
-      return func.call(table);
+    return table._client.transaction(function (tx) {
+      return func.call(table, tx);
     });
   },
 
