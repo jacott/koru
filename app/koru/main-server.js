@@ -13,7 +13,9 @@ define(function(require, exports, module) {
     if (koru.loadError) throw koru.loadError;
     console.log('=> Reloading');
 
-    requirejs.nodeRequire('kexec')(process.execPath, process.execArgv.concat(process.argv.slice(1)));
+    var argv = process.argv.slice(0,1).concat(process.execArgv.concat(process.argv.slice(1)));
+    requirejs.nodeRequire('bindings')('koru_restart.node')
+      .execv(process.execPath, argv);
   };
 
   koru.appDir = koru.config.appDir || require.toUrl('').slice(0,-1);
