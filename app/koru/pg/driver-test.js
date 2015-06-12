@@ -231,6 +231,12 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(v.foo.query({}), []);
       },
+
+      "test truncate": function () {
+        v.foo.truncate();
+
+        assert.equals(v.foo.query({}), []);
+      },
     },
   });
 });

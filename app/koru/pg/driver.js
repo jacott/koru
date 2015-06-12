@@ -471,6 +471,15 @@ Table.prototype = {
       return queryWhere(table, 'DELETE FROM "'+table._name+'"', where);
     });
   },
+
+  truncate: function () {
+    if (this._ready !== true) return;
+
+    var table = this;
+    table._client.withConn(function (conn) {
+      table._client.query('TRUNCATE TABLE "'+table._name+'"');
+    });
+  },
 };
 
 function selectFields(table, fields) {

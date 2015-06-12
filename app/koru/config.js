@@ -24,7 +24,8 @@ define(['require', 'module'], function (require, module) {
       function fetch() {
         var opt = name.substring(1);
         var provider = module.config()[opt];
-        if (! provider) throw new Error('No config setting: ' + opt);
+        var msg = 'No config setting: ' + opt + " for " + module.id;
+        if (! provider) throw new Error(msg);
 
         koru.insertDependency(loaderPrefix + name, provider);
 
