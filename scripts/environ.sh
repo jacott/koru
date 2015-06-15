@@ -5,6 +5,7 @@ if test ! -e .koru;then
     exit 1
 fi
 
+export TZ=UTC
 export KORU_HOME=$PWD
 
 tmpdir=$KORU_HOME/tmp

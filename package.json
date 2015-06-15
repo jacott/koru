@@ -38,10 +38,10 @@
   },
   "devDependencies": {
     "mongodb": "1.4.31",
-    "pg-libpq": ">=0.3.1"
+    "pg-libpq": ">=0.4.1"
   },
   "engines": {
     "node": ">=0.12"
   },
-  "version": "0.0.3"
+  "version": "0.1.0"
 }

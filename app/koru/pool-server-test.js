@@ -17,8 +17,8 @@ isServer && define(function (require, exports, module) {
 
       v.destroy = test.stub();
 
-      test.stub(koru, 'setTimeout').returns(123);
-      test.stub(koru, 'clearTimeout');
+      test.stub(global, 'setTimeout').returns(123);
+      test.stub(global, 'clearTimeout');
     },
 
     tearDown: function () {
@@ -78,17 +78,17 @@ isServer && define(function (require, exports, module) {
         pool.release(conn1);
 
 
-        assert.calledOnceWith(koru.setTimeout, TH.match.func, 30000);
+        assert.calledOnceWith(global.setTimeout, TH.match.func, 30000);
 
-        var tofunc = koru.setTimeout.args[0][0];
-        koru.setTimeout.reset();
+        var tofunc = global.setTimeout.args[0][0];
+        global.setTimeout.reset();
 
         util.thread.date += 20000;
 
         tofunc();
 
         refute.called(v.destroy);
-        assert.calledWith(koru.setTimeout, tofunc, 10000);
+        assert.calledWith(global.setTimeout, tofunc, 10000);
 
         util.thread.date += 10000;
 

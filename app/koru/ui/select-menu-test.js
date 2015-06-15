@@ -60,7 +60,8 @@ isClient && define(function (require, exports, module) {
       },
 
       "test above": function () {
-        v.testSelectMenu.style.marginTop = '300px';
+        v.testSelectMenu.style.position = 'absolute';
+        v.testSelectMenu.style.bottom = '250px';
         v.popup(null, 'above');
         assert.dom('body>#GlassPane>#SelectMenu', function () {
           var bbox = v.button.getBoundingClientRect();

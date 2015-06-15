@@ -653,6 +653,15 @@ define(function (require, exports, module) {
         });
       },
 
+      "test field accessor false": function () {
+        v.TestModel.defineFields({fuzz: {type: 'text', accessor: false}});
+        var doc = v.TestModel.build({fuzz: 'bar'});
+
+        assert.same(doc.fuzz, undefined);
+        assert.same(doc.changes.fuzz, 'bar');
+        assert.same(v.TestModel.$fields.fuzz.accessor, false);
+      },
+
       'test equality': function () {
         var OtherClass = Model.define('OtherClass'),
             a = new v.TestModel(),

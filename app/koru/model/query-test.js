@@ -28,11 +28,11 @@ define(function (require, exports, module) {
       v.TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
 
-      assert.same(v.TestModel.where('aoo', [{a: 1, b: 3}]).count(), 1);
-      assert.same(v.TestModel.where('aoo', [{a: 1, b: 1}]).count(), 0);
+      assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+      assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
 
-      assert.same(v.TestModel.query.whereNot('aoo', [{a: 1, b: 3}]).count(), 1);
-      assert.same(v.TestModel.query.whereNot('aoo', [{a: 1, b: 1}]).count(), 2);
+      assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+      assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
     },
 
     "query withIndex": {

@@ -34,6 +34,22 @@ isServer && define(function (require, exports, module) {
       assert.equals(db.query('select 1 as a; select 2 as b'), [{b: 2}]);
     },
 
+    "test isPG": function () {
+      assert.same(sut.isPG, true);
+    },
+
+    "test override _id spec": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        _id: 'integer',
+      });
+
+      v.foo.insert({_id: 123});
+      assert.isTrue(v.foo.exists({_id: 123}));
+      assert.exception(function () {
+        v.foo.insert({_id: 123});
+      }, {sqlState: '23505', message: TH.match(/violates unique constraint "Foo_pkey"/)});
+    },
+
     "test Array insert": function () {
       v.foo = sut.defaultDb.table('Foo', {
         bar_ids: 'has_many',
@@ -52,6 +68,87 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.findOne({}).bar_ids, ['1', {a: v.date.toISOString()}]);
     },
 
+    "test $elemMatch": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        widget: 'object',
+      });
+
+      v.foo.insert({_id: '123', widget: [{id: "1", value: 200}, {id: "5", value: 500}, {id: "2", value: 100}]});
+      v.foo.insert({_id: '234', widget: [{id: "1", value: 100}, {id: "4", value: 400}, {id: "3", value: 200}]});
+
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: {$in: [100, 200]}}}}), 2);
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: {$in: [100, 300]}}}}), 1);
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "4"}}}), 1);
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "6"}}}), 0);
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "1"}}}), 2);
+      assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: 100}}}), 1);
+    },
+
+    "test multipart key": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        widget: 'object',
+      });
+      v.foo.insert({_id: '123', widget: {a: {b: {c: 1}}}});
+
+      assert.equals(v.foo.count({'widget.a.b.c': 1}), 1);
+      assert.equals(v.foo.count({'widget.a.b.c': 2}), 0);
+      assert.equals(v.foo.count({'widget.a.b': {c: 1}}), 1);
+      assert.equals(v.foo.count({'widget.a.b': {c: 2}}), 0);
+      assert.equals(v.foo.count({'widget.a.b': [{c: 2}, {c: 1}]}), 1);
+      assert.equals(v.foo.count({'widget.a.b': [{c: 2}, {c: 3}]}), 0);
+    },
+
+    "test string in json": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        widget: 'object',
+      });
+      v.foo.insert({_id: '123', widget: "dodacky"});
+
+      assert.equals(v.foo.count({widget: "dodacky"}), 1);
+      assert.equals(v.foo.count({widget: "wazzit"}), 0);
+    },
+
+    "test ARRAY column": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        widget: 'integer[]',
+      });
+      v.foo.insert({_id: '123', widget: [1,2,3]});
+      v.foo.insert({_id: '456', widget: [3,4]});
+
+      assert.equals(v.foo.count({'widget': 2}), 1);
+      assert.equals(v.foo.count({'widget': 3}), 2);
+      assert.equals(v.foo.count({'widget': 5}), 0);
+      assert.equals(v.foo.count({'widget': {$in: [1,3]}}), 2);
+      assert.equals(v.foo.count({'widget': {$nin: [1,3]}}), 0);
+      assert.equals(v.foo.count({'widget': {$nin: [4,5]}}), 1);
+      assert.equals(v.foo.count({'widget': {$in: []}}), 0);
+      assert.equals(v.foo.count({'widget': {$nin: []}}), 2);
+    },
+
+    "test date": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        createdOn: 'date',
+      });
+
+      v.foo.insert({_id: '123', createdOn: v.date = new Date(2015, 3, 4)});
+
+      assert.equals(v.foo.count({createdOn: v.date}), 1);
+      assert.equals(v.foo.count({createdOn: new Date(2015, 3, 5)}), 0);
+    },
+
+    "test $regex": function () {
+       v.foo = sut.defaultDb.table('Foo', {
+         story: 'text',
+      });
+
+      v.foo.insert({_id: '123', story: "How now brown cow"});
+
+      assert.equals(v.foo.count({story: {$regex: "how"}}), 0);
+      assert.equals(v.foo.count({story: {$regex: "cow$"}}), 1);
+      assert.equals(v.foo.count({story: {$regex: "how", $options: "i"}}), 1);
+      assert.equals(v.foo.count({story: {$options: "i", $regex: "how"}}), 1);
+    },
+
     "find": {
       setUp: function () {
         v.foo = sut.defaultDb.table('Foo', {
@@ -61,11 +158,30 @@ isServer && define(function (require, exports, module) {
           age: {type: 'number', default: 10}
         });
 
+        test.spy(v.foo, '_ensureTable');
         v.foo.transaction(function () {
           "one two three four five".split(' ').forEach(function (name, i) {
             v.foo.insert({_id: name+i, name: name, createdAt: new Date(util.dateNow()-i*1e6)});
           });
         });
+        assert.called(v.foo._ensureTable);
+      },
+
+      "test bad sql": function () {
+        var cursor = v.foo.find({age: 'hello'});
+
+        assert.exception(function () {
+          try {
+            cursor.next();
+          }
+          finally {
+            cursor.close();     // should not raise error
+          }
+        }, {message: TH.match(/invalid input syntax.*hello/)});
+      },
+
+      "test $sql": function () {
+        assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
       },
 
       "test fields": function () {
@@ -102,6 +218,15 @@ isServer && define(function (require, exports, module) {
           cursor.close(); // optional since in transaction
         });
       },
+
+      "test cursor with options": function () {
+        var cursor = v.foo.find({age: 10}, {limit: 1, sort: {name: 1}});
+        try {
+          assert.equals(cursor.next(2), [mf('name', 'five')]);
+        } finally {
+          cursor.close();
+        }
+      },
     },
 
     "Static table": {
@@ -124,10 +249,25 @@ isServer && define(function (require, exports, module) {
         }, {sqlState: '23505'});
 
         v.foo.ensureIndex({name: -1}, {unique: true});
+        v.foo.ensureIndex({name: 1, _id: -1});
       },
 
       "test query all": function () {
         assert.equals(v.foo.query({}), [{_id: "123", name: "abc", age: 10}, {_id: "456", name: "def", age: 10}]);
+      },
+
+      "test $inequality": function () {
+        assert.same(v.foo.count({age: {$ne: 10}}), 0);
+        assert.same(v.foo.count({name: {$ne: 'abc'}}), 1);
+        assert.same(v.foo.count({name: {$ne: 'aabc'}}), 2);
+        assert.same(v.foo.count({name: {$gte: 'def'}}), 1);
+        assert.same(v.foo.count({name: {$gte: 'abcd'}}), 1);
+        assert.same(v.foo.count({name: {$gt: 'abc'}}), 1);
+        assert.same(v.foo.count({name: {$lte: 'abc'}}), 1);
+        assert.same(v.foo.count({name: {$lte: 'abc'}}), 1);
+        assert.same(v.foo.count({name: {$lt: 'abc'}}), 0);
+        assert.same(v.foo.count({name: null}), 0);
+        assert.same(v.foo.count({name: {$ne: null}}), 2);
       },
 
       "test can't add field": function () {
@@ -169,7 +309,7 @@ isServer && define(function (require, exports, module) {
           createdAt: 'timestamp',
         };
         v.foo.update({name: 'abc'}, {$set: {name: 'eee'}});
-        assert.equals(v.foo.query({name: 'eee'}), [{_id: "123", name: "eee", age: 10, createdAt: null}]);
+        assert.equals(v.foo.query({name: 'eee'}), [{_id: "123", name: "eee", age: 10}]);
         v.foo.update({_id: '123'}, {$set: {createdAt: v.createdAt = new Date()}});
         assert.equals(v.foo.findOne({_id: "123"}).createdAt, v.createdAt);
       },
@@ -209,7 +349,7 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz", age: 7}]);
         assert.equals(v.foo.findOne({_id: "123"}), {_id: "123", name: "zzz", age: 7});
-        assert.equals(v.foo.findOne({_id: "456"}), {_id: "456", name: "def", age: null});
+        assert.equals(v.foo.findOne({_id: "456"}), {_id: "456", name: "def"});
       },
 
       "test count": function () {

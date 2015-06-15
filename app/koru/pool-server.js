@@ -62,12 +62,12 @@ define(function(require, exports, module) {
           fetchHead(v, 'idle');
           wait.future.return(conn);
         } else {
-          v.idleTimeout = koru.setTimeout(clearIdle, v.idleTimeoutMillis);
+          v.idleTimeout = global.setTimeout(clearIdle, v.idleTimeoutMillis);
         }
       } else if (wait) {
-        koru.clearTimeout(v.idleTimeout);
+        global.clearTimeout(v.idleTimeout);
         var idle = fetchHead(v, 'idle');
-        v.idleTimeout = koru.setTimeout(clearIdle, idle.at - now);
+        v.idleTimeout = global.setTimeout(clearIdle, idle.at - now);
         wait.future.return(idle.conn);
       } else {
         --v.count;
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
             --v.count;
             v.destroy(fetchHead(v, 'idle').conn);
           } else {
-            v.idleTimeout = koru.setTimeout(clearIdle, v.idleHead.at - now);
+            v.idleTimeout = global.setTimeout(clearIdle, v.idleHead.at - now);
             break;
           }
         }
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
       clearWait(v, new Error('The pool is closed for draining'));
       var idle;
       if (v.idleTimeout)
-        koru.clearTimeout(v.idleTimeout);
+        global.clearTimeout(v.idleTimeout);
       v.idleTimeout = null;
       while(idle = fetchHead(v, 'idle')) {
         v.destroy(idle.conn);

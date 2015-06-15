@@ -684,7 +684,7 @@ define(function(require, exports, module) {
 
       if (options['default'] !== undefined) this._defaults[field] = options['default'];
       $fields[field] = options;
-      defineField(proto,field);
+      if (options.accessor !== false) defineField(proto,field);
     }
     _support.resetDocs(this);
     return this;

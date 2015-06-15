@@ -126,7 +126,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           this.message = {};
           for(var key in name) {
             if (! (key in ex)) throw ex;
-            if (! gu.deepEqual(name[key], ex[key])) {
+            if (! gu.deepEqual(ex[key], name[key])) {
               this.message[key] = ex[key];
               result = false;
             }

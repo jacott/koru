@@ -26,6 +26,8 @@ define(function(require, exports, module) {
   }
 
   return {
+    isPG: true,
+
     get defaultDb() {
       if (defaultDb) return defaultDb;
       return defaultDb = new Client(module.config().url);
@@ -41,6 +43,9 @@ define(function(require, exports, module) {
 
 function aryToSqlStr(value) {
   if (! value) return value;
+
+  if (! Array.isArray(value))
+    throw new Error('Value is not an array: '+util.inspect(value));
 
   return '{'+value.map(function (v) {
     return JSON.stringify(v);
@@ -187,13 +192,8 @@ function query(conn, text, params) {
     conn.execParams(text, params, wait(future));
   else
     conn.exec(text, wait(future));
-  try {
-    return future.wait();
-  } catch(ex) {
-    var msg = new Error(ex.message);
-    msg.sqlState = ex.sqlState;
-    throw msg;
-  }
+
+  return future.wait();
 }
 
 function Table(name, schema, client) {
@@ -242,9 +242,15 @@ Table.prototype = {
     if (this._columns.length === 0) {
       var fields = ['_id varchar(17) PRIMARY KEY'];
       if (schema) {
-        for (var col in schema)
-          fields.push(jsFieldToPg(col, schema[col]));
+        for (var col in schema) {
+          var spec = jsFieldToPg(col, schema[col], this._client);
+          if (col === '_id')
+            fields[0] = spec + ' PRIMARY KEY';
+          else
+            fields.push(spec);
+        }
       }
+
       this._client.query('CREATE TABLE IF NOT EXISTS "'+this._name+'" ('+fields.join(',')+')');
       readColumns(this);
     } else if (schema) {
@@ -303,6 +309,8 @@ Table.prototype = {
   },
 
   ensureIndex: function (keys, options) {
+    this._ensureTable();
+    options = options || {};
     var cols = Object.keys(keys);
     var name = this._name+'_'+cols.join('_');
     cols = cols.map(function (col) {
@@ -341,32 +349,53 @@ Table.prototype = {
     var count = whereValues.length;
     return where1(where);
 
-    function where1(where) {
+    function where1(where, notable) {
       var whereSql = [];
       for (var key in  where) {
-        if (key[0] === '$') switch(key) {
-        case '$or':
-        case '$and':
-          var parts = [];
-          util.forEach(where[key], function (w) {
-            parts.push('('+where1(w)+')');
-          });
-          whereSql.push('('+parts.join(key === '$or' ? ' OR ' :  ' AND ')+')');
-          continue;
-        }
-        var qkey = '"'+key+'"';
-        ++count;
         var value = where[key];
+        var splitIndex = key.indexOf(".");
+        if (splitIndex !== -1) {
+          var remKey = key.slice(splitIndex+1);
+          key = key.slice(0,splitIndex);
+          var qkey = ['"'+key+'"'];
+          remKey.split(".").forEach(function (p) {
+            qkey.push("'"+p+ "'");
+          });
+          qkey = qkey.join("->");
+        } else {
+          if (key[0] === '$') switch(key) {
+          case '$sql':
+            whereSql.push(value);
+            continue;
+          case '$or':
+          case '$and':
+            var parts = [];
+            util.forEach(value, function (w) {
+              parts.push('('+where1(w)+')');
+            });
+            whereSql.push('('+parts.join(key === '$or' ? ' OR ' :  ' AND ')+')');
+            continue;
+          }
+          var qkey = '"'+key+'"';
+        }
+        ++count;
+
         if (value && typeof value === 'object') {
-          switch (table._colMap[key].data_type) {
+          switch (notable ? toBaseType(value) : table._colMap[key] ? table._colMap[key].data_type : 'text') {
           case 'ARRAY':
             for(var vk in value) {
               switch(vk) {
               case '$in':
-                value = value[vk];
                 whereSql.push(qkey+' && $'+ count);
-                whereValues.push(aryToSqlStr(value));
+                whereValues.push(aryToSqlStr(value[vk]));
                 break;
+              case '$nin':
+                whereSql.push("NOT("+qkey+' && $'+ count+")");
+                whereValues.push(aryToSqlStr(value[vk]));
+                break;
+              default:
+                assertNoDirective(vk);
+                equality(value, true);
               }
               break;
             }
@@ -374,62 +403,151 @@ Table.prototype = {
 
           case 'json':
           case 'jsonb':
-            for(var vk in value) {
-              switch(vk) {
-              case '$in':
-                whereSql.push(qkey+' @> $'+ count);
-                whereValues.push(JSON.stringify(value[vk]));
-                break;
-              case '$nin':
-                whereSql.push('('+qkey+' IS NULL OR NOT ('+qkey+' @> $'+ count+'))');
-                whereValues.push(JSON.stringify(value[vk]));
-                break;
-              }
-              break;
-            }
+            json_comp_value(value, true);
             break;
           default:
+            if (value.constructor === Date) {
+              equality(value, true);
+              continue;
+            }
             for(var vk in value) {
               switch(vk) {
+              case '$regex':
+              case '$options':
+                var regex = value.$regex;
+                var options = value.$options;
+                if (! regex) {
+                  --count;
+                  continue;
+                }
+                whereSql.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+count);
+                whereValues.push(regex);
+                break;
+              case '$ne':
+                value = value[vk];
+                if (value == null) {
+                  --count;
+                  whereSql.push(qkey+' IS NOT NULL');
+                } else {
+                  whereSql.push('('+qkey+' <> $'+count+' OR '+qkey+' IS NULL)');
+                  whereValues.push(value);
+                }
+                break;
+              case '$gt':
+                var op = '>';
+              case '$gte':
+                op = op || '>=';
+              case '$lt':
+                op = op || '<';
+              case '$lte':
+                op = op || '<=';
+                whereValues.push(value[vk]);
+                whereSql.push(qkey+op+'$'+count);
+                break;
               case '$in':
               case '$nin':
                 --count;
                 value = value[vk];
-                var param = [];
-                util.forEach(value, function (v) {
-                  param.push('$'+(++count));
-                  whereValues.push(v);
-                });
-                whereSql.push(qkey+(vk === '$in' ? ' IN (' : ' NOT IN (')+param.join(',')+')');
+                if (value.length === 0) {
+                  whereSql.push(vk === '$in' ? 'FALSE' : "TRUE");
+                } else {
+                  var param = [];
+                  util.forEach(value, function (v) {
+                    param.push('$'+(++count));
+                    whereValues.push(v);
+                  });
+                  whereSql.push(qkey+(vk === '$in' ? ' IN (' : ' NOT IN (')+param.join(',')+')');
+                }
                 break;
-
-              case '$ne':
-                whereSql.push(qkey+'<>$'+count);
-                whereValues.push(value[vk]);
-                break;
+              default:
+                assertNoDirective(vk);
+                equality(value, true);
               }
               break;
             }
           }
         } else {
-          switch (table._colMap[key].data_type) {
+          if (value == null) {
+            match_null(true);
+          } else switch (notable ? toBaseType(value) :
+                  table._colMap.hasOwnProperty(key) ? table._colMap[key].data_type : 'error') {
           case 'ARRAY':
-            whereSql.push('$'+count+' = ANY ("'+key+'")');
-            whereValues.push(value);
+            arrayIn(true);
             break;
+          case 'object':
           case 'json':
           case 'jsonb':
-            whereSql.push(qkey+'=$'+count);
-            whereValues.push(JSON.stringify(value));
+            json_comp_value(value, true);
             break;
+          case 'error':
+            throw new Error('Table '+ table._name + ' has no column: ' + key);
           default:
-            whereSql.push(qkey+'=$'+count);
-            whereValues.push(value);
+            equality(value, true);
           }
         }
       }
+
       if (whereSql.length)
         return whereSql.join(' AND ');
+
+      function match_null(affirm) {
+        --count;
+        whereSql.push(qkey+ (affirm ? ' IS NULL' : 'IS NOT NULL'));
+      }
+
+      function equality(value, affirm) {
+        whereSql.push(qkey+(affirm ? '=$' : '<>$')+count);
+        whereValues.push(value);
+      }
+
+      function arrayIn(affirm) {
+        whereSql.push('$'+count+(affirm ? ' =' : ' <>')+' ANY ('+qkey+')');
+        whereValues.push(value);
+      }
+
+      function assertNoDirective(vk) {
+        if (vk[0] === '$')
+          throw new Error("invalid/unsupported directive: " + vk);
+      }
+
+      function json_comp_value(value, affirm) {
+        if (value == null)
+          match_null(affirm);
+        else if (typeof value === 'object') {
+          for(var vk in value) {
+            switch(vk) {
+            case '$ne':
+              json_comp_value(value[vk], false);
+              break;
+            case '$in':
+            case '$nin':
+              throw new Error(vk + ' not supported for jsonb fields');
+
+            case '$elemMatch':
+              var subvalue = value[vk];
+              --count;
+              var columns = [];
+              for (var subcol in subvalue) {
+                columns.push(mapType(subcol, subvalue[subcol]));
+              }
+              whereSql.push((affirm ? 'EXISTS' : 'NOT EXISTS')+' (SELECT 1 FROM jsonb_to_recordset('+qkey+
+                            ') as __x('+columns.join(',')+') where '+where1(subvalue, 'notable')+')');
+              break;
+            default:
+              assertNoDirective(vk);
+              if (Array.isArray(value)) {
+                whereSql.push((affirm ? 'EXISTS' : 'NOT EXISTS')+' (SELECT * FROM jsonb_array_elements($'+count+') where value '+
+                              (affirm ? '= ' : '<> ')+qkey+')');
+                whereValues.push(value);
+              } else
+                equality(value, affirm);
+            }
+            break;
+          }
+        } else {
+          equality(JSON.stringify(value), affirm);
+        }
+      }
     }
   },
 
@@ -443,16 +561,19 @@ Table.prototype = {
   },
 
   find: function (where, options) {
+    this._ensureTable();
+
     var table = this;
     var sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
 
+
     if (util.isObjEmpty(where))
-      return new Cursor(this, sql);
+      return new Cursor(this, sql, null, options);
 
     var values = [];
     where = table.where(where, values);
     sql = sql+' WHERE '+where;
-    return new Cursor(this, sql, values);
+    return new Cursor(this, sql, values, options);
   },
 
   exists: function (where) {
@@ -502,17 +623,24 @@ function selectFields(table, fields) {
   return result.join(',');
 }
 
-function Cursor(table, sql, values) {
+function Cursor(table, sql, values, options) {
   this.table = table;
   this._sql = sql;
   this._values = values;
+
+  if (options) for (var op in options) {
+    var func = this[op];
+    if (typeof func === 'function')
+      func.call(this, options[op]);
+  }
+
 }
 
 function initCursor(cursor) {
   if (cursor._name) return;
   var client = cursor.table._client;
   var tx = client._weakMap.get(util.thread);
-  cursor._name = 'c'+(++cursorCount).toString(36);
+  var cname = 'c'+(++cursorCount).toString(36);
   var sql = cursor._sql;
   if (cursor._sort) {
     sql += ' ORDER BY '+Object.keys(cursor._sort).map(function (k) {
@@ -523,11 +651,12 @@ function initCursor(cursor) {
 
   if (tx && tx.transaction) {
     cursor._inTran = true;
-    client.query('DECLARE '+cursor._name+' CURSOR FOR '+sql, cursor._values);
+    client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
   } else client.transaction(function () {
     getConn(client); // so cursor is valid outside transaction
-    client.query('DECLARE '+cursor._name+' CURSOR WITH HOLD FOR '+sql, cursor._values);
+    client.query('DECLARE '+cname+' CURSOR WITH HOLD FOR '+sql, cursor._values);
   });
+  cursor._name = cname;
 }
 
 Cursor.prototype = {
@@ -618,6 +747,8 @@ function toColumns(table, params) {
       case 'json':
         value = JSON.stringify(value);
         break;
+      case 'date':
+      case 'timestamp with time zone':
       case 'timestamp without time zone':
         value = value && value.toISOString();
         break;
@@ -646,32 +777,46 @@ function performTransaction(table, sql, params) {
   });
 }
 
-function mapType(col, value, desc) {
-  var type = typeof(value);
-  switch(type) {
+function toBaseType(value) {
+  if (value == null) return 'text';
+  switch(typeof(value)) {
   case 'object':
+    if (Array.isArray(value)) {
+      var type = value.length ? toBaseType(value[0]) : 'text';
+      return type+'[]';
+    }
     if (match.date.$test(value))
-      type = 'timestamp';
-    break;
+      return 'timestamp with time zone';
+    for (var key in value) {
+      if (key.slice(0,1) === '$')
+        var type = toBaseType(value[key]);
+      if (type && type.slice(-2) === '[]')
+        return type.slice(0, -2);
+      return type;
+      break;
+    }
+    return 'jsonb';
   case 'number':
     if (value === Math.floor(value))
-      type = 'integer';
+      return 'integer';
     else
-      type = 'double precision';
-    break;
+      return 'double precision';
+  case 'string':
+    return 'text';
   }
+}
+
+function mapType(col, value) {
+  var type = toBaseType(value);
   return jsFieldToPg(col, type);
 }
 
-function jsFieldToPg(col, colSchema) {
+function jsFieldToPg(col, colSchema, client) {
   var defaultVal = '';
   if (typeof colSchema === 'string')
     var type = colSchema;
-  else {
-    var type = colSchema.type;
-    if(colSchema.default)
-      defaultVal = ' DEFAULT ' +colSchema.default;
-  }
+  else
+    var type = colSchema ? colSchema.type : 'text';
 
   switch(type) {
   case 'string':
@@ -681,6 +826,7 @@ function jsFieldToPg(col, colSchema) {
     type = 'double precision';
     break;
   case 'belongs_to':
+  case 'id':
   case 'user_id_on_create':
     type = 'varchar(17)';
     break;
@@ -695,6 +841,27 @@ function jsFieldToPg(col, colSchema) {
     type = 'jsonb';
     break;
   }
+
+  if(typeof colSchema === 'object' && colSchema.default != null) {
+    var literal = colSchema.default;
+    client.withConn(function (conn) {
+      if (type === 'jsonb')
+        literal = conn.escapeLiteral(JSON.stringify(literal))+'::jsonb';
+      else switch (typeof literal) {
+      case 'number':
+      case 'boolean':
+        break;
+      case 'object':
+        if (Array.isArray(literal)) {
+          literal = conn.escapeLiteral(aryToSqlStr(literal))+'::'+type;
+          break;
+        }
+      default:
+        literal = conn.escapeLiteral(literal)+'::'+type;
+      }
+    });
+    defaultVal = ' DEFAULT ' + literal;;
+  }
   return '"' + col + '" ' + type + defaultVal;
 }
 
@@ -703,7 +870,7 @@ function updateSchema(table, schema) {
   var colMap = table._colMap;
   for (var col in schema) {
     colMap.hasOwnProperty(col) ||
-      (needCols[col] = jsFieldToPg(col, schema[col]));
+      (needCols[col] = jsFieldToPg(col, schema[col], table._client));
   }
 
   util.isObjEmpty(needCols) ||
