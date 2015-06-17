@@ -182,7 +182,7 @@ define(function(require, exports, module) {
           if (! doc) return;
           var attrs = doc.attributes;
 
-          if (this._whereNots && foundIn(this._whereNots)) return;
+          if (this._whereNots && foundIn(this._whereNots, false)) return;
 
           if (this._wheres && ! foundIn(this._wheres)) return;
 
@@ -191,38 +191,44 @@ define(function(require, exports, module) {
 
           if (this._whereSomes &&
               ! this._whereSomes.some(function (ors) {
-                return ors.some(foundIn);
+                return ors.some(function (o) {return foundIn(o)});
               })) return;
 
           return doc;
 
-          function foundIn(fields) {
+          function foundIn(fields, affirm) {
+            if (affirm === undefined) affirm = true;
             for(var key in fields) {
-              var value = fields[key];
-              var expected = attrs[key];
-
-              if (typeof expected === 'object') {
-                if (Array.isArray(expected)) {
-                  var found = false;
-                  for(var i = 0; ! found && i < expected.length; ++i) {
-                    var exv = expected[i];
-                    if (Array.isArray(value)) {
-                      if (value.some(function (item) {return util.deepEqual(item, exv)}))
-                        found = true;
-                    } else if (util.deepEqual(exv, value))
-                      found = true;
-                  }
-                  if (! found) return false;
-                }
-              } else if (Array.isArray(value)) {
-                if (value.every(function (item) {
-                  return ! util.deepEqual(item, expected);
-                }))
-                  return false;
-              } else if (! util.deepEqual(expected, value))
-                return false;
+              if (foundItem(attrs[key], fields[key]) !== affirm)
+                return ! affirm;
             }
-            return true;
+            return affirm;
+          }
+
+          function foundItem(value, expected) {
+            if (typeof expected === 'object') {
+              if (Array.isArray(expected)) {
+                var av = Array.isArray(value);
+                for(var i = 0; i < expected.length; ++i) {
+                  var exv = expected[i];
+                  if (av) {
+                    if (value.some(function (item) {return util.deepEqual(item, exv)}))
+                      return true;
+                  } else if (util.deepEqual(exv, value))
+                    return true;
+                }
+                return false;
+              }
+              if (Array.isArray(value))
+                return value.some(function (item) {return util.deepEqual(item, expected)});
+
+            } else if (Array.isArray(value)) {
+              return ! value.every(function (item) {
+                return ! util.deepEqual(item, expected);
+              });
+            }
+
+            return util.deepEqual(expected, value);
           }
         },
 

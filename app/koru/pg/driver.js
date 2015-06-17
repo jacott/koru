@@ -369,11 +369,12 @@ Table.prototype = {
             continue;
           case '$or':
           case '$and':
+          case '$nor':
             var parts = [];
             util.forEach(value, function (w) {
               parts.push('('+where1(w)+')');
             });
-            whereSql.push('('+parts.join(key === '$or' ? ' OR ' :  ' AND ')+')');
+            whereSql.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
             continue;
           }
           var qkey = '"'+key+'"';
@@ -530,17 +531,26 @@ Table.prototype = {
               for (var subcol in subvalue) {
                 columns.push(mapType(subcol, subvalue[subcol]));
               }
-              whereSql.push((affirm ? 'EXISTS' : 'NOT EXISTS')+' (SELECT 1 FROM jsonb_to_recordset('+qkey+
-                            ') as __x('+columns.join(',')+') where '+where1(subvalue, 'notable')+')');
+              whereSql.push((affirm ? '' : 'NOT')+
+                            '(jsonb_typeof('+qkey+
+                            ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset('+qkey+
+                            ') as __x('+columns.join(',')+') where '+where1(subvalue, 'notable')+'))');
               break;
             default:
               assertNoDirective(vk);
-              if (Array.isArray(value)) {
-                whereSql.push((affirm ? 'EXISTS' : 'NOT EXISTS')+' (SELECT * FROM jsonb_array_elements($'+count+') where value '+
-                              (affirm ? '= ' : '<> ')+qkey+')');
-                whereValues.push(value);
-              } else
-                equality(value, affirm);
+              var q = [];
+              q.push(qkey+'=$'+count);
+              if (Array.isArray(value))
+                q.push('EXISTS(SELECT * FROM jsonb_array_elements($'+
+                       count+') where value='+qkey+ ')');
+
+
+              q.push('(jsonb_typeof('+qkey+') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements('+
+                     qkey+') where value=$'+count+ '))');
+
+              q = q.join(' OR ');
+              whereSql.push(affirm ? q : 'NOT('+q+')');
+              whereValues.push(value);
             }
             break;
           }

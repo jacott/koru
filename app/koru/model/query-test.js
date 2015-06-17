@@ -20,7 +20,6 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-//      v.TestModel && v.TestModel.docs._client.query('truncate "TestModel"');
       v = null;
     },
 
@@ -28,11 +27,24 @@ define(function (require, exports, module) {
       v.TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
 
-      assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
-      assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
+      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
 
-      assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
-      assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
+      v.bar.$onThis.update('aoo', {a: 2, b:2});
+
+      if (isServer) {
+         assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+         assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
+
+         assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
+         assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+      }
+
+      assert.same(v.TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
+      assert.same(v.TestModel.where('aoo', {a: 1, b: 1}).count(), 0);
+      assert.same(v.TestModel.query.where('aoo', {a: 1}).count(), 0);
+
+      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 3}).count(), 1);
+      assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 1}).count(), 2);
     },
 
     "query withIndex": {
@@ -315,6 +327,7 @@ define(function (require, exports, module) {
       assert.equals(st.fetchField('age'), [10]);
 
       assert.equals(st.whereNot('age', [5, 10]).fetchField('age'), []);
+      assert.equals(st.whereNot('name', 'foo').fetchField('name'), []);
     },
 
     "test where with array": function () {

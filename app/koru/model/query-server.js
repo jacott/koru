@@ -261,18 +261,18 @@ define(function(require, exports, module) {
 
     if (fields = query._whereNots) {
       var neg = {};
-
-      for(var key in fields) {
-        var value = fields[key];
-        if (Array.isArray(value))
-          neg[key] = {$nin: value};
-        else
-          neg[key] = {$ne: value};
+      foundIn(query._whereNots, neg);
+      var nor = [];
+      for (var key in neg) {
+        var item = {};
+        item[key] = neg[key];
+        nor.push(item);
       }
+      nor = {$nor: nor};
       if (util.isObjEmpty(result))
-        result = neg;
+        result = nor;
       else
-        result = {$and: [result, neg]};
+        result = {$and: [result, nor]};
     }
 
     if (query._whereSomes) {
