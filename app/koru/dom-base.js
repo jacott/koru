@@ -15,7 +15,7 @@ define(function(require, exports, module) {
       if (Array.isArray(html)) {
         var elm = document.createDocumentFragment();
         util.forEach(html, function (item) {
-          elm.appendChild(Dom.html(item));
+          item && elm.appendChild(Dom.html(item));
         });
         return elm;
       }
@@ -54,7 +54,7 @@ define(function(require, exports, module) {
         elm.textContent = content;
       else if (Array.isArray(content))
         util.forEach(content, function (item) {
-          elm.appendChild(Dom.html(item));
+          item && elm.appendChild(Dom.html(item));
         });
       else
         content && elm.appendChild(content);
