@@ -5,7 +5,7 @@ define(function(require, exports, module) {
 
   return function() {
 
-    if (new Query(List).findOne()) return;
+    if (new Query(List).fetchOne()) return;
     var data = [
       {name: "Koru Principles",
        contents: [
