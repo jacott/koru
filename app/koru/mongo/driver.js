@@ -80,6 +80,7 @@ Collection.prototype = {
   },
 
   update: function (query, changes, options) {
+    query = buildQuery(query);
     var future = new Future;
     if (options)
       this._col.update(query, changes, options, future.resolver());
@@ -90,6 +91,7 @@ Collection.prototype = {
   },
 
   count: function (query, options) {
+    query = buildQuery(query);
     var future = new Future;
     if (options)
       this._col.count(query, options, future.resolver());
@@ -104,6 +106,7 @@ Collection.prototype = {
   },
 
   findOne: function (query, options) {
+    query = buildQuery(query);
     var future = new Future;
     if (options)
       this._col.findOne(query, options, future.resolver());
@@ -113,11 +116,13 @@ Collection.prototype = {
     return future.wait();
   },
 
-  find: function (/* args */) {
+  find: function (query /*, args */) {
+    query = buildQuery(query);
     return new Cursor(this._col.find.apply(this._col, arguments));
   },
 
   remove: function (query, options) {
+    query = buildQuery(query);
     var future = new Future;
     if (options)
       this._col.remove(query, options, future.resolver());
@@ -245,3 +250,58 @@ Cursor.prototype = {
     }
   },
 };
+
+function buildQuery(query) {
+  if (query.constructor === Object)
+    return query;
+  var result = {};
+  var fields;
+  if (query.singleId)
+    result._id = query.singleId;
+
+  query._wheres && foundIn(query._wheres, result);
+
+  if (fields = query._whereNots) {
+    var neg = {};
+    foundIn(query._whereNots, neg);
+    var nor = [];
+    for (var key in neg) {
+      var item = {};
+      item[key] = neg[key];
+      nor.push(item);
+    }
+    nor = {$nor: nor};
+    if (util.isObjEmpty(result))
+      result = nor;
+    else
+      result = {$and: [result, nor]};
+  }
+
+  if (query._whereSomes) {
+    var ands = result['$and'];
+    if (! ands) {
+      if (util.isObjEmpty(result))
+        result = {$and: ands = []};
+      else
+        result = {$and: ands = [result]};
+    }
+    var somes = query._whereSomes.map(function (ors) {
+      ands.push({$or: ors.map(function (fields) {
+        return foundIn(fields, {});
+      })});
+    });
+  }
+
+  return result;
+
+  function foundIn(fields, result) {
+    for(var key in fields) {
+      var value = fields[key];
+      if (key[0] !== '$' && Array.isArray(value))
+        result[key] = {$in: value};
+      else
+        result[key] = value;
+    }
+    return result;
+  }
+}

@@ -37,7 +37,7 @@ define(function (require, exports, module) {
       assert.equals(v.TestModel.query.sort('name').batchSize(2).fetchField('name'), ['foo', 'foo2', 'foo3']);
     },
 
-    "test mongo code": function () {
+    "test $or": function () {
       assert.same(v.TestModel.where({$or: [{name: 'foo'}, {age: 3}]}).count(), 1);
     },
 

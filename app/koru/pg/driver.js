@@ -344,15 +344,62 @@ Table.prototype = {
     return performTransaction(this, sql, set);
   },
 
-  where: function (where, whereValues) {
+  where: function (query, whereValues) {
+    if (! query) return;
     var table = this;
     var count = whereValues.length;
-    return where1(where);
+    var colMap = table._colMap;
+    var fields;
 
-    function where1(where, notable) {
-      var whereSql = [];
-      for (var key in  where) {
-        var value = where[key];
+    var whereSql = [];
+    if (query.constructor === Object) {
+      foundIn(query, whereSql);
+    } else {
+      if (query.singleId) {
+        whereSql.push('"_id"=$'+ ++count);
+        whereValues.push(query.singleId);
+      }
+
+      query._wheres && foundIn(query._wheres, whereSql);
+
+      if (fields = query._whereNots) {
+        var subSql = [];
+        foundIn(fields, subSql);
+        whereSql.push("(" + subSql.join(" OR ") + ") IS NOT TRUE");
+      }
+
+      if (fields = query._whereSomes) {
+        query._whereSomes.forEach(function (ors) {
+          whereSql.push("("+ors.map(function (q) {
+            var subSql = [];
+            foundIn(q, subSql);
+            return subSql.join(" AND ");
+          }).join(' OR ')+") IS TRUE");
+        });
+      }
+    }
+
+    if (whereSql.length === 0)
+      return;
+
+    return whereSql.join(' AND ');
+
+    function inArray(qkey, result, value, op) {
+      if (value.length === 0) {
+        result.push(op === ' IN' ? 'TRUE' : 'FALSE');
+      } else {
+        var param = [];
+        util.forEach(value, function (v) {
+          param.push('$'+ ++count);
+          whereValues.push(v);
+        });
+        result.push(qkey+op+'(' +param.join(',')+')');
+      }
+    }
+
+    function foundIn(fields, result) {
+      for(var key in fields) {
+        var value = fields[key];
         var splitIndex = key.indexOf(".");
         if (splitIndex !== -1) {
           var remKey = key.slice(splitIndex+1);
@@ -362,75 +409,115 @@ Table.prototype = {
             qkey.push("'"+p+ "'");
           });
           qkey = qkey.join("->");
+          if (value == null) {
+            result.push(qkey+' = $'+ ++count);
+            whereValues.push(null);
+            continue;
+          }
         } else {
           if (key[0] === '$') switch(key) {
           case '$sql':
-            whereSql.push(value);
+            result.push(value);
             continue;
           case '$or':
           case '$and':
           case '$nor':
             var parts = [];
             util.forEach(value, function (w) {
-              parts.push('('+where1(w)+')');
+              var q = [];
+              foundIn(w, q);
+              q.length && parts.push('('+q.join(' AND ')+')');
             });
-            whereSql.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
+            result.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
             continue;
           }
           var qkey = '"'+key+'"';
+          if (value == null) {
+            result.push(qkey+' IS NULL');
+            continue;
+          }
         }
-        ++count;
 
-        if (value && typeof value === 'object') {
-          switch (notable ? toBaseType(value) : table._colMap[key] ? table._colMap[key].data_type : 'text') {
-          case 'ARRAY':
-            for(var vk in value) {
+        var colSpec = colMap[key];
+
+        if (value != null) switch(colSpec && colSpec.data_type) {
+        case 'ARRAY':
+          if (typeof value === 'object') {
+            if (Array.isArray(value)) {
+              result.push(qkey+' && $'+ ++count);
+              whereValues.push(aryToSqlStr(value));
+              continue;
+            } else {
+              for (var vk in value) {break;}
               switch(vk) {
               case '$in':
-                whereSql.push(qkey+' && $'+ count);
+                result.push(qkey+' && $'+ ++count);
                 whereValues.push(aryToSqlStr(value[vk]));
-                break;
+                continue;
               case '$nin':
-                whereSql.push("NOT("+qkey+' && $'+ count+")");
+                result.push("NOT("+qkey+' && $'+ ++count+")");
                 whereValues.push(aryToSqlStr(value[vk]));
-                break;
-              default:
-                assertNoDirective(vk);
-                equality(value, true);
+                continue;
               }
-              break;
             }
-            break;
+          }
+          result.push('$'+ ++count + '= ANY('+qkey+')');
+          whereValues.push(value);
+          break;
 
-          case 'json':
-          case 'jsonb':
-            json_comp_value(value, true);
-            break;
-          default:
-            if (value.constructor === Date) {
-              equality(value, true);
+        case 'jsonb':
+          if (typeof value === 'object') {
+            if (value.$elemMatch) {
+              var subvalue = value.$elemMatch;
+              var columns = [];
+              for (var subcol in subvalue) {
+                columns.push(mapType(subcol, subvalue[subcol]));
+              }
+              var q = [];
+              foundIn(subvalue, q);
+              result.push('jsonb_typeof('+qkey+
+                            ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset('+qkey+
+                            ') as __x('+columns.join(',')+') where '+q.join(' AND ')+')');
               continue;
             }
-            for(var vk in value) {
+            var q = [];
+            ++count; whereValues.push(value);
+            q.push(qkey+'=$'+count);
+            if (Array.isArray(value))
+              q.push('EXISTS(SELECT * FROM jsonb_array_elements($'+
+                     count+') where value='+qkey+ ')');
+
+            q.push('(jsonb_typeof('+qkey+') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements('+
+                   qkey+') where value=$'+count+ '))');
+
+            result.push('('+q.join(' OR ')+')');
+          } else {
+            result.push(qkey+'=$'+ ++count);
+            whereValues.push(JSON.stringify(value));
+          }
+          break;
+
+        default:
+          if (typeof value === 'object') {
+            if (Array.isArray(value)) {
+              inArray(qkey, result, value, ' IN ');
+
+            } else {
+              for(var vk in value) {break;}
               switch(vk) {
               case '$regex':
               case '$options':
                 var regex = value.$regex;
                 var options = value.$options;
-                if (! regex) {
-                  --count;
-                  continue;
-                }
-                whereSql.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+count);
+                result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
                 whereValues.push(regex);
                 break;
               case '$ne':
                 value = value[vk];
                 if (value == null) {
-                  --count;
-                  whereSql.push(qkey+' IS NOT NULL');
+                  result.push(qkey+' IS NOT NULL');
                 } else {
-                  whereSql.push('('+qkey+' <> $'+count+' OR '+qkey+' IS NULL)');
+                  result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
                   whereValues.push(value);
                 }
                 break;
@@ -442,120 +529,22 @@ Table.prototype = {
                 op = op || '<';
               case '$lte':
                 op = op || '<=';
+                result.push(qkey+op+'$'+ ++count);
                 whereValues.push(value[vk]);
-                whereSql.push(qkey+op+'$'+count);
                 break;
               case '$in':
               case '$nin':
-                --count;
-                value = value[vk];
-                if (value.length === 0) {
-                  whereSql.push(vk === '$in' ? 'FALSE' : "TRUE");
-                } else {
-                  var param = [];
-                  util.forEach(value, function (v) {
-                    param.push('$'+(++count));
-                    whereValues.push(v);
-                  });
-                  whereSql.push(qkey+(vk === '$in' ? ' IN (' : ' NOT IN (')+param.join(',')+')');
-                }
+                inArray(qkey, result, value[vk], vk === '$in' ? ' IN' : ' NOT IN');
                 break;
               default:
-                assertNoDirective(vk);
-                equality(value, true);
+                result.push(qkey+'=$'+ ++count);
+                whereValues.push(value);
               }
-              break;
             }
+          } else {
+            result.push(qkey+'=$'+ ++count);
+            whereValues.push(value);
           }
-        } else {
-          if (value == null) {
-            match_null(true);
-          } else switch (notable ? toBaseType(value) :
-                  table._colMap.hasOwnProperty(key) ? table._colMap[key].data_type : 'error') {
-          case 'ARRAY':
-            arrayIn(true);
-            break;
-          case 'object':
-          case 'json':
-          case 'jsonb':
-            json_comp_value(value, true);
-            break;
-          case 'error':
-            throw new Error('Table '+ table._name + ' has no column: ' + key);
-          default:
-            equality(value, true);
-          }
-        }
-      }
-
-      if (whereSql.length)
-        return whereSql.join(' AND ');
-
-      function match_null(affirm) {
-        --count;
-        whereSql.push(qkey+ (affirm ? ' IS NULL' : 'IS NOT NULL'));
-      }
-
-      function equality(value, affirm) {
-        whereSql.push(qkey+(affirm ? '=$' : '<>$')+count);
-        whereValues.push(value);
-      }
-
-      function arrayIn(affirm) {
-        whereSql.push('$'+count+(affirm ? ' =' : ' <>')+' ANY ('+qkey+')');
-        whereValues.push(value);
-      }
-
-      function assertNoDirective(vk) {
-        if (vk[0] === '$')
-          throw new Error("invalid/unsupported directive: " + vk);
-      }
-
-      function json_comp_value(value, affirm) {
-        if (value == null)
-          match_null(affirm);
-        else if (typeof value === 'object') {
-          for(var vk in value) {
-            switch(vk) {
-            case '$ne':
-              json_comp_value(value[vk], false);
-              break;
-            case '$in':
-            case '$nin':
-              throw new Error(vk + ' not supported for jsonb fields');
-
-            case '$elemMatch':
-              var subvalue = value[vk];
-              --count;
-              var columns = [];
-              for (var subcol in subvalue) {
-                columns.push(mapType(subcol, subvalue[subcol]));
-              }
-              whereSql.push((affirm ? '' : 'NOT')+
-                            '(jsonb_typeof('+qkey+
-                            ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset('+qkey+
-                            ') as __x('+columns.join(',')+') where '+where1(subvalue, 'notable')+'))');
-              break;
-            default:
-              assertNoDirective(vk);
-              var q = [];
-              q.push(qkey+'=$'+count);
-              if (Array.isArray(value))
-                q.push('EXISTS(SELECT * FROM jsonb_array_elements($'+
-                       count+') where value='+qkey+ ')');
-
-
-              q.push('(jsonb_typeof('+qkey+') = \'array\' AND EXISTS(SELECT * FROM jsonb_array_elements('+
-                     qkey+') where value=$'+count+ '))');
-
-              q = q.join(' OR ');
-              whereSql.push(affirm ? q : 'NOT('+q+')');
-              whereValues.push(value);
-            }
-            break;
-          }
-        } else {
-          equality(JSON.stringify(value), affirm);
         }
       }
     }
@@ -577,11 +566,14 @@ Table.prototype = {
     var sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
 
 
-    if (util.isObjEmpty(where))
+    if (where) {
+      var values = [];
+      where = table.where(where, values);
+    }
+
+    if (where === undefined)
       return new Cursor(this, sql, null, options);
 
-    var values = [];
-    where = table.where(where, values);
     sql = sql+' WHERE '+where;
     return new Cursor(this, sql, values, options);
   },
@@ -650,7 +642,6 @@ function initCursor(cursor) {
   if (cursor._name) return;
   var client = cursor.table._client;
   var tx = client._weakMap.get(util.thread);
-  var cname = 'c'+(++cursorCount).toString(36);
   var sql = cursor._sql;
   if (cursor._sort) {
     sql += ' ORDER BY '+Object.keys(cursor._sort).map(function (k) {
@@ -659,14 +650,22 @@ function initCursor(cursor) {
   }
   if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
 
-  if (tx && tx.transaction) {
-    cursor._inTran = true;
-    client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
-  } else client.transaction(function () {
-    getConn(client); // so cursor is valid outside transaction
-    client.query('DECLARE '+cname+' CURSOR WITH HOLD FOR '+sql, cursor._values);
-  });
-  cursor._name = cname;
+  if (cursor._batchSize) {
+    var cname = 'c'+(++cursorCount).toString(36);
+    if (tx && tx.transaction) {
+      cursor._inTran = true;
+      client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
+    } else client.transaction(function () {
+      getConn(client); // so cursor is valid outside transaction
+      client.query('DECLARE '+cname+' CURSOR WITH HOLD FOR '+sql, cursor._values);
+    });
+    cursor._name = cname;
+  } else {
+    cursor._rows = client.query(sql, cursor._values);
+    cursor._index = 0;
+    cursor._name = 'all';
+  }
+
 }
 
 Cursor.prototype = {
@@ -689,13 +688,30 @@ Cursor.prototype = {
 
   next: function (count) {
     initCursor(this);
-    var c = count === undefined ? 1 : count;
-    var result = this.table._client.query('FETCH '+c+' '+this._name);
-    return count === undefined ? result[0] : result;
+    if (this.hasOwnProperty('_index')) {
+      if (count === undefined) {
+        if (this._index >= this._rows.length)
+          return;
+        return this._rows[this._index++];
+      } else {
+        this._index += count;
+
+        return this._rows.slice(this._index - count, this._index);
+      }
+    } else {
+      var c = count === undefined ? 1 : count;
+      var result = this.table._client.query('FETCH '+c+' '+this._name);
+      return count === undefined ? result[0] : result;
+    }
   },
 
   sort: function (spec) {
     this._sort = spec;
+    return this;
+  },
+
+  batchSize: function (value) {
+    this._batchSize = value;
     return this;
   },
 
@@ -725,13 +741,15 @@ Cursor.prototype = {
 function queryWhere(table, sql, where, suffix) {
   table._ensureTable();
 
-  if (util.isObjEmpty(where)) {
+  if (where) {
+    var values = [];
+    where = table.where(where, values);
+  }
+  if (where === undefined) {
     if (suffix) sql += suffix;
     return table._client.query(sql);
   }
 
-  var values = [];
-  where = table.where(where, values);
   sql = sql+' WHERE '+where;
   if (suffix) sql += suffix;
 

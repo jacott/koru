@@ -382,7 +382,7 @@ define(function (require, exports, module) {
         assert.same(attrs, v.TestModel.findById(doc._id).attributes);
       },
 
-      "test findBy": function () {
+      "test findBy.": function () {
         var doc = v.TestModel.create({name: 'Sam', foo: 'bar'});
 
         assert[isClient ? 'same' : 'equals'](v.TestModel.findBy('foo', 'bar').attributes, doc.attributes);

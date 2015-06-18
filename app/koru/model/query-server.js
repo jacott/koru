@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   var util = require('../util');
-  var mongodb = require('../mongo/driver');
   var koru = require('../main');
   var Model = require('./base');
   var Future = requirejs.nodeRequire('fibers/future');
@@ -29,10 +28,6 @@ define(function(require, exports, module) {
         return results;
       },
 
-      fetchOne: function () {
-        return this.findOne();
-      },
-
       waitForOne: function (timeout) {
         timeout = timeout || 2000;
         var query = this;
@@ -58,7 +53,7 @@ define(function(require, exports, module) {
         if (this.singleId) throw Error('fetchIds onId not supported');
 
         var model = this.model;
-        var cursor = model.docs.find(buildQuery(this), {fields: {_id: 1}});
+        var cursor = model.docs.find(this, {fields: {_id: 1}});
         applyCursorOptions(this, cursor);
 
         var results = [];
@@ -73,20 +68,20 @@ define(function(require, exports, module) {
       },
 
       show: function (func) {
-        func(JSON.stringify(buildQuery(this)));
+        func(this.model.docs.show(this));
         return this;
       },
 
       forEach: function (func) {
         var where = this._wheres;
         if (this.singleId) {
-          var doc = this.findOne(this.singleId);
+          var doc = this.fetchOne();
           doc && func(doc);
         } else {
           var model = this.model;
           var options = {};
           if (this._fields) options.fields = this._fields;
-          var cursor = model.docs.find(buildQuery(this), options);
+          var cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
             for(var doc = cursor.next(); doc; doc = cursor.next()) {
@@ -126,13 +121,13 @@ define(function(require, exports, module) {
 
       count: function (max) {
         if (max == null)
-          return this.model.docs.count(buildQuery(this));
+          return this.model.docs.count(this);
         else
-          return this.model.docs.count(buildQuery(this), {limit: max});
+          return this.model.docs.count(this, {limit: max});
       },
 
       exists: function () {
-        return this.model.docs.exists(buildQuery(this));
+        return this.model.docs.exists(this);
       },
 
       update: function (origChanges, value) {
@@ -223,13 +218,13 @@ define(function(require, exports, module) {
         return count;
       },
 
-      findOne: function(id) {
+      fetchOne: function() {
         var opts;
-        if (this._sort && ! id) {
+        if (this._sort && ! this.singleId) {
           var options = {limit: 1};
           if (this._sort) options.sort = this._sort;
           if (this._fields) options.fields = this._fields;
-          var cursor = this.model.docs.find(buildQuery(this, id), options);
+          var cursor = this.model.docs.find(this, options);
           try {
             var doc = cursor.next();
           } finally {
@@ -237,7 +232,7 @@ define(function(require, exports, module) {
           }
         } else {
           if (this._fields) opts = this._fields;
-          var doc = this.model.docs.findOne(buildQuery(this, id), opts);
+          var doc = this.model.docs.findOne(this, opts);
         }
         if (! doc) return;
         return new this.model(doc);
@@ -249,59 +244,6 @@ define(function(require, exports, module) {
     query._batchSize && cursor.batchSize(query._batchSize);
     query._limit && cursor.limit(query._limit);
     query._sort && cursor.sort(query._sort);
-  }
-
-  function buildQuery(query, id) {
-    var result = {};
-    var fields;
-    if (id = id || query.singleId)
-      result._id = id;
-
-    query._wheres && foundIn(query._wheres, result);
-
-    if (fields = query._whereNots) {
-      var neg = {};
-      foundIn(query._whereNots, neg);
-      var nor = [];
-      for (var key in neg) {
-        var item = {};
-        item[key] = neg[key];
-        nor.push(item);
-      }
-      nor = {$nor: nor};
-      if (util.isObjEmpty(result))
-        result = nor;
-      else
-        result = {$and: [result, nor]};
-    }
-
-    if (query._whereSomes) {
-      var ands = result['$and'];
-      if (! ands) {
-        if (util.isObjEmpty(result))
-          result = {$and: ands = []};
-        else
-          result = {$and: ands = [result]};
-      }
-      var somes = query._whereSomes.map(function (ors) {
-        ands.push({$or: ors.map(function (fields) {
-          return foundIn(fields, {});
-        })});
-      });
-    }
-
-    return result;
-
-    function foundIn(fields, result) {
-      for(var key in fields) {
-        var value = fields[key];
-        if (key[0] !== '$' && Array.isArray(value))
-          result[key] = {$in: value};
-        else
-          result[key] = value;
-      }
-      return result;
-    }
   }
 
   function buildUpdate(query, changes) {
