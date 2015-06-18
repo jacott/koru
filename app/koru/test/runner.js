@@ -1,7 +1,7 @@
 define(['./core'], function (geddon) {
   geddon.start = function (runNextWrapper) {
     var tests = geddon._tests = [],
-        promise,
+        promise, _runNext,
         next = 0;
 
     for(var key in geddon._testCases) {
@@ -12,15 +12,19 @@ define(['./core'], function (geddon) {
         tc.add(tc.option);
     }
 
-    geddon.runCallBacks('start');
-
-    if (runNextWrapper)
-      var _runNext = function () {runNextWrapper(runNext)};
-    else
-      var _runNext = runNext;
-
     var tcs = [];
-    _runNext();
+
+    if (runNextWrapper) {
+      runNextWrapper(function () {
+        geddon.runCallBacks('start');
+        _runNext = function () {runNextWrapper(runNext)};
+        _runNext();
+      });
+    } else {
+      geddon.runCallBacks('start');
+      _runNext = runNext;
+      _runNext();
+    }
 
     function runNext(abort) {
       while(! abort) {

@@ -219,6 +219,8 @@ function Table(name, schema, client) {
 Table.prototype = {
   constructor: Table,
 
+  isPG: true,
+
   _ensureTable: function () {
     if (this._ready === true) return;
 
@@ -672,7 +674,7 @@ Cursor.prototype = {
   constructor: Cursor,
 
   close: function () {
-    if (this._name) {
+    if (this._name && this._name !== 'all') {
       try {
         this.table._client.query('CLOSE '+this._name);
       } finally {

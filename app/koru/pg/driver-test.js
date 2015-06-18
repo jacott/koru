@@ -36,6 +36,10 @@ isServer && define(function (require, exports, module) {
 
     "test isPG": function () {
       assert.same(sut.isPG, true);
+      v.foo = sut.defaultDb.table('Foo', {
+        bar_ids: 'has_many',
+      });
+      assert.same(v.foo.isPG, true);
     },
 
     "test override _id spec": function () {
