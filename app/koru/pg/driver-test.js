@@ -280,27 +280,56 @@ isServer && define(function (require, exports, module) {
         }, {sqlState: '42703'});
       },
 
-      "test transaction rollback": function () {
+      "test nested transactions": function () {
         try {
           v.foo.transaction(function (tran) {
             v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
             tran.onAbort(v.onAbort = test.stub());
             tran.onAbort(v.onAbort2 = test.stub());
+            try {
+              v.foo.transaction(function (tran) {
+                tran.onAbort(v.onAbort3 = test.stub());
+                v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+                throw 'abort';
+              });
+            } catch(ex) {
+              refute.same(ex, 'abort');
+              throw ex;
+            }
+            assert.called(v.onAbort3);
+            refute.called(v.onAbort);
             assert.equals(v.foo.findOne({_id: '123'}).name, 'eee');
             throw 'abort';
           });
         } catch(ex) {
-          if (ex !== 'abort') throw ex;
+          refute.same(ex, 'abort');
+          throw ex;
         }
         assert.called(v.onAbort);
         assert.called(v.onAbort2);
+        assert.calledOnce(v.onAbort3);
         assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
+
+        // ensure inner transaction works
+
+        v.foo.transaction(function (tran) {
+          tran.onAbort(v.onAbort = test.stub());
+          v.foo.transaction(function (tran) {
+            v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+          });
+          assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
+          throw 'abort';
+        });
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
+
 
         // ensure transaction commit works
 
         v.foo.transaction(function (tran) {
           tran.onAbort(v.onAbort = test.stub());
-          v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+          v.foo.transaction(function (tran) {
+            v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+          });
         });
         assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
         refute.called(v.onAbort);

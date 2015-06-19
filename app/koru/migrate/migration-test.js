@@ -94,10 +94,22 @@ isServer && define(function (require, exports, module) {
 
       assert.equals(v.client.query('SELECT bar from "TestTable"')[0].bar, v.date);
 
-      sut.migrateTo(v.client, dir, "");
+      sut.migrateTo(v.client, dir, " ");
 
       assert.same(v.client.query('select exists(select 1 from pg_catalog.pg_class where relname = $1)',
                                  ["TestTable"])[0].exists, false);
+    },
+
+    "test rollback on error": function () {
+      var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
+
+      assert.exception(function () {
+        sut.migrateTo(v.client, dir, "zz");
+      }, {sqlState: "42703"});
+
+      refute.exception(function () {
+        v.client.query('SELECT baz from "TestTable"');
+      });
     },
   });
 });

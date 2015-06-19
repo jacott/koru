@@ -159,10 +159,27 @@ Client.prototype = {
     getConn(this); // ensure connection
     var tx = this._weakMap.get(util.thread);
     try {
-      if (tx.transaction)
-        return func.call(this, tx);
-
-      try {
+      if (tx.transaction) {
+        var onAborts = tx._onAborts;
+        tx._onAborts = null;
+        if(tx.savepoint)
+          ++tx.savepoint;
+        else
+          tx.savepoint = 1;
+        try {
+          query(tx.conn, "SAVEPOINT s"+tx.savepoint);
+          var result = func.call(this, tx);
+          query(tx.conn, "RELEASE SAVEPOINT s"+tx.savepoint);
+          return result;
+        } catch(ex) {
+          query(tx.conn, "ROLLBACK TO SAVEPOINT s"+tx.savepoint);
+          runOnAborts(tx, 'ROLLBACK');
+          if (ex !== 'abort') throw ex;
+        } finally {
+          --tx.savepoint;
+          tx._onAborts = onAborts;
+        }
+      } else try {
         tx.transaction = 'COMMIT';
         query(tx.conn, 'BEGIN');
         return func.call(this, tx);
@@ -174,20 +191,24 @@ Client.prototype = {
         var command = tx.transaction;
         tx.transaction = null;
         query(tx.conn, command);
-        var onAborts = tx._onAborts;
-        if (onAborts) {
-          tx._onAborts = null;
-          if (command == 'ROLLBACK')
-            onAborts.forEach(function (f) {
-              f();
-            });
-        }
+        runOnAborts(tx, command);
       }
     } finally {
       releaseConn(this);
     }
   },
 };
+
+function runOnAborts(tx, command) {
+  var onAborts = tx._onAborts;
+  if (onAborts) {
+    tx._onAborts = null;
+    if (command == 'ROLLBACK')
+      onAborts.forEach(function (f) {
+        f();
+      });
+  }
+}
 
 function query(conn, text, params) {
   var future = new Future;
