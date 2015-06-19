@@ -6,6 +6,7 @@ var koru, util, makeSubject, match, Pool;
 var pools = {};
 var clientCount = 0;
 var cursorCount = 0;
+var autoSchema = false;
 
 define(function(require, exports, module) {
   koru = require('../main');
@@ -17,6 +18,8 @@ define(function(require, exports, module) {
   koru.onunload(module, 'reload');
 
   koru.onunload(module, closeDefaultDb);
+
+  autoSchema = module.config().autoSchema || false;
 
   var defaultDb = null;
 
@@ -239,6 +242,16 @@ Table.prototype = {
 
     var subject = this._ready = makeSubject({});
 
+    if (autoSchema) {
+      this.autoCreate();
+    } else {
+      readColumns(this);
+    }
+    this._ready = true;
+    subject.notify();
+  },
+
+  autoCreate: function () {
     readColumns(this);
     var schema = this.schema;
     if (this._columns.length === 0) {
@@ -258,8 +271,6 @@ Table.prototype = {
     } else if (schema) {
       updateSchema(this, schema);
     }
-    this._ready = true;
-    subject.notify();
   },
 
   transaction: function (func) {
@@ -759,7 +770,7 @@ function queryWhere(table, sql, where, suffix) {
 }
 
 function toColumns(table, params) {
-  var needCols = {};
+  var needCols = autoSchema && {};
   var cols = Object.keys(params);
   var values = new Array(cols.length);
   var colMap = table._colMap;
@@ -786,12 +797,14 @@ function toColumns(table, params) {
     }
     values[i] = value;
 
-    if (! desc) {
+    if (needCols && ! desc) {
       needCols[col] = mapType(col, params[col]);
     }
   });
 
-  return {needCols: needCols, cols: cols, values: values};
+  var res = {cols: cols, values: values};
+  if (needCols) res.needCols = needCols;
+  return res;
 }
 
 function performTransaction(table, sql, params) {
