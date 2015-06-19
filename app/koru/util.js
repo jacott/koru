@@ -52,6 +52,14 @@ define(function(require, exports, module) {
       }
     },
 
+    reverseForEach: function reverseForEach(list, func) {
+      if (! list) return;
+      var len = list.length;
+      for(var i = len-1; i >= 0 ; --i) {
+        func(list[i], i);
+      }
+    },
+
     map: function mymap(list, func) {
       var len = list.length;
       var result = new Array(len);

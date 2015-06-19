@@ -340,6 +340,18 @@ define(function (require, exports, module) {
       assert.equals(results, ['1.0', '2.1', '3.2']);
     },
 
+    "test reverseForEach": function () {
+      util.reverseForEach(null, v.stub = test.stub());
+      refute.called(v.stub);
+      var results = [];
+      util.reverseForEach(v.list = [1,2,3], function (val, index) {
+        results.push(val+"."+index);
+      });
+
+      assert.equals(results, ['3.2', '2.1', '1.0']);
+    },
+
+
     "test append": function () {
       var list1 = [1, 2, 3];
 
