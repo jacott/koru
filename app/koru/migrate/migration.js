@@ -17,7 +17,8 @@ define(function(require, exports, module) {
     doMigration(client, false, name, options);
   };
 
-  exports.migrateTo = function (client, dirPath, pos) {
+  exports.migrateTo = function (client, dirPath, pos, verbose) {
+    if (! pos) throw new Error("Please specifiy where to migrate to");
     try {
       var filenames = readdir(dirPath).wait().filter(function (fn) {
         return /.js$/.test(fn);
@@ -29,13 +30,17 @@ define(function(require, exports, module) {
         var row = filenames[i].replace(/\.js$/,'');
         if (row > pos)
           break;
-        migrations[row] ||
+        if (! migrations[row]) {
+          verbose && console.log("Adding " + row);
           exports.addMigration(client, row, readMigration(dirPath+'/'+row));
+        }
       }
       util.reverseForEach(Object.keys(migrations).sort(), function (row) {
-        if (row > pos)
+        if (row > pos) {
+          verbose && console.log("Reverting " + row);
           exports.revertMigration(client, row, readMigration(dirPath+'/'+row));
-      });
+        }
+        });
     } finally {
       exports.migrations = null;
     }
