@@ -52,7 +52,7 @@ define(['./core'], function (geddon) {
           test.tc.runSetUp(test);
           if (test.func.length === 1) {
             var promise = promiseFunc(test, _runNext);
-            test.func(promise);
+            test.tc.runTest(test, test.func, promise);
             if (promise.done) continue;
             promise.timeout = setTimeout(function () {
               promise(new Error("Timed out!"));
@@ -60,7 +60,7 @@ define(['./core'], function (geddon) {
             return;
           } else {
             var assertCount = geddon.assertCount;
-            test.func(test);
+            test.tc.runTest(test, test.func);
             checkAssertionCount(test, assertCount);
           }
         } catch(ex) {

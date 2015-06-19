@@ -55,6 +55,41 @@ define(['./core'], function (geddon) {
       this.setUp && this.setUp.call(test);
     },
 
+    runTest: function (test, func, done) {
+      if (done) {
+        for(var tc = this; tc; tc = tc.tc) {
+          if (tc.setUpArround)
+            throw new Error("setUpArround not supported on async tests");
+        }
+        func.call(test, done);
+      } else {
+        for(var tc = this; tc; tc = tc.tc) {
+          if (tc.setUpArround) {
+            if (tc.tc)
+              tc.tc.runTest(test, function () {
+                tc.runSetUpArround(test, func);
+              });
+            else
+              tc.runSetUpArround(test, func);
+            return;
+          }
+        }
+        func.call(test);
+      }
+    },
+
+    runSetUpArround: function (test, func) {
+      var tex;
+      this.setUpArround.call(test, function () {
+        try {
+          func.call(test);
+        } catch(ex) {
+          tex = ex;
+        }
+      });
+      if (tex) throw tex;
+    },
+
     runTearDown: function (test) {
       this.tearDown && this.tearDown.call(test);
       this.tc && this.tc.runTearDown(test);
@@ -68,16 +103,20 @@ define(['./core'], function (geddon) {
 
       if (typeof func === 'function') {
 
-        if (name === 'setUp' || name === 'tearDown') {
+        switch(name) {
+        case 'setUp': case 'tearDown': case 'setUpArround':
           skipped || (this[name] = func);
-        } else if (! geddon.runArg || this.fullName(name).indexOf(geddon.runArg) !== -1) {
+          break;
+        default:
+          if (! geddon.runArg || this.fullName(name).indexOf(geddon.runArg) !== -1) {
 
-          ++geddon.testCount;
-          if (skipped) {
-            ++geddon.skipCount;
-            geddon._tests.push(new Test(this.fullName(name), this));
-          } else {
-            geddon._tests.push(new Test(this.fullName(name), this, func));
+            ++geddon.testCount;
+            if (skipped) {
+              ++geddon.skipCount;
+              geddon._tests.push(new Test(this.fullName(name), this));
+            } else {
+              geddon._tests.push(new Test(this.fullName(name), this, func));
+            }
           }
         }
       } else if (func != null) {
