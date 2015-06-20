@@ -291,17 +291,21 @@ isServer && define(function (require, exports, module) {
       },
 
       "test $inequality": function () {
+        v.foo.insert({_id: "789", name: 'ghi'});
+        assert.same(v.foo.count({name: {$regex: '[AG]', $ne: 'ghi', $options: 'i'}}), 1);
+        assert.same(v.foo.count({name: {$gt: 'abc', $lt: 'ghi'}}), 1);
+        assert.same(v.foo.count({name: {$gt: 'abc', $ne: 'def'}}), 1);
+        assert.same(v.foo.count({name: {$gte: 'abc', $in: ['def', 'ghi']}}), 2);
         assert.same(v.foo.count({age: {$ne: 10}}), 0);
-        assert.same(v.foo.count({name: {$ne: 'abc'}}), 1);
-        assert.same(v.foo.count({name: {$ne: 'aabc'}}), 2);
-        assert.same(v.foo.count({name: {$gte: 'def'}}), 1);
-        assert.same(v.foo.count({name: {$gte: 'abcd'}}), 1);
-        assert.same(v.foo.count({name: {$gt: 'abc'}}), 1);
+        assert.same(v.foo.count({name: {$ne: 'abc'}}), 2);
+        assert.same(v.foo.count({name: {$ne: 'aabc'}}), 3);
+        assert.same(v.foo.count({name: {$gte: 'abcd'}}), 2);
+        assert.same(v.foo.count({name: {$gt: 'abc'}}), 2);
         assert.same(v.foo.count({name: {$lte: 'abc'}}), 1);
         assert.same(v.foo.count({name: {$lte: 'abc'}}), 1);
         assert.same(v.foo.count({name: {$lt: 'abc'}}), 0);
         assert.same(v.foo.count({name: null}), 0);
-        assert.same(v.foo.count({name: {$ne: null}}), 2);
+        assert.same(v.foo.count({name: {$ne: null}}), 3);
       },
 
       "test can't add field": function () {

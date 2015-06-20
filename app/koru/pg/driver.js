@@ -560,50 +560,55 @@ Table.prototype = {
           if (typeof value === 'object') {
             if (Array.isArray(value)) {
               inArray(qkey, result, value, ' IN ');
+              break;
 
-            } else {
-              for(var vk in value) {break;}
-              switch(vk) {
-              case '$regex':
-              case '$options':
-                var regex = value.$regex;
-                var options = value.$options;
-                result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
-                whereValues.push(regex);
-                break;
-              case '$ne':
-                value = value[vk];
-                if (value == null) {
-                  result.push(qkey+' IS NOT NULL');
-                } else {
-                  result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
+            } else if (value.constructor === Object) {
+              for(var vk in value) {
+                switch(vk) {
+                case '$regex':
+                case '$options':
+                  if (regex) break;
+                  var regex = value.$regex;
+                  var options = value.$options;
+                  result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
+                  whereValues.push(regex);
+                  continue;
+                case '$ne':
+                  value = value[vk];
+                  if (value == null) {
+                    result.push(qkey+' IS NOT NULL');
+                  } else {
+                    result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
+                    whereValues.push(value);
+                  }
+                  continue;
+                case '$gt':
+                  var op = '>';
+                case '$gte':
+                  op = op || '>=';
+                case '$lt':
+                  op = op || '<';
+                case '$lte':
+                  op = op || '<=';
+                  result.push(qkey+op+'$'+ ++count);
+                  whereValues.push(value[vk]);
+                  op = null;
+                  continue;
+                case '$in':
+                case '$nin':
+                  inArray(qkey, result, value[vk], vk === '$in' ? ' IN' : ' NOT IN');
+                  continue;
+                default:
+                  result.push(qkey+'=$'+ ++count);
                   whereValues.push(value);
                 }
                 break;
-              case '$gt':
-                var op = '>';
-              case '$gte':
-                op = op || '>=';
-              case '$lt':
-                op = op || '<';
-              case '$lte':
-                op = op || '<=';
-                result.push(qkey+op+'$'+ ++count);
-                whereValues.push(value[vk]);
-                break;
-              case '$in':
-              case '$nin':
-                inArray(qkey, result, value[vk], vk === '$in' ? ' IN' : ' NOT IN');
-                break;
-              default:
-                result.push(qkey+'=$'+ ++count);
-                whereValues.push(value);
               }
+              break;
             }
-          } else {
-            result.push(qkey+'=$'+ ++count);
-            whereValues.push(value);
           }
+          result.push(qkey+'=$'+ ++count);
+          whereValues.push(value);
         }
       }
     }
