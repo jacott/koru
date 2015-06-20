@@ -311,6 +311,8 @@ define(function (require, exports, module) {
       },
 
       "test _id": function () {
+        assert.equals(v.TestModel.$fields._id, {type: 'id'});
+
         var doc = new v.TestModel({_id: "attrId"});
 
         assert.same(doc._id, "attrId");

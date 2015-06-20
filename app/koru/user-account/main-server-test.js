@@ -186,6 +186,8 @@ isServer && define(function (require, exports, module) {
       },
 
       "test expired token": function () {
+        assert.equals(userAccount.model.$fields.resetTokenExpire, {type: 'integer'});
+
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() -5;
         v.lu.$$save();

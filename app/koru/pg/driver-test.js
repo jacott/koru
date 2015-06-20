@@ -26,7 +26,9 @@ isServer && define(function (require, exports, module) {
       assert.same(db, sut.defaultDb);
 
       db.query('CREATE TABLE "Foo" (_id varchar(17) PRIMARY KEY, "foo" jsonb)');
-      db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', ['123', JSON.stringify({a: 1})]);
+      db.prepare('ins1', 'INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)');
+      db.execPrepared('ins1', ['123', JSON.stringify({a: 1})]);
+      db.query('DEALLOCATE ins1');
       db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', ['456', JSON.stringify([1])]);
 
       assert.same(db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', [''])[0].exists, true);
@@ -47,6 +49,8 @@ isServer && define(function (require, exports, module) {
         _id: 'integer',
       });
 
+      assert.same(v.foo.dbType('_id'), 'integer');
+
       v.foo.insert({_id: 123});
       assert.isTrue(v.foo.exists({_id: 123}));
       assert.exception(function () {
@@ -59,6 +63,8 @@ isServer && define(function (require, exports, module) {
         bar_ids: 'has_many',
       });
 
+      assert.same(v.foo.dbType('bar_ids'), 'varchar(17) ARRAY');
+
       v.foo.insert({_id: '123', bar_ids: ["1","2","3"]});
       assert.equals(v.foo.findOne({}).bar_ids, ['1', '2', '3']);
     },
@@ -68,6 +74,7 @@ isServer && define(function (require, exports, module) {
         bar_ids: 'object',
       });
 
+      assert.same(v.foo.dbType('bar_ids'), 'jsonb');
       v.foo.insert({_id: '123', bar_ids: ["1",{a: v.date = new Date()}]});
       assert.equals(v.foo.findOne({}).bar_ids, ['1', {a: v.date.toISOString()}]);
     },
@@ -102,6 +109,24 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.count({'widget.a.b': [{c: 2}, {c: 3}]}), 0);
     },
 
+    "test values": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        widget: 'object',
+        lots: 'integer[]',
+        createdOn: 'date',
+        updatedAt: 'timestamp',
+      });
+      var data = {
+        widget: "a",
+        lots: [11,23,44],
+        createdOn: new Date(2015, 5, 12),
+        updatedAt: new Date(2014, 11, 27, 23, 45, 55)
+      };
+      assert.equals(v.foo.values(data), ['"a"', "{11,23,44}", "2015-06-12T00:00:00.000Z", "2014-12-27T23:45:55.000Z"]);
+      data.widget = [1,2,{a: 3}];
+      assert.equals(v.foo.values(data, ['createdOn', 'widget']), ["2015-06-12T00:00:00.000Z", '[1,2,{"a":3}]']);
+    },
+
     "test string in json": function () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'object',
@@ -116,6 +141,9 @@ isServer && define(function (require, exports, module) {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'integer[]',
       });
+
+      assert.same(v.foo.dbType('widget'), 'integer[]');
+
       v.foo.insert({_id: '123', widget: [1,2,3]});
       v.foo.insert({_id: '456', widget: [3,4]});
 
@@ -133,6 +161,8 @@ isServer && define(function (require, exports, module) {
       v.foo = sut.defaultDb.table('Foo', {
         createdOn: 'date',
       });
+
+      assert.same(v.foo.dbType('createdOn'), 'date');
 
       v.foo.insert({_id: '123', createdOn: v.date = new Date(2015, 3, 4)});
 

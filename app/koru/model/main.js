@@ -674,7 +674,7 @@ define(function(require, exports, module) {
   function defineFields(fields) {
     var proto = this.prototype;
     var $fields = this.$fields;
-    if (! $fields) $fields = this.$fields = {};
+    if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
     for(var field in fields) {
       var options = fields[field];
       if (! options.type) options = {type: options};

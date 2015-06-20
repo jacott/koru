@@ -147,6 +147,22 @@ Client.prototype = {
     });
   },
 
+  prepare: function (name, command) {
+    return this.withConn(function (conn) {
+      var future = new Future;
+      conn.prepare(name, command, wait(future));
+      return future.wait();
+    });
+  },
+
+  execPrepared: function (name, params) {
+    return this.withConn(function (conn) {
+      var future = new Future;
+      conn.execPrepared(name, params, wait(future));
+      return future.wait();
+    });
+  },
+
   table: function (name, schema) {
     return new Table(name, schema, this);
   },
@@ -272,6 +288,10 @@ Table.prototype = {
     subject.notify();
   },
 
+  dbType: function (col) {
+    return pgFieldType(this.schema[col]);
+  },
+
   autoCreate: function () {
     readColumns(this);
     var schema = this.schema;
@@ -311,6 +331,11 @@ Table.prototype = {
           params.cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
 
     return performTransaction(this, sql, params);
+  },
+
+  values: function (rowSet, cols) {
+    this._ensureTable();
+    return toColumns(this, rowSet, cols).values;
   },
 
   koruUpdate: function (doc, changes) {
@@ -790,9 +815,9 @@ function queryWhere(table, sql, where, suffix) {
   return table._client.query(sql, values);
 }
 
-function toColumns(table, params) {
+function toColumns(table, params, cols) {
   var needCols = autoSchema && {};
-  var cols = Object.keys(params);
+  cols = cols || Object.keys(params);
   var values = new Array(cols.length);
   var colMap = table._colMap;
 
@@ -875,8 +900,7 @@ function mapType(col, value) {
   return jsFieldToPg(col, type);
 }
 
-function jsFieldToPg(col, colSchema, client) {
-  var defaultVal = '';
+function pgFieldType(colSchema) {
   if (typeof colSchema === 'string')
     var type = colSchema;
   else
@@ -884,27 +908,29 @@ function jsFieldToPg(col, colSchema, client) {
 
   switch(type) {
   case 'string':
-    type = 'text';
-    break;
+    return 'text';
   case 'number':
-    type = 'double precision';
-    break;
+    return 'double precision';
   case 'belongs_to':
   case 'id':
   case 'user_id_on_create':
-    type = 'varchar(17)';
-    break;
+    return 'varchar(17)';
   case 'has_many':
-    type = 'varchar(17) ARRAY';
-    break;
+    return 'varchar(17) ARRAY';
   case 'color':
-    type = 'varchar(9)';
-    break;
+    return 'varchar(9)';
   case 'object':
   case 'baseObject':
-    type = 'jsonb';
-    break;
+    return 'jsonb';
+  default:
+    return type;
   }
+}
+
+function jsFieldToPg(col, colSchema, client) {
+  var defaultVal = '';
+
+  var type = pgFieldType(colSchema);
 
   if(typeof colSchema === 'object' && colSchema.default != null) {
     var literal = colSchema.default;
