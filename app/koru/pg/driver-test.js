@@ -25,11 +25,11 @@ isServer && define(function (require, exports, module) {
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
 
-      db.query('CREATE TABLE "Foo" (_id varchar(17) PRIMARY KEY, "foo" jsonb)');
+      db.query('CREATE TABLE "Foo" (_id varchar(24) PRIMARY KEY, "foo" jsonb)');
       db.prepare('ins1', 'INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)');
       db.execPrepared('ins1', ['123', JSON.stringify({a: 1})]);
-      db.query('DEALLOCATE ins1');
-      db.query('INSERT INTO "Foo" ("_id","foo") values ($1,$2)', ['456', JSON.stringify([1])]);
+      db.execPrepared('ins1', ['456', JSON.stringify([1])]);
+      db.query('DEALLOCATE PREPARE ins1');
 
       assert.same(db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', [''])[0].exists, true);
       assert.equals(db.query('select 1+1 as a')[0], {a: 2});
@@ -63,7 +63,7 @@ isServer && define(function (require, exports, module) {
         bar_ids: 'has_many',
       });
 
-      assert.same(v.foo.dbType('bar_ids'), 'varchar(17) ARRAY');
+      assert.same(v.foo.dbType('bar_ids'), 'varchar(24) ARRAY');
 
       v.foo.insert({_id: '123', bar_ids: ["1","2","3"]});
       assert.equals(v.foo.findOne({}).bar_ids, ['1', '2', '3']);

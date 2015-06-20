@@ -751,7 +751,7 @@ define(function (require, exports, module) {
       "put": {
         setUp: function () {
           test.stub(koru, 'userId').returns('u123');
-          v.TestModel.defineFields({myAry: 'varchar(17) ARRAY', deep: 'object'});
+          v.TestModel.defineFields({myAry: 'varchar(24) ARRAY', deep: 'object'});
           v.doc = v.TestModel.create({name: 'old', myAry: ['zero', 'three'], deep: {a: 1}});
 
           isClient && this.spy(session, "rpc");

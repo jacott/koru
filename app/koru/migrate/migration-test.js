@@ -28,7 +28,10 @@ isServer && define(function (require, exports, module) {
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc._id, "12345670123456789");
       assert.same(doc.name, "foo");
-
+      var row = v.client.query("SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
+                               ['TestTable', '_id'])[0];
+      assert.equals(row.character_maximum_length, 24);
+      assert.equals(row.data_type, "character varying");
 
       var migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 1);
@@ -61,6 +64,7 @@ isServer && define(function (require, exports, module) {
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
+      assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
     "test reversible": function () {

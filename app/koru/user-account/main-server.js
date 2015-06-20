@@ -56,7 +56,7 @@ define(function(require, exports, module) {
     srp: 'object',
     tokens: 'object',
     resetToken: 'text',
-    resetTokenExpire: 'integer',
+    resetTokenExpire: 'bigint',
   });
 
   koru.onunload(module, function () {

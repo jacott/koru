@@ -98,7 +98,7 @@ define(function(require, exports, module) {
     createTable: function (name, fields) {
       var qname = '"'+name+'"';
       if (this.add) {
-        var list = ['_id varchar(17) PRIMARY KEY'];
+        var list = ['_id varchar(24) PRIMARY KEY'];
         for (var col in fields) {
           var desc = fields[col].type;
           var colspec = '"'+col+'" '+desc;

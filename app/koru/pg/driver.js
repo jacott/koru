@@ -296,7 +296,7 @@ Table.prototype = {
     readColumns(this);
     var schema = this.schema;
     if (this._columns.length === 0) {
-      var fields = ['_id varchar(17) PRIMARY KEY'];
+      var fields = ['_id varchar(24) PRIMARY KEY'];
       if (schema) {
         for (var col in schema) {
           var spec = jsFieldToPg(col, schema[col], this._client);
@@ -914,9 +914,9 @@ function pgFieldType(colSchema) {
   case 'belongs_to':
   case 'id':
   case 'user_id_on_create':
-    return 'varchar(17)';
+    return 'varchar(24)';
   case 'has_many':
-    return 'varchar(17) ARRAY';
+    return 'varchar(24) ARRAY';
   case 'color':
     return 'varchar(9)';
   case 'object':
