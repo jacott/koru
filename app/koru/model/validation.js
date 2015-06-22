@@ -7,7 +7,7 @@ define(function(require, exports, module) {
 
   var validators = {};
 
-  var ID_SPEC = {_id: 'string'};
+  var ID_SPEC = {_id: 'id'};
 
   var Val = {
     Error: {
