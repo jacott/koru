@@ -208,15 +208,6 @@ define(function(require, exports, module) {
       return query.update.apply(query, arguments);
     },
 
-    $reload: function () {
-      var doc = this.constructor.findById(this._id);
-      this.attributes = doc ? doc.attributes : {};
-      this.changes = {};
-      this._errors = null;
-      this._cache = null;
-      return this;
-    },
-
     $clearChanges: function () {
       util.isObjEmpty(this.changes) || (this.changes = {});
     },
@@ -655,7 +646,7 @@ define(function(require, exports, module) {
       mapFieldType(model, field, bt, name);
     },
 
-    timestamp: function(model, field) {
+    auto_timestamp: function(model, field) {
       if (/create/i.test(field)) {
         model.createTimestamps = model.createTimestamps || {};
         model.createTimestamps[field] = true;

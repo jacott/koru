@@ -62,6 +62,25 @@ define(function (require, exports, module) {
       refute.called (v.beforeSave);
     },
 
+    "test reload": function () {
+      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+
+      v.doc = TestModel.create({name: 'foo'});
+
+      v.doc.attributes.name = 'baz';
+      v.doc.name = 'bar';
+
+      TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'fuz'}});
+
+      assert.same(v.doc.$reload(), v.doc);
+      assert.same(v.doc.name, 'baz');
+      assert.same(v.doc.$reload('full'), v.doc);
+      assert.same(v.doc.name, 'fuz');
+
+      TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'doz'}});
+      assert.same(v.doc.$reload().name, 'fuz');
+    },
+
     "test saveRpc new": function () {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()

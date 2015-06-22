@@ -538,7 +538,7 @@ define(function (require, exports, module) {
       },
 
       'test timestamps': function () {
-        v.TestModel.defineFields({createdAt: 'timestamp', updatedAt: 'timestamp',});
+        v.TestModel.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
 
         assert.equals(v.TestModel.createTimestamps, { createdAt: true });
         assert.equals(v.TestModel.updateTimestamps, { updatedAt: true });

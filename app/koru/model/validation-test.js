@@ -114,7 +114,7 @@ define(function (require, exports, module) {
       var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord: function () {return true}};
       val.assertDocChanges(newDoc, {name: 'string'});
 
-      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'string'}});
+      assert.calledWithExactly(val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
 
       val.assertDocChanges(newDoc, {name: 'string'}, {_id: 'any'});
 

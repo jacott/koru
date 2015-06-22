@@ -112,7 +112,7 @@ define(function(require, exports, module) {
           ++count;
           Model._callBeforeObserver('beforeRemove', doc);
           docs.remove({_id: doc._id});
-          model._$removeWeakDoc(doc, 'force');
+          model._$removeWeakDoc(doc);
           Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });

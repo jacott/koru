@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   model.defineFields({
     list_id: 'belongs_to',
     text: 'text',
-    timestamp: 'number',
+    timestamp: 'bigint',
     tags: 'text[]',
     done: 'boolean',
   });

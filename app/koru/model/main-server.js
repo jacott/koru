@@ -77,6 +77,24 @@ define(function(require, exports, module) {
         return new Query(this.constructor).onId(this._id).remove();
       };
 
+      BaseModel.prototype.$reload = function (full) {
+        var model = this.constructor;
+        var doc = full ? model.docs.findOne({_id: this._id}) : model.findAttrsById(this._id);
+
+        if (doc) {
+          full && model._$setWeakDoc(doc);
+          this.attributes = doc;
+        } else {
+          model._$removeWeakDoc(this);
+          this.attributes = {};
+        }
+        this.changes = {};
+        this._errors = null;
+        this._cache = null;
+
+        return this;
+      };
+
       ModelEnv.save = function (doc) {
         if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
@@ -160,8 +178,9 @@ define(function(require, exports, module) {
 
     setupModel: function (model) {
       model._$wm = new WeakIdMap();
-      model._$removeWeakDoc = function(doc, force) {
-        model._$wm.delete(doc._id);
+      model._$removeWeakDoc = function(doc) {
+        if (doc._id)
+          model._$wm.delete(doc._id);
       };
 
       _resetDocs[model.modelName] = function () {docs = null};

@@ -922,6 +922,8 @@ function pgFieldType(colSchema) {
     return 'varchar(24)';
   case 'has_many':
     return 'varchar(24) ARRAY';
+  case 'auto_timestamp':
+    return 'timestamp';
   case 'color':
     return 'varchar(9)';
   case 'object':

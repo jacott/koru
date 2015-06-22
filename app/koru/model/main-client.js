@@ -36,6 +36,15 @@ define(function(require, exports, module) {
                     koru.globalCallback);
       };
 
+      BaseModel.prototype.$reload = function () {
+        var doc = this.constructor.findById(this._id);
+        this.attributes = doc ? doc.attributes : {};
+        this.changes = {};
+        this._errors = null;
+        this._cache = null;
+        return this;
+      };
+
       session.defineRpc("save", function (modelName, id, changes) {
         var model = BaseModel[modelName],
             docs = model.docs,
