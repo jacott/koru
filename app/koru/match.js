@@ -43,6 +43,7 @@ define(function(require, exports, module) {
     object: match(function (value) {return !! value && typeof value === 'object'}, 'match.object'),
     func: match(match.function.$test, 'match.func'),
     match: match(function (value) {return !! value && value.constructor === Match}, 'match.match'),
+    id: match(function (value) {return /^[a-z0-9]{3,24}$/i.test(value)}, 'match.id'),
     equal: function (expected, name) {
       return match(function (value) {
         return util.deepEqual(value, expected);

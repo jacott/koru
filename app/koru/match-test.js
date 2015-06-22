@@ -22,6 +22,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test match.id": function () {
+      assert.isTrue(sut.id.$test("123"));
+      assert.isTrue(sut.id.$test("aAgGzZqQ8901234567890123"));
+      assert.isFalse(sut.id.$test("0123456789012345678901234"));
+      assert.isFalse(sut.id.$test("12"));
+    },
+
     "test match naming": function () {
       assert.same(''+sut(function (arg) {return true}), "match(function (arg) {return true})");
       assert.same(''+sut(function fooMatch(arg) {return true}), 'match(fooMatch)');
