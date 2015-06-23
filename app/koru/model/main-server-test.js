@@ -5,6 +5,8 @@ define(function (require, exports, module) {
   var session = require('../session/base');
   var koru = require('../main');
   var Val = require('./validation');
+  var Future = requirejs.nodeRequire('fibers/future');
+  var util = require('../util');
 
   TH.testCase(module, {
     setUp: function () {
@@ -62,7 +64,7 @@ define(function (require, exports, module) {
       refute.called (v.beforeSave);
     },
 
-    "test reload": function () {
+    "test reload and caching": function () {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
@@ -70,12 +72,41 @@ define(function (require, exports, module) {
       v.doc.attributes.name = 'baz';
       v.doc.name = 'bar';
 
+      var retFut = new Future;
+      var waitFut = new Future;
+
+      util.Fiber(function () {
+        try {
+          while(retFut) {
+            var what= retFut.wait();
+            waitFut.return(what && what());
+          }
+        } catch(ex) {
+          waitFut.throw(ex);
+        }
+      }).run();
+
+      retFut.return(function () {
+        retFut = new Future;
+        var doc = TestModel.findById(v.doc._id);
+        doc.attributes.name = 'cache foo';
+      });
+      waitFut.wait();
+
       TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'fuz'}});
 
       assert.same(v.doc.$reload(), v.doc);
       assert.same(v.doc.name, 'baz');
       assert.same(v.doc.$reload('full'), v.doc);
       assert.same(v.doc.name, 'fuz');
+
+      waitFut = new Future;
+      retFut.return(function () {
+        retFut = null;
+        return TestModel.findById(v.doc._id);
+      });
+      ;
+      assert.same(waitFut.wait().name, 'cache foo');
 
       TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'doz'}});
       assert.same(v.doc.$reload().name, 'fuz');

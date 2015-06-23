@@ -177,13 +177,9 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
-      model._$wm = new WeakIdMap();
-      model._$removeWeakDoc = function(doc) {
-        if (doc._id)
-          model._$wm.delete(doc._id);
-      };
-
       _resetDocs[model.modelName] = function () {docs = null};
+
+      var docCache = new WeakMap;
 
       var docs, db;
       util.extend(model, {
@@ -192,6 +188,21 @@ define(function(require, exports, module) {
         },
         get db() {
           return db = db || driver.defaultDb;
+        },
+        get _$wm() {
+          var dc = docCache.get(util.thread);
+          if (dc) return dc;
+          dc = new WeakIdMap();
+          docCache.set(util.thread, dc);
+          return dc;
+        },
+        _$removeWeakDoc: function(doc) {
+          if (doc._id)
+            this._$wm.delete(doc._id);
+        },
+
+        _$clearDocCache: function () {
+          this._$wm.clear();
         },
       });
     },
