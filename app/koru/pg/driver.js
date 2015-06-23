@@ -137,6 +137,8 @@ Client.prototype = {
     }
   },
 
+  aryToSqlStr: aryToSqlStr,
+
   findOne: function (text, params) {
     return this.query(text, params).rows[0];
   },
@@ -287,6 +289,8 @@ Table.prototype = {
     this._ready = true;
     subject.notify();
   },
+
+  aryToSqlStr: aryToSqlStr,
 
   dbType: function (col) {
     return pgFieldType(this.schema[col]);

@@ -26,10 +26,8 @@ isServer && define(function (require, exports, module) {
       assert.same(db, sut.defaultDb);
 
       db.query('CREATE TABLE "Foo" (_id varchar(24) PRIMARY KEY, "foo" jsonb)');
-      db.prepare('ins1', 'INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)');
-      db.execPrepared('ins1', ['123', JSON.stringify({a: 1})]);
-      db.execPrepared('ins1', ['456', JSON.stringify([1])]);
-      db.query('DEALLOCATE PREPARE ins1');
+      db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)', ['123', JSON.stringify({a: 1})]);
+      db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)', ['456', JSON.stringify([1])]);
 
       assert.same(db.query('SELECT EXISTS(SELECT 1 FROM "Foo" WHERE "_id">$1)', [''])[0].exists, true);
       assert.equals(db.query('select 1+1 as a')[0], {a: 2});
@@ -42,6 +40,13 @@ isServer && define(function (require, exports, module) {
         bar_ids: 'has_many',
       });
       assert.same(v.foo.isPG, true);
+    },
+
+    "test aryToSqlStr": function () {
+      v.foo = sut.defaultDb.table('Foo');
+      assert.same(v.foo.aryToSqlStr, sut.defaultDb.aryToSqlStr);
+
+      assert.equals(v.foo.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
     "test override _id spec": function () {
