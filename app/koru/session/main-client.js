@@ -149,10 +149,35 @@ define(function (require, exports, module) {
           }
         }
       }
+
+      var broadcastFuncs = {};
+
+      session.provide('B', function (data) {
+        data = message.decodeMessage(data.subarray(1));
+        var func = broadcastFuncs[data[0]];
+        if (! func)
+          koru.error("Broadcast function '"+data[1]+"' not registered");
+        else try {
+          func.apply(session, data.slice(1));
+        } catch(ex) {
+          koru.error(util.extractError(ex));
+        }
+      });
+
+      util.extend(session, {
+        registerBroadcast: function (name, func) {
+          if (broadcastFuncs[name])
+            throw new Error("Broadcast function '"+name+"' alreaady registered");
+          broadcastFuncs[name] = func;
+        },
+        deregisterBroadcast: function (name) {
+          delete broadcastFuncs[name];
+        },
+      });
+
       return session;
     };
   }
-
   exports = Constructor(sessState);
   exports.__init__ = Constructor;
   return exports;

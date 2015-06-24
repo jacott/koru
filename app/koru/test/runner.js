@@ -140,6 +140,8 @@ define(['./core'], function (geddon) {
         var func = cbs[i];
         if (typeof func === 'function')
           func.call(test);
+        else if (! func || typeof func.stop !== 'function')
+          throw new Error("test.onEnd called with non function or object.stop function");
         else
           func.stop();
       }

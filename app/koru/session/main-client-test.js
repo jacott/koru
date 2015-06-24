@@ -28,6 +28,37 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test server-to-client broadcast messages": function () {
+      v.sess.registerBroadcast("foo", v.foo = test.stub());
+      v.sess.registerBroadcast("bar", v.bar = test.stub());
+      test.onEnd(function () {
+        v.sess.deregisterBroadcast("foo");
+        v.sess.deregisterBroadcast("bar");
+      });
+
+      assert.calledWith(v.sess.provide, 'B', TH.match(function (arg) {
+        v.func = arg;
+        return typeof arg === 'function';
+      }));
+
+      var data = ['foo', 1, 2, 3];
+      var buffer = message.encodeMessage('M', data);
+      data = message.decodeMessage(buffer.subarray(1));
+
+      v.func(buffer);
+
+      assert.calledWith(v.foo, 1, 2, 3);
+      refute.called(v.bar);
+
+      data = ['bar', "otherTest"];
+      buffer = message.encodeMessage('M', data);
+      data = message.decodeMessage(buffer.subarray(1));
+
+      v.func(buffer);
+
+      assert.calledWith(v.bar, "otherTest");
+    },
+
     "test initial KORU_APP_VERSION": function () {
       test.onEnd(function () {
         delete window.KORU_APP_VERSION;
