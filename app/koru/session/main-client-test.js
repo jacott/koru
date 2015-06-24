@@ -43,18 +43,15 @@ define(function (require, exports, module) {
 
       var data = ['foo', 1, 2, 3];
       var buffer = message.encodeMessage('M', data);
-      data = message.decodeMessage(buffer.subarray(1));
 
-      v.func(buffer);
+      v.func(buffer.subarray(1));
 
       assert.calledWith(v.foo, 1, 2, 3);
       refute.called(v.bar);
 
       data = ['bar', "otherTest"];
       buffer = message.encodeMessage('M', data);
-      data = message.decodeMessage(buffer.subarray(1));
-
-      v.func(buffer);
+      v.func(buffer.subarray(1));
 
       assert.calledWith(v.bar, "otherTest");
     },

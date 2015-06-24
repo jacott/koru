@@ -153,7 +153,7 @@ define(function (require, exports, module) {
       var broadcastFuncs = {};
 
       session.provide('B', function (data) {
-        data = message.decodeMessage(data.subarray(1));
+        data = message.decodeMessage(data);
         var func = broadcastFuncs[data[0]];
         if (! func)
           koru.error("Broadcast function '"+data[1]+"' not registered");
