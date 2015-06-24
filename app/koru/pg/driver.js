@@ -480,7 +480,15 @@ Table.prototype = {
         } else {
           if (key[0] === '$') switch(key) {
           case '$sql':
-            result.push(value);
+            if (typeof value === 'string')
+              result.push(value);
+            else {
+              var items = value[1];
+              result.push(value[0].replace(/\{\$([\w]+)\}/g, function (m, key) {
+                whereValues.push(items[key]);
+                return '$'+ ++count;
+              }));
+            }
             continue;
           case '$or':
           case '$and':
