@@ -445,11 +445,12 @@ define(function(require, exports, module) {
           var start = document.createComment('start');
           Dom.replaceElement(start, currentElement);
           currentElement = start;
-        }
-        currentElement.textContent = 'start';
+        } else
+          currentElement.textContent = 'start';
         currentElement._koruEnd = document.createComment('end');
         currentElement.parentNode.insertBefore(currentElement._koruEnd, currentElement.nextSibling);
       }
+
       currentElement.parentNode.insertBefore(value, currentElement._koruEnd);
       value = currentElement;
 
