@@ -131,6 +131,8 @@ isClient && define(function (require, exports, module) {
           assert.same(this.innerHTML, 'foo<br>bar');
           this.innerHTML = 'new<br><b>content</b>';
           assert.same(this.value, 'new\ncontent');
+          this.value = "how now";
+          assert.same(this.value, 'how now');
         });
       });
     },

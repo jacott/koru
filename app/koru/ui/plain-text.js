@@ -24,10 +24,15 @@ define(function(require, exports, module) {
 
       EditorCommon.addAttributes(elm, ctx.data.options);
 
-      Object.defineProperty(elm, 'value', {get: function () {
-        var value = exports.fromHtml(elm);
-        return value;
-      }});
+      Object.defineProperty(elm, 'value', {
+        get: function () {
+          var value = exports.fromHtml(elm);
+          return value;
+        },
+        set: function (value) {
+          exports.setTextAsHTML(elm, value);
+        },
+      });
     },
 
     insert: EditorCommon.insert,
