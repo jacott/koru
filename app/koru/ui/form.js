@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor');
   var format = require('../format');
+  var PlainText = require('./plain-text');
 
   var Tpl = Dom.newTemplate(require('../html!./form'));
   var OnOff = Tpl.OnOff;
@@ -425,6 +426,8 @@ define(function(require, exports, module) {
     }
 
     switch(options.type || 'text') {
+    case 'plainTextEditor':
+      return PlainText.Editor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
     case 'markdownEditor':
       return MarkdownEditor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
     case 'onOff':

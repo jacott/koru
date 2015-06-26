@@ -3,19 +3,69 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var Dom = require('../dom');
   var $ = Dom.current;
+  var Tpl = Dom.newTemplate(module, require('koru/html!./plain-text'));
+  var EditorCommon = require('./editor-common');
 
   var output;
 
-
   Dom.registerHelpers({
     setTextAsHTML: function (content) {
-      var elm = $.element;
-      Dom.removeChildren(elm);
-      elm.appendChild(exports.toHtml(content));
+      exports.setTextAsHTML($.element, content);
+    },
+
+    planTextEditor: function (content, options) {
+      return Tpl.$autoRender({content: content, options: options});
+    },
+  });
+
+  Tpl.$extend({
+    $created: function (ctx, elm) {
+      exports.setTextAsHTML(elm, ctx.data.content);
+
+      EditorCommon.addAttributes(elm, ctx.data.options);
+
+      Object.defineProperty(elm, 'value', {get: function () {
+        var value = exports.fromHtml(elm);
+        return value;
+      }});
+    },
+
+    insert: EditorCommon.insert,
+  });
+
+  Tpl.$events({
+    'keydown': function (event) {
+      if (event.ctrlKey) switch(event.which) {
+      case 66: case 85: case 73:
+        Dom.stopEvent();
+        break;
+      }
+    },
+
+    'paste': function (event) {
+      if ('clipboardData' in event) {
+        var types = event.clipboardData.types;
+        if (types) for(var i = 0; i < types.length; ++i) {
+          var type = types[i];
+          if (/html/.test(type)) {
+            var md = exports.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
+            if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
+              Dom.stopEvent();
+            return;
+          }
+        }
+      }
     },
   });
 
   return exports = {
+    Editor: Tpl,
+
+    setTextAsHTML: function (elm, content) {
+      Dom.removeChildren(elm);
+      elm.appendChild(exports.toHtml(content));
+    },
+
     fromHtml: function (html) {
       output = [];
       html && outputChildNodes(html);

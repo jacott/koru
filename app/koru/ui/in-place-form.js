@@ -97,15 +97,22 @@ define(function(require, exports, module) {
   Tpl.$events({
     'submit': submit,
 
+    'keydown': function (event) {
+      switch (event.which) {
+      case 13:
+        if (event.ctrlKey || event.shiftKey) {
+          Dom.stopEvent();
+          submit.call(this, event);
+        }
+        break;
+      }
+    },
+
     'keyup': function (event) {
       switch (event.which) {
       case 27:
         Dom.stopEvent();
         cancel(this);
-        break;
-      case 13:
-        if (event.ctrlKey || event.shiftKey)
-          submit.call(this, event);
         break;
       }
     },

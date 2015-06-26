@@ -3,60 +3,18 @@ define(function(require, exports, module) {
   var koru   = require('../main');
   var util = require('../util');
   var Markdown = require('./markdown');
+  var EditorCommon = require('./editor-common');
+  var getRange = EditorCommon.getRange;
+  var setRange = EditorCommon.setRange;
+
   var Tpl = Dom.newTemplate(require('../html!./markdown-editor'));
-
   var $ = Dom.current;
-
   var Input = Tpl.Input;
-
-
-  var IGNORE_OPTIONS = {"class": true, type: true, atList: true};
-
-  if (Dom.vendorPrefix === 'ms') {
-    var insert = function (arg) {
-      var range = getRange();
-      document.execCommand("ms-beginUndoUnit");
-      if (typeof arg === 'string')
-        arg = document.createTextNode(arg);
-
-      try {
-        range.collapsed || range.deleteContents();
-        range.insertNode(arg);
-      } catch(ex) {
-        return false;
-      }
-      document.execCommand("ms-endUndoUnit");
-
-      var range = getRange();
-      if (arg.nodeType === document.TEXT_NODE && range.startContainer.nodeType === document.TEXT_NODE) {
-        range = document.createRange();
-        range.selectNode(arg);
-        range.collapse(false);
-        setRange(range);
-      }
-      return true;
-    };
-  } else {
-    var insert = function (arg) {
-      if (typeof arg === 'string') {
-        return document.execCommand('insertText', 0, arg);
-      }
-
-      if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
-        var t = document.createElement('div');
-        t.appendChild(arg);
-        t = t.innerHTML;
-      } else {
-        var t = arg.outerHTML;
-      }
-      return document.execCommand("insertHTML", 0, t);
-    };
-  }
 
   Tpl.$extend({
     execCommand: execCommand,
 
-    insert: insert,
+    insert: EditorCommon.insert,
 
     moveLeft: function (select) {
       var range = getRange();
@@ -90,11 +48,7 @@ define(function(require, exports, module) {
       var className = options['class'] || '';
       elm.className = className + " mdEditor";
 
-      for(var key in options) {
-        if (key in IGNORE_OPTIONS) continue;
-        elm.setAttribute(key, options[key]);
-      }
-
+      EditorCommon.addAttributes(elm, options);
       var tbElm = Tpl.Toolbar.$autoRender(data);
       elm.appendChild(tbElm);
       data.toolbar = Dom.getCtx(tbElm);
@@ -261,12 +215,6 @@ define(function(require, exports, module) {
     data.toolbar.updateAllTags();
   }
 
-  function getRange() {
-    var sel = window.getSelection();
-    if (sel.rangeCount === 0) return null;
-    return sel.getRangeAt(0);
-  }
-
   function getTag(tag) {
     var range = getRange();
     if (range === null) return null;
@@ -287,17 +235,6 @@ define(function(require, exports, module) {
 
   function execCommand (cmd, value) {
     return document.execCommand(cmd, false, value);
-  }
-
-  function setRange(range) {
-    var sel = window.getSelection();
-		try {
-			sel.removeAllRanges();
-		} catch (ex) {
-			document.body.createTextRange().select();
-			document.selection.empty();
-		}
-    sel.addRange(range);
   }
 
   function getCaretRect(range) {

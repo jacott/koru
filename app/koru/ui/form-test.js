@@ -122,6 +122,19 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test PlainTextEditor": function () {
+      document.body.appendChild(Dom.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
+
+      assert.dom('#TestPlainTextEditor>label', function () {
+        assert.dom('span.name', 'Name');
+        assert.dom('#nameId.input.plainText[placeholder="Foo"][data-errorfield="name"]:not([type])', 'foobar', function () {
+          assert.same(this.innerHTML, 'foo<br>bar');
+          this.innerHTML = 'new<br><b>content</b>';
+          assert.same(this.value, 'new\ncontent');
+        });
+      });
+    },
+
     "test format": function () {
       document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
 
