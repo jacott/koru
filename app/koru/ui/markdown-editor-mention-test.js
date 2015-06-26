@@ -53,16 +53,12 @@ isClient && define(function (require, exports, module) {
         TH.trigger('[name=mention]', 'mousedown');
         TH.trigger('[name=mention]', 'mouseup');
 
-        assert.dom('.mdEditor', function () {
-          Dom.addClass(this, 'empty');
-        });
-
         assert.dom('.mdMention:not(.inline) input', function () {
           TH.input(this, 'g');
           TH.trigger(this, 'keydown', {which: 13});
         });
 
-        assert.dom('.mdEditor:not(.empty)>.input', function () {
+        assert.dom('.mdEditor>.input', function () {
           assert.same(Markdown.fromHtml(this), 'hello @[Geoff Jacobsen](g1)');
           this.innerHTML = '';
         });
@@ -432,8 +428,6 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: 'hello'}));
 
       assert.dom('.mdEditor', function () {
-        refute.className(this, 'empty');
-
         assert.dom(v.input, function () {
           pressAt(this);
           TH.keypress(this, 'h');
@@ -441,7 +435,6 @@ isClient && define(function (require, exports, module) {
 
         Dom.MarkdownEditor.clear(this);
         assert.dom('>.input', '');
-        assert.className(this, 'empty');
       });
 
       refute.dom('.mdMention');

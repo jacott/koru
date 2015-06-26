@@ -58,16 +58,6 @@ define(function(require, exports, module) {
 
     insert: insert,
 
-    checkEmpty: function (mdEditor) {
-      var input = mdEditor.getElementsByClassName('input')[0];
-      if (input) {
-        var isEmpty = ! (input.firstChild && input.firstChild.textContent);
-
-        if (! Dom.hasClass(mdEditor, 'empty') === isEmpty)
-          Dom.setClass('empty', isEmpty, mdEditor);
-      }
-    },
-
     moveLeft: function (select) {
       var range = getRange();
       var node = range.startContainer;
@@ -91,7 +81,6 @@ define(function(require, exports, module) {
       input.textContent = '';
       input.setAttribute('contenteditable', 'true');
       Dom.remove(Dom.getCtx(input).selectItem);
-      Dom.addClass(elm, 'empty');
     },
 
     $created: function (ctx, elm) {
@@ -99,7 +88,6 @@ define(function(require, exports, module) {
       var options = data.options;
 
       var className = options['class'] || '';
-      if (! data.content) className += ' empty';
       elm.className = className + " mdEditor";
 
       for(var key in options) {
@@ -169,9 +157,6 @@ define(function(require, exports, module) {
     },
     keydown: function (event) {
       var mdEditor = this.parentNode;
-      koru.afTimeout(function () {
-        Tpl.checkEmpty(mdEditor);
-      });
 
       switch(event.which) {
       case 229: case 16:

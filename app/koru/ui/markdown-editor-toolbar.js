@@ -60,7 +60,6 @@ define(function(require, exports, module) {
           data.form = formFunc(data, function () {
             tbCtx.updateAllTags();
             data.form = null;
-            MarkdownEditor.checkEmpty(toolbar.parentNode);
           }, button, event);
 
           if (! data.form) return;

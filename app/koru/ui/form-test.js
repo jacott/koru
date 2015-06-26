@@ -118,7 +118,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('#TestMarkdownEditor>label', function () {
         assert.dom('span.name', 'Name');
-        assert.dom('#nameId.mdEditor.bar.empty[data-errorfield="name"]:not([type])>.input');
+        assert.dom('#nameId.mdEditor.bar[data-errorfield="name"]:not([type])>.input');
       });
     },
 

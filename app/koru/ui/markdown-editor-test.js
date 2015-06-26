@@ -166,35 +166,5 @@ isClient && define(function (require, exports, module) {
         }));
       },
     },
-
-    "test empty class": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
-
-      test.stub(koru, 'afTimeout');
-
-      assert.dom('#TestMarkdownEditor', function () {
-        assert.dom('.mdEditor.empty>.input[contenteditable=true]', '', function () {
-          this.innerHTML = '<b>Brave <i>new</i> World</b>';
-          TH.trigger(this, 'keydown');
-          koru.afTimeout.yield();
-
-          assert.same(Markdown.fromHtml(this), "**Brave _new_ World**");
-          refute.className(this.parentNode, 'empty');
-
-          input(this, ' ');
-          refute.className(this.parentNode, 'empty');
-
-          input(this, '');
-
-          assert.className(this.parentNode, 'empty');
-
-          function input(node, value) {
-            TH.trigger(node, 'keydown');
-            TH.input(node, value);
-            koru.afTimeout.yield();
-          }
-        });
-      });
-    },
   });
 });
