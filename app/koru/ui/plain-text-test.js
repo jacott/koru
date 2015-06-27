@@ -41,7 +41,7 @@ isClient && define(function (require, exports, module) {
     "test toHtml": function () {
       var elm = document.createElement('div');
       elm.appendChild(sut.toHtml("  hello world\n\nhow now\nbrown cow"));
-
+      elm.appendChild(sut.toHtml());
       assert.same(elm.innerHTML, '  hello world<br><br>how now<br>brown cow');
     },
   });

@@ -80,6 +80,7 @@ define(function(require, exports, module) {
     },
 
     toHtml: function (text, wrapper) {
+      text = text || '';
       var frag = wrapper ? (typeof wrapper === 'string' ? document.createElement(wrapper) : wrapper) : document.createDocumentFragment();
       var first = true;
       util.forEach(text.split('\n'), function (line) {
