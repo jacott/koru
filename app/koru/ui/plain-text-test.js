@@ -1,6 +1,6 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('../ui/test-helper');
   var sut = require('./plain-text');
   var Dom = require('../dom');
   var koru = require('../main');
@@ -12,7 +12,24 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      Dom.removeChildren(document.body);
       v = null;
+    },
+
+    "test editor": function () {
+      document.body.appendChild(sut.Editor.$autoRender({content: "foo", options: {placeholder: "hello"}}));
+      assert.dom('.input.plainText[contenteditable=true][placeholder=hello]', function () {
+        assert.same(this.textContent, "foo");
+        test.spy(Dom, 'stopEvent');
+        TH.trigger(this, 'keydown', {which: 66});
+        TH.trigger(this, 'keydown', {which: 85});
+        TH.trigger(this, 'keydown', {which: 73});
+        refute.called(Dom.stopEvent);
+        TH.trigger(this, 'keydown', {which: 66, ctrlKey: true});
+        TH.trigger(this, 'keydown', {which: 85, ctrlKey: true});
+        TH.trigger(this, 'keydown', {which: 73, ctrlKey: true});
+        assert.calledThrice(Dom.stopEvent);
+      });
     },
 
     "fromHtml": {
