@@ -44,7 +44,7 @@ define(function(require, exports, module) {
       }
       function check1(obj, subSpec, name) {
         if (typeof subSpec === 'string') {
-          if (obj === undefined) return;
+          if (obj == null) return;
           if (match[subSpec] && match[subSpec].$test(obj))
             return;
           bad(name, obj, subSpec);

@@ -143,7 +143,6 @@ isClient && define(function (require, exports, module) {
       v.parent.appendChild(widget.element);
 
       assert.dom(widget.element, function () {
-        debugger;
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13}); });
 
