@@ -221,7 +221,7 @@ function runOnAborts(tx, command) {
   var onAborts = tx._onAborts;
   if (onAborts) {
     tx._onAborts = null;
-    if (command == 'ROLLBACK')
+    if (command === 'ROLLBACK')
       onAborts.forEach(function (f) {
         f();
       });

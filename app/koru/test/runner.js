@@ -49,10 +49,12 @@ define(['./core'], function (geddon) {
           geddon.runCallBacks('testEnd', test);
           continue;
         } else try {
-          test.tc.runSetUp(test);
+          var around = ! test.tc.runSetUp(test);
           if (test.func.length === 1) {
+            if (around)
+              throw new Error("setUpAround not supported on async tests");
             var promise = promiseFunc(test, _runNext);
-            test.tc.runTest(test, test.func, promise);
+            test.tc.runTest(test, test.func, false, promise);
             if (promise.done) continue;
             promise.timeout = setTimeout(function () {
               promise(new Error("Timed out!"));
@@ -60,14 +62,14 @@ define(['./core'], function (geddon) {
             return;
           } else {
             var assertCount = geddon.assertCount;
-            test.tc.runTest(test, test.func);
+            test.tc.runTest(test, test.func, around);
             checkAssertionCount(test, assertCount);
           }
         } catch(ex) {
           failed(test, ex);
         }
         promise = null;
-        abort = runTearDowns(test);
+        abort = runTearDowns(test, around);
       }
     }
 
@@ -133,19 +135,12 @@ define(['./core'], function (geddon) {
     }
   }
 
-  function runTearDowns(test) {
+  function runTearDowns(test, around) {
     try {
-      var cbs = test.__testEnd;
-      if (cbs) for(var i=0;i < cbs.length;++i) {
-        var func = cbs[i];
-        if (typeof func === 'function')
-          func.call(test);
-        else if (! func || typeof func.stop !== 'function')
-          throw new Error("test.onEnd called with non function or object.stop function");
-        else
-          func.stop();
+      if (! around) {
+        test.tc.runOnEnds(test);
+        test.tc.runTearDown(test);
       }
-      test.tc.runTearDown(test);
     } catch(ex) {
       if (test.success)
         failed(test, ex);

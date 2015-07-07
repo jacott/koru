@@ -6,7 +6,7 @@ isServer && define(function (require, exports, module) {
   var Model = require('../model/main');
 
   TH.testCase(module, {
-    setUpArround: function (run) {
+    setUpAround: function (run) {
       test = this;
       v = {};
       v.client = DBDriver.defaultDb;

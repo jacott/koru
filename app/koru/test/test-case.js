@@ -51,43 +51,70 @@ define(['./core'], function (geddon) {
     },
 
     runSetUp: function (test) {
-      this.tc && this.tc.runSetUp(test);
+      if (this.setUpAround) return false;
+      if (this.tc && ! this.tc.runSetUp(test))
+        return false;
       this.setUp && this.setUp.call(test);
+      return true;
     },
 
-    runTest: function (test, func, done) {
-      if (done) {
-        for(var tc = this; tc; tc = tc.tc) {
-          if (tc.setUpArround)
-            throw new Error("setUpArround not supported on async tests");
-        }
+    runTest: function (test, func, around, done) {
+      if (! around) {
         func.call(test, done);
-      } else {
-        for(var tc = this; tc; tc = tc.tc) {
-          if (tc.setUpArround) {
-            if (tc.tc)
-              tc.tc.runTest(test, function () {
-                tc.runSetUpArround(test, func);
-              });
-            else
-              tc.runSetUpArround(test, func);
-            return;
-          }
-        }
-        func.call(test);
+        return;
+      }
+
+      for(var tc = this; tc; tc = tc.tc) {
+        if (tc.tc)
+          tc.tc.runTest(test, function () {
+            tc.runSetUpArround(test, func);
+          }, true);
+        else
+          tc.runSetUpArround(test, func);
+        return;
       }
     },
 
     runSetUpArround: function (test, func) {
       var tex;
-      this.setUpArround.call(test, function () {
+      var tc = this;
+      if (tc.setUpAround)
+        tc.setUpAround.call(test, doit);
+      else
+        doit();
+
+      if (tex) throw tex;
+
+      function doit() {
+        var onEnds = test.__testEnd;
+        test.__testEnd = null;
         try {
-          func.call(test);
+          tc.setUp && tc.setUp.call(test);
+          try {
+            func.call(test);
+          } finally {
+            tc.runOnEnds(test);
+            tc.tearDown && tc.tearDown.call(test);
+          }
         } catch(ex) {
           tex = ex;
+        } finally {
+          test.__testEnd = onEnds;
         }
-      });
-      if (tex) throw tex;
+      }
+    },
+
+    runOnEnds: function (test) {
+      var cbs = test.__testEnd;
+      if (cbs) for(var i=0;i < cbs.length;++i) {
+        var func = cbs[i];
+        if (typeof func === 'function')
+          func.call(test);
+        else if (! func || typeof func.stop !== 'function')
+          throw new Error("test.onEnd called with non function or object.stop function");
+        else
+          func.stop();
+      }
     },
 
     runTearDown: function (test) {
@@ -104,7 +131,7 @@ define(['./core'], function (geddon) {
       if (typeof func === 'function') {
 
         switch(name) {
-        case 'setUp': case 'tearDown': case 'setUpArround':
+        case 'setUp': case 'tearDown': case 'setUpAround':
           skipped || (this[name] = func);
           break;
         default:
