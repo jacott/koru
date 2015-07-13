@@ -594,7 +594,20 @@ define(function (require, exports, module) {
       b.f2 = "2"; // string less than number
       assert.same(util.compareByField('f2')(a,b), 1);
       assert.same(util.compareByField('f2')(b,a), -1);
+    },
 
+    "test compareBy list": function () {
+      var a = {f1: "Bob", f2: 1};
+      var b = {f1: "Bob", f2: 2};
+
+      assert.same(util.compareBy(['f1'])(a,b), 0);
+      assert.same(util.compareBy(['f1', 'f2'])(a,b), -1);
+      assert.same(util.compareBy(['f2', -1])(a,b), 1);
+      b.f2 = "2";
+      assert.same(util.compareBy(['f1', 'f2'])(a,b), 1);
+      b = {f1: 'Amy', f2: 3};
+      assert.same(util.compareBy(['f1', 1, 'f2'])(a,b), 1);
+      assert.same(util.compareBy(['f2', 1, 'f1'])(a,b), -1);
     },
 
     "test colorToArray": function () {

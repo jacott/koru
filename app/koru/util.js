@@ -623,6 +623,30 @@ define(function(require, exports, module) {
       };
     },
 
+    compareBy: function (list) {
+      var len = list.length;
+      return function (a, b) {
+        for(var i = 0; i < len; ++i) {
+          var field = list[i];
+          var dir = list[i+1];
+          if (typeof dir === 'number')
+            ++i;
+          else
+            dir = 1;
+          var af = a[field];
+          var bf = b[field];
+          if (af !== bf) {
+            var atype = typeorder(af), btype = typeorder(bf);
+            if (atype !== btype)
+              return atype < btype ? -dir : dir;
+
+            return af < bf ? -dir : dir;
+          }
+        }
+        return 0;
+      };
+    },
+
     colorToArray: colorToArray,
 
     setNestedHash: function (value, hash /*, keys */) {
