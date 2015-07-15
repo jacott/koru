@@ -51,7 +51,7 @@ define(function (require, exports, module) {
     session.provide('E', function (data) {
       session.remoteControl && session.remoteControl.logHandle ?
         session.remoteControl.logHandle.call(this, data) :
-        koru.logger('INFO', this.engine, data);
+        koru.logger('INFO', this.sessId, this.engine, data);
     });
     session.provide('M', function (data) {
       data = message.decodeMessage(data);

@@ -23,12 +23,15 @@ define(function (require, exports, module) {
     if (ev.error === 'reloading') return;
     var badIds = koru.discardIncompleteLoads(ev.error).join("\n");
 
+    if (badIds)
+      badIds = "\nWhile loading:\n" + badIds;
+
     session.send('E', koru.util.extractError(ev.error.name === 'SyntaxError' ? {
       toString: function () {
         return ev.error.toString();
       },
       stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
-    } : ev.error) +  "\nWhile loading:\n" + badIds);
+    } : ev.error) +  badIds);
   }
 
   return koru;

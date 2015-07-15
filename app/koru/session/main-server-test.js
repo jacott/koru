@@ -110,6 +110,19 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.send, 'K');
     },
 
+    "test client errors": function () {
+       v.sess = serverSession(v.mockSess);
+
+      assert.calledWith(v.sess.provide, 'E', TH.match(function (func) {
+        return v.func = func;
+      }));
+
+      test.stub(koru, 'logger');
+      v.sess.sessId = 's123';
+      v.func.call({send: v.send = test.stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
+      assert.calledWith(koru.logger, 'INFO', 's123', 'test engine', 'hello world');
+    },
+
     "rpc": {
       setUp: function () {
         v.run = function (rpcMethod) {
