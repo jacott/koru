@@ -144,6 +144,32 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test intercept": function () {
+        v.Each.$helpers({
+          fooList: function (callback) {
+            return callback.render({
+              model: v.TestModel,
+              params: {id1: Dom.current.data().major, id2: '2'},
+              intercept: function (doc, old) {
+                if (old && old.name === 'bob')
+                  return v.bob = true;
+                return /ice/.test(doc.name);
+              },
+            });
+          }
+        });
+
+        assert.dom(v.Each.$render({major: '1'}), function () {
+          assert.dom('li', {count: 1});
+          assert.dom('li', 'bob');
+          v.doc1.$remove();
+          assert.dom('li', 'bob');
+          assert.isTrue(v.bob);
+          v.TestModel.create({id1: '1', id2: '2', name: 'Rick'});
+          assert.dom('li', 'Rick');
+        });
+      },
+
       "test filter and model": function () {
          v.Each.$helpers({
           fooList: function (callback) {

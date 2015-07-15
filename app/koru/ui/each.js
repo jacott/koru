@@ -137,6 +137,7 @@ define(function(require, exports, module) {
     var params = options.params;
     var filter = options.filter;
     var changed = options.changed;
+    var intercept = options.intercept;
 
     var sortFunc = options.sort;
     if (typeof sortFunc === 'string')
@@ -150,7 +151,10 @@ define(function(require, exports, module) {
       return filter(doc);
     });
 
-    util.forEach(results.sort(sortFunc), function (doc) {callback(doc)});
+    util.forEach(results.sort(sortFunc), function (doc) {
+      if (! (intercept && intercept(doc)))
+        callback(doc);
+    });
 
     callback._handle = model.onChange(function (doc, was) {
       var old = doc ? doc.$asBefore(was) : was;
@@ -162,7 +166,7 @@ define(function(require, exports, module) {
         if (doc && ! filter(doc)) doc = null;
       }
 
-      if (doc || old) {
+      if ((doc || old) && ! (intercept && intercept(doc, old))) {
         callback(doc, old, sortFunc);
         changed && changed(doc, was);
       }
