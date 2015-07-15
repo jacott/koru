@@ -22,6 +22,28 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test relative name": function () {
+      Dom.newTemplate({
+        name: "Bar.Baz.Buzz",
+        nodes:[{
+          name:"div",
+          children: [' ', ['>', '../../Fnord']],
+        }],
+      });
+
+      Dom.newTemplate({
+        name: "Bar.Fnord",
+        nodes: [{
+          name: 'div',
+          children: ["hello Fnord"],
+        }],
+      });
+
+      assert.dom(Dom.Bar.Baz.Buzz.$render({}), function () {
+        assert.dom('div', 'hello Fnord');
+      });
+    },
+
     "partial": {
       setUp: function () {
         Dom.newTemplate({

@@ -894,6 +894,11 @@ define(function(require, exports, module) {
       var result = Dom[name.slice(1)];
     } else {
       var result = template[name];
+      while (! result && name.slice(0,3) === '../' && template.parent) {
+        name = name.slice(3);
+        template = template.parent;
+        result = template[name];
+      }
     }
     if (rest) for(var i = 0; i < rest.length; ++i) {
       result = result && result[rest[i]];
