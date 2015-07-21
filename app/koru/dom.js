@@ -64,13 +64,12 @@ define(function(require, exports, module) {
     },
 
     lookupTemplate: function (name) {
-      var names = name.split('.');
-      var node = this;
-      for(var i = 0; node && i < names.length; ++i) {
-        node = node[names[i]];
-      }
+      var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
-      return node;
+      if (m)
+        return fetchTemplate(this, m[1], m[2].split("."));
+
+      return fetchTemplate(this, name);
     },
 
     modifierKey: function (event) {
@@ -709,7 +708,7 @@ define(function(require, exports, module) {
     },
 
     $inspect: function () {
-      return "DomTemplate:" + this.name;
+      return "DomTemplate:" + this.$fullname;
     },
   };
 
@@ -867,19 +866,23 @@ define(function(require, exports, module) {
   }
 
   function parseNode(template, node, result) {
-    var m = /^([^\.]+)\.(.*)$/.exec(node[1]);
+    var origName = node[1];
+    var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(origName);
     var partial = node[0] === '>';
 
     if (m) {
       var name = m[1];
       node = {dotted: m[2].split('.'), opts: node.slice(m ? 2 : 1)};
     } else {
-      var name = node[1];
+      var name = origName;
       node = node.slice(2);
     }
 
     if (partial) {
-      result.push(fetchTemplate(template, name, m && node.dotted));
+      var pt = fetchTemplate(template, name, m && node.dotted);
+      if (! pt) throw new Error("Invalid partial '"  + origName + "' in Template: " + template.name);
+
+      result.push(pt);
       result.push(m ? node.opts : node);
     } else {
       result.push(template._helpers[name] || name);
@@ -903,8 +906,6 @@ define(function(require, exports, module) {
     if (rest) for(var i = 0; i < rest.length; ++i) {
       result = result && result[rest[i]];
     }
-
-    if (! result) throw new Error("Invalid partial '"  + name + (rest ? "."+rest.join(".") : '') + "' in Template: " + template.name);
 
     return result;
   }

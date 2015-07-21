@@ -27,12 +27,12 @@ isClient && define(function (require, exports, module) {
         name: "Bar.Baz.Buzz",
         nodes:[{
           name:"div",
-          children: [' ', ['>', '../../Fnord']],
+          children: [' ', ['>', '../../Fnord.Sub.Sub', ['=', 'x', 123]]],
         }],
       });
 
       Dom.newTemplate({
-        name: "Bar.Fnord",
+        name: "Bar.Fnord.Sub.Sub",
         nodes: [{
           name: 'div',
           children: ["hello Fnord"],
@@ -414,12 +414,17 @@ isClient && define(function (require, exports, module) {
       },
 
       "test not found": function () {
-        Dom.newTemplate({name: "Foo.Bar.Baz"});
+        var tp = Dom.newTemplate({name: "Foo.Bar.Baz"});
         assert.same(Dom.lookupTemplate('Foo.Fizz.Bar'), undefined);
       },
 
       "test nest by name": function () {
-        Dom.newTemplate({name: "Foo.Bar.Baz"});
+        var fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
+        var fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});
+
+        assert.same(fbb, Dom.lookupTemplate("Foo.Bar.Baz"));
+        assert.same(fbb, Dom.lookupTemplate.call(Dom.lookupTemplate("Foo"), "Bar.Baz"));
+        assert.same(fff, Dom.lookupTemplate.call(fbb, "../../Fnord.Fuzz"));
 
         var tpl = Dom.Foo.Bar;
         assert.same(tpl.name, 'Bar');
