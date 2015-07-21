@@ -24,7 +24,7 @@ define(function(require, exports, module) {
   function createEach(insertPoint, func, options) {
     var eachCtx = $.ctx;
     var ctpl = $.template;
-    var helper = ctpl._helpers[func];
+    var helper = ctpl._helpers[func] || Dom._helpers[func];
     if (! helper)
       throw new Error("helper '" + func +
                       "' not found in template '" + ctpl.name + "'");

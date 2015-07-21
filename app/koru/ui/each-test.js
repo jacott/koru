@@ -42,6 +42,21 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test calling global helper": function () {
+      delete v.Each._helpers.fooList;
+      Dom.registerHelpers({
+        fooList: test.stub(),
+      });
+
+      test.onEnd(function () {
+        delete Dom._helpers.fooList;
+      });
+
+      v.Each.$render({});
+
+      assert.calledWith(Dom._helpers.fooList, TH.match.func);
+    },
+
     "callback.render": {
       setUp: function () {
         v.TestModel = Model.define('TestModel').defineFields({
