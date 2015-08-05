@@ -8,7 +8,9 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     popup: function (elm, options, pos) {
-      Modal.append(pos, Tpl.$autoRender(options), elm);
+      var menu = Tpl.$autoRender(options);
+      Modal.append(pos, menu, elm);
+      Dom.focus(menu);
     },
 
     close: function (ctx, elm) {
@@ -22,7 +24,16 @@ define(function(require, exports, module) {
     $destroyed: function (ctx) {
       ctx.data.onClose && ctx.data.onClose();
     },
+
+    searchRegExp: searchRegExp,
   });
+
+  function searchRegExp(value) {
+    return new RegExp(".*"+
+                      util.regexEscape(value||"").replace(/\s+/g, '.*') +
+                      ".*", "i");
+  }
+
 
   Tpl.$helpers({
     content: function () {
@@ -31,6 +42,10 @@ define(function(require, exports, module) {
         Dom.getMyCtx(elm).updateAllTags();
       else
         return Tpl.List.$autoRender(this);
+    },
+    search: function () {
+      if ($.element.nodeType !== document.DOCUMENT_NODE && this.search)
+        return Tpl.Search.$autoRender(this);
     },
   });
 
@@ -56,6 +71,17 @@ define(function(require, exports, module) {
 
       Dom.hasClass(this, 'disabled') ||
         select($.ctx, this, event);
+    },
+  });
+
+  Tpl.Search.$events({
+    'input input': function (event) {
+      Dom.stopEvent();
+      var func = $.ctx.data.search;
+      var searchRe = searchRegExp(this.value);
+      util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), function (li) {
+        Dom.setClass('hide', ! func(searchRe, $.data(li)), li);
+      });
     },
   });
 

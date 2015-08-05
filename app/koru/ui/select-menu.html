@@ -1,10 +1,14 @@
 <template name="SelectMenu">
-  <div class="glassPane"><div id="SelectMenu" class="{{classes}}" {{customize}}>{{content}}</div></div>
+  <div class="glassPane"><div id="SelectMenu" class="{{classes}}" {{customize}}>{{search}}{{content}}</div></div>
 
   <template name="List">
     <ul>{{each "items" template="Item"}}</ul>
     <template name="Item">
       <li>{{name}}</li>
     </template>
+  </template>
+
+  <template name="Search">
+    <label class="search"><input name="search"></label>
   </template>
 </template>

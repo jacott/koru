@@ -51,6 +51,29 @@ isClient && define(function (require, exports, module) {
       assert.called(v.onClose);
     },
 
+    "test search": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        sut.popup(this, {
+          search: function (reg, data) {
+            return reg.test(data.name);
+          },
+          list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
+        });
+        v.button = this;
+      });
+      assert.dom('body>.glassPane>#SelectMenu', function () {
+        assert.dom('input[name=search]', function () {
+          assert.same(document.activeElement, this);
+
+          TH.input(v.search = this, 't');
+        });
+        assert.dom('li.hide', {count: 1, text: 'One'});
+        TH.input(v.search, 'one');
+        assert.dom('li.hide', {count: 2});
+        assert.dom('li:not(.hide)', 'One');
+      });
+    },
+
     "position": {
       "test default": function () {
         v.popup();
@@ -119,6 +142,7 @@ isClient && define(function (require, exports, module) {
 
       "test content": function () {
         assert.dom('#SelectMenu ul', function () {
+          refute.dom('input');
           assert.dom('li', 'One');
           assert.dom('li', 'Two');
         });
