@@ -2,26 +2,35 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Dom = require('../dom');
 
+  var modals = [];
+
+  function keydownCallback(event) {
+    if (event.which !== 9 && event.which !== 27) {
+      return;
+    }
+
+    Dom.stopEvent();
+    Dom.remove(modals[modals.length - 1][1]);
+  }
+
   return exports = {
     _init: function(ctx, container) {
-      container.addEventListener('keydown', callback, true);
+      if (modals.length === 0)
+        document.addEventListener('keydown', keydownCallback, true);
+      var index = modals.length;
+      modals.push([ctx, container]);
       container.addEventListener('mousedown', callback, true);
       ctx.onDestroy(function () {
-        container.removeEventListener('keydown', callback, true);
+        modals.splice(index, 1);
+        if (modals.length === 0)
+          document.removeEventListener('keydown', keydownCallback, true);
         container.removeEventListener('mousedown', callback, true);
       });
 
       var popup = container.firstChild;
 
       function callback(event) {
-        if (event) {
-          if (event.type === 'mousedown') {
-            if (Dom.contains(popup, event.target)) return;
-          } else if (event.which !== 9 && event.which !== 27) {
-            return;
-          }
-        }
-
+        if (Dom.contains(popup, event.target)) return;
         Dom.remove(container);
       }
     },

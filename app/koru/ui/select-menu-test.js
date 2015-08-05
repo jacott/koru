@@ -45,14 +45,16 @@ isClient && define(function (require, exports, module) {
         });
       });
 
-      Dom.removeId('GlassPane');
+      assert.dom('body>.glassPane', function () {
+        Dom.remove(this);
+      });
       assert.called(v.onClose);
     },
 
     "position": {
       "test default": function () {
         v.popup();
-        assert.dom('body>#GlassPane>#SelectMenu', function () {
+        assert.dom('body>.glassPane>#SelectMenu', function () {
           var bbox = v.button.getBoundingClientRect();
           assert.cssNear(this, 'top', bbox.top + bbox.height, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
@@ -63,7 +65,7 @@ isClient && define(function (require, exports, module) {
         v.testSelectMenu.style.position = 'absolute';
         v.testSelectMenu.style.bottom = '250px';
         v.popup(null, 'above');
-        assert.dom('body>#GlassPane>#SelectMenu', function () {
+        assert.dom('body>.glassPane>#SelectMenu', function () {
           var bbox = v.button.getBoundingClientRect();
           assert.same(this.style.top, '');
           assert.cssNear(this, 'bottom', window.innerHeight - bbox.top, 2, 'px');
@@ -137,7 +139,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('#SelectMenu');
           TH.trigger(this, 'mousedown');
           assert.dom('#SelectMenu');
-          TH.trigger('#GlassPane', 'mousedown');
+          TH.trigger('body>.glassPane', 'mousedown');
           refute.dom('#SelectMenu');
         });
       },
@@ -179,7 +181,7 @@ isClient && define(function (require, exports, module) {
 
       "test clicking off list closes list": function () {
         assert.dom('#TestSelectMenu>br');
-        TH.trigger('#GlassPane', 'mousedown');
+        TH.trigger('body>.glassPane', 'mousedown');
         refute.dom('#SelectMenu');
       },
 

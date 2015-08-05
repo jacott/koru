@@ -27,7 +27,10 @@ define(function (require, exports, module) {
       assert.same(Dom.html({html: ["hello ", undefined, {tag: 'span', text: 'cruel'}, ' world']}).outerHTML,
                   '<div>hello <span>cruel</span> world</div>');
 
+      assert.same(Dom.html({content: ["one", {tag: "b"}, "two"]}).outerHTML, "<div>one<b></b>two</div>");
       assert.same(Dom.html({content: Dom.html(["one", undefined, "two"])}).outerHTML, "<div>onetwo</div>");
+      assert.same(Dom.html({content: {content: "x"}}).outerHTML, '<div><div>x</div></div>');
+
 
 
       assert.same(Dom.html('<div id="d123" class="foo">bar</div>').outerHTML, '<div id="d123" class="foo">bar</div>');

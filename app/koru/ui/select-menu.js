@@ -8,12 +8,13 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     popup: function (elm, options, pos) {
-      Dom.removeId('GlassPane');
       Modal.append(pos, Tpl.$autoRender(options), elm);
     },
 
     close: function (ctx, elm) {
-      var menu = document.getElementById('GlassPane');
+      var menu = document.getElementsByClassName('glassPane');
+      if (! menu.length) return;
+      menu = menu[menu.length - 1];
       menu && Dom.remove(menu);
       return menu;
     },
@@ -38,6 +39,14 @@ define(function(require, exports, module) {
       util.forEach(this.list, function (row) {
         callback({id: row[0], name: row[1]});
       });
+    },
+  });
+
+  Tpl.List.Item.$helpers({
+    name: function () {
+      if ($.ctx.parentCtx.data.selected === this.id)
+        Dom.addClass($.element.parentNode, 'selected');
+      return this.name;
     },
   });
 

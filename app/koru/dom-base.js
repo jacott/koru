@@ -28,7 +28,7 @@ define(function(require, exports, module) {
 
         case "class": case "className": className = value; break;
         case "content": case "html":
-          content = typeof value === 'string' ? Dom.html(value) : value;
+          content = Dom.html(value);
           break;
         case "textContent": case "text": content = ''+value; break;
 

@@ -50,5 +50,36 @@ isClient && define(function (require, exports, module) {
       });
       refute.called(sut._init);
     },
+
+    "test nesting": function () {
+      test.spy(sut, '_init');
+      var page = Dom.html({content: ['text', {tag: 'input'}]});
+      document.body.appendChild(page);
+      var popup = Dom.html({class: 'glassPane', content: {class: 'popup', style: 'position:absolute', text: 'popup'}});
+      Dom.setCtx(popup);
+      var popup2 = Dom.html({class: 'glassPane', content: {class: 'popup2', style: 'position:absolute', text: 'popup2'}});
+      Dom.setCtx(popup2);
+      assert.dom('input', function () {
+        sut.appendBelow(popup, this);
+        sut.appendBelow(popup2, popup);
+        v.ibox = this.getBoundingClientRect();
+      });
+      assert.dom('body', function () {
+        assert.dom('>.glassPane:nth-last-child(2)>.popup', function () {
+          assert.cssNear(this, 'left', v.ibox.left);
+          assert.cssNear(this, 'top', v.ibox.top + v.ibox.height);
+        });
+        assert.dom('>.glassPane:last-child>.popup2', function () {
+          assert.same(this, popup2.firstChild);
+        });
+        TH.trigger(this, 'keydown', {which: 27});
+        assert.dom('>.glassPane:last-child>.popup', function () {
+          assert.same(this, popup.firstChild);
+        });
+        TH.trigger(this, 'keydown', {which: 27});
+        refute.dom('.glassPane');
+      });
+      assert.calledTwice(sut._init);
+    },
   });
 });
