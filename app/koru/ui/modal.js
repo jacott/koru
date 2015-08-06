@@ -5,20 +5,22 @@ define(function(require, exports, module) {
   var modals = [];
 
   function keydownCallback(event) {
+    var last = modals[modals.length - 1];
     if (event.which !== 9 && event.which !== 27) {
+      last[2] && last[2](event, last);
       return;
     }
 
     Dom.stopEvent();
-    Dom.remove(modals[modals.length - 1][1]);
+    Dom.remove(last[1]);
   }
 
   return exports = {
-    _init: function(ctx, container) {
+    _init: function(ctx, container, keydownHandler) {
       if (modals.length === 0)
         document.addEventListener('keydown', keydownCallback, true);
       var index = modals.length;
-      modals.push([ctx, container]);
+      modals.push([ctx, container, keydownHandler]);
       container.addEventListener('mousedown', callback, true);
       ctx.onDestroy(function () {
         modals.splice(index, 1);
@@ -45,15 +47,16 @@ define(function(require, exports, module) {
 
     append: function (pos, container, origin, popup) {
       var height = window.innerHeight;
-      var isNested = ! popup;
+      var isNested = ! popup || typeof popup === 'function';
       if (isNested) {
+        var keydownHandler = popup;
         popup = container.firstChild;
       } else {
         container = popup;
       }
       if (isNested) {
         var ctx = Dom.getMyCtx(container);
-        exports._init(ctx, container);
+        exports._init(ctx, container, keydownHandler);
       }
 
       var ps = popup.style;

@@ -58,6 +58,11 @@ isClient && define(function (require, exports, module) {
             return reg.test(data.name);
           },
           list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
+          onSelect: function (elm, event) {
+            v.elm = elm;
+            v.which = event.which;
+            return true;
+          },
         });
         v.button = this;
       });
@@ -65,13 +70,33 @@ isClient && define(function (require, exports, module) {
         assert.dom('input[name=search]', function () {
           assert.same(document.activeElement, this);
 
-          TH.input(v.search = this, 't');
+          TH.input(v.search = this, 'one');
         });
-        assert.dom('li.hide', {count: 1, text: 'One'});
-        TH.input(v.search, 'one');
         assert.dom('li.hide', {count: 2});
-        assert.dom('li:not(.hide)', 'One');
+        assert.dom('li:not(.hide)', 'One', function () {
+          Dom.addClass(v.one = this, 'selected');
+        });
+        TH.input(v.search, 't');
+        assert.dom('li.hide', {count: 1, text: 'One'});
+        TH.trigger(v.search, 'keydown', {which: 13});
+        TH.trigger(v.search, 'keydown', {which: 40});
+        assert.dom('li.selected', 'Two');
+        assert.dom('li:not(.selected)', 'One');
+        TH.trigger(v.search, 'keydown', {which: 40});
+        assert.dom('li.selected', 'Three');
+        assert.dom('li:not(.selected)', 'Two');
+        TH.trigger(v.search, 'keydown', {which: 40});
+        assert.dom('li.selected', 'Three');
+        TH.trigger(v.search, 'keydown', {which: 38});
+        assert.dom('li.selected', 'Two');
+        assert.dom('li:not(.selected)', 'One');
+        TH.trigger(v.search, 'keydown', {which: 38});
+        assert.dom('li.selected', 'Two');
+        TH.trigger(v.search, 'keydown', {which: 13});
       });
+      assert.same(v.elm.textContent, 'Two');
+      refute.dom('glassPane');
+      assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
     },
 
     "position": {
@@ -179,6 +204,7 @@ isClient && define(function (require, exports, module) {
           });
           refute.dom('#SelectMenu');
         });
+        assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
       },
 
       "test tab closes list": function () {
