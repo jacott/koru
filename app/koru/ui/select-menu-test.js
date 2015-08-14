@@ -66,11 +66,15 @@ isClient && define(function (require, exports, module) {
         });
         v.button = this;
       });
+      var ev;
       assert.dom('body>.glassPane>#SelectMenu', function () {
         assert.dom('input[name=search]', function () {
           assert.same(document.activeElement, this);
 
           TH.input(v.search = this, 'one');
+          var ev = keydown(101 /* e */);
+          refute.called(ev.stopImmediatePropagation);
+          refute.called(ev.preventDefault);
         });
         assert.dom('li.hide', {count: 2});
         assert.dom('li:not(.hide)', 'One', function () {
@@ -79,7 +83,9 @@ isClient && define(function (require, exports, module) {
         TH.input(v.search, 't');
         assert.dom('li.hide', {count: 1, text: 'One'});
         TH.trigger(v.search, 'keydown', {which: 13});
-        TH.trigger(v.search, 'keydown', {which: 40});
+        ev = keydown(40);
+        assert.called(ev.stopImmediatePropagation);
+        assert.called(ev.preventDefault);
         assert.dom('li.selected', 'Two');
         assert.dom('li:not(.selected)', 'One');
         TH.trigger(v.search, 'keydown', {which: 40});
@@ -92,11 +98,21 @@ isClient && define(function (require, exports, module) {
         assert.dom('li:not(.selected)', 'One');
         TH.trigger(v.search, 'keydown', {which: 38});
         assert.dom('li.selected', 'Two');
-        TH.trigger(v.search, 'keydown', {which: 13});
+        ev = keydown(13);
+        assert.called(ev.stopImmediatePropagation);
+        assert.called(ev.preventDefault);
       });
       assert.same(v.elm.textContent, 'Two');
       refute.dom('glassPane');
       assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
+
+      function keydown(keycode) {
+        var ev = TH.buildEvent('keydown', {which: keycode});
+        test.spy(ev, 'stopImmediatePropagation');
+        test.spy(ev, 'preventDefault');
+        TH.trigger(v.search, ev);
+        return ev;
+      }
     },
 
     "position": {

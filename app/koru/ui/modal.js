@@ -11,7 +11,8 @@ define(function(require, exports, module) {
       return;
     }
 
-    Dom.stopEvent();
+    event.stopImmediatePropagation();
+    if (event.which !==9) event.preventDefault();
     Dom.remove(last[1]);
   }
 

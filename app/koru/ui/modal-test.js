@@ -61,9 +61,11 @@ isClient && define(function (require, exports, module) {
       Dom.setCtx(popup2);
       assert.dom('input', function () {
         sut.appendBelow(popup, this);
-        sut.appendBelow(popup2, popup);
+        sut.appendBelow(popup2, popup, popup2KeyHandler);
         v.ibox = this.getBoundingClientRect();
       });
+      function popup2KeyHandler(event, details) {
+      }
       assert.dom('body', function () {
         assert.dom('>.glassPane:nth-last-child(2)>.popup', function () {
           assert.cssNear(this, 'left', v.ibox.left);
@@ -72,7 +74,12 @@ isClient && define(function (require, exports, module) {
         assert.dom('>.glassPane:last-child>.popup2', function () {
           assert.same(this, popup2.firstChild);
         });
-        TH.trigger(this, 'keydown', {which: 27});
+        var ev = TH.buildEvent('keydown', {which: 27});
+        test.spy(ev, 'stopImmediatePropagation');
+        test.spy(ev, 'preventDefault');
+        TH.trigger(this, ev);
+        assert.called(ev.stopImmediatePropagation);
+        assert.called(ev.preventDefault);
         assert.dom('>.glassPane:last-child>.popup', function () {
           assert.same(this, popup.firstChild);
         });

@@ -7,7 +7,6 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   function keydownHandler(event, details) {
-    Dom.stopEvent();
     switch(event.which) {
     case 13: // enter
       var sel = details[1].getElementsByClassName('selected')[0];
@@ -29,11 +28,19 @@ define(function(require, exports, module) {
       var curr = mElm.getElementsByClassName('selected')[0];
       for (var nSel = firstElm(); nSel; nextElm()) {
         if (Dom.hasClass(nSel, 'hide')) continue;
-        Dom.addClass(nSel, 'selected');
         Dom.removeClass(curr, 'selected');
+        Dom.addClass(nSel, 'selected');
+        Dom.isInView(nSel, details[1]) ||
+          nSel.scrollIntoView(event.which === 38);
         break;
       }
+      break;
+    default:
+      return; // don't stop event
     }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
   }
 
   Tpl.$extend({
