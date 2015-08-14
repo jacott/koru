@@ -13,7 +13,12 @@ fi
 # export UV_THREADPOOL_SIZE=8
 
 
-fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
+if [ "`which mongod`" != "" ];then
+    export KORU_USE_MONGO=1
+    fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
+else
+    unset KORU_USE_MONGO
+fi
 cd app
 echo -e "starting ${branch}...\c"
 exec node  --expose-gc ../lib/koru.js "$@"

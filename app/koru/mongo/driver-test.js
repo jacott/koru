@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
   var sut = require('./driver');
