@@ -56,7 +56,6 @@ isClient && define(function (require, exports, module) {
         assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', function () {
           assert.same(this.value, 'abc');
         });
-        assert.dom('input~span.errorMsg');
         assert.dom('fieldset', function () {
           assert.dom('button[name=apply]', 'Save');
         });

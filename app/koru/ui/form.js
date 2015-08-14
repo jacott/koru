@@ -218,6 +218,7 @@ define(function(require, exports, module) {
       if (! (msgElm && Dom.hasClass(msgElm, 'errorMsg'))) {
         msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
+        msgElm.appendChild(document.createElement('div'));
         fieldElm.parentNode.insertBefore(msgElm, fieldElm.nextElementSibling);
         var ms = msgElm.style;
       } else {
@@ -226,7 +227,7 @@ define(function(require, exports, module) {
       }
       Dom.setClass('error', msg, fieldElm);
       Dom.removeClass(msgElm, 'animate');
-      msgElm.textContent = msg || '';
+      msgElm.firstChild.textContent = msg || '';
       if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
         var fpos = fieldElm.getBoundingClientRect();
         var mpos = msgElm.getBoundingClientRect();

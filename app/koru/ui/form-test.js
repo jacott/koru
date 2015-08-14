@@ -265,8 +265,8 @@ isClient && define(function (require, exports, module) {
       Form.renderError(form, 'bar', 'bar msg');
 
       assert.dom(form, function () {
-        assert.dom('[name=bar].error+.errorMsg', 'bar msg');
-        assert.dom('[name=foo].error+.errorMsg', 'foo msg');
+        assert.dom('[name=bar].error+.errorMsg>div', 'bar msg');
+        assert.dom('[name=foo].error+.errorMsg>div', 'foo msg');
 
         Form.renderError(form, 'bar', false);
 
