@@ -1,6 +1,6 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('./test-helper');
   var Dom = require('../dom');
 
   TH.testCase(module, {
@@ -10,9 +10,39 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      TH.domTearDown();
       delete Dom.Foo;
       Dom.removeChildren(document.body);
       v = null;
+    },
+
+    "test isInView": function () {
+      var x = Dom.html({style: "position:absolute;left:-12px;width:20px;height:30px", content: "x"});
+      document.body.appendChild(x);
+
+      refute(Dom.isInView(x, document.body));
+      x.style.left = "-9px";
+      assert(Dom.isInView(x, document.body));
+
+      x.style.left = '';
+      x.style.right = '-9px';
+      assert(Dom.isInView(x, document.body));
+      x.style.right = '-11px';
+      refute(Dom.isInView(x, document.body));
+      x.style.right = '';
+
+      x.style.top = '-17px';
+      refute(Dom.isInView(x, document.body));
+      x.style.top = "-14px";
+      assert(Dom.isInView(x, document.body));
+      x.style.top = '';
+      x.style.bottom = '-14px';
+      assert(Dom.isInView(x, document.body));
+      x.style.bottom = '-17px';
+      var rect = {top: 0, bottom: 50, left: 0, right: 40};
+      refute(Dom.isInView(x, rect));
+      rect.bottom = 2000;
+      assert(Dom.isInView(x, rect));
     },
 
     "test wheelDelta": function () {

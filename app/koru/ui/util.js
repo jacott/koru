@@ -68,6 +68,16 @@ define(function(require, exports, module) {
       };
     },
 
+    isInView: function (elm, region) {
+      if ('getBoundingClientRect' in region)
+        region = region.getBoundingClientRect();
+      var bb = elm.getBoundingClientRect();
+      var cx = (bb.left+bb.width/2);
+      var cy = (bb.top+bb.height/2);
+
+      return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
+    },
+
     setClassBySuffix: function (name, suffix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;
