@@ -9,8 +9,8 @@ define(function(require, exports, module) {
   function keydownHandler(event, details) {
     switch(event.which) {
     case 13: // enter
-      var sel = details[1].getElementsByClassName('selected')[0];
-      if (sel && ! Dom.hasClass(sel, 'hide')) select(details[0], sel, event);
+      var sel = details.container.getElementsByClassName('selected')[0];
+      if (sel && ! Dom.hasClass(sel, 'hide')) select(details.ctx, sel, event);
       break;
     case 38: // up
       var nextElm = function () {nSel = nSel.previousElementSibling};
@@ -24,13 +24,13 @@ define(function(require, exports, module) {
     case 40: // down
       var nextElm = nextElm || function () {nSel = nSel.nextElementSibling};
       var firstElm = firstElm || function () {return curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]};
-      var mElm = details[1];
+      var mElm = details.container;
       var curr = mElm.getElementsByClassName('selected')[0];
       for (var nSel = firstElm(); nSel; nextElm()) {
         if (Dom.hasClass(nSel, 'hide')) continue;
         Dom.removeClass(curr, 'selected');
         Dom.addClass(nSel, 'selected');
-        Dom.isInView(nSel, details[1]) ||
+        Dom.isInView(nSel, mElm) ||
           nSel.scrollIntoView(event.which === 38);
         break;
       }

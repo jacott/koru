@@ -55,19 +55,26 @@ isClient && define(function (require, exports, module) {
       test.spy(sut, '_init');
       var page = Dom.html({content: ['text', {tag: 'input'}]});
       document.body.appendChild(page);
-      var popup = Dom.html({class: 'glassPane', content: {class: 'popup', style: 'position:absolute', text: 'popup'}});
-      Dom.setCtx(popup);
+      var popup0 = Dom.html({class: 'glassPane', content: {class: 'popup0', style: 'position:absolute', text: 'popup0'}});
+      Dom.setCtx(popup0);
+      var popup1 = Dom.html({class: 'glassPane', content: {class: 'popup1', style: 'position:absolute', text: 'popup1'}});
+      Dom.setCtx(popup1);
       var popup2 = Dom.html({class: 'glassPane', content: {class: 'popup2', style: 'position:absolute', text: 'popup2'}});
       Dom.setCtx(popup2);
       assert.dom('input', function () {
-        sut.appendBelow(popup, this);
-        sut.appendBelow(popup2, popup, popup2KeyHandler);
+        sut.appendBelow(popup0, this);
+        sut.appendBelow(popup1, popup0);
+        sut.appendBelow(popup2, popup1, popup2KeyHandler);
         v.ibox = this.getBoundingClientRect();
       });
       function popup2KeyHandler(event, details) {
       }
+      document.body.addEventListener('keydown', v.keydown = test.stub());
+      test.onEnd(function () {
+        document.body.removeEventListener('keydown', v.keydown);
+      });
       assert.dom('body', function () {
-        assert.dom('>.glassPane:nth-last-child(2)>.popup', function () {
+        assert.dom('>.glassPane:nth-last-child(3)>.popup0', function () {
           assert.cssNear(this, 'left', v.ibox.left);
           assert.cssNear(this, 'top', v.ibox.top + v.ibox.height);
         });
@@ -80,13 +87,18 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, ev);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
-        assert.dom('>.glassPane:last-child>.popup', function () {
-          assert.same(this, popup.firstChild);
+
+        Dom.remove(popup0);
+        assert.dom('>.glassPane:last-child>.popup1', function () {
+          assert.same(this, popup1.firstChild);
         });
         TH.trigger(this, 'keydown', {which: 27});
         refute.dom('.glassPane');
+        refute.called(v.keydown);
+        TH.trigger(this, 'keydown', {which: 27});
+        assert.calledOnce(v.keydown);
       });
-      assert.calledTwice(sut._init);
+      assert.calledThrice(sut._init);
     },
   });
 });

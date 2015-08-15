@@ -2,32 +2,37 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Dom = require('../dom');
 
-  var modals = [];
+  var topModal = null;
 
   function keydownCallback(event) {
-    var last = modals[modals.length - 1];
     if (event.which !== 9 && event.which !== 27) {
-      last[2] && last[2](event, last);
+      topModal.keydownHandler && topModal.keydownHandler(event, topModal);
       return;
     }
 
     event.stopImmediatePropagation();
     if (event.which !==9) event.preventDefault();
-    Dom.remove(last[1]);
+    Dom.remove(topModal.container);
   }
 
   return exports = {
     _init: function(ctx, container, keydownHandler) {
-      if (modals.length === 0)
+      if (topModal == null)
         document.addEventListener('keydown', keydownCallback, true);
-      var index = modals.length;
-      modals.push([ctx, container, keydownHandler]);
+      var mymodal = topModal = {ctx: ctx, container: container, keydownHandler: keydownHandler, prev: topModal};
       container.addEventListener('mousedown', callback, true);
       ctx.onDestroy(function () {
-        modals.splice(index, 1);
-        if (modals.length === 0)
-          document.removeEventListener('keydown', keydownCallback, true);
         container.removeEventListener('mousedown', callback, true);
+        if (mymodal === topModal) {
+          topModal = topModal.prev;
+          if (topModal == null)
+            document.removeEventListener('keydown', keydownCallback, true);
+        } else for(var last = topModal, curr = topModal.prev;
+                 curr; last = curr, curr = curr.prev) {
+          if (mymodal === curr) {
+            last.prev = curr.prev;
+          }
+        }
       });
 
       var popup = container.firstChild;
