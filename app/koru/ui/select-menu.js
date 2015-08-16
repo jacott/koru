@@ -24,7 +24,7 @@ define(function(require, exports, module) {
     case 40: // down
       var nextElm = nextElm || function () {nSel = nSel.nextElementSibling};
       var firstElm = firstElm || function () {return curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]};
-      var mElm = details.container;
+      var mElm = details.container.firstChild;
       var curr = mElm.getElementsByClassName('selected')[0];
       for (var nSel = firstElm(); nSel; nextElm()) {
         if (Dom.hasClass(nSel, 'hide')) continue;

@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var Dom = require('../dom');
   var Form = require('./form');
   var util = require('../util');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(require('../html!./complete-list'));
   var $ = Dom.current;
@@ -33,7 +34,7 @@ define(function(require, exports, module) {
         callback: options.callback,
       };
       var elm = v.input;
-      elm.parentNode.insertBefore(v.completeList, elm.nextSibling);
+      Modal.appendBelow(null, elm, v.completeList);
       options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
     },

@@ -21,25 +21,25 @@ isClient && define(function (require, exports, module) {
     "test rendering": function () {
       assert.dom(v.CompleteList.$autoRender({}), function () {
         assert.dom('[name=name]', function () {
-          Dom.Form.completeList({input: this, completeList: [{name: 'abc'}, {name: 'def'}]});
+          Dom.Form.completeList({input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
         });
-        assert.dom('[name=name]+ul.complete', function () {
-          assert.dom('li.selected', 'abc');
-          assert.dom('li', 'def');
-        });
-        assert.dom('[name=name]', function () {
-          Dom.Form.completeList({input: this, completeList: [{name: 'foo'}]});
-        });
-        refute.dom('li', 'abc');
-        assert.dom('[name=name]+ul.complete', function () {
-          assert.dom('li', 'foo');
-        });
-
-        assert.dom('[name=name]', function () {
-          Dom.Form.completeList({input: this});
-        });
-        refute.dom('.complete');
       });
+      assert.dom('body>ul.complete', function () {
+        assert.dom('li.selected', 'abc');
+        assert.dom('li', 'def');
+      });
+      assert.dom(v.input, function () {
+        Dom.Form.completeList({input: this, completeList: [{name: 'foo'}]});
+      });
+      refute.dom('li', 'abc');
+      assert.dom('body>ul.complete', function () {
+        assert.dom('li', 'foo');
+      });
+
+      assert.dom(v.input, function () {
+        Dom.Form.completeList({input: this});
+      });
+      refute.dom('.complete');
     },
 
     "callback": {
