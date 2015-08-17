@@ -168,8 +168,7 @@ define(function(require, exports, module) {
     buffer.push(tObject);
     for(var key in object) {
       var dkey = addToDict(dict, key);
-      buffer.push(dkey >> 8, dkey % 0x100);
-
+      buffer.push(dkey >> 8, dkey & 0xff);
       encode(buffer, object[key], dict);
     }
     buffer.push(tTerm);
@@ -181,35 +180,24 @@ define(function(require, exports, module) {
     var code = k2c[name];
     if (code) return code;
 
-    var index = dict.index || 0;
+    var index = dict.index || 0x100;
+
+    if (index === 32767) throw new Error("Dictionary overflow");
     dict.index = index + 1;
 
-    if (index === (1 << 15) - 0x80) throw new Error("Dictionary overflow");
+    k2c[name] = index;
 
-    code = k2c[name] = ((index % 0x80) + 0x80 << 8) + (index >> 7);
-
-    index += 0x80;
-
-    var c2k = dict.c2k || (dict.c2k = {});
-    var key = String.fromCharCode(index % 0x100);
-    var val = c2k[key];
-    if (! val) {
-      c2k[key] = [name];
-      return code;
-    }
-    val[index >> 8] = name;
-    return code;
+    var c2k = dict.c2k || (dict.c2k = []);
+    c2k[index - 0x100] = name;
+    return index;
   }
 
   exports.encodeDict = encodeDict;
   function encodeDict(dict, buffer) {
-    var index = dict.index + 0x80;
+    var index = dict.index - 0x100;
     var c2k = dict.c2k;
-    for(var i = 0x80; i < index; ++i) {
-      var val = c2k[String.fromCharCode(i % 0x100)];
-      val = val[i >> 8];
-
-      utf16to8(buffer, val);
+    for(var i = 0; i < index; ++i) {
+      utf16to8(buffer, c2k[i]);
       buffer.push(0xff);
     }
     buffer.push(tTerm);
@@ -238,7 +226,7 @@ define(function(require, exports, module) {
 
   exports.getDictItem = getDictItem;
   function getDictItem(dict, code) {
-    return dict.c2k[String.fromCharCode(code >> 8)][code % 0x100];
+    return dict.c2k[code - 0x100];
   }
 
   exports._decode = function (object) {

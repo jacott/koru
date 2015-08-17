@@ -135,47 +135,44 @@ define(function (require, exports, module) {
         98, 97, 122, 0xff,        // local entry 0x81: baz
         0,
         7,                           // object
-        0x80, 0, 131, 98, 97, 114,   // foo: bar
-        0x81, 0, 131, 102, 111, 111, // baz: foo
+        1, 0, 131, 98, 97, 114,   // foo: bar
+        1, 1, 131, 102, 111, 111, // baz: foo
         0
       ]);
 
       assert.equals(message._decode(v.ans), {foo: 'bar', baz: 'foo'});
     },
 
+    "test large object": function () {
+      var obj = {};
+      for(var i = 0; i < 129; ++i) {
+        obj[i]=i;
+      }
+      assert.equals(message._decode(message._encode(obj)), obj);
+    },
+
     "test addToDict": function () {
       var dict = {};
-      assert.equals(message.addToDict(dict, "foo"), 0x8000);
+      assert.equals(message.addToDict(dict, "foo"), 0x100);
 
-      assert.same(dict.index, 1);
-      assert.equals(dict.c2k[String.fromCharCode(0x80)], ["foo"]);
+      assert.same(dict.index, 0x101);
+      assert.equals(dict.c2k[0], "foo");
 
       for(var i = 0; i < 127; ++i) {
-        assert.equals(message.addToDict(dict, "x"+i), 0x81+i << 8);
+        assert.equals(message.addToDict(dict, "x"+i), 0x101 + i);
       }
 
-      assert.same(dict.index, 0x80);
-      assert.equals(message.addToDict(dict, "x0"), 0x8100);
-      assert.same(dict.index, 0x80);
+      assert.same(dict.index, 128 + 0x100);
+      assert.equals(message.addToDict(dict, "x0"), 0x101);
+      assert.same(dict.index, 128 + 0x100);
 
-      for(var i = 0; i < 128; ++i) {
-        assert.equals(message.addToDict(dict, "w"+i), (0x80+i << 8) + 1);
-      }
 
-      for(var i = 0; i < 128; ++i) {
-        assert.equals(message.addToDict(dict, "v"+i), (0x80+i << 8) + 2);
-      }
-
-      for(var i = 0; i < 128; ++i) {
-        assert.equals(message.addToDict(dict, "u"+i), (0x80+i << 8) + 3);
-      }
-
-      dict.index = (1 << 15) + -128;
+      dict.index = 32767;
       assert.exception(function () {
         message.addToDict(dict, "ubig");
       }, 'Error', 'Dictionary overflow');
 
-      assert.equals(message.addToDict(dict, "v97"), 57602);
+      assert.equals(message.addToDict(dict, "x0"), 257);
     },
 
     "test encodeDict decodeDict": function () {
@@ -193,9 +190,9 @@ define(function (require, exports, module) {
 
       assert.same(message.decodeDict(v.ans, 0, dict), 13);
 
-      assert.equals(dict.k2c["bár\x00"], 0x81 << 8);
+      assert.equals(dict.k2c["bár\x00"], 257);
 
-      assert.same(message.getDictItem(dict, 0x81 << 8), "bár\x00");
+      assert.same(message.getDictItem(dict, 257), "bár\x00");
     },
 
     "test mixed": function () {
@@ -211,19 +208,15 @@ define(function (require, exports, module) {
     },
 
     "test unchanged encoding system": function () {
-      // ensure we still use the same encoding system as at this test
-      var msg = '62696e5f6964ff6f72646572ff0081368473617665865469636b6574916a4a394d696148746364674a7a6246766e07800091475374544a465848445a6d536b584d347a81000b01';
-      var len = msg.length / 2;
+      var obj = ["6", "save", "Ticket", "jJ9MiaHtcdgJzbFvn", {bin_id: "GStTJFXHDZmSkXM4z", order: 256}];
+      var u8 = message.encodeMessage("X", obj).subarray(1);
+      var len = u8.length;
 
-      var ary = [];
-      for(var i = 0; i < len; ++i) {
-        ary.push(parseInt(msg.slice(i*2,i*2+2), 16));
-      }
+      var msg = message.toHex(u8).join('');
+      assert.same(msg, "62696e5f6964ff6f72646572ff0081368473617665865469636b6574916a4a394d6961" +
+                  "48746364674a7a6246766e07010091475374544a465848445a6d536b584d347a01010b010000");
 
-      var u8 = new Uint8Array(ary);
-
-      assert.same(message.toHex(u8).join(''), msg);
-      assert.equals(message.decodeMessage(u8), ["6", "save", "Ticket", "jJ9MiaHtcdgJzbFvn", {bin_id: "GStTJFXHDZmSkXM4z", order: 256}]);
+      assert.equals(message.decodeMessage(u8), obj);
     },
 
     "test encode/decodeMessage": function () {
@@ -233,7 +226,7 @@ define(function (require, exports, module) {
       assert.same(Object.prototype.toString.call(u8), '[object Uint8Array]');
 
       data.forEach.call(u8, function (b) {data.push(b)});
-      assert.equals(data, [77, 102, 111, 111, 255, 0, 65, 66, 7, 128, 0, 131, 98, 97, 114, 0]);
+      assert.equals(data, [77, 102, 111, 111, 255, 0, 65, 66, 7, 1, 0, 131, 98, 97, 114, 0]);
 
       assert.equals(message.decodeMessage(u8.subarray(1)), [1, 2, {foo: 'bar'}]);
     },
