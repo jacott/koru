@@ -103,7 +103,7 @@ isClient && define(function (require, exports, module) {
       Dialog.open(Dom.html('<form id="Foo"></form>'));
 
       assert.dom('.Dialog', function () {
-        TH.trigger(this, 'keyup', {which: 27});
+        TH.trigger(this, 'keydown', {which: 27});
       });
 
       refute.dom('.Dialog');

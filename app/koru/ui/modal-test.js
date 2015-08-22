@@ -20,26 +20,26 @@ isClient && define(function (require, exports, module) {
     "test appendBelow": function () {
       test.stub(sut, 'append');
 
-      sut.appendBelow('gp', 'origin');
+      sut.appendBelow('opts');
 
-      assert.calledWith(sut.append, 'below', 'gp', 'origin');
+      assert.calledWith(sut.append, 'below', 'opts');
     },
 
     "test appendAbove": function () {
       test.stub(sut, 'append');
 
-      sut.appendAbove('gp', 'origin');
+      sut.appendAbove('opts');
 
-      assert.calledWith(sut.append, 'above', 'gp', 'origin');
+      assert.calledWith(sut.append, 'above', 'opts');
     },
 
     "test popup": function () {
-      test.spy(sut, '_init');
+      test.spy(sut, 'init');
       var page = Dom.html({content: ['text', {tag: 'input'}]});
       document.body.appendChild(page);
       var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
       assert.dom('input', function () {
-        sut.appendBelow(document.body, this, popup);
+        sut.appendBelow({container: popup, origin: this, popup: popup});
         v.ibox = this.getBoundingClientRect();
       });
       assert.dom('body', function () {
@@ -48,11 +48,11 @@ isClient && define(function (require, exports, module) {
           assert.cssNear(this, 'top', v.ibox.top + v.ibox.height);
         });
       });
-      refute.called(sut._init);
+      refute.called(sut.init);
     },
 
     "test nesting": function () {
-      test.spy(sut, '_init');
+      test.spy(sut, 'init');
       var page = Dom.html({content: ['text', {tag: 'input'}]});
       document.body.appendChild(page);
       var popup0 = Dom.html({class: 'glassPane', content: {class: 'popup0', style: 'position:absolute', text: 'popup0'}});
@@ -62,13 +62,11 @@ isClient && define(function (require, exports, module) {
       var popup2 = Dom.html({class: 'glassPane', content: {class: 'popup2', style: 'position:absolute', text: 'popup2'}});
       Dom.setCtx(popup2);
       assert.dom('input', function () {
-        sut.appendBelow(popup0, this);
-        sut.appendBelow(popup1, popup0);
-        sut.appendBelow(popup2, popup1, popup2KeyHandler);
+        sut.appendBelow({container: popup0, origin: this});
+        sut.appendBelow({container: popup1, origin: popup0});
+        sut.appendBelow({container: popup2, origin: popup1});
         v.ibox = this.getBoundingClientRect();
       });
-      function popup2KeyHandler(event, details) {
-      }
       document.body.addEventListener('keydown', v.keydown = test.stub());
       test.onEnd(function () {
         document.body.removeEventListener('keydown', v.keydown);
@@ -98,7 +96,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keydown', {which: 27});
         assert.calledOnce(v.keydown);
       });
-      assert.calledThrice(sut._init);
+      assert.calledThrice(sut.init);
     },
   });
 });

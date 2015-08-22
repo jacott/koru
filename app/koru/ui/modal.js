@@ -5,76 +5,103 @@ define(function(require, exports, module) {
   var topModal = null;
 
   function keydownCallback(event) {
-    if (event.which !== 9 && event.which !== 27) {
-      topModal.keydownHandler && topModal.keydownHandler(event, topModal);
-      return;
+    switch(event.which) {
+    case 9:
+      if (! topModal.ignoreTab) {
+        event.stopImmediatePropagation();
+        var focus = topModal.focus;
+        Dom.remove(topModal.container);
+        focus.focus();
+        return;
+      }
+      break;
+    case 27:
+      if (! topModal.ignoreEscape) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        Dom.remove(topModal.container);
+        return;
+      }
+      break;
     }
 
-    event.stopImmediatePropagation();
-    if (event.which !==9) event.preventDefault();
-    Dom.remove(topModal.container);
+    if (topModal.keydownHandler)
+      topModal.keydownHandler(event, topModal);
+    else if (! Dom.contains(topModal.container, event.target)) {
+      event.stopImmediatePropagation();
+      event.preventDefault();
+    }
+  }
+
+  function retKeydownCallback(event) {
+    if (event.which !==9) {
+      event.stopImmediatePropagation();
+    }
   }
 
   return exports = {
-    _init: function(ctx, container, keydownHandler) {
-      if (topModal == null)
+    init: function(options) {
+      if (topModal == null) {
         document.addEventListener('keydown', keydownCallback, true);
-      var mymodal = topModal = {ctx: ctx, container: container, keydownHandler: keydownHandler, prev: topModal};
-      container.addEventListener('mousedown', callback, true);
-      ctx.onDestroy(function () {
-        container.removeEventListener('mousedown', callback, true);
-        if (mymodal === topModal) {
+        document.addEventListener('keydown', retKeydownCallback);
+      }
+      options = util.extend({}, options);
+      options.prev = topModal; topModal = options;
+
+      if (! options.focus) options.focus = document.activeElement;
+      if (! options.ctx) options.ctx = Dom.getMyCtx(options.container);
+      if (! options.popup) options.popup = options.container.firstElementChild;
+      options.container.addEventListener('mousedown', callback, true);
+      options.ctx.onDestroy(function () {
+        options.container.removeEventListener('mousedown', callback, true);
+        if (options === topModal) {
           topModal = topModal.prev;
-          if (topModal == null)
+          if (topModal == null) {
             document.removeEventListener('keydown', keydownCallback, true);
-        } else for(var last = topModal, curr = topModal.prev;
+            document.removeEventListener('keydown', retKeydownCallback);
+          }
+        } else for(var last = topModal, curr = topModal && topModal.prev;
                  curr; last = curr, curr = curr.prev) {
-          if (mymodal === curr) {
+          if (options === curr) {
             last.prev = curr.prev;
           }
         }
       });
 
-      var popup = container.firstChild;
-
       function callback(event) {
-        if (Dom.contains(popup, event.target)) return;
-        Dom.remove(container);
+        if (Dom.contains(options.popup, event.target)) return;
+        Dom.remove(options.container);
       }
+      return options;
     },
 
-    appendAbove: function (container, origin, popup) {
-      return this.append('above', container, origin, popup);
+    appendAbove: function (options) {
+      return this.append('above', options);
     },
 
-    appendBelow: function (container, origin, popup) {
-      return this.append('below', container, origin, popup);
+    appendBelow: function (options) {
+      return this.append('below', options);
     },
 
-    append: function (pos, container, origin, popup) {
+    append: function (pos, options) {
       var height = window.innerHeight;
-      var isNested = ! popup || typeof popup === 'function';
+      var isNested = ! options.popup;
       if (isNested) {
-        var keydownHandler = popup;
-        popup = container.firstChild;
+        options = exports.init(options);
       } else {
-        container = popup;
-      }
-      if (isNested) {
-        var ctx = Dom.getMyCtx(container);
-        exports._init(ctx, container, keydownHandler);
+        options = util.extend({container: options.popup}, options);
       }
 
-      var ps = popup.style;
-      var bbox = origin.getBoundingClientRect();
+      var ps = options.popup.style;
+      var bbox = options.origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
       if (pos === 'above') {
         ps.bottom = (height - bbox.top) + 'px';
       } else {
         ps.top = (bbox.top + bbox.height) + 'px';
       }
-      document.body.appendChild(container);
-      var ppos = popup.getBoundingClientRect();
+      document.body.appendChild(options.container);
+      var ppos = options.popup.getBoundingClientRect();
       if (pos === 'above') {
         if (ppos.top < 0) {
           ps.bottom = '';

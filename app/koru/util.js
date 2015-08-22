@@ -25,6 +25,7 @@ define(function(require, exports, module) {
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     reverseExtend: function (obj, properties, exclude) {
+      if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && prop in exclude) continue;
         if (! (prop in obj))

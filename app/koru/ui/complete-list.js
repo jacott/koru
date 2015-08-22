@@ -34,7 +34,7 @@ define(function(require, exports, module) {
         callback: options.callback,
       };
       var elm = v.input;
-      Modal.appendBelow(null, elm, v.completeList);
+      Modal.appendBelow({origin: elm, popup: v.completeList});
       options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
     },

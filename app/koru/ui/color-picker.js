@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var Form = require('./form');
   var uColor = require('../util-color');
   var Slider = require('./slider');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(module, require('../html!./color-picker'));
   var $ = Dom.current;
@@ -106,13 +107,14 @@ define(function(require, exports, module) {
       var data = {orig: color, color: hsla, callback: callback, alpha: alpha};
       var elm = Tpl.$autoRender(data);
       document.body.appendChild(elm);
-      Form.modalize(elm, function (event) {
-        close(elm, 'cancel');
+      Modal.init({
+        container: elm,
+        popup: elm.firstElementChild.firstElementChild,
+        ignoreTab: true,
       });
     },
 
     $destroyed: function (ctx, elm) {
-      Form.cancelModalize();
       Tpl.$detachEvents(elm);
     },
   });

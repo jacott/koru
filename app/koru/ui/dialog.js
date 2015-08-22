@@ -1,20 +1,20 @@
 define(function(require, exports, module) {
   var Dom = require('../dom');
   var Form = require('./form');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(require('../html!./dialog'));
   var $ = Dom.current;
 
-  var count = 0;
-
   Tpl.$extend({
     isOpen: function () {
-      return count !== 0;
+      return document.getElementsByClassName('Dialog').length !== 0;
     },
 
     open: function (content, nofocus) {
       var elm = Tpl.$autoRender({content: content});
       document.body.appendChild(elm);
+      modalize(Dom.getMyCtx(elm), elm);
 
       if (! nofocus) {
         var focus = elm.querySelector(Dom.INPUT_SELECTOR);
@@ -26,7 +26,7 @@ define(function(require, exports, module) {
       if (elm) {
         if (typeof elm === 'string')
           elm = document.getElementById(elm);
-        Dom.remove(Dom.getClosest(elm, '.Dialog'));
+        Dom.remove(Dom.getClosestClass(elm, 'Dialog'));
         return;
       }
 
@@ -34,13 +34,18 @@ define(function(require, exports, module) {
       if (dialogs.length > 0) Dom.remove(dialogs[dialogs.length - 1]);
     },
 
+    closeAll: function () {
+      var dialogs = document.getElementsByClassName('Dialog');
+      while (dialogs.length !== 0) {
+        var len = dialogs.length;
+        Dom.remove(dialogs[len - 1]);
+        if (dialogs.length === len) break; // I think this is needed for some versions of IE
+      }
+    },
+
     confirm: function (data) {
       document.body.appendChild(Tpl.Confirm.$autoRender(data));
     },
-
-    $created: modalize,
-
-    $destroyed: cancelModalize,
   });
 
   Tpl.$helpers({
@@ -92,21 +97,13 @@ define(function(require, exports, module) {
 
   Tpl.Confirm.$extend({
     $created: modalize,
-
-    $destroyed: cancelModalize,
   });
 
   function modalize(ctx, elm) {
-    ++count;
-    Form.modalize(elm, function (event) {
-      Dom.remove(elm);
+    Modal.init({ctx: ctx, container: elm,
+      popup: elm.firstElementChild.firstElementChild,
+      ignoreTab: true,
     });
   }
-
-  function cancelModalize() {
-    --count;
-    Dom.Form.cancelModalize();
-  }
-
   return Tpl;
 });

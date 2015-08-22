@@ -71,9 +71,15 @@ isClient && define(function (require, exports, module) {
         assert.dom('input[name=search]', function () {
           assert.same(document.activeElement, this);
 
-          TH.input(v.search = this, 'one');
+          v.search = this;
+          v.search.addEventListener('keydown', v.inputel = test.stub());
+          test.onEnd(function () {
+            v.search.removeEventListener('keydown', v.inputel);
+          });
+          TH.input(v.search, 'one');
           var ev = keydown(101 /* e */);
-          refute.called(ev.stopImmediatePropagation);
+          assert.called(v.inputel);
+          assert.called(ev.stopImmediatePropagation);
           refute.called(ev.preventDefault);
         });
         assert.dom('li.hide', {count: 2});

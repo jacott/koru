@@ -167,7 +167,7 @@ define(function(require, exports, module) {
 
         options && options.customize && options.customize(popup, this);
 
-        Modal.appendBelow(document.body, this, popup);
+        Modal.appendBelow({container: popup, origin: this, popup: popup});
       }
     },
   });

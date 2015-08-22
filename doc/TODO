@@ -1,24 +1,11 @@
 Issues and Ideas
 ================
 
-* Refactor Val.permitSpec
-   make object with add method and validation methods
-
 * Tidy up model callbacks
    replace ".before..." with nested hashmaps
 
 * Lock doc by id before update
    Do in query-server.js. lock waits if already locked.
-
-* Client: On setUserId
-   (is this already done?)
-   resubscribe and match all changed matchers. Maybe limit matchers to
-   one model per subscription
-
-* Change when no existing record
-   (do we need this?)
-   should request it via method fetchIdFromServer. The server will
-   check if a matcher accepts the client.
 
 * Server side publish should batch sends to client
    When mutilple subscriptions are interested in the same doc we
@@ -48,11 +35,5 @@ Issues and Ideas
 * SRP is CPU intensive and blocks node;
    is this true for server logic?
    consider handing off to worker thread on server
-
-* Use https://github.com/ahyatt/emacs-websocket
-   to talk to server instead of geddon-test.js
-
-
-
 
 -------

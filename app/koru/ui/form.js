@@ -33,6 +33,9 @@ define(function(require, exports, module) {
 
   var modalize;
 
+  /**
+   * @deprecated
+   */
   function modalizeCallback(event) {
     var elm = modalize.elm;
     if (typeof elm === 'string') modalize.elm = elm = document.querySelector(elm);
@@ -56,7 +59,9 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     field: field,
-
+    /**
+     * @deprecated
+     */
     modalize: function (elm, func) {
       if (modalize) {
         modalize = {parent: modalize, elm: elm, func: func};
@@ -68,6 +73,9 @@ define(function(require, exports, module) {
       }
     },
 
+    /**
+     * @deprecated
+     */
     cancelModalize: function (all) {
       if (! modalize) return null;
       modalize = all === 'all' ? null : modalize.parent;
