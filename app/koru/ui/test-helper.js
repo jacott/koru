@@ -153,6 +153,24 @@ define(function(require, exports, module) {
       }
     },
 
+    keydown: function (node, key, args) {
+      args = args || {};
+      switch (typeof key) {
+      case 'string':
+        for(var i = 0; i < key.length; ++i) {
+          args.which = key.charCodeAt(i);
+          TH.trigger(node, 'keydown', args);
+        }
+        break;
+      case 'number':
+        args.which = key;
+        TH.trigger(node, 'keydown', args);
+        break;
+      default:
+        throw new Error("invalid key");
+      }
+    },
+
     click: function(node) {
       if (typeof node === 'string') {
         var args = util.slice(arguments);
