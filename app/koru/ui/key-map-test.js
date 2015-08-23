@@ -2,6 +2,7 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var sut = require('./key-map');
+  var Dom = require('../dom');
 
   TH.testCase(module, {
     setUp: function () {
@@ -35,6 +36,21 @@ isClient && define(function (require, exports, module) {
       TH.keydown(document.body, "X1");
       assert.calledOnce(v.bar);
       refute.called(v.bar2);
+    },
+
+    "test input focused": function () {
+      test.spy(Dom, 'matches');
+      document.body.appendChild(Dom.html({tag: 'input', type: 'text'}));
+      assert.dom('input', function () {
+        this.focus();
+        var event = TH.buildEvent('keydown', {which: 88});
+        v.km.exec(event);
+        refute.called(v.foo);
+        assert.calledWith(Dom.matches, this, Dom.INPUT_SELECTOR);
+        var event = TH.buildEvent('keydown', {which: 88});
+        v.km.exec(event, 'ignoreFocus');
+        assert.called(v.foo);
+      });
     },
   });
 });

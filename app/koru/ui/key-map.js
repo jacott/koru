@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  var util = require('../util');
+  var Dom = require('../dom');
 
   function KeyMap() {
     this.map = {};
@@ -25,7 +26,10 @@ define(function(require, exports, module) {
     return keyMap;
   };
 
-  function exec(event) {
+  function exec(event, ignoreFocus) {
+    if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR))
+      return;
+
     var keyMap = this;
     var map = keyMap.map[event.which];
     if (! map) return;
