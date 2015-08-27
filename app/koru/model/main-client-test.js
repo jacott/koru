@@ -39,5 +39,14 @@ define(function (require, exports, module) {
       assert.same(doc, TestModel.findById(doc._id));
 
     },
+
+    "test transaction": function () {
+      var TestModel = Model.define('TestModel');
+      var stub = test.stub().returns('result');
+      assert.same(TestModel.transaction(stub), 'result');
+
+      assert.called(stub);
+    },
+
   });
 });

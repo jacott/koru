@@ -77,7 +77,11 @@ define(function(require, exports, module) {
           session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
         },
 
-        remote: function (name, func) {
+        transaction: function (model, func) {
+          return func();
+        },
+
+        remote: function (model, name, func) {
           return func;
         },
       });

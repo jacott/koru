@@ -125,21 +125,25 @@ define(function(require, exports, module) {
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
+        var userId = this.userId;
+        Val.allowAccessIf(userId);
         Val.assertCheck(id, 'string', {baseName: '_id'});
         Val.assertCheck(modelName, 'string', {baseName: 'modelName'});
         var model = BaseModel[modelName];
         Val.allowIfFound(model);
-        var doc = model.findById(id);
-        if (! doc) {
-          doc = new model();
-          changes._id = id;
-        }
+        model.docs.transaction(function () {
+          var doc = model.findById(id);
+          if (! doc) {
+            doc = new model();
+            changes._id = id;
+          }
 
-        doc.changes = changes;
-        Val.allowAccessIf(this.userId && doc.authorize);
-        doc.authorize(this.userId);
-        doc.$assertValid();
-        doc.$save();
+          doc.changes = changes;
+          Val.allowAccessIf(doc.authorize);
+          doc.authorize(userId);
+          doc.$assertValid();
+          doc.$save();
+        });
       });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
@@ -147,15 +151,19 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("remove", function (modelName, id) {
+        var userId = this.userId;
+        Val.allowAccessIf(userId);
         Val.ensureString(id);
         Val.ensureString(modelName);
         var model = BaseModel[modelName];
         Val.allowIfFound(model);
-        var doc = model.findById(id);
-        Val.allowIfFound(doc);
-        Val.allowAccessIf(this.userId && doc.authorize);
-        doc.authorize(this.userId, {remove: true});
-        doc.$remove();
+        model.docs.transaction(function () {
+          var doc = model.findById(id);
+          Val.allowIfFound(doc);
+          Val.allowAccessIf(doc.authorize);
+          doc.authorize(userId, {remove: true});
+          doc.$remove();
+        });
       });
 
       util.extend(_support, {
@@ -167,10 +175,18 @@ define(function(require, exports, module) {
           _support.performBumpVersion(this.constructor, this._id,this._version);
         },
 
-        remote: function (name, func) {
+        transaction: function (model, func) {
+          return model.docs.transaction(func);
+        },
+
+        remote: function (model, name, func) {
           return function (/* arguments */) {
-            Val.allowAccessIf(this.userId);
-            return func.apply(this,arguments);
+            var conn = this;
+            var args = arguments;
+            return model.docs.transaction(function () {
+              Val.allowAccessIf(conn.userId);
+              return func.apply(conn, args);
+            });
           };
         },
       });

@@ -326,6 +326,10 @@ define(function(require, exports, module) {
       return doc;
     },
 
+    transaction: function (func) {
+      return _support.transaction(this, func);
+    },
+
     toId: function (doc) {
       if (! doc || typeof doc === 'string') return doc;
       return doc._id;
@@ -406,7 +410,7 @@ define(function(require, exports, module) {
       var prefix = this.modelName + '.';
 
       for(var key in funcs) {
-        session.defineRpc(prefix + key, _support.remote(key,funcs[key]));
+        session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
       return this;

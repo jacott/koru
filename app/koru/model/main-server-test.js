@@ -34,7 +34,9 @@ define(function (require, exports, module) {
     "test remote": function () {
       var TestModel = Model.define('TestModel');
 
-      TestModel.remote({foo: v.foo = test.stub()});
+      TestModel.remote({foo: v.foo = test.stub().returns('result')});
+
+      test.spy(TestModel.docs, 'transaction');
 
       assert.accessDenied(function () {
         session._rpcs['TestModel.foo'].call({userId: null});
@@ -42,11 +44,14 @@ define(function (require, exports, module) {
 
       refute.called(v.foo);
 
-      session._rpcs['TestModel.foo'].call(v.conn = {userId: "uid"});
+      assert.same(session._rpcs['TestModel.foo'].call(v.conn = {userId: "uid"}, 1, 2),
+                  'result');
 
       assert.calledOnce(v.foo);
-
+      assert.calledWithExactly(v.foo, 1, 2);
       assert.same(v.foo.thisValues[0], v.conn);
+
+      assert.called(TestModel.docs.transaction);
     },
 
     "test when no changes in save": function () {
@@ -118,6 +123,7 @@ define(function (require, exports, module) {
       }).defineFields({name: 'text'});
 
 
+      test.spy(TestModel.docs, 'transaction');
       TestModel.onChange(v.afterLocalChange = test.stub());
 
       assert.accessDenied(function () {
@@ -141,6 +147,8 @@ define(function (require, exports, module) {
 
       assert.calledWith(Val.assertCheck, "fooid", "string", {baseName: "_id"});
       assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
+
+      assert.calledOnce(TestModel.docs.transaction);
     },
 
     "test saveRpc existing": function () {
@@ -174,6 +182,7 @@ define(function (require, exports, module) {
         authorize: v.auth = test.stub()
       }).defineFields({name: 'text'});
 
+      test.spy(TestModel.docs, 'transaction');
 
       v.doc = TestModel.create({name: 'foo'});
 
@@ -189,6 +198,8 @@ define(function (require, exports, module) {
 
       assert.called(v.afterRemove);
       assert.calledWith(v.auth, "u123", {remove: true});
+
+      assert.calledOnce(TestModel.docs.transaction);
     },
 
     "test addUniqueIndex": function () {
@@ -217,6 +228,16 @@ define(function (require, exports, module) {
       Model.ensureIndexes();
 
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
+    },
+
+    "test transaction": function () {
+      var TestModel = Model.define('TestModel');
+      var stub = test.stub().returns('result');
+      var tx = test.spy(TestModel.docs, 'transaction');
+      assert.same(TestModel.transaction(stub), 'result');
+
+      assert.called(stub);
+      assert.calledWith(tx, stub);
     },
   });
 });
