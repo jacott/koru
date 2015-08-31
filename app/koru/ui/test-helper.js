@@ -27,6 +27,18 @@ define(function(require, exports, module) {
       delete Dom.Test;
     },
 
+    stubAfTimeout: function () {
+      if (koru.afTimeout.restore)
+        koru.afTimeout.restore();
+      else
+        TH.geddon.test.stub(koru, 'afTimeout').returns(koru.nullFunc);
+    },
+
+    yieldAfTimeout: function () {
+      koru.afTimeout.yield();
+      koru.afTimeout.reset();
+    },
+
     createMockEvent: function(currentTarget, options) {
       return util.extend(util.extend({}, {
         preventDefault: geddon.test.stub(),

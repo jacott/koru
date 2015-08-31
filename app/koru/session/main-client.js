@@ -106,7 +106,7 @@ define(function (require, exports, module) {
         ws.onmessage = function (event) {
           heatbeatTime = util.dateNow() + session.heartbeatInterval;
           if (! heartbeatTO) {
-            heartbeatTO = koru.afTimeout(queueHeatBeat, session.heartbeatInterval);
+            heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
           }
           session._onMessage(conn, event.data);
         };
@@ -122,7 +122,7 @@ define(function (require, exports, module) {
 
           sessState.retry();
 
-          reconnTimeout = koru.afTimeout(connect, retryCount*500);
+          reconnTimeout = koru._afTimeout(connect, retryCount*500);
         };
 
         var heartbeatTO, heatbeatTime;
@@ -141,10 +141,10 @@ define(function (require, exports, module) {
           }
           var now = util.dateNow();
           if (now < heatbeatTime) {
-            heartbeatTO = koru.afTimeout(queueHeatBeat, heatbeatTime - now);
+            heartbeatTO = koru._afTimeout(queueHeatBeat, heatbeatTime - now);
           } else {
             heatbeatTime = null;
-            heartbeatTO = koru.afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
+            heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
             ws.send('H');
           }
         }

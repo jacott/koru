@@ -108,7 +108,7 @@ define(function (require, exports, module) {
 
         v.sess.newWs = test.stub().returns(v.ws);
 
-        test.stub(koru, 'afTimeout').returns(v.afTimeoutStop = test.stub());
+        test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
 
         v.sess.connect();
 
@@ -144,26 +144,26 @@ define(function (require, exports, module) {
 
           assert.same(v.sess.heartbeatInterval, 20000);
 
-          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 20000);
+          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
 
-          koru.afTimeout.reset();
+          koru._afTimeout.reset();
           util.thread.date += 15000;
           v.ws.onmessage(event);
 
-          refute.called(koru.afTimeout);
+          refute.called(koru._afTimeout);
 
           util.thread.date += 7000;
           v.actualConn._queueHeatBeat();
 
-          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 13000);
+          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 13000);
 
-          koru.afTimeout.reset();
+          koru._afTimeout.reset();
 
           util.thread.date += 14000;
           v.actualConn._queueHeatBeat();
 
-          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 10000);
-          koru.afTimeout.reset();
+          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 10000);
+          koru._afTimeout.reset();
 
           assert.calledOnce(v.ws.send);
           assert.calledWith(v.ws.send, 'H');
@@ -171,10 +171,10 @@ define(function (require, exports, module) {
           util.thread.date += 1000;
 
           v.ws.onmessage(event);
-          refute.called(koru.afTimeout);
+          refute.called(koru._afTimeout);
 
           v.actualConn._queueHeatBeat();
-          assert.calledWith(koru.afTimeout, v.actualConn._queueHeatBeat, 20000);
+          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
         });
       },
 
@@ -222,13 +222,13 @@ define(function (require, exports, module) {
         return conn.ws === v.ws;
       }));
 
-      test.stub(koru, 'afTimeout').returns(v.afTimeoutStop = test.stub());
+      test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
       test.stub(koru, 'info');
 
       v.ws.onclose({});         // remote close
 
       assert.called(sessState.retry);
-      assert.calledWith(koru.afTimeout, v.sess.connect, 500);
+      assert.calledWith(koru._afTimeout, v.sess.connect, 500);
 
       v.sess.stop();            // local stop
 

@@ -44,7 +44,8 @@ define(function(require, exports, module) {
   };
 
 
-  koru.afTimeout = function (func, duration) {
+  // _afTimeout is used by client session; do not override in tests
+  koru._afTimeout = koru.afTimeout = function (func, duration) {
     var af = null;
     if (duration && duration > 0)
       var timeout = setTimeout(inner, duration);

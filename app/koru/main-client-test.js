@@ -21,6 +21,7 @@ define(function (require, exports, module) {
 
     "afTimeout": {
       setUp: function () {
+        assert.same(TH.geddon._origAfTimeout, koru._afTimeout);
         test.stub(window, 'setTimeout').returns(7766);
         test.stub(window, 'clearTimeout');
 
@@ -29,7 +30,7 @@ define(function (require, exports, module) {
       },
 
       "test zero timeout": function () {
-        koru.afTimeout(v.stub = test.stub());
+        koru._afTimeout(v.stub = test.stub());
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame, TH.match.func);
@@ -39,14 +40,14 @@ define(function (require, exports, module) {
       },
 
       "test -ve timeout": function () {
-        koru.afTimeout(v.stub = test.stub(), -3);
+        koru._afTimeout(v.stub = test.stub(), -3);
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame);
       },
 
       "test running": function () {
-        var stop = koru.afTimeout(v.stub = test.stub(), 1234);
+        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         assert.calledWith(setTimeout, TH.match.func, 1234);
 
@@ -67,7 +68,7 @@ define(function (require, exports, module) {
       },
 
       "test canceling before timeout": function () {
-        var stop = koru.afTimeout(v.stub = test.stub(), 1234);
+        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         stop();
 
@@ -81,7 +82,7 @@ define(function (require, exports, module) {
       },
 
       "test canceling after timeout": function () {
-        var stop = koru.afTimeout(v.stub = test.stub(), 1234);
+        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         setTimeout.yield();
 

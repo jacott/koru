@@ -99,9 +99,11 @@ define(function(require, exports, module) {
 
   geddon.onTestStart(function (test) {
     timer = Date.now();
+    isClient && (geddon._origAfTimeout = koru.afTimeout, koru.afTimeout = koru.nullFunc);
   });
 
   geddon.onTestEnd(function (test) {
+    koru.afTimeout = geddon._origAfTimeout;
     if (test.errors) {
       ++errorCount;
 
