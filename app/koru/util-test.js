@@ -41,6 +41,11 @@ define(function (require, exports, module) {
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
 
+    "test keyMatches": function () {
+      assert.isTrue(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b/));
+      assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
+    },
+
     "test addItem": function () {
       var list = ['a', 'b'];
 

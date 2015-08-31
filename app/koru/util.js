@@ -227,6 +227,14 @@ define(function(require, exports, module) {
       return true;
     },
 
+    keyMatches: function (obj, regex) {
+      if (obj) for(var key in obj) {
+        if (regex.test(key))
+          return true;
+      }
+      return false;
+    },
+
     addItem: function (list, item) {
       var pos = util.itemIndex(list, item);
       if (pos !== -1) return pos;
