@@ -256,19 +256,6 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
     },
 
-    "test $getClosest": function () {
-      document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar"><button type="button" id="sp"></button></div></div></div>'));
-
-      var button = document.getElementById('sp');
-
-      var foobar = document.querySelector('.foo>.bar');
-
-      test.stub(Dom, 'getCtx').withArgs(foobar).returns('the ctx');
-
-      assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
-      assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
-    },
-
     "test $actions": function () {
       Dom.newTemplate({name: "Foo"});
       Dom.Foo.$actions({

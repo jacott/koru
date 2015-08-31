@@ -19,6 +19,17 @@ define(function(require, exports, module) {
 
   var DOCUMENT_NODE = document.DOCUMENT_NODE;
 
+  if (! document.documentElement.closest) {
+    Element.prototype.closest = function (selector) {
+      var elm = this;
+      while(elm && elm.nodeType !== DOCUMENT_NODE) {
+        if (matches.call(elm, selector))
+          return elm;
+        elm = elm.parentNode;
+      }
+    };
+  }
+
   util.extend(Dom, {
     _matchesFunc: matches,
 
@@ -141,11 +152,11 @@ define(function(require, exports, module) {
     getClosest: function (elm, selector) {
       if (elm && elm.nodeType !== document.ELEMENT_NODE)
         elm = elm.parentNode;
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
-        if (matches.call(elm, selector))
-          return elm;
-        elm = elm.parentNode;
-      }
+      return elm && elm.closest(selector);
+    },
+
+    getClosestCtx: function (elm, selector) {
+      return this.getCtx(this.getClosest(elm, selector));
     },
 
     searchUpFor: function (elm, func, stopClass) {

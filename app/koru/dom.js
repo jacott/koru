@@ -228,10 +228,6 @@ define(function(require, exports, module) {
       return null;
     },
 
-    getClosestCtx: function (elm, selector) {
-      return this.getCtx(this.getClosest(elm, selector));
-    },
-
     setCtx: function (elm, ctx) {
       if (! ctx) {
         ctx = new DomCtx(null, Dom.getCtx(elm));
