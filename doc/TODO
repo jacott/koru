@@ -1,8 +1,6 @@
 Issues and Ideas
 ================
 
-* less-watcher extractInfo() looks wrong
-
 * Tidy up model callbacks
    replace ".before..." with nested hashmaps
 

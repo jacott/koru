@@ -94,6 +94,8 @@ define(function(require, exports, module) {
       try {
         src = fst.readFile(fullname);
         srcName = fullname.slice(topDirLen);
+        fullname = Path.join(topDir, srcName);
+        src = fst.readFile(fullname);
       } catch(ex) {
         if (ex.code === 'ENOENT') {
           ex.message = "ENOENT @import '" + srcName + "' from '" + fromName + '"';
@@ -102,8 +104,6 @@ define(function(require, exports, module) {
       }
     }
 
-    var fullname = Path.join(topDir, srcName);
-    var src = fst.readFile(fullname);
 
     var provs = sources[srcName];
     if (! src) {
