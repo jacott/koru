@@ -88,9 +88,9 @@ define(function(require, exports, module) {
     },
 
     updateInput: function (input, value) {
-      var start = input.selectionStart;
-      var end = input.selectionEnd;
       if (value !== input.value) {
+        var start = input.selectionStart;
+        var end = input.selectionEnd;
         input.value = value;
         input.setSelectionRange(start, end);
       }
