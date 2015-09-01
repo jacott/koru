@@ -42,7 +42,13 @@
     inspect: function (o, count, len) {
       return inspect1(o, count || 4).toString().slice(0, len || 1000);
     },
+
+    qstr: qstr,
   });
+
+  function qstr(s) {
+    return JSON.stringify(s).slice(1, -1);
+  }
 
   function inspect1(o, i) {
     try {
@@ -74,8 +80,8 @@
           if (o instanceof Error) {
             r.push(o.toString());
           }
-          for (var p in o){
-            r.push(p.toString() + ": " + inspect1(o[p], i-1));
+          for (var p in o) {
+            r.push(qstr(p) + ": " + inspect1(o[p], i-1));
           }
           return "{" + r.join(", ") +"}";
         }
@@ -83,7 +89,7 @@
           return ("{"+key+"="+o[key]+",...}");
         }
       case 'string':
-        return '"'+o+'"';
+        return "'"+qstr(o)+"'";
       default:
         return o.toString();
       }

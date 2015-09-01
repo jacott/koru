@@ -14,6 +14,8 @@ define(['./core'], function (geddon) {
 
     var tcs = [];
 
+    geddon.abnormalEnd = false;
+
     if (runNextWrapper) {
       runNextWrapper(function () {
         geddon.runCallBacks('start');
@@ -24,6 +26,8 @@ define(['./core'], function (geddon) {
       geddon.runCallBacks('start');
       _runNext = runNext;
       _runNext();
+      if (geddon.abnormalEnd)
+        geddon.runCallBacks('end');;
     }
 
     function runNext(abort) {
@@ -146,6 +150,7 @@ define(['./core'], function (geddon) {
         failed(test, ex);
       else
         test.errors.push(geddon.extractError(ex));
+      geddon.abnormalEnd = true;
       return 'abort';
     } finally {
       geddon.runCallBacks('testEnd', test);

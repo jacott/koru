@@ -44,7 +44,7 @@ define(function (require, exports, module) {
       },
 
       "test inspect": function () {
-        assert.same(format("{i0}, {i1} {i2}", "foo", {a: [3,4, bar]}), '"foo", {a: [3, 4, => bar]} undefined');
+        assert.same(format("{i0}, {i1} {i2}", "foo", {a: [3,4, bar]}), "'foo', {a: [3, 4, => bar]} undefined");
 
         function bar () {}
       },

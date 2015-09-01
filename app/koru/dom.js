@@ -680,13 +680,9 @@ define(function(require, exports, module) {
     $actions: function (actions) {
       var events = {};
       for(var key in actions) {
-        events['click [name='+key+']'] = actionFunc(actions[key]);
+        events['click [name='+key+']'] = actions[key];
       }
       return this.$events(events);
-
-      function actionFunc(func) {
-        return func;
-      }
     },
 
     $extend: function (properties) {

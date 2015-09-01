@@ -210,11 +210,11 @@ define(function(require, exports, module) {
     for (var i = 0, l = expectedKeys.length; i < l; i++) {
       key = expectedKeys[i];
       if (! Object.prototype.hasOwnProperty.call(actual, key)) {
-        setHint(actual[key], expected[key], 'key = ' + key + ': ');
+        setHint(actual[key], expected[key], 'key = ' + util.qstr(key) + ': ');
         return false;
       }
       if (! deepEqual(actual[key], expected[key], hint, hintField)) {
-        setHint(actual[key], expected[key], 'key = ' + key + ': ');
+        setHint(actual[key], expected[key], 'key = ' + util.qstr(key) + ': ');
         return false;
       }
     }

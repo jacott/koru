@@ -155,7 +155,7 @@ isServer && define(function (require, exports, module) {
         });
 
         assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 404, {foo: 'not found'}]);
-        assert.same(v.error.message, '{foo: "not found"} [404]');
+        assert.same(v.error.message, "{foo: 'not found'} [404]");
       },
 
       "test general exception": function () {
