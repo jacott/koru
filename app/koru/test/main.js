@@ -53,6 +53,20 @@ define(function(require, exports, module) {
 
     get test() {return geddon.test},
 
+    stubProperty: function (object, prop, newValue) {
+      var oldValue = Object.getOwnPropertyDescriptor(object, prop);
+      if (typeof newValue !== 'object') {
+        newValue = {value: newValue};
+      }
+      Object.defineProperty(object, prop, newValue);
+      geddon.test.onEnd(function () {
+        if (oldValue)
+          Object.defineProperty(object, prop, oldValue);
+        else
+          delete object[prop];
+      });
+    },
+
     run: function (pattern, tests) {
       if (isClient) {
         document.title = 'Running: ' + document.title;
