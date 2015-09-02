@@ -87,15 +87,7 @@ define(function(require, exports, module) {
       return modalize.elm;
     },
 
-    updateInput: function (input, value) {
-      if (value !== input.value) {
-        var start = input.selectionStart;
-        var end = input.selectionEnd;
-        input.value = value;
-        input.setSelectionRange(start, end);
-      }
-      return value;
-    },
+    updateInput: Dom.updateInput,
 
     submitFunc: function(elmId, successPage, extraSetup) {
       return function (event) {

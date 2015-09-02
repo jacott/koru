@@ -42,8 +42,15 @@ define(function(require, exports, module) {
 
     _helpers: {
       inputValue: function (value) {
-        Dom.current.element.value = value || '';
+        Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
+    },
+
+    updateInput: function (input, value) {
+      if (value !== input.value) {
+        input.value = value;
+      }
+      return value;
     },
 
     registerHelpers: function (helpers) {
