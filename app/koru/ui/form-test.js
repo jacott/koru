@@ -20,11 +20,31 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test elmId": function () {
+    "test helper elmId": function () {
       var elmId = Dom._helpers.elmId;
       assert.same(elmId.call({_id: 'fooId'}, "bar"), 'bar_fooId');
 
       assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
+    },
+
+    "test helper checked": function () {
+      var elmStub = {tagName: 'INPUT'};
+      test.stub(Dom, 'setClass');
+      test.stub(Dom, 'setBoolean');
+      TH.stubProperty(Dom.current, 'element', {get: function () {return elmStub}});
+      Dom._helpers.checked(true);
+      refute.called(Dom.setClass);
+      assert.calledWith(Dom.setBoolean, 'checked', true);
+
+      Dom.setBoolean.reset();
+      elmStub.tagName = 'BUTTON';
+      Dom._helpers.checked(false);
+      assert.calledOnceWith(Dom.setClass, 'on', false);
+      refute.called(Dom.setBoolean);
+
+      Dom.setClass.reset();
+      Dom._helpers.checked(true, 'foo');
+      assert.calledOnceWith(Dom.setClass, 'foo', true);
     },
 
     "modalize": {

@@ -345,8 +345,11 @@ define(function(require, exports, module) {
       return Dom.hasClass(elm, 'errorMsg') ? elm : errorMsg.cloneNode(true);
     },
 
-    checked: function (value) {
-      Dom.setBoolean('checked', value);
+    checked: function (value, onClass) {
+      if ($.element.tagName === 'BUTTON')
+        Dom.setClass(onClass||'on', value);
+      else
+        Dom.setBoolean('checked', value);
     },
 
     elmId: function (prefix) {
