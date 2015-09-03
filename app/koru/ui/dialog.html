@@ -1,11 +1,11 @@
 <template name="Dialog">
-  <div class="glassPane Dialog" >
+  <div class="glassPane Dialog">
     {{content}}
   </div>
   <template name="Confirm">
     <div class="glassPane Dialog Confirm">
       <div class="dialogContainer">
-        <div {{classes}}>
+        <div {{classes}} tabindex="0">
           <div>
             {{content}}
           </div>

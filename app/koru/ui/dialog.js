@@ -17,7 +17,7 @@ define(function(require, exports, module) {
       modalize(Dom.getMyCtx(elm), elm);
 
       if (! nofocus) {
-        var focus = elm.querySelector(Dom.INPUT_SELECTOR);
+        var focus = elm.querySelector(Dom.FOCUS_SELECTOR);
         focus && focus.focus();
       }
     },
@@ -44,7 +44,12 @@ define(function(require, exports, module) {
     },
 
     confirm: function (data) {
-      document.body.appendChild(Tpl.Confirm.$autoRender(data));
+      var elm = Tpl.Confirm.$autoRender(data);
+      document.body.appendChild(elm);
+      if (! data.nofocus) {
+        var focus = elm.querySelector(Dom.FOCUS_SELECTOR);
+        focus && focus.focus();
+      }
     },
   });
 

@@ -265,6 +265,7 @@ define(function(require, exports, module) {
   var matches = Dom._matchesFunc;
 
   Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
+  Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
 
   if (! document.head.classList) {
     Dom.hasClass = function (elm, name) {

@@ -126,7 +126,7 @@ define(function(require, exports, module) {
 
     focus: function (elm, selector) {
       if (!elm) return;
-      if (typeof selector !== 'string') selector = Dom.INPUT_SELECTOR;
+      if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
       var focus = elm.querySelector(selector);
       focus && focus.focus();
     },

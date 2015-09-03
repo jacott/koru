@@ -27,7 +27,7 @@ isClient && define(function (require, exports, module) {
 
       assert.isTrue(Dialog.isOpen());
 
-      Dialog.open(Dom.html('<div id="Nested"><input></div>'), 'nofocus');
+      Dialog.open(Dom.html('<div id="Nested" tabindex="0"><input></div>'), 'nofocus');
 
       assert.dom('#Nested', function () {
         assert.same(document.activeElement, v.input);
@@ -42,6 +42,13 @@ isClient && define(function (require, exports, module) {
       assert.isTrue(Dialog.isOpen());
 
       Dialog.close('Foo');
+
+      Dialog.open(Dom.html('<div id="Nested" tabindex="0"><input></div>'));
+      assert.dom('#Nested', function () {
+        assert.same(document.activeElement, this);
+      });
+
+      Dialog.close();
 
       refute.dom('.Dialog');
 
@@ -120,6 +127,8 @@ isClient && define(function (require, exports, module) {
       Dialog.confirm(data);
 
       assert.dom('.Dialog.Confirm .dialogContainer .ui-dialog', function () {
+        assert.same(document.activeElement, this);
+
         assert.dom('span', 'bla');
         assert.dom('.actions', function () {
           assert.dom('button#cancel[name=cancel]', 'Cancel', function () {
