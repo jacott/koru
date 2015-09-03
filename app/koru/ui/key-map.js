@@ -72,10 +72,10 @@ define(function(require, exports, module) {
       var mod = 0;
       var map = keyMap.map[String.fromCharCode(event.which)];
       if (! map) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
     }
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
     if (Array.isArray(map)) {
       map[1](map[0]);
     } else {
@@ -89,8 +89,6 @@ define(function(require, exports, module) {
       }
 
       function nextKey(event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
         var code = String.fromCharCode(event.which);
         var modk = MODIFIERS[code];
 
@@ -110,10 +108,15 @@ define(function(require, exports, module) {
 
         map = map[String.fromCharCode(event.which)];
         if (map && ! Array.isArray(map)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
           return;
         }
         cancel();
-        map && map[1](map[0]);
+        if (! map) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        map[1](map[0]);
       }
 
       function cancel() {

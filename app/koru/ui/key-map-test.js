@@ -67,9 +67,9 @@ isClient && define(function (require, exports, module) {
       });
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown(elm, sut.shift+'W');
-      refute.called(v.stub);
+      assert.called(v.stub);
       TH.keydown(elm, 'X');
-      assert.calledOnce(v.stub);
+      assert.calledThrice(v.stub);
       refute.called(v.foo);
     },
 
