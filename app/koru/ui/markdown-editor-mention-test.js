@@ -4,6 +4,7 @@ isClient && define(function (require, exports, module) {
   var Dom = require('../dom');
   var MarkdownEditor = require('./markdown-editor');
   var Markdown = require('./markdown');
+  var Modal = require('./modal');
 
   var insert = MarkdownEditor.insert;
 
@@ -53,7 +54,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger('[name=mention]', 'mousedown');
         TH.trigger('[name=mention]', 'mouseup');
 
-        assert.dom('.mdMention:not(.inline) input', function () {
+        assert.dom(document.querySelector('.mdMention:not(.inline) input'), function () {
           TH.input(this, 'g');
           TH.trigger(this, 'keydown', {which: 13});
         });
@@ -81,7 +82,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.ln', 'g');
       });
 
-      assert.dom('.mdEditor>.mdMention', function () {
+      assert.dom('.mdMention', function () {
         assert.dom('input', {value: 'g'}, function () {
           assert.same(document.activeElement, this);
         });
@@ -266,7 +267,8 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test input box sizing": function () {
+    "test input box uses modal": function () {
+      test.spy(Modal, 'append');
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -275,37 +277,11 @@ isClient && define(function (require, exports, module) {
       var ln = document.getElementsByClassName('ln')[0];
       var unbb = ln.getBoundingClientRect();
 
-      assert.dom('.mdMention', function () {
-        // css settings
-        this.style.position = 'absolute';
-        this.border = 'none';
-        // end of css settings
-
-        assert.dom('input', function () {
-          var inbb = this.getBoundingClientRect();
-
-          assert
-            .near(unbb.left, inbb.left, 0.1)
-            .near(unbb.top, inbb.top, 0.1)
-            .near(unbb.height, inbb.height, 0.1)
-            .near(unbb.width + 2, inbb.width, 0.1);
-
-
-          v.input.style.marginTop = '10px';
-          v.input.style.marginLeft = '5px';
-
-          TH.input(this, 'foo bar');
-
-          assert.same(ln.textContent, 'foo bar');
-          unbb = ln.getBoundingClientRect();
-
-          inbb = this.getBoundingClientRect();
-
-          assert
-            .near(unbb.left, inbb.left, 0.1)
-            .near(unbb.top, inbb.top, 0.1)
-            .near(unbb.height, inbb.height, 0.1)
-            .near(unbb.width + 2, inbb.width, 0.1);
+      assert.dom('body>.mdMention', function () {
+        assert.calledWith(Modal.append, 'on', {container: this, popup: this, origin: TH.match.field('tagName', 'SPAN')});
+        var minp = this.querySelector('input');
+        assert.dom('.empty', function () {
+          assert.calledWith(Modal.append, 'below', {container: this, popup: this, noAppend: true, origin: minp});
         });
       });
     },

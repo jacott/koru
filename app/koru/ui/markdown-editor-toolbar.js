@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor-common');
   var Markdown = require('./markdown');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(require('../html!./markdown-editor-toolbar'));
   var $ = Dom.current;
@@ -66,17 +67,7 @@ define(function(require, exports, module) {
 
           var parent = toolbar.parentNode;
           var op = parent.offsetParent;
-          var abb = Dom.clonePosition(button, data.form, op, 'Bl');
-          parent.appendChild(data.form);
-
-          var ibb = parent.getBoundingClientRect();
-          var lbb = data.form.getBoundingClientRect();
-
-          if (lbb.right > ibb.right) {
-            data.form.style.left = '';
-            data.form.style.right = '0';
-          }
-
+          var abb = Modal.append('below', {container: data.form, popup: data.form, origin: button});
           var lnp = data.form.getElementsByTagName('input')[0];
 
           lnp.focus();

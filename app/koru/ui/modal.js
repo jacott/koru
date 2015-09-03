@@ -84,6 +84,7 @@ define(function(require, exports, module) {
     },
 
     append: function (pos, options) {
+      pos = pos || 'below';
       var height = window.innerHeight;
       var isNested = ! options.popup;
       if (isNested) {
@@ -95,14 +96,24 @@ define(function(require, exports, module) {
       var ps = options.popup.style;
       var bbox = options.origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
-      if (pos === 'above') {
+      switch (pos) {
+      case 'above':
+        ps.top = '';
         ps.bottom = (height - bbox.top) + 'px';
-      } else {
+        break;
+      case 'below':
+        ps.bottom = '';
         ps.top = (bbox.top + bbox.height) + 'px';
+        break;
+      case 'on':
+        ps.bottom = '';
+        ps.top = bbox.top + 'px';
       }
-      document.body.appendChild(options.container);
+      options.noAppend ||
+        document.body.appendChild(options.container);
       var ppos = options.popup.getBoundingClientRect();
-      if (pos === 'above') {
+      switch (pos) {
+      case 'above':
         if (ppos.top < 0) {
           ps.bottom = '';
           if (ppos.height + bbox.top + bbox.height > height) {
@@ -111,18 +122,23 @@ define(function(require, exports, module) {
             ps.top = (bbox.top + bbox.height) + 'px';
           }
         }
-      } else if (ppos.bottom > height) {
-        if (ppos.height >= bbox.top) {
-          ps.top = '0';
-        } else {
-          ps.bottom = (height - bbox.top) + 'px';
-          ps.top = '';
+        break;
+      case 'below':
+        if (ppos.bottom > height) {
+          if (ppos.height >= bbox.top) {
+            ps.top = '0';
+          } else {
+            ps.bottom = (height - bbox.top) + 'px';
+            ps.top = '';
+          }
         }
       }
-      var width = window.innerWidth;
-      if (ppos.right > width) {
-        ps.right = '0';
-        ps.left = '';
+      if (pos !== 'on') {
+        var width = window.innerWidth;
+        if (ppos.right > width) {
+          ps.right = '0';
+          ps.left = '';
+        }
       }
 
     },

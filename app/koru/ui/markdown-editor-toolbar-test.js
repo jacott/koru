@@ -68,37 +68,29 @@ isClient && define(function (require, exports, module) {
         TH.trigger(v.link, 'mousedown');
         TH.trigger(v.link, 'mouseup');
 
-        test.stub(koru, 'afTimeout');
+        TH.stubAfTimeout();
+      });
 
-        assert.dom('.mdLink', function () {
-          // css settings
-          this.style.position = 'absolute';
-          // end of css settings
-
-          var inbb = this.getBoundingClientRect();
-
-          assert.near(inbb.left, v.lnbb.left, 0.1);
-          assert.near(inbb.top, v.lnbb.bottom, 0.1);
-          assert.dom('input', {value: '/link.html'}, function () {
-            TH.trigger(this, 'focusout');
-          });
+      assert.dom('body>.mdLink', function () {
+        assert.dom('input', {value: '/link.html'}, function () {
+          TH.trigger(this, 'focusout');
         });
+      });
 
-        assert.calledOnce(koru.afTimeout);
-        document.activeElement.blur();
+      assert.calledOnce(koru.afTimeout);
+      document.activeElement.blur();
 
-        assert.dom('.mdLink');
-        koru.afTimeout.yield();
-        refute.dom('.mdLink');
+      assert.dom('.mdLink');
+      TH.yieldAfTimeout();
+      refute.dom('.mdLink');
 
-        assert.dom('i', 'world', function () {
-          v.setCaret(this, 3);
-          this.parentNode.focus();
-          TH.trigger(this, 'mousedown');
-          TH.trigger(this, 'mouseup');
-          assert.className(v.italic, 'on');
-          refute.className(v.link, 'on');
-        });
+      assert.dom('i', 'world', function () {
+        v.setCaret(this, 3);
+        this.parentNode.focus();
+        TH.trigger(this, 'mousedown');
+        TH.trigger(this, 'mouseup');
+        assert.className(v.italic, 'on');
+        refute.className(v.link, 'on');
       });
     },
 
@@ -253,9 +245,11 @@ isClient && define(function (require, exports, module) {
 
         TH.trigger('[name=link]', 'mousedown');
         TH.trigger('[name=link]', 'mouseup');
+      });
 
-        TH.click('.mdLink [name=cancel]');
+      TH.click('.mdLink [name=cancel]');
 
+      assert.dom('.mdEditor', function () {
         assert.same(this.value, v.origText);
         assert.dom('.input', function () {
           assert.same(this, document.activeElement);
@@ -263,11 +257,13 @@ isClient && define(function (require, exports, module) {
 
         TH.trigger('[name=link]', 'mousedown');
         TH.trigger('[name=link]', 'mouseup');
+      });
 
-        TH.trigger('.mdLink input', 'keyup', {which: 27});
+      TH.trigger('.mdLink input', 'keyup', {which: 27});
 
-        refute.dom('.mdLink');
+      refute.dom('.mdLink');
 
+      assert.dom('.mdEditor', function () {
         assert.same(this.value, v.origText);
         assert.dom('.input', function () {
           assert.same(this, document.activeElement);

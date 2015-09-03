@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var MarkdownEditor = require('./markdown-editor-common');
   var Markdown = require('./markdown');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(require('../html!./markdown-editor-mention'));
   var $ = Dom.current;
@@ -228,22 +229,14 @@ define(function(require, exports, module) {
     input.value = data.value;
     data.span.style.opacity = "0";
 
-    data.inputElm.parentNode.appendChild(al);
     input.selectionStart = input.selectionEnd = 1;
     input.focus();
     return al;
   }
 
   function transformList(data, al) {
-    var op = data.inputElm.parentNode.offsetParent;
-
-    var spbb = Dom.clonePosition(data.span, al, op);
-    var input = al.firstChild;
-    var st = input.style;
-    st.width = (spbb.width+2)+'px';
-    st.height = spbb.height+'px';
-
-    return op;
+    Modal.append('on', {container: al, popup: al, origin: data.span});
+    Modal.append('below', {container: al.lastElementChild, popup: al.lastElementChild, noAppend: true, origin: al.firstElementChild});
   }
   return Tpl;
 });
