@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   var pubs = publish._pubs;
 
   function subscribe(data) {
-    data = message.decodeMessage(data);
+    data = message.decodeMessage(data, session.globalDict);
 
     var subId = data[0];
     var name = data[1];

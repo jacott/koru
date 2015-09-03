@@ -17,6 +17,8 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
+      v.gDict = message.newGlobalDict();
+
       TH.mockConnectState(v);
       subscribe = subscribeFactory(v.sess ={
         provide: test.stub(),
@@ -32,7 +34,7 @@ isClient && define(function (require, exports, module) {
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
           v['recv'+type] = function () {
-            func(message.encodeMessage(type, util.slice(arguments)).subarray(1));
+            func(message.encodeMessage(type, util.slice(arguments), v.gDict).subarray(1));
           };
           return true;
         }));

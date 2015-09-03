@@ -31,6 +31,19 @@ define(function (require, exports, module) {
       }, 'Error', 'invalid id: [object Object]');
     },
 
+    "test globalDictAdders": function () {
+      var adder = session._globalDictAdders[koru.absId(require, './main-server')];
+      assert.isFunction(adder);
+
+      var TestModel = Model.define('TestModel').defineFields({name: 'text', 'age': 'number'});
+
+      adder(v.stub = test.stub());
+
+      assert.calledWith(v.stub, '_id');
+      assert.calledWith(v.stub, 'name');
+      assert.calledWith(v.stub, 'age');
+    },
+
     "test remote": function () {
       var TestModel = Model.define('TestModel');
 

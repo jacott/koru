@@ -60,7 +60,7 @@ define(function(require, exports, module) {
   exports._encode =  function (object, globalDict) {
     var buffer = [];
     var dict = {};
-    encode(buffer, object, [globalDict, dict]);
+    encode(buffer, object, [globalDict || exports.newGlobalDict(), dict]);
     if (dict.index)
       return encodeDict(dict, [tDict]).concat(buffer);
     else
@@ -174,10 +174,17 @@ define(function(require, exports, module) {
     buffer.push(tTerm);
   }
 
+  exports.newGlobalDict = function () {
+    return {index: 0x8000, k2c: {}, c2k: []};
+  };
+
   exports.addToDict = addToDict;
   function addToDict(dict, name) {
-    if (Array.isArray(dict))
+    if (Array.isArray(dict)) {
+      var code = dict[0].k2c[name];
+      if (code) return code;
       dict = dict[1];
+    }
     var k2c = dict.k2c || (dict.k2c = {});
     var code = k2c[name];
     if (code) return code;
@@ -234,7 +241,7 @@ define(function(require, exports, module) {
   }
 
   exports._decode = function (object, globalDict) {
-    return decode(object, 0, [globalDict, {}])[0];
+    return decode(object, 0, [globalDict || exports.newGlobalDict(), {}])[0];
   };
   function decode(buffer, index, dict) {
     var tmpAb = new ArrayBuffer(8);

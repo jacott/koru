@@ -12,6 +12,12 @@ define(function(require, exports, module) {
 
   var uniqueIndexes = {}, indexes = {};
 
+  session.registerGlobalDictionaryAdder(module, addToDictionary);
+
+  koru.onunload(module, function () {
+    session.deregisterGlobalDictionaryAdder(module);
+  });
+
   var ModelEnv = {
     destroyModel: function (model, drop) {
       if (! model) return;
@@ -273,6 +279,15 @@ define(function(require, exports, module) {
 
   function setWeakDoc(doc) {
     this._$wm.set(doc);
+  }
+
+  function addToDictionary(adder) {
+    for (var mname in BaseModel) {
+      var model = BaseModel[mname];
+      for (var name in model.$fields) {
+        adder(name);
+      }
+    }
   }
 
   return ModelEnv;

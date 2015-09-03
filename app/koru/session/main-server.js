@@ -14,12 +14,13 @@ define(function (require, exports, module) {
     koru.onunload(module, 'reload');
 
     var sessCounter = 0;
+    var globalDictAdders = {};
 
     util.extend(session, {
       wss: new (session._wssOverride || WebSocketServer)({server: server, perMessageDeflate: false}),
       conns: {},
       sendAll: sendAll,
-      versionHash: process.env['KORU_APP_VERSION'] || Date.now(),
+      versionHash: process.env['KORU_APP_VERSION'] || ''+Date.now(),
       unload: unload,
       load: load,
       totalSessions: 0,
@@ -31,11 +32,45 @@ define(function (require, exports, module) {
         IdleCheck.waitIdle(func);
       },
 
+      registerGlobalDictionaryAdder: function (module, adder) {
+        globalDictAdders[module.id] = adder;
+      },
+
+      deregisterGlobalDictionaryAdder: function (module) {
+        delete globalDictAdders[module.id];
+      },
+
+      get globalDict() {
+        if (_globalDict) return _globalDict;
+        return buildGlobalDict();
+      },
+
       // for testing
       _onConnection: onConnection,
       get _sessCounter() {return sessCounter},
       get _Connection() {return Connection},
+      get _globalDictAdders() {return globalDictAdders},
     });
+
+    var _globalDict, _globalDictEncoded;
+
+
+    function buildGlobalDict() {
+      _globalDict = message.newGlobalDict();
+      for(var name in globalDictAdders) {
+        globalDictAdders[name](addToDict);
+      }
+      _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
+      return _globalDict;
+    }
+
+    function addToDict(word) {
+      message.addToDict(_globalDict, word);
+    }
+
+    function globalDictEncoded() {
+      return session.globalDict && _globalDictEncoded;
+    }
 
     makeSubject(session.countNotify = {});
 
@@ -54,7 +89,7 @@ define(function (require, exports, module) {
         koru.logger('INFO', this.sessId, this.engine, data);
     });
     session.provide('M', function (data) {
-      data = message.decodeMessage(data);
+      data = message.decodeMessage(data, session.globalDict);
       var msgId = data[0];
       var func = session._rpcs[data[1]];
       try {
@@ -104,7 +139,7 @@ define(function (require, exports, module) {
 
       ws.on('message', conn.onMessage.bind(conn));
 
-      conn.send('X1', session.versionHash);
+      conn.sendBinary('X', [1, session.versionHash, globalDictEncoded()]);
       koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
       session.countNotify.notify(conn, true);
     }
@@ -123,7 +158,7 @@ define(function (require, exports, module) {
     function unload(id) {
       if (requirejs.defined(id)) {
         koru.unload(id);
-        this.versionHash = Date.now();
+        this.versionHash = ''+Date.now();
       }
       this.sendAll('U', this.versionHash + ':' + id);
     }

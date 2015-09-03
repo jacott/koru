@@ -19,7 +19,7 @@ isServer && define(function (require, exports, module) {
       });
 
       v.callSub = function () {
-        v.conn = new (serverConnection())({send: v.send = test.stub(), on: test.stub()}, 's123');
+        v.conn = new (serverConnection({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
         v.conn.sendBinary = test.stub();
         session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
       };

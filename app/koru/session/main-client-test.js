@@ -21,6 +21,7 @@ define(function (require, exports, module) {
       });
       v.ready = false;
       TH.mockConnectState(v);
+      v.gDict = message.newGlobalDict();
     },
 
     tearDown: function () {
@@ -79,17 +80,26 @@ define(function (require, exports, module) {
         return v.func = func;
       }));
 
-      v.func('1hash,version');
+      var dict = message.newGlobalDict();
+      message.addToDict(dict, 't1');
+      message.addToDict(dict, 't2');
+
+      var endict = new Uint8Array(message.encodeDict(dict, []));
+
+      v.func(message.encodeMessage('X', [1, 'hash,version', endict]).subarray(1));
+
+      assert.same(v.sess.globalDict.k2c['t1'], 0x8000);
+      assert.same(v.sess.globalDict.k2c['t2'], 0x8001);
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,version');
 
-      v.func('1hash,v2');
+      v.func(message.encodeMessage('X', [1, 'hash,v2', dict], v.gDict).subarray(1));
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,v2');
 
-      v.func('1hashdiff,v2');
+      v.func(message.encodeMessage('X', [1, 'hashdiff,v2', dict], v.gDict).subarray(1));
 
       assert.called(koru.reload);
     },
@@ -283,7 +293,7 @@ define(function (require, exports, module) {
 
         assert.calledWith(v.ws.send, TH.match(function (data) {
           if (data[0] === 'M'.charCodeAt(0)) {
-            assert.equals(message.decodeMessage(data.subarray(1)), [1,2,3,4]);
+            assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [1,2,3,4]);
             return true;
           }
         }));

@@ -27,6 +27,19 @@ define(function(require, exports, module) {
       ws.on('close', function () {conn.close()});
     }
 
+
+    session.encodeAdded = function (name, id, attrs, filter) {
+      return message.encodeMessage('A', [name, id, filterAttrs(attrs, filter)], session.globalDict);
+    };
+
+    session.encodeChanged = function (name, id, attrs, filter) {
+      return message.encodeMessage('C', [name, id, filterAttrs(attrs, filter)], session.globalDict);
+    };
+
+    session.encodeRemoved = function (name, id) {
+      return message.encodeMessage('R', [name, id], session.globalDict);
+    };
+
     var binaryData = {binary: true};
 
     Connection.prototype = {
@@ -68,7 +81,7 @@ define(function(require, exports, module) {
       },
 
       sendBinary: function (type, args) {
-        var msg = arguments.length === 1 ? type : message.encodeMessage(type, args);
+        var msg = arguments.length === 1 ? type : message.encodeMessage(type, args, session.globalDict);
         try {
           this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {
@@ -146,20 +159,6 @@ define(function(require, exports, module) {
   }
 
   exports.filterAttrs = filterAttrs;
-
-  exports.encodeAdded = function (name, id, attrs, filter) {
-    return message.encodeMessage('A', [name, id, filterAttrs(attrs, filter)]);
-  };
-
-  exports.encodeChanged = function (name, id, attrs, filter) {
-    return message.encodeMessage('C', [name, id, filterAttrs(attrs, filter)]);
-  };
-
-  exports.encodeRemoved = function (name, id) {
-    return message.encodeMessage('R', [name, id]);
-  };
-
-
 
 
   return exports;

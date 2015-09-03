@@ -75,6 +75,10 @@ isServer && define(function (require, exports, module) {
           return v.func = func;
         }));
 
+        v.sess.registerGlobalDictionaryAdder({id: 'test'}, function (adder) {
+          adder('g1'); adder('g2');
+        });
+
         assert.between(v.sess.versionHash, Date.now() - 2000, Date.now() + 2000);
 
         v.sess.versionHash = 'hash,v1';
@@ -82,7 +86,23 @@ isServer && define(function (require, exports, module) {
         test.stub(koru, 'info');
         v.func(v.ws);
 
-        assert.calledWith(v.ws.send, 'X1hash,v1');
+        assert.calledWith(v.ws.send, TH.match(function (arg) {
+          v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);
+          assert.equals(v.msg,
+                        [1, 'hash,v1', TH.match.any]);
+
+          return arg[0] === 88;
+        }), {binary: true});
+
+        var dict = message.newGlobalDict();
+
+        assert.same(v.msg[2].length, 7);
+
+
+        message.decodeDict(v.msg[2], 0, dict);
+
+        assert.same(dict.k2c['g1'], 0x8000);
+        assert.same(dict.k2c['g2'], 0x8001);
       },
     },
 

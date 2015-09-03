@@ -209,6 +209,8 @@ isServer && define(function (require, exports, module) {
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
         assert.calledWith(v.ws.send, TH.match(function (data) {
+          if (typeof data !== 'string') return false;
+
           var m = data.match(/^VT(.*)\|(.*)$/);
           v.docId = m && m[1];
           return v.token = m && m[2];

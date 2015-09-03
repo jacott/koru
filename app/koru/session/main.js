@@ -2,8 +2,8 @@ define(function(require) {
   var koru = require('../main');
   var base = require('./base');
 
-  function Constructor(QueryEnv, base) {
-    QueryEnv(base);
+  function Constructor(env, base) {
+    env(base);
     return base;
   }
 

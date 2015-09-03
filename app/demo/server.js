@@ -1,7 +1,6 @@
 define(function(require, exports, module) {
   var bootstrap = require('bootstrap');
   require('publish-all');
-  var server = require('koru/server');
   var session = require('koru/session');
   var webServer = require('koru/web-server');
 

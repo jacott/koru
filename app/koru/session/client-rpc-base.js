@@ -57,7 +57,7 @@ define(function(require, exports, module) {
     sessState.onConnect("20", onConnect);
 
     session.provide('M', function (data) {
-      data = message.decodeMessage(data);
+      data = message.decodeMessage(data, session.globalDict);
       var msgId = data[0];
       var args = waitMs[msgId];
       if (! args) return;

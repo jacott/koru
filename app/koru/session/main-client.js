@@ -26,7 +26,7 @@ define(function (require, exports, module) {
         },
 
         sendBinary: function (type, msg) {
-          if (sessState.isReady()) connect._ws.send(message.encodeMessage(type, msg));
+          if (sessState.isReady()) connect._ws.send(message.encodeMessage(type, msg, session.globalDict));
           else waitSends.push([type, util.deepCopy(msg)]);
         },
 
@@ -57,12 +57,15 @@ define(function (require, exports, module) {
 
       session.provide('X', function (data) {
         var ws = this.ws;
-        data = data.slice(1).toString();
+        data = message.decodeMessage(data, session.globalDict);
 
-        if (session.versionHash && session.versionHash.replace(/,.*$/,'') !== data.replace(/,.*$/,'')) {
+        if (session.versionHash && session.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
           koru.reload();
         }
-        session.versionHash = data;
+        session.versionHash = data[1];
+        session.globalDict = message.newGlobalDict();
+
+        message.decodeDict(data[2], 0, session.globalDict);
 
         retryCount = 0;
       });
@@ -91,14 +94,15 @@ define(function (require, exports, module) {
           ws.send('X1');
           sessState.connected(conn);
 
-          // TODO add global dictionary. We will need to receive
-          // dictionary before we can send queued
-          // messages. Alternatively we can clear the global dictionary
-          // so messages do not use it.
+
+          // We will need to clear the old global dictionary before we
+          // can send queued messages.
+          session.globalDict = message.newGlobalDict();
+
           for(var i = 0; i < waitSends.length; ++i) {
             // encode here because we may have a different global dictionary
             var item = waitSends[i];
-            ws.send(typeof item === 'string' ? item : message.encodeMessage.apply(message, item));
+            ws.send(typeof item === 'string' ? item : message.encodeMessage.call(message, item[0], item[1], session.globalDict));
           }
           waitSends = [];
         };
@@ -153,7 +157,7 @@ define(function (require, exports, module) {
       var broadcastFuncs = {};
 
       session.provide('B', function (data) {
-        data = message.decodeMessage(data);
+        data = message.decodeMessage(data, session.globalDict);
         var func = broadcastFuncs[data[0]];
         if (! func)
           koru.error("Broadcast function '"+data[1]+"' not registered");
