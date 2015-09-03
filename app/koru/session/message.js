@@ -26,12 +26,12 @@ define(function(require, exports, module) {
 
   var toStringFunc = Object.prototype.toString;
 
-  exports.encodeMessage = function (type, args) {
+  exports.encodeMessage = function (type, args, globalDict) {
     var buffer = [];
     var dict = {};
 
     util.forEach(args, function (o) {
-      encode(buffer, o, dict);
+      encode(buffer, o, [globalDict, dict]);
     });
 
     dict = encodeDict(dict, [type.charCodeAt(0)]);
@@ -43,24 +43,24 @@ define(function(require, exports, module) {
     return result;
   },
 
-  exports.decodeMessage = function (u8) {
+  exports.decodeMessage = function (u8, globalDict) {
     var dict = {};
     var index = decodeDict(u8, 0, dict);
 
     var len = u8.length;
     var out = [];
     for(;index < len; index = result[1]) {
-      var result = decode(u8, index, dict);
+      var result = decode(u8, index, [globalDict, dict]);
       out.push(result[0]);
     }
 
     return out;
   },
 
-  exports._encode =  function (object) {
+  exports._encode =  function (object, globalDict) {
     var buffer = [];
     var dict = {};
-    encode(buffer, object, dict);
+    encode(buffer, object, [globalDict, dict]);
     if (dict.index)
       return encodeDict(dict, [tDict]).concat(buffer);
     else
@@ -176,25 +176,27 @@ define(function(require, exports, module) {
 
   exports.addToDict = addToDict;
   function addToDict(dict, name) {
+    if (Array.isArray(dict))
+      dict = dict[1];
     var k2c = dict.k2c || (dict.k2c = {});
     var code = k2c[name];
     if (code) return code;
 
     var index = dict.index || 0x100;
 
-    if (index === 32767) throw new Error("Dictionary overflow");
+    if ((index & 0x7fff) === 0x7fff) throw new Error("Dictionary overflow");
     dict.index = index + 1;
 
     k2c[name] = index;
 
     var c2k = dict.c2k || (dict.c2k = []);
-    c2k[index - 0x100] = name;
+    c2k[index - (index > 0x7fff ? 0x8000 : 0x100)] = name;
     return index;
   }
 
   exports.encodeDict = encodeDict;
   function encodeDict(dict, buffer) {
-    var index = dict.index - 0x100;
+    var index = dict.index - (dict.index > 0x7fff ? 0x8000 : 0x100);
     var c2k = dict.c2k;
     for(var i = 0; i < index; ++i) {
       utf16to8(buffer, c2k[i]);
@@ -226,11 +228,13 @@ define(function(require, exports, module) {
 
   exports.getDictItem = getDictItem;
   function getDictItem(dict, code) {
-    return dict.c2k[code - 0x100];
+    if (code > 0x7fff)
+      return dict[0].c2k[code - 0x8000];
+    return dict[1].c2k[code - 0x100];
   }
 
-  exports._decode = function (object) {
-    return decode(object, 0, {})[0];
+  exports._decode = function (object, globalDict) {
+    return decode(object, 0, [globalDict, {}])[0];
   };
   function decode(buffer, index, dict) {
     var tmpAb = new ArrayBuffer(8);

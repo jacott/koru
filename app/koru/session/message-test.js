@@ -192,7 +192,27 @@ define(function (require, exports, module) {
 
       assert.equals(dict.k2c["bár\x00"], 257);
 
-      assert.same(message.getDictItem(dict, 257), "bár\x00");
+      assert.same(message.getDictItem([{}, dict], 257), "bár\x00");
+    },
+
+    "test global encodeDict decodeDict": function () {
+      var dict = {index: 0x8000};
+
+      message.addToDict(dict, "foo");
+      message.addToDict(dict, "bár\x00");
+
+      assert.equals(message.encodeDict(dict, [8]), v.ans = [8,
+                                               102, 111, 111, 0xff,
+                                               98, 195, 161, 114, 192, 128, 0xff,
+                                               0]);
+
+      var dict = {index: 0x8000};
+
+      assert.same(message.decodeDict(v.ans, 0, dict), 13);
+
+      assert.equals(dict.k2c["bár\x00"], 32769);
+
+      assert.same(message.getDictItem([dict, {}], 32769), "bár\x00");
     },
 
     "test mixed": function () {
