@@ -20,6 +20,7 @@ define(function(require, exports, module) {
   var tDec4 = 14;
   var tDate = 15;
   var tBinary = 16;
+  var tDictString = 17;
 
   var tSmString = 0x80;
   var tSmNumber = 0x40;
@@ -77,6 +78,13 @@ define(function(require, exports, module) {
       if (object === '')
         return buffer.push(tEmptyString);
 
+      if (object.length !== 1) {
+        var dkey = dict[0].k2c[object];
+        if (dkey) {
+          buffer.push(tDictString, dkey >> 8, dkey & 0xff);
+          return;
+        }
+      }
       // TODO add a hex string type and maybe an _id type (17 bytes [0-9a-zA-Z])
 
       var index = buffer.length;
@@ -283,6 +291,9 @@ define(function(require, exports, module) {
 
     case tString:
       return utf8to16(buffer, index);
+
+    case tDictString:
+      return [getDictItem(dict, (buffer[index] << 8) + buffer[index+1]), index + 2];
 
     case tArray:
       var len = buffer.length;

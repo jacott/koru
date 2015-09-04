@@ -27,7 +27,7 @@ isClient && define(function (require, exports, module) {
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
         v.recvP = function () {
-          func(message.encodeMessage('P', util.slice(arguments)).subarray(1));
+          func(message.encodeMessage('P', util.slice(arguments), v.gDict).subarray(1));
         };
         return true;
       }));

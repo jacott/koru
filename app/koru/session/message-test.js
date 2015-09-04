@@ -68,6 +68,18 @@ define(function (require, exports, module) {
       assert.equals(message._decode(message._encode(string)).length, string.length);
     },
 
+    "test string in dict": function () {
+      var gDict = message.newGlobalDict();
+      message.addToDict(gDict, "Friday");
+      message.addToDict(gDict, "x");
+
+      assert.equals(message._encode('x', gDict),  v.ans = [129, 120]);
+      assert.same(message._decode(v.ans, gDict), 'x');
+
+      assert.equals(message._encode('Friday', gDict),  v.ans = [17, 128, 0]);
+      assert.same(message._decode(v.ans, gDict), 'Friday');
+    },
+
     "test small integer": function () {
       assert.equals(message._encode(1), v.ans = [0x41]);
 
@@ -135,13 +147,13 @@ define(function (require, exports, module) {
       var msg = message._encode({foo: 'bar', baz: 'foo'}, gDict);
 
       assert.equals(msg, v.ans = [
-        8,                        // Dictionary
-        98, 97, 122, 0xff,        // local entry 0x80: baz
-        0,
-        7,                           // object
-        0x80, 0, 131, 98, 97, 114,   // foo: bar
-        1, 0, 131, 102, 111, 111, // baz: foo
-        0
+        8,                         // Dictionary
+        98, 97, 122, 0xff,         // local entry 0x80: baz
+        0,                         // end-of-dict
+        7,                         // object
+        0x80, 0, 131, 98, 97, 114, // foo: bar
+        1, 0, 17, 128, 0,          // baz: foo
+        0                          // eom
       ]);
 
       assert.equals(message._decode(v.ans, gDict), {foo: 'bar', baz: 'foo'});

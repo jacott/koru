@@ -17,10 +17,11 @@ define(function (require, exports, module) {
         _rpcs: {},
         sendBinary: v.sendBinary = test.stub(),
         state: 'ready',
+        globalDict: message.newGlobalDict(),
       }, sessState);
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function () {
-          func(message.encodeMessage('M', util.slice(arguments)).subarray(1));
+          func(message.encodeMessage('M', util.slice(arguments), v.sess.globalDict).subarray(1));
         };
         return true;
       }));

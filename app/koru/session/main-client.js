@@ -51,6 +51,8 @@ define(function (require, exports, module) {
 
         heartbeatInterval: 20000,
 
+        globalDict: message.newGlobalDict(),
+
         // for testing
         get _waitSends() {return waitSends},
       });

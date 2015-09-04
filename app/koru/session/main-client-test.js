@@ -18,10 +18,10 @@ define(function (require, exports, module) {
       v.sess.newWs = test.stub().returns(v.ws = {
         send: test.stub(),
         close: test.stub(),
+        globalDict: v.gDict = message.newGlobalDict(),
       });
       v.ready = false;
       TH.mockConnectState(v);
-      v.gDict = message.newGlobalDict();
     },
 
     tearDown: function () {
@@ -43,7 +43,7 @@ define(function (require, exports, module) {
       }));
 
       var data = ['foo', 1, 2, 3];
-      var buffer = message.encodeMessage('M', data);
+      var buffer = message.encodeMessage('M', data, v.gDict);
 
       v.func(buffer.subarray(1));
 
@@ -51,7 +51,7 @@ define(function (require, exports, module) {
       refute.called(v.bar);
 
       data = ['bar', "otherTest"];
-      buffer = message.encodeMessage('M', data);
+      buffer = message.encodeMessage('M', data, v.gDict);
       v.func(buffer.subarray(1));
 
       assert.calledWith(v.bar, "otherTest");
@@ -86,7 +86,7 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func(message.encodeMessage('X', [1, 'hash,version', endict]).subarray(1));
+      v.func(message.encodeMessage('X', [1, 'hash,version', endict], v.gDict).subarray(1));
 
       assert.same(v.sess.globalDict.k2c['t1'], 0x8000);
       assert.same(v.sess.globalDict.k2c['t2'], 0x8001);

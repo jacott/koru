@@ -21,7 +21,7 @@ isServer && define(function (require, exports, module) {
       v.callSub = function () {
         v.conn = new (serverConnection({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
         v.conn.sendBinary = test.stub();
-        session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
+        session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       };
 
       v.callSub();
@@ -37,7 +37,7 @@ isServer && define(function (require, exports, module) {
       session._onMessage(v.conn = {
         sendBinary: test.stub(),
         _subs: {},
-      }, message.encodeMessage('P', ['a123', 'bar', [1,2,3]]));
+      }, message.encodeMessage('P', ['a123', 'bar', [1,2,3]], session.globalDict));
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'unknown publication: bar']);
     },
@@ -48,7 +48,7 @@ isServer && define(function (require, exports, module) {
           sendBinary: test.stub(),
           // no ws
           // no _subs
-        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]]));
+        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       });
     },
 
@@ -67,11 +67,11 @@ isServer && define(function (require, exports, module) {
       refute(v.sub.stopped);
 
       // "P", <pub-id>; no name means stop
-      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123'], session.globalDict));
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);
 
-      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123'], session.globalDict));
       assert.calledOnce(v.onStop);
 
       assert.calledWith(v.conn.sendBinary, 'P');
@@ -84,7 +84,7 @@ isServer && define(function (require, exports, module) {
       v.sub.stop();
       assert.called(v.onStop);
       refute('a123' in v.conn._subs);
-      session._onMessage(v.conn, message.encodeMessage('P', ['a123']));
+      session._onMessage(v.conn, message.encodeMessage('P', ['a123'], session.globalDict));
       assert.calledOnce(v.onStop);
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', false]);
