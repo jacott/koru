@@ -7,6 +7,7 @@ define(function (require, exports, module) {
   var message = require('./message');
   var IdleCheck = require('../idle-check').singleton;
   var makeSubject = require('../make-subject');
+  var BatchMessage = require('./batch-message');
 
   return function (session) {
     var Connection = require('./server-connection')(session);
@@ -43,6 +44,18 @@ define(function (require, exports, module) {
       get globalDict() {
         if (_globalDict) return _globalDict;
         return buildGlobalDict();
+      },
+
+      batchMessages: function () {
+        util.thread.batchMessage = new BatchMessage(this);
+      },
+      releaseMessages: function () {
+        util.thread.batchMessage.release();
+        util.thread.batchMessage = null;
+      },
+      abortMessages: function () {
+        util.thread.batchMessage.abort();
+        util.thread.batchMessage = null;
       },
 
       // for testing
@@ -89,16 +102,18 @@ define(function (require, exports, module) {
         koru.logger('INFO', this.sessId, this.engine, data);
     });
     session.provide('M', function (data) {
-      data = message.decodeMessage(data, session.globalDict);
       var msgId = data[0];
       var func = session._rpcs[data[1]];
       try {
+        session.batchMessages();
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
         var result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
+        session.releaseMessages();
       } catch(ex) {
+        session.abortMessages();
         if (ex.error) {
           this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         } else {

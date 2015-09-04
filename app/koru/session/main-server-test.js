@@ -155,6 +155,50 @@ isServer && define(function (require, exports, module) {
         };
       },
 
+      "batch messages": {
+        setUp: function () {
+          test.spy(session, 'batchMessages');
+          test.spy(session, 'releaseMessages');
+          test.spy(session, 'abortMessages');
+        },
+
+        "test send after return": function () {
+          v.run(function (one, two, three) {
+            assert.called(session.batchMessages);
+            assert(util.thread.batchMessage);
+            refute.called(session.releaseMessages);
+            v.release = test.stub(util.thread.batchMessage, 'release');
+            return 'result';
+          });
+
+          refute(util.thread.batchMessage);
+          assert.calledWith(v.conn.sendBinary, 'M', ['123', 'r', 'result']);
+          assert(session.releaseMessages.calledAfter(v.conn.sendBinary));
+          refute.called(session.abortMessages);
+          assert.called(v.release);
+        },
+
+        "test abort": function () {
+          v.run(function (one, two, three) {
+            assert.called(session.batchMessages);
+            assert(util.thread.batchMessage);
+            v.abort = test.stub(util.thread.batchMessage, 'abort');
+            refute.called(session.releaseMessages);
+            test.stub(koru, 'error');
+            throw 'test aborted';
+          });
+
+          koru.error.restore();
+
+          refute(util.thread.batchMessage);
+          assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 'test aborted']);
+          assert(session.abortMessages.calledBefore(v.conn.sendBinary));
+          refute.called(session.releaseMessages);
+          assert.called(v.abort);
+        },
+      },
+
+
       "test result": function () {
         v.run(function (one, two, three) {
           v.thisValue = this;

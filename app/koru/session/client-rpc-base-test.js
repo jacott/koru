@@ -21,7 +21,7 @@ define(function (require, exports, module) {
       }, sessState);
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function () {
-          func(message.encodeMessage('M', util.slice(arguments), v.sess.globalDict).subarray(1));
+          func(util.slice(arguments));
         };
         return true;
       }));

@@ -104,28 +104,41 @@ isServer && define(function (require, exports, module) {
       },
     },
 
+    "test send batched": function () {
+      var bm = util.thread.batchMessage = {batch: test.stub()};
+      test.onEnd(function () {util.thread.batchMessage = null});
+
+      v.conn.sendBinary.restore();
+
+      v.conn.sendBinary('M', [1, 2, 3], v.func = test.stub());
+
+      assert.calledWith(bm.batch, v.conn, 'M', [1, 2, 3], v.func);
+
+      refute.called(v.conn.ws.send);
+    },
+
     "test send": function () {
       v.conn.send('X', 'FOO');
       assert.calledWith(v.ws.send, 'XFOO');
 
-      test.stub(koru, 'error');
+      test.stub(koru, 'info');
       refute.exception(function () {
         v.conn.ws.send = test.stub().throws(v.error = new Error('foo'));
         v.conn.send('X', 'FOO');
       });
 
       assert.called(v.sessClose);
-      assert.called(koru.error);
+      assert.called(koru.info);
 
       v.sessClose.reset();
-      koru.error.reset();
+      koru.info.reset();
       v.conn.ws = null;
       refute.exception(function () {
         v.conn.send('X', 'FOO');
       });
 
       refute.called(v.sessClose);
-      refute.called(koru.error);
+      refute.called(koru.info);
     },
 
     "test sendBinary": function () {

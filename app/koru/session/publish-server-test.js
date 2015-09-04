@@ -25,6 +25,9 @@ isServer && define(function (require, exports, module) {
       };
 
       v.callSub();
+      test.spy(session, 'batchMessages');
+      test.spy(session, 'releaseMessages');
+      test.spy(session, 'abortMessages');
     },
 
     tearDown: function () {
@@ -40,6 +43,7 @@ isServer && define(function (require, exports, module) {
       }, message.encodeMessage('P', ['a123', 'bar', [1,2,3]], session.globalDict));
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'unknown publication: bar']);
+      assert(session.releaseMessages.calledAfter(session.batchMessages));
     },
 
     "test session closing before subscribe": function () {
@@ -50,6 +54,7 @@ isServer && define(function (require, exports, module) {
           // no _subs
         }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       });
+      refute.called(session.batchMessages);
     },
 
     "test publish": function () {
@@ -163,6 +168,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Error: Foo error']);
 
       refute('a123' in v.conn._subs);
+      assert(session.releaseMessages.calledAfter(session.batchMessages));
     },
 
     "test error when conn closed": function () {

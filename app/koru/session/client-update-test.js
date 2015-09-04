@@ -24,7 +24,7 @@ isClient && define(function (require, exports, module) {
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
           v['recv'+type] = function () {
-            func(message.encodeMessage(type, util.slice(arguments), v.gDict).subarray(1));
+            func(util.slice(arguments));
           };
           return true;
         }));

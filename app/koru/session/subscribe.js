@@ -24,8 +24,6 @@ define(function(require, exports, module) {
     };
 
     session.provide('P', function (data) {
-      data = message.decodeMessage(data, session.globalDict);
-
       var handle = subs[data[0]];
       if (! handle) return;
       handle._received(data[1]);

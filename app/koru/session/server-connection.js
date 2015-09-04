@@ -27,20 +27,10 @@ define(function(require, exports, module) {
       ws.on('close', function () {conn.close()});
     }
 
-
-    session.encodeAdded = function (name, id, attrs, filter) {
-      return message.encodeMessage('A', [name, id, filterAttrs(attrs, filter)], session.globalDict);
-    };
-
-    session.encodeChanged = function (name, id, attrs, filter) {
-      return message.encodeMessage('C', [name, id, filterAttrs(attrs, filter)], session.globalDict);
-    };
-
-    session.encodeRemoved = function (name, id) {
-      return message.encodeMessage('R', [name, id], session.globalDict);
-    };
-
     var binaryData = {binary: true};
+
+    function batchMessage(type, args, func) {
+    }
 
     Connection.prototype = {
       constructor: Connection,
@@ -75,13 +65,18 @@ define(function(require, exports, module) {
         try {
           this.ws && this.ws.send(type + (data === undefined ? '' : data));
         } catch(ex) {
-          koru.error(util.extractError(ex));
+          koru.info('send exception', ex);
           this.close();
         }
       },
 
-      sendBinary: function (type, args) {
-        var msg = arguments.length === 1 ? type : message.encodeMessage(type, args, session.globalDict);
+      sendBinary: function (type, args, func) {
+        var bm = util.thread.batchMessage;
+        if (bm) {
+          bm.batch(this, type, args, func);
+          return;
+        }
+        var msg = arguments.length === 1 ? type : message.encodeMessage(type, func ? func(args) : args, session.globalDict);
         try {
           this.ws && this.ws.send(msg, binaryData);
         } catch(ex) {

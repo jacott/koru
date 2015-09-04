@@ -23,7 +23,6 @@ define(function(require, exports, module) {
   }
 
   session.provide('i', function (data) {
-    data = message.decodeMessage(data, session.globalDict);
     queueHead ||
       handleError(new Error('unexpected server message: ' + util.inpect(data)));
 

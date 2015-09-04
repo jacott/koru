@@ -14,11 +14,12 @@ define(function (require, exports, module) {
       v.sess = clientSession({
         provide: test.stub(),
         _rpcs: {},
+        globalDict: v.gDict = message.newGlobalDict(),
+        _commands: {},
       });
       v.sess.newWs = test.stub().returns(v.ws = {
         send: test.stub(),
         close: test.stub(),
-        globalDict: v.gDict = message.newGlobalDict(),
       });
       v.ready = false;
       TH.mockConnectState(v);
@@ -43,18 +44,32 @@ define(function (require, exports, module) {
       }));
 
       var data = ['foo', 1, 2, 3];
-      var buffer = message.encodeMessage('M', data, v.gDict);
 
-      v.func(buffer.subarray(1));
+      v.func(data);
 
       assert.calledWith(v.foo, 1, 2, 3);
       refute.called(v.bar);
 
       data = ['bar', "otherTest"];
-      buffer = message.encodeMessage('M', data, v.gDict);
-      v.func(buffer.subarray(1));
+      v.func(data);
 
       assert.calledWith(v.bar, "otherTest");
+    },
+
+    "test batched messages": function () {
+      v.sess._commands.f = v.f = test.stub();
+      v.sess._commands.g = v.g = test.stub();
+
+      assert.calledWith(v.sess.provide, 'W', TH.match(function (arg) {
+        v.func = arg;
+        return typeof arg === 'function';
+      }));
+
+      var data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
+      v.func(data);
+
+      assert.calledWith(v.f, ['foo', 1, 2, 3]);
+      assert.calledWith(v.g, ['gee', 'waz']);
     },
 
     "test initial KORU_APP_VERSION": function () {
@@ -86,7 +101,7 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func(message.encodeMessage('X', [1, 'hash,version', endict], v.gDict).subarray(1));
+      v.func([1, 'hash,version', endict]);
 
       assert.same(v.sess.globalDict.k2c['t1'], 0x8000);
       assert.same(v.sess.globalDict.k2c['t2'], 0x8001);
@@ -94,12 +109,12 @@ define(function (require, exports, module) {
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,version');
 
-      v.func(message.encodeMessage('X', [1, 'hash,v2', dict], v.gDict).subarray(1));
+      v.func([1, 'hash,v2', dict]);
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,v2');
 
-      v.func(message.encodeMessage('X', [1, 'hashdiff,v2', dict], v.gDict).subarray(1));
+      v.func([1, 'hashdiff,v2', dict]);
 
       assert.called(koru.reload);
     },

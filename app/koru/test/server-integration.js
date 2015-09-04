@@ -9,7 +9,6 @@ define(function(require, exports, module) {
   var clientMessage, cmFuture;
 
   session.provide('i', function (data) {
-    data = message.decodeMessage(data, session.globalDict);
     clientMessage = data;
     cmFuture && cmFuture.return('');
   });

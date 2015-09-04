@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   var koru = require('../main');
+  var message = require('./message');
 
   function Constructor() {
     return {
@@ -27,7 +28,7 @@ define(function(require, exports, module) {
         } else {
           data = new Uint8Array(data);
           var type = String.fromCharCode(data[0]);
-          data = data.subarray(1);
+          data = message.decodeMessage(data.subarray(1), this.globalDict);
         }
 
         var func = this._commands[type];

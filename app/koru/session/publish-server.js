@@ -10,28 +10,34 @@ define(function(require, exports, module) {
   var pubs = publish._pubs;
 
   function subscribe(data) {
-    data = message.decodeMessage(data, session.globalDict);
-
     var subId = data[0];
     var name = data[1];
     var subs = this._subs;
     if (! subs) return; // we are closed
     var sub = subs[subId];
 
-    if (! name) {
-      if (sub) {
-        stopped(sub);
+    try {
+      session.batchMessages();
+      if (! name) {
+        if (sub) {
+          stopped(sub);
+        }
+      } else {
+        var func = pubs[name];
+        if (! func) {
+          var msg = 'unknown publication: ' + name;
+          this.sendBinary('P', [subId, 500, msg]);
+          koru.info(msg);
+        } else {
+          sub = subs[subId] = new Sub(this, subId, func, data[2]);
+          sub.resubscribe();
+          subs[subId] && this.sendBinary('P', [subId]); // ready
+        }
       }
-    } else {
-      var func = pubs[name];
-      if (! func) {
-        var msg = 'unknown publication: ' + name;
-        this.sendBinary('P', [subId, 500, msg]);
-        return koru.info(msg);
-      }
-      sub = subs[subId] = new Sub(this, subId, func, data[2]);
-      sub.resubscribe();
-      subs[subId] && this.sendBinary('P', [subId]); // ready
+      session.releaseMessages();
+    } catch(ex) {
+      session.abortMessages();
+      throw ex;
     }
   }
 

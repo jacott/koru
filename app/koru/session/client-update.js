@@ -41,7 +41,6 @@ define(function(require, exports, module) {
 
     function modelUpdate(func, type) {
       return function (data) {
-        data = message.decodeMessage(data, session.globalDict);
         if (debug_clientUpdate) {
           if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
             koru.logger("Debug"+type, '< ' + util.inspect(data));

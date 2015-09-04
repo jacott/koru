@@ -59,8 +59,6 @@ define(function (require, exports, module) {
 
       session.provide('X', function (data) {
         var ws = this.ws;
-        data = message.decodeMessage(data, session.globalDict);
-
         if (session.versionHash && session.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
           koru.reload();
         }
@@ -121,7 +119,7 @@ define(function (require, exports, module) {
           if (heartbeatTO) heartbeatTO();
           heatbeatTime = heartbeatTO = connect._ws = ws = conn = null;
           retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
-          retryCount = Math.min(4, ++retryCount); // FIXME make this different for TDD/Demo vs Production
+          retryCount = Math.min(4, ++retryCount);
 
           if (sessState.isClosed())
             return;
@@ -156,10 +154,22 @@ define(function (require, exports, module) {
         }
       }
 
+      session.provide('W', batchedMessages);
+      function batchedMessages(data) {
+        util.forEach(data, function (msg) {
+          try {
+            var func = session._commands[msg[0]];
+            func(msg[1]);
+          } catch(ex) {
+            koru.error(util.extractError(ex));
+          }
+        });
+      }
+
+
       var broadcastFuncs = {};
 
       session.provide('B', function (data) {
-        data = message.decodeMessage(data, session.globalDict);
         var func = broadcastFuncs[data[0]];
         if (! func)
           koru.error("Broadcast function '"+data[1]+"' not registered");

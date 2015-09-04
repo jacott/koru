@@ -1,5 +1,35 @@
-Issues and Ideas
-================
+* Batch client messages until end of transaction
+
+  1. Have a filter registry name: columns
+  2. Store changes in structure: thread -> [ [type, filter, doc._id, attrs, conns], ... ] or
+     thread -> [ [type, args, func, conns], ... ]
+  3. Combine and send message to clients by:
+     #+BEGIN_SRC ruby
+       if conn.length == 1
+         while conn.length ==1 && next_message == conn do
+           push message
+         end
+         encode messages && send
+       else
+         encode message && send to all
+       end
+     #+END_SRC
+
+     messages are encoded by applying encode(func ? func(args) : args)
+
+* Ceiling floor message dictionaries
+  code all strings. For now, exception of dictionaries collide
+  new method freeze ceiling to put global dictornary at top
+
+* Is weakref id map still needed to cache docs on server since cache is tied to thread?
+
+* Rich text editor
+
+* Partiioning
+  + Try with separte dbs on client.
+  + Need to handle onChange for different db than setup
+
+
 
 * Tidy up model callbacks
    replace ".before..." with nested hashmaps
@@ -8,23 +38,24 @@ Issues and Ideas
    Do in query-server.js. lock waits if already locked.
 
 * Server side publish should batch sends to client
-   When mutilple subscriptions are interested in the same doc we
-   should only send once to client. We can have a feature in the
-   notify that allows the pub to register a callback if it wants to
-   send data to client. The callback is run once all observers are
-   notified.
+  Redundant; see [[Batch client messages until end of transaction]]
 
-   We want to register it via the sessId so that only one callback is
-   registered per session.
+  When mutilple subscriptions are interested in the same doc we should
+  only send once to client. We can have a feature in the notify that
+  allows the pub to register a callback if it wants to send data to
+  client. The callback is run once all observers are notified.
 
-   More thoughts:
+  We want to register it via the sessId so that only one callback is
+  registered per session.
 
-   notify should pass an extra arg: an Inform func which if called is passed a
-   callback to call after everyone notified.
+  More thoughts:
 
-   This is used by the publish logic to actually send data to the
-   client. if two observers match the same doc then only one message
-   needs to be sent to client. Also fields can be filtered here.
+  notify should pass an extra arg: an Inform func which if called is
+  passed a callback to call after everyone notified.
+
+  This is used by the publish logic to actually send data to the
+  client. if two observers match the same doc then only one message
+  needs to be sent to client. Also fields can be filtered here.
 
    The publish should only call the Inform func if not already called.
 
@@ -37,3 +68,5 @@ Issues and Ideas
    consider handing off to worker thread on server
 
 -------
+
+* Footnotes

@@ -144,6 +144,15 @@ define(function (require, exports, module) {
       assert.isFalse(util.egal("a", "b"));
     },
 
+    "test shallowEqual arrays": function () {
+      assert.isTrue(util.shallowEqual([1, 2, 3], [1, 2, 3]));
+      assert.isFalse(util.shallowEqual([1, {}, 3], [1, {}, 3]));
+      assert.isFalse(util.shallowEqual([1, 2], [1, 2, 3]));
+      assert.isFalse(util.shallowEqual([1, 2], [1]));
+      assert.isFalse(util.shallowEqual([1, 2], null));
+      assert.isFalse(util.shallowEqual('a', [1, 2]));
+    },
+
     "test deepEqual": function () {
       assert.isTrue(util.deepEqual(null, null));
       assert.isTrue(util.deepEqual(null, undefined));
