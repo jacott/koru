@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   var koru = global._koru_ = require('./main');
 
   koru.discardIncompleteLoads = function () {
-    return []; // FIXME what should I do on sever side?
+    return []; // What should I do on sever side?
   };
 
   koru.reload = function () {

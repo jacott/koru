@@ -786,11 +786,6 @@ Cursor.prototype = {
     return this;
   },
 
-  batchSize: function (value) {
-    this._batchSize = value;
-    return this;
-  },
-
   limit: function (value) {
     this._limit = value;
     return this;
@@ -798,7 +793,6 @@ Cursor.prototype = {
 
   batchSize: function (value) {
     this._batchSize = value;
-    // FIXME do we need this for fetch
     return this;
   },
 

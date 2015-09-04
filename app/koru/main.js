@@ -1,7 +1,4 @@
 (function() {
-  // FIXME need this to work diferently in optimiser
-  var suffix  = typeof process === 'undefined' ? '-client' : '-server';
-
   /**
    * Map of module dependencies. Entries list what to unload when
    * module unloaded. key is module.id.
