@@ -103,8 +103,8 @@ define(function (require, exports, module) {
 
       v.func([1, 'hash,version', endict]);
 
-      assert.same(v.sess.globalDict.k2c['t1'], 0x8000);
-      assert.same(v.sess.globalDict.k2c['t2'], 0x8001);
+      assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
+      assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,version');

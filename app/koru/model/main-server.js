@@ -283,6 +283,7 @@ define(function(require, exports, module) {
 
   function addToDictionary(adder) {
     for (var mname in BaseModel) {
+      adder(mname);
       var model = BaseModel[mname];
       for (var name in model.$fields) {
         adder(name);

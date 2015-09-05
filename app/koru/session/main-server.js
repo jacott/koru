@@ -16,6 +16,7 @@ define(function (require, exports, module) {
 
     var sessCounter = 0;
     var globalDictAdders = {};
+    globalDictAdders[module.id] = addToDictionary;
 
     util.extend(session, {
       wss: new (session._wssOverride || WebSocketServer)({server: server, perMessageDeflate: false}),
@@ -73,6 +74,7 @@ define(function (require, exports, module) {
       for(var name in globalDictAdders) {
         globalDictAdders[name](addToDict);
       }
+      message.finializeGlobalDict(_globalDict);
       _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
       return _globalDict;
     }
@@ -176,6 +178,12 @@ define(function (require, exports, module) {
         this.versionHash = ''+Date.now();
       }
       this.sendAll('U', this.versionHash + ':' + id);
+    }
+
+    function addToDictionary(adder) {
+      for (var name in session._rpcs) {
+        adder(name);
+      }
     }
 
     return session;

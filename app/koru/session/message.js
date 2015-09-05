@@ -29,7 +29,7 @@ define(function(require, exports, module) {
 
   exports.encodeMessage = function (type, args, globalDict) {
     var buffer = [];
-    var dict = {};
+    var dict = newLocalDict();
 
     util.forEach(args, function (o) {
       encode(buffer, o, [globalDict, dict]);
@@ -45,7 +45,7 @@ define(function(require, exports, module) {
   },
 
   exports.decodeMessage = function (u8, globalDict) {
-    var dict = {};
+    var dict = newLocalDict();
     var index = decodeDict(u8, 0, dict);
 
     var len = u8.length;
@@ -58,15 +58,7 @@ define(function(require, exports, module) {
     return out;
   },
 
-  exports._encode =  function (object, globalDict) {
-    var buffer = [];
-    var dict = {};
-    encode(buffer, object, [globalDict || exports.newGlobalDict(), dict]);
-    if (dict.index)
-      return encodeDict(dict, [tDict]).concat(buffer);
-    else
-      return buffer;
-  };
+  exports._encode =  encode;
   function encode(buffer, object, dict) {
     var tmpAb = new ArrayBuffer(8);
     var tmpDv = new DataView(tmpAb);
@@ -78,15 +70,14 @@ define(function(require, exports, module) {
       if (object === '')
         return buffer.push(tEmptyString);
 
+
       if (object.length !== 1) {
-        var dkey = dict[0].k2c[object];
-        if (dkey) {
+        var dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{' ? addToDict(dict, object) : getString(dict, object);
+        if (dkey !== null) {
           buffer.push(tDictString, dkey >> 8, dkey & 0xff);
           return;
         }
       }
-      // TODO add a hex string type and maybe an _id type (17 bytes [0-9a-zA-Z])
-
       var index = buffer.length;
       buffer.push(tSmString);
       utf16to8(buffer, object);
@@ -176,6 +167,7 @@ define(function(require, exports, module) {
     buffer.push(tObject);
     for(var key in object) {
       var dkey = addToDict(dict, key);
+      if (dkey === null) throw new Error("Dictionary overflow");
       buffer.push(dkey >> 8, dkey & 0xff);
       encode(buffer, object[key], dict);
     }
@@ -183,37 +175,68 @@ define(function(require, exports, module) {
   }
 
   exports.newGlobalDict = function () {
-    return {index: 0x8000, k2c: {}, c2k: []};
+    var dict = newLocalDict();
+    dict.limit = 0xfff0;
+    return dict;
   };
+
+  exports._newLocalDict = newLocalDict;
+  function newLocalDict() {return {index: 0, k2c: {}, c2k: []}}
+
+  exports.finializeGlobalDict = function (dict) {
+    if (dict.index === null) return;
+    var c2k = dict.c2k;
+    var k2c = dict.k2c;
+    var delta = dict.limit = 0xffff - c2k.length;
+
+    for(var i = 0; i < c2k.length; ++i) {
+      k2c[c2k[i]] = i + delta;
+    }
+    dict.index = null;
+  };
+
+  function getString(dict, word) {
+    if (Array.isArray(dict)) {
+      var code = dict[0].k2c[word];
+      if (code) return code;
+      dict = dict[1];
+    }
+    var code = dict.k2c[word];
+    if (code) return code;
+    return null;
+  }
 
   exports.addToDict = addToDict;
   function addToDict(dict, name) {
     if (Array.isArray(dict)) {
+      var limit = dict[0].limit;
       var code = dict[0].k2c[name];
       if (code) return code;
       dict = dict[1];
+    } else {
+      var limit = 0xfff0;
     }
-    var k2c = dict.k2c || (dict.k2c = {});
+    var k2c = dict.k2c;
     var code = k2c[name];
     if (code) return code;
 
     var index = dict.index || 0x100;
 
-    if ((index & 0x7fff) === 0x7fff) throw new Error("Dictionary overflow");
+    if (index >= limit) return null;
     dict.index = index + 1;
 
     k2c[name] = index;
 
     var c2k = dict.c2k || (dict.c2k = []);
-    c2k[index - (index > 0x7fff ? 0x8000 : 0x100)] = name;
+    c2k[index - 0x100] = name;
     return index;
   }
 
   exports.encodeDict = encodeDict;
   function encodeDict(dict, buffer) {
-    var index = dict.index - (dict.index > 0x7fff ? 0x8000 : 0x100);
     var c2k = dict.c2k;
-    for(var i = 0; i < index; ++i) {
+    var len = c2k.length;
+    for(var i = 0; i < len; ++i) {
       utf16to8(buffer, c2k[i]);
       buffer.push(0xff);
     }
@@ -243,14 +266,13 @@ define(function(require, exports, module) {
 
   exports.getDictItem = getDictItem;
   function getDictItem(dict, code) {
-    if (code > 0x7fff)
-      return dict[0].c2k[code - 0x8000];
+    var d = dict[0];
+    if (code >= d.limit)
+      return d.c2k[code - d.limit];
     return dict[1].c2k[code - 0x100];
   }
 
-  exports._decode = function (object, globalDict) {
-    return decode(object, 0, [globalDict || exports.newGlobalDict(), {}])[0];
-  };
+  exports._decode = decode;
   function decode(buffer, index, dict) {
     var tmpAb = new ArrayBuffer(8);
     var tmpDv = new DataView(tmpAb);

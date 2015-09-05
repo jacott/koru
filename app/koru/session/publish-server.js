@@ -7,6 +7,13 @@ define(function(require, exports, module) {
 
   session.provide('P', subscribe);
 
+  session.registerGlobalDictionaryAdder(module, addToDictionary);
+
+  koru.onunload(module, function () {
+    session.deregisterGlobalDictionaryAdder(module);
+  });
+
+
   var pubs = publish._pubs;
 
   function subscribe(data) {
@@ -122,6 +129,13 @@ define(function(require, exports, module) {
     sub._matches = [];
     sub.stopped = true;
   }
+
+  function addToDictionary(adder) {
+    for (var name in publish._pubs) {
+      adder(name);
+    }
+  }
+
 
   return publish;
 });
