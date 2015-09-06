@@ -53,10 +53,13 @@ isClient && define(function (require, exports, module) {
 
     "test search": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
+        v.searchStub = test.stub();
         sut.popup(this, {
           search: function (reg, data) {
+            v.searchStub();
             return reg.test(data.name);
           },
+          searchDone: v.searchDone = test.stub(),
           list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
           onSelect: function (elm, event) {
             v.elm = elm;
@@ -68,6 +71,7 @@ isClient && define(function (require, exports, module) {
       });
       var ev;
       assert.dom('body>.glassPane>#SelectMenu', function () {
+        v.selectMenuELm = this;
         assert.dom('input[name=search]', function () {
           assert.same(document.activeElement, this);
 
@@ -81,6 +85,8 @@ isClient && define(function (require, exports, module) {
           assert.called(v.inputel);
           assert.called(ev.stopImmediatePropagation);
           refute.called(ev.preventDefault);
+          assert.calledOnceWith(v.searchDone, this, v.selectMenuELm);
+          assert(v.searchDone.calledAfter(v.searchStub));
         });
         assert.dom('li.hide', {count: 2});
         assert.dom('li:not(.hide)', 'One', function () {

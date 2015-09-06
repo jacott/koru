@@ -115,11 +115,13 @@ define(function(require, exports, module) {
   Tpl.Search.$events({
     'input input': function (event) {
       Dom.stopEvent();
-      var func = $.ctx.data.search;
+      var options = $.ctx.data;
+      var func = options.search;
       var searchRe = searchRegExp(this.value);
       util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), function (li) {
         Dom.setClass('hide', ! func(searchRe, $.data(li)), li);
       });
+      options.searchDone && options.searchDone(this, event.currentTarget.parentNode);
     },
   });
 
