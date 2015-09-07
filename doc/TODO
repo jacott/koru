@@ -1,26 +1,3 @@
-* Batch client messages until end of transaction
-
-  1. Have a filter registry name: columns
-  2. Store changes in structure: thread -> [ [type, filter, doc._id, attrs, conns], ... ] or
-     thread -> [ [type, args, func, conns], ... ]
-  3. Combine and send message to clients by:
-     #+BEGIN_SRC ruby
-       if conn.length == 1
-         while conn.length ==1 && next_message == conn do
-           push message
-         end
-         encode messages && send
-       else
-         encode message && send to all
-       end
-     #+END_SRC
-
-     messages are encoded by applying encode(func ? func(args) : args)
-
-* Ceiling floor message dictionaries
-  code all strings. For now, exception of dictionaries collide
-  new method freeze ceiling to put global dictornary at top
-
 * Is weakref id map still needed to cache docs on server since cache is tied to thread?
 
 * Rich text editor

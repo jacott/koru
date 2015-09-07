@@ -45,16 +45,13 @@ isClient && define(function (require, exports, module) {
 
     "test modifier keys": function () {
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
-      TH.keydown(sut.shift+sut.ctrl+sut.alt);
-      TH.keyup(sut.alt);
-      TH.keydown('2');
+      TH.keydown('2', {shiftKey: true, ctrlKey: true});
       assert.calledOnce(v.mbar2);
       refute.called(v.bar2);
     },
 
     "test modifier first key": function () {
-      v.km.exec(TH.buildEvent('keydown', {which: 17}));
-      TH.keydown('A');
+      v.km.exec(TH.buildEvent('keydown', {ctrlKey: true, which: 'A'.charCodeAt(0)}));
       assert.calledOnce(v.foo2);
     },
 
@@ -66,10 +63,10 @@ isClient && define(function (require, exports, module) {
         elm.removeEventListener('keydown', v.stub);
       });
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
-      TH.keydown(elm, sut.shift+'W');
+      TH.keydown(elm, 'W', {shiftKey: true});
       assert.called(v.stub);
       TH.keydown(elm, 'X');
-      assert.calledThrice(v.stub);
+      assert.calledTwice(v.stub);
       refute.called(v.foo);
     },
 

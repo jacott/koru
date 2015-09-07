@@ -193,7 +193,11 @@ define(function(require, exports, module) {
   });
 
   function keyseq(event, node, key, args) {
-    if (key === undefined) {
+    if (args === undefined && typeof key === 'object') {
+      args = key;
+      key = node;
+      node = document.body;
+    } else if (key === undefined) {
       key = node;
       node = document.body;
     }
