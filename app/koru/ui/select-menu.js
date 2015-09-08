@@ -46,6 +46,7 @@ define(function(require, exports, module) {
   Tpl.$extend({
     popup: function (elm, options, pos) {
       var menu = Tpl.$autoRender(options);
+      options.rendered && options.rendered(menu.firstElementChild);
       Dom.getMyCtx(menu).originElm = elm;
       Modal.append(pos, {container: menu, origin: elm, keydownHandler: keydownHandler});
       Dom.focus(menu);

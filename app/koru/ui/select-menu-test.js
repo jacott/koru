@@ -60,6 +60,7 @@ isClient && define(function (require, exports, module) {
             return reg.test(data.name);
           },
           searchDone: v.searchDone = test.stub(),
+          rendered: v.rendered = test.stub(),
           list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
           onSelect: function (elm, event) {
             v.elm = elm;
@@ -88,6 +89,7 @@ isClient && define(function (require, exports, module) {
           assert.calledOnceWith(v.searchDone, this, v.selectMenuELm);
           assert(v.searchDone.calledAfter(v.searchStub));
         });
+        assert.calledOnceWith(v.rendered, this);
         assert.dom('li.hide', {count: 2});
         assert.dom('li:not(.hide)', 'One', function () {
           Dom.addClass(v.one = this, 'selected');
