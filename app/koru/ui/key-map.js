@@ -4,6 +4,7 @@ define(function(require, exports, module) {
 
   function KeyMap() {
     this.map = {};
+    this.descMap = {};
   }
 
   exports = function (funcs) {
@@ -30,9 +31,11 @@ define(function(require, exports, module) {
       }
 
       for(var name in funcs) {
-        var keySeq = funcs[name][0];
+        var line = funcs[name];
+        var keySeq = line[0];
         var km = top;
         var mod = 0;
+        this.descMap[name] = [keySeq, line[1]];
         for(var i = 0; i < keySeq.length - 1; ++i) {
           var code = keySeq[i];
           var modk = MODIFIERS[code];
@@ -47,10 +50,23 @@ define(function(require, exports, module) {
         }
         procMod();
 
-        km[keySeq[i]] = [name, funcs[name][1]];
+        km[keySeq[i]] = [name, line[1]];
       }
-    }
+    },
+
+    getTitle: function(desc, name) {
+      var sc = this.descMap[name];
+      if (! sc) return (this.descMap[name]=['', null, desc])[2];
+      return sc[2] || (sc[2] = makeTitle(desc, sc[0]));
+    },
   };
+
+  function makeTitle(name, keySeq) {
+    keySeq = keySeq.replace(/[\u0010-\u0012]/g, function (m) {
+      return exports.modCodeToName(m)+'-';
+    });
+    return keySeq ? name + ' ['+keySeq+']' : name;
+  }
 
   var MODIFIERS = {};
   var MOD_NAMES = {};

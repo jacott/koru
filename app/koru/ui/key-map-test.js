@@ -29,6 +29,14 @@ isClient && define(function (require, exports, module) {
                      '\u0002': {A: ['foo2', v.foo2]}});
     },
 
+    "test getTitle": function () {
+      assert.same(v.km.getTitle('foo desc', 'foo'), "foo desc [X]");
+      assert.same(v.km.getTitle('no key desc', 'nk'), "no key desc");
+
+      assert.equals(v.km.descMap, {foo: ['X', v.foo, 'foo desc [X]'], bar: ['QX1', v.bar], mbar2: ['Q\u0011\u00102', v.mbar2],
+                                   bar2: ['QX2', v.bar2], foo2: ['\u0011A', v.foo2], nk: ['', null, 'no key desc']});
+    },
+
     "test single key": function () {
       var event = TH.buildEvent('keydown', {which: 88});
       v.km.exec(event);
