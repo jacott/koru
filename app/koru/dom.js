@@ -644,6 +644,7 @@ define(function(require, exports, module) {
         currentCtx.data === undefined || currentCtx.updateAllTags(currentCtx.data);
         return frag;
       } catch(ex) {
+        ex.message = 'while rendering: '+this.$fullname+'\n' + ex.message;
         // clean up what we can
         try {
           Dom.destroyData(frag);

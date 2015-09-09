@@ -45,6 +45,7 @@ define(['./core'], function (geddon) {
         if (! geddon.test || geddon.test.tc !== test.tc) {
           newTestCase(test.tc);
         }
+        geddon.lastTest = geddon.test;
         geddon.test = test;
         geddon.runCallBacks('testStart', test);
 
