@@ -806,7 +806,7 @@ isClient && define(function (require, exports, module) {
 
         assert.exception(function () {
           Dom.Foo.$render({});
-        }, 'Error', 'bang');
+        }, 'Error', 'while rendering: Foo\nbang');
 
         assert.calledWith(Dom.destroyData, TH.match(function (elm) {
           return elm.tagName === 'DIV';

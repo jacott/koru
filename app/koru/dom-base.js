@@ -1,7 +1,11 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
 
-  var Dom = {
+  function Dom(cssQuery) {
+    return document.body.querySelector(cssQuery);
+  }
+
+  util.extend(Dom, {
     html: function (html, tagName) {
       tagName = tagName || 'div';
       if (typeof html === 'string') {
@@ -93,7 +97,7 @@ define(function(require, exports, module) {
       Dom.addClass(elm, name);
       return true;
     },
-  };
+  });
 
   return Dom;
 });

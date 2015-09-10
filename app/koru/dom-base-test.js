@@ -15,6 +15,15 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test Dom cssQuery": function () {
+      document.body.appendChild(v.result = Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
+
+      if (isClient)
+        assert.same(Dom('body>.bar>span').textContent, "Goodbye");
+      else
+        assert("no server css query yet");
+    },
+
     "test undefined textConent": function () {
       assert.same(Dom.html({text: undefined}).outerHTML, '<div>undefined</div>');
     },
