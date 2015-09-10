@@ -68,6 +68,29 @@ isClient && define(function (require, exports, module) {
         Dom.Form.cancelModalize('all');
       },
 
+      "test addChangeFields": function () {
+        Dom.TestData = v.Form.TestData;
+        test.onEnd(function () {delete Dom.TestData});
+        Form.addChangeFields('TestData', ['fooField'], v.onChange = test.stub());
+        document.body.appendChild(Dom.TestData.$autoRender(v.doc = {
+          myData: {
+            foo: 'x', fooField: 'ff1',
+          },
+          changes: {changes: 1},
+          $asChanges: function (changes) {
+            return {asChanges: changes};
+          },
+
+          $save: v.save = test.stub(),
+
+        }));
+        v.save.onCall(0).returns(false).onCall(1).returns(true);
+        TH.change('[name=fooField]', 'bad');
+        refute.called(v.onChange);
+        TH.change('[name=fooField]', 'nv');
+        assert.calledWith(v.onChange, v.doc, {changes: 1}, {asChanges: {changes: 1}});
+      },
+
 
       "test mousedown and nesting": function () {
         var removeEventListener = test.spy(document, 'removeEventListener');

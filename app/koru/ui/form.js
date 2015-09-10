@@ -142,9 +142,15 @@ define(function(require, exports, module) {
       Tpl.renderErrors(doc, form);
     },
 
-    saveChanges: function (doc, form) {
+    saveChanges: function (doc, form, onChange) {
       Tpl.clearErrors(form);
+      if (onChange) {
+        var changes = doc.changes;
+        var was = doc.$asChanges(changes);
+      }
       if (doc.$save()) {
+
+        onChange && onChange(doc, changes, was);
         return true;
       }
 
@@ -242,15 +248,15 @@ define(function(require, exports, module) {
       return fieldElm;
     },
 
-    addChangeFields: function (template, fields, action) {
+    addChangeFields: function (template, fields, onChange, action) {
       action = action || 'change';
       var events = {};
       for(var i=0;i < fields.length;++i) {
         var field = fields[i];
         if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
-          events['click [name=' + field + ']'] = changeColorEvent(template, field);
+          events['click [name=' + field + ']'] = changeColorEvent(template, field, onChange);
         } else {
-          events[action + ' [name=' + field + ']'] = changeFieldEvent(template, field);
+          events[action + ' [name=' + field + ']'] = changeFieldEvent(template, field, onChange);
         }
       }
       Dom[template].$events(events);
@@ -442,7 +448,7 @@ define(function(require, exports, module) {
 
   }
 
-  function changeColorEvent(formId, field) {
+  function changeColorEvent(formId, field, onChange) {
     return function (event) {
       Dom.stopEvent();
       var doc = $.data();
@@ -453,13 +459,13 @@ define(function(require, exports, module) {
       Dom.ColorPicker.choose(doc[field], alpha, function (result) {
         if (result) {
           doc[field] = result;
-          Tpl.saveChanges(doc, document.getElementById(formId));
+          Tpl.saveChanges(doc, document.getElementById(formId), onChange);
         }
       });
     };
   }
 
-  function changeFieldEvent(formId, field) {
+  function changeFieldEvent(formId, field, onChange) {
     return function (event) {
       Dom.stopEvent();
       var doc = $.data();
@@ -474,7 +480,7 @@ define(function(require, exports, module) {
       }
 
       doc[field] = value;
-      Tpl.saveChanges(doc, document.getElementById(formId));
+      Tpl.saveChanges(doc, document.getElementById(formId), onChange);
     };
   }
 
