@@ -128,6 +128,8 @@ define(function(require, exports, module) {
       function has(re) {return !! modifiers.match(re)};
     },
 
+    dispatchEvent: dispatchEvent,
+
     change: function (node, value) {
       if (typeof node === 'string') {
         var args = util.slice(arguments);
