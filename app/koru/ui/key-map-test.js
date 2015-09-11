@@ -23,6 +23,13 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test key codes": function () {
+      assert.same(sut.left, '%');
+      assert.same(sut.up, '&');
+      assert.same(sut.down, '(');
+      assert.same(sut.right, '\'');
+    },
+
     "test config": function () {
       assert.equals(v.km.map,
                     {X: ['foo', v.foo], Q: {'\u0003': {2: ['mbar2', v.mbar2]}, X: {1: ['bar', v.bar], 2: ['bar2', v.bar2]}},
