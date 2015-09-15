@@ -240,7 +240,7 @@ define(function(require, exports, module) {
     keyMatches: function (obj, regex) {
       if (obj) for(var key in obj) {
         if (regex.test(key))
-          return true;
+          return key;
       }
       return false;
     },

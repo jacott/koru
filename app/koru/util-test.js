@@ -42,7 +42,7 @@ define(function (require, exports, module) {
     },
 
     "test keyMatches": function () {
-      assert.isTrue(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b/));
+      assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b/),'bc');
       assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
     },
 
