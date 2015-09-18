@@ -224,10 +224,19 @@ define(function(require, exports, module) {
 
   // assert.cssNear
   ga.add('cssNear', {
-    assert: function (elm,styleAttr, expected, delta, unit) {
+    assert: function (elm, styleAttr, expected, delta, unit) {
+      if (typeof elm === 'string') {
+        var actual = elm;
+        unit = delta;
+        delta = expected;
+        expected = styleAttr;
+      } else {
+        var actual = elm.style[styleAttr];
+      }
+      this.actual = actual;
       delta = this.delta = delta  || 1;
       unit = this.unit = unit || 'px';
-      var actual = this.actual = elm.style[styleAttr];
+
 
       if(!actual || actual.length < unit.length+1) return false;
       actual = actual.slice(0,-unit.length);
