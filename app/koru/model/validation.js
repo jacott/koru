@@ -87,6 +87,26 @@ define(function(require, exports, module) {
       }
     },
 
+    nestedFieldValidator: function (func) {
+      return function (field) {
+        var doc = this;
+        var value = doc.changes[field];
+        if (value !== undefined) {
+          var opts = {
+            onError: function (name, obj) {
+              if (name)
+                Val.addError(doc, field, 'is_invalid',
+                             name, typeof obj === 'string' ? obj : obj && obj._errors);
+              else
+                Val.addError(doc, field, 'is_invalid');
+
+            },
+          };
+          func(doc, field, value, opts);
+        }
+      };
+    },
+
     assertCheck: function (obj, spec, options) {
       var error;
       if (! options || ! options.hasOwnProperty('onError'))

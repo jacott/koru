@@ -234,6 +234,38 @@ define(function (require, exports, module) {
       assert.same(doc.age, 15);
     },
 
+    "test nestedFieldValidator": function () {
+      var sut = val.nestedFieldValidator(v.func = test.stub());
+
+      sut.call({changes: {}}, 'foo');
+
+      refute.msg("Should not call when field value undefined")
+        .called(v.func);
+
+      var doc = {changes: {foo: 'bar'}};
+
+      sut.call(doc, 'foo');
+
+      assert.calledOnceWith(v.func, doc, 'foo', 'bar', TH.match(function (opts) {
+        v.opts = opts;
+        return true;
+      }));
+
+      assert.isFunction(v.opts.onError);
+      v.opts.onError();
+
+      assert.equals(doc._errors, {foo: [['is_invalid']]});
+      doc._errors = null;
+
+      v.opts.onError('abc', 'def');
+
+      assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def']]});
+
+      v.opts.onError('xyz', {_errors: {def: [['not_numeric']]}});
+
+      assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
+    },
+
     "test matchFields": function () {
       val.register('mymodule', {divByx: function (doc, field, x) {
         if (doc[field] % x !== 0)
