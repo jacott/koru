@@ -238,9 +238,10 @@ define(function(require, exports, module) {
     },
 
     keyMatches: function (obj, regex) {
+      var m;
       if (obj) for(var key in obj) {
-        if (regex.test(key))
-          return key;
+        if (m = regex.exec(key))
+          return m;
       }
       return false;
     },
