@@ -8,6 +8,8 @@ define(function(require, exports, module) {
   require("./runner");
   var geddon = require("./core");
 
+  Error.stackTraceLimit = 50;
+
   koru._geddon_ = geddon; // helpful for errors finding test name
 
   koru.onunload(module, 'reload');
