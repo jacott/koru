@@ -32,6 +32,10 @@ define(function(require, exports, module) {
       lastNow = now;
     },
 
+    lastOrCreate: function (name) {
+      return last[name] || Factory['create'+util.capitalize(name)]();
+    },
+
     getUniqueNow: getUniqueNow,
     generateName: generateName,
 
@@ -54,6 +58,7 @@ define(function(require, exports, module) {
       return this;
     },
 
+    BaseBuilder: BaseBuilder,
     Builder: Builder,
   };
 
@@ -124,6 +129,11 @@ define(function(require, exports, module) {
     return prefix + (space == null ? ' ' : space) + ++nameGen[prefix];
   }
 
+  function BaseBuilder(options, default_opts) {
+    this.options = options || {};
+    this.default_opts = default_opts || {};
+  }
+
   /**
    * Builder
    *
@@ -132,34 +142,10 @@ define(function(require, exports, module) {
   function Builder(modelName, options, default_opts) {
     this.model = Model[modelName];
     if (! this.model) throw new Error('Model: "'+modelName+'" not found');
-    this.options = options || {};
-    this.default_opts = util.extend(util.extend({}, this.model._defaults), default_opts || {});
+    BaseBuilder.call(this, options, util.extend(util.extend({}, this.model._defaults), default_opts || {}));
   }
 
-  util.extend(Builder.prototype, {
-    addRef: function(ref, doc) {
-      var refId = ref+'_id';
-      if (! this.options.hasOwnProperty(refId)) {
-        var model = this.model.fieldTypeMap[refId];
-        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
-        var modelName = model.modelName;
-        doc = doc ||
-          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
-          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
-        this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
-      }
-      return this;
-    },
-
-    canSave: function (value) {
-      this._canSave = value;
-      return this;
-    },
-
-    genName: function (field, prefix) {
-      return this.addField(field || 'name', generateName(prefix || this.model.modelName));
-    },
-
+  util.extend(BaseBuilder.prototype, {
     addField: function (field, value) {
       if (! this.options.hasOwnProperty(field)) {
         switch(typeof value) {
@@ -196,6 +182,33 @@ define(function(require, exports, module) {
     field: function (name) {
       if (name in this.options) return this.options[name];
       return this.default_opts[name];
+    },
+  });
+
+  Builder.prototype = util.extend(Object.create(BaseBuilder.prototype, {}), {
+    constructor: Builder,
+
+    addRef: function(ref, doc) {
+      var refId = ref+'_id';
+      if (! this.options.hasOwnProperty(refId)) {
+        var model = this.model.fieldTypeMap[refId];
+        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
+        var modelName = model.modelName;
+        doc = doc ||
+          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
+          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
+        this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
+      }
+      return this;
+    },
+
+    genName: function (field, prefix) {
+      return this.addField(field || 'name', generateName(prefix || this.model.modelName));
+    },
+
+    canSave: function (value) {
+      this._canSave = value;
+      return this;
     },
 
     insert: function () {
