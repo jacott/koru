@@ -330,9 +330,14 @@ define(function(require, exports, module) {
       return _support.transaction(this, func);
     },
 
-    toId: function (doc) {
-      if (! doc || typeof doc === 'string') return doc;
-      return doc._id;
+    toId: function (docOrId) {
+      if (! docOrId || typeof docOrId === 'string') return docOrId;
+      return docOrId._id;
+    },
+
+    toDoc: function (docOrId) {
+      if (! docOrId || typeof docOrId === 'string') return this.findById(docOrId);
+      return docOrId;
     },
 
     get query() {

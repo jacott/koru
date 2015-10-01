@@ -877,7 +877,19 @@ define(function (require, exports, module) {
 
         assert.same(v.TestModel.toId(doc), 'theId');
         assert.same(v.TestModel.toId('astring'), 'astring');
+      },
 
+      "test toDoc": function () {
+        var doc = new v.TestModel({_id: 'theId'});
+
+
+        test.stub(v.TestModel, 'findById', function (id) {
+          return "found " + id;
+        });
+
+
+        assert.same(v.TestModel.toDoc(doc)._id, 'theId');
+        assert.same(v.TestModel.toDoc('astring'), 'found astring');
       },
     },
 
