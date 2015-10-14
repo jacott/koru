@@ -484,10 +484,18 @@ Table.prototype = {
               result.push(value);
             else {
               var items = value[1];
-              result.push(value[0].replace(/\{\$([\w]+)\}/g, function (m, key) {
-                whereValues.push(items[key]);
-                return '$'+ ++count;
-              }));
+              if (Array.isArray(items)) {
+                result.push(value[0]);
+                items.forEach(function (item) {
+                  ++count;
+                  whereValues.push(item);
+                });
+              } else {
+                result.push(value[0].replace(/\{\$([\w]+)\}/g, function (m, key) {
+                  whereValues.push(items[key]);
+                  return '$'+ ++count;
+                }));
+              }
             }
             continue;
           case '$or':

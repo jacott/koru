@@ -222,6 +222,7 @@ isServer && define(function (require, exports, module) {
       "test $sql": function () {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}", {likeE: '%e', four: 'four'}]}), 4);
+        assert.equals(v.foo.count({$sql: ["name like $1 OR name = $2", ['%e', 'four']]}), 4);
       },
 
       "test fields": function () {
