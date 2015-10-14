@@ -310,6 +310,23 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
+      "test changesTo": function () {
+        var res = v.TestModel.changesTo("foo", v.doc = {foo: {123: {name: 'y'}}},
+                                        v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
+
+        assert.equals(res, {123: 'foo.123.name', 456: 'foo.456.age'});
+        assert.same(v.TestModel.changesTo("foo", v.doc, v.was), res);
+
+        res = v.TestModel.changesTo("baz", v.doc, v.was);
+        assert.equals(res, 'upd');
+
+        assert.equals(v.TestModel.changesTo("daz", v.doc, v.was), undefined);
+
+        assert.equals(v.TestModel.changesTo("daz", {daz: 123}, {daz: undefined}), 'upd');
+        assert.equals(v.TestModel.changesTo("daz", {attributes: {daz: 123}}, null), 'add');
+        assert.equals(v.TestModel.changesTo("daz", null, {attributes: {daz: 123}}), 'del');
+      },
+
       "test _id": function () {
         assert.equals(v.TestModel.$fields._id, {type: 'id'});
 

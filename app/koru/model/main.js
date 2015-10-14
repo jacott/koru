@@ -398,6 +398,38 @@ define(function(require, exports, module) {
 
     defineFields: defineFields,
 
+    changesTo: function (field, doc, was) {
+      var cache = this._changesToCache;
+      if (cache && cache.field === field && cache.doc === doc && cache.was === was)
+        return cache.keyMap;
+
+      cache = this._changesToCache = {field: field, doc: doc, was: was};
+
+      if (doc) {
+
+        if (was) {
+          if (field in was) {
+            cache.keyMap = 'upd';
+          } else {
+            var m, regex = new RegExp("^"+field+"\\.([^.]+)");
+            for (var key in was) {
+              if (m = regex.exec(key)) {
+                if (! cache.keyMap) {
+                  cache.keyMap = {};
+                };
+                cache.keyMap[m[1]] = key;
+              }
+            }
+          }
+        } else if (field in doc.attributes) {
+          cache.keyMap = 'add';
+        }
+      } else if (field in was.attributes) {
+        cache.keyMap = 'del';
+      }
+      return cache.keyMap;
+    },
+
     addVersioning: function() {
       var model = this,
           proto = model.prototype;
