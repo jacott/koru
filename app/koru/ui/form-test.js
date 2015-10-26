@@ -71,7 +71,7 @@ isClient && define(function (require, exports, module) {
       "test addChangeFields": function () {
         Dom.TestData = v.Form.TestData;
         test.onEnd(function () {delete Dom.TestData});
-        Form.addChangeFields('TestData', ['fooField'], v.onChange = test.stub());
+        Form.addChangeFields({template: Dom.TestData, fields: ['fooField'], undo: v.onChange = test.stub()});
         document.body.appendChild(Dom.TestData.$autoRender(v.doc = {
           myData: {
             foo: 'x', fooField: 'ff1',

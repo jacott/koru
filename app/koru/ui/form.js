@@ -248,18 +248,18 @@ define(function(require, exports, module) {
       return fieldElm;
     },
 
-    addChangeFields: function (template, fields, onChange, action) {
-      action = action || 'change';
+    addChangeFields: function (options) {
+      var action = options.action || 'change';
       var events = {};
-      for(var i=0;i < fields.length;++i) {
-        var field = fields[i];
+      for(var i=0;i < options.fields.length;++i) {
+        var field = options.fields[i];
         if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
-          events['click [name=' + field + ']'] = changeColorEvent(template, field, onChange);
+          events['click [name=' + field + ']'] = changeColorEvent(field, options);
         } else {
-          events[action + ' [name=' + field + ']'] = changeFieldEvent(template, field, onChange);
+          events[action + ' [name=' + field + ']'] = changeFieldEvent(field, options);
         }
       }
-      Dom[template].$events(events);
+      options.template.$events(events);
     },
 
     renderField: field,
@@ -448,24 +448,23 @@ define(function(require, exports, module) {
 
   }
 
-  function changeColorEvent(formId, field, onChange) {
+  function changeColorEvent(field, options) {
     return function (event) {
       Dom.stopEvent();
       var doc = $.data();
 
-      var validator = doc.constructor._fieldValidators[field];
-      var alpha = (validator && validator.color && validator.color[1] === 'alpha');
+      var fieldSpec = doc.classMethods.$fields[field];
+      var alpha = (fieldSpec && fieldSpec.color === 'alpha');
 
       Dom.ColorPicker.choose(doc[field], alpha, function (result) {
         if (result) {
-          doc[field] = result;
-          Tpl.saveChanges(doc, document.getElementById(formId), onChange);
+          saveChange(doc, field, result, options);
         }
       });
     };
   }
 
-  function changeFieldEvent(formId, field, onChange) {
+  function changeFieldEvent(field, options) {
     return function (event) {
       Dom.stopEvent();
       var doc = $.data();
@@ -479,9 +478,21 @@ define(function(require, exports, module) {
         value = this.value;
       }
 
-      doc[field] = value;
-      Tpl.saveChanges(doc, document.getElementById(formId), onChange);
+      saveChange(doc, field, value, options);
     };
+  }
+
+  function saveChange(doc, field, value, options) {
+    var form = document.getElementById(options.template.name);
+    if (options.update) {
+      var errors = doc[options.update](field, value, options.undo);
+      if (errors) {
+        Tpl.renderErrors({_errors: errors}, form);
+      }
+    } else {
+      doc[field] = value;
+      Tpl.saveChanges(doc, form, options.undo);
+    }
   }
 
   return Tpl;
