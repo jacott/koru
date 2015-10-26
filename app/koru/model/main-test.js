@@ -327,6 +327,11 @@ define(function (require, exports, module) {
         assert.equals(v.TestModel.changesTo("daz", null, {attributes: {daz: 123}}), 'del');
       },
 
+      "test classMethods": function () {
+        var doc = v.TestModel.build();
+        assert.same(doc.constructor, doc.classMethods);
+      },
+
       "test _id": function () {
         assert.equals(v.TestModel.$fields._id, {type: 'id'});
 

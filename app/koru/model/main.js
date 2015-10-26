@@ -22,6 +22,8 @@ define(function(require, exports, module) {
   BaseModel.prototype = {
     get _id() {return this.attributes._id || this.changes._id;},
 
+    get classMethods() {return this.constructor},
+
     $inspect: function () {
       return "{Model: " + this.constructor.modelName + "_" + this._id + "  " + this.name + "}";
     },
