@@ -152,17 +152,20 @@ define(function(require, exports, module) {
     },
 
     validateField: function (doc, field, spec) {
+      for(var name in spec) {
+        var validator = validators[name];
+        validator && validator(doc, field, spec[name]);
+      }
+
+      if (doc._errors) return false;
+
       var value = doc[field];
       if (value != null && ! Val.check(value, spec.type)) {
         Val.addError(doc, field, 'wrong_type', spec.type);
         return;
       }
 
-      for(var name in spec) {
-        var validator = validators[name];
-        validator && validator(doc, field, spec[name]);
-      }
-
+      return ! doc._errors;
     },
 
     denyAccessIf: function (falsey, message) {

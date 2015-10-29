@@ -223,15 +223,23 @@ define(function (require, exports, module) {
     "test validateField": function () {
       val.register('mymodule', {addIt: function (doc, field, x) {
         doc[field] += x;
-        doc._errors = 'set';
+        doc._errors = errors;
       }});
       test.onEnd(function () {val.register('mymodule')});
       var doc = {age: 10};
 
+      var errors = 'set';
       val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
       assert.same(doc._errors, 'set');
       assert.same(doc.age, 15);
+
+      doc.age = 'x';
+      errors = null;
+      val.validateField(doc, 'age', {type: 'number', addIt: 5});
+
+      assert.equals(doc._errors, {age: [['wrong_type', 'number']]});
+      assert.same(doc.age, 'x5');
     },
 
     "test nestedFieldValidator": function () {
