@@ -131,39 +131,40 @@ define(function(require, exports, module) {
     } else {
       window.addEventListener('keydown', nextKey, true);
       document.body.addEventListener('mouseleave', cancel, true);
+    }
 
-      function nextKey(event) {
-        var code = String.fromCharCode(event.which);
-        if (MODIFIERS[code]) return;
+    function nextKey(event) {
+      var code = String.fromCharCode(event.which);
+      if (MODIFIERS[code]) return;
 
-        mod = eventMod(event);
+      mod = eventMod(event);
 
-        if (mod) {
-          map = map[String.fromCharCode(mod)];
-          if (! map) {
-            cancel();
-            return;
-          }
-        }
-
-        map = map[String.fromCharCode(event.which)];
-        if (map && ! Array.isArray(map)) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
+      if (mod) {
+        map = map[String.fromCharCode(mod)];
+        if (! map) {
+          cancel();
           return;
         }
-        cancel();
-        if (! map) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        map[1](map[0]);
       }
 
-      function cancel() {
-        window.removeEventListener('keydown', nextKey, true);
-        document.body.removeEventListener('mouseleave', cancel, true);
+      map = map[String.fromCharCode(event.which)];
+      if (map && ! Array.isArray(map)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
       }
+      cancel();
+      if (! map) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      map[1](map[0]);
     }
+
+    function cancel() {
+      window.removeEventListener('keydown', nextKey, true);
+      document.body.removeEventListener('mouseleave', cancel, true);
+    }
+
   }
 
   function eventMod(event) {
