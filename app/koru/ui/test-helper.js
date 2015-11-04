@@ -47,18 +47,6 @@ define(function(require, exports, module) {
       }), options || {});
     },
 
-    buildEvent: function (name, params) {
-      if (document.createEvent) {
-        var e = document.createEvent("Event");
-        e.initEvent(name, true, true);
-      } else {
-        var e = document.createEventObject();
-        e.__name = name;
-      }
-      params && util.extend(e, params);
-      return e;
-    },
-
     setColor: function (node, value) {
       TH.click(node);
       assert.elideFromStack.dom(document.body, function () {
@@ -122,7 +110,7 @@ define(function(require, exports, module) {
                                  has(/ctrl/), has(/alt/), has(/shift/), has(/meta/),
                                  keycode, keycode);
       }
-      dispatchEvent(elm ,pressEvent);
+      dispatchEvent(elm, pressEvent);
       return this;
 
       function has(re) {return !! modifiers.match(re)};
@@ -152,21 +140,11 @@ define(function(require, exports, module) {
         });
       } else {
         assert.elideFromStack(node,'node not found');
-
-        if (typeof event === 'string') {
-          if (event === 'mousewheel')
-            event = Dom.MOUSEWHEEL_EVENT;
-          event =  this.buildEvent(event, args);
-        }
-
-        if (document.createEvent) {
-          dispatchEvent(node, event);
-        } else {
-          node.fireEvent("on" + event.__name, event);
-        }
-        return event;
+        return Dom.triggerEvent(node, event, args);
       }
     },
+
+    buildEvent: Dom.buildEvent,
 
     keydown: function (node, key, args) {
       keyseq('keydown', node, key, args);
@@ -232,8 +210,10 @@ define(function(require, exports, module) {
         expected = styleAttr;
       } else {
         var actual = elm.style[styleAttr];
+        this.field = 'css('+styleAttr+')';
       }
       this.actual = actual;
+      this.expected = expected;
       delta = this.delta = delta  || 1;
       unit = this.unit = unit || 'px';
 
@@ -244,8 +224,8 @@ define(function(require, exports, module) {
       return actual > expected-delta && actual < expected+delta;
     },
 
-    assertMessage: "Expected css({1}) {$actual} to be near {2}{$unit} by delta {$delta}",
-    refuteMessage: "Expected css({1}) {$actual} not to be near {2}{$unit} by delta {$delta}",
+    assertMessage: "Expected {$field} {$actual} to be near {$expected}{$unit} by delta {$delta}",
+    refuteMessage: "Expected {$field} {$actual} not to be near {$expected}{$unit} by delta {$delta}",
   });
 
 
@@ -254,7 +234,7 @@ define(function(require, exports, module) {
     var evex;
     koru.unhandledException = unhandledException;
     try {
-      elm.dispatchEvent (event);
+      elm.dispatchEvent(event);
       if (evex) {
         koru.error(util.extractError(evex));
         throw new Error("event Dispatch => " + evex);

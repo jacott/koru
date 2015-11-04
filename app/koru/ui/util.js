@@ -202,6 +202,20 @@ define(function(require, exports, module) {
       elm.style[vendorTransform] = elm.style[vendorTransform].replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
     },
 
+    buildEvent: buildEvent,
+
+    triggerEvent: function (node, event, args) {
+      if (typeof event === 'string')
+        event = buildEvent(event, args);
+
+      if (Event || document.createEvent)
+        node.dispatchEvent(event);
+      else
+        node.fireEvent("on" + event.__name, event);
+
+      return event;
+    },
+
     vendorTransform: vendorTransform,
     vendorTransformOrigin: vendorTransform+'Origin',
 
@@ -211,6 +225,24 @@ define(function(require, exports, module) {
 
     INPUT_SELECTOR: 'input,textarea,select,select>option,[contenteditable="true"]',
   });
+
+  var DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
+
+  function buildEvent(event, args) {
+    if (event === 'mousewheel')
+      event = Dom.MOUSEWHEEL_EVENT;
+
+    if (Event) {
+      var e = new Event(event, DEFAULT_EVENT_ARGS);
+    } if (document.createEvent) {
+      var e = document.createEvent("Event");
+      e.initEvent(event, true, true);
+    } else {
+      var e = document.createEventObject();
+    }
+    util.extend(e, args);
+    return e;
+  }
 
   Dom.animationEndEventName = 'animationend';
 
