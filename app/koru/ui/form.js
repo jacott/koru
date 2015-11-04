@@ -10,7 +10,6 @@ define(function(require, exports, module) {
 
   var Tpl = Dom.newTemplate(require('../html!./form'));
   var OnOff = Tpl.OnOff;
-  var Slider = Tpl.Slider;
   var $ = Dom.current;
 
   var IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};

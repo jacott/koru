@@ -15,7 +15,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test mousedown on slider": function () {
-      var slider = sut.$autoRender({pos: .25});
+      var slider = sut.$autoRender({pos: .25, callback: v.callback = test.stub()});
 
       slider.style.width = '256px';
       slider.style.height = '16px';
@@ -49,6 +49,10 @@ isClient && define(function (require, exports, module) {
         });
       });
 
+      assert.calledWith(v.callback, .5);
+      assert.calledWith(v.callback, .75, TH.match(function (ctx) {
+        return ctx.data.pos === 0.75;
+      }));
     },
 
   });
