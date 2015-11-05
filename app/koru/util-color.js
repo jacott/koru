@@ -46,7 +46,7 @@ define(function(require, exports, module) {
 
       exports.setBackgroundColorStyle(style, color);
       var cc = contrastColors[color];
-      style.borderColor = boarderColors[cc] || (boarderColors[color] = fade(cc, 30));
+      style.borderColor = boarderColors[color] || (boarderColors[color] = fade(cc, 30));
     },
 
     rgb2hsl: function (rgb) {

@@ -80,7 +80,6 @@ define(function (require, exports, module) {
     },
 
     "test setBackgroundAndBoarderColorStyle": function () {
-
       var style = {foo: 123};
 
       uColor.setBackgroundAndBoarderColorStyle(style, '#717a1d');
