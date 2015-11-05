@@ -200,34 +200,6 @@ define(function(require, exports, module) {
 
   var ga = TH.geddon.assertions;
 
-  // assert.cssNear
-  ga.add('cssNear', {
-    assert: function (elm, styleAttr, expected, delta, unit) {
-      if (typeof elm === 'string') {
-        var actual = elm;
-        unit = delta;
-        delta = expected;
-        expected = styleAttr;
-      } else {
-        var actual = elm.style[styleAttr];
-        this.field = 'css('+styleAttr+')';
-      }
-      this.actual = actual;
-      this.expected = expected;
-      delta = this.delta = delta  || 1;
-      unit = this.unit = unit || 'px';
-
-
-      if(!actual || actual.length < unit.length+1) return false;
-      actual = actual.slice(0,-unit.length);
-
-      return actual > expected-delta && actual < expected+delta;
-    },
-
-    assertMessage: "Expected {$field} {$actual} to be near {$expected}{$unit} by delta {$delta}",
-    refuteMessage: "Expected {$field} {$actual} not to be near {$expected}{$unit} by delta {$delta}",
-  });
-
 
   function dispatchEvent(elm, event) {
     var old_unhandledException = koru.unhandledException;

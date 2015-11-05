@@ -244,20 +244,32 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     message: "{i0} to equal {i1}; {i$actual} !== {i$expected} within delta {$delta}"
   });
 
-   ga.add('cssUnitNear', {
-    assert:  function (unit, actual, expected, delta) {
-      this.delta = delta = delta || 1;
-      if (typeof actual !== 'string' || ! actual || ! expected)
-        return actual === expected;
-      var ure = new RegExp(util.regexEscape(unit)+"$");
-      var exNum = typeof expected === 'number';
-      if (! (ure.test(actual) && (exNum || ure.test(expected)))) return false;
-      return withinDelta(+actual.slice(0, -unit.length),
-                         exNum ? expected : +expected.slice(0, -unit.length),
-                         delta);
+  // assert.cssNear
+  ga.add('cssNear', {
+    assert: function (elm, styleAttr, expected, delta, unit) {
+      if (typeof elm === 'string') {
+        var actual = elm;
+        unit = delta;
+        delta = expected;
+        expected = styleAttr;
+      } else {
+        var actual = elm.style[styleAttr];
+        this.field = 'css('+styleAttr+')';
+      }
+      this.actual = actual;
+      this.expected = expected;
+      delta = this.delta = delta  || 1;
+      unit = this.unit = unit || 'px';
+
+
+      if(!actual || actual.length < unit.length+1) return false;
+      var actualUnit = actual.slice(-unit.length);
+      actual = actual.slice(0,-unit.length);
+
+      return actualUnit === unit && actual > expected-delta && actual < expected+delta;
     },
 
-    message: "{i1} to be near {i2} within delta {$delta} with unit of {i0}"
+    message: "{$field} {$actual} to be near {$expected}{$unit} by delta {$delta}",
   });
 
   // assert.dom
