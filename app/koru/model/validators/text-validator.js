@@ -92,7 +92,16 @@ define(function () {
           this.addError(doc,field,'not_a_string');
         else {
           val = val.trim();
-          if (type === 'toNull' && ! val) val = null;
+          if (! val) {
+            switch(type) {
+            case 'toNull':
+              val = null;
+              break;
+            case 'toUndefined':
+              val = undefined;
+              break;
+            }
+          }
           doc[field] = val;
         }
       }

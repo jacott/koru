@@ -218,6 +218,17 @@ define(function (require, exports, module) {
 
       },
 
+      "test toUndefined": function () {
+
+        var doc = {name: '  '};
+
+        sut.validators('trim')(doc,'name', 'toUndefined');
+
+        refute(doc._errors);
+        assert.same(doc.name, undefined);
+
+      },
+
       'test trims': function () {
         var doc = {name: '  in  the middle  '};
 
