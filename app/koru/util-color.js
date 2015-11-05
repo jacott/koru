@@ -35,9 +35,9 @@ define(function(require, exports, module) {
     },
 
     setBackgroundColorStyle: function (style, color) {
-      color = color || '#ffffff';
+      var uc = color || '#ffffff';
       style.backgroundColor = hex2Style(color);
-      style.color = hex2Style(contrastColors[color] || (contrastColors[color] = contrastColor(color, '#4d4d4d')));
+      style.color = hex2Style(contrastColors[uc] || (contrastColors[uc] = contrastColor(uc, '#4d4d4d')));
       return style;
     },
 

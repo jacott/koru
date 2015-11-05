@@ -96,6 +96,9 @@ define(function (require, exports, module) {
 
       uColor.setBackgroundColorStyle(style, '#717a1d');
       assert.equals(style, {foo: 123, "backgroundColor": "#717a1d", color: "#fcfcfc"});
+
+      uColor.setBackgroundColorStyle(style, '');
+      assert.equals(style, {foo: 123, "backgroundColor": "", color: "#4d4d4d"});
     },
 
     "test backgroundColorStyle": function () {
