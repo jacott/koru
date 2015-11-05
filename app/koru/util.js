@@ -827,6 +827,7 @@ define(function(require, exports, module) {
   }
 
   function colorToArray(color) {
+    if (! color) return color;
     if (typeof color !== 'string') return color;
     var result = [];
     var m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);

@@ -232,8 +232,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       this.delta = delta = delta || 0.0001;
       this.actual = util.colorToArray(actual);
       this.expected = util.colorToArray(expected);
+      if (! this.actual) {
+        return ! this.expected;
+      }
+      var alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
+            withinDelta(this.actual[3], this.expected[3], delta);
       return gu.deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
-        withinDelta(this.actual[3], this.expected[3], delta);
+        alphaGood;
     },
 
     message: "{i0} to equal {i1}; {i$actual} !== {i$expected} within delta {$delta}"

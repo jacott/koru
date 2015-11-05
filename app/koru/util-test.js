@@ -625,6 +625,7 @@ define(function (require, exports, module) {
     },
 
     "test colorToArray": function () {
+      assert.equals(util.colorToArray(''), '');
       assert.equals(util.colorToArray([1,2,3,0.5]), [1,2,3,0.5]);
       assert.equals(util.colorToArray("#ac3d4f"), [172, 61, 79, 1]);
       assert.equals(util.colorToArray("#d4faf480"), [212, 250, 244, 0.5]);
