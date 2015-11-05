@@ -14,6 +14,7 @@ define(function (require, exports, module) {
     },
 
     "test hex2Style": function () {
+      assert.equals(uColor.hex2Style(''), "");
       assert.equals(uColor.hex2Style('#x'), "rgba(0,0,0,0)");
       assert.equals(uColor.hex2Style('#FF001180'), "rgba(255,0,17,0.5)");
     },

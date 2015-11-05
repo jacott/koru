@@ -150,6 +150,7 @@ define(function(require, exports, module) {
   }
 
   function hex2Style(color) {
+    if (! color) return '';
     if (color.length === 7) return color;
 
     var match = HEX_RE.exec(color) || ['', '00', '00', '00', '00'];
