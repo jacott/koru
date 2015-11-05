@@ -47,12 +47,20 @@ isClient && define(function (require, exports, module) {
 
           refute.called(window.requestAnimationFrame);
         });
-      });
 
-      assert.calledWith(v.callback, .5);
-      assert.calledWith(v.callback, .75, TH.match(function (ctx) {
-        return ctx.data.pos === 0.75;
-      }));
+        assert.calledWith(v.callback, .5);
+        assert.calledWith(v.callback, .75, TH.match(function (ctx) {
+          return ctx.data.pos === 0.75;
+        }), this);
+
+        v.callback.reset();
+
+        sut.move(this, 1);
+        assert.calledWith(v.callback, 1, TH.match(function (ctx) {
+          return ctx.data.pos === 1;
+        }), this);
+
+      });
     },
 
   });

@@ -24,14 +24,14 @@ define(function(require, exports, module) {
 
       var x = event.clientX;
 
-      var slider = this;
-      var width = slider.clientWidth;
+      var sliderElm = this;
+      var width = sliderElm.clientWidth;
 
       var handle = event.target;
 
-      if (handle === slider) {
-        handle = slider.firstElementChild;
-        var bbox = slider.getBoundingClientRect();
+      if (handle === sliderElm) {
+        handle = sliderElm.firstElementChild;
+        var bbox = sliderElm.getBoundingClientRect();
 
         data.pos = (x - bbox.left) / width;
       }
@@ -42,7 +42,7 @@ define(function(require, exports, module) {
       var xMin = x - (width * data.pos);
       var af = null;
 
-      Dom.addClass(slider, 'ui-dragging');
+      Dom.addClass(sliderElm, 'ui-dragging');
 
       draw();
 
@@ -61,7 +61,7 @@ define(function(require, exports, module) {
         }
         document.removeEventListener('mousemove', adjust, true);
         document.removeEventListener('mouseup', cancel, true);
-        Dom.removeClass(slider, 'ui-dragging');
+        Dom.removeClass(sliderElm, 'ui-dragging');
         handleStyle.willChange = '';
       }
 
@@ -71,7 +71,7 @@ define(function(require, exports, module) {
 
         handleStyle.left = data.pos*100+'%';
 
-        data.callback && data.callback(data.pos, ctx, slider);
+        data.callback && data.callback(data.pos, ctx, sliderElm);
       }
     },
   });
@@ -79,6 +79,16 @@ define(function(require, exports, module) {
   Tpl.$extend({
     $destroyed: function (ctx) {
       ctx.cancel && ctx.cancel();
+    },
+
+    move: function (sliderElm, pos) {
+      var ctx = Dom.getMyCtx(sliderElm);
+      var data = ctx.data;
+      data.pos = pos;
+
+      sliderElm.style.left = pos*100+'%';
+
+      data.callback && data.callback(pos, ctx, sliderElm);
     },
   });
 
