@@ -53,6 +53,8 @@ isClient && define(function (require, exports, module) {
           return ctx.data.pos === 0.75;
         }), this);
 
+        assert.same(v.callback.callCount, 3);
+
         v.callback.reset();
 
         sut.move(this, 1);

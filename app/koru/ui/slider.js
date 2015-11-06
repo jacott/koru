@@ -63,6 +63,8 @@ define(function(require, exports, module) {
         document.removeEventListener('mouseup', cancel, true);
         Dom.removeClass(sliderElm, 'ui-dragging');
         handleStyle.willChange = '';
+        var data = ctx.data;
+        data.callback && data.callback(data.pos, ctx, sliderElm);
       }
 
       function draw() {
