@@ -90,13 +90,17 @@ define(function(require, exports, module) {
     '\u0025left',
     '\u0026up',
     '\u0027right',
-    '\u0028down'
+    '\u0028down',
+    '\u0021pgUp',
+    '\u0022pgDown',
+    '\u0023end',
+    '\u0024home'
   );
 
   function addCodes() {
     util.forEach(arguments, function (code, i) {
       var name = code.slice(1);
-      exports[name] = code = code[0];
+      exports[name] = code[0];
     });
   }
 
