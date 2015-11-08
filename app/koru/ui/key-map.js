@@ -62,14 +62,19 @@ define(function(require, exports, module) {
   };
 
   function makeTitle(name, keySeq) {
-    keySeq = keySeq.replace(/[\u0010-\u0012]/g, function (m) {
-      return exports.modCodeToName(m)+'-';
+    keySeq = keySeq.replace(/[\u0010-\u002B]/g, function (m) {
+      var mc = MOD_NAMES[m];
+      if (mc)
+        return mc+'-';
+      else
+        return "<"+SYM_NAMES[m]+">";
     });
     return keySeq ? name + ' ['+keySeq+']' : name;
   }
 
   var MODIFIERS = {};
   var MOD_NAMES = {};
+  var SYM_NAMES = {};
 
   addModifiers(
     '\u0010shift',
@@ -82,6 +87,7 @@ define(function(require, exports, module) {
       var name = code.slice(1);
       exports[name] = code = code[0];
       MODIFIERS[code] = 1 << i;
+      SYM_NAMES[code] = name;
       MOD_NAMES[code] = name;
     });
   }
@@ -100,7 +106,8 @@ define(function(require, exports, module) {
   function addCodes() {
     util.forEach(arguments, function (code, i) {
       var name = code.slice(1);
-      exports[name] = code[0];
+      exports[name] = code = code[0];
+      SYM_NAMES[code] = name;
     });
   }
 

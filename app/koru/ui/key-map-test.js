@@ -42,6 +42,20 @@ isClient && define(function (require, exports, module) {
 
       assert.equals(v.km.descMap, {foo: ['X', v.foo, 'foo desc [X]'], bar: ['QX1', v.bar], mbar2: ['Q\u0011\u00102', v.mbar2],
                                    bar2: ['QX2', v.bar2], foo2: ['\u0011A', v.foo2], nk: ['', null, 'no key desc']});
+
+      assert.same(v.km.getTitle('mbar2 desc', 'mbar2'), "mbar2 desc [Qctrl-shift-2]");
+
+      v.km.addKeys({
+        home: [sut.home, test.stub()],
+        end: [sut.end, test.stub()],
+        pgdn: [sut.pgDown, test.stub()],
+        pgup: [sut.pgUp, test.stub()],
+      });
+
+      assert.same(v.km.getTitle('home', 'home'), "home [<home>]");
+      assert.same(v.km.getTitle('end', 'end'), "end [<end>]");
+      assert.same(v.km.getTitle('pgdn', 'pgdn'), "pgdn [<pgDown>]");
+      assert.same(v.km.getTitle('pgup', 'pgup'), "pgup [<pgUp>]");
     },
 
     "test single key": function () {
