@@ -50,12 +50,14 @@ isClient && define(function (require, exports, module) {
         end: [sut.end, test.stub()],
         pgdn: [sut.pgDown, test.stub()],
         pgup: [sut.pgUp, test.stub()],
+        esc: [sut.esc, test.stub()],
       });
 
       assert.same(v.km.getTitle('home', 'home'), "home [<home>]");
       assert.same(v.km.getTitle('end', 'end'), "end [<end>]");
       assert.same(v.km.getTitle('pgdn', 'pgdn'), "pgdn [<pgDown>]");
       assert.same(v.km.getTitle('pgup', 'pgup'), "pgup [<pgUp>]");
+      assert.same(v.km.getTitle('esc', 'esc'), "esc [<esc>]");
     },
 
     "test single key": function () {
