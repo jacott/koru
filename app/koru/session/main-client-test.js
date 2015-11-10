@@ -95,9 +95,12 @@ define(function (require, exports, module) {
         return v.func = func;
       }));
 
+      v.sess.addToDict('foo'); // does nothing
+
       var dict = message.newGlobalDict();
       message.addToDict(dict, 't1');
       message.addToDict(dict, 't2');
+
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
@@ -105,6 +108,7 @@ define(function (require, exports, module) {
 
       assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
+      assert.same(v.sess.globalDict.k2c['foo'], undefined);
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,version');

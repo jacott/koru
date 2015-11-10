@@ -75,6 +75,8 @@ isServer && define(function (require, exports, module) {
           return v.func = func;
         }));
 
+        v.sess.addToDict('foo');
+
         v.sess.registerGlobalDictionaryAdder({id: 'test'}, function (adder) {
           adder('g1'); adder('g2');
         });
@@ -96,7 +98,7 @@ isServer && define(function (require, exports, module) {
 
         var dict = message.newGlobalDict();
 
-        assert.same(v.msg[2].length, 7);
+        assert.same(v.msg[2].length, 11);
 
 
         message.decodeDict(v.msg[2], 0, dict);
@@ -105,8 +107,13 @@ isServer && define(function (require, exports, module) {
         assert.same(dict.k2c['g1'], 0xfffd);
         assert.same(dict.k2c['g2'], 0xfffe);
 
-        assert.same(v.sess.globalDict.k2c['g1'], 0xfffd);
+        assert.same(v.sess.globalDict.k2c['foo'], 0xfffc);
         assert.same(v.sess.globalDict.k2c['g2'], 0xfffe);
+        assert.same(v.sess.globalDict.k2c['g1'], 0xfffd);
+
+        v.sess.addToDict('fuz');
+
+        assert.same(v.sess.globalDict.k2c['fuz'], undefined);
       },
     },
 

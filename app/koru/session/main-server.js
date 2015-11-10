@@ -42,6 +42,8 @@ define(function (require, exports, module) {
         delete globalDictAdders[module.id];
       },
 
+      addToDict: addToDict,
+
       get globalDict() {
         if (_globalDict) return _globalDict;
         return buildGlobalDict();
@@ -67,20 +69,23 @@ define(function (require, exports, module) {
     });
 
     var _globalDict, _globalDictEncoded;
+    var _preloadDict = message.newGlobalDict();
 
 
     function buildGlobalDict() {
-      _globalDict = message.newGlobalDict();
       for(var name in globalDictAdders) {
         globalDictAdders[name](addToDict);
       }
+      _globalDict = _preloadDict;
+      _preloadDict = null;
+
       message.finializeGlobalDict(_globalDict);
       _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
       return _globalDict;
     }
 
     function addToDict(word) {
-      message.addToDict(_globalDict, word);
+      _preloadDict && message.addToDict(_preloadDict, word);
     }
 
     function globalDictEncoded() {

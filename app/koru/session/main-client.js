@@ -53,6 +53,8 @@ define(function (require, exports, module) {
 
         globalDict: message.newGlobalDict(),
 
+        addToDict: function () {}, // no op on client
+
         // for testing
         get _waitSends() {return waitSends},
       });
