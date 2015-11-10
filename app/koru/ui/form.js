@@ -235,13 +235,17 @@ define(function(require, exports, module) {
       msgElm.firstChild.textContent = msg || '';
       if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
         var fpos = fieldElm.getBoundingClientRect();
-        var mpos = msgElm.getBoundingClientRect();
+        ms.minWidth = fpos.width+'px';
+        ms.height = fpos.height+'px';
         ms.position = 'absolute';
+        var mpos = msgElm.getBoundingClientRect();
         ms.marginTop = (fpos.top-mpos.top-mpos.height)+'px';
-        ms.marginLeft = (fpos.left-mpos.left)+'px';
-        ms.width = mpos.width+'px';
-        ms.height = mpos.height+'px';
-      }
+
+        if (Dom.hasClass(fieldElm, 'errorRight') )
+          ms.marginLeft = (fpos.right-mpos.right)+'px';
+        else
+          ms.marginLeft = (fpos.left-mpos.left)+'px';
+        }
       Dom.setClass('animate', msg, msgElm);
 
       return fieldElm;
@@ -483,6 +487,7 @@ define(function(require, exports, module) {
 
   function saveChange(doc, field, value, options) {
     var form = document.getElementById(options.template.name);
+    Tpl.clearErrors(form);
     if (options.update) {
       var errors = doc[options.update](field, value, options.undo);
       if (errors) {

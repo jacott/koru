@@ -318,17 +318,44 @@ isClient && define(function (require, exports, module) {
     },
 
     "test errorTop renderError": function () {
-      var form = Dom.html({content: ['hello world', '<br>', {name: 'foo'},
-                                     {name: 'bar', style: 'margin-left:25px', class: 'errorTop'}]});
+      var form = Dom.html({
+        style: 'width: 300px;height:100px',
+        content: ['hello world', '<br>', {name: 'foo'},
+                  {tag: 'input', name: 'bar', style: 'margin-left:200;width:50px;height:20px', class: 'errorTop'}],
+      });
       document.body.appendChild(form);
 
       Form.renderError(form, 'foo', 'foo msg');
-      Form.renderError(form, 'bar', 'bar msg');
+      Form.renderError(form, 'bar', v.barMsg = 'big long message bar msg');
 
       assert.dom(form, function () {
-        assert.dom('[name=bar].error+.errorMsg.animate', 'bar msg', function () {
-          assert.cssNear(this, 'marginLeft', 25, 2);
-          assert.cssNear(this, 'marginTop', -15, 2);
+        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, function () {
+          assert.cssNear(this, 'marginLeft', -50, 2);
+          assert.cssNear(this, 'marginTop', -20, 2);
+        });
+        assert.dom('[name=foo].error+.errorMsg', 'foo msg');
+
+        Form.renderError(form, 'bar', false);
+
+        assert.dom('[name=bar]:not(.error)+.errorMsg', '');
+      });
+    },
+
+    "test errorRight renderError": function () {
+      var form = Dom.html({
+        style: 'width: 300px;height:100px',
+        content: ['hello world', '<br>', {name: 'foo'},
+                  {tag: 'input', name: 'bar', style: 'margin-left:200px;width:50px;height:20px', class: 'errorTop errorRight'}],
+      });
+      document.body.appendChild(form);
+
+      Form.renderError(form, 'foo', 'foo msg');
+      Form.renderError(form, 'bar', 'big long message bar msg');
+
+      assert.dom(form, function () {
+        assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, function () {
+          assert.cssNear(this, 'marginLeft', -162, 15); // firefox is 172; chrome is 152 both display correctly?
+          assert.cssNear(this, 'marginTop', -20, 2);
         });
         assert.dom('[name=foo].error+.errorMsg', 'foo msg');
 
