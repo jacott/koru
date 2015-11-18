@@ -170,8 +170,13 @@ define(function(require, exports, module) {
 
       stop: function () {
         if (! this._id) return;
+        debug_subscribe && koru.logger((this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
         session.sendP(this._id);
         stopped(this);
+        if (! this.waiting) return;
+
+        sessState.decPending();
+        this.waiting = false;
       },
 
       match: function (modelName, func) {

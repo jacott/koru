@@ -248,6 +248,15 @@ isClient && define(function (require, exports, module) {
       assert.same(v.sub.userId, 'test123');
     },
 
+    "test stop before result": function () {
+      v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+      test.spy(sessState, "decPending");
+      v.sub.stop();
+      assert.called(sessState.decPending);
+      v.sub.stop();
+      assert.calledOnce(sessState.decPending);
+    },
+
     "test subscribe": function () {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
 
