@@ -94,6 +94,13 @@ define(function(require, exports, module) {
   }));
 
   Tpl.Row.$events({
+    'click .addtag': function (event) {
+      Dom.stopEvent();
+      Dom.removeId('AddTag');
+      var elm = Tpl.Row.AddTag.$autoRender($.ctx.data);
+      this.parentNode.insertBefore(elm, this);
+      elm.focus();
+    },
     'click .destroy': function (event) {
       Dom.stopEvent();
       $.ctx.data.$remove();
@@ -113,6 +120,29 @@ define(function(require, exports, module) {
         return tag !== remove;
       });
       todo.$$save();
+    },
+  });
+
+  Tpl.Row.AddTag.$events({
+    'change': function (event) {
+      Dom.stopEvent();
+
+      var value = this.value;
+      Dom.remove(this);
+      if (! value) return;
+      var todo = $.ctx.data;
+      todo.$change('tags').push(value);
+      todo.$$save();
+    },
+
+    'focusout': function (event) {
+      Dom.remove(this);
+    },
+
+    'keydown': function (event) {
+      if (event.which !== 27) return;
+      Dom.stopEvent();
+      Dom.remove(this);
     },
   });
 

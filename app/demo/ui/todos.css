@@ -269,3 +269,7 @@ h3 {
 #edittag-input {
     width: 80px;
 }
+
+[name=name]+.addtag {
+  display: none;
+}
