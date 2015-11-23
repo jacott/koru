@@ -271,6 +271,7 @@ define(function (require, exports, module) {
         assert.same(v.foo.age, 7);
 
         assert.calledOnce(v.change);
+        assert.calledWithExactly(v.change, TH.matchModel(v.foo), {age: 5, name: 'foo'}, undefined);
       },
 
       "test nested structures": function () {
@@ -332,7 +333,7 @@ define(function (require, exports, module) {
         assert.same(bar.age, undefined);
         assert.same(bar.name, 'sam');
 
-        assert.calledWith(v.changed, TH.matchModel(bar), {age: 5});
+        assert.calledWith(v.changed, TH.matchModel(bar), {age: 5}, true);
       },
 
       "test matching remove ": function () {
@@ -384,9 +385,9 @@ define(function (require, exports, module) {
 
       "test remote removed non existant": function () {
         test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
-        v.TestModel.serverQuery.onId('noDoc').remove();
+        v.TestModel.onId('noDoc').fromServer().remove();
 
-        refute.called(v.changed);
+        refute.calledWith(v.changed, null, v.foo, true);
       },
 
       "test notification of different fields": function () {
@@ -401,14 +402,14 @@ define(function (require, exports, module) {
         v.TestModel.serverQuery.onId(v.foo._id).update({name: 'sam'});
 
         // Should notify immediately if major key not in client changes
-        assert.calledWith(v.changed, TH.matchModel(v.foo), {name: 'foo'});
+        assert.calledWith(v.changed, TH.matchModel(v.foo), {name: 'foo'}, true);
 
         v.changed.reset();
 
         sessState.decPending();
 
         // Should notify at revert for other changes
-        assert.calledWith(v.changed, TH.matchModel(v.foo), {age: 7});
+        assert.calledWith(v.changed, TH.matchModel(v.foo), {age: 7}, true);
       },
     },
   });

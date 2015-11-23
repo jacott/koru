@@ -107,6 +107,11 @@ define(function(require, exports, module) {
           return this;
         },
 
+        fromServer: function() {
+          this.isFromServer = true;
+          return this;
+        },
+
         fetch: function () {
           var results = [];
           this.forEach(function (doc) {
@@ -326,10 +331,10 @@ define(function(require, exports, module) {
       });
 
       function notify(model, doc, changes, isFromServer) {
-        model._indexUpdate.notify(doc, changes);   // first: update indexes
+        model._indexUpdate.notify(doc, changes); // first: update indexes
         isFromServer ||
-          Model._callAfterObserver(doc, changes);  // next:  changes originated here
-        model.notify(doc, changes);                // last:  Notify everything else
+          Model._callAfterObserver(doc, changes); // next:  changes originated here
+        model.notify(doc, changes, isFromServer); // last:  Notify everything else
       }
 
       function findMatching(func) {

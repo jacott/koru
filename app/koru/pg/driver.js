@@ -662,6 +662,11 @@ Table.prototype = {
     return new Cursor(this, sql, values, options);
   },
 
+  show: function (where) {
+    var values = [];
+    return ' WHERE ' + this.where(where, values) + ' ('+ util.inspect(values) + ')';
+  },
+
   exists: function (where) {
     return queryWhere(this, 'SELECT EXISTS (SELECT 1 FROM "'+this._name+'"',
                       where, ')')[0].exists;
