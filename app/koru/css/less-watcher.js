@@ -99,7 +99,7 @@ define(function(require, exports, module) {
       } catch(ex) {
         if (ex.code === 'ENOENT') {
           ex.message = "ENOENT @import '" + srcName + "' from '" + fromName + '"';
-          throw ex;
+          koru.error(ex);
         }
       }
     }
