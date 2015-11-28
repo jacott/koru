@@ -191,7 +191,7 @@ define(function(require, exports, module) {
 
     if (isArguments(expected) || isArguments(actual)) {
       if (expected.length != actual.length) {
-        hint[hintField] = 'Arguments lengths differ: ' + actual.length + ' != ' +expected.length;
+        if (hint) hint[hintField] = 'Arguments lengths differ: ' + actual.length + ' != ' +expected.length;
         return false;
       }
     } else {
@@ -200,7 +200,7 @@ define(function(require, exports, module) {
         return false;
       }
       if (expectedKeys.length != actualKeys.length) {
-        hint[hintField] = 'Array lengths differ: ' + actual.length + ' != ' +expected.length;
+        if (hint) hint[hintField] = 'Array lengths differ: ' + actual.length + ' != ' +expected.length;
         return false;
       }
     }
