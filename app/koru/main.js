@@ -9,6 +9,7 @@
    */
   var unloads = {};
   var loaded = {};
+  var waitLoad = {};
   var loadError = null;
   var koru;
 
@@ -30,7 +31,35 @@
       insertDependency(map.id, id);
     }
     loaded[map.id] = true;
+    runLoaded(map.id);
   };
+
+  function whenLoaded(require, id, func) {
+    /**
+     * Calls func immediately after file is loaded. This is useful
+     * when there is tight coupling between two files. The
+     * `require(['foo'], function...)` call waits for next tick to
+     * call FUNC which if often too late.
+     */
+    var absId = this.absId(require, id);
+    if (loaded[absId]) {
+      func(require(id));
+    } else {
+      (waitLoad[absId] || (waitLoad[absId] = [])).push(func);
+    }
+  }
+
+  function runLoaded(id) {
+    var list = waitLoad[id];
+    if (! list) return;
+    delete waitLoad[id];
+    var resource = requirejs(id);
+    console.log('resource', resource);
+
+    list && list.forEach(function (func) {
+      func(resource);
+    });
+  }
 
   function insertDependency(dependant, provider) {
     (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
@@ -59,8 +88,9 @@
     if (onunload !== undefined) {
       if (typeof onunload === 'function')
         onunload(id, error);
-      else if (onunload !== 'reload')
-        onunload.forEach(function (f) {f(id, error)});
+      else if (Array.isArray(onunload))
+        onunload.forEach(function (f) {(f.stop || f)(id, error)});
+      else if (onunload.stop) onunload.stop();
     }
 
     delete loaded[id];
@@ -150,6 +180,8 @@
 
         return id.slice(require.toUrl('').length);
       },
+
+      whenLoaded: whenLoaded,
 
       clearTimeout: function (handle) {
         return clearTimeout(handle);
