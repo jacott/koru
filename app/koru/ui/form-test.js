@@ -332,6 +332,8 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=bar].error+.errorMsg.animate', v.barMsg, function () {
           assert.cssNear(this, 'marginLeft', -50, 2);
           assert.cssNear(this, 'marginTop', -20, 2);
+          assert.cssNear(this, 'height', 20, 2);
+          assert.same(this.style.position, 'absolute');
         });
         assert.dom('[name=foo].error+.errorMsg', 'foo msg');
 
