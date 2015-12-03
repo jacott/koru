@@ -56,6 +56,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(document.querySelector('.mdMention:not(.inline) input'), function () {
           TH.input(this, 'g');
+
           TH.trigger(this, 'keydown', {which: 13});
         });
 
@@ -139,7 +140,15 @@ isClient && define(function (require, exports, module) {
         assert.dom('.mdMention.inline>div:not(.empty)');
         TH.input('input', 'jjgx');
         assert.dom('.mdMention.inline>div.empty');
-        TH.input('input', 'jjg');
+
+        assert.dom('input', function () {
+          var updspy = test.spy(Dom.getCtx(this), 'updateAllTags');
+          var mdlspy = test.spy(Modal, 'append');
+
+          TH.input(this, 'jjg');
+          assert(updspy.calledBefore(mdlspy));
+          assert.calledWith(mdlspy, 'on', TH.match(function (obj) {return obj.noAppend;}));
+        });
         assert.dom('.mdMention.inline>div:not(.empty)');
       },
 
@@ -278,7 +287,7 @@ isClient && define(function (require, exports, module) {
       var unbb = ln.getBoundingClientRect();
 
       assert.dom('body>.mdMention', function () {
-        assert.calledWith(Modal.append, 'on', {container: this, popup: this, origin: TH.match.field('tagName', 'SPAN')});
+        assert.calledWith(Modal.append, 'on', {container: this, popup: this, noAppend: TH.match.falsy, origin: TH.match.field('tagName', 'SPAN')});
         var minp = this.querySelector('input');
         assert.dom('.empty', function () {
           assert.calledWith(Modal.append, 'below', {container: this, popup: this, noAppend: true, origin: minp});

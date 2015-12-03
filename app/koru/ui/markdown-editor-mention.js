@@ -75,11 +75,11 @@ define(function(require, exports, module) {
       var data = $.ctx.data;
       data.value = this.value;
 
+      $.ctx.updateAllTags();
       if (data.span) {
         data.span.textContent = data.value.replace(/ /g, '\xa0');
-        transformList(data, event.currentTarget);
+        transformList(data, event.currentTarget, true);
       }
-      $.ctx.updateAllTags();
     },
 
     'keydown .mdMention>input': function (event) {
@@ -234,8 +234,9 @@ define(function(require, exports, module) {
     return al;
   }
 
-  function transformList(data, al) {
-    Modal.append('on', {container: al, popup: al, origin: data.span});
+  function transformList(data, al, noAppend) {
+    // noAppend needed to stop firefox loosing focus
+    Modal.append('on', {container: al, popup: al, noAppend: noAppend, origin: data.span});
     Modal.append('below', {container: al.lastElementChild, popup: al.lastElementChild, noAppend: true, origin: al.firstElementChild});
   }
   return Tpl;
