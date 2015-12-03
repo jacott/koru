@@ -109,6 +109,14 @@ define(function (require, exports, module) {
       assert.equals(util.diff([1,2,3], [2,4]), [1, 3]);
     },
 
+    "test symDiff": function () {
+      assert.equals(util.symDiff(), []);
+      assert.equals(util.symDiff([1, 2]), [1, 2]);
+
+      assert.equals(util.symDiff([1,2,3], [2,4]).sort(), [1, 3, 4]);
+      assert.equals(util.symDiff([2,4], [1,2,3]).sort(), [1, 3, 4]);
+    },
+
     'test extend': function () {
       var item = 5,
           sub={a: 1, b: 2},

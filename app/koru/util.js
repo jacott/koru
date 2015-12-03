@@ -521,6 +521,21 @@ define(function(require, exports, module) {
       return result;
     },
 
+    symDiff: function (a, b) {
+      var result = [];
+      b = util.toMap(b);
+      if (a) for(var i = 0; i < a.length; ++i) {
+        var val = a[i];
+        if (b[val] ) b[val] = 1;
+        else result.push(val);
+      }
+
+      for (var val in b) {
+        b[val] === true && result.push(val);
+      }
+      return result;
+    },
+
     union: function (args) {
       var set = {};
       for(var i = 0; i < arguments.length; ++i) {
