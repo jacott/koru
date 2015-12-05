@@ -1,7 +1,6 @@
-define(['sinon', '../util'], function(sinon, util) {
+define(function(require, exports, module) {
+  var util = require('koru/util');
   var geddon = {
-    sinon: sinon,
-
     _testCases: {},
 
     _init: function () {

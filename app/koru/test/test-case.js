@@ -1,5 +1,4 @@
-define(['./core'], function (geddon) {
-  var sinon = geddon.sinon;
+define(['./core', './stubber'], function (geddon, stubber) {
 
   geddon.testCase = function (name, option) {
     var tc = new TestCase(name, null, option);
@@ -175,13 +174,13 @@ define(['./core'], function (geddon) {
     },
 
     spy: function () {
-      var spy = sinon.spy.apply(sinon, arguments);
+      var spy = stubber.spy.apply(stubber, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
     },
 
     stub: function () {
-      var spy = sinon.stub.apply(sinon, arguments);
+      var spy = stubber.stub.apply(stubber, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
     },

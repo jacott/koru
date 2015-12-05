@@ -4,8 +4,6 @@ window.yaajs.config({
     "koru", "koru/test", "koru/session",
   ],
 
-  paths: {sinon: "koru/test/sinon"},
-
   baseUrl: '/',
 });
 

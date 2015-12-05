@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
+  var match = require('./match');
+
   var Module = module.constructor;
 
   require("./assertions-methods");
@@ -28,28 +30,20 @@ define(function(require, exports, module) {
 
   var testRunCount = 0;
 
-  util.extend(geddon.sinon.match, {
+  util.extend(match, {
     near: function (expected, delta) {
       delta = delta  || 1;
-      return geddon.sinon.match(function matchNear(actual) {
+      return match(function matchNear(actual) {
         return actual > expected-delta && actual < expected+delta;
       }, "match.near(" + expected + ", delta=" + delta + ")");
     },
 
     field: function (name, value) {
-      return geddon.sinon.match(function matchField(actual) {
+      return match(function matchField(actual) {
         return actual && geddon._u.deepEqual(actual[name], value);
       }, "match.field(" + name + ", " + value + ")");
     },
   });
-
-  geddon.sinon.format = function () {
-    var result = [];
-    util.forEach(arguments, function (arg) {
-      result.push(util.inspect(arg));
-    });
-    return result.join(', ');
-  };
 
   module.ctx.onError = function (err, mod) {
     if (err.onload) {
@@ -90,7 +84,7 @@ define(function(require, exports, module) {
   exports = {
     geddon: geddon,
 
-    match: geddon.sinon.match,
+    match: match,
 
     get test() {return geddon.test},
 
