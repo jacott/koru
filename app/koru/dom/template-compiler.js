@@ -1,5 +1,5 @@
-var Path = require.nodeRequire('path');
-var htmlparser = require.nodeRequire("htmlparser2");
+var Path = require('path');
+var htmlparser = requirejs.nodeRequire("htmlparser2");
 
 var Compiler = {
   Error: function (message, point) {

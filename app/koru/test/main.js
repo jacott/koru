@@ -92,14 +92,13 @@ define(function(require, exports, module) {
       }, errorLoading);
 
       function errorLoading(err) {
-        var badIds = koru.discardIncompleteLoads();
         ++errorCount;
         var orig = err;
         if (err.originalError) err = err.originalError;
         if (('stack' in err))
           koru.error(koru.util.extractError(err));
         else {
-          koru.error('Test load failure: ', orig + "\nWhile loading:\n" + badIds.join("\n"));
+          koru.error('Test load failure: ', orig + "\nWhile loading:\n FIXME");
         }
         endTest();
       }

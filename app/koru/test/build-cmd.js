@@ -63,8 +63,8 @@ define(function(require, exports, module) {
       }
 
       if (type !== 'client') {
-        var dest = require.toUrl('test/server-ready.js');
-        if (requirejs.defined('test/server-ready')) {
+        var dest = module.toUrl('test/server-ready.js');
+        if (module.ctx.modules['test/server-ready']) {
           exports.serverReady = new Future;
           fs.unlinkSync(dest);
           exports.serverReady.wait();
@@ -72,7 +72,7 @@ define(function(require, exports, module) {
         } else {
           try {fs.unlinkSync(dest);} catch (ex) {}
         }
-        fs.symlinkSync(require.toUrl('./server-ready-prep.js'), dest);
+        fs.symlinkSync(module.toUrl('./server-ready-prep.js'), dest);
       }
 
       callback(type, {

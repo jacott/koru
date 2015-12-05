@@ -5,25 +5,6 @@ define(function(require, exports, module) {
   var util = require('./util-client');
   var koru = window._koru_ = require('./main');
 
-  koru.discardIncompleteLoads = function (error) {
-    var list = document.head.querySelectorAll('script[data-requiremodule]');
-    var badIds = [];
-    koru.loadError = error;
-    try {
-      for(var i = 0; i < list.length; ++i) {
-        var elm = list[i];
-        var modId = elm.getAttribute('data-requiremodule');
-        if (modId && ! koru.loaded.hasOwnProperty(modId)) {
-          koru.unload(modId, error);
-          badIds.push("\tat "+modId+".js:1");
-        }
-      }
-    } finally {
-      koru.loadError = null;
-    }
-    return badIds;
-  };
-
   koru.reload = function () {
     if (koru.loadError) throw koru.loadError;
 
@@ -31,7 +12,7 @@ define(function(require, exports, module) {
     throw "reloading"; // no point continuing
   };
 
-  koru.appDir = require.toUrl('').slice(0,-1);
+  koru.appDir = module.toUrl('').slice(0,-1);
 
   koru.setTimeout = function (func, duration) {
     return setTimeout(function () {

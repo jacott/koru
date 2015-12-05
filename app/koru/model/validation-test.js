@@ -6,11 +6,14 @@ define(function (require, exports, module) {
   var match = require('../match');
   var util = require('../util');
 
+  var Module = module.constructor;
+
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
       test.stub(koru, 'info');
+      v.myModule = new Module(module.ctx, 'mymodule');
     },
 
     tearDown: function () {
@@ -95,10 +98,11 @@ define(function (require, exports, module) {
         val.assertCheck({_id: 'abc'}, {name: 'string'});
       }, {error: 400, reason: {_id: [['is_invalid']]}});
 
-      val.register('mymodule', {valAbc: function (doc, field) {
+
+      val.register(v.myModule, {valAbc: function (doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
-      test.onEnd(function () {val.register('mymodule')});
+      test.onEnd(function () {val.register(v.myModule)});
 
       assert.exception(function () {
         val.assertCheck({name: 'abc'}, val.matchFields({name: {type: 'string', valAbc: true}}));
@@ -221,11 +225,11 @@ define(function (require, exports, module) {
     },
 
     "test validateField": function () {
-      val.register('mymodule', {addIt: function (doc, field, x) {
+      val.register(v.myModule, {addIt: function (doc, field, x) {
         doc[field] += x;
         doc._errors = errors;
       }});
-      test.onEnd(function () {val.register('mymodule')});
+      test.onEnd(function () {val.register(v.myModule)});
       var doc = {age: 10};
 
       var errors = 'set';
@@ -275,11 +279,11 @@ define(function (require, exports, module) {
     },
 
     "test matchFields": function () {
-      val.register('mymodule', {divByx: function (doc, field, x) {
+      val.register(v.myModule, {divByx: function (doc, field, x) {
         if (doc[field] % x !== 0)
           this.addError(doc, field, 'is_invalid');
       }});
-      test.onEnd(function () {val.register('mymodule')});
+      test.onEnd(function () {val.register(v.myModule)});
 
       var matcher = val.matchFields({foo: {type: 'number', divByx: 2}});
       var doc = {foo: 4};

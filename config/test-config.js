@@ -24,6 +24,7 @@ exports.server = function (cfg) {
 
   cfg.merge("requirejs.paths", {sinon: "koru/test/sinon"});
   cfg.merge("requirejs.packages", ["koru/test"]);
+  cfg.merge("requirejs.shim", {sinon: {}});
 
   cfg.set('startup', 'test/server');
   cfg.set('clientjs', 'test/client');

@@ -4,11 +4,8 @@ define(function (require, exports, module) {
   require('./ui/helpers');
 
   koru.onunload(module, function () {
-    window.removeEventListener('error', errorListener);
     requirejs.onError = null;
   });
-
-  window.addEventListener('error', errorListener);
 
   requirejs.onError = function (err) {
     var name = err.requireModules && err.requireModules[0];
@@ -18,21 +15,6 @@ define(function (require, exports, module) {
     session.send('E', err);
     koru.error(err);
   };
-
-  function errorListener(ev) {
-    if (ev.error === 'reloading') return;
-    var badIds = koru.discardIncompleteLoads(ev.error).join("\n");
-
-    if (badIds)
-      badIds = "\nWhile loading:\n" + badIds;
-
-    session.send('E', koru.util.extractError(ev.error.name === 'SyntaxError' ? {
-      toString: function () {
-        return ev.error.toString();
-      },
-      stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
-    } : ev.error) +  badIds);
-  }
 
   return koru;
 });

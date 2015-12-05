@@ -13,7 +13,7 @@ var buildDir = Path.resolve(Path.join(__dirname, '../build'));
 process.chdir(topDir);
 var cfg = require('koru/lib/build-conf');
 
-var cfgStr = "requirejs.config(" + JSON.stringify(cfg.client.requirejs) + ");\n";
+var cfgStr = "yaajs.config(" + JSON.stringify(cfg.client.requirejs) + ");\n";
 
 var optConfig = cfg.setTarget(cfg.client.requirejs);
 

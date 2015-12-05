@@ -1,4 +1,5 @@
-requirejs.config({
+window.requirejs = window.yaajs
+window.yaajs.config({
   packages: [
     "koru", "koru/test", "koru/session",
   ],

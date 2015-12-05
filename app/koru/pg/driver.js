@@ -1,5 +1,5 @@
 var Future = requirejs.nodeRequire('fibers/future');
-var Libpq = require('pg-libpq'); // app installs this
+var Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
 
 var koru, util, makeSubject, match, Pool;
 
