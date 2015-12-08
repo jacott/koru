@@ -170,6 +170,15 @@ define(function(require, exports, module) {
       return this;
     },
 
+    mouseDownUp: function (node, args) {
+      if (typeof node === 'string') {
+        assert.elideFromStack.dom(node, function () {
+          node = this;
+        });
+      }
+      TH.trigger(node, 'mousedown', args);
+      TH.trigger(node, 'mouseup', args);
+    },
   });
 
   function keyseq(event, node, key, args) {
