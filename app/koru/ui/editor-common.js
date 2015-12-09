@@ -12,25 +12,8 @@ define(function(require, exports, module) {
 
   };
 
-  function setRange(range) {
-    var sel = window.getSelection();
-		try {
-			sel.removeAllRanges();
-		} catch (ex) {
-			document.body.createTextRange().select();
-			document.selection.empty();
-		}
-    sel.addRange(range);
-  }
-
-  function getRange() {
-    var sel = window.getSelection();
-    if (sel.rangeCount === 0) return null;
-    return sel.getRangeAt(0);
-  }
-
-  exports.getRange = getRange;
-  exports.setRange = setRange;
+  var getRange = Dom.getRange;
+  var setRange = Dom.setRange;
 
   if (Dom.vendorPrefix === 'ms') {
     exports.insert = function (arg) {

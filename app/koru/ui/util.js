@@ -131,6 +131,32 @@ define(function(require, exports, module) {
       focus && focus.focus();
     },
 
+    setRange: function(range) {
+      var sel = window.getSelection();
+      try {
+        sel.removeAllRanges();
+      } catch (ex) {
+        document.body.createTextRange().select();
+        document.selection.empty();
+      }
+      sel.addRange(range);
+    },
+
+    getRange: function() {
+      var sel = window.getSelection();
+      if (sel.rangeCount === 0) return null;
+      return sel.getRangeAt(0);
+    },
+
+    selectElm: function(elm) {
+      if (elm) {
+        var range = document.createRange();
+        range.selectNode(elm);
+        Dom.setRange(range);
+        return range;
+      }
+    },
+
     forEach: function (elm, querySelector, func) {
       if (! elm) return;
       var elms = elm.querySelectorAll(querySelector);

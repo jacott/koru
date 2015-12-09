@@ -4,8 +4,8 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Markdown = require('./markdown');
   var EditorCommon = require('./editor-common');
-  var getRange = EditorCommon.getRange;
-  var setRange = EditorCommon.setRange;
+  var getRange = Dom.getRange;
+  var setRange = Dom.setRange;
 
   var Tpl = Dom.newTemplate(require('../html!./markdown-editor'));
   var $ = Dom.current;
@@ -71,7 +71,7 @@ define(function(require, exports, module) {
     getRange: getRange,
     setRange: setRange,
     getTag: getTag,
-    selectElm: selectElm,
+    selectElm: Dom.selectElm,
     getCaretRect: getCaretRect,
   });
 
@@ -222,15 +222,6 @@ define(function(require, exports, module) {
     return Dom.searchUpFor(start, function (elm) {
       return elm.tagName === tag;
     }, 'mdEditor');
-  }
-
-  function selectElm(elm) {
-    if (elm) {
-      var range = document.createRange();
-      range.selectNode(elm);
-      setRange(range);
-      return range;
-    }
   }
 
   function execCommand (cmd, value) {
