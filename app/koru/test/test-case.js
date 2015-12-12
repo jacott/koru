@@ -26,27 +26,27 @@ define(['./core'], function (geddon) {
       return name ? ret + ' ' + name : ret;
     },
 
-    onStartTestCase: function (func) {
-      (this._onstc = this._onstc || []).push(func);
+    before: function (func) {
+      (this._before = this._before || []).push(func);
       return this;
     },
 
-    onEndTestCase: function (func) {
-      (this._onetc = this._onetc || []).push(func);
+    after: function (func) {
+      (this._after = this._after || []).push(func);
       return this;
     },
 
     startTestCase: function () {
-      var onstc = this._onstc;
-      if (onstc) for(var i = 0; i < onstc.length; ++i) {
-        onstc[i].call(this);
+      var before = this._before;
+      if (before) for(var i = 0; i < before.length; ++i) {
+        before[i].call(this);
       }
     },
 
     endTestCase: function () {
-      var onetc = this._onetc;
-      if (onetc) for(var i = 0; i < onetc.length; ++i) {
-        onetc[i].call(this);
+      var after = this._after;
+      if (after) for(var i = 0; i < after.length; ++i) {
+        after[i].call(this);
       }
     },
 
@@ -122,9 +122,9 @@ define(['./core'], function (geddon) {
       this.tc && this.tc.runTearDown(test);
     },
 
-    add: function (name, func, skipped) {
+    add: function (name, func) {
       if (typeof name === 'string' && name.match(/^\/\//)) {
-        skipped = true;
+        var skipped = true;
         name = name.slice(2);
       }
 

@@ -11,8 +11,8 @@ define(function(require, exports, module) {
   return TH.util.reverseExtend({
     testCase: function () {
       var tc = testCase.apply(TH, arguments);
-      tc.onStartTestCase(stubSendM);
-      tc.onEndTestCase(unstubSendM);
+      tc.before(stubSendM);
+      tc.after(unstubSendM);
       return tc;
     },
 
