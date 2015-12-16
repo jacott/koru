@@ -28,6 +28,7 @@ isClient && define(function (require, exports, module) {
       assert.same(sut.up, '&');
       assert.same(sut.down, '(');
       assert.same(sut.right, '\'');
+      assert.same(sut.del, '.');
     },
 
     "test config": function () {

@@ -101,7 +101,8 @@ define(function(require, exports, module) {
     '\u0022pgDown',
     '\u0023end',
     '\u0024home',
-    '\u001Besc'
+    '\u001Besc',
+    '\u002Edel'
   );
 
   function addCodes() {
