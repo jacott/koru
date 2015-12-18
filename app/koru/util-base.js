@@ -62,6 +62,8 @@
         if (o.constructor === RegExp) return o.toString();
         if ('outerHTML' in o)
           return o.outerHTML;
+        if (o.nodeType === 3)
+          return "$TextNode:"+o.textContent;
         if (o.$inspect)
           return o.$inspect();
         if (o.constructor === Date) return "<"+o.toISOString()+">";

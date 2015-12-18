@@ -56,8 +56,13 @@ define(function(require, exports, module) {
     createDocumentFragment: function () {return new DocumentFragment()},
 
     appendChild: function (node) {
-      node.parentNode = this;
-      this.childNodes.push(node);
+      if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
+        var self = this;
+        node.childNodes.forEach(function (n) {self.appendChild(n)});
+      } else {
+        node.parentNode = this;
+        this.childNodes.push(node);
+      }
     },
 
     cloneNode: function (deep) {
@@ -171,7 +176,7 @@ define(function(require, exports, module) {
 
   function DocumentElement(tag) {
     common(this, ELEMENT_NODE);
-    this.tagName = tag.toUpperCase();
+    this.tagName = (''+tag).toUpperCase();
     this.attributes = {};
   }
   buildNodeType(DocumentElement, {

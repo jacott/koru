@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   var util = require('./util');
-  var match = require('./match');
 
   format.compile = compile;
   format.escape = escape;
@@ -15,7 +14,7 @@ define(function(require, exports, module) {
         last = arguments[arguments.length -1],
         lit =fmt[0];
 
-    if (last === fmt || ! match.object.$test(last))
+    if (last === fmt || ! last || typeof last !== 'object')
       last = this;
 
     for(var i =0, lit = fmt[0];

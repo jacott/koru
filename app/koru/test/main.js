@@ -146,6 +146,11 @@ define(function(require, exports, module) {
   });
 
   function endTest() {
+    if (geddon.testCount === 0) {
+      errorCount = 1;
+      self.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+    }
+
     if (isClient) {
       document.title = document.title.replace(/Running: /, '');
       window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {

@@ -18,6 +18,36 @@ define(function(require, exports, module) {
 
   var geddon = TH.geddon;
 
+  var ga = geddon.assertions;
+
+  ga.add('rangeEquals', {
+    assert: function (startContainer, startOffset, endContainer, endOffset) {
+      if (endContainer === undefined) {
+        endContainer = startContainer;
+        endOffset = startOffset;
+      }
+
+      var range = Dom.getRange();
+
+      this.actual = {
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset,
+      };
+      this.expected = {
+        startContainer: startContainer,
+        startOffset: startOffset,
+        endContainer: endContainer,
+        endOffset: endOffset,
+      };
+
+      return geddon._u.deepEqual(this.actual, this.expected, this, 'diff');
+    },
+
+    message: "{i$actual} to equal {i$expected}\nDiff at\n -> {i$diff}",
+  });
+
   TH.util.extend(TH, {
     domTearDown: function () {
       Dom.flushNextFrame();
@@ -150,6 +180,10 @@ define(function(require, exports, module) {
       keyseq('keydown', node, key, args);
     },
 
+    keypress: function (node, key, args) {
+      keyseq('keypress', node, key, args);
+    },
+
     keyup: function (node, key, args) {
       keyseq('keyup', node, key, args);
     },
@@ -178,6 +212,18 @@ define(function(require, exports, module) {
       }
       TH.trigger(node, 'mousedown', args);
       TH.trigger(node, 'mouseup', args);
+    },
+
+    setRange: function (startContainer, startOffset, endContainer, endOffset) {
+      if (endContainer === undefined) {
+        endContainer = startContainer;
+        endOffset = startOffset;
+      }
+      var range = document.createRange();
+      range.setStart(startContainer, startOffset);
+      range.setEnd(endContainer, endOffset);
+      Dom.setRange(range);
+      return range;
     },
   });
 
