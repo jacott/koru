@@ -47,12 +47,10 @@ define(function(require, exports, module) {
       }
 
       var provider = koru.buildPath(name)+'.html';
-      mod.uri = mod.ctx.uri(provider);
 
-      mod.loadModule(function () {
-        var gdr =  Module._globalDefineResult;
-        Module._globalDefineResult = null;
-        onload(gdr && gdr[2]);
+      req(provider, function (value, pMod) {
+        pMod.addDependancy(req.module);
+        onload(value);
       }, onload.error);
     },
 
