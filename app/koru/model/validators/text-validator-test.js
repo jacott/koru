@@ -99,6 +99,30 @@ define(function (require, exports, module) {
       },
     },
 
+    "date": {
+      "test valid": function () {
+        var doc = {startDate: new Date()};
+
+        sut.validators('date')(doc, 'startDate');
+        refute(doc._errors);
+
+        var doc = {startDate: '2015-12-31'};
+
+        sut.validators('date')(doc, 'startDate');
+        refute(doc._errors);
+
+        assert.equals(doc.startDate, new Date(Date.parse('2015-12-31')));
+      },
+
+      'test invalid': function () {
+        var doc = {startDate: 'abc'};
+
+        sut.validators('date')(doc, 'startDate');
+        assert(doc._errors);
+        assert.equals(doc._errors['startDate'],[['not_a_date']]);
+      },
+    },
+
     'number': {
       "test min value": function () {
         var doc = {order: 123};

@@ -21,6 +21,26 @@ define(function () {
         this.addError(doc,field,'is_invalid');
     },
 
+    date: function (doc,field, options) {
+      var val = doc[field];
+
+      if (val === '') {
+        doc[field] = null;
+        return;
+      }
+
+      if (val == null) return;
+
+      if (options === true || options == null) options = {};
+
+      if (! (val && val.constructor === Date && val.getDate() === val.getDate())) {
+        if (typeof val !== 'string' || ((val = new Date(Date.parse(val))) && val.getDate() !== val.getDate()))
+          return this.addError(doc,field,'not_a_date');
+      }
+
+      doc[field] = val;
+    },
+
     number: function (doc,field, options) {
       var val = doc[field];
 

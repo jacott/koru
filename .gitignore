@@ -3,6 +3,7 @@ node_modules
 *#
 TAG*
 /tmp
+.build/
 /build
 /app/cmd-client.js
 /app/test/server-ready.js
