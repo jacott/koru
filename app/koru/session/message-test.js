@@ -143,6 +143,16 @@ define(function (require, exports, module) {
       assert.equals(_decode(v.ans), [1 ,2, "hello"]);
     },
 
+    "test sparse array": function () {
+      var array = [];
+      array[130] = "x";
+      array[131] = 1;
+      array[5432] = null;
+      assert.equals(_encode(array), v.ans = [6, 18, 130, 129, 120, 65, 19, 0, 0, 20, 180, 2, 0]);
+
+      assert.equals(_decode(v.ans), array);
+    },
+
     "test nested arrays": function () {
       var orig = [1, 2, [true, null, [undefined, "hello"], 0], 5];
       assert.equals(_decode(_encode(orig)), orig);

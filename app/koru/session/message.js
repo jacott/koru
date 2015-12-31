@@ -21,6 +21,8 @@ define(function(require, exports, module) {
   var tDate = 15;
   var tBinary = 16;
   var tDictString = 17;
+  var tSparseSmall = 18;
+  var tSparseLarge = 19;
 
   var tSmString = 0x80;
   var tSmNumber = 0x40;
@@ -145,7 +147,24 @@ define(function(require, exports, module) {
       });
     case "[object Array]":
       buffer.push(tArray);
-      util.forEach(object, function (o) {
+      var last = -1;
+      object.forEach(function (o, index) {
+        var diff = index - last - 1;
+        if (diff !== 0) {
+          if (diff < 256) {
+            buffer.push(tSparseSmall);
+            tmpDv.setInt8(0, diff);
+            buffer.push(tmpU8[0]);
+          } else {
+            if (diff > 4294967294) throw new Error("sparse array too sparse");
+            buffer.push(tSparseLarge);
+            tmpDv.setUint32(0, diff);
+            util.forEach(tmpU8.subarray(0, 4), function (v) {
+              buffer.push(v);
+            });
+          }
+        }
+        last = index;
         encode(buffer, o, dict);
       });
       return buffer.push(tTerm);
@@ -320,9 +339,24 @@ define(function(require, exports, module) {
     case tArray:
       var len = buffer.length;
       var out = [];
+      var count = 0;
+      var sparseResult = [0,1];
       for(;index < len && buffer[index] !== tTerm; index = result[1]) {
-        var result = decode(buffer, index, dict);
-        out.push(result[0]);
+        switch(buffer[index]) {
+        case tSparseSmall:
+          result = sparseResult;
+          result[1] = index+2;
+          count += buffer[index+1];
+          break;
+        case tSparseLarge:
+          result = sparseResult;
+          tmpU8.set(buffer.slice(index + 1, result[1] = index + 5), 0);
+          count += tmpDv.getUint32(0);
+          break;
+        default:
+          var result = decode(buffer, index, dict);
+          out[count++] = result[0];
+        }
       }
       return [out, ++index];
 
