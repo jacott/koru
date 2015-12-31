@@ -180,10 +180,6 @@ define(function(require, exports, module) {
       keyseq('keydown', node, key, args);
     },
 
-    keypress: function (node, key, args) {
-      keyseq('keypress', node, key, args);
-    },
-
     keyup: function (node, key, args) {
       keyseq('keyup', node, key, args);
     },

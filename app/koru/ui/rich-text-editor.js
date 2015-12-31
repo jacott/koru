@@ -22,19 +22,26 @@ define(function(require, exports, module) {
       });
     },
 
-    insert: insert,
     select: select,
-    breakLine: breakLine,
     findContainingBlock: findContainingBlock,
     firstInnerMostNode: firstInnerMostNode,
     lastInnerMostNode: lastInnerMostNode,
-    deleteSelected: function (editor) {
-      var range = Dom.getRange();
-      range = deleteContents(editor, range);
-      Dom.setRange(range);
-      return range;
+    insert: function (arg, inner) {
+      if (typeof arg === 'string') {
+        return document.execCommand('insertText', 0, arg);
+      }
+
+      if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
+        var t = document.createElement('div');
+        t.appendChild(arg);
+        t = t.innerHTML;
+      } else if (inner) {
+        var t = arg.innerHTML;
+      } else {
+        var t = arg.outerHTML;
+      }
+      return document.execCommand("insertHTML", 0, t);
     },
-    deleteContents: deleteContents,
   });
 
   Tpl.$events({
@@ -43,70 +50,23 @@ define(function(require, exports, module) {
         var types = event.clipboardData.types;
         if (types) for(var i = 0; i < types.length; ++i) {
           var type = types[i];
-          _koru_.debug('type', type);
-          Dom.stopEvent();
-          return;
+          if (/html/.test(type)) {
+            var md = RichText.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
+            if (Tpl.insert(RichText.toHtml(md), 'inner') || Tpl.insert(md.textContent))
+              Dom.stopEvent();
+            return;
+          }
         }
       }
-    },
-
-    'cut': function (event) {
-      Dom.stopEvent();
-      _koru_.debug('cut');
-
     },
 
     'keydown': function (event) {
-      _koru_.debug('kd');
-
-      switch(event.which) {
-      case 37:
-        var amount = -1;
-      case 39:
-        amount = amount || 1;
-        Dom.stopEvent();
-        range = select(this, 'char', amount);
-        if (range) {
-          range.collapse(amount < 0);
-          Dom.setRange(range);
-        }
-        return;
-
-      case 46:
-        var amount = 1;
-      case 8:
-        amount = amount || -1;
+      if (event.which === 34) {
         Dom.stopEvent();
         var range = Dom.getRange();
-        if (range && range.collapsed)
-          range = select(this, 'char', amount);
-        if (range) {
-          range = deleteContents(this, range);
-          Dom.setRange(range);
-        }
         return;
       }
-
-    },
-
-    'keypress': function (event) {
-      if (event.charCode) {
-        var code = event.which;
-        Dom.stopEvent();
-        var range = Dom.getRange();
-        switch(code) {
-        case 13: case 10:
-          breakLine(this);
-          return;
-        }
-        insert(this, String.fromCharCode(code));
-      }
-    },
-
-    'input': function (event) {
-      var node = this;
-      Dom.stopEvent();
-      _koru_.debug('X');
+      return;
     },
   });
 
@@ -249,7 +209,6 @@ define(function(require, exports, module) {
   }
 
   function normPos(editor, range, node, offset, setter) {
-    _koru_.debug('node', node, offset);
     if (node.nodeType !== TEXT_NODE) {
       if (node.tagName === 'BR') {
         if (offset !== 0) range[setter](node, 0);
@@ -268,127 +227,6 @@ define(function(require, exports, module) {
       } else if (curr !== node) {
         range[setter](curr, 0);
       }
-    }
-  }
-
-  function deleteContents(editor, range) {
-    if (range.collapsed) return range;
-    normRange(editor, range);
-    var node = range.startContainer;
-    var startOffset = range.startOffset;
-    var endNode = range.endContainer;
-    var endOffset = range.endOffset;
-
-    if (node === endNode) {
-      node.textContent = node.textContent.slice(0, startOffset) + node.textContent.slice(range.endOffset);
-      // } else {
-      //   endNode = node.childNodes[range.endOffset];
-      //   var curr = node.childNodes[range.startOffset];
-      //   while(curr && curr !== endNode) {
-      //     curr = curr.nextSibling;
-      //     node.removeChild(curr.previousSibling);
-      //   }
-      //   curr = node.childNodes[range.startOffset];
-      //   node = firstInnerMostNode(curr);
-      //   startOffset = 0;
-      // }
-    } else {
-      var startList = traceContainingBlock(editor, node);
-      var endList = traceContainingBlock(editor, endNode, startList);
-      var startIdx = startList.length - 1;
-      var endIdx = endList.length - 1;
-      for(var i = 0; i < startIdx ; ++i) {
-        var curr = startList[i];
-        var parent = curr.parentNode;
-        while (curr.nextSibling) parent.removeChild(curr.nextSibling);
-      }
-      for(var i = 0; i < endIdx ; ++i) {
-        var curr = endList[i];
-        var parent = curr.parentNode;
-        while (curr.previousSibling) parent.removeChild(curr.previousSibling);
-      }
-      var curr = startList[startIdx];
-      var parent = curr.parentNode;
-      var currEnd = endList[endIdx];
-      while (curr.nextSibling !== currEnd)
-        parent.removeChild(curr.nextSibling);
-
-      if (node.nodeType === TEXT_NODE) {
-        node.textContent = node.textContent.slice(0, startOffset) + (endNode.nodeType === TEXT_NODE ? endNode.textContent.slice(range.endOffset) : '');
-      } else if (endNode.nodeType === TEXT_NODE) {
-        var curr = document.createTextNode(endNode.textContent.slice(range.endOffset));
-        node.parentNode.insertBefore(curr, node);
-        node.parentNode.removeChild(node);
-        node = curr;
-      }
-      var parent = endNode.parentNode;
-      parent.removeChild(endNode);
-      while (parent !== editor && ! parent.firstChild) {
-        curr = parent;
-        parent = parent.parentNode;
-        parent.removeChild(curr);
-      }
-    }
-    range.setStart(node, startOffset);
-    range.collapse(true);
-    deleteEmpty(range);
-    return range;
-  }
-
-  function breakLine(editor) {
-    var range = Dom.getRange();
-    if (! range) return;
-    range = deleteContents(editor, range);
-
-    var node = range.startContainer;
-
-    var block = findContainingBlock(editor, node);
-    if (block === node) {
-      if (block === editor) {
-        var copy = document.createElement('div');
-        copy.appendChild(BR.cloneNode());
-        editor.insertBefore(copy, editor.childNodes[range.startOffset]);
-      } else {
-        var copy = block.cloneNode();
-        block.parentNode.insertBefore(copy, block.nextSibling);
-        var endNode = BR.cloneNode();
-        copy.appendChild(endNode);
-      }
-      range.setEnd(copy, 0);
-      range.collapse();
-      Dom.setRange(range);
-    } else if (node.nodeType === TEXT_NODE) {
-      var remainder = node.textContent.slice(range.startOffset);
-      node.textContent = node.textContent.slice(0, range.startOffset);
-      var endNode = remainder ? document.createTextNode(remainder) : BR.cloneNode();
-      copy = endNode;
-
-      while (node !== block) {
-        var curr, nextSib = node.nextSibling;
-        node = node.parentNode;
-        curr = copy;
-        copy = node.cloneNode();
-        copy.appendChild(curr);
-
-        while(curr = nextSib) {
-          nextSib = curr.nextSibling;
-          copy.appendChild(curr);
-        }
-      }
-      block.parentNode.insertBefore(copy, block.nextSibling);
-      if (block.childNodes.length === 0) {
-        block.appendChild(BR.cloneNode());
-      }
-      range.setEnd(endNode, 0);
-      node = range.startContainer;
-      if (node.textContent.length === 0) {
-        if (node.parentNode.childNodes.length === 1)
-          node.parentNode.appendChild(BR.cloneNode());
-        node.parentNode.removeChild(node);
-      }
-      range.collapse();
-
-      Dom.setRange(range);
     }
   }
 
@@ -431,72 +269,6 @@ define(function(require, exports, module) {
     }
 
     return last;
-  }
-
-  function insert(editor, data) {
-    if (data.nodeType === TEXT_NODE)
-      data = data.textContent;
-
-    var range = Dom.getRange();
-    if (! range) return;
-    range = deleteContents(editor, range);
-    var node = range.startContainer;
-    if (! Dom.contains(editor, node)) return;
-    var text = node.textContent;
-    var offset = range.startOffset;
-
-    if (typeof data === 'string') {
-    }
-
-    var newRange = document.createRange();
-    if (node.nodeType === TEXT_NODE) {
-      if (typeof data === 'string') {
-        var newOffset= offset + data.length;
-        data = text.slice(0, offset) + data + text.slice(offset);
-        node.textContent = fixSpaces(data);
-        newRange.setStart(node, newOffset);
-      } else if (data.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
-        var firstChild = data.firstChild;
-        if (firstChild.nodeType === TEXT_NODE) {
-          data.removeChild(firstChild);
-          text += firstChild.textContent;
-        }
-        node.textContent = text;
-        node.parentNode.insertBefore(data, node.nextSibling);
-        newRange.setStart(node, offset + data.length);
-      } else {
-        node.textContent = text.slice(0, offset);
-        var before = node.nextSibling;
-        var endText = document.createTextNode(text.slice(offset));
-        node.parentNode.insertBefore(data, before);
-        node.parentNode.insertBefore(endText, before);
-
-        newRange.setStart(endText, 0);
-      }
-    } else {
-      var before = node.childNodes[offset];
-      var sc, so;
-      if (typeof data === 'string') {
-        data = document.createTextNode(fixSpaces(data));
-        sc = data; so = data.length;
-      } else if (data.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
-        if (data.lastChild.nodeType === TEXT_NODE) {
-          sc = data.lastChild; so = data.lastChild.textContent.length;
-        } else {
-          sc = node; so = offset + data.childNodes.length;
-        }
-      } else {
-        sc = node; so = offset + 1;
-      }
-
-      node.insertBefore(data, before);
-      if (before && before.tagName === 'BR')
-        node.removeChild(before);
-      newRange.setStart(sc, so);
-    }
-    newRange.collapse(true);
-    deleteEmpty(newRange);
-    Dom.setRange(newRange);
   }
 
   function fixSpaces(data) {
