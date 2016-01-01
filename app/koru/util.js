@@ -22,6 +22,8 @@ define(function(require, exports, module) {
   var slice = Array.prototype.slice;
 
   util.extend(util, {
+    DAY: 1000*60*60*24,
+
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     reverseExtend: function (obj, properties, exclude) {

@@ -14,6 +14,12 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test DAY": function () {
+      var d1 = new Date(2015, 1, 1);
+      var d2 = new Date(2015, 1, 2);
+      assert.same(util.DAY, +d2 - d1);
+    },
+
     "test pc": function () {
       assert.same(util.pc('1.2345678'), '123.4568%');
     },
