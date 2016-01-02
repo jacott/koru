@@ -4,25 +4,27 @@ define(function (require, exports, module) {
   var sut = require('./rich-text');
   var util = require('koru/util');
 
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4;
+
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      v.p = document.createElement('p');
     },
 
     tearDown: function () {
       v = null;
     },
 
-
     "test just text": function () {
       var doc = "Hello world";
 
-      var html = sut.toHtml(doc);
+      var html = sut.toHtml(doc, null, v.p);
 
-      assert.same(html.textContent, "Hello world");
+      assert.same(html.outerHTML, "<p><div>Hello world</div></p>");
 
-      assert.equals(sut.fromHtml(html), doc);
+      assert.equals(sut.fromHtml(html), [[doc], null]);
     },
 
     "test div with multi-line text": function () {
@@ -35,14 +37,16 @@ define(function (require, exports, module) {
       var arround = document.createElement('div');
       arround.appendChild(html);
 
-      assert.equals(sut.fromHtml(arround), {p: doc});
+      assert.equals(sut.fromHtml(arround), [doc.split('\n'), null]);
     },
 
     "test empty li": function () {
-      var doc = {ol: [{li: ""}, {li: ""}]};
+      var doc = "\n\n", markup = [OL, 0, 1];
 
-      var html = sut.toHtml(doc);
-      assert.same(html.outerHTML, "<ol><li><br></li><li><br></li></ol>");
+      var html = sut.toHtml(doc, markup, v.p);
+      assert.same(html.outerHTML, "<p><ol><li><br></li><li><br></li></ol><div><br></div></p>");
+
+      assert.equals(sut.fromHtml(v.p), [doc.split('\n'), markup]);
     },
 
     "test simple": function () {
@@ -52,38 +56,46 @@ define(function (require, exports, module) {
 
       assert.same(html.outerHTML, "<p><div>a</div><div>b</div></p>");
 
-      assert.equals(sut.fromHtml(html), {p: doc});
+      assert.equals(sut.fromHtml(html), [['a', 'b'], null]);
     },
 
     "test list and nesting": function () {
-      var doc = {p: ["Hello ", {p: {b: "brave"}}, {p: [" new ", {i: "world"}]}]};
+      var doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 2, BOLD, 1, 0, 5, ITALIC, 2, 5, 10];
 
-      var html = sut.toHtml(doc);
+      var html = sut.toHtml(doc, markup, v.p);
 
-      assert.same(html.outerHTML, "<div><div>Hello </div><div><b>brave</b></div><div> new <i>world</i></div></div>");
+      assert.same(html.outerHTML, "<p><div>It´s a</div><blockquote><div><b>brave</b></div><div> new <i>world</i> now</div></blockquote></p>");
 
-      assert.equals(sut.fromHtml(html), doc);
+      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
     },
 
     "test complex": function () {
       var complex = '<div>he</div><div>-llo world<b>in <i>here</i> out</b></div><div><br></div><div>line 2</div>';
-      var doc = doc = {p: ["he", {p: ["-llo world", {b: ["in ", {i: "here"}, " out"]}]}, "\nline 2"]};
+      var doc = "he\n-llo worldin here out\n\nline 2";
+      var markup = [BOLD, 1, 10, 21, ITALIC, 1, 13, 17];
       var html = document.createElement('div');
       html.innerHTML = complex;
-      assert.equals(sut.fromHtml(html), doc);
-      assert.equals(sut.toHtml(doc).innerHTML, complex);
+      assert.equals(sut.toHtml(doc, markup, document.createElement('div')).innerHTML, complex);
+      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
     },
 
-    "//test classes, attrs and id": function () {
-      var doc = {p: "foo", $style: "width:100px", id: "FOOID", class: "bar baz"};
-
-      var html = sut.toHtml(doc);
-
-      assert.same(html.outerHTML, '<p class=\"bar baz\" id=\"FOOID\" style=\"width:100px\">foo</p>');
-
-      assert.equals(sut.fromHtml(html), doc);
+    "test multiple": function () {
+      assertConvert('simple', '<div>simple</div>');
+      assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
+      assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
+      assertConvert("<ol><li><br></li><li><br></li></ol>");
+      assertConvert('<blockquote><ul><li>one</li><ol><li>2.1</li><li>2.2</li></ol><li>TH<b><i>R</i></b>EE 3</li></ul></blockquote>');
+      assertConvert('<section><section>sec<span>ti</span>on</section></section>', '<div>section</div>');
     },
   });
+
+  function assertConvert(text, expect) {
+    expect = expect || text;
+    var html = document.createElement('p');
+    html.innerHTML = text;
+    var rt = sut.fromHtml(html);
+    assert.elideFromStack.msg(function () {return rt}).same(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML, expect);
+  }
 
   function inspectFrag(frag) {
     var result = [];

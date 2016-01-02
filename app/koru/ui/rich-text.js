@@ -5,24 +5,7 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var TO_HTML = {
-    p: 'div',
-    b: 'b',
-    i: 'i',
-    u: 'u',
-  };
-
-  var FROM_HTML = {
-    div: 'p',
-    br: 'br',
-    ol: 'ol',
-    ul: 'ul',
-    li: 'li',
-    p: 'p',
-    b: 'b',
-    i: 'i',
-    u: 'u',
-  };
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5;
 
   var INLINE_TAGS = {
     B: 'inline',
@@ -32,150 +15,204 @@ define(function(require, exports, module) {
     SPAN: 'inline',
   };
 
-  return {
-    toHtml: html,
+  function fromText(lines, markup, node) {
+    if (node.nodeType === TEXT_NODE || node.tagName === 'BR') {
+      lines.push(node.textContent);
+      return true;
+    }
+  }
 
-    fromHtml: fromHtml,
+  function fromDiv(lines, markup, node, state) {
+    if (fromText(lines, markup, node, state)) return;
+
+    var rule = FROM_RULE[node.tagName] || fromDiv;
+    fromChildren(lines, markup, node, rule === fromDiv ? state : {oldState: state, rule: rule});
+  }
+
+  function fromInline(code) {
+    return function fromInline(lines, markup, node, state) {
+      var index = lines.length - 1;
+      markup.push(code, index, lines[index].length, 0);
+      var pos = markup.length - 1;
+      fromChildren(lines, markup, node, state);
+      markup[pos] = lines[index].length;
+    };
+  }
+
+  function fromBlock(code) {
+    return function fromBlock(lines, markup, node, state) {
+      if (state.start === undefined) {
+        state.start = lines.length;
+        state.endMarker = markup.length + 2;
+        markup.push(code, state.start, 0);
+      }
+      var rule = FROM_RULE[node.tagName] || fromDiv;
+      fromChildren(lines, markup, node, rule === fromDiv ? state : {oldState: state, rule: rule});
+
+      markup[state.endMarker] = lines.length - 1;
+    };
+  }
+
+  var FROM_RULE = {
+    DIV: fromDiv,
+    OL: fromBlock(OL),
+    UL: fromBlock(UL),
+    BLOCKQUOTE: fromBlock(NEST),
+    P: fromDiv,
+    B: fromInline(BOLD),
+    I: fromInline(ITALIC),
+  };
+
+  var toLi = toBlock('LI');
+  var toDiv = toBlock('DIV');
+
+  function toNested(blockTag, innerFunc) {
+    return function toNested(line, index, markup) {
+      this.begun = true;
+      this.result.appendChild(this.result = document.createElement(blockTag));
+      this.rule = innerFunc;
+      this.pos += 3;
+    };
+  }
+
+  function toBlock(tag) {
+    return function(line, index, markup) {
+      if (! this.begun)
+        return this.begun = true;
+      var oldResult = this.result;
+      oldResult.appendChild(this.result = document.createElement(tag));
+      toChildren(line, index, markup, this);
+      this.result = oldResult;
+    };
+  }
+
+  function toInline(tag) {
+    toInlineTag.inline = true;
+    toInlineTag.muInc = 4;
+    return toInlineTag;
+    function toInlineTag(line, index, markup) {
+      var oldResult = this.result;
+      oldResult.appendChild(this.result = document.createElement(tag));
+      toChildren(line, index, markup, this);
+      this.result = oldResult;
+    }
+  };
+
+  var TO_RULES = [];
+  TO_RULES[0] = toDiv;
+  TO_RULES[OL] = toNested('OL', toLi);
+  TO_RULES[UL] = toNested('UL', toLi);
+  TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
+
+  TO_RULES[BOLD] = toInline('B');
+  TO_RULES[ITALIC] = toInline('I');
+
+  return {
+    toHtml: toHtml,
+
+    fromHtml: function (html) {
+      var lines = [], markup = [];
+      var state = {rule: fromDiv};
+      fromChildren(lines, markup, html, state);
+      return [lines, markup.length ? markup : null];
+    },
 
     INLINE_TAGS: INLINE_TAGS,
   };
+
+  function toChildren(line, index, markup, state) {
+    var nmu = markup[state.pos+1];
+    var startPos = state.inlineStart || 0;
+    var endPos = state.inlineEnd || line.length;
+
+    if (index === nmu) {
+      while(index === nmu && markup[state.pos+2] <= endPos) {
+        var rule = TO_RULES[markup[state.pos]];
+
+        var text = line.slice(state.inlineStart || 0, markup[state.pos+2]);
+        if (text)
+          state.result.appendChild(document.createTextNode(text));
+        startPos = markup[state.pos+3];
+
+        state = {
+          result: state.result,
+          oldState: state,
+          rule: rule,
+          pos: state.pos + rule.muInc,
+          inlineStart: markup[state.pos+2],
+          inlineEnd: markup[state.pos+3]
+        };
+        state.rule(line, index, markup);
+        state.oldState.pos = state.pos;
+        state = state.oldState;
+
+        nmu = markup[state.pos+1];
+      }
+    }
+    if (! line) {
+      state.result.appendChild(document.createElement('BR'));
+    } else {
+      var text = line.slice(startPos, endPos);
+      text &&
+        state.result.appendChild(document.createTextNode(text));
+    }
+  }
 
   function isInlineNode(item) {
     return item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
   }
 
-  function html(body) {
-    if (typeof body === "string") {
-      if (body.indexOf("\n") !== -1) {
-        content = document.createDocumentFragment();
-        body.split('\n').forEach(function (line) {
-          var elm = document.createElement('div');
-          if (line)
-            elm.textContent = line;
-          else
-            elm.appendChild(document.createElement('br'));
-          content.appendChild(elm);
-        });
-        return content;
-      } else
-        return document.createTextNode(body);
-    }
+  function toHtml(lines, markup, result) {
+    lines = typeof lines === 'string' ? lines.split("\n") : lines;
+    markup = markup || [];
 
-    if (Array.isArray(body)) {
-      var elm = document.createDocumentFragment();
-      var last;
-      body.forEach(function (item) {
-        if (! item) return;
-        item = html(item);
-        if (last && isInlineNode(item) &&
-            ! isInlineNode(last)) {
-          last = item;
-          item = document.createElement('div');
-          item.appendChild(last);
-        }
-        elm.appendChild(item);
-        last = item;
-      });
+    result = result || document.createDocumentFragment();
 
-      if (elm.childNodes.length > 1 && elm.firstChild.nodeType === TEXT_NODE && ! isInlineNode(elm.childNodes[1])) {
-        last = document.createElement('div');
-        last.appendChild(elm.firstChild);
-        elm.insertBefore(last, elm.firstChild);
+    var nrule;
+    var nmu = markup[1];
+    var state = {result: result, rule: toDiv, pos: 0, begun: true};
+    for(var index = 0; index < lines.length; ++index) {
+      var line = lines[index];
+      while (index === nmu && ! (nrule = TO_RULES[markup[state.pos]]).inline) {
+        state = {result: state.result, rule: nrule, last: markup[state.pos+2], pos: state.pos, oldState: state};
+        state.rule(line, index, markup);
+        nmu = markup[state.pos+1];
       }
+      state.rule(line, index, markup, state);
 
-      return elm;
-    }
-
-    var id, className, content, tagName = 'div', attrs = {};
-    for(var key in body) {
-      var value = body[key];
-      if (TO_HTML[key]) {
-        tagName = TO_HTML[key];
-        content = value && html(value);
-      } else switch(key) {
-      case "id": id = value; break;
-
-      case "class": className = value; break;
-
-      default:
-        if (key[0] === '$') {
-          attrs[key.slice(1)] = value;
-        } else {
-          tagName = key;
-          if (value)
-            content = html(value);
-          else if (! INLINE_TAGS[key.toUpperCase()]) {
-            content = document.createElement('br');
-          }
-        }
-        break;
+      while (state.last === index) {
+        var pos = state.pos;
+        state = state.oldState;
+        state.pos = pos;
       }
-    }
-
-    var elm = document.createElement(tagName);
-    className && (elm.className = className);
-    id && (elm.id = id);
-    for(var key in attrs) {
-      elm.setAttribute(key, attrs[key]);
-    }
-
-    content && elm.appendChild(content);
-
-    return elm;
-  }
-
-  function fromHtml(dom) {
-    if (dom.nodeType === TEXT_NODE)
-      return dom.textContent;
-
-    var result = {};
-
-    var tag = dom.tagName.toLowerCase();
-    tag = FROM_HTML[tag] || 'p';
-
-    var nodes = dom.childNodes;
-    switch(nodes.length) {
-    case 1:
-      if (nodes[0].nodeType === TEXT_NODE) {
-        if (tag === 'p')
-          return nodes[0].textContent;
-        result[tag] = nodes[0].textContent;
-      } else if (tag === 'p' && nodes[0].tagName === 'BR')
-        return "";
-      else {
-        result[tag] = fromHtml(nodes[0]);
-      }
-    case 0:
-      break;
-    default:
-      var content = [];
-      var textString = [];
-      util.forEach(nodes, function (node) {
-        if (node.nodeType === TEXT_NODE) {
-          textString.push(node.textContent);
-        } else {
-          var sub = fromHtml(node);
-          if (typeof sub === 'string') {
-            if (textString.length)
-              textString.push('\n');
-            textString.push(sub);
-          } else {
-            if (textString.length) {
-              content.push(textString.join(''));
-              textString.length = 0;
-            }
-
-            content.push(fromHtml(node));
-          }
-        }
-      });
-      textString.length && content.push(textString.join(''));
-      if (content.length === 1 && typeof content[0] === 'string')
-        result[tag] = content[0];
-      else
-        result[tag] = content;
     }
 
     return result;
+  }
+
+  function fromChildren(lines, markup, parent, state) {
+    var nodes = parent.childNodes;
+    state.last = nodes.length - 1;
+    util.forEach(nodes, function (node, index) {
+      if (node.tagName === 'BR') {
+        lines.push('');
+      } else if (isInlineNode(node)) {
+        var isInline = state.inline;
+        if (! isInline) {
+          index || lines.push('');
+          state.inline = true;
+        }
+        if (node.nodeType === TEXT_NODE) {
+          lines[lines.length - 1] += node.textContent;
+        } else {
+          var rule = FROM_RULE[node.tagName];
+          rule ? rule(lines, markup, node, state) : lines[lines.length - 1] += node.textContent;
+        }
+        state.inline = isInline;
+      } else if (! state.inline) {
+        state.rule(lines, markup, node, state);
+      }
+    });
+    --state.inline;
   }
 });

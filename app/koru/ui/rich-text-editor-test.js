@@ -12,17 +12,17 @@ isClient && define(function (require, exports, module) {
       test = this;
       v = {};
       v.tpl = Dom.newTemplate(util.deepCopy(RichTextEditorTpl));
-      TH.domTearDown();
     },
 
     tearDown: function () {
+      TH.domTearDown();
       v = null;
     },
 
     "test forward/back char": function () {
       runSubTests({
         "within text node ": function () {
-          this.appendChild(RichText.toHtml({p: "hello world"}));
+          this.appendChild(RichText.toHtml("hello world"));
           TH.setRange(sut.firstInnerMostNode(this),5);
 
           Dom.setRange(sut.select(this, 'char', 1));
@@ -34,7 +34,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "next line": function () {
-           this.appendChild(RichText.toHtml({p: "hello\nworld"}));
+          this.innerHTML = '<div><div>hello</div><div>world</div></div>';
           TH.setRange(sut.firstInnerMostNode(this),5);
 
           Dom.setRange(sut.select(this, 'char', 1));
@@ -46,20 +46,20 @@ isClient && define(function (require, exports, module) {
         },
 
         "block nested": function () {
-          this.appendChild(RichText.toHtml([{p: ["hello world", {b: ["in ", {i: "here"}]}]}, "\nline 2"]));
+          this.innerHTML = "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
           var iElm = this.querySelector('i').firstChild;
           TH.setRange(iElm, 4);
 
           Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(iElm, 4, this.childNodes[1], 0);
+          assert.rangeEquals(iElm, 4, this.childNodes[1].firstChild, 0);
 
           collapse();
           Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(iElm, 4, this.childNodes[1], 0);
+          assert.rangeEquals(iElm, 4, this.childNodes[1].firstChild, 0);
         },
 
         "span nested": function () {
-          this.appendChild(RichText.toHtml([{p: ["hello ", {b: ["in ", {i: "here"}, ' out']}]}, "\nline 2"]));
+          this.innerHTML = "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
           TH.setRange(sut.firstInnerMostNode(this), 6);
 
           Dom.setRange(sut.select(this, 'char', 1));
@@ -85,14 +85,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test typing": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: [
-        "helo\n\n\nworld how are",
-        {div: {div: [{a: "href", $href: "foo"}, {b: "bold"}]}},
-        "\n\nyou", {ol: [{li: "one"},
-                         {li: "two"},
-                         {ol: [{li: "two,zero"}, {li: "two,one", class: "x"}, {li: "two,two"}]},
-                         {li: "three"}]}
-      ]}));
+      document.body.appendChild(v.tpl.$autoRender({content: 'hello\nworld'}));
 
       Dom.flushNextFrame();
 

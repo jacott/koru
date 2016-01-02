@@ -14,9 +14,7 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     $created: function (ctx, elm) {
-      var html = RichText.toHtml(ctx.data.content);
-
-      elm.insertBefore(html, elm.lastChild);
+      RichText.toHtml(ctx.data.content, null, elm.lastChild);
       Dom.nextFrame(function () {
         elm.focus();
       });
@@ -46,6 +44,7 @@ define(function(require, exports, module) {
 
   Tpl.$events({
     'paste': function (event) {
+      return;
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;
         if (types) for(var i = 0; i < types.length; ++i) {
@@ -63,7 +62,7 @@ define(function(require, exports, module) {
     'keydown': function (event) {
       if (event.which === 34) {
         Dom.stopEvent();
-        var range = Dom.getRange();
+        document.execCommand('indent', 0, null);
         return;
       }
       return;
