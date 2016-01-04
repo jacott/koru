@@ -7,6 +7,7 @@ define(function(require, exports, module) {
 
   util.extend(Dom, {
     html: html,
+    h: html2,
 
     escapeHTML: function(text) {
       var pre = document.createElement('pre');
@@ -40,6 +41,59 @@ define(function(require, exports, module) {
       return true;
     },
   });
+
+
+  function html2(body) {
+    if (typeof body === "string") {
+      if (body.indexOf("\n") !== -1) {
+        content = document.createDocumentFragment();
+        body.split('\n').forEach(function (line, index) {
+          index && content.appendChild(document.createElement('br'));
+          line && content.appendChild(document.createTextNode(line));
+        });
+        return content;
+      } else
+        return document.createTextNode(body);
+    }
+
+    if (Array.isArray(body)) {
+      var elm = document.createDocumentFragment();
+      body.forEach(function (item) {
+        item && elm.appendChild(html2(item));
+      });
+      return elm;
+    }
+
+    var id, className, content, tagName = 'div', attrs = {};
+    for(var key in body) {
+      var value = body[key];
+      switch(key) {
+      case "id": id = value; break;
+
+      case "class": className = value; break;
+
+      default:
+        if (key[0] === '$') {
+          attrs[key.slice(1)] = value;
+        } else {
+          tagName = key;
+          content = value && html2(value);
+        }
+        break;
+      }
+    }
+
+    var elm = document.createElement(tagName);
+    className && (elm.className = className);
+    id && (elm.id = id);
+    for(var key in attrs) {
+      elm.setAttribute(key, attrs[key]);
+    }
+
+    content && elm.appendChild(content);
+
+    return elm;
+  }
 
   function html(body, tagName) {
     tagName = tagName || 'div';

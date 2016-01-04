@@ -12,21 +12,35 @@ define(function(require, exports, module) {
 
   var INLINE_TAGS = RichText.INLINE_TAGS;
 
+  Tpl.$helpers({
+    attrs: function () {
+      var elm = $.element;
+      var options = this.options;
+      for (var id in options) {
+        if (id[0] === '$') continue;
+        elm.setAttribute(id, options[id]);
+      }
+      Dom.addClass(elm, 'richTextEditor');
+    },
+  });
+
   Tpl.$extend({
     $created: function (ctx, elm) {
-      RichText.toHtml(ctx.data.content, null, elm.lastChild);
+      ctx.data.content && elm.lastChild.appendChild(ctx.data.content);
       Dom.nextFrame(function () {
         elm.focus();
       });
     },
 
     select: select,
+    execCommand: execCommand,
+    getTag: getTag,
     findContainingBlock: findContainingBlock,
     firstInnerMostNode: firstInnerMostNode,
     lastInnerMostNode: lastInnerMostNode,
     insert: function (arg, inner) {
       if (typeof arg === 'string') {
-        return document.execCommand('insertText', 0, arg);
+        return execCommand('insertText', arg);
       }
 
       if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
@@ -38,7 +52,7 @@ define(function(require, exports, module) {
       } else {
         var t = arg.outerHTML;
       }
-      return document.execCommand("insertHTML", 0, t);
+      return execCommand("insertHTML", t);
     },
   });
 
@@ -62,12 +76,25 @@ define(function(require, exports, module) {
     'keydown': function (event) {
       if (event.which === 34) {
         Dom.stopEvent();
-        document.execCommand('indent', 0, null);
+        execCommand('indent', null);
         return;
       }
       return;
     },
   });
+
+  function getTag(tag) {
+    var range = Dom.getRange();
+    if (range === null) return null;
+    var start = range.startContainer;
+    return Dom.searchUpFor(start, function (elm) {
+      return elm.tagName === tag;
+    }, 'mdEditor');
+  }
+
+  function execCommand (cmd, value) {
+    return document.execCommand(cmd, false, value);
+  }
 
   function select(editor, type, amount) {
     var range = Dom.getRange();

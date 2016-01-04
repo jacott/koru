@@ -213,7 +213,12 @@ define(function(require, exports, module) {
     setRange: function (startContainer, startOffset, endContainer, endOffset) {
       if (endContainer === undefined) {
         endContainer = startContainer;
-        endOffset = startOffset;
+        if (startOffset === undefined) {
+          startOffset = 0;
+          endOffset = startContainer[startContainer.nodeType === document.TEXT_NODE ?
+                                     'childNodes' : 'textContent'].length;
+        }else
+          endOffset = startOffset;
       }
       var range = document.createRange();
       range.setStart(startContainer, startOffset);

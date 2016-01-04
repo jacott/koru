@@ -19,6 +19,10 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "//test attrs helper": function () {
+
+    },
+
     "test forward/back char": function () {
       runSubTests({
         "within text node ": function () {
@@ -85,7 +89,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test typing": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: 'hello\nworld'}));
+      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
       Dom.flushNextFrame();
 
@@ -106,13 +110,11 @@ isClient && define(function (require, exports, module) {
   }
 
   function runSubTests(subTests) {
-    document.body.appendChild(v.tpl.$autoRender({content: ''}));
+    document.body.appendChild(v.tpl.$autoRender({}));
 
     assert.dom('.richTextEditor .input[contenteditable=true]', function () {
       for(var name in subTests) {
         Dom.removeChildren(this);
-        _koru_.debug.inspect('> ' + name);
-
         subTests[name].call(this);
       }
     });
