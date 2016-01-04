@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var util = require('koru/util');
   var Dom = require('koru/dom');
   var RichText = require('./rich-text');
+  var KeyMap = require('./key-map');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   var $ = Dom.current;
@@ -11,6 +12,52 @@ define(function(require, exports, module) {
   var BR = document.createElement('br');
 
   var INLINE_TAGS = RichText.INLINE_TAGS;
+
+  var shift = KeyMap.shift, ctrl = KeyMap.ctrl;
+
+  var actions = commandify({
+    bold: true,
+    italic: true,
+    underline: true,
+  });
+
+  debugger;
+  var keyMap = KeyMap(mapActions({
+    bold: ctrl+'B',
+    italic: ctrl+'I',
+    underline: ctrl+'U',
+  }));
+
+  function commandify(func, cmd) {
+    switch(typeof func) {
+    case 'function':
+      return function (event) {
+        return func.call(null, event, cmd);
+      };
+    case 'boolean':
+      return function () {
+        execCommand(cmd);
+      };
+    }
+    for (cmd in func) {
+      func[cmd] = commandify(func[cmd], cmd);
+    }
+    return func;
+  }
+
+
+  function mapActions(keys) {
+    for (var name in keys) {
+      keys[name] = [keys[name], actions[name]];
+    }
+    return keys;
+  }
+
+  function execFunc(command) {
+    return function () {
+
+    };
+  }
 
   Tpl.$helpers({
     attrs: function () {
@@ -38,10 +85,10 @@ define(function(require, exports, module) {
     findContainingBlock: findContainingBlock,
     firstInnerMostNode: firstInnerMostNode,
     lastInnerMostNode: lastInnerMostNode,
+
     insert: function (arg, inner) {
-      if (typeof arg === 'string') {
+      if (typeof arg === 'string')
         return execCommand('insertText', arg);
-      }
 
       if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
         var t = document.createElement('div');
@@ -58,14 +105,16 @@ define(function(require, exports, module) {
 
   Tpl.$events({
     'paste': function (event) {
-      return;
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;
         if (types) for(var i = 0; i < types.length; ++i) {
           var type = types[i];
           if (/html/.test(type)) {
             var md = RichText.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
-            if (Tpl.insert(RichText.toHtml(md), 'inner') || Tpl.insert(md.textContent))
+            var text = md[0].join('\n');
+
+            var div = document.createElement('div');
+            if (Tpl.insert(RichText.toHtml(text, md[1], div).firstChild, 'inner') || Tpl.insert(text))
               Dom.stopEvent();
             return;
           }
@@ -73,14 +122,7 @@ define(function(require, exports, module) {
       }
     },
 
-    'keydown': function (event) {
-      if (event.which === 34) {
-        Dom.stopEvent();
-        execCommand('indent', null);
-        return;
-      }
-      return;
-    },
+    'keydown':keyMap.exec,
   });
 
   function getTag(tag) {

@@ -88,6 +88,84 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test bold, italic, underline": function () {
+      v.ec = test.stub(document, 'execCommand');
+
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.keydown(this, 'B', {ctrlKey: true});
+        TH.keydown(this, 'B', {ctrlKey: false});
+        assert.calledOnceWith(v.ec, 'bold');
+
+        TH.keydown(this, 'I', {ctrlKey: true});
+        assert.calledWith(v.ec, 'italic');
+
+        TH.keydown(this, 'U', {ctrlKey: true});
+        assert.calledWith(v.ec, 'underline');
+      });
+    },
+
+    "paste": {
+      setUp: function () {
+        v.ec = test.stub(document, 'execCommand');
+        v.event = {
+          clipboardData: {
+            types: ['text/plain', 'text/html'],
+            getData: test.stub().withArgs('text/html').returns('<b>bold</b> world'),
+          },
+        };
+
+        v.slot = TH.findDomEvent(sut, 'paste')[0];
+        v.paste = v.slot[2];
+        v.slot[2] = test.stub();
+        test.stub(Dom, 'stopEvent');
+
+        document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+        v.input = document.body.getElementsByClassName('input')[0];
+        v.insertHTML = v.ec.withArgs('insertHTML');
+        v.insertText = v.ec.withArgs('insertText').returns(true);
+      },
+
+      tearDown: function () {
+        if (v.slot) v.slot[2] = v.paste;
+      },
+
+      "test wiried": function () {
+        TH.trigger(v.input, 'paste');
+
+        assert.called(v.slot[2]);
+      },
+
+      "test no clipboard": function () {
+        delete v.event.clipboardData;
+
+        v.paste(v.event);
+
+        refute.called(Dom.stopEvent);
+      },
+
+      "test no insertHTML": function () {
+        v.insertHTML.returns(false);
+
+        v.paste(v.event);
+
+        assert.calledWith(v.insertText, 'insertText', false, 'bold world');
+        assert.called(Dom.stopEvent);
+      },
+
+      "test insertHTML": function () {
+        v.insertHTML.returns(true);
+        v.paste(v.event);
+
+        assert.called(Dom.stopEvent);
+
+        refute.called(v.insertText);
+        assert.calledWith(v.insertHTML, 'insertHTML', false, '<b>bold</b> world');
+      },
+    },
+
     "test typing": function () {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
