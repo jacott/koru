@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   var Dom = require('koru/dom');
   var RichText = require('./rich-text');
   var KeyMap = require('./key-map');
+  var RichTextMention = require('./rich-text-mention');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   var $ = Dom.current;
@@ -21,7 +22,6 @@ define(function(require, exports, module) {
     underline: true,
   });
 
-  debugger;
   var keyMap = KeyMap(mapActions({
     bold: ctrl+'B',
     italic: ctrl+'I',
@@ -73,10 +73,35 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     $created: function (ctx, elm) {
-      ctx.data.content && elm.lastChild.appendChild(ctx.data.content);
+      ctx.inputElm = elm.lastChild;
+      ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
       Dom.nextFrame(function () {
-        elm.focus();
+        ctx.inputElm.focus();
       });
+    },
+
+    $destroyed: function (ctx) {
+      Dom.remove(ctx.selectItem);
+    },
+
+    clear: function (elm) {
+      if (! Dom.hasClass(elm, 'richTextEditor'))
+        elm = elm.parentNode;
+      var ctx = Dom.getCtx(elm);
+      var input = ctx.inputElm;
+      input.setAttribute('contenteditable', 'false');
+      input.textContent = '';
+      input.setAttribute('contenteditable', 'true');
+      Dom.remove(ctx.selectItem);
+    },
+
+    moveLeft: function (editor, mark) {
+      var range = select(editor, 'char', -1);
+      if (! range) return;
+      if (! mark) {
+        range.collapse(true);
+      }
+      Dom.setRange(range);
     },
 
     select: select,
@@ -122,7 +147,74 @@ define(function(require, exports, module) {
       }
     },
 
-    'keydown':keyMap.exec,
+    'click a,button': function (event) {
+      event.preventDefault();
+    },
+
+    keydown: function (event) {
+      var mdEditor = this.parentNode;
+
+      switch(event.which) {
+      case 229: case 16:
+        return;
+      }
+
+      if (event.ctrlKey) {
+        keyMap.exec(event);
+        return;
+      }
+
+      if ($.ctx.mentionState != null && $.ctx.mentionState < 3 &&
+          ++$.ctx.mentionState > 2) {
+        // we had a non printable key pressed; abort mention
+        RichTextMention.revertMention(this);
+      }
+    },
+
+    keypress: function (event) {
+      var ctx = $.ctx;
+
+      if (ctx.mentionState != null && ctx.mentionState < 3) {
+        Dom.stopEvent();
+        var ch = String.fromCharCode(event.which);
+        var range = Dom.getRange();
+        var span = Dom.html({tag: 'span', "class": 'ln', text: ch});
+        range.insertNode(span);
+        ctx.mentionState = 3;
+        ctx.selectItem = RichTextMention.selectItem({
+          type: '$mention@',
+          inputCtx: ctx,
+          inputElm: ctx.inputElm,
+          span: span,
+        });
+        return;
+      }
+      switch(event.which) {
+      case 64:
+        if (event.shiftKey) {
+          var range = Dom.getRange();
+          if (range.startOffset !== 0) {
+            if (range.startContainer.nodeType === document.TEXT_NODE) {
+              var text = range.startContainer.textContent;
+              text = text[range.startOffset - 1];
+            } else {
+              var text = range.startContainer.childNodes[range.startOffset - 1].textContent;
+            }
+            if (text.match(/\S/)) return;
+          }
+          ctx.mentionState = 1;
+          return;
+        }
+        break;
+      }
+    },
+
+    keyup: function () {
+      var ctx = $.ctx;
+      if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
+        Dom.remove(ctx.selectItem);
+      }
+    },
   });
 
   function getTag(tag) {
@@ -131,7 +223,7 @@ define(function(require, exports, module) {
     var start = range.startContainer;
     return Dom.searchUpFor(start, function (elm) {
       return elm.tagName === tag;
-    }, 'mdEditor');
+    }, 'richTextEditor');
   }
 
   function execCommand (cmd, value) {
@@ -391,6 +483,8 @@ define(function(require, exports, module) {
       return Tpl.$autoRender({content: content, options: options});
     }
   });
+
+  RichTextMention.init(Tpl);
 
   return Tpl;
 });

@@ -80,6 +80,8 @@ define(function (require, exports, module) {
     },
 
     "test multiple": function () {
+      assertConvert('<div>hello <span class="link user" contenteditable="true" data-a="g1">Geoff Jacobsen</span></div>');
+      assertConvert('<div>hello <span class="link ticket" contenteditable="true" data-a="t123">Ticket 123</span></div>');
       assertConvert('simple', '<div>simple</div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");

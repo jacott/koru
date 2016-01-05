@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var RichTextEditor = require('./rich-text-editor');
   var Modal = require('./modal');
   var koru = require('koru');
+  var RichTextMention = require('./rich-text-mention');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor-toolbar'));
   var $ = Dom.current;
@@ -18,7 +19,7 @@ define(function(require, exports, module) {
     $autoRender: function (data, parentCtx) {
       var elm = RichTextEditor.$autoRender(data, parentCtx);
       var ctx = Dom.getMyCtx(elm);
-      var toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, elm.getElementsByClassName('input')[0], ctx);
+      var toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
       var toolbarCtx = Dom.getMyCtx(toolbar);
       elm.insertBefore(toolbar, elm.firstChild);
       elm.addEventListener('mouseup', redraw, true);
@@ -98,12 +99,13 @@ define(function(require, exports, module) {
     mention: function (data, close) {
       var range = Dom.getRange();
 
-      // return range && MarkdownEditor.List.$autoRender({
-      //   inputCtx: $.ctx,
-      //   close: close, range: range,
-      //   value: range.toString(),
-      //   inputElm: data.inputElm
-      // });
+      return range && RichTextMention.$autoRender({
+        type: '$mention@',
+        inputCtx: $.ctx.parentCtx,
+        close: close, range: range,
+        value: range.toString(),
+        inputElm: data,
+      });
     },
 
     link: function (data, close) {

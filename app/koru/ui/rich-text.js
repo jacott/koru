@@ -5,7 +5,15 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, SPAN = 6;
+
+  var CODE_TO_LINK = [
+    'link user',
+    'link ticket',
+  ];
+
+  var LINK_TO_CODE = {};
+  CODE_TO_LINK.forEach(function (name, index) {LINK_TO_CODE[name] =  index});
 
   var INLINE_TAGS = {
     B: 'inline',
@@ -61,6 +69,20 @@ define(function(require, exports, module) {
     P: fromDiv,
     B: fromInline(BOLD),
     I: fromInline(ITALIC),
+
+    SPAN: function (lines, markup, node, state) {
+      var index = lines.length - 1;
+      var code = LINK_TO_CODE[node.className];
+      if (code !== undefined) {
+        markup.push(SPAN, index, lines[index].length, 0, code, node.getAttribute("data-a"));
+        var pos = markup.length - 3;
+        fromChildren(lines, markup, node, state);
+        markup[pos] = lines[index].length;
+      }
+      else {
+        fromChildren(lines, markup, node, state);
+      }
+    },
   };
 
   var toLi = toBlock('LI');
@@ -87,16 +109,25 @@ define(function(require, exports, module) {
   }
 
   function toInline(tag) {
-    toInlineTag.inline = true;
-    toInlineTag.muInc = 4;
-    return toInlineTag;
     function toInlineTag(line, index, markup) {
       var oldResult = this.result;
       oldResult.appendChild(this.result = document.createElement(tag));
       toChildren(line, index, markup, this);
       this.result = oldResult;
-    }
+    } toInlineTag.inline = true; toInlineTag.muInc = 4;
+
+    return toInlineTag;
   };
+
+  function toSpan(line, index, markup, state) {
+    var oldResult = this.result;
+    oldResult.appendChild(this.result = document.createElement('SPAN'));
+    this.result.className = CODE_TO_LINK[markup[state.pos - 2]];
+    this.result.setAttribute('contenteditable', 'true');
+    this.result.setAttribute('data-a', markup[state.pos - 1]);
+    toChildren(line, index, markup, this);
+    this.result = oldResult;
+  } toSpan.inline = true; toSpan.muInc = 6;
 
   var TO_RULES = [];
   TO_RULES[0] = toDiv;
@@ -106,6 +137,7 @@ define(function(require, exports, module) {
 
   TO_RULES[BOLD] = toInline('B');
   TO_RULES[ITALIC] = toInline('I');
+  TO_RULES[SPAN] = toSpan;
 
   return {
     toHtml: toHtml,
@@ -142,7 +174,7 @@ define(function(require, exports, module) {
           inlineStart: markup[state.pos+2],
           inlineEnd: markup[state.pos+3]
         };
-        state.rule(line, index, markup);
+        state.rule(line, index, markup, state);
         state.oldState.pos = state.pos;
         state = state.oldState;
 

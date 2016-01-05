@@ -19,8 +19,13 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "//test attrs helper": function () {
-
+    "test attrs helper": function () {
+      assert.dom(sut.$autoRender({content: '', options: {class: 'foo bar', id: 'FOO', $other: 'x', 'data-foo': 'daf'}}), function () {
+        assert.same(this.className, 'foo bar richTextEditor');
+        assert.same(this.getAttribute('$other'), null);
+        assert.same(this.getAttribute('data-foo'), 'daf');
+        assert.same(this.id, 'FOO');
+      });
     },
 
     "test forward/back char": function () {

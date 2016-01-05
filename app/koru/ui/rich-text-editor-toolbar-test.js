@@ -5,17 +5,15 @@ isClient && define(function (require, exports, module) {
   var Dom = require('koru/dom');
   var util = require('koru/util');
   var sut = require('./rich-text-editor-toolbar');
-  var RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
   var RichTextEditor = require('./rich-text-editor');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.tpl = Dom.newTemplate(util.deepCopy(RichTextEditorTpl));
       document.body.appendChild(sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
-      ]), options: {id: "Foo"}}));
+      ]), options: {id: "Foo", '$mention@': {list: function () {}}}}));
 
     },
 
@@ -135,29 +133,27 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "//test mention button": function () {
+    "test mention button": function () {
       assert.dom('b', 'Hello', function () {
-        v.setCaret(this, 0);
+        TH.setRange(this.firstChild, 0);
         TH.trigger(this, 'keyup');
       });
 
-      TH.trigger('[name=mention]', 'mousedown');
-      TH.trigger('[name=mention]', 'mouseup');
+      TH.mouseDownUp('[name=mention]');
 
-      assert.dom('.mdMention', function () {
+      assert.dom('.rtMention', function () {
         assert.dom('input', {value: ''});
         TH.trigger(this, 'focusout');
       });
 
       assert.dom('b', 'Hello', function () {
-        v.setCaret(this, 0, 5);
+        TH.setRange(this.firstChild, 0, this.firstChild, 5);
         TH.trigger(this, 'keyup');
       });
 
-      TH.trigger('[name=mention]', 'mousedown');
-      TH.trigger('[name=mention]', 'mouseup');
+      TH.mouseDownUp('[name=mention]');
 
-      assert.dom('.mdMention:not(.inline)', function () {
+      assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});
       });
     },
