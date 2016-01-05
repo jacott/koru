@@ -12,14 +12,6 @@
   var waitLoad = {};
   var koru;
 
-  function noopFunc(value) {return value}
-
-  function onunload(module, func) {
-    if (func === 'reload')
-      func = koru.reload;
-    module.onUnload(func);
-  }
-
   /**
    * Main koru module. Responsible for:
    *
@@ -33,6 +25,15 @@
     var errors = require('./errors');
 
     var loaderPrefix = module.id + "!";
+
+    function onunload(subm, func) {
+      if (func === 'reload')
+        func = koru.reload;
+      if (typeof subm === 'string')
+        subm = module.ctx.modules[subm];
+
+      subm && subm.onUnload(func);
+    }
 
     koru = {
       onunload: onunload,
