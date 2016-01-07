@@ -29,6 +29,14 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=hex]', {value: '00ffff87'});
     },
 
+    "test custom button": function () {
+      sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = test.stub());
+
+      TH.click('[name=custom]', 'My prompt');
+
+      assert.calledOnceWith(v.cb, 'ret_val');
+    },
+
     "test hue slider": function () {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 

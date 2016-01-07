@@ -17,7 +17,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return gu.deepEqual(actual, expected, this, 'diff');
     },
 
-    message: "{i0} to equal {i1}\nDiff at\n -> {i$diff}"
+    message: "{i0} to equal {i1}\nDiff at\n -> {$diff}"
   });
 
   ga.add('isTrue', {

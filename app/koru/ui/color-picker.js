@@ -30,6 +30,11 @@ define(function(require, exports, module) {
 
       Tpl.setColor($.ctx, this.getAttribute('data-color'), $.ctx.data.color.a);
     },
+
+    'click [name=custom]': function (event) {
+      Dom.stopEvent();
+      close(event.currentTarget, 'custom');
+    },
   });
 
   function hsl2hex(hsl, prefix) {
@@ -48,6 +53,11 @@ define(function(require, exports, module) {
   }
 
   Tpl.$helpers({
+    customButton: function () {
+      if (this.custom)
+        return Dom.html({tag: 'button', name: 'custom', text: this.custom[0]});
+    },
+
     palette: function (color) {
       if ($.element.nodeType === document.ELEMENT_NODE) return;
 
@@ -97,14 +107,19 @@ define(function(require, exports, module) {
       ctx.updateAllTags();
     },
 
-    choose: function (color, alpha, callback) {
+    choose: function (color, options, callback) {
       if (arguments.length === 2) {
-        callback = alpha;
-        alpha = false;
+        callback = options;
+        options = false;
       }
+      if (! options || typeof options !== 'object')
+        options = {alpha: options};
+
+      var alpha = options.alpha;
+
       var hsla = hex2hsl(color) || {h: 0, s: 0, l: 1, a: 1};
       if (! alpha) hsla.a = 1;
-      var data = {orig: color, color: hsla, callback: callback, alpha: alpha};
+      var data = util.reverseExtend({orig: color, color: hsla, callback: callback}, options);
       var elm = Tpl.$autoRender(data);
       document.body.appendChild(elm);
       Modal.init({
@@ -119,12 +134,12 @@ define(function(require, exports, module) {
     },
   });
 
-  function close(elm, cancel) {
+  function close(elm, button) {
     var ctx = Dom.getMyCtx(elm);
     if (ctx) {
       var data = ctx.data;
 
-      data.callback(cancel ? null : hsl2hex(data.color));
+      data.callback(button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
       Dom.remove(elm);
     }
   }
