@@ -60,6 +60,10 @@ define(function(require, exports, module) {
       return menu;
     },
 
+    nameSearch: function (regexp, line) {
+      return regexp.test(line.name);
+    },
+
     $destroyed: function (ctx) {
       ctx.data.onClose && ctx.data.onClose();
     },
