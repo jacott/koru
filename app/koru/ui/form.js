@@ -7,6 +7,7 @@ define(function(require, exports, module) {
   var MarkdownEditor = require('./markdown-editor');
   var format = require('../format');
   var PlainText = require('./plain-text');
+  var RichTextEditorToolbar = require('./rich-text-editor-toolbar');
 
   var Tpl = Dom.newTemplate(require('../html!./form'));
   var OnOff = Tpl.OnOff;
@@ -431,6 +432,12 @@ define(function(require, exports, module) {
     Tpl[name].$helpers(util.reverseExtend(funcs, DEFAULT_HELPERS));
   }
 
+  var EDITORS = {
+    richTextEditor: RichTextEditorToolbar,
+    plainTextEditor: PlainText.Editor,
+    markdownEditor: MarkdownEditor,
+  };
+
   function field(doc, name, options) {
     options = options || {};
     if ('selectList' in options) {
@@ -438,13 +445,13 @@ define(function(require, exports, module) {
     }
 
     switch(options.type || 'text') {
-    case 'plainTextEditor':
-      return PlainText.Editor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
-    case 'markdownEditor':
-      return MarkdownEditor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
     case 'onOff':
       return OnOff.$autoRender({name: name, doc: doc, options: options});
     default:
+      var editor = EDITORS[options.type];
+      if (editor)
+        return editor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
+
       return Tpl.TextInput.$autoRender({type: options.type || 'text', name: name, doc: doc, options: options});
     }
 

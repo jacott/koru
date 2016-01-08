@@ -180,6 +180,25 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test RichTextEditor": function () {
+      document.body.appendChild(Dom.Test.Form.TestRichTextEditor.$autoRender({name: Dom.h([{b: 'foo'}, '\nbar'])}));
+
+      assert.dom('#TestRichTextEditor>label', function () {
+        assert.dom('span.name', 'Name');
+        assert.dom('#nameId.richTextEditor[data-errorfield="name"][placeholder="Foo"]:not([type])', function () {
+          assert.dom('.rtToolbar');
+          assert.dom('>.input', 'foobar', function () {
+            assert.same(this.innerHTML, '<b>foo</b><br>bar');
+          });
+          assert.same(this.value.innerHTML, '<b>foo</b><br>bar');
+          this.value = Dom.h({ul: [{li: 'how'}, {li: 'now'}]});
+          assert.dom('>.input', 'hownow', function () {
+            assert.same(this.innerHTML, '<ul><li>how</li><li>now</li></ul>');
+          });
+        });
+      });
+    },
+
     "test format": function () {
       document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
 

@@ -11,9 +11,12 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      document.body.appendChild(sut.$autoRender({content: Dom.h([
+      var editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
-      ]), options: {id: "Foo", '$mention@': {list: function () {}}}}));
+      ]), options: {id: "Foo", '$mention@': {list: function () {}}}});
+
+      v.origText = editor.value;
+      document.body.appendChild(editor);
 
     },
 
@@ -230,7 +233,7 @@ isClient && define(function (require, exports, module) {
       TH.click('.rtLink [name=cancel]');
 
       assert.dom('.richTextEditor', function () {
-        assert.same(this.value, v.origText);
+        assert.same(this.value.innerHTML, v.origText.innerHTML);
         assert.dom('.input', function () {
           assert.same(this, document.activeElement);
         });
@@ -243,7 +246,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('.rtLink');
 
       assert.dom('.richTextEditor', function () {
-        assert.same(this.value, v.origText);
+        assert.same(this.value.innerHTML, v.origText.innerHTML);
         assert.dom('.input', function () {
           assert.same(this, document.activeElement);
         });

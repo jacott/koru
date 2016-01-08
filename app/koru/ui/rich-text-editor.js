@@ -64,15 +64,26 @@ define(function(require, exports, module) {
       var elm = $.element;
       var options = this.options;
       for (var id in options) {
-        if (id[0] === '$') continue;
+        if (id === 'type' || id[0] === '$') continue;
         elm.setAttribute(id, options[id]);
       }
       Dom.addClass(elm, 'richTextEditor');
     },
   });
 
+  function getHtml() {
+    return Dom.getMyCtx(this).inputElm.cloneNode(true);
+  }
+
+  function setHtml(value) {
+    var inputElm = Dom.getMyCtx(this).inputElm;
+    Tpl.clear(inputElm);
+    inputElm.appendChild(value);
+  }
+
   Tpl.$extend({
     $created: function (ctx, elm) {
+      Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
       Dom.nextFrame(function () {
