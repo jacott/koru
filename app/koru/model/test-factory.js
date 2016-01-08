@@ -10,8 +10,9 @@ define(function(require, exports, module) {
     },
 
     createList: function (number, creator /* arguments */) {
-      var list = [],
-          args = util.slice(arguments, 2);
+      var list = [];
+      var args = new Array(arguments.length - 2);
+      for(var i = 0; i < args.length; ++i) args[i] = arguments[i+2];
 
       var func = typeof args[0] === 'function' ? args.shift() : null;
 

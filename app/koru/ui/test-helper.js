@@ -48,6 +48,25 @@ define(function(require, exports, module) {
     message: "{i$actual} to equal {i$expected}\nDiff at\n -> {i$diff}",
   });
 
+  function domEvent(eventName, func) {
+    return trigger;
+    function trigger(node, arg1, arg2) {
+      var value = arg1;
+      if (typeof node === 'string') {
+        var func1 = function () {node = this};
+        if (arg2 === undefined) {
+          assert.elideFromStack.dom(node, func1);
+        } else {
+          value = arg2;
+          assert.elideFromStack.dom(node, arg1, func1);
+        }
+      }
+      func(node, value);
+      TH.trigger(node, eventName);
+      return this;
+    }
+  }
+
   TH.util.extend(TH, {
     domTearDown: function () {
       Dom.flushNextFrame();
@@ -94,24 +113,12 @@ define(function(require, exports, module) {
       });
     },
 
-    input: function (node, value) {
-      if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        value = args[args.length -1];
-        args[args.length -1 ] = function () {
-          TH.input(this, value);
-        };
-        assert.elideFromStack.dom.apply(assert, args);
-      } else {
-        if ('value' in node)
-          node.value = value;
-        else
-          node.textContent = value;
-
-        this.trigger(node, 'input');
-      }
-      return this;
-    },
+    input: domEvent('input', function (node, value) {
+      if ('value' in node)
+        node.value = value;
+      else
+        node.textContent = value;
+    }),
 
     keypress: function (elm, keycode, modifiers) {
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
@@ -148,20 +155,12 @@ define(function(require, exports, module) {
 
     dispatchEvent: dispatchEvent,
 
-    change: function (node, value) {
-      if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        value = args[args.length -1];
-        args[args.length -1 ] = function () {
-          TH.change(this, value);
-        };
-        assert.elideFromStack.dom.apply(assert, args);
-      } else {
+    change: domEvent('change', function (node, value) {
+      if ('value' in node)
         node.value = value;
-        this.trigger(node, 'change');
-      }
-      return this;
-    },
+      else
+        node.textContent = value;
+    }),
 
     trigger: function (node, event, args) {
       if (typeof node === 'string') {
@@ -184,13 +183,9 @@ define(function(require, exports, module) {
       keyseq('keyup', node, key, args);
     },
 
-    click: function(node) {
+    click: function(node, arg1) {
       if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        args.push(function () {
-          TH.click(this);
-        });
-        assert.elideFromStack.dom.apply(assert, args);
+        assert.elideFromStack.dom(node, arg1, function () {TH.click(this)});
       } else {
         if (node.click)
           node.click(); // supported by form controls cross-browser; most native way

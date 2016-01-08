@@ -185,6 +185,26 @@ define(['./core'], function (geddon) {
       this.onEnd(restorSpy(spy));
       return spy;
     },
+
+    intercept: function (object, prop, replacement, restore) {
+      var orig = Object.getOwnPropertyDescriptor(object, prop);
+      var func = replacement ? function() {
+        return replacement.apply(this, arguments);
+      } :  function () {};
+      var desc = {
+        configurable: true,
+        value: func,
+      };
+
+      Object.defineProperty(object, prop, desc);
+      func.restore = function () {
+        if (orig) Object.defineProperty(object, prop, orig);
+        else delete object[prop];
+        restore && restore();
+      };
+      this.onEnd(func.restore);
+      return func;
+    },
   };
 
   function restorSpy(spy) {
