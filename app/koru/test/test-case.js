@@ -151,9 +151,8 @@ define(['./core'], function (geddon) {
         new TestCase(name, this).add(func, null, skipped);
       } else {
 
-        var option = name;
-        for(name in option) {
-          this.add(name, option[name], skipped);
+        for(var opId in name) {
+          this.add(opId, name[opId], skipped);
         }
       }
       return this;

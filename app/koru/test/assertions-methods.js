@@ -153,7 +153,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add("className", {
     assert: function (element, className) {
       if (typeof element.className == "undefined") {
-        return geddon.fail(format("{2} Expected object to have className property", arguments[1]));
+        return geddon.fail(format("{1} Expected object to have className property", className));
       }
 
       var expected = typeof className == "string" ? className.split(" ") : className;
@@ -331,7 +331,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return elm.length ? elm[0].textContent.trim() : '';
     }
 
-    function select(elm, options, body /* arguments */) {
+    function select(elm, options, body) {
       var msg, old = selectNode, orig = elm;
       function setClue(self, msg) {
         self.htmlClue = msg + ' for ' + self.htmlClue;
@@ -470,11 +470,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add('calledOnceWith', {
     assert:  function (spy /* arguments */) {
       checkSpy(spy);
-      var args = this.args = util.slice(arguments, 1);
+      var args = new Array(arguments.length - 1);
+      for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+      this.args = args;
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
-        this.spy = arguments[0].printf("%n");
-        this.calls = arguments[0].printf("%C");
+        this.spy = spy.printf("%n");
+        this.calls = spy.printf("%C");
       }
       return result;
     },
@@ -495,7 +497,9 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     ga.add(meth, {
       assert:  function (spy) {
         checkSpy(spy);
-        var args = this.args = util.slice(arguments, 1);
+        var args = new Array(arguments.length - 1);
+        for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+        this.args = args;
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");

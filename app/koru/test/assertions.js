@@ -87,7 +87,8 @@ define(function(require, exports, module) {
     var func = options.assert;
     return function() {
       var sideAffects = {_asserting: pass},
-          args = arguments;
+          args = new Array(arguments.length);
+      for(var i = 0; i < args.length; ++i) args[i] = arguments[i];
 
       if (pass === ! func.apply(sideAffects, args)) {
         args.push || (args = util.slice(args, 0));
