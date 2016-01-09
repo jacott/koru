@@ -51,6 +51,11 @@ isClient && define(function (require, exports, module) {
       assert.called(v.onClose);
     },
 
+    "test nameSearch": function () {
+      assert.same(sut.nameSearch(/foo/, {name: 'a foo'}), true);
+      assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);
+    },
+
     "test search": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = test.stub();
@@ -73,7 +78,7 @@ isClient && define(function (require, exports, module) {
       var ev;
       assert.dom('body>.glassPane>#SelectMenu', function () {
         v.selectMenuELm = this;
-        assert.dom('input[name=search]', function () {
+        assert.dom('input[name=search][autocomplete=off]', function () {
           assert.same(document.activeElement, this);
 
           v.search = this;
