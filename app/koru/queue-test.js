@@ -3,7 +3,7 @@ isServer && define(function (require, exports, module) {
   var koru = require('./main');
   var TH = require('./test');
   var Queue = require('./queue');
-  var Future = require('fibers/future');
+  var Future = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
     setUp: function () {

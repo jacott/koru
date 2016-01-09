@@ -6,65 +6,8 @@ define(function(require, exports, module) {
   }
 
   util.extend(Dom, {
-    html: function (html, tagName) {
-      tagName = tagName || 'div';
-      if (typeof html === 'string') {
-        var elm = document.createElement(tagName);
-        elm.innerHTML = html;
-        return elm.firstChild;
-      }
-
-      if ('nodeType' in html) return html;
-
-      if (Array.isArray(html)) {
-        var elm = document.createDocumentFragment();
-        util.forEach(html, function (item) {
-          item && elm.appendChild(Dom.html(item));
-        });
-        return elm;
-      }
-
-      var id, className, content, attrs = {};
-      for(var key in html) {
-        var value = html[key];
-        switch(key) {
-        case "id": id = value; break;
-
-        case "class": case "className": className = value; break;
-        case "content": case "html":
-          content = Dom.html(value);
-          break;
-        case "textContent": case "text": content = ''+value; break;
-
-        case "tag": case "tagName": tagName = value; break;
-        default:
-          if (typeof value === 'object') {
-            content = Dom.html(value, key);
-          } else {
-            attrs[key] = value;
-          }
-          break;
-        }
-      }
-
-      var elm = document.createElement(tagName);
-      className && (elm.className = className);
-      id && (elm.id = id);
-      for(var key in attrs) {
-        elm.setAttribute(key, attrs[key]);
-      }
-
-      if (typeof content === "string")
-        elm.textContent = content;
-      else if (Array.isArray(content))
-        util.forEach(content, function (item) {
-          item && elm.appendChild(Dom.html(item));
-        });
-      else
-        content && elm.appendChild(content);
-
-      return elm;
-    },
+    html: html,
+    h: html2,
 
     escapeHTML: function(text) {
       var pre = document.createElement('pre');
@@ -98,6 +41,130 @@ define(function(require, exports, module) {
       return true;
     },
   });
+
+
+  function html2(body) {
+    if (typeof body === "string") {
+      if (body.indexOf("\n") !== -1) {
+        content = document.createDocumentFragment();
+        body.split('\n').forEach(function (line, index) {
+          index && content.appendChild(document.createElement('br'));
+          line && content.appendChild(document.createTextNode(line));
+        });
+        return content;
+      } else
+        return document.createTextNode(body);
+    }
+
+    if (Array.isArray(body)) {
+      var elm = document.createDocumentFragment();
+      body.forEach(function (item) {
+        item && elm.appendChild(html2(item));
+      });
+      return elm;
+    }
+
+    var id, className, content, tagName = 'div', attrs = {};
+    for(var key in body) {
+      var value = body[key];
+      switch(key) {
+      case "id": id = value; break;
+
+      case "class": className = value; break;
+
+      default:
+        if (key[0] === '$') {
+          attrs[key.slice(1)] = value;
+        } else {
+          tagName = key;
+          content = value && html2(value);
+        }
+        break;
+      }
+    }
+
+    var elm = document.createElement(tagName);
+    className && (elm.className = className);
+    id && (elm.id = id);
+    for(var key in attrs) {
+      elm.setAttribute(key, attrs[key]);
+    }
+
+    content && elm.appendChild(content);
+
+    return elm;
+  }
+
+  function html(body, tagName) {
+    tagName = tagName || 'div';
+    if (typeof body === 'string') {
+      var elm = document.createElement(tagName);
+      elm.innerHTML = body;
+      return elm.firstChild;
+    }
+
+    if ('nodeType' in body) return body;
+
+    if (Array.isArray(body)) {
+      var elm = document.createDocumentFragment();
+      body.forEach(function (item) {
+        item && elm.appendChild(html(item));
+      });
+      return elm;
+    }
+
+    var id, className, content, attrs = {};
+    for(var key in body) {
+      var value = body[key];
+      switch(key) {
+      case "id": id = value; break;
+
+      case "class": case "className": className = value; break;
+      case "content": case "html": case "body":
+        content = html(value);
+        break;
+
+      case "textContent": case "text":
+        content = ''+value;
+        if (content.indexOf("\n") !== -1) {
+          value = content;
+          content = document.createDocumentFragment();
+          value.split('\n').forEach(function (line, index) {
+            index && content.appendChild(document.createElement('br'));
+            content.appendChild(document.createTextNode(line));
+          });
+        }
+        break;
+
+      case "tag": case "tagName": tagName = value; break;
+      default:
+        if (typeof value === 'object') {
+          content = html(value, key);
+        } else {
+          attrs[key] = value;
+        }
+        break;
+      }
+    }
+
+    var elm = document.createElement(tagName);
+    className && (elm.className = className);
+    id && (elm.id = id);
+    for(var key in attrs) {
+      elm.setAttribute(key, attrs[key]);
+    }
+
+    if (typeof content === "string")
+      elm.textContent = content;
+    else if (Array.isArray(content))
+      content.forEach(function (item) {
+        item && elm.appendChild(html(item));
+      });
+    else
+      content && elm.appendChild(content);
+
+    return elm;
+  }
 
   return Dom;
 });

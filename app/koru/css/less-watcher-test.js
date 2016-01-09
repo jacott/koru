@@ -1,15 +1,16 @@
 isServer && define(function (require, exports, module) {
+  var Future = requirejs.nodeRequire('fibers/future');
+  var Path = requirejs.nodeRequire('path');
+  var fs = requirejs.nodeRequire('fs');
+
   var test, v;
 
   var sut = require('./less-watcher');
   var koru = require('../main');
-  var Future = require('fibers/future');
   var TH = require('../test');
   var fw = require('../file-watch');
-  var Path = require('path');
   var session = require('../session/main');
   var fst = require('../fs-tools');
-  var fs = require('fs');
   var util = require('koru/util');
 
   TH.testCase(module, {
@@ -70,12 +71,17 @@ isServer && define(function (require, exports, module) {
         v.topDirLen = koru.appDir.length + 1;
 
         v.addTimestamps(v.expectedSources);
+        var orig = fst.stat;
         test.stub(fst, 'stat', function (fn) {
           fn = fn.slice(v.topDirLen);
           if (fn === 'koru/css/.build/less-compiler-test.less.css')
             fn = 'koru/css/less-compiler-test.less';
 
-          return {mtime: new Date(v.expectedSources[fn].mtime)};
+          var exp = v.expectedSources[fn];
+          if (exp)
+            return {mtime: new Date(exp.mtime)};
+          else
+            return orig.call(fst, fn);
         });
 
       },

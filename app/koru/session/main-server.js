@@ -178,8 +178,12 @@ define(function (require, exports, module) {
     }
 
     function unload(id) {
-      if (requirejs.defined(id)) {
-        koru.unload(id);
+      var ctx = requirejs.module.ctx;
+      id = ctx.normalizeId(id);
+
+      var mod = ctx.modules[id];
+      if (mod) {
+        mod.unload();
         this.versionHash = ''+Date.now();
       }
       this.sendAll('U', this.versionHash + ':' + id);

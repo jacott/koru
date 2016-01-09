@@ -1,5 +1,5 @@
-var Path = require('path');
-var http = require('http');
+var Path = requirejs.nodeRequire('path');
+var http = requirejs.nodeRequire('http');
 var send = requirejs.nodeRequire('send');
 var parseurl = requirejs.nodeRequire('parseurl');
 var Future = requirejs.nodeRequire('fibers/future');
@@ -13,7 +13,7 @@ define(function (require, exports, module) {
 
   koru.onunload(module, 'reload');
 
-  var root = require.toUrl('');
+  var root = module.toUrl('');
   var appDir = koru.appDir;
   var koruParent = Path.join(koru.libDir, 'app');
 
@@ -28,7 +28,7 @@ define(function (require, exports, module) {
   };
 
   function indexjs() {
-    return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/requirejs/require.js'), '/'];
+    return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/yaajs/yaa.js'), '/'];
   }
 
   var handlers = {};

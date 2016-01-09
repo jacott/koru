@@ -1,3 +1,7 @@
+* try running with not-found html file - hangs
+* try running client only test on server
+ eg; rich-text-editor-test on server - stack trace is unhelpful (hint: remove isClient)
+
 * Is weakref id map still needed to cache docs on server since cache is tied to thread?
 
 * Rich text editor

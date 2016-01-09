@@ -10,132 +10,7 @@
   var unloads = {};
   var loaded = {};
   var waitLoad = {};
-  var loadError = null;
   var koru;
-
-  function noopFunc(value) {return value}
-
-  requirejs.onResourceLoad = function (context, map, depArray) {
-    if (depArray) for(var i = 0; i < depArray.length; ++i) {
-      var row = depArray[i];
-      var id = row.id;
-      if (id === 'require' || id === 'exports' || id === 'module')
-        continue;
-
-      // If name is unnormalized then it wont match. So we ask the
-      // prefix to normalize it for us if needed.
-      if (row.unnormalized) {
-        var plugin = require(row.prefix); // plugin will already be loaded
-        id = row.prefix+"!"+ (plugin.normalize ? plugin.normalize(row.name, noopFunc) : row.name);
-      }
-      insertDependency(map.id, id);
-    }
-    loaded[map.id] = true;
-    runLoaded(map.id);
-  };
-
-  function whenLoaded(require, id, func) {
-    /**
-     * Calls func immediately after file is loaded. This is useful
-     * when there is tight coupling between two files. The
-     * `require(['foo'], function...)` call waits for next tick to
-     * call FUNC which if often too late.
-     */
-    var absId = this.absId(require, id);
-    if (loaded[absId]) {
-      func(require(id));
-    } else {
-      (waitLoad[absId] || (waitLoad[absId] = [])).push(func);
-    }
-  }
-
-  function runLoaded(id) {
-    var list = waitLoad[id];
-    if (! list) return;
-    delete waitLoad[id];
-    var resource = requirejs(id);
-    console.log('resource', resource);
-
-    list && list.forEach(function (func) {
-      func(resource);
-    });
-  }
-
-  function insertDependency(dependant, provider) {
-    (providerMap[provider] = providerMap[provider] || {})[dependant] = true;
-  }
-
-  function unload(id, error) {
-    if (! requirejs.defined(id)) return;
-
-    var deps = providerMap[id];
-
-    if (deps === 'unloading') return;
-
-    var onunload = unloads[id];
-    delete unloads[id];
-
-    if (! loadError && onunload === 'reload') return reload();
-
-    if (deps) {
-      providerMap[id] = 'unloading';
-      for(var key in deps) {
-        unload(key, error);
-      }
-      delete providerMap[id];
-    }
-
-    if (onunload !== undefined) {
-      if (typeof onunload === 'function')
-        onunload(id, error);
-      else if (Array.isArray(onunload))
-        onunload.forEach(function (f) {(f.stop || f)(id, error)});
-      else if (onunload.stop) onunload.stop();
-    }
-
-    delete loaded[id];
-    requirejs.undef(id);
-  }
-
-  function revertonunload(module, func) {
-    var id = typeof module === 'string' ? module : module.id;
-
-    var oldFunc = unloads[id];
-    if (oldFunc === func) {
-      delete unloads[id];
-    }
-    if (Array.isArray(oldFunc)) {
-      var i = oldFunc.indexOf(func);
-      if (i !== -1)
-        oldFunc.splice(i, 1);
-      if (oldFunc.length === 0)
-        delete unloads[id];
-    }
-  }
-
-  function onunload(module, func) {
-    var id = typeof module === 'string' ? module : module.id;
-    var oldFunc = unloads[id];
-    if (func === 'reload' || oldFunc === 'reload') {
-      unloads[id] = 'reload';
-      return;
-    }
-    var len = arguments.length;
-    if (oldFunc === undefined)
-      oldFunc = unloads[id] = len > 2 ? [func] : func;
-    else if (typeof oldFunc === 'function')
-      oldFunc = unloads[id] = [oldFunc, func];
-    else
-      oldFunc.push(func);
-
-    if (len > 2) for(var i = 0; i < len; ++i) {
-      oldFunc.push(arguments[i]);
-    }
-  }
-
-  function reload() {
-    koru.reload();
-  }
 
   /**
    * Main koru module. Responsible for:
@@ -151,16 +26,22 @@
 
     var loaderPrefix = module.id + "!";
 
+    function onunload(subm, func) {
+      if (func === 'reload')
+        func = koru.reload;
+      if (typeof subm === 'string')
+        subm = module.ctx.modules[subm];
+
+      subm && subm.onUnload(func);
+    }
+
     koru = {
       onunload: onunload,
-      revertonunload: revertonunload,
-      unload: unload,
-      providerMap: providerMap,
-      unloads: unloads,
-      insertDependency: insertDependency,
-      loaded: loaded,
-      get loadError() {return loadError},
-      set loadError(value) {loadError = value},
+
+      unload: function (id) {
+        var mod = module.ctx.modules[id];
+        mod && mod.unload();
+      },
 
       config: module.config(),
       throwConfigMissing: function (name) {
@@ -176,12 +57,8 @@
       util: util,
 
       absId: function (require, id) {
-        id = require.toUrl(id);
-
-        return id.slice(require.toUrl('').length);
+        return require.module.normalizeId(id);
       },
-
-      whenLoaded: whenLoaded,
 
       clearTimeout: function (handle) {
         return clearTimeout(handle);
@@ -240,7 +117,22 @@
 
         return path.slice(0, ++idx) + '.build/' + path.slice(idx);
       },
+
+      fetchDependants: fetchDependants,
     };
+
+    function fetchDependants(mod) {
+      var result = [];
+      if (! mod) return result;
+      var modules = mod.ctx.modules;
+      var deps = mod.dependants;
+      for (var id in deps) {
+        var map = {};
+        map[id] = fetchDependants(modules[id]);
+        result.push(map);
+      }
+      return result;
+    }
 
     function logDebug() {
       var args = util.slice(arguments, 0);

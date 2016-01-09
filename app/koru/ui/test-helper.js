@@ -18,6 +18,55 @@ define(function(require, exports, module) {
 
   var geddon = TH.geddon;
 
+  var ga = geddon.assertions;
+
+  ga.add('rangeEquals', {
+    assert: function (startContainer, startOffset, endContainer, endOffset) {
+      if (endContainer === undefined) {
+        endContainer = startContainer;
+        endOffset = startOffset;
+      }
+
+      var range = Dom.getRange();
+
+      this.actual = {
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset,
+      };
+      this.expected = {
+        startContainer: startContainer,
+        startOffset: startOffset,
+        endContainer: endContainer,
+        endOffset: endOffset,
+      };
+
+      return geddon._u.deepEqual(this.actual, this.expected, this, 'diff');
+    },
+
+    message: "{i$actual} to equal {i$expected}\nDiff at\n -> {i$diff}",
+  });
+
+  function domEvent(eventName, func) {
+    return trigger;
+    function trigger(node, arg1, arg2) {
+      var value = arg1;
+      if (typeof node === 'string') {
+        var func1 = function () {node = this};
+        if (arg2 === undefined) {
+          assert.elideFromStack.dom(node, func1);
+        } else {
+          value = arg2;
+          assert.elideFromStack.dom(node, arg1, func1);
+        }
+      }
+      func(node, value);
+      TH.trigger(node, eventName);
+      return this;
+    }
+  }
+
   TH.util.extend(TH, {
     domTearDown: function () {
       Dom.flushNextFrame();
@@ -64,24 +113,12 @@ define(function(require, exports, module) {
       });
     },
 
-    input: function (node, value) {
-      if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        value = args[args.length -1];
-        args[args.length -1 ] = function () {
-          TH.input(this, value);
-        };
-        assert.elideFromStack.dom.apply(assert, args);
-      } else {
-        if ('value' in node)
-          node.value = value;
-        else
-          node.textContent = value;
-
-        this.trigger(node, 'input');
-      }
-      return this;
-    },
+    input: domEvent('input', function (node, value) {
+      if ('value' in node)
+        node.value = value;
+      else
+        node.textContent = value;
+    }),
 
     keypress: function (elm, keycode, modifiers) {
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
@@ -118,20 +155,12 @@ define(function(require, exports, module) {
 
     dispatchEvent: dispatchEvent,
 
-    change: function (node, value) {
-      if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        value = args[args.length -1];
-        args[args.length -1 ] = function () {
-          TH.change(this, value);
-        };
-        assert.elideFromStack.dom.apply(assert, args);
-      } else {
+    change: domEvent('change', function (node, value) {
+      if ('value' in node)
         node.value = value;
-        this.trigger(node, 'change');
-      }
-      return this;
-    },
+      else
+        node.textContent = value;
+    }),
 
     trigger: function (node, event, args) {
       if (typeof node === 'string') {
@@ -154,13 +183,9 @@ define(function(require, exports, module) {
       keyseq('keyup', node, key, args);
     },
 
-    click: function(node) {
+    click: function(node, arg1) {
       if (typeof node === 'string') {
-        var args = util.slice(arguments);
-        args.push(function () {
-          TH.click(this);
-        });
-        assert.elideFromStack.dom.apply(assert, args);
+        assert.elideFromStack.dom(node, arg1, function () {TH.click(this)});
       } else {
         if (node.click)
           node.click(); // supported by form controls cross-browser; most native way
@@ -178,6 +203,23 @@ define(function(require, exports, module) {
       }
       TH.trigger(node, 'mousedown', args);
       TH.trigger(node, 'mouseup', args);
+    },
+
+    setRange: function (startContainer, startOffset, endContainer, endOffset) {
+      if (endContainer === undefined) {
+        endContainer = startContainer;
+        if (startOffset === undefined) {
+          startOffset = 0;
+          endOffset = startContainer[startContainer.nodeType === document.TEXT_NODE ?
+                                     'childNodes' : 'textContent'].length;
+        }else
+          endOffset = startOffset;
+      }
+      var range = document.createRange();
+      range.setStart(startContainer, startOffset);
+      range.setEnd(endContainer, endOffset);
+      Dom.setRange(range);
+      return range;
     },
   });
 

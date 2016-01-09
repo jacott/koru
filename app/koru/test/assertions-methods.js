@@ -14,7 +14,11 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   ga.add('equals', {
     assert:  function (actual, expected) {
-      return gu.deepEqual(actual, expected, this, 'diff');
+      var equal = gu.deepEqual(actual, expected);
+      if (! equal === this._asserting) {
+        gu.deepEqual(actual, expected, this, 'diff');
+      }
+      return equal;
     },
 
     message: "{i0} to equal {i1}\nDiff at\n -> {$diff}"
@@ -153,7 +157,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add("className", {
     assert: function (element, className) {
       if (typeof element.className == "undefined") {
-        return geddon.fail(format("{2} Expected object to have className property", arguments[1]));
+        return geddon.fail(format("{1} Expected object to have className property", className));
       }
 
       var expected = typeof className == "string" ? className.split(" ") : className;
@@ -331,12 +335,19 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return elm.length ? elm[0].textContent.trim() : '';
     }
 
-    function select(elm, options, body /* arguments */) {
-      var msg, old = selectNode, orig = elm;
+    function select(elm, options, body) {
+      var old = selectNode;
       function setClue(self, msg) {
         self.htmlClue = msg + ' for ' + self.htmlClue;
       }
       try {
+        return inner.call(this);
+      } finally {
+        selectNode = old;
+      }
+
+      function inner() {
+        var msg, orig = elm;
         if (typeof elm === "string") {
           msg = elm;
           if (selectNode != null) {
@@ -348,17 +359,19 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           if (elm.nodeType) elm = [elm];
           msg = elm[0].innerHTML;
         }
-        if (selectNode != null) {
-          var html;
-          try {
-            html = formatHTML(selectNode[0].innerHTML);
-          } catch(e) {
-            html = selectNode[0].toString();
+        this.htmlClue = {toString: function () {
+          if (old != null) {
+            var html;
+            try {
+              html = formatHTML(old[0].innerHTML);
+            } catch(e) {
+              html = old[0].toString();
+            }
+            return "'" + msg + "' in:\n[" + html + "]\n";
+          } else {
+            return "'" + msg + "'";
           }
-          this.htmlClue = "'" + msg + "' in:\n[" + html + "]\n";
-        } else {
-          this.htmlClue = "'" + msg + "'";
-        }
+        }};
         selectNode = elm;
         if (options != null) {
           switch (typeof options) {
@@ -405,10 +418,18 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if(options.hasOwnProperty('data')) {
               var hint = {};
               var ef = filter(elm, function (i) {
-                return i._koru && gu.deepEqual(i._koru.data, options.data, hint, 'i');
+                return i._koru && gu.deepEqual(i._koru.data, options.data);
               });
               if (ef.length === 0) {
-                setClue(this, "data equality; got " + hint.i);
+                if (this._asserting !== false) {
+                  Array.prototype.find.call(elm, function (i) {
+                    if (i._koru) {
+                      gu.deepEqual(i._koru.data, options.data, hint, 'i');
+                    }
+                    return true;
+                  });
+                  setClue(this, "data equality; got " + hint.i);
+                }
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -451,10 +472,6 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         }
         return !!(elm && elm.length != 0);
       }
-
-      finally {
-        selectNode = old;
-      };
     }
   })();
 
@@ -470,11 +487,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add('calledOnceWith', {
     assert:  function (spy /* arguments */) {
       checkSpy(spy);
-      var args = this.args = util.slice(arguments, 1);
+      var args = new Array(arguments.length - 1);
+      for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+      this.args = args;
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
-        this.spy = arguments[0].printf("%n");
-        this.calls = arguments[0].printf("%C");
+        this.spy = spy.printf("%n");
+        this.calls = spy.printf("%C");
       }
       return result;
     },
@@ -495,7 +514,9 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     ga.add(meth, {
       assert:  function (spy) {
         checkSpy(spy);
-        var args = this.args = util.slice(arguments, 1);
+        var args = new Array(arguments.length - 1);
+        for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+        this.args = args;
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");

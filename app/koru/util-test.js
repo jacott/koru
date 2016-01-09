@@ -715,7 +715,7 @@ define(function (require, exports, module) {
           assert.equals(util.dateNow(), +date + 123);
 
           if (isServer) {
-            var Fiber = requirejs('fibers');
+            var Fiber = requirejs.nodeRequire('fibers');
             assert.same(util.thread, Fiber.current.appThread);
           }
           assert.equals(util.thread.dates, [undefined, 1370819436855]);

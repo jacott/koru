@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
+  var Module = module.constructor;
 
   require("./assertions-methods");
   require("./callbacks");
@@ -92,15 +93,23 @@ define(function(require, exports, module) {
       }, errorLoading);
 
       function errorLoading(err) {
-        var badIds = koru.discardIncompleteLoads();
         ++errorCount;
-        var orig = err;
-        if (err.originalError) err = err.originalError;
-        if (('stack' in err))
-          koru.error(koru.util.extractError(err));
-        else {
-          koru.error('Test load failure: ', orig + "\nWhile loading:\n" + badIds.join("\n"));
+        if (err.onload) {
+          var msg = [err.toString()];
+          var modules = err.module.ctx.modules;
+          var fetchNotReady = function (mod) {
+            for (var depId in mod.dependants) {
+              var depMod = modules[depId];
+              if (! depMod || depMod.state !== Module.READY) {
+                msg.push("\tat "+ (depMod ? isClient ? depMod.uri.slice(1) : depMod.uri : depId+'.js') + ':1:1');
+                depMod && fetchNotReady(depMod);
+              }
+            }
+          };
+          fetchNotReady(err.module);
+          koru.error(msg.join('\n'));
         }
+        koru.error(koru.util.extractError(err));
         endTest();
       }
     },
@@ -137,6 +146,11 @@ define(function(require, exports, module) {
   });
 
   function endTest() {
+    if (geddon.testCount === 0) {
+      errorCount = 1;
+      self.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+    }
+
     if (isClient) {
       document.title = document.title.replace(/Running: /, '');
       window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {

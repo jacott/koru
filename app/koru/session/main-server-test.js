@@ -41,7 +41,6 @@ isServer && define(function (require, exports, module) {
       },
 
       "test unload client only": function () {
-        test.stub(requirejs, 'defined');
         test.stub(koru, 'unload');
         test.stub(v.sess, 'sendAll');
 
@@ -55,15 +54,18 @@ isServer && define(function (require, exports, module) {
       },
 
       "test unload server": function () {
-        test.stub(requirejs, 'defined').withArgs('foo').returns(true);
-        test.stub(koru, 'unload');
+        var ctx = requirejs.module.ctx;
+        test.onEnd(function () {
+          delete ctx.modules.foo;
+        });
+        ctx.modules.foo = {unload: test.stub()};
         test.stub(v.sess, 'sendAll');
 
         v.sess.versionHash = '1234';
 
         v.sess.unload('foo');
 
-        assert.calledWith(koru.unload, 'foo');
+        assert.called(ctx.modules.foo.unload);
 
         refute.same(v.sess.versionHash, '1234');
 

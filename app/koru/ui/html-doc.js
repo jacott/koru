@@ -55,9 +55,68 @@ define(function(require, exports, module) {
     createTextNode: function (value) {return new TextNode(value)},
     createDocumentFragment: function () {return new DocumentFragment()},
 
+    removeChild: function (node) {
+      var parent = this;
+      var nodes = parent.childNodes;
+
+      for(var i = 0; i < nodes.length; ++i) {
+        if (nodes[i] === node) {
+          node.parentNode = null;
+          nodes.splice(i, 1);
+          return;
+        }
+      }
+    },
+
+    insertBefore: function (node, before) {
+      var parent = this;
+      if (! before)
+        return parent.appendChild(node);
+
+      if (node.parentNode)
+        node.parentNode.removeChild(node);
+
+      var nodes = parent.childNodes;
+
+      for(var i = 0; i < nodes.length; ++i) {
+        if (nodes[i] === before) {
+          if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
+            var cns = node.childNodes;
+            var cnsLen = cns.length;
+            var j = nodes.length += cnsLen;
+            ++i;
+            while(--j > i)
+              nodes[j] = nodes[j-cnsLen];
+
+            while (--cnsLen >= 0)
+              (nodes[j--] = cns[cnsLen]).parentNode = parent;
+            cns.length = 0;
+          } else {
+
+            node.parentNode = parent;
+            nodes.splice(i, 0, node);
+          }
+          return;
+        }
+      }
+      throw new Error("before node is not a child");
+    },
+
     appendChild: function (node) {
-      node.parentNode = this;
-      this.childNodes.push(node);
+      if (node.parentNode)
+        node.parentNode.removeChild(node);
+      if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
+        var nodes = this.childNodes;
+        var cns = node.childNodes;
+        var cnsLen = cns.length;
+        var j = nodes.length += cnsLen;
+        while (--cnsLen >= 0)
+          (nodes[--j] = cns[cnsLen]).parentNode = this;
+        cns.length = 0;
+      } else {
+        node.parentNode = this;
+        this.childNodes.push(node);
+      }
     },
 
     cloneNode: function (deep) {
@@ -171,7 +230,7 @@ define(function(require, exports, module) {
 
   function DocumentElement(tag) {
     common(this, ELEMENT_NODE);
-    this.tagName = tag.toUpperCase();
+    this.tagName = (''+tag).toUpperCase();
     this.attributes = {};
   }
   buildNodeType(DocumentElement, {

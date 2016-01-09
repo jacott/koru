@@ -1,8 +1,7 @@
 /**
  * Load file based on config setting.
  */
-define(['require', 'module'], function (require, module) {
-  var koru;
+define(function(require, exports, module) {
   var loaderPrefix = module.id + "!";
 
   return {
@@ -13,31 +12,14 @@ define(['require', 'module'], function (require, module) {
      * format: koru/config!<name> as <nameValue>.js
      */
     load: function (name, req, onload, config) {
-      if (! koru) {
-        require(['./main'], function (k) {
-          koru = k;
-          fetch();
-        });
-      } else
-        fetch();
+      var provider = module.config()[name];
+      if (! provider)
+        throw new Error('No config setting: ' + name + " for " + module.id);
 
-      function fetch() {
-        var opt = name.substring(1);
-        var provider = module.config()[opt];
-        var msg = 'No config setting: ' + opt + " for " + module.id;
-        if (! provider) throw new Error(msg);
-
-        koru.insertDependency(loaderPrefix + name, provider);
-
-        req([provider], function (value) {
-          onload(value);
-        }, onload.error);
-      }
-    },
-
-    normalize: function (name, normalize) {
-      if (name[0] === ':') return name;
-      return ':'+normalize(name);
+      req(provider, function (value, pMod) {
+        pMod.addDependancy(req.module);
+        onload(value);
+      }, onload.error);
     },
 
     pluginBuilder: './config-builder',

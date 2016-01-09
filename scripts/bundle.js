@@ -1,61 +1,67 @@
 #!/usr/bin/env node
+var bundleAll = require('koru/lib/bundle-all');
 
-var Fiber = require('koru/node_modules/fibers');
-var bundleCss = require('koru/lib/bundle-css');
-var Path = require('path');
-var fs = require('fs');
+process.chdir(__dirname+'/..');
+bundleAll.bundle();
 
-var requirejs = require('koru/node_modules/requirejs');
+// #!/usr/bin/env node
 
-var topDir = Path.resolve(Path.join(__dirname, '../app'));
-var buildDir = Path.resolve(Path.join(__dirname, '../build'));
+// var Fiber = require('koru/node_modules/fibers');
+// var bundleCss = require('koru/lib/bundle-css');
+// var Path = require('path');
+// var fs = require('fs');
 
-process.chdir(topDir);
-var cfg = require('koru/lib/build-conf');
+// var requirejs = require('koru/node_modules/requirejs');
 
-var cfgStr = "requirejs.config(" + JSON.stringify(cfg.client.requirejs) + ");\n";
+// var topDir = Path.resolve(Path.join(__dirname, '../app'));
+// var buildDir = Path.resolve(Path.join(__dirname, '../build'));
 
-var optConfig = cfg.setTarget(cfg.client.requirejs);
+// process.chdir(topDir);
+// var cfg = require('koru/lib/build-conf');
 
-cfg.merge("paths", {
-  requireLib: Path.join(cfg.rootDir, "node_modules/koru/node_modules/requirejs/require"),
-});
+// var cfgStr = "yaajs.config(" + JSON.stringify(cfg.client.requirejs) + ");\n";
 
-var clientjs = cfg.server.clientjs;
-console.log(clientjs);
+// var optConfig = cfg.setTarget(cfg.client.requirejs);
 
-cfg.extend(optConfig, {
-  include: 'requireLib',
-  // optimize: 'none',
+// cfg.merge("paths", {
+//   requireLib: Path.join(cfg.rootDir, "node_modules/koru/node_modules/requirejs/require"),
+// });
 
-  stubModules: ['koru/dom/template-compiler'],
+// var clientjs = cfg.server.clientjs;
+// console.log(clientjs);
 
-  onBuildRead: function (moduleName, path, contents) {
-    if (moduleName === 'koru/css/loader')
-      return "define({loadAll: function(){}});";
+// cfg.extend(optConfig, {
+//   include: 'requireLib',
+//   // optimize: 'none',
 
-    if (moduleName === clientjs) {
-      return cfgStr + contents;
-    }
+//   stubModules: ['koru/dom/template-compiler'],
 
-    return contents;
-  },
+//   onBuildRead: function (moduleName, path, contents) {
+//     if (moduleName === 'koru/css/loader')
+//       return "define({loadAll: function(){}});";
 
-  name: clientjs,
-  out: Path.join(buildDir, "/index.js"),
-});
+//     if (moduleName === clientjs) {
+//       return cfgStr + contents;
+//     }
 
-try {fs.mkdirSync(buildDir);} catch(ex) {}
+//     return contents;
+//   },
 
-Fiber(function () {
-  try {
-    fs.writeFileSync(Path.join(buildDir, 'index.css'), bundleCss(topDir, ['ui']));
+//   name: clientjs,
+//   out: Path.join(buildDir, "/index.js"),
+// });
 
-    requirejs.optimize(optConfig, function (buildResponse) {
+// try {fs.mkdirSync(buildDir);} catch(ex) {}
 
-    });
-  } catch(ex) {
-    process.stderr.write(ex.stack);
-    process.exit(1);
-  }
-}).run();
+// Fiber(function () {
+//   try {
+//     fs.writeFileSync(Path.join(buildDir, 'index.css'), bundleCss(topDir, ['ui']));
+
+//     requirejs.optimize(optConfig, function (buildResponse) {
+
+//     });
+//   } catch(ex) {
+//     process.stderr.write(ex.stack);
+//     process.exit(1);
+//   }
+// }).run();

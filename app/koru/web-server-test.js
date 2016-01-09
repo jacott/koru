@@ -1,4 +1,4 @@
-var Future = require('fibers/future');
+var Future = requirejs.nodeRequire('fibers/future');
 var fs = require('fs');
 
 isServer && define(function (require, exports, module) {

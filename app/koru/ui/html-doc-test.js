@@ -53,6 +53,24 @@ define(function (require, exports, module) {
       assert.same(top.textContent, 'hello worldbar');
     },
 
+    "test insertBefore": function () {
+      var top = document.createElement('div');
+
+      var b = document.createElement('b');
+      top.appendChild(b);
+      var i = document.createElement('i');
+      top.insertBefore(i, b);
+      top.insertBefore(i, b);
+
+      var frag = document.createDocumentFragment();
+      frag.appendChild(document.createElement('x1'));
+      frag.appendChild(document.createElement('x2'));
+
+      top.insertBefore(frag, b);
+
+      assert.sameHtml(top.innerHTML, '<i></i><x1></x1><x2></x2><b></b>');
+    },
+
     "test innerHTML": function () {
       var elm = document.createElement('div');
       elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar<br>baz</foo></div>';

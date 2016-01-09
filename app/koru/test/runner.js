@@ -53,25 +53,28 @@ define(['./core'], function (geddon) {
           test.success = true;
           geddon.runCallBacks('testEnd', test);
           continue;
-        } else try {
+        } else {
           var around = ! test.tc.runSetUp(test);
           if (test.func.length === 1) {
             if (around)
               throw new Error("setUpAround not supported on async tests");
             var promise = promiseFunc(test, _runNext);
-            test.tc.runTest(test, test.func, false, promise);
-            if (promise.done) continue;
-            promise.timeout = setTimeout(function () {
-              promise(new Error("Timed out!"));
-            }, promise.maxTime || 2000);
-            return;
+            var ex = runPromise(test, promise);
+            if (! ex) {
+              if (promise.done) continue;
+              promise.timeout = setTimeout(function () {
+                promise(new Error("Timed out!"));
+              }, promise.maxTime || 2000);
+              return;
+            }
           } else {
             var assertCount = geddon.assertCount;
-            test.tc.runTest(test, test.func, around);
-            checkAssertionCount(test, assertCount);
+            var ex = runSync(test, around);
+            ex || checkAssertionCount(test, assertCount);
           }
-        } catch(ex) {
-          failed(test, ex);
+          if (ex) {
+            failed(test, ex);
+          }
         }
         promise = null;
         abort = runTearDowns(test, around);
@@ -91,6 +94,22 @@ define(['./core'], function (geddon) {
       return i+1;
     }
   };
+
+  function runSync(test, around) {
+    try {
+      test.tc.runTest(test, test.func, around);
+    } catch(ex) {
+      return ex;
+    }
+  }
+
+  function runPromise(test, promise) {
+    try {
+      test.tc.runTest(test, test.func, false, promise);
+    } catch(ex) {
+      return ex;
+    }
+  }
 
   function promiseFunc(test, runNext) {
     var assertCount = geddon.assertCount;

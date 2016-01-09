@@ -151,9 +151,8 @@ define(['./core'], function (geddon) {
         new TestCase(name, this).add(func, null, skipped);
       } else {
 
-        var option = name;
-        for(name in option) {
-          this.add(name, option[name], skipped);
+        for(var opId in name) {
+          this.add(opId, name[opId], skipped);
         }
       }
       return this;
@@ -185,6 +184,26 @@ define(['./core'], function (geddon) {
       var spy = sinon.stub.apply(sinon, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
+    },
+
+    intercept: function (object, prop, replacement, restore) {
+      var orig = Object.getOwnPropertyDescriptor(object, prop);
+      var func = replacement ? function() {
+        return replacement.apply(this, arguments);
+      } :  function () {};
+      var desc = {
+        configurable: true,
+        value: func,
+      };
+
+      Object.defineProperty(object, prop, desc);
+      func.restore = function () {
+        if (orig) Object.defineProperty(object, prop, orig);
+        else delete object[prop];
+        restore && restore();
+      };
+      this.onEnd(func.restore);
+      return func;
     },
   };
 

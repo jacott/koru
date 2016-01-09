@@ -1,26 +1,21 @@
-var fs = require.nodeRequire('fs');
+var fs = requirejs.nodeRequire('fs');
 
 /**
  Load compiled template from .build directory.
  The template-compiler will convert the html to js.
  */
-define(['./dom/template-compiler'], function (templateCompiler) {
-  var baseUrl;
+define(function(require, exports, module) {
+  var util = require('koru/util');
+  var templateCompiler = require('./dom/template-compiler');
+  var baseUrl = module.ctx.baseUrl;
 
   return {
-    load: function (name, req, onload, config) {
-      baseUrl = config.baseUrl;
-      onload();
-    },
-
-    write: function (pluginName, name, write, config) {
+    load: function (name, req, onload) {
       var html = fs.readFileSync(baseUrl + name + ".html").toString();
-
       var js = templateCompiler.toJavascript(html);
 
-      write.asModule(pluginName + "!" + name,
-                     "define(" + js + ");\n");
-    }
-
+      onload.fromText("define(" + js + ");\n");
+      onload();
+    },
   };
 });

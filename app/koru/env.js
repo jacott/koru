@@ -24,19 +24,13 @@ define(['require', 'module'], function (require, module) {
         fetch();
 
       function fetch() {
-        var provider = name.substring(1) + suffix;
+        var provider = name + suffix;
 
-        koru.insertDependency(loaderPrefix + name, provider);
-
-        req([provider], function (value) {
+        req(provider, function (value, pMod) {
+          pMod.addDependancy(req.module);
           onload(value);
         }, onload.error);
       }
-    },
-
-    normalize: function (name, normalize) {
-      if (name[0] === ':') return name;
-      return ':'+normalize(name);
     },
 
     pluginBuilder: './env-builder',
