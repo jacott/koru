@@ -35,7 +35,7 @@
     "send": "0.10.1",
     "weak": "0.4.1",
     "ws": "0.7.2",
-    "yaajs": "^1.0.2"
+    "yaajs": "^1.0.3"
   },
   "devDependencies": {
     "mongodb": "1.4.31",
