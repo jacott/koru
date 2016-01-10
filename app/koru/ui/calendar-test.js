@@ -86,6 +86,7 @@ isClient && define(function (require, exports, module) {
 
     "test pick date": function () {
       v.open(new Date(2015, 11, 31));
+      Dom('[name=testField]').addEventListener('change', v.change = test.stub());
       assert.dom('body>.Calendar td', '25', function () {
         test.spy(Dom, 'stopEvent');
         TH.trigger(document.body.lastChild, 'mousedown');
@@ -95,6 +96,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=testField]', function () {
         assert.same(document.activeElement, this);
         assert.same(this.value, '2015-12-25');
+        assert.called(v.change);
       });
       refute.dom('.Calendar');
     },

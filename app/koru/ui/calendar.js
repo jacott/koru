@@ -94,7 +94,12 @@ define(function(require, exports, module) {
 
     date = new Date(Date.UTC(date.getFullYear(), date.getMonth() + offset, day));
 
-    $.ctx._input.value = util.dateInputFormat(date);
+    var input = $.ctx._input;
+    var newDate = util.dateInputFormat(date);
+    if (input.value !== newDate) {
+      input.value = newDate;
+      Dom.triggerEvent(input, 'change');
+    }
 
     Dom.remove(event.currentTarget);
   }
