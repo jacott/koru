@@ -95,7 +95,7 @@ define(function(require, exports, module) {
   Tpl.List.$helpers({
     items: function (callback) {
       util.forEach(this.list, function (row) {
-        callback({id: row[0], name: row[1]});
+        callback(Array.isArray(row) ? {id: row[0], name: row[1]} : row);
       });
     },
   });

@@ -51,6 +51,21 @@ isClient && define(function (require, exports, module) {
       assert.called(v.onClose);
     },
 
+    "test can select by object": function () {
+      var stub = function(arg) {
+        v.arg = arg;
+      };
+      var items = sut.List._helpers.items;
+
+      items.call({list: [v.expect = {name: 123}]}, stub);
+
+      assert.same(v.arg, v.expect);
+
+      items.call({list: [[123, 'foo']]}, stub);
+
+      assert.equals(v.arg, {id: 123, name: 'foo'});
+    },
+
     "test nameSearch": function () {
       assert.same(sut.nameSearch(/foo/, {name: 'a foo'}), true);
       assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);
