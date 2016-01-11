@@ -32,7 +32,7 @@
       if (typeof subm === 'string')
         subm = module.ctx.modules[subm];
 
-      subm && subm.onUnload(func);
+      subm && subm.onUnload(typeof func === 'function' ? func : func.stop);
     }
 
     koru = {
@@ -121,15 +121,15 @@
       fetchDependants: fetchDependants,
     };
 
-    function fetchDependants(mod) {
-      var result = [];
-      if (! mod) return result;
+    function fetchDependants(mod, result) {
+      if (! result) result = {};
+      if (! mod || result[mod.id]) return result;
+      result[mod.id] = true;
       var modules = mod.ctx.modules;
       var deps = mod.dependants;
       for (var id in deps) {
         var map = {};
-        map[id] = fetchDependants(modules[id]);
-        result.push(map);
+        fetchDependants(modules[id], result);
       }
       return result;
     }

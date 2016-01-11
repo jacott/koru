@@ -30,7 +30,7 @@ define(function(require, exports, module) {
   };
 
   module.ctx.onError = function (error, mod) {
-    koru.error("error loading: " + mod.id + '\nwith dependancies:\n' + JSON.stringify(koru.fetchDependants(mod)));
+    koru.error("error loading: " + mod.id + '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
     throw error;
   };
 
