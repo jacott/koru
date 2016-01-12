@@ -21,4 +21,4 @@ else
 fi
 cd app
 echo -e "starting ${branch}...\c"
-exec node  --expose-gc ../lib/koru.js "$@"
+exec ${NODEDEBUG-node}  --expose-gc ../lib/koru.js "$@"

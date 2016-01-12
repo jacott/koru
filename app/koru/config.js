@@ -16,10 +16,8 @@ define(function(require, exports, module) {
       if (! provider)
         throw new Error('No config setting: ' + name + " for " + module.id);
 
-      req(provider, function (value, pMod) {
-        pMod.addDependancy(req.module);
-        onload(value);
-      }, onload.error);
+      req.module.dependOn(provider);
+      req(provider, onload, onload.error);
     },
 
     pluginBuilder: './config-builder',

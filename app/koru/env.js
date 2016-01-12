@@ -3,7 +3,6 @@
  */
 define(['require', 'module'], function (require, module) {
   var koru, suffix = (typeof isServer !== 'undefined') && isServer ? '-server' : '-client';
-;
   var loaderPrefix = module.id + "!";
 
   return {
@@ -16,20 +15,18 @@ define(['require', 'module'], function (require, module) {
      */
     load: function (name, req, onload, config) {
       if (! koru) {
-        require(['./main'], function (k) {
+        require('./main'+suffix, function (k) {
           koru = k;
           fetch();
         });
+
       } else
         fetch();
 
       function fetch() {
         var provider = name + suffix;
-
-        req(provider, function (value, pMod) {
-          pMod.addDependancy(req.module);
-          onload(value);
-        }, onload.error);
+        var pMod = req.module.dependOn(provider);
+        req(provider, onload, onload.error);
       }
     },
 

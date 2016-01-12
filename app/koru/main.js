@@ -24,11 +24,13 @@
     var util = require('./util');
     var errors = require('./errors');
 
-    var loaderPrefix = module.id + "!";
+    function reload() {
+      return koru.reload();
+    }
 
     function onunload(subm, func) {
       if (func === 'reload')
-        func = koru.reload;
+        func = reload;
       if (typeof subm === 'string')
         subm = module.ctx.modules[subm];
 
