@@ -21,7 +21,7 @@ define(function (require, exports, module) {
 
       util.extend(session, {
         send: function (type, msg) {
-          if (sessState.isReady()) connect._ws.send(type+msg);
+          if (sessState.isReady() && connect._ws) connect._ws.send(type+msg);
           else waitSends.push(type+msg);
         },
 
