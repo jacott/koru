@@ -486,7 +486,7 @@ define(function(require, exports, module) {
       case "[object Date]":
         return new Date(orig.getTime());
       case "[object Array]":
-        return util.map(orig, function (item) {
+        return orig.map(function (item) {
           return util.deepCopy(item);
         });
       case "[object Uint8Array]":

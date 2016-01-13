@@ -520,6 +520,8 @@ define(function (require, exports, module) {
       result[2].three[1].five = 'changed';
 
       assert.equals(orig, [1, "2", {three: [4, {five: 6}]}]);
+
+      assert.msg("should handle sparse arrays").equals(util.deepCopy([1,2,,3]), [1,2,,3]);
     },
 
     "test camelize": function () {
