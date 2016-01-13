@@ -66,6 +66,60 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.arg, {id: 123, name: 'foo'});
     },
 
+    "test selected array data": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        v.button = this;
+      });
+
+      sut.popup(v.button, {
+        list: [[1, 'One'], [2, 'Two']],
+        selected: 2,
+        onSelect: function (elm, event) {
+        },
+      });
+
+      assert.dom('body>.glassPane', function () {
+        assert.dom('.selected', {data:TH.match.field('id', 2)});
+      });
+    },
+
+    "test selected object data": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        v.button = this;
+      });
+
+      sut.popup(v.button, {
+        list: [{_id: 1, name: 'One'}, {_id: 2, name: 'Two'}],
+        selected: 2,
+        onSelect: function (elm, event) {
+        },
+      });
+
+      assert.dom('body>.glassPane', function () {
+        assert.dom('.selected', {count: 1});
+        assert.dom('.selected', {data:TH.match.field('_id', 2)});
+      });
+    },
+
+    "test multi select": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        v.button = this;
+      });
+
+      sut.popup(v.button, {
+        list: [{_id: 1, name: 'One'}, {_id: 2, name: 'Two'}, {_id: 3, name: 'Three'}],
+        selected: [3, 2],
+        onSelect: function (elm, event) {
+        },
+      });
+
+      assert.dom('body>.glassPane', function () {
+        assert.dom('.selected', {count: 2});
+        assert.dom('.selected', {data:TH.match.field('_id', 2)});
+        assert.dom('.selected', {data:TH.match.field('_id', 3)});
+      });
+    },
+
     "test nameSearch": function () {
       assert.same(sut.nameSearch(/foo/, {name: 'a foo'}), true);
       assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);

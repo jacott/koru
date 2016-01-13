@@ -64,6 +64,18 @@ define(function(require, exports, module) {
       return regexp.test(line.name);
     },
 
+    $created: function (ctx) {
+      var selected = ctx.data.selected;
+      if (selected != null) {
+        if (typeof selected === 'object')
+          ctx.selected = Array.isArray(selected) ? util.toMap(selected) : selected;
+        else {
+          ctx.selected = {};
+          ctx.selected[selected] = true;
+        }
+      }
+    },
+
     $destroyed: function (ctx) {
       ctx.data.onClose && ctx.data.onClose();
     },
@@ -102,7 +114,9 @@ define(function(require, exports, module) {
 
   Tpl.List.Item.$helpers({
     name: function () {
-      if ($.ctx.parentCtx.data.selected === this.id)
+      var selected = Tpl.$ctx().selected;
+
+      if (selected && selected[this.id || this._id])
         Dom.addClass($.element.parentNode, 'selected');
       return this.name;
     },
@@ -133,7 +147,7 @@ define(function(require, exports, module) {
   function select(ctx, elm, event) {
     var data = ctx.data;
     if (data.onSelect(elm, event)) {
-      var elm = ctx.originElm;
+      elm = ctx.originElm;
       Dom.remove(ctx.element());
       elm && elm.focus();
     }
