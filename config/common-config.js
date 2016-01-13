@@ -2,7 +2,7 @@ exports.common = function (cfg) {
   cfg.merge('requirejs.packages', [
     "koru/model", "koru/user-account",
   ]);
-  cfg.set('requirejs.ensureAcyclic', true);
+  cfg.set('requirejs.enforceAcyclic', true);
 };
 
 exports.client = function (cfg) {

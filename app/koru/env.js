@@ -1,11 +1,9 @@
 /**
  * Load client or server related file.
  */
-define(['require', 'module'], function (require, module) {
-  var koru, suffix = (typeof isServer !== 'undefined') && isServer ? '-server' : '-client';
-  var loaderPrefix = module.id + "!";
-
-  return {
+(function () {
+  var suffix = (typeof isServer !== 'undefined') && isServer ? '-server' : '-client';
+  define({
     /**
      * Load a module for the current koru -- client or server -- and
      * call {@unload} when ready.
@@ -14,22 +12,14 @@ define(['require', 'module'], function (require, module) {
      * format: koru/env!<name> as <name>-client.js
      */
     load: function (name, req, onload, config) {
-      if (! koru) {
-        require('./main'+suffix, function (k) {
-          koru = k;
-          fetch();
-        });
-
-      } else
-        fetch();
-
-      function fetch() {
-        var provider = name + suffix;
-        var pMod = req.module.dependOn(provider);
-        req(provider, onload, onload.error);
-      }
+      var provider = name + suffix;
+      var pMod = req.module.dependOn(provider);
+      req.module.body = function () {
+        return pMod.exports;
+      };
+      onload();
     },
 
     pluginBuilder: './env-builder',
-  };
-});
+  });
+})();

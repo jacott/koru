@@ -1,26 +1,11 @@
 define({
   load: function (name, req, onload, config) {
-    buildConfig = config;
+    var delegate = config.config['koru/config'][name.substring(1)];
 
-    onload.fromText(name, text(name));
+    var text = 'define(["'+delegate+'"], function(sub) {return sub});\n';
+
+    onload.fromText(name, text);
     onload();
     return;
   },
-
-  normalize: function (name, normalize) {
-    if (name[0] === ':') return name;
-    return ':'+normalize(name);
-  },
-
-  write: function (pluginName, name, write) {
-    write.asModule(pluginName + "!" + name, text(name));
-  },
 });
-
-var buildConfig;
-
-function text(name) {
-  var delegate = buildConfig.config['koru/config'][name.substring(1)];
-
-  return 'define(["'+delegate+'"], function(sub) {return sub});\n';
-}

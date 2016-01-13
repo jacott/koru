@@ -25,7 +25,6 @@ define(function (require, exports, module) {
 
       assert.same(TestModel.findById(null), undefined);
 
-
       assert.exception(function () {
         TestModel.findById({});
       }, 'Error', 'invalid id: [object Object]');

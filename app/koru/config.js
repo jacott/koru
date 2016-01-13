@@ -2,8 +2,6 @@
  * Load file based on config setting.
  */
 define(function(require, exports, module) {
-  var loaderPrefix = module.id + "!";
-
   return {
     /**
      * Load a module cooresponding to the config setting of name.
@@ -17,7 +15,11 @@ define(function(require, exports, module) {
         throw new Error('No config setting: ' + name + " for " + module.id);
 
       req.module.dependOn(provider);
-      req(provider, onload, onload.error);
+      var pMod = req.module.dependOn(provider);
+      req.module.body = function () {
+        return pMod.exports;
+      };
+      onload();
     },
 
     pluginBuilder: './config-builder',

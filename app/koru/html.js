@@ -19,8 +19,11 @@ define(function(require, exports, module) {
       }
 
       var provider = koru.buildPath(name)+'.html';
-      req.module.dependOn(provider);
-      req(provider, onload, onload.error);
+      var pMod = mod.dependOn(provider);
+      mod.body = function () {
+        return pMod.exports;
+      };
+      onload();
     },
 
     pluginBuilder: './html-builder',
