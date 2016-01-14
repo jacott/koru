@@ -1,7 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
-
   TH.testCase(module, {
     setUp: function () {
       test = this;
@@ -12,10 +11,9 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test require": function (done) {
-      require('./text!./example.sql', function (sql) {
-        assert(false);
-      }, done);
+    "test require": function () {
+      var text = require('./text!./test-data/example.sql');
+      assert.same(text, 'select * from foo\n');
     },
 
   });
