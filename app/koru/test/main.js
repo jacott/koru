@@ -49,7 +49,41 @@ define(function(require, exports, module) {
     return result.join(', ');
   };
 
-  var self = {
+  module.ctx.onError = function (err, mod) {
+    if (err.onload) {
+      var errEvent = err.event;
+
+      if (errEvent && errEvent.filename) {
+        exports.logHandle('ERROR', koru.util.extractError({
+          toString: function () {
+            var uer = errEvent && errEvent.error;
+            return uer ? uer.toString() : err.toString();
+          },
+          stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
+        }));
+        return;
+      }
+      var ctx = mod.ctx;
+      var stack = Object.keys(koru.fetchDependants(mod)).map(function (id) {
+        return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
+      }).join('\n');
+      exports.logHandle("ERROR", koru.util.extractError({
+        toString: function () {
+          return "failed to load module: " + mod.id + '\nwith dependancies:\n';
+        },
+        stack: stack,
+      }));
+      return;
+    }
+    if (err.name === 'SyntaxError') {
+      exports.logHandle('ERROR', err.message.replace(/([\S]*)([\s\S]*)/m, 'SyntaxError:\n  at $1\n$2'));
+      return;
+    }
+
+    exports.logHandle('ERROR', koru.util.extractError(err));
+  };
+
+  exports = {
     geddon: geddon,
 
     match: geddon.sinon.match,
@@ -82,8 +116,9 @@ define(function(require, exports, module) {
 
       koru.logger = function (type) {
         origLogger.apply(koru, arguments);
-        var args = util.slice(arguments, 1);
-        self.logHandle(type+": "+(type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
+        var args = new Array(arguments.length - 1);
+        for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+        exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
       };
 
       require(tests, function () {
@@ -94,22 +129,23 @@ define(function(require, exports, module) {
 
       function errorLoading(err) {
         ++errorCount;
-        if (err.onload) {
-          var msg = [err.toString()];
-          var modules = err.module.ctx.modules;
-          var fetchNotReady = function (mod) {
-            for (var depId in mod.dependants) {
-              var depMod = modules[depId];
-              if (! depMod || depMod.state !== Module.READY) {
-                msg.push("\tat "+ (depMod ? isClient ? depMod.uri.slice(1) : depMod.uri : depId+'.js') + ':1:1');
-                depMod && fetchNotReady(depMod);
-              }
-            }
-          };
-          fetchNotReady(err.module);
-          koru.error(msg.join('\n'));
-        }
-        koru.error(koru.util.extractError(err));
+        // FIXME
+        // if (err.onload) {
+        //   var msg = [err.toString()];
+        //   var modules = err.module.ctx.modules;
+        //   var fetchNotReady = function (mod) {
+        //     for (var depId in mod.dependants) {
+        //       var depMod = modules[depId];
+        //       if (! depMod || depMod.state !== Module.READY) {
+        //         msg.push("\tat "+ (depMod ? isClient ? depMod.uri.slice(1) : depMod.uri : depId+'.js') + ':1:1');
+        //         depMod && fetchNotReady(depMod);
+        //       }
+        //     }
+        //   };
+        //   fetchNotReady(err.module);
+        //   koru.error(msg.join('\n'));
+        // }
+        // koru.error(koru.util.extractError(err));
         endTest();
       }
     },
@@ -137,18 +173,18 @@ define(function(require, exports, module) {
       for(var i=0;i < errors.length; ++i) {
         result += errors[i]+"\n";
       }
-      self.testHandle('E', result);
+      exports.testHandle('E', result);
     }
 
     test.skipped ? ++skipCount : ++count;
 
-    self.testHandle('R', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
+    exports.testHandle('R', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
   function endTest() {
     if (geddon.testCount === 0) {
       errorCount = 1;
-      self.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+      exports.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
     }
 
     if (isClient) {
@@ -158,13 +194,13 @@ define(function(require, exports, module) {
       }, 1);
     }
     koru.logger = origLogger;
-    self.testHandle('F', errorCount);
+    exports.testHandle('F', errorCount);
     geddon._init();
   }
 
   function warnFullPageReload() {
-    self.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
+    exports.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   }
 
-  return self;
+  return exports;
 });

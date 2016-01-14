@@ -6,11 +6,8 @@ define(function(require, exports, module) {
     session.remoteControl.testHandle(cmd+msg);
   };
 
-  test.logHandle = function (msg) {
+  test.logHandle = function (type, msg) {
     session.remoteControl.logHandle(msg);
-  };
-
-  module.ctx.onError = function (err) {
   };
 
   return test;

@@ -198,7 +198,7 @@ define(function(require, exports, module) {
       pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
       pageRoute.pathname = pathname(page, pageRoute || {});
 
-      debug_page && koru.logger('DebugPage', util.inspect(pageRoute, 2));
+      debug_page && koru.logger('D', 'gotoPage', util.inspect(pageRoute, 2));
 
       Route.loadingArgs = [page, pageRoute];
 

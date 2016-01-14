@@ -81,8 +81,11 @@
       },
 
       logger: function () {
-        var args = util.slice(arguments);
-        args.unshift(new Date().toISOString());
+        var args = new Array(arguments.length + 1);
+        args[0] = new Date().toISOString();
+        for(var i = 1; i < args.length; ++i) {
+          args[i] = arguments[i-1];
+        }
 
         console.log.apply(console, args);
       },
@@ -137,13 +140,20 @@
     }
 
     function logDebug() {
-      var args = util.slice(arguments, 0);
-      args.unshift('\x44EBUG');
+      var args = new Array(arguments.length + 1);
+      args[0] = '\x44EBUG';
+      for(var i = 1; i < args.length; ++i) {
+        args[i] = arguments[i-1];
+      }
       koru.logger.apply(koru, args);
     }
 
     logDebug.inspect = function () {
-      koru.logger('\x44EBUG ' + util.map(arguments, function (arg) {return util.inspect(arg)}).join(', '));
+      var args = new Array(arguments.length);
+      for(var i = 0; i < arguments.length; ++i) {
+        args[i] = util.inspect(arguments[i-1]);
+      }
+      koru.logger('\x44EBUG ', args.join(', '));
     };
 
     return koru;

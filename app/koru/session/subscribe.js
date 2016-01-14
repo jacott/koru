@@ -132,14 +132,14 @@ define(function(require, exports, module) {
       },
 
       _wait: function () {
-        debug_subscribe && koru.logger((this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
+        debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
         if (this.waiting) return;
         sessState.incPending();
         this.waiting = true;
       },
 
       _received: function (result) {
-        debug_subscribe && koru.logger((this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
+        debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
         if (result !== undefined) stopped(this);
         if (! this.waiting) return;
 
@@ -170,7 +170,7 @@ define(function(require, exports, module) {
 
       stop: function () {
         if (! this._id) return;
-        debug_subscribe && koru.logger((this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
+        debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
         session.sendP(this._id);
         stopped(this);
         if (! this.waiting) return;

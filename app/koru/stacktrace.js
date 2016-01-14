@@ -48,7 +48,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
       if (url === 'index.js') continue;
 
-      if (/(?:(?:koru\/test\/|require.js)|node_modules\/)/.test(url)) {
+      if (/(?:(?:koru\/test\/|yaajs)|node_modules\/)/.test(url)) {
         if (notUs) continue;
 
       } else notUs = true;

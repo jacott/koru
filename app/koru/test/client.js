@@ -9,8 +9,8 @@ define(function(require, exports, module) {
     session.send('T', cmd+msg);
   };
 
-  test.logHandle = function (msg) {
-    session.send('L', msg);
+  test.logHandle = function (type, msg) {
+    session.send(type === 'ERROR' ? 'E' : 'L', msg);
   };
 
   var ls;
@@ -22,22 +22,6 @@ define(function(require, exports, module) {
   koru.onunload(module, function () {
     requirejs.onError = null;
   });
-
-  module.ctx.onError = function (err, mod) {
-    if (err.onload) {
-      var errEvent = err.event;
-      var uer = errEvent && errEvent.error;
-      session.send('E', koru.util.extractError({
-        toString: function () {
-          return uer ? uer.toString() : err.toString();
-        },
-        stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
-      }));
-    } else if (mod.onError)
-      return; // handled already
-    err = koru.util.extractError(err);
-    session.send('E', err);
-  };
 
   test.geddon.onStart(function () {
     localStorage.setItem = function (key, value) {

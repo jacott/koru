@@ -43,7 +43,7 @@ define(function(require, exports, module) {
       return function (data) {
         if (debug_clientUpdate) {
           if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
-            koru.logger("Debug"+type, '< ' + util.inspect(data));
+            koru.logger("D", type, '< ' + util.inspect(data));
         }
         session.isUpdateFromServer = true;
         try {

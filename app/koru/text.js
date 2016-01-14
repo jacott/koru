@@ -1,17 +1,14 @@
-/**
- Load compiled template from .build directory.
- The template-compiler will convert the html to js.
- */
-
 define(function(require, exports, module) {
-  var koru = require('./main');
-  var loaderPrefix = module.id + "!";
-
-  koru.onunload(module, 'reload');
+  var util = require('koru/util');
+  var loader = require('koru/env!./text');
 
   return {
     load: function (name, req, onload, config) {
       var mod = req.module;
+      if (mod.state === Module.READY) {
+        onload();
+        return;
+      }
 
       var provider = koru.buildPath(name)+'.html';
       var pMod = mod.dependOn(provider);
@@ -20,7 +17,5 @@ define(function(require, exports, module) {
       };
       onload();
     },
-
-    pluginBuilder: './html-builder',
-  };
+  }
 });

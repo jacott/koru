@@ -139,8 +139,8 @@ define(function(require, exports, module) {
     }
 
     function logHandle(msg) {
+      this.engine !== 'Server' && console.log('INFO ' + this.engine + ' ' + msg);
       try {
-        this.engine !== 'Server' && console.log('INFO ' + this.engine + ' ' + msg);
         ws.send('L' + this.engine + '\x00' + msg);
       } catch(ex) {
         // ignore since it will just come back to us

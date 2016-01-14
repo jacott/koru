@@ -26,7 +26,7 @@ isServer && define(function (require, exports, module) {
 
     tearDown: function () {
       userAccount.model.docs.remove({});
-      test.stub(koru, 'logger');
+      test.intercept(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
       v = null;
@@ -279,7 +279,7 @@ isServer && define(function (require, exports, module) {
 
     "login with token": {
       tearDown: function () {
-        test.stub(koru, 'logger');
+        test.intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
         v.connOther && v.connOther.close();
