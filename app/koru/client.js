@@ -7,7 +7,8 @@ define(function (require, exports, module) {
     requirejs.onError = null;
   });
 
-  window.yaajs.ctx.onError = function (err) {
+
+  window.yaajs.module.ctx.onError = function (err) {
     err = koru.util.extractError(err);
     session.send('E', err);
     koru.error(err);
