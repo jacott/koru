@@ -22,6 +22,10 @@ define(function(require, exports, module) {
     },
   };
 
+  function defaultUnloader(path) {
+    session.unload(path);
+  }
+
   exports.watch = function (dir, top) {
     watch(Path.resolve(dir), Path.resolve(top)+'/');
   };
@@ -42,7 +46,8 @@ define(function(require, exports, module) {
         var m = /\.(\w+)$/.exec(path);
         var handler = m && exports.listeners[m[1]];
 
-        handler && handler(m[1], path.slice(top.length), top, session);
+        handler ? handler(m[1], path.slice(top.length), top, session) :
+          defaultUnloader(path);
       }).run();
     });
     fst.readdir(dir).forEach(function (filename) {
