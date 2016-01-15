@@ -32,10 +32,17 @@ define(function(require, exports, module) {
   function MarkupBuilder() {
     this.markup = [];
     this.lines = [];
+    this._relativePos = 0;
   }
 
   MarkupBuilder.prototype = {
     constructor: MarkupBuilder,
+
+    relative: function (pos) {
+      var rel = pos - this._relativePos;
+      this._relativePos = pos;
+      return rel;
+    },
 
     fromChildren: function(parent, state) {
       var nodes = parent.childNodes;
@@ -83,7 +90,7 @@ define(function(require, exports, module) {
   function fromInline(code) {
     return function fromInline(node, state) {
       var index = this.lines.length - 1;
-      this.markup.push(code, index, this.lines[index].length, 0);
+      this.markup.push(code, this.relative(index), this.lines[index].length, 0);
       var pos = this.markup.length - 1;
       this.fromChildren(node, state);
       this.markup[pos] = this.lines[index].length;
@@ -95,12 +102,12 @@ define(function(require, exports, module) {
       if (state.start === undefined) {
         state.start = this.lines.length;
           state.endMarker = this.markup.length + 2;
-        this.markup.push(code, state.start, 0);
+        this.markup.push(code, this.relative(state.start), 0);
       }
       var rule = FROM_RULE[node.tagName] || fromDiv;
       this.fromChildren(node, rule === fromDiv ? state : {oldState: state, rule: rule});
 
-      this.markup[state.endMarker] = this.lines.length - 1;
+      this.markup[state.endMarker] = this.lines.length - 1 - state.start;
     };
   }
 
@@ -117,7 +124,7 @@ define(function(require, exports, module) {
       var index = this.lines.length - 1;
       var code = LINK_TO_CODE[node.className];
       if (code !== undefined) {
-        this.markup.push(SPAN, index, this.lines[index].length, 0, code, node.getAttribute("data-a"));
+        this.markup.push(SPAN, this.relative(index), this.lines[index].length, 0, code, node.getAttribute("data-a"));
         var pos = this.markup.length - 3;
         this.fromChildren(node, state);
         this.markup[pos] = this.lines[index].length;
@@ -138,17 +145,18 @@ define(function(require, exports, module) {
     html = html || document.createDocumentFragment();
     lines = typeof lines === 'string' ? lines.split("\n") : lines;
     this.markup = markup || [];
-    this.midx = 0;
-    var nextMarkup = this.offset(1);
+    this.lidx = this.midx = 0;
+    this.lineCount = [this.offset(1)];
+    var nextMarkup = this.nextMarkupLine();
     var state = {result: html, rule: toDiv, begun: true};
 
     var nrule;
     for(var index = 0; index < lines.length; ++index) {
       this.line = lines[this.lidx = index];
-      while (index === nextMarkup && ! (nrule = TO_RULES[this.offset(0)]).inline) {
-        state = {result: state.result, rule: nrule, last: this.offset(2), oldState: state};
+      while (index === nextMarkup && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
+        state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
         state.rule.call(this, state);
-        nextMarkup = this.offset(1);
+        nextMarkup = this.nextMarkupLine();
       }
       state.inlineStart = 0;
       state.inlineEnd = this.line.length;
@@ -169,8 +177,23 @@ define(function(require, exports, module) {
       return this.markup[this.midx + offset];
     },
 
+    nextRule: function (offset) {
+      this.midx += offset;
+      this.lineCount[this.midx] = this.lidx + this.markup[this.midx + 1];
+    },
+
+    nextMarkupLine: function () {
+      var line = this.lineCount[this.midx];
+      return line;
+    },
+
+    endMarkup: function () {
+      var line = this.lineCount[this.midx] + this.offset(2);
+      return line;
+    },
+
     toChildren: function(state) {
-      var nextMarkup = this.offset(1);
+      var nextMarkup = this.nextMarkupLine();
       var startPos = state.inlineStart;
       var endPos = state.inlineEnd;
 
@@ -191,14 +214,14 @@ define(function(require, exports, module) {
             inlineStart: this.offset(2),
             inlineEnd: this.offset(3),
           };
-          this.midx += rule.muInc,
+          this.nextRule(rule.muInc),
 
           state.rule.call(this, state);
           startPos = state.inlineEnd;
           state = state.oldState;
           state.inlineStart = startPos;
 
-          nextMarkup = this.offset(1);
+          nextMarkup = this.nextMarkupLine();
         }
       }
 
@@ -222,7 +245,7 @@ define(function(require, exports, module) {
       state.begun = true;
       state.result.appendChild(state.result = document.createElement(blockTag));
       state.rule = innerFunc;
-      this.midx += 3;
+      this.nextRule(3);
     };
   }
 

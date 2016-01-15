@@ -59,7 +59,7 @@ define(function (require, exports, module) {
       assert.equals(sut.fromHtml(html), [['a', 'b'], null]);
     },
 
-    "//test nested": function () {
+    "test nested": function () {
       var doc = "brave\nnew\nworld\nnow", markup = [NEST, 0, 2, NEST, 0, 0, NEST, 2, 0, NEST, 1, 0];
       var html = sut.toHtml(doc, markup, v.p);
       assert.same(html.outerHTML,
@@ -69,19 +69,16 @@ define(function (require, exports, module) {
                     '<blockquote><div>world</div></blockquote>' +
                   '</blockquote>' +
                   '<blockquote><div>now</div></blockquote></p>');
-
-      // assertConvert('<blockquote><blockquote><div>brave</div></blockquote><div>new</div>' +
-      //               '<blockquote><div>world</div></blockquote></blockquote>');
     },
 
-    "//test inline styles": function () {
+    "test inline styles": function () {
       var doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, ITALIC, 1, 3, 4];
       var html = sut.toHtml(doc, markup, v.p);
       assert.same(html.outerHTML, '<p><div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div></p>');
     },
 
     "test list and nesting": function () {
-      var doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 2, BOLD, 1, 0, 5, ITALIC, 2, 5, 10];
+      var doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 1, BOLD, 0, 0, 5, ITALIC, 1, 5, 10];
 
       var html = sut.toHtml(doc, markup, v.p);
 
@@ -93,20 +90,20 @@ define(function (require, exports, module) {
     "test complex": function () {
       var complex = '<div>he</div><div>-llo world<b>in <i>here</i> out</b></div><div><br></div><div>line 2</div>';
       var doc = "he\n-llo worldin here out\n\nline 2";
-      var markup = [BOLD, 1, 10, 21, ITALIC, 1, 13, 17];
+      var markup = [BOLD, 1, 10, 21, ITALIC, 0, 13, 17];
       var html = document.createElement('div');
       html.innerHTML = complex;
-      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
       assert.equals(sut.toHtml(doc, markup, document.createElement('div')).innerHTML, complex);
+      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
     },
 
     "test multiple": function () {
+      assertConvert('simple', '<div>simple</div>');
       assertConvert('<div><b>cd</b><i>gh</i></div>');
       assertConvert('<div>ab<b>cd</b>ef<i>gh</i>ih</div>');
       assertConvert('<div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div>');
       assertConvert('<div>hello <span class="link user" contenteditable="true" data-a="g1">Geoff Jacobsen</span></div>');
       assertConvert('<div>hello <span class="link ticket" contenteditable="true" data-a="t123">Ticket 123</span></div>');
-      assertConvert('simple', '<div>simple</div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");
