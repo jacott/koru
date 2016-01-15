@@ -46,7 +46,9 @@ define(function(require, exports, module) {
         var m = /\.(\w+)$/.exec(path);
         var handler = m && exports.listeners[m[1]];
 
-        handler ? handler(m[1], path.slice(top.length), top, session) :
+        path = path.slice(top.length);
+
+        handler ? handler(m[1], path, top, session) :
           defaultUnloader(path);
       }).run();
     });
