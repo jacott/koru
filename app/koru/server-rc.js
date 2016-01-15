@@ -74,8 +74,9 @@ define(function(require, exports, module) {
         if (testMode !== 'client' &&
             testExec.server && testClientCount === 0) {
           ws.send('XServer');
-          testExec.server();
+          var server = testExec.server;
           testExec.server = null;
+          server();
         }
       }
     }

@@ -69,15 +69,18 @@ define(function(require, exports, module) {
           fs.unlinkSync(dest);
           exports.serverReady.wait();
           exports.serverReady = null;
-        } else {
-          try {fs.unlinkSync(dest);} catch (ex) {}
         }
-        fs.symlinkSync(module.toUrl('./server-ready-prep.js'), dest);
+        try {
+          fs.symlinkSync(module.toUrl('./server-ready-prep.js'), dest);
+        } catch(ex) {}
       }
 
       callback(type, {
         server: function () {
-          require(['./server', 'test/server-ready'], function (TH) {TH.run(pattern, sTests)});
+          require(['./server', 'test/server-ready'], function (TH, serverReady) {
+            serverReady(koru, exports);
+            TH.run(pattern, sTests);
+          });
         },
         client: function (conn) {
           conn.send('L', '/.build/cmd-client.js');

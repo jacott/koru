@@ -129,23 +129,6 @@ define(function(require, exports, module) {
 
       function errorLoading(err) {
         ++errorCount;
-        // FIXME
-        // if (err.onload) {
-        //   var msg = [err.toString()];
-        //   var modules = err.module.ctx.modules;
-        //   var fetchNotReady = function (mod) {
-        //     for (var depId in mod.dependants) {
-        //       var depMod = modules[depId];
-        //       if (! depMod || depMod.state !== Module.READY) {
-        //         msg.push("\tat "+ (depMod ? isClient ? depMod.uri.slice(1) : depMod.uri : depId+'.js') + ':1:1');
-        //         depMod && fetchNotReady(depMod);
-        //       }
-        //     }
-        //   };
-        //   fetchNotReady(err.module);
-        //   koru.error(msg.join('\n'));
-        // }
-        // koru.error(koru.util.extractError(err));
         endTest();
       }
     },
@@ -194,6 +177,7 @@ define(function(require, exports, module) {
       }, 1);
     }
     koru.logger = origLogger;
+
     exports.testHandle('F', errorCount);
     geddon._init();
   }

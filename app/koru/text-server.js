@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   exports.load = function (name, onload) {
     fs.readFile(name, function (err, text) {
       if (err) onload.error(err);
-      else onload(text.toString());
+      else onload(''+text.toString());
     });
   };
 });
