@@ -18,9 +18,12 @@ isClient && define(function (require, exports, module) {
 
       v.fooFunc = test.stub();
       document.body.appendChild(RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello\xa0'), options: {
-        id: 'TestRichTextEditor', '$mention@': {
-          list: function (frag, text) {v.fooFunc(frag, text)},
-          html: function (elm) {return v.fooHtmlFunc(elm)},
+        id: 'TestRichTextEditor', mentions: {
+          '@': {
+            buttonClass: 'atMention',
+            list: function (frag, text) {v.fooFunc(frag, text)},
+            html: function (elm) {return v.fooHtmlFunc(elm)},
+          }
         },
       }}));
 
@@ -41,11 +44,15 @@ isClient && define(function (require, exports, module) {
     "test button mode": function () {
       v.fooFunc = function (frag, text) {
         if (text === 'g') {
-          frag.appendChild(v.div1 = Dom.html({div: 'Geoff Jacobsen', "data-id": "g1"}));
+          frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
         }
       };
 
       TH.mouseDownUp('[name=mention]');
+
+      v.fooHtmlFunc = function (elm) {
+        return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
+      };
 
       assert.dom('.rtMention:not(.inline) input', function () {
         TH.input(this, 'g');
@@ -54,7 +61,7 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.richTextEditor>.input', function () {
-        assert.same(this.innerHTML, 'hello&nbsp;<span class=\"link user\" contenteditable=\"true\" data-a=\"g1\"></span>&nbsp;');
+        assert.same(this.innerHTML, 'hello&nbsp;<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;');
       });
     },
 
@@ -109,14 +116,18 @@ isClient && define(function (require, exports, module) {
       setUp: function () {
         v.fooFunc = function (frag, text) {
           if (text === 'g') {
-            frag.appendChild(v.div1 = Dom.html({text: 'Geoff Jacobsen', "data-id": "g1"}));
-            frag.appendChild(v.div2 = Dom.html({text: 'Gordon Snow', "data-id": "g2"}));
-            frag.appendChild(v.div3 = Dom.html({text: 'Gayle Gunter', "data-id": "g3"}));
+            frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
+            frag.appendChild(v.div2 = Dom.h({div: 'Gordon Snow', "$data-id": "g2"}));
+            frag.appendChild(v.div3 = Dom.h({div: 'Gayle Gunter', "$data-id": "g3"}));
           }
           if (text === 'jjg') {
-            frag.appendChild(v.div2 = Dom.html({text: 'James J Gooding', "data-id": "j2"}));
-            frag.appendChild(v.div3 = Dom.html({text: '(*)', "data-id": "j3", span: {className: 'name', text: 'Josiah<JG>'}}));
+            frag.appendChild(v.div2 = Dom.h({div: 'James J Gooding', "$data-id": "j2"}));
+            frag.appendChild(v.div3 = Dom.h({div: 'Josiah<JG>', "$data-id": "j3"}));
           }
+        };
+
+        v.fooHtmlFunc = function (elm) {
+          return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
         };
 
         assert.dom(v.input, function () {
@@ -173,7 +184,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(v.input, function () {
           refute.dom('.ln');
-          assert.dom('[data-a="j3"][contenteditable=true]', 'Josiah<JG>');
+          assert.dom('a[href="/#j3"]', 'Josiah<JG>');
         });
       },
 
@@ -198,7 +209,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger('input', 'keydown', {which: 9});
 
         assert.dom('.input', function () {
-          assert.same(this.innerHTML, 'hello&nbsp;<span class=\"link user\" contenteditable=\"true\" data-a=\"g1\">Geoff Jacobsen</span>&nbsp;');
+          assert.same(this.innerHTML, 'hello&nbsp;<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;');
         });
       },
 
@@ -261,7 +272,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(v.input, function () {
           refute.dom('.ln');
-          assert.dom('[data-a="g2"][contenteditable=true]', 'Gordon Snow');
+          assert.dom('a[href="/#g2"]', 'Gordon Snow');
         });
       },
     },

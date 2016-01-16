@@ -6,6 +6,8 @@ isClient && define(function (require, exports, module) {
   var formTpl = require('../html!./form-test');
   var util = require('../util');
 
+  var $ = Dom.current;
+
   TH.testCase(module, {
     setUp: function () {
       test = this;
@@ -181,11 +183,22 @@ isClient && define(function (require, exports, module) {
     },
 
     "test RichTextEditor": function () {
+      Dom.Test.Form.TestRichTextEditor.$helpers({
+        testFormMentions: function () {
+          return {
+            mentions: {'@': 'testMentions'},
+          };
+        },
+      });
       document.body.appendChild(Dom.Test.Form.TestRichTextEditor.$autoRender({name: Dom.h([{b: 'foo'}, '\nbar'])}));
 
       assert.dom('#TestRichTextEditor>label', function () {
         assert.dom('span.name', 'Name');
         assert.dom('#nameId.richTextEditor[data-errorfield="name"][placeholder="Foo"]:not([type])', function () {
+          var data = $.data(this);
+          assert.equals(data.extend.mentions, {'@': 'testMentions'});
+
+
           assert.dom('.rtToolbar');
           assert.dom('>.input', 'foobar', function () {
             assert.same(this.innerHTML, '<b>foo</b><br>bar');

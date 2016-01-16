@@ -362,13 +362,18 @@ define(function(require, exports, module) {
       return field(data, name, options);
     },
 
-    labelField: function (name, options) {
+    labelField: function (name, options, arg3) {
+      if (arg3) {
+        var extend = options;
+        options = arg3;
+      }
+
       options = options || {};
       var data = options.hasOwnProperty('data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
         name: name,
         options: options,
-        value: field(data, name, options),
+        value: field(data, name, options, extend),
         label: options.label ||  util.capitalize(util.humanize(name)),
       });
     },
@@ -438,21 +443,27 @@ define(function(require, exports, module) {
     markdownEditor: MarkdownEditor,
   };
 
-  function field(doc, name, options) {
+  function field(doc, name, options, extend) {
     options = options || {};
+    var data = {name: name, doc: doc, options: options};
     if ('selectList' in options) {
-      return Tpl[options.type === 'radio' ? 'Radio' : 'Select'].$autoRender({name: name, doc: doc, options: options});
+      return Tpl[options.type === 'radio' ? 'Radio' : 'Select'].$autoRender(data);
     }
 
     switch(options.type || 'text') {
     case 'onOff':
-      return OnOff.$autoRender({name: name, doc: doc, options: options});
+      return OnOff.$autoRender(data);
     default:
       var editor = EDITORS[options.type];
-      if (editor)
-        return editor.$autoRender({content: doc[name], options: util.reverseExtend({"data-errorField": name}, options)});
+      if (editor) {
+        if (extend) data.extend = extend;
+        data.content = doc[name];
+        data.options = util.extend({"data-errorField": name}, options);
+        return editor.$autoRender(data);
+      }
 
-      return Tpl.TextInput.$autoRender({type: options.type || 'text', name: name, doc: doc, options: options});
+      data.type = options.type || 'text';
+      return Tpl.TextInput.$autoRender(data);
     }
 
   }

@@ -287,7 +287,6 @@ define(function(require, exports, module) {
     oldResult.appendChild(link);
     var code = LINK_TO_HTML[this.offset(-2)];
     code.class && (link.className = code.class);
-    link.setAttribute('contenteditable', 'true');
     this.toChildren(state);
     code.toHtml(state.result, this.offset(-1));
     state.result = oldResult;

@@ -45,6 +45,18 @@ define(function(require, exports, module) {
     link: function () {
       Dom.setClass('on', getTag('A'));
     },
+
+    mentions: function () {
+      if ($.element._koruEnd) return;
+      var mentions = $.ctx.parentCtx.data.options;
+      mentions = mentions && mentions.mentions;
+      if (! mentions) return;
+      var frag = document.createDocumentFragment();
+      Object.keys(mentions).sort().forEach(function (id) {
+        frag.appendChild(Dom.h({button: id, class: mentions[id].buttonClass, $name: 'mention', '$data-type': id}));
+      });
+      return frag;
+    },
   });
 
   Tpl.$events({
@@ -96,11 +108,12 @@ define(function(require, exports, module) {
   });
 
   var actionForms = {
-    mention: function (data, close) {
+    mention: function (data, close, button) {
       var range = Dom.getRange();
 
       return range && RichTextMention.$autoRender({
-        type: '$mention@',
+        type: button.getAttribute('data-type'),
+        mentions: $.ctx.parentCtx.data.options.mentions,
         inputCtx: $.ctx.parentCtx,
         close: close, range: range,
         value: range.toString(),

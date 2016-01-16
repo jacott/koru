@@ -129,7 +129,7 @@ define(function (require, exports, module) {
       test.onEnd(function () {
         sut.deregisterLinkType(1);
       });
-      var html = Dom.h({div: {a: "a foo", $contenteditable: true, class: "foo", $href: 'link_to_foo'}});
+      var html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
       assert.equals(sut.fromHtml(html), [['a foo'], [LINK, 0, 0, 5, 1, "link_to"]]);
       assertConvert(html.outerHTML);
     },
@@ -144,7 +144,7 @@ define(function (require, exports, module) {
       assertConvert('<div><b>cd</b><i>gh</i></div>');
       assertConvert('<div>ab<b>cd</b>ef<i>gh</i>ih</div>');
       assertConvert('<div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div>');
-      assertConvert('<div>hello <a contenteditable="true" href="#/foo1">Foo link</a></div>');
+      assertConvert('<div>hello <a href="#/foo1">Foo link</a></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");

@@ -13,7 +13,10 @@ isClient && define(function (require, exports, module) {
       v = {};
       var editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
-      ]), options: {id: "Foo", '$mention@': {list: function () {}}}});
+      ]), options: {id: "Foo", mentions: {'@': {
+        buttonClass: 'myButton',
+        list: function () {}
+      }}}});
 
       v.origText = editor.value;
       document.body.appendChild(editor);
@@ -143,7 +146,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('[name=mention]');
+      TH.mouseDownUp('button.myButton');
 
       assert.dom('.rtMention', function () {
         assert.dom('input', {value: ''});
@@ -155,7 +158,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('[name=mention]');
+      TH.mouseDownUp('button.myButton');
 
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});

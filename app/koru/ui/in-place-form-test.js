@@ -32,6 +32,15 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test options": function () {
+      test.stub(Dom.Form, 'field');
+      sut._helpers.field.call(v.opts = {'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
+                               name: 'theName', type: 'foo',
+                               notthis: 'not this'});
+
+      assert.calledWith(Dom.Form.field, {theName: '123'}, 'theName', {type: 'foo', me: 'html me'}, v.opts);
+    },
+
     "test no doc": function () {
       var sut = Dom.InPlaceForm.$render({value: "foo"});
 

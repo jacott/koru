@@ -193,30 +193,29 @@ define(function(require, exports, module) {
         range.insertNode(span);
         ctx.mentionState = 3;
         ctx.selectItem = RichTextMention.selectItem({
-          type: '$mention@',
+          type: ctx.mentionType,
+          mentions: ctx.data.options.mentions,
           inputCtx: ctx,
           inputElm: ctx.inputElm,
           span: span,
         });
         return;
       }
-      switch(event.which) {
-      case 64:
-        if (event.shiftKey) {
-          var range = Dom.getRange();
-          if (range.startOffset !== 0) {
-            if (range.startContainer.nodeType === document.TEXT_NODE) {
-              var text = range.startContainer.textContent;
-              text = text[range.startOffset - 1];
-            } else {
-              var text = range.startContainer.childNodes[range.startOffset - 1].textContent;
-            }
-            if (text.match(/\S/)) return;
+      var mentionType = mentionKey(ctx, event.which);
+      if (mentionType && event.shiftKey) {
+        ctx.mentionType = mentionType;
+        var range = Dom.getRange();
+        if (range.startOffset !== 0) {
+          if (range.startContainer.nodeType === document.TEXT_NODE) {
+            var text = range.startContainer.textContent;
+            text = text[range.startOffset - 1];
+          } else {
+            var text = range.startContainer.childNodes[range.startOffset - 1].textContent;
           }
-          ctx.mentionState = 1;
-          return;
+          if (text.match(/\S/)) return;
         }
-        break;
+        ctx.mentionState = 1;
+        return;
       }
     },
 
@@ -227,6 +226,13 @@ define(function(require, exports, module) {
       }
     },
   });
+
+  function mentionKey(ctx, code) {
+    var mentions = ctx.data.options.mentions;
+    var id = String.fromCharCode(code);
+    if (mentions && mentions[id])
+      return id;
+  }
 
   function getTag(tag) {
     var range = Dom.getRange();

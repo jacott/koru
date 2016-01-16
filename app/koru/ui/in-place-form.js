@@ -41,7 +41,7 @@ define(function(require, exports, module) {
         doc[name] = options.value;
       }
 
-      return Dom.Form.field(doc, name, fieldOptions);
+      return Dom.Form.field(doc, name, fieldOptions, options);
     },
 
     deleteButton: function () {

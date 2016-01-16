@@ -42,7 +42,7 @@ define(function(require, exports, module) {
 
     list: function () {
       var frag = document.createDocumentFragment();
-      this.inputCtx.data.options[this.type].list(frag, this.value);
+      this.mentions[this.type].list(frag, this.value);
       Dom.addClass(frag.firstChild, 'selected');
 
       Dom.setClass('empty', ! frag.firstChild, $.element.parentNode);
@@ -145,13 +145,14 @@ define(function(require, exports, module) {
 
   function acceptItem(event, item) {
     Dom.stopEvent();
+
     var data = $.ctx.data;
 
-    var id = item.getAttribute('data-id');
-    var nameELm = item.getElementsByClassName('name')[0];
+    var link = data.mentions[data.type].html(item);
 
     var frag = document.createDocumentFragment();
-    frag.appendChild(Dom.html({tag: 'span', class: 'ln', text: (nameELm || item).textContent}));
+    frag.appendChild(link);
+    // FIXME Dom.html({tag: 'span', class: 'ln', text: (nameELm || item).textContent})
     frag.appendChild(document.createTextNode('\xa0'));
 
     if (data.span) {
@@ -162,13 +163,13 @@ define(function(require, exports, module) {
       RichTextEditor.insert(frag);
     }
 
-    var button = data.inputElm.getElementsByClassName('ln')[0];
+    // var button = data.inputElm.getElementsByClassName('ln')[0];
 
-    if (button) {
-      button.setAttribute('contenteditable', 'true');
-      button.className = 'link user';
-      button.setAttribute('data-a', id);
-    }
+    // if (button) {
+    //   button.setAttribute('contenteditable', 'true');
+    //   button.className = 'link user';
+    //   button.setAttribute('data-a', id);
+    // }
     collapseRange(false);
     data.inputElm = null;
     Dom.remove(event.currentTarget);
