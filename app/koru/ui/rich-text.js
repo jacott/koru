@@ -308,6 +308,18 @@ define(function(require, exports, module) {
 
     fromHtml: fromHtml,
 
+    isValid: function (text, markup) {
+      if (text == null && markup == null) return true;
+      if (typeof text !== 'string' || ! (markup == null || Array.isArray(markup)))
+        return false;
+
+      var html = toHtml(text, markup, document.createElement('div'));
+      var rt = fromHtml(html);
+
+
+      return text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
+    },
+
     registerLinkType: function (data) {
       LINK_TO_HTML[data.id] = data;
       LINK_FROM_HTML[data.class] = data;

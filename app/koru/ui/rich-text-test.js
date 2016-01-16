@@ -18,6 +18,25 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "validation": {
+      "test simple": function () {
+        assert(sut.isValid(""));
+        assert(sut.isValid());
+        assert(sut.isValid("some\nlines"));
+        refute(sut.isValid("some\nlines", []));
+        assert(sut.isValid("some\nlines", [BOLD, 0, 2, 3]));
+        refute(sut.isValid("some\nlines", [BOLD, 0, 2, 1]));
+        refute(sut.isValid("some\nlines", [BOLD, -1, 2, 3]));
+        refute(sut.isValid("some\nlines", [BOLD, 1]));
+        refute(sut.isValid("some\nlines", [-1, 1]));
+        refute(sut.isValid("some\nlines", 'hello'));
+        refute(sut.isValid("345", NaN));
+        refute(sut.isValid([1,2]));
+      },
+
+
+    },
+
     "test just text": function () {
       var doc = "Hello world";
 
