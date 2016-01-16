@@ -44,7 +44,10 @@ define(function (require, exports, module) {
       var top = document.createElement('section');
 
       elm.id = "top123";
+      assert.same(elm.className, '');
+
       elm.className = "un deux trois";
+      assert.same(elm.className, "un deux trois");
 
       top.appendChild(df);
 

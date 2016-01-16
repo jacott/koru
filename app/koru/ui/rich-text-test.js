@@ -3,8 +3,9 @@ define(function (require, exports, module) {
   var TH = require('../test');
   var sut = require('./rich-text');
   var util = require('koru/util');
+  var Dom = require('../dom-base');
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6;
 
   TH.testCase(module, {
     setUp: function () {
@@ -97,13 +98,30 @@ define(function (require, exports, module) {
       assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
     },
 
+    "test special": function () {
+      sut.registerLinkType({
+        id: 1,
+        class: "foo",
+        fromHtml: function (node) {return node.getAttribute('href').replace(/_foo$/,'')},
+        toHtml: function (node, ref) {
+          node.setAttribute('href', ref+"_foo");
+        },
+      });
+      test.onEnd(function () {
+        sut.deregisterLinkType(1);
+      });
+      var html = Dom.h({div: {a: "a foo", $contenteditable: true, class: "foo", $href: 'link_to_foo'}});
+      assert.equals(sut.fromHtml(html), [['a foo'], [LINK, 0, 0, 5, 1, "link_to"]]);
+      assertConvert(html.outerHTML);
+    },
+
     "test multiple": function () {
       assertConvert('simple', '<div>simple</div>');
+      assertConvert('<div><b></b>x<i></i>y</div>');
       assertConvert('<div><b>cd</b><i>gh</i></div>');
       assertConvert('<div>ab<b>cd</b>ef<i>gh</i>ih</div>');
       assertConvert('<div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div>');
-      assertConvert('<div>hello <span class="link user" contenteditable="true" data-a="g1">Geoff Jacobsen</span></div>');
-      assertConvert('<div>hello <span class="link ticket" contenteditable="true" data-a="t123">Ticket 123</span></div>');
+      assertConvert('<div>hello <a contenteditable="true" href="#/foo1">Foo link</a></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");

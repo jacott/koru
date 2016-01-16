@@ -5,15 +5,20 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, SPAN = 6;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6;
 
-  var CODE_TO_LINK = [
-    'link user',
-    'link ticket',
+  var LINK_TO_HTML = [
+    {
+      id: 0,
+      class: "",
+      fromHtml: function (node) {return node.getAttribute('href')},
+      toHtml: function (node, ref) {node.setAttribute('href', ref)},
+    },
   ];
 
-  var LINK_TO_CODE = {};
-  CODE_TO_LINK.forEach(function (name, index) {LINK_TO_CODE[name] =  index});
+  var LINK_FROM_HTML = {
+    '': LINK_TO_HTML[0]
+  };
 
   var INLINE_TAGS = {
     B: 'inline',
@@ -120,11 +125,12 @@ define(function(require, exports, module) {
     B: fromInline(BOLD),
     I: fromInline(ITALIC),
 
-    SPAN: function (node, state) {
+    A: function (node, state) {
       var index = this.lines.length - 1;
-      var code = LINK_TO_CODE[node.className];
+      var code = LINK_FROM_HTML[node.className];
+
       if (code !== undefined) {
-        this.markup.push(SPAN, this.relative(index), this.lines[index].length, 0, code, node.getAttribute("data-a"));
+        this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, code.fromHtml(node));
         var pos = this.markup.length - 3;
         this.fromChildren(node, state);
         this.markup[pos] = this.lines[index].length;
@@ -271,15 +277,17 @@ define(function(require, exports, module) {
     return toInlineTag;
   };
 
-  function toSpan(state) {
+  function toLink(state) {
     var oldResult = state.result;
-    oldResult.appendChild(state.result = document.createElement('SPAN'));
-    state.result.className = CODE_TO_LINK[this.offset(-2)];
-    state.result.setAttribute('contenteditable', 'true');
-    state.result.setAttribute('data-a', this.offset(-1));
+    var link = state.result = document.createElement('A');
+    oldResult.appendChild(link);
+    var code = LINK_TO_HTML[this.offset(-2)];
+    code.class && (link.className = code.class);
+    link.setAttribute('contenteditable', 'true');
     this.toChildren(state);
+    code.toHtml(state.result, this.offset(-1));
     state.result = oldResult;
-  } toSpan.inline = true; toSpan.muInc = 6;
+  } toLink.inline = true; toLink.muInc = 6;
 
   var TO_RULES = [];
   TO_RULES[0] = toDiv;
@@ -289,7 +297,7 @@ define(function(require, exports, module) {
 
   TO_RULES[BOLD] = toInline('B');
   TO_RULES[ITALIC] = toInline('I');
-  TO_RULES[SPAN] = toSpan;
+  TO_RULES[LINK] = toLink;
 
   function isInlineNode(item) {
     return item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
@@ -299,6 +307,18 @@ define(function(require, exports, module) {
     toHtml: toHtml,
 
     fromHtml: fromHtml,
+
+    registerLinkType: function (data) {
+      LINK_TO_HTML[data.id] = data;
+      LINK_FROM_HTML[data.class] = data;
+    },
+    deregisterLinkType: function (id) {
+      var data = LINK_TO_HTML[id];
+      if (data) {
+        delete LINK_TO_HTML[id];
+        delete LINK_FROM_HTML[data.class];
+      }
+    },
 
     INLINE_TAGS: INLINE_TAGS,
   };

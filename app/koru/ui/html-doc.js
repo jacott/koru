@@ -243,7 +243,7 @@ define(function(require, exports, module) {
     set id(value) {this.setAttribute('id', value)},
     get id() {return this.getAttribute('id')},
     set className(value) {this.setAttribute('class', value)},
-    get className() {return this.getAttribute('class')},
+    get className() {return this.getAttribute('class') || ''},
     get outerHTML() {
       var tn = this.tagName.toLowerCase();
       var attrs = this.attributes;
