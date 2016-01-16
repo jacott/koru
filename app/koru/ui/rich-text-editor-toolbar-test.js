@@ -30,6 +30,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('>.rtToolbar:first-child>div', function () {
           assert.dom('button[name=bold]', 'B', function () {v.bold = this});
           assert.dom('button[name=italic]', 'I', function () {v.italic = this});
+          assert.dom('button[name=underline]', 'U', function () {v.underline = this});
           assert.dom('button[name=link]', '', function () {v.link = this});
 
         });

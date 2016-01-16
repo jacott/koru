@@ -5,7 +5,7 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7;
 
   var LINK_TO_HTML = [
     {
@@ -95,10 +95,13 @@ define(function(require, exports, module) {
   function fromInline(code) {
     return function fromInline(node, state) {
       var index = this.lines.length - 1;
-      this.markup.push(code, this.relative(index), this.lines[index].length, 0);
-      var pos = this.markup.length - 1;
-      this.fromChildren(node, state);
-      this.markup[pos] = this.lines[index].length;
+      var hasText =  node.textContent.length !== 0;
+      if (hasText) {
+        this.markup.push(code, this.relative(index), this.lines[index].length, 0);
+        var pos = this.markup.length - 1;
+        this.fromChildren(node, state);
+        this.markup[pos] = this.lines[index].length;
+      }
     };
   }
 
@@ -123,6 +126,7 @@ define(function(require, exports, module) {
     BLOCKQUOTE: fromBlock(NEST),
     P: fromDiv,
     B: fromInline(BOLD),
+    U: fromInline(UNDERLINE),
     I: fromInline(ITALIC),
 
     A: function (node, state) {
@@ -297,6 +301,7 @@ define(function(require, exports, module) {
 
   TO_RULES[BOLD] = toInline('B');
   TO_RULES[ITALIC] = toInline('I');
+  TO_RULES[UNDERLINE] = toInline('U');
   TO_RULES[LINK] = toLink;
 
   function isInlineNode(item) {
