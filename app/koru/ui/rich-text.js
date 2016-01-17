@@ -131,17 +131,12 @@ define(function(require, exports, module) {
 
     A: function (node, state) {
       var index = this.lines.length - 1;
-      var code = LINK_FROM_HTML[node.className];
+      var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
 
-      if (code !== undefined) {
-        this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, code.fromHtml(node));
-        var pos = this.markup.length - 3;
-        this.fromChildren(node, state);
-        this.markup[pos] = this.lines[index].length;
-      }
-      else {
-        this.fromChildren(node, state);
-      }
+      this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, code.fromHtml(node));
+      var pos = this.markup.length - 3;
+      this.fromChildren(node, state);
+      this.markup[pos] = this.lines[index].length;
     },
   };
 

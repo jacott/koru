@@ -138,6 +138,7 @@ define(function (require, exports, module) {
       assertConvert('<div><b>Hello </b></div><div><b><i><br></i></b></div><div><b><i>dffd</i></b></div><div><b><i><br></i></b></div><div><b>World</b></div>',
                     '<div><b>Hello </b></div><div><br></div><div><b><i>dffd</i></b></div><div><br></div><div><b>World</b></div>');
       assertConvert('simple', '<div>simple</div>');
+      assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test">test</a></div>');
       assertConvert('<div><b></b>x<i></i>y</div>', '<div>xy</div>');
       assertConvert('<div><b><i><u>three</u></i></b></div>');
       assertConvert('<div><div><b><br></b></div><div>next</div></div>', '<div><br></div><div>next</div>');
