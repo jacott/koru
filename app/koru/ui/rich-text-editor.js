@@ -194,7 +194,7 @@ define(function(require, exports, module) {
         ctx.mentionState = 3;
         ctx.selectItem = RichTextMention.selectItem({
           type: ctx.mentionType,
-          mentions: ctx.data.options.mentions,
+          mentions: ctx.data.extend.mentions,
           inputCtx: ctx,
           inputElm: ctx.inputElm,
           span: span,
@@ -228,9 +228,11 @@ define(function(require, exports, module) {
   });
 
   function mentionKey(ctx, code) {
-    var mentions = ctx.data.options.mentions;
+    var mentions = ctx.data.extend;
+    mentions = mentions && mentions.mentions;
+    if (! mentions) return;
     var id = String.fromCharCode(code);
-    if (mentions && mentions[id])
+    if (mentions[id])
       return id;
   }
 

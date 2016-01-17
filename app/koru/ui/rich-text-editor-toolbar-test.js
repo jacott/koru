@@ -13,10 +13,11 @@ isClient && define(function (require, exports, module) {
       v = {};
       var editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
-      ]), options: {id: "Foo", mentions: {'@': {
-        buttonClass: 'myButton',
-        list: function () {}
-      }}}});
+      ]), options: {id: "Foo"}, extend: {
+        mentions: {'@': {
+          buttonClass: 'myButton',
+          list: function () {}
+        }}}});
 
       v.origText = editor.value;
       document.body.appendChild(editor);

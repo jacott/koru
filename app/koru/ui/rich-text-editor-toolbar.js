@@ -48,7 +48,7 @@ define(function(require, exports, module) {
 
     mentions: function () {
       if ($.element._koruEnd) return;
-      var mentions = $.ctx.parentCtx.data.options;
+      var mentions = $.ctx.parentCtx.data.extend;
       mentions = mentions && mentions.mentions;
       if (! mentions) return;
       var frag = document.createDocumentFragment();
@@ -113,7 +113,7 @@ define(function(require, exports, module) {
 
       return range && RichTextMention.$autoRender({
         type: button.getAttribute('data-type'),
-        mentions: $.ctx.parentCtx.data.options.mentions,
+        mentions: $.ctx.parentCtx.data.extend.mentions,
         inputCtx: $.ctx.parentCtx,
         close: close, range: range,
         value: range.toString(),

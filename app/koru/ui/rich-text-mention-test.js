@@ -18,14 +18,16 @@ isClient && define(function (require, exports, module) {
 
       v.fooFunc = test.stub();
       document.body.appendChild(RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello\xa0'), options: {
-        id: 'TestRichTextEditor', mentions: {
-          '@': {
-            buttonClass: 'atMention',
-            list: function (frag, text) {v.fooFunc(frag, text)},
-            html: function (elm) {return v.fooHtmlFunc(elm)},
-          }
+        id: 'TestRichTextEditor'}, extend: {
+          mentions: {
+            '@': {
+              buttonClass: 'atMention',
+              list: function (frag, text) {v.fooFunc(frag, text)},
+              html: function (elm) {return v.fooHtmlFunc(elm)},
+            }
+          },
         },
-      }}));
+      }));
 
       document.getElementById('TestRichTextEditor').style.position = 'relative';
 
