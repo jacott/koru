@@ -20,13 +20,20 @@ isClient && define(function (require, exports, module) {
     },
 
     "test attrs helper": function () {
-      assert.dom(sut.$autoRender({content: '', options: {class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
-                                                         $other: 'x', 'data-foo': 'daf'}}), function () {
+      var elm = sut.$autoRender({
+        content: '', options: {
+          class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
+          placeholder: 'place holder text',
+          $other: 'x', 'data-foo': 'daf',
+        }
+      });
+      assert.dom(elm, function () {
         assert.same(this.className, 'foo bar richTextEditor');
         assert.same(this.getAttribute('$other'), null);
         assert.same(this.getAttribute('type'), null);
         assert.same(this.getAttribute('data-foo'), 'daf');
         assert.same(this.id, 'FOO');
+        assert.dom('.input[placeholder="place holder text"]');
       });
     },
 

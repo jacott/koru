@@ -194,13 +194,13 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('#TestRichTextEditor>label', function () {
         assert.dom('span.name', 'Name');
-        assert.dom('#nameId.richTextEditor[data-errorfield="name"][placeholder="Foo"]:not([type])', function () {
+        assert.dom('#nameId.richTextEditor[data-errorfield="name"]:not([type])', function () {
           var data = $.data(this);
           assert.equals(data.extend.mentions, {'@': 'testMentions'});
 
 
           assert.dom('.rtToolbar');
-          assert.dom('>.input', 'foobar', function () {
+          assert.dom('>.input[placeholder="Foo"]', 'foobar', function () {
             assert.same(this.innerHTML, '<b>foo</b><br>bar');
           });
           assert.same(this.value.innerHTML, '<b>foo</b><br>bar');

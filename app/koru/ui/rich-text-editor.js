@@ -65,7 +65,9 @@ define(function(require, exports, module) {
       var options = this.options;
       for (var id in options) {
         if (id === 'type' || id[0] === '$') continue;
-        elm.setAttribute(id, options[id]);
+        (id === 'placeholder' ?
+         $.ctx.inputElm : elm)
+          .setAttribute(id, options[id]);
       }
       Dom.addClass(elm, 'richTextEditor');
     },
