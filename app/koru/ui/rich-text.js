@@ -133,10 +133,12 @@ define(function(require, exports, module) {
       var index = this.lines.length - 1;
       var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
 
-      this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, code.fromHtml(node));
-      var pos = this.markup.length - 3;
+      this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, 0);
+      var pos = this.markup.length - 1;
       this.fromChildren(node, state);
       this.markup[pos] = this.lines[index].length;
+      this.lines[index] += ' (' + code.fromHtml(node) + ')';
+      this.markup[pos - 2] = this.lines[index].length;
     },
   };
 
@@ -282,8 +284,13 @@ define(function(require, exports, module) {
     oldResult.appendChild(link);
     var code = LINK_TO_HTML[this.offset(-2)];
     code.class && (link.className = code.class);
+    var lineEnd = state.inlineEnd;
+    state.inlineEnd = this.offset(-1);
+    var ref = this.line.slice(state.inlineEnd + 2, lineEnd - 1);
     this.toChildren(state);
-    code.toHtml(state.result, this.offset(-1));
+    state.inlineEnd = lineEnd;
+    var tnode = state.result.lastChild;
+    code.toHtml(state.result, ref);
     state.result = oldResult;
   } toLink.inline = true; toLink.muInc = 6;
 

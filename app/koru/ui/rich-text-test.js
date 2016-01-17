@@ -130,7 +130,7 @@ define(function (require, exports, module) {
         sut.deregisterLinkType(1);
       });
       var html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
-      assert.equals(sut.fromHtml(html), [['a foo'], [LINK, 0, 0, 5, 1, "link_to"]]);
+      assert.equals(sut.fromHtml(html), [['a foo (link_to)'], [LINK, 0, 0, 15, 1, 5]]);
       assertConvert(html.outerHTML);
     },
 
