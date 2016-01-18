@@ -120,6 +120,51 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test title": function () {
+      var keyMap = test.spy(sut.keyMap, 'getTitle');
+      sut.title('foo', 'insertOrderedList');
+      assert.calledWith(keyMap, 'foo', 'insertOrderedList');
+    },
+
+    "test lists": function () {
+      v.ec = test.stub(document, 'execCommand');
+
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.keydown(this, '7', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(v.ec, 'insertOrderedList');
+
+        TH.keydown(this, '8', {ctrlKey: true, shiftKey: true});
+        assert.calledWith(v.ec, 'insertUnorderedList');
+      });
+    },
+
+    "test indent, outdent": function () {
+      v.ec = test.stub(document, 'execCommand');
+      var keyMap = test.spy(sut.keyMap, 'exec');
+
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.keydown(this, ']', {ctrlKey: true});
+        assert.calledOnceWith(v.ec, 'indent');
+
+        TH.keydown(this, '[', {ctrlKey: true});
+        assert.calledWith(v.ec, 'outdent');
+
+        v.ec.reset();
+
+        TH.keydown(this, 'Ý', {ctrlKey: true});
+        assert.calledWith(v.ec, 'indent');
+
+        TH.keydown(this, 'Û', {ctrlKey: true});
+        assert.calledWith(v.ec, 'outdent');
+      });
+
+      assert.calledWith(keyMap, TH.match.any, 'ignoreFocus');
+    },
+
     "paste": {
       setUp: function () {
         v.ec = test.stub(document, 'execCommand');

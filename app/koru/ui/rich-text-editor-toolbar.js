@@ -46,6 +46,14 @@ define(function(require, exports, module) {
       Dom.setClass('on', getTag('A'));
     },
 
+    title: function (title) {
+      if ($.element.getAttribute('title')) return;
+
+      var action = $.element.getAttribute('name');
+
+      $.element.setAttribute('title', RichTextEditor.title(title, action));
+    },
+
     mentions: function () {
       if ($.element._koruEnd) return;
       var mentions = $.ctx.parentCtx.data.extend;

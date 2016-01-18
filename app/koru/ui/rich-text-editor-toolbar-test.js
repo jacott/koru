@@ -37,6 +37,10 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=underline]', 'U', function () {v.underline = this});
           assert.dom('button[name=link]', '', function () {v.link = this});
 
+          assert.dom('button[name=outdent][title="Decrease indent [ctrl-[]"]');
+          assert.dom('button[name=indent][title="Increase indent [ctrl-]]"]');
+          assert.dom('button[name=insertOrderedList][title="Numbered list [ctrl-shift-7]"]');
+          assert.dom('button[name=insertUnorderedList][title="Bulleted list [ctrl-shift-8]"]');
         });
 
         // check toolbar state after cusor moved

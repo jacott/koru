@@ -20,12 +20,25 @@ define(function(require, exports, module) {
     bold: true,
     italic: true,
     underline: true,
+    insertOrderedList: true,
+    insertUnorderedList: true,
+    outdent: true,
+    indent: true,
   });
 
   var keyMap = KeyMap(mapActions({
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
+    insertOrderedList: ctrl+shift+'7',
+    insertUnorderedList: ctrl+shift+'8',
+    outdent: ctrl+'Û', // '['
+    indent: ctrl+'Ý', // ']'
+  }));
+
+  keyMap.addKeys(mapActions({
+    outdent: ctrl+'[',
+    indent: ctrl+']',
   }));
 
   function commandify(func, cmd) {
@@ -97,6 +110,10 @@ define(function(require, exports, module) {
       Dom.remove(ctx.selectItem);
     },
 
+    title: function (title, action) {
+      return keyMap.getTitle(title, action);
+    },
+
     clear: function (elm) {
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
@@ -139,6 +156,8 @@ define(function(require, exports, module) {
       }
       return execCommand("insertHTML", t);
     },
+
+    keyMap: keyMap,
   });
 
   Tpl.$events({
@@ -173,7 +192,7 @@ define(function(require, exports, module) {
       }
 
       if (event.ctrlKey) {
-        keyMap.exec(event);
+        keyMap.exec(event, 'ignoreFocus');
         return;
       }
 
