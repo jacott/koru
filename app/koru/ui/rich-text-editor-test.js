@@ -102,6 +102,17 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test focus": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.trigger(this, 'focusin');
+        assert.className(this.parentNode, 'focus');
+        TH.trigger(this, 'focusout');
+        refute.className(this.parentNode, 'focus');
+      });
+    },
+
     "test bold, italic, underline": function () {
       v.ec = test.stub(document, 'execCommand');
 

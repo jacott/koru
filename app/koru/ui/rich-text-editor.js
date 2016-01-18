@@ -96,10 +96,16 @@ define(function(require, exports, module) {
     inputElm.appendChild(value);
   }
 
+  function focusInput(event) {
+    Dom.setClass('focus', event.type === 'focusin', event.currentTarget.parentNode);
+  }
+
   Tpl.$extend({
     $created: function (ctx, elm) {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
+      ctx.inputElm.addEventListener('focusin', focusInput);
+      ctx.inputElm.addEventListener('focusout', focusInput);
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
       Dom.nextFrame(function () {
         ctx.inputElm.focus();
@@ -107,6 +113,8 @@ define(function(require, exports, module) {
     },
 
     $destroyed: function (ctx) {
+      ctx.inputElm.addEventListener('focusin', focusInput);
+      ctx.inputElm.addEventListener('focusout', focusInput);
       Dom.remove(ctx.selectItem);
     },
 
