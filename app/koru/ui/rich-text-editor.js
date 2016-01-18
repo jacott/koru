@@ -169,6 +169,15 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
+    'input': function (event) {
+      var input = event.target;
+      var fc = input.firstChild;
+      if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
+        input.removeChild(fc);
+      util.forEach(input.querySelectorAll('[style]'), function (elm) {
+        elm.removeAttribute('style');
+      });
+    },
     'paste': function (event) {
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;

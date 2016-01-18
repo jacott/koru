@@ -236,16 +236,28 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test typing": function () {
+    "test empty": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
+      Dom.flushNextFrame();
+
+      assert.dom('.input[contenteditable=true]', function () {
+        Dom.removeChildren(this);
+        this.appendChild(Dom.h({br: null}));
+        TH.trigger(this, 'input');
+        assert.same(this.firstChild, null);
+      });
+    },
+
+    "test blockquote": function () {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
       Dom.flushNextFrame();
 
       assert.dom('.input[contenteditable=true]', function () {
-        this.style.padding = '5px';
-        this.style.margin = '20px';
-        this.style.width = '500px';
-        this.style.border = '1px solid black';
+        TH.keydown(this, ']', {ctrlKey: true});
+        assert.dom('blockquote', 'hello', function () {
+          assert.same(this.getAttribute('style'), null);
+        });
       });
     },
   });
