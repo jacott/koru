@@ -154,16 +154,14 @@ define(function(require, exports, module) {
     this.markup = markup || [];
     this.lidx = this.midx = 0;
     this.lineCount = [this.offset(1)];
-    var nextMarkup = this.nextMarkupLine();
     var state = {result: html, rule: toDiv, begun: true};
 
     var nrule;
     for(var index = 0; index < lines.length; ++index) {
       this.line = lines[this.lidx = index];
-      while (index === nextMarkup && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
+      while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
         state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
         state.rule.call(this, state);
-        nextMarkup = this.nextMarkupLine();
       }
       state.inlineStart = 0;
       state.inlineEnd = this.line.length;
@@ -190,8 +188,7 @@ define(function(require, exports, module) {
     },
 
     nextMarkupLine: function () {
-      var line = this.lineCount[this.midx];
-      return line;
+      return this.lineCount[this.midx];
     },
 
     endMarkup: function () {
@@ -258,8 +255,10 @@ define(function(require, exports, module) {
 
   function toBlock(tag) {
     return function(state) {
-      if (! state.begun)
+      if (! state.begun) {
+        this.nextRule(3);
         return state.begun = true;
+      }
       var oldResult = state.result;
       oldResult.appendChild(state.result = document.createElement(tag));
       this.toChildren(state);

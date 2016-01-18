@@ -132,7 +132,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test title": function () {
-      var keyMap = test.spy(sut.keyMap, 'getTitle');
+      var keyMap = test.stub(sut.keyMap, 'getTitle');
       sut.title('foo', 'insertOrderedList');
       assert.calledWith(keyMap, 'foo', 'insertOrderedList');
     },

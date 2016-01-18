@@ -135,7 +135,10 @@ define(function (require, exports, module) {
     },
 
     "test multiple": function () {
-      assertConvert('<div><b>Hello </b></div><div><b><i><br></i></b></div><div><b><i>dffd</i></b></div><div><b><i><br></i></b></div><div><b>World</b></div>',
+      assertConvert('<ol><li>hey</li><ol><li>now</li></ol></ol>');
+      assertConvert('<ol><li><b>hey</b></li><ol><li><b>now</b></li></ol></ol>');
+      assertConvert('<div><b>Hello </b></div><div><b><i><br></i></b></div><div><b><i>dffd</i></b></div>' +
+                    '<div><b><i><br></i></b></div><div><b>World</b></div>',
                     '<div><b>Hello </b></div><div><br></div><div><b><i>dffd</i></b></div><div><br></div><div><b>World</b></div>');
       assertConvert('simple', '<div>simple</div>');
       assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test">test</a></div>');
