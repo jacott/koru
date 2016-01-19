@@ -188,7 +188,7 @@ define(function(require, exports, module) {
             var text = md[0].join('\n');
 
             var div = document.createElement('div');
-            if (Tpl.insert(RichText.toHtml(text, md[1], div).firstChild, 'inner') || Tpl.insert(text))
+            if (Tpl.insert(RichText.toHtml(text, md[1], div), 'inner') || Tpl.insert(text))
               Dom.stopEvent();
             return;
           }

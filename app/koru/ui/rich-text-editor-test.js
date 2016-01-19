@@ -232,7 +232,7 @@ isClient && define(function (require, exports, module) {
         assert.called(Dom.stopEvent);
 
         refute.called(v.insertText);
-        assert.calledWith(v.insertHTML, 'insertHTML', false, '<b>bold</b> world');
+        assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><b>bold</b> world</div>');
       },
     },
 
