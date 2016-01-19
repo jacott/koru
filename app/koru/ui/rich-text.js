@@ -90,16 +90,18 @@ define(function(require, exports, module) {
       var nodes = parent.childNodes;
       var last = state.last = nodes.length - 1;
       for(var index = 0; index <= last; ++index) {
-        this.needNL && this.newLine();
         var node = nodes[index];
         if(node.tagName === 'BR') {
-          if (node !== parent.lastChild)
+          if (this.needNL)
             this.newLine();
+          else
+            this.needNL = true;
           continue;
         }
 
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
+            this.needNL && this.newLine();
             this.applyInlines();
             this.lines[this.lines.length - 1] += node.textContent;
           } else {
@@ -112,26 +114,16 @@ define(function(require, exports, module) {
             this.inlineIdx = Math.min(this.inlineIdx, this.inlines.length);
           }
         } else {
-          this.inlineIdx && this.newLine();
-          state.rule.call(this, node, state);
-          this.resetInlines();
           this.needNL = true;
+          state.rule.call(this, node, state);
+          this.needNL = true;
+          this.resetInlines();
         }
-      }
-    },
-
-    fromText: function(parent, node) {
-      if (node.nodeType === TEXT_NODE || node.tagName === 'BR') {
-        this.lines.push(node.textContent);
-        return true;
       }
     },
   };
 
-
   function fromDiv(node, state) {
-    if (this.fromText(node, state)) return;
-
     var rule = FROM_RULE[node.tagName] || fromDiv;
     this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
   }
@@ -148,7 +140,7 @@ define(function(require, exports, module) {
   function fromBlock(code) {
     return function fromBlock(node, state) {
       if (state.start === undefined) {
-        state.start = this.lines.length - 1;
+        state.start = this.lines.length;
           state.endMarker = this.markup.length + 2;
         this.markup.push(code, this.relative(state.start), 0);
       }

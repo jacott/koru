@@ -135,18 +135,19 @@ define(function (require, exports, module) {
     },
 
     "test multiple": function () {
+      assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
+                    '<ol><li>hey</li></ol><div>now</div><div><br></div>');
+      assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
+      assertConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
+                   '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
+      assertConvert('hello<div>world</div>', '<div>hello</div><div>world</div>');
       assertConvert('<ol><li>hey</li><ol><li>now</li></ol></ol>');
       assertConvert('<b>t<i>w</i>o<br>lines</b>', '<div><b>t<i>w</i>o</b></div><div><b>lines</b></div>');
       assertConvert('<b>si<i>m</i>ple</b>', 'wrap');
       assertConvert('<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
-      assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert('<blockquote><ul><li>one</li><ol><li>2.1</li><li>2.2</li></ol><li>TH<b><i>R</i></b>EE 3</li></ul></blockquote>');
       assertConvert('<section><section>sec<span>ti</span>on</section></section>', '<div>section</div>');
       assertConvert('<ol><li><b>hey</b></li><ol><li><b>now</b></li></ol></ol>');
-      assertConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
-                   '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
-      assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
-                    '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('<div><b>Hello </b></div><div><b><i><br></i></b></div><div><b><i>dffd</i></b></div>' +
                     '<div><b><i><br></i></b></div><div><b>World</b></div>',
                     '<div><b>Hello </b></div><div><br></div><div><b><i>dffd</i></b></div><div><br></div><div><b>World</b></div>');
