@@ -136,7 +136,17 @@ define(function (require, exports, module) {
 
     "test multiple": function () {
       assertConvert('<ol><li>hey</li><ol><li>now</li></ol></ol>');
+      assertConvert('<b>t<i>w</i>o<br>lines</b>', '<div><b>t<i>w</i>o</b></div><div><b>lines</b></div>');
+      assertConvert('<b>si<i>m</i>ple</b>', 'wrap');
+      assertConvert('<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
+      assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
+      assertConvert('<blockquote><ul><li>one</li><ol><li>2.1</li><li>2.2</li></ol><li>TH<b><i>R</i></b>EE 3</li></ul></blockquote>');
+      assertConvert('<section><section>sec<span>ti</span>on</section></section>', '<div>section</div>');
       assertConvert('<ol><li><b>hey</b></li><ol><li><b>now</b></li></ol></ol>');
+      assertConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
+                   '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
+      assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
+                    '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('<div><b>Hello </b></div><div><b><i><br></i></b></div><div><b><i>dffd</i></b></div>' +
                     '<div><b><i><br></i></b></div><div><b>World</b></div>',
                     '<div><b>Hello </b></div><div><br></div><div><b><i>dffd</i></b></div><div><br></div><div><b>World</b></div>');
@@ -149,16 +159,16 @@ define(function (require, exports, module) {
       assertConvert('<div>ab<b>cd</b>ef<i>gh</i>ih</div>');
       assertConvert('<div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div>');
       assertConvert('<div>hello <a href="#/foo1">Foo link</a></div>');
-      assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");
-      assertConvert('<blockquote><ul><li>one</li><ol><li>2.1</li><li>2.2</li></ol><li>TH<b><i>R</i></b>EE 3</li></ul></blockquote>');
-      assertConvert('<section><section>sec<span>ti</span>on</section></section>', '<div>section</div>');
     },
   });
 
   function assertConvert(text, expect) {
-    expect = expect || text;
+    if (expect === 'wrap')
+      expect = "<div>"+text+"</div>";
+    else
+      expect = expect || text;
     var html = document.createElement('p');
     html.innerHTML = text;
     var rt = sut.fromHtml(html);
