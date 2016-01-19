@@ -56,6 +56,8 @@ define(function(require, exports, module) {
         return document.createTextNode(body);
     }
 
+    if (body.nodeType) return body;
+
     if (Array.isArray(body)) {
       var elm = document.createDocumentFragment();
       body.forEach(function (item) {

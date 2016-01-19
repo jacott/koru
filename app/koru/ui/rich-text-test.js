@@ -134,7 +134,16 @@ define(function (require, exports, module) {
       assertConvert(html.outerHTML);
     },
 
+    "test skips empty text": function () {
+      var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
+      var rt = sut.fromHtml(html);
+      assert.equals(rt, [['one', 'two'], [1, 0, 1]]);
+    },
+
     "test multiple": function () {
+      assertConvert('<ol><li>Hello</li><li><a href=\"/#u/123\">link</a> </li></ol>');
+      assertConvert('<ol><li>Hello</li><li><a href="/#u/123">link</a> <br></li></ol>',
+                    '<ol><li>Hello</li><li><a href=\"/#u/123\">link</a> </li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
                     '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');

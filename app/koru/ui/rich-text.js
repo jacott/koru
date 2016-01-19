@@ -31,7 +31,7 @@ define(function(require, exports, module) {
   function fromHtml(html) {
     var builder = new MarkupBuilder();
     builder.fromChildren(html, {rule: fromDiv});
-    var markup = util.flatten(builder.markup);
+    var markup = builder.markup;
     return [builder.lines, markup.length ? markup : null];
   }
 
@@ -101,6 +101,7 @@ define(function(require, exports, module) {
 
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
+            if (! node.textContent) continue;
             this.needNL && this.newLine();
             this.applyInlines();
             this.lines[this.lines.length - 1] += node.textContent;
@@ -141,8 +142,8 @@ define(function(require, exports, module) {
     return function fromBlock(node, state) {
       if (state.start === undefined) {
         state.start = this.lines.length;
-          state.endMarker = this.markup.length + 2;
         this.markup.push(code, this.relative(state.start), 0);
+        state.endMarker = this.markup.length - 1;
       }
       var rule = FROM_RULE[node.tagName] || fromDiv;
       this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
