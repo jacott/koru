@@ -57,22 +57,9 @@ define(function(require, exports, module) {
       Dom.addClass(this, 'selected');
     },
 
-    'mousedown .rtMention>div>*': function (event) {
-      Dom.stopEvent();
-      $.ctx.mousedown = true;
-    },
-
-    'focusout': function (event) {
-      if ($.ctx.mousedown)
-        $.ctx.mousedown = null;
-      else
-        Dom.remove(this);
-    },
-
     'mouseup .rtMention>div>*': function (event) {
       var ctx = $.ctx;
       acceptItem(event, this);
-      ctx.mousedown = false;
     },
 
     'input .rtMention>input': function (event) {
@@ -82,7 +69,7 @@ define(function(require, exports, module) {
       $.ctx.updateAllTags();
       if (data.span) {
         data.span.textContent = data.value.replace(/ /g, '\xa0');
-        transformList(data, event.currentTarget, true);
+        transformList(data, event.currentTarget);
       }
     },
 
@@ -231,9 +218,10 @@ define(function(require, exports, module) {
     data.value = data.span.textContent;
     var al = Tpl.$autoRender(data);
 
+    Modal.append('on', {container: al, origin: data.span, ignoreTab: true});
     transformList(data, al);
 
-    var input = al.firstChild;
+    var input = al.firstChild.firstChild;
     input.value = data.value;
     data.span.style.opacity = "0";
 
@@ -242,10 +230,12 @@ define(function(require, exports, module) {
     return al;
   }
 
-  function transformList(data, al, noAppend) {
+  function transformList(data, al) {
     // noAppend needed to stop firefox loosing focus
-    Modal.append('on', {container: al, popup: al, noAppend: noAppend, origin: data.span});
-    Modal.append('below', {container: al.lastElementChild, popup: al.lastElementChild, noAppend: true, origin: al.firstElementChild});
+    var rtMention = al.firstElementChild;
+    Modal.reposition('on', {popup: rtMention, origin: data.span});
+    var list = rtMention.lastElementChild;
+    Modal.reposition('below', {popup: list, origin: rtMention.firstElementChild});
   }
 
   return Tpl;

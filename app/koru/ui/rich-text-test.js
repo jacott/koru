@@ -134,6 +134,10 @@ define(function (require, exports, module) {
       assertConvert(html.outerHTML);
     },
 
+    "//test no javascript in link": function () {
+      // 'javascript:alert("bad")'
+    },
+
     "test skips empty text": function () {
       var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
       var rt = sut.fromHtml(html);

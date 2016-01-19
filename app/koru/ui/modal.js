@@ -83,18 +83,11 @@ define(function(require, exports, module) {
       return this.append('below', options);
     },
 
-    append: function (pos, options) {
+    reposition: function (pos, options) {
       pos = pos || 'below';
       var height = window.innerHeight;
-      var isNested = ! options.popup;
-      if (isNested) {
-        options = exports.init(options);
-      } else {
-        options = util.extend({container: options.popup}, options);
-      }
-
       var ps = options.popup.style;
-      var bbox = options.origin.getBoundingClientRect();
+      var bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
       switch (pos) {
       case 'above':
@@ -109,8 +102,6 @@ define(function(require, exports, module) {
         ps.bottom = '';
         ps.top = bbox.top + 'px';
       }
-      options.noAppend ||
-        document.body.appendChild(options.container);
       var ppos = options.popup.getBoundingClientRect();
       switch (pos) {
       case 'above':
@@ -140,7 +131,19 @@ define(function(require, exports, module) {
           ps.left = '';
         }
       }
+      return options;
+    },
 
+    append: function (pos, options) {
+      options.noAppend || document.body.appendChild(options.container || options.popup);
+
+      if (options.popup) {
+        options = util.extend({container: options.popup}, options);
+      } else {
+        options = exports.init(options);
+      }
+
+      return this.reposition(pos, options);
     },
   };
 });

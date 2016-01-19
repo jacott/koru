@@ -146,11 +146,14 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('input', function () {
           var updspy = test.spy(Dom.getCtx(this), 'updateAllTags');
-          var mdlspy = test.spy(Modal, 'append');
+          var mdlspy = test.spy(Modal, 'reposition');
 
+          var input = this;
           TH.input(this, 'jjg');
           assert(updspy.calledBefore(mdlspy));
-          assert.calledWith(mdlspy, 'on', TH.match(function (obj) {return obj.noAppend;}));
+          assert.calledWith(mdlspy, 'on', TH.match(function (obj) {
+            return obj.popup === input.parentNode && obj.origin === v.input.querySelector('.ln');
+          }));
         });
         assert.dom('.rtMention.inline>div:not(.empty)');
       },
@@ -190,21 +193,20 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test focusout aborts list": function () {
-        assert.dom('.rtMention', function () {
-          TH.trigger('.rtMention>div>*', 'mousedown');
-          assert.isTrue(Dom.getCtx(this).mousedown);
-          TH.trigger(this, 'focusout');
-          assert.isNull(Dom.getCtx(this).mousedown);
+      "test click out aborts list": function () {
+        assert.dom('.rtMention input', function () {
+          TH.keydown(40);
         });
 
         assert.dom('.rtMention');
 
-        assert.dom('.rtMention', function () {
-          TH.trigger(this, 'focusout');
-        });
+        TH.mouseDownUp('.glassPane');
 
         refute.dom('.rtMention');
+
+        assert.dom('.input', function () {
+          assert.same(this.innerHTML, 'hello @g');
+        });
       },
 
       "test tab": function () {
@@ -280,7 +282,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test input box uses modal": function () {
-      test.spy(Modal, 'append');
+      test.spy(Modal, 'reposition');
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -289,11 +291,14 @@ isClient && define(function (require, exports, module) {
       var ln = document.getElementsByClassName('ln')[0];
       var unbb = ln.getBoundingClientRect();
 
-      assert.dom('body>.rtMention', function () {
-        assert.calledWith(Modal.append, 'on', {container: this, popup: this, noAppend: TH.match.falsy, origin: TH.match.field('tagName', 'SPAN')});
+      assert.dom('.glassPane>.rtMention', function () {
+        assert.calledWith(Modal.reposition, 'on', {
+          popup: this,
+          origin: TH.match.field('tagName', 'SPAN'),
+        });
         var minp = this.querySelector('input');
         assert.dom('.empty', function () {
-          assert.calledWith(Modal.append, 'below', {container: this, popup: this, noAppend: true, origin: minp});
+          assert.calledWith(Modal.reposition, 'below', {popup: this, origin: minp});
         });
       });
     },
@@ -470,7 +475,7 @@ isClient && define(function (require, exports, module) {
         TH.keypress(this, 'h');
       });
 
-      assert.dom('.rtMention', function () {
+      assert.dom('.glassPane', function () {
         Dom.remove(this);
       });
 

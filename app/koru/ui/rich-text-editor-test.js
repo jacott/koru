@@ -6,6 +6,9 @@ isClient && define(function (require, exports, module) {
   var RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
   var util = require('koru/util');
   var RichText = require('./rich-text');
+  var KeyMap = require('./key-map');
+
+  var ctrl = KeyMap.ctrl;
 
   TH.testCase(module, {
     setUp: function () {
@@ -259,6 +262,130 @@ isClient && define(function (require, exports, module) {
           assert.same(this.getAttribute('style'), null);
         });
       });
+    },
+
+    "links": {
+      setUp: function () {
+        document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
+
+        Dom.flushNextFrame();
+      },
+
+      "test changing a link": function () {
+        assert.dom('a', 'world', function () {
+          TH.setRange(this.firstChild, 3);
+          v.pos = this.getBoundingClientRect();
+        });
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        assert.dom('.rtLink', function () {
+          assert.cssNear(this, 'top', v.pos.bottom);
+          assert.cssNear(this, 'left', v.pos.left);
+
+          assert.dom('label>input[name=text]', {value: "world"}, function () {
+            TH.input(this, "mars");
+          });
+          assert.dom('label>input[name=link]', {value: '/#/two'}, function () {
+            assert.same(document.activeElement, this);
+
+            TH.input(this, 'http://cruel-mars.org');
+          });
+          TH.trigger(this, 'submit');
+        });
+        assert.dom('.richTextEditor>.input', function () {
+          assert.dom('a[href="http://cruel-mars.org"]', 'mars', function () {
+            assert.same(this.previousSibling.textContent, '\xa0');
+            assert.same(this.nextSibling, null);
+          });
+          assert.same(document.activeElement, this);
+          assert.dom('a', {count: 1});
+        });
+      },
+
+      "test adding link with selection": function () {
+        assert.dom('b', 'Hello', function () {
+          TH.setRange(this.firstChild, 0, this.firstChild, 4);
+          v.pos = Dom.getRange().getBoundingClientRect();
+        });
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        assert.dom('.rtLink', function () {
+          assert.cssNear(this, 'top', v.pos.bottom);
+          assert.cssNear(this, 'left', v.pos.left);
+
+          assert.dom('label>input[name=text]', {value: "Hell"}, function () {
+            TH.input(this, "Goodbye");
+          });
+          assert.dom('label>input[name=link]', {value: ''}, function () {
+            assert.same(document.activeElement, this);
+
+            TH.input(this, 'http://cruel-world.org');
+          });
+          TH.trigger(this, 'submit');
+        });
+        assert.dom('.richTextEditor>.input', function () {
+          assert.dom('a[href="http://cruel-world.org"]', 'Goodbye', function () {
+            assert.same(this.nextSibling.textContent, "o");
+          });
+          assert.same(document.activeElement, this);
+          assert.dom('a', {count: 2});
+        });
+      },
+
+      "test adding link no selection": function () {
+        assert.dom('b', 'Hello', function () {
+          TH.setRange(this.firstChild, 2);
+        });
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        assert.dom('.rtLink', function () {
+          TH.input('[name=text]', {value: ''}, 'foo');
+          TH.input('[name=link]', {value: ''}, 'bar');
+          TH.trigger(this, 'submit');
+        });
+
+        assert.dom('.input a[href="bar"]', 'foo', function () {
+          assert.same(this.previousSibling.textContent, 'He');
+          assert.same(this.nextSibling.textContent, 'llo');
+        });
+      },
+
+      "test adding link no caret": function () {
+        window.getSelection().removeAllRanges();
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        refute.dom('.rtLink');
+      },
+
+      "test canceling link": function () {
+        assert.dom('.richTextEditor>.input', function () {
+          v.orig = this.outerHTML;
+          assert.dom('b', 'Hello', function () {
+            TH.setRange(this.firstChild);
+          });
+        });
+
+        TH.keydown('.input', "K", {ctrlKey: true});
+
+        assert.dom('.rtLink', function () {
+          TH.input('[name=text]', 'foo');
+          TH.input('[name=link]', 'bar');
+        });
+
+        TH.mouseDownUp('.glassPane');
+
+        refute.dom('.glassPane');
+
+        assert.dom('.richTextEditor>.input', function () {
+          assert.same(this.outerHTML, v.orig);
+          assert.same(document.activeElement, this);
+        });
+      },
+
     },
   });
 

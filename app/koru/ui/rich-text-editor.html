@@ -3,4 +3,23 @@
     <div class="input" contenteditable="true">
     </div>
   </div>
+
+
+  <template name="Link">
+    <div class="glassPane">
+      <form class="rtLink">
+        <div class="fields">
+          <label>
+            <span class="name">Text</span>
+            <input type="text" name="text"{{inputValue text}}>
+          </label>
+          <label>
+            <span class="name">Link</span>
+            <input type="text" name="link" placeholder="Enter or paste a link" {{inputValue link}}>
+          </label>
+        </div>
+        <button type="submit" name="apply">Apply</button>
+      </form>
+    </div>
+  </template>
 </template>

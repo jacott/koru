@@ -4,9 +4,11 @@ define(function(require, exports, module) {
   var RichText = require('./rich-text');
   var KeyMap = require('./key-map');
   var RichTextMention = require('./rich-text-mention');
+  var Modal = require('./modal');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   var $ = Dom.current;
+  var Link = Tpl.Link;
 
   var TEXT_NODE = document.TEXT_NODE;
 
@@ -24,6 +26,46 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
+    link: function (event) {
+      var aElm = getTag('A');
+      var range = Dom.selectElm(aElm) || Dom.getRange();
+      if (! range) return;
+
+      var dialog = Link.$autoRender({
+        range: range,
+        elm: aElm,
+        link: aElm ? aElm.getAttribute('href') : '',
+        text: range.toString() || '',
+        inputElm: Tpl.$ctx(aElm).inputElm,
+      });
+      Modal.appendBelow({
+        container: dialog,
+        boundingClientRect: range.getBoundingClientRect(),
+      });
+      dialog.querySelector('[name=link]').focus();
+    },
+    mention: function (event) {
+      if (event.type !== 'mouseup') return;
+      var button = event.target;
+
+      var range = Dom.getRange();
+      if (! range) return;
+
+      var dialog = RichTextMention.$autoRender({
+        range: range,
+        type: button.getAttribute('data-type'),
+        mentions: $.ctx.parentCtx.data.extend.mentions,
+        inputCtx: $.ctx.parentCtx,
+        value: range.toString(),
+        inputElm: Tpl.$ctx(range.startContainer).inputElm,
+      });
+
+      Modal.appendBelow({
+        container: dialog,
+        boundingClientRect: range.getBoundingClientRect(),
+      });
+      dialog.getElementsByTagName('input')[0].focus();
+    },
   });
 
   var keyMap = KeyMap(mapActions({
@@ -34,6 +76,7 @@ define(function(require, exports, module) {
     insertUnorderedList: ctrl+shift+'8',
     outdent: ctrl+'Û', // '['
     indent: ctrl+'Ý', // ']'
+    link: ctrl+'K',
   }));
 
   keyMap.addKeys(mapActions({
@@ -101,6 +144,8 @@ define(function(require, exports, module) {
   }
 
   Tpl.$extend({
+    actions: actions,
+
     $created: function (ctx, elm) {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
@@ -542,6 +587,29 @@ define(function(require, exports, module) {
   });
 
   RichTextMention.init(Tpl);
+
+  Link.$extend({
+    cancel: function (elm) {
+      Dom.remove(elm);
+    },
+
+    $destroyed: function (ctx) {
+      ctx.data.inputElm.focus();
+    },
+  });
+
+  Link.$events({
+    'submit': function (event) {
+      Dom.stopEvent();
+      var inputs = this.getElementsByTagName('input');
+
+      var data = $.ctx.data;
+      Dom.setRange(data.range);
+      data.inputElm.focus();
+      Tpl.insert(Dom.h({a: inputs[0].value, $href: inputs[1].value}));
+      Dom.remove(event.currentTarget);
+    },
+  });
 
   return Tpl;
 });

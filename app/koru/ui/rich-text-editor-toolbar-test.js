@@ -78,17 +78,12 @@ isClient && define(function (require, exports, module) {
         TH.stubAfTimeout();
       });
 
-      assert.dom('body>.rtLink', function () {
+      assert.dom('.rtLink', function () {
         assert.dom('input', {value: '/link.html'}, function () {
-          TH.trigger(this, 'focusout');
         });
+        TH.mouseDownUp(this.parentNode);
       });
 
-      assert.calledOnce(koru.afTimeout);
-      document.activeElement.blur();
-
-      assert.dom('.rtLink');
-      TH.yieldAfTimeout();
       refute.dom('.rtLink');
 
       assert.dom('i', 'world', function () {
@@ -110,8 +105,7 @@ isClient && define(function (require, exports, module) {
       TH.mouseDownUp('[name=link]');
 
       assert.dom('.rtLink', function () {
-        assert.dom('input', function () {
-          this.focus();
+        assert.dom('[name=link]', function () {
           TH.input(this, 'http://new/value');
         });
         TH.trigger(this, 'submit');
@@ -167,98 +161,6 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});
-      });
-    },
-
-    "test adding link with selection": function () {
-      assert.dom('b', 'Hello', function () {
-        TH.setRange(this.firstChild, 0, this.firstChild, 2);
-        TH.trigger(this, 'keyup');
-      });
-
-      TH.mouseDownUp('[name=link]');
-
-      assert.dom('.rtLink', function () {
-        assert.dom('label>.name+input', {value: 'http://'}, function () {
-          this.focus();
-          TH.input(this, 'http://new.link.co/foo');
-        });
-        TH.trigger(this, 'submit');
-      });
-      assert.dom('.richTextEditor>.input', function () {
-        assert.dom('a[href="http://new.link.co/foo"]', 'He');
-        assert.same(this, document.activeElement);
-        assert.dom('a', {count: 2});
-      });
-    },
-
-    "test adding link no selection": function () {
-      assert.dom('b', 'Hello', function () {
-        TH.setRange(this.firstChild, 2);
-        TH.trigger(this, 'keyup');
-      });
-
-      TH.mouseDownUp('[name=link]');
-
-      assert.dom('.rtLink', function () {
-        assert.dom('label>.name+input', {value: 'http://'}, function () {
-          this.focus();
-          TH.input(this, 'http://new.link.co/foo');
-        });
-        TH.trigger(this, 'submit');
-      });
-      assert.dom('.richTextEditor>.input', function () {
-        assert.dom('b', 'Hehttp://new.link.co/foollo', function () {
-          assert.dom('a[href="http://new.link.co/foo"]', 'http://new.link.co/foo');
-        });
-        assert.same(this, document.activeElement);
-        assert.dom('a', {count: 2});
-      });
-    },
-
-
-    "test adding link no caret": function () {
-      window.getSelection().removeAllRanges();
-      assert.dom('b', 'Hello', function () {
-        TH.trigger(this, 'keyup');
-      });
-
-      TH.trigger('[name=link]', 'mousedown');
-      TH.trigger('[name=link]', 'mouseup');
-
-      refute.dom('.rtLink');
-    },
-
-    "test canceling link": function () {
-      assert.dom('.richTextEditor', function () {
-        assert.dom('b', 'Hello', function () {
-          TH.setRange(this.firstChild);
-          TH.trigger(this, 'keyup');
-        });
-
-        TH.mouseDownUp('[name=link]');
-      });
-
-      TH.click('.rtLink [name=cancel]');
-
-      assert.dom('.richTextEditor', function () {
-        assert.same(this.value.innerHTML, v.origText.innerHTML);
-        assert.dom('.input', function () {
-          assert.same(this, document.activeElement);
-        });
-
-        TH.mouseDownUp('[name=link]');
-      });
-
-      TH.trigger('.rtLink input', 'keyup', {which: 27});
-
-      refute.dom('.rtLink');
-
-      assert.dom('.richTextEditor', function () {
-        assert.same(this.value.innerHTML, v.origText.innerHTML);
-        assert.dom('.input', function () {
-          assert.same(this, document.activeElement);
-        });
       });
     },
   });

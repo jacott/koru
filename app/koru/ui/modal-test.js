@@ -33,6 +33,15 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(sut.append, 'above', 'opts');
     },
 
+    "test supply position": function () {
+      var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
+      sut.append('below', {container: popup, popup: popup, boundingClientRect: {top: 10, left: 15, height: 20, width: 30}});
+      assert.dom('.popup', function () {
+        assert.cssNear(this, 'left', 15);
+        assert.cssNear(this, 'top', 30);
+      });
+    },
+
     "test popup": function () {
       test.spy(sut, 'init');
       var page = Dom.html({content: ['text', {tag: 'input'}]});
@@ -49,6 +58,24 @@ isClient && define(function (require, exports, module) {
         });
       });
       refute.called(sut.init);
+    },
+
+    "test repositioning": function () {
+      var container = Dom.h({class: 'glassPane', div: {class: 'popup', $style: 'position:absolute', div: {input: ''}}});
+      var ctx = Dom.setCtx(container);
+      test.spy(ctx, 'onDestroy');
+
+      test.onEnd(function () {TH.mouseDownUp(container)});
+
+      var options = sut.appendBelow({
+        container: container,
+        origin: document.body,
+        noAppend: true,
+      });
+
+      assert.same(sut.reposition('above', options), options);
+
+      assert.calledOnce(ctx.onDestroy);
     },
 
     "test nesting": function () {
