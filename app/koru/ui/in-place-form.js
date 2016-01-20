@@ -105,11 +105,6 @@ define(function(require, exports, module) {
           submit.call(this, event);
         }
         break;
-      }
-    },
-
-    'keyup': function (event) {
-      switch (event.which) {
       case 27:
         Dom.stopEvent();
         cancel(this);

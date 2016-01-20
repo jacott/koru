@@ -135,22 +135,22 @@ isClient && define(function (require, exports, module) {
         assert.called(removeEventListener);
       },
 
-      "test keyup": function () {
-        TH.trigger('#sp', 'keyup', {which: 26});
-        TH.trigger('.foo', 'keyup', {which: 26});
-        TH.trigger('#st', 'keyup', {which: 27});
-        TH.trigger('#sta', 'keyup', {which: 27});
-        TH.trigger('#sce', 'keyup', {which: 27});
-        TH.trigger('#sp', 'keyup', {which: 27});
+      "test keydown": function () {
+        TH.trigger('#sp', 'keydown', {which: 26});
+        TH.trigger('.foo', 'keydown', {which: 26});
+        TH.trigger('#st', 'keydown', {which: 27});
+        TH.trigger('#sta', 'keydown', {which: 27});
+        TH.trigger('#sce', 'keydown', {which: 27});
+        TH.trigger('#sp', 'keydown', {which: 27});
 
         refute.called(v.func);
 
-        TH.trigger('.foo', 'keyup', {which: 27});
-        TH.trigger('#sb', 'keyup', {which: 27});
-        TH.trigger('#os', 'keyup', {which: 27});
+        TH.trigger('.foo', 'keydown', {which: 27});
+        TH.trigger('#sb', 'keydown', {which: 27});
+        TH.trigger('#os', 'keydown', {which: 27});
 
         assert.calledWith(v.func, TH.match(function (event) {
-          assert.same(event.type, 'keyup');
+          assert.same(event.type, 'keydown');
           return event.target === document.querySelector('.foo');
         }));
 

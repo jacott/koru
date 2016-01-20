@@ -40,7 +40,7 @@ define(function(require, exports, module) {
     var elm = modalize.elm;
     if (typeof elm === 'string') modalize.elm = elm = document.querySelector(elm);
     if (Dom.getClosestClass(event.target, 'anyModal')) return;
-    if (event.type === 'keyup') {
+    if (event.type === 'keydown') {
       if (event.which === 27) {
         if (! Dom.contains(elm, event.target))
           return modalize.func.call(this, event);
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
         modalize = {elm: elm, func: func};
 
         document.addEventListener('mousedown', modalizeCallback, true);
-        document.addEventListener('keyup', modalizeCallback, true);
+        document.addEventListener('keydown', modalizeCallback);
       }
     },
 
@@ -81,7 +81,7 @@ define(function(require, exports, module) {
       modalize = all === 'all' ? null : modalize.parent;
       if (! modalize) {
         document.removeEventListener('mousedown', modalizeCallback, true);
-        document.removeEventListener('keyup', modalizeCallback, true);
+        document.removeEventListener('keydown', modalizeCallback);
         return null;
       }
       return modalize.elm;

@@ -216,11 +216,11 @@ isClient && define(function (require, exports, module) {
 
 
       assert.dom(v.parent, function () {
-        TH.trigger('form [name=name]', 'keyup', {which: 65});
+        TH.trigger('form [name=name]', 'keydown', {which: 65});
 
         refute.dom('>span');
 
-        TH.trigger('form [name=name]', 'keyup', {which: 27});
+        TH.trigger('form [name=name]', 'keydown', {which: 27});
 
         assert.dom('>span');
       });
