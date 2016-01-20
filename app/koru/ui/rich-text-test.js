@@ -134,8 +134,12 @@ define(function (require, exports, module) {
       assertConvert(html.outerHTML);
     },
 
-    "//test no javascript in link": function () {
-      // 'javascript:alert("bad")'
+    "test linkType": function () {
+      assert.equals(sut.linkType(0), {id: 0, class: '', fromHtml: TH.match.func, toHtml: TH.match.func});
+    },
+
+    "test no javascript in link": function () {
+      assertConvert('<a href="javascript:alert(123)">abc</a>', '<div><a href="alert(123)">abc</a></div>');
     },
 
     "test skips empty text": function () {

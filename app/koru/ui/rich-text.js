@@ -169,7 +169,7 @@ define(function(require, exports, module) {
       else {
         this.markup[pos] = index;
         var lineIdx = this.lines.length - 1;
-        this.lines[lineIdx] += ' (' + code.fromHtml(node) + ')';
+        this.lines[lineIdx] += ' (' + code.fromHtml(node).replace(/^javascript:/,'') + ')';
         this.markup[pos - 2] = this.lines[lineIdx].length;
       }
     },
@@ -356,6 +356,10 @@ define(function(require, exports, module) {
 
 
       return text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
+    },
+
+    linkType: function (id) {
+      return LINK_TO_HTML[id];
     },
 
     registerLinkType: function (data) {
