@@ -62,6 +62,8 @@ isClient && define(function (require, exports, module) {
       },
 
       "test accept": function () {
+        assert(Modal.topModal.handleTab);
+
         assert.dom('.rtMention:not(.inline) input', function () {
           TH.input(this, 'g');
 
@@ -106,6 +108,7 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.rtMention', function () {
+        assert(Modal.topModal.handleTab);
         assert.dom('input', {value: 'g'}, function () {
           assert.same(document.activeElement, this);
         });

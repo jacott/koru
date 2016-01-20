@@ -6,6 +6,7 @@ isClient && define(function (require, exports, module) {
   var util = require('koru/util');
   var sut = require('./rich-text-editor-toolbar');
   var RichTextEditor = require('./rich-text-editor');
+  var Modal = require('./modal');
 
   TH.testCase(module, {
     setUp: function () {
@@ -79,6 +80,9 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.rtLink', function () {
+        assert.dom('.startTab:first-child');
+        assert.dom('.endTab:last-child');
+        assert(Modal.topModal.handleTab);
         assert.dom('input', {value: '/link.html'}, function () {
         });
         TH.mouseDownUp(this.parentNode);

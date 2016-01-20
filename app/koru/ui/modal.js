@@ -153,5 +153,7 @@ define(function(require, exports, module) {
 
       return this.reposition(pos, options);
     },
+
+    get topModal() {return topModal},
   };
 });

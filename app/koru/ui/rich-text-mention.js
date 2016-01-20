@@ -144,7 +144,6 @@ define(function(require, exports, module) {
 
     var frag = document.createDocumentFragment();
     frag.appendChild(link);
-    // FIXME Dom.html({tag: 'span', class: 'ln', text: (nameELm || item).textContent})
     frag.appendChild(document.createTextNode('\xa0'));
 
     if (data.span) {
@@ -156,13 +155,6 @@ define(function(require, exports, module) {
       RichTextEditor.insert(frag);
     }
 
-    // var button = data.inputElm.getElementsByClassName('ln')[0];
-
-    // if (button) {
-    //   button.setAttribute('contenteditable', 'true');
-    //   button.className = 'link user';
-    //   button.setAttribute('data-a', id);
-    // }
     collapseRange(false);
     data.inputElm = null;
     Dom.remove(event.currentTarget);
@@ -224,7 +216,7 @@ define(function(require, exports, module) {
     data.value = data.span.textContent;
     var al = Tpl.$autoRender(data);
 
-    Modal.append('on', {container: al, origin: data.span, ignoreTab: true});
+    Modal.append('on', {container: al, origin: data.span, handleTab: true});
     transformList(data, al);
 
     var input = al.firstChild.firstChild;

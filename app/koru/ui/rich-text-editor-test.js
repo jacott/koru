@@ -7,6 +7,7 @@ isClient && define(function (require, exports, module) {
   var util = require('koru/util');
   var RichText = require('./rich-text');
   var KeyMap = require('./key-map');
+  var Modal = require('./modal');
 
   var ctrl = KeyMap.ctrl;
 
@@ -280,6 +281,9 @@ isClient && define(function (require, exports, module) {
         TH.keydown('.input', "K", {ctrlKey: true});
 
         assert.dom('.rtLink', function () {
+          assert.dom('.startTab:first-child');
+          assert.dom('.endTab:last-child');
+          assert(Modal.topModal.handleTab);
           assert.cssNear(this, 'top', v.pos.bottom);
           assert.cssNear(this, 'left', v.pos.left);
 
