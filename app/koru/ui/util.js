@@ -148,6 +148,50 @@ define(function(require, exports, module) {
       return sel.getRangeAt(0);
     },
 
+    getRangeClientRect: function(range) {
+      if (range.collapsed) {
+        var sc = range.startContainer;
+        var so = range.startOffset;
+        var tr = document.createRange();
+        var result = {width: 0};
+        if (sc.nodeType === document.TEXT_NODE) {
+          var text = sc.textContent;
+          if (text) {
+            if (so < text.length) {
+              tr.setStart(sc, so);
+              tr.setEnd(sc, so + 1);
+              var dims = tr.getBoundingClientRect();
+            } else {
+              tr.setStart(sc, so - 1);
+              tr.setEnd(sc, so);
+              var dims = tr.getBoundingClientRect();
+              result.left = dims.right;
+            }
+          } else {
+            var dims = sc.parentNode.getBoundingClientRect();
+          }
+        } else {
+          var node = sc.childNodes[so] || sc;
+          if (node.nodeType === document.TEXT_NODE) {
+            tr.setStart(node, 0);
+            return this.getRangeClientRect(tr);
+          } else {
+            var dims = node.getBoundingClientRect();
+          }
+        }
+        result.height = dims.height;
+        result.top = dims.top;
+        result.bottom = dims.bottom;
+
+        if (result.left === undefined)
+          result.left = dims.left;
+        result.right = result.left;
+        return result;
+      } else {
+        return range.getBoundingClientRect();
+      }
+    },
+
     selectElm: function(elm) {
       if (elm) {
         var range = document.createRange();

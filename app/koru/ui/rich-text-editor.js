@@ -40,7 +40,7 @@ define(function(require, exports, module) {
       });
       Modal.appendBelow({
         container: dialog,
-        boundingClientRect: range.getBoundingClientRect(),
+        boundingClientRect: Dom.getRangeClientRect(range),
       });
       dialog.querySelector('[name=link]').focus();
     },
@@ -62,7 +62,7 @@ define(function(require, exports, module) {
 
       Modal.appendBelow({
         container: dialog,
-        boundingClientRect: range.getBoundingClientRect(),
+        boundingClientRect: Dom.getRangeClientRect(range),
       });
       dialog.getElementsByTagName('input')[0].focus();
     },
