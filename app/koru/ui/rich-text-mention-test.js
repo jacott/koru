@@ -27,7 +27,7 @@ isClient && define(function (require, exports, module) {
             }
           },
         },
-      }));
+                                                                  }));
 
       document.getElementById('TestRichTextEditor').style.position = 'relative';
 
@@ -43,28 +43,51 @@ isClient && define(function (require, exports, module) {
       TH.domTearDown();
     },
 
-    "test button mode": function () {
-      v.fooFunc = function (frag, text) {
-        if (text === 'g') {
-          frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
-        }
-      };
+    "toolbar": {
+      setUp: function () {
+        v.input.appendChild(Dom.h(["one", {div: ["two ", "three"]}]));
 
-      TH.mouseDownUp('[name=mention]');
+        v.range = TH.setRange(v.input.lastChild.lastChild, 2);
+        v.fooFunc = function (frag, text) {
+          if (text === 'g') {
+            frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
+          }
+        };
 
-      v.fooHtmlFunc = function (elm) {
-        return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
-      };
+        TH.mouseDownUp('[name=mention]');
 
-      assert.dom('.rtMention:not(.inline) input', function () {
-        TH.input(this, 'g');
+        v.fooHtmlFunc = function (elm) {
+          return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
+        };
+      },
 
-        TH.trigger(this, 'keydown', {which: 13});
-      });
+      "test accept": function () {
+        assert.dom('.rtMention:not(.inline) input', function () {
+          TH.input(this, 'g');
 
-      assert.dom('.richTextEditor>.input', function () {
-        assert.same(this.innerHTML, 'hello&nbsp;<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;');
-      });
+          TH.trigger(this, 'keydown', {which: 13});
+        });
+
+        assert.dom('.richTextEditor>.input', function () {
+           assert.same(document.activeElement, this);
+          RichTextEditor.insert("_x_");
+          assert.same(this.innerHTML, 'hello&nbsp;one<div>two th<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;_x_ree</div>');
+        });
+      },
+
+      "test cancel": function () {
+        assert.dom('.rtMention:not(.inline) input', function () {
+          TH.input(this, 'g');
+        });
+        TH.mouseDownUp('.glassPane');
+        assert.dom('.input', function () {
+          assert.same(document.activeElement, this);
+          var range = Dom.getRange();
+          refute.same(range, v.range);
+          assert.same(range.startContainer, v.range.startContainer);
+          assert.same(range.startOffset, v.range.startOffset);
+        });
+      },
     },
 
     "test typing @g": function () {

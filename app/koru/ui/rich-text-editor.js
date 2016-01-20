@@ -26,7 +26,7 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
-    link: function (event) {
+    link: function () {
       var aElm = getTag('A');
       var range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
@@ -45,12 +45,10 @@ define(function(require, exports, module) {
       dialog.querySelector('[name=link]').focus();
     },
     mention: function (event) {
-      if (event.type !== 'mouseup') return;
-      var button = event.target;
-
       var range = Dom.getRange();
       if (! range) return;
 
+      var button = event.target;
       var dialog = RichTextMention.$autoRender({
         range: range,
         type: button.getAttribute('data-type'),
@@ -594,6 +592,7 @@ define(function(require, exports, module) {
     },
 
     $destroyed: function (ctx) {
+      Dom.setRange(ctx.data.range);
       ctx.data.inputElm.focus();
     },
   });

@@ -15,11 +15,16 @@ define(function(require, exports, module) {
   Tpl.$extend({
     $destroyed: function (ctx, elm) {
       try {
-        revertMention(ctx.data.inputElm);
+        var data = ctx.data;
+        if (data.span) {
+          revertMention(data.inputElm);
+        } else if (data.inputElm) {
+          setRange(data.range);
+          data.inputElm.focus();
+        }
       } catch(ex) {
         koru.unhandledException(ex);
       }
-      ctx.data.close && ctx.data.close();
     },
 
     selectItem: selectItem,
@@ -146,6 +151,7 @@ define(function(require, exports, module) {
       revertMention(data.inputElm, frag);
     } else {
       setRange(data.range);
+      data.range = null;
       data.inputElm.focus();
       RichTextEditor.insert(frag);
     }
@@ -167,7 +173,7 @@ define(function(require, exports, module) {
     Dom.remove(elm);
   }
 
-  function revertMention(editorELm, button) {
+  function revertMention(editorELm, frag) {
     if (! editorELm) return;
 
     var ln = editorELm.getElementsByClassName('ln')[0];
@@ -182,8 +188,8 @@ define(function(require, exports, module) {
         var range = document.createRange();
         range.setStart(dest, destOffset);
         range.collapse(true);
-        Dom.setRange(range);
-        if (! button) {
+        setRange(range);
+        if (! frag) {
           ln.textContent && RichTextEditor.insert(ln.textContent);
           var range = getRange();
           if (range) { // maybe missing on destroy
@@ -192,7 +198,7 @@ define(function(require, exports, module) {
           }
         } else {
           RichTextEditor.moveLeft(editorELm, 'select');
-          RichTextEditor.insert(button);
+          RichTextEditor.insert(frag);
         }
       }
     } else {
