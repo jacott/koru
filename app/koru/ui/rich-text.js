@@ -12,7 +12,7 @@ define(function(require, exports, module) {
       id: 0,
       class: "",
       fromHtml: function (node) {return node.getAttribute('href')},
-      toHtml: function (node, ref) {node.setAttribute('href', ref)},
+      toHtml: function (node, ref) {node.setAttribute('href', ref.replace(/^javascript:/,''))},
     },
   ];
 
@@ -169,7 +169,7 @@ define(function(require, exports, module) {
       else {
         this.markup[pos] = index;
         var lineIdx = this.lines.length - 1;
-        this.lines[lineIdx] += ' (' + code.fromHtml(node).replace(/^javascript:/,'') + ')';
+        this.lines[lineIdx] += ' (' + code.fromHtml(node) + ')';
         this.markup[pos - 2] = this.lines[lineIdx].length;
       }
     },
