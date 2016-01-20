@@ -7,7 +7,15 @@ define(function(require, exports, module) {
   function keydownCallback(event) {
     switch(event.which) {
     case 9:
-      if (! topModal.ignoreTab) {
+      if (topModal.handleTab) {
+        if (event.shiftKey) {
+          if (Dom.hasClass(event.target, 'startTab')) {
+            event.target.parentNode.getElementsByClassName('endTab')[0].focus();
+          }
+        } else if (Dom.hasClass(event.target, 'endTab')) {
+          event.target.parentNode.getElementsByClassName('startTab')[0].focus();
+        }
+      } else {
         event.stopImmediatePropagation();
         var focus = topModal.focus;
         Dom.remove(topModal.container);

@@ -34,7 +34,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test supply position": function () {
-      var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
+      var popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
       sut.append('below', {container: popup, popup: popup, boundingClientRect: {top: 10, left: 15, height: 20, width: 30}});
       assert.dom('.popup', function () {
         assert.cssNear(this, 'left', 15);
@@ -44,9 +44,9 @@ isClient && define(function (require, exports, module) {
 
     "test popup": function () {
       test.spy(sut, 'init');
-      var page = Dom.html({content: ['text', {tag: 'input'}]});
+      var page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
-      var popup = Dom.html({class: 'popup', style: 'position:absolute', text: 'popup'});
+      var popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
       assert.dom('input', function () {
         sut.appendBelow({container: popup, origin: this, popup: popup});
         v.ibox = this.getBoundingClientRect();
@@ -70,7 +70,6 @@ isClient && define(function (require, exports, module) {
       var options = sut.appendBelow({
         container: container,
         origin: document.body,
-        noAppend: true,
       });
 
       assert.same(sut.reposition('above', options), options);
@@ -78,15 +77,56 @@ isClient && define(function (require, exports, module) {
       assert.calledOnce(ctx.onDestroy);
     },
 
+    "test handleTab": function () {
+      var container =  Dom.h({
+        class: 'glassPane', div: {
+          form: [
+            {span: '', class: 'startTab', $tabindex: 0},
+            {input: ''},
+            {button: 'foo'},
+            {span: '', class: 'endTab', $tabindex: 0},
+          ],
+        },
+      });
+      var ctx = Dom.setCtx(container);
+      test.spy(ctx, 'onDestroy');
+
+      test.onEnd(function () {TH.mouseDownUp(container)});
+
+      var options = sut.appendBelow({
+        container: container,
+        handleTab: true,
+        origin: document.body,
+      });
+
+      assert.dom('.endTab', function () {
+        this.focus();
+        TH.keydown(this, 9);
+      });
+
+      assert.dom('.startTab', function () {
+        assert.same(document.activeElement, this);
+        v.focus = test.spy(Object.getPrototypeOf(this), 'focus');
+        TH.keydown(this, 9);
+        refute.called(v.focus);
+        TH.keydown(this, 9, {shiftKey: true});
+        assert.called(v.focus);
+      });
+
+      assert.dom('.endTab', function () {
+        assert.same(document.activeElement, this);
+      });
+    },
+
     "test nesting": function () {
       test.spy(sut, 'init');
-      var page = Dom.html({content: ['text', {tag: 'input'}]});
+      var page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
-      var popup0 = Dom.html({class: 'glassPane', content: {class: 'popup0', style: 'position:absolute', text: 'popup0'}});
+      var popup0 = Dom.h({class: 'glassPane', div: {class: 'popup0', $style: 'position:absolute', div: 'popup0'}});
       Dom.setCtx(popup0);
-      var popup1 = Dom.html({class: 'glassPane', content: {class: 'popup1', style: 'position:absolute', text: 'popup1'}});
+      var popup1 = Dom.h({class: 'glassPane', div: {class: 'popup1', $style: 'position:absolute', div: 'popup1'}});
       Dom.setCtx(popup1);
-      var popup2 = Dom.html({class: 'glassPane', content: {class: 'popup2', style: 'position:absolute', text: 'popup2'}});
+      var popup2 = Dom.h({class: 'glassPane', div: {class: 'popup2', $style: 'position:absolute', div: 'popup2'}});
       Dom.setCtx(popup2);
       assert.dom('input', function () {
         sut.appendBelow({container: popup0, origin: this});
