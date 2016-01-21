@@ -15,11 +15,13 @@ define(function (require, exports, module) {
     },
 
     "test toDp": function () {
+      assert.same(util.toDp(10.7, 0), "11");
+      assert.same(util.toDp(2.6, 1), "2.6");
       assert.same(util.toDp(1.2345, 3, true), "1.235");
       assert.same(util.toDp(1.2, 3, true), "1.200");
       assert.same(util.toDp(1.0021, 3, true), "1.002");
+      assert.same(util.toDp(10, 3), "10");
       assert.same(util.toDp(10.2, 3), "10.2");
-      assert.same(util.toDp(10.7, 0), "11");
     },
 
     "test DAY": function () {

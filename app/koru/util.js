@@ -637,18 +637,18 @@ define(function(require, exports, module) {
     toDp: function (number, dp, zeroFill) {
       var scalar = Math.pow(10, dp);
       var decs = ''+(Math.round(number * scalar) % scalar);
-      number = ''+Math.round(number);
+
       if (! zeroFill && ! decs)
-        return number;
+        return ''+number;
 
       while (decs.length < dp)
         decs = '00000'.slice(decs.length - dp) + decs;
       if (!zeroFill) {
         decs = decs.replace(/0+$/, '');
         if (! decs)
-          return number;
+          return ''+Math.round(number);
       }
-      return number + "." + decs;
+      return Math.floor(number) + "." + decs;
     },
 
     sansPx: sansSuffix.bind(2),
