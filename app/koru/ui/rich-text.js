@@ -5,7 +5,7 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, INLINE_CODE = 9;
 
   var LINK_TO_HTML = [
     {
@@ -26,6 +26,7 @@ define(function(require, exports, module) {
     I: 'inline',
     A: 'inline',
     SPAN: 'inline',
+    CODE: 'inline',
   };
 
   function fromHtml(html) {
@@ -126,6 +127,9 @@ define(function(require, exports, module) {
 
   function fromDiv(node, state) {
     var rule = FROM_RULE[node.tagName] || fromDiv;
+    if (rule && rule.override)
+      return rule.call(this, node, state);
+
     this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
   }
 
@@ -152,6 +156,108 @@ define(function(require, exports, module) {
     };
   }
 
+  function fromPre(parent, state) {
+    var lines = this.lines;
+    var start = lines.length;
+    this.markup.push(CODE, this.relative(start), 0);
+    var pos = this.markup.length - 1;
+    this.newLine();
+    lines[start] = "code: " + (parent.getAttribute('data-lang')||'');
+    this.newLine();
+
+    var nodes = parent.childNodes;
+    var last = state.last = nodes.length - 1;
+    for(var index = 0; index <= last; ++index) {
+      var node = nodes[index];
+      var hlCode = undefined;
+      if (node.tagName === 'SPAN') {
+        hlCode = CLASS_TO_CODE[node.className];
+      } else if (node.nodeType !== TEXT_NODE) {
+        continue;
+      }
+      var rows = node.textContent.split('\n');
+      for(var i = 0; i < rows.length; ++i) {
+        i !== 0 && this.newLine();
+        var cIdx = lines.length - 1;
+        var lPos = lines[cIdx].length;
+        lines[lines.length - 1] += rows[i];
+        if (hlCode !== undefined && lines[cIdx].length !== lPos)
+          this.markup.push(hlCode, this.relative(cIdx), lPos, lines[cIdx].length - lPos);
+      }
+    }
+    this.markup[pos] = this.lines.length - start - 1;
+  } fromPre.override = true;
+
+  var CODE_TO_CLASS = [
+    'hll',// { background-color: #ffffcc }
+    'c',  // { color: #408080; font-style: italic } /* Comment */
+    'err',// { border: 1px solid #FF0000 } /* Error */
+    'k',  // { color: #008000; font-weight: bold } /* Keyword */
+    'o',  // { color: #666666 } /* Operator */
+    'cm', // { color: #408080; font-style: italic } /* Comment.Multiline */
+    'cp', // { color: #BC7A00 } /* Comment.Preproc */
+    'c1', // { color: #408080; font-style: italic } /* Comment.Single */
+    'cs', // { color: #408080; font-style: italic } /* Comment.Special */
+    'gd', // { color: #A00000 } /* Generic.Deleted */
+    'ge', // { font-style: italic } /* Generic.Emph */
+    'gr', // { color: #FF0000 } /* Generic.Error */
+    'gh', // { color: #000080; font-weight: bold } /* Generic.Heading */
+    'gi', // { color: #00A000 } /* Generic.Inserted */
+    'go', // { color: #808080 } /* Generic.Output */
+    'gp', // { color: #000080; font-weight: bold } /* Generic.Prompt */
+    'gs', // { font-weight: bold } /* Generic.Strong */
+    'gu', // { color: #800080; font-weight: bold } /* Generic.Subheading */
+    'gt', // { color: #0040D0 } /* Generic.Traceback */
+    'kc', // { color: #008000; font-weight: bold } /* Keyword.Constant */
+    'kd', // { color: #008000; font-weight: bold } /* Keyword.Declaration */
+    'kn', // { color: #008000; font-weight: bold } /* Keyword.Namespace */
+    'kp', // { color: #008000 } /* Keyword.Pseudo */
+    'kr', // { color: #008000; font-weight: bold } /* Keyword.Reserved */
+    'kt', // { color: #B00040 } /* Keyword.Type */
+    'm',  // { color: #666666 } /* Literal.Number */
+    's',  // { color: #BA2121 } /* Literal.String */
+    'na', // { color: #7D9029 } /* Name.Attribute */
+    'nb', // { color: #008000 } /* Name.Builtin */
+    'nc', // { color: #0000FF; font-weight: bold } /* Name.Class */
+    'no', // { color: #880000 } /* Name.Constant */
+    'nd', // { color: #AA22FF } /* Name.Decorator */
+    'ni', // { color: #999999; font-weight: bold } /* Name.Entity */
+    'ne', // { color: #D2413A; font-weight: bold } /* Name.Exception */
+    'nf', // { color: #0000FF } /* Name.Function */
+    'nl', // { color: #A0A000 } /* Name.Label */
+    'nn', // { color: #0000FF; font-weight: bold } /* Name.Namespace */
+    'nt', // { color: #008000; font-weight: bold } /* Name.Tag */
+    'nv', // { color: #19177C } /* Name.Variable */
+    'ow', // { color: #AA22FF; font-weight: bold } /* Operator.Word */
+    'w',  // { color: #bbbbbb } /* Text.Whitespace */
+    'mf', // { color: #666666 } /* Literal.Number.Float */
+    'mh', // { color: #666666 } /* Literal.Number.Hex */
+    'mi', // { color: #666666 } /* Literal.Number.Integer */
+    'mo', // { color: #666666 } /* Literal.Number.Oct */
+    'sb', // { color: #BA2121 } /* Literal.String.Backtick */
+    'sc', // { color: #BA2121 } /* Literal.String.Char */
+    'sd', // { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+    's2', // { color: #BA2121 } /* Literal.String.Double */
+    'se', // { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+    'sh', // { color: #BA2121 } /* Literal.String.Heredoc */
+    'si', // { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+    'sx', // { color: #008000 } /* Literal.String.Other */
+    'sr', // { color: #BB6688 } /* Literal.String.Regex */
+    's1', // { color: #BA2121 } /* Literal.String.Single */
+    'ss', // { color: #19177C } /* Literal.String.Symbol */
+    'bp', // { color: #008000 } /* Name.Builtin.Pseudo */
+    'vc', // { color: #19177C } /* Name.Variable.Class */
+    'vg', // { color: #19177C } /* Name.Variable.Global */
+    'vi', // { color: #19177C } /* Name.Variable.Instance */
+    'il', // { color: #666666 } /* Literal.Number.Integer.Long */
+  ];
+
+  var CLASS_TO_CODE = {};
+
+  CODE_TO_CLASS.forEach(function (id, index) {
+    CLASS_TO_CODE[id] = index;
+  });
+
   var FROM_RULE = {
     DIV: fromDiv,
     OL: fromBlock(OL),
@@ -161,6 +267,8 @@ define(function(require, exports, module) {
     B: fromInline(BOLD),
     U: fromInline(UNDERLINE),
     I: fromInline(ITALIC),
+    CODE: fromInline(INLINE_CODE),
+    PRE: fromPre,
 
     A: function (node, index, pos) {
       var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
@@ -299,6 +407,58 @@ define(function(require, exports, module) {
     };
   }
 
+  function toCode(state) {
+    if (! state.begun) {
+      var pre = document.createElement('pre');
+      state.result.appendChild(state.result = pre);
+      state.currLine = this.lidx;
+      state.lastLine = state.currLine + this.offset(2);
+      this.nextRule(3);
+      state.skip = true;
+      pre.setAttribute('data-lang', this.line.slice(6));
+      state.rulePos = this.midx;
+      var markup = this.markup;
+      state.offset = function (delta) {
+        return markup[state.rulePos + delta];
+      };
+
+      while (state.lastLine >= this.nextMarkupLine()) this.nextRule(4);
+
+      return state.begun = true;
+    }
+
+
+    if (state.skip) {
+      state.skip = false;
+      return;
+    }
+
+    var line = this.line;
+
+    var startPos = 0;
+
+    var delta = state.offset(1);
+    while(this.lidx === (state.currLine + delta)) {
+      var eIdx = startPos + state.offset(2);
+      if (eIdx > startPos)
+        state.result.appendChild(document.createTextNode(line.slice(startPos, eIdx)));
+
+      var span = document.createElement('SPAN');
+
+      span.className = CODE_TO_CLASS[state.offset(0)];
+      span.textContent = line.slice(eIdx, startPos = eIdx + state.offset(3));
+
+      state.result.appendChild(span);
+      state.currLine += delta;
+      state.rulePos+=4;
+      delta = state.offset(1);
+    }
+    var text = line.slice(startPos);
+    if (this.lidx !== state.lastLine)
+      text += "\n";
+    text && state.result.appendChild(document.createTextNode(text));
+  }
+
   function toInline(tag) {
     function toInlineTag(state) {
       var oldResult = state.result;
@@ -331,10 +491,12 @@ define(function(require, exports, module) {
   TO_RULES[OL] = toNested('OL', toLi);
   TO_RULES[UL] = toNested('UL', toLi);
   TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
+  TO_RULES[CODE] = toCode;
 
   TO_RULES[BOLD] = toInline('B');
   TO_RULES[ITALIC] = toInline('I');
   TO_RULES[UNDERLINE] = toInline('U');
+  TO_RULES[INLINE_CODE] = toInline('CODE');
   TO_RULES[LINK] = toLink;
 
   function isInlineNode(item) {

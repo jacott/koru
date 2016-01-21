@@ -148,6 +148,12 @@ define(function (require, exports, module) {
       assert.equals(rt, [['one', 'two'], [1, 0, 1]]);
     },
 
+    "test code": function () {
+      assertConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>');
+      assertConvert('<pre data-lang="javascript">stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</pre>');
+      assertConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>');
+    },
+
     "test multiple": function () {
       assertConvert('<ol><li>Hello</li><li><a href=\"/#u/123\">link</a> </li></ol>');
       assertConvert('<ol><li>Hello</li><li><a href="/#u/123">link</a> <br></li></ol>',
