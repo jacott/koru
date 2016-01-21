@@ -156,6 +156,29 @@ define(function(require, exports, module) {
     };
   }
 
+  function extractText(node, rows, needNl) {
+    if (node.nodeType === TEXT_NODE) {
+      if (needNl)
+        rows.push('');
+      var nodes = node.textContent.split("\n");
+      rows[rows.length - 1] += nodes[0];
+      for(var i = 1; i < nodes.length; ++i) {
+        rows.push(nodes[i]);
+      }
+      return;
+    } else {
+      if (! INLINE_TAGS[node.tagName])
+        needNl = true;
+      var nodes = node.childNodes;
+      if (nodes.length) {
+        extractText(nodes[0], rows, needNl);
+        for(var i = 1; i < nodes.length; ++i) {
+          extractText(nodes[i], rows);
+        }
+      }
+    }
+  }
+
   function fromPre(parent, state) {
     var lines = this.lines;
     var start = lines.length;
@@ -172,10 +195,11 @@ define(function(require, exports, module) {
       var hlCode = undefined;
       if (node.tagName === 'SPAN') {
         hlCode = CLASS_TO_CODE[node.className];
-      } else if (node.nodeType !== TEXT_NODE) {
-        continue;
+        var rows = node.textContent.split('\n');
+      } else {
+        var rows = [];
+        extractText(node, rows, true);
       }
-      var rows = node.textContent.split('\n');
       for(var i = 0; i < rows.length; ++i) {
         i !== 0 && this.newLine();
         var cIdx = lines.length - 1;

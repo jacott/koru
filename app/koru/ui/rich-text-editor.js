@@ -26,6 +26,13 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
+    code: function () {
+      var range = Dom.getRange();
+      var pre = document.createElement('PRE');
+      pre.appendChild(range.extractContents());
+      var rt = RichText.fromHtml(Dom.h({div: pre}));
+      Tpl.insert(RichText.toHtml(rt[0], rt[1]));
+    },
     link: function () {
       var aElm = getTag('A');
       var range = Dom.selectElm(aElm) || Dom.getRange();
@@ -77,6 +84,7 @@ define(function(require, exports, module) {
     outdent: ctrl+'Û', // '['
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
+    code: ctrl+'`',
   }));
 
   keyMap.addKeys(mapActions({

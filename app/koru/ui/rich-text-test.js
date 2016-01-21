@@ -152,6 +152,7 @@ define(function (require, exports, module) {
       assertConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>');
       assertConvert('<pre data-lang="javascript">stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</pre>');
       assertConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>');
+      assertConvert('<div><pre><ol><li>hello</li><li>wo<b>rl</b>d</li></ol></pre></div>', '<pre data-lang=\"\">hello\nworld</pre>');
     },
 
     "test multiple": function () {

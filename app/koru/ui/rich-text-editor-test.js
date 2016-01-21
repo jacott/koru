@@ -135,6 +135,21 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test code": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        this.focus();
+        sut.insert(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
+        assert.dom('ol', function () {
+          Dom.selectElm(this);
+        });
+        TH.keydown(this, '`', {ctrlKey: true});
+        sut.insert(' foo');
+        assert.dom('pre', 'hello\nworld foo');
+      });
+    },
+
     "test title": function () {
       var keyMap = test.stub(sut.keyMap, 'getTitle');
       sut.title('foo', 'insertOrderedList');
