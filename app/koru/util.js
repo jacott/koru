@@ -634,6 +634,23 @@ define(function(require, exports, module) {
       return Math.round(value*1000000)/10000+'%';
     },
 
+    toDp: function (number, dp, zeroFill) {
+      var scalar = Math.pow(10, dp);
+      var decs = ''+(Math.round(number * scalar) % scalar);
+      number = ''+Math.round(number);
+      if (! zeroFill && ! decs)
+        return number;
+
+      while (decs.length < dp)
+        decs = '00000'.slice(decs.length - dp) + decs;
+      if (!zeroFill) {
+        decs = decs.replace(/0+$/, '');
+        if (! decs)
+          return number;
+      }
+      return number + "." + decs;
+    },
+
     sansPx: sansSuffix.bind(2),
     sansPc: sansSuffix.bind(1),
 
