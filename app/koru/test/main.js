@@ -50,21 +50,11 @@ define(function(require, exports, module) {
   };
 
   module.ctx.onError = function (err, mod) {
+    exports.logHandle("ERROR", 'XX' + err.name + ', ' + err.onload);
     if (err.onload) {
-      var errEvent = err.event;
-
-      if (errEvent && errEvent.filename) {
-        exports.logHandle('ERROR', koru.util.extractError({
-          toString: function () {
-            var uer = errEvent && errEvent.error;
-            return uer ? uer.toString() : err.toString();
-          },
-          stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
-        }));
-        return;
-      }
       var ctx = mod.ctx;
       var stack = Object.keys(koru.fetchDependants(mod)).map(function (id) {
+        if (id === mod.id) return '';
         return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
       }).join('\n');
       exports.logHandle("ERROR", koru.util.extractError({
@@ -77,6 +67,19 @@ define(function(require, exports, module) {
     }
     if (err.name === 'SyntaxError') {
       exports.logHandle('ERROR', err.message.replace(/([\S]*)([\s\S]*)/m, 'SyntaxError:\n  at $1\n$2'));
+      return;
+    }
+
+    var errEvent = err.event;
+
+    if (errEvent && errEvent.filename) {
+      exports.logHandle('ERROR', koru.util.extractError({
+        toString: function () {
+          var uer = errEvent && errEvent.error;
+          return uer ? uer.toString() : err.toString();
+        },
+        stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
+      }));
       return;
     }
 
