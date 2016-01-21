@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var util = require('../util');
+  var util = require('koru/util');
 
   function nextFrame (obj) {
     obj = obj || {};

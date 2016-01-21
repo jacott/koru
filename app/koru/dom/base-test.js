@@ -1,8 +1,8 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test');
-  require('./ui/html-doc');
-  var Dom = require('./dom-base');
+  var TH = require('../test');
+  require('./html-doc');
+  var Dom = require('./base');
 
   TH.testCase(module, {
     setUp: function () {

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  require('./html-doc');
-  var Dom = require('koru/dom-base');
+  require('koru/dom/html-doc');
+  var Dom = require('koru/dom/base');
   var util = require('koru/util');
 
   var TEXT_NODE = document.TEXT_NODE;

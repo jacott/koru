@@ -1,6 +1,6 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('koru/test');
   var nextFrame = require('./next-frame');
 
   TH.testCase(module, {

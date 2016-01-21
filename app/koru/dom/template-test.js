@@ -1,8 +1,9 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test');
-  var Dom = require('./dom');
-  var util = require('./util');
+  var TH = require('koru/test');
+  var DomTemplate = require('./template');
+  var util = require('koru/util');
+  var Dom = require('../dom');
 
   TH.testCase(module, {
     setUp: function () {
@@ -248,14 +249,6 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test contains": function () {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      assert.same(Dom.contains(elm, elm), elm);
-      assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
-      assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
-    },
-
     "test $actions": function () {
       Dom.newTemplate({name: "Foo"});
       Dom.Foo.$actions({
@@ -272,46 +265,6 @@ isClient && define(function (require, exports, module) {
       Dom.Foo._events[0][2](event);
 
       assert.calledWithExactly(v.one, event);
-    },
-
-    "test onMouseUp": function () {
-      Dom.newTemplate({name: 'Foo', nodes: [{
-        name: 'div', children: [
-          {name: 'span'},
-        ]
-      }]});
-      Dom.Foo.$events({
-        'mousedown span': function (event) {
-          Dom.onMouseUp(function (e2) {
-            v.ctx = Dom.current.ctx;
-            v.target = e2.target;
-          });
-        },
-      });
-
-      document.body.appendChild(Dom.Foo.$autoRender({}));
-
-      assert.dom('div>span', function () {
-        trigger(this, 'mousedown');
-        trigger(this, 'mouseup');
-
-        assert.same(v.ctx, Dom.Foo.$ctx(this));
-        assert.same(v.target, this);
-
-        v.ctx = null;
-
-        trigger(this, 'mouseup');
-
-        assert.same(v.ctx, null);
-      });
-    },
-
-    "test modifierKey": function () {
-      refute(Dom.modifierKey({}));
-      assert(Dom.modifierKey({ctrlKey: true}));
-      assert(Dom.modifierKey({shiftKey: true}));
-      assert(Dom.modifierKey({metaKey: true}));
-      assert(Dom.modifierKey({altKey: true}));
     },
 
     "test event calling": function () {
@@ -562,6 +515,22 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(Dom.remove, 1);
       assert.calledWith(Dom.remove, 2);
+    },
+
+    "test contains": function () {
+      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+
+      assert.same(Dom.contains(elm, elm), elm);
+      assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
+      assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
+    },
+
+    "test modifierKey": function () {
+      refute(Dom.modifierKey({}));
+      assert(Dom.modifierKey({ctrlKey: true}));
+      assert(Dom.modifierKey({shiftKey: true}));
+      assert(Dom.modifierKey({metaKey: true}));
+      assert(Dom.modifierKey({altKey: true}));
     },
 
     "test forEach": function () {
@@ -968,34 +937,5 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test inputValue helper": function () {
-      var elm = Dom._private.currentElement = {};
-      TH.stubProperty(elm, 'value', {get: function () {return '34'}, set: v.stub = test.stub()});
-      Dom._helpers.inputValue('foo');
-
-      assert.calledWith(v.stub, 'foo');
-
-      Dom._helpers.inputValue();
-
-      assert.calledWith(v.stub, '');
-
-      v.stub.reset();
-      Dom._helpers.inputValue(34);
-
-      refute.called(v.stub);
-    },
-  });
-
-  function trigger(elm, event, args) {
-    if (typeof event === 'string') {
-      var e = document.createEvent("Event");
-      e.initEvent(event, true, true);
-      util.extend(e, args);
-      event =  e;
-    }
-
-    elm.dispatchEvent(event);
-
-    return event;
-  }
+ });
 });

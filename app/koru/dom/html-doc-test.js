@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('koru/test');
   var sut = require('./html-doc');
 
   TH.testCase(module, {

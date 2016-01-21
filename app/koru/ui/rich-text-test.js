@@ -3,7 +3,7 @@ define(function (require, exports, module) {
   var TH = require('../test');
   var sut = require('./rich-text');
   var util = require('koru/util');
-  var Dom = require('../dom-base');
+  var Dom = require('koru/dom/base');
 
   var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6;
 

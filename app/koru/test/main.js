@@ -50,7 +50,6 @@ define(function(require, exports, module) {
   };
 
   module.ctx.onError = function (err, mod) {
-    exports.logHandle("ERROR", 'XX' + err.name + ', ' + err.onload);
     if (err.onload) {
       var ctx = mod.ctx;
       var stack = Object.keys(koru.fetchDependants(mod)).map(function (id) {

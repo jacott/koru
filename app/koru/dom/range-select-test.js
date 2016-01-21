@@ -1,8 +1,8 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
+  var TH = require('koru/test-helper');
   require('./range-select');
-  var Dom = require('../dom');
+  var Dom = require('./dom-client');
 
   TH.testCase(module, {
     setUp: function () {
@@ -16,7 +16,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      TH.domTearDown();
+      Dom.removeChildren(document.body);
       v = null;
     },
 

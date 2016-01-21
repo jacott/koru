@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
-  var Dom = require('../dom-base');
+  var Dom = require('./dom');
 
   var vendorTransform;
   var vendorStylePrefix = (function () {
@@ -292,8 +292,6 @@ define(function(require, exports, module) {
     vendorPrefix: vendorFuncPrefix,
 
     hasPointerEvents: true,
-
-    INPUT_SELECTOR: 'input,textarea,select,select>option,[contenteditable="true"]',
   });
 
   var DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};

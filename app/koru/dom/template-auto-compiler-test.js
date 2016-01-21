@@ -1,8 +1,8 @@
 isClient && define(function(require, exports, module) {
   var test, v;
-  var TH = require('../test');
-  var Dom = require('../dom');
-  var testTpl = require('../html!./template-compiler-test');
+  var TH = require('koru/test');
+  var Dom = require('./dom-client');
+  var testTpl = require('koru/html!./template-compiler-test');
 
   var $ = Dom.current;
 

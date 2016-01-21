@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
-  var Dom = require('../dom');
+  var Dom = require('./dom-client');
 
   var empty = {};
 
