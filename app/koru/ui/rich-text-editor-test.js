@@ -135,18 +135,87 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test code": function () {
+    "test pre on selection": function () {
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
         this.focus();
-        sut.insert(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
+        this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
         assert.dom('ol', function () {
           Dom.selectElm(this);
         });
-        TH.keydown(this, '`', {ctrlKey: true});
+        TH.keydown(this, 'À', {ctrlKey: true});
         sut.insert(' foo');
-        assert.dom('pre', 'hello\nworld foo');
+        assert.dom('pre[data-lang="text"]', 'hello\nworld foo');
+      });
+    },
+
+    "test pre on empty": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        this.focus();
+        TH.setRange(this);
+
+        TH.keydown(this, '`', {ctrlKey: true});
+
+        assert.dom('pre[data-lang="text"]>br');
+        sut.insert(' foo');
+        assert.dom('pre[data-lang="text"]', 'foo');
+      });
+    },
+
+    "test inline code on selection": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
+
+      assert.dom('.input', function () {
+        this.contentEditable = true;
+        this.focus();
+        TH.setRange(this.lastChild.firstChild, 0, this.lastChild.firstChild, 1);
+        TH.keydown(this, '`', {ctrlKey: true});
+        assert.dom('font[face=monospace]', '2');
+        sut.insert('foo');
+        assert.dom('font[face=monospace]', 'foo');
+
+        TH.keydown(this, '`', {ctrlKey: true});
+        sut.insert(' bar');
+        if (Dom('font[face=monospace] font[face=initial]')) {
+          assert.dom('font[face=monospace]', 'foo bar', function () {
+            assert.dom('font[face=initial]', 'bar');
+          });
+        } else {
+          assert.dom('font[face=monospace]', 'foo', function () {
+            assert.same(this.nextSibling.textContent, ' bar');
+          });
+        }
+        assert.dom('font[face=monospace]', function () {
+          TH.setRange(this.firstChild, 1);
+        });
+        TH.keydown(this, '`', {ctrlKey: true});
+        sut.insert('baz');
+        assert.dom('font[face=monospace]', /^f/, function () {
+          v.start = this.firstChild;
+        });
+        assert.dom('font[face=initial]', 'baz');
+
+        if (Dom('font[face=initial]+font[face=monospace]')) {
+          assert.dom('font[face=initial]+font[face=monospace]', 'oo', function () {
+            TH.setRange(v.start, 0, this.firstChild, 1);
+          });
+          TH.keydown(this, '`', {ctrlKey: true});
+          assert.dom('font[face=monospace]', 'o');
+        } else {
+          assert.dom('font[face=initial]', 'baz', function () {
+            TH.setRange(v.start, 0, this.nextSibling, 1);
+          });
+          TH.keydown(this, '`', {ctrlKey: true});
+          assert.dom('font[face=initial]', 'fbazo');
+        }
+        var rt = RichText.fromHtml(this);
+        rt.push(Dom.h({p: ''}));
+        assert.dom(RichText.toHtml.apply(RichText, rt), function () {
+          assert.dom('font', 'bar');
+        });
       });
     },
 
@@ -273,6 +342,8 @@ isClient && define(function (require, exports, module) {
       Dom.flushNextFrame();
 
       assert.dom('.input[contenteditable=true]', function () {
+        this.focus();
+        TH.setRange(this.firstChild.firstChild, 0);
         TH.keydown(this, ']', {ctrlKey: true});
         assert.dom('blockquote', 'hello', function () {
           assert.same(this.getAttribute('style'), null);
@@ -314,7 +385,7 @@ isClient && define(function (require, exports, module) {
         });
         assert.dom('.richTextEditor>.input', function () {
           assert.dom('a[href="http://cruel-mars.org"]', 'mars', function () {
-            assert.same(this.previousSibling.textContent, '\xa0');
+            assert.match(this.previousSibling.textContent, /^[\xa0 ]$/);
             assert.same(this.nextSibling, null);
           });
           assert.same(document.activeElement, this);

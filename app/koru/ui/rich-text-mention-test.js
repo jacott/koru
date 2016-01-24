@@ -73,7 +73,12 @@ isClient && define(function (require, exports, module) {
         assert.dom('.richTextEditor>.input', function () {
            assert.same(document.activeElement, this);
           RichTextEditor.insert("_x_");
-          assert.same(this.innerHTML, 'hello&nbsp;one<div>two th<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;_x_ree</div>');
+          assert.dom('a[class=foo][href="/#g1"]', 'Geoff Jacobsen', function () {
+            assert.match(this.nextSibling.textContent, /_x_/);
+          });
+          assert.dom('a[href="/#g1"][class="foo"]', 'Geoff Jacobsen');
+          assert.same(this.innerHTML.replace(/<a[^>]*>/,'<a>').replace(/&nbsp;/g, ' '), 'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
+
         });
       },
 
@@ -85,7 +90,6 @@ isClient && define(function (require, exports, module) {
         assert.dom('.input', function () {
           assert.same(document.activeElement, this);
           var range = Dom.getRange();
-          refute.same(range, v.range);
           assert.same(range.startContainer, v.range.startContainer);
           assert.same(range.startOffset, v.range.startOffset);
         });
@@ -239,7 +243,9 @@ isClient && define(function (require, exports, module) {
         TH.trigger('input', 'keydown', {which: 9});
 
         assert.dom('.input', function () {
-          assert.same(this.innerHTML, 'hello&nbsp;<a class=\"foo\" href=\"/#g1\">Geoff Jacobsen</a>&nbsp;');
+          assert.dom('a[href="/#g1"][class="foo"]');
+          assert.same(this.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
+                      'hello <a>Geoff Jacobsen</a> ');
         });
       },
 

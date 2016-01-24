@@ -5,7 +5,23 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, INLINE_CODE = 9;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9;
+
+  var FONT_FACE_TO_ID = {
+    'sans-serif': 0,
+    serif: 1,
+    monospace: 2,
+    script: 4,
+    cursive: 5,
+    calligraphy: 6,
+    handwriting: 7,
+    whiteboard: 8,
+    poster: 9,
+  };
+
+  var FONT_ID_TO_FACE = [];
+  for (var id in FONT_FACE_TO_ID)
+    FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
 
   var LINK_TO_HTML = [
     {
@@ -20,14 +36,7 @@ define(function(require, exports, module) {
     '': LINK_TO_HTML[0]
   };
 
-  var INLINE_TAGS = {
-    B: 'inline',
-    U: 'inline',
-    I: 'inline',
-    A: 'inline',
-    SPAN: 'inline',
-    CODE: 'inline',
-  };
+  var INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
   function fromHtml(html) {
     var builder = new MarkupBuilder();
@@ -79,8 +88,10 @@ define(function(require, exports, module) {
         var entry = this.inlines[i];
         var node = entry[0];
         var rule = FROM_RULE[node.tagName] || this.ignoreInline;;
-        rule.call(this, node, index);
-        entry[1] = this.markup.length - 1;
+        if (rule.call(this, node, index) === false)
+          entry[1] = null;
+        else
+          entry[1] = this.markup.length - 1;
       }
       this.inlineIdx = i;
     },
@@ -158,17 +169,18 @@ define(function(require, exports, module) {
 
   function extractText(node, rows, needNl) {
     if (node.nodeType === TEXT_NODE) {
-      if (needNl)
-        rows.push('');
+      rows.length || rows.push('');
+      needNl && rows.push('');
       var nodes = node.textContent.split("\n");
       rows[rows.length - 1] += nodes[0];
       for(var i = 1; i < nodes.length; ++i) {
         rows.push(nodes[i]);
       }
-      return;
+    } else if (node.tagName === 'BR') {
+      rows.length || rows.push('');
+      rows.push('');
     } else {
-      if (! INLINE_TAGS[node.tagName])
-        needNl = true;
+      needNl = ! INLINE_TAGS[node.tagName];
       var nodes = node.childNodes;
       if (nodes.length) {
         extractText(nodes[0], rows, needNl);
@@ -185,7 +197,7 @@ define(function(require, exports, module) {
     this.markup.push(CODE, this.relative(start), 0);
     var pos = this.markup.length - 1;
     this.newLine();
-    lines[start] = "code: " + (parent.getAttribute('data-lang')||'');
+    lines[start] = "code:"+(parent.getAttribute('data-lang')||'text');
     this.newLine();
 
     var nodes = parent.childNodes;
@@ -195,10 +207,12 @@ define(function(require, exports, module) {
       var hlCode = undefined;
       if (node.tagName === 'SPAN') {
         hlCode = CLASS_TO_CODE[node.className];
-        var rows = node.textContent.split('\n');
-      } else {
+        if (hlCode)
+          var rows = node.textContent.split('\n');
+      }
+      if (! hlCode) {
         var rows = [];
-        extractText(node, rows, true);
+        extractText(node, rows);
       }
       for(var i = 0; i < rows.length; ++i) {
         i !== 0 && this.newLine();
@@ -282,6 +296,20 @@ define(function(require, exports, module) {
     CLASS_TO_CODE[id] = index;
   });
 
+  function fromFont(node, index, pos) {
+    if (pos !== undefined) {
+      this.markup[pos - 1] = index;
+      return;
+    }
+
+    var face = node.tagName === 'FONT' ? node.getAttribute('face') : 'monospace';
+    var faceId = FONT_FACE_TO_ID[face];
+    if (faceId === undefined)
+      faceId = face;
+
+    this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, faceId);
+  }
+
   var FROM_RULE = {
     DIV: fromDiv,
     OL: fromBlock(OL),
@@ -291,7 +319,8 @@ define(function(require, exports, module) {
     B: fromInline(BOLD),
     U: fromInline(UNDERLINE),
     I: fromInline(ITALIC),
-    CODE: fromInline(INLINE_CODE),
+    CODE: fromFont,
+    FONT: fromFont,
     PRE: fromPre,
 
     A: function (node, index, pos) {
@@ -439,7 +468,7 @@ define(function(require, exports, module) {
       state.lastLine = state.currLine + this.offset(2);
       this.nextRule(3);
       state.skip = true;
-      pre.setAttribute('data-lang', this.line.slice(6));
+      pre.setAttribute('data-lang', this.line.slice(5));
       state.rulePos = this.midx;
       var markup = this.markup;
       state.offset = function (delta) {
@@ -483,16 +512,31 @@ define(function(require, exports, module) {
     text && state.result.appendChild(document.createTextNode(text));
   }
 
-  function toInline(tag) {
+  function toInline(tag, attrs) {
     function toInlineTag(state) {
       var oldResult = state.result;
       oldResult.appendChild(state.result = document.createElement(tag));
+      attrs && addAttrs(attrs, state.result);
       this.toChildren(state);
       state.result = oldResult;
     } toInlineTag.inline = true; toInlineTag.muInc = 4;
 
     return toInlineTag;
   };
+
+  function addAttrs(attrs, elm) {
+    for(var name in attrs)
+      elm.setAttribute(name, attrs[name]);
+  }
+
+  function toFont(state) {
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('FONT'));
+    var code = this.offset(-1);
+    state.result.setAttribute('face', FONT_ID_TO_FACE[code] || code);
+    this.toChildren(state);
+    state.result = oldResult;
+  } toFont.inline = true; toFont.muInc = 5;
 
   function toLink(state) {
     var oldResult = state.result;
@@ -520,7 +564,7 @@ define(function(require, exports, module) {
   TO_RULES[BOLD] = toInline('B');
   TO_RULES[ITALIC] = toInline('I');
   TO_RULES[UNDERLINE] = toInline('U');
-  TO_RULES[INLINE_CODE] = toInline('CODE');
+  TO_RULES[FONT] = toFont;
   TO_RULES[LINK] = toLink;
 
   function isInlineNode(item) {
@@ -539,7 +583,6 @@ define(function(require, exports, module) {
 
       var html = toHtml(text, markup, document.createElement('div'));
       var rt = fromHtml(html);
-
 
       return text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
     },

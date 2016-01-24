@@ -26,12 +26,30 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
-    code: function () {
+    code: function (event) {
       var range = Dom.getRange();
-      var pre = document.createElement('PRE');
-      pre.appendChild(range.extractContents());
-      var rt = RichText.fromHtml(Dom.h({div: pre}));
-      Tpl.insert(RichText.toHtml(rt[0], rt[1]));
+      var sc = range.startContainer;
+      var ec = range.endContainer;
+      var collapsed = range.collapsed;
+
+      var editor = Dom.getClosestClass(sc, 'input');
+      if (! editor) return;
+
+      var _code;
+
+      if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
+        execCommand('fontName', _code ? 'initial': 'monospace');
+        return;
+      }
+      var html = document.createElement('PRE');
+      if (! collapsed) {
+        html.appendChild(range.extractContents());
+      }
+      var rt = RichText.fromHtml(Dom.h({div: html}));
+      html = RichText.toHtml(rt[0], rt[1]).firstChild;
+
+      collapsed && html.appendChild(document.createElement("br"));
+      Tpl.insert(html);
     },
     link: function () {
       var aElm = getTag('A');
@@ -84,12 +102,13 @@ define(function(require, exports, module) {
     outdent: ctrl+'Û', // '['
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
-    code: ctrl+'`',
+    code: ctrl+'À',
   }));
 
   keyMap.addKeys(mapActions({
     outdent: ctrl+'[',
     indent: ctrl+']',
+    code: ctrl+'`',
   }));
 
   function commandify(func, cmd) {
@@ -115,12 +134,6 @@ define(function(require, exports, module) {
       keys[name] = [keys[name], actions[name]];
     }
     return keys;
-  }
-
-  function execFunc(command) {
-    return function () {
-
-    };
   }
 
   Tpl.$helpers({
@@ -203,6 +216,8 @@ define(function(require, exports, module) {
     lastInnerMostNode: lastInnerMostNode,
 
     insert: function (arg, inner) {
+      var range = Dom.getRange();
+
       if (typeof arg === 'string')
         return execCommand('insertText', arg);
 
@@ -227,7 +242,7 @@ define(function(require, exports, module) {
       var fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
         input.removeChild(fc);
-      util.forEach(input.querySelectorAll('[style]'), function (elm) {
+      util.forEach(input.querySelectorAll('BLOCKQUOTE[style]'), function (elm) {
         elm.removeAttribute('style');
       });
     },
@@ -261,6 +276,22 @@ define(function(require, exports, module) {
         return;
       }
 
+      var codeMode = $.ctx.codeMode;
+      if (codeMode) {
+        switch (codeMode.keyCount) {
+        case 0:
+          codeMode.keyCount = 1;
+          break;
+        case 1:
+          if (codeMode.on)
+            $.ctx.codeMode = null;
+          else {
+            codeMode.on = true;
+            codeMode.keyCount = null;
+          }
+        }
+      }
+
       if (event.ctrlKey) {
         keyMap.exec(event, 'ignoreFocus');
         return;
@@ -274,7 +305,23 @@ define(function(require, exports, module) {
     },
 
     keypress: function (event) {
+      if (event.which === 0) return; // for firefox
       var ctx = $.ctx;
+      var codeMode = ctx.codeMode;
+      if (codeMode && codeMode.keyCount === 1) {
+        Dom.stopEvent();
+        var text = String.fromCharCode(event.which);
+        if (codeMode.on) {
+          execCommand('insertHTML', '<span style="font-family:code">'+text+'</span>');
+        } else {
+          execCommand('insertText', text);
+          var range = Dom.getRange();
+          range.setStart(range.startContainer, range.startOffset - text.length);
+          Dom.setRange(range);
+          removeCode(ctx.inputElm, range);
+        }
+        return;
+      }
 
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
@@ -476,6 +523,7 @@ define(function(require, exports, module) {
   function normRange(editor, range) {
     normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
     normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
+    return range;
   }
 
   function normPos(editor, range, node, offset, setter) {
@@ -615,10 +663,58 @@ define(function(require, exports, module) {
       var data = $.ctx.data;
       Dom.setRange(data.range);
       data.inputElm.focus();
-      Tpl.insert(Dom.h({a: inputs[0].value, $href: inputs[1].value}));
+      var href  = inputs[1].value;
+      Tpl.insert(Dom.h({a: inputs[0].value || href, $href: href}));
       Dom.remove(event.currentTarget);
     },
   });
+
+  function removeCode(editor, range) {
+    var ctx = Dom.getMyCtx(editor.parentNode);
+    var ec = range.endContainer;
+    var midText = range.toString();
+    var parent = ec.parentNode;
+    range.setEnd(parent, 1);
+    var endText = range.toString().slice(midText.length);
+    Dom.setRange(range);
+    execCommand('delete');
+    range = document.createRange();
+    range.setStartAfter(ec);
+    var sc = range.startContainer;
+    var so = range.startOffset;
+    Dom.setRange(range);
+    midText && execCommand('insertHtml', '<span>'+midText+'</span>');
+    range = Dom.getRange();
+    endText && addCode(endText);
+    range.setStart(sc, so);
+    Dom.setRange(range);
+  }
+
+  function addCode(text, select) {
+    execCommand('insertHTML', '<span style="font-family:code">'+text+'</span>');
+    if (select) {
+      var range = Dom.getRange();
+      range.setStart(range.endContainer, 0);
+      Dom.setRange(range);
+      return range;
+    }
+  }
+
+  function setCode(editor, range, isCode) {
+    var ctx = Dom.getMyCtx(editor.parentNode);
+    var cn = codeNode(editor, range);
+    ctx.codeMode = {
+      container: range.startContainer, offset: range.startOffset, codeNode: cn,
+      on: isCode, keyCount: (! cn) !== (! isCode) && 0};
+  }
+
+  function codeNode(editor, range) {
+    for(var node = range.startContainer; node && node !== editor; node = node.parentNode) {
+      if (node.nodeType === 1 && node.getAttribute('face') === 'monospace') {
+        return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
+      }
+    }
+  }
 
   return Tpl;
 });
