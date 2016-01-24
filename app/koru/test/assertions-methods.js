@@ -6,10 +6,12 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   ga.add('same', {
     assert:  function (actual, expected) {
-      return actual === expected;
+      var result = actual === expected;
+      this.eql = result ? '==' : '!=';
+      return result;
     },
 
-    message: "{i0} to be the same as {i1}"
+    message: "to be the same:\n    {i0}\n {$eql} {i1}"
   });
 
   ga.add('equals', {

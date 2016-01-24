@@ -146,6 +146,8 @@ define(['./core'], function (geddon) {
   }
 
   function failed(test, ex) {
+    if (ex === 'abortTests')
+      throw ex;
     test.success = false;
     test.errors = [geddon.extractError(ex)];
   }
