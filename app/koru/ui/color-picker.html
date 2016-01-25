@@ -1,5 +1,6 @@
 <template name="ColorPicker">
   <div id="ColorPicker" class="glassPane Dialog Confirm" {{alphaClass}}>
+    <span tabindex="0" class="startTab"></span>
     <div class="dialogContainer">
       <div class="ui-dialog">
         <fieldset class="palette">
@@ -33,6 +34,7 @@
         </fieldset>
       </div>
     </div>
+    <span tabindex="0" class="endTab"></span>
   </div>
 
   <template name="ColorPart">

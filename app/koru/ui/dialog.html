@@ -1,11 +1,14 @@
 <template name="Dialog">
   <div class="glassPane Dialog">
+    <span tabindex="0" class="startTab"></span>
     {{content}}
+    <span tabindex="0" class="endTab"></span>
   </div>
   <template name="Confirm">
     <div class="glassPane Dialog Confirm">
+      <span tabindex="0" class="startTab"></span>
       <div class="dialogContainer">
-        <div {{classes}} tabindex="0">
+        <div {{classes}}>
           <div>
             {{content}}
           </div>
@@ -15,6 +18,7 @@
           </div>
         </div>
       </div>
+      <span tabindex="0" class="endTab"></span>
     </div>
   </template>
 </template>

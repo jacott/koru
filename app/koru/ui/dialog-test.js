@@ -29,8 +29,8 @@ isClient && define(function (require, exports, module) {
 
       Dialog.open(Dom.html('<div id="Nested" tabindex="0"><input></div>'), 'nofocus');
 
-      assert.dom('#Nested', function () {
-        assert.same(document.activeElement, v.input);
+      assert.dom('.Dialog:last-child>span.startTab', function () {
+        assert.same(document.activeElement, this);
       });
 
       assert.isTrue(Dialog.isOpen());
@@ -126,13 +126,17 @@ isClient && define(function (require, exports, module) {
 
       Dialog.confirm(data);
 
-      assert.dom('.Dialog.Confirm .dialogContainer .ui-dialog', function () {
-        assert.same(document.activeElement, this);
+      assert.dom('.Dialog.Confirm', function () {
+        assert.dom('.startTab', function () {
+          assert.same(document.activeElement, this);
+        });
+        assert.dom('.dialogContainer .ui-dialog', function () {
 
-        assert.dom('span', 'bla');
-        assert.dom('.actions', function () {
-          assert.dom('button#cancel[name=cancel]', 'Cancel', function () {
-            TH.click(this);
+          assert.dom('span', 'bla');
+          assert.dom('.actions', function () {
+            assert.dom('button#cancel[name=cancel]', 'Cancel', function () {
+              TH.click(this);
+            });
           });
         });
       });

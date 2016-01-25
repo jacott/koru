@@ -61,7 +61,7 @@ define(function(require, exports, module) {
     palette: function (color) {
       if ($.element.nodeType === document.ELEMENT_NODE) return;
 
-      var elm = Dom.html({tag: 'button', "data-color": color});
+      var elm = Dom.h({button: '', "$data-color": color, $tabindex: "-1"});
       elm.style.backgroundColor = '#'+color;
       return elm;
     },
@@ -124,9 +124,9 @@ define(function(require, exports, module) {
       document.body.appendChild(elm);
       Modal.init({
         container: elm,
-        popup: elm.firstElementChild.firstElementChild,
-        ignoreTab: true,
+        handleTab: true,
       });
+      elm.querySelector('[name=hex]').focus();
     },
 
     $destroyed: function (ctx, elm) {

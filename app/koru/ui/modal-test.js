@@ -132,6 +132,7 @@ isClient && define(function (require, exports, module) {
         sut.appendBelow({container: popup0, origin: this});
         sut.appendBelow({container: popup1, origin: popup0});
         sut.appendBelow({container: popup2, origin: popup1});
+
         v.ibox = this.getBoundingClientRect();
       });
       document.body.addEventListener('keydown', v.keydown = test.stub());
@@ -152,6 +153,8 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, ev);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
+
+        refute.dom('.popup2');
 
         Dom.remove(popup0);
         assert.dom('>.glassPane:last-child>.popup1', function () {

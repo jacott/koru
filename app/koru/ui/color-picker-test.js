@@ -20,6 +20,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('[data-color="ffff00"]', function () {
         assert.same(this.style.backgroundColor, 'rgb(255, 255, 0)');
+        this.focus();
         TH.click(this);
       });
       assert.dom('[name=hex]', {value: 'ffff0087'});
@@ -65,6 +66,7 @@ isClient && define(function (require, exports, module) {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
       assert.dom('.colorPart.s', function () {
+        this.focus();
         assert.dom('input', {value: '100'});
         TH.input('input', '-50');
         assert.dom('.handle', function () {

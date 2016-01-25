@@ -17,9 +17,10 @@ define(function(require, exports, module) {
       modalize(Dom.getMyCtx(elm), elm);
 
       if (! nofocus) {
-        var focus = elm.querySelector(Dom.FOCUS_SELECTOR);
-        focus && focus.focus();
+        var focus = elm.children[1].querySelector(Dom.FOCUS_SELECTOR);
       }
+      if (! focus) focus = elm.children[0];
+      focus.focus();
     },
 
     close: function (elm) {
@@ -46,6 +47,7 @@ define(function(require, exports, module) {
     confirm: function (data) {
       var elm = Tpl.Confirm.$autoRender(data);
       document.body.appendChild(elm);
+      modalize(Dom.getMyCtx(elm), elm);
       if (! data.nofocus) {
         var focus = elm.querySelector(Dom.FOCUS_SELECTOR);
         focus && focus.focus();
@@ -106,8 +108,8 @@ define(function(require, exports, module) {
 
   function modalize(ctx, elm) {
     Modal.init({ctx: ctx, container: elm,
-      popup: elm.firstElementChild.firstElementChild,
-      ignoreTab: true,
+                popup: elm.firstElementChild.firstElementChild,
+                handleTab: true,
     });
   }
   return Tpl;

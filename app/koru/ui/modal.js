@@ -58,7 +58,11 @@ define(function(require, exports, module) {
 
       if (! options.focus) options.focus = document.activeElement;
       if (! options.ctx) options.ctx = Dom.getMyCtx(options.container);
-      if (! options.popup) options.popup = options.container.firstElementChild;
+      if (! options.popup) {
+        options.popup = options.container.firstElementChild;
+        if (options.popup.tagName === 'SPAN')
+          options.popup = options.popup.nextElementSibling;
+      }
       options.container.addEventListener('mousedown', callback, true);
       options.ctx.onDestroy(function () {
         options.container.removeEventListener('mousedown', callback, true);
