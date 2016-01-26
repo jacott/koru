@@ -636,6 +636,8 @@ define(function(require, exports, module) {
 
   function onEvent(event) {
     if (_disable_focusout && event.type == 'focusout') return;
+    var prevEvent = currentEvent;
+    var prevCtx = currentCtx;
     currentEvent = event;
     currentCtx = event.currentTarget._koru;
     var eventTypes = currentCtx.__events[event.type];
@@ -681,8 +683,8 @@ define(function(require, exports, module) {
       event.stopImmediatePropagation();
       handleException(ex);
     } finally {
-      currentEvent = null;
-      currentCtx = null;
+      currentEvent = prevEvent;
+      currentCtx = prevCtx;
     }
   }
 
