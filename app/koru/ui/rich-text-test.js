@@ -157,22 +157,28 @@ define(function (require, exports, module) {
     },
 
     "test code": function () {
+      assertConvert('<pre data-lang="text"><div>stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</div></pre>');
+      assertConvert('<pre data-lang=\"text\">One</pre>'+
+                    '<pre data-lang=\"text\"><div><div>Two</div>two</div></pre>'+
+                    '<pre data-lang=\"text\"></pre>',
+
+                    '<pre data-lang=\"text\"><div>One</div></pre>'+
+                    '<pre data-lang=\"text\"><div>Two\ntwo</div></pre>'+
+                    '<pre data-lang=\"text\"><div></div></pre>');
+
       var p = document.createElement('p');
       p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
       var rt = sut.fromHtml(p);
-      assert.equals(rt, [['code:text', 'One', 'code:text', 'Two', 'code:text', ''], [8, 0, 1, 8, 2, 1, 8, 2, 1]]);
+      assert.equals(rt, [['code:text', 'One', 'code:text', 'Two', 'code:text'], [8, 0, 1, 8, 2, 1, 8, 2, 0]]);
 
-      assertConvert('<pre data-lang=\"text\">One</pre>'+
-                    '<pre data-lang=\"text\">Two</pre>'+
-                    '<pre data-lang=\"text\"></pre>');
-      assertConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>');
+      assertConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
+                    '<pre data-lang="javascript"><div><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</div></pre>');
       assertConvert('<div><pre><ol><li>hello</li><li>wo<b>rl</b>d</li></ol></pre></div>',
-                    '<pre data-lang="text">\nhello\nworld</pre>');
+                    '<pre data-lang="text"><div>hello\nworld</div></pre>');
       assertConvert('<div><pre>hello<div><br></div>new<br>world<div>now</div></pre></div>',
-                    '<pre data-lang="text">hello\nnew\nworld\nnow</pre>');
-      assertConvert('<pre data-lang="text">stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</pre>');
+                    '<pre data-lang="text"><div>hello\n\nnew\nworld\nnow</div></pre>');
       assertConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>',
-                   '<div>Some <font face="monospace">code in</font> here</div><pre data-lang=\"javascript\">one\ntwo\nthree</pre>');
+                    '<div>Some <font face="monospace">code in</font> here</div><pre data-lang=\"javascript\"><div>one\ntwo\nthree</div></pre>');
     },
 
     "test multiple": function () {

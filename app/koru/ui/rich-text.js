@@ -167,63 +167,65 @@ define(function(require, exports, module) {
     };
   }
 
-  function extractText(node, rows, needNl) {
-    if (node.nodeType === TEXT_NODE) {
-      rows.length || rows.push('');
-      needNl && rows.push('');
-      var nodes = node.textContent.split("\n");
-      rows[rows.length - 1] += nodes[0];
-      for(var i = 1; i < nodes.length; ++i) {
-        rows.push(nodes[i]);
-      }
-    } else if (node.tagName === 'BR') {
-      rows.length || rows.push('');
-      rows.push('');
-    } else {
-      needNl = ! INLINE_TAGS[node.tagName];
-      var nodes = node.childNodes;
-      if (nodes.length) {
-        extractText(nodes[0], rows, needNl);
-        for(var i = 1; i < nodes.length; ++i) {
-          extractText(nodes[i], rows);
-        }
-      }
-    }
-  }
-
   function fromPre(parent, state) {
-    var lines = this.lines;
+    var needNl = true;
+    var builder =this;
+    var lines = builder.lines;
     var start = lines.length;
-    this.markup.push(CODE, this.relative(start), 0);
-    var pos = this.markup.length - 1;
-    this.newLine();
+    builder.markup.push(CODE, builder.relative(start), 0);
+    var pos = builder.markup.length - 1;
+    builder.newLine();
     lines[start] = "code:"+(parent.getAttribute('data-lang')||'text');
-    this.newLine();
 
     var nodes = parent.childNodes;
     var last = state.last = nodes.length - 1;
+    var hlCode;
     for(var index = 0; index <= last; ++index) {
-      var node = nodes[index];
-      var hlCode = undefined;
-      if (node.tagName === 'SPAN') {
-        hlCode = CLASS_TO_CODE[node.className];
-        if (hlCode)
-          var rows = node.textContent.split('\n');
-      }
-      if (! hlCode) {
-        var rows = [];
-        extractText(node, rows);
-      }
-      for(var i = 0; i < rows.length; ++i) {
-        i !== 0 && this.newLine();
-        var cIdx = lines.length - 1;
-        var lPos = lines[cIdx].length;
-        lines[lines.length - 1] += rows[i];
-        if (hlCode !== undefined && lines[cIdx].length !== lPos)
-          this.markup.push(hlCode, this.relative(cIdx), lPos, lines[cIdx].length - lPos);
+      extractText(nodes[index]);
+    }
+    builder.markup[pos] = builder.lines.length - start - 1;
+
+    function addText(text) {
+      var cIdx = lines.length - 1;
+      var lPos = lines[cIdx].length;
+      lines[cIdx] += text;
+      if (hlCode !== undefined && lines[cIdx].length !== lPos) {
+        builder.markup.push(hlCode, builder.relative(cIdx), lPos, lines[cIdx].length - lPos);
+        hlCode = undefined;
       }
     }
-    this.markup[pos] = this.lines.length - start - 1;
+
+    function extractText(node) {
+      if (node.tagName === 'SPAN') {
+        hlCode = CLASS_TO_CODE[node.className];
+      }
+      if (node.nodeType === TEXT_NODE) {
+        lines.length || lines.push('');
+        if (needNl) {
+          builder.newLine();
+          needNl = false;
+        }
+        var rows = node.textContent.split("\n");
+        addText(rows[0]);
+        for(var i = 1; i < rows.length; ++i) {
+          needNl = false;
+          builder.newLine();
+          addText(rows[i]);
+        }
+      } else if (node.tagName === 'BR') {
+        builder.newLine();
+        needNl = false;
+      } else {
+        if (! INLINE_TAGS[node.tagName])
+          needNl = true;
+        var nodes = node.childNodes;
+        for(var i = 0; i < nodes.length; ++i) {
+          extractText(nodes[i], lines, state);
+        }
+        if (! INLINE_TAGS[node.tagName])
+          needNl = true;
+      }
+    }
   } fromPre.override = true;
 
   var CODE_TO_CLASS = [
@@ -463,7 +465,9 @@ define(function(require, exports, module) {
   function toCode(state) {
     if (! state.begun) {
       var pre = document.createElement('pre');
-      state.result.appendChild(state.result = pre);
+      var inner = document.createElement('div');
+      state.result.appendChild(pre);
+      pre.appendChild(state.result = inner);
       state.currLine = this.lidx;
       state.lastLine = state.currLine + this.offset(2);
       this.nextRule(3);
@@ -575,6 +579,11 @@ define(function(require, exports, module) {
     toHtml: toHtml,
 
     fromHtml: fromHtml,
+
+    fromToHtml: function (html) {
+      var rt = fromHtml(Dom.h({div: html}));
+      return toHtml(rt[0], rt[1], document.createElement('div'));
+    },
 
     isValid: function (text, markup) {
       if (text == null && markup == null) return true;
