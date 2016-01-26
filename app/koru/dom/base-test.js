@@ -24,6 +24,14 @@ define(function (require, exports, module) {
         assert("no server css query yet");
     },
 
+    "test nodeIndex": function () {
+      var node = Dom.html({div: ['one', 'two',  'three']});
+
+      assert.same(Dom.nodeIndex(node.firstChild), 0);
+      assert.same(Dom.nodeIndex(node.childNodes[1]), 1);
+      assert.same(Dom.nodeIndex(node.childNodes[2]), 2);
+    },
+
     "test undefined textConent": function () {
       assert.same(Dom.html({text: undefined}).outerHTML, '<div>undefined</div>');
     },

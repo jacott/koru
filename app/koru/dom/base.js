@@ -40,6 +40,15 @@ define(function(require, exports, module) {
       Dom.addClass(elm, name);
       return true;
     },
+
+    nodeIndex: function (node) {
+      var nodes = node.parentNode.childNodes;
+      for (var count = nodes.length; count >= 0; --count) {
+        if (node === nodes[count])
+          return count;
+      }
+      return -1;
+    },
   });
 
 
