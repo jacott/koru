@@ -135,37 +135,67 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test pre on selection": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+    "pre": {
+      setUp: function () {
+        document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      },
 
-      assert.dom('.input', function () {
-        this.focus();
-        this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
-        assert.dom('ol', function () {
-          Dom.selectElm(this);
+      "test on selection": function () {
+        assert.dom('.input', function () {
+          this.focus();
+          this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
+          assert.dom('ol', function () {
+            Dom.selectElm(this);
+          });
+          TH.keyup(this, 39);
+          TH.keydown(this, 'À', {ctrlKey: true});
+          sut.insert(' foo');
+          assert.dom('pre[data-lang="text"]', 'hello\nworld foo');
+          TH.keydown(this, 13);
+          TH.keyup(this, 13);
+          assert.same(sut.$ctx(this).mode.type, 'code');
+          sut.insert('bar');
+          assert.dom(RichText.fromToHtml(this.parentNode.value), function () {
+            assert.dom('pre[data-lang="text"]>div', 'hello\nworld foo\nbar');
+          });
+          this.insertBefore(Dom.h({div: "outside"}), this.firstChild);
+          TH.setRange(this.firstChild.firstChild, 3);
+          TH.keyup(this, 39);
+          TH.keydown(this, 13);
+          assert.same(this.firstChild.firstChild.textContent, 'outside');
         });
-        TH.keydown(this, 'À', {ctrlKey: true});
-        sut.insert(' foo');
-        assert.dom('pre[data-lang="text"]', 'hello\nworld foo');
-      });
-    },
+      },
 
-    "test pre on empty": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      "test mouseup on/off": function () {
+         assert.dom('.input', function () {
+           this.focus();
+           assert.same(sut.$ctx(this).mode.type, 'standard');
+           Dom('.richTextEditor').value = Dom.h([{div: "first"}, {pre: "second"}]);
+           TH.setRange(this.lastChild, 0);
+           TH.mouseDownUp(this);
+           assert.same(sut.$ctx(this).mode.type, 'code');
+           TH.setRange(this.firstChild, 0);
+           TH.mouseDownUp(this);
+           assert.same(sut.$ctx(this).mode.type, 'standard');
+         });
+      },
 
-      assert.dom('.input', function () {
-        this.focus();
-        TH.setRange(this);
+      "test on empty": function () {
+        assert.dom('.input', function () {
+          this.focus();
+          TH.setRange(this);
 
-        TH.keydown(this, '`', {ctrlKey: true});
+          TH.keydown(this, '`', {ctrlKey: true});
 
-        assert.dom('pre[data-lang="text"]>br');
-        sut.insert(' foo');
-        assert.dom('pre[data-lang="text"]', 'foo');
-      });
+          assert.dom('pre[data-lang="text"]>div>br');
+          sut.insert(' foo');
+          assert.dom('pre[data-lang="text"]', 'foo');
+        });
+      },
     },
 
     "test inline code on selection": function () {
+
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {
@@ -274,26 +304,33 @@ isClient && define(function (require, exports, module) {
           },
         };
 
+        document.body.appendChild(v.tpl.$autoRender({content: ''}));
+        v.input = Dom('.input');
+        var topCtx = Dom.getMyCtx(v.input.parentNode);
+
         v.slot = TH.findDomEvent(sut, 'paste')[0];
-        v.paste = v.slot[2];
-        v.slot[2] = test.stub();
+        v.origPaste = v.slot[2];
+        v.paste = function (event) {
+          var origCtx = Dom.current.ctx;
+          Dom.current._ctx = topCtx;
+          try {
+            return v.origPaste.call(v.input.parentNode, event);
+          } finally {
+          Dom.current._ctx = origCtx;
+          }
+        };
         test.stub(Dom, 'stopEvent');
 
-        document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
-        v.input = document.body.getElementsByClassName('input')[0];
         v.insertHTML = v.ec.withArgs('insertHTML');
         v.insertText = v.ec.withArgs('insertText').returns(true);
       },
 
       tearDown: function () {
-        if (v.slot) v.slot[2] = v.paste;
       },
 
       "test wiried": function () {
-        TH.trigger(v.input, 'paste');
-
-        assert.called(v.slot[2]);
+        assert.equals(v.slot, ['paste', '', v.origPaste]);
       },
 
       "test no clipboard": function () {
@@ -315,12 +352,28 @@ isClient && define(function (require, exports, module) {
 
       "test insertHTML": function () {
         v.insertHTML.returns(true);
-        v.paste(v.event);
 
+        v.paste(v.event);
         assert.called(Dom.stopEvent);
 
         refute.called(v.insertText);
         assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><b>bold</b> world</div>');
+      },
+
+      "test pre": function () {
+        v.insertHTML.returns(true);
+        v.input.parentNode.value = Dom.h({pre: {div: 'paste before'}});
+        assert.dom('.input', function () {
+          assert.dom('pre>div', function () {
+            this.focus();
+            TH.setRange(this.firstChild, 0);
+            TH.keyup(this, 39);
+            v.paste(v.event);
+            assert.calledWith(v.insertHTML, 'insertHTML', false, 'bold world');
+          });
+          sut.$ctx(this).mode.paste('<b>bold</b>\nplain<br>newline');
+          assert.calledWith(v.insertHTML, 'insertHTML', false, 'bold\nplain\nnewline');
+        });
       },
     },
 

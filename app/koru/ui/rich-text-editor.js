@@ -18,6 +18,8 @@ define(function(require, exports, module) {
 
   var shift = KeyMap.shift, ctrl = KeyMap.ctrl;
 
+  var EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
+
   var actions = commandify({
     bold: true,
     italic: true,
@@ -41,15 +43,13 @@ define(function(require, exports, module) {
         execCommand('fontName', _code ? 'initial': 'monospace');
         return;
       }
-      var html = document.createElement('PRE');
-      if (! collapsed) {
-        html.appendChild(range.extractContents());
+      if (collapsed) {
+        var html = EMPTY_PRE.cloneNode(true);
+      } else {
+        var html = RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild;
       }
-      var rt = RichText.fromHtml(Dom.h({div: html}));
-      html = RichText.toHtml(rt[0], rt[1]).firstChild;
-
-      collapsed && html.appendChild(document.createElement("br"));
       Tpl.insert(html);
+      Dom.getMyCtx(editor.parentNode).mode = codeMode;
     },
     link: function () {
       var aElm = getTag('A');
@@ -103,13 +103,74 @@ define(function(require, exports, module) {
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
     code: ctrl+'À',
-  }));
+  }, actions));
 
   keyMap.addKeys(mapActions({
     outdent: ctrl+'[',
     indent: ctrl+']',
     code: ctrl+'`',
-  }));
+  }, actions));
+
+
+  var codeActions = commandify({
+    bold: false,
+    italic: false,
+    underline: false,
+    nextSection: function (event) {
+      var elm = getModeNode($.ctx, Dom.getRange().endContainer);
+      if (! elm) return;
+      var nextElm = elm.nextSibling;
+      var range = document.createRange();
+      if (nextElm) {
+        normPos($.ctx.inputElm, range, elm.nextSibling, 0, 'setEnd');
+        range.collapse();
+        Dom.setRange(range);
+      } else {
+        var temp = document.createTextNode("\xa0");
+        elm.parentNode.appendChild(temp);
+        range.setEnd(temp, 0);
+        range.collapse();
+        Dom.setRange(range);
+        execCommand('insertHTML', '<div><br></div>');
+        temp.parentNode.removeChild(temp);
+      }
+    },
+    previousSection: function () {
+      var elm = getModeNode($.ctx, Dom.getRange().endContainer);
+      if (! elm) return;
+      var previousElm = elm.previousSibling;
+      var range = document.createRange();
+      if (previousElm) {
+        normPos($.ctx.inputElm, range, elm.previousSibling, 0, 'setStart');
+        range.collapse(true);
+        Dom.setRange(range);
+      } else {
+        var temp = document.createTextNode("\xa0");
+        elm.parentNode.insertBefore(temp, elm);
+        range.setEnd(temp, 0);
+        range.collapse();
+        Dom.setRange(range);
+        execCommand('insertHTML', '<div><br></div>');
+        temp.parentNode.removeChild(temp);
+      }
+    },
+    syntaxHighlight: function () {},
+    newline: function () {
+      execCommand('insertText', '\n');
+    },
+  });
+
+  var codeKeyMap = KeyMap(mapActions({
+    bold: ctrl+'B',
+    italic: ctrl+'I',
+    underline: ctrl+'U',
+    nextSection: ctrl+KeyMap.down,
+    previousSection: ctrl+KeyMap.up,
+    syntaxHighlight: ctrl+shift+'H',
+    newline: "\x0d",
+  }, codeActions));
+
+  function noop() {}
 
   function commandify(func, cmd) {
     switch(typeof func) {
@@ -118,9 +179,9 @@ define(function(require, exports, module) {
         return func.call(null, event, cmd);
       };
     case 'boolean':
-      return function () {
+      return func ? function () {
         execCommand(cmd);
-      };
+      } : noop;
     }
     for (cmd in func) {
       func[cmd] = commandify(func[cmd], cmd);
@@ -129,7 +190,7 @@ define(function(require, exports, module) {
   }
 
 
-  function mapActions(keys) {
+  function mapActions(keys, actions) {
     for (var name in keys) {
       keys[name] = [keys[name], actions[name]];
     }
@@ -164,6 +225,39 @@ define(function(require, exports, module) {
     Dom.setClass('focus', event.type === 'focusin', event.currentTarget.parentNode);
   }
 
+  var standardMode = {
+    type: 'standard',
+    paste: function (htmlText) {
+      var html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
+      Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
+    },
+
+    keydown: function (event) {
+      if (event.ctrlKey) {
+        keyMap.exec(event, 'ignoreFocus');
+        return;
+      }
+
+      if ($.ctx.mentionState != null && $.ctx.mentionState < 3 &&
+          ++$.ctx.mentionState > 2) {
+        // we had a non printable key pressed; abort mention
+        RichTextMention.revertMention(this);
+      }
+    },
+  };
+
+  var codeMode = {
+    type: 'code',
+    keydown:  function (event) {
+      codeKeyMap.exec(event, 'ignoreFocus');
+    },
+
+    paste: function (htmlText) {
+      var html = RichText.fromToHtml(Dom.html('<pre><div>'+htmlText+'</div></pre>'));
+      Tpl.insert(html.firstChild.firstChild, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
+    },
+  };
+
   Tpl.$extend({
     actions: actions,
 
@@ -172,6 +266,8 @@ define(function(require, exports, module) {
       ctx.inputElm = elm.lastChild;
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
+      ctx.mode = standardMode;
+
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
       Dom.nextFrame(function () {
         ctx.inputElm.focus();
@@ -252,16 +348,16 @@ define(function(require, exports, module) {
         if (types) for(var i = 0; i < types.length; ++i) {
           var type = types[i];
           if (/html/.test(type)) {
-            var md = RichText.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
-            var text = md[0].join('\n');
-
-            var div = document.createElement('div');
-            if (Tpl.insert(RichText.toHtml(text, md[1], div), 'inner') || Tpl.insert(text))
-              Dom.stopEvent();
+            Dom.stopEvent();
+            $.ctx.mode.paste(event.clipboardData.getData(type));
             return;
           }
         }
       }
+    },
+
+    mouseup: function () {
+      setMode($.ctx, Dom.getRange().startContainer);
     },
 
     'click a,button': function (event) {
@@ -276,52 +372,20 @@ define(function(require, exports, module) {
         return;
       }
 
-      var codeMode = $.ctx.codeMode;
-      if (codeMode) {
-        switch (codeMode.keyCount) {
-        case 0:
-          codeMode.keyCount = 1;
-          break;
-        case 1:
-          if (codeMode.on)
-            $.ctx.codeMode = null;
-          else {
-            codeMode.on = true;
-            codeMode.keyCount = null;
-          }
+      if (event.shiftKey) {
+        if (event.which === 13) {
+          event.stopImmediatePropagation();
+          event.stopPropagation();
+          return;
         }
       }
 
-      if (event.ctrlKey) {
-        keyMap.exec(event, 'ignoreFocus');
-        return;
-      }
-
-      if ($.ctx.mentionState != null && $.ctx.mentionState < 3 &&
-          ++$.ctx.mentionState > 2) {
-        // we had a non printable key pressed; abort mention
-        RichTextMention.revertMention(this);
-      }
+      $.ctx.mode.keydown.call(this, event);
     },
 
     keypress: function (event) {
       if (event.which === 0) return; // for firefox
       var ctx = $.ctx;
-      var codeMode = ctx.codeMode;
-      if (codeMode && codeMode.keyCount === 1) {
-        Dom.stopEvent();
-        var text = String.fromCharCode(event.which);
-        if (codeMode.on) {
-          execCommand('insertHTML', '<span style="font-family:code">'+text+'</span>');
-        } else {
-          execCommand('insertText', text);
-          var range = Dom.getRange();
-          range.setStart(range.startContainer, range.startOffset - text.length);
-          Dom.setRange(range);
-          removeCode(ctx.inputElm, range);
-        }
-        return;
-      }
 
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
@@ -359,11 +423,32 @@ define(function(require, exports, module) {
 
     keyup: function () {
       var ctx = $.ctx;
+      setMode(ctx, Dom.getRange().startContainer);
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
       }
     },
   });
+
+  function getModeNode(ctx, elm) {
+    for(var editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
+      switch (elm.tagName) {
+      case 'PRE':
+        return elm;
+      }
+    }
+  }
+
+  function setMode(ctx, elm) {
+    elm = getModeNode(ctx, elm);
+    switch (elm && elm.tagName) {
+    case 'PRE':
+      ctx.mode = codeMode;
+      break;
+    default:
+      ctx.mode = standardMode;
+    }
+  }
 
   function mentionKey(ctx, code) {
     var mentions = ctx.data.extend;
@@ -385,6 +470,13 @@ define(function(require, exports, module) {
 
   function execCommand (cmd, value) {
     return document.execCommand(cmd, false, value);
+  }
+
+  function move(editor, type, amount) {
+    var range = select(editor, type, amount);
+    range.collapse(amount < 0);
+    Dom.setRange();
+    return range;
   }
 
   function select(editor, type, amount) {
@@ -668,45 +760,6 @@ define(function(require, exports, module) {
       Dom.remove(event.currentTarget);
     },
   });
-
-  function removeCode(editor, range) {
-    var ctx = Dom.getMyCtx(editor.parentNode);
-    var ec = range.endContainer;
-    var midText = range.toString();
-    var parent = ec.parentNode;
-    range.setEnd(parent, 1);
-    var endText = range.toString().slice(midText.length);
-    Dom.setRange(range);
-    execCommand('delete');
-    range = document.createRange();
-    range.setStartAfter(ec);
-    var sc = range.startContainer;
-    var so = range.startOffset;
-    Dom.setRange(range);
-    midText && execCommand('insertHtml', '<span>'+midText+'</span>');
-    range = Dom.getRange();
-    endText && addCode(endText);
-    range.setStart(sc, so);
-    Dom.setRange(range);
-  }
-
-  function addCode(text, select) {
-    execCommand('insertHTML', '<span style="font-family:code">'+text+'</span>');
-    if (select) {
-      var range = Dom.getRange();
-      range.setStart(range.endContainer, 0);
-      Dom.setRange(range);
-      return range;
-    }
-  }
-
-  function setCode(editor, range, isCode) {
-    var ctx = Dom.getMyCtx(editor.parentNode);
-    var cn = codeNode(editor, range);
-    ctx.codeMode = {
-      container: range.startContainer, offset: range.startOffset, codeNode: cn,
-      on: isCode, keyCount: (! cn) !== (! isCode) && 0};
-  }
 
   function codeNode(editor, range) {
     for(var node = range.startContainer; node && node !== editor; node = node.parentNode) {
