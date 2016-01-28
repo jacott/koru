@@ -16,6 +16,7 @@ isClient && define(function (require, exports, module) {
       v.result = false;
       v.popup = function (customize, pos) {
         assert.dom('#TestSelectMenu [name=select]', function () {
+          this.focus();
           sut.popup(this, {
             customize: function () {
               $.element.style.position = 'absolute';
@@ -128,6 +129,7 @@ isClient && define(function (require, exports, module) {
     "test search": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = test.stub();
+        this.focus();
         sut.popup(this, {
           search: function (reg, data) {
             v.searchStub();

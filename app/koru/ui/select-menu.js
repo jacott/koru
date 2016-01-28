@@ -47,9 +47,14 @@ define(function(require, exports, module) {
     popup: function (elm, options, pos) {
       var menu = Tpl.$autoRender(options);
       options.rendered && options.rendered(menu.firstElementChild);
-      Dom.getMyCtx(menu).originElm = elm;
-      Modal.append(pos, {container: menu, origin: elm, keydownHandler: keydownHandler});
+      Dom.getMyCtx(menu).focusElm = document.activeElement;
+      Modal.append(pos, {
+        container: menu,
+        boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
+        keydownHandler: keydownHandler,
+      });
       Dom.focus(menu);
+      return menu.firstChild;
     },
 
     close: function (ctx, elm) {
@@ -147,7 +152,7 @@ define(function(require, exports, module) {
   function select(ctx, elm, event) {
     var data = ctx.data;
     if (data.onSelect(elm, event)) {
-      elm = ctx.originElm;
+      elm = ctx.focusElm;
       Dom.remove(ctx.element());
       elm && elm.focus();
     }
