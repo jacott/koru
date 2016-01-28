@@ -64,14 +64,18 @@ isClient && define(function (require, exports, module) {
     "test single key": function () {
       var event = TH.buildEvent('keydown', {which: 88});
       v.km.exec(event);
-      assert.calledOnce(v.foo);
+      assert.calledOnceWith(v.foo, TH.match(function (ev) {
+        return ev.which === 88;
+      }));
       refute.called(v.bar);
     },
 
     "test multi key": function () {
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown("X1");
-      assert.calledOnce(v.bar);
+      assert.calledOnceWith(v.bar, TH.match(function (ev) {
+        return ev.type === 'keydown' && ev.which === 49;
+      }));
       refute.called(v.bar2);
     },
 

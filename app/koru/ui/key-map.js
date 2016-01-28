@@ -140,7 +140,7 @@ define(function(require, exports, module) {
     event.stopImmediatePropagation();
 
     if (Array.isArray(map)) {
-      map[1](map[0]);
+      map[1](event);
     } else {
       window.addEventListener('keydown', nextKey, true);
       document.body.addEventListener('mouseleave', cancel, true);
@@ -170,7 +170,7 @@ define(function(require, exports, module) {
       if (! map) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      map[1](map[0]);
+      map[1](event);
     }
 
     function cancel() {
