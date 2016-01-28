@@ -170,7 +170,7 @@ define(function(require, exports, module) {
           node = elm;
         },
         ontext: function(text){
-          node.appendChild(new TextNode(text));
+          node.appendChild(new TextNode(unescapeHTML(text)));
         },
         onclosetag: function(name){
           node = node.parentNode;
@@ -309,7 +309,7 @@ define(function(require, exports, module) {
     get textContent() {return this.wholeText},
     set textContent(value) {this.wholeText = value},
     get innerHTML() {return escapeHTML(this.wholeText)},
-    set innerHTML(value) {this.wholeText = value},
+    set innerHTML(value) {this.wholeText = unescapeHTML(value)},
   });
 
   function buildNodeType(func, proto) {
@@ -325,11 +325,32 @@ define(function(require, exports, module) {
 
   function escapeHTML(html) {
     return String(html)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/[&<>\xa0]/g, function (m) {return CHAR_TO_NAME[m]});
+  }
+
+  var NAME_TO_CHAR = {
+    amp: '&',
+    quot: '"',
+    lt: '<',
+    gt: '>',
+    nbsp: '\xa0',
+    euro: '\u20ac',
+  };
+
+  var CHAR_TO_NAME = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '\xa0': '&nbsp;',
+  };
+
+  function unescapeHTML(html) {
+    return html
+      .replace(/\&(#\d+|[a-z]+);/gi, function (m, d) {
+        if (d[0] === '#')
+          return String.fromCharCode(+d.slice(1));
+        return NAME_TO_CHAR[d.toLowerCase()] || m;
+      });
   }
 
   return Document;

@@ -76,10 +76,17 @@ define(function (require, exports, module) {
 
     "test innerHTML": function () {
       var elm = document.createElement('div');
-      elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar<br>baz</foo></div>';
-      assert.same(elm.innerHTML, v.exp);
+      elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo></div>';
       assert.same(elm.firstChild.id, "top123");
-      assert.same(elm.firstChild.firstChild.textContent, 'hello world');
+      assert.same(elm.firstChild.firstChild.textContent, 'hello <world>');
+      assert.same(elm.innerHTML, v.exp.replace(/&#62/, '&gt'));
+    },
+
+    "test HTML entities": function () {
+      var div = document.createElement('div');
+      div.innerHTML = "&lt;&QUOT;&quot;&gt;&#39;&amp;&nbsp;&euro;";
+      assert.same(div.firstChild.textContent, '<"">\'&\xa0\u20ac');
+      assert.same(div.innerHTML, '&lt;""&gt;\'&amp;&nbsp;\u20ac');
     },
   });
 });

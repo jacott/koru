@@ -1,6 +1,6 @@
 <template name="RichTextEditorToolbar">
-  <div class="rtToolbar">
-    <div>
+  <div class="rtToolbar" data-mode="{{mode}}">
+    <div class="standard">
       <button name="bold" tabindex="-1" {{state}} {{title "Bold"}}>B</button>
       <button name="italic" tabindex="-1" {{state}} {{title "Italic"}}>I</button>
       <button name="underline" tabindex="-1" {{state}} {{title "Underline"}}>U</button>
@@ -10,6 +10,10 @@
       <button name="outdent" tabindex="-1" {{title "Decrease indent"}}></button>
       <button name="indent" tabindex="-1" {{title "Increase indent"}}></button>
       {{mentions}}
+    </div>
+    <div class="code">
+      <button name="language" class="select" tabindex="-1" {{title "Set the language for the data"}}>{{language}}</button>
+      <button name="syntaxHighlight" tabindex="-1" {{title "Highlight language syntax"}}></button>
     </div>
   </div>
 </template>

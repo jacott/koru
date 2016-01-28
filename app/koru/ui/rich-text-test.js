@@ -20,6 +20,7 @@ define(function (require, exports, module) {
 
     "validation": {
       "test simple": function () {
+        assert(sut.isValid('code:rb\n\"a\"\ncode:rb\nb', [8, 0, 1, 48, 1, 0, 3, 8, 1, 1]));
         assert(sut.isValid(""));
         assert(sut.isValid());
         assert(sut.isValid("some\nlines"));
@@ -156,7 +157,20 @@ define(function (require, exports, module) {
       assertConvert('<div>one<font face="sans-serif">two</font>three</div>');
     },
 
+    "test includeTop": function () {
+      var rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
+      assert.equals(rt, [['line'], [1, 0, 0]]);
+    },
+
     "test code": function () {
+      assertConvert('<pre data-lang=\"ruby\"><div><span class="k">Class</span> <span class="no">Abc</span>\n' +
+                    '  <span class="k">def</span> <span class="nf">foo</span><span class="mh">(</span><span class="nv">a</span>' +
+                    '<span class="mh">,</span> <span class="nv">b</span><span class="mh">)</span>\n' +
+                    '     <span class="nv">a</span> <span class="o">+</span> <span class="nv">b</span>\n' +
+                    '  <span class="k">end</span>\n' +
+                    '<span class="k">end</span>' +
+                    '</div></pre>');
+      assertConvert('<pre data-lang=\"ruby\"><div><span class="k">Class</span> <span class="no">Abc</span></div></pre>');
       assertConvert('<pre data-lang="text"><div>stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</div></pre>');
       assertConvert('<pre data-lang=\"text\">One</pre>'+
                     '<pre data-lang=\"text\"><div><div>Two</div>two</div></pre>'+

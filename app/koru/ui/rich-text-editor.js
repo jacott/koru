@@ -5,10 +5,16 @@ define(function(require, exports, module) {
   var KeyMap = require('./key-map');
   var RichTextMention = require('./rich-text-mention');
   var Modal = require('./modal');
+  var makeSubject = require('koru/make-subject');
+  var SelectMenu = require('./select-menu');
+  var session = require('../session/client-rpc');
+  var koru = require('koru');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   var $ = Dom.current;
   var Link = Tpl.Link;
+
+  var languageList;
 
   var TEXT_NODE = document.TEXT_NODE;
 
@@ -113,6 +119,47 @@ define(function(require, exports, module) {
 
 
   var codeActions = commandify({
+    language: function (event) {
+      var ctx = Tpl.$ctx(event.target);
+      var origin = event.target;
+
+      var options = {
+        search: SelectMenu.nameSearch,
+        list: languageList,
+        onSelect: function (item) {
+          var id = $.data(item).id;
+          var pre = Dom.getClosest(ctx.lastElm, 'pre');
+          pre && pre.setAttribute('data-lang', id);
+          codeMode.language = id;
+          ctx.caretMoved.notify();
+          return true;
+        },
+      };
+
+      options.boundingClientRect = ctx.inputElm.contains(event.target) ?
+        Dom.getRangeClientRect(Dom.getRange()) :
+        event.target.getBoundingClientRect();
+
+      SelectMenu.popup(event.target, options);
+    },
+    syntaxHighlight: function (event) {
+      var ctx = Tpl.$ctx(event.target);
+      var pre = Dom.getClosest(ctx.lastElm, 'pre');
+      Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
+      var rt = RichText.fromHtml(pre, {includeTop: true});
+      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].slice(1).join("\n"), function (err, result) {
+        if (err) return koru.globalCallback(err);
+        result[2] = rt[1][2];
+        var html = RichText.toHtml(rt[0], result);
+        var range = document.createRange();
+        range.selectNodeContents(pre);
+        range.deleteContents();
+        range.insertNode(html.firstChild.firstChild);
+        range.collapse(true);
+        Dom.setRange(range);
+        setMode(ctx, Dom.getRange().startContainer);
+      });
+    },
     bold: false,
     italic: false,
     underline: false,
@@ -154,13 +201,13 @@ define(function(require, exports, module) {
         temp.parentNode.removeChild(temp);
       }
     },
-    syntaxHighlight: function () {},
     newline: function () {
       execCommand('insertText', '\n');
     },
   });
 
   var codeKeyMap = KeyMap(mapActions({
+    language: ctrl+'L',
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
@@ -179,8 +226,10 @@ define(function(require, exports, module) {
         return func.call(null, event, cmd);
       };
     case 'boolean':
-      return func ? function () {
+      return func ? function (event) {
         execCommand(cmd);
+        var ctx = Tpl.$ctx(event.target);
+        ctx.caretMoved.notify();
       } : noop;
     }
     for (cmd in func) {
@@ -226,7 +275,11 @@ define(function(require, exports, module) {
   }
 
   var standardMode = {
+    actions: actions,
     type: 'standard',
+
+    keyMap: keyMap,
+
     paste: function (htmlText) {
       var html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
@@ -247,7 +300,11 @@ define(function(require, exports, module) {
   };
 
   var codeMode = {
+    actions: codeActions,
     type: 'code',
+
+    keyMap: codeKeyMap,
+
     keydown:  function (event) {
       codeKeyMap.exec(event, 'ignoreFocus');
     },
@@ -258,12 +315,16 @@ define(function(require, exports, module) {
     },
   };
 
-  Tpl.$extend({
-    actions: actions,
+  var modes = {
+    standard: standardMode,
+    code: codeMode,
+  };
 
+  Tpl.$extend({
     $created: function (ctx, elm) {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
+      ctx.caretMoved = makeSubject({});
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
       ctx.mode = standardMode;
@@ -280,8 +341,8 @@ define(function(require, exports, module) {
       Dom.remove(ctx.selectItem);
     },
 
-    title: function (title, action) {
-      return keyMap.getTitle(title, action);
+    title: function (title, action, mode) {
+      return modes[mode].keyMap.getTitle(title, action);
     },
 
     clear: function (elm) {
@@ -329,7 +390,20 @@ define(function(require, exports, module) {
       return execCommand("insertHTML", t);
     },
 
-    keyMap: keyMap,
+    get languageList() {
+      return languageList;
+    },
+
+    set languageList(value) {
+      languageList = value;
+      Tpl.languageMap = {};
+      value && value.forEach(function (lang) {
+        Tpl.languageMap[lang[0]] = lang[1];
+      });
+
+    },
+
+    modes: modes,
   });
 
   Tpl.$events({
@@ -357,7 +431,8 @@ define(function(require, exports, module) {
     },
 
     mouseup: function () {
-      setMode($.ctx, Dom.getRange().startContainer);
+      var range = Dom.getRange();
+      range && setMode($.ctx, range.startContainer);
     },
 
     'click a,button': function (event) {
@@ -440,14 +515,25 @@ define(function(require, exports, module) {
   }
 
   function setMode(ctx, elm) {
+    if (elm === ctx.lastElm) return;
+    ctx.lastElm = elm;
+
     elm = getModeNode(ctx, elm);
     switch (elm && elm.tagName) {
     case 'PRE':
       ctx.mode = codeMode;
+      codeMode.language = elm.getAttribute('data-lang') || 'text';
+      if (! languageList) {
+        session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
+          Tpl.languageList = result;
+          ctx.caretMoved.notify();
+        });
+      }
       break;
     default:
       ctx.mode = standardMode;
     }
+    ctx.caretMoved.notify();
   }
 
   function mentionKey(ctx, code) {

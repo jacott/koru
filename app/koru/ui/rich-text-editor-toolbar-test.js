@@ -12,7 +12,7 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      var editor = sut.$autoRender({content: Dom.h([
+      v.editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
       ]), options: {id: "Foo"}, extend: {
         mentions: {'@': {
@@ -20,14 +20,70 @@ isClient && define(function (require, exports, module) {
           list: function () {}
         }}}});
 
-      v.origText = editor.value;
-      document.body.appendChild(editor);
+      v.origText = v.editor.value;
+      document.body.appendChild(v.editor);
 
     },
 
     tearDown: function () {
       TH.domTearDown();
       v = null;
+    },
+
+    "with code": {
+      setUp: function () {
+        assert.dom('.input', function () {
+          this.focus();
+          this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
+          var input = this;
+          v.selectCode = function () {
+            var node = input.querySelector('pre>div').firstChild;
+            TH.setRange(node, 2);
+            TH.keyup(node, 39);
+          };
+        });
+      },
+
+      "test data-mode": function () {
+        assert.dom('.rtToolbar[data-mode=standard]');
+        v.selectCode();
+        assert.dom('.rtToolbar[data-mode=code]');
+      },
+
+      "test fetch languages": function () {
+        RichTextEditor.languageList = [['c', 'C'], ['lisp', 'Common Lisp, elisp']];
+
+        v.selectCode();
+
+        assert.dom('[name=language]', 'Text', function () {
+          TH.mouseDownUp(this);
+        });
+
+        assert.dom('.glassPane', function () {
+          this.focus();
+          assert.dom('li', 'C');
+          TH.click('li', 'Common Lisp, elisp');
+        });
+
+        assert.dom('.input', function () {
+          assert.dom('pre[data-lang="lisp"]');
+          RichTextEditor.$ctx(this).mode.language = 'lisp';
+          assert.same(document.activeElement, this);
+        });
+
+        assert.dom('[name=language]', 'Common Lisp');
+      },
+
+      "test syntax highlight": function () {
+        v.selectCode();
+
+        var syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor')).mode.actions, 'syntaxHighlight');
+        assert.dom('[name=syntaxHighlight]', '', function () {
+          TH.mouseDownUp(this);
+        });
+
+        assert.called(syntaxHighlight);
+      },
     },
 
     "test rendering": function () {

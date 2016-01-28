@@ -38,9 +38,13 @@ define(function(require, exports, module) {
 
   var INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
-  function fromHtml(html) {
-    var builder = new MarkupBuilder();
-    builder.fromChildren(html, {rule: fromDiv});
+  function fromHtml(html, options) {
+    var builder = new MarkupBuilder(options);
+    var state = {rule: fromDiv};
+    if (options && options.includeTop)
+      fromDiv.call(builder, html, state);
+    else
+      builder.fromChildren(html, state);
     var markup = builder.markup;
     return [builder.lines, markup.length ? markup : null];
   }
@@ -180,6 +184,7 @@ define(function(require, exports, module) {
     var nodes = parent.childNodes;
     var last = state.last = nodes.length - 1;
     var hlCode;
+    var prevLen = 0;
     for(var index = 0; index <= last; ++index) {
       extractText(nodes[index]);
     }
@@ -190,18 +195,22 @@ define(function(require, exports, module) {
       var lPos = lines[cIdx].length;
       lines[cIdx] += text;
       if (hlCode !== undefined && lines[cIdx].length !== lPos) {
-        builder.markup.push(hlCode, builder.relative(cIdx), lPos, lines[cIdx].length - lPos);
+        builder.markup.push(hlCode, builder.relative(cIdx), lPos - prevLen, lines[cIdx].length - lPos);
         hlCode = undefined;
+        prevLen = lines[cIdx].length;
+
       }
     }
 
     function extractText(node) {
+
       if (node.tagName === 'SPAN') {
         hlCode = CLASS_TO_CODE[node.className];
       }
       if (node.nodeType === TEXT_NODE) {
         lines.length || lines.push('');
         if (needNl) {
+          prevLen = 0;
           builder.newLine();
           needNl = false;
         }
@@ -209,10 +218,12 @@ define(function(require, exports, module) {
         addText(rows[0]);
         for(var i = 1; i < rows.length; ++i) {
           needNl = false;
+          prevLen = 0;
           builder.newLine();
           addText(rows[i]);
         }
       } else if (node.tagName === 'BR') {
+        prevLen = 0;
         builder.newLine();
         needNl = false;
       } else {
@@ -479,7 +490,9 @@ define(function(require, exports, module) {
         return markup[state.rulePos + delta];
       };
 
-      while (state.lastLine >= this.nextMarkupLine()) this.nextRule(4);
+      while (state.lastLine >= (this.lidx = this.nextMarkupLine())) {
+        this.nextRule(4);
+      }
 
       return state.begun = true;
     }
@@ -501,7 +514,6 @@ define(function(require, exports, module) {
         state.result.appendChild(document.createTextNode(line.slice(startPos, eIdx)));
 
       var span = document.createElement('SPAN');
-
       span.className = CODE_TO_CLASS[state.offset(0)];
       span.textContent = line.slice(eIdx, startPos = eIdx + state.offset(3));
 

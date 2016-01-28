@@ -8,6 +8,8 @@ isClient && define(function (require, exports, module) {
   var RichText = require('./rich-text');
   var KeyMap = require('./key-map');
   var Modal = require('./modal');
+  var session = require('../session/client-rpc');
+  var koru = require('koru');
 
   var ctrl = KeyMap.ctrl;
 
@@ -138,6 +140,96 @@ isClient && define(function (require, exports, module) {
     "pre": {
       setUp: function () {
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
+        v.selectCode = function () {
+          var node = Dom('.input pre>div').firstChild;
+          var range = TH.setRange(node, 2);
+          TH.keyup(node, 39);
+          return range;
+        };
+      },
+
+      "test load languages": function () {
+        var langs = test.stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
+        assert.dom('.input', function () {
+          this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
+          sut.languageList = null;
+          var elm = v.selectCode().startContainer;
+          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+        });
+
+        assert.called(langs);
+        refute.called(v.caretMoved);
+        langs.yield(null, [['c', 'C'], ['ruby', 'Ruby']]);
+        assert.called(v.caretMoved);
+        assert.equals(sut.languageList, [['c', 'C'], ['ruby', 'Ruby']]);
+        assert.equals(sut.languageMap, {c: 'C', ruby: 'Ruby'});
+
+      },
+
+      "test set language": function () {
+        assert.dom('.input', function () {
+          this.focus();
+          this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
+          sut.languageList = [['c', 'C'], ['ruby', 'Ruby']];
+          var elm = v.selectCode().startContainer;
+          TH.keydown(elm, 'L', {ctrlKey: true});
+          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+        });
+
+        assert.dom('.glassPane', function () {
+          assert.dom('li', 'C');
+          TH.click('li', 'Ruby');
+        });
+
+        assert.dom('pre[data-lang="ruby"]');
+      },
+
+      "test syntax highlight": function () {
+        var highlight = test.stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
+        assert.dom('.input', function () {
+          this.focus();
+          this.appendChild(Dom.h({pre: {div: "if a:\n  (b)\n"}, '$data-lang': 'python'}));
+          var elm = v.selectCode().startContainer;
+          this.appendChild(Dom.h({div: "after"}));
+          assert.dom('pre+div', 'after');
+          TH.keydown(elm, 'H', {ctrlKey: true, shiftKey: true});
+          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+        });
+
+        assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
+        assert.dom('.richTextEditor.syntaxHighlighting');
+
+        highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
+
+        assert.dom('pre', function () {
+          assert.same(this.innerHTML, '<div><span class=\"k\">if</span> a:\n  (b)\n</div>');
+          assert.equals(RichText.fromHtml(this, {includeTop: true})[0], ['code:python', 'if a:', '  (b)', '']);
+        });
+        assert.dom('pre+div', 'after');
+        assert.called(v.caretMoved);
+
+        highlight.reset();
+        assert.dom('.input>pre>div', function () {
+          TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
+        });
+        assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
+        highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
+        assert.dom('pre', function () {
+          assert.same(this.innerHTML, '<div><span class=\"k\">if</span> a:\n  (b)\n</div>');
+          assert.equals(RichText.fromHtml(this, {includeTop: true})[0], ['code:python', 'if a:', '  (b)', '']);
+        });
+
+
+        highlight.reset();
+        test.stub(koru, 'globalCallback');
+        assert.dom('.input>pre>div', function () {
+          TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
+        });
+
+        highlight.yield('error');
+
+        assert.dom('pre>div>span.k', 'if');
+        assert.calledWith(koru.globalCallback, 'error');
       },
 
       "test on selection": function () {
@@ -250,9 +342,13 @@ isClient && define(function (require, exports, module) {
     },
 
     "test title": function () {
-      var keyMap = test.stub(sut.keyMap, 'getTitle');
-      sut.title('foo', 'insertOrderedList');
+      var keyMap = test.stub(sut.modes.standard.keyMap, 'getTitle');
+      sut.title('foo', 'insertOrderedList', 'standard');
       assert.calledWith(keyMap, 'foo', 'insertOrderedList');
+
+      keyMap = test.stub(sut.modes.code.keyMap, 'getTitle');
+      sut.title('foo', 'bar', 'code');
+      assert.calledWith(keyMap, 'foo', 'bar');
     },
 
     "test lists": function () {
@@ -271,7 +367,7 @@ isClient && define(function (require, exports, module) {
 
     "test indent, outdent": function () {
       v.ec = test.stub(document, 'execCommand');
-      var keyMap = test.spy(sut.keyMap, 'exec');
+      var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 

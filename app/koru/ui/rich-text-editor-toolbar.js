@@ -20,13 +20,7 @@ define(function(require, exports, module) {
       var toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
       var toolbarCtx = Dom.getMyCtx(toolbar);
       elm.insertBefore(toolbar, elm.firstChild);
-      elm.addEventListener('mouseup', redraw, true);
-      elm.addEventListener('keyup', redraw, true);
-
-      ctx.onDestroy(function () {
-        elm.removeEventListener('mouseup', redraw, true);
-        elm.removeEventListener('keyup', redraw, true);
-      });
+      ctx.onDestroy(ctx.caretMoved.onChange(redraw));
 
       function redraw() {
         toolbarCtx.updateAllTags();
@@ -36,6 +30,10 @@ define(function(require, exports, module) {
   });
 
   Tpl.$helpers({
+    mode: function () {
+      return $.ctx.parentCtx.mode.type;
+    },
+
     state: function () {
       Dom.setClass('on', document.queryCommandState($.element.getAttribute('name')));
     },
@@ -45,11 +43,12 @@ define(function(require, exports, module) {
     },
 
     title: function (title) {
-      if ($.element.getAttribute('title')) return;
+      var elm = $.element;
+      if (elm.getAttribute('title')) return;
 
-      var action = $.element.getAttribute('name');
+      var action = elm.getAttribute('name');
 
-      $.element.setAttribute('title', RichTextEditor.title(title, action));
+      elm.setAttribute('title', RichTextEditor.title(title, action, elm.parentNode.className));
     },
 
     mentions: function () {
@@ -62,6 +61,15 @@ define(function(require, exports, module) {
         frag.appendChild(Dom.h({button: id, class: mentions[id].buttonClass, $name: 'mention', '$data-type': id}));
       });
       return frag;
+    },
+
+    language: function () {
+      var mode = $.ctx.parentCtx.mode;
+      if (mode.type !== 'code') return;
+      var language = mode.language || 'text';
+
+      return ((RichTextEditor.languageMap && RichTextEditor.languageMap[language]) || util.capitalize(language))
+        .replace(/,.*$/, '');
     },
   });
 
@@ -79,7 +87,7 @@ define(function(require, exports, module) {
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        RichTextEditor.actions[button.getAttribute('name')](event);
+        $.ctx.parentCtx.mode.actions[button.getAttribute('name')](event);
       });
     },
   });
