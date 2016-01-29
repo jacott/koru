@@ -35,17 +35,18 @@ define(function(require, exports, module) {
         endContainer: range.endContainer,
         endOffset: range.endOffset,
       };
-      this.expected = {
+      var expected = {
         startContainer: startContainer,
         startOffset: startOffset,
         endContainer: endContainer,
         endOffset: endOffset,
       };
 
-      return geddon._u.deepEqual(this.actual, this.expected, this, 'diff');
+      return geddon._u.deepEqual(this.actual, expected, this, 'diff');
     },
 
-    message: "{i$actual} to equal {i$expected}\nDiff at\n -> {i$diff}",
+    assertMessage: "range to be equal{$diff}",
+    refuteMessage: "range tp be equal\n  {i$actual}",
   });
 
   function domEvent(eventName, func) {

@@ -190,9 +190,9 @@ define(function(require, exports, module) {
     var expectedKeys = Object.keys(expected);
     var actualKeys = Object.keys(actual);
 
-    if (isArguments(expected) || isArguments(actual)) {
+    if (isArguments(expected) && isArguments(actual)) {
       if (expected.length != actual.length) {
-        if (hint) hint[hintField] = 'Arguments lengths differ: ' + actual.length + ' != ' +expected.length;
+        hint && setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length);
         return false;
       }
     } else {
@@ -201,7 +201,10 @@ define(function(require, exports, module) {
         return false;
       }
       if (expectedKeys.length != actualKeys.length) {
-        if (hint) hint[hintField] = 'Array lengths differ: ' + actual.length + ' != ' +expected.length;
+        if (hint) {
+          hint[hintField] = 'lengths differ: ' + actualKeys.length + ' != ' + expectedKeys.length;
+          setHint();
+        }
         return false;
       }
     }
@@ -211,24 +214,30 @@ define(function(require, exports, module) {
     for (var i = 0, l = expectedKeys.length; i < l; i++) {
       key = expectedKeys[i];
       if (! Object.prototype.hasOwnProperty.call(actual, key)) {
-        setHint(actual[key], expected[key], 'key = ' + util.qstr(key) + ': ');
-        return false;
+        return badKey();
       }
       if (! deepEqual(actual[key], expected[key], hint, hintField)) {
-        setHint(actual[key], expected[key], 'key = ' + util.qstr(key) + ': ');
-        return false;
+        return badKey();
       }
     }
 
     return true;
 
+    function badKey() {
+      if (hint) {
+        hint[hintField] = 'at key = ' + util.qstr(key) + hint[hintField];
+        setHint();
+      }
+      return false;
+    }
+
     function setHint(aobj, eobj, prefix) {
+
       if (! hint) return;
       var prev = hint[hintField];
 
       aobj = aobj || actual; eobj = eobj || expected;
-
-      hint[hintField] = (prefix || '') + format("{i0} != {i1}", aobj, eobj) + (prev ? "\n    " + prev : '');
+      hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) + (prev ? "\n" + prev : '');
     }
   }
 

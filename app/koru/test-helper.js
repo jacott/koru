@@ -144,7 +144,7 @@ define(function(require, exports, module) {
 
       for(var key in expected) {
         if (! gu.deepEqual(actual[key], expected[key], this, 'diff')) {
-          this.diff = key;
+          this.key = key;
           return false;
         }
       }
@@ -152,7 +152,8 @@ define(function(require, exports, module) {
       return true;
     },
 
-    message: "attribute {i$diff} in {i$actual} to equal the specified attributes: {i$expected}\nDiff at:\n -> {i$diff}",
+    assertMessage: "attribute {i$key} to be equal{$diff}",
+    refuteMessage: "attributes to be equal",
   }),
 
   ga.add('attributesEqual', {
@@ -182,7 +183,7 @@ define(function(require, exports, module) {
       return gu.deepEqual(actual, expected, this, 'diff');
     },
 
-    message: "attributes in {i$actual} to equal {i$expected}\nDiff at:\n -> {i$diff}",
+    message: "attributes to be equal{$diff}",
   });
 
   function mapFields(list, exclude) {

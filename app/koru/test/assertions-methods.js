@@ -23,7 +23,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return equal;
     },
 
-    message: "{i0} to equal {i1}\nDiff at\n -> {$diff}"
+    message: "equality{$diff}"
   });
 
   ga.add('isTrue', {
