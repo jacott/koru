@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var util = require('../util');
   var Dom = require('../dom');
   var Modal = require('./modal');
+  require('./each');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./select-menu'));
   var $ = Dom.current;
@@ -47,7 +48,10 @@ define(function(require, exports, module) {
     popup: function (elm, options, pos) {
       var menu = Tpl.$autoRender(options);
       options.rendered && options.rendered(menu.firstElementChild);
-      Dom.getMyCtx(menu).focusElm = document.activeElement;
+      var ctx = Dom.getMyCtx(menu);
+      ctx.focusElm = document.activeElement;
+      ctx.focusRange = Dom.getRange();
+
       Modal.append(pos, {
         container: menu,
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
@@ -82,6 +86,10 @@ define(function(require, exports, module) {
     },
 
     $destroyed: function (ctx) {
+      var elm = ctx.focusElm;
+      elm && elm.focus();
+      var range = ctx.focusRange;
+      range && Dom.setRange(range);
       ctx.data.onClose && ctx.data.onClose();
     },
 
@@ -152,9 +160,7 @@ define(function(require, exports, module) {
   function select(ctx, elm, event) {
     var data = ctx.data;
     if (data.onSelect(elm, event)) {
-      elm = ctx.focusElm;
       Dom.remove(ctx.element());
-      elm && elm.focus();
     }
   }
 

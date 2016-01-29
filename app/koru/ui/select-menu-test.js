@@ -14,7 +14,7 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
       v.result = false;
-      v.popup = function (customize, pos) {
+      v.popup = function (customize, pos, range) {
         assert.dom('#TestSelectMenu [name=select]', function () {
           this.focus();
           sut.popup(this, {
@@ -50,6 +50,26 @@ isClient && define(function (require, exports, module) {
         Dom.remove(this);
       });
       assert.called(v.onClose);
+    },
+
+    "test restores range": function () {
+      var html = Dom.h({div: "Hello world", '$contenteditable': true});
+      document.body.appendChild(html);
+      html.focus();
+      TH.setRange(html.firstChild, 3, html.firstChild, 5);
+      sut.popup(html, {
+        list: [],
+        search: sut.nameSearch,
+      });
+      document.activeElement.blur();
+      assert.dom('.glassPane');
+      TH.mouseDownUp('.glassPane');
+      assert.same(document.activeElement, html);
+      var range = Dom.getRange();
+      assert.same(range.startContainer, html.firstChild);
+      assert.same(range.startOffset, 3);
+      assert.same(range.endContainer, html.firstChild);
+      assert.same(range.endOffset, 5);
     },
 
     "test can select by object": function () {
@@ -300,6 +320,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test autoClose": function () {
+        document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -325,6 +346,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test escape closes list": function () {
+        document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -333,6 +355,7 @@ isClient && define(function (require, exports, module) {
           });
           refute.dom('#SelectMenu');
         });
+        assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
       },
 
       "test clicking off list closes list": function () {
