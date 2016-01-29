@@ -88,8 +88,8 @@ define(function(require, exports, module) {
         currentCtx = prevCtx;
       }
     },
-
   };
+
   function DomTemplate(name, parent) {
     this.name = name;
     if (parent !== Dom)
@@ -681,18 +681,10 @@ define(function(require, exports, module) {
     } catch(ex) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      handleException(ex);
+      Dom.handleException(ex);
     } finally {
       currentEvent = prevEvent;
       currentCtx = prevCtx;
-    }
-  }
-
-  function handleException(ex) {
-    if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
-      koru.unhandledException(ex);
-
-      throw ex;
     }
   }
 

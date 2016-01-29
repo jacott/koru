@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
+  var koru = require('koru');
 
   function Dom(cssQuery) {
     return document.body.querySelector(cssQuery);
@@ -48,6 +49,14 @@ define(function(require, exports, module) {
           return count;
       }
       return -1;
+    },
+
+    handleException: function(ex) {
+      if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
+        koru.unhandledException(ex);
+
+        throw ex;
+      }
     },
   });
 
