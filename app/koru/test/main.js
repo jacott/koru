@@ -117,7 +117,7 @@ define(function(require, exports, module) {
       count = skipCount = errorCount = 0;
 
       koru.logger = function (type) {
-        origLogger.apply(koru, arguments);
+        console.log.apply(console, arguments);
         var args = new Array(arguments.length - 1);
         for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
         exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));

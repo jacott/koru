@@ -18,13 +18,14 @@ define(function (require, exports, module) {
     koru.error(err);
   };
 
-
   koru.logger = function (type) {
-    origLogger.apply(koru, arguments);
+    console.log.apply(console, arguments);
     var args = new Array(arguments.length - 1);
     for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
-    if (type === 'ERROR') type = 'E';
-    session.send(type === "ERROR" ? "E" : "L", (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
+    if (type === 'ERROR')
+      session.send('E', args.join(' '));
+    else
+      session.send("L", type+ ": " + (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
   };
 
   return koru;
