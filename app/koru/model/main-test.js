@@ -446,6 +446,13 @@ define(function (require, exports, module) {
         assert.same(doc.foo.fnord.a, 1);
 
         assert.same(doc.$asBefore(was), old);
+
+        var was = {"foo.bar.baz": undefined, "foo.bar.buzz": 2, queen: undefined, 'foo.fnord.a': 2};
+
+        var old = doc.$asBefore(was);
+        assert.same(old.foo.bar.baz, undefined);
+        assert.same(old.foo.bar.buzz, 2);
+        assert.same(old.queen, undefined);
       },
 
       "test asBefore on arrays addItem": function () {

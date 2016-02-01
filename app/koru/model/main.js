@@ -149,10 +149,7 @@ define(function(require, exports, module) {
         var desc = Object.getOwnPropertyDescriptor(changes, attr);
 
         if (index === -1) {
-          if (desc.value === undefined)
-            delete cc[attr];
-          else
-            Object.defineProperty(cc, attr, desc);
+          Object.defineProperty(cc, attr, desc);
         } else { // update part of attribute
           var ov, parts = attr.split(".");
           var curr = cc[parts[0]];
@@ -170,8 +167,6 @@ define(function(require, exports, module) {
               util.removeItem(curr, desc.value);
             else
               util.addItem(curr, desc.value);
-          } else if (desc.value === undefined) {
-            delete curr[parts[i]];
           } else
             Object.defineProperty(curr, part,  desc);
         }
