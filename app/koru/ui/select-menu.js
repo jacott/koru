@@ -159,7 +159,12 @@ define(function(require, exports, module) {
 
   function select(ctx, elm, event) {
     var data = ctx.data;
+    var activeElement = document.activeElement;
     if (data.onSelect(elm, event)) {
+      if (activeElement !== document.activeElement) {
+        ctx.focusRange = ctx.focusElm = null;
+      }
+
       Dom.remove(ctx.element());
     }
   }

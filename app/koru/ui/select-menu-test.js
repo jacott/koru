@@ -55,21 +55,41 @@ isClient && define(function (require, exports, module) {
     "test restores range": function () {
       var html = Dom.h({div: "Hello world", '$contenteditable': true});
       document.body.appendChild(html);
+      var input = Dom.h({input: ""});
+      document.body.appendChild(input);
       html.focus();
       TH.setRange(html.firstChild, 3, html.firstChild, 5);
       sut.popup(html, {
-        list: [],
+        list: [["foo", "foo"]],
         search: sut.nameSearch,
+        onSelect: function () {
+          return true;
+        },
       });
       document.activeElement.blur();
       assert.dom('.glassPane');
-      TH.mouseDownUp('.glassPane');
+      TH.click('.glassPane li');
       assert.same(document.activeElement, html);
       var range = Dom.getRange();
       assert.same(range.startContainer, html.firstChild);
       assert.same(range.startOffset, 3);
       assert.same(range.endContainer, html.firstChild);
       assert.same(range.endOffset, 5);
+      sut.popup(html, {
+        list: [["foo", "foo"]],
+        search: sut.nameSearch,
+        onSelect: function () {
+          input.focus();
+          input.value = "foo";
+          input.select();
+          return true;
+        },
+      });
+
+      TH.click('.glassPane li');
+
+      assert.same(document.activeElement, input);
+      assert.same(input.selectionEnd, 3);
     },
 
     "test can select by object": function () {
