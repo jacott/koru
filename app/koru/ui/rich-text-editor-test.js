@@ -202,8 +202,9 @@ isClient && define(function (require, exports, module) {
         highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
 
         assert.dom('pre', function () {
-          assert.same(this.innerHTML, '<div><span class=\"k\">if</span> a:\n  (b)\n</div>');
-          assert.equals(RichText.fromHtml(this, {includeTop: true})[0], ['code:python', 'if a:', '  (b)', '']);
+          var rt = RichText.fromHtml(this, {includeTop: true});
+          assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
+          assert.equals(rt[1], [8, 0, 3, 3, 1, 0, 2]);
         });
         assert.dom('pre+div', 'after');
         assert.called(v.caretMoved);
@@ -215,8 +216,9 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
         highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
         assert.dom('pre', function () {
-          assert.same(this.innerHTML, '<div><span class=\"k\">if</span> a:\n  (b)\n</div>');
-          assert.equals(RichText.fromHtml(this, {includeTop: true})[0], ['code:python', 'if a:', '  (b)', '']);
+          var rt = RichText.fromHtml(this, {includeTop: true});
+          assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
+          assert.equals(rt[1], [8, 0, 3, 3, 1, 0, 2]);
         });
 
 
@@ -228,7 +230,7 @@ isClient && define(function (require, exports, module) {
 
         highlight.yield('error');
 
-        assert.dom('pre>div>span.k', 'if');
+        assert.dom('pre div>span.k', 'if');
         assert.calledWith(koru.globalCallback, 'error');
       },
 

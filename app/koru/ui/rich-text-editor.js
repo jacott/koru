@@ -148,15 +148,25 @@ define(function(require, exports, module) {
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
       var rt = RichText.fromHtml(pre, {includeTop: true});
       session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].slice(1).join("\n"), function (err, result) {
+        Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
+        if (util.deepEqual(result, rt[1]))
+          return;
         var html = RichText.toHtml(rt[0], result);
         var range = document.createRange();
-        range.selectNodeContents(pre);
-        range.deleteContents();
-        range.insertNode(html.firstChild.firstChild);
-        range.collapse(true);
-        Dom.setRange(range);
+        if (Dom.vendorPrefix === 'moz') {
+          range.selectNode(pre);
+          Dom.setRange(range);
+          execCommand('insertHTML', html.firstChild.outerHTML);
+        } else {
+          range.selectNodeContents(pre);
+          Dom.setRange(range);
+          execCommand('insertHTML', html.firstChild.innerHTML);
+          var innerDiv = pre.firstChild.firstChild;
+          if (innerDiv && innerDiv.tagName === 'DIV' && innerDiv.nextSibling)
+            execCommand('forwardDelete');
+        }
         setMode(ctx, Dom.getRange().startContainer);
       });
     },
