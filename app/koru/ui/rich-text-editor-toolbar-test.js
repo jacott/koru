@@ -91,8 +91,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('>.rtToolbar:first-child>div', function () {
           assert.dom('button[name=bold]', 'B', function () {v.bold = this});
           assert.dom('button[name=italic]', 'I', function () {v.italic = this});
-          assert.dom('button[name=underline]', 'U', function () {v.underline = this});
+          assert.dom('button[name=underline]', 'U');
           assert.dom('button[name=link]', '', function () {v.link = this});
+          assert.dom('button[name=code]', '');
 
           assert.dom('button[name=outdent][title="Decrease indent [ctrl-[]"]');
           assert.dom('button[name=indent][title="Increase indent [ctrl-]]"]');
@@ -127,6 +128,7 @@ isClient && define(function (require, exports, module) {
             refute.className(v.italic, 'on');
             assert.className(v.link, 'on');
           });
+
         });
 
         refute.dom('.rtLink');
@@ -197,6 +199,25 @@ isClient && define(function (require, exports, module) {
       assert.dom('.richTextEditor>.input', function () {
         assert.same(this.innerHTML, 'Hello <i>world</i> <a href=\"/link.html\">the link</a>');
       });
+    },
+
+    "test un/making code": function () {
+      assert.dom('.richTextEditor>.input', function () {
+        this.focus();
+        assert.dom('b', 'Hello', function () {
+          TH.setRange(this.firstChild, 1, this.firstChild, 3);
+        });
+      });
+
+      TH.mouseDownUp('[name=code]');
+
+      assert.dom('.richTextEditor>.input b', function () {
+        assert.same(this.innerHTML, 'H<font face="monospace">el</font>lo');
+      });
+
+      assert.dom('[name=code].on');
+      TH.mouseDownUp('[name=code]');
+      assert.dom('[name=code]:not(.on)');
     },
 
     "test mention button": function () {

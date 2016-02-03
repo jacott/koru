@@ -45,17 +45,20 @@ define(function(require, exports, module) {
 
       var _code;
 
+      var ctx = Dom.getMyCtx(editor.parentNode);
+
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
         execCommand('fontName', _code ? 'initial': 'monospace');
-        return;
-      }
-      if (collapsed) {
-        var html = EMPTY_PRE.cloneNode(true);
       } else {
-        var html = RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild;
+        if (collapsed) {
+          var html = EMPTY_PRE.cloneNode(true);
+        } else {
+          var html = RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild;
+        }
+        Tpl.insert(html);
+        ctx.mode = codeMode;
       }
-      Tpl.insert(html);
-      Dom.getMyCtx(editor.parentNode).mode = codeMode;
+      notify(ctx, 'force');
     },
     link: function () {
       var aElm = getTag('A');
@@ -131,7 +134,7 @@ define(function(require, exports, module) {
           var pre = Dom.getClosest(ctx.lastElm, 'pre');
           pre && pre.setAttribute('data-lang', id);
           codeMode.language = id;
-          ctx.caretMoved.notify();
+          notify(ctx);
           return true;
         },
       };
@@ -239,7 +242,7 @@ define(function(require, exports, module) {
       return func ? function (event) {
         execCommand(cmd);
         var ctx = Tpl.$ctx(event.target);
-        ctx.caretMoved.notify();
+        notify(ctx, 'force');
       } : noop;
     }
     for (cmd in func) {
@@ -526,8 +529,6 @@ define(function(require, exports, module) {
 
   function setMode(ctx, elm) {
     if (elm === ctx.lastElm) return;
-    ctx.lastElm = elm;
-
     elm = getModeNode(ctx, elm);
     switch (elm && elm.tagName) {
     case 'PRE':
@@ -536,13 +537,26 @@ define(function(require, exports, module) {
       if (! languageList) {
         session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
           Tpl.languageList = result;
-          ctx.caretMoved.notify();
+          notify(ctx, 'force');
         });
       }
       break;
     default:
       ctx.mode = standardMode;
     }
+    notify(ctx);
+  }
+
+  function notify(ctx, force) {
+    var range = Dom.getRange();
+    if (range.startContainer.nodeType !== TEXT_NODE)
+      var elm = range.startContainer.childNodes[range.startContainer.offset] || range.startContainer;
+    else
+      var elm = range.startContainer;
+
+    if (! force && ctx.lastElm === elm) return;
+    ctx.lastElm = elm;
+
     ctx.caretMoved.notify();
   }
 

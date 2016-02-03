@@ -42,6 +42,11 @@ define(function(require, exports, module) {
       Dom.setClass('on', getTag('A'));
     },
 
+    code: function () {
+      var code = getTag('FONT');
+      Dom.setClass('on', code && code.getAttribute('face') === 'monospace');
+    },
+
     title: function (title) {
       var elm = $.element;
       if (elm.getAttribute('title')) return;
