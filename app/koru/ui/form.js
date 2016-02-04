@@ -236,7 +236,6 @@ define(function(require, exports, module) {
       msgElm.firstChild.textContent = msg || '';
       if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
         var fpos = fieldElm.getBoundingClientRect();
-        ms.height = fpos.height+'px';
         ms.position = 'absolute';
         var mpos = msgElm.getBoundingClientRect();
         ms.marginTop = (fpos.top-mpos.top-mpos.height)+'px';
