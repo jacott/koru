@@ -140,7 +140,7 @@ define(function (require, exports, module) {
     },
 
     "test no javascript in link": function () {
-      assertConvert('<a href="javascript:alert(123)">abc</a>', '<div><a href="alert(123)">abc</a></div>');
+      assertConvert('<a href="javascript:alert(123)">abc</a>', '<div><a target="_blank" href="alert(123)">abc</a></div>');
     },
 
     "test skips empty text": function () {
@@ -196,9 +196,9 @@ define(function (require, exports, module) {
     },
 
     "test multiple": function () {
-      assertConvert('<ol><li>Hello</li><li>begin <a href=\"/#u/123\">link</a> end</li></ol>');
-      assertConvert('<ol><li>Hello</li><li><a href="/#u/123">link</a> <br></li></ol>',
-                    '<ol><li>Hello</li><li><a href=\"/#u/123\">link</a> </li></ol>');
+      assertConvert('<ol><li>Hello</li><li>begin <a target="_blank" href=\"/#u/123\">link</a> end</li></ol>');
+      assertConvert('<ol><li>Hello</li><li><a target="_blank" href="/#u/123">link</a> <br></li></ol>',
+                    '<ol><li>Hello</li><li><a target="_blank" href=\"/#u/123\">link</a> </li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
                     '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
@@ -216,14 +216,14 @@ define(function (require, exports, module) {
                     '<div><b><i><br></i></b></div><div><b>World</b></div>',
                     '<div><b>Hello </b></div><div><br></div><div><b><i>dffd</i></b></div><div><br></div><div><b>World</b></div>');
       assertConvert('simple', '<div>simple</div>');
-      assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test">test</a></div>');
+      assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a target="_blank" href="/#test">test</a></div>');
       assertConvert('<div><b></b>x<i></i>y</div>', '<div>xy</div>');
       assertConvert('<div><b><i><u>three</u></i></b></div>');
       assertConvert('<div><div><b><br></b></div><div>next</div></div>', '<div><br></div><div>next</div>');
       assertConvert('<div><b>cd</b><i>gh</i></div>');
       assertConvert('<div>ab<b>cd</b>ef<i>gh</i>ih</div>');
       assertConvert('<div><b>brave</b></div><div><i>ne</i><b>w</b></div><div>wor<i>l</i>d</div>');
-      assertConvert('<div>hello <a href="#/foo1">Foo link</a> end</div>');
+      assertConvert('<div>hello <a target="_blank" href="#/foo1">Foo link</a> end</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");
     },

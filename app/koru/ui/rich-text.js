@@ -28,7 +28,10 @@ define(function(require, exports, module) {
       id: 0,
       class: "",
       fromHtml: function (node) {return node.getAttribute('href')},
-      toHtml: function (node, ref) {node.setAttribute('href', ref.replace(/^javascript:/,''))},
+      toHtml: function (node, ref) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('href', ref.replace(/^javascript:/,''));
+      },
     },
   ];
 
