@@ -31,7 +31,7 @@ define(function (require, exports, module) {
     },
 
     "test pc": function () {
-      assert.same(util.pc('1.2345678'), '123.4568%');
+      assert.same(util.pc('1.2345678'), '123.45678%');
     },
 
     "test px": function () {

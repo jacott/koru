@@ -631,7 +631,7 @@ define(function(require, exports, module) {
     },
 
     pc: function (value) {
-      return Math.round(value*1000000)/10000+'%';
+      return value*100 + '%';
     },
 
     toDp: function (number, dp, zeroFill) {
