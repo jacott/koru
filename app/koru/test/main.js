@@ -139,6 +139,17 @@ define(function(require, exports, module) {
       koru.onunload(module, geddon.unloadTestcase);
       return geddon.testCase(module.id.replace(/-test$/, ''), option);
     },
+
+    normHTMLStr: function (html) {
+      return html.replace(/(<[^>]+)>/g, function (m, m1) {
+        if (m[1] === '/') return m;
+        var parts = m1.split(' ');
+        if (parts.length === 1) return m;
+        var p1 = parts[0];
+        parts = parts.slice(1).sort();
+        return p1 + ' ' + parts.join(' ') + '>';
+      });
+    }
   };
 
   geddon.onEnd(endTest);

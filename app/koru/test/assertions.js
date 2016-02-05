@@ -54,10 +54,15 @@ define(function(require, exports, module) {
     if (__elidePoint && __elidePoint.stack) {
       ex = __elidePoint;
       ex.message = message;
-      var lines = __elidePoint.stack.split(/\n\s+at\s/).slice(2);
-      lines[0] = message;
+      var lines = __elidePoint.stack.split(/\n\s+at\s/);
+      if (lines.length > 2) {
+        lines = lines.slice(2);
+        lines[0] = message;
 
-      ex.stack = lines.join("\n    at ");
+        ex.stack = lines.join("\n    at ");
+      } else {
+        ex.stack = __elidePoint.stack.split("\n").slice(2).join("\n");
+      }
     } else {
       var ex = new Error(message);
     }
