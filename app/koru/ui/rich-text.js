@@ -318,12 +318,24 @@ define(function(require, exports, module) {
       return;
     }
 
-    var face = node.tagName === 'FONT' ? node.getAttribute('face') : 'monospace';
+    var attrs = [];
+    if (node.tagName === 'FONT') {
+      var face = node.getAttribute('face');
+      var color = node.getAttribute('color');
+      color && attrs.push(color);
+      var size = node.getAttribute('size');
+      size && attrs.push(size);
+    } else {
+      var face = 'monospace';
+    }
     var faceId = FONT_FACE_TO_ID[face];
     if (faceId === undefined)
       faceId = face;
+    faceId == null || attrs.push(faceId);
 
-    this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, faceId);
+    if (attrs.length) {
+      this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, attrs.length === 1 ? attrs[0] : attrs);
+    }
   }
 
   var FROM_RULE = {
@@ -552,7 +564,24 @@ define(function(require, exports, module) {
     var oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('FONT'));
     var code = this.offset(-1);
-    state.result.setAttribute('face', FONT_ID_TO_FACE[code] || code);
+    if (! Array.isArray(code))
+      code = [code];
+    util.forEach(code, function (attr) {
+      if (typeof attr === 'string') {
+        switch(attr[0]) {
+        case '#': case 'r':
+          state.result.setAttribute('color', attr);
+          return;
+        default:
+          if (/^[1-7]$/.test(attr)) {
+            state.result.setAttribute('size', attr);
+            return;
+          }
+          break;
+        }
+      }
+      state.result.setAttribute('face', FONT_ID_TO_FACE[attr] || attr);
+    });
     this.toChildren(state);
     state.result = oldResult;
   } toFont.inline = true; toFont.muInc = 5;
