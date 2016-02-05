@@ -30,6 +30,15 @@ define(function (require, exports, module) {
       assert.equals(uColor.hex2rgb('123456', 'validate'), {r: 18, g: 52, b: 86, a: 1});
     },
 
+    "test toHex": function () {
+      assert.equals(uColor.toHex('rgba(100, 3, 45)'), '#64032d');
+    },
+
+    "test toRgbStyle": function () {
+      assert.equals(uColor.toRgbStyle('rgba(100, 3, 45, .75)'), 'rgba(100, 3, 45, 0)');
+      assert.equals(uColor.toRgbStyle('rgba(100, 3, 45)'), 'rgb(100, 3, 45)');
+    },
+
     "test hex2rgb": function () {
       assert.equals(uColor.hex2rgb('#11aadd'), {r: 17, g: 170, b: 221, a: 1});
       assert.equals(uColor.hex2rgb('11aadd'), {r: 17, g: 170, b: 221, a: 1});

@@ -9,6 +9,8 @@ define(function(require, exports, module) {
   require("./runner");
   var geddon = require("./core");
 
+  var RGBA_RE = /\s+rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/g;
+
   Error.stackTraceLimit = 50;
 
   koru._geddon_ = geddon; // helpful for errors finding test name
@@ -143,7 +145,7 @@ define(function(require, exports, module) {
     normHTMLStr: function (html) {
       return html.replace(/(<[^>]+)>/g, function (m, m1) {
         if (m[1] === '/') return m;
-        var parts = m1.split(' ');
+        var parts = m1.replace(RGBA_RE, function (m) {return m.replace(/ /g, '')}).split(' ');
         if (parts.length === 1) return m;
         var p1 = parts[0];
         parts = parts.slice(1).sort();

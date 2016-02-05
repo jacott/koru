@@ -56,6 +56,15 @@ define(function (require, exports, module) {
       assert.same(top.textContent, 'hello worldbar');
     },
 
+    "test style backgroundColor": function () {
+      var top = document.createElement('div');
+      assert.same(top.style.backgroundColor, '');
+      top.style.backgroundColor = '#ffff00';
+      assert.same(top.style.backgroundColor, 'rgb(255, 255, 0)');
+      assert.same(top.getAttribute('style'), 'background-color: rgb(255, 255, 0);');
+
+    },
+
     "test insertBefore": function () {
       var top = document.createElement('div');
 

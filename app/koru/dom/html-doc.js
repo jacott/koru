@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   if (isClient) return window.document;
   var util = require('koru/util');
   var koru = require('koru');
+  var uColor = require('koru/util-color');
 
   var CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
   var htmlparser = requirejs.nodeRequire("htmlparser2");
@@ -134,6 +135,11 @@ define(function(require, exports, module) {
       }
 
       return copy;
+    },
+
+    get style() {
+      if (this.__style) return this.__style;
+      return this.__style = new Style(this);
     },
 
     get firstChild() {
@@ -352,6 +358,46 @@ define(function(require, exports, module) {
         return NAME_TO_CHAR[d.toLowerCase()] || m;
       });
   }
+
+  function Style(node) {
+    var me = this;
+    me._node = node;
+    me._styles = {};
+
+    (me._node.getAttribute('style')||'').split(/\s*;\s*/).forEach(function (style) {
+      var idx = style.indexOf(':');
+      if (idx !== -1) {
+        me[util.camelize(style.slice(0, idx))] = style.slice(idx+1);
+      }
+    });
+  }
+
+
+  Style.prototype = {
+    constructor: Style,
+
+    get backgroundColor() {
+      var color = this._styles.backgroundColor;
+
+      return color ? uColor.toRgbStyle(color) : '';
+    },
+
+    set backgroundColor(value) {
+      this._setStyle('backgroundColor', value);
+    },
+
+    _setStyle: function (name, value) {
+      var styles = this._styles;
+      styles[name] = value;
+
+      var styleStr = '';
+      for (var id in styles)
+        styleStr += util.dasherize(name)+': '+this[id]+';';
+
+      this._node.setAttribute('style', styleStr);
+    },
+  };
+
 
   return Document;
 });

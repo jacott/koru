@@ -12,6 +12,8 @@ define(function(require, exports, module) {
   exports = {
     hex2rgb: hex2rgb,
 
+    RGBA_RE: RGBA_RE,
+
     toRGB: function (input) {
       if (typeof input === 'string') {
         var match = input.match(RGBA_RE);
@@ -21,6 +23,13 @@ define(function(require, exports, module) {
           return hex2rgb(input, 'validate');
       }
       return null;
+    },
+
+    toHex: function (input) {
+      var rgb = exports.toRGB(input);
+      if (rgb)
+        return '#' + rgb2hex(rgb);
+      return '';
     },
 
     rgb2hex: function (rgb, prefix) {
@@ -133,6 +142,8 @@ define(function(require, exports, module) {
 
     hex2Style: hex2Style,
 
+    toRgbStyle: toRgbStyle,
+
     alphaHexToFrac: alphaHexToFrac,
 
     alphaFracToHex: alphaFracToHex,
@@ -198,6 +209,19 @@ define(function(require, exports, module) {
     if (a === 'ff' || a == null)
       a = '';
     return byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b)+a;
+  }
+
+  function toRgbStyle(input) {
+    var rgb = exports.toRGB(input);
+
+    var result = rgb.r + ', ' + rgb.g + ', ' + rgb.b;
+
+    if (rgb.a !== 1)
+      result =  'rgba(' + result + ', ' + alphaHexToFrac(rgb.a);
+    else
+      result = 'rgb(' + result;
+
+    return result + ')';
   }
 
   function alphaHexToFrac(a) {
