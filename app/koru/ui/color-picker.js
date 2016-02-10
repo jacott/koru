@@ -1,7 +1,6 @@
 define(function(require, exports, module) {
   var Dom = require('../dom');
   var util = require('../util');
-  var Form = require('./form');
   var uColor = require('../util-color');
   var Slider = require('./slider');
   var Modal = require('./modal');

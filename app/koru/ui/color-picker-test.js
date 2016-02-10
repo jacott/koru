@@ -38,6 +38,12 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, 'ret_val');
     },
 
+    "test customFieldset": function () {
+      sut.choose('#fffa1387', {alpha: true, customFieldset: Dom.h({div: 'hello', class: 'myCustom'})}, v.cb = test.stub());
+
+      assert.dom('.ui-dialog>.myCustom', 'hello');
+    },
+
     "test hue slider": function () {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
