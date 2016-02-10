@@ -2,18 +2,17 @@ define(function(require, exports, module) {
   require('koru/dom/html-doc');
   var Dom = require('koru/dom/base');
   var util = require('koru/util');
+  var uColor = require('koru/util-color');
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9, BGCOLOR = 10;
 
   var FONT_FACE_TO_ID = {
     'sans-serif': 0,
     serif: 1,
     monospace: 2,
-    script: 4,
     cursive: 5,
-    calligraphy: 6,
     handwriting: 7,
     whiteboard: 8,
     poster: 9,
@@ -321,7 +320,7 @@ define(function(require, exports, module) {
     var attrs = [];
     if (node.tagName === 'FONT') {
       var face = node.getAttribute('face');
-      var color = node.getAttribute('color');
+      var color = uColor.toHex(node.getAttribute('color'));
       color && attrs.push(color);
       var size = node.getAttribute('size');
       size && attrs.push(size);
@@ -333,9 +332,21 @@ define(function(require, exports, module) {
       faceId = face;
     faceId == null || attrs.push(faceId);
 
-    if (attrs.length) {
-      this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, attrs.length === 1 ? attrs[0] : attrs);
+    if (! attrs.length)
+      return false;
+    this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, attrs.length === 1 ? attrs[0] : attrs);
+  }
+
+  function fromSpan(node, index, pos) {
+    if (pos !== undefined) {
+      this.markup[pos - 1] = index;
+      return;
     }
+
+    var attrs = [];
+    var style = node.style;
+    if (! style.backgroundColor) return false;
+    this.markup.push(BGCOLOR, this.relative(index), this.lines[index].length, 0, uColor.toHex(style.backgroundColor));
   }
 
   var FROM_RULE = {
@@ -347,6 +358,7 @@ define(function(require, exports, module) {
     B: fromInline(BOLD),
     U: fromInline(UNDERLINE),
     I: fromInline(ITALIC),
+    SPAN: fromSpan,
     CODE: fromFont,
     FONT: fromFont,
     PRE: fromPre,
@@ -586,6 +598,15 @@ define(function(require, exports, module) {
     state.result = oldResult;
   } toFont.inline = true; toFont.muInc = 5;
 
+  function toBgColor(state) {
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('SPAN'));
+    var code = this.offset(-1);
+    state.result.style.backgroundColor = code;
+    this.toChildren(state);
+    state.result = oldResult;
+  } toBgColor.inline = true; toBgColor.muInc = 5;
+
   function toLink(state) {
     var oldResult = state.result;
     var link = state.result = document.createElement('A');
@@ -613,6 +634,7 @@ define(function(require, exports, module) {
   TO_RULES[ITALIC] = toInline('I');
   TO_RULES[UNDERLINE] = toInline('U');
   TO_RULES[FONT] = toFont;
+  TO_RULES[BGCOLOR] = toBgColor;
   TO_RULES[LINK] = toLink;
 
   function isInlineNode(item) {
@@ -620,6 +642,8 @@ define(function(require, exports, module) {
   }
 
   return {
+    standardFonts: FONT_ID_TO_FACE,
+
     toHtml: toHtml,
 
     fromHtml: fromHtml,

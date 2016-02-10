@@ -150,13 +150,18 @@ define(function (require, exports, module) {
     },
 
     "test font": function () {
+      assertConvert('<div>one<font color="#ff0000">two</font>three</div>');
       assertConvert('<div>one<font face="initial">two</font>three</div>');
       assertConvert('<div>one<font face="myface">two</font>three</div>');
       assertConvert('<div>one<font face="serif">two</font>three</div>');
       assertConvert('<div>one<font face="monospace"></font>three</div>', '<div>onethree</div>');
       assertConvert('<div>one<font face="sans-serif">two</font>three</div>');
-      assertConvert('<div>one<font color="#ff0000">two</font>three</div>');
       assertConvert('<div>one<font color="#ff0000" face="serif" size="4">two</font>three</div>');
+    },
+
+    "test hiliteColor": function () {
+      assertConvert('<div>one<span style="background-color:#ffff00">two</span>three</div>',
+                    '<div>one<span style="background-color:rgb(255,255,0);">two</span>three</div>');
     },
 
     "test includeTop": function () {

@@ -26,6 +26,10 @@ define(function(require, exports, module) {
 
   var EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
 
+  var FONT_LIST = RichText.standardFonts.map(function (id) {
+    return [id, Dom.h({font: util.capitalize(util.humanize(id)), $face: id})];
+  });
+
   var actions = commandify({
     bold: true,
     italic: true,
@@ -34,6 +38,22 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
+    fontName: function (event) {
+      chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
+        execCommand('fontName', id);
+        if (Dom.getRange().collapsed)
+          return {font: id};
+      });
+    },
+    foreColor: function (event) {
+      execCommand('foreColor', '#ff0000');
+    },
+    fontSize: function (event) {
+      execCommand('fontSize', 5);
+    },
+    hiliteColor: function (event) {
+      execCommand('hiliteColor', '#ffff00');
+    },
     code: function (event) {
       var range = Dom.getRange();
       var sc = range.startContainer;
@@ -48,7 +68,9 @@ define(function(require, exports, module) {
       var ctx = Dom.getMyCtx(editor.parentNode);
 
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
-        execCommand('fontName', _code ? 'initial': 'monospace');
+        var font = _code ? 'initial': 'monospace';
+        execCommand('fontName', font);
+        notify(ctx, 'force', collapsed && {font: font});
       } else {
         if (collapsed) {
           var html = EMPTY_PRE.cloneNode(true);
@@ -57,8 +79,9 @@ define(function(require, exports, module) {
         }
         Tpl.insert(html);
         ctx.mode = codeMode;
+        ensureLangues(ctx);
+        notify(ctx, 'force');
       }
-      notify(ctx, 'force');
     },
     link: function () {
       var aElm = getTag('A');
@@ -112,6 +135,7 @@ define(function(require, exports, module) {
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
     code: ctrl+'À',
+    hiliteColor: ctrl+'D',
   }, actions));
 
   keyMap.addKeys(mapActions({
@@ -120,30 +144,37 @@ define(function(require, exports, module) {
     code: ctrl+'`',
   }, actions));
 
+  function chooseFromMenu(event, options, onSelect) {
+    var ctx = Tpl.$ctx(event.target);
+    var origin = event.target;
+
+    options = util.extend({
+      onSelect: function (item) {
+        var id = $.data(item).id;
+
+        // close dialog before notify to restore range
+        Dom.remove(Dom.getClosestClass(item, 'glassPane'));
+        notify(ctx, 'force', onSelect(ctx, id));
+      },
+    }, options);
+
+    options.boundingClientRect = ctx.inputElm.contains(event.target) ?
+      Dom.getRangeClientRect(Dom.getRange()) :
+      event.target.getBoundingClientRect();
+
+    SelectMenu.popup(event.target, options);
+  }
 
   var codeActions = commandify({
     language: function (event) {
-      var ctx = Tpl.$ctx(event.target);
-      var origin = event.target;
-
-      var options = {
+      chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
-        onSelect: function (item) {
-          var id = $.data(item).id;
-          var pre = Dom.getClosest(ctx.lastElm, 'pre');
-          pre && pre.setAttribute('data-lang', id);
-          codeMode.language = id;
-          notify(ctx);
-          return true;
-        },
-      };
-
-      options.boundingClientRect = ctx.inputElm.contains(event.target) ?
-        Dom.getRangeClientRect(Dom.getRange()) :
-        event.target.getBoundingClientRect();
-
-      SelectMenu.popup(event.target, options);
+      }, function (ctx, id) {
+        var pre = Dom.getClosest(ctx.lastElm, 'pre');
+        pre && pre.setAttribute('data-lang', id);
+        codeMode.language = id;
+      });
     },
     syntaxHighlight: function (event) {
       var ctx = Tpl.$ctx(event.target);
@@ -170,7 +201,7 @@ define(function(require, exports, module) {
           if (innerDiv && innerDiv.tagName === 'DIV' && innerDiv.nextSibling)
             execCommand('forwardDelete');
         }
-        setMode(ctx, Dom.getRange().startContainer);
+        setMode(ctx, Dom.getRange());
       });
     },
     bold: false,
@@ -242,7 +273,7 @@ define(function(require, exports, module) {
       return func ? function (event) {
         execCommand(cmd);
         var ctx = Tpl.$ctx(event.target);
-        notify(ctx, 'force');
+        notify(ctx, 'force', {});
       } : noop;
     }
     for (cmd in func) {
@@ -343,9 +374,6 @@ define(function(require, exports, module) {
       ctx.mode = standardMode;
 
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
-      Dom.nextFrame(function () {
-        ctx.inputElm.focus();
-      });
     },
 
     $destroyed: function (ctx) {
@@ -445,7 +473,8 @@ define(function(require, exports, module) {
 
     mouseup: function () {
       var range = Dom.getRange();
-      range && setMode($.ctx, range.startContainer);
+      $.ctx.override = null;
+      range && setMode($.ctx, range);
     },
 
     'click a,button': function (event) {
@@ -511,10 +540,10 @@ define(function(require, exports, module) {
 
     keyup: function () {
       var ctx = $.ctx;
-      setMode(ctx, Dom.getRange().startContainer);
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
       }
+      setMode(ctx, Dom.getRange());
     },
   });
 
@@ -527,19 +556,18 @@ define(function(require, exports, module) {
     }
   }
 
-  function setMode(ctx, elm) {
-    if (elm === ctx.lastElm) return;
+  function setMode(ctx, range) {
+    var elm = range.endContainer;
+    if (elm === ctx.lastElm) {
+      if (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))
+      return;
+    }
     elm = getModeNode(ctx, elm);
     switch (elm && elm.tagName) {
     case 'PRE':
       ctx.mode = codeMode;
       codeMode.language = elm.getAttribute('data-lang') || 'text';
-      if (! languageList) {
-        session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
-          Tpl.languageList = result;
-          notify(ctx, 'force');
-        });
-      }
+      ensureLangues(ctx);
       break;
     default:
       ctx.mode = standardMode;
@@ -547,17 +575,29 @@ define(function(require, exports, module) {
     notify(ctx);
   }
 
-  function notify(ctx, force) {
+  function ensureLangues(ctx) {
+    if (languageList) return;
+    session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
+      Tpl.languageList = result;
+      notify(ctx, 'force');
+    });
+  }
+
+  function notify(ctx, force, override) {
     var range = Dom.getRange();
-    if (range.startContainer.nodeType !== TEXT_NODE)
-      var elm = range.startContainer.childNodes[range.startContainer.offset] || range.startContainer;
+    if (range.endContainer.nodeType !== TEXT_NODE)
+      var elm = range.endContainer.childNodes[range.endContainer.offset] || range.endContainer;
     else
-      var elm = range.startContainer;
+      var elm = range.endContainer;
 
-    if (! force && ctx.lastElm === elm) return;
+
+    if (! force && ctx.lastElm === elm && (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))) return;
+
+    ctx.override = override;
     ctx.lastElm = elm;
+    ctx.lastOffset = range.endOffset;
 
-    ctx.caretMoved.notify();
+    ctx.caretMoved.notify(override);
   }
 
   function mentionKey(ctx, code) {
@@ -572,7 +612,7 @@ define(function(require, exports, module) {
   function getTag(tag) {
     var range = Dom.getRange();
     if (range === null) return null;
-    var start = range.startContainer;
+    var start = range.endContainer;
     return Dom.searchUpFor(start, function (elm) {
       return elm.tagName === tag;
     }, 'richTextEditor');

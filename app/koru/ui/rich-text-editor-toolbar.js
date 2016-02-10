@@ -22,12 +22,22 @@ define(function(require, exports, module) {
       elm.insertBefore(toolbar, elm.firstChild);
       ctx.onDestroy(ctx.caretMoved.onChange(redraw));
 
-      function redraw() {
+      function redraw(override) {
+        toolbarCtx.override = override;
         toolbarCtx.updateAllTags();
       }
       return elm;
     },
   });
+
+  function getFont() {
+    var override = $.ctx.override;
+    if (override && override.font)
+      return override.font;
+
+    var code = getTag('FONT');
+    return (code && code.getAttribute('face')) || 'sans-serif';
+  }
 
   Tpl.$helpers({
     mode: function () {
@@ -43,8 +53,14 @@ define(function(require, exports, module) {
     },
 
     code: function () {
-      var code = getTag('FONT');
-      Dom.setClass('on', code && code.getAttribute('face') === 'monospace');
+      Dom.setClass('on', getFont() === 'monospace');
+    },
+
+    font: function () {
+      var code = getFont();
+      if (code === 'initial') code = 'sans-serif';
+      $.element.setAttribute('face', code);
+      $.element.textContent = util.capitalize(util.humanize(code));
     },
 
     title: function (title) {
@@ -86,13 +102,22 @@ define(function(require, exports, module) {
       var toolbar = mde.currentTarget;
 
       var button = this;
+
+      if (document.activeElement !== $.ctx.parentCtx.inputElm)
+        $.ctx.parentCtx.inputElm.focus();
       Dom.onMouseUp(function (event) {
-        if (! Dom.contains(event.target, button)) return;
+        if (! Dom.contains(button, event.target)) return;
 
         event.preventDefault();
         event.stopImmediatePropagation();
 
-        $.ctx.parentCtx.mode.actions[button.getAttribute('name')](event);
+        var name = button.getAttribute('name');
+        if (name === 'more') {
+          Dom.toggleClass(toolbar, 'more');
+          return;
+        }
+
+        $.ctx.parentCtx.mode.actions[name](event);
       });
     },
   });

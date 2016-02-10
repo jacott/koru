@@ -50,7 +50,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtToolbar[data-mode=code]');
       },
 
-      "test fetch languages": function () {
+      "test set language": function () {
         RichTextEditor.languageList = [['c', 'C'], ['lisp', 'Common Lisp, elisp']];
 
         v.selectCode();
@@ -67,7 +67,6 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.input', function () {
           assert.dom('pre[data-lang="lisp"]');
-          RichTextEditor.$ctx(this).mode.language = 'lisp';
           assert.same(document.activeElement, this);
         });
 
@@ -242,6 +241,36 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});
+      });
+    },
+
+    "test set font": function () {
+      assert.dom('b', 'Hello', function () {
+        this.focus();
+        TH.setRange(this.firstChild, 0, this.firstChild, 3);
+        TH.trigger(this, 'keyup');
+      });
+
+      TH.mouseDownUp('.rtToolbar [name=fontName]');
+
+      assert.dom('.glassPane', function () {
+        assert.dom('li>font[face="sans-serif"]', 'Sans serif');
+        TH.click('li>font[face="poster"]', 'Poster');
+      });
+
+      assert.dom('.input', function () {
+        assert.dom('font[face="poster"]');
+      });
+
+      assert.dom('[name=fontName]', 'Poster');
+    },
+
+    "test more": function () {
+      assert.dom('.rtToolbar:not(.more)', function () {
+        TH.mouseDownUp("[name=more]");
+        assert.className(this, 'more');
+        TH.mouseDownUp("[name=more]");
+        refute.className(this, 'more');
       });
     },
   });
