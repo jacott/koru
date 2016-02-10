@@ -32,6 +32,20 @@ define(function(require, exports, module) {
     return [id, Dom.h({font: util.capitalize(util.humanize(id)), $face: id})];
   });
 
+  var FONT_SIZE_LIST = [
+    [1, 'X small'],
+    [2, 'Small'],
+    [3, 'Medium'],
+    [4, 'Large'],
+    [5, 'X large'],
+    [6, 'XX large'],
+    [7, 'XXX large'],
+  ];
+
+  FONT_SIZE_LIST.forEach(function (row) {
+    row[1] = Dom.h({font: row[1], $size: row[0]});
+  });
+
   var actions = commandify({
     bold: true,
     italic: true,
@@ -77,7 +91,11 @@ define(function(require, exports, module) {
       });
     },
     fontSize: function (event) {
-      execCommand('fontSize', 5);
+      chooseFromMenu(event, {list: FONT_SIZE_LIST}, function (ctx, id) {
+        execCommand('fontSize', +id);
+        if (Dom.getRange().collapsed)
+          return {fontSize: id};
+      });
     },
     code: function (event) {
       var range = Dom.getRange();

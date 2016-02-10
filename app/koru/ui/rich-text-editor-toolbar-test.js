@@ -254,7 +254,7 @@ isClient && define(function (require, exports, module) {
       },
 
 
-      "test set font": function () {
+      "test set fontName": function () {
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
@@ -267,6 +267,18 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('[name=fontName]', 'Poster');
+      },
+
+      "test set fontSize": function () {
+        TH.mouseDownUp('.rtToolbar [name=fontSize]');
+
+        assert.dom('.glassPane', function () {
+          TH.click('li>font[size="4"]', 'Large');
+        });
+
+        assert.dom('.input', function () {
+          assert.dom('font[size="4"]');
+        });
       },
 
       "test set fontColor": function () {

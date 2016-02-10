@@ -294,9 +294,15 @@ isClient && define(function (require, exports, module) {
       assert.dom('.input font', function () {
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
 
-        sut.$ctx(this).mode.actions.fontSize();
+        sut.$ctx(this).mode.actions.fontSize({target: this.firstChild});
       });
 
+      assert.dom('.glassPane', function () {
+          assert.dom('li>font[size="6"]', 'XX large');
+          TH.click('li>font[size="2"]', 'Small');
+      });
+
+      assert.dom('font[size="2"]', 'b');
     },
 
     "test fontColor": function () {
