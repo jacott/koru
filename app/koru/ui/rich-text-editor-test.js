@@ -288,20 +288,31 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test textColor": function () {
+    "test fontSize": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: 'bold', $size: "1"})}));
+
+      assert.dom('.input font', function () {
+        TH.setRange(this.firstChild, 0, this.firstChild, 1);
+
+        sut.$ctx(this).mode.actions.fontSize();
+      });
+
+    },
+
+    "test fontColor": function () {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: {span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
       assert.dom('.input font span', function () {
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
 
-        sut.$ctx(this).mode.actions.textColor();
+        sut.$ctx(this).mode.actions.fontColor();
       });
 
       // set hiliteColor
 
       assert.dom('#ColorPicker', function () {
         assert.dom('[name=hex]', {value: '0000ff'});
-        assert.dom('.textColor[data-mode="foreColor"]', function () {
+        assert.dom('.fontColor[data-mode="foreColor"]', function () {
           TH.click('[name=hiliteColor]');
           assert.same(this.getAttribute('data-mode'), 'hiliteColor');
           TH.click('[name=foreColor]');
@@ -321,7 +332,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('*', 'b', function () {
           assert.colorEqual(this.style.backgroundColor, '#ff0000');
         });
-        sut.$ctx(this).mode.actions.textColor();
+        sut.$ctx(this).mode.actions.fontColor();
       });
 
       // set foreColor
@@ -333,7 +344,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.input', function () {
         assert.dom('font[color="#f0f0f0"]', 'b');
-        sut.$ctx(this).mode.actions.textColor();
+        sut.$ctx(this).mode.actions.fontColor();
       });
 
       // clear background

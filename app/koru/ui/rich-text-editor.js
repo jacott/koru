@@ -47,7 +47,7 @@ define(function(require, exports, module) {
           return {font: id};
       });
     },
-    textColor: function (event) {
+    fontColor: function (event) {
       var node = Dom.getRange().endContainer;
       if (node && node.nodeType === TEXT_NODE)
         node = node.parentNode;
@@ -64,7 +64,7 @@ define(function(require, exports, module) {
       var range = Dom.getRange();
 
       var options = {foreColor: fgColor, hiliteColor: bgColor};
-      var typeElm = Tpl.TextColor.$autoRender(options);
+      var typeElm = Tpl.FontColor.$autoRender(options);
       ColorPicker.choose(fgColor, {customFieldset: typeElm}, function (color) {
         focus.focus();
         Dom.setRange(range);
@@ -943,7 +943,7 @@ define(function(require, exports, module) {
     }
   }
 
-  Tpl.TextColor.$events({
+  Tpl.FontColor.$events({
     'click button': function (event) {
       Dom.stopEvent();
       this.focus();

@@ -269,8 +269,8 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=fontName]', 'Poster');
       },
 
-      "test set textColor": function () {
-        TH.mouseDownUp('.rtToolbar [name=textColor]');
+      "test set fontColor": function () {
+        TH.mouseDownUp('.rtToolbar [name=fontColor]');
 
         assert.dom('#ColorPicker', function () {
           TH.input('[name=hex]', '00ff00');
