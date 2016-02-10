@@ -244,25 +244,43 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test set font": function () {
-      assert.dom('b', 'Hello', function () {
-        this.focus();
-        TH.setRange(this.firstChild, 0, this.firstChild, 3);
-        TH.trigger(this, 'keyup');
-      });
+    "font attributes": {
+      setUp: function () {
+        assert.dom('b', 'Hello', function () {
+          this.focus();
+          TH.setRange(this.firstChild, 0, this.firstChild, 3);
+          TH.trigger(this, 'keyup');
+        });
+      },
 
-      TH.mouseDownUp('.rtToolbar [name=fontName]');
 
-      assert.dom('.glassPane', function () {
-        assert.dom('li>font[face="sans-serif"]', 'Sans serif');
-        TH.click('li>font[face="poster"]', 'Poster');
-      });
+      "test set font": function () {
+        TH.mouseDownUp('.rtToolbar [name=fontName]');
 
-      assert.dom('.input', function () {
-        assert.dom('font[face="poster"]');
-      });
+        assert.dom('.glassPane', function () {
+          assert.dom('li>font[face="sans-serif"]', 'Sans serif');
+          TH.click('li>font[face="poster"]', 'Poster');
+        });
 
-      assert.dom('[name=fontName]', 'Poster');
+        assert.dom('.input', function () {
+          assert.dom('font[face="poster"]');
+        });
+
+        assert.dom('[name=fontName]', 'Poster');
+      },
+
+      "test set textColor": function () {
+        TH.mouseDownUp('.rtToolbar [name=textColor]');
+
+        assert.dom('#ColorPicker', function () {
+          TH.input('[name=hex]', '00ff00');
+          TH.click('[name=apply]');
+        });
+
+        assert.dom('.input', function () {
+          assert.dom('font[color="#00ff00"]');
+        });
+      },
     },
 
     "test more": function () {

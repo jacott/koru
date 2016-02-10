@@ -288,8 +288,70 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test inline code on selection": function () {
+    "test textColor": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: {span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
+      assert.dom('.input font span', function () {
+        TH.setRange(this.firstChild, 0, this.firstChild, 1);
+
+        sut.$ctx(this).mode.actions.textColor();
+      });
+
+      // set hiliteColor
+
+      assert.dom('#ColorPicker', function () {
+        assert.dom('[name=hex]', {value: '0000ff'});
+        assert.dom('.textColor[data-mode="foreColor"]', function () {
+          TH.click('[name=hiliteColor]');
+          assert.same(this.getAttribute('data-mode'), 'hiliteColor');
+          TH.click('[name=foreColor]');
+          assert.same(this.getAttribute('data-mode'), 'foreColor');
+          TH.click('[name=hiliteColor]');
+        });
+        assert.dom('[name=hex]', {value: 'ffff00'}, function () {
+          TH.input(this, 'ff0000');
+        });
+        TH.click('[name=apply]');
+      });
+
+      refute.dom('#ColorPicker');
+
+
+      assert.dom('.input', function () {
+        assert.dom('*', 'b', function () {
+          assert.colorEqual(this.style.backgroundColor, '#ff0000');
+        });
+        sut.$ctx(this).mode.actions.textColor();
+      });
+
+      // set foreColor
+
+      assert.dom('#ColorPicker', function () {
+        TH.input('[name=hex]', 'f0f0f0');
+        TH.click('[name=apply]');
+      });
+
+      assert.dom('.input', function () {
+        assert.dom('font[color="#f0f0f0"]', 'b');
+        sut.$ctx(this).mode.actions.textColor();
+      });
+
+      // clear background
+
+      assert.dom('#ColorPicker', function () {
+        TH.click('[name=removeHilite]');
+      });
+
+      refute.dom('#ColorPicker');
+
+       assert.dom('.input', function () {
+        assert.dom('*', 'b', function () {
+          assert.colorEqual(window.getComputedStyle(this).backgroundColor, 'rgba(0,0,0,0)');
+        });
+      });
+    },
+
+    "test inline code on selection": function () {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {

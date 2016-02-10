@@ -9,6 +9,8 @@ define(function(require, exports, module) {
   var SelectMenu = require('./select-menu');
   var session = require('../session/client-rpc');
   var koru = require('koru');
+  var uColor = require('koru/util-color');
+  var ColorPicker = require('./color-picker');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   var $ = Dom.current;
@@ -45,14 +47,37 @@ define(function(require, exports, module) {
           return {font: id};
       });
     },
-    foreColor: function (event) {
-      execCommand('foreColor', '#ff0000');
+    textColor: function (event) {
+      var node = Dom.getRange().endContainer;
+      if (node && node.nodeType === TEXT_NODE)
+        node = node.parentNode;
+      if (! node) return;
+      var style = window.getComputedStyle(node);
+
+      var fgColor = uColor.toRGB(style.color);
+      var bgColor = uColor.toRGB(style.backgroundColor);
+
+      fgColor = fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor);
+      bgColor = bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor);
+
+      var focus = document.activeElement;
+      var range = Dom.getRange();
+
+      var options = {foreColor: fgColor, hiliteColor: bgColor};
+      var typeElm = Tpl.TextColor.$autoRender(options);
+      ColorPicker.choose(fgColor, {customFieldset: typeElm}, function (color) {
+        focus.focus();
+        Dom.setRange(range);
+        if (color === 'removeHilite') {
+          execCommand('hiliteColor', 'initial');
+          return;
+        }
+        var cmd = typeElm.getAttribute('data-mode');
+        color && execCommand(cmd, color);
+      });
     },
     fontSize: function (event) {
       execCommand('fontSize', 5);
-    },
-    hiliteColor: function (event) {
-      execCommand('hiliteColor', '#ffff00');
     },
     code: function (event) {
       var range = Dom.getRange();
@@ -135,7 +160,6 @@ define(function(require, exports, module) {
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
     code: ctrl+'À',
-    hiliteColor: ctrl+'D',
   }, actions));
 
   keyMap.addKeys(mapActions({
@@ -918,6 +942,21 @@ define(function(require, exports, module) {
       }
     }
   }
+
+  Tpl.TextColor.$events({
+    'click button': function (event) {
+      Dom.stopEvent();
+      this.focus();
+      var type = this.getAttribute('name');
+      if (type === 'removeHilite') {
+        $.ctx.parentCtx.data.callback(type);
+        Dom.remove($.ctx.parentCtx.element());
+        return;
+      }
+      event.currentTarget.setAttribute('data-mode', type);
+      ColorPicker.setColor($.ctx.parentCtx, $.ctx.data[type]);
+    },
+  });
 
   return Tpl;
 });
