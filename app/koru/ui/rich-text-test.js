@@ -159,6 +159,14 @@ define(function (require, exports, module) {
       assertConvert('<div>one<font color="#ff0000" face="serif" size="4">two</font>three</div>');
     },
 
+    "test alignment": function () {
+      assertConvert('<div style="text-align:justify;">hello</div><div style="text-align:left;">world</div>');
+      assertConvert('<blockquote><div style="text-align:right;">one</div></blockquote>');
+      assertConvert('<blockquote><div style="text-align:center;">one<br>two</div></blockquote>',
+                    '<blockquote><div style=\"text-align:center;\">one</div><div style=\"text-align:center;\">two</div></blockquote>');
+
+    },
+
     "test hiliteColor": function () {
       assertConvert('<div>one<span style="background-color:#ffff00">two</span>three</div>',
                     '<div>one<span style="background-color:rgb(255,255,0);">two</span>three</div>');
@@ -170,6 +178,11 @@ define(function (require, exports, module) {
     },
 
     "test code": function () {
+      var p = document.createElement('p');
+      p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
+      var rt = sut.fromHtml(p);
+      assert.equals(rt, [['code:text', 'One', 'code:text', 'Two', 'code:text'], [8, 0, 1, 8, 2, 1, 8, 2, 0]]);
+
       assertConvert('<pre data-lang=\"ruby\"><div><span class="k">Class</span> <span class="no">Abc</span>\n' +
                     '  <span class="k">def</span> <span class="nf">foo</span><span class="mh">(</span><span class="nv">a</span>' +
                     '<span class="mh">,</span> <span class="nv">b</span><span class="mh">)</span>\n' +
@@ -187,10 +200,6 @@ define(function (require, exports, module) {
                     '<pre data-lang=\"text\"><div>Two\ntwo</div></pre>'+
                     '<pre data-lang=\"text\"><div></div></pre>');
 
-      var p = document.createElement('p');
-      p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
-      var rt = sut.fromHtml(p);
-      assert.equals(rt, [['code:text', 'One', 'code:text', 'Two', 'code:text'], [8, 0, 1, 8, 2, 1, 8, 2, 0]]);
 
       assertConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
                     '<pre data-lang="javascript"><div><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</div></pre>');

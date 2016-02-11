@@ -6,7 +6,7 @@ define(function(require, exports, module) {
 
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9, BGCOLOR = 10;
+  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9, BGCOLOR = 10, ALIGN = 11;
 
   var FONT_FACE_TO_ID = {
     'sans-serif': 0,
@@ -21,6 +21,18 @@ define(function(require, exports, module) {
   var FONT_ID_TO_FACE = [];
   for (var id in FONT_FACE_TO_ID)
     FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
+
+  var ALIGN_TEXT_TO_CODE = {
+    left: 0,
+    right: 1,
+    center: 2,
+    justify: 3
+  };
+
+
+  var ALIGN_CODE_TO_TEXT = [];
+  for (var id in ALIGN_TEXT_TO_CODE)
+    ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
   var LINK_TO_HTML = [
     {
@@ -105,6 +117,9 @@ define(function(require, exports, module) {
     ignoreInline: function () {},
 
     fromChildren: function(parent, state) {
+      if (parent.style.textAlign)
+        textAlign.call(this, parent, state);
+
       var nodes = parent.childNodes;
       var last = state.last = nodes.length - 1;
       for(var index = 0; index <= last; ++index) {
@@ -139,11 +154,25 @@ define(function(require, exports, module) {
           this.resetInlines();
         }
       }
+
+      state.endCall && state.endCall.call(this, parent, state);
     },
   };
 
+  function textAlign(node, state) {
+    var start = this.lines.length;
+    this.markup.push(ALIGN, this.relative(start), 0, ALIGN_TEXT_TO_CODE[node.style.textAlign]);
+    var endMarker = this.markup.length - 2;
+    var lastEndCall = state.endCall;
+
+    state.endCall = function () {
+      state.endCall = lastEndCall;
+      this.markup[endMarker] = this.lines.length - 1 - start;
+    };
+  }
+
   function fromDiv(node, state) {
-    var rule = FROM_RULE[node.tagName] || fromDiv;
+    var rule = fromBlockRule(node);
     if (rule && rule.override)
       return rule.call(this, node, state);
 
@@ -166,7 +195,7 @@ define(function(require, exports, module) {
         this.markup.push(code, this.relative(state.start), 0);
         state.endMarker = this.markup.length - 1;
       }
-      var rule = FROM_RULE[node.tagName] || fromDiv;
+      var rule = fromBlockRule(node);
       this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
 
       this.markup[state.endMarker] = this.lines.length - 1 - state.start;
@@ -376,6 +405,10 @@ define(function(require, exports, module) {
     },
   };
 
+  function fromBlockRule(node) {
+    return FROM_RULE[node.tagName] || fromDiv;
+  }
+
   // TO HTML
 
   function toHtml(lines, markup, result) {
@@ -485,6 +518,20 @@ define(function(require, exports, module) {
       state.rule = innerFunc;
       this.nextRule(3);
     };
+  }
+
+  function toAlign(state) {
+    if (! state.begun) {
+      state.type = ALIGN_CODE_TO_TEXT[this.offset(3)];
+      this.nextRule(4);
+      return state.begun = true;
+    }
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('DIV'));
+
+    state.result.style.textAlign = state.type;
+    this.toChildren(state);
+    state.result = oldResult;
   }
 
   function toBlock(tag) {
@@ -636,6 +683,7 @@ define(function(require, exports, module) {
   TO_RULES[FONT] = toFont;
   TO_RULES[BGCOLOR] = toBgColor;
   TO_RULES[LINK] = toLink;
+  TO_RULES[ALIGN] = toAlign;
 
   function isInlineNode(item) {
     return item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];

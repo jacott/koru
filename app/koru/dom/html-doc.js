@@ -398,6 +398,14 @@ define(function(require, exports, module) {
     },
   };
 
+  'textAlign'.split(' ').forEach(function (name) {
+    Object.defineProperty(Style.prototype, name, {
+      configurable: true,
+      get: function () {return this._styles[name]},
+      set: function (value) {this._setStyle(name, value)},
+    });
+  });
+
 
   return Document;
 });

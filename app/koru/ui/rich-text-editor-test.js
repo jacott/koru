@@ -446,6 +446,32 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test textAlign": function () {
+      v.ec = test.stub(document, 'execCommand');
+      var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
+
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      assert.dom('.input', function () {
+        TH.keydown(this, 'L', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(v.ec, 'justifyLeft');
+        v.ec.reset();
+
+        TH.keydown(this, 'E', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(v.ec, 'justifyCenter');
+        v.ec.reset();
+
+        TH.keydown(this, 'R', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(v.ec, 'justifyRight');
+        v.ec.reset();
+
+        TH.keydown(this, 'J', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(v.ec, 'justifyFull');
+      });
+
+      assert.calledWith(keyMap, TH.match.any, 'ignoreFocus');
+    },
+
     "test indent, outdent": function () {
       v.ec = test.stub(document, 'execCommand');
       var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');

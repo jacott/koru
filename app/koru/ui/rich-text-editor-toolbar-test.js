@@ -281,6 +281,25 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test set textAlign": function () {
+        TH.mouseDownUp('.rtToolbar [name=textAlign]');
+
+        assert.dom('.glassPane .rtTextAlign', function () {
+          assert.dom('li>[name=justifyLeft]');
+          assert.dom('li>[name=justifyCenter]', function () {
+            assert.same(this.getAttribute('title'), 'Center [ctrl-shift-E]');
+          });
+          assert.dom('li>[name=justifyRight]');
+          TH.click('li>[name=justifyFull]');
+        });
+
+        assert.dom('.input', function () {
+          assert.dom('div b', 'Hello', function () {
+            assert.same(this.parentNode.style.textAlign, 'justify');
+          });
+        });
+      },
+
       "test set fontColor": function () {
         TH.mouseDownUp('.rtToolbar [name=fontColor]');
 

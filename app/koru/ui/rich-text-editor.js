@@ -54,6 +54,10 @@ define(function(require, exports, module) {
     insertUnorderedList: true,
     outdent: true,
     indent: true,
+    justifyLeft: true,
+    justifyCenter: true,
+    justifyRight: true,
+    justifyFull: true,
     fontName: function (event) {
       chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
         execCommand('fontName', id);
@@ -178,6 +182,10 @@ define(function(require, exports, module) {
     indent: ctrl+'Ý', // ']'
     link: ctrl+'K',
     code: ctrl+'À',
+    justifyLeft: ctrl+shift+"L",
+    justifyCenter: ctrl+shift+"E",
+    justifyRight: ctrl+shift+"R",
+    justifyFull: ctrl+shift+"J",
   }, actions));
 
   keyMap.addKeys(mapActions({

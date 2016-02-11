@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var Modal = require('./modal');
   var koru = require('koru');
   var RichTextMention = require('./rich-text-mention');
+  var SelectMenu = require('./select-menu');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor-toolbar'));
   var $ = Dom.current;
@@ -94,6 +95,17 @@ define(function(require, exports, module) {
     },
   });
 
+  var TEXT_ALIGN_LIST = [
+    ['justifyLeft', 'Left align'],
+    ['justifyCenter', 'Center'],
+    ['justifyRight', 'Right align'],
+    ['justifyFull', 'Justify'],
+  ];
+
+  TEXT_ALIGN_LIST.forEach(function (row) {
+    row[1] = Dom.h({button: '', $name: row[0], $title: RichTextEditor.title(row[1], row[0], 'standard')});
+  });
+
   Tpl.$events({
     'click button': function (event) {Dom.stopEvent()},
     'mousedown button': function (mde) {
@@ -103,8 +115,11 @@ define(function(require, exports, module) {
 
       var button = this;
 
+      var pCtx = $.ctx.parentCtx;
+      var actions = pCtx.mode.actions;
+
       if (document.activeElement !== $.ctx.parentCtx.inputElm)
-        $.ctx.parentCtx.inputElm.focus();
+        pCtx.inputElm.focus();
       Dom.onMouseUp(function (event) {
         if (! Dom.contains(button, event.target)) return;
 
@@ -112,12 +127,23 @@ define(function(require, exports, module) {
         event.stopImmediatePropagation();
 
         var name = button.getAttribute('name');
-        if (name === 'more') {
+        switch(name) {
+        case 'more':
           Dom.toggleClass(toolbar, 'more');
           return;
+        case 'textAlign':
+          SelectMenu.popup(event.target, {
+            classes: 'rtTextAlign',
+            list: TEXT_ALIGN_LIST,
+            onSelect: function (elm) {
+              actions[$.data(elm).id](event);
+            },
+          });
+          return;
+        default:
+          actions[name](event);
         }
 
-        $.ctx.parentCtx.mode.actions[name](event);
       });
     },
   });
