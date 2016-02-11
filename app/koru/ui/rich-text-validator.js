@@ -3,6 +3,26 @@ define(function(require, exports, module) {
   var RichText = require('./rich-text');
 
   return {
+    richText: function (doc, field, options) {
+      var changes = doc.changes;
+      if (! changes || ! changes.hasOwnProperty(field))
+        return;
+
+      var val = doc[field];
+
+      if (typeof val === 'string')
+        return;
+
+      if (Array.isArray(val[0]))
+        val[0] = val[0].join("\n");
+
+      if (RichText.isValid(val[0], val[1]))
+        return;
+
+
+      return this.addError(doc, field, 'invalid_html');
+    },
+
     richTextMarkup: function (doc, field, options) {
       var markupField = field;
       field = markupField.slice(0, -6);
