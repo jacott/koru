@@ -48,6 +48,11 @@ define(function (require, exports, module) {
       assert.equals(sut.fromHtml(html), [[doc], null]);
     },
 
+    "test fragment": function () {
+      var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
+      assert.equals(rt, [['foo bar'], [3, 0, 0, 3]]);
+    },
+
     "test div with multi-line text": function () {
       var doc = "Hello world\n\nline 2\n";
 

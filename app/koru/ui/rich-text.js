@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var util = require('koru/util');
   var uColor = require('koru/util-color');
 
+  var ELEMENT_NODE = document.ELEMENT_NODE;
   var TEXT_NODE = document.TEXT_NODE;
 
   var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9, BGCOLOR = 10, ALIGN = 11;
@@ -117,7 +118,7 @@ define(function(require, exports, module) {
     ignoreInline: function () {},
 
     fromChildren: function(parent, state) {
-      if (parent.style.textAlign)
+      if (parent.nodeType === ELEMENT_NODE && parent.style.textAlign)
         textAlign.call(this, parent, state);
 
       var nodes = parent.childNodes;
