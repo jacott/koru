@@ -160,11 +160,11 @@ define(function (require, exports, module) {
     },
 
     "test alignment": function () {
+      assertConvert('<ul><li style="text-align:center;">one</li></ul>');
       assertConvert('<div style="text-align:justify;">hello</div><div style="text-align:left;">world</div>');
       assertConvert('<blockquote><div style="text-align:right;">one</div></blockquote>');
       assertConvert('<blockquote><div style="text-align:center;">one<br>two</div></blockquote>',
-                    '<blockquote><div style=\"text-align:center;\">one</div><div style=\"text-align:center;\">two</div></blockquote>');
-
+                    '<blockquote><div style="text-align:center;">one</div><div style=\"text-align:center;\">two</div></blockquote>');
     },
 
     "test hiliteColor": function () {

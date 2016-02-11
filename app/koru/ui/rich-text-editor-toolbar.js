@@ -137,6 +137,7 @@ define(function(require, exports, module) {
             list: TEXT_ALIGN_LIST,
             onSelect: function (elm) {
               actions[$.data(elm).id](event);
+              return true;
             },
           });
           return;

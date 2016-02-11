@@ -522,12 +522,15 @@ define(function(require, exports, module) {
 
   function toAlign(state) {
     if (! state.begun) {
+      var tag = state.oldState.rule;
+      state.tag = (tag && tag.tag) || 'DIV';
       state.type = ALIGN_CODE_TO_TEXT[this.offset(3)];
       this.nextRule(4);
       return state.begun = true;
     }
     var oldResult = state.result;
-    oldResult.appendChild(state.result = document.createElement('DIV'));
+
+    oldResult.appendChild(state.result = document.createElement(state.tag));
 
     state.result.style.textAlign = state.type;
     this.toChildren(state);
@@ -535,7 +538,9 @@ define(function(require, exports, module) {
   }
 
   function toBlock(tag) {
-    return function(state) {
+    block.tag = tag;
+    return block;
+    function block(state) {
       if (! state.begun) {
         this.nextRule(3);
         return state.begun = true;
