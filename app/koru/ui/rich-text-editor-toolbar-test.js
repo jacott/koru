@@ -94,6 +94,11 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=link]', '', function () {v.link = this});
           assert.dom('button[name=code]', '');
 
+          assert.dom('button[name=removeFormat]', function () {
+            // I think the backslash upsets assert.dom
+            assert.same(this.getAttribute('title'), 'Clear formatting [ctrl-\\]');
+          });
+
           assert.dom('button[name=outdent][title="Decrease indent [ctrl-[]"]');
           assert.dom('button[name=indent][title="Increase indent [ctrl-]]"]');
           assert.dom('button[name=insertOrderedList][title="Numbered list [ctrl-shift-7]"]');

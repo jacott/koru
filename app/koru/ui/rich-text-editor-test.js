@@ -448,7 +448,6 @@ isClient && define(function (require, exports, module) {
 
     "test textAlign": function () {
       v.ec = test.stub(document, 'execCommand');
-      var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -468,8 +467,20 @@ isClient && define(function (require, exports, module) {
         TH.keydown(this, 'J', {ctrlKey: true, shiftKey: true});
         assert.calledOnceWith(v.ec, 'justifyFull');
       });
+    },
 
-      assert.calledWith(keyMap, TH.match.any, 'ignoreFocus');
+    "test removeFormat": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({b: 'foo'})}));
+
+      assert.dom('.input', function () {
+        assert.dom('b', function () {
+          TH.setRange(this.firstChild, 0, this.firstChild, 3);
+        });
+
+        TH.keydown(this, 'Ü', {ctrlKey: true});
+
+        refute.dom('b');
+      });
     },
 
     "test indent, outdent": function () {

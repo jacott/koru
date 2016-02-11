@@ -58,6 +58,7 @@ define(function(require, exports, module) {
     justifyCenter: true,
     justifyRight: true,
     justifyFull: true,
+    removeFormat: true,
     fontName: function (event) {
       chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
         execCommand('fontName', id);
@@ -186,12 +187,14 @@ define(function(require, exports, module) {
     justifyCenter: ctrl+shift+"E",
     justifyRight: ctrl+shift+"R",
     justifyFull: ctrl+shift+"J",
+    removeFormat: ctrl+'Ü',
   }, actions));
 
   keyMap.addKeys(mapActions({
     outdent: ctrl+'[',
     indent: ctrl+']',
     code: ctrl+'`',
+    removeFormat: ctrl+'\\',
   }, actions));
 
   function chooseFromMenu(event, options, onSelect) {
