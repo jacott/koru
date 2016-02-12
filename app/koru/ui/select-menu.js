@@ -136,6 +136,9 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.$events({
+    'mousedown': function () {
+      Dom.stopEvent();
+    },
     'click li': function (event) {
       Dom.stopEvent();
 

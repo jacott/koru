@@ -323,7 +323,10 @@ isClient && define(function (require, exports, module) {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
+              test.spy(Dom, 'stopEvent');
               TH.trigger(this, 'mousedown');
+              assert.called(Dom.stopEvent);
+              Dom.stopEvent.restore();
               TH.trigger(this, 'mouseup');
               TH.click(this);
               assert.same(v.elm, this);

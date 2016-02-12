@@ -92,6 +92,9 @@ define(function(require, exports, module) {
   });
 
   Tpl.$extend({
+    $created: function (ctx, elm) {
+      ctx.startTab = elm.getElementsByClassName('startTab')[0];
+    },
     setColor: function (ctx, hex, alpha) {
       var hsla = hex2hsl(hex);
       var data = ctx.data;
@@ -206,7 +209,7 @@ define(function(require, exports, module) {
       }
 
       var elm = Slider.$autoRender({pos: hsla[part], callback: function (pos, ctx, slider) {
-        document.activeElement.blur();
+        cpCtx.startTab.focus();
         data.error = null;
         hsla = data.color;
         hsla[part] = pos;

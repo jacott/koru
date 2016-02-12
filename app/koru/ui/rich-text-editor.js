@@ -67,10 +67,15 @@ define(function(require, exports, module) {
       });
     },
     fontColor: function (event) {
-      var node = Dom.getRange().endContainer;
+      var range = Dom.getRange();
+      var node = range.endContainer;
       if (node && node.nodeType === TEXT_NODE)
         node = node.parentNode;
       if (! node) return;
+
+      var ctx = Tpl.$ctx(event.target);
+      var focus = ctx.inputElm;
+
       var style = window.getComputedStyle(node);
 
       var fgColor = uColor.toRGB(style.color);
@@ -79,12 +84,12 @@ define(function(require, exports, module) {
       fgColor = fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor);
       bgColor = bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor);
 
-      var focus = document.activeElement;
-      var range = Dom.getRange();
-
       var options = {foreColor: fgColor, hiliteColor: bgColor};
       var typeElm = Tpl.FontColor.$autoRender(options);
+
+      ctx.openDialog = true;
       ColorPicker.choose(fgColor, {customFieldset: typeElm}, function (color) {
+        ctx.openDialog = false;
         focus.focus();
         Dom.setRange(range);
         if (color === 'removeHilite') {
@@ -188,6 +193,8 @@ define(function(require, exports, module) {
     justifyRight: ctrl+shift+"R",
     justifyFull: ctrl+shift+"J",
     removeFormat: ctrl+'Ü',
+    fontColor: ctrl+shift+'H',
+    fontName: ctrl+shift+'O',
   }, actions));
 
   keyMap.addKeys(mapActions({
@@ -209,12 +216,16 @@ define(function(require, exports, module) {
         Dom.remove(Dom.getClosestClass(item, 'glassPane'));
         notify(ctx, 'force', onSelect(ctx, id));
       },
+      onClose: function () {
+        ctx.openDialog = null;
+      }
     }, options);
 
     options.boundingClientRect = ctx.inputElm.contains(event.target) ?
       Dom.getRangeClientRect(Dom.getRange()) :
       event.target.getBoundingClientRect();
 
+    ctx.openDialog = true;
     SelectMenu.popup(event.target, options);
   }
 
@@ -368,7 +379,22 @@ define(function(require, exports, module) {
   }
 
   function focusInput(event) {
-    Dom.setClass('focus', event.type === 'focusin', event.currentTarget.parentNode);
+    var focusout = event.type === 'focusout';
+
+    var elm = event.currentTarget;
+
+    if (focusout) {
+      if (currentDialog(elm))
+        return;
+      var data = Dom.getMyCtx(elm.parentNode).data;
+      data.options.focusout && data.options.focusout.call(elm, event);
+    }
+    Dom.setClass('focus', ! focusout, elm.parentNode);
+  }
+
+  function currentDialog(me) {
+    var ctx = Dom.getMyCtx(me.parentNode);
+    return ctx && ctx.openDialog;
   }
 
   var standardMode = {

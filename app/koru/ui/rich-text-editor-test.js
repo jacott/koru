@@ -112,8 +112,13 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
+        this.focus();
         TH.trigger(this, 'focusin');
         assert.className(this.parentNode, 'focus');
+        TH.keydown(this, 'O', {ctrlKey: true, shiftKey: true});
+        TH.trigger(this, 'focusout');
+        assert.className(this.parentNode, 'focus');
+        Dom.remove(Dom('.glassPane'));
         TH.trigger(this, 'focusout');
         refute.className(this.parentNode, 'focus');
       });
@@ -309,10 +314,16 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: {span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
       assert.dom('.input font span', function () {
+        this.focus();
+        TH.trigger(this, 'focusin');
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
 
-        sut.$ctx(this).mode.actions.fontColor();
+        TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
+        TH.trigger(this, 'focusout');
       });
+
+      assert.className(Dom('.richTextEditor'), 'focus');
+
 
       // set hiliteColor
 
@@ -335,10 +346,13 @@ isClient && define(function (require, exports, module) {
 
 
       assert.dom('.input', function () {
+        TH.trigger(this, 'focusout');
+        refute.className(Dom('.richTextEditor'), 'focus');
+
         assert.dom('*', 'b', function () {
           assert.colorEqual(this.style.backgroundColor, '#ff0000');
         });
-        sut.$ctx(this).mode.actions.fontColor();
+        sut.$ctx(this).mode.actions.fontColor({target: this});
       });
 
       // set foreColor
@@ -350,7 +364,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.input', function () {
         assert.dom('font[color="#f0f0f0"]', 'b');
-        sut.$ctx(this).mode.actions.fontColor();
+        sut.$ctx(this).mode.actions.fontColor({target: this});
       });
 
       // clear background

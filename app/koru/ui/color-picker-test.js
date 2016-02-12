@@ -57,6 +57,10 @@ isClient && define(function (require, exports, module) {
         });
         assert.dom('input', {value: '180'});
       });
+      assert.dom('.startTab', function () {
+        assert.same(document.activeElement, this);
+
+      });
       assert.dom('.colorPart.s .slider', function () {
         assert.same(this.style.backgroundImage, 'linear-gradient(90deg, rgb(128, 128, 128) 0%, rgb(0, 255, 255) 100%)');
       });
