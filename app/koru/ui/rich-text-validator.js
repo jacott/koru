@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   return {
     richText: function (doc, field, options) {
       var changes = doc.changes;
-      if (! changes || ! changes.hasOwnProperty(field))
+      if (changes && ! changes.hasOwnProperty(field))
         return;
 
       var val = doc[field];
@@ -16,9 +16,10 @@ define(function(require, exports, module) {
       if (Array.isArray(val[0]))
         val[0] = val[0].join("\n");
 
-      if (RichText.isValid(val[0], val[1]))
+      if (RichText.isValid(val[0], val[1])) {
+        if (val[1] == null) doc[field] = val[0];
         return;
-
+      }
 
       return this.addError(doc, field, 'invalid_html');
     },

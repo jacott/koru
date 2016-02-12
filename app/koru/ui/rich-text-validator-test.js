@@ -30,7 +30,6 @@ define(function (require, exports, module) {
         assert.isNull(doc._errors);
         assert.equals(v.args, v.rt);
         assert.equals(doc.foo, ['one\ntwo', [3, 0, 0, 3]]);
-
       },
 
       "test valid text": function () {
@@ -39,6 +38,15 @@ define(function (require, exports, module) {
         sut.validators('richText')(doc, 'foo');
         assert.isNull(doc._errors);
         assert.equals(v.args, undefined);
+        assert.equals(doc.foo, 'just\ntext');
+      },
+
+      "test no Markup": function () {
+        var doc = {foo: v.rt = [['one', 'two'], null]};
+
+        sut.validators('richText')(doc, 'foo');
+        assert.isNull(doc._errors);
+        assert.equals(doc.foo, 'one\ntwo');
       },
 
       "test bad but no changes": function () {
