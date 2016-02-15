@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   var koru = require('koru');
   var RichTextMention = require('./rich-text-mention');
   var SelectMenu = require('./select-menu');
+  var RichText = require('./rich-text');
 
   var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor-toolbar'));
   var $ = Dom.current;
@@ -36,8 +37,8 @@ define(function(require, exports, module) {
     if (override && override.font)
       return override.font;
 
-    var code = getTag('FONT');
-    return (code && code.getAttribute('face')) || 'sans-serif';
+    var code = getTag('SPAN');
+    return RichText.fontType(code && code.style.fontFamily);
   }
 
   Tpl.$helpers({

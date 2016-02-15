@@ -253,13 +253,18 @@ define(function(require, exports, module) {
     get outerHTML() {
       var tn = this.tagName.toLowerCase();
       var attrs = this.attributes;
+      if (this.__style) {
+        var cssText = this.style._origCssText();
+      }
       if (util.isObjEmpty(attrs)) {
         var open = tn;
+        if (cssText) open += ' style="'+cssText+'"';
       } else {
         var open = [tn];
         for(var attr in attrs) {
           open.push(attr+'="'+attrs[attr]+'"');
         }
+        cssText && open.push('style="'+cssText+'"');
         open = open.join(' ');
       }
 
@@ -269,8 +274,18 @@ define(function(require, exports, module) {
       return "<"+open+">"+this.innerHTML+"</"+tn+">";
     },
 
-    setAttribute: function (name, value) {this.attributes[name] = value},
-    getAttribute: function (name) {return this.attributes[name]},
+    setAttribute: function (name, value) {
+      if (name === 'style')
+        this.style.cssText = value;
+      else
+        this.attributes[name] = value;
+    },
+    getAttribute: function (name) {
+      if (name === 'style')
+        return this.style._origCssText();
+      else
+        return this.attributes[name];
+    },
 
     get classList() {
       return new ClassList(this);
@@ -363,46 +378,91 @@ define(function(require, exports, module) {
     var me = this;
     me._node = node;
     me._styles = {};
-
-    (me._node.getAttribute('style')||'').split(/\s*;\s*/).forEach(function (style) {
-      var idx = style.indexOf(':');
-      if (idx !== -1) {
-        me[util.camelize(style.slice(0, idx))] = style.slice(idx+1);
-      }
-    });
+    me._styleArray = [];
+    this._needBuild = true;
   }
 
 
   Style.prototype = {
     constructor: Style,
 
-    get backgroundColor() {
-      var color = this._styles.backgroundColor;
+    get length() {return this._styleArray.length},
 
-      return color ? uColor.toRgbStyle(color) : '';
-    },
+    item: function (index) {return this._styleArray[index]},
 
-    set backgroundColor(value) {
-      this._setStyle('backgroundColor', value);
-    },
-
-    _setStyle: function (name, value) {
+    _setStyle: function (name, dname, value) {
+      this._needBuild = true;
       var styles = this._styles;
-      styles[name] = value;
+      var oldValue = styles[name];
+      if (oldValue === value) return;
+      if (oldValue === undefined) {
+        styles[this._styleArray.length] = name;
+        this._styleArray.push(dname);
+      }
+      styles[dname] = styles[name] = value;
+    },
 
-      var styleStr = '';
-      for (var id in styles)
-        styleStr += util.dasherize(name)+': '+this[id]+';';
+    _origCssText: function () {
+      this._needBuild && this._rebuild();
+      return this._cssText;
+    },
 
-      this._node.setAttribute('style', styleStr);
+    _rebuild: function () {
+      this._needBuild = false;
+      this._cssText = this.cssText;
+    },
+
+    get cssText() {
+      var sm = this._styles;
+      return this._styleArray.map(function (dname) {
+        var value = sm[dname];
+        if (! /color/.test(dname) && / /.test(value))
+          value = "'"+value+"'";
+        return dname+": "+value+";";
+      }).join(" ");
+    },
+
+    set cssText(cssText) {
+      this._cssText = cssText;
+      var sm = this._styles = {};
+      var sa = this._styleArray = [];
+      this._needBuild = false;
+      var styles = cssText.split(/\s*;\s*/);
+      for(var i = 0; i < styles.length; ++i) {
+        var style = styles[i];
+        if (! style) {
+          styles.length = i;
+          break;
+        }
+        var idx = style.indexOf(':');
+        var dname = style.slice(0, idx);
+        var name = util.camelize(dname);
+        var value = style.slice(idx+1).trim();
+        if (/color/.test(dname))
+          value = (value && uColor.toRgbStyle(value)) || '';
+        sm[dname] = sm[name] = value;
+        sa.push(dname);
+      }
     },
   };
 
-  'textAlign'.split(' ').forEach(function (name) {
+  'text-align font-size font-family font-weight font-style text-decoration background-color color'.split(' ').forEach(function (dname) {
+    var name = util.camelize(dname);
+    var get = function () {return this._styles[name] || ''};
+    var set = /color/i.test(name) ? function (value) {
+      this._setStyle(name, dname, (value && uColor.toRgbStyle(value)) || '');
+    } : function (value) {this._setStyle(name, dname, value)};
+
     Object.defineProperty(Style.prototype, name, {
       configurable: true,
-      get: function () {return this._styles[name]},
-      set: function (value) {this._setStyle(name, value)},
+      get: get,
+      set: set,
+    });
+
+    Object.defineProperty(Style.prototype, dname, {
+      configurable: true,
+      get: get,
+      set: set,
     });
   });
 

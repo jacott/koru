@@ -216,7 +216,7 @@ isClient && define(function (require, exports, module) {
       TH.mouseDownUp('[name=code]');
 
       assert.dom('.richTextEditor>.input b', function () {
-        assert.same(this.innerHTML, 'H<font face="monospace">el</font>lo');
+        assert.same(this.innerHTML, 'H<span style=\"font-family: monospace;\">el</span>lo');
       });
 
       assert.dom('[name=code].on');
@@ -268,7 +268,9 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.input', function () {
-          assert.dom('font[face="poster"]');
+          assert.dom('b span', 'Hel', function () {
+            assert.same(this.style.fontFamily, 'poster');
+          });
         });
 
         assert.dom('[name=fontName]', 'Poster');
@@ -282,7 +284,9 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.input', function () {
-          assert.dom('font[size="4"]');
+          assert.dom('b span', 'Hel', function () {
+            assert.same(this.style.fontSize, '1.2em');
+          });
         });
       },
 
@@ -314,7 +318,9 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.input', function () {
-          assert.dom('font[color="#00ff00"]');
+          assert.dom('b span', 'Hel', function () {
+            assert.colorEqual(this.style.color, "#00ff00");
+          });
         });
       },
     },

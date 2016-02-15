@@ -62,7 +62,25 @@ define(function (require, exports, module) {
       top.style.backgroundColor = '#ffff00';
       assert.same(top.style.backgroundColor, 'rgb(255, 255, 0)');
       assert.same(top.getAttribute('style'), 'background-color: rgb(255, 255, 0);');
+    },
 
+    "test style.cssText": function () {
+      var top = document.createElement('div');
+      top.setAttribute('style', 'color:#ff0000;font-weight:bold');
+      assert.same(top.style.color, 'rgb(255, 0, 0)');
+      assert.same(top.style.fontWeight, 'bold');
+      assert.same(top.style['font-weight'], 'bold');
+      assert.same(top.style.cssText, 'color: rgb(255, 0, 0); font-weight: bold;');
+      assert.same(top.getAttribute('style'), 'color:#ff0000;font-weight:bold');
+      top.style.fontWeight = 'normal';
+      assert.same(top.getAttribute('style'), 'color: rgb(255, 0, 0); font-weight: normal;');
+      top.style.textDecoration = 'underline';
+      assert.same(top.style.item(2), 'text-decoration');
+      assert.same(top.getAttribute('style'), 'color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline;');
+      assert.same(top.style.textAlign, '');
+      assert.same(top.outerHTML, '<div style="color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline;"></div>');
+      top.style.fontFamily = 'foo bar';
+      assert.same(top.style.cssText, "color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline; font-family: 'foo bar';");
     },
 
     "test insertBefore": function () {

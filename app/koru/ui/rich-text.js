@@ -7,7 +7,10 @@ define(function(require, exports, module) {
   var ELEMENT_NODE = document.ELEMENT_NODE;
   var TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, NEST = 2, BOLD = 3, ITALIC = 4, UL = 5, LINK = 6, UNDERLINE = 7, CODE = 8, FONT = 9, BGCOLOR = 10, ALIGN = 11;
+  var OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
+      LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
+      MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
+      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17;
 
   var FONT_FACE_TO_ID = {
     'sans-serif': 0,
@@ -23,11 +26,13 @@ define(function(require, exports, module) {
   for (var id in FONT_FACE_TO_ID)
     FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
 
+  var FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
+
   var ALIGN_TEXT_TO_CODE = {
-    left: 0,
-    right: 1,
-    center: 2,
-    justify: 3
+    left: LEFT,
+    right: RIGHT,
+    center: CENTER,
+    justify: JUSTIFY
   };
 
 
@@ -88,6 +93,25 @@ define(function(require, exports, module) {
       this.lines.push('');
     },
 
+    addInline: function (muIndex, code, index, value) {
+      if (muIndex === this.markup.length) {
+        this.markup.push(code, this.relative(index), this.lines[index].length, 0);
+        value === undefined || this.markup.push(value);
+        return;
+      }
+      var cc = this.markup[muIndex];
+      var values = this.markup[muIndex+4];
+      if (cc !== MULTILINE) {
+        this.markup[muIndex] = MULTILINE;
+        if (values === undefined)
+          this.markup.push(values = [cc]);
+        else
+          this.markup[muIndex+4] = values = [cc, values];
+      }
+      values.push(code);
+      if (value !== undefined) values.push(value);
+    },
+
     resetInlines: function () {
       if (this.inlineIdx === 0) return;
       var lineLength = this.lines[this.lines.length - 1].length;
@@ -95,7 +119,7 @@ define(function(require, exports, module) {
         var entry = this.inlines[i];
         var node = entry[0];
         var rule = FROM_RULE[node.tagName] || this.ignoreInline;
-        rule.call(this, node, lineLength, entry[1]);
+        entry[1] === null || rule.call(this, node, lineLength, entry[1]);
       }
 
       this.inlineIdx = 0;
@@ -107,10 +131,12 @@ define(function(require, exports, module) {
         var entry = this.inlines[i];
         var node = entry[0];
         var rule = FROM_RULE[node.tagName] || this.ignoreInline;;
-        if (rule.call(this, node, index) === false)
+        var len = this.markup.length;
+        rule.call(this, node, index);
+        if (len === this.markup.length)
           entry[1] = null;
         else
-          entry[1] = this.markup.length - 1;
+          entry[1] = len;
       }
       this.inlineIdx = i;
     },
@@ -162,8 +188,8 @@ define(function(require, exports, module) {
 
   function textAlign(node, state) {
     var start = this.lines.length;
-    this.markup.push(ALIGN, this.relative(start), 0, ALIGN_TEXT_TO_CODE[node.style.textAlign]);
-    var endMarker = this.markup.length - 2;
+    this.markup.push(ALIGN_TEXT_TO_CODE[node.style.textAlign], this.relative(start), 0);
+    var endMarker = this.markup.length - 1;
     var lastEndCall = state.endCall;
 
     state.endCall = function () {
@@ -185,7 +211,7 @@ define(function(require, exports, module) {
       if (pos === undefined)
         this.markup.push(code, this.relative(index), this.lines[index].length, 0);
       else
-        this.markup[pos] = index;
+        this.markup[pos+3] = index;
     };
   }
 
@@ -343,40 +369,90 @@ define(function(require, exports, module) {
 
   function fromFont(node, index, pos) {
     if (pos !== undefined) {
-      this.markup[pos - 1] = index;
+      this.markup[pos+3] = index;
       return;
     }
 
-    var attrs = [];
+    var markupLen = this.markup.length;
     if (node.tagName === 'FONT') {
       var face = node.getAttribute('face');
+      face && fromFace.call(this, markupLen, FONT, 'font-family', face, index);
       var color = uColor.toHex(node.getAttribute('color'));
-      color && attrs.push(color);
+      color && fromColor.call(this, markupLen, COLOR, 'color', color, index);
       var size = node.getAttribute('size');
-      size && attrs.push(size);
+      size && fromSize.call(this, markupLen, SIZE, 'size', size, index);
     } else {
+      fromFace.call(this, markupLen, FONT, 'font-family', 'monospace', index);
       var face = 'monospace';
     }
-    var faceId = FONT_FACE_TO_ID[face];
-    if (faceId === undefined)
-      faceId = face;
-    faceId == null || attrs.push(faceId);
+  }
 
-    if (! attrs.length)
-      return false;
-    this.markup.push(FONT, this.relative(index), this.lines[index].length, 0, attrs.length === 1 ? attrs[0] : attrs);
+  var SPAN_STYLES = {
+    'background-color': [BGCOLOR, fromColor],
+    'color': [COLOR, fromColor],
+    'font-family': [FONT, fromFace],
+    'font-size': [SIZE, fromSize],
+    'font-weight': [BOLD, fromSimple],
+    'font-style': [ITALIC, fromSimple],
+    'text-decoration': [UNDERLINE, fromSimple],
+  };
+
+  function fromColor(muIndex, code, name, value, index) {
+    this.addInline(muIndex, code, index, uColor.toHex(value));
+  }
+
+  function fromFace(muIndex, code, name, value, index) {
+    var id = FONT_FACE_TO_ID[value.replace(/'/g,'')];
+    this.addInline(muIndex, code, index, id === undefined ? value : id);
+  }
+
+  var FONT_SIZE_TO_EM = {
+    '1': '.68em',
+    'x-small': '.68em',
+    '2': '.8em',
+    'small': '.8em',
+    '3': '1em',
+    'medium': '1em',
+    '4': '1.2em',
+    'large': '1.2em',
+    '5': '1.6em',
+    'x-large': '1.6em',
+    '6': '2em',
+    'xx-large': '2em',
+    '7': '3em',
+    'xxx-large': '3em',
+  };
+
+  function fromSize(muIndex, code, name, value, index) {
+    var size = FONT_SIZE_TO_EM[value.replace(/^-[a-z]+-/,'')];
+    if (! size && value.slice(-2) !== 'em')
+      return;
+
+    this.addInline(muIndex, code, index, size || value);
+  }
+
+  function fromSimple(muIndex, code, name, value, index) {
+    this.addInline(muIndex, code, index);
   }
 
   function fromSpan(node, index, pos) {
     if (pos !== undefined) {
-      this.markup[pos - 1] = index;
+      this.markup[pos+3] = index;
       return;
     }
 
     var attrs = [];
     var style = node.style;
-    if (! style.backgroundColor) return false;
-    this.markup.push(BGCOLOR, this.relative(index), this.lines[index].length, 0, uColor.toHex(style.backgroundColor));
+    var markupLen = this.markup.length;
+    for(var i = 0; i < style.length; ++i) {
+
+      var name = style.item(i);
+      var spanStyle = SPAN_STYLES[name];
+
+      if (spanStyle) {
+        spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index);
+      }
+    }
   }
 
   var FROM_RULE = {
@@ -398,10 +474,10 @@ define(function(require, exports, module) {
       if (pos === undefined)
         this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, 0);
       else {
-        this.markup[pos] = index;
+        this.markup[pos+5] = index;
         var lineIdx = this.lines.length - 1;
         this.lines[lineIdx] += ' (' + code.fromHtml(node) + ')';
-        this.markup[pos - 2] = this.lines[lineIdx].length;
+        this.markup[pos+3] = this.lines[lineIdx].length;
       }
     },
   };
@@ -436,6 +512,8 @@ define(function(require, exports, module) {
       state.rule.call(this, state);
 
       while (state.last === index) {
+        state.endCall && state.endCall();
+
         state = state.oldState;
       }
     }
@@ -472,7 +550,6 @@ define(function(require, exports, module) {
       if (this.lidx === nextMarkup) {
         while(this.lidx ===  nextMarkup && this.offset(2) < endPos) {
           var rule = TO_RULES[this.offset(0)];
-
           var text = this.line.slice(state.inlineStart || 0, this.offset(2));
 
           if (text)
@@ -482,6 +559,7 @@ define(function(require, exports, module) {
           state = {
             result: state.result,
             oldState: state,
+            index: this.midx,
             rule: rule,
             inlineStart: this.offset(2),
             inlineEnd: this.offset(3),
@@ -525,15 +603,21 @@ define(function(require, exports, module) {
     if (! state.begun) {
       var tag = state.oldState.rule;
       state.tag = (tag && tag.tag) || 'DIV';
-      state.type = ALIGN_CODE_TO_TEXT[this.offset(3)];
-      this.nextRule(4);
+      var type = ALIGN_CODE_TO_TEXT[this.offset(0)];
+      this.nextRule(3);
+      state.endCall = state.addAlign = function () {
+        state.endCall = null;
+        if (! state.alignElm) state.alignElm = state.result.firstChild;
+
+        state.alignElm.style.textAlign = type;
+      };
       return state.begun = true;
     }
     var oldResult = state.result;
 
-    oldResult.appendChild(state.result = document.createElement(state.tag));
+    oldResult.appendChild(state.alignElm = state.result = document.createElement(state.tag));
+    state.addAlign();
 
-    state.result.style.textAlign = state.type;
     this.toChildren(state);
     state.result = oldResult;
   }
@@ -608,22 +692,52 @@ define(function(require, exports, module) {
     text && state.result.appendChild(document.createTextNode(text));
   }
 
-  function toInline(tag, attrs) {
-    function toInlineTag(state) {
-      var oldResult = state.result;
-      oldResult.appendChild(state.result = document.createElement(tag));
-      attrs && addAttrs(attrs, state.result);
-      this.toChildren(state);
-      state.result = oldResult;
-    } toInlineTag.inline = true; toInlineTag.muInc = 4;
-
-    return toInlineTag;
+  var CODE_TO_STYLE_NAME = [], CODE_TO_STYLE_VALUE = [];
+  CODE_TO_STYLE_NAME[BOLD] = 'font-weight'; CODE_TO_STYLE_VALUE[BOLD] = 'bold';
+  CODE_TO_STYLE_NAME[ITALIC] = 'font-style'; CODE_TO_STYLE_VALUE[ITALIC] = 'italic';
+  CODE_TO_STYLE_NAME[UNDERLINE] = 'text-decoration'; CODE_TO_STYLE_VALUE[UNDERLINE] = 'underline';
+  CODE_TO_STYLE_NAME[BGCOLOR] = 'background-color';
+  CODE_TO_STYLE_NAME[COLOR] = 'color';
+  CODE_TO_STYLE_NAME[FONT] = 'font-family';
+  CODE_TO_STYLE_VALUE[FONT] = function (value) {
+    return FONT_ID_TO_FACE[value] || value;
   };
+  CODE_TO_STYLE_NAME[SIZE] = 'font-size';
 
-  function addAttrs(attrs, elm) {
-    for(var name in attrs)
-      elm.setAttribute(name, attrs[name]);
-  }
+  function toInline(state) {
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('SPAN'));
+    var code = this.markup[state.index];
+    state.result.style[CODE_TO_STYLE_NAME[code]] = CODE_TO_STYLE_VALUE[code];
+    this.toChildren(state);
+    state.result = oldResult;
+  } toInline.inline = true; toInline.muInc = 4;
+
+  function toInlineValue(state) {
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('SPAN'));
+    var code = this.markup[state.index];
+    var value = this.markup[state.index+4];
+    var decode = CODE_TO_STYLE_VALUE[code];
+    state.result.style[CODE_TO_STYLE_NAME[code]] = decode ? decode(value) : value;
+    this.toChildren(state);
+    state.result = oldResult;
+  } toInlineValue.inline = true; toInlineValue.muInc = 5;
+
+  function toMultiInline(state) {
+    var oldResult = state.result;
+    oldResult.appendChild(state.result = document.createElement('SPAN'));
+    var value = this.markup[state.index+4];
+    var idx = 0;
+    var style = state.result.style;
+    for(var idx = 0; idx < value.length; ++idx) {
+      var code = value[idx];
+      var decode = CODE_TO_STYLE_VALUE[code];
+      style[CODE_TO_STYLE_NAME[code]] = typeof decode === 'string' ? decode : decode ? decode(value[++idx]) : value[++idx];
+    }
+    this.toChildren(state);
+    state.result = oldResult;
+  } toMultiInline.inline = true; toMultiInline.muInc = 5;
 
   function toFont(state) {
     var oldResult = state.result;
@@ -683,13 +797,21 @@ define(function(require, exports, module) {
   TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
   TO_RULES[CODE] = toCode;
 
-  TO_RULES[BOLD] = toInline('B');
-  TO_RULES[ITALIC] = toInline('I');
-  TO_RULES[UNDERLINE] = toInline('U');
-  TO_RULES[FONT] = toFont;
-  TO_RULES[BGCOLOR] = toBgColor;
   TO_RULES[LINK] = toLink;
-  TO_RULES[ALIGN] = toAlign;
+
+  TO_RULES[LEFT] = toAlign;
+  TO_RULES[RIGHT] = toAlign;
+  TO_RULES[CENTER] = toAlign;
+  TO_RULES[JUSTIFY] = toAlign;
+
+  TO_RULES[MULTILINE] = toMultiInline;
+  TO_RULES[BOLD] = toInline;
+  TO_RULES[ITALIC] = toInline;
+  TO_RULES[UNDERLINE] = toInline;
+  TO_RULES[FONT] = toInlineValue;
+  TO_RULES[BGCOLOR] = toInlineValue;
+  TO_RULES[COLOR] = toInlineValue;
+  TO_RULES[SIZE] = toInlineValue;
 
   function isInlineNode(item) {
     return item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
@@ -733,6 +855,25 @@ define(function(require, exports, module) {
         delete LINK_FROM_HTML[data.class];
       }
     },
+
+    fontType: function (face) {
+      if (! face) return 'sans-serif';
+      var id = FONT_FACE_TO_ID[face];
+      if (! id) return face;
+      return FONT_ID_TO_STD[id];
+    },
+
+    mapFontNames: function (faces) {
+      for(var std in faces) {
+        var code = FONT_FACE_TO_ID[std];
+        if (code === undefined) throw new Error("face not found: " + std);
+        var face = faces[std];
+        FONT_FACE_TO_ID[face] = code;
+        FONT_ID_TO_FACE[code] = face;
+      }
+    },
+
+    FONT_SIZE_TO_EM: FONT_SIZE_TO_EM,
 
     INLINE_TAGS: INLINE_TAGS,
   };

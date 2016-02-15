@@ -46,6 +46,8 @@ define(function(require, exports, module) {
     row[1] = Dom.h({font: row[1], $size: row[0]});
   });
 
+  execCommand('styleWithCSS', true);
+
   var actions = commandify({
     bold: true,
     italic: true,
@@ -528,15 +530,32 @@ define(function(require, exports, module) {
     modes: modes,
   });
 
+  var FONT_SIZE_TO_EM = RichText.FONT_SIZE_TO_EM;
+
   Tpl.$events({
     'input': function (event) {
       var input = event.target;
       var fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
         input.removeChild(fc);
-      util.forEach(input.querySelectorAll('BLOCKQUOTE[style]'), function (elm) {
-        elm.removeAttribute('style');
-      });
+
+      for(var sp = Dom.getRange().endContainer; sp; sp = sp.parentNode) {
+        sp = Dom.getClosest(sp, 'SPAN,BLOCKQUOTE,.input');
+        if (! sp || sp === input) break;
+        switch (sp.tagName) {
+        case 'BLOCKQUOTE':
+          sp.removeAttribute('style');
+          break;
+        case 'SPAN':
+          var st = sp.style;
+          var fs = st.fontSize;
+          if (fs && fs.slice(-2) !== 'em') {
+            st.fontSize = FONT_SIZE_TO_EM[fs.replace(/^-[a-z]+-/,'')] || '3em';
+            st.lineHeight = "1em";
+          }
+          break;
+        }
+      }
     },
     'paste': function (event) {
       if ('clipboardData' in event) {
@@ -994,7 +1013,7 @@ define(function(require, exports, module) {
 
   function codeNode(editor, range) {
     for(var node = range.startContainer; node && node !== editor; node = node.parentNode) {
-      if (node.nodeType === 1 && node.getAttribute('face') === 'monospace') {
+      if (node.nodeType === 1 && RichText.fontType(node.style.fontFamily) === 'monospace') {
         return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
       }
     }

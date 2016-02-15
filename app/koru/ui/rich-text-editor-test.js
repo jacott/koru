@@ -216,12 +216,12 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
         assert.dom('.richTextEditor.syntaxHighlighting');
 
-        highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
+        highlight.yield(null, [4, 0, 3, 3, 1, 0, 2]);
 
         assert.dom('pre', function () {
           var rt = RichText.fromHtml(this, {includeTop: true});
           assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
-          assert.equals(rt[1], [8, 0, 3, 3, 1, 0, 2]);
+          assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
         assert.dom('pre+div', 'after');
         assert.called(v.caretMoved);
@@ -231,11 +231,11 @@ isClient && define(function (require, exports, module) {
           TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
         });
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
-        highlight.yield(null, [8, 0, 3, 3, 1, 0, 2]);
+        highlight.yield(null, [4, 0, 3, 3, 1, 0, 2]);
         assert.dom('pre', function () {
           var rt = RichText.fromHtml(this, {includeTop: true});
           assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
-          assert.equals(rt[1], [8, 0, 3, 3, 1, 0, 2]);
+          assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
 
 
@@ -319,7 +319,9 @@ isClient && define(function (require, exports, module) {
           TH.click('li>font[size="2"]', 'Small');
       });
 
-      assert.dom('font[size="2"]', 'b');
+      assert.dom('span', 'b', function () {
+        assert.same(this.style.fontSize, '0.8em');
+      });
     },
 
     "test fontColor": function () {
@@ -375,7 +377,10 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.input', function () {
-        assert.dom('font[color="#f0f0f0"]', 'b');
+        assert.dom('span', 'b', function () {
+          assert.colorEqual(this.style.color, '#f0f0f0');
+          assert.colorEqual(this.style.backgroundColor, '#ff0000');
+        });
         sut.$ctx(this).mode.actions.fontColor({target: this});
       });
 
@@ -402,48 +407,70 @@ isClient && define(function (require, exports, module) {
         this.focus();
         TH.setRange(this.lastChild.firstChild, 0, this.lastChild.firstChild, 1);
         TH.keydown(this, '`', {ctrlKey: true});
-        assert.dom('font[face=monospace]', '2');
+        assert.dom('span', '2', function () {
+          assert.same(this.style.fontFamily, 'monospace');
+
+        });
         sut.insert('foo');
-        assert.dom('font[face=monospace]', 'foo');
+        assert.dom('span', 'foo', function () {
+          assert.same(this.style.fontFamily, 'monospace');
+        });
 
         TH.keydown(this, '`', {ctrlKey: true});
         sut.insert(' bar');
-        if (Dom('font[face=monospace] font[face=initial]')) {
-          assert.dom('font[face=monospace]', 'foo bar', function () {
-            assert.dom('font[face=initial]', 'bar');
+        if (Dom('span>span')) {
+          assert.dom('span', 'foo bar', function () {
+            assert.same(this.style.fontFamily, 'monospace');
+            TH.setRange(this.firstChild, 1);
+            assert.dom('span', 'bar', function () {
+              assert.same(this.style.fontFamily, 'initial');
+            });
           });
         } else {
-          assert.dom('font[face=monospace]', 'foo', function () {
-            assert.same(this.nextSibling.textContent, ' bar');
+          assert.dom('span', 'foo', function () {
+            assert.same(this.style.fontFamily, 'monospace');
+            TH.setRange(this.firstChild, 1);
+          });
+          assert.dom('span+span', 'bar', function () {
+            assert.same(this.style.fontFamily, 'initial');
           });
         }
-        assert.dom('font[face=monospace]', function () {
-          TH.setRange(this.firstChild, 1);
-        });
         TH.keydown(this, '`', {ctrlKey: true});
         sut.insert('baz');
-        assert.dom('font[face=monospace]', /^f/, function () {
+        assert.dom('span', /^f/, function () {
+          assert.same(this.style.fontFamily, 'monospace');
           v.start = this.firstChild;
         });
-        assert.dom('font[face=initial]', 'baz');
+        assert.dom('span', 'baz', function () {
+          assert.same(this.style.fontFamily, 'initial');
+        });
 
-        if (Dom('font[face=initial]+font[face=monospace]')) {
-          assert.dom('font[face=initial]+font[face=monospace]', 'oo', function () {
-            TH.setRange(v.start, 0, this.firstChild, 1);
-          });
-          TH.keydown(this, '`', {ctrlKey: true});
-          assert.dom('font[face=monospace]', 'o');
-        } else {
-          assert.dom('font[face=initial]', 'baz', function () {
+        if (Dom('span>span')) {
+          assert.dom('span', 'baz', function () {
+            assert.same(this.style.fontFamily, 'initial');
             TH.setRange(v.start, 0, this.nextSibling, 1);
           });
           TH.keydown(this, '`', {ctrlKey: true});
           assert.dom('font[face=initial]', 'fbazo');
+        } else {
+          assert.dom('span', 'baz', function () {
+            assert.same(this.style.fontFamily, 'initial');
+            var oo = this.nextSibling;
+            assert.same(oo.textContent, 'oo');
+            assert.same(oo.style.fontFamily, 'monospace');
+            TH.setRange(v.start, 0, oo.firstChild, 1);
+          });
+          TH.keydown(this, '`', {ctrlKey: true});
+          assert.dom('span', 'o', function () {
+            assert.same(this.style.fontFamily, 'monospace');
+          });
         }
         var rt = RichText.fromHtml(this);
         rt.push(Dom.h({p: ''}));
         assert.dom(RichText.toHtml.apply(RichText, rt), function () {
-          assert.dom('font', 'bar');
+          assert.dom('span', 'bar', function () {
+            assert.same(this.style.fontFamily, 'initial');
+          });
         });
       });
     },
@@ -597,7 +624,7 @@ isClient && define(function (require, exports, module) {
         assert.called(Dom.stopEvent);
 
         refute.called(v.insertText);
-        assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><b>bold</b> world</div>');
+        assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
       },
 
       "test pre": function () {
