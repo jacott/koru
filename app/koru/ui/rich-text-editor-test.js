@@ -43,6 +43,18 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test get/set value": function () {
+      document.body.appendChild(v.tpl.$autoRender({content: null}));
+
+      assert.dom('.input', function () {
+        assert.same(this.firstChild, null);
+        this.parentNode.value = Dom.h({b: 'bold'});
+        assert.same(this.firstChild.textContent, 'bold');
+        this.parentNode.value = null;
+        assert.same(this.firstChild, null);
+      });
+    },
+
     "test forward/back char": function () {
       runSubTests({
         "within text node ": function () {

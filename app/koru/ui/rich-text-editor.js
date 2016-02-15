@@ -375,7 +375,7 @@ define(function(require, exports, module) {
   function setHtml(value) {
     var inputElm = Dom.getMyCtx(this).inputElm;
     Tpl.clear(inputElm);
-    inputElm.appendChild(value);
+    value && inputElm.appendChild(value);
   }
 
   function focusInput(event) {
@@ -386,7 +386,9 @@ define(function(require, exports, module) {
     if (focusout) {
       if (currentDialog(elm))
         return;
-      var data = Dom.getMyCtx(elm.parentNode).data;
+      var pCtx = Dom.getMyCtx(elm.parentNode);
+      if (! pCtx) return;
+      var data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
     }
     Dom.setClass('focus', ! focusout, elm.parentNode);
