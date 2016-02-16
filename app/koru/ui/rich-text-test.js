@@ -209,6 +209,8 @@ define(function (require, exports, module) {
     },
 
     "test code": function () {
+      assertConvert('<pre data-lang="text"><div><br></div></pre>');
+
       var p = document.createElement('p');
       p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
       var rt = sut.fromHtml(p);

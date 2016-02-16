@@ -281,7 +281,6 @@ define(function(require, exports, module) {
       } else if (node.tagName === 'BR') {
         prevLen = 0;
         builder.newLine();
-        needNl = false;
       } else {
         if (! INLINE_TAGS[node.tagName])
           needNl = true;
@@ -678,9 +677,13 @@ define(function(require, exports, module) {
       delta = state.offset(1);
     }
     var text = line.slice(startPos);
+
     if (this.lidx !== state.lastLine)
       text += "\n";
-    text && state.result.appendChild(document.createTextNode(text));
+    if (text )
+      state.result.appendChild(document.createTextNode(text));
+    else if (! state.result.firstChild)
+      state.result.appendChild(document.createElement('BR'));
   }
 
   var CODE_TO_STYLE_NAME = [], CODE_TO_STYLE_VALUE = [];
