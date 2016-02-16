@@ -186,7 +186,11 @@ define(function (require, exports, module) {
 
     "test alignment": function () {
       assertBothConvert('<div style="text-align: center;"><ol><li>foo</li></ol></div>',
-                        '<ol style="text-align: center;"><li>foo</li></ol>');
+                        '<ol><li style="text-align: center;">foo</li></ol>');
+      assertConvert('<div><ol style="text-align: justify;"><li>abc</li><li><br></li></ol></div>',
+                    '<ol><li style="text-align: justify;">abc</li><li style="text-align: justify;"><br></li></ol>');
+      assertConvert('<div style="text-align: left;"><ol><li>abc</li></ol></div>',
+                    '<ol><li style=\"text-align: left;\">abc</li></ol>');
       assertConvert('<ul><li style="text-align: center;">one</li></ul>');
       assertConvert('<div style="text-align: justify;">hello</div><div style="text-align: left;">world</div>');
       assertConvert('<blockquote><div style="text-align: right;">one</div></blockquote>');

@@ -145,7 +145,7 @@ define(function(require, exports, module) {
 
     fromChildren: function(parent, state) {
       if (parent.nodeType === ELEMENT_NODE && parent.style.textAlign)
-        textAlign.call(this, parent, state);
+        var endAlign = textAlign.call(this, parent, state);
 
       var nodes = parent.childNodes;
       var last = state.last = nodes.length - 1;
@@ -182,7 +182,7 @@ define(function(require, exports, module) {
         }
       }
 
-      state.endCall && state.endCall.call(this, parent, state);
+      endAlign && endAlign.call(this, parent, state);
     },
   };
 
@@ -190,10 +190,8 @@ define(function(require, exports, module) {
     var start = this.lines.length;
     this.markup.push(ALIGN_TEXT_TO_CODE[node.style.textAlign], this.relative(start), 0);
     var endMarker = this.markup.length - 1;
-    var lastEndCall = state.endCall;
 
-    state.endCall = function () {
-      state.endCall = lastEndCall;
+    return function () {
       this.markup[endMarker] = this.lines.length - 1 - start;
     };
   }
@@ -512,7 +510,7 @@ define(function(require, exports, module) {
       state.rule.call(this, state);
 
       while (state.last === index) {
-        state.endCall && state.endCall();
+        state.endCall && state.endCall.call(this);
 
         state = state.oldState;
       }
@@ -601,25 +599,15 @@ define(function(require, exports, module) {
 
   function toAlign(state) {
     if (! state.begun) {
-      var tag = state.oldState.rule;
-      state.tag = (tag && tag.tag) || 'DIV';
-      var type = ALIGN_CODE_TO_TEXT[this.offset(0)];
+      state.rule = state.oldState.rule;
+      var oldAlign = this.align;
+      this.align = ALIGN_CODE_TO_TEXT[this.offset(0)];
       this.nextRule(3);
-      state.endCall = state.addAlign = function () {
-        state.endCall = null;
-        if (! state.alignElm) state.alignElm = state.result.firstChild;
-
-        state.alignElm.style.textAlign = type;
+      state.endCall = function () {
+        this.align = oldAlign;
       };
       return state.begun = true;
     }
-    var oldResult = state.result;
-
-    oldResult.appendChild(state.alignElm = state.result = document.createElement(state.tag));
-    state.addAlign();
-
-    this.toChildren(state);
-    state.result = oldResult;
   }
 
   function toBlock(tag) {
@@ -632,6 +620,9 @@ define(function(require, exports, module) {
       }
       var oldResult = state.result;
       oldResult.appendChild(state.result = document.createElement(tag));
+      if (this.align) {
+        state.result.style.textAlign = this.align;
+      }
       this.toChildren(state);
       state.result = oldResult;
     };
@@ -837,7 +828,9 @@ define(function(require, exports, module) {
       var html = toHtml(text, markup, document.createElement('div'));
       var rt = fromHtml(html);
 
-      return text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
+      var result = text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
+
+      return result;
     },
 
     linkType: function (id) {
