@@ -7,8 +7,9 @@ define(function (require, exports, module) {
 
   var OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
       LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
-      BOLD = 11, ITALIC = 12, UNDERLINE = 13,
-      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17;
+      MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
+      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
+      LI = 20;
 
 
   TH.testCase(module, {
@@ -71,7 +72,7 @@ define(function (require, exports, module) {
     },
 
     "test empty li": function () {
-      var doc = "\n\n", markup = [OL, 0, 1];
+      var doc = "\n\n", markup = [OL, 0, 1, LI, 0, 0, LI, 1, 0];
 
       var html = sut.toHtml(doc, markup, v.p);
       assert.same(html.outerHTML, "<p><ol><li><br></li><li><br></li></ol><div><br></div></p>");
@@ -158,7 +159,7 @@ define(function (require, exports, module) {
     "test skips empty text": function () {
       var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
       var rt = sut.fromHtml(html);
-      assert.equals(rt, [['one', 'two'], [1, 0, 1]]);
+      assert.equals(rt, [['one', 'two'], [OL, 0, 1, LI, 0, 0, LI, 1, 0]]);
     },
 
     "test font": function () {
@@ -186,12 +187,11 @@ define(function (require, exports, module) {
 
     "test alignment": function () {
       assertBothConvert('<div style="text-align: center;"><ol><li>foo</li></ol></div>',
-                        '<ol><li style="text-align: center;">foo</li></ol>');
-      assertConvert('<div><ol style="text-align: justify;"><li>abc</li><li><br></li></ol></div>',
-                    '<ol><li style="text-align: justify;">abc</li><li style="text-align: justify;"><br></li></ol>');
+                        '<ol><li><div style="text-align: center;">foo</div></li></ol>');
+      assertBothConvert('<div><ol style="text-align: justify;"><li>abc</li><li><br></li></ol></div>',
+                        '<ol><li><div style="text-align: justify;">abc</div></li><li><div style="text-align: justify;"><br></div></li></ol>');
       assertConvert('<div style="text-align: left;"><ol><li>abc</li></ol></div>',
-                    '<ol><li style=\"text-align: left;\">abc</li></ol>');
-      assertConvert('<ul><li style="text-align: center;">one</li></ul>');
+                    '<ol><li><div style=\"text-align: left;\">abc</div></li></ol>');
       assertConvert('<div style="text-align: justify;">hello</div><div style="text-align: left;">world</div>');
       assertConvert('<blockquote><div style="text-align: right;">one</div></blockquote>');
       assertBothConvert('<blockquote><div style="text-align:center;">one<br>two</div></blockquote>',
@@ -205,10 +205,12 @@ define(function (require, exports, module) {
 
     "test includeTop": function () {
       var rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
-      assert.equals(rt, [['line'], [1, 0, 0]]);
+      assert.equals(rt, [['line'], [OL, 0, 0, LI, 0, 0]]);
     },
 
     "test code": function () {
+      assertBothConvert('<ol><li><div>one</div><pre data-lang="text"><div>foo</div></pre></li></ol>',
+                        '<ol><li>one<pre data-lang=\"text\"><div>foo</div></pre></li></ol>');
       assertConvert('<pre data-lang="text"><div><br></div></pre>');
 
       var p = document.createElement('p');
@@ -247,15 +249,15 @@ define(function (require, exports, module) {
 
     "test multiple": function () {
       sut.mapFontNames({poster: 'foo font'});
-      assertConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
-                    '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
+      assertConvert('<ol><li>Hello</li><li>begin <a href="/#u/123" target="_blank">link</a> end</li></ol>');
+      assertBothConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
+                        '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
       assertBothConvert('<div><span style="font-family: \'foo font\'; font-weight: bold; text-decoration: underline; '+
                         'font-style: italic; font-size: large; color: rgb(255, 128, 0); '+
                         'background-color: rgb(0, 0, 255);">hello world</span></div>',
                         '<div><span style="font-family: \'foo font\'; font-weight: bold; text-decoration: underline; '+
                         'font-style: italic; font-size: 1.2em; color: rgb(255, 128, 0); '+
                         'background-color: rgb(0, 0, 255);">hello world</span></div>');
-      assertConvert('<ol><li>Hello</li><li>begin <a href="/#u/123" target="_blank">link</a> end</li></ol>');
       assertConvert('<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a> <br></li></ol>',
                     '<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a> </li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',

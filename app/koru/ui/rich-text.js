@@ -10,7 +10,9 @@ define(function(require, exports, module) {
   var OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
       LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
       MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
-      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17;
+      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
+      LI = 20;
+
 
   var FONT_FACE_TO_ID = {
     'sans-serif': 0,
@@ -60,11 +62,10 @@ define(function(require, exports, module) {
 
   function fromHtml(html, options) {
     var builder = new MarkupBuilder(options);
-    var state = {rule: fromDiv};
     if (options && options.includeTop)
-      fromDiv.call(builder, html, state);
+      (FROM_RULE[html.tagName] || fromDiv).call(builder, html);
     else
-      builder.fromChildren(html, state);
+      builder.fromChildren(html);
     var markup = builder.markup;
     return [builder.lines, markup.length ? markup : null];
   }
@@ -143,14 +144,15 @@ define(function(require, exports, module) {
 
     ignoreInline: function () {},
 
-    fromChildren: function(parent, state) {
+    fromChildren: function(parent) {
       if (parent.nodeType === ELEMENT_NODE && parent.style.textAlign)
-        var endAlign = textAlign.call(this, parent, state);
+        var endAlign = textAlign.call(this, parent);
 
       var nodes = parent.childNodes;
-      var last = state.last = nodes.length - 1;
+      var last = nodes.length - 1;
       for(var index = 0; index <= last; ++index) {
         var node = nodes[index];
+
         if(node.tagName === 'BR') {
           if (this.needNL)
             this.newLine();
@@ -167,7 +169,7 @@ define(function(require, exports, module) {
             this.lines[this.lines.length - 1] += node.textContent;
           } else {
             this.inlines.push([node, null]);
-            this.fromChildren(node, state);
+            this.fromChildren(node);
             var rule = FROM_RULE[node.tagName] || this.ignoreInline;
             var entry = this.inlines.pop();
             if (entry[1] !== null)
@@ -176,17 +178,18 @@ define(function(require, exports, module) {
           }
         } else {
           this.needNL = true;
-          state.rule.call(this, node, state);
+          var rule = fromBlockRule(node);
+          rule.call(this, node);
           this.needNL = true;
           this.resetInlines();
         }
       }
 
-      endAlign && endAlign.call(this, parent, state);
+      endAlign && endAlign.call(this, parent);
     },
   };
 
-  function textAlign(node, state) {
+  function textAlign(node) {
     var start = this.lines.length;
     this.markup.push(ALIGN_TEXT_TO_CODE[node.style.textAlign], this.relative(start), 0);
     var endMarker = this.markup.length - 1;
@@ -196,13 +199,19 @@ define(function(require, exports, module) {
     };
   }
 
-  function fromDiv(node, state) {
-    var rule = fromBlockRule(node);
-    if (rule && rule.override)
-      return rule.call(this, node, state);
-
-    this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
+  function fromDiv(node) {
+    this.fromChildren(node);
   }
+
+  function fromLi(node) {
+    var start = this.lines.length;
+    this.markup.push(LI, this.relative(start), 0);
+    var endMarker = this.markup.length - 1;
+
+    this.fromChildren(node, {});
+
+    this.markup[endMarker] = this.lines.length - 1 - start;
+  };
 
   function fromInline(code) {
     return function fromInline(node, index, pos) {
@@ -214,20 +223,17 @@ define(function(require, exports, module) {
   }
 
   function fromBlock(code) {
-    return function fromBlock(node, state) {
-      if (state.start === undefined) {
-        state.start = this.lines.length;
-        this.markup.push(code, this.relative(state.start), 0);
-        state.endMarker = this.markup.length - 1;
-      }
-      var rule = fromBlockRule(node);
-      this.fromChildren(node, rule === fromDiv ? state : {rule: rule});
+    return function fromBlock(node) {
+      var start = this.lines.length;
+      this.markup.push(code, this.relative(start), 0);
+      var endMarker = this.markup.length - 1;
+      this.fromChildren(node);
 
-      this.markup[state.endMarker] = this.lines.length - 1 - state.start;
+      this.markup[endMarker] = this.lines.length - 1 - start;
     };
   }
 
-  function fromPre(parent, state) {
+  function fromPre(parent) {
     var needNl = true;
     var builder =this;
     var lines = builder.lines;
@@ -238,7 +244,7 @@ define(function(require, exports, module) {
     lines[start] = "code:"+(parent.getAttribute('data-lang')||'text');
 
     var nodes = parent.childNodes;
-    var last = state.last = nodes.length - 1;
+    var last = nodes.length - 1;
     var hlCode;
     var prevLen = 0;
     for(var index = 0; index <= last; ++index) {
@@ -286,13 +292,13 @@ define(function(require, exports, module) {
           needNl = true;
         var nodes = node.childNodes;
         for(var i = 0; i < nodes.length; ++i) {
-          extractText(nodes[i], lines, state);
+          extractText(nodes[i]);
         }
         if (! INLINE_TAGS[node.tagName])
           needNl = true;
       }
     }
-  } fromPre.override = true;
+  }
 
   var CODE_TO_CLASS = [
     'hll',// { background-color: #ffffcc }
@@ -456,6 +462,7 @@ define(function(require, exports, module) {
     DIV: fromDiv,
     OL: fromBlock(OL),
     UL: fromBlock(UL),
+    LI: fromLi,
     BLOCKQUOTE: fromBlock(NEST),
     P: fromDiv,
     B: fromInline(BOLD),
@@ -584,7 +591,6 @@ define(function(require, exports, module) {
     },
   };
 
-  var toLi = toBlock('LI');
   var toDiv = toBlock('DIV');
 
   function toNested(blockTag, innerFunc) {
@@ -594,6 +600,24 @@ define(function(require, exports, module) {
       state.rule = innerFunc;
       this.nextRule(3);
     };
+  }
+
+  function toLi(state) {
+    state.begun = true;
+    state.result.appendChild(state.result = document.createElement('LI'));
+    state.rule = toInnerLi;
+    this.nextRule(3);
+  }
+
+  function toInnerLi(state) {
+    var oldResult = state.result;
+    if (state.result.firstChild || this.align) {
+      oldResult.appendChild(state.result = document.createElement('DIV'));
+      if (this.align)
+        state.result.style.textAlign = this.align;
+    }
+    this.toChildren(state);
+    state.result = oldResult;
   }
 
   function toAlign(state) {
@@ -619,9 +643,8 @@ define(function(require, exports, module) {
       }
       var oldResult = state.result;
       oldResult.appendChild(state.result = document.createElement(tag));
-      if (this.align) {
+      if (this.align)
         state.result.style.textAlign = this.align;
-      }
       this.toChildren(state);
       state.result = oldResult;
     };
@@ -629,9 +652,16 @@ define(function(require, exports, module) {
 
   function toCode(state) {
     if (! state.begun) {
-      var pre = document.createElement('pre');
-      var inner = document.createElement('div');
-      state.result.appendChild(pre);
+      var pre = document.createElement('PRE');
+      var inner = document.createElement('DIV');
+      if (state.oldState.rule.tag === 'LI') {
+        var li = document.createElement('LI');
+        if (this.align)
+          li.style.textAlign = this.align;
+        li.appendChild(pre);
+        state.result.appendChild(li);
+      } else
+        state.result.appendChild(pre);
       pre.appendChild(state.result = inner);
       state.currLine = this.lidx;
       state.lastLine = state.currLine + this.offset(2);
@@ -786,8 +816,9 @@ define(function(require, exports, module) {
 
   var TO_RULES = [];
   TO_RULES[0] = toDiv;
-  TO_RULES[OL] = toNested('OL', toLi);
-  TO_RULES[UL] = toNested('UL', toLi);
+  TO_RULES[OL] = toNested('OL', toDiv);
+  TO_RULES[UL] = toNested('UL', toDiv);
+  TO_RULES[LI] = toLi,
   TO_RULES[NEST] = toNested('BLOCKQUOTE', toDiv);
   TO_RULES[CODE] = toCode;
 
