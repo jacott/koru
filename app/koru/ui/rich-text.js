@@ -849,7 +849,10 @@ define(function(require, exports, module) {
 
     toHtml: toHtml,
 
-    fromHtml: fromHtml,
+    fromHtml: function (html, options) {
+      var rt = fromHtml(html, options);
+      return fromHtml(toHtml(rt[0], rt[1], document.createElement('div')));
+    },
 
     fromToHtml: function (html) {
       var rt = fromHtml(Dom.h({div: html}));

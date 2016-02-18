@@ -53,6 +53,12 @@ define(function (require, exports, module) {
       assert.equals(sut.fromHtml(html), [[doc], null]);
     },
 
+    "test canonized markup": function () {
+      assert.equals(sut.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"})),
+                    [['a', 'b'], [OL, 0, 1, LI, 0, 0, RIGHT, 0, 0, LI, 1, 0, RIGHT, 0, 0]]);
+
+    },
+
     "test fragment": function () {
       var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
       assert.equals(rt, [['foo bar'], [11, 0, 0, 3]]);
@@ -186,6 +192,8 @@ define(function (require, exports, module) {
     },
 
     "test alignment": function () {
+      assertBothConvert('<div style="text-align: right;"><ol><li>a</li><li>b</li></ol></div>',
+                        '<ol><li><div style=\"text-align: right;\">a</div></li><li><div style=\"text-align: right;\">b</div></li></ol>');
       assertBothConvert('<div style="text-align: center;"><ol><li>foo</li></ol></div>',
                         '<ol><li><div style="text-align: center;">foo</div></li></ol>');
       assertBothConvert('<div><ol style="text-align: justify;"><li>abc</li><li><br></li></ol></div>',
