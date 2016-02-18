@@ -398,6 +398,7 @@ define(function(require, exports, module) {
     'font-weight': [BOLD, fromSimple],
     'font-style': [ITALIC, fromSimple],
     'text-decoration': [UNDERLINE, fromSimple],
+    'text-decoration-line': [UNDERLINE, fromSimple],
   };
 
   function fromColor(muIndex, code, name, value, index) {
@@ -843,7 +844,8 @@ define(function(require, exports, module) {
   }
 
   return {
-    standardFonts: FONT_ID_TO_FACE,
+    standardFonts: FONT_ID_TO_STD,
+    fontIdToFace: FONT_ID_TO_FACE,
 
     toHtml: toHtml,
 
@@ -885,6 +887,7 @@ define(function(require, exports, module) {
 
     fontType: function (face) {
       if (! face) return 'sans-serif';
+      face = face.replace(/'/g,'');
       var id = FONT_FACE_TO_ID[face];
       if (! id) return face;
       return FONT_ID_TO_STD[id];

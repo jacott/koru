@@ -28,8 +28,8 @@ define(function(require, exports, module) {
 
   var EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
 
-  var FONT_LIST = RichText.standardFonts.map(function (id) {
-    return [id, Dom.h({font: util.capitalize(util.humanize(id)), $face: id})];
+  var FONT_LIST = RichText.standardFonts.map(function (name, id) {
+    return [id, Dom.h({font: util.capitalize(util.humanize(name)), $face: RichText.fontIdToFace[id]})];
   });
 
   var FONT_SIZE_LIST = [
@@ -63,7 +63,7 @@ define(function(require, exports, module) {
     removeFormat: true,
     fontName: function (event) {
       chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
-        execCommand('fontName', id);
+        execCommand('fontName', RichText.fontIdToFace[id]);
         if (Dom.getRange().collapsed)
           return {font: id};
       });
@@ -81,7 +81,8 @@ define(function(require, exports, module) {
       var style = window.getComputedStyle(node);
 
       var fgColor = uColor.toRGB(style.color);
-      var bgColor = uColor.toRGB(style.backgroundColor);
+      var bgColor = style.backgroundColor;
+      var bgColor = uColor.toRGB(bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor);
 
       fgColor = fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor);
       bgColor = bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor);
@@ -392,6 +393,11 @@ define(function(require, exports, module) {
       if (! pCtx) return;
       var data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
+    } else {
+      var ctx = Tpl.$ctx(elm);
+      ctx.lastElm === undefined &&
+        setMode(ctx, Dom.getRange());
+      execCommand('styleWithCSS', true);
     }
     Dom.setClass('focus', ! focusout, elm.parentNode);
   }

@@ -307,7 +307,7 @@ define(function (require, exports, module) {
     var rt = sut.fromHtml(html);
 
     assert.elideFromStack.msg(function () {return rt})
-      .same(TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML), expect);
+      .same(TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML).replace(/\&quot;/g, "'"), expect);
   }
 
   function assertBothConvert(text, expect) {

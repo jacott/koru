@@ -7,6 +7,7 @@ isClient && define(function (require, exports, module) {
   var sut = require('./rich-text-editor-toolbar');
   var RichTextEditor = require('./rich-text-editor');
   var Modal = require('./modal');
+  var RichText = require('./rich-text');
 
   TH.testCase(module, {
     setUp: function () {
@@ -211,6 +212,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 1, this.firstChild, 3);
         });
+        document.execCommand('styleWithCSS', false, true);
       });
 
       TH.mouseDownUp('[name=code]');
@@ -255,21 +257,23 @@ isClient && define(function (require, exports, module) {
           this.focus();
           TH.setRange(this.firstChild, 0, this.firstChild, 3);
           TH.trigger(this, 'keyup');
+          document.execCommand('styleWithCSS', false, true);
         });
       },
 
 
       "test set fontName": function () {
+        RichText.mapFontNames({poster: 'foo font'});
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
           assert.dom('li>font[face="sans-serif"]', 'Sans serif');
-          TH.click('li>font[face="poster"]', 'Poster');
+          TH.click('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
         });
 
         assert.dom('.input', function () {
           assert.dom('b span', 'Hel', function () {
-            assert.same(this.style.fontFamily, 'poster');
+            assert.match(this.style.fontFamily, /^'?foo font'?$/);
           });
         });
 
@@ -284,7 +288,9 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.input', function () {
-          assert.dom('b span', 'Hel', function () {
+          if (Dom('font[size]'))
+            assert.dom('b font[size="4"]', 'Hel');
+          else  assert.dom('b span', 'Hel', function () {
             assert.same(this.style.fontSize, '1.2em');
           });
         });

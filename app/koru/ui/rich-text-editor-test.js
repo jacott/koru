@@ -122,10 +122,12 @@ isClient && define(function (require, exports, module) {
 
     "test focus": function () {
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      test.stub(document, 'execCommand');
 
       assert.dom('.input', function () {
         this.focus();
         TH.trigger(this, 'focusin');
+        assert.calledWith(document.execCommand, 'styleWithCSS', false, true);
         assert.className(this.parentNode, 'focus');
         TH.keydown(this, 'O', {ctrlKey: true, shiftKey: true});
         TH.trigger(this, 'focusout');
@@ -309,6 +311,7 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: 'bold', $size: "1"})}));
 
       assert.dom('.input font', function () {
+        this.focus();
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
 
         sut.$ctx(this).mode.actions.fontSize({target: this.firstChild});
@@ -319,8 +322,12 @@ isClient && define(function (require, exports, module) {
           TH.click('li>font[size="2"]', 'Small');
       });
 
-      assert.dom('span', 'b', function () {
-        assert.same(this.style.fontSize, '0.8em');
+      assert.dom('.input', function () {
+        if(Dom('font>font'))
+          assert.dom('font[size="1"]>font[size="2"]', 'b');
+        else assert.dom('span', 'b', function () {
+          assert.same(this.style.fontSize, '0.8em');
+        });
       });
     },
 
@@ -377,7 +384,12 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.input', function () {
-        assert.dom('span', 'b', function () {
+        if (Dom('span>span'))
+          assert.dom('span>span>span', 'b', function () {
+            assert.colorEqual(this.style.backgroundColor, '#ff0000');
+            assert.colorEqual(this.parentNode.style.color, '#f0f0f0');
+          });
+        else assert.dom('span', 'b', function () {
           assert.colorEqual(this.style.color, '#f0f0f0');
           assert.colorEqual(this.style.backgroundColor, '#ff0000');
         });
@@ -392,8 +404,12 @@ isClient && define(function (require, exports, module) {
 
       refute.dom('#ColorPicker');
 
-       assert.dom('.input', function () {
-        assert.dom('*', 'b', function () {
+      assert.dom('.input', function () {
+        if (Dom('span>span'))
+          assert.dom('span>span>span', 'b', function () {
+            assert.same(window.getComputedStyle(this).backgroundColor, 'transparent');
+          });
+        else assert.dom('*', 'b', function () {
           assert.colorEqual(window.getComputedStyle(this).backgroundColor, 'rgba(0,0,0,0)');
         });
       });
@@ -403,13 +419,12 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {
-        this.contentEditable = true;
+        document.execCommand('styleWithCSS', false, true);
         this.focus();
         TH.setRange(this.lastChild.firstChild, 0, this.lastChild.firstChild, 1);
         TH.keydown(this, '`', {ctrlKey: true});
         assert.dom('span', '2', function () {
           assert.same(this.style.fontFamily, 'monospace');
-
         });
         sut.insert('foo');
         assert.dom('span', 'foo', function () {
@@ -418,23 +433,13 @@ isClient && define(function (require, exports, module) {
 
         TH.keydown(this, '`', {ctrlKey: true});
         sut.insert(' bar');
-        if (Dom('span>span')) {
-          assert.dom('span', 'foo bar', function () {
-            assert.same(this.style.fontFamily, 'monospace');
-            TH.setRange(this.firstChild, 1);
-            assert.dom('span', 'bar', function () {
-              assert.same(this.style.fontFamily, 'initial');
-            });
-          });
-        } else {
-          assert.dom('span', 'foo', function () {
-            assert.same(this.style.fontFamily, 'monospace');
-            TH.setRange(this.firstChild, 1);
-          });
-          assert.dom('span+span', 'bar', function () {
-            assert.same(this.style.fontFamily, 'initial');
-          });
-        }
+        assert.dom('span', 'foo', function () {
+          assert.same(this.style.fontFamily, 'monospace');
+          TH.setRange(this.firstChild, 1);
+        });
+        assert.dom('span+span', 'bar', function () {
+          assert.same(this.style.fontFamily, 'initial');
+        });
         TH.keydown(this, '`', {ctrlKey: true});
         sut.insert('baz');
         assert.dom('span', /^f/, function () {
