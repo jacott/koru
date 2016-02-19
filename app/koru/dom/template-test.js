@@ -937,5 +937,23 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test inputValue helper": function () {
+      var elm = Dom._private.currentElement = {};
+      TH.stubProperty(elm, 'value', {get: function () {return '34'}, set: v.stub = test.stub()});
+      Dom._helpers.inputValue('foo');
+
+      assert.same(elm.__koruOrigValue__, 'foo');
+
+      assert.calledWith(v.stub, 'foo');
+
+      Dom._helpers.inputValue();
+
+      assert.calledWith(v.stub, '');
+
+      v.stub.reset();
+      Dom._helpers.inputValue(34);
+
+      refute.called(v.stub);
+    },
  });
 });

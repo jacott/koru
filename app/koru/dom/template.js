@@ -248,6 +248,7 @@ define(function(require, exports, module) {
 
     _helpers: {
       inputValue: function (value) {
+        Dom.current.element.__koruOrigValue__ = value;
         Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
     },
