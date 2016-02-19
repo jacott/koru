@@ -248,7 +248,7 @@ define(function(require, exports, module) {
       var pre = Dom.getClosest(ctx.lastElm, 'pre');
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
       var rt = RichText.fromHtml(pre, {includeTop: true});
-      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].slice(1).join("\n"), function (err, result) {
+      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), function (err, result) {
         Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
@@ -415,7 +415,7 @@ define(function(require, exports, module) {
 
     paste: function (htmlText) {
       var html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
-      Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
+      Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
     keydown: function (event) {

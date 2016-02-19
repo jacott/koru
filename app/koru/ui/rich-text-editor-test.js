@@ -222,7 +222,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('pre', function () {
           var rt = RichText.fromHtml(this, {includeTop: true});
-          assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
+          assert.equals(rt[0], 'code:python\nif a:\n  (b)\n');
           assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
         assert.dom('pre+div', 'after');
@@ -236,7 +236,7 @@ isClient && define(function (require, exports, module) {
         highlight.yield(null, [4, 0, 3, 3, 1, 0, 2]);
         assert.dom('pre', function () {
           var rt = RichText.fromHtml(this, {includeTop: true});
-          assert.equals(rt[0], ['code:python', 'if a:', '  (b)', '']);
+          assert.equals(rt[0], 'code:python\nif a:\n  (b)\n');
           assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
 

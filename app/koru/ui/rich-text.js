@@ -851,7 +851,9 @@ define(function(require, exports, module) {
 
     fromHtml: function (html, options) {
       var rt = fromHtml(html, options);
-      return fromHtml(toHtml(rt[0], rt[1], document.createElement('div')));
+      rt = fromHtml(toHtml(rt[0], rt[1], document.createElement('div')));
+      rt[0] = rt[0].join("\n");
+      return rt;
     },
 
     fromToHtml: function (html) {

@@ -50,18 +50,18 @@ define(function (require, exports, module) {
 
       assert.same(html.outerHTML, "<p><div>Hello world</div></p>");
 
-      assert.equals(sut.fromHtml(html), [[doc], null]);
+      assert.equals(sut.fromHtml(html), [doc, null]);
     },
 
     "test canonized markup": function () {
       assert.equals(sut.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"})),
-                    [['a', 'b'], [OL, 0, 1, LI, 0, 0, RIGHT, 0, 0, LI, 1, 0, RIGHT, 0, 0]]);
+                    ['a\nb', [OL, 0, 1, LI, 0, 0, RIGHT, 0, 0, LI, 1, 0, RIGHT, 0, 0]]);
 
     },
 
     "test fragment": function () {
       var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
-      assert.equals(rt, [['foo bar'], [11, 0, 0, 3]]);
+      assert.equals(rt, ['foo bar', [11, 0, 0, 3]]);
     },
 
     "test div with multi-line text": function () {
@@ -74,7 +74,7 @@ define(function (require, exports, module) {
       var arround = document.createElement('div');
       arround.appendChild(html);
 
-      assert.equals(sut.fromHtml(arround), [doc.split('\n'), null]);
+      assert.equals(sut.fromHtml(arround), [doc, null]);
     },
 
     "test empty li": function () {
@@ -83,7 +83,7 @@ define(function (require, exports, module) {
       var html = sut.toHtml(doc, markup, v.p);
       assert.same(html.outerHTML, "<p><ol><li><br></li><li><br></li></ol><div><br></div></p>");
 
-      assert.equals(sut.fromHtml(v.p), [doc.split('\n'), markup]);
+      assert.equals(sut.fromHtml(v.p), [doc, markup]);
     },
 
     "test simple": function () {
@@ -93,7 +93,7 @@ define(function (require, exports, module) {
 
       assert.same(html.outerHTML, "<p><div>a</div><div>b</div></p>");
 
-      assert.equals(sut.fromHtml(html), [['a', 'b'], null]);
+      assert.equals(sut.fromHtml(html), ['a\nb', null]);
     },
 
     "test nested": function () {
@@ -123,7 +123,7 @@ define(function (require, exports, module) {
 
       assert.same(html.outerHTML, '<p><div>It´s a</div><blockquote><div><span style="font-weight: bold;">brave</span></div><div> new <span style="font-style: italic;">world</span> now</div></blockquote></p>');
 
-      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
+      assert.equals(sut.fromHtml(html), [doc, markup]);
     },
 
     "test complex": function () {
@@ -134,7 +134,7 @@ define(function (require, exports, module) {
       var html = document.createElement('div');
       html.innerHTML = complex;
       assert.equals(sut.toHtml(doc, markup, document.createElement('div')).innerHTML, complex);
-      assert.equals(sut.fromHtml(html), [doc.split('\n'), markup]);
+      assert.equals(sut.fromHtml(html), [doc, markup]);
     },
 
     "test special": function () {
@@ -150,7 +150,7 @@ define(function (require, exports, module) {
         sut.deregisterLinkType(1);
       });
       var html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
-      assert.equals(sut.fromHtml(html), [['a foo (link_to)'], [LINK, 0, 0, 15, 1, 5]]);
+      assert.equals(sut.fromHtml(html), ['a foo (link_to)', [LINK, 0, 0, 15, 1, 5]]);
       assertConvert(TH.normHTMLStr(html.outerHTML));
     },
 
@@ -165,7 +165,7 @@ define(function (require, exports, module) {
     "test skips empty text": function () {
       var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
       var rt = sut.fromHtml(html);
-      assert.equals(rt, [['one', 'two'], [OL, 0, 1, LI, 0, 0, LI, 1, 0]]);
+      assert.equals(rt, ['one\ntwo', [OL, 0, 1, LI, 0, 0, LI, 1, 0]]);
     },
 
     "test font": function () {
@@ -175,7 +175,7 @@ define(function (require, exports, module) {
                         '<div>one<span style="font-family: foo-face; color: rgb(255, 0, 0); font-size: 1.2em;">two</span>three</div>');
 
       assertConvert('<div><span style="font-family: foo-face;">two</span></div>');
-      assert.equals(sut.fromHtml(Dom.h({div: {font: 'foo', $face: 'foo-face'}})), [['foo'], [FONT, 0, 0, 3, 5]]);
+      assert.equals(sut.fromHtml(Dom.h({div: {font: 'foo', $face: 'foo-face'}})), ['foo', [FONT, 0, 0, 3, 5]]);
       assertBothConvert('<div>one<font color="#ff0000">two</font>three</div>',
                         '<div>one<span style="color: rgb(255, 0, 0);">two</span>three</div>');
       assertBothConvert('<div>one<font face="initial">two</font>three</div>',
@@ -213,7 +213,7 @@ define(function (require, exports, module) {
 
     "test includeTop": function () {
       var rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
-      assert.equals(rt, [['line'], [OL, 0, 0, LI, 0, 0]]);
+      assert.equals(rt, ['line', [OL, 0, 0, LI, 0, 0]]);
     },
 
     "test code": function () {
@@ -224,7 +224,7 @@ define(function (require, exports, module) {
       var p = document.createElement('p');
       p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
       var rt = sut.fromHtml(p);
-      assert.equals(rt, [['code:text', 'One', 'code:text', 'Two', 'code:text'], [CODE, 0, 1, CODE, 2, 1, CODE, 2, 0]]);
+      assert.equals(rt, ['code:text\nOne\ncode:text\nTwo\ncode:text', [CODE, 0, 1, CODE, 2, 1, CODE, 2, 0]]);
 
       assertConvert('<pre data-lang="ruby"><div><span class="k">Class</span> <span class="no">Abc</span>\n' +
                     '  <span class="k">def</span> <span class="nf">foo</span><span class="mh">(</span><span class="nv">a</span>' +
