@@ -22,7 +22,7 @@ isClient && define(function (require, exports, module) {
           mentions: {
             '@': {
               buttonClass: 'atMention',
-              list: function (frag, text) {v.fooFunc(frag, text)},
+              list: function (frag, text, ctx) {v.fooFunc(frag, text, ctx)},
               html: function (elm) {return v.fooHtmlFunc(elm)},
             }
           },
@@ -141,6 +141,36 @@ isClient && define(function (require, exports, module) {
         TH.keypress(this, 'g');
 
         assert.dom('span.ln');
+      });
+    },
+
+    "test ctx": function () {
+      v.fooFunc = function (frag, text, ctx) {
+        if (ctx.foo) {
+          frag.appendChild(Dom.h({div: 'yes foo', "$data-id": "yesfoo"}));
+        } else {
+          ctx.foo = true;
+          ctx.data.value = 'now foo';
+          frag.appendChild(Dom.h({div: 'no foo', "$data-id": "nofoo"}));
+        }
+      };
+
+      assert.dom(v.input, function () {
+        pressAt(this);
+        TH.keypress(this, 'x');
+      });
+
+      assert.dom('.rtMention.inline', function () {
+        assert.dom('div:first-child', 'no foo');
+      });
+
+      assert.dom('input', {value: 'now foo'}, function () {
+        TH.input(this, 'z');
+      });
+
+
+      assert.dom('.rtMention.inline', function () {
+        assert.dom('div:first-child', 'yes foo');
       });
     },
 

@@ -47,7 +47,7 @@ define(function(require, exports, module) {
 
     list: function () {
       var frag = document.createDocumentFragment();
-      this.mentions[this.type].list(frag, this.value);
+      this.mentions[this.type].list(frag, this.value, $.ctx);
       Dom.addClass(frag.firstChild, 'selected');
 
       Dom.setClass('empty', ! frag.firstChild, $.element.parentNode);
