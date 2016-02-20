@@ -22,8 +22,8 @@ isClient && define(function (require, exports, module) {
           mentions: {
             '@': {
               buttonClass: 'atMention',
-              list: function (frag, text, ctx) {v.fooFunc(frag, text, ctx)},
-              html: function (elm) {return v.fooHtmlFunc(elm)},
+              list: function (frag, text, ctx) {return v.fooFunc(frag, text, ctx)},
+              html: function (elm, ctx) {return v.fooHtmlFunc(elm, ctx)},
             }
           },
         },
@@ -174,6 +174,19 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test needMore": function () {
+      v.fooFunc = function (frag, text) {
+        return true;
+      };
+
+      pressAt(v.input);
+      TH.keypress(v.input, 'g');
+
+      assert.dom('.rtMention' , function () {
+        assert.dom('div.empty.needMore');
+      });
+    },
+
     "at list menu": {
       setUp: function () {
         v.fooFunc = function (frag, text) {
@@ -188,14 +201,12 @@ isClient && define(function (require, exports, module) {
           }
         };
 
-        v.fooHtmlFunc = function (elm) {
+        v.fooHtmlFunc = function (elm, ctx) {
           return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
         };
 
-        assert.dom(v.input, function () {
-          pressAt(this);
-          TH.keypress(this, 'g');
-        });
+        pressAt(v.input);
+        TH.keypress(v.input, 'g');
       },
 
       "test empty": function () {
@@ -218,6 +229,29 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtMention.inline>div:not(.empty)');
       },
 
+      "test acceptItem override": function () {
+        v.fooHtmlFunc = function (elm, ctx) {
+          v.fooHtmlFuncCtx = ctx;
+          return;
+        };
+
+
+        assert.dom('.rtMention', function () {
+          TH.input('input', 'jjg');
+
+          assert.dom('>div>div', 'James J Gooding', function () {
+            Dom.stopEvent.reset();
+            TH.trigger(this, 'mousedown');
+            assert.called(Dom.stopEvent);
+            TH.trigger(this, 'mouseup');
+          });
+        });
+
+        assert.dom('.rtMention div', 'James J Gooding', function () {
+          assert.same(v.fooHtmlFuncCtx, Dom.getCtx(this));
+        });
+      },
+
       "test input and click": function () {
         assert.dom('.rtMention', function () {
           assert.dom('>div>div', {count: 3});
@@ -226,7 +260,6 @@ isClient && define(function (require, exports, module) {
           });
 
           assert.dom('input', function () {
-            this.focus();
             TH.input(this, 'jjg');
           });
 
@@ -236,8 +269,7 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('>div>div:last-child', function () {
             assert.same(this, v.div3);
-            TH.trigger(this, 'mousedown');
-            TH.trigger(this, 'mouseup');
+            TH.mouseDownUp(this);
           });
         });
 
@@ -535,12 +567,14 @@ isClient && define(function (require, exports, module) {
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
+        assert.isTrue(Dom.getCtx(v.input).openDialog);
       });
 
       assert.dom('.glassPane', function () {
         Dom.remove(this);
       });
 
+      assert.isFalse(Dom.getCtx(v.input).openDialog);
       refute.dom('.ln');
 
       var ctx = Dom.getCtx(v.input);

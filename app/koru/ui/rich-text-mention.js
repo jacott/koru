@@ -13,9 +13,14 @@ define(function(require, exports, module) {
   var execCommand, RichTextEditor;
 
   Tpl.$extend({
+    $created: function (ctx, elm) {
+      ctx.data.inputCtx.openDialog = true;
+    },
+
     $destroyed: function (ctx, elm) {
       try {
         var data = ctx.data;
+        data.inputCtx.openDialog = false;
         if (data.span) {
           revertMention(data.inputElm);
         } else if (data.inputElm) {
@@ -47,10 +52,12 @@ define(function(require, exports, module) {
 
     list: function () {
       var frag = document.createDocumentFragment();
-      this.mentions[this.type].list(frag, this.value, $.ctx);
+      var parentNode = $.element.parentNode;
+      var needMore = this.mentions[this.type].list(frag, this.value, $.ctx, parentNode);
       Dom.addClass(frag.firstChild, 'selected');
 
-      Dom.setClass('empty', ! frag.firstChild, $.element.parentNode);
+      Dom.setClass('needMore', needMore, parentNode);
+      Dom.setClass('empty', ! frag.firstChild, parentNode);
 
       return frag;
     },
@@ -60,6 +67,10 @@ define(function(require, exports, module) {
     'mouseover .rtMention>div>*': function (event) {
       Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
       Dom.addClass(this, 'selected');
+    },
+
+    'mousedown .rtMention': function (event) {
+      Dom.stopEvent();
     },
 
     'mouseup .rtMention>div>*': function (event) {
@@ -140,7 +151,9 @@ define(function(require, exports, module) {
 
     var data = $.ctx.data;
 
-    var link = data.mentions[data.type].html(item);
+    var link = data.mentions[data.type].html(item, $.ctx);
+    if (! link)
+      return;
 
     var frag = document.createDocumentFragment();
     frag.appendChild(link);
