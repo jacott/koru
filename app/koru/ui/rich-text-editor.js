@@ -395,6 +395,14 @@ define(function(require, exports, module) {
       data.options.focusout && data.options.focusout.call(elm, event);
     } else {
       var ctx = Tpl.$ctx(elm);
+      var range = Dom.getRange();
+      if (! range || ! elm.contains(range.endContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(elm);
+        range.collapse(true);
+        normRange(elm, range);
+        Dom.setRange(range);
+      }
       ctx.lastElm === undefined &&
         setMode(ctx, Dom.getRange());
       execCommand('styleWithCSS', true);
@@ -880,8 +888,10 @@ define(function(require, exports, module) {
         if (offset !== 0) range[setter](node, 0);
         return;
       }
+      var children = node.childNodes;
+      if (! children.length) return;
       var curr = node.childNodes[offset];
-      if (curr.tagName === 'BR') {
+      if (curr && curr.tagName === 'BR') {
         range[setter](curr, 0);
         return;
       }

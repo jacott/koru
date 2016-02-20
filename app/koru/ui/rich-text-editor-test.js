@@ -337,6 +337,9 @@ isClient && define(function (require, exports, module) {
       assert.dom('.input font span', function () {
         this.focus();
         TH.trigger(this, 'focusin');
+        var range = Dom.getRange();
+        assert.same(range.startContainer.parentNode, this);
+
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
 
         TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
