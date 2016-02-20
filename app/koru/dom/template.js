@@ -322,7 +322,7 @@ define(function(require, exports, module) {
     },
 
     removeAll: function (elms) {
-      for(var i = 0; i < elms.length; ++i) {
+      for(var i = elms.length - 1; i >= 0; --i) {
         this.remove(elms[i]);
       }
     },

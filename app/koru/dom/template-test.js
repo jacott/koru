@@ -511,10 +511,13 @@ isClient && define(function (require, exports, module) {
     "test removeAll": function () {
       test.stub(Dom, 'remove');
 
+      var r1 = Dom.remove.withArgs(1);
+      var r2 = Dom.remove.withArgs(2);
+
       Dom.removeAll([1, 2]);
 
-      assert.calledWith(Dom.remove, 1);
-      assert.calledWith(Dom.remove, 2);
+      assert.called(r2);
+      assert(r2.calledBefore(r1));
     },
 
     "test contains": function () {
