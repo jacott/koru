@@ -219,6 +219,20 @@ isServer && define(function (require, exports, module) {
         }, {message: TH.match(/invalid input syntax.*hello/)});
       },
 
+      "test array param": function () {
+        assert.equals(v.foo.count({name: ['one', 'three']}), 2);
+        assert.equals(v.foo.count({name: []}), 0);
+        assert.equals(v.foo.count({name: ['four']}), 1);
+
+        assert.equals(v.foo.count({name: {$in: ['one', 'three']}}), 2);
+        assert.equals(v.foo.count({name: {$in: []}}), 0);
+        assert.equals(v.foo.count({name: {$in: ['four']}}), 1);
+
+        assert.equals(v.foo.count({name: {$nin: ['one', 'three']}}), 3);
+        assert.equals(v.foo.count({name: {$nin: []}}), 5);
+        assert.equals(v.foo.count({name: {$nin: ['four']}}), 4);
+      },
+
       "test $sql": function () {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}", {likeE: '%e', four: 'four'}]}), 4);

@@ -447,17 +447,20 @@ Table.prototype = {
 
     return whereSql.join(' AND ');
 
-    function inArray(qkey, result, value, op) {
-      if (value.length === 0) {
-        result.push(op === ' IN' ? 'TRUE' : 'FALSE');
-      } else {
-        var param = [];
-        util.forEach(value, function (v) {
-          param.push('$'+ ++count);
-          whereValues.push(v);
-        });
-        result.push(qkey+op+'(' +param.join(',')+')');
+    function inArray(qkey, result, value, isIn) {
+      switch (value.length) {
+      case 0:
+        result.push(isIn ? 'FALSE' : 'TRUE');
+        return;
+      case 1:
+        whereValues.push(value[0]);
+        var where = qkey+" IN ($"+ ++count + ')';
+        break;
+      default:
+        whereValues.push(aryToSqlStr(value));
+        var where = qkey+" = ANY($"+ ++count + ")";
       }
+      result.push(isIn ? where : 'NOT ('+where+')');
     }
 
     function foundIn(fields, result) {
@@ -579,7 +582,7 @@ Table.prototype = {
         default:
           if (typeof value === 'object') {
             if (Array.isArray(value)) {
-              inArray(qkey, result, value, ' IN ');
+              inArray(qkey, result, value, true);
               break;
 
             } else if (value.constructor === Object) {
@@ -616,7 +619,7 @@ Table.prototype = {
                   continue;
                 case '$in':
                 case '$nin':
-                  inArray(qkey, result, value[vk], vk === '$in' ? ' IN' : ' NOT IN');
+                  inArray(qkey, result, value[vk], vk === '$in');
                   continue;
                 default:
                   result.push(qkey+'=$'+ ++count);
