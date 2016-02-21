@@ -145,7 +145,7 @@ define(function(require, exports, module) {
     ignoreInline: function () {},
 
     fromChildren: function(parent) {
-      if (parent.nodeType === ELEMENT_NODE && parent.style.textAlign)
+      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) && parent.style.textAlign)
         var endAlign = textAlign.call(this, parent);
 
       var nodes = parent.childNodes;
