@@ -395,10 +395,10 @@ define(function(require, exports, module) {
     'color': [COLOR, fromColor],
     'font-family': [FONT, fromFace],
     'font-size': [SIZE, fromSize],
-    'font-weight': [BOLD, fromSimple],
-    'font-style': [ITALIC, fromSimple],
-    'text-decoration': [UNDERLINE, fromSimple],
-    'text-decoration-line': [UNDERLINE, fromSimple],
+    'font-weight': [BOLD, fromSimple, /bold/i],
+    'font-style': [ITALIC, fromSimple, /italic/i],
+    'text-decoration': [UNDERLINE, fromSimple, /underline/i],
+    'text-decoration-line': [UNDERLINE, fromSimple, /underline/i],
   };
 
   function fromColor(muIndex, code, name, value, index) {
@@ -435,8 +435,9 @@ define(function(require, exports, module) {
     this.addInline(muIndex, code, index, size || value);
   }
 
-  function fromSimple(muIndex, code, name, value, index) {
-    this.addInline(muIndex, code, index);
+  function fromSimple(muIndex, code, name, value, index, expect) {
+    if (expect.test(value))
+      this.addInline(muIndex, code, index);
   }
 
   function fromSpan(node, index, pos) {
@@ -454,7 +455,7 @@ define(function(require, exports, module) {
       var spanStyle = SPAN_STYLES[name];
 
       if (spanStyle) {
-        spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index);
+        spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index, spanStyle[2]);
       }
     }
   }

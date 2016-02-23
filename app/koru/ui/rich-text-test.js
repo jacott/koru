@@ -258,6 +258,9 @@ define(function (require, exports, module) {
     "test multiple": function () {
       sut.mapFontNames({poster: 'foo font'});
 
+      assertConvert('<div><span style="font-weight:normal;font-style:normal;text-decoration:line-through;">text</span></div>',
+                    '<div>text</div>');
+
       assertBothConvert('<div style="text-align: right;">Hello<span style="line-height: 1.2em;">&nbsp;</span>'+
                         '<a href="/foo" style="line-height: 1.2em; text-align: left;">world</a></div>',
                         '<div style="text-align: right;">Hello&nbsp;<a href="/foo" target="_blank">world</a></div>');
