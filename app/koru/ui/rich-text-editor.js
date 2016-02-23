@@ -553,15 +553,14 @@ define(function(require, exports, module) {
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
         input.removeChild(fc);
 
-      for(var sp = Dom.getRange().endContainer; sp; sp = sp.parentNode) {
-        sp = Dom.getClosest(sp, 'SPAN,BLOCKQUOTE,.input');
-        if (! sp || sp === input) break;
-        switch (sp.tagName) {
+      util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), function (node) {
+        switch (node.tagName) {
         case 'BLOCKQUOTE':
-          sp.removeAttribute('style');
+          node.removeAttribute('style');
           break;
         case 'SPAN':
-          var st = sp.style;
+
+          var st = node.style;
           var fs = st.fontSize;
           if (fs && fs.slice(-2) !== 'em') {
             st.fontSize = FONT_SIZE_TO_EM[fs.replace(/^-[a-z]+-/,'')] || '3em';
@@ -569,7 +568,7 @@ define(function(require, exports, module) {
           }
           break;
         }
-      }
+      });
     },
     'paste': function (event) {
       if ('clipboardData' in event) {

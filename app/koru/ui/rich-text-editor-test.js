@@ -308,7 +308,8 @@ isClient && define(function (require, exports, module) {
     },
 
     "test fontSize": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: 'bold', $size: "1"})}));
+      document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{font: 'bold', $size: "1"},
+                                                                   {span: 'big', $style: "font-size: xx-large"}])}));
 
       assert.dom('.input font', function () {
         this.focus();
@@ -318,15 +319,21 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('.glassPane', function () {
-          assert.dom('li>font[size="6"]', 'XX large');
-          TH.click('li>font[size="2"]', 'Small');
+        assert.dom('li>font[size="6"]', 'XX large');
+        TH.click('li>font[size="2"]', 'Small');
       });
 
       assert.dom('.input', function () {
+        TH.trigger(this, 'input');
+        assert.dom('span', 'big', function () {
+          assert.same(this.style.fontSize, '2em');
+          assert.same(this.style.lineHeight, '1em');
+        });
         if(Dom('font>font'))
           assert.dom('font[size="1"]>font[size="2"]', 'b');
         else assert.dom('span', 'b', function () {
           assert.same(this.style.fontSize, '0.8em');
+          assert.same(this.style.lineHeight, '1em');
         });
       });
     },
