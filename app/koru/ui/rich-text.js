@@ -477,9 +477,12 @@ define(function(require, exports, module) {
 
     A: function (node, index, pos) {
       var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
-      if (pos === undefined)
+      if (pos === undefined) {
+        if (this.hasATag) return;
+        this.hasATag = true;
         this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, 0);
-      else {
+      } else {
+        this.hasATag = null;
         this.markup[pos+5] = index;
         var lineIdx = this.lines.length - 1;
         this.lines[lineIdx] += ' (' + code.fromHtml(node) + ')';

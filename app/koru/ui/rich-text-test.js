@@ -255,6 +255,13 @@ define(function (require, exports, module) {
                         '<pre data-lang="javascript"><div>one\ntwo\nthree</div></pre>');
     },
 
+    "test nested links": function () {
+      var html = Dom.h({div: {a: {a: 'text', $href: "/2"}, $href: "/1"}});
+
+      var rt = sut.fromHtml(html);
+      assert.equals(rt, ['text (/1)', [5, 0, 0, 9, 0, 4]]);
+    },
+
     "test multiple": function () {
       sut.mapFontNames({poster: 'foo font'});
 
