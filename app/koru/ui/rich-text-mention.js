@@ -83,6 +83,9 @@ define(function(require, exports, module) {
       data.value = this.value;
 
       $.ctx.updateAllTags();
+
+      if (data.value !== this.value)
+        this.value = data.value;
       if (data.span) {
         data.span.textContent = data.value.replace(/ /g, '\xa0');
         transformList(data, event.currentTarget);

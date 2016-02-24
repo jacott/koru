@@ -229,15 +229,28 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtMention.inline>div:not(.empty)');
       },
 
-      "test acceptItem override": function () {
+      "test override": function () {
         v.fooHtmlFunc = function (elm, ctx) {
           v.fooHtmlFuncCtx = ctx;
           return;
         };
 
+        var fooFuncOrig = v.fooFunc;
+
+        v.fooFunc = function (frag, text, ctx) {
+          assert.same(ctx.data.value, 'jjg');
+
+          ctx.data.value = 'changed';
+          return fooFuncOrig(frag, text, ctx);
+        };
+
 
         assert.dom('.rtMention', function () {
-          TH.input('input', 'jjg');
+          assert.dom('input', function () {
+            this.focus();
+            TH.input(this, 'jjg');
+            assert.same(this.value, 'changed');
+          });
 
           assert.dom('>div>div', 'James J Gooding', function () {
             Dom.stopEvent.reset();
