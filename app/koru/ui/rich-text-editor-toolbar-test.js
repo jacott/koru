@@ -17,6 +17,7 @@ isClient && define(function (require, exports, module) {
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
       ]), options: {id: "Foo"}, extend: {
         mentions: {'@': {
+          title: 'Mention someone',
           buttonClass: 'myButton',
           list: function () {}
         }}}});
@@ -244,7 +245,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('button.myButton');
+      TH.mouseDownUp('button.myButton[title="Mention someone"]');
 
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});

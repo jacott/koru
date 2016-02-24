@@ -81,7 +81,7 @@ define(function(require, exports, module) {
       if (! mentions) return;
       var frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(function (id) {
-        frag.appendChild(Dom.h({button: id, class: mentions[id].buttonClass, $name: 'mention', '$data-type': id}));
+        frag.appendChild(Dom.h({button: id, class: mentions[id].buttonClass, $name: 'mention', '$data-type': id, $title: mentions[id].title}));
       });
       return frag;
     },
