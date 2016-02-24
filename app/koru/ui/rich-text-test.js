@@ -192,6 +192,8 @@ define(function (require, exports, module) {
     },
 
     "test alignment": function () {
+      assertConvert('<div align="right">foo</div>',
+                    '<div style="text-align: right;">foo</div>');
       assertBothConvert('<div style="text-align: right;"><ol><li>a</li><li>b</li></ol></div>',
                         '<ol><li><div style=\"text-align: right;\">a</div></li><li><div style=\"text-align: right;\">b</div></li></ol>');
       assertBothConvert('<div style="text-align: center;"><ol><li>foo</li></ol></div>',
@@ -262,6 +264,11 @@ define(function (require, exports, module) {
       assert.equals(rt, ['text (/1)', [5, 0, 0, 9, 0, 4]]);
     },
 
+    "test paste from other editors": function () {
+      assertConvert('<div><meta http-equiv="content-type" content="text/html; charset=utf-8"><ul style="color: rgb(0, 0, 0); font-family: \'Times New Roman\'; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 1; word-spacing: 0px; -webkit-text-stroke-width: 0px;"><li><p style="margin-bottom: 0cm; line-height: 16px;">Item 1</p></li><li>  \n\n\t   </li></ul><br class="Apple-interchange-newline"></div>',
+                    '<ul><li><div style=\"text-align: left;\">Item 1</div></li></ul><li><br></li>');
+    },
+
     "test multiple": function () {
       sut.mapFontNames({poster: 'foo font'});
 
@@ -281,7 +288,7 @@ define(function (require, exports, module) {
                         'font-style: italic; font-size: 1.2em; color: rgb(255, 128, 0); '+
                         'background-color: rgb(0, 0, 255);">hello world</span></div>');
       assertConvert('<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a> <br></li></ol>',
-                    '<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a> </li></ol>');
+                    '<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a></li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
                     '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
@@ -305,7 +312,7 @@ define(function (require, exports, module) {
                         '<div><span style="font-weight: bold;">Hello </span></div><div><br></div><div>'+
                         '<span style="font-weight: bold;"><span style="font-style: italic;">dffd</span></span>'+
                         '</div><div><br></div><div><span style="font-weight: bold;">World</span></div>');
-      assertConvert('simple', '<div>simple</div>');
+      assertConvert('   simple \t\t\ntext\n\n\n', '<div> simple text </div>');
       assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test" target="_blank">test</a></div>');
       assertConvert('<div><b></b>x<i></i>y</div>', '<div>xy</div>');
       assertConvert('<div><b><i><u>three</u></i></b></div>',

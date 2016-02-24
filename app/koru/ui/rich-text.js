@@ -42,6 +42,12 @@ define(function(require, exports, module) {
   for (var id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
+  util.extend(ALIGN_TEXT_TO_CODE, {
+    start: LEFT,
+    end: RIGHT,
+    'justify-all': JUSTIFY
+  });
+
   var LINK_TO_HTML = [
     {
       id: 0,
@@ -145,7 +151,7 @@ define(function(require, exports, module) {
     ignoreInline: function () {},
 
     fromChildren: function(parent) {
-      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) && parent.style.textAlign)
+      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) && (parent.getAttribute('align') || parent.style.textAlign))
         var endAlign = textAlign.call(this, parent);
 
       var nodes = parent.childNodes;
@@ -163,10 +169,12 @@ define(function(require, exports, module) {
 
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
-            if (! node.textContent) continue;
+            var text = node.textContent;
+            text = text.replace(/[ \n\t]+/g, ' ');
+            if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
             this.needNL && this.newLine();
             this.applyInlines();
-            this.lines[this.lines.length - 1] += node.textContent;
+            this.lines[this.lines.length - 1] += text;
           } else {
             this.inlines.push([node, null]);
             this.fromChildren(node);
@@ -191,7 +199,9 @@ define(function(require, exports, module) {
 
   function textAlign(node) {
     var start = this.lines.length;
-    this.markup.push(ALIGN_TEXT_TO_CODE[node.style.textAlign], this.relative(start), 0);
+    var code = ALIGN_TEXT_TO_CODE[node.style.textAlign || node.getAttribute('align')];
+    if (code === undefined) return;
+    this.markup.push(code, this.relative(start), 0);
     var endMarker = this.markup.length - 1;
 
     return function () {
@@ -228,7 +238,6 @@ define(function(require, exports, module) {
       this.markup.push(code, this.relative(start), 0);
       var endMarker = this.markup.length - 1;
       this.fromChildren(node);
-
       this.markup[endMarker] = this.lines.length - 1 - start;
     };
   }
@@ -460,7 +469,13 @@ define(function(require, exports, module) {
     }
   }
 
+  function fromIgnore() {}
+
   var FROM_RULE = {
+    HEAD: fromIgnore,
+    META: fromIgnore,
+    TITLE: fromIgnore,
+    STYLE: fromIgnore,
     DIV: fromDiv,
     OL: fromBlock(OL),
     UL: fromBlock(UL),
