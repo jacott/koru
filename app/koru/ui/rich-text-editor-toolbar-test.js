@@ -267,7 +267,7 @@ isClient && define(function (require, exports, module) {
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          assert.dom('li>font[face="sans-serif"]', 'Sans serif');
+          assert.dom('li>font[face="whiteboard"]', 'Whiteboard');
           TH.click('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
         });
 
@@ -278,6 +278,30 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('[name=fontName]', 'Poster');
+
+        TH.mouseDownUp('.rtToolbar [name=fontName]');
+
+        assert.dom('.glassPane', function () {
+          TH.click('li>font[face="handwriting"]', 'Handwriting');
+        });
+        assert.dom('[name=fontName]', 'Handwriting');
+
+        assert.dom('.input', function () {
+          document.execCommand('insertText', false, 'x');
+          assert.dom('b span', 'x', function () {
+            assert.equals(this.style.fontFamily, 'handwriting');
+          });
+        });
+
+        assert.dom('[name=fontName]', 'Handwriting');
+
+        TH.mouseDownUp('.rtToolbar [name=fontName]');
+
+        assert.dom('.glassPane', function () {
+          TH.click('li>font[face="sans-serif"]', 'Sans serif');
+        });
+
+        assert.dom('[name=fontName]', 'Sans serif');
       },
 
       "test set fontSize": function () {

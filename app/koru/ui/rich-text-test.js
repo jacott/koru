@@ -39,8 +39,17 @@ define(function (require, exports, module) {
         refute(sut.isValid([1,2]));
         assert(sut.isValid('code:rb\n"a"\ncode:rb\nb', [CODE, 0, 1, 48, OL, 0, 3, CODE, 1, 1]));
       },
+    },
 
-
+    "test fontType": function () {
+      sut.mapFontNames({cursive: 'foo-face'});
+      assert.same(sut.fontType(0), 'sans-serif');
+      assert.same(sut.fontType("5"), 'cursive');
+      assert.same(sut.fontType(5), 'cursive');
+      assert.same(sut.fontType("cursive"), 'cursive');
+      assert.same(sut.fontType("foo-face"), 'cursive');
+      assert.same(sut.fontType("serif"), 'serif');
+      assert.same(sut.fontType(""), 'sans-serif');
     },
 
     "test just text": function () {

@@ -34,8 +34,8 @@ define(function(require, exports, module) {
 
   function getFont() {
     var override = $.ctx.override;
-    if (override && override.font)
-      return override.font;
+    if (override && override.font !== undefined)
+      return RichText.fontType(override.font);
 
     var code = getTag('SPAN');
     return RichText.fontType(code && code.style.fontFamily);

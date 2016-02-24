@@ -910,10 +910,13 @@ define(function(require, exports, module) {
     },
 
     fontType: function (face) {
-      if (! face) return 'sans-serif';
-      face = face.replace(/'/g,'');
-      var id = FONT_FACE_TO_ID[face];
-      if (! id) return face;
+      var id = +face;
+      if (id !== id) {
+        if (! face) return 'sans-serif';
+        face = face.replace(/'/g,'');
+        var id = FONT_FACE_TO_ID[face];
+        if (id === undefined) return face;
+      }
       return FONT_ID_TO_STD[id];
     },
 
