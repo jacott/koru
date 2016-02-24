@@ -30,6 +30,14 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=hex]', {value: '00ffff87'});
     },
 
+    "test callback on destroy": function () {
+      sut.choose('#fffa1387', {}, v.cb = test.stub());
+
+      Dom.removeId('ColorPicker');
+
+      assert.calledOnceWith(v.cb, null);
+    },
+
     "test custom button": function () {
       sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = test.stub());
 

@@ -132,6 +132,7 @@ define(function(require, exports, module) {
     },
 
     $destroyed: function (ctx, elm) {
+      ctx.data.callback && ctx.data.callback(null);
       Tpl.$detachEvents(elm);
     },
   });
@@ -141,7 +142,8 @@ define(function(require, exports, module) {
     if (ctx) {
       var data = ctx.data;
 
-      data.callback(button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
+      data.callback && data.callback(button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
+      data.callback = null;
       Dom.remove(elm);
     }
   }
