@@ -170,7 +170,7 @@ define(function(require, exports, module) {
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
             var text = node.textContent;
-            text = text.replace(/[ \n\t]+/g, ' ');
+            text = text.replace(/[ \n\t\r]+/g, ' ');
             if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
             this.needNL && this.newLine();
             this.applyInlines();
