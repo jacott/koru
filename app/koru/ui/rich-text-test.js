@@ -274,7 +274,7 @@ define(function (require, exports, module) {
     },
 
     "test paste from other editors": function () {
-      assertConvert('<div><meta http-equiv="content-type" content="text/html; charset=utf-8"><ul style="color: rgb(0, 0, 0); font-family: \'Times New Roman\'; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 1; word-spacing: 0px; -webkit-text-stroke-width: 0px;"><li><p style="margin-bottom: 0cm; line-height: 16px;">Item 1</p></li><li>  \n\n\r\t   </li></ul><br class="Apple-interchange-newline"></div>',
+      assertConvert('<div><meta http-equiv="content-type" content="text/html; charset=utf-8"><ul style="color: rgb(0, 0, 0); font-family: \'Times New Roman\'; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 1; word-spacing: 0px; -webkit-text-stroke-width: 0px;"><li><script>bad.code</script><p style="margin-bottom: 0cm; line-height: 16px;">Item 1</p></li><li>  \n\n\r\t   </li></ul><br class="Apple-interchange-newline"></div>',
                     '<ul><li><div style=\"text-align: left;\">Item 1</div></li></ul><li><br></li>');
     },
 

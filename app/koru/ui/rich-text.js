@@ -476,6 +476,7 @@ define(function(require, exports, module) {
     META: fromIgnore,
     TITLE: fromIgnore,
     STYLE: fromIgnore,
+    SCRIPT: fromIgnore,
     DIV: fromDiv,
     OL: fromBlock(OL),
     UL: fromBlock(UL),
