@@ -22,7 +22,7 @@
   "dependencies": {
     "autoprefixer-core": "5.1.11",
     "bindings": "^1.2.1",
-    "clean-css": "^3.3.7",
+    "clean-css": "^3.4.9",
     "css-selector-parser": "1.0.4",
     "fibers": "1.0.5",
     "htmlparser2": "3.8.2",
