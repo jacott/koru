@@ -152,6 +152,8 @@ isClient && define(function (require, exports, module) {
 
       assert.dom(widget.element, function () {
         TH.input('input', 'new text');
+        TH.trigger('input', 'keydown', {which: 13, shiftKey: true});
+        refute.same(v.arg, 'new text');
         TH.trigger('input', 'keydown', {which: 13}); });
 
       assert.same(v.arg, 'new text');

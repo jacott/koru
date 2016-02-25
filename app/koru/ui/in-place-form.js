@@ -100,7 +100,7 @@ define(function(require, exports, module) {
     'keydown': function (event) {
       switch (event.which) {
       case 13:
-        if (event.ctrlKey || event.shiftKey || $.ctx.data.enterSubmits) {
+        if (! event.shiftKey && (event.ctrlKey || $.ctx.data.enterSubmits)) {
           Dom.stopEvent();
           submit.call(this, event);
         }
