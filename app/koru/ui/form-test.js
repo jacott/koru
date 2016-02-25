@@ -158,15 +158,6 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test empty MarkdownEditor": function() {
-      document.body.appendChild(Dom.Test.Form.TestMarkdownEditor.$autoRender({}));
-
-      assert.dom('#TestMarkdownEditor>label', function () {
-        assert.dom('span.name', 'Name');
-        assert.dom('#nameId.mdEditor.bar[data-errorfield="name"]:not([type])>.input');
-      });
-    },
-
     "test PlainTextEditor": function () {
       document.body.appendChild(Dom.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
 

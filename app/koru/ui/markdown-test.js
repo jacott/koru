@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
   var Markdown = require('./markdown');
@@ -113,7 +113,9 @@ isClient && define(function (require, exports, module) {
                         '<a href="/l1" target="_blank">l1</a> text [O]'+
                         '<a href="http://obeya.co" target="_blank">b<br>]eya</a>'+
                         '<a href="/a" target="_blank">link2</a>'+
-                        '<a href="/#int/ernal">int</a>');
+                        '<a '+
+                        (isClient ? 'href="/#int/ernal"' : 'href="http://getobeya.com/#int/ernal" target="_blank"')+
+                        '>int</a>');
       },
 
       "test underscores in link text": function () {

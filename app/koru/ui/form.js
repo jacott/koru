@@ -4,7 +4,6 @@ define(function(require, exports, module) {
   var Route = require('./route');
   var Val   = require('../model/validation');
   var util = require('../util');
-  var MarkdownEditor = require('./markdown-editor');
   var format = require('../format');
   var PlainText = require('./plain-text');
   var RichTextEditorToolbar = require('./rich-text-editor-toolbar');
@@ -439,7 +438,6 @@ define(function(require, exports, module) {
   var EDITORS = {
     richTextEditor: RichTextEditorToolbar,
     plainTextEditor: PlainText.Editor,
-    markdownEditor: MarkdownEditor,
   };
 
   function field(doc, name, options, extend) {
