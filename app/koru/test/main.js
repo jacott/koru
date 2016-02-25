@@ -145,7 +145,7 @@ define(function(require, exports, module) {
     normHTMLStr: function (html) {
       return html.replace(/(<[^>]+)>/g, function (m, m1) {
         if (m[1] === '/') return m;
-        var parts = m1.replace(/\bstyle="[^"]*"/, function (m) {
+        var parts = m1.replace(/="[^"]*"/g, function (m) {
           return m.replace(/ /g, '\xa0');
         }).split(' ');
         if (parts.length === 1) return m;
