@@ -335,7 +335,7 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
 
           insert('w');
-          assert.same(this.innerHTML, 'hello @w');
+          assert.same(this.innerHTML, 'hello @wg');
         });
       },
 
@@ -349,7 +349,7 @@ isClient && define(function (require, exports, module) {
         assert.className(v.div1, 'selected');
       },
 
-      "test keydown, keyup, enter ": function () {
+      "test key down, up, enter ": function () {
         assert.dom('.rtMention', function () {
           assert.dom('input', function () {
             TH.trigger(this, 'keydown', {which: 40});
@@ -453,7 +453,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test escape pressed": function () {
-        TH.trigger('.rtMention>input', 'keyup', {which: 27});
+        TH.trigger('.rtMention>input', 'keydown', {which: 27});
 
         assert.dom(v.input, function () {
           assert.same(this.innerHTML, 'hello @h');
@@ -461,7 +461,7 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
 
           insert('w');
-          assert.same(this.innerHTML, 'hello @w');
+          assert.same(this.innerHTML, 'hello @hw');
         });
       },
     },

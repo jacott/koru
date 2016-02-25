@@ -24,6 +24,7 @@ define(function(require, exports, module) {
         if (data.span) {
           revertMention(data.inputElm);
         } else if (data.inputElm) {
+          data.range.collapse();
           setRange(data.range);
           data.inputElm.focus();
         }
@@ -96,7 +97,7 @@ define(function(require, exports, module) {
       switch(event.which) {
       case 9: // tab
         if (event.shiftKey) {
-          cancelList(event.currentTarget);
+          cancelList(event.currentTarget, true);
           break;
         }
       case 13: // enter
@@ -125,7 +126,7 @@ define(function(require, exports, module) {
         break;
       case 37: // left
         if (this.selectionStart === 0) {
-          cancelList(event.currentTarget);
+          cancelList(event.currentTarget, true);
           RichTextEditor.moveLeft($.ctx.data.inputElm);
         }
         break;
@@ -137,15 +138,6 @@ define(function(require, exports, module) {
         }
         break;
       }
-    },
-
-    'keyup .rtMention>input': function (event) {
-      switch(event.which) {
-      case 27: // escape
-        // this is a keyup event so that it stops propagating the event
-        cancelList(event.currentTarget);
-        break;
-      };
     },
   });
 
@@ -176,12 +168,15 @@ define(function(require, exports, module) {
     Dom.remove(event.currentTarget);
   }
 
-  function cancelList(elm) {
+  function cancelList(elm, collapseStart) {
     Dom.stopEvent();
+    if (collapseStart !== undefined) {
+      revertMention($.data(elm).inputElm, null, collapseStart);
+    }
     Dom.remove(elm);
   }
 
-  function revertMention(editorELm, frag) {
+  function revertMention(editorELm, frag, collapseStart) {
     if (! editorELm) return;
 
     var ln = editorELm.getElementsByClassName('ln')[0];
@@ -195,13 +190,14 @@ define(function(require, exports, module) {
         editorELm.focus();
         var range = document.createRange();
         range.setStart(dest, destOffset);
-        range.collapse(true);
+        range.collapse(collapseStart);
         setRange(range);
         if (! frag) {
           ln.textContent && RichTextEditor.insert(ln.textContent);
           var range = getRange();
           if (range) { // maybe missing on destroy
             range.setStart(dest, destOffset);
+            range.collapse(collapseStart);
             setRange(range);
           }
         } else {
@@ -221,11 +217,9 @@ define(function(require, exports, module) {
   }
 
   function collapseRange(start) {
-    var sel = window.getSelection();
-    var range = sel.getRangeAt(0);
+    var range = Dom.getRange();
     range.collapse(start);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    Dom.setRange(range);
   }
 
   function selectItem(data) {
