@@ -144,12 +144,14 @@ define(function(require, exports, module) {
       var range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
 
+      var inputCtx = Tpl.$ctx(aElm);
       var dialog = Link.$autoRender({
         range: range,
         elm: aElm,
         link: aElm ? aElm.getAttribute('href') : '',
         text: range.toString() || '',
-        inputElm: Tpl.$ctx(aElm).inputElm,
+        inputCtx: inputCtx,
+        inputElm: inputCtx.inputElm,
       });
       Modal.appendBelow({
         container: dialog,
@@ -1046,13 +1048,18 @@ define(function(require, exports, module) {
   RichTextMention.init(Tpl);
 
   Link.$extend({
-    cancel: function (elm) {
-      Dom.remove(elm);
+    $created: function (ctx) {
+      ctx.data.inputCtx.openDialog = true;
     },
 
     $destroyed: function (ctx) {
       Dom.setRange(ctx.data.range);
       ctx.data.inputElm.focus();
+      ctx.data.inputCtx.openDialog = false;
+    },
+
+    cancel: function (elm) {
+      Dom.remove(elm);
     },
   });
 

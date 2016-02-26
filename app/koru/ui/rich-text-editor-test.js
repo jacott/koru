@@ -794,17 +794,22 @@ isClient && define(function (require, exports, module) {
           TH.setRange(this.firstChild, 2);
         });
 
-        TH.keydown('.input', "K", {ctrlKey: true});
+        assert.dom('.richTextEditor>.input', function () {
+          TH.keydown(this, "K", {ctrlKey: true});
+          assert.isTrue(Dom.getCtx(this).openDialog);
 
-        assert.dom('.rtLink', function () {
-          TH.input('[name=text]', {value: ''}, 'foo');
-          TH.input('[name=link]', {value: ''}, 'bar');
-          TH.trigger(this, 'submit');
-        });
+          assert.dom(Dom('.rtLink'), function () {
+            TH.input('[name=text]', {value: ''}, 'foo');
+            TH.input('[name=link]', {value: ''}, 'bar');
+            TH.trigger(this, 'submit');
+          });
 
-        assert.dom('.input a[href="bar"]', 'foo', function () {
-          assert.same(this.previousSibling.textContent, 'He');
-          assert.same(this.nextSibling.textContent, 'llo');
+          assert.dom('a[href="bar"]', 'foo', function () {
+            assert.same(this.previousSibling.textContent, 'He');
+            assert.same(this.nextSibling.textContent, 'llo');
+          });
+
+          assert.isFalse(Dom.getCtx(this).openDialog);
         });
       },
 
