@@ -615,6 +615,35 @@ isClient && define(function (require, exports, module) {
         assert.equals(v.slot, ['paste', '', v.origPaste]);
       },
 
+      "test plain text": function () {
+        v.event.clipboardData = {
+          types: ['text/plain'],
+          getData: test.stub().withArgs('text/plain').returns('containshttps://nolink https:/a/link'),
+        };
+
+        v.paste(v.event);
+
+        assert.calledWith(v.insertText, 'insertText', false, 'containshttps://nolink https:/a/link');
+      },
+
+      "test text hyperlinks": function () {
+        sut.handleHyperLink = function (text) {
+          if (text === 'https://real/link')
+            return Dom.h({a: 'my link', $href: 'http://foo'});
+        };
+        test.onEnd(function () {sut.handleHyperLink = null});
+        v.event.clipboardData = {
+          types: ['text/plain'],
+          getData: test.stub().withArgs('text/plain').returns('contains\n ahttps://false/link and a https://real/link as\nwell'),
+        };
+
+        v.paste(v.event);
+
+        assert.calledWith(v.insertHTML, 'insertHTML', false,
+                          '<div>contains</div><div> ahttps://false/link and a '+
+                          '<a target="_blank" href="http://foo">my link</a> as</div><div>well</div>');
+      },
+
       "test no clipboard": function () {
         delete v.event.clipboardData;
 

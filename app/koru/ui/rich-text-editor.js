@@ -426,6 +426,35 @@ define(function(require, exports, module) {
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
+    pasteText: function (text) {
+      var URL_RE = /(\bhttps?:\/\/\S+)/;
+
+      if (Tpl.handleHyperLink && URL_RE.test(text)) {
+        var html = document.createElement('DIV');
+        text.split(/(\r?\n)/).forEach(function (line, oi) {
+          if (oi % 2) {
+            html.appendChild(document.createElement('BR'));
+          } else {
+            line.split(URL_RE).forEach(function (part, index) {
+              if (index % 2) {
+                var elm = Tpl.handleHyperLink(part);
+                if (elm) {
+                  html.appendChild(elm);
+                  return;
+                }
+              }
+              html.appendChild(document.createTextNode(part));
+            });
+          }
+        });
+        var html = RichText.fromToHtml(html);
+        Tpl.insert(html, 'inner') || Tpl.insert(text);
+        return;
+      }
+
+      Tpl.insert(text);
+    },
+
     keydown: function (event) {
       if (event.ctrlKey) {
         keyMap.exec(event, 'ignoreFocus');
@@ -571,6 +600,7 @@ define(function(require, exports, module) {
       });
     },
     'paste': function (event) {
+      var foundText;
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;
         if (types) for(var i = 0; i < types.length; ++i) {
@@ -580,6 +610,15 @@ define(function(require, exports, module) {
             $.ctx.mode.paste(event.clipboardData.getData(type));
             return;
           }
+          if (/text/.test(type)) {
+            foundText = type;
+          }
+        }
+      }
+      if (foundText) {
+        if ($.ctx.mode.pasteText) {
+          Dom.stopEvent();
+          $.ctx.mode.pasteText(event.clipboardData.getData(type));
         }
       }
     },

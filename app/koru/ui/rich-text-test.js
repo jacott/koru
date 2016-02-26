@@ -286,8 +286,8 @@ define(function (require, exports, module) {
 
       assertBothConvert('<div style="text-align: right;">Hello<span style="line-height: 1.2em;">&nbsp;</span>'+
                         '<a href="/foo" style="line-height: 1.2em; text-align: left;">world</a></div>',
-                        '<div style="text-align: right;">Hello&nbsp;<a href="/foo" target="_blank">world</a></div>');
-      assertConvert('<ol><li>Hello</li><li>begin <a href="/#u/123" target="_blank">link</a> end</li></ol>');
+                        '<div style="text-align: right;">Hello&nbsp;<a href="/foo">world</a></div>');
+      assertConvert('<ol><li>Hello</li><li>begin <a href="/#u/123">link</a> end</li></ol>');
       assertBothConvert('<ol><li>one</li></ol><span><ul><li><span>two</span><br></li></ul></span><ol><li>three</li></ol>',
                         '<ol><li>one</li></ol><ul><li>two</li></ul><ol><li>three</li></ol>');
       assertBothConvert('<div><span style="font-family: \'foo font\'; font-weight: bold; text-decoration: underline; '+
@@ -296,8 +296,8 @@ define(function (require, exports, module) {
                         '<div><span style="font-family: \'foo font\'; font-weight: bold; text-decoration: underline; '+
                         'font-style: italic; font-size: 1.2em; color: rgb(255, 128, 0); '+
                         'background-color: rgb(0, 0, 255);">hello world</span></div>');
-      assertConvert('<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a> <br></li></ol>',
-                    '<ol><li>Hello</li><li><a href="/#u/123" target="_blank">link</a></li></ol>');
+      assertConvert('<ol><li>Hello</li><li><a href="http://x/#u/123" target="_blank">link</a> <br></li></ol>',
+                    '<ol><li>Hello</li><li><a href="http://x/#u/123" target="_blank">link</a></li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
                     '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');
@@ -322,7 +322,7 @@ define(function (require, exports, module) {
                         '<span style="font-weight: bold;"><span style="font-style: italic;">dffd</span></span>'+
                         '</div><div><br></div><div><span style="font-weight: bold;">World</span></div>');
       assertConvert('   simple \t\t\ntext\n\n\n', '<div> simple text </div>');
-      assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test" target="_blank">test</a></div>');
+      assertConvert('<div><a href="/#test" class="fuzz">test</a></div>', '<div><a href="/#test">test</a></div>');
       assertConvert('<div><b></b>x<i></i>y</div>', '<div>xy</div>');
       assertConvert('<div><b><i><u>three</u></i></b></div>',
                     '<div><span style="font-weight: bold;"><span style="font-style: italic;">'+
@@ -332,7 +332,7 @@ define(function (require, exports, module) {
                         '<div><span style="font-weight: bold;">brave</span></div><div>'+
                         '<span style="font-style: italic;">ne</span><span style="font-weight: bold;">w</span></div>'+
                         '<div>wor<span style="font-style: italic;">l</span>d</div>');
-      assertConvert('<div>hello <a href="#/foo1" target="_blank">Foo link</a> end</div>');
+      assertConvert('<div>hello <a href="#/foo1">Foo link</a> end</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");
     },
