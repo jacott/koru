@@ -65,6 +65,26 @@ define(function (require, exports, module) {
         sut.validators('richText')(doc, 'foo');
         assert.equals(doc._errors['foo'],[['invalid_html']]);
       },
+
+
+      "test filtering with markup": function () {
+        var foo = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}));
+        var doc = {foo: foo, changes: {foo:  foo}};
+
+        sut.validators('richText')(doc, 'foo', 'filter');
+        refute(doc._errors);
+        assert.equals(doc.changes.foo, ['a\nb', [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]]);
+        assert.same(doc.foo, doc.changes.foo);
+      },
+
+      "test filtering without markup": function () {
+        var foo = ['bold', null];
+        var doc = {foo: foo, changes: {foo:  foo}};
+
+        sut.validators('richText')(doc, 'foo', 'filter');
+        refute(doc._errors);
+        assert.equals(doc.foo, 'bold');
+      },
     },
 
     "richTextMarkup": {
@@ -76,6 +96,17 @@ define(function (require, exports, module) {
         assert.isNull(doc._errors);
         assert.equals(v.args, [v.rt[0], v.rt[1]]);
       },
+
+      "test filtering": function () {
+        var markup = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}))[1];
+        var doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
+
+        sut.validators('richTextMarkup')(doc, 'fooMarkup', 'filter');
+        refute(doc._errors);
+        assert.equals(doc.foo, 'a\nb');
+        assert.equals(doc.fooMarkup, [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]);
+      },
+
 
       "test bad but no changes": function () {
         var doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};

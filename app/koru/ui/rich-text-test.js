@@ -62,12 +62,6 @@ define(function (require, exports, module) {
       assert.equals(sut.fromHtml(html), [doc, null]);
     },
 
-    "test canonized markup": function () {
-      assert.equals(sut.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"})),
-                    ['a\nb', [OL, 0, 1, LI, 0, 0, RIGHT, 0, 0, LI, 1, 0, RIGHT, 0, 0]]);
-
-    },
-
     "test fragment": function () {
       var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
       assert.equals(rt, ['foo bar', [11, 0, 0, 3]]);
