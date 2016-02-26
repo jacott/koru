@@ -121,10 +121,9 @@ isClient && define(function (require, exports, module) {
     },
 
     "test focus": function () {
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
       test.stub(document, 'execCommand');
-
-      assert.dom('.input', function () {
+      document.body.appendChild(sut.$autoRender({content: '', options: {focusout: v.focusout = test.stub()}}));
+      assert.dom('.richTextEditor:not([focusout])>.input', function () {
         this.focus();
         TH.trigger(this, 'focusin');
         assert.calledWith(document.execCommand, 'styleWithCSS', false, true);
@@ -133,8 +132,10 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'focusout');
         assert.className(this.parentNode, 'focus');
         Dom.remove(Dom('.glassPane'));
+        refute.called(v.focusout);
         TH.trigger(this, 'focusout');
         refute.className(this.parentNode, 'focus');
+        assert.called(v.focusout);
       });
     },
 

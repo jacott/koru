@@ -357,12 +357,17 @@ define(function(require, exports, module) {
     return keys;
   }
 
+  var optionKeys = {
+    type: true,
+    focusout: true,
+  };
+
   Tpl.$helpers({
     attrs: function () {
       var elm = $.element;
       var options = this.options;
       for (var id in options) {
-        if (id === 'type' || id[0] === '$') continue;
+        if (optionKeys[id] || id[0] === '$') continue;
         (id === 'placeholder' ?
          $.ctx.inputElm : elm)
           .setAttribute(id, options[id]);
