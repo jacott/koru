@@ -144,6 +144,20 @@ Client.prototype = {
   },
 
   query: function (text, params) {
+    if (params && ! Array.isArray(params)) {
+      var fields = params;
+      var posMap = {};
+      var count = 0;
+      params = [];
+      text = text.replace(/\{\$(\w+)\}/g, function (m, key) {
+        var pos = posMap[key];
+        if (! pos) {
+          pos = posMap[key] = '$' + ++count;
+          params.push(fields[key]);
+        }
+        return pos;
+      });
+    }
     return this.withConn(function (conn) {
       return query(conn, text, params);
     });

@@ -233,6 +233,12 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.count({name: {$nin: ['four']}}), 4);
       },
 
+      "test named params on _client": function () {
+        var client = v.foo._client;
+        assert.equals(client.query('select count(*) from "Foo" where name like {$likeE} OR name = {$four}', {likeE: '%e', four: 'four'}),
+                      [{count: '4'}]);
+      },
+
       "test $sql": function () {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}", {likeE: '%e', four: 'four'}]}), 4);
