@@ -127,10 +127,14 @@ define(function(require, exports, module) {
 
   Tpl.List.Item.$helpers({
     name: function () {
-      var selected = Tpl.$ctx().selected;
+      var ctx = Tpl.$ctx();
+      var elm = $.element;
+      var selected = ctx.selected;
+      var decorator = ctx.data.decorator;
 
       if (selected && selected[this.id || this._id])
-        Dom.addClass($.element.parentNode, 'selected');
+        Dom.addClass(elm.parentNode, 'selected');
+      decorator && decorator(this, elm);
       return this.name;
     },
   });

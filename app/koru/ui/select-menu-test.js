@@ -107,6 +107,28 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.arg, {id: 123, name: 'foo'});
     },
 
+    "test decorator": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        v.button = this;
+      });
+      sut.popup(v.button, {
+        list: v.list = [[1, 'One'], [2, 'Two']],
+        decorator: v.decorator = test.stub(),
+      });
+
+      assert.calledWith(v.decorator, TH.match(function (arg) {
+        return arg.id === 1;
+      }), TH.match(function (arg) {
+        return arg.textContent === 'One';
+      }));
+
+      assert.calledWith(v.decorator, TH.match(function (arg) {
+        return arg.id === 2;
+      }), TH.match(function (arg) {
+        return arg.textContent === 'Two';
+      }));
+    },
+
     "test selected array data": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
