@@ -1,7 +1,8 @@
 var Path = require('path');
 var less = requirejs.nodeRequire("less");
 var Future = requirejs.nodeRequire('fibers/future');
-var autoprefixer = requirejs.nodeRequire("autoprefixer-core")({browsers: ['> 5%', 'last 2 versions']});
+var autoprefixer = requirejs.nodeRequire("autoprefixer")({browsers: ['> 5%', 'last 2 versions']});
+var postcss = requirejs.nodeRequire("postcss")([autoprefixer]);
 
 define(function(require, exports, module) {
   var koru = require('../main');
@@ -43,7 +44,12 @@ define(function(require, exports, module) {
         })+"\n");
         future.return(null);
       } else {
-        future.return(autoprefixer.process(output.css).css);
+        postcss.process(output.css).then(function (result) {
+          result.warnings().forEach(function (warn) {
+            console.warn(warn.toString());
+          });
+          future.return(result.css);
+        });
       }
     });
 

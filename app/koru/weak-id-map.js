@@ -13,7 +13,8 @@ define(function(require, exports, module) {
     };
 
     this.set = function (value) {
-      map[value[idField]] = weak(value, deleteValue);
+      var id = value[idField];
+      map[id] = weak(value, function () {delete map[id]});
       return this;
     };
 
@@ -22,11 +23,9 @@ define(function(require, exports, module) {
       return this;
     };
 
-    this.delete = deleteValue;
-
-    function deleteValue(value) {
+    this.delete = function deleteValue(value) {
       delete map[value[idField] || value];
-    }
+    };
   }
 
   return WeakIdMap;

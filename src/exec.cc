@@ -20,7 +20,7 @@ static char* newUtf8String(Handle<Value> from) {
 }
 
 static char** newUtf8StringArray(Handle<Array> list) {
-  NanScope();
+  Nan::HandleScope();
 
   int len = list->Length();
 
@@ -48,23 +48,23 @@ static void clear_cloexec (int fd) {
 }
 
 NAN_METHOD(js_execv) {
-  NanScope();
+  Nan::HandleScope();
 
-  Local<Array> argv = Local<Array>::Cast(args[1]);
+  Local<Array> argv = Local<Array>::Cast(info[1]);
 
   clear_cloexec(0); //stdin
   clear_cloexec(1); //stdout
   clear_cloexec(2); //stderr
-  execv(newUtf8String(args[0]), newUtf8StringArray(argv));
+  execv(newUtf8String(info[0]), newUtf8StringArray(argv));
 
-  NanThrowError(NanNew<String>(strerror(errno)));
+  Nan::ThrowError(Nan::New(strerror(errno)).ToLocalChecked());
 
-  NanReturnNull();
+  info.GetReturnValue().SetUndefined();
 }
 
-
-void InitAddon(Handle<v8::Object> exports) {
-  exports->Set(NanNew<String>("execv"), NanNew<v8::FunctionTemplate>(js_execv)->GetFunction());
+NAN_MODULE_INIT(InitAll) {
+  Nan::Set(target, Nan::New("execv").ToLocalChecked(),
+           Nan::GetFunction(Nan::New<v8::FunctionTemplate>(js_execv)).ToLocalChecked());
 }
 
-NODE_MODULE(addon, InitAddon)
+NODE_MODULE(addon, InitAll)
