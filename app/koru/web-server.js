@@ -28,7 +28,7 @@ define(function (require, exports, module) {
   };
 
   function indexjs() {
-    return [koru.config.indexjs || Path.join(koru.libDir, 'node_modules/yaajs/yaa.js'), '/'];
+    return [koru.config.indexjs || requirejs.nodeRequire.resolve('yaajs/yaa.js'), '/'];
   }
 
   var handlers = {};
