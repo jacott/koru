@@ -6,7 +6,6 @@ define(function(require, exports, module) {
   var Val = require('./validation');
   var driver = require('../config!DBDriver');
   var Query = require('./query');
-  var WeakIdMap = require('../weak-id-map');
 
   var _support, BaseModel;
 
@@ -34,8 +33,6 @@ define(function(require, exports, module) {
       _support = _baseSupport;
       modelProperties.findById = findById;
       modelProperties.findAttrsById = findAttrsById;
-      modelProperties._$setWeakDoc = setWeakDoc;
-      modelProperties._$getWeakDoc = getWeakDoc;
       modelProperties.addUniqueIndex = addUniqueIndex;
       modelProperties.addIndex = addIndex;
 
@@ -88,10 +85,10 @@ define(function(require, exports, module) {
         var doc = full ? model.docs.findOne({_id: this._id}) : model.findAttrsById(this._id);
 
         if (doc) {
-          full && model._$setWeakDoc(doc);
+          full && model._$docCacheSet(doc);
           this.attributes = doc;
         } else {
-          model._$removeWeakDoc(this);
+          model._$docCacheDelete(this);
           this.attributes = {};
         }
         this.changes = {};
@@ -201,7 +198,7 @@ define(function(require, exports, module) {
     setupModel: function (model) {
       _resetDocs[model.modelName] = function () {docs = null};
 
-      var docCache = new WeakMap;
+      var threadMap = new WeakMap;
 
       var docs, db;
       util.extend(model, {
@@ -211,20 +208,29 @@ define(function(require, exports, module) {
         get db() {
           return db = db || driver.defaultDb;
         },
-        get _$wm() {
-          var dc = docCache.get(util.thread);
-          if (dc) return dc;
-          dc = new WeakIdMap();
-          docCache.set(util.thread, dc);
-          return dc;
-        },
-        _$removeWeakDoc: function(doc) {
-          if (doc._id)
-            this._$wm.delete(doc._id);
+        _$docCacheGet: function(id) {
+          var dc = threadMap.get(util.thread);
+          var doc = dc && dc[id];
+          return doc;
         },
 
-        _$clearDocCache: function () {
-          this._$wm.clear();
+        _$docCacheSet: function (doc) {
+          var thread = util.thread;
+          var dc = threadMap.get(thread);
+          dc || threadMap.set(thread, dc = {});
+          dc[doc._id] = doc;
+        },
+
+        _$docCacheDelete: function(doc) {
+          if (doc._id) {
+            var dc = threadMap.get(util.thread);
+            if (dc)
+              delete dc[doc._id];
+          }
+        },
+
+        _$docCacheClear: function () {
+          return threadMap.delete(util.thread);
         },
       });
     },
@@ -232,14 +238,14 @@ define(function(require, exports, module) {
     insert: function (doc) {
       var model = doc.constructor;
       model.docs.insert(doc.attributes);
-      model._$setWeakDoc(doc.attributes);
+      model._$docCacheSet(doc.attributes);
       BaseModel._callAfterObserver(doc, null);
       model.notify(doc, null);
     },
 
     _insertAttrs: function (model, attrs) {
       model.docs.insert(attrs);
-      model._$setWeakDoc(attrs);
+      model._$docCacheSet(attrs);
     },
   };
 
@@ -260,10 +266,10 @@ define(function(require, exports, module) {
   function findAttrsById(id) {
     if (! id) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
-    var doc = this._$getWeakDoc(id);
+    var doc = this._$docCacheGet(id);
     if (! doc) {
       doc = this.docs.findOne({_id: id});
-      doc && this._$setWeakDoc(doc);
+      doc && this._$docCacheSet(doc);
     }
     return doc;
   }
@@ -271,14 +277,6 @@ define(function(require, exports, module) {
   function findById(id) {
     var doc = this.findAttrsById(id);
     if (doc) return new this(doc);
-  }
-
-  function getWeakDoc(id) {
-    return this._$wm.get(id);
-  }
-
-  function setWeakDoc(doc) {
-    this._$wm.set(doc);
   }
 
   function addToDictionary(adder) {
@@ -290,6 +288,10 @@ define(function(require, exports, module) {
       }
     }
   }
+
+  function DocCache() {}
+
+  DocCache.prototype = {};
 
   return ModelEnv;
 });

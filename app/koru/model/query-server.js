@@ -112,7 +112,7 @@ define(function(require, exports, module) {
           ++count;
           Model._callBeforeObserver('beforeRemove', doc);
           docs.remove({_id: doc._id});
-          model._$removeWeakDoc(doc);
+          model._$docCacheDelete(doc);
           Model._callAfterObserver(null, doc);
           model.notify(null, doc);
         });
@@ -207,9 +207,9 @@ define(function(require, exports, module) {
           docs.transaction(function (tran) {
             docs.koruUpdate(doc, cmd, dups);
 
-            model._$setWeakDoc(doc.attributes);
+            model._$docCacheSet(doc.attributes);
             tran.onAbort(function () {
-              model._$wm.delete(doc);
+              model._$docCacheDelete(doc);
             });
             Model._callAfterObserver(doc, changes);
             model.notify(doc, changes);
