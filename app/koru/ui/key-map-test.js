@@ -66,7 +66,7 @@ isClient && define(function (require, exports, module) {
       v.km.exec(event);
       assert.calledOnceWith(v.foo, TH.match(function (ev) {
         return ev.which === 88;
-      }));
+      }), 'foo');
       refute.called(v.bar);
     },
 
@@ -75,7 +75,7 @@ isClient && define(function (require, exports, module) {
       TH.keydown("X1");
       assert.calledOnceWith(v.bar, TH.match(function (ev) {
         return ev.type === 'keydown' && ev.which === 49;
-      }));
+      }), 'bar');
       refute.called(v.bar2);
     },
 
