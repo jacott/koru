@@ -124,8 +124,8 @@ define(function(require, exports, module) {
       Dom.onMouseUp(function (event) {
         if (! Dom.contains(button, event.target)) return;
 
-        event.preventDefault();
-        event.stopImmediatePropagation();
+
+        Dom.stopEvent(event);
 
         var name = button.getAttribute('name');
         switch(name) {

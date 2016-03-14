@@ -40,8 +40,7 @@ define(function(require, exports, module) {
       return; // don't stop event
     }
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    Dom.stopEvent(event);
   }
 
   Tpl.$extend({

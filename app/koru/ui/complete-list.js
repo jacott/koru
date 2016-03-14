@@ -61,8 +61,7 @@ define(function(require, exports, module) {
       return;
     }
 
-    event.stopImmediatePropagation();
-    event.preventDefault();
+    Dom.stopEvent(event);
   }
 
   function select(li) {

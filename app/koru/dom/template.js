@@ -279,8 +279,13 @@ define(function(require, exports, module) {
       return fetchTemplate(this, name);
     },
 
-    stopEvent: function () {
-      currentEvent = null;
+    stopEvent: function (event) {
+      if (event && event !== currentEvent) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      } else {
+        currentEvent = null;
+      }
     },
 
     stopPropigation: function () {
@@ -680,8 +685,7 @@ define(function(require, exports, module) {
         if (fire(event, elm, eventTypes[key])) return;
       }
     } catch(ex) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
+      Dom.stopEvent(event);
       Dom.handleException(ex);
     } finally {
       currentEvent = prevEvent;

@@ -23,6 +23,60 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test stopEvent": function () {
+      var ev = {stopImmediatePropagation: test.stub(), preventDefault: test.stub()};
+      Dom.stopEvent(ev);
+      assert.called(ev.stopImmediatePropagation);
+      assert.called(ev.preventDefault);
+      var Tpl = Dom.newTemplate({
+        name: "Foo",
+        nodes:[{
+          name:"div",
+        }],
+      });
+
+      Tpl.$events({
+        'click': function (event) {
+          assert.same(Dom.current.event, event);
+          Dom.stopEvent(event);
+          refute.called(event.stopImmediatePropagation);
+          refute.called(event.preventDefault);
+          assert.same(Dom.current.event, null);
+          v.success = true;
+        },
+
+        'keydown': function (event) {
+          assert.same(Dom.current.event, event);
+          Dom.stopEvent();
+          refute.called(event.stopImmediatePropagation);
+          refute.called(event.preventDefault);
+          assert.same(Dom.current.event, null);
+          v.success = true;
+        },
+      });
+
+      document.body.appendChild(Tpl.$autoRender({}));
+      assert.dom('div', function () {
+        var ev = Dom.buildEvent('click');
+        test.stub(ev, 'stopImmediatePropagation');
+        test.stub(ev, 'preventDefault');
+        this.dispatchEvent(ev);
+        assert.called(ev.stopImmediatePropagation);
+        assert.called(ev.preventDefault);
+        assert(v.success);
+
+        v.success = false;
+
+        var ev = Dom.buildEvent('keydown');
+        test.stub(ev, 'stopImmediatePropagation');
+        test.stub(ev, 'preventDefault');
+        this.dispatchEvent(ev);
+        assert.called(ev.stopImmediatePropagation);
+        assert.called(ev.preventDefault);
+        assert(v.success);
+      });
+    },
+
     "test relative name": function () {
       Dom.newTemplate({
         name: "Bar.Baz.Buzz",

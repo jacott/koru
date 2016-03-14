@@ -136,8 +136,7 @@ define(function(require, exports, module) {
 
     map = map[String.fromCharCode(event.which)];
     if (! map) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    Dom.stopEvent(event);
 
     if (Array.isArray(map)) {
       map[1](event, map[0]);
@@ -162,14 +161,12 @@ define(function(require, exports, module) {
 
       map = map[String.fromCharCode(event.which)];
       if (map && ! Array.isArray(map)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+        Dom.stopEvent(event);
         return;
       }
       cancel();
       if (! map) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
+      Dom.stopEvent(event);
       map[1](event, map[0]);
     }
 

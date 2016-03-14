@@ -650,8 +650,7 @@ define(function(require, exports, module) {
 
       if (event.shiftKey) {
         if (event.which === 13) {
-          event.stopImmediatePropagation();
-          event.stopPropagation();
+          Dom.stopEvent(event);
           return;
         }
       }

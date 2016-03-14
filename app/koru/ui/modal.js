@@ -25,8 +25,7 @@ define(function(require, exports, module) {
       break;
     case 27:
       if (! topModal.ignoreEscape) {
-        event.stopImmediatePropagation();
-        event.preventDefault();
+        Dom.stopEvent(event);
         Dom.remove(topModal.container);
         return;
       }
@@ -36,8 +35,7 @@ define(function(require, exports, module) {
     if (topModal.keydownHandler)
       topModal.keydownHandler(event, topModal);
     else if (! Dom.contains(topModal.container, event.target)) {
-      event.stopImmediatePropagation();
-      event.preventDefault();
+      Dom.stopEvent(event);
     }
   }
 
