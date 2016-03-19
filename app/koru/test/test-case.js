@@ -188,9 +188,14 @@ define(['./core'], function (geddon) {
 
     intercept: function (object, prop, replacement, restore) {
       var orig = Object.getOwnPropertyDescriptor(object, prop);
-      var func = replacement ? function() {
-        return replacement.apply(this, arguments);
-      } :  function () {};
+      if (replacement) {
+        var func = function() {
+          return replacement.apply(this, arguments);
+        };
+        func._actual = orig && orig.value;
+      } else {
+        var func = function () {};
+      }
       var desc = {
         configurable: true,
         value: func,
@@ -202,7 +207,7 @@ define(['./core'], function (geddon) {
         else delete object[prop];
         restore && restore();
       };
-      this.onEnd(func.restore);
+      this.onEnd(restorSpy(func));
       return func;
     },
   };
