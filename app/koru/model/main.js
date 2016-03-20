@@ -249,7 +249,7 @@ define(function(require, exports, module) {
         util.extend(changes, pSum[key]);
       }
       doc.changes = {};
-      query.put(changes);
+      query.update(changes);
     } catch(ex1) {
       ex = ex1;
     } finally {

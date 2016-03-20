@@ -199,11 +199,11 @@ define(function (require, exports, module) {
       assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'cat'});
     },
 
-    "test put": function () {
+    "test update arrays": function () {
       v.TestModel.defineFields({foo: 'jsonb', x: 'integer[]'});
       var st = new Query(v.TestModel).onId(v.foo._id);
 
-      st.put({name: 'new Name', 'foo.bar.baz': 123, 'x.$+1': 11, 'x.$+2': 22});
+      st.update({name: 'new Name', 'foo.bar.baz': 123, 'x.$+1': 11, 'x.$+2': 22});
 
       var attrs = v.foo.$reload().attributes;
 
