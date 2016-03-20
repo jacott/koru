@@ -117,14 +117,14 @@ define(function(require, exports, module) {
     },
 
     /**
-     * Return a doc representing this doc before the supplied changes
-     * were made.
+     * Return a doc representing this doc with the supplied changes
+     * staged against it such that calling doc.$save will apply the changes.
      *
      * If this method is called again with the same changes object
      * then a cached version of the before doc is return.
      */
-    $asBefore: function (changes) {
-      var cache = this.$cache.$asBefore || (this.$cache.$asBefore = []);
+    $withChanges: function (changes) {
+      var cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
       if (changes === cache[0]) return cache[1];
 
       cache[0] = changes;
@@ -229,6 +229,9 @@ define(function(require, exports, module) {
       return this.$cache[key] || (this.$cache[key] = {});
     },
   };
+
+  /** @deprecated @alias */
+  BaseModel.prototype.$asBefore = BaseModel.prototype.$withChanges;
 
   session.defineRpc("put", function (modelName, id, updates) {
     Val.assertCheck([modelName, id], ['string']);

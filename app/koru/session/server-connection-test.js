@@ -202,7 +202,7 @@ isServer && define(function (require, exports, module) {
         constructor: {modelName: 'Foo'},
         _id: 'f123',
         attributes: {name: 'x'},
-        $asBefore: test.stub().withArgs('changes')
+        $withChanges: test.stub().withArgs('changes')
           .returns(v.before = {constructor: {modelName: 'Foo'}, _id: 'f123', attributes: {name: 'y'}}),
         $asChanges: test.stub().withArgs('changes')
           .returns(v.changes= {changes: true}),
@@ -216,19 +216,19 @@ isServer && define(function (require, exports, module) {
       // added
       v.func = function (doc) {return v.doc === doc};
       assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'added');
-      assert.calledWith(v.doc.$asBefore, 'changes');
+      assert.calledWith(v.doc.$withChanges, 'changes');
       assert.calledOnceWith(v.conn.sendBinary, 'A', ['Foo', 'f123', v.doc.attributes]);
 
       // changed
       v.conn.sendBinary.reset();
-      v.doc.$asBefore.reset();
+      v.doc.$withChanges.reset();
       v.func = function (doc) {return v.doc === doc || doc === v.before};
       assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'changed');
-      assert.calledWith(v.doc.$asBefore, 'changes');
+      assert.calledWith(v.doc.$withChanges, 'changes');
       assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
 
       // removed
-      v.doc.$asBefore.reset();
+      v.doc.$withChanges.reset();
       v.conn.sendBinary.reset();
       v.func = function (doc) {return doc === v.before};
       assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'removed');

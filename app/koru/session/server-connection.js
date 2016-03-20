@@ -98,14 +98,14 @@ define(function(require, exports, module) {
 
       sendMatchUpdate: function (doc, changes, filter) {
         if (doc && this.match.has(doc)) {
-          if (changes && this.match.has(doc.$asBefore(changes))) {
+          if (changes && this.match.has(doc.$withChanges(changes))) {
             this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
             return 'changed';
           } else {
             this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
             return 'added';
           }
-        } else if (changes && this.match.has(doc ? doc.$asBefore(changes) : changes)) {
+        } else if (changes && this.match.has(doc ? doc.$withChanges(changes) : changes)) {
           this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
           return 'removed';
         }

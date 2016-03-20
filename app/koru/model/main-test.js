@@ -429,13 +429,13 @@ define(function (require, exports, module) {
         refute(doc.$isValid());
       },
 
-      "test asBefore on objects": function () {
+      "test withChanges on objects": function () {
         v.TestModel.defineFields({queen: 'text'});
 
         var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
         var was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary', 'foo.fnord.a': 2};
-        var old = doc.$asBefore(was);
+        var old = doc.$withChanges(was);
 
         assert.same(old.foo.bar.baz, "orig");
         assert.same(old.foo.bar.buzz, 2);
@@ -445,34 +445,34 @@ define(function (require, exports, module) {
         assert.same(doc.foo.bar.buzz, 5);
         assert.same(doc.foo.fnord.a, 1);
 
-        assert.same(doc.$asBefore(was), old);
+        assert.same(doc.$withChanges(was), old);
 
         var was = {"foo.bar.baz": undefined, "foo.bar.buzz": 2, queen: undefined, 'foo.fnord.a': 2};
 
-        var old = doc.$asBefore(was);
+        var old = doc.$withChanges(was);
         assert.same(old.foo.bar.baz, undefined);
         assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, undefined);
       },
 
-      "test asBefore on arrays addItem": function () {
+      "test withChanges on arrays addItem": function () {
         var doc = new v.TestModel({_id: 'f123', foo: ['f123']});
         var was = {'foo.$-1': 'f123'};
-        var old = doc.$asBefore(was);
+        var old = doc.$withChanges(was);
         assert.equals(old.foo, []);
       },
 
-      "test asBefore on array removeItem": function () {
+      "test withChanges on array removeItem": function () {
         var doc = new v.TestModel({_id: "123", foo: []});
         var was = {"foo.1.bar": 3};
 
-        var old = doc.$asBefore(was);
+        var old = doc.$withChanges(was);
 
         assert.equals(old.foo, [, {bar: 3}]);
 
         doc.attributes.foo = [1, {bar: 3}];
 
-        old = doc.$asBefore({"foo.$-0": 1});
+        old = doc.$withChanges({"foo.$-0": 1});
         assert.equals(old.foo, [{bar: 3}]);
       },
 
@@ -779,7 +779,7 @@ define(function (require, exports, module) {
 
       "put": {
         setUp: function () {
-          test.stub(koru, 'userId').returns('u123');
+          test.intercept(koru, 'userId', function () {return 'u123'});
           v.TestModel.defineFields({myAry: 'varchar(24) ARRAY', deep: 'object'});
           v.doc = v.TestModel.create({name: 'old', myAry: ['zero', 'three'], deep: {a: 1}});
 

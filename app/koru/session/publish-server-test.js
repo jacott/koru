@@ -190,7 +190,7 @@ isServer && define(function (require, exports, module) {
           return doc.attributes.name === 'John';
         });
         v.docProto = {
-          $asBefore: function (changes) {
+          $withChanges: function (changes) {
             var old = util.deepCopy(this);
             util.extend(old.attributes, changes);
             return old;

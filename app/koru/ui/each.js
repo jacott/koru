@@ -157,7 +157,7 @@ define(function(require, exports, module) {
     });
 
     callback._handle = model.onChange(function (doc, was) {
-      var old = doc ? doc.$asBefore(was) : was;
+      var old = doc ? doc.$withChanges(was) : was;
       if (doc && params && ! util.includesAttributes(params, doc)) doc = null;
       if (old && params && ! util.includesAttributes(params, old)) old = null;
 

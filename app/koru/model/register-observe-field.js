@@ -103,7 +103,7 @@ define(function(require, exports, module) {
       function initModelObserver() {
         modelObserver = model.onChange(function (doc, was) {
           var nowValue = doc && doc[field];
-          var asBefore = doc ? was && doc.$asBefore(was) : was;
+          var asBefore = doc ? was && doc.$withChanges(was) : was;
           var oldValue = asBefore && asBefore[field];
 
           var called = {}; // ensure only called once;
