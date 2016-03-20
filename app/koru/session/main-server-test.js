@@ -87,7 +87,7 @@ isServer && define(function (require, exports, module) {
 
         v.sess.versionHash = 'hash,v1';
 
-        test.stub(koru, 'info');
+        TH.noInfo();
         v.func(v.ws);
 
         assert.calledWith(v.ws.send, TH.match(function (arg) {
@@ -246,7 +246,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test onclose": function () {
-      test.stub(koru, 'info');
+      TH.noInfo();
       var conn = TH.sessionConnect(v.ws);
 
       assert.calledWith(v.ws.on, 'close', TH.match(function (func) {

@@ -36,7 +36,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test unknown publication": function () {
-      test.stub(koru, 'info');
+      test.intercept(koru, 'info');
       session._onMessage(v.conn = {
         sendBinary: test.stub(),
         _subs: {},

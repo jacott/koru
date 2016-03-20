@@ -19,6 +19,10 @@ define(function(require, exports, module) {
         util.thread.userId = oldId;
       }
     },
+    noInfo: function () {
+      if (! koru.info.restore)
+        geddon.test.intercept(koru, 'info');
+    },
   }, TH);
 
   var ga = geddon.assertions;

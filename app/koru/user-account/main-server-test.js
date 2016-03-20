@@ -14,7 +14,7 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.ws = TH.mockWs();
-      test.stub(koru, 'info');
+      TH.noInfo();
       v.conn = TH.sessionConnect(v.ws);
       v.lu = userAccount.model.create({
         userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',

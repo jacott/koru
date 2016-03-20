@@ -12,7 +12,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      test.stub(koru, 'info');
+      TH.noInfo();
       v.myModule = new Module(module.ctx, 'mymodule');
     },
 

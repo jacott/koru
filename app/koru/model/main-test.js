@@ -552,7 +552,7 @@ define(function (require, exports, module) {
       },
 
       "test must be valid save ": function () {
-        test.stub(koru, 'info');
+        TH.noInfo();
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
 

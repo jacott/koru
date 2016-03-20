@@ -252,7 +252,7 @@ define(function (require, exports, module) {
       }));
 
       test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
-      test.stub(koru, 'info');
+      TH.noInfo();
 
       v.ws.onclose({});         // remote close
 
