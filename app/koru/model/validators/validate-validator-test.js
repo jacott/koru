@@ -20,7 +20,7 @@ define(function (require, exports, module) {
       sut(doc,'foo', func);
 
       assert.calledOnceWith(func, 'foo');
-      assert.same(func.thisValues[0], doc);
+      assert.same(func.firstCall.thisValue, doc);
     },
   });
 });

@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var util = require('koru/util');
   var geddon = require('./core');
   var format = require('../format');
+  var match = require('./match');
 
   var gu = geddon._u;
   gu.format = format;
@@ -106,7 +107,7 @@ define(function(require, exports, module) {
   }
 
   gu.isDate = isDate;
-  gu.egal = egal;
+  gu.egal = Object.is || egal;
   gu.deepEqual = deepEqual;
 
   function isDate(value) {
@@ -135,100 +136,44 @@ define(function(require, exports, module) {
   }
 
   function deepEqual(actual, expected, hint, hintField) {
-    if (egal(expected, actual)) {
+
+    if (egal(actual, expected) || actual == expected) {
       return true;
     }
 
-    if (expected == null || actual == null) {
-      if (actual === expected) return true;
-      setHint();
-      return false;
-    }
+    if (match.match.$test(expected) && expected.$test(actual))
+      return true;
 
-    if (typeof expected === 'object') {
-      if (expected.hasOwnProperty('test') && typeof expected.or === 'function') {
-        if (expected.test(actual)) return true;
-        setHint(actual, expected.message);
-        return false;
+    if (typeof actual !== 'object' || typeof expected !== 'object')
+      return ((actual === undefined || expected === undefined) && actual == expected) || setHint();
+
+    if (actual == null || expected == null) return setHint();
+
+    if (actual.getTime && expected.getTime)
+      return actual.getTime() === expected.getTime() || setHint();
+
+    if (Array.isArray(actual)) {
+      if (! Array.isArray(expected))
+        return setHint();
+      var len = actual.length;
+      if (expected.length !== len)
+        return hint ? setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length) : false;
+      for(var i = 0; i < len; ++i) {
+        if (! deepEqual(actual[i], expected[i], hint, hintField)) return setHint();
       }
+      return true;
     }
 
-    // Elements are only equal if expected === actual
-    if (gu.isElement(expected) || gu.isElement(actual)) {
-      setHint();
-      return false;
-    }
+    var ekeys = Object.keys(actual);
 
-    if (isDate(expected) || isDate(actual)) {
-      if (isDate(expected) && isDate(actual) &&
-        expected.getTime() == actual.getTime())
-        return true;
+    if (Object.keys(expected).length !== ekeys.length)
+      return hint ? setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length) : false;
+    return ekeys.every(function (key) {
+      return deepEqual(actual[key], expected[key], hint, hintField) ||
+        badKey(key);
+    });
 
-      setHint();
-      return false;
-    }
-
-    var useCoercingEquality = typeof expected != "object" || typeof actual != "object";
-
-    if (expected instanceof RegExp && actual instanceof RegExp) {
-      if (expected.toString() != actual.toString()) {
-        setHint();
-        return false;
-      }
-
-      useCoercingEquality = false;
-    }
-
-    // Arrays can only be equal to arrays
-    var expectedStr = toString.call(expected);
-    var actualStr = toString.call(actual);
-
-    // Coerce and compare when primitives are involved
-    if (useCoercingEquality) {
-      if (expectedStr != "[object Array]" && actualStr != "[object Array]" &&
-        expected == actual) return true;
-
-      setHint();
-      return false;
-    }
-
-    var expectedKeys = Object.keys(expected);
-    var actualKeys = Object.keys(actual);
-
-    if (isArguments(expected) && isArguments(actual)) {
-      if (expected.length != actual.length) {
-        hint && setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length);
-        return false;
-      }
-    } else {
-      if (typeof expected != typeof actual || expectedStr != actualStr) {
-        setHint();
-        return false;
-      }
-      if (expectedKeys.length != actualKeys.length) {
-        if (hint) {
-          hint[hintField] = 'lengths differ: ' + actualKeys.length + ' != ' + expectedKeys.length;
-          setHint();
-        }
-        return false;
-      }
-    }
-
-    var key;
-
-    for (var i = 0, l = expectedKeys.length; i < l; i++) {
-      key = expectedKeys[i];
-      if (! Object.prototype.hasOwnProperty.call(actual, key)) {
-        return badKey();
-      }
-      if (! deepEqual(actual[key], expected[key], hint, hintField)) {
-        return badKey();
-      }
-    }
-
-    return true;
-
-    function badKey() {
+    function badKey(key) {
       if (hint) {
         hint[hintField] = 'at key = ' + util.qstr(key) + hint[hintField];
         setHint();
@@ -237,13 +182,15 @@ define(function(require, exports, module) {
     }
 
     function setHint(aobj, eobj, prefix) {
-
-      if (! hint) return;
+      if (! hint) return false;
       var prev = hint[hintField];
 
       aobj = aobj || actual; eobj = eobj || expected;
       hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) + (prev ? "\n" + prev : '');
+      return false;
     }
+
+    return setHint();
   }
 
   function isArguments(obj) {

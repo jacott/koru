@@ -192,7 +192,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           koru.setTimeout.yield();
 
@@ -210,7 +210,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           Route.gotoPage(v.RootBar);
 
@@ -229,7 +229,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.returnValues[0], 'stop');
+          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           Route.gotoPage(v.RootBar);
 

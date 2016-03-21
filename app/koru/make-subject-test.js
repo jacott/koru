@@ -29,7 +29,7 @@ define(function (require, exports, module) {
       refute.called(v.stub2);
       assert.calledWith(v.stub3, 123);
 
-      assert.same(v.stub3.thisValues[0], h2);
+      assert.same(v.stub3.firstCall.thisValue, h2);
     },
   });
 });

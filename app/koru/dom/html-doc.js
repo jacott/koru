@@ -334,7 +334,7 @@ define(function(require, exports, module) {
   });
 
   function buildNodeType(func, proto) {
-    func.prototype = Object.create(Document.prototype, {});
+    func.prototype = Object.create(Document.prototype);
     func.prototype.constructor = func;
     util.extend(func.prototype, proto);
   }

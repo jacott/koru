@@ -811,10 +811,10 @@ define(function (require, exports, module) {
           assert.equals(v.doc.changes, {});
 
           assert.calledWith(v.auth, 'u123', {myAry: {"myAry.$+1": "one", "myAry.$+2": "two", "myAry.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
-          assert.equals(v.auth.thisValues[0], TH.matchModel(v.doc));
+          assert.equals(v.auth.firstCall.thisValue, TH.matchModel(v.doc));
           if (isClient) {
             assert.calledTwice(v.auth);
-            assert.equals(v.auth.thisValues[1], TH.matchModel(v.doc));
+            assert.equals(v.auth.getCall(1).thisValue, TH.matchModel(v.doc));
             assert(v.auth.calledBefore(session.rpc));
           }
 
@@ -856,11 +856,11 @@ define(function (require, exports, module) {
               deep: {"deep.nested": {value: 444}}
             }
           });
-          assert.equals(v.auth.thisValues[0], TH.matchModel(v.doc));
+          assert.equals(v.auth.firstCall.thisValue, TH.matchModel(v.doc));
           if (isClient) {
             assert.calledTwice(v.auth);
             assert.same(v.myAry.callCount, 2);
-            assert.equals(v.auth.thisValues[1], TH.matchModel(v.doc));
+            assert.equals(v.auth.getCall(1).thisValue, TH.matchModel(v.doc));
             assert(v.auth.calledBefore(session.rpc));
           }
           assert.calledWith(v.myAry, TH.matchModel(v.doc), v.myAryUpdates, 'myAry');

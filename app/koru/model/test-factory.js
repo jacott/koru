@@ -186,7 +186,7 @@ define(function(require, exports, module) {
     },
   });
 
-  Builder.prototype = util.extend(Object.create(BaseBuilder.prototype, {}), {
+  Builder.prototype = util.extend(Object.create(BaseBuilder.prototype), {
     constructor: Builder,
 
     addRef: function(ref, doc) {

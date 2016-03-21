@@ -46,13 +46,15 @@ define(['require', 'koru/util-base'], function (require, util) {
 
       url = url.replace(originRe, '');
 
-      if (url === 'index.js' && stack.length)
-        continue;
-
-      if (/(?:(?:koru\/test\/|yaajs)|node_modules\/)/.test(url)) {
-        if (notUs) continue;
-
-      } else notUs = true;
+      if (! util.FULL_STACK) {
+        if (/^(?:koru\/test\/|yaajs|node_modules\/)/.test(url) && ! /-test.js$/.test(url)) {
+          if (notUs) continue;
+        } else if (url === 'index.js') {
+          if (stack.length)
+            continue;
+        } else
+          notUs = true;
+      }
 
       func = (func || '').replace(/['"\[\]\(\)\{\}\s]+/g, ' ');
 

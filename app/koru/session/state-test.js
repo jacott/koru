@@ -60,7 +60,7 @@ define(function (require, exports, module) {
 
       sessState.connected(v.conn = {});
 
-      assert.same(v.conn22_1.thisValues[0], v.conn);
+      assert.same(v.conn22_1.firstCall.thisValue, v.conn);
 
       assert(v.conn22_1.calledAfter(v.conn10_1));
       assert(v.onChange.calledAfter(v.conn22_1));

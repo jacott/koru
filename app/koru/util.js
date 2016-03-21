@@ -87,7 +87,7 @@ define(function(require, exports, module) {
      * -0 === +0 (should be false)
      *  http://wiki.ecmascript.org/doku.php?id=harmony:egal
      */
-    egal: egal,
+    egal: Object.is || egal,
 
     /**
      * Only for undefined, null, number, string, boolean, date, array

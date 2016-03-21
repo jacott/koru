@@ -288,7 +288,7 @@ isClient && define(function (require, exports, module) {
 
     "test clear rows": function () {
       assert.dom(v.Each.$render({}), function () {
-        var callback = v.fooList.args[0][0];
+        var callback = v.fooList.args(0, 0);
         v.fooList.yield({id: 1, name: 'r1'});
         v.fooList.yield({id: 2, name: 'r2'});
         v.fooList.yield({id: 3, name: 'r3'});
@@ -323,15 +323,15 @@ isClient && define(function (require, exports, module) {
       assert.dom(v.Each.$render({}), function () {
         refute.dom('li');
         assert.calledOnceWith(v.fooList, TH.match.func);
-        assert.same(v.fooList.args[0][0].count, 1);
+        assert.same(v.fooList.args(0, 0).count, 1);
 
         v.fooList.yield({id: 1, name: 'r1'});
         assert.dom('li', 'r1');
 
         Dom.getCtx(this).updateAllTags();
         assert.calledTwice(v.fooList);
-        assert.same(v.fooList.args[0][0], v.fooList.args[1][0]);
-        assert.same(v.fooList.args[0][0].count, 2);
+        assert.same(v.fooList.args(0, 0), v.fooList.args(1, 0));
+        assert.same(v.fooList.args(0, 0).count, 2);
 
         assert.dom('li', {count: 1});
       });
@@ -339,7 +339,7 @@ isClient && define(function (require, exports, module) {
 
     "test doc and old null": function () {
       assert.dom(v.Each.$render({}), function () {
-        var callback = v.fooList.args[0][0];
+        var callback = v.fooList.args(0, 0);
 
         refute.exception(function () {
           callback(null, null);
@@ -349,7 +349,7 @@ isClient && define(function (require, exports, module) {
 
     "test works with removeInserts": function () {
       assert.dom(v.Each.$render({}), function () {
-        var callback = v.fooList.args[0][0];
+        var callback = v.fooList.args(0, 0);
 
         callback({id: 1, name: 'r1'});
         callback({id: 2, name: 'r2'});
@@ -367,7 +367,7 @@ isClient && define(function (require, exports, module) {
 
     "test ordered": function () {
       assert.dom(v.Each.$render({}), function () {
-        var callback = v.fooList.args[0][0];
+        var callback = v.fooList.args(0, 0);
 
         function sort(a, b) {
           return a.order - b.order;

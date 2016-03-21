@@ -74,7 +74,7 @@ isServer && define(function (require, exports, module) {
 
       assert.calledWith(spy, 'test pw');
 
-      assert.equals(lu.$reload().srp, spy.returnValues[0]);
+      assert.equals(lu.$reload().srp, spy.firstCall.returnValue);
       assert.same(lu.email, 'alice@obeya.co');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});

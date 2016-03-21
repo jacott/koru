@@ -200,7 +200,7 @@ isClient && define(function (require, exports, module) {
         refute(v.sub.isResubscribe);
 
         assert.calledWith(v.pubFunc, 123, 456);
-        assert.same(v.pubFunc.thisValues[0], v.sub);
+        assert.same(v.pubFunc.firstCall.thisValue, v.sub);
 
         assert.isTrue(v.sub2isResub);
 
@@ -261,7 +261,7 @@ isClient && define(function (require, exports, module) {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
 
       assert.calledOnce(v.pubFunc);
-      assert.same(v.pubFunc.thisValues[0], v.sub);
+      assert.same(v.pubFunc.firstCall.thisValue, v.sub);
 
 
       assert.same(v.sub._id, subscribe._nextId.toString(36));

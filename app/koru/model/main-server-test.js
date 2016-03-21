@@ -61,7 +61,7 @@ define(function (require, exports, module) {
 
       assert.calledOnce(v.foo);
       assert.calledWithExactly(v.foo, 1, 2);
-      assert.same(v.foo.thisValues[0], v.conn);
+      assert.same(v.foo.firstCall.thisValue, v.conn);
 
       assert.called(TestModel.docs.transaction);
     },
@@ -155,7 +155,7 @@ define(function (require, exports, module) {
       assert.called(v.afterLocalChange);
       assert.calledWithExactly(v.auth, "u123");
 
-      assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
+      assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
 
       assert.calledWith(Val.assertCheck, "fooid", "string", {baseName: "_id"});
       assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
@@ -186,7 +186,7 @@ define(function (require, exports, module) {
       assert.called(v.afterLocalChange);
       assert.calledWithExactly(v.auth, "u123");
 
-      assert.equals(v.auth.thisValues[0].attributes, v.doc.attributes);
+      assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
     },
 
     'test removeRpc': function () {

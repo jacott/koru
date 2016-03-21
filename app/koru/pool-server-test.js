@@ -80,7 +80,7 @@ isServer && define(function (require, exports, module) {
 
         assert.calledOnceWith(global.setTimeout, TH.match.func, 30000);
 
-        var tofunc = global.setTimeout.args[0][0];
+        var tofunc = global.setTimeout.args(0, 0);
         global.setTimeout.reset();
 
         util.thread.date += 20000;

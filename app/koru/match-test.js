@@ -29,6 +29,13 @@ define(function (require, exports, module) {
       assert.isFalse(sut.id.$test("12"));
     },
 
+    "test non function construction": function () {
+      assert(sut(/abc/).$test('aabcc'));
+      refute(sut(/abc/).$test('aabbcc'));
+      assert(sut([1, sut.any]).$test([1, 'foo']));
+      refute(sut([2, sut.any]).$test([1, 'foo']));
+    },
+
     "test match naming": function () {
       assert.same(''+sut(function (arg) {return true}), "match(function (arg) {return true})");
       assert.same(''+sut(function fooMatch(arg) {return true}), 'match(fooMatch)');
@@ -39,6 +46,7 @@ define(function (require, exports, module) {
       assert.same(''+sut.number, 'match.number');
       assert.same(''+sut.undefined, 'match.undefined');
       assert.same(''+sut.null, 'match.null');
+      assert.same(''+sut.nil, 'match.nil');
       assert.same(''+sut.date, 'match.date');
       assert.same(''+sut.function, 'match.function');
       assert.same(''+sut.func, 'match.func');
@@ -132,6 +140,10 @@ define(function (require, exports, module) {
       assert.isTrue(sut.null.$test(null));
       assert.isFalse(sut.null.$test(''));
       assert.isFalse(sut.null.$test(undefined));
+
+      assert.isTrue(sut.nil.$test(null));
+      assert.isFalse(sut.nil.$test(''));
+      assert.isTrue(sut.nil.$test(undefined));
 
       assert.isTrue(sut.date.$test(new Date));
       assert.isFalse(sut.date.$test(''));

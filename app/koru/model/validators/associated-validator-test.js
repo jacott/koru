@@ -23,8 +23,8 @@ define(function (require, exports, module) {
           doc = {foo_ids: foo_ids};
 
       var forEach = test.stub(Query.prototype, 'forEach', function (func) {
-          func({_id: "abc"});
-          func({_id: "xyz"});
+        func({_id: "abc"});
+        func({_id: "xyz"});
       });
 
       sut(doc,'foo_ids', {filter: true});
@@ -32,7 +32,8 @@ define(function (require, exports, module) {
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, ["abc", "xyz"]);
 
-      var query = forEach.thisValues[0];
+      assert.called(forEach);
+      var query = forEach.firstCall.thisValue;
       assert.equals(query._wheres, {_id: ["xyz", "def", "abc"]});
       assert.equals(query._fields, {_id: true});
     },
@@ -41,7 +42,7 @@ define(function (require, exports, module) {
       var foo_ids = ["abc", "def", "xyz"],
           doc = {foo_ids: foo_ids};
 
-      var forEach = test.stub(Query.prototype, 'forEach');
+      var forEach = test.intercept(Query.prototype, 'forEach');
 
       sut(doc,'foo_ids', {filter: true});
       refute(doc._errors);
@@ -126,11 +127,11 @@ define(function (require, exports, module) {
 
       sut(doc,'bar_ids', 'Foo');
 
-      var query = count.thisValues[0];
+      var query = count.firstCall.thisValue;
       assert.equals(query._wheres, {_id: ["x", "y"]});
       assert.same(query.model, Model.Foo);
 
-      query = count.thisValues[1];
+      query = count.getCall(1).thisValue;
       assert.same(query.model, Model.Foo);
 
       assert.calledTwice(count);
@@ -145,7 +146,7 @@ define(function (require, exports, module) {
       sut(doc,'foo_ids', true);
       refute(doc._errors);
 
-      var query = count.thisValues[0];
+      var query = count.firstCall.thisValue;
 
       assert.equals(query._wheres, {_id: ["x", "y"]});
       assert.same(query.model, Model.Foo);

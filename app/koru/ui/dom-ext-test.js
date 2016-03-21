@@ -30,7 +30,7 @@ isClient && define(function (require, exports, module) {
 
       Dom.autoUpdate(ctx, {field: 'foo_ids'});
 
-      assert.calledWith(ctx.onDestroy, obs.returnValues[0]);
+      assert.calledWith(ctx.onDestroy, obs.firstCall.returnValue);
 
       var foo2 = v.TestModel.create();
 

@@ -100,7 +100,7 @@ isClient && define(function (require, exports, module) {
       v.recvC('Foo', 'f222', v.attrs = {age: 7});
       assert.called(remove);
 
-      assert.same(remove.thisValues[0].singleId, 'f222');
+      assert.same(remove.firstCall.thisValue.singleId, 'f222');
 
     },
 

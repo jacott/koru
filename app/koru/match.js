@@ -7,7 +7,20 @@ define(function(require, exports, module) {
     }
 
     function Match(test, message) {
-      this.$test = test;
+      if (typeof test === 'function')
+        this.$test = test;
+      else switch(test.constructor) {
+      case RegExp:
+        this.$test = function (value) {
+          return typeof value === 'string' &&
+            test.test(value);
+        };
+        break;
+      default:
+        this.$test = function (value) {
+          return util.deepEqual(value, test);
+        };
+      }
       this.message = message || 'match('+(test.name||test)+')';
     }
 
@@ -37,6 +50,7 @@ define(function(require, exports, module) {
     util.extend(match, {
       any: match(function () {return true}, 'match.any'),
       null: match(function (value) {return value === null}, 'match.null'),
+      nil: match(function (value) {return value == null}, 'match.nil'),
       date: match(function (value) {
         return !! value && value.constructor === Date && value.getDate() === value.getDate();
       }, 'match.date'),

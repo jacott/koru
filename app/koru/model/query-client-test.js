@@ -119,10 +119,10 @@ define(function (require, exports, module) {
 
       assert.calledOnce(v.onChange);
 
-      assert.equals(v.onChange.args[0][0].attributes, {name: 'foo new', nested: [{ary: ['f']}]});
-      assert.equals(v.onChange.args[0][1], {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+      assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
+      assert.equals(v.onChange.args(0, 1), {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
 
-      assert.same(v.foo.attributes, v.onChange.args[0][0].attributes);
+      assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     },
 
     "test insertFromServer doc already exists and pending": function () {
@@ -132,10 +132,10 @@ define(function (require, exports, module) {
 
       assert.calledOnce(v.onChange);
 
-      assert.equals(v.onChange.args[0][0].attributes, {name: 'foo new', nested: [{ary: ['f']}]});
-      assert.equals(v.onChange.args[0][1], {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+      assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
+      assert.equals(v.onChange.args(0, 1), {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
 
-      assert.same(v.foo.attributes, v.onChange.args[0][0].attributes);
+      assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
       refute.msg("Should update fromServer; not client")(Query._simDocs.TestModel);
     },
 

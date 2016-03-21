@@ -580,7 +580,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   function checkSpy(spy) {
-    (spy && spy.hasOwnProperty('called')) ||
+    (spy && spy._stubId) ||
       geddon.fail("Argument is not a spy/stub");
   }
 });

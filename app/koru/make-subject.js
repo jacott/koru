@@ -22,12 +22,13 @@ define(['module', './main'], function(module, koru) {
     };
 
     subject[notifyName] = function (first) {
+      var result = first;
       for(var i in observers) {
         var handle = observers[i];
         handle.function.apply(handle, arguments);
       }
 
-      return first;
+      return result;
     };
 
     return subject;
