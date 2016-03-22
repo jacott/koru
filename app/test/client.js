@@ -9,15 +9,10 @@ window.yaajs.config({
 
 window.history.replaceState(null, '', '/');
 
-// register under two names
-define("test/client", function (require, exports, module) {
-  var koru = require('koru/main-client');
-  koru.onunload(module, 'reload');
-});
-
 define(function(require, exports, module) {
   var koru = require('koru/main-client');
   var session = require('koru/session/main');
+  require('koru/test/client');
 
   document.title = 'Koru Test Mode';
   koru.onunload(module, 'reload');

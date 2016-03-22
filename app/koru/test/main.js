@@ -11,8 +11,6 @@ define(function(require, exports, module) {
   require("./runner");
   var geddon = require("./core");
 
-  var RGBA_RE = /\s+rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/g;
-
   Error.stackTraceLimit = 50;
 
   koru._geddon_ = geddon; // helpful for errors finding test name

@@ -17,6 +17,12 @@ define(function(require, exports, module) {
 
   var ls;
 
+  session.provide('T', function (data) {
+    var pattern = data[0];
+    var tests = data[1];
+    test.run(pattern, tests);
+  });
+
   var setItem = localStorage.setItem;
   var getItem = localStorage.getItem;
   var removeItem = localStorage.removeItem;

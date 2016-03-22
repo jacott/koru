@@ -7,10 +7,7 @@ var stat = Future.wrap(fs.stat);
 define(function(require, exports, module) {
   var koru = require('../main');
   var topDir = koru.appDir;
-  var cmdFn = Path.resolve(topDir + '/../tmp/cmd-client.js');
   var util = require('../util');
-
-  try {fs.mkdirSync(topDir+'/.build');} catch(ex) {}
 
   return exports = {
     runTests: function(session, type, pattern, callback) {
@@ -53,15 +50,6 @@ define(function(require, exports, module) {
       if (type === 'none')
         return;
 
-      if (type !== 'server') {
-        session.unload('/.build/cmd-client.js');
-        fs.writeFileSync(cmdFn,
-                         "define(['koru/test/client'],function(TH){TH.run("+
-                         JSON.stringify(pattern)+","+JSON.stringify(cTests)+
-                         ")})");
-        fs.renameSync(cmdFn, topDir + '/.build/cmd-client.js');
-      }
-
       if (type !== 'client') {
         var dest = module.toUrl('test/server-ready.js');
         if (module.ctx.modules['test/server-ready']) {
@@ -83,7 +71,7 @@ define(function(require, exports, module) {
           });
         },
         client: function (conn) {
-          conn.send('L', '/.build/cmd-client.js');
+          conn.sendBinary('T', [pattern, cTests]);
         }
       });
 
