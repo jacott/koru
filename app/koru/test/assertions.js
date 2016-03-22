@@ -164,11 +164,11 @@ define(function(require, exports, module) {
       return true;
     }
 
-    var ekeys = Object.keys(actual);
-
-    if (Object.keys(expected).length !== ekeys.length)
-      return hint ? setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length) : false;
-    return ekeys.every(function (key) {
+    var akeys = Object.keys(actual);
+    var ekeys = Object.keys(expected);
+    if (ekeys.length !== akeys.length)
+      return hint ? setHint(actual, expected, 'lengths differ: ' + akeys.length + ' != ' + ekeys.length) : false;
+    return akeys.every(function (key) {
       return deepEqual(actual[key], expected[key], hint, hintField) ||
         badKey(key);
     });

@@ -23,7 +23,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return equal;
     },
 
-    message: "equality{$diff}"
+    message: "equality but {$diff}"
   });
 
   ga.add('isTrue', {
