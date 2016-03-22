@@ -118,7 +118,7 @@ define(function(require, exports, module) {
       };
 
       require(tests, function () {
-        geddon.start(isServer ? function (runNext) {
+        geddon.start(arguments, isServer ? function (runNext) {
           koru.Fiber(runNext).run();
         } : undefined);
       }, errorLoading);
@@ -130,8 +130,9 @@ define(function(require, exports, module) {
     },
 
     testCase: function (module, option) {
-      koru.onunload(module, geddon.unloadTestcase);
-      return geddon.testCase(module.id.replace(/-test$/, ''), option);
+      var tc = geddon.testCase(module.id.replace(/-test$/, ''), option);
+      module.exports = tc;
+      return tc;
     },
 
     normHTMLStr: function (html) {

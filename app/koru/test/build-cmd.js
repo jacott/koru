@@ -70,8 +70,9 @@ define(function(require, exports, module) {
             TH.run(pattern, sTests);
           });
         },
-        client: function (conn) {
-          conn.sendBinary('T', [pattern, cTests]);
+        clientTests: cTests,
+        client: function (conn, clientTests) {
+          conn.sendBinary('T', [pattern, clientTests]);
         }
       });
 

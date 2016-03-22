@@ -20,6 +20,7 @@ define(function(require, exports, module) {
   session.provide('T', function (data) {
     var pattern = data[0];
     var tests = data[1];
+
     test.run(pattern, tests);
   });
 

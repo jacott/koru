@@ -1,8 +1,6 @@
 define(function(require, exports, module) {
   var util = require('koru/util');
   var geddon = {
-    _testCases: {},
-
     _init: function () {
       this.testCount = this.skipCount = this.assertCount = 0;
     },

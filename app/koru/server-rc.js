@@ -15,11 +15,12 @@ define(function(require, exports, module) {
   remoteControl.engine = 'Server';
 
 
-
   function remoteControl(ws) {
     var session = this;
     var oldLogHandle = session.provide('L', logHandle);
     var oldTestHandle = session.provide('T', testHandle);
+    var testMode = 'none', testExec = {};
+    var testClientCount = 0, pendingClientTests = [];
 
     koru._INTERCEPT = intercept;
 
@@ -27,47 +28,64 @@ define(function(require, exports, module) {
     remoteControl.testHandle = testHandle;
     remoteControl.logHandle = logHandle;
 
+    var clientCount = 0;
     var clients = {};
     for (var key in session.conns) {
       var conn = session.conns[key];
-      clients[conn.engine] = [conn];
+      var cs = clients[conn.engine];
+      if (! cs) cs = clients[conn.engine] = {};
+      cs[key] = newConn(conn);
+    }
+
+    ws.send('AServer');
+
+    function channelKey(conn) {
+      var engine = conn.engine;
+      if (engine === 'Server')
+        return engine;
+      else
+        return engine+' '+conn.sessId;
+    }
+
+    function newConn(conn) {
+      var key = channelKey(conn);
+      ws.send('A'+key);
+      ++clientCount;
+      return {conn: conn, key: key};
     }
 
     session.countNotify.onChange(function (conn, isOpen) {
       if (! conn.engine) return;
       var cs = clients[conn.engine];
-      if (! cs) { cs = clients[conn.engine] = [conn]; }
       if (isOpen) {
-        cs[0] = conn;
-        if (testExec.client && testMode !== 'server') {
-          if (cs[1]) {
-            testExec.client(conn);
-          } else if (testClientCount > testRunCount) {
-            ++testRunCount;
-            cs[1] = true;
-            testExec.client(conn);
-            ws.send('X'+conn.engine);
-          }
+        if (! cs) cs = clients[conn.engine] = {};
+        var channel = cs[conn.sessId];
+        if (! channel) {
+          channel = cs[conn.sessId] = newConn(conn);
         }
-      } else {
-        cs[0] = null;
+        if (testExec.client && testMode !== 'server') {
+          readyForTests(channel);
+        }
+      } else if (cs && (channel = cs[conn.sessId])) {
+        --clientCount;
+        ws.send('D'+channel.key);
+        delete cs[conn.sessId];
+        if (util.isObjEmpty(cs))
+          delete clients[conn.engine];
       }
     });
-
-    var testMode = 'none', testExec = {}, testClientCount = 0, testRunCount = 0;
 
     function testWhenReady() {
       if (testMode !== 'none') {
         if (testMode !== 'server' &&
-            testExec.client && testClientCount > testRunCount) {
+            testExec.client && clientCount) {
+          top:
           for (var key in clients) {
             var cs = clients[key];
-            if (cs[0]) {
-              cs[1] = true;
-              testExec.client(cs[0]);
-              ws.send('X'+key);
-              if (testClientCount === ++testRunCount)
-                break;
+            for (var sessId in cs) {
+              var channel = cs[sessId];
+              if (! readyForTests(channel))
+                break top;
             }
           }
         }
@@ -96,6 +114,24 @@ define(function(require, exports, module) {
             testExec = exec;
             if (mode === 'client')
               testExec.server = null;
+            var ct = testExec.clientTests;
+
+            if (ct) {
+              if (testClientCount === 1)
+                pendingClientTests = [ct];
+              else {
+                var ctLen = ct.length;
+                testClientCount = Math.max(1, Math.min(testClientCount, ctLen));
+                pendingClientTests = new Array(testClientCount);
+                for(var i = 0; i < testClientCount; ++i) {
+                  pendingClientTests[i] = [];
+                }
+
+                for(var i = 0; i < ctLen; ++i) {
+                  pendingClientTests[i % testClientCount].push(ct[i]);
+                }
+              }
+            }
             testWhenReady();
           });
         }).run();
@@ -118,16 +154,30 @@ define(function(require, exports, module) {
       }
     });
 
+    function readyForTests(channel) {
+      if (pendingClientTests.length === 0) return false;
+      channel.tests = pendingClientTests.pop();
+      testExec.client(channel.conn, channel.tests);
+      ws.send('X'+channel.key);
+      return true;
+    }
+
     function testHandle(msg) {
       try {
-        ws.send(msg[0] + this.engine + '\x00' + msg.slice(1));
+        ws.send(msg[0] + channelKey(this) + '\x00' + msg.slice(1));
         if (msg[0] === 'F') {
           var cs = clients[this.engine];
-          if (cs && cs[1]) {
-            cs[1] = false;
-            --testRunCount;
-            if (--testClientCount === 0 && testExec.server) {
-              testWhenReady();
+          var channel = cs && cs[this.sessId];
+          if (channel && channel.tests) {
+            channel.tests = null;
+            if (--testClientCount === 0) {
+              if (testExec.server) {
+                testExec.client = null;
+                testWhenReady();
+                return;
+              }
+            } else if (pendingClientTests.length) {
+              readyForTests(channel);
               return;
             }
           }
@@ -140,9 +190,10 @@ define(function(require, exports, module) {
     }
 
     function logHandle(msg) {
-      this.engine !== 'Server' && console.log('INFO ' + this.engine + ' ' + msg);
+      var key = channelKey(this);
+      key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
       try {
-        ws.send('L' + this.engine + '\x00' + msg);
+        ws.send('L' + channelKey(this) + '\x00' + msg);
       } catch(ex) {
         // ignore since it will just come back to us
       }

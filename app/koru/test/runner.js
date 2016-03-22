@@ -1,11 +1,12 @@
 define(['./core'], function (geddon) {
-  geddon.start = function (runNextWrapper) {
+  geddon.start = function (testCases, runNextWrapper) {
     var tests = geddon._tests = [],
         promise, _runNext,
         next = 0;
 
-    for(var key in geddon._testCases) {
-      var tc = geddon._testCases[key];
+    for(var i = 0; i < testCases.length; ++i) {
+      var tc = testCases[i];
+      if (! tc) continue;
       if (typeof tc.option === 'function')
         tc.option(tc);
       else

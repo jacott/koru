@@ -2,13 +2,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
   geddon.testCase = function (name, option) {
     var tc = new TestCase(name, null, option);
-    geddon._testCases[name] = tc;
-
     return tc;
-  };
-
-  geddon.unloadTestcase = function (name) {
-    delete geddon._testCases[name];
   };
 
   function TestCase (name, tc, option) {
