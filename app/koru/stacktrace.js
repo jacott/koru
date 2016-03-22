@@ -47,7 +47,7 @@ define(['require', 'koru/util-base'], function (require, util) {
       url = url.replace(originRe, '');
 
       if (! util.FULL_STACK) {
-        if (/^(?:koru\/test\/|yaajs|node_modules\/)/.test(url) && ! /-test.js$/.test(url)) {
+        if (/(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) && ! /-test.js$/.test(url)) {
           if (notUs) continue;
         } else if (url === 'index.js') {
           if (stack.length)
