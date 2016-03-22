@@ -38,18 +38,31 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test onClose": function () {
-      assert.dom('#TestSelectMenu [name=select]', function () {
-        sut.popup(this, {
-          onClose: v.onClose = test.stub(),
-          onSelect: function () {return true},
+    "closing": {
+      setUp: function () {
+        assert.dom('#TestSelectMenu [name=select]', function () {
+          sut.popup(this, {
+            onClose: v.onClose = test.stub(),
+            onSelect: function () {return true},
+          });
         });
-      });
 
-      assert.dom('body>.glassPane', function () {
-        Dom.remove(this);
-      });
-      assert.called(v.onClose);
+
+      },
+
+      "test onClose": function () {
+        assert.dom('body>.glassPane', function () {
+          Dom.remove(this);
+        });
+        assert.called(v.onClose);
+      },
+
+      "test closes if parent ctx closes": function () {
+        Dom.remove(v.testSelectMenu);
+        refute.dom('body>.glassPane');
+        assert.called(v.onClose);
+      },
+
     },
 
     "test restores range": function () {
