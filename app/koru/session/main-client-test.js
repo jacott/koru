@@ -5,13 +5,16 @@ define(function (require, exports, module) {
   var message = require('./message');
   var clientSession = require('./main-client');
   var koru = require('../main');
-  var sessState = require('./state');
+  var SessState = require('./state').__init__;
+
+  var sessState;
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.sess = clientSession({
+      sessState = SessState();
+      v.sess = clientSession.__init__(sessState)({
         provide: test.stub(),
         _rpcs: {},
         globalDict: v.gDict = message.newGlobalDict(),
@@ -237,6 +240,9 @@ define(function (require, exports, module) {
     },
 
     "test connection cycle": function () {
+      test.spy(sessState, 'connected');
+      test.spy(sessState, 'retry');
+      test.spy(sessState, 'close');
       test.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
       v.sess.connect();         // connect
@@ -256,6 +262,8 @@ define(function (require, exports, module) {
 
       v.ws.onclose({});         // remote close
 
+      refute(sessState.isReady());
+
       assert.called(sessState.retry);
       assert.calledWith(koru._afTimeout, v.sess.connect, 500);
 
@@ -266,9 +274,18 @@ define(function (require, exports, module) {
       sessState.connected.reset();
 
       v.sess.connect();         // reconnect
+      v.sess.connect();         // reconnect
       v.ws.onopen();            // success
 
       assert.called(sessState.connected);
+
+      v.afTimeoutStop.reset();
+      v.ws.onclose({});         // remote close again
+
+      assert.called(koru._afTimeout);
+
+      v.sess.connect();         // reconnect
+      assert.called(v.afTimeoutStop);
     },
 
     "test before connected": function () {

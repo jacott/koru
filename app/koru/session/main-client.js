@@ -33,16 +33,13 @@ define(function (require, exports, module) {
         connect: connect,
 
         stop: function () {
-          reconnTimeout && reconnTimeout();
-          reconnTimeout = null;
+          stopReconnTimeout();
           sessState.close();
           try {
             connect._ws && connect._ws.close();
           } catch(ex) {}
-          finally {
-            if (connect._ws)
-              connect._ws.onclose({wasClean: true});
-          }
+          connect._ws &&
+            connect._ws.onclose({wasClean: true});
         },
 
         newWs: function (url) {
@@ -86,7 +83,16 @@ define(function (require, exports, module) {
         return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
       }
 
+      function stopReconnTimeout() {
+        if (reconnTimeout) {
+          reconnTimeout();
+          reconnTimeout = null;
+        }
+      }
+
       function connect() {
+        if (connect._ws) return;
+        stopReconnTimeout();
         var ws = connect._ws = session.newWs(url());
         ws.binaryType = 'arraybuffer';
         var conn = {
@@ -119,6 +125,7 @@ define(function (require, exports, module) {
         };
 
         ws.onclose = function (event) {
+          stopReconnTimeout();
           if (heartbeatTO) heartbeatTO();
           heatbeatTime = heartbeatTO = connect._ws = ws = conn = null;
           retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
