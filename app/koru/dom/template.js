@@ -2,6 +2,7 @@ define(function(require, exports, module) {
   var util = require('koru/util');
   var Dom = require('./base');
   var koru = require('koru');
+  var makeSubject = require('koru/make-subject');
 
   var extend = util.extend;
 
@@ -13,6 +14,11 @@ define(function(require, exports, module) {
   var currentCtx, currentElement, currentEvent;
   var _disable_focusout = false;
 
+  var globalIds = 0;
+
+  function getId(ctx) {
+    return ctx.__id || (ctx.__id = (++globalIds).toString(36));
+  }
 
   function DomCtx(template, parentCtx, data) {
     this.template = template;
@@ -30,6 +36,18 @@ define(function(require, exports, module) {
       var list = this.__onDestroy || (this.__onDestroy = []);
       list.push(obj);
       return this;
+    },
+
+    destroyMeWith: function (elm, ctx) {
+      if (elm._koru !== this) throw new Error("element does not match ctx");
+      if (ctx._koru) ctx = ctx._koru;
+      var id = getId(this);
+      var observers = ctx.__destoryObservers;
+      if (! observers) {
+        observers = ctx.__destoryObservers = Object.create(null);
+      }
+      observers[id] = elm;
+      this.__destoryWith = ctx;
     },
 
     element: function () {
@@ -303,10 +321,33 @@ define(function(require, exports, module) {
     destroyData: function (elm) {
       var ctx = elm && elm._koru;
       if (ctx) {
+        var dw = ctx.__destoryWith;
+        if (dw) {
+          ctx.__destoryWith = null;
+          var observers = dw.__destoryObservers;
+          if (observers) {
+            delete observers[ctx.__id];
+            if (util.isObjEmpty(observers))
+              dw.__destoryObservers = null;
+          }
+        }
+        var observers = ctx && ctx.__destoryObservers;
+        if (observers) {
+          ctx.__destoryObservers = null;
+          for (var id in observers) {
+            var withElm = observers[id];
+            var withCtx = withElm._koru;
+            if (withCtx)  {
+              withCtx.__destoryWith = null;
+            }
+            Dom.remove(withElm);
+          }
+        }
+
         if (ctx.__onDestroy) {
           var list = ctx.__onDestroy;
           ctx.__onDestroy = null;
-          for(var i = 0; i < list.length; ++i) {
+          for(var i = list.length - 1; i >=0; --i) {
             var row = list[i];
             if (typeof row === 'function')
               row.call(ctx);

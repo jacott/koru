@@ -837,9 +837,47 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Dom.destroyData, TH.match(function (elm) {
           return elm.tagName === 'DIV';
         }));
-
       },
 
+      "destroyMeWith": {
+        setUp: function () {
+          v.elm = Dom.h({div: "subject"});
+          v.elmCtx = Dom.setCtx(v.elm);
+
+          v.dep = Dom.h({div: "dep"});
+          v.depCtx = Dom.setCtx(v.dep);
+
+          document.body.appendChild(v.elm);
+          document.body.appendChild(v.dep);
+          v.depCtx.destroyMeWith(v.dep, v.elm);
+
+          v.dep2 = Dom.h({div: "dep2"});
+          v.dep2Ctx = Dom.setCtx(v.dep2);
+
+          document.body.appendChild(v.dep2);
+          v.dep2Ctx.destroyMeWith(v.dep2, v.elm);
+        },
+
+        "test removes with": function () {
+          Dom.remove(v.elm);
+          assert.same(v.elm._koru, null);
+          assert.same(v.dep._koru, null);
+          assert.same(v.dep.parentNode, null);
+          assert.same(v.dep2._koru, null);
+          assert.same(v.dep2.parentNode, null);
+        },
+
+        "test detaches if removed": function () {
+          Dom.remove(v.dep);
+          var obs = {};
+          assert(v.dep2Ctx.__id);
+          obs[v.dep2Ctx.__id] = v.dep2;
+          assert.equals(v.elm._koru.__destoryObservers, obs);
+
+          Dom.remove(v.dep2);
+          assert.same(v.elm._koru.__destoryObservers, null);
+        },
+      },
 
       "test no frag if only one child node": function () {
         Dom.newTemplate({
