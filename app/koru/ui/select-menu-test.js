@@ -142,6 +142,20 @@ isClient && define(function (require, exports, module) {
       }));
     },
 
+    "test class lines": function () {
+       assert.dom('#TestSelectMenu [name=select]', function () {
+        v.button = this;
+      });
+      sut.popup(v.button, {
+        list: v.list = [[1, 'One'], 'sep me', [2, 'Two'], {id: 3, name: 'Three', parent: {class: 'foo', 'data-id': 'fuzz'}}],
+      });
+
+      assert.dom('.glassPane', function () {
+        assert.dom('li.sep.me');
+        assert.dom('li.foo[data-id=fuzz]', 'Three');
+      });
+    },
+
     "test selected array data": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
@@ -429,6 +443,10 @@ isClient && define(function (require, exports, module) {
               Dom.addClass(this, 'disabled');
               TH.click(this);
               assert.same(v.elm, undefined);
+              TH.keydown(40);
+              TH.keydown(38);
+              TH.keydown(this, 13);
+              refute.className(v.elm, 'disabled');
             });
           });
           assert.dom('#SelectMenu');

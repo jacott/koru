@@ -28,7 +28,7 @@ define(function(require, exports, module) {
       var mElm = details.container.firstChild;
       var curr = mElm.getElementsByClassName('selected')[0];
       for (var nSel = firstElm(); nSel; nextElm()) {
-        if (Dom.hasClass(nSel, 'hide')) continue;
+        if (Dom.hasClass(nSel, 'hide') || Dom.hasClass(nSel, 'disabled')) continue;
         Dom.removeClass(curr, 'selected');
         Dom.addClass(nSel, 'selected');
         Dom.isInView(nSel, mElm) ||
@@ -120,8 +120,11 @@ define(function(require, exports, module) {
 
   Tpl.List.$helpers({
     items: function (callback) {
-      util.forEach(this.list, function (row) {
-        callback(Array.isArray(row) ? {id: row[0], name: row[1]} : row);
+      util.forEach(this.list, function (row, index) {
+        if (typeof row === 'string')
+          callback({parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}});
+        else
+          callback(Array.isArray(row) ? {id: row[0], name: row[1]} : row);
       });
     },
   });
@@ -132,6 +135,22 @@ define(function(require, exports, module) {
       var elm = $.element;
       var selected = ctx.selected;
       var decorator = ctx.data.decorator;
+
+      var parent = this.parent;
+      if (parent) {
+        for (var key in parent) {
+          var li = elm.parentNode;
+          if (key === 'class') {
+            var classes = parent.class;
+            if (typeof classes === 'string')
+              Dom.addClass(li, classes);
+            else
+              Dom.addClasses(li, classes);
+          } else {
+            li.setAttribute(key, parent[key]);
+          }
+        }
+      }
 
       if (selected && selected[this.id || this._id])
         Dom.addClass(elm.parentNode, 'selected');
