@@ -26,6 +26,13 @@ define(function(require, exports, module) {
       classList && classList.add(name);
     },
 
+    addClasses: function (elm, name) {
+      var classList = elm && elm.classList;
+      if (classList)
+        for(var i = name.length - 1; i >= 0; --i)
+          classList.add(name[i]);
+    },
+
     removeClass: function (elm, name) {
       var classList = elm && elm.classList;
       classList && classList.remove(name);

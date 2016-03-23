@@ -69,8 +69,9 @@ define(function (require, exports, module) {
       refute(Dom.hasClass(null, 'foo'));
       refute(Dom.hasClass(elm, 'foo'));
 
-      Dom.addClass(elm, 'foo');
+      Dom.addClasses(elm, ['foo', 'baz']);
       assert(Dom.hasClass(elm, 'foo'));
+      assert(Dom.hasClass(elm, 'baz'));
 
       Dom.addClass(null, 'foo');
       Dom.addClass(elm, 'foo');
