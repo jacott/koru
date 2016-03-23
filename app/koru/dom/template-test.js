@@ -849,13 +849,13 @@ isClient && define(function (require, exports, module) {
 
           document.body.appendChild(v.elm);
           document.body.appendChild(v.dep);
-          v.depCtx.destroyMeWith(v.dep, v.elm);
+          Dom.destroyMeWith(v.dep, v.elm);
 
           v.dep2 = Dom.h({div: "dep2"});
           v.dep2Ctx = Dom.setCtx(v.dep2);
 
           document.body.appendChild(v.dep2);
-          v.dep2Ctx.destroyMeWith(v.dep2, v.elm);
+          Dom.destroyMeWith(v.dep2, v.elm);
         },
 
         "test removes with": function () {

@@ -153,6 +153,12 @@ define(function(require, exports, module) {
         options = exports.init(options);
       }
 
+      var destroyMeWith = options.destroyMeWith;
+      if (destroyMeWith) {
+        var me = options.container;
+        var meCtx = Dom.getMyCtx(me);
+        meCtx && Dom.destroyMeWith(me, Dom.getCtx(destroyMeWith) || destroyMeWith);
+      }
       return this.reposition(pos, options);
     },
 

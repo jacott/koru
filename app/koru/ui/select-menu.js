@@ -49,7 +49,7 @@ define(function(require, exports, module) {
       var menu = Tpl.$autoRender(options);
       options.rendered && options.rendered(menu.firstElementChild);
       var ctx = Dom.getMyCtx(menu);
-      elmCtx && ctx.destroyMeWith(menu, elmCtx);
+      elmCtx && Dom.destroyMeWith(menu, elmCtx);
       ctx.focusElm = document.activeElement;
       ctx.focusRange = Dom.getRange();
 

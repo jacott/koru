@@ -38,18 +38,6 @@ define(function(require, exports, module) {
       return this;
     },
 
-    destroyMeWith: function (elm, ctx) {
-      if (elm._koru !== this) throw new Error("element does not match ctx");
-      if (ctx._koru) ctx = ctx._koru;
-      var id = getId(this);
-      var observers = ctx.__destoryObservers;
-      if (! observers) {
-        observers = ctx.__destoryObservers = Object.create(null);
-      }
-      observers[id] = elm;
-      this.__destoryWith = ctx;
-    },
-
     element: function () {
       var evals = this.evals;
       evals = evals && this.evals[0];
@@ -316,6 +304,18 @@ define(function(require, exports, module) {
       }
       elm._koru = ctx;
       return ctx;
+    },
+
+    destroyMeWith: function (elm, ctx) {
+      if (ctx._koru) ctx = ctx._koru;
+      var elmCtx = elm._koru;
+      var id = getId(elmCtx);
+      var observers = ctx.__destoryObservers;
+      if (! observers) {
+        observers = ctx.__destoryObservers = Object.create(null);
+      }
+      observers[id] = elm;
+      elmCtx.__destoryWith = ctx;
     },
 
     destroyData: function (elm) {

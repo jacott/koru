@@ -60,6 +60,25 @@ isClient && define(function (require, exports, module) {
       refute.called(sut.init);
     },
 
+    "test closes with destroyMeWith": function () {
+      v.elm = Dom.h({div: {div: "subject"}, id: 'subject'});
+      v.elmCtx = Dom.setCtx(v.elm);
+      document.body.appendChild(v.elm);
+
+      v.dep = Dom.h({div: {section: "dep"}, id: 'dep'});
+      v.depCtx = Dom.setCtx(v.dep);
+
+      sut.appendBelow({
+        container: v.dep,
+        destroyMeWith: v.elm.firstChild,
+        origin: v.elm,
+      });
+
+      assert.dom('#dep');
+      Dom.remove(v.elm);
+      refute.dom('#dep');
+    },
+
     "test repositioning": function () {
       var container = Dom.h({class: 'glassPane', div: {class: 'popup', $style: 'position:absolute', div: {input: ''}}});
       var ctx = Dom.setCtx(container);
