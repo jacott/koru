@@ -120,6 +120,7 @@ define(function(require, exports, module) {
 
   Tpl.List.$helpers({
     items: function (callback) {
+      $.ctx.parentCtx.callback = callback;
       util.forEach(this.list, function (row, index) {
         if (typeof row === 'string')
           callback({parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}});

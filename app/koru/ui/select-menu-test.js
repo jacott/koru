@@ -111,7 +111,12 @@ isClient && define(function (require, exports, module) {
       };
       var items = sut.List._helpers.items;
 
+      $._ctx = {parentCtx: {}};
+      test.onEnd(function () {$._ctx = null});
+
       items.call({list: [v.expect = {name: 123}]}, stub);
+
+      assert.same($.ctx.parentCtx.callback, stub);
 
       assert.same(v.arg, v.expect);
 
@@ -365,6 +370,8 @@ isClient && define(function (require, exports, module) {
           refute.dom('input');
           assert.dom('li', 'One');
           assert.dom('li', 'Two');
+          sut.$ctx(this).callback({id: 'newx', name: 'New'});
+          assert.dom('li', 'New');
         });
       },
 
