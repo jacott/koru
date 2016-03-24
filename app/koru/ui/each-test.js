@@ -396,6 +396,20 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test before": function () {
+      assert.dom(v.Each.$render({}), function () {
+        var callback = v.fooList.args(0, 0);
+
+        callback({id: 1, name: 'r1'});
+        callback({id: 2, name: 'r2'});
+        callback({id: 3, name: 'r3'}, null, this.querySelector('li:nth-child(2)'));
+
+        assert.dom('li:nth-child(1)', 'r1');
+        assert.dom('li:nth-child(2)', 'r3');
+        assert.dom('li:nth-child(3)', 'r2');
+      });
+    },
+
     "test initial insert with sort": function () {
       v.Each.$helpers({
         fooList: function (callback) {

@@ -84,13 +84,14 @@ define(function(require, exports, module) {
     function insert(elm, sort) {
       var a = $.data(elm);
       var before = endEach;
-      if (sort) {
+      if (typeof sort === 'function') {
         var prev;
         for(var prev; (prev = before.previousSibling) !== startEach; before = prev)  {
           var b = $.data(prev);
           if (a !== b && sort(a, b) >= 0) break;
         }
-      }
+      } else if (sort)
+        before = sort;
 
       endEach.parentNode.insertBefore(elm, before);
     }
