@@ -220,6 +220,26 @@ isClient && define(function (require, exports, module) {
       assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);
     },
 
+    "test noFocus": function () {
+      assert.dom('#TestSelectMenu [name=select]', function () {
+        v.searchStub = test.stub();
+        this.focus();
+        sut.popup(this, {
+          noFocus: true,
+          search: function () {},
+          list: [[1, 'One'], [2, 'Two']],
+          onSelect: function (elm, event) {
+            return true;
+          },
+        });
+      });
+      assert.dom('body>.glassPane>#SelectMenu', function () {
+        assert.dom('input[name=search][autocomplete=off]', function () {
+          refute.same(document.activeElement, this);
+        });
+      });
+    },
+
     "test search": function () {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = test.stub();

@@ -58,7 +58,7 @@ define(function(require, exports, module) {
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
         keydownHandler: keydownHandler,
       });
-      Dom.focus(menu);
+      options.noFocus || Dom.focus(menu);
       return menu.firstChild;
     },
 
