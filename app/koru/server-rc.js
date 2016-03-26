@@ -57,16 +57,8 @@ define(function(require, exports, module) {
     session.countNotify.onChange(function (conn, isOpen) {
       if (! conn.engine) return;
       var cs = clients[conn.engine];
-      if (isOpen) {
-        if (! cs) cs = clients[conn.engine] = {};
-        var channel = cs[conn.sessId];
-        if (! channel) {
-          channel = cs[conn.sessId] = newConn(conn);
-        }
-        if (testExec.client && testMode !== 'server') {
-          readyForTests(channel);
-        }
-      } else if (cs && (channel = cs[conn.sessId])) {
+      var channel;
+      if (! isOpen && cs && (channel = cs[conn.sessId])) {
         --clientCount;
         ws.send('D'+channel.key);
         delete cs[conn.sessId];
@@ -164,28 +156,44 @@ define(function(require, exports, module) {
 
     function testHandle(msg) {
       try {
-        ws.send(msg[0] + channelKey(this) + '\x00' + msg.slice(1));
-        if (msg[0] === 'F') {
-          var cs = clients[this.engine];
-          var channel = cs && cs[this.sessId];
-          if (channel && channel.tests) {
-            channel.tests = null;
-            if (--testClientCount === 0) {
-              if (testExec.server) {
-                testExec.client = null;
-                testWhenReady();
-                return;
-              }
-            } else if (pendingClientTests.length) {
-              readyForTests(channel);
+        _testHandle(this, msg);
+      } catch(ex) {
+        koru.error(ex.stack);
+      }
+    }
+
+    function _testHandle(conn, msg) {
+      if (msg[0] === 'A') {
+        if (! cs) cs = clients[conn.engine] = {};
+        var channel = cs[conn.sessId];
+        if (! channel) {
+          channel = cs[conn.sessId] = newConn(conn);
+        }
+        if (testExec.client && testMode !== 'server') {
+          readyForTests(channel);
+        }
+        return;
+      }
+
+      ws.send(msg[0] + channelKey(conn) + '\x00' + msg.slice(1));
+      if (msg[0] === 'F') {
+        var cs = clients[conn.engine];
+        var channel = cs && cs[conn.sessId];
+        if (channel && channel.tests) {
+          channel.tests = null;
+          if (--testClientCount === 0) {
+            if (testExec.server) {
+              testExec.client = null;
+              testWhenReady();
               return;
             }
+          } else if (pendingClientTests.length) {
+            readyForTests(channel);
+            return;
           }
-          if (testClientCount || testExec.server) return;
-          ws.send('Z');
         }
-      } catch(ex) {
-        koru.error(ex);
+        if (testClientCount || testExec.server) return;
+        ws.send('Z');
       }
     }
 

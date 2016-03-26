@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var test = require('./main');
-  var session = require('../session/base');
-  var localStorage = require('../local-storage');
+  var session = require('koru/session');
+  var localStorage = require('koru/local-storage');
   var koru = require('koru');
   var Module = module.constructor;
 
@@ -56,6 +56,8 @@ define(function(require, exports, module) {
     localStorage.getItem = getItem;
     localStorage.removeItem = removeItem;
   });
+
+  test.testHandle('A');
 
   return test;
 });
