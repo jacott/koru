@@ -39,7 +39,6 @@
     "uglify-js": "^2.6.1"
   },
   "devDependencies": {
-    "mongodb": "1.4.31",
     "pg-libpq": ">=1.0.2"
   },
   "engines": {
