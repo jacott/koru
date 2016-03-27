@@ -12,7 +12,8 @@ define(function(require, exports, module) {
   test.logHandle = function (type, msg) {
     if (type === 'ERROR')
       session.send('E', msg);
-    session.send('L', type + ': ' + msg);
+    else
+      session.send('L', type + ': ' + msg);
   };
 
   var ls;

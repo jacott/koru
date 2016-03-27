@@ -61,8 +61,6 @@ define(function(require, exports, module) {
     handleException: function(ex) {
       if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
         koru.unhandledException(ex);
-
-        throw ex;
       }
     },
   });
