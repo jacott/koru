@@ -7,6 +7,7 @@ define(function (require, exports, module) {
   var Val = require('./validation');
   var Future = requirejs.nodeRequire('fibers/future');
   var util = require('../util');
+  var Driver = require('koru/pg/driver');
 
   TH.testCase(module, {
     setUp: function () {
@@ -18,6 +19,43 @@ define(function (require, exports, module) {
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
       v = null;
+    },
+
+    "test util.thread.db": function () {
+      var TestModel = Model.define('TestModel');
+      TestModel.defineFields({name: 'text'});
+      var defDb = Driver.defaultDb;
+      var altDb = Driver.connect(defDb._url + " options='-c search_path=alt'");
+
+      altDb.query('CREATE SCHEMA ALT');
+
+      v.doc = TestModel.create({name: 'bar1'});
+      v.doc = TestModel.create({name: 'bar2'});
+
+      util.thread.db = altDb;
+      test.onEnd(revertTodefault);
+
+      function revertTodefault() {
+        if (altDb) {
+          altDb.query("DROP SCHEMA alt CASCADE");
+          util.thread.db = null;
+          altDb = null;
+        }
+      }
+
+      assert.equals(TestModel.docs._client.query('show search_path'), [{search_path: "alt"}]);
+
+      v.doc = TestModel.create({name: 'foo'});
+      assert.same(TestModel.query.count(), 1);
+
+      util.thread.db = defDb;
+      assert.same(TestModel.query.count(), 2);
+
+      util.thread.db = altDb;
+      assert.same(TestModel.query.count(), 1);
+
+      revertTodefault();
+      assert.same(TestModel.query.count(), 2);
     },
 
     "test invalid findById": function () {

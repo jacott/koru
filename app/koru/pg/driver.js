@@ -118,6 +118,13 @@ Client.prototype = {
     return "Pg:" + this._url;
   },
 
+  get schemaName() {
+    if (! this._schemaName) {
+      this._schemaName = this.query("SELECT current_schema")[0].current_schema;
+    }
+    return this._schemaName;
+  },
+
   end: function () {
     var pool = pools[this._id];
     if (pool) {
@@ -1025,7 +1032,7 @@ function addColumns(table, needCols) {
 
 function readColumns(table) {
   var colQuery = "SELECT * FROM information_schema.columns WHERE table_name = '" +
-        table._name + "'";
+        table._name + "' AND table_schema = '"+table._client.schemaName+"'";
   table._columns = table._client.query(colQuery);
   table._colMap = util.toMap('column_name', null, table._columns);
 }

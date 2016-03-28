@@ -19,6 +19,7 @@ isServer && define(function (require, exports, module) {
     "test connection": function () {
       var db = sut.connect("host=/var/run/postgresql dbname=korutest");
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
+      assert.same(db.schemaName, 'public');
     },
 
     "test defaultDb": function () {

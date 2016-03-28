@@ -196,18 +196,36 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
-      _resetDocs[model.modelName] = function () {docs = null};
+      _resetDocs[model.modelName] = function () {
+        db = docs = null;
+        dbMap = new WeakMap;
+      };
 
       var threadMap = new WeakMap;
+      var dbMap = new WeakMap;
 
       var docs, db;
       util.extend(model, {
         get docs() {
-          return docs = docs || this.db.table(model.modelName, model.$fields);
+          if (! this.db) return;
+          docs = docs || dbMap.get(db);
+          if (docs) return docs;
+
+          dbMap.set(db, docs = db.table(model.modelName, model.$fields));
+          return docs;
         },
         get db() {
-          return db = db || driver.defaultDb;
+          var tdb = util.thread.db || driver.defaultDb;
+          if (tdb !== db) {
+            docs = null;
+            util.thread.db = db = tdb;
+          }
+          return db;
         },
+
+        setDb: function (value) {
+        },
+
         _$docCacheGet: function(id) {
           var dc = threadMap.get(util.thread);
           var doc = dc && dc[id];
