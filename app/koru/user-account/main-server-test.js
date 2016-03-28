@@ -278,7 +278,12 @@ isServer && define(function (require, exports, module) {
     },
 
     "login with token": {
+      setUp: function () {
+        userAccount.init();
+      },
+
       tearDown: function () {
+        userAccount.stop();
         test.intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();

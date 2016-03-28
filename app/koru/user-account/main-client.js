@@ -6,23 +6,6 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var sessState = require('../session/state');
 
-  session.provide('V', function (data) {
-    switch(data[0]) {
-    case 'T':
-      localStorage.setItem('koru.loginToken', data.slice(1).toString());
-      break;
-    case 'S':
-      login.setUserId(data.slice(1).toString() || null);
-      break;
-    case 'F':
-      login.failed();
-      break;
-    case 'C':
-      login.ready();
-      break;
-    }
-  });
-
   koru.onunload(module, function () {
     exports.stop();
   });
@@ -39,10 +22,28 @@ define(function(require, exports, module) {
 
   exports = {
     init: function () {
+      session.provide('V', function (data) {
+        switch(data[0]) {
+        case 'T':
+          localStorage.setItem('koru.loginToken', data.slice(1).toString());
+          break;
+        case 'S':
+          login.setUserId(data.slice(1).toString() || null);
+          break;
+        case 'F':
+          login.failed();
+          break;
+        case 'C':
+          login.ready();
+          break;
+        }
+      });
+
       sessState.onConnect('05', onConnect);
     },
 
     stop: function () {
+      session.unprovide('V');
       sessState.stopOnConnect('05');
     },
 

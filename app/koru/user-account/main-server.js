@@ -10,8 +10,6 @@ define(function(require, exports, module) {
 
   var emailConfig;
 
-  session.provide('V', onMessage);
-
   var model = Model.define('UserLogin', {
     unexpiredTokens: function () {
       var tokens = this.tokens;
@@ -118,6 +116,14 @@ define(function(require, exports, module) {
   });
 
   util.extend(exports, {
+    init: function () {
+      session.provide('V', onMessage);
+    },
+
+    stop: function () {
+      session.unprovide('V');
+    },
+
     model: model,
 
     verifyClearPassword: function (email, password) {
