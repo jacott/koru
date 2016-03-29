@@ -140,6 +140,12 @@ define(function(require, exports, module) {
       if (S.M === response.M) return doc;
     },
 
+    verifyToken: function (email, token) {
+      var doc = model.findBy('email', email);
+      if (doc && doc.unexpiredTokens()[token])
+        return doc;
+    },
+
     createUserLogin: function (attrs) {
       return model.create({
         email: attrs.email,

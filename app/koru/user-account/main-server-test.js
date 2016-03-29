@@ -125,6 +125,15 @@ isServer && define(function (require, exports, module) {
     "test verifyClearPassword": function () {
       var doc = userAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(doc && doc._id, v.lu._id);
+      var doc = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
+      assert.same(doc, undefined);
+    },
+
+    "test verifyToken": function () {
+      var doc = userAccount.verifyToken('foo@bar.co', 'abc');
+      assert.equals(doc && doc._id, v.lu._id);
+      var doc = userAccount.verifyToken('foo@bar.co', 'exp');
+      assert.same(doc, undefined);
     },
 
     "loginWithPassword": {
