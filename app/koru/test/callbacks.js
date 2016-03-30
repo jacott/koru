@@ -19,7 +19,7 @@ define(['./core', '../main'], function (geddon, koru) {
 
     var firstEx;
 
-    for(var i=0;i < cbs.length;++i) {
+    for(var i=cbs.length - 1; i >= 0; --i) {
       try {
         cbs[i](test);
       } catch(ex) {
