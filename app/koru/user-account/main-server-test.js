@@ -123,10 +123,11 @@ isServer && define(function (require, exports, module) {
     },
 
     "test verifyClearPassword": function () {
-      var doc = userAccount.verifyClearPassword('foo@bar.co', 'secret');
-      assert.equals(doc && doc._id, v.lu._id);
-      var doc = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
-      assert.same(doc, undefined);
+      var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
+      assert.equals(docToken && docToken[0]._id, v.lu._id);
+      assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
+      var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
+      assert.same(docToken, undefined);
     },
 
     "test verifyToken": function () {

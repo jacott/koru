@@ -141,7 +141,11 @@ define(function(require, exports, module) {
       var challenge = S.issueChallenge(request);
       var response = C.respondToChallenge(challenge);
 
-      if (S.M === response.M) return doc;
+      if (S.M === response.M) {
+        var token = doc.makeToken();
+        doc.$$save();
+        return [doc, token];
+      }
     },
 
     verifyToken: function (email, token) {
