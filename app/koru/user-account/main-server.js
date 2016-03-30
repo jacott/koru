@@ -61,16 +61,20 @@ define(function(require, exports, module) {
     Model._destroyModel('UserLogin');
   });
 
-  session.defineRpc('SRPBegin', function (request) {
+  session.defineRpc('SRPBegin', SRPBegin);
+
+  function SRPBegin(request) {
     var doc = model.findBy('email', request.email);
     if (! doc) throw new koru.Error(403, 'failure');
     var srp = new SRP.Server(doc.srp);
     this.$srp = srp;
     this.$srpUserAccount = doc;
     return srp.issueChallenge({A: request.A});
-  });
+  }
 
-  session.defineRpc('SRPLogin', function (response) {
+  session.defineRpc('SRPLogin', SRPLogin);
+
+  function SRPLogin(response) {
     exports.assertResponse(this, response);
     var doc = this.$srpUserAccount;
     var token = doc.makeToken();
@@ -83,7 +87,7 @@ define(function(require, exports, module) {
     this.$srp = null;
     this.$srpUserAccount = null;
     return result;
-  });
+  }
 
   var VERIFIER_SPEC = exports.VERIFIER_SPEC = {identity: 'string', salt: 'string', verifier: 'string'};
   session.defineRpc('SRPChangePassword', function (response) {
@@ -193,6 +197,14 @@ define(function(require, exports, module) {
     assertResponse: function (conn, response) {
       if (response && conn.$srp && response.M === conn.$srp.M) return;
       throw new koru.Error(403, 'failure');
+    },
+
+
+    SRPBegin: function (state, request) {
+      return SRPBegin.call(state, request);
+    },
+    SRPLogin: function (state, response) {
+      return SRPLogin.call(state, response);
     },
   });
 

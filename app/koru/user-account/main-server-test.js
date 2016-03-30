@@ -143,6 +143,17 @@ isServer && define(function (require, exports, module) {
         v.request.email = 'foo@bar.co';
       },
 
+      "test direct calling": function () {
+        var storage = {};
+        var result = userAccount.SRPBegin(storage, v.request);
+
+        assert.equals(storage, {$srp: TH.match.any, $srpUserAccount: TH.match.field('_id', v.lu._id)});
+        var response = v.srp.respondToChallenge(result);
+        result = userAccount.SRPLogin(storage, response);
+        assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+        assert.same(result.userId, 'uid111');
+      },
+
       "test success": function () {
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
