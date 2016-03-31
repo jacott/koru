@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
   var Random = require('../random');
-  var session = require('../session/base');
+  var session = require('../session');
   var Val = require('./validation');
   var driver = require('../config!DBDriver');
   var Query = require('./query');
