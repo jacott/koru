@@ -9,7 +9,6 @@ define(function (require, exports, module) {
   koru.onunload(module, 'reload');
 
   function Constructor(sessState) {
-
     return function (session) {
       var waitSends = [];
       var retryCount = 0;
@@ -42,8 +41,8 @@ define(function (require, exports, module) {
             connect._ws.onclose({wasClean: true});
         },
 
-        newWs: function (url) {
-          return new WebSocket(url);
+        newWs: function () {
+          return new WebSocket(url());
         },
 
         heartbeatInterval: 20000,
@@ -78,11 +77,6 @@ define(function (require, exports, module) {
         koru.unload(args[1]);
       });
 
-      function url() {
-        var location = koru.getLocation();
-        return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
-      }
-
       function stopReconnTimeout() {
         if (reconnTimeout) {
           reconnTimeout();
@@ -93,7 +87,7 @@ define(function (require, exports, module) {
       function connect() {
         if (connect._ws) return;
         stopReconnTimeout();
-        var ws = connect._ws = session.newWs(url());
+        var ws = connect._ws = session.newWs();
         ws.binaryType = 'arraybuffer';
         var conn = {
           ws: ws,
@@ -204,7 +198,14 @@ define(function (require, exports, module) {
       return session;
     };
   }
-  exports = Constructor(sessState);
+
+  module.exports = exports = Constructor(sessState, url);
+  exports._url = url;
+
+  function url() {
+    var location = koru.getLocation();
+    return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
+  }
+
   exports.__init__ = Constructor;
-  return exports;
 });
