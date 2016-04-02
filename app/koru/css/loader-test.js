@@ -22,11 +22,16 @@ isClient && define(function (require, exports, module) {
 
     "test load all": function (done) {
       require(['koru/css/loader'], done.wrap(function (loader) {
-        test.stub(session._commands, 'S', done.wrap(function (data) {
+        // proxy S command on to test session
+        TH.session.provide('S', done.wrap(function (data) {
           assert.same(data.split(' ').sort().join(' '),
                       'Lkoru/css/less-compiler-test.less koru/css/loader-test.css koru/css/loader-test2.css');
           done();
         }));
+        test.intercept(session, 'send', function (cmd, data) {
+          TH.session.send(cmd, data);
+        });
+        test.onEnd(function () {TH.session.unprovide('S')});
         loader.loadAll('koru/css');
       }));
     },

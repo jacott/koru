@@ -1,9 +1,12 @@
 define(function(require, exports, module) {
   var test = require('./main');
-  var session = require('koru/session');
+  var sessionBase = require('koru/session/base').__initBase__();
+  var session = require('koru/session/main-client')(sessionBase);
   var localStorage = require('koru/local-storage');
   var koru = require('koru');
   var Module = module.constructor;
+
+  test.session = session;
 
   test.testHandle = function (cmd, msg) {
     session.send('T', cmd+msg);
@@ -59,6 +62,8 @@ define(function(require, exports, module) {
   });
 
   test.testHandle('A');
+
+  session.connect();
 
   return test;
 });

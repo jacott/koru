@@ -199,7 +199,7 @@ define(function (require, exports, module) {
     };
   }
 
-  module.exports = exports = Constructor(sessState, url);
+  module.exports = exports = Constructor(sessState);
   exports._url = url;
 
   function url() {
