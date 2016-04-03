@@ -53,11 +53,6 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
-    "test parseUrlParams": function () {
-      assert.equals(webServer.parseUrlParams('stuff?foo=bar&name=bob'), {foo: 'bar', name: 'bob'});
-      assert.equals(webServer.parseUrlParams({url: 'stuff?foo=bar'}), {foo: 'bar'});
-    },
-
     "test not found html": function () {
       v.req.url = '/koru/.build/notFound.html.js';
 
