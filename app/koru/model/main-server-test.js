@@ -58,6 +58,21 @@ define(function (require, exports, module) {
       assert.same(TestModel.query.count(), 2);
     },
 
+    "test auto Id": function () {
+      var TestModel = Model.define('TestModel');
+      TestModel.defineFields({
+        _id: {type: 'serial', auto: true},
+        name: 'text',
+      });
+
+      TestModel.create({name: 'foo'});
+      TestModel.create({name: 'bar'});
+
+      var doc = TestModel.findBy('name', 'bar');
+      assert(doc);
+      assert.same(doc._id, 2);
+    },
+
     "test invalid findById": function () {
       var TestModel = Model.define('TestModel');
 

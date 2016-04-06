@@ -108,7 +108,8 @@ define(function(require, exports, module) {
 
         BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
         if(doc.attributes._id == null) {
-          changes._id = changes._id || Random.id();
+          if (! model.$fields._id.auto)
+            changes._id = changes._id || Random.id();
           BaseModel._addUserIds(changes, model.userIds, util.thread.userId);
           BaseModel._updateTimestamps(changes, model.createTimestamps, now);
 
@@ -262,6 +263,7 @@ define(function(require, exports, module) {
     },
 
     _insertAttrs: function (model, attrs) {
+      if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
       model.docs.insert(attrs);
       model._$docCacheSet(attrs);
     },

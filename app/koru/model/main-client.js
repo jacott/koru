@@ -95,6 +95,7 @@ define(function(require, exports, module) {
     insert: Query.insert,
 
     _insertAttrs: function (model, attrs) {
+      if (! attrs._id) attrs._id = Random.id();
       model.docs[attrs._id] = new model(attrs);
     },
   };
