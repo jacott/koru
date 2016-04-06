@@ -95,7 +95,7 @@ define(function(require, exports, module) {
   MigrationControl.prototype = {
     constructor: MigrationControl,
 
-    createTable: function (name, fields) {
+    createTable: function (name, fields, indexes) {
       var qname = '"'+name+'"';
       if (this.add) {
         var list = ['_id varchar(24) PRIMARY KEY'];
@@ -108,6 +108,18 @@ define(function(require, exports, module) {
             list.push(colspec);
         }
         this.client.query('CREATE TABLE '+qname+' ('+list.join(',')+')');
+        if (indexes) {
+          indexes.forEach(spec => {
+            var i = 0;
+            var unique = spec[0] === '*unique';
+            if (unique) spec = spec.slice(1);
+            var iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
+            this.client.query((unique ? 'CREATE UNIQUE' : 'CREATE')+
+                              ' INDEX "'+iname+'" ON '+qname+' USING btree ('+
+                              spec.map(field => field.replace(/(^\S+)/, '"$1"'))
+                              .join(',')+')');
+          });
+        }
       } else {
         this.client.query('DROP TABLE IF EXISTS '+qname);
       }

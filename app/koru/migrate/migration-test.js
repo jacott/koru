@@ -21,13 +21,13 @@ isServer && define(function (require, exports, module) {
     "test create": function () {
       sut.addMigration(v.client, '20151003T20:30:20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
-          name: {type: 'text'}
-        });
+          myName: {type: 'text'}
+        }, [['*unique', 'myName DESC', '_id'], ['myName']]);
       });
-      v.client.query('INSERT INTO "TestTable" (_id, name) values ($1,$2)', ["12345670123456789", "foo"]);
+      v.client.query('INSERT INTO "TestTable" (_id, "myName") values ($1,$2)', ["12345670123456789", "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc._id, "12345670123456789");
-      assert.same(doc.name, "foo");
+      assert.same(doc.myName, "foo");
       var row = v.client.query("SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
                                ['TestTable', '_id'])[0];
       assert.equals(row.character_maximum_length, 24);
@@ -37,6 +37,14 @@ isServer && define(function (require, exports, module) {
       assert.same(migs.length, 1);
 
       assert.equals(migs[0].name, '20151003T20:30:20-create-TestModel');
+
+      var indexes = v.client.query('select * from pg_indexes where tablename = $1 ORDER BY indexname', ['TestTable']);
+      assert.same(indexes.length, 3);
+      assert.equals(indexes[0].indexname, 'TestTable_myName');
+      assert.equals(indexes[1].indexname, 'TestTable_myName__id');
+
+      assert.same(indexes[0].indexdef, 'CREATE INDEX "TestTable_myName" ON "TestTable" USING btree ("myName")');
+      assert.same(indexes[1].indexdef, 'CREATE UNIQUE INDEX "TestTable_myName__id" ON "TestTable" USING btree ("myName" DESC, _id)');
 
       sut.addMigration(v.client, '20151003T20:30:20-create-TestModel', function (mig) {
         assert(false, "should not run twice");
@@ -51,6 +59,8 @@ isServer && define(function (require, exports, module) {
 
       assert.same(v.client.query('select exists(select 1 from pg_catalog.pg_class where relname = $1)',
                                  ["TestTable"])[0].exists, false);
+
+
 
     },
 
