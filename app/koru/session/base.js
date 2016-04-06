@@ -35,7 +35,7 @@ define(function(require, exports, module) {
         if (func)
           func.call(conn, data);
         else
-          koru.info('Unexpected websocket message: '+ type, conn.sessId);
+          koru.info('Unexpected session message: '+ type, conn.sessId);
       },
     };
   }

@@ -202,7 +202,7 @@ define(function(require, exports, module) {
   exports._newLocalDict = newLocalDict;
   function newLocalDict() {return {index: 0, k2c: {}, c2k: []}}
 
-  exports.finializeGlobalDict = function (dict) {
+  exports.finalizeGlobalDict = function (dict) {
     if (dict.index === null) return;
     var c2k = dict.c2k;
     var k2c = dict.k2c;
@@ -212,6 +212,7 @@ define(function(require, exports, module) {
       k2c[c2k[i]] = i + delta;
     }
     dict.index = null;
+    return dict;
   };
 
   function getString(dict, word) {

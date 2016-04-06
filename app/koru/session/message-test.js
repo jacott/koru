@@ -9,7 +9,7 @@ define(function (require, exports, module) {
       test = this;
       v = {};
       v.gDict = message.newGlobalDict();
-      message.finializeGlobalDict(v.gDict);
+      message.finalizeGlobalDict(v.gDict);
     },
 
     tearDown: function () {
@@ -76,7 +76,8 @@ define(function (require, exports, module) {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, "Friday");
       message.addToDict(gDict, "x");
-      message.finializeGlobalDict(gDict);
+      assert.same(message.finalizeGlobalDict(gDict), gDict);
+
 
       assert.equals(_encode('x', gDict),  v.ans = [129, 120]);
       assert.same(_decode(v.ans, gDict), 'x');
@@ -161,7 +162,7 @@ define(function (require, exports, module) {
     "test populated object": function () {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'foo');
-      message.finializeGlobalDict(gDict);
+      message.finalizeGlobalDict(gDict);
 
       var msg = _encode({foo: 'bar', baz: 'foo'}, gDict);
 
@@ -234,7 +235,7 @@ define(function (require, exports, module) {
       message.addToDict(dict, "foo");
       message.addToDict(dict, "bár\x00");
 
-      message.finializeGlobalDict(dict);
+      message.finalizeGlobalDict(dict);
 
       assert.same(dict.k2c['foo'], 0xfffd);
       assert.same(dict.k2c["bár\x00"], 0xfffe);
@@ -248,7 +249,7 @@ define(function (require, exports, module) {
       var dict = message.newGlobalDict();
 
       assert.same(message.decodeDict(v.ans.slice(1), 0, dict), 12);
-      message.finializeGlobalDict(dict);
+      message.finalizeGlobalDict(dict);
 
       assert.equals(dict.k2c["bár\x00"], 0xfffe);
 
@@ -259,7 +260,7 @@ define(function (require, exports, module) {
     "test mixed": function () {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'baz', 'bif');
-      message.finializeGlobalDict(gDict);
+      message.finalizeGlobalDict(gDict);
 
       var bin = new Uint8Array([4,7,6,4]);
       var longStr = new Array(200).join('x');
@@ -275,7 +276,7 @@ define(function (require, exports, module) {
     "test unchanged encoding system": function () {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'order');
-      message.finializeGlobalDict(gDict);
+      message.finalizeGlobalDict(gDict);
 
       var obj = ["6", "save", "Ticket", "jJ9MiaHtcdgJzbFvn", {bin_id: "GStTJFXHDZmSkXM4z", order: 256}];
       var u8 = message.encodeMessage("X", obj, gDict).subarray(1);

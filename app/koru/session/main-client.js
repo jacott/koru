@@ -64,7 +64,7 @@ define(function (require, exports, module) {
         session.globalDict = message.newGlobalDict();
 
         message.decodeDict(data[2], 0, session.globalDict);
-        message.finializeGlobalDict(session.globalDict);
+        message.finalizeGlobalDict(session.globalDict);
 
         retryCount = 0;
       });

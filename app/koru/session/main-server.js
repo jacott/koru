@@ -79,7 +79,7 @@ define(function (require, exports, module) {
       _globalDict = _preloadDict;
       _preloadDict = null;
 
-      message.finializeGlobalDict(_globalDict);
+      message.finalizeGlobalDict(_globalDict);
       _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
       return _globalDict;
     }

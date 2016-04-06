@@ -104,7 +104,7 @@ isServer && define(function (require, exports, module) {
 
 
         message.decodeDict(v.msg[2], 0, dict);
-        message.finializeGlobalDict(dict);
+        message.finalizeGlobalDict(dict);
 
         assert.same(dict.k2c['g1'], 0xfffd);
         assert.same(dict.k2c['g2'], 0xfffe);
