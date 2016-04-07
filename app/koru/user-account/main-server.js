@@ -148,8 +148,14 @@ define(function(require, exports, module) {
       }
     },
 
-    verifyToken: function (email, token) {
-      var doc = model.findBy('email', email);
+    verifyToken: function (emailOrComposite, token) {
+      if (token === undefined) {
+        var pair = emailOrComposite.split('|');
+        token = pair[1];
+        var doc = model.findById(pair[0]);
+      } else {
+        var doc = model.findBy('email', emailOrComposite);
+      }
       if (doc && doc.unexpiredTokens()[token])
         return doc;
     },

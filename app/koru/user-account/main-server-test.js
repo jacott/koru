@@ -131,10 +131,12 @@ isServer && define(function (require, exports, module) {
     },
 
     "test verifyToken": function () {
-      var doc = userAccount.verifyToken('foo@bar.co', 'abc');
+      var doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
       assert.equals(doc && doc._id, v.lu._id);
-      var doc = userAccount.verifyToken('foo@bar.co', 'exp');
+      var doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
       assert.same(doc, undefined);
+      var doc = userAccount.verifyToken(v.lu._id+'|abc'); // by composite
+      assert.equals(doc && doc._id, v.lu._id);
     },
 
     "loginWithPassword": {
