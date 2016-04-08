@@ -1,4 +1,4 @@
-/*global WebSocket, */
+/*global WebSocket, KORU_APP_VERSION */
 
 define(function (require, exports, module) {
   var koru = require('../main');
@@ -15,8 +15,8 @@ define(function (require, exports, module) {
       var isSimulation = false;
       var reconnTimeout;
 
-      if (typeof window.KORU_APP_VERSION === 'string')
-        session.versionHash = window.KORU_APP_VERSION;
+      if (! session.versionHash && typeof KORU_APP_VERSION === 'string')
+        session.versionHash = KORU_APP_VERSION;
 
       util.extend(session, {
         send: function (type, msg) {

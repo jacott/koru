@@ -98,10 +98,6 @@
         return util.thread.userId;
       },
 
-      getLocation: function () {
-        return window.location;
-      },
-
       getHashOrigin: function () {
         var l = this.getLocation();
         return l.protocol+'//'+l.host+l.pathname;

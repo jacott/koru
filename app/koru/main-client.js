@@ -25,6 +25,11 @@ define(function(require, exports, module) {
   };
 
 
+  koru.getLocation = function () {
+    return window.location;
+  };
+
+
   // _afTimeout is used by client session; do not override in tests
   koru._afTimeout = koru.afTimeout = function (func, duration) {
     var af = null;
