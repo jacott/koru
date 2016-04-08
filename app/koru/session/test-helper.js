@@ -8,18 +8,19 @@ define(function(require, exports, module) {
 
   return TH.util.reverseExtend({
     sessionConnect: function (ws) {
-      session._onConnection(ws);
+      session.onConnection(ws);
 
       var key = session._sessCounter.toString(36);
       return session.conns[key];
     },
 
     mockWs: function () {
+      var test = geddon.test;
       return {
         upgradeReq: {socket: {}, headers: {}},
-        on: geddon.test.stub(),
-        send: geddon.test.stub(),
-        close: geddon.test.stub(),
+        on: test.stub(),
+        send: test.stub(),
+        close: test.stub(),
       };
     },
 
