@@ -29,9 +29,8 @@ define(function (require, exports, module) {
       rpc: function (name /*, args */) {
         return session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
       },
-      stop: function (func) {
+      stop: function () {
         this.wss.close();
-        IdleCheck.waitIdle(func);
       },
 
       registerGlobalDictionaryAdder: function (module, adder) {

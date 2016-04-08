@@ -6,7 +6,6 @@ isServer && define(function (require, exports, module) {
   var koru = require('../main');
   var message = require('./message');
   var serverSession = require('./main-server');
-  var IdleCheck = require('../idle-check').singleton;
 
   TH.testCase(module, {
     setUp: function () {
@@ -32,12 +31,8 @@ isServer && define(function (require, exports, module) {
       },
 
       "test stop": function () {
-        var waitIdle = test.spy(IdleCheck, 'waitIdle');
-
-        v.sess.stop(v.stub = test.stub());
-        assert.called(v.stub);
+        v.sess.stop();
         assert.called(v.sess.wss.close);
-        assert.calledWith(waitIdle, v.stub);
       },
 
       "test unload client only": function () {
