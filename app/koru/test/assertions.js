@@ -29,7 +29,7 @@ define(function(require, exports, module) {
   };
 
   var refute = geddon.refute = function (truth, msg) {
-    geddon.assert(!truth, msg || 'Did not expect truthness');
+    geddon.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
   assert.msg = function (msg) {
