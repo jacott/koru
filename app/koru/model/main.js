@@ -6,7 +6,6 @@ define(function(require, exports, module) {
   var session = require('../session/base');
   var Random = require('../random');
   var Query = require('./query');
-  var makeSubject = require('../make-subject');
   var registerObserveId = require('./register-observe-id');
   var registerObserveField = require('./register-observe-field');
   var BaseModel = require('./base');
@@ -592,7 +591,6 @@ define(function(require, exports, module) {
       model._fieldValidators = {};
       model._defaults = {};
       model.hasMany = hasMany;
-      makeSubject(model);
       ModelEnv.setupModel(model);
 
       model.fieldTypeMap = {};

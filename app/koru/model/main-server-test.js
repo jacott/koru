@@ -29,24 +29,26 @@ define(function (require, exports, module) {
 
       altDb.query('CREATE SCHEMA ALT');
 
+      var obDef = TestModel.onChange(v.defChanged = test.stub());
+
       v.doc = TestModel.create({name: 'bar1'});
       v.doc = TestModel.create({name: 'bar2'});
+
+      assert.calledTwice(v.defChanged);
+      v.defChanged.reset();
 
       util.thread.db = altDb;
       test.onEnd(revertTodefault);
 
-      function revertTodefault() {
-        if (altDb) {
-          altDb.query("DROP SCHEMA alt CASCADE");
-          util.thread.db = null;
-          altDb = null;
-        }
-      }
+      var obAlt = TestModel.onChange(v.altChanged = test.stub());
 
       assert.equals(TestModel.docs._client.query('show search_path'), [{search_path: "alt"}]);
 
       v.doc = TestModel.create({name: 'foo'});
       assert.same(TestModel.query.count(), 1);
+
+      refute.called(v.defChanged);
+      assert.calledWith(v.altChanged, v.doc);
 
       util.thread.db = defDb;
       assert.same(TestModel.query.count(), 2);
@@ -56,6 +58,17 @@ define(function (require, exports, module) {
 
       revertTodefault();
       assert.same(TestModel.query.count(), 2);
+
+      function revertTodefault() {
+        obDef && obDef.stop();
+        obAlt && obAlt.stop();
+        obDef = obAlt = null;
+        if (altDb) {
+          altDb.query("DROP SCHEMA alt CASCADE");
+          util.thread.db = null;
+          altDb = null;
+        }
+      }
     },
 
     "test auto Id": function () {

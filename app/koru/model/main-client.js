@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   var session = require('../session/client-rpc');
   var clientIndex = require('./index-client');
   var Query = require('./query');
+  var makeSubject = require('../make-subject');
 
   var _support;
 
@@ -88,6 +89,7 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
+      makeSubject(model);
       model.docs = {};
       clientIndex(model);
     },

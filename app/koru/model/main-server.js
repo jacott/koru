@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   var Val = require('./validation');
   var driver = require('../config!DBDriver');
   var Query = require('./query');
+  var makeSubject = require('../make-subject');
 
   var _support, BaseModel;
 
@@ -197,16 +198,29 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
+
       _resetDocs[model.modelName] = function () {
         db = docs = null;
         dbMap = new WeakMap;
       };
 
-      var threadMap = new WeakMap;
+      var docCache = new WeakMap;
+      var notifyMap = new WeakMap;
       var dbMap = new WeakMap;
 
       var docs, db;
       util.extend(model, {
+        notify: function () {
+          var subject = notifyMap.get(model.db);
+          if (subject)
+            return subject.notify.apply(subject, arguments);
+        },
+        onChange: function () {
+          var subject = notifyMap.get(model.db);
+          subject || notifyMap.set(db, subject = makeSubject({}));
+
+          return subject.onChange.apply(subject, arguments);
+        },
         get docs() {
           if (! this.db) return;
           docs = docs || dbMap.get(db);
@@ -228,28 +242,28 @@ define(function(require, exports, module) {
         },
 
         _$docCacheGet: function(id) {
-          var dc = threadMap.get(util.thread);
+          var dc = docCache.get(util.thread);
           var doc = dc && dc[id];
           return doc;
         },
 
         _$docCacheSet: function (doc) {
           var thread = util.thread;
-          var dc = threadMap.get(thread);
-          dc || threadMap.set(thread, dc = {});
+          var dc = docCache.get(thread);
+          dc || docCache.set(thread, dc = {});
           dc[doc._id] = doc;
         },
 
         _$docCacheDelete: function(doc) {
           if (doc._id) {
-            var dc = threadMap.get(util.thread);
+            var dc = docCache.get(util.thread);
             if (dc)
               delete dc[doc._id];
           }
         },
 
         _$docCacheClear: function () {
-          return threadMap.delete(util.thread);
+          return docCache.delete(util.thread);
         },
       });
     },
