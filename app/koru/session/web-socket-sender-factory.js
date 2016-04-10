@@ -85,6 +85,7 @@ define(function (require, exports, module) {
         ws: ws,
         _queueHeatBeat: queueHeatBeat,
       };
+      ws.onerror = onclose;
       ws.onopen = function () {
         ws.send('X1');
         sessState.connected(conn);
@@ -110,7 +111,9 @@ define(function (require, exports, module) {
         session._onMessage(conn, event.data);
       };
 
-      ws.onclose = function (event) {
+      ws.onclose = onclose;
+
+      function onclose(event) {
         stopReconnTimeout();
         if (heartbeatTO) heartbeatTO();
         heatbeatTime = heartbeatTO = connect._ws = ws = conn = null;

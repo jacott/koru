@@ -18,6 +18,14 @@ define(function(require, exports, module) {
   koru.appDir = koru.config.appDir || module.toUrl('').slice(0,-1);
   koru.libDir = requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..');
 
+  koru._afTimeout = koru.afTimeout = function (func, duration) {
+    var cancel = koru.setTimeout(func, duration);
+    return function () {
+      cancel && clearTimeout(cancel);
+      cancel = null;
+    };
+  };
+
   koru.setTimeout = function (func, duration) {
     var fiber = util.Fiber(function () {
       try {
