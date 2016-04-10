@@ -262,10 +262,15 @@ isServer && define(function (require, exports, module) {
     },
 
     "test closed": function () {
+      v.conn.onClose(v.close1 = test.stub());
+      v.conn.onClose(v.close2 = test.stub());
       v.conn._subs.t1 = {stop: v.t1 = test.stub()};
       v.conn._subs.t2 = {stop: v.t2 = test.stub()};
 
       v.conn.close();
+
+      assert.calledWith(v.close1, v.conn);
+      assert.calledWith(v.close2, v.conn);
 
       assert.called(v.t1);
       assert.called(v.t2);

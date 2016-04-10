@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   var message = require('./message');
   var match = require('./match');
   var IdleCheck = require('../idle-check').singleton;
+  var makeSubject = require('koru/make-subject');
 
   exports = function (session) {
     function Connection(ws, sessId, close) {
@@ -12,6 +13,10 @@ define(function(require, exports, module) {
       conn.sessId = sessId;
       conn._subs = {};
       conn.close = function () {
+        if (conn._onClose) {
+          conn._onClose.notify(conn);
+          conn._onClose = null;
+        }
         var subs = conn._subs;
         conn._subs = null;
         conn.ws = null;
@@ -34,6 +39,11 @@ define(function(require, exports, module) {
 
     Connection.prototype = {
       constructor: Connection,
+
+      onClose: function (func) {
+        var subj = this._onClose || (this._onClose = makeSubject({}));
+        return subj.onChange(func);
+      },
 
       onMessage: function (data, flags) {
         var conn = this;
