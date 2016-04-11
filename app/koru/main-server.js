@@ -37,6 +37,20 @@ define(function(require, exports, module) {
     return setTimeout(fiber.run.bind(fiber), duration);
   };
 
+  koru.fiberWrapper = function (func, conn, data) {
+    util.Fiber(function () {
+      try {
+        var thread = util.thread;
+        thread.userId = conn.userId;
+        thread.connection = conn;
+
+        func.call(conn, data);
+      } catch(ex) {
+        koru.error(util.extractError(ex));
+      }
+    }).run();
+  };
+
   module.ctx.onError = function (error, mod) {
     koru.error("error loading: " + mod.id + '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
     throw error;

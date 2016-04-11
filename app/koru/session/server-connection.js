@@ -55,9 +55,6 @@ define(function(require, exports, module) {
         IdleCheck.inc();
         var thread = util.thread;
 
-        thread.userId = conn.userId;
-        thread.connection = conn;
-
         while(current) {
           session._onMessage(conn, current[0]);
           current = current[1];
