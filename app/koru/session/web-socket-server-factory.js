@@ -8,7 +8,7 @@ define(function (require, exports, module) {
   var makeSubject = require('../make-subject');
   var BatchMessage = require('./batch-message');
 
-  return function (session) {
+  return function (session, execWrapper) {
     var Connection = require('./server-connection')(session);
 
     koru.onunload(module, 'reload');
@@ -18,6 +18,7 @@ define(function (require, exports, module) {
     globalDictAdders[module.id] = addToDictionary;
 
     util.extend(session, {
+      execWrapper: execWrapper || koru.fiberWrapper,
       conns: {},
       sendAll: sendAll,
       versionHash: process.env['KORU_APP_VERSION'] || ''+Date.now(),
@@ -154,7 +155,7 @@ define(function (require, exports, module) {
         conn.sendBinary('X', [1, session.versionHash, globalDictEncoded()]);
         koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
         session.countNotify.notify(conn, true);
-
+        return conn;
       }
     }
 

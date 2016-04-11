@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   var util = require('../util');
   var message = require('./message');
 
-  return function (session, sessState) {
+  return function (session, sessState, execWrapper) {
     var waitSends = [];
     var retryCount = 0;
     var isSimulation = false;
@@ -15,6 +15,8 @@ define(function (require, exports, module) {
       session.versionHash = KORU_APP_VERSION;
 
     util.extend(session, {
+      execWrapper: execWrapper || defaultWrapper,
+
       send: function (type, msg) {
         if (sessState.isReady() && connect._ws) connect._ws.send(type+msg);
         else waitSends.push(type+msg);
@@ -192,4 +194,12 @@ define(function (require, exports, module) {
 
     return session;
   };
+
+  function defaultWrapper(func, conn, data) {
+    try {
+      func.call(conn, data);
+    } catch(ex) {
+      koru.error(util.extractError(ex));
+    }
+  }
 });

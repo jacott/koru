@@ -9,8 +9,9 @@ define(function (require, exports, module) {
 
   function Constructor(sessState) {
     return function (session) {
+      session._url = url;
       session.newWs = function () {
-        return new WebSocket(url());
+        return new WebSocket(session._url());
       };
       return WebSocketSenderFactory(session, sessState);
     };

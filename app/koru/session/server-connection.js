@@ -52,23 +52,18 @@ define(function(require, exports, module) {
           return;
         }
         var current = conn._last = [data];
-        koru.Fiber(function () {
-          IdleCheck.inc();
-          var thread = util.thread;
-          thread.userId = conn.userId;
-          thread.connection = conn;
+        IdleCheck.inc();
+        var thread = util.thread;
 
-          while(current) {
-            try {
-              session._onMessage(conn, current[0]);
-            } catch(ex) {
-              koru.error(util.extractError(ex));
-            }
-            current = current[1];
-          }
-          conn._last = null;
-          IdleCheck.dec();
-        }).run();
+        thread.userId = conn.userId;
+        thread.connection = conn;
+
+        while(current) {
+          session._onMessage(conn, current[0]);
+          current = current[1];
+        }
+        conn._last = null;
+        IdleCheck.dec();
       },
 
       send: function (type, data) {
@@ -164,7 +159,6 @@ define(function(require, exports, module) {
   }
 
   exports.filterAttrs = filterAttrs;
-
 
   return exports;
 });

@@ -35,18 +35,17 @@ isServer && define(function (require, exports, module) {
 
     "onMessage": {
       setUp: function () {
-        test.stub(koru, 'Fiber', function (func) {
-          return v.fiber = {run: test.stub(), func: func};
-        });
-        test.onEnd(function () {
-          delete session._commands.t;
-        });
-
         v.tStub = test.stub();
         session.provide('t', v.tFunc = function () {
           v.tStub.apply(this, arguments);
         });
+        test.intercept(util, 'thread', v.thread = {});
       },
+
+      tearDown: function () {
+        delete session._commands.t;
+      },
+
 
       "test waitIdle": function () {
         test.spy(IdleCheck, 'inc');
@@ -57,8 +56,7 @@ isServer && define(function (require, exports, module) {
           v.success = true;
         });
         v.conn.onMessage('t123');
-        refute.called(IdleCheck.inc);
-        v.fiber.func();
+        assert.called(IdleCheck.inc);
         assert.called(IdleCheck.dec);
         assert(v.success);
       },
@@ -72,35 +70,31 @@ isServer && define(function (require, exports, module) {
         v.conn.userId = 'tcuid';
 
         v.conn.onMessage('t123');
-        v.fiber.func();
 
-        assert.same(v.threadConnection, v.conn);
-        assert.same(v.threadUserId, 'tcuid');
+        assert.same(v.thread.connection, v.conn);
+        assert.same(v.thread.userId, 'tcuid');
       },
 
-      "test fiber": function () {
+      "test queued": function () {
+        v.calls = [];
+        test.intercept(session, '_onMessage', function (conn, data) {
+          v.calls.push(data);
+          switch(data) {
+          case 't123':
+            assert.equals(v.conn._last, ['t123']);
+            v.conn.onMessage('t456');
+            assert.equals(v.conn._last, ['t456']);
+            assert.equals(v.calls, ['t123']);
+            break;
+          case 't456':
+            assert.equals(v.conn._last, ['t456']);
+            break;
+          }
+        });
         v.conn.onMessage('t123');
 
-        assert.equals(v.conn._last, ['t123']);
-
-        v.conn.onMessage('t456');
-
-        assert.equals(v.conn._last, ['t456']);
-
-        assert.calledOnce(koru.Fiber);
-        assert.calledOnce(v.fiber.run);
-
-        refute.called(v.tStub);
-
-        var m123 = v.tStub.withArgs('123');
-        var m456 = v.tStub.withArgs('456');
-
-        v.fiber.func();
-
-        assert.called(m123);
-        assert.called(m456);
-
-        assert(m123.calledBefore(m456));
+        assert.equals(v.calls, ['t123', 't456']);
+        assert.equals(v.conn._last, null);
       },
     },
 
