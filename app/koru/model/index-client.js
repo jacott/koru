@@ -13,8 +13,7 @@ define(function(require, exports, module) {
       },
     });
 
-    model.addIndex = function () {
-      var fields = util.slice(arguments);
+    model.addIndex = function (...fields) {
       fields.push('_id');
       return this.addUniqueIndex.apply(this, fields);
     };

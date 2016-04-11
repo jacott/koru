@@ -26,15 +26,15 @@ isClient && define(function (require, exports, module) {
         sendBinary: v.sendBinary = test.stub(),
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
-        v.recvP = function () {
-          func(util.slice(arguments));
+        v.recvP = function (...args) {
+          func(args.slice());
         };
         return true;
       }));
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
-          v['recv'+type] = function () {
-            func(util.slice(arguments));
+          v['recv'+type] = function (...args) {
+            func(args.slice());
           };
           return true;
         }));
@@ -210,9 +210,9 @@ isClient && define(function (require, exports, module) {
 
     "test resubscribe": function () {
       v.sub = subscribe('foo', 'x');
-      v.pubFunc = function () {
+      v.pubFunc = function (...args) {
         assert.same(this, v.sub);
-        assert.equals(koru.util.slice(arguments), ['x']);
+        assert.equals(args.slice(), ['x']);
         assert.isTrue(this.isResubscribe);
       };
 

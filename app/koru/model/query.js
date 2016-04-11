@@ -55,9 +55,9 @@ define(function(require, exports, module) {
           return condition(this, '_wheres', params, value);
       },
 
-      whereSome: function () {
+      whereSome: function (...args) {
         var conditions = (this._whereSomes = this._whereSomes || []);
-        conditions.push(util.slice(arguments));
+        conditions.push(args);
         return this;
       },
 

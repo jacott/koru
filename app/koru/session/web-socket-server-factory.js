@@ -25,8 +25,8 @@ define(function (require, exports, module) {
       unload: unload,
       load: load,
       totalSessions: 0,
-      rpc: function (name /*, args */) {
-        return session._rpcs[name].apply(util.thread, util.slice(arguments, 1));
+      rpc: function (name, ...args) {
+        return session._rpcs[name].apply(util.thread, args);
       },
       onConnection: onConnection,
       stop: function () {

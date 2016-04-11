@@ -28,10 +28,10 @@ define(function(require, exports, module) {
   var ga = geddon.assertions;
 
   ga.add('difference', {
-    assert: function (count, diffFunc, /* [query], */ func) {
+    assert: function (count, diffFunc, ...query) {
       if (diffFunc.modelName) {
-        var query = util.slice(arguments, 2, -1)[0];
-        func = arguments[arguments.length - 1];
+        var func = query.pop();
+        query = query[0];
         var model = diffFunc;
         diffFunc = function () {
           query = query || model.query;

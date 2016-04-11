@@ -83,9 +83,7 @@
       logger: function () {
         var args = new Array(arguments.length + 1);
         args[0] = new Date().toISOString();
-        for(var i = 1; i < args.length; ++i) {
-          args[i] = arguments[i-1];
-        }
+        for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
 
         console.log.apply(console, args);
       },
@@ -138,17 +136,16 @@
     function logDebug() {
       var args = new Array(arguments.length + 1);
       args[0] = '\x44EBUG';
-      for(var i = 1; i < args.length; ++i) {
-        args[i] = arguments[i-1];
-      }
+      for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
+
       koru.logger.apply(koru, args);
     }
 
     logDebug.inspect = function () {
       var args = new Array(arguments.length);
-      for(var i = 0; i < arguments.length; ++i) {
+      for(var i = 0; i < arguments.length; ++i)
         args[i] = util.inspect(arguments[i-1]);
-      }
+
       koru.logger('\x44EBUG ', args.join(', '));
     };
 

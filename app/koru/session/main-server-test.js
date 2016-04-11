@@ -208,9 +208,9 @@ isServer && define(function (require, exports, module) {
 
 
       "test result": function () {
-        v.run(function (one, two, three) {
+        v.run(function (...args) {
           v.thisValue = this;
-          v.args = util.slice(arguments);
+          v.args = args.slice();
           return 'result';
         });
 

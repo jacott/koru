@@ -110,9 +110,9 @@ isServer && define(function (require, exports, module) {
     },
 
     "test resubscribe": function () {
-      v.pubFunc = function () {
+      v.pubFunc = function (...args) {
         assert.same(this, v.sub);
-        assert.equals(koru.util.slice(arguments), [1,2,3]);
+        assert.equals(args, [1,2,3]);
         assert.isTrue(this.isResubscribe);
       };
       v.sub.onStop(v.onStop = function () {

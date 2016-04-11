@@ -28,10 +28,9 @@ define(function (require, exports, module) {
     session.send('E',koru.util.extractError(ev.error));
   }
 
-  koru.logger = function (type) {
-    console.log.apply(console, arguments);
-    var args = new Array(arguments.length - 1);
-    for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
+  koru.logger = function (...args) {
+    console.log.apply(console, args);
+    var type = args[0];
     if (type === 'ERROR')
       session.send('E', args.join(' '));
     else

@@ -59,8 +59,8 @@ define(function(require, exports, module) {
           }, duration);
         });
       },
-      tellServer: function (msg) {
-        var args = util.slice(arguments);
+      tellServer: function (...args) {
+        var msg = args[0];
         return new Promise(function (resolve, reject) {
           var entry = {func: function (data) {
             try {

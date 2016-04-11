@@ -75,22 +75,20 @@ define(function(require, exports, module) {
           return set.hasOwnProperty(value);
         }, name || 'match.has');
       },
-      or: function () {
-        var len = arguments.length;
-        if (typeof arguments[len-1] === 'string')
-          var name = arguments[--len];
-        var args = util.slice(arguments, 0, len);
+      or: function (...args) {
+        var len = args.length;
+        if (typeof args[len-1] === 'string')
+          var name = args.pop();
         return match(function (value) {
           return args.some(function (match) {
             return match.$test(value);
           });
         }, name || 'match.or');
       },
-      and: function () {
-        var len = arguments.length;
-        if (typeof arguments[len-1] === 'string')
-          var name = arguments[--len];
-        var args = util.slice(arguments, 0, len);
+      and: function (...args) {
+        var len = args.length;
+        if (typeof args[len-1] === 'string')
+          var name = args.pop();
         return match(function (value, msg) {
           var mthd = msg ? '$throwTest' : '$test';
 

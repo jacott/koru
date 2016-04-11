@@ -19,8 +19,8 @@ define(function(require, exports, module) {
     var subs = {};
     var ready = false;
 
-    session.sendP = function (id, name, args) {
-      ready && session.sendBinary('P', util.slice(arguments));
+    session.sendP = function (...args) {
+      ready && session.sendBinary('P', args);
     };
 
     session.provide('P', function (data) {
@@ -56,13 +56,11 @@ define(function(require, exports, module) {
       }
     });
 
-    function Subcribe(name /*, args..., callback */) {
+    function Subcribe(name, ...args) {
       if (! publish._pubs[name]) throw new Error("No client publish of " + name);
 
       var callback = arguments[arguments.length - 1];
-      var sub = new ClientSub(
-        (++nextId).toString(36), name, util.slice(arguments, 1)
-      );
+      var sub = new ClientSub((++nextId).toString(36), name, args);
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
         return sub;
       subs[sub._id] = sub;

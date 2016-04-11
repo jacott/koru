@@ -211,8 +211,8 @@ define(function(require, exports, module) {
 
     ensureArray: ensureType,
 
-    ensure: function (type/*, args */) {
-      ensureType(type, util.slice(arguments, 1));
+    ensure: function (type, ...args) {
+      ensureType(type, args);
     },
 
     errorsToString: function (doc) {
@@ -309,11 +309,11 @@ define(function(require, exports, module) {
       delete validators[key];
     },
 
-    addError: function (doc,field,message /* arguments */) {
+    addError: function (doc,field, ...args) {
       var errors = doc._errors || (doc._errors = {}),
           fieldErrors = errors[field] || (errors[field] = []);
 
-      fieldErrors.push(util.slice(arguments, 2));
+      fieldErrors.push(args);
     },
   };
 

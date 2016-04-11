@@ -21,9 +21,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    yields: function () {
-      var args = new Array(arguments.length);
-      for(var i = arguments.length - 1; i >= 0 ; --i) args[i] = arguments[i];
+    yields: function (...args) {
       this._yields = args;
       return this;
     },
@@ -34,9 +32,7 @@ define(function(require, exports, module) {
         util.inspect(this.original, 1);
     },
 
-    withArgs: function () {
-      var args = new Array(arguments.length);
-      for(var i = arguments.length - 1; i >= 0 ; --i) args[i] = arguments[i];
+    withArgs: function (...args) {
       var spy = function() {
         return spy.subject.apply(this, arguments);
       };
@@ -116,9 +112,7 @@ define(function(require, exports, module) {
       }
     },
 
-    calledWith: function () {
-      var args = new Array(arguments.length);
-      for(var i = arguments.length - 1; i >= 0 ; --i) args[i] = arguments[i];
+    calledWith: function (...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         if (list.length > args.length)
@@ -128,9 +122,7 @@ define(function(require, exports, module) {
       });
     },
 
-    calledWithExactly: function () {
-      var args = new Array(arguments.length);
-      for(var i = arguments.length - 1; i >= 0 ; --i) args[i] = arguments[i];
+    calledWithExactly: function (...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         return deepEqual(list, args);
@@ -209,9 +201,7 @@ define(function(require, exports, module) {
   });
 
   var callProto = {
-    calledWith: function () {
-      var args = new Array(arguments.length);
-      for(var i = arguments.length - 1; i >= 0 ; --i) args[i] = arguments[i];
+    calledWith: function (...args) {
       return deepEqual(this.args, args);
     },
   };

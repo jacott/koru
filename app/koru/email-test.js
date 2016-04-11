@@ -59,8 +59,8 @@ isServer && define(function (require, exports, module) {
 
       test.onEnd(function () {Email.SmtpPool = SmtpPool});
 
-      Email.SmtpPool = function () {
-        v.smtpPollArgs = util.slice(arguments);
+      Email.SmtpPool = function (...args) {
+        v.smtpPollArgs = args.slice();
         return SmtpStub();
       };
 

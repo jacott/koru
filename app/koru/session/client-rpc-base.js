@@ -13,10 +13,11 @@ define(function(require, exports, module) {
 
       _msgId: 0,
 
-      rpc: function (name /*, args */) {
-        var func = arguments[arguments.length - 1];
+      rpc: function (name, ...args) {
+        var func = args[args.length - 1];
         if (typeof func !== 'function') func = null;
-        var args = util.slice(arguments, 1, func ? -1 : arguments.length);
+        else
+          args.length = args.length - 1;
 
         if (isSimulation) {
           this._rpcs[name] && this._rpcs[name].apply(util.thread, args);

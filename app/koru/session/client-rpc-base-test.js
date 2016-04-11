@@ -20,8 +20,8 @@ define(function (require, exports, module) {
         globalDict: message.newGlobalDict(),
       }, sessState);
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
-        v.recvM = function () {
-          func(util.slice(arguments));
+        v.recvM = function (...args) {
+          func(args);
         };
         return true;
       }));
@@ -99,8 +99,8 @@ define(function (require, exports, module) {
       v.recM(msgId.toString(36), 'e', '404,global cb');
       assert.calledOnceWith(koru.globalCallback, 404, 'global cb');
 
-      function rpcSimMethod() {
-        v.args = util.slice(arguments);
+      function rpcSimMethod(...args) {
+        v.args = args.slice();
       }
     },
 
@@ -153,9 +153,9 @@ define(function (require, exports, module) {
 
       assert.same(v.sess._msgId, fooId+1);
 
-      function rpcSimMethod(one, two, three) {
+      function rpcSimMethod(...args) {
         v.thisValue = this;
-        v.args = util.slice(arguments);
+        v.args = args.slice();
         fooId = v.sess._msgId;
         assert.calledWith(v.sendBinary, 'M', [fooId.toString(36), "foo.rpc"].concat(v.args));
         assert.isTrue(v.sess.isSimulation);
@@ -214,8 +214,8 @@ define(function (require, exports, module) {
         return true;
       }));
 
-      function rpcSimMethod() {
-        v.args = util.slice(arguments);
+      function rpcSimMethod(...args) {
+        v.args = args.slice();
       }
     },
 

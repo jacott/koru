@@ -23,8 +23,8 @@ isClient && define(function (require, exports, module) {
       });
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
-          v['recv'+type] = function () {
-            func(util.slice(arguments));
+          v['recv'+type] = function (...args) {
+            func(args.slice());
           };
           return true;
         }));

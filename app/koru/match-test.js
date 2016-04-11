@@ -95,6 +95,11 @@ define(function (require, exports, module) {
       assert.isFalse(mor.$test({}));
       assert.isFalse(mor.$test(null));
       v.assertThrows(mor, new Date(), 'mymatch');
+
+      mor = sut.or(sut.number, sut.string);
+      assert.isTrue(mor.$test(1));
+      assert.isTrue(mor.$test("a"));
+      assert.isFalse(mor.$test(false));
     },
 
     "test match.and": function () {

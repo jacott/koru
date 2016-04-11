@@ -487,10 +487,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   delegate('calledWithExactly');
 
   ga.add('calledOnceWith', {
-    assert:  function (spy /* arguments */) {
+    assert:  function (spy, ...args) {
       checkSpy(spy);
-      var args = new Array(arguments.length - 1);
-      for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
       this.args = args;
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
@@ -514,10 +512,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   function delegate(meth) {
     ga.add(meth, {
-      assert:  function (spy) {
+      assert:  function (spy, ...args) {
         checkSpy(spy);
-        var args = new Array(arguments.length - 1);
-        for(var i = 0; i < args.length; ++i) args[i] = arguments[i+1];
         this.args = args;
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {

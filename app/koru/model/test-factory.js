@@ -9,10 +9,8 @@ define(function(require, exports, module) {
       nameGen = {};
     },
 
-    createList: function (number, creator /* arguments */) {
+    createList: function (number, creator, ...args) {
       var list = [];
-      var args = new Array(arguments.length - 2);
-      for(var i = 0; i < args.length; ++i) args[i] = arguments[i+2];
 
       var func = typeof args[0] === 'function' ? args.shift() : null;
 
