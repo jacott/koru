@@ -181,10 +181,15 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
     intercept: function (object, prop, replacement, restore) {
       var orig = Object.getOwnPropertyDescriptor(object, prop);
+
       if (replacement) {
-        var func = function() {
-          return replacement.apply(this, arguments);
-        };
+        if (typeof replacement === 'function') {
+          var func = function() {
+            return replacement.apply(this, arguments);
+          };
+        } else {
+          func = replacement;
+        }
         func._actual = orig && orig.value;
       } else {
         var func = function () {};
