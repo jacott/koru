@@ -23,7 +23,7 @@ define(function(require, exports, module) {
     msg = msg || 'Expected truthness';
     if (__msg) {
       if (typeof __msg === 'function') __msg = __msg();
-      msg = format("{i0} {1}", __msg, msg);
+      msg = `${__msg}; ${msg}`;
     }
     geddon.fail(msg);
   };

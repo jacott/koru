@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   util.Fiber = requirejs.nodeRequire('fibers');
 
   // Fix fibers making future enumerable
-  var future = requirejs.nodeRequire('fibers/future');
+  var future = util.Future = requirejs.nodeRequire('fibers/future');
   delete Function.prototype.future;
   Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
 

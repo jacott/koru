@@ -1,5 +1,4 @@
 var fs = require('fs');
-var Future = requirejs.nodeRequire('fibers/future');
 var vm = require('vm');
 
 define(function(require, exports, module) {
@@ -212,7 +211,7 @@ define(function(require, exports, module) {
     function intercept(obj) {
       interceptObj = obj;
       ws.send('I' + util.extractError(new Error("interrupt")));
-      future = new Future;
+      future = new util.Future;
       try {
         return future.wait();
       } finally {

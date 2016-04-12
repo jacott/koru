@@ -1,5 +1,3 @@
-var Future = requirejs.nodeRequire('fibers/future');
-
 function noDebug() {}
 
 define(function(require, exports, module) {
@@ -28,7 +26,7 @@ define(function(require, exports, module) {
       }
 
       if (v.count === v.max) {
-        var future = new Future;
+        var future = new util.Future;
         addTail(v, 'wait', {future: future});
 
         return future.wait();
@@ -36,7 +34,7 @@ define(function(require, exports, module) {
 
       ++v.count;
 
-      var future = new Future;
+      var future = new util.Future;
       v.create(function (err, conn) {
         if (err) {
           --v.count;
