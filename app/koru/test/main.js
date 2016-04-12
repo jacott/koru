@@ -116,10 +116,8 @@ define(function(require, exports, module) {
         exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
       };
 
-      require(tests, function () {
-        geddon.start(arguments, isServer ? function (runNext) {
-          koru.Fiber(runNext).run();
-        } : undefined);
+      require(tests, function (...args) {
+        koru.Fiber(() => {geddon.start(args)}).run();
       }, errorLoading);
 
       function errorLoading(err) {

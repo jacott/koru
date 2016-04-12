@@ -133,6 +133,9 @@ Client.prototype = {
     delete pools[this._id];
   },
 
+  _getConn: function () {return getConn(this)},
+  _releaseConn: function () {return releaseConn(this)},
+
   withConn: function(func) {
     var tx = this._weakMap.get(util.thread);
     if (tx)
@@ -206,17 +209,21 @@ Client.prototype = {
         else
           tx.savepoint = 1;
         try {
+          var ex;
           query(tx.conn, "SAVEPOINT s"+tx.savepoint);
           var result = func.call(this, tx);
           query(tx.conn, "RELEASE SAVEPOINT s"+tx.savepoint);
           return result;
-        } catch(ex) {
+        } catch(ex1) {
+          ex = ex1;
           query(tx.conn, "ROLLBACK TO SAVEPOINT s"+tx.savepoint);
           runOnAborts(tx, 'ROLLBACK');
-          if (ex !== 'abort') throw ex;
+          if (ex === 'abort')
+            ex = null;
         } finally {
           --tx.savepoint;
           tx._onAborts = onAborts;
+          if (ex) throw ex;
         }
       } else try {
         tx.transaction = 'COMMIT';
