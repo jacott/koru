@@ -32,6 +32,8 @@ define(function(require, exports, module) {
   }
 
   function findAll(dir) {
+    if (/jira/.test(dir)) throw new Error(dir);
+
     if (dir.match(/(^[./]|[./]\.)/)) throw new koru.Error(500, 'Illegal directory name');
 
     loadDirs.hasOwnProperty(dir) || queue(dir, function (isNew, result) {
