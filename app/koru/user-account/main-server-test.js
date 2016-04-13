@@ -135,7 +135,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(doc && doc._id, v.lu._id);
       var doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
       assert.same(doc, undefined);
-      var doc = userAccount.verifyToken(v.lu._id+'|abc'); // by composite
+      var doc = userAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
       assert.equals(doc && doc._id, v.lu._id);
     },
 

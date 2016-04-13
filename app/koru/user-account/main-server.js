@@ -148,13 +148,11 @@ define(function(require, exports, module) {
       }
     },
 
-    verifyToken: function (emailOrComposite, token) {
-      if (token === undefined) {
-        var pair = emailOrComposite.split('|');
-        token = pair[1];
-        var doc = model.findById(pair[0]);
+    verifyToken: function (emailOrId, token) {
+      if (emailOrId.indexOf('@') === -1) {
+        var doc = model.findById(emailOrId);
       } else {
-        var doc = model.findBy('email', emailOrComposite);
+        var doc = model.findBy('email', emailOrId);
       }
       if (doc && doc.unexpiredTokens()[token])
         return doc;

@@ -251,6 +251,8 @@ define(function(require, exports, module) {
 
       var desc = Object.getOwnPropertyDescriptor(object, property);
       var orig = desc ? desc.value : object[property];
+      if (orig && typeof orig.restore === 'function')
+        throw new Error(`Already stubbed ${property}`);
       if (typeof orig === 'function') {
         var func = stubFunction(orig, stubProto);
         func._replacement = repFunc;
