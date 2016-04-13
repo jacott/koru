@@ -14,6 +14,7 @@ define(function(require, exports, module) {
       .execv(process.execPath, argv);
   };
 
+  koru.onunload(module, 'reload');
 
   koru.appDir = koru.config.appDir || module.toUrl('').slice(0,-1);
   koru.libDir = requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..');
@@ -43,6 +44,7 @@ define(function(require, exports, module) {
         var thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
+        thread.db = conn.db;
 
         func.call(conn, data);
       } catch(ex) {

@@ -9,9 +9,11 @@ define(function(require, exports, module) {
   delete Function.prototype.future;
   Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
 
+  var clientThread = {};
 
   Object.defineProperty(util, 'thread', {configurable: true, get: function () {
-    return util.Fiber.current ? (util.Fiber.current.appThread || (util.Fiber.current.appThread = {})) : {};
+    var current = util.Fiber.current;
+    return current ? (current.appThread || (current.appThread = {})) : clientThread;
   }});
 
   return util;

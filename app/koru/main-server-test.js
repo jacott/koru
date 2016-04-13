@@ -11,6 +11,7 @@ define(function (require, exports, module) {
     },
 
     tearDown: function () {
+      cleanup();
       v = null;
     },
 
@@ -26,14 +27,21 @@ define(function (require, exports, module) {
     },
 
     "test fiberWrapper": function () {
+      cleanup();
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 
-      sut.fiberWrapper(v.stub = test.stub(), v.conn = {}, v.data = [1, 2]);
+      sut.fiberWrapper(function (data) {
+        v.thread = util.extend({This: this, data: data}, util.thread);
+      }, v.conn = {userId: 'u123', db: "mydb"}, v.data = [1, 2]);
       assert.called(v.run);
       util.Fiber.args(0, 0)();
-      assert.calledWith(v.stub, v.data);
+      assert(v.thread);
 
-      assert.same(v.stub.firstCall.thisValue, v.conn);
+      assert.equals(v.thread.userId, "u123");
+      assert.equals(v.thread.db, "mydb");
+      assert.same(v.thread.connection, v.conn);
+      assert.same(v.thread.This, v.conn);
+      assert.same(v.thread.data, v.data);
 
       util.Fiber.reset();
       test.stub(sut, 'error');
@@ -42,4 +50,8 @@ define(function (require, exports, module) {
       assert.calledWith(sut.error, TH.match(/Foo/));
     },
   });
+
+  function cleanup() {
+    util.thread.db = util.thread.connection = util.thread.userId = null;
+  }
 });
