@@ -5,6 +5,7 @@ isClient && define(function (require, exports, module) {
   var Form = require('./form');
   var formTpl = require('../html!./form-test');
   var util = require('../util');
+  var Route = require('./route');
 
   var $ = Dom.current;
 
@@ -27,6 +28,70 @@ isClient && define(function (require, exports, module) {
       assert.same(elmId.call({_id: 'fooId'}, "bar"), 'bar_fooId');
 
       assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
+    },
+
+    "test submitFunc": function () {
+      var top = Dom.h({
+        id: "top",
+        div: {
+          class: 'fields',
+          div: [
+            {input: '', $name: 'name', $value: 'foo'},
+            {input: '', $name: 'age', $value: '12'},
+          ],
+        }
+      });
+      document.body.appendChild(top);
+
+      var ctx = Dom.setCtx(top);
+      ctx.data = {$save: function () {
+        this._errors = {name: [['bad name']]};
+      }};
+
+      test.stub(Dom, 'stopEvent');
+
+      var sf = Form.submitFunc('top', v.opts = {
+        success: v.success = test.stub(),
+      });
+
+      sf();
+
+      assert.called(Dom.stopEvent);
+
+      assert.same(ctx.data.name, 'foo');
+      assert.same(ctx.data.age, '12');
+
+
+      assert.dom('#top', function () {
+        assert.dom('[name=name].error+error>div', 'bad name');
+      });
+
+      refute.called(v.success);
+
+      ctx.data = {$save: function () {
+        return true;
+      }};
+
+      sf();
+
+      assert.called(v.success);
+
+      v.opts.save = test.stub().returns(true);
+      v.opts.success = 'back';
+
+      test.stub(Route.history, 'back');
+
+      sf();
+
+      assert.calledWith(v.opts.save, ctx.data, top.querySelector('.fields'));
+      assert.called(Route.history.back);
+
+      v.opts.success = {};
+      test.stub(Route, 'replacePath');
+
+      sf();
+
+      assert.calledWith(Route.replacePath, v.opts.success);
     },
 
     "test helper checked": function () {

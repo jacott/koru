@@ -88,7 +88,7 @@ define(function(require, exports, module) {
 
     updateInput: Dom.updateInput,
 
-    submitFunc: function(elmId, successPage, extraSetup) {
+    submitFunc: function(elmId, options) {
       return function (event) {
         Dom.stopEvent();
 
@@ -99,9 +99,18 @@ define(function(require, exports, module) {
 
         if (! form) throw new Error('no "fields" class within ' + elmId);
         Tpl.fillDoc(doc, form);
-        extraSetup && extraSetup(doc, elm);
 
-        if (doc.$save()) {
+        if (options.success === undefined && options.save === undefined)
+          options = {success: options};
+
+        if (options.save)
+          var result = options.save(doc, form, elm);
+        else
+          var result = doc.$save();
+
+        var successPage = options.success;
+
+        if (result) {
           switch(typeof successPage) {
           case 'object':
             Route.replacePath(successPage);
