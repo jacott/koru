@@ -270,7 +270,10 @@ define(function(require, exports, module) {
 
     insert: function (doc) {
       var model = doc.constructor;
-      model.docs.insert(doc.attributes);
+      var result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+      if (Array.isArray(result))
+        doc.attributes._id = result[0]._id;
+
       model._$docCacheSet(doc.attributes);
       BaseModel._callAfterObserver(doc, null);
       model.notify(doc, null);

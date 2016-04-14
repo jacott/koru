@@ -353,14 +353,17 @@ Table.prototype = {
     });
   },
 
-  insert: function (params) {
+  insert: function (params, suffix) {
     this._ensureTable();
+
     params = toColumns(this, params);
 
     var sql = 'INSERT INTO "'+this._name+'" ('+params.cols.map(function (col) {
       return '"'+col+'"';
     }).join(',')+') values (' +
           params.cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
+
+    if (suffix) sql += ` ${suffix}`;
 
     return performTransaction(this, sql, params);
   },

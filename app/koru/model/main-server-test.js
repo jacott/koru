@@ -79,7 +79,8 @@ define(function (require, exports, module) {
       });
 
       TestModel.create({name: 'foo'});
-      TestModel.create({name: 'bar'});
+      var bar = TestModel.create({name: 'bar'});
+      assert.same(bar._id, 2);
 
       var doc = TestModel.findBy('name', 'bar');
       assert(doc);

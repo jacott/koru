@@ -50,6 +50,15 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
+    "test insert suffix": function () {
+      v.foo = sut.defaultDb.table('Foo', {
+        _id: 'integer',
+        name: 'text',
+      });
+
+      assert.equals(v.foo.insert({_id: 123, name: 'a name'}, 'RETURNING name'), [{name: 'a name'}]);
+    },
+
     "test override _id spec": function () {
       v.foo = sut.defaultDb.table('Foo', {
         _id: 'integer',
