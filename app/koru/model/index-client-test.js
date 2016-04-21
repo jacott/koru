@@ -1,4 +1,5 @@
 define(function (require, exports, module) {
+  'use strict';
   var test, v;
   var TH = require('./test-helper');
   var Model = require('./main');
@@ -12,6 +13,7 @@ define(function (require, exports, module) {
         id1: 'text',
         id2: 'text',
       });
+      util.thread.db = 'foo';
 
       v.obSpy = test.spy(v.TestModel._indexUpdate, 'onChange');
       v.idx = v.TestModel.addUniqueIndex('id2', 'id1');
@@ -23,7 +25,37 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
+      util.thread.db = null;
+      delete Model._databases.foo;
+      delete Model._databases.bar;
       v = null;
+    },
+
+    "test changing db": function () {
+      util.thread.db = 'bar';
+
+      var bar1 = v.TestModel.create({id1: '3', id2: '4'});
+
+      assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
+
+      util.thread.db = 'foo';
+
+      assert.same(v.idx({id1: '3', id2: '4'}), v.doc1._id);
+
+      v.doc1.id1 = '4';
+      v.doc1.$$save();
+
+      util.thread.db = 'bar';
+
+      assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
+
+      bar1.$update('id1', '4');
+
+      assert.same(v.idx({id1: '4', id2: '4'}), bar1._id);
+
+      util.thread.db = 'foo';
+
+      assert.same(v.idx({id1: '4', id2: '4'}), v.doc1._id);
     },
 
     "test adding": function () {

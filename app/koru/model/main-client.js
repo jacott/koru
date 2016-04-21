@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  'use strict';
   var koru = require('../main');
   var util = koru.util;
   var Random = require('../random');
@@ -9,18 +10,43 @@ define(function(require, exports, module) {
 
   var _support;
 
+  var dbs = {};
+  var thread = util.thread;
+
+  function getProp(db, modelName, prop) {
+    var obj = dbs[db];
+    if (! obj) return false;
+    obj = obj[modelName];
+    return (obj && obj[prop]) || false;
+  }
+
+  function getSetProp(db, modelName, prop, setter) {
+    var obj = dbs[db] || (dbs[db] = {});
+    obj = obj[modelName] || (obj[modelName] = {});
+
+    return obj[prop] || (obj[prop] = setter());
+  }
+
   var ModelEnv = {
     save: save,
     put: put,
 
     destroyModel: function (model, drop) {
       if (! model) return;
-      model.docs = null;
-      Query._destroyModel(model);
+
+      let modelName = model.modelName;
+
+      for (let db in dbs) {
+        delete dbs[db][modelName];
+      }
     },
 
     init: function (BaseModel, supportBase, modelProperties) {
       _support = supportBase;
+
+      Object.defineProperty(BaseModel, '_databases', {enumerable: false, get: function () {return dbs}});
+      Object.defineProperty(BaseModel, '_getProp', {enumerable: false, value: getProp});
+      Object.defineProperty(BaseModel, '_getSetProp', {enumerable: false, value: getSetProp});
 
       util.extend(modelProperties, {
         findById: findById,
@@ -90,7 +116,39 @@ define(function(require, exports, module) {
 
     setupModel: function (model) {
       makeSubject(model);
-      model.docs = {};
+
+      var modelName = model.modelName;
+      var db, docs;
+
+      function chkdb() {
+        var tdb = thread.db || 'global';
+        if (tdb !== db) {
+          docs = null;
+          thread.db = db = tdb;
+        }
+        return db;
+      }
+
+      Object.defineProperty(model, 'db', {configurable: true, get: chkdb});
+
+      function setDocs() {return {}}
+      makeSubject(model);
+
+      util.extend(model, {
+        get docs() {
+          chkdb();
+          if (docs) return docs;
+          docs = getSetProp(db, modelName, 'docs', setDocs);
+          return docs;
+        },
+        set docs(value) {
+          chkdb();
+          docs = docs || getSetProp(db, modelName, 'docs', () => value);
+          dbs[db][modelName].docs = value;
+          model._indexUpdate.reloadAll();
+          docs = value;
+        },
+      });
       clientIndex(model);
     },
 

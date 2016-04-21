@@ -3,20 +3,25 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var defSessState = require('../session/state');
   var Model = require('./base');
-  var defSession = require('../session/main');
 
-  function Constructor(sessState, session) {
+  var thread = util.thread;
+
+  function Constructor(sessState) {
     return function(Query) {
       var syncOb, stateOb;
-      var simDocs = {};
 
       util.extend(Query, {
         revertSimChanges: function () {
-          for (var modelName in simDocs) {
+          var dbs = Model._databases[util.thread.db||'global'];
+          if (! dbs) return;
+
+          for (var modelName in dbs) {
             var model = Model[modelName];
             var modelDocs = model && model.docs;
             if (! modelDocs) continue;
-            var docs = simDocs[modelName];
+            var docs = dbs[modelName].simDocs;
+            if (! docs) continue;
+            dbs[modelName].simDocs = {};
             for(var id in docs) {
               var doc = modelDocs[id];
               var fields = docs[id];
@@ -38,7 +43,6 @@ define(function(require, exports, module) {
               }
             }
           }
-          simDocs = {};
         },
 
         insert: function (doc) {
@@ -91,19 +95,27 @@ define(function(require, exports, module) {
         _reset: reset,
 
         _unload: unload,
-
-        _destroyModel: function (model) {
-          delete simDocs[model.modelName];
-        },
-
-        get _simDocs() {return simDocs},
       });
 
       reset();
 
       util.extend(Query.prototype, {
+        get docs() {
+          return this._docs || (this._docs = this.model.docs);
+        },
         withIndex: function (idx, params) {
+          var orig = thread.db;
+          thread.db = this._db || orig;
           this._index = idx(params) || {};
+          thread.db = orig;
+          return this;
+        },
+
+        withDB: function (db) {
+          var orig = thread.db;
+          this._db = thread.db = db;
+          this._docs = this.model.docs;
+          thread.db = orig;
           return this;
         },
 
@@ -170,7 +182,7 @@ define(function(require, exports, module) {
         count: function (max) {
           var count = 0;
           if (! this.model) return 0;
-          var docs = this.model.docs;
+          var docs = this.docs;
           this.forEach(function (doc) {
             ++count;
             return count === max;
@@ -183,7 +195,7 @@ define(function(require, exports, module) {
         },
 
         findOne: function(id) {
-          var doc = this.model.docs[id];
+          var doc = this.docs[id];
           if (! doc) return;
           var attrs = doc.attributes;
 
@@ -241,23 +253,25 @@ define(function(require, exports, module) {
           var count = 0;
           var self = this;
           var model = self.model;
-          var docs = model.docs;
-          if (sessState.pendingCount() && self.isFromServer) {
-            if (fromServer(model, self.singleId, null) === null) {
-              var doc = docs[self.singleId];
-              delete docs[self.singleId];
-              doc && notify(model, null, doc, self.isFromServer);
+          util.withDB(this._db||util.thread.db, () => {
+            var docs = this.docs;
+            if (sessState.pendingCount() && self.isFromServer) {
+              if (fromServer(model, self.singleId, null) === null) {
+                var doc = docs[self.singleId];
+                delete docs[self.singleId];
+                doc && notify(model, null, doc, self.isFromServer);
+              }
+              return 1;
             }
-            return 1;
-          }
-          self.forEach(function (doc) {
-            ++count;
-            Model._callBeforeObserver('beforeRemove', doc);
-            if (sessState.pendingCount()) {
-              recordChange(model, doc.attributes);
-            }
-            delete docs[doc._id];
-            notify(model, null, doc, self.isFromServer);
+            self.forEach(doc => {
+              ++count;
+              Model._callBeforeObserver('beforeRemove', doc);
+              if (sessState.pendingCount()) {
+                recordChange(model, doc.attributes);
+              }
+              delete docs[doc._id];
+              notify(model, null, doc, self.isFromServer);
+            });
           });
           return count;
         },
@@ -273,58 +287,62 @@ define(function(require, exports, module) {
           var self = this;
           var count = 0;
           var model = self.model;
-          var docs = model.docs;
+          var docs = this.docs;
           var items;
           if (sessState.pendingCount() && self.isFromServer) {
             var changes = fromServer(model, self.singleId, origChanges);
             var doc = docs[self.singleId];
             if (doc) {
               util.applyChanges(doc.attributes, changes);
-              for(var noop in changes) {
-                notify(model, doc, changes, self.isFromServer);
-                break;
-              }
+              util.withDB(this._db||util.thread.db, () => {
+                for(var noop in changes) {
+                  notify(model, doc, changes, self.isFromServer);
+                  break;
+                }
+              });
             }
             return 1;
           }
-          self.forEach(function (doc) {
-            var changes = util.deepCopy(origChanges);
-            ++count;
-            var attrs = doc.attributes;
+          util.withDB(this._db||util.thread.db, () => {
+            self.forEach(function (doc) {
+              var changes = util.deepCopy(origChanges);
+              ++count;
+              var attrs = doc.attributes;
 
-            if (self._incs) for (var field in self._incs) {
-              changes[field] = attrs[field] + self._incs[field];
-            }
+              if (self._incs) for (var field in self._incs) {
+                changes[field] = attrs[field] + self._incs[field];
+              }
 
-            sessState.pendingCount() && recordChange(model, attrs, changes);
-            util.applyChanges(attrs, changes);
+              sessState.pendingCount() && recordChange(model, attrs, changes);
+              util.applyChanges(attrs, changes);
 
-            var itemCount = 0;
+              var itemCount = 0;
 
-            if (items = self._addItems) for(var field in items) {
-              var list = attrs[field] || (attrs[field] = []);
-              util.forEach(items[field], function (item) {
-                if (util.addItem(list, item) == null) {
-                  sessState.pendingCount() && recordItemChange(model, attrs, field);
-                  changes[field + ".$-" + ++itemCount] = item;
-                }
-              });
-            }
+              if (items = self._addItems) for(var field in items) {
+                var list = attrs[field] || (attrs[field] = []);
+                util.forEach(items[field], function (item) {
+                  if (util.addItem(list, item) == null) {
+                    sessState.pendingCount() && recordItemChange(model, attrs, field);
+                    changes[field + ".$-" + ++itemCount] = item;
+                  }
+                });
+              }
 
-            if (items = self._removeItems) for(var field in items) {
-              var match, list = attrs[field];
-              util.forEach(items[field], function (item) {
-                if (list && (match = util.removeItem(list, item)) !== undefined) {
-                  sessState.pendingCount() && recordItemChange(model, attrs, field);
-                  changes[field + ".$+" + ++itemCount] = match;
-                }
-              });
-            }
+              if (items = self._removeItems) for(var field in items) {
+                var match, list = attrs[field];
+                util.forEach(items[field], function (item) {
+                  if (list && (match = util.removeItem(list, item)) !== undefined) {
+                    sessState.pendingCount() && recordItemChange(model, attrs, field);
+                    changes[field + ".$+" + ++itemCount] = match;
+                  }
+                });
+              }
 
-            for(var key in changes) {
-              notify(model, doc, changes, self.isFromServer);
-              break;
-            }
+              for(var key in changes) {
+                notify(model, doc, changes, self.isFromServer);
+                break;
+              }
+            });
           });
           return count;
         },
@@ -343,7 +361,7 @@ define(function(require, exports, module) {
         if (this._index) {
           findByIndex(this, this._index, func);
 
-        } else for(var id in this.model.docs) {
+        } else for(var id in this.docs) {
           var doc = this.findOne(id);
           if (doc && func(doc) === true)
             break;
@@ -365,7 +383,7 @@ define(function(require, exports, module) {
 
       function fromServer(model, id, changes) {
         var modelName = model.modelName;
-        var docs = simDocs[modelName];
+        var docs = Model._getProp(model.db, modelName, 'simDocs');
         if (! docs) return changes;
 
         if (! changes) {
@@ -435,8 +453,10 @@ define(function(require, exports, module) {
           keys[key] = util.deepCopy(attrs[key]);
       }
 
+      function newEmptyObj() {return {}}
+
       function simDocsFor(model) {
-        return simDocs[model.modelName] || (simDocs[model.modelName] = {});
+        return Model._getSetProp(model.db, model.modelName, 'simDocs', newEmptyObj);
       }
 
       function reset() {
@@ -447,11 +467,15 @@ define(function(require, exports, module) {
         });
 
         stateOb = sessState.onChange(function (ready) {
-          if (! ready) for(var name in Model) {
+          if (ready) return;
+
+          var dbs = Model._databases[util.thread.db||'global'];
+          if (! dbs) return;
+          for(var name in dbs) {
             var model = Model[name];
             if (! model) continue;
             var docs = model.docs;
-            var sd = simDocs[name] = {};
+            var sd = dbs[name].simDocs = {};
             for (var id in docs) {
               sd[id] = 'new';
             }
@@ -476,7 +500,7 @@ define(function(require, exports, module) {
     };
   }
 
-  exports = Constructor(defSessState, defSession);
+  exports = Constructor(defSessState);
   exports.__init__ = Constructor;
 
   return exports;

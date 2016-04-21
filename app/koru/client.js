@@ -1,4 +1,5 @@
 define(function (require, exports, module) {
+  'use strict';
   var koru = require('./main');
   var session = require('./session/main');
   require('./ui/helpers');
@@ -28,9 +29,8 @@ define(function (require, exports, module) {
     session.send('E',koru.util.extractError(ev.error));
   }
 
-  koru.logger = function (...args) {
+  koru.logger = function (type, ...args) {
     console.log.apply(console, args);
-    var type = args[0];
     if (type === 'ERROR')
       session.send('E', args.join(' '));
     else

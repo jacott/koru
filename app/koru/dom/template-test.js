@@ -1,4 +1,5 @@
 isClient && define(function (require, exports, module) {
+  'use strict';
   var test, v;
   var TH = require('koru/test');
   var DomTemplate = require('./template');

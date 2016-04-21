@@ -14,6 +14,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
+      util.thread.db = 'foo';
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     },
@@ -22,7 +23,28 @@ define(function (require, exports, module) {
       Model._destroyModel('TestModel', 'drop');
       Model._destroyModel('TestModel2', 'drop');
       sessState._resetPendingCount();
+      util.thread.db = null;
+      delete Model._databases.foo;
+      delete Model._databases.foo2;
       v = null;
+    },
+
+    "test withDB": function () {
+      util.withDB('foo2', () => v.TestModel.create({age: 3}));
+
+      var ocDB = [];
+      test.onEnd(v.TestModel.onChange((doc, was) => {
+        ocDB.push(util.thread.db, was);
+      }).stop);
+
+      v.TestModel.query.update('age', 2);
+
+      v.TestModel.query.withDB('foo2').update('age', 7);
+
+      assert.equals(ocDB, ['foo', {age: 5}, 'foo2', {age: 3}]);
+
+      assert.equals(v.TestModel.query.map(doc => doc.age), [2]);
+      assert.equals(v.TestModel.query.withDB('foo2').map(doc => doc.age), [7]);
     },
 
     "test empty Query": function () {
@@ -85,7 +107,7 @@ define(function (require, exports, module) {
 
       assert(v.TestModel.exists({_id: 'foo4'}));
 
-      assert.equals(Object.keys(Query._simDocs.TestModel), ['foo1']);
+      assert.equals(Object.keys(Model._databases.foo.TestModel.simDocs), ['foo1']);
     },
 
     "test nested update after connection lost": function () {
@@ -136,7 +158,7 @@ define(function (require, exports, module) {
       assert.equals(v.onChange.args(0, 1), {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
-      refute.msg("Should update fromServer; not client")(Query._simDocs.TestModel);
+      refute.msg("Should update fromServer; not client")(Model._databases.foo.TestModel.simDocs);
     },
 
     "test updating array item": function () {
@@ -191,13 +213,13 @@ define(function (require, exports, module) {
 
       stateOC.yield(false);
 
-      var simDocs = MockQuery._simDocs;
+      var simDocs = Model._databases.foo.TestModel.simDocs;
 
-      assert(simDocs.TestModel);
+      assert(simDocs);
 
-      assert.same(simDocs.TestModel.foo123, 'new');
-      assert.same(simDocs.TestModel.foo2, 'new');
-      assert.same(simDocs.TestModel2.moe1, 'new');
+      assert.same(simDocs.foo123, 'new');
+      assert.same(simDocs.foo2, 'new');
+      assert.same(Model._databases.foo.TestModel2.simDocs.moe1, 'new');
 
       var pending = true;
 
@@ -225,7 +247,7 @@ define(function (require, exports, module) {
 
         assert.same(v.foo.name, 'bar');
 
-        var tmchanges = Query._simDocs.TestModel;
+        var tmchanges = Model._databases.foo.TestModel.simDocs;
 
         assert.equals(tmchanges[v.foo._id].name, 'foo');
 
@@ -244,7 +266,7 @@ define(function (require, exports, module) {
         assert.same(v.foo.name, 'foo');
         assert.same(v.foo.age, 5);
 
-        assert.equals(Query._simDocs, {});
+        assert.equals(Model._databases.foo.TestModel.simDocs, {});
 
         assert.calledWith(v.change, TH.matchModel(v.foo), {name: 'baz', age: 9});
       },
@@ -277,7 +299,7 @@ define(function (require, exports, module) {
       "test nested structures": function () {
         v.TestModel.query.update({"nested.0.arg.0": 'f'});
 
-        var tmchanges = Query._simDocs.TestModel;
+        var tmchanges = Model._databases.foo.TestModel.simDocs;
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['m']}]);
 

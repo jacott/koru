@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  'use strict';
   var util = require('koru/util');
   var makeSubject = require('../make-subject');
 
@@ -18,13 +19,14 @@ define(function(require, exports, module) {
       return this.addUniqueIndex.apply(this, fields);
     };
 
-    model.addUniqueIndex = function () {
-      var fields = arguments;
-      var len = fields.length;
-      var leadLen = len - 1;
+    model.addUniqueIndex = function (...fields) {
+      const len = fields.length;
+      const leadLen = len - 1;
+      var db;
       var idx;
+      var indexes = {};
 
-      var _tmpModel = new model();
+      const _tmpModel = new model();
 
       function tmpModel(doc, changes) {
         _tmpModel.attributes = doc;
@@ -32,10 +34,10 @@ define(function(require, exports, module) {
         return _tmpModel;
       }
 
-
       var uIndex = function (keys) {
-        var ret = idx;
-        for(var i = 0; ret && i < len; ++i) {
+        var ret = getIdx();
+
+        for(let i = 0; ret && i < len; ++i) {
           if (! keys.hasOwnProperty(fields[i])) return ret;
           ret = ret[keys[fields[i]]];
         }
@@ -51,10 +53,22 @@ define(function(require, exports, module) {
         return results;
       };
 
+      function getIdx() {
+        if (model.db === db)
+          return idx;
+
+        db = model.db;
+        idx = indexes[db];
+        if (! idx) idx = indexes[db] = {};
+
+        return idx;
+      }
+
       uIndex.reload = function () {
-        idx = {};
+        getIdx();
+        idx = indexes[db] = {};
         var docs = model.docs;
-        for(var id in docs) {
+        for(let id in docs) {
           onChange(docs[id]);
         }
       };
@@ -65,9 +79,10 @@ define(function(require, exports, module) {
       handle = null;
 
       function onChange(doc, old) {
+        var idx = getIdx();
         if (doc) {
           if (old) {
-            for(var i = 0; i < len; ++i) {
+            for(let i = 0; i < len; ++i) {
               var field = fields[i];
               if (old.hasOwnProperty(field) && doc[field] != old[field]) {
                 // make a temporary old version

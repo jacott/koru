@@ -110,9 +110,8 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      koru.logger = function (...args) {
+      koru.logger = function (type, ...args) {
         console.log.apply(console, args);
-        var type = args[0];
         exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
       };
 
