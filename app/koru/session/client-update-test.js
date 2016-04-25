@@ -24,7 +24,7 @@ isClient && define(function (require, exports, module) {
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
           v['recv'+type] = function (...args) {
-            func(args.slice());
+            func.call(v.sess, args.slice());
           };
           return true;
         }));
@@ -42,6 +42,8 @@ isClient && define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('Foo', 'drop');
+      util.thread.db = null;
+      delete Model._databases.foo01;
       v = null;
     },
 
@@ -75,6 +77,14 @@ isClient && define(function (require, exports, module) {
       v.attrs._id = 'f123';
       assert.equals(foo.attributes, v.attrs);
       assert.calledWith(insertSpy, v.Foo, 'f123', v.attrs);
+
+      v.sess.db = 'foo01';
+      v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 7});
+
+      var foo = v.Foo.findById('f123');
+
+      assert.same(foo.age, 5);
+      assert.same(v.Foo.query.withDB('foo01').fetchOne().age, 7);
     },
 
     "test changed": function () {

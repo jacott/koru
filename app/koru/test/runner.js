@@ -25,7 +25,13 @@ define(['./core'], function (geddon) {
       });
     } else {
       geddon.runCallBacks('start');
-      _runNext = runNext;
+      _runNext = function () {
+        try {
+          runNext();
+        } catch(ex) {
+          geddon.abort(ex);
+        }
+      };
       _runNext();
       if (geddon.abnormalEnd)
         geddon.runCallBacks('end');;
@@ -125,6 +131,7 @@ define(['./core'], function (geddon) {
 
       if (promise.timeout) {
         clearTimeout(promise.timeout);
+
         if (abort) runNext(abort);
         else setTimeout(runNext, 0);
       }

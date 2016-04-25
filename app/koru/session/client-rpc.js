@@ -1,8 +1,7 @@
 define(function(require, exports, module) {
-  var session = require('./base');
-  var sessState = require('./state');
+  var session = require('./main');
 
-  require('./client-rpc-base')(session, sessState);
+  require('./client-rpc-base')(session);
 
   return session;
 });

@@ -5,30 +5,31 @@ define(function (require, exports, module) {
   var message = require('./message');
   var rpc = require('./client-rpc-base');
   var koru = require('../main');
-  var sessState = require('./state');
+  var sessState = require('./state').__init__;
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      TH.mockConnectState(v);
+      v.state = sessState();
+      TH.mockConnectState(v, v.state);
       v.sess = rpc({
         provide: test.stub(),
         _rpcs: {},
+        _commands: {},
         sendBinary: v.sendBinary = test.stub(),
-        state: 'ready',
+        state: v.state,
         globalDict: message.newGlobalDict(),
-      }, sessState);
+      });
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function (...args) {
-          func(args);
+          func.call(v.sess, args);
         };
         return true;
       }));
     },
 
     tearDown: function () {
-      sessState._resetPendingCount();
       v = null;
     },
 
@@ -38,14 +39,14 @@ define(function (require, exports, module) {
      */
     "reconnect": {
       "test replay messages": function () {
-        assert.calledWith(sessState.onConnect, "20", v.sess._onConnect);
+        assert.calledWith(v.state.onConnect, "20", v.sess._onConnect);
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
-        v.sess.state = 'retry';
+        v.sess.state._state = 'retry';
         v.sendBinary.reset();
         v.recvM("1", 'r');
 
-        v.sess._onConnect();
+        v.sess._onConnect(v.sess);
 
         assert.calledWith(v.sendBinary, 'M', ["2", "foo.baz", 1, 2]);
         assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
@@ -106,9 +107,9 @@ define(function (require, exports, module) {
 
     "test onChange rpc": function () {
       v.ready = true;
-      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
+      test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.state.pendingCount(), 0);
 
       v.sess.sendM('foo.rpc', [1, 2]);
 
@@ -117,7 +118,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.same(sessState.pendingCount(), 1);
+      assert.same(v.state.pendingCount(), 1);
 
       v.ob.reset();
 
@@ -130,7 +131,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.state.pendingCount(), 0);
     },
 
 
@@ -220,9 +221,9 @@ define(function (require, exports, module) {
     },
 
     "test onChange rpc": function () {
-      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
+      test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.state.pendingCount(), 0);
 
       assert.isFalse(v.sess.isRpcPending());
       v.sess.sendM('foo.rpc', [1, 2]);
@@ -233,7 +234,7 @@ define(function (require, exports, module) {
       v.sess.sendM('foo.rpc');
       assert.calledOnce(v.ob);
 
-      assert.same(sessState.pendingCount(), 2);
+      assert.same(v.state.pendingCount(), 2);
 
       v.ob.reset();
 
@@ -247,7 +248,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.ob, false);
       assert.isFalse(v.sess.isRpcPending());
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.state.pendingCount(), 0);
     }
   });
 });

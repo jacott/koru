@@ -29,19 +29,18 @@ define(function(require, exports, module) {
         if (priority in this._onConnect)
           throw new Error("priority " + priority + " already taken for onConnect");
         this._onConnect[priority] = func;
-        if (state === 'ready')
-          func();
       },
 
-      stopOnConnect: function (priority, func) {
+      stopOnConnect: function (priority) {
         delete this._onConnect[priority];
       },
 
-      connected: function (conn) {
+      connected: function (session) {
+        this.session = session;
         state = 'ready';
         var onConnect = this._onConnect;
         util.forEach(Object.keys(onConnect).sort(), function (priority) {
-          onConnect[priority].call(conn);
+          onConnect[priority](session);
         });
         this.notify(true);
       },

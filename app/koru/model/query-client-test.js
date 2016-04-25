@@ -113,19 +113,19 @@ define(function (require, exports, module) {
     "test nested update after connection lost": function () {
       var _sessState = sessState.__init__();
       var _session = session.__init__(sessionClient.__init__(_sessState), session.__initBase__());
-      _session.connect._ws = {send: test.stub()};
+      _session.ws = {send: test.stub()};
       clientRpcBase(_session, _sessState);
       _session.defineRpc('fooUpdate',function () {
         new _Query(v.TestModel).onId('foo2').update('nested.b', 3);
       });
 
-      var _QueryClient = sut.__init__(_sessState, _session);
+      var _QueryClient = sut.__init__(_session);
       var _Query = Query.__init__(_QueryClient);
       _sessState.connected();
       _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
       _sessState.retry();
       _session.rpc('fooUpdate');
-      _sessState.connected();
+      _sessState.connected(_session);
       _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
       var query = new _Query(v.TestModel).onId('foo2');
       query.isFromServer = true;

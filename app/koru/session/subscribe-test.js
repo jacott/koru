@@ -22,12 +22,14 @@ isClient && define(function (require, exports, module) {
       TH.mockConnectState(v);
       subscribe = subscribeFactory(v.sess ={
         provide: test.stub(),
+        state: sessState,
         _rpcs: {},
+        _commands: {},
         sendBinary: v.sendBinary = test.stub(),
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
         v.recvP = function (...args) {
-          func(args.slice());
+          func.call(v.sess, args.slice());
         };
         return true;
       }));
@@ -58,7 +60,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test sendP": function () {
-      subscribe._onConnect();
+      subscribe._onConnect(v.sess);
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
       assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
@@ -82,19 +84,19 @@ isClient && define(function (require, exports, module) {
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
-      subscribe._onConnect();
+      subscribe._onConnect(v.sess);
 
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
     "test not Ready": function () {
-      subscribe._onConnect();
+      subscribe._onConnect(v.sess);
       sessState.notify(false);
 
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
-      subscribe._onConnect();
+      subscribe._onConnect(v.sess);
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
@@ -112,7 +114,7 @@ isClient && define(function (require, exports, module) {
 
       var pendingCount = sessState.pendingCount();
 
-      subscribe._onConnect();
+      subscribe._onConnect(v.sess);
 
       assert.same(sessState.pendingCount(), pendingCount + 1);
       assert.isTrue(sub1.waiting);

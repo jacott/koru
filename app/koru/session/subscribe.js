@@ -4,7 +4,6 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var login = require('../user-account/client-login');
   var message = require('./message');
-  var sessState = require('./state');
   var Trace = require('../trace');
 
   koru.onunload(module, 'reload');
@@ -16,15 +15,15 @@ define(function(require, exports, module) {
 
   return function(session) {
     var nextId = 0;
-    var subs = {};
+    var subs = session.subs = {};
     var ready = false;
 
     session.sendP = function (...args) {
       ready && session.sendBinary('P', args);
     };
 
-    session.provide('P', function (data) {
-      var handle = subs[data[0]];
+    session._commands.P || session.provide('P', function (data) {
+      var handle = this.subs[data[0]];
       if (! handle) return;
       handle._received(data[1]);
     });
@@ -43,11 +42,11 @@ define(function(require, exports, module) {
       }
     });
 
-    sessState.onChange(function (sessReady) {
+    session.state.onChange(function (sessReady) {
       if (! sessReady) ready = false;
     });
 
-    sessState.onConnect('10', Subcribe._onConnect = function () {
+    session.state.onConnect('10', Subcribe._onConnect = function (session) {
       ready = true;
       for(var id in subs) {
         var sub = subs[id];
@@ -76,7 +75,7 @@ define(function(require, exports, module) {
       get _subs() {return subs},
       get _nextId() {return nextId},
       unload: function () {
-        sessState.stopOnConnect('10');
+        session.state.stopOnConnect('10');
         loginOb && loginOb.stop();
         loginOb = null;
         session.unprovide('P');
@@ -132,7 +131,7 @@ define(function(require, exports, module) {
       _wait: function () {
         debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
         if (this.waiting) return;
-        sessState.incPending();
+        session.state.incPending();
         this.waiting = true;
       },
 
@@ -141,7 +140,7 @@ define(function(require, exports, module) {
         if (result !== undefined) stopped(this);
         if (! this.waiting) return;
 
-        sessState.decPending();
+        session.state.decPending();
         this.waiting = false;
         if (this.callback) {
           this.callback(result || null);
@@ -173,7 +172,7 @@ define(function(require, exports, module) {
         stopped(this);
         if (! this.waiting) return;
 
-        sessState.decPending();
+        session.state.decPending();
         this.waiting = false;
       },
 

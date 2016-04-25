@@ -1,7 +1,8 @@
 define(function(require, exports, module) {
   var test = require('./main');
   var sessionBase = require('koru/session/base').__initBase__();
-  var session = require('koru/session/main-client')(sessionBase);
+  var sessState = require('koru/session/state').__init__();
+  var session = require('koru/session/main-client').__init__(sessState)(sessionBase);
   var localStorage = require('koru/local-storage');
   var koru = require('koru');
   var Module = module.constructor;
@@ -35,6 +36,12 @@ define(function(require, exports, module) {
   koru.onunload(module, function () {
     requirejs.onError = null;
   });
+
+  test.geddon.abort = function (ex) {
+    test.logHandle('E', koru.util.extractError(ex)+"\n\n**** Tests aborted! *****");
+    test.testHandle('F', test.geddon.testCount + 1);
+    throw ex;
+  };
 
   test.geddon.onStart(function () {
     localStorage.setItem = function (key, value) {

@@ -33,32 +33,6 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test server-to-client broadcast messages": function () {
-      v.sess.registerBroadcast("foo", v.foo = test.stub());
-      v.sess.registerBroadcast("bar", v.bar = test.stub());
-      test.onEnd(function () {
-        v.sess.deregisterBroadcast("foo");
-        v.sess.deregisterBroadcast("bar");
-      });
-
-      assert.calledWith(v.sess.provide, 'B', TH.match(function (arg) {
-        v.func = arg;
-        return typeof arg === 'function';
-      }));
-
-      var data = ['foo', 1, 2, 3];
-
-      v.func(data);
-
-      assert.calledWith(v.foo, 1, 2, 3);
-      refute.called(v.bar);
-
-      data = ['bar', "otherTest"];
-      v.func(data);
-
-      assert.calledWith(v.bar, "otherTest");
-    },
-
     "test batched messages": function () {
       v.sess._commands.f = v.f = test.stub();
       v.sess._commands.g = v.g = test.stub();
@@ -69,7 +43,7 @@ define(function (require, exports, module) {
       }));
 
       var data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
-      v.func(data);
+      v.func.call(v.sess, data);
 
       assert.calledWith(v.f, ['foo', 1, 2, 3]);
       assert.calledWith(v.g, ['gee', 'waz']);
@@ -107,7 +81,7 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func([1, 'hash,version', endict]);
+      v.func.call(v.sess, [1, 'hash,version', endict]);
 
       assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
@@ -116,12 +90,12 @@ define(function (require, exports, module) {
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,version');
 
-      v.func([1, 'hash,v2', dict]);
+      v.func.call(v.sess, [1, 'hash,v2', dict]);
 
       refute.called(koru.reload);
       assert.same(v.sess.versionHash, 'hash,v2');
 
-      v.func([1, 'hashdiff,v2', dict]);
+      v.func.call(v.sess, [1, 'hashdiff,v2', dict]);
 
       assert.called(koru.reload);
     },
@@ -158,7 +132,7 @@ define(function (require, exports, module) {
 
       "test setup": function () {
         assert.calledWith(v.sess.provide, 'K', TH.match.func);
-        assert.same(v.sess.connect._ws, v.ws);
+        assert.same(v.sess.ws, v.ws);
 
         assert(v.ws.onmessage);
 

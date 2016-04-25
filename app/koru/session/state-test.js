@@ -60,16 +60,13 @@ define(function (require, exports, module) {
 
       sessState.connected(v.conn = {});
 
-      assert.same(v.conn22_1.firstCall.thisValue, v.conn);
+      assert.same(v.conn22_1.firstCall.args[0], v.conn);
 
       assert(v.conn22_1.calledAfter(v.conn10_1));
       assert(v.onChange.calledAfter(v.conn22_1));
       assert.calledWith(v.onChange, true);
 
       assert.same(sessState._state, 'ready');
-
-      sessState.onConnect('40', v.lateConn = test.stub());
-      assert.called(v.lateConn);
 
       assert(sessState.isReady());
       refute(sessState.isClosed());

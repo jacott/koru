@@ -15,6 +15,8 @@ define(function(require, exports, module) {
     extractError: util.extractError,
 
     util: util,
+
+    abort: function (ex) {throw ex}
   };
 
   geddon._init();

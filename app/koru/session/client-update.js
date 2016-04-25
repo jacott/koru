@@ -41,15 +41,19 @@ define(function(require, exports, module) {
 
     function modelUpdate(func, type) {
       return function (data) {
+        var session = this;
         if (debug_clientUpdate) {
           if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
             koru.logger("D", type, '< ' + util.inspect(data));
         }
         session.isUpdateFromServer = true;
+        var origDb = util.thread.db;
         try {
-          func.call(this, Model[data[0]], data[1], data[2]);
+          util.thread.db = session.db || origDb;
+          func(Model[data[0]], data[1], data[2]);
         } finally {
           session.isUpdateFromServer = false;
+          util.thread.db = origDb;
         }
       };
     }

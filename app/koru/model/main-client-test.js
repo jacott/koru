@@ -33,7 +33,7 @@ define(function (require, exports, module) {
       var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
 
       assert.equals(Model._databases, {
-        global: {TestModel: {
+        null: {TestModel: {
           docs: {glo1: TH.matchModel(docGlobal)},
         }},
         foo1: {TestModel: {
@@ -72,7 +72,7 @@ define(function (require, exports, module) {
 
       assert.equals(Model._getSetProp('foo2', 'FooModel', 'docs', () => {return {foo: 123}}), {foo: 123});
 
-      assert.equals(Model._databases, {global: {}, foo1: {}, foo2: {
+      assert.equals(Model._databases, {null: {}, foo1: {}, foo2: {
         FooModel: {docs: {foo: 123}}
       }});
 
@@ -94,7 +94,7 @@ define(function (require, exports, module) {
 
       assert.called(v.afterRemove);
 
-      assert.equals(Object.keys(Model._databases), ['global']);
+      assert.equals(Object.keys(Model._databases), ['null']);
     },
 
     "test create returns same as findById": function () {

@@ -15,6 +15,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       v.handles.forEach(function (h) {h.stop()});
+      util.thread.db = null;
       v = null;
     },
 
@@ -49,6 +50,9 @@ define(function (require, exports, module) {
       assert(v.t.id);
       refute.same(v.t.id, v.f.id);
 
+      util.thread.db = 'foo';
+      refute.isTrue(v.match.has(v.doc));
+      util.thread.db = null;
       assert.isTrue(v.match.has(v.doc));
       v.t.stop();
 

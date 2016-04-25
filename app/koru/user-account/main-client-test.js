@@ -8,7 +8,6 @@ isClient && define(function (require, exports, module) {
   var util = require('../util');
   var koru = require('../main');
   var login = require('./client-login');
-  var sessState = require('../session/state');
 
   TH.testCase(module, {
     setUp: function () {
@@ -215,6 +214,7 @@ isClient && define(function (require, exports, module) {
 
     "token login/logout": {
       setUp: function () {
+        session.state._state = 'ready';
         test.stub(session, 'send');
         userAccount.init();
       },
@@ -253,14 +253,12 @@ isClient && define(function (require, exports, module) {
       },
 
       "test sending login token": function () {
-        assert.same(sessState._onConnect['05'], userAccount._onConnect);
+        assert.same(session.state._onConnect['05'], userAccount._onConnect);
 
         refute.calledWith(session.send, 'VL');
-        assert.same(login.state, 'ready');
-
 
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount._onConnect();
+        userAccount._onConnect(session);
 
         assert.same(login.state, 'wait');
 
@@ -297,7 +295,7 @@ isClient && define(function (require, exports, module) {
 
       "test login failure": function () {
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
-        userAccount._onConnect();
+        userAccount._onConnect(session);
 
         session._onMessage({}, 'VF');
 

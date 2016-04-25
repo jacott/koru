@@ -121,7 +121,7 @@ define(function(require, exports, module) {
       var db, docs;
 
       function chkdb() {
-        var tdb = thread.db || 'global';
+        var tdb = thread.db;
         if (tdb !== db) {
           docs = null;
           thread.db = db = tdb;

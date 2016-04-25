@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var makeSubject = require('../make-subject');
 
-  return function (session, sessState) {
+  return function (session) {
     var waitMs = {};
     var isSimulation = false;
 
@@ -36,8 +36,8 @@ define(function(require, exports, module) {
         var data = [msgId, name];
         args && util.forEach(args, function (arg) {data.push(util.deepCopy(arg))});
         waitMs[msgId] = [data, func];
-        sessState.incPending();
-        sessState.isReady() && session.sendBinary('M', data);
+        session.state.incPending();
+        session.state.isReady() && session.sendBinary('M', data);
         return msgId;
       },
 
@@ -55,14 +55,15 @@ define(function(require, exports, module) {
       get _onConnect() {return onConnect},
     });
 
-    sessState.onConnect("20", onConnect);
+    session.state._onConnect['20'] || session.state.onConnect("20", onConnect);
 
-    session.provide('M', function (data) {
+    session._commands.M || session.provide('M', function (data) {
+      var session = this;
       var msgId = data[0];
       var args = waitMs[msgId];
       if (! args) return;
       delete waitMs[msgId];
-      sessState.decPending();
+      session.state.decPending();
       var type = data[1];
       if (type === 'e') {
         var callback = args[1] || koru.globalCallback;
@@ -75,7 +76,7 @@ define(function(require, exports, module) {
       args[1] && args[1](null, data[2]);
     });
 
-    function onConnect () {
+    function onConnect (session) {
       var list = Object.keys(waitMs).sort(function (a, b) {
         if (a.length < b.length) return -1;
         if (a.length > b.length) return 1;

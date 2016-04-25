@@ -2,7 +2,6 @@ define(function(require, exports, module) {
   var TH = require('../test-helper');
   var session = require('../session/base');
   var koru = require('../main');
-  var sessState = require('./state');
 
   var geddon = TH.geddon;
 
@@ -24,13 +23,14 @@ define(function(require, exports, module) {
       };
     },
 
-    mockConnectState: function (v) {
+    mockConnectState: function (v, state) {
       var test = geddon.test;
-      test.stub(sessState, 'onConnect');
-      test.stub(sessState, 'connected');
-      test.stub(sessState, 'close');
-      test.stub(sessState, 'retry');
-      test.stub(sessState, 'isReady', function () {
+      state = state || session.state;
+      test.stub(state, 'onConnect');
+      test.stub(state, 'connected');
+      test.stub(state, 'close');
+      test.stub(state, 'retry');
+      test.stub(state, 'isReady', function () {
         return v.ready;
       });
     },

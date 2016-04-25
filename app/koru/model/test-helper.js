@@ -2,7 +2,6 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var TH = require('../test-helper');
   var session = require('../session/base');
-  var sessState = require('../session/state');
   var Query = require('./query');
 
   var testCase = TH.testCase;
@@ -36,7 +35,7 @@ define(function(require, exports, module) {
 
   function unstubSendM() {
     if (sendM) {
-      sessState._resetPendingCount();
+      session.state._resetPendingCount();
       Query.revertSimChanges();
       session.sendM = sendM;
       sendM = null;

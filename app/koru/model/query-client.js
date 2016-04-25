@@ -1,18 +1,18 @@
 define(function(require, exports, module) {
   var util = require('../util');
   var koru = require('../main');
-  var defSessState = require('../session/state');
   var Model = require('./base');
+  var session = require('koru/session/client-rpc');
 
   var thread = util.thread;
 
-  function Constructor(sessState) {
+  function Constructor(session) {
     return function(Query) {
       var syncOb, stateOb;
 
       util.extend(Query, {
         revertSimChanges: function () {
-          var dbs = Model._databases[util.thread.db||'global'];
+          var dbs = Model._databases[util.thread.db];
           if (! dbs) return;
 
           for (var modelName in dbs) {
@@ -47,7 +47,7 @@ define(function(require, exports, module) {
 
         insert: function (doc) {
           var model = doc.constructor;
-          if (sessState.pendingCount()) {
+          if (session.state.pendingCount()) {
             simDocsFor(model)[doc._id] = 'new';
           }
           model.docs[doc._id] = doc;
@@ -56,7 +56,7 @@ define(function(require, exports, module) {
         },
 
         insertFromServer: function (model, id, attrs) {
-          if (sessState.pendingCount()) {
+          if (session.state.pendingCount()) {
             var changes = fromServer(model, id, attrs);
             var doc = model.docs[id];
             if (doc && changes !== attrs) { // found existing
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
           var model = self.model;
           util.withDB(this._db||util.thread.db, () => {
             var docs = this.docs;
-            if (sessState.pendingCount() && self.isFromServer) {
+            if (session.state.pendingCount() && self.isFromServer) {
               if (fromServer(model, self.singleId, null) === null) {
                 var doc = docs[self.singleId];
                 delete docs[self.singleId];
@@ -266,7 +266,7 @@ define(function(require, exports, module) {
             self.forEach(doc => {
               ++count;
               Model._callBeforeObserver('beforeRemove', doc);
-              if (sessState.pendingCount()) {
+              if (session.state.pendingCount()) {
                 recordChange(model, doc.attributes);
               }
               delete docs[doc._id];
@@ -289,7 +289,7 @@ define(function(require, exports, module) {
           var model = self.model;
           var docs = this.docs;
           var items;
-          if (sessState.pendingCount() && self.isFromServer) {
+          if (session.state.pendingCount() && self.isFromServer) {
             var changes = fromServer(model, self.singleId, origChanges);
             var doc = docs[self.singleId];
             if (doc) {
@@ -313,7 +313,7 @@ define(function(require, exports, module) {
                 changes[field] = attrs[field] + self._incs[field];
               }
 
-              sessState.pendingCount() && recordChange(model, attrs, changes);
+              session.state.pendingCount() && recordChange(model, attrs, changes);
               util.applyChanges(attrs, changes);
 
               var itemCount = 0;
@@ -322,7 +322,7 @@ define(function(require, exports, module) {
                 var list = attrs[field] || (attrs[field] = []);
                 util.forEach(items[field], function (item) {
                   if (util.addItem(list, item) == null) {
-                    sessState.pendingCount() && recordItemChange(model, attrs, field);
+                    session.state.pendingCount() && recordItemChange(model, attrs, field);
                     changes[field + ".$-" + ++itemCount] = item;
                   }
                 });
@@ -332,7 +332,7 @@ define(function(require, exports, module) {
                 var match, list = attrs[field];
                 util.forEach(items[field], function (item) {
                   if (list && (match = util.removeItem(list, item)) !== undefined) {
-                    sessState.pendingCount() && recordItemChange(model, attrs, field);
+                    session.state.pendingCount() && recordItemChange(model, attrs, field);
                     changes[field + ".$+" + ++itemCount] = match;
                   }
                 });
@@ -462,14 +462,14 @@ define(function(require, exports, module) {
       function reset() {
         unload();
 
-        syncOb = sessState.pending.onChange(function (pending) {
+        syncOb = session.state.pending.onChange(function (pending) {
           pending || Query.revertSimChanges();
         });
 
-        stateOb = sessState.onChange(function (ready) {
+        stateOb = session.state.onChange(function (ready) {
           if (ready) return;
 
-          var dbs = Model._databases[util.thread.db||'global'];
+          var dbs = Model._databases[util.thread.db];
           if (! dbs) return;
           for(var name in dbs) {
             var model = Model[name];
@@ -500,7 +500,7 @@ define(function(require, exports, module) {
     };
   }
 
-  exports = Constructor(defSessState);
+  exports = Constructor(session);
   exports.__init__ = Constructor;
 
   return exports;

@@ -4,19 +4,18 @@ define(function(require, exports, module) {
   var login = require('./client-login');
   var SRP = require('../srp/srp');
   var koru = require('../main');
-  var sessState = require('../session/state');
 
   koru.onunload(module, function () {
     exports.stop();
   });
 
-  function onConnect() {
+  function onConnect(session) {
     var token = localStorage.getItem('koru.loginToken');
     if (token) {
       session.send('VL', token);
-      login.wait();
+      login.wait(session);
     } else {
-      login.ready();
+      login.ready(session);
     }
   }
 
@@ -31,20 +30,20 @@ define(function(require, exports, module) {
           login.setUserId(data.slice(1).toString() || null);
           break;
         case 'F':
-          login.failed();
+          login.failed(this);
           break;
         case 'C':
-          login.ready();
+          login.ready(this);
           break;
         }
       });
 
-      sessState.onConnect('05', onConnect);
+      session.state.onConnect('05', onConnect);
     },
 
     stop: function () {
       session.unprovide('V');
-      sessState.stopOnConnect('05');
+      session.state.stopOnConnect('05');
     },
 
     state: null,
