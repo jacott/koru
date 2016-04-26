@@ -9,7 +9,7 @@ isClient && define(function (require, exports, module) {
   var login = require('../user-account/client-login');
   var message = require('./message');
   var util = require('../util');
-  var sessState = require('./state');
+  var sessStateFactory = require('./state').__init__;
 
   var subscribe;
 
@@ -22,7 +22,7 @@ isClient && define(function (require, exports, module) {
       TH.mockConnectState(v);
       subscribe = subscribeFactory(v.sess ={
         provide: test.stub(),
-        state: sessState,
+        state: v.sessState = sessStateFactory(),
         _rpcs: {},
         _commands: {},
         sendBinary: v.sendBinary = test.stub(),
@@ -51,7 +51,6 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown: function () {
-      sessState._resetPendingCount();
       publish._destroy('foo');
       publish._destroy('foo2');
       if (subscribe) for(var key in subscribe._subs)
@@ -60,7 +59,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test sendP": function () {
-      subscribe._onConnect(v.sess);
+      v.sessState.connected(v.sess);
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
       assert.calledWith(v.sendBinary, 'P', ['id', 'foo', [1, 2, 'bar']]);
@@ -84,24 +83,27 @@ isClient && define(function (require, exports, module) {
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
-      subscribe._onConnect(v.sess);
+      v.sessState.connected(v.sess);
 
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
     "test not Ready": function () {
-      subscribe._onConnect(v.sess);
-      sessState.notify(false);
+      v.sessState.connected(v.sess);
+      v.sessState.close(false);
 
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
-      subscribe._onConnect(v.sess);
+      v.sessState.connected(v.sess);
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
     "test resubscribe onConnect": function () {
-      assert.calledWith(sessState.onConnect, "10", subscribe._onConnect);
+      test.stub(v.sessState, 'onConnect');
+      subscribe = subscribeFactory(v.sess);
+      test.stub(v.sess, 'sendP');
+      assert.calledWith(v.sessState.onConnect, "10", subscribe._onConnect);
 
       publish("foo2", function () {});
 
@@ -112,11 +114,11 @@ isClient && define(function (require, exports, module) {
       v.sess.sendP.reset();
       sub1.waiting = false;
 
-      var pendingCount = sessState.pendingCount();
+      var pendingCount = v.sessState.pendingCount();
 
       subscribe._onConnect(v.sess);
 
-      assert.same(sessState.pendingCount(), pendingCount + 1);
+      assert.same(v.sessState.pendingCount(), pendingCount + 1);
       assert.isTrue(sub1.waiting);
 
 
@@ -126,9 +128,9 @@ isClient && define(function (require, exports, module) {
     },
 
     "test onChange rpc": function () {
-      test.onEnd(sessState.pending.onChange(v.ob = test.stub()));
+      test.onEnd(v.sessState.pending.onChange(v.ob = test.stub()));
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.sessState.pendingCount(), 0);
 
       var sub1 = subscribe("foo", 1 ,2, v.sub1CB = test.stub());
       assert.isTrue(sub1.waiting);
@@ -138,7 +140,7 @@ isClient && define(function (require, exports, module) {
       var sub2 = subscribe("foo", 3, 4);
       assert.calledOnce(v.ob);
 
-      assert.same(sessState.pendingCount(), 2);
+      assert.same(v.sessState.pendingCount(), 2);
 
       v.ob.reset();
 
@@ -154,7 +156,7 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(v.ob, false);
 
-      assert.same(sessState.pendingCount(), 0);
+      assert.same(v.sessState.pendingCount(), 0);
     },
 
     "filtering":{
@@ -252,11 +254,11 @@ isClient && define(function (require, exports, module) {
 
     "test stop before result": function () {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
-      test.spy(sessState, "decPending");
+      test.spy(v.sessState, "decPending");
       v.sub.stop();
-      assert.called(sessState.decPending);
+      assert.called(v.sessState.decPending);
       v.sub.stop();
-      assert.calledOnce(sessState.decPending);
+      assert.calledOnce(v.sessState.decPending);
     },
 
     "test subscribe": function () {

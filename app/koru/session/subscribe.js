@@ -16,10 +16,9 @@ define(function(require, exports, module) {
   return function(session) {
     var nextId = 0;
     var subs = session.subs = {};
-    var ready = false;
 
     session.sendP = function (...args) {
-      ready && session.sendBinary('P', args);
+      session.state.isReady() && session.sendBinary('P', args);
     };
 
     session._commands.P || session.provide('P', function (data) {
@@ -42,12 +41,7 @@ define(function(require, exports, module) {
       }
     });
 
-    session.state.onChange(function (sessReady) {
-      if (! sessReady) ready = false;
-    });
-
     session.state.onConnect('10', Subcribe._onConnect = function (session) {
-      ready = true;
       for(var id in subs) {
         var sub = subs[id];
         sub._wait();
