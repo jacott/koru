@@ -28,6 +28,24 @@ define(function (require, exports, module) {
       assert.same(v.state, v.sess.state);
     },
 
+    "test batched messages": function () {
+      v.sess._commands.f = v.f = test.stub();
+      v.sess._commands.g = v.g = test.stub();
+
+      assert.calledWith(v.sess.provide, 'W', TH.match(function (arg) {
+        v.func = arg;
+        return typeof arg === 'function';
+      }));
+
+      var data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
+      v.func.call(v.sess, data);
+
+      assert.calledWith(v.f, ['foo', 1, 2, 3]);
+      assert.calledWith(v.g, ['gee', 'waz']);
+      assert.same(v.f.firstCall.thisValue, v.sess);
+      assert.same(v.g.firstCall.thisValue, v.sess);
+    },
+
     "test using separate base": function () {
       var sess1 = SessionBase();
       var sess2 = SessionBase();

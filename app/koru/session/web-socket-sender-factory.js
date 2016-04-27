@@ -163,7 +163,7 @@ define(function (require, exports, module) {
         util.forEach(data, msg => {
           try {
             var func = session._commands[msg[0]];
-            func(msg[1]);
+            func.call(session, msg[1]);
           } catch(ex) {
             koru.error(util.extractError(ex));
           }

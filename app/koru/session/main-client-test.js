@@ -33,22 +33,6 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test batched messages": function () {
-      v.sess._commands.f = v.f = test.stub();
-      v.sess._commands.g = v.g = test.stub();
-
-      assert.calledWith(v.sess.provide, 'W', TH.match(function (arg) {
-        v.func = arg;
-        return typeof arg === 'function';
-      }));
-
-      var data = [['f', ['foo', 1, 2, 3]], ['g', ['gee', 'waz']]];
-      v.func.call(v.sess, data);
-
-      assert.calledWith(v.f, ['foo', 1, 2, 3]);
-      assert.calledWith(v.g, ['gee', 'waz']);
-    },
-
     "test initial KORU_APP_VERSION": function () {
       test.onEnd(function () {
         delete window.KORU_APP_VERSION;
