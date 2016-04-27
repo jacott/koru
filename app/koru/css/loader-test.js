@@ -2,12 +2,14 @@ isClient && define(function (require, exports, module) {
   var test, v;
   var TH = require('../test');
   var koru = require('../main');
-  var session = require('../session/base');
+  var sessionBase = require('../session/base').__initBase__;
+  var sut = require('./loader');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
+      v.session = sessionBase();
     },
 
     tearDown: function () {
@@ -17,43 +19,41 @@ isClient && define(function (require, exports, module) {
       for(var i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
-      koru.unload('koru/css/loader');
+      sut.removeAllCss();
     },
 
     "test load all": function (done) {
-      require(['koru/css/loader'], done.wrap(function (loader) {
-        // proxy S command on to test session
-        TH.session.provide('S', done.wrap(function (data) {
-          assert.same(data.split(' ').sort().join(' '),
-                      'Lkoru/css/less-compiler-test.less koru/css/loader-test.css koru/css/loader-test2.css');
-          done();
-        }));
-        test.intercept(session, 'send', function (cmd, data) {
-          TH.session.send(cmd, data);
-        });
-        test.onEnd(function () {TH.session.unprovide('S')});
-        loader.loadAll('koru/css');
+      var loader = sut(v.session);
+      test.intercept(v.session, 'send', function (cmd, data) {
+        TH.session.send(cmd, data);
+      });
+      // proxy S command on to test session
+      TH.session.provide('S', done.wrap(function (data) {
+        assert.same(data.split(' ').sort().join(' '),
+                    'Lkoru/css/less-compiler-test.less koru/css/loader-test.css koru/css/loader-test2.css');
+        done();
       }));
+      test.onEnd(function () {TH.session.unprovide('S')});
+      loader.loadAll('koru/css');
     },
 
     "test loading css": function (done) {
       refute.dom('head>link[rel=stylesheet]');
 
-      var provide = test.stub(session, "provide");
+      var provide = test.stub(v.session, "provide");
+      var loader = sut(v.session);
 
-      require(['koru/css/loader'], done.wrap(function (loader) {
-        assert.calledWith(provide, "S");
+      assert.calledWith(provide, "S");
 
-        v.links = [];
+      v.links = [];
 
-        var origCallback = loader.callback;
-        test.onEnd(function () {
-          loader.callback = origCallback;
-        });
-        loader.callback = onload;
+      var origCallback = loader.callback;
+      test.onEnd(function () {
+        loader.callback = origCallback;
+      });
+      loader.callback = onload;
 
-        provide.yield("Lkoru/css/loader-test.css koru/css/less-compiler-test.less");
-      }));
+      provide.yield("Lkoru/css/loader-test.css koru/css/less-compiler-test.less");
 
       function onload(event) {
         v.links.push(event.target);
