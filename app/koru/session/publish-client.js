@@ -10,7 +10,9 @@ define(function(require, exports, module) {
     match: match(),
     _filterModels: function (models) {
       for(var name in models) {
-        var mm = this.match._models[name] || {};
+        var mm = this.match._models;
+        mm = mm && mm[name];
+        if (! mm) continue;
         var model = Model[name];
         if (! model) continue;
         var docs = model.docs;

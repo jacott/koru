@@ -39,14 +39,14 @@ define(function (require, exports, module) {
      */
     "reconnect": {
       "test replay messages": function () {
-        assert.calledWith(v.state.onConnect, "20", v.sess._onConnect);
+        assert.calledWith(v.state.onConnect, "20", TH.match(func => v.onConnect = func));
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
         v.sess.state._state = 'retry';
         v.sendBinary.reset();
         v.recvM("1", 'r');
 
-        v.sess._onConnect(v.sess);
+        v.onConnect(v.sess);
 
         assert.calledWith(v.sendBinary, 'M', ["2", "foo.baz", 1, 2]);
         assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
@@ -141,7 +141,7 @@ define(function (require, exports, module) {
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
       v.sess._rpcs['foo.s2'] = rpcSimMethod2;
 
-      assert.isFalse(v.sess.isSimulation);
+      refute(v.sess.isSimulation);
       v.sess.rpc('foo.rpc', 1, 2, 3);
       assert.isFalse(v.sess.isSimulation);
 
