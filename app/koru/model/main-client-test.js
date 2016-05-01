@@ -14,26 +14,26 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-      util.thread.db = null;
+      util.dbId = null;
       delete Model._databases.foo1;
       delete Model._databases.foo2;
       v = null;
     },
 
-    "test changing db": function () {
+    "test changing dbId": function () {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
        var docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
 
-      util.thread.db = 'foo1';
+      util.dbId = 'foo1';
 
       var doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
 
-      util.thread.db = 'foo2';
+      util.dbId = 'foo2';
 
       var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
 
       assert.equals(Model._databases, {
-        null: {TestModel: {
+        '': {TestModel: {
           docs: {glo1: TH.matchModel(docGlobal)},
         }},
         foo1: {TestModel: {
@@ -46,14 +46,14 @@ define(function (require, exports, module) {
 
       assert.same(TestModel.findById('tmf1'), doc2);
 
-      util.thread.db = 'foo1';
+      util.dbId = 'foo1';
 
       assert.same(TestModel.findById('tmf1'), doc);
 
       assert.same(Model._getProp('foo1', 'TestModel', 'docs'), TestModel.docs);
       assert.same(Model._getProp('foo2', 'TestModel', 'docs').tmf1, doc2);
 
-      util.thread.db = 'foo2';
+      util.dbId = 'foo2';
 
 
       test.stub(TestModel._indexUpdate, 'reloadAll');
@@ -72,7 +72,7 @@ define(function (require, exports, module) {
 
       assert.equals(Model._getSetProp('foo2', 'FooModel', 'docs', () => {return {foo: 123}}), {foo: 123});
 
-      assert.equals(Model._databases, {null: {}, foo1: {}, foo2: {
+      assert.equals(Model._databases, {'': {}, foo1: {}, foo2: {
         FooModel: {docs: {foo: 123}}
       }});
 
@@ -94,7 +94,7 @@ define(function (require, exports, module) {
 
       assert.called(v.afterRemove);
 
-      assert.equals(Object.keys(Model._databases), ['null']);
+      assert.equals(Object.keys(Model._databases), ['']);
     },
 
     "test create returns same as findById": function () {

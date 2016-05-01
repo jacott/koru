@@ -22,7 +22,7 @@ define(function(require, exports, module) {
     model.addUniqueIndex = function (...fields) {
       const len = fields.length;
       const leadLen = len - 1;
-      var db;
+      var dbId;
       var idx;
       var indexes = {};
 
@@ -54,19 +54,19 @@ define(function(require, exports, module) {
       };
 
       function getIdx() {
-        if (model.db === db)
+        if (model.dbId === dbId)
           return idx;
 
-        db = model.db;
-        idx = indexes[db];
-        if (! idx) idx = indexes[db] = {};
+        dbId = model.dbId;
+        idx = indexes[dbId];
+        if (! idx) idx = indexes[dbId] = {};
 
         return idx;
       }
 
       uIndex.reload = function () {
         getIdx();
-        idx = indexes[db] = {};
+        idx = indexes[dbId] = {};
         var docs = model.docs;
         for(let id in docs) {
           onChange(docs[id]);

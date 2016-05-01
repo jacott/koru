@@ -6,9 +6,9 @@ define(function(require, exports, module) {
     var key = 0;
 
 
-    function StopFunc(id, db, modelName) {
+    function StopFunc(id, dbId, modelName) {
       this.id = id;
-      this.db = db;
+      this.dbId = dbId;
       this.modelName = modelName;
     }
 
@@ -17,7 +17,7 @@ define(function(require, exports, module) {
 
       stop: function () {
         if (! this.id) return;
-        var models = dbs[this.db];
+        var models = dbs[this.dbId];
         var matchFuncs = models[this.modelName];
         delete matchFuncs[this.id];
         this.id = null;
@@ -29,10 +29,10 @@ define(function(require, exports, module) {
     };
 
     return {
-      get _models() { return dbs[util.thread.db]},
+      get _models() { return dbs[util.dbId]},
 
       has: function(doc) {
-        var models = dbs[util.thread.db];
+        var models = dbs[util.dbId];
         var mm = models && models[doc.constructor.modelName];
         for(var key in mm) {
           if (mm[key](doc)) return true;
@@ -41,12 +41,12 @@ define(function(require, exports, module) {
       },
 
       register: function (modelName, func) {
-        var db = util.thread.db;
+        var dbId = util.dbId;
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);
-        var models = dbs[db] || (dbs[db] = {});
+        var models = dbs[dbId] || (dbs[dbId] = {});
         (models[modelName] || (models[modelName] = {}))[id] = func;
-        return new StopFunc(id, db, modelName);
+        return new StopFunc(id, dbId, modelName);
       },
     };
   };

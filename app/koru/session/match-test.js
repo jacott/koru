@@ -15,7 +15,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       v.handles.forEach(function (h) {h.stop()});
-      util.thread.db = null;
+      util.dbId = null;
       v = null;
     },
 
@@ -50,9 +50,19 @@ define(function (require, exports, module) {
       assert(v.t.id);
       refute.same(v.t.id, v.f.id);
 
-      util.thread.db = 'foo';
-      refute.isTrue(v.match.has(v.doc));
-      util.thread.db = null;
+      if (isClient) {
+        util.dbId = 'foo';
+        refute.isTrue(v.match.has(v.doc));
+        util.dbId = null;
+      } else {
+        var orig = util.dbId;
+        try {
+          util.thread.db.name = 'foo';
+          refute.isTrue(v.match.has(v.doc));
+        } finally {
+          util.thread.db.name = orig;
+        }
+      }
       assert.isTrue(v.match.has(v.doc));
       v.t.stop();
 

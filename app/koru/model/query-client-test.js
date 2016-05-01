@@ -14,7 +14,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      util.thread.db = 'foo';
+      util.dbId = 'foo';
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     },
@@ -23,7 +23,7 @@ define(function (require, exports, module) {
       Model._destroyModel('TestModel', 'drop');
       Model._destroyModel('TestModel2', 'drop');
       sessState._resetPendingCount();
-      util.thread.db = null;
+      util.dbId = null;
       delete Model._databases.foo;
       delete Model._databases.foo2;
       v = null;
@@ -34,7 +34,7 @@ define(function (require, exports, module) {
 
       var ocDB = [];
       test.onEnd(v.TestModel.onChange((doc, was) => {
-        ocDB.push(util.thread.db, was);
+        ocDB.push(util.dbId, was);
       }).stop);
 
       v.TestModel.query.update('age', 2);

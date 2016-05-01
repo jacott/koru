@@ -2,18 +2,18 @@ define(function(require, exports, module) {
   var util = require('./util');
 
   util.engine = util.browserVersion(navigator.userAgent);
-  util.thread = {db: null};
+  util.thread = {dbId: ''};
   util.Fiber = function(func) {return {run: func}};
-  util.withDB = function (db, func) {
-    var orig = util.thread.db;
-    if (db === orig)
+  util.withDB = function (dbId, func) {
+    var orig = util.dbId;
+    if (dbId === orig)
       return func();
 
     try {
-      util.thread.db = db;
+      util.dbId = dbId;
       return func();
     } finally {
-      util.thread.db = orig;
+      util.dbId = orig;
     }
   };
 

@@ -4,15 +4,13 @@ define(function(require, exports, module) {
   var Model = require('./base');
   var session = require('koru/session/client-rpc');
 
-  var thread = util.thread;
-
   function Constructor(session) {
     return function(Query) {
       var syncOb, stateOb;
 
       util.extend(Query, {
         revertSimChanges: function () {
-          var dbs = Model._databases[util.thread.db];
+          var dbs = Model._databases[util.dbId];
           if (! dbs) return;
 
           for (var modelName in dbs) {
@@ -104,18 +102,18 @@ define(function(require, exports, module) {
           return this._docs || (this._docs = this.model.docs);
         },
         withIndex: function (idx, params) {
-          var orig = thread.db;
-          thread.db = this._db || orig;
+          var orig = util.dbId;
+          util.dbId = this._dbId || orig;
           this._index = idx(params) || {};
-          thread.db = orig;
+          util.dbId = orig;
           return this;
         },
 
-        withDB: function (db) {
-          var orig = thread.db;
-          this._db = thread.db = db;
+        withDB: function (dbId) {
+          var orig = util.dbId;
+          this._dbId = util.dbId = dbId;
           this._docs = this.model.docs;
-          thread.db = orig;
+          util.dbId = orig;
           return this;
         },
 
@@ -253,7 +251,7 @@ define(function(require, exports, module) {
           var count = 0;
           var self = this;
           var model = self.model;
-          util.withDB(this._db||util.thread.db, () => {
+          util.withDB(this._dbId || util.dbId, () => {
             var docs = this.docs;
             if (session.state.pendingCount() && self.isFromServer) {
               if (fromServer(model, self.singleId, null) === null) {
@@ -294,7 +292,7 @@ define(function(require, exports, module) {
             var doc = docs[self.singleId];
             if (doc) {
               util.applyChanges(doc.attributes, changes);
-              util.withDB(this._db||util.thread.db, () => {
+              util.withDB(this._dbId || util.dbId, () => {
                 for(var noop in changes) {
                   notify(model, doc, changes, self.isFromServer);
                   break;
@@ -303,7 +301,7 @@ define(function(require, exports, module) {
             }
             return 1;
           }
-          util.withDB(this._db||util.thread.db, () => {
+          util.withDB(this._dbId || util.dbId, () => {
             self.forEach(function (doc) {
               var changes = util.deepCopy(origChanges);
               ++count;
@@ -383,7 +381,7 @@ define(function(require, exports, module) {
 
       function fromServer(model, id, changes) {
         var modelName = model.modelName;
-        var docs = Model._getProp(model.db, modelName, 'simDocs');
+        var docs = Model._getProp(model.dbId, modelName, 'simDocs');
         if (! docs) return changes;
 
         if (! changes) {
@@ -456,7 +454,7 @@ define(function(require, exports, module) {
       function newEmptyObj() {return {}}
 
       function simDocsFor(model) {
-        return Model._getSetProp(model.db, model.modelName, 'simDocs', newEmptyObj);
+        return Model._getSetProp(model.dbId, model.modelName, 'simDocs', newEmptyObj);
       }
 
       function reset() {
@@ -469,7 +467,7 @@ define(function(require, exports, module) {
         stateOb = session.state.onChange(function (ready) {
           if (ready) return;
 
-          var dbs = Model._databases[util.thread.db];
+          var dbs = Model._databases[util.dbId];
           if (! dbs) return;
           for(var name in dbs) {
             var model = Model[name];

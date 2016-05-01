@@ -44,7 +44,7 @@ define(function(require, exports, module) {
         var thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
-        thread.db = conn.db;
+        util.db = conn.db;
 
         func.call(conn, data);
       } catch(ex) {

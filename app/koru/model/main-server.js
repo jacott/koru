@@ -14,6 +14,20 @@ define(function(require, exports, module) {
 
   session.registerGlobalDictionaryAdder(module, addToDictionary);
 
+  util.extend(util, {
+    get db() {
+      var thread = util.thread;
+      return thread.db || (thread.db = driver.defaultDb);
+    },
+    set db(value) {
+      value = value || driver.defaultDb;
+      var thread = util.thread;
+      thread.db = value;
+      thread.dbId = value.name;
+    },
+    get dbId() {return util.db.name},
+  });
+
   koru.onunload(module, function () {
     session.deregisterGlobalDictionaryAdder(module);
   });
@@ -230,15 +244,12 @@ define(function(require, exports, module) {
           return docs;
         },
         get db() {
-          var tdb = util.thread.db || driver.defaultDb;
+          var tdb = util.db;
           if (tdb !== db) {
             docs = null;
-            util.thread.db = db = tdb;
+            db = tdb;
           }
           return db;
-        },
-
-        setDb: function (value) {
         },
 
         _$docCacheGet: function(id) {

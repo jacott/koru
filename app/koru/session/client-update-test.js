@@ -42,7 +42,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('Foo', 'drop');
-      util.thread.db = null;
+      util.dbId = null;
       delete Model._databases.foo01;
       v = null;
     },
@@ -78,7 +78,7 @@ isClient && define(function (require, exports, module) {
       assert.equals(foo.attributes, v.attrs);
       assert.calledWith(insertSpy, v.Foo, 'f123', v.attrs);
 
-      v.sess.db = 'foo01';
+      v.sess.dbId = 'foo01';
       v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 7});
 
       var foo = v.Foo.findById('f123');

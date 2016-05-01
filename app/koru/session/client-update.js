@@ -47,13 +47,13 @@ define(function(require, exports, module) {
             koru.logger("D", type, '< ' + util.inspect(data));
         }
         session.isUpdateFromServer = true;
-        var origDb = util.thread.db;
+        var origDbId = util.dbId;
         try {
-          util.thread.db = session.db || origDb;
+          util.dbId = session.dbId || origDbId;
           func(Model[data[0]], data[1], data[2]);
         } finally {
           session.isUpdateFromServer = false;
-          util.thread.db = origDb;
+          util.dbId = origDbId;
         }
       };
     }

@@ -32,13 +32,13 @@ define(function (require, exports, module) {
 
       sut.fiberWrapper(function (data) {
         v.thread = util.extend({This: this, data: data}, util.thread);
-      }, v.conn = {userId: 'u123', db: "mydb"}, v.data = [1, 2]);
+      }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
       assert.called(v.run);
       util.Fiber.args(0, 0)();
       assert(v.thread);
 
       assert.equals(v.thread.userId, "u123");
-      assert.equals(v.thread.db, "mydb");
+      assert.same(v.thread.db, v.mydb);
       assert.same(v.thread.connection, v.conn);
       assert.same(v.thread.This, v.conn);
       assert.same(v.thread.data, v.data);
@@ -52,6 +52,6 @@ define(function (require, exports, module) {
   });
 
   function cleanup() {
-    util.thread.db = util.thread.connection = util.thread.userId = null;
+    util.db = util.thread.connection = util.thread.userId = null;
   }
 });

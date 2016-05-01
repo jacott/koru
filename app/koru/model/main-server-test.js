@@ -21,11 +21,11 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test util.thread.db": function () {
+    "test util.db": function () {
       var TestModel = Model.define('TestModel');
       TestModel.defineFields({name: 'text'});
       var defDb = Driver.defaultDb;
-      var altDb = Driver.connect(defDb._url + " options='-c search_path=alt'");
+      var altDb = Driver.connect(defDb._url + " options='-c search_path=alt'", 'alt');
 
       altDb.query('CREATE SCHEMA ALT');
 
@@ -37,7 +37,7 @@ define(function (require, exports, module) {
       assert.calledTwice(v.defChanged);
       v.defChanged.reset();
 
-      util.thread.db = altDb;
+      util.db = altDb;
       test.onEnd(revertTodefault);
 
       var obAlt = TestModel.onChange(v.altChanged = test.stub());
@@ -50,10 +50,10 @@ define(function (require, exports, module) {
       refute.called(v.defChanged);
       assert.calledWith(v.altChanged, v.doc);
 
-      util.thread.db = defDb;
+      util.db = defDb;
       assert.same(TestModel.query.count(), 2);
 
-      util.thread.db = altDb;
+      util.db = altDb;
       assert.same(TestModel.query.count(), 1);
 
       revertTodefault();
@@ -65,7 +65,7 @@ define(function (require, exports, module) {
         obDef = obAlt = null;
         if (altDb) {
           altDb.query("DROP SCHEMA alt CASCADE");
-          util.thread.db = null;
+          util.db = null;
           altDb = null;
         }
       }

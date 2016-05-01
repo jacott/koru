@@ -10,18 +10,24 @@ define(function(require, exports, module) {
 
   var _support;
 
-  var dbs = {};
-  var thread = util.thread;
+  var threadDbId = '';
 
-  function getProp(db, modelName, prop) {
-    var obj = dbs[db];
+  util.extend(util, {
+    get dbId() {return threadDbId},
+    set dbId(value) {threadDbId = value || ''},
+  });
+
+  var dbs = {};
+
+  function getProp(dbId, modelName, prop) {
+    var obj = dbs[dbId];
     if (! obj) return false;
     obj = obj[modelName];
     return (obj && obj[prop]) || false;
   }
 
-  function getSetProp(db, modelName, prop, setter) {
-    var obj = dbs[db] || (dbs[db] = {});
+  function getSetProp(dbId, modelName, prop, setter) {
+    var obj = dbs[dbId] || (dbs[dbId] = {});
     obj = obj[modelName] || (obj[modelName] = {});
 
     return obj[prop] || (obj[prop] = setter());
@@ -36,8 +42,8 @@ define(function(require, exports, module) {
 
       let modelName = model.modelName;
 
-      for (let db in dbs) {
-        delete dbs[db][modelName];
+      for (let dbId in dbs) {
+        delete dbs[dbId][modelName];
       }
     },
 
@@ -118,18 +124,18 @@ define(function(require, exports, module) {
       makeSubject(model);
 
       var modelName = model.modelName;
-      var db, docs;
+      var dbId, docs;
 
       function chkdb() {
-        var tdb = thread.db;
-        if (tdb !== db) {
+        var tdbId = threadDbId;
+        if (tdbId !== dbId) {
           docs = null;
-          thread.db = db = tdb;
+          dbId = tdbId;
         }
-        return db;
+        return dbId;
       }
 
-      Object.defineProperty(model, 'db', {configurable: true, get: chkdb});
+      Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
       function setDocs() {return {}}
       makeSubject(model);
@@ -138,13 +144,13 @@ define(function(require, exports, module) {
         get docs() {
           chkdb();
           if (docs) return docs;
-          docs = getSetProp(db, modelName, 'docs', setDocs);
+          docs = getSetProp(dbId, modelName, 'docs', setDocs);
           return docs;
         },
         set docs(value) {
           chkdb();
-          docs = docs || getSetProp(db, modelName, 'docs', () => value);
-          dbs[db][modelName].docs = value;
+          docs = docs || getSetProp(dbId, modelName, 'docs', () => value);
+          dbs[dbId][modelName].docs = value;
           model._indexUpdate.reloadAll();
           docs = value;
         },

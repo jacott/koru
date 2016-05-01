@@ -20,11 +20,14 @@ isServer && define(function (require, exports, module) {
       var db = sut.connect("host=/var/run/postgresql dbname=korutest");
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
       assert.same(db.schemaName, 'public');
+      assert.same(db.name, 'public');
     },
 
     "test defaultDb": function () {
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
+      assert.same(db.name, 'default');
+
 
       db.query('CREATE TABLE "Foo" (_id varchar(24) PRIMARY KEY, "foo" jsonb)');
       db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::jsonb)', ['123', JSON.stringify({a: 1})]);

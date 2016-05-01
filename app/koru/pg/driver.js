@@ -32,14 +32,16 @@ define(function(require, exports, module) {
     isPG: true,
 
     get defaultDb() {
-      if (defaultDb) return defaultDb;
-      return defaultDb = new Client(module.config().url);
+      if (! defaultDb) {
+        defaultDb = new Client(module.config().url, 'default');
+      }
+      return defaultDb;
     },
 
     closeDefaultDb: closeDefaultDb,
 
-    connect: function (url) {
-      return new Client(url);
+    connect: function (url, name) {
+      return new Client(url, name);
     },
   };
 });
@@ -105,10 +107,11 @@ function Connection(client, callback) {
   };
 }
 
-function Client(url) {
+function Client(url, name) {
   this._id = (++clientCount).toString(36);
   this._url = url;
   this._weakMap = new WeakMap;
+  this.name = name || this.schemaName;
 }
 
 Client.prototype = {
