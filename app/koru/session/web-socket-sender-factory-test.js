@@ -24,6 +24,15 @@ define(function (require, exports, module) {
       assert.same(v.ws.onerror, v.ws.onclose);
     },
 
+    "test onStop callbacks": function () {
+      v.sess.onStop(v.c1 = test.stub());
+      v.sess.onStop(v.c2 = test.stub());
+
+      v.sess.stop();
+      assert.called(v.c1);
+      assert.called(v.c2);
+    },
+
     "test state": function () {
       assert.same(v.state, v.sess.state);
     },

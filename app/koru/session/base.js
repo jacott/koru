@@ -18,6 +18,10 @@ define(function(require, exports, module) {
       delete this._commands[cmd];
     },
 
+    onStop: function (func) {
+      (this._onStops || (this._onStops = [])).push(func);
+    },
+
     _onMessage: function(conn, data) {
       if (typeof data === 'string') {
         var type = data[0];

@@ -39,6 +39,7 @@ define(function (require, exports, module) {
         } catch(ex) {}
         this.ws &&
           this.ws.onclose({wasClean: true});
+        this._onStops && this._onStops.forEach(func => func());
       },
 
       heartbeatInterval: 20000,
