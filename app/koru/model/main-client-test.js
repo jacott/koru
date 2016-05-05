@@ -14,7 +14,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-      util.dbId = null;
+      util.clearDbId();
       delete Model._databases.foo1;
       delete Model._databases.foo2;
       v = null;
@@ -46,7 +46,8 @@ define(function (require, exports, module) {
 
       assert.same(TestModel.findById('tmf1'), doc2);
 
-      util.dbId = 'foo1';
+      /** Test can change the main db id from within a temp change */
+      util.withDB('foo2', () => {util.setMainDbId('foo1')});
 
       assert.same(TestModel.findById('tmf1'), doc);
 

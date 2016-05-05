@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         id1: 'text',
         id2: 'text',
       });
-      util.dbId = 'foo';
+      util.setMainDbId('foo');
 
       v.obSpy = test.spy(v.TestModel._indexUpdate, 'onChange');
       v.idx = v.TestModel.addUniqueIndex('id2', 'id1');
@@ -25,7 +25,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-      util.dbId = null;
+      util.clearDbId();
       delete Model._databases.foo;
       delete Model._databases.bar;
       v = null;

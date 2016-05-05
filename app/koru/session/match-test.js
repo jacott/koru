@@ -1,8 +1,9 @@
 define(function (require, exports, module) {
   var test, v;
-  var util = require('../util');
+  var util = require('koru/util');
   var TH = require('./test-helper');
   var match = require('./match');
+  var Model = require('koru/model/main');
 
   TH.testCase(module, {
     setUp: function () {
@@ -15,7 +16,7 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       v.handles.forEach(function (h) {h.stop()});
-      util.dbId = null;
+      util.clearDbId();
       v = null;
     },
 
@@ -51,9 +52,9 @@ define(function (require, exports, module) {
       refute.same(v.t.id, v.f.id);
 
       if (isClient) {
-        util.dbId = 'foo';
+        util.pushDbId('foo');
         refute.isTrue(v.match.has(v.doc));
-        util.dbId = null;
+        util.popDbId();
       } else {
         var orig = util.dbId;
         try {

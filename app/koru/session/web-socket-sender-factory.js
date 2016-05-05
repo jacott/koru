@@ -97,7 +97,7 @@ define(function (require, exports, module) {
         stopReconnTimeout();
         if (heartbeatTO) heartbeatTO();
         heatbeatTime = heartbeatTO = session.ws = ws = session._queueHeatBeat = null;
-        retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
+        if (event.code) retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
         retryCount = Math.min(4, ++retryCount);
 
         if (sessState.isClosed())

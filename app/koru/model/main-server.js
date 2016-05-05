@@ -26,6 +26,8 @@ define(function(require, exports, module) {
       thread.dbId = value.name;
     },
     get dbId() {return util.db.name},
+
+    clearDbId: function () {util.db = null}
   });
 
   koru.onunload(module, function () {

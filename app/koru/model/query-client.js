@@ -103,7 +103,7 @@ define(function(require, exports, module) {
         },
         withIndex: function (idx, params) {
           var orig = util.dbId;
-          util.dbId = this._dbId || orig;
+          util.dbId = this._dbId;
           this._index = idx(params) || {};
           util.dbId = orig;
           return this;
@@ -111,7 +111,8 @@ define(function(require, exports, module) {
 
         withDB: function (dbId) {
           var orig = util.dbId;
-          this._dbId = util.dbId = dbId;
+          util.dbId = dbId;
+          this._dbId = dbId;
           this._docs = this.model.docs;
           util.dbId = orig;
           return this;

@@ -7,7 +7,7 @@ define(function(require, exports, module) {
 
   util.extend(exports, {
     setUserId: function (id) {
-      koru.util.thread.userId = id;
+      util.thread.userId = id;
       setState('change');
     },
 

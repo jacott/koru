@@ -14,7 +14,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      util.dbId = 'foo';
+      util.setMainDbId('foo');
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     },
@@ -23,7 +23,7 @@ define(function (require, exports, module) {
       Model._destroyModel('TestModel', 'drop');
       Model._destroyModel('TestModel2', 'drop');
       sessState._resetPendingCount();
-      util.dbId = null;
+      util.clearDbId();
       delete Model._databases.foo;
       delete Model._databases.foo2;
       v = null;

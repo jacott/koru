@@ -10,11 +10,45 @@ define(function(require, exports, module) {
 
   var _support;
 
-  var threadDbId = '';
+  var threadDbId = '', mainDbId = '', dbIdStack = [];
 
   util.extend(util, {
     get dbId() {return threadDbId},
-    set dbId(value) {threadDbId = value || ''},
+    set dbId(value) {
+      threadDbId = value || '';
+    },
+
+    pushDbId: function (value) {
+      dbIdStack.push(threadDbId);
+      threadDbId = value || '';
+    },
+
+    popDbId: function () {
+      threadDbId = dbIdStack.pop();
+      if (dbIdStack.length === 0)
+        threadDbId = mainDbId;
+    },
+
+    setMainDbId: function (value) {
+      return threadDbId = mainDbId = value || '';
+    },
+
+    clearDbId: function () {
+      threadDbId = mainDbId = '';
+      dbIdStack.length = 0;
+    },
+
+    withDB: function (dbId, func) {
+      if (dbId === util.dbId)
+        return func();
+
+      try {
+        util.pushDbId(dbId);
+        return func();
+      } finally {
+        util.popDbId();
+      }
+    },
   });
 
   var dbs = {};

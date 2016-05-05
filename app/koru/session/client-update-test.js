@@ -42,7 +42,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('Foo', 'drop');
-      util.dbId = null;
+      util.clearDbId();
       delete Model._databases.foo01;
       v = null;
     },
