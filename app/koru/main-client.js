@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   koru.reload = function () {
     if (koru.loadError) throw koru.loadError;
 
-    window.location.reload(true);
+    (window.top || window).location.reload(true);
     throw "reloading"; // no point continuing
   };
 

@@ -37,7 +37,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test title": function () {
-      assert.same(v.origTitle, 'Running: Koru Test Mode');
+      assert.same(v.origTitle, 'Koru Test Mode');
     },
 
     "test focus": function () {

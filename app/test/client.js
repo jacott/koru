@@ -14,5 +14,6 @@ define(function(require, exports, module) {
   require('koru/test/client');
 
   document.title = 'Koru Test Mode';
+  if (window.top) window.top.document.title = document.title;
   koru.onunload(module, 'reload');
 });

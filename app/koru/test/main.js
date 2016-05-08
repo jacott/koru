@@ -3,13 +3,17 @@ define(function(require, exports, module) {
   var util = require('../util');
   var match = require('./match');
 
-  var Module = module.constructor;
 
   require("./assertions-methods");
   require("./callbacks");
   require("./test-case");
   require("./runner");
+
+  var Module = module.constructor;
   var geddon = require("./core");
+
+  if (isClient)
+    var topDoc = window.top ? window.top.document : document;
 
   Error.stackTraceLimit = 50;
 
@@ -102,7 +106,7 @@ define(function(require, exports, module) {
 
     run: function (pattern, tests) {
       if (isClient) {
-        document.title = 'Running: ' + document.title;
+        topDoc.title = 'Running: ' + topDoc.title;
         window.onbeforeunload = warnFullPageReload;
       }
       console.log('*** test-start ' + ++testRunCount);
@@ -177,7 +181,7 @@ define(function(require, exports, module) {
     }
 
     if (isClient) {
-      document.title = document.title.replace(/Running: /, '');
+      topDoc.title = topDoc.title.replace(/Running: /, '');
       window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {
         window.onbeforeunload = null;
       }, 1);
