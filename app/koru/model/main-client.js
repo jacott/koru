@@ -10,17 +10,17 @@ define(function(require, exports, module) {
 
   var _support;
 
-  var threadDbId = '', mainDbId = '', dbIdStack = [];
+  var defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default', dbIdStack = [];
 
   util.extend(util, {
     get dbId() {return threadDbId},
     set dbId(value) {
-      threadDbId = value || '';
+      threadDbId = value || defaultDbId;
     },
 
     pushDbId: function (value) {
       dbIdStack.push(threadDbId);
-      threadDbId = value || '';
+      threadDbId = value || defaultDbId;
     },
 
     popDbId: function () {
@@ -30,11 +30,15 @@ define(function(require, exports, module) {
     },
 
     setMainDbId: function (value) {
-      return threadDbId = mainDbId = value || '';
+      return threadDbId = mainDbId = value || defaultDbId;
+    },
+
+    setDefaultDbId: function (value) {
+      defaultDbId = mainDbId = threadDbId = value;
     },
 
     clearDbId: function () {
-      threadDbId = mainDbId = '';
+      threadDbId = mainDbId = defaultDbId;
       dbIdStack.length = 0;
     },
 

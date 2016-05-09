@@ -103,7 +103,7 @@ define(function(require, exports, module) {
         },
         withIndex: function (idx, params) {
           var orig = util.dbId;
-          util.dbId = this._dbId;
+          util.dbId = this._dbId || orig;
           this._index = idx(params) || {};
           util.dbId = orig;
           return this;

@@ -181,6 +181,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
     intercept: function (object, prop, replacement, restore) {
       var orig = Object.getOwnPropertyDescriptor(object, prop);
+      if (orig && orig.value && typeof orig.value.restore === 'function')
+        throw new Error(`Already stubbed ${prop}`);
 
       if (replacement) {
         if (typeof replacement === 'function') {

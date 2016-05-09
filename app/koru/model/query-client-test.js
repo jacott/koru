@@ -29,6 +29,15 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test withIndex, withDB": function () {
+      v.idx = v.TestModel.addUniqueIndex('name', 'age');
+
+      util.withDB('foo2', () => v.TestModel.create({name: 'foo', age: 3}));
+
+      assert.equals(v.TestModel.query.withIndex(v.idx, {name: 'foo'}).fetchField('age'), [5]);
+      assert.equals(v.TestModel.query.withDB('foo2').withIndex(v.idx, {name: 'foo'}).fetchField('age'), [3]);
+    },
+
     "test withDB": function () {
       util.withDB('foo2', () => v.TestModel.create({age: 3}));
 

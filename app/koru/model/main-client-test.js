@@ -20,6 +20,26 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test changing defaultDbId, mainDbId": function () {
+      test.onEnd(() => util.setDefaultDbId('default'));
+      assert.same(util.dbId, 'default');
+      util.setMainDbId('bar');
+      assert.same(util.dbId, 'bar');
+      util.setDefaultDbId('foo');
+      util.dbId = null;
+      assert.same(util.dbId, 'foo');
+      util.pushDbId('fuzz');
+      util.popDbId();
+      assert.same(util.dbId, 'foo');
+      util.setMainDbId('bar');
+      util.pushDbId('fuzz');
+      assert.same(util.dbId, 'fuzz');
+      util.popDbId();
+      assert.same(util.dbId, 'bar');
+      util.clearDbId();
+      assert.same(util.dbId, 'foo');
+    },
+
     "test changing dbId": function () {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
        var docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
@@ -33,7 +53,7 @@ define(function (require, exports, module) {
       var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
 
       assert.equals(Model._databases, {
-        '': {TestModel: {
+        default: {TestModel: {
           docs: {glo1: TH.matchModel(docGlobal)},
         }},
         foo1: {TestModel: {
@@ -73,7 +93,7 @@ define(function (require, exports, module) {
 
       assert.equals(Model._getSetProp('foo2', 'FooModel', 'docs', () => {return {foo: 123}}), {foo: 123});
 
-      assert.equals(Model._databases, {'': {}, foo1: {}, foo2: {
+      assert.equals(Model._databases, {default: {}, foo1: {}, foo2: {
         FooModel: {docs: {foo: 123}}
       }});
 
@@ -95,7 +115,7 @@ define(function (require, exports, module) {
 
       assert.called(v.afterRemove);
 
-      assert.equals(Object.keys(Model._databases), ['']);
+      assert.equals(Object.keys(Model._databases), ['default']);
     },
 
     "test create returns same as findById": function () {
