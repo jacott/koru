@@ -240,25 +240,30 @@ define(function(require, exports, module) {
     return result;
   }
 
+  function AssertionError(ex) {
+    ex.name = 'AssertionError';
+    return ex;
+  }
+
   exports.stub = function (object, property, repFunc) {
     if (repFunc && typeof repFunc !== 'function')
-      throw new Error("third argument to stub must be a function or null");
+      throw AssertionError(new Error("third argument to stub must be a function or null"));
     if (object) {
       if (typeof property !== 'string')
-        throw new Error(inspect(property) + "is not a string");
+        throw AssertionError(new Error(inspect(property) + "is not a string"));
       if (! (property in object))
-        throw new Error(inspect(property) + "does not exist in "+inspect(object, 1));
+        throw AssertionError(new Error(inspect(property) + "does not exist in "+inspect(object, 1)));
 
       var desc = Object.getOwnPropertyDescriptor(object, property);
       var orig = desc ? desc.value : object[property];
       if (orig && typeof orig.restore === 'function')
-        throw new Error(`Already stubbed ${property}`);
+        throw AssertionError(new Error(`Already stubbed ${property}`));
       if (typeof orig === 'function') {
         var func = stubFunction(orig, stubProto);
         func._replacement = repFunc;
       } else {
         if (repFunc) {
-          throw new Error("Attempt to stub non function with a function");
+          throw AssertionError(new Error("Attempt to stub non function with a function"));
         }
 
         var func = Object.create(stubProto);
@@ -278,7 +283,7 @@ define(function(require, exports, module) {
 
   exports.spy = function (object, property, func) {
     if (func && typeof func !== 'function')
-      throw new Error("third argument to spy must be a function or null");
+      throw AssertionError(new Error("third argument to spy must be a function or null"));
     if (object && typeof property === 'string') {
       var desc = Object.getOwnPropertyDescriptor(object, property);
       var orig = desc === undefined ? object[property] : desc.value;
@@ -294,7 +299,7 @@ define(function(require, exports, module) {
       }
     }
 
-    throw new Error("Attempt to spy on non function");
+    throw AssertionError(new Error("Attempt to spy on non function"));
   };
 
   function restore(object, property, desc, orig, func) {

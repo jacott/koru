@@ -2,17 +2,9 @@ define(function (require, exports, module) {
   'use strict';
   var koru = require('./main');
   var session = require('./session/main');
-  require('./ui/helpers');
   var util = require('koru/util');
 
-  var origLogger = koru.logger;
-
-  koru.onunload(module, function () {
-    requirejs.onError = null;
-    window.removeEventListener('error', errorListener);
-    koru.logger = origLogger;
-  });
-
+  koru.onunload(module, 'reload');
 
   window.yaajs.module.ctx.onError = logError;
 

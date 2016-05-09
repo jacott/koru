@@ -5,7 +5,7 @@ define(function(require) {
   require('koru/server-rc');
   var webServer = require('koru/web-server');
   var koru = require('koru/main');
-
+  require('koru/test/server');
 
   return function () {
     webServer.start();

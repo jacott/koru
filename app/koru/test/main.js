@@ -28,8 +28,6 @@ define(function(require, exports, module) {
 
   var count, skipCount, errorCount, timer;
 
-  var origLogger = koru.logger;
-
   var testRunCount = 0;
 
   util.extend(match, {
@@ -114,11 +112,6 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      koru.logger = function (type, ...args) {
-        console.log.apply(console, args);
-        exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
-      };
-
       require(tests, function (...args) {
         koru.Fiber(() => {geddon.start(args)}).run();
       }, errorLoading);
@@ -147,6 +140,11 @@ define(function(require, exports, module) {
         return p1 + ' ' + parts.join(' ').replace(/\xa0/g, ' ') + '>';
       });
     }
+  };
+
+  koru.logger = function (type, ...args) {
+    console.log.apply(console, args);
+    exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
   };
 
   geddon.onEnd(endTest);
@@ -186,7 +184,6 @@ define(function(require, exports, module) {
         window.onbeforeunload = null;
       }, 1);
     }
-    koru.logger = origLogger;
 
     exports.testHandle('F', errorCount);
     geddon._init();
