@@ -6,8 +6,10 @@ define(function(require, exports, module) {
 
   exports.load = function (name, onload) {
     fs.readFile(name, function (err, text) {
-      if (err) onload.error(err);
-      else onload(text.toString());
+      util.Fiber(function () {
+        if (err) onload.error(err);
+        else onload(text.toString());
+      }).run();
     });
   };
 });
