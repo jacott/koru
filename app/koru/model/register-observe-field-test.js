@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   var Model = require('./main');
+  var util = require('koru/util');
 
   TH.testCase(module, {
     setUp: function () {
@@ -20,6 +21,43 @@ define(function (require, exports, module) {
         row.stop();
       }
       v = null;
+    },
+
+    "test multi dbs": function () {
+      v.TestModel.registerObserveField('toys');
+      var origId = v.dbId = util.dbId;
+      test.intercept(util, 'dbId');
+      Object.defineProperty(util, 'dbId', {configurable: true, get: function () {return v.dbId}});
+      var oc = test.spy(v.TestModel, 'onChange');
+
+      v.obs.push(v.TestModel.observeToys(['robot'], v.origOb = test.stub()));
+      v.dbId = 'alt';
+      assert.same(util.dbId, 'alt');
+
+      assert.calledWith(oc, TH.match(func => v.oFunc = func));
+      oc.reset();
+      v.obs.push(v.altHandle = v.TestModel.observeToys(['robot'], v.altOb = test.stub()));
+      assert.calledWith(oc, TH.match(func => v.altFunc = func));
+      v.oFunc(v.doc, {name: 'old'});
+      assert.calledWith(v.origOb, v.doc);
+      refute.called(v.altOb);
+
+      v.origOb.reset();
+      v.altFunc(v.doc, {name: 'old'});
+      assert.calledWith(v.altOb, v.doc);
+      refute.called(v.origOb);
+
+      v.altHandle.stop();
+
+      v.altOb.reset();
+      v.altFunc(v.doc, {name: 'old'});
+      refute.called(v.altOb);
+
+
+      oc.reset();
+      v.obs.push(v.TestModel.observeToys(['robot'], test.stub()));
+      v.obs.push(v.TestModel.observeToys(['buzz'], test.stub()));
+      assert.calledOnce(oc);
     },
 
     "observe array field": {

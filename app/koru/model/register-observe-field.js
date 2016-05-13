@@ -8,8 +8,8 @@ define(function(require, exports, module) {
     model.registerObserveField = registerObserveField;
 
     function registerObserveField(field) {
-      var observers = {};
-      var modelObserver;
+      var dbObservers = {};
+      var modelObMap = {};
       var key = 0;
       var findFieldOpts = (function () {
         var fields = {};
@@ -32,21 +32,25 @@ define(function(require, exports, module) {
       };
 
       function observeValue(value, options) {
+        var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
         var obs = observers[value] || (observers[value] = {});
         obs[options[0]] = options;
-        modelObserver || initModelObserver();
-        return stopObserver(value, obs, options);
+        var modelObserver = getModelOb(observers);
+        return stopObserver(value, obs, options, observers);
       };
 
-      function stopObserver(value, obs, options) {
+      function stopObserver(value, obs, options, observers) {
         return {
           stop: function() {
             delete obs[options[0]];
             for(var key in obs) return;
             delete observers[value];
             for(var key in observers) return;
-            modelObserver && modelObserver.stop();
-            modelObserver = null;
+          var modelObserver = modelObMap[util.dbId];
+            if (modelObserver) {
+              modelObserver.stop();
+              delete modelObMap[util.dbId];
+            }
           },
 
           value: value
@@ -100,13 +104,18 @@ define(function(require, exports, module) {
         };
       }
 
-      function initModelObserver() {
-        modelObserver = model.onChange(function (doc, was) {
+      function getModelOb(observers) {
+        var ob = modelObMap[util.dbId];
+        if (ob) return ob;
+
+        ob = model.onChange(function (doc, was) {
           var nowValue = doc && doc[field];
           var asBefore = doc ? was && doc.$withChanges(was) : was;
           var oldValue = asBefore && asBefore[field];
 
           var called = {}; // ensure only called once;
+
+
 
           if (oldValue != undefined) {
             if (Array.isArray(oldValue)) for(var i = 0; i < oldValue.length; ++i) {
@@ -124,15 +133,17 @@ define(function(require, exports, module) {
             }
           }
         });
-      }
 
-      function callObservers(called, doc, was, value) {
-        var cbs = observers[value];
-        if (cbs) for(var key in cbs) {
-          var options = cbs[key];
-          if (! (options[0] in called)) {
-            called[options[0]] = true;
-            options[1](doc, was);
+        return modelObMap[util.dbId] = ob;
+
+        function callObservers(called, doc, was, value) {
+          var cbs = observers[value];
+          if (cbs) for(var key in cbs) {
+            var options = cbs[key];
+            if (! (options[0] in called)) {
+              called[options[0]] = true;
+              options[1](doc, was);
+            }
           }
         }
       }

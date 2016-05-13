@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
-  var makeSubject = require('../make-subject');
+  var util = require('koru/util');
+  var makeSubject = require('koru/make-subject');
 
   return function (model) {
-    var observers = {};
-    var modelObserver;
+    var dbObservers = {};
+    var modelObMap = {};
     var key = 0;
     var modelName = model.modelName;
 
@@ -12,21 +13,25 @@ define(function(require, exports, module) {
     model.observeIds = observeIds;
 
     function observeId(id, callback) {
+      var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
       var obs = observers[id] || (observers[id] = {});
       obs[++key] = callback;
-      modelObserver || initModelObserver();
-      return stopObserver(id, obs, key);
+      var modelObserver = getModelOb(observers);
+      return stopObserver(id, obs, key, observers);
     };
 
-    function stopObserver(id, obs, key) {
+    function stopObserver(id, obs, key, observers) {
       return {
         stop: function() {
           delete obs[key];
           for(key in obs) return;
           delete observers[id];
-          for(key in observers) return;
-          modelObserver && modelObserver.stop();
-          modelObserver = null;
+          for(id in observers) return;
+          var modelObserver = modelObMap[util.dbId];
+          if (modelObserver) {
+            modelObserver.stop();
+            delete modelObMap[util.dbId];
+          }
         },
 
         id: id
@@ -71,14 +76,19 @@ define(function(require, exports, module) {
       };
     }
 
-    function initModelObserver() {
-      modelObserver = model.onChange(function (doc, was) {
+    function getModelOb(observers) {
+      var ob = modelObMap[util.dbId];
+      if (ob) return ob;
+
+      ob = model.onChange(function (doc, was) {
         var cbs = observers[(doc || was)._id];
         if (cbs) for(var i in cbs) {
           var cb = cbs[i];
           cb(doc, was);
         }
       });
+
+      return modelObMap[util.dbId] = ob;
     }
   };
 });
