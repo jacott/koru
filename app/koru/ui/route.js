@@ -35,10 +35,10 @@ define(function(require, exports, module) {
         module = null;
       }
       options = addCommon(this, module, template, options);
-      if (! ('onEntry' in template))
+      if (! template.onEntry)
         template.onEntry = onEntryFunc(template, options);
 
-      if (! ('onExit' in template))
+      if (! template.onExit)
         template.onExit = onExitFunc(template);
     },
 
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
     },
 
     addDialog: function (module, template, options) {
-      if (module && ! ('exports' in module)) {
+      if (module && ! module.exports) {
         options = template;
         template = module;
         module = null;
@@ -78,8 +78,8 @@ define(function(require, exports, module) {
 
       var path = template.$path || (template.$path = templatePath(template));
 
-      if ('route' in template) throw new Error(template.name + ' is already a route base');
-      if (path in this.routes) throw new Error('Path already exists! ', path + " for template " + this.path);
+      if (template.route) throw new Error(template.name + ' is already a route base');
+      if (this.routes.path) throw new Error('Path already exists! ', path + " for template " + this.path);
 
       return template.route = this.routes[path] = new Route(path, template, this, routeVar);
     },
@@ -109,7 +109,7 @@ define(function(require, exports, module) {
     options = options || {};
     var path = options.path;
     if (path == null) path = templatePath(template);
-    if (path in route.routes) throw new Error('Path already exists! ' + path + " for template " + this.path);
+    if (route.routes.path) throw new Error('Path already exists! ' + path + " for template " + this.path);
     route.routes[path] = template;
     template.route = route;
     template.subPath = path;
@@ -188,11 +188,8 @@ define(function(require, exports, module) {
     },
 
     gotoPage: function (page, pageRoute) {
-      if (page && ! ('onEntry' in page)) {
-        if ('route' in page)
-          page = page.route.defaultPage;
-        else
-          page = page.defaultPage;
+      if (page && ! page.onEntry) {
+        page = page.route ? page.route.defaultPage : page.defaultPage;
       }
 
       pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
@@ -264,7 +261,7 @@ define(function(require, exports, module) {
 
     recordHistory: function (page, href) {
       if (! Route.history) return;
-      if (! pageState || (page && ('noPageHistory' in page)))
+      if (! pageState || (page && page.noPageHistory))
           return;
       if (currentHref === href)
         var cmd = 'replaceState';
@@ -316,7 +313,7 @@ define(function(require, exports, module) {
         page = koru.getLocation();
 
       if (typeof page !== 'string') {
-        if (! ('pathname' in page))
+        if (! page.pathname)
           return this.gotoPage.apply(this, arguments);
 
         if (page.pathname !== '/') {
@@ -331,7 +328,7 @@ define(function(require, exports, module) {
 
       var m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) || /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
       if (m) {
-        pageRoute.pathname = page = m[1] || '/';
+        page = m[1] || '/';
         if (m[2]) pageRoute.search = m[2];
         if (m[3]) pageRoute.hash = m[3];
       }
@@ -345,12 +342,12 @@ define(function(require, exports, module) {
       for(var i = 0; i < parts.length; ++i) {
         var part = parts[i];
         if (! part) continue;
-        newPage = (('routes' in page) && page.routes[part]);
+        newPage = (page.routes && page.routes[part]);
         if (! newPage) {
           newPage = page.defaultPage;
 
           if (page.routeVar) {
-            if (page.routeVar in pageRoute) {
+            if (pageRoute[page.routeVar]) {
               pageRoute.append = parts.slice(i).join('/');
               break;
             }
@@ -425,12 +422,12 @@ define(function(require, exports, module) {
   }
 
   function pathname(template, pageRoute) {
-    if (template && ('route' in template)) {
+    if (template && template.route) {
       var path = routePath(template.route, pageRoute)+'/'+template.subPath;
     } else
       var path = '';
 
-    if ('append' in pageRoute)
+    if (pageRoute.append)
       return path + '/' + pageRoute.append;
 
     return path;
@@ -440,9 +437,9 @@ define(function(require, exports, module) {
     if (! route) return '';
 
     var path = route.path;
-    var sym = route.routeVar;
-    if (sym && (sym in pageRoute))
-      path += '/' + pageRoute[sym];
+    var routeVar = route.routeVar && pageRoute[route.routeVar];
+    if (routeVar)
+      path += '/' + routeVar;
 
     if (! route.parent) return path;
     return routePath(route.parent, pageRoute)+'/'+path;
