@@ -87,6 +87,16 @@ isClient && define(function (require, exports, module) {
         v.Baz.route.addTemplate(v.RootBar);
       },
 
+      "test async addBase": function () {
+        v.Baz.route.async = true;
+
+        Route.gotoPath('/baz/an-id/root-bar');
+
+        refute.called(v.RootBar.onEntry);
+        assert.calledWith(v.Baz.onBaseEntry, TH.match.object, {pathname: '/baz/an-id/root-bar', bazId: 'an-id'}, TH.match.func);
+        v.Baz.onBaseEntry.yield();
+        assert.calledWith(v.RootBar.onEntry, v.RootBar, {pathname: '/baz/an-id/root-bar', bazId: 'an-id'});
+      },
 
       "test default root": function () {
         Route.root.routeVar = 'fooId';
@@ -474,7 +484,10 @@ isClient && define(function (require, exports, module) {
 
       Route.root.addTemplate(RootBar);
 
-      Route.root.addBase(Baz);
+      /** test route options */
+      Route.root.addBase(Baz, {foo: 123});
+      assert.same(Baz.route.foo, 123);
+
       Baz.route.addBase(Fnord);
       Fnord.route.addTemplate(v.FooBar);
       Baz.route.addTemplate(BazBar);

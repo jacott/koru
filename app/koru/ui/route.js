@@ -11,12 +11,18 @@ define(function(require, exports, module) {
     debug_page = value;
   };
 
-  function Route(path, template, parent, routeVar) {
+  function Route(path, template, parent, options) {
+    if (options) {
+      if (typeof options === 'string')
+        this.routeVar = options;
+      else
+        util.extend(this, options);
+    }
+
     this.path = path || '';
     this.template = template;
     this.parent = parent;
     this.routes = {};
-    this.routeVar = routeVar;
   };
 
   makeSubject(Route);
@@ -63,14 +69,14 @@ define(function(require, exports, module) {
       this.routes[path] = template;
     },
 
-    addBase: function (module, template, routeVar) {
+    addBase: function (module, template, options) {
       if (module) {
         if ('exports' in module) {
           koru.onunload(module, function () {
             this.removeBase(template);
           }.bind(this));
         } else {
-          routeVar = template;
+          options = template;
           template = module;
           module = null;
         }
@@ -81,7 +87,7 @@ define(function(require, exports, module) {
       if (template.route) throw new Error(template.name + ' is already a route base');
       if (this.routes.path) throw new Error('Path already exists! ', path + " for template " + this.path);
 
-      return template.route = this.routes[path] = new Route(path, template, this, routeVar);
+      return template.route = this.routes[path] = new Route(path, template, this, options);
     },
 
     removeBase: function (template) {
@@ -95,10 +101,10 @@ define(function(require, exports, module) {
       onBaseExit && onBaseExit.call(template, page, location);
     },
 
-    onBaseEntry: function(page, location) {
+    onBaseEntry: function(page, location, callback) {
       var template = this.template;
       var onBaseEntry = template && template.onBaseEntry;
-      onBaseEntry && onBaseEntry.call(template, page, location);
+      onBaseEntry && onBaseEntry.call(template, page, location, callback);
     },
   };
 
@@ -223,26 +229,28 @@ define(function(require, exports, module) {
         if (currentPage) {
           currentPage.onExit && currentPage.onExit(page, pageRoute);
 
-          exitEntry(toPath(currentPage.$autoRender ? currentPage.route : currentPage), currentPageRoute, toPath(page && page.route), pageRoute, page);
+          exitEntry(toPath(currentPage.$autoRender ? currentPage.route : currentPage), currentPageRoute, toPath(page && page.route), pageRoute, page, then);
         } else {
-          exitEntry([], {}, toPath(page && page.route), pageRoute, page);
+          exitEntry([], {}, toPath(page && page.route), pageRoute, page, then);
         }
 
-        if (! page) {
-          var href = null;
-          var title = Route.title;
-          pageRoute = {};
-        } else {
-          page = page.Index || page;
-          var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
-          if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
-          var title = page.title || Route.title;
-        }
+        function then() {
+          if (! page) {
+            var href = null;
+            var title = Route.title;
+            pageRoute = {};
+          } else {
+            page = page.Index || page;
+            var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+            if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
+            var title = page.title || Route.title;
+          }
 
-        Route.recordHistory(page, href);
-        currentHref = href;
-        currentPage = page;
-        Route.setTitle(title);
+          Route.recordHistory(page, href);
+          currentHref = href;
+          currentPage = page;
+          Route.setTitle(title);
+        }
       }
       catch(ex) {
         inGotoPage = false;
@@ -389,7 +397,7 @@ define(function(require, exports, module) {
     },
   });
 
-  function exitEntry(exit, oldSymbols, entry, pageRoute, page) {
+  function exitEntry(exit, oldSymbols, entry, pageRoute, page, then) {
     var entryLen = entry.length;
     var exitLen = exit.length;
     var diff = exitLen - entryLen;
@@ -414,11 +422,20 @@ define(function(require, exports, module) {
 
     currentPage = exit[index];
 
-    for(index = index - diff - 1 ; index >= 0; --index) {
-      item = entry[index];
+    index = index - diff - 1 ;
+    function callback() {
+      if (index < 0)
+        return then();
+      item = entry[index--];
       currentPage = item;
-      item.onBaseEntry(page, pageRoute);
+      if (item.async)
+        item.onBaseEntry(page, pageRoute, callback);
+      else {
+        item.onBaseEntry(page, pageRoute);
+        callback();
+      }
     }
+    callback();
   }
 
   function pathname(template, pageRoute) {
