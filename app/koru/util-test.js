@@ -148,6 +148,7 @@ define(function (require, exports, module) {
     },
 
     "test egal": function () {
+      assert.same(util.egal, util.is);
       assert.isTrue(util.egal(null, null));
       assert.isTrue(util.egal(NaN, NaN));
       assert.isTrue(util.egal(-0, -0));

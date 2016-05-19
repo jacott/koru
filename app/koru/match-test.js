@@ -67,6 +67,12 @@ define(function (require, exports, module) {
       assert.isTrue(me.$throwTest([1, null]));
     },
 
+    "test match.is": function () {
+      var me = sut.is(v.foo = {foo: 123});
+      assert.isTrue(me.$test(v.foo));
+      assert.isFalse(me.$test({foo: 123}));
+    },
+
     "test match.regExp": function () {
       var mr = sut.regExp(/^ab*c$/i);
 

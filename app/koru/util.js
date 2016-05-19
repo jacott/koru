@@ -21,6 +21,20 @@ define(function(require, exports, module) {
 
   var slice = Array.prototype.slice;
 
+  var egal = Object.is || function(x, y) {
+    if (x === y) {
+      // 0 === -0, but they are not identical
+      return x !== 0 || 1 / x === 1 / y;
+    }
+
+    // NaN !== NaN, but they are identical.
+    // NaNs are the only non-reflexive value, i.e., if x !== x,
+    // then x is a NaN.
+    // isNaN is broken: it converts its argument to number, so
+    // isNaN("foo") => true
+    return x !== x && y !== y;
+  };
+
   util.extend(util, {
     DAY: 1000*60*60*24,
 
@@ -87,7 +101,8 @@ define(function(require, exports, module) {
      * -0 === +0 (should be false)
      *  http://wiki.ecmascript.org/doku.php?id=harmony:egal
      */
-    egal: Object.is || egal,
+    egal: egal,
+    is: egal,
 
     /**
      * Only for undefined, null, number, string, boolean, date, array
@@ -812,20 +827,6 @@ define(function(require, exports, module) {
 
     TwoIndex: TwoIndex,
   });
-
-  function egal(x, y) {
-    if (x === y) {
-      // 0 === -0, but they are not identical
-      return x !== 0 || 1 / x === 1 / y;
-    }
-
-    // NaN !== NaN, but they are identical.
-    // NaNs are the only non-reflexive value, i.e., if x !== x,
-    // then x is a NaN.
-    // isNaN is broken: it converts its argument to number, so
-    // isNaN("foo") => true
-    return x !== x && y !== y;
-  }
 
   function deepEqual(actual, expected) {
     if (egal(actual, expected)) {

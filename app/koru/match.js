@@ -64,6 +64,11 @@ define(function(require, exports, module) {
           return util.deepEqual(value, expected);
         }, name || 'match.equal');
       },
+      is: function (expected, name) {
+        return match(function (value) {
+          return util.is(value, expected);
+        }, name || 'match.is');
+      },
       regExp: function (regexp, name) {
         return match(function (value) {
           return typeof value === 'string' &&
