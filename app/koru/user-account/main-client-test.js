@@ -14,7 +14,7 @@ isClient && define(function (require, exports, module) {
       test = this;
       v = {};
       v.oldUserId = util.thread.userId;
-      v.handle = login.onChange(v.onChange = test.stub());
+      v.handle = login.onChange(session, v.onChange = test.stub());
       test.stub(session, 'rpc');
     },
 
@@ -22,7 +22,7 @@ isClient && define(function (require, exports, module) {
       util.thread.userId = v.oldUserId;
       v.handle && v.handle.stop();
       v = null;
-      login.state = null;
+      login.wait(session);
     },
 
     "test secureCall": function () {
@@ -238,7 +238,7 @@ isClient && define(function (require, exports, module) {
         userAccount.logout();
         assert.calledWith(session.send, 'VX' + 'abc|def');
 
-        session._onMessage({}, 'VS');
+        session._onMessage(session, 'VS');
 
         assert.same(koru.userId(), null);
         assert.same(localStorage.getItem('koru.loginToken'), undefined);
@@ -260,27 +260,27 @@ isClient && define(function (require, exports, module) {
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
         userAccount._onConnect(session);
 
-        assert.same(login.state, 'wait');
+        assert.same(login.getState(session), 'wait');
 
         assert.calledWith(v.onChange, 'wait');
         assert.calledWith(session.send, 'VL', 'tokenId|token123');
 
-        session._onMessage({}, 'VSuid123');
+        session._onMessage(session, 'VSuid123');
 
-        assert.same(login.state, 'change');
         assert.calledWith(v.onChange, 'change');
+        assert.same(login.getState(session), 'change');
 
         assert.same(koru.userId(), 'uid123');
 
 
-        session._onMessage({}, 'VC');
+        session._onMessage(session, 'VC');
 
-        assert.same(login.state, 'ready');
+        assert.same(login.getState(session), 'ready');
         assert.calledWith(v.onChange, 'ready');
       },
 
       "test receiving token": function () {
-        session._onMessage({}, 'VTthe_token');
+        session._onMessage(session, 'VTthe_token');
 
         assert.same(localStorage.getItem('koru.loginToken'), 'the_token');
       },
@@ -297,9 +297,9 @@ isClient && define(function (require, exports, module) {
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
         userAccount._onConnect(session);
 
-        session._onMessage({}, 'VF');
+        session._onMessage(session, 'VF');
 
-        assert.same(login.state, 'failure');
+        assert.same(login.getState(session), 'failure');
         assert.calledWith(v.onChange, 'failure');
       },
     },

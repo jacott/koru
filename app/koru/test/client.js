@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var test = require('./main');
-  var sessionBase = require('koru/session/base').__initBase__();
+  var sessionBase = require('koru/session/base').__initBase__('test');
   var sessState = require('koru/session/state').__init__();
   var session = require('koru/session/main-client').__init__(sessState)(sessionBase);
   var localStorage = require('koru/local-storage');

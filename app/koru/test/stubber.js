@@ -101,6 +101,8 @@ define(function(require, exports, module) {
 
     yield: function () {
       var args = this._calls && this._calls[0] && this._calls[0].args;
+      if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
+
       if (args) {
         for(var i = 0; i < args.length; ++i) {
           var arg = args[i];

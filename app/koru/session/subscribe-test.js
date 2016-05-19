@@ -194,12 +194,12 @@ isClient && define(function (require, exports, module) {
 
         refute(v.sub.isResubscribe);
 
-        login.notify('change'); // no userId change
+        login.setUserId(v.sess, util.thread.userId); // no userId change
         refute.called(v.pubFunc);
 
         subscribe._userId = null;
 
-        login.notify('change');
+        login.setUserId(v.sess, util.thread.userId);
 
         refute(v.sub.isResubscribe);
 

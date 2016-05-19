@@ -9,7 +9,7 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      var base = SessionBase();
+      var base = SessionBase('foo');
       test.stub(base, 'provide');
       v.sess = sut(base, v.state = SessState());
       v.sess.newWs = function () {return v.ws = {}};
@@ -56,9 +56,9 @@ define(function (require, exports, module) {
     },
 
     "test using separate base": function () {
-      var sess1 = SessionBase();
-      var sess2 = SessionBase();
-      var base = SessionBase();
+      var sess1 = SessionBase('foo1');
+      var sess2 = SessionBase('foo2');
+      var base = SessionBase('foo3');
       sut(sess1, v.state = SessState(), v.wrapper1 = test.stub(), base);
       var bfunc = base._commands.B;
       sut(sess2, v.state = SessState(), v.wrapper2 = test.stub(), base);

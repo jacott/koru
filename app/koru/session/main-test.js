@@ -14,6 +14,10 @@ define(function (require, exports, module) {
       delete session._commands.t;
     },
 
+    "test setup": function () {
+      assert.same(session._id, 'default');
+    },
+
     "test provide": function () {
       refute(session._commands.hasOwnProperty('t'));
 

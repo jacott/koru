@@ -9,7 +9,7 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      v.session = sessionBase();
+      v.session = sessionBase('loader');
     },
 
     tearDown: function () {

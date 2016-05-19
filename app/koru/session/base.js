@@ -40,15 +40,15 @@ define(function(require, exports, module) {
     },
   };
 
-  function Constructor() {
+  function Constructor(id) {
     var base = Object.create(proto);
     base._rpcs = {};
     base._commands = {};
-
+    base._id = id;
     return base;
   }
 
-  exports = Constructor();
+  exports = Constructor('default');
   exports.__initBase__ = Constructor;
   return exports;
 });

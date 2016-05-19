@@ -48,7 +48,7 @@ define(function(require, exports, module) {
         }
         session.isUpdateFromServer = true;
         try {
-          util.pushDbId(session.dbId);
+          util.pushDbId(session._id);
           func(Model[data[0]], data[1], data[2]);
         } finally {
           session.isUpdateFromServer = false;

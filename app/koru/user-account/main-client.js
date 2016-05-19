@@ -27,7 +27,7 @@ define(function(require, exports, module) {
           localStorage.setItem('koru.loginToken', data.slice(1).toString());
           break;
         case 'S':
-          login.setUserId(data.slice(1).toString() || null);
+          login.setUserId(this, data.slice(1).toString() || null);
           break;
         case 'F':
           login.failed(this);
@@ -55,7 +55,7 @@ define(function(require, exports, module) {
         function() {},
         function (err, result) {
           localStorage.setItem('koru.loginToken', result.loginToken);
-          login.setUserId(result.userId);
+          login.setUserId(session, result.userId);
           callback();
         }
       );

@@ -29,7 +29,7 @@ define(function(require, exports, module) {
 
     var userId;
 
-    var loginOb = login.onChange(function (state) {
+    var loginOb = login.onChange(session, function (state, sess) {
       if (state === 'change') {
         if (koru.userId() === userId) return;
         userId = koru.userId();

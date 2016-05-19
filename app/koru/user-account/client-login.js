@@ -3,28 +3,40 @@ define(function(require, exports, module) {
   var makeSubject = require('../make-subject');
   var koru = require('../main');
 
-  makeSubject(exports);
+  var sessMap = {};
 
   util.extend(exports, {
-    setUserId: function (id) {
+    onChange: function (session, func) {
+      var subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
+      return subject.onChange(func);
+    },
+    setUserId: function (session, id) {
       util.thread.userId = id;
-      setState('change');
+      setState(session, 'change');
     },
 
-    ready: function () {
-      setState('ready');
+    ready: function (session) {
+      setState(session, 'ready');
     },
 
-    failed: function () {
-      setState('failure');
+    failed: function (session) {
+      setState(session, 'failure');
     },
 
-    wait: function () {
-      setState('wait');
+    wait: function (session) {
+      setState(session, 'wait');
     },
+
+    getState: function (session) {
+      var subject = sessMap[session._id];
+      return subject && subject.state;
+    }
   });
 
-  function setState(state) {
-    exports.notify(exports.state = state);
+  function setState(session, state) {
+    var subject = sessMap[session._id];
+    if (! subject) return;
+    subject.state = state;
+    subject.notify(state);
   }
 });
