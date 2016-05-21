@@ -107,6 +107,10 @@ define(function(require, exports, module) {
                     koru.globalCallback);
       };
 
+      /**
+       * Warning: $reload does not ensure that this doc belongs to the
+       * current database.
+       **/
       BaseModel.prototype.$reload = function () {
         var doc = this.constructor.findById(this._id);
         this.attributes = doc ? doc.attributes : {};

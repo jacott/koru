@@ -53,6 +53,12 @@ isClient && define(function (require, exports, module) {
 
       assert.called(foo.$reload);
       assert.called(ctx.updateAllTags);
+
+      foo.$reload.reset();
+
+      v.TestModel.notify({_id: foo._id});
+
+      refute.called(foo.$reload);
     },
   });
 });

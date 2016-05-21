@@ -7,8 +7,8 @@ define(function(require, exports, module) {
     if (! subject || ! subject._id) return;
     ctx.onDestroy(subject.constructor.onChange(function (doc, was) {
       if (! doc) {
-        was._id === subject._id && options.removed && options.removed();
-      } else if (doc._id === subject._id) {
+        was === subject && options.removed && options.removed();
+      } else if (doc === subject) {
         subject.$reload();
         ctx.updateAllTags();
       }

@@ -1,3 +1,14 @@
+* multi-db
+
+** Model#onChange (client)
+   model client should have onChange per db (like server).
+
+   This may cause problems in Obeya when switching orgs as some
+   listeners may be more global (not sure).
+
+** need Model#onAnyChange (client and server)
+   Listens to all databases
+
 * try running with not-found html file - hangs
 * try running client only test on server
  eg; rich-text-editor-test on server - stack trace is unhelpful (hint: remove isClient)
