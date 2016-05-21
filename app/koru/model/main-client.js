@@ -163,8 +163,6 @@ define(function(require, exports, module) {
     },
 
     setupModel: function (model) {
-      makeSubject(model);
-
       var modelName = model.modelName;
       var dbId, docs;
 
@@ -180,9 +178,25 @@ define(function(require, exports, module) {
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
       function setDocs() {return {}}
-      makeSubject(model);
+      var anyChange = makeSubject({});
 
       util.extend(model, {
+        notify: function () {
+          chkdb();
+          var subject = getProp(dbId, modelName, 'notify');
+          if (subject)
+            subject.notify.apply(subject, arguments);
+
+          anyChange.notify.apply(subject, arguments);
+        },
+        onAnyChange: anyChange.onChange,
+        onChange: function () {
+          chkdb();
+          var subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
+
+          return subject.onChange.apply(subject, arguments);
+        },
+
         get docs() {
           chkdb();
           if (docs) return docs;

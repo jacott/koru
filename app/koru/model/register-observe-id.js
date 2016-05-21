@@ -3,10 +3,10 @@ define(function(require, exports, module) {
   var makeSubject = require('koru/make-subject');
 
   return function (model) {
-    var dbObservers = {};
-    var modelObMap = {};
+    const dbObservers = {};
+    const modelObMap = {};
+    const modelName = model.modelName;
     var key = 0;
-    var modelName = model.modelName;
 
     model.observeId = observeId;
 
@@ -14,9 +14,11 @@ define(function(require, exports, module) {
 
     function observeId(id, callback) {
       var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
+
       var obs = observers[id] || (observers[id] = {});
       obs[++key] = callback;
-      var modelObserver = getModelOb(observers);
+
+      observeModel(observers);
       return stopObserver(id, obs, key, observers);
     };
 
@@ -76,19 +78,16 @@ define(function(require, exports, module) {
       };
     }
 
-    function getModelOb(observers) {
-      var ob = modelObMap[util.dbId];
-      if (ob) return ob;
+    function observeModel(observers) {
+      if (modelObMap[util.dbId]) return;
 
-      ob = model.onChange(function (doc, was) {
+      modelObMap[util.dbId] = model.onChange(function (doc, was) {
         var cbs = observers[(doc || was)._id];
         if (cbs) for(var i in cbs) {
           var cb = cbs[i];
           cb(doc, was);
         }
       });
-
-      return modelObMap[util.dbId] = ob;
     }
   };
 });

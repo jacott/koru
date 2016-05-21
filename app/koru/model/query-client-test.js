@@ -42,7 +42,7 @@ define(function (require, exports, module) {
       util.withDB('foo2', () => v.TestModel.create({age: 3}));
 
       var ocDB = [];
-      test.onEnd(v.TestModel.onChange((doc, was) => {
+      test.onEnd(v.TestModel.onAnyChange((doc, was) => {
         ocDB.push(util.dbId, was);
       }).stop);
 

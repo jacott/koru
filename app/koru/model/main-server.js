@@ -220,8 +220,10 @@ define(function(require, exports, module) {
         dbMap = new WeakMap;
       };
 
-      var docCache = new WeakMap;
       var notifyMap = new WeakMap;
+      var anyChange = makeSubject({});
+
+      var docCache = new WeakMap;
       var dbMap = new WeakMap;
 
       var docs, db;
@@ -229,8 +231,11 @@ define(function(require, exports, module) {
         notify: function () {
           var subject = notifyMap.get(model.db);
           if (subject)
-            return subject.notify.apply(subject, arguments);
+            subject.notify.apply(subject, arguments);
+
+          anyChange.notify.apply(subject, arguments);
         },
+        onAnyChange: anyChange.onChange,
         onChange: function () {
           var subject = notifyMap.get(model.db);
           subject || notifyMap.set(db, subject = makeSubject({}));

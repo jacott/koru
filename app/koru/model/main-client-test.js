@@ -46,21 +46,31 @@ define(function (require, exports, module) {
 
       util.dbId = 'foo1';
 
+      var obAny = TestModel.onAnyChange(v.anyChanged = test.stub());
+      var obFoo1 = TestModel.onChange(v.foo1Changed = test.stub());
+
       var doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
 
       util.dbId = 'foo2';
 
+      var obFoo2 = TestModel.onChange(v.foo2Changed = test.stub());
       var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
+
+      assert.calledOnce(v.foo1Changed);
+      assert.calledOnce(v.foo2Changed);
+      assert.calledTwice(v.anyChanged);
 
       assert.equals(Model._databases, {
         default: {TestModel: {
           docs: {glo1: TH.matchModel(docGlobal)},
         }},
         foo1: {TestModel: {
-          docs: {tmf1: TH.matchModel(doc)}
+          docs: {tmf1: TH.matchModel(doc)},
+          notify: TH.match.object,
         }},
         foo2: {TestModel: {
-          docs: {tmf1: TH.matchModel(doc2)}
+          docs: {tmf1: TH.matchModel(doc2)},
+          notify: TH.match.object,
         }},
       });
 
