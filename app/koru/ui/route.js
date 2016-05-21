@@ -127,14 +127,15 @@ define(function(require, exports, module) {
     return options;
   }
 
-  var inGotoPage = false;
+  const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
+  var inGotoPage = 0;
   var currentPage = null;
   var targetPage = null;
   var currentPageRoute = {};
   var currentTitle, currentHref;
   var pageState = 'pushState';
-  var excludes = {append: 1, href: 1, hash: 1, search: 1};
   var pageCount = 0;
+  var runInstance; // used with async callbacks
 
   util.extend(Route, {
     root: new Route(),
@@ -224,14 +225,15 @@ define(function(require, exports, module) {
           koru.error(util.extractError(ex));
           throw ex;
         }
+
       } else try {
-        inGotoPage = true;
+        ++inGotoPage;
         if (currentPage) {
           currentPage.onExit && currentPage.onExit(page, pageRoute);
 
-          exitEntry(toPath(currentPage.$autoRender ? currentPage.route : currentPage), currentPageRoute, toPath(page && page.route), pageRoute, page, then);
+          var finished = exitEntry(toPath(currentPage.$autoRender ? currentPage.route : currentPage), currentPageRoute, toPath(page && page.route), pageRoute, page, then);
         } else {
-          exitEntry([], {}, toPath(page && page.route), pageRoute, page, then);
+          var finished = exitEntry([], {}, toPath(page && page.route), pageRoute, page, then);
         }
 
         function then() {
@@ -253,7 +255,6 @@ define(function(require, exports, module) {
         }
       }
       catch(ex) {
-        inGotoPage = false;
         if (ex.abortPage) {
           ex.location && this.replacePath(ex.location);
           return;
@@ -261,7 +262,7 @@ define(function(require, exports, module) {
         throw ex;
       }
       finally {
-        inGotoPage = false;
+        --inGotoPage;
         Route.loadingArgs = null;
         currentPageRoute = pageRoute;
       }
@@ -423,9 +424,15 @@ define(function(require, exports, module) {
     currentPage = exit[index];
 
     index = index - diff - 1 ;
+    var runInstanceCopy = runInstance = {};
     function callback() {
-      if (index < 0)
-        return then();
+      if (runInstanceCopy !== runInstance)
+        return; // route call overridden
+      if (index < 0) {
+        runInstanceCopy = null; // stop multi calling
+        then();
+        return true;
+      }
       item = entry[index--];
       currentPage = item;
       if (item.async)

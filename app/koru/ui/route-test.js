@@ -96,6 +96,21 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.Baz.onBaseEntry, TH.match.object, {pathname: '/baz/an-id/root-bar', bazId: 'an-id'}, TH.match.func);
         v.Baz.onBaseEntry.yield();
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {pathname: '/baz/an-id/root-bar', bazId: 'an-id'});
+        v.RootBar.onEntry.reset();
+        v.Baz.onBaseEntry.yield();
+        refute.called(v.RootBar.onEntry);
+      },
+
+      "test async page change before callback": function () {
+        v.Baz.route.async = true;
+
+        Route.gotoPath('/baz/an-id/root-bar');
+
+        refute.called(v.RootBar.onEntry);
+        assert.calledWith(v.Baz.onBaseEntry, TH.match.object, {pathname: '/baz/an-id/root-bar', bazId: 'an-id'}, TH.match.func);
+        Route.gotoPage('/');
+        v.Baz.onBaseEntry.yield();
+        refute.called(v.RootBar.onEntry);
       },
 
       "test default root": function () {
