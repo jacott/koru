@@ -43,6 +43,7 @@ define(function(require, exports, module) {
     throw ex;
   };
 
+  localStorage._resetValue = function () {return {}};
   test.geddon.onStart(function () {
     localStorage.setItem = function (key, value) {
       ls[key] = value;
@@ -57,9 +58,7 @@ define(function(require, exports, module) {
     };
   });
 
-  test.geddon.onTestStart(function () {
-    ls = {};
-  });
+  test.geddon.onTestStart(function () {ls = localStorage._resetValue()});
 
   test.geddon.onEnd(function () {
     ls = null;
