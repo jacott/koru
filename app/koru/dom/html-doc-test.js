@@ -80,7 +80,7 @@ define(function (require, exports, module) {
       assert.same(top.style.textAlign, '');
       assert.same(top.outerHTML, '<div style="color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline;"></div>');
       top.style.fontFamily = 'foo bar';
-      assert.match(top.style.cssText, /^color: rgb\(255, 0, 0\); font-weight: normal; text-decoration: underline; font-family: '?foo bar'?;$/);
+      assert.match(top.style.cssText, /^color: rgb\(255, 0, 0\); font-weight: normal; text-decoration: underline; font-family: ['"]?foo bar["'?];$/);
     },
 
     "test insertBefore": function () {

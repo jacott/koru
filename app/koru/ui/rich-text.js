@@ -914,7 +914,7 @@ define(function(require, exports, module) {
       var id = +face;
       if (id !== id) {
         if (! face) return 'sans-serif';
-        face = face.replace(/'/g,'');
+        face = face.replace(/['"]/g,'');
         var id = FONT_FACE_TO_ID[face];
         if (id === undefined) return face;
       }
