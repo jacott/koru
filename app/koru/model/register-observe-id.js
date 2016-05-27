@@ -13,26 +13,27 @@ define(function(require, exports, module) {
     model.observeIds = observeIds;
 
     function observeId(id, callback) {
-      var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
+      var dbId = util.dbId;
+      var observers = dbObservers[dbId] || (dbObservers[dbId] = {});
 
       var obs = observers[id] || (observers[id] = {});
       obs[++key] = callback;
 
       observeModel(observers);
-      return stopObserver(id, obs, key, observers);
+      return stopObserver(id, obs, key, dbId, observers);
     };
 
-    function stopObserver(id, obs, key, observers) {
+    function stopObserver(id, obs, key, dbId, observers) {
       return {
         stop: function() {
           delete obs[key];
           for(key in obs) return;
           delete observers[id];
           for(id in observers) return;
-          var modelObserver = modelObMap[util.dbId];
+          var modelObserver = modelObMap[dbId];
           if (modelObserver) {
             modelObserver.stop();
-            delete modelObMap[util.dbId];
+            delete modelObMap[dbId];
           }
         },
 

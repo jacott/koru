@@ -17,6 +17,7 @@ define(function (require, exports, module) {
       v.obs.forEach(row => row.stop());
       Model._destroyModel('TestModel', 'drop');
       v = null;
+      util.clearDbId();
     },
 
     "test observeIds": function () {
@@ -60,7 +61,9 @@ define(function (require, exports, module) {
       assert.calledWith(v.altOb, v.doc);
       refute.called(v.origOb);
 
+      v.dbId = origId;
       v.altHandle.stop();
+      v.dbId = 'alt';
 
       v.altOb.reset();
       v.altFunc(v.doc, {name: 'old'});
