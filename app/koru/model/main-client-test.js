@@ -144,5 +144,18 @@ define(function (require, exports, module) {
       assert.called(stub);
     },
 
+    "test setting docs": function () {
+      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      v.idx = TestModel.addUniqueIndex('name');
+
+      var foo1 = new TestModel({_id: 'foo1', name: 'Foo'});
+
+      TestModel.docs = {foo1: foo1};
+
+      var res = TestModel.query.withIndex(v.idx, 'Foo').fetch();
+
+      assert.equals(res, [foo1]);
+    },
+
   });
 });

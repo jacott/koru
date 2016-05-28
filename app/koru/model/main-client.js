@@ -207,8 +207,8 @@ define(function(require, exports, module) {
           chkdb();
           docs = docs || getSetProp(dbId, modelName, 'docs', () => value);
           dbs[dbId][modelName].docs = value;
-          model._indexUpdate.reloadAll();
           docs = value;
+          model._indexUpdate.reloadAll();
         },
       });
       clientIndex(model);
