@@ -40,13 +40,6 @@ define(function(require, exports, module) {
       this.tokens = tokens;
       return token;
     },
-
-    sendNewToken: function (conn) {
-      var token = this.makeToken();
-      this.$$save();
-      conn.send('VT', this._id + '|' + token);
-      conn.userId = this.userId;
-    },
   })
   .defineFields({
     userId: 'text',
@@ -106,17 +99,10 @@ define(function(require, exports, module) {
   });
 
   session.defineRpc('resetPassword', function (token, passwordHash) {
-    Val.ensureString(token);
-    Val.assertCheck(passwordHash, VERIFIER_SPEC);
-    var parts = token.split('-');
-    var lu = model.findById(parts[0]);
-    if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
-      lu.srp = passwordHash;
-      lu.resetToken = lu.resetTokenExpire = undefined;
-      lu.sendNewToken(this);
-      return;
-    }
-    throw new koru.Error(404, 'Expired or invalid reset request');
+    var result = exports.resetPassword(token, passwordHash);
+    var lu = result[0];
+    this.send('VT', lu._id + '|' + result[1]);
+    this.userId = lu.userId;
   });
 
   util.extend(exports, {
@@ -129,6 +115,22 @@ define(function(require, exports, module) {
     },
 
     model: model,
+
+    resetPassword: function (token, passwordHash) {
+      Val.ensureString(token);
+      Val.assertCheck(passwordHash, VERIFIER_SPEC);
+      var parts = token.split('-');
+      var lu = model.findById(parts[0]);
+
+      if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
+        lu.srp = passwordHash;
+        lu.resetToken = lu.resetTokenExpire = undefined;
+        var loginToken = lu.makeToken();
+        lu.$$save();
+        return [lu, loginToken];
+      }
+      throw new koru.Error(404, 'Expired or invalid reset request');
+    },
 
     verifyClearPassword: function (email, password) {
       var doc = model.findBy('email', email);
@@ -167,10 +169,10 @@ define(function(require, exports, module) {
       });
     },
 
-    sendResetPasswordEmail: function (userId) {
+    sendResetPasswordEmail: function (user) {
       emailConfig || configureEmail();
 
-      var lu = model.findBy('userId', userId);
+      var lu = model.findBy('userId', user._id);
 
       var rand = Random.create();
 
@@ -182,7 +184,7 @@ define(function(require, exports, module) {
         from: emailConfig.from,
         to: lu.email,
         subject: 'How to reset your password on ' + emailConfig.siteName,
-        text: emailConfig.sendResetPasswordEmailText(lu.userId, lu._id + '-' + lu.resetToken),
+        text: emailConfig.sendResetPasswordEmailText(user, lu._id + '-' + lu.resetToken),
       });
     },
 

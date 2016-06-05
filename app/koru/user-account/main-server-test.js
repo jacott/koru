@@ -38,8 +38,8 @@ isServer && define(function (require, exports, module) {
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
           emailConfig: {
-            sendResetPasswordEmailText: function (userId, token) {
-              return "userid: " + userId + " token: " + token;
+            sendResetPasswordEmailText: function (user, token) {
+              return "userid: " + user._id + " token: " + token;
             },
 
             from: 'Koru <koru@obeya.co>',
@@ -53,7 +53,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test send": function () {
-        userAccount.sendResetPasswordEmail('uid111');
+        userAccount.sendResetPasswordEmail({_id: 'uid111'});
 
         var tokenExp =  v.lu.$reload().resetTokenExpire;
 
@@ -221,6 +221,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test success": function () {
+        test.spy(userAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
         v.lu.$$save();
@@ -228,6 +229,7 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(Val.ensureString, v.lu._id+'-secretToken');
         assert.calledWith(Val.assertCheck, {identity: 'abc123'}, { identity: 'string', salt: 'string', verifier: 'string' });
+
         assert.same(v.conn.userId, v.lu.userId);
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
@@ -240,6 +242,7 @@ isServer && define(function (require, exports, module) {
 
         }));
         assert.same(v.lu._id, v.docId);
+        assert.equals(userAccount.resetPassword.firstCall.returnValue, [TH.match.field('_id', v.lu._id), v.token]);
         assert.between(v.lu.tokens[v.token], Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
         assert.same(v.lu.resetToken, undefined);
         assert.same(v.lu.resetTokenExpire, undefined);
