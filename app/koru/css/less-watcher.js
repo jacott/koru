@@ -92,7 +92,7 @@ define(function(require, exports, module) {
       }
     }
     if (! src) {
-      fullname = Path.resolve(topDir, Path.dirname(fromName), srcName);
+      fullname = Path.resolve(topDir, Path.dirname(fromName || ''), srcName);
       try {
         src = fst.readFile(fullname);
         srcName = fullname.slice(topDirLen);

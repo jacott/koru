@@ -20,15 +20,15 @@
   "main": "lib/koru",
   "gypfile": true,
   "dependencies": {
-    "autoprefixer": "6.3.3",
+    "autoprefixer": "^6.3.3",
     "postcss": "5.0.19",
-    "bindings": "1.2.1",
+    "bindings": "^1.2.1",
     "clean-css": "3.4.10",
     "css-selector-parser": "1.1.0",
-    "fibers": "1.0.10",
+    "fibers": "^1.0.10",
     "htmlparser2": "3.9.0",
     "less": "2.6.0",
-    "nan": "2.2.0",
+    "nan": "^2.3.5",
     "nodemailer": "2.3.0",
     "nodemailer-smtp-pool": "2.5.1",
     "nodemailer-stub-transport": "1.0.0",
@@ -42,7 +42,7 @@
     "pg-libpq": ">=1.0.3"
   },
   "engines": {
-    "node": ">=4.3.2"
+    "node": ">=6.2.1"
   },
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
