@@ -17,11 +17,11 @@ define(function() {
   // window.crypto.getRandomValues() or alea, the primitive is fraction and we use
   // that to construct hex string.
 
-  var nodeCrypto = isServer && requirejs('crypto');
+  const nodeCrypto = isServer && requirejs.nodeRequire('crypto');
 
   // see http://baagoe.org/en/wiki/Better_random_numbers_for_javascript
   // for a full discussion and Alea implementation.
-  var Alea = function () {
+  function Alea () {
     function Mash() {
       var n = 0xefc8249d;
 
@@ -74,7 +74,7 @@ define(function() {
       }
       mash = null;
 
-      var random = function() {
+      const random = function() {
         var t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
         s0 = s1;
         s1 = s2;
@@ -94,67 +94,80 @@ define(function() {
     } (Array.prototype.slice.call(arguments)));
   };
 
-  var UNMISTAKABLE_CHARS = "23456789ABCDEFGHJKLMNPQRSTWXYZabcdefghijkmnopqrstuvwxyz";
+  const UNMISTAKABLE_CHARS = "23456789ABCDEFGHJKLMNPQRSTWXYZabcdefghijkmnopqrstuvwxyz";
+  const UNMISTAKABLE_CHARS_LEN = UNMISTAKABLE_CHARS.length;
 
   // If seeds are provided, then the alea PRNG will be used, since cryptographic
   // PRNGs (Node crypto and window.crypto.getRandomValues) don't allow us to
   // specify seeds. The caller is responsible for making sure to provide a seed
   // for alea if a csprng is not available.
-  var RandomGenerator = function (seedArray) {
-    var self = this;
+  const RandomGenerator = function (seedArray) {
     if (seedArray !== undefined)
-      self.alea = Alea.apply(null, seedArray);
+      this.alea = Alea.apply(null, seedArray);
   };
 
+  const fracArray = isClient && new Uint32Array(1);
+
   RandomGenerator.prototype.fraction = function () {
-    var self = this;
-    if (self.alea) {
-      return self.alea();
-    } else if (nodeCrypto) {
-      var numerator = parseInt(self.hexString(8), 16);
+    if (this.alea) {
+      return this.alea();
+    }
+
+    if (isServer) {
+      var numerator = parseInt(this.hexString(8), 16);
       return numerator * 2.3283064365386963e-10; // 2^-32
     } else if (typeof window !== "undefined" && window.crypto &&
                window.crypto.getRandomValues) {
-      var array = new Uint32Array(1);
-      window.crypto.getRandomValues(array);
-      return array[0] * 2.3283064365386963e-10; // 2^-32
+      window.crypto.getRandomValues(fracArray);
+      return fracArray[0] * 2.3283064365386963e-10; // 2^-32
     }
   };
 
   RandomGenerator.prototype.hexString = function (digits) {
-    var self = this;
-    if (nodeCrypto && ! self.alea) {
-      var numBytes = Math.ceil(digits / 2);
-      var bytes;
-      // Try to get cryptographically strong randomness. Fall back to
-      // non-cryptographically strong if not available.
-      try {
-        bytes = nodeCrypto.randomBytes(numBytes);
-      } catch (e) {
-        // XXX should re-throw any error except insufficient entropy
-        bytes = nodeCrypto.pseudoRandomBytes(numBytes);
-      }
-      var result = bytes.toString("hex");
-      // If the number of digits is odd, we'll have generated an extra 4 bits
-      // of randomness, so we need to trim the last digit.
-      return result.substring(0, digits);
-    } else {
-      var hexDigits = [];
+    if (this.alea) {
+      var hexDigits = '';
       for (var i = 0; i < digits; ++i) {
-        hexDigits.push(self.choice("0123456789abcdef"));
+        hexDigits += this.choice("0123456789abcdef");
       }
-      return hexDigits.join('');
+      return hexDigits;
     }
+    var numBytes = Math.ceil(digits / 2);
+    var bytes;
+    if (isServer) {
+      bytes = nodeCrypto.randomBytes(numBytes);
+    } else {
+      bytes = new Uint8Array(numBytes);
+      window.crypto.getRandomValues(bytes);
+    }
+    var result = '';
+    for(var i = 0; i < numBytes; ++i) {
+      var hex = bytes[i].toString(16);
+      if (hex.length === 1) hex = '0'+hex;
+      result += hex;
+    }
+
+    return result.substring(0, digits);
   };
+
   RandomGenerator.prototype.id = function () {
-    var digits = [];
-    var self = this;
-    // Length of 17 preserves around 96 bits of entropy, which is the
-    // amount of state in the Alea PRNG.
-    for (var i = 0; i < 17; i++) {
-      digits[i] = self.choice(UNMISTAKABLE_CHARS);
+    var digits = '';
+    if (this.alea) {
+      for (var i = 0; i < 17; i++) {
+        digits += UNMISTAKABLE_CHARS[Math.floor(this.alea() * UNMISTAKABLE_CHARS_LEN)];
+      }
+      return digits;
     }
-    return digits.join("");
+
+    if (isServer) {
+      var bytes = nodeCrypto.randomBytes(17);
+    } else {
+      var bytes = new Uint8Array(17);
+      window.crypto.getRandomValues(bytes);
+    }
+    for (var i = 0; i < 17; i++) {
+      digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
+    }
+    return digits;
   };
 
   RandomGenerator.prototype.choice = function (arrayOrString) {
@@ -169,7 +182,7 @@ define(function() {
   // cryptographic PRNG isn't available.
 
   // client sources
-  var height = (typeof window !== 'undefined' && window.innerHeight) ||
+  const height = (typeof window !== 'undefined' && window.innerHeight) ||
         (typeof document !== 'undefined'
          && document.documentElement
          && document.documentElement.clientHeight) ||
@@ -178,7 +191,7 @@ define(function() {
          && document.body.clientHeight) ||
         1;
 
-  var width = (typeof window !== 'undefined' && window.innerWidth) ||
+  const width = (typeof window !== 'undefined' && window.innerWidth) ||
         (typeof document !== 'undefined'
          && document.documentElement
          && document.documentElement.clientWidth) ||
@@ -187,9 +200,9 @@ define(function() {
          && document.body.clientWidth) ||
         1;
 
-  var agent = (typeof navigator !== 'undefined' && navigator.userAgent) || "";
+  const agent = (typeof navigator !== 'undefined' && navigator.userAgent) || "";
 
-  if (nodeCrypto ||
+  if (isServer ||
       (typeof window !== "undefined" &&
        window.crypto && window.crypto.getRandomValues))
     var Random = new RandomGenerator();

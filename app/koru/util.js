@@ -932,9 +932,8 @@ define(function(require, exports, module) {
   }
 
   function twoDigits(num) {
-    if (num < 10)
-      return '0'+num;
-    return ''+num;
+    var result = ''+num;
+    return result.length === 1 ? '0'+result : result;
   }
 
   return util;

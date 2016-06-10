@@ -34,11 +34,6 @@
 
 define(function() {
   // Bits per digit
-  var dbits;
-
-  // JavaScript engine analysis
-  var canary = 0xdeadbeefcafe;
-  var j_lm = ((canary&0xffffff)==0xefcafe);
 
   // (public) Constructor
   function BigInteger(a,b,c) {
@@ -97,35 +92,21 @@ define(function() {
     return c;
   }
 
-  /* XXX METEOR XXX
-   if(j_lm && (navigator.appName == "Microsoft Internet Explorer")) {
-   BigInteger.prototype.am = am2;
-   dbits = 30;
-   }
-   else if(j_lm && (navigator.appName != "Netscape")) {
-   BigInteger.prototype.am = am1;
-   dbits = 26;
-   }
-   else
-   */
-
-  { // Mozilla/Netscape seems to prefer am3
-    BigInteger.prototype.am = am3;
-    dbits = 28;
-  }
+  BigInteger.prototype.am = am3;
+  const dbits = 28;
 
   BigInteger.prototype.DB = dbits;
   BigInteger.prototype.DM = ((1<<dbits)-1);
   BigInteger.prototype.DV = (1<<dbits);
 
-  var BI_FP = 52;
+  const BI_FP = 52;
   BigInteger.prototype.FV = Math.pow(2,BI_FP);
   BigInteger.prototype.F1 = BI_FP-dbits;
   BigInteger.prototype.F2 = 2*dbits-BI_FP;
 
   // Digit conversions
-  var BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
-  var BI_RC = new Array();
+  const BI_RM = "0123456789abcdefghijklmnopqrstuvwxyz";
+  const BI_RC = new Array();
   var rr,vv;
   rr = "0".charCodeAt(0);
   for(vv = 0; vv <= 9; ++vv) BI_RC[rr++] = vv;
