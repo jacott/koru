@@ -3,8 +3,8 @@ define(function(require, exports, module) {
   var makeSubject = require('koru/make-subject');
 
   return function (model) {
-    const dbObservers = {};
-    const modelObMap = {};
+    const dbObservers = Object.create(null);
+    const modelObMap = Object.create(null);
     const modelName = model.modelName;
     var key = 0;
 
@@ -16,7 +16,7 @@ define(function(require, exports, module) {
       var dbId = util.dbId;
       var observers = dbObservers[dbId] || (dbObservers[dbId] = {});
 
-      var obs = observers[id] || (observers[id] = {});
+      var obs = observers[id] || (observers[id] = Object.create(null));
       obs[++key] = callback;
 
       observeModel(observers);
@@ -56,7 +56,7 @@ define(function(require, exports, module) {
         },
 
         replaceIds: function (newIds) {
-          var set = {};
+          var set = Object.create(null);
           for(var i=0;i < obs.length;++i) {
             var ob = obs[i];
             set[ob.id]=ob;

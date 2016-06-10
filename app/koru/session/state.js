@@ -16,8 +16,8 @@ define(function(require, exports, module) {
         koru._decPendingStack = [];
         debug_pending = true;
       } else {
-        delete koru._incPendingStack;
-        delete koru._decPendingStack;
+        koru._incPendingStack = null;
+        koru._decPendingStack = null;
         debug_pending = false;
       }
     };

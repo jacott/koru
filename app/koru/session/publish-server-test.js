@@ -205,7 +205,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(Object.keys(v.conn.match._models).sort(), ['Bar', 'Foo']);
 
         v.sub.stop();
-        assert.equals(Object.keys(v.conn.match._models), []);
+        assert.equals(v.conn.match._models, {Foo: {}, Bar: {}});
         assert.equals(v.sub._matches, []);
       },
 

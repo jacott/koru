@@ -19,8 +19,6 @@ define(function (require, exports, module) {
       var handle = v.foo.onFoo(v.stub2 = test.stub());
       var h2 = v.foo.onFoo(v.stub3 = test.stub());
 
-      assert.same(h2.key, handle.key+1);
-
       handle.stop();
 
       v.foo.notify(123, 'bar');

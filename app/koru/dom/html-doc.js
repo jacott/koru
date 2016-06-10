@@ -14,7 +14,7 @@ define(function(require, exports, module) {
   cssParser.enableSubstitutes();
 
   koru.onunload(module, function () {
-    delete global.document;
+    global.document = null;
   });
 
   var threadMap = new WeakMap;

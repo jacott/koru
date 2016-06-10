@@ -37,7 +37,7 @@ define(function(require, exports, module) {
     insertPoint.parentNode.insertBefore(endEach, insertPoint.nextSibling);
     insertPoint.parentNode.insertBefore(startEach, endEach);
 
-    var rows = {};
+    var rows = Object.create(null);
     options = options || {};
     var templateName = options.template || "Each_" + func;
 

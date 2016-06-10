@@ -11,7 +11,7 @@ define(function(require, exports, module) {
       var conn = this;
       conn.ws = ws;
       conn.sessId = sessId;
-      conn._subs = {};
+      conn._subs = Object.create(null);
       conn.close = function () {
         if (conn._onClose) {
           conn._onClose.notify(conn);

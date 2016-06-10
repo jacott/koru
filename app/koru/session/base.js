@@ -15,7 +15,7 @@ define(function(require, exports, module) {
     },
 
     unprovide: function (cmd) {
-      delete this._commands[cmd];
+      this._commands[cmd] = null;
     },
 
     onStop: function (func) {

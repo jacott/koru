@@ -99,7 +99,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.bar, "otherTest");
 
       v.sess.deregisterBroadcast('foo');
-      assert.equals(v.sess._broadcastFuncs, {bar: TH.match.func});
+      assert.equals(v.sess._broadcastFuncs, {foo: null, bar: TH.match.func});
 
     },
   });

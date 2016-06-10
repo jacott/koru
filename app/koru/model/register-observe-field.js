@@ -8,11 +8,11 @@ define(function(require, exports, module) {
     model.registerObserveField = registerObserveField;
 
     function registerObserveField(field) {
-      var dbObservers = {};
-      var modelObMap = {};
+      var dbObservers = Object.create(null);
+      var modelObMap = Object.create(null);
       var key = 0;
       var findFieldOpts = (function () {
-        var fields = {};
+        var fields = Object.create(null);
         fields[field] = 1;
         return {transform: null, fields: fields};
       })();
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
       model['observe'+ util.capitalize(field)] = function (values, callback) {
         if (typeof values !== 'object') values = [values];
 
-        var obsSet = {};
+        var obsSet = Object.create(null);
         var options = [++key, callback];
         for(var i=0;i < values.length;++i) {
           var ob = observeValue(values[i], options);
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
 
       function observeValue(value, options) {
         var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
-        var obs = observers[value] || (observers[value] = {});
+        var obs = observers[value] || (observers[value] = Object.create(null));
         obs[options[0]] = options;
         var modelObserver = getModelOb(observers);
         return stopObserver(value, obs, options, observers);

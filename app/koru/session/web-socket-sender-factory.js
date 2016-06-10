@@ -193,7 +193,7 @@ define(function (require, exports, module) {
           base._broadcastFuncs[name] = func;
         },
         deregisterBroadcast: function (name) {
-          delete base._broadcastFuncs[name];
+          base._broadcastFuncs[name] = null;
         },
       });
     }

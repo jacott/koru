@@ -14,10 +14,10 @@ define(function(require, exports, module) {
   var queue = require('../queue')();
   var util = require('koru/util');
 
-  var loads = {};
-  var imports = {};
-  var sources = {};
-  var loadDirs = {};
+  var loads = Object.create(null);
+  var imports = Object.create(null);
+  var sources = Object.create(null);
+  var loadDirs = Object.create(null);
 
   koru.onunload(module, 'reload');
 
@@ -36,7 +36,7 @@ define(function(require, exports, module) {
 
     if (dir.match(/(^[./]|[./]\.)/)) throw new koru.Error(500, 'Illegal directory name');
 
-    loadDirs.hasOwnProperty(dir) || queue(dir, function (isNew, result) {
+    loadDirs[dir] || queue(dir, function (isNew, result) {
       if (loadDirs[dir]) return;
 
       var prefixLen = dir.length + 1;
@@ -110,7 +110,7 @@ define(function(require, exports, module) {
     var provs = sources[srcName];
     if (! src) {
 
-      if (provs) for(imp in provs) {
+      if (provs) for(let imp in provs) {
         imp = imports[imp];
         if (imp) delete imp[srcName];
       }
@@ -146,7 +146,7 @@ define(function(require, exports, module) {
       var imp = Path.resolve(Path.join(dir, m[1])).slice(topDirLen);
       var deps = imports[imp];
       if (! deps)  {
-        imports[imp] = deps = {};
+        imports[imp] = deps = Object.create(null);
         var imt = extractInfo(imp, srcName);
 
       } else {

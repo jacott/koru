@@ -51,7 +51,7 @@ define(function(require, exports, module) {
     removeTemplate: function (template, options) {
       var path = options && options.path;
       if (path == null) path = templatePath(template);
-      delete this.routes[path];
+      this.routes[path] = null;
     },
 
     addDialog: function (module, template, options) {
@@ -91,8 +91,8 @@ define(function(require, exports, module) {
     },
 
     removeBase: function (template) {
-      delete template.route;
-      delete this.routes[template.$path];
+      template.route = null;
+      this.routes[template.$path] = null;
     },
 
     onBaseExit: function(page, location) {

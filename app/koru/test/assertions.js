@@ -189,24 +189,4 @@ define(function(require, exports, module) {
 
     return setHint();
   }
-
-  function isArguments(obj) {
-    if (typeof obj != "object" || typeof obj.length != "number" ||
-        toString.call(obj) == "[object Array]") {
-      return false;
-    }
-
-    if (typeof obj.callee == "function") {
-      return true;
-    }
-
-    try {
-      obj[obj.length] = 6;
-      delete obj[obj.length];
-    } catch (e) {
-      return true;
-    }
-
-    return false;
-  }
 });

@@ -35,7 +35,7 @@ define(function(require, exports, module) {
   }).run();
 
   function watch(dir, top) {
-    var dirs = {};
+    var dirs = Object.create(null);
 
     var watcher = fs.watch(dir, function (event, filename) {
       Fiber(function () {

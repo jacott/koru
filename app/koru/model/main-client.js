@@ -55,7 +55,7 @@ define(function(require, exports, module) {
     },
   });
 
-  var dbs = {};
+  var dbs = Object.create(null);
 
   function getProp(dbId, modelName, prop) {
     var obj = dbs[dbId];
@@ -177,7 +177,12 @@ define(function(require, exports, module) {
 
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
-      function setDocs() {return {}}
+      function setDocs() {
+        var obj = Object.create(null);
+        obj.x = 1;
+        delete obj.x; // try to make JSVM use dictionary mode
+        return obj;
+      }
       var anyChange = makeSubject({});
 
       util.extend(model, {

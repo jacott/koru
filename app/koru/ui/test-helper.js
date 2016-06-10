@@ -74,7 +74,7 @@ define(function(require, exports, module) {
       Route._reset();
       Dom.removeChildren(document.body);
       document.body.className = '';
-      delete Dom.Test;
+      Dom.Test = null;
     },
 
     stubAfTimeout: function () {

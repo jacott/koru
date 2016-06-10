@@ -8,7 +8,7 @@ define(function(require, exports, module) {
 
   var globalCount = 0;
   var globalId = 0;
-  var allListeners = {};
+  var allListeners = Object.create(null);
 
   var stubProto = util.extend(Object.create(Function.prototype), {
     returns: function (arg) {

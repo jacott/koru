@@ -15,7 +15,7 @@ define(function(require, exports, module) {
 
   return function(session) {
     var nextId = 0;
-    var subs = session.subs = {};
+    var subs = session.subs = Object.create(null);
 
     session.sendP = function (...args) {
       session.state.isReady() && session.sendBinary('P', args);
@@ -73,7 +73,7 @@ define(function(require, exports, module) {
         loginOb && loginOb.stop();
         loginOb = null;
         session.unprovide('P');
-        delete session.sendP;
+        session.sendP = null;
         clientUpdate && clientUpdate.unload();
         clientUpdate = null;
         userId = null;

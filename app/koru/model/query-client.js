@@ -19,7 +19,7 @@ define(function(require, exports, module) {
             if (! modelDocs) continue;
             var docs = dbs[modelName].simDocs;
             if (! docs) continue;
-            dbs[modelName].simDocs = {};
+            dbs[modelName].simDocs = Object.create(null);
             for(var id in docs) {
               var doc = modelDocs[id];
               var fields = docs[id];
@@ -68,7 +68,7 @@ define(function(require, exports, module) {
           }
 
           // otherwise new doc
-          if (model.docs.hasOwnProperty(id)) {
+          if (model.docs[id]) {
             // already exists; convert to update
             var old = model.docs[id].attributes;
             for(var key in old) {

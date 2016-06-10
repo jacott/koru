@@ -880,8 +880,8 @@ define(function (require, exports, module) {
         refute.same(doc.attributes, copy.changes);
         assert.same(doc.name, copy.name);
 
-        assert.same(copy._id, undefined);
-        assert.same(copy.changes._id, undefined);
+        assert.equals(copy._id, null);
+        assert.equals(copy.changes._id, null);
       },
 
       'test setFields': function () {

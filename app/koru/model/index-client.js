@@ -5,11 +5,10 @@ define(function(require, exports, module) {
 
   return function (model) {
     model._indexUpdate = makeSubject({
-      indexes: {},
+      indexes: new Map,
       reloadAll: function () {
-        var indexes = this.indexes;
-        for(var key in indexes) {
-          indexes[key].reload();
+        for(var idx of this.indexes.values()) {
+          idx.reload();
         }
       },
     });
@@ -59,7 +58,7 @@ define(function(require, exports, module) {
 
         dbId = model.dbId;
         idx = indexes[dbId];
-        if (! idx) idx = indexes[dbId] = {};
+        if (! idx) idx = indexes[dbId] = Object.create(null);
 
         return idx;
       }
@@ -75,8 +74,7 @@ define(function(require, exports, module) {
 
       var handle = model._indexUpdate.onChange(onChange);
       uIndex.stop = handle.stop;
-      model._indexUpdate.indexes[handle.key] = uIndex;
-      handle = null;
+      model._indexUpdate.indexes.set(handle, uIndex);
 
       function onChange(doc, old) {
         var idx = getIdx();

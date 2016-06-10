@@ -319,7 +319,7 @@ define(function(require, exports, module) {
       var doc = new this();
       if(attributes) {
         util.extend(doc.changes, util.deepCopy(attributes));
-        allow_id || delete doc.changes._id;
+        allow_id || (doc.changes._id = null);
       }
       return doc;
     },
@@ -366,7 +366,7 @@ define(function(require, exports, module) {
     },
 
     isLocked: function(id) {
-      return (this._locks || (this._locks = {})).hasOwnProperty(id);
+      return (this._locks || (this._locks = Object.create(null)))[id] || false;
     },
 
     lock: function(id, func) {

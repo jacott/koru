@@ -131,7 +131,7 @@ define(function (require, exports, module) {
     "test reloadAll": function () {
       var id1Idx = v.TestModel.addIndex('id1');
 
-      assert.same(Object.keys(v.TestModel._indexUpdate.indexes).length, 2);
+      assert.same(v.TestModel._indexUpdate.indexes.size, 2);
 
       id1Idx({})['x'] = 'junk';
       v.idx({})['x'] = 'junk';

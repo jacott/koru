@@ -134,8 +134,9 @@ define(function(require, exports, module) {
     matchFields: function (fieldSpec, name) {
       var m = match(function (doc) {
         if (! doc) return false;
-        delete doc._errors;
+        doc._errors = undefined;
         for (var field in doc) {
+          if (field === '_errors') continue;
           if (! fieldSpec.hasOwnProperty(field)) {
             Val.addError(doc, field, 'unexpected_field');
             return false;

@@ -268,7 +268,7 @@ define(function(require, exports, module) {
         _$docCacheSet: function (doc) {
           var thread = util.thread;
           var dc = docCache.get(thread);
-          dc || docCache.set(thread, dc = {});
+          dc || docCache.set(thread, dc = Object.create(null));
           dc[doc._id] = doc;
         },
 

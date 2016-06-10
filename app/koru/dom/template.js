@@ -271,7 +271,7 @@ define(function(require, exports, module) {
 
       var tpl = addTemplates(Dom, options);
       koru.onunload(module, function () {
-        delete (tpl.parent || Dom)[tpl.name];
+        (tpl.parent || Dom)[tpl.name] = null;
       });
       return tpl;
     },
@@ -690,7 +690,8 @@ define(function(require, exports, module) {
     var eventTypes = currentCtx.__events[event.type];
     var matches = Dom._matchesFunc;
 
-    var later = {};
+    var later = Object.create(null);
+    later.x = true; delete later.x; // force dictionary
     var elm = event.target;
 
     try {

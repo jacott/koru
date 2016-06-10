@@ -3,7 +3,7 @@ var Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
 
 var koru, util, makeSubject, match, Pool;
 
-var pools = {};
+var pools = Object.create(null);
 var clientCount = 0;
 var cursorCount = 0;
 var autoSchema = false;

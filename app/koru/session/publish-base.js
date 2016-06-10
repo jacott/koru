@@ -3,10 +3,10 @@ define(function(require, exports, module) {
   var koru = require('../main');
 
   koru.onunload(module, function () {
-    pubs = {};
+    pubs = Object.create(null);
   });
 
-  var pubs = {};
+  var pubs = Object.create(null);
 
   function publish(module, name, func) {
     if (typeof module === 'string') {

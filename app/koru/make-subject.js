@@ -6,25 +6,30 @@ define(['module', './main'], function(module, koru) {
     var allStopped = subject['allStopped_'+observeName];
     var init = subject['init_'+observeName];
 
-    var key = 0;
-    var observers = {};
+    var firstOb = true;
+    var observers = new Set;
 
     subject['stopAll_'+observeName] = function () {
-      key = 0;
-      observers = {};
+      firstOb = true;
+      observers.clear();
       allStopped && allStopped.call(subject);
     };
 
     subject[observeName] = function (func) {
-      key === 0 && init && init.call(subject);
+      if (firstOb) {
+        firstOb = false;
+        init && init.call(subject);
+      }
 
-      return observers[++key] = handle(key, func);
+      var obj = handle(func);
+      observers.add(obj);
+
+      return obj;
     };
 
     subject[notifyName] = function (first) {
       var result = first;
-      for(var i in observers) {
-        var handle = observers[i];
+      for(var handle of observers) {
         handle.function.apply(handle, arguments);
       }
 
@@ -33,17 +38,19 @@ define(['module', './main'], function(module, koru) {
 
     return subject;
 
-    function handle(cKey, func) {
-      return {
-        key: cKey,
+    function handle(func) {
+      var key = {
         function: func,
         stop: function () {
-          delete observers[cKey];
-          for(var i in observers) return;
-          key = 0;
+          if (! key) return;
+          observers.delete(key);
+          if (observers.length) return;
+          firstOb = true;
+          key = null;
           allStopped && allStopped.call(subject);
         }
       };
+      return key;
     }
   };
 });

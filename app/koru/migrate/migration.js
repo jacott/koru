@@ -62,7 +62,7 @@ define(function(require, exports, module) {
   function getMigrations(client) {
     if (exports.migrations) return exports.migrations;
     client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
-    var migrations = exports.migrations = {};
+    var migrations = exports.migrations = Object.create(null);
     client.query('SELECT name FROM "Migration"').
       forEach(function (row) {migrations[row.name] = true});
     return migrations;

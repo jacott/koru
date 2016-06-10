@@ -4,7 +4,7 @@ define(function(require, exports, module) {
 
   module.exports = function (session) {
     util.extend(session, {
-      _waitMs: {},
+      _waitMs: Object.create(null),
       _msgId: 0,
       rpc,
       sendM,

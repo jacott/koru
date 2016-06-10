@@ -21,10 +21,6 @@ define(function(require, exports, module) {
         var matchFuncs = models[this.modelName];
         delete matchFuncs[this.id];
         this.id = null;
-        for(var noop in matchFuncs) {
-          return;
-        }
-        delete models[this.modelName];
       }
     };
 
@@ -45,7 +41,7 @@ define(function(require, exports, module) {
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);
         var models = dbs[dbId] || (dbs[dbId] = {});
-        (models[modelName] || (models[modelName] = {}))[id] = func;
+        (models[modelName] || (models[modelName] = Object.create(null)))[id] = func;
         return new StopFunc(id, dbId, modelName);
       },
     };

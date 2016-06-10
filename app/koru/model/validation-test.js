@@ -5,6 +5,7 @@ define(function (require, exports, module) {
   var koru = require('../main');
   var match = require('../match');
   var util = require('../util');
+  var Model = require('./main');
 
   var Module = module.constructor;
 
@@ -288,7 +289,7 @@ define(function (require, exports, module) {
       var matcher = val.matchFields({foo: {type: 'number', divByx: 2}});
       var doc = {foo: 4};
       assert.isTrue(matcher.$test(doc));
-      refute(doc.hasOwnProperty('_errors'));
+      assert.same(doc._errors, undefined);
       doc.foo = 1;
       assert.isFalse(matcher.$test(doc));
       assert.modelErrors(doc, {foo: 'is_invalid'});
