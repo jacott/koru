@@ -200,6 +200,23 @@ define(function (require, exports, module) {
       assert.same(v.doc.$reload().name, 'fuz');
     },
 
+    "test overrideSave": function () {
+      var TestModel = Model.define('TestModel', {
+        overrideSave: v.overrideSave = test.stub()
+      }).defineFields({name: 'text'});
+
+      var saveSpy = test.spy(TestModel.prototype, '$save');
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
+
+      assert.calledWith(v.overrideSave, 'u123');
+      var model = v.overrideSave.firstCall.thisValue;
+      assert.same(model.constructor, TestModel);
+      assert.same(model.changes.name, 'bar');
+
+      refute.called(saveSpy);
+    },
+
     "test saveRpc new": function () {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()

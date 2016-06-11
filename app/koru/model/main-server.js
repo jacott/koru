@@ -160,10 +160,14 @@ define(function(require, exports, module) {
           }
 
           doc.changes = changes;
-          Val.allowAccessIf(doc.authorize);
-          doc.authorize(userId);
-          doc.$assertValid();
-          doc.$save();
+          if (doc.overrideSave)
+            doc.overrideSave(userId);
+          else {
+            Val.allowAccessIf(doc.authorize);
+            doc.authorize(userId);
+            doc.$assertValid();
+            doc.$save();
+          }
         });
       });
 
