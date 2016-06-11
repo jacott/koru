@@ -193,6 +193,8 @@ define(function(require, exports, module) {
         var model = this.model.fieldTypeMap[refId];
         if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
         var modelName = model.modelName;
+        if (typeof doc === 'function')
+          doc = doc(this);
         doc = doc ||
           (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
           (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
