@@ -304,6 +304,37 @@ define(function(require, exports, module) {
     throw AssertionError(new Error("Attempt to spy on non function"));
   };
 
+  exports.intercept = function (object, prop, replacement, restore) {
+    var orig = Object.getOwnPropertyDescriptor(object, prop);
+    if (orig && orig.value && typeof orig.value.restore === 'function')
+      throw new Error(`Already stubbed ${prop}`);
+
+    if (replacement) {
+      if (typeof replacement === 'function') {
+        var func = function() {
+          return replacement.apply(this, arguments);
+        };
+      } else {
+        func = replacement;
+      }
+      func._actual = orig && orig.value;
+    } else {
+      var func = function () {};
+    }
+    var desc = {
+      configurable: true,
+      value: func,
+    };
+
+    Object.defineProperty(object, prop, desc);
+    func.restore = function () {
+      if (orig) Object.defineProperty(object, prop, orig);
+      else delete object[prop];
+      restore && restore();
+    };
+    return func;
+  };
+
   function restore(object, property, desc, orig, func) {
     object && Object.defineProperty(object, property, desc || {value: orig, configurable: true});
     delete allListeners[func._stubId];

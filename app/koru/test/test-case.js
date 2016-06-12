@@ -1,8 +1,7 @@
 define(['./core', './stubber'], function (geddon, stubber) {
 
   geddon.testCase = function (name, option) {
-    var tc = new TestCase(name, null, option);
-    return tc;
+    return new TestCase(name, null, option);
   };
 
   function TestCase (name, tc, option) {
@@ -179,36 +178,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
       return spy;
     },
 
-    intercept: function (object, prop, replacement, restore) {
-      var orig = Object.getOwnPropertyDescriptor(object, prop);
-      if (orig && orig.value && typeof orig.value.restore === 'function')
-        throw new Error(`Already stubbed ${prop}`);
-
-      if (replacement) {
-        if (typeof replacement === 'function') {
-          var func = function() {
-            return replacement.apply(this, arguments);
-          };
-        } else {
-          func = replacement;
-        }
-        func._actual = orig && orig.value;
-      } else {
-        var func = function () {};
-      }
-      var desc = {
-        configurable: true,
-        value: func,
-      };
-
-      Object.defineProperty(object, prop, desc);
-      func.restore = function () {
-        if (orig) Object.defineProperty(object, prop, orig);
-        else delete object[prop];
-        restore && restore();
-      };
-      this.onEnd(restorSpy(func));
-      return func;
+    intercept: function () {
+      var spy = stubber.intercept.apply(stubber, arguments);
+      this.onEnd(restorSpy(spy));
+      return spy;
     },
   };
 
