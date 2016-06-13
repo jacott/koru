@@ -158,14 +158,16 @@ define(function (require, exports, module) {
       });
     },
 
-    "test ensure ": function () {
+    "test ensure": function () {
       refute.accessDenied(function () {
-        val.ensure("string", "a", "b");
+        val.ensure(match.string, "a", "b");
+        val.ensure('func', function () {});
+        val.ensure(match.number, 2, 3);
       });
 
-      assert.accessDenied(function () {
-        val.ensure("number", 2, "b");
-      });
+      assert.exception(function () {
+        val.ensure(match.number, 2, "b");
+      }, {error: 403, details: 'expected match.number'});
     },
 
     "test ensureDate": function () {

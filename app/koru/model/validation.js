@@ -1,15 +1,15 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var ResourceString = require('../resource-string');
-  var format = require('../format');
-  var match = require('../match');
+  const format          = require('../format');
+  const koru            = require('../main');
+  const match           = require('../match');
+  const ResourceString  = require('../resource-string');
+  const util            = require('../util');
 
-  var validators = {};
+  const validators = {};
 
-  var ID_SPEC = {_id: 'id'};
+  const ID_SPEC = {_id: 'id'};
 
-  var Val = {
+  const Val = {
     Error: {
       msgFor: function (doc, field, other_error) {
         var errors = doc._errors ? doc._errors[field] : typeof doc === 'string' ? [[doc]] : doc;
@@ -196,25 +196,10 @@ define(function(require, exports, module) {
       return truthy || accessDenied(message);
     },
 
-    ensureString: function (/* args */) {
-      ensureType('string', arguments);
-    },
-
-    ensureNumber: function (/* args */) {
-      ensureType('number', arguments);
-    },
-
-    ensureDate: function () {
-      for(var i = 0; i < arguments.length; ++i) {
-        match.date.$test(arguments[i])  || accessDenied('expected a date');
-      }
-    },
-
-    ensureArray: ensureType,
-
-    ensure: function (type, ...args) {
-      ensureType(type, args);
-    },
+    ensureString: function (...args) {ensure(match.string, arguments)},
+    ensureNumber: function (...args) {ensure(match.number, args)},
+    ensureDate: function (...args) {ensure(match.date, args)},
+    ensure: function (type, ...args) {ensure(type, args)},
 
     errorsToString: function (doc) {
       var errs = doc._errors;
@@ -358,11 +343,12 @@ define(function(require, exports, module) {
     return output;
   }
 
-  function ensureType(type, args) {
+  function ensure(type, args) {
+    if (typeof type === 'string')
+      type = match[type];
     for(var i = 0; i < args.length; ++i) {
-      typeof args[i] === type || accessDenied('expected a ' + type + ' for argument ' + i);
+      type.$test(args[i])  || accessDenied(`expected ${type}`);
     }
-
   }
 
   return Val;
