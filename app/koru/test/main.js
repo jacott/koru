@@ -61,8 +61,8 @@ define(function(require, exports, module) {
       return;
     }
     if (err.name === 'SyntaxError') {
-      exports.logHandle('ERROR', err.message.replace(/([\S]*)([\s\S]*)/m, err.module.id + ' SyntaxError:\n  at $1\n$2')
-                       );
+      var m = /^([\S]*)([\s\S]*)    at.*vm.js:/m.exec(err.stack);
+      exports.logHandle('ERROR', `\n    at ${m[1]}\n${m[2]}`);
       return;
     }
 
