@@ -1,25 +1,25 @@
-var Path = requirejs.nodeRequire('path');
-var http = requirejs.nodeRequire('http');
-var send = requirejs.nodeRequire('send');
-var parseurl = requirejs.nodeRequire('parseurl');
-var Future = requirejs.nodeRequire('fibers/future');
+const Path      = requirejs.nodeRequire('path');
+const http      = requirejs.nodeRequire('http');
+var   send      = requirejs.nodeRequire('send');
+const parseurl  = requirejs.nodeRequire('parseurl');
+const Future    = requirejs.nodeRequire('fibers/future');
 
 define(function (require, exports, module) {
-  var koru = require('./main');
-  var util = require('./util');
-  var fst = require('./fs-tools');
-  var queue = require('./queue')();
-  var IdleCheck = require('./idle-check').singleton;
+  const fst        = require('./fs-tools');
+  const IdleCheck  = require('./idle-check').singleton;
+  const koru       = require('./main');
+  const queue      = require('./queue')();
+  const util       = require('./util');
 
-  module.exports = function (host, port, root, SPECIALS, DEFAULT_PAGE) {
+  module.exports = function (host, port, root, DEFAULT_PAGE, SPECIALS) {
     SPECIALS = SPECIALS || {};
-    var koruParent = Path.join(koru.libDir, 'app');
+    const koruParent = Path.join(koru.libDir, 'app');
 
-    var handlers = {};
+    const handlers = {};
 
-    var server = http.createServer(requestListener);
+    const server = http.createServer(requestListener);
 
-    var webServer = {
+    const webServer = {
       start: function () {
         Future.wrap(server.listen).call(server, port, host).wait();
       },
@@ -67,20 +67,21 @@ define(function (require, exports, module) {
       },
     };
 
-    var count = 0;
-
     function requestListener(req, res) {koru.Fiber(function () {
       IdleCheck.inc();
       try {
         var path = parseurl(req).pathname;
         var reqRoot = root;
 
+        if (path === '/')
+          path = DEFAULT_PAGE;
+
         var m = /^\/([^/]+)(.*)$/.exec(path);
         if (m) {
           var special = SPECIALS[m[1]];
 
           if (special) {
-            var pr = special(m);
+            var pr = typeof special === 'function' ? special(m) : special;
             path = pr[0]; reqRoot = pr[1];
 
           } else if(special = handlers[m[1]]) {
@@ -93,8 +94,8 @@ define(function (require, exports, module) {
 
         if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
           send(req, path, {root: reqRoot, index: false})
-            .on('error', sendDefault)
-            .on('directory', sendDefault)
+            .on('error', error)
+            .on('directory', error)
             .pipe(res);
         }
       } catch(ex) {
@@ -102,22 +103,6 @@ define(function (require, exports, module) {
         error(ex);
       } finally {
         IdleCheck.dec();
-      }
-
-      function sendDefault(err) {
-        if (err && err.status === 404) {
-          if (path.match(/\.js$/)) {
-            error(err);
-            return;
-          }
-        }
-
-        if (DEFAULT_PAGE)
-          send(req, DEFAULT_PAGE, {root: root})
-          .on('error', error)
-          .pipe(res);
-        else
-          error(err);
       }
 
       function error(err, msg) {

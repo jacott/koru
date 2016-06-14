@@ -25,5 +25,5 @@ define(function (require, exports, module) {
   var port = module.config().port || 3000;
   var host = module.config().host;
 
-  return WebServerFactory(host, port, root, SPECIALS, DEFAULT_PAGE);
+  return WebServerFactory(host, port, root, DEFAULT_PAGE, SPECIALS);
 });
