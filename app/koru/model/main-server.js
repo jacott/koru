@@ -1,16 +1,17 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var Random = require('../random');
-  var session = require('../session');
-  var Val = require('./validation');
-  var driver = require('../config!DBDriver');
-  var Query = require('./query');
-  var makeSubject = require('../make-subject');
+  const driver       = require('../config!DBDriver');
+  const koru         = require('../main');
+  const makeSubject  = require('../make-subject');
+  const Random       = require('../random');
+  const session      = require('../session');
+  const util         = require('../util');
+  const Query        = require('./query');
+  const Val          = require('./validation');
 
   var _support, BaseModel;
 
-  var uniqueIndexes = {}, indexes = {};
+  const uniqueIndexes = {};
+  const indexes = {};
 
   session.registerGlobalDictionaryAdder(module, addToDictionary);
 
@@ -208,7 +209,7 @@ define(function(require, exports, module) {
           return function (/* arguments */) {
             var conn = this;
             var args = arguments;
-            return model.docs.transaction(function () {
+            return model.db.transaction(function () {
               Val.allowAccessIf(conn.userId);
               return func.apply(conn, args);
             });

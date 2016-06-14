@@ -1,13 +1,14 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Model = require('./main');
-  var session = require('../session/base');
-  var koru = require('../main');
-  var Val = require('./validation');
-  var Future = requirejs.nodeRequire('fibers/future');
-  var util = require('../util');
-  var Driver = require('koru/pg/driver');
+  const koru     = require('../main');
+  const session  = require('../session/base');
+  const util     = require('../util');
+  const Model    = require('./main');
+  const TH       = require('./test-helper');
+  const Val      = require('./validation');
+  const Driver   = require('koru/pg/driver');
+
+  const Future   = util.Future;
 
   TH.testCase(module, {
     setUp: function () {
@@ -119,7 +120,7 @@ define(function (require, exports, module) {
 
       TestModel.remote({foo: v.foo = test.stub().returns('result')});
 
-      test.spy(TestModel.docs, 'transaction');
+      test.spy(TestModel.db, 'transaction');
 
       assert.accessDenied(function () {
         session._rpcs['TestModel.foo'].call({userId: null});
@@ -134,7 +135,7 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.foo, 1, 2);
       assert.same(v.foo.firstCall.thisValue, v.conn);
 
-      assert.called(TestModel.docs.transaction);
+      assert.called(TestModel.db.transaction);
     },
 
     "test when no changes in save": function () {
