@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
-  var util = require('./util-base');
-  var stacktrace = require('./stacktrace');
-  var match = require('./match');
+  const match       = require('./match');
+  const stacktrace  = require('./stacktrace');
+  const util        = require('./util-base');
 
-  var valueUndefined = {value: undefined};
+  const valueUndefined = {value: undefined};
 
-  var TYPEORDER = {
+  const TYPEORDER = {
     undefined: 0,
     string: 1,
     boolean: 2,
@@ -19,9 +19,9 @@ define(function(require, exports, module) {
     return obj === null ? -1 : TYPEORDER[typeof obj];
   }
 
-  var slice = Array.prototype.slice;
+  const slice = Array.prototype.slice;
 
-  var egal = Object.is || function(x, y) {
+  const egal = Object.is || function(x, y) {
     if (x === y) {
       // 0 === -0, but they are not identical
       return x !== 0 || 1 / x === 1 / y;
@@ -40,23 +40,20 @@ define(function(require, exports, module) {
 
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
+    extendExclude: function(obj, properties, exclude) {
+      for(var prop in properties) {
+        if (exclude[prop]) continue;
+        Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+      }
+      return obj;
+    },
+
     reverseExtend: function (obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && prop in exclude) continue;
         if (! (prop in obj))
           Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties, prop));
-      }
-      return obj;
-    },
-
-    extendWithDelete: function(obj, properties) {
-      for(var prop in properties) {
-        var value = Object.getOwnPropertyDescriptor(properties, prop);
-        if (value.value === undefined)
-          delete obj[prop];
-        else
-          Object.defineProperty(obj,prop, value);
       }
       return obj;
     },

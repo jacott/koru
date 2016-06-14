@@ -147,6 +147,20 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
+    'test extendExclude': function () {
+      var item = 5,
+          sub={a: 1, b: 2},
+          sup = {b: 3, get c() {return item;}, d: 4, e: 5};
+
+      util.extendExclude(sub,sup, {d: true, e: true});
+
+      item = 6;
+
+      assert.same(sub.a,1);
+      assert.same(sub.b,3);
+      assert.same(sub.c,6);
+    },
+
     "test egal": function () {
       assert.same(util.egal, util.is);
       assert.isTrue(util.egal(null, null));
@@ -204,14 +218,6 @@ define(function (require, exports, module) {
     "test invert": function () {
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
       assert.equals(util.invert({a: 1, b: 2}, function (x) {return x+x}), {'1': "aa", '2': "bb"});
-    },
-
-    "test extendWithDelete": function () {
-      var orig = {a: 1, b: 2, c: 3};
-      var changes = {a: 2, b: undefined, d: 4};
-
-      assert.same(util.extendWithDelete(orig, changes), orig);
-      assert.equals(orig, {a:2, c: 3, d: 4});
     },
 
     "test lookupDottedValue": function () {
