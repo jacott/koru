@@ -1,8 +1,20 @@
 define(function(require, exports, module) {
-  var util = require('./util');
+  const util = require('./util');
 
   util.engine = 'Server';
   util.Fiber = requirejs.nodeRequire('fibers');
+
+  util.waitCallback = function (future) {
+    return function (err, response) {
+      if (err) {
+        if (err instanceof Error)
+          future.throw(err);
+        else
+          future.throw(new Error(err.toString()));
+      } else
+        future.return(response);
+    };
+  };
 
   // Fix fibers making future enumerable
   var future = util.Future = requirejs.nodeRequire('fibers/future');
