@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var message = require('./message');
-  var match = require('./match');
-  var IdleCheck = require('../idle-check').singleton;
-  var makeSubject = require('koru/make-subject');
+  const IdleCheck    = require('../idle-check').singleton;
+  const koru         = require('../main');
+  const util         = require('../util');
+  const match        = require('./match');
+  const message      = require('./message');
+  const makeSubject  = require('koru/make-subject');
 
   exports = function (session) {
     function Connection(ws, sessId, close) {
@@ -12,6 +12,7 @@ define(function(require, exports, module) {
       conn.ws = ws;
       conn.sessId = sessId;
       conn._subs = Object.create(null);
+      conn._onClose = null;
       conn.close = function () {
         if (conn._onClose) {
           conn._onClose.notify(conn);

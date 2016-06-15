@@ -1,15 +1,15 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var Dom = require('./base');
-  var koru = require('koru');
-  var makeSubject = require('koru/make-subject');
+  const Dom          = require('./base');
+  const koru         = require('koru');
+  const makeSubject  = require('koru/make-subject');
+  const util         = require('koru/util');
 
-  var extend = util.extend;
+  const extend = util.extend;
 
-  var TEXT_NODE = document.TEXT_NODE;
-  var COMMENT_NODE = document.COMMENT_NODE;
-  var DOCUMENT_NODE = document.DOCUMENT_NODE;
-  var DOCUMENT_FRAGMENT_NODE = document.DOCUMENT_FRAGMENT_NODE;
+  const TEXT_NODE = document.TEXT_NODE;
+  const COMMENT_NODE = document.COMMENT_NODE;
+  const DOCUMENT_NODE = document.DOCUMENT_NODE;
+  const DOCUMENT_FRAGMENT_NODE = document.DOCUMENT_FRAGMENT_NODE;
 
   var currentCtx, currentElement, currentEvent;
   var _disable_focusout = false;
@@ -98,8 +98,7 @@ define(function(require, exports, module) {
 
   function DomTemplate(name, parent) {
     this.name = name;
-    if (parent !== Dom)
-      this.parent = parent;
+    this.parent = parent !== Dom ? parent : null;
   }
 
   DomTemplate.prototype = {
@@ -744,6 +743,7 @@ define(function(require, exports, module) {
   }
 
   function nativeOff(parent, eventType, selector, func) {
+    if (! parent._koru) debugger;
     var events = parent._koru.__events;
 
     if (events) {

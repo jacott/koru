@@ -349,9 +349,5 @@ define(function(require, exports, module) {
     }
   }
 
-  function DocCache() {}
-
-  DocCache.prototype = {};
-
   return ModelEnv;
 });

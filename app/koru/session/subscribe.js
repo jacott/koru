@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var publish = require('./publish');
-  var koru = require('../main');
-  var login = require('../user-account/client-login');
-  var message = require('./message');
-  var Trace = require('../trace');
+  const koru     = require('../main');
+  const Trace    = require('../trace');
+  const login    = require('../user-account/client-login');
+  const util     = require('../util');
+  const message  = require('./message');
+  const publish  = require('./publish');
 
   koru.onunload(module, 'reload');
 
@@ -90,8 +90,10 @@ define(function(require, exports, module) {
       if (typeof cb === 'function') {
         this.callback = cb;
         this.args = args.slice(0, -1);
-      } else
+      } else {
+        this.callback = null;
         this.args = args;
+      }
     }
 
     ClientSub.prototype = {

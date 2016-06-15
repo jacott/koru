@@ -51,7 +51,7 @@ define(function(require, exports, module) {
     reverseExtend: function (obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
-        if (exclude && prop in exclude) continue;
+        if (exclude && exclude[prop]) continue;
         if (! (prop in obj))
           Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties, prop));
       }

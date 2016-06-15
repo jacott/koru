@@ -1,20 +1,20 @@
 define(function(require, exports, module) {
   require('koru/dom/html-doc');
-  var Dom = require('koru/dom/base');
-  var util = require('koru/util');
-  var uColor = require('koru/util-color');
+  const Dom     = require('koru/dom/base');
+  const util    = require('koru/util');
+  const uColor  = require('koru/util-color');
 
-  var ELEMENT_NODE = document.ELEMENT_NODE;
-  var TEXT_NODE = document.TEXT_NODE;
+  const ELEMENT_NODE = document.ELEMENT_NODE;
+  const TEXT_NODE = document.TEXT_NODE;
 
-  var OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
+  const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
       LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
       MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
       FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
       LI = 20;
 
 
-  var FONT_FACE_TO_ID = {
+  const FONT_FACE_TO_ID = {
     'sans-serif': 0,
     serif: 1,
     monospace: 2,
@@ -24,13 +24,13 @@ define(function(require, exports, module) {
     poster: 9,
   };
 
-  var FONT_ID_TO_FACE = [];
+  const FONT_ID_TO_FACE = [];
   for (var id in FONT_FACE_TO_ID)
     FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
 
-  var FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
+  const FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
 
-  var ALIGN_TEXT_TO_CODE = {
+  const ALIGN_TEXT_TO_CODE = {
     left: LEFT,
     right: RIGHT,
     center: CENTER,
@@ -38,7 +38,7 @@ define(function(require, exports, module) {
   };
 
 
-  var ALIGN_CODE_TO_TEXT = [];
+  const ALIGN_CODE_TO_TEXT = [];
   for (var id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
@@ -48,7 +48,7 @@ define(function(require, exports, module) {
     'justify-all': JUSTIFY
   });
 
-  var LINK_TO_HTML = [
+  const LINK_TO_HTML = [
     {
       id: 0,
       class: "",
@@ -61,11 +61,11 @@ define(function(require, exports, module) {
     },
   ];
 
-  var LINK_FROM_HTML = {
+  const LINK_FROM_HTML = {
     '': LINK_TO_HTML[0]
   };
 
-  var INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
+  const INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
   function fromHtml(html, options) {
     var builder = new MarkupBuilder(options);
@@ -310,7 +310,7 @@ define(function(require, exports, module) {
     }
   }
 
-  var CODE_TO_CLASS = [
+  const CODE_TO_CLASS = [
     'hll',// { background-color: #ffffcc }
     'c',  // { color: #408080; font-style: italic } /* Comment */
     'err',// { border: 1px solid #FF0000 } /* Error */
@@ -374,7 +374,7 @@ define(function(require, exports, module) {
     'il', // { color: #666666 } /* Literal.Number.Integer.Long */
   ];
 
-  var CLASS_TO_CODE = {};
+  const CLASS_TO_CODE = {};
 
   CODE_TO_CLASS.forEach(function (id, index) {
     CLASS_TO_CODE[id] = index;
@@ -420,7 +420,7 @@ define(function(require, exports, module) {
     this.addInline(muIndex, code, index, id === undefined ? value : id);
   }
 
-  var FONT_SIZE_TO_EM = {
+  const FONT_SIZE_TO_EM = {
     '1': '.68em',
     'x-small': '.68em',
     '2': '.8em',
@@ -472,7 +472,7 @@ define(function(require, exports, module) {
 
   function fromIgnore() {}
 
-  var FROM_RULE = {
+  const FROM_RULE = {
     HEAD: fromIgnore,
     META: fromIgnore,
     TITLE: fromIgnore,
@@ -527,6 +527,7 @@ define(function(require, exports, module) {
     var state = {result: html, rule: toDiv, begun: true};
 
     var nrule;
+    this.line = null;
     for(var index = 0; index < lines.length; ++index) {
       this.line = lines[this.lidx = index];
       while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
@@ -613,7 +614,7 @@ define(function(require, exports, module) {
     },
   };
 
-  var toDiv = toBlock('DIV');
+  const toDiv = toBlock('DIV');
 
   function toNested(blockTag, innerFunc) {
     return function toNested(state) {
@@ -738,7 +739,7 @@ define(function(require, exports, module) {
       state.result.appendChild(document.createElement('BR'));
   }
 
-  var CODE_TO_STYLE_NAME = [], CODE_TO_STYLE_VALUE = [];
+  const CODE_TO_STYLE_NAME = [], CODE_TO_STYLE_VALUE = [];
   CODE_TO_STYLE_NAME[BOLD] = 'font-weight'; CODE_TO_STYLE_VALUE[BOLD] = 'bold';
   CODE_TO_STYLE_NAME[ITALIC] = 'font-style'; CODE_TO_STYLE_VALUE[ITALIC] = 'italic';
   CODE_TO_STYLE_NAME[UNDERLINE] = 'text-decoration'; CODE_TO_STYLE_VALUE[UNDERLINE] = 'underline';

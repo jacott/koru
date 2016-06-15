@@ -1,10 +1,10 @@
 isClient && define(function (require, exports, module) {
   'use strict';
   var test, v;
-  var TH = require('koru/test');
-  var DomTemplate = require('./template');
-  var util = require('koru/util');
-  var Dom = require('../dom');
+  const Dom          = require('../dom');
+  const DomTemplate  = require('./template');
+  const TH           = require('koru/test');
+  const util         = require('koru/util');
 
   TH.testCase(module, {
     setUp: function () {
@@ -948,7 +948,7 @@ isClient && define(function (require, exports, module) {
           }],
         });
 
-        assert.same(undefined, Dom.Foo.parent);
+        assert.same(null, Dom.Foo.parent);
         assert.same(Dom.Foo, Dom.Foo.Bar.parent);
         assert.same(Dom.Foo.Bar, Dom.Foo.Bar.Baz.parent);
         assert.same(Dom.Foo.Bar.$fullname, 'Foo.Bar');
