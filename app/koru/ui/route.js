@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var Dom = require('../dom');
   require('koru/ui/dom-ext');
-  var Trace = require('../trace');
-  var makeSubject = require('../make-subject');
+  const Dom          = require('koru/dom');
+  const koru         = require('koru/main');
+  const makeSubject  = require('koru/make-subject');
+  const Trace        = require('koru/trace');
+  const util         = require('koru/util');
 
   var debug_page = false;
   Trace.debug_page = function (value) {
@@ -12,17 +12,18 @@ define(function(require, exports, module) {
   };
 
   function Route(path, template, parent, options) {
-    if (options) {
-      if (typeof options === 'string')
-        this.routeVar = options;
-      else
-        util.extend(this, options);
-    }
+    if (typeof options === 'string') {
+      this.routeVar = options;
+      options = {};
+    } else
+      this.routeVar = options ? options.routeVar : null;
 
     this.path = path || '';
     this.template = template;
-    this.parent = parent;
+    this.parent = options && options.hasOwnProperty('parent') ? options.parent : parent;
     this.routes = {};
+
+    util.reverseExtend(this, options);
   };
 
   makeSubject(Route);

@@ -1,9 +1,9 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var koru = require('../main');
-  var TH = require('./test-helper');
-  var Route = require('./route');
-  var Dom = require('../dom');
+  const Dom    = require('../dom');
+  const koru   = require('../main');
+  const Route  = require('./route');
+  const TH     = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
@@ -467,6 +467,40 @@ isClient && define(function (require, exports, module) {
 
     "test root": function () {
       assert.same(v.root.constructor, Route);
+    },
+
+    "test setting parent in addBase": function () {
+      var Baz = {
+        name: 'Baz',
+        onBaseEntry: test.stub(),
+        onBaseExit: test.stub(),
+      };
+
+      var BazBar = {
+        name: 'BazBar',
+        $autoRender: test.stub(),
+        onEntry: test.stub(),
+        onExit: test.stub(),
+      };
+
+      Route.root.routeVar = 'foo';
+      test.onEnd(() => Route.root.routeVar = null);
+      test.intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = test.stub());
+      test.intercept(Route.root, 'onBaseExit', v.rootBaseExit = test.stub());
+
+      Route.root.addBase(Baz, {parent: null});
+
+      Baz.route.addTemplate(BazBar);
+
+      Route.gotoPage(BazBar);
+
+      refute.called(v.rootBaseEntry);
+      assert.calledWith(BazBar.onEntry, TH.match(opts => opts.route.hasOwnProperty('routeVar')), {pathname: 'baz/baz-bar'});
+
+      Route.gotoPage(null);
+
+      refute.called(v.rootBaseExit);
+      assert.calledWith(BazBar.onExit, null, {pathname: ''});
     },
 
     "test addBase and addAlias": function () {
