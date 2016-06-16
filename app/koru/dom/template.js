@@ -743,8 +743,7 @@ define(function(require, exports, module) {
   }
 
   function nativeOff(parent, eventType, selector, func) {
-    if (! parent._koru) debugger;
-    var events = parent._koru.__events;
+    var events = parent._koru && parent._koru.__events;
 
     if (events) {
       var eventTypes = events[eventType];

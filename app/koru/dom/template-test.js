@@ -394,6 +394,11 @@ isClient && define(function (require, exports, module) {
         refute.called(v.divCall);
         assert.called(v.sip);
         refute.called(v.pd);
+
+        Dom.Foo.$detachEvents(top);
+        Dom.remove(top);
+        Dom.Foo.$detachEvents(top);
+
       });
     },
 
