@@ -133,7 +133,6 @@ define(function(require, exports, module) {
 
     $destroyed: function (ctx, elm) {
       ctx.data.callback && ctx.data.callback(null);
-      Tpl.$detachEvents(elm);
     },
   });
 
