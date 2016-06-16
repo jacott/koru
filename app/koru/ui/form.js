@@ -1,20 +1,20 @@
 define(function(require, exports, module) {
-  var Dom   = require('../dom');
-  var koru   = require('../main');
-  var Route = require('./route');
-  var Val   = require('../model/validation');
-  var util = require('../util');
-  var format = require('../format');
-  var PlainText = require('./plain-text');
-  var RichTextEditorToolbar = require('./rich-text-editor-toolbar');
+  const Dom                    = require('../dom');
+  const format                 = require('../format');
+  const koru                   = require('../main');
+  const Val                    = require('../model/validation');
+  const util                   = require('../util');
+  const PlainText              = require('./plain-text');
+  const RichTextEditorToolbar  = require('./rich-text-editor-toolbar');
+  const Route                  = require('./route');
 
-  var Tpl = Dom.newTemplate(require('../html!./form'));
-  var OnOff = Tpl.OnOff;
-  var $ = Dom.current;
+  const Tpl = Dom.newTemplate(require('../html!./form'));
+  const $ = Dom.current;
+  const OnOff = Tpl.OnOff;
 
-  var IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};
+  const IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};
 
-  var DEFAULT_HELPERS = {
+  const DEFAULT_HELPERS = {
     value: function () {
       return this.doc[this.name];
     },
@@ -224,7 +224,15 @@ define(function(require, exports, module) {
     },
 
     renderError: function (form, field, msg) {
-      var fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
+      if (arguments.length === 2) {
+        var fieldElm = form;
+        msg = field;
+      } else {
+        var fieldElm = form.querySelector('[name="'+field+'"],[data-errorField="'+field+'"]');
+      }
+
+      if (Array.isArray(msg))
+        msg = Val.text(msg);
 
       if (! fieldElm) return;
 

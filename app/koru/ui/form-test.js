@@ -298,12 +298,12 @@ isClient && define(function (require, exports, module) {
     "test renderError": function () {
       var form = Dom.html({content: [{name: 'foo'},{name: 'bar'}]});
 
-      Form.renderError(form, 'foo', 'foo msg');
+      Form.renderError(form, 'foo', ['is_required']);
       Form.renderError(form, 'bar', 'bar msg');
 
       assert.dom(form, function () {
         assert.dom('[name=bar].error+.errorMsg>div', 'bar msg');
-        assert.dom('[name=foo].error+.errorMsg>div', 'foo msg');
+        assert.dom('[name=foo].error+.errorMsg>div', "can't be blank");
 
         Form.renderError(form, 'bar', false);
 
