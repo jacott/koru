@@ -232,9 +232,9 @@ define(function(require, exports, module) {
         if (currentPage) {
           currentPage.onExit && currentPage.onExit(page, pageRoute);
 
-          var finished = exitEntry(toPath(currentPage.$autoRender ? currentPage.route : currentPage), currentPageRoute, toPath(page && page.route), pageRoute, page, then);
+          exitEntry(toPath(currentPage), currentPageRoute, toPath(page), pageRoute, page, then);
         } else {
-          var finished = exitEntry([], {}, toPath(page && page.route), pageRoute, page, then);
+          exitEntry([], {}, toPath(page), pageRoute, page, then);
         }
 
         function then() {
@@ -470,7 +470,12 @@ define(function(require, exports, module) {
     return routePath(route.parent, pageRoute)+'/'+path;
   }
 
-  function toPath(route) {
+  function toPath(page) {
+    if (page) {
+      if (page.noParentRoute)
+        return [];
+      var route = page.$autoRender ? page.route : page;
+    }
     var path = [];
     while(route) {
       path.push(route);

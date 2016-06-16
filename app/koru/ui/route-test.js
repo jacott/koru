@@ -495,12 +495,39 @@ isClient && define(function (require, exports, module) {
       Route.gotoPage(BazBar);
 
       refute.called(v.rootBaseEntry);
-      assert.calledWith(BazBar.onEntry, TH.match(opts => opts.route.hasOwnProperty('routeVar')), {pathname: 'baz/baz-bar'});
+      assert.calledWith(BazBar.onEntry, BazBar, {pathname: 'baz/baz-bar'});
 
       Route.gotoPage(null);
 
       refute.called(v.rootBaseExit);
       assert.calledWith(BazBar.onExit, null, {pathname: ''});
+    },
+
+    "test noParentRoute": function () {
+      var BazBar = {
+        name: 'BazBar',
+        noParentRoute: true,
+        $autoRender: test.stub(),
+        onEntry: test.stub(),
+        onExit: test.stub(),
+      };
+
+      test.intercept(Route.root, 'onBaseEntry', v.rootBaseEntry = test.stub());
+      test.intercept(Route.root, 'onBaseExit', v.rootBaseExit = test.stub());
+
+      Route.root.addTemplate(BazBar);
+
+      Route.gotoPath('/baz-bar/foo');
+
+      refute.called(v.rootBaseEntry);
+      assert.calledWith(BazBar.onEntry, BazBar, {pathname: '/baz-bar/foo', append: 'foo'});
+
+      Route.gotoPage(null);
+
+      refute.called(v.rootBaseExit);
+      assert.calledWith(BazBar.onExit, null, {pathname: ''});
+
+
     },
 
     "test addBase and addAlias": function () {
