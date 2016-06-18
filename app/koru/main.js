@@ -1,154 +1,162 @@
-(function() {
+/**
+ * Main koru module. Responsible for:
+ *
+ *   Fibers
+ *   Logging
+ *   Dependency tracking and load/unload manager
+ *   AppDir location
+ */
+define(function (require, exports, module) {
+  const errors = require('./errors');
+  const util   = require('./util');
+
   /**
    * Map of module dependencies. Entries list what to unload when
    * module unloaded. key is module.id.
    */
-  var providerMap = {};
+  const providerMap = {};
   /**
    * Functions to call when module is unloaded
    */
-  var unloads = {};
-  var loaded = {};
-  var waitLoad = {};
-  var koru;
+  const unloads = {};
+  const loaded = {};
+  const waitLoad = {};
+  function reload() {
+    return koru.reload();
+  }
 
-  /**
-   * Main koru module. Responsible for:
-   *
-   *   Fibers
-   *   Logging
-   *   Dependency tracking and load/unload manager
-   *   AppDir location
-   */
-  define(function (require, exports, module) {
-    var util = require('./util');
-    var errors = require('./errors');
+  function onunload(subm, func) {
+    if (func === 'reload')
+      func = reload;
+    if (typeof subm === 'string')
+      subm = module.ctx.modules[subm];
 
-    function reload() {
-      return koru.reload();
-    }
+    subm && subm.onUnload(typeof func === 'function' ? func : func.stop);
+  }
 
-    function onunload(subm, func) {
-      if (func === 'reload')
-        func = reload;
-      if (typeof subm === 'string')
-        subm = module.ctx.modules[subm];
+  const koru = {
+    onunload: onunload,
 
-      subm && subm.onUnload(typeof func === 'function' ? func : func.stop);
-    }
+    unload: function (id) {
+      var mod = module.ctx.modules[id];
+      mod && mod.unload();
+    },
 
-    koru = {
-      onunload: onunload,
+    config: module.config(),
 
-      unload: function (id) {
-        var mod = module.ctx.modules[id];
-        mod && mod.unload();
-      },
+    throwConfigMissing: function (name) {
+      throw new Error(module.id + ' config is missing for: ' + name);
+    },
 
-      config: module.config(),
-      throwConfigMissing: function (name) {
-        throw new Error(module.id + ' config is missing for: ' + name);
-      },
+    throwConfigError: function (name, reason) {
+      throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
+    },
 
-      throwConfigError: function (name, reason) {
-        throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
-      },
-
-      Error: errors.Error.bind(errors),
-      Fiber: util.Fiber,
-      util: util,
-
-      absId: function (require, id) {
-        return require.module.normalizeId(id);
-      },
-
-      clearTimeout: function (handle) {
-        return clearTimeout(handle);
-      },
-
-      "\x64ebug": logDebug,
-
-      info: function () {
-        koru.logger('INFO', Array.prototype.join.call(arguments, ' '));
-      },
-
-      error: function () {
-        koru.logger('ERROR', Array.prototype.join.call(arguments, ' '));
-      },
-
-      unhandledException: function (ex) {
-        koru.error(util.extractError(ex));
-      },
-
-      logger: function () {
-        var args = new Array(arguments.length + 1);
-        args[0] = new Date().toISOString();
-        for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
-
-        console.log.apply(console, args);
-      },
-
-      globalCallback: function (err, result) {
-        if (err) koru.error(err);
-      },
-
-      userId: function () {
-        return util.thread.userId;
-      },
-
-      getHashOrigin: function () {
-        var l = this.getLocation();
-        return l.protocol+'//'+l.host+l.pathname;
-      },
-
-      nullFunc: function () {},
-
-      /**
-       * Converts path to related build path of compiled resource.
-       * @param {string} path source path of resource.
-       *
-       * @returns build path for resource.
-       */
-      buildPath: function (path) {
-        var idx = path.lastIndexOf('/');
-        if (idx === -1)
-          return '.build/' + path;
-
-        return path.slice(0, ++idx) + '.build/' + path.slice(idx);
-      },
-
-      fetchDependants: fetchDependants,
-    };
-
-    function fetchDependants(mod, result) {
-      if (! result) result = {};
-      if (! mod || result[mod.id]) return result;
-      result[mod.id] = true;
-      var modules = mod.ctx.modules;
-      var deps = mod.dependants;
-      for (var id in deps) {
-        var map = {};
-        fetchDependants(modules[id], result);
+    replaceProperty: function (object, prop, newValue) {
+      var oldValue = Object.getOwnPropertyDescriptor(object, prop);
+      if (! oldValue) {
+        newValue.writeable === undefined && (newValue.writeable = true);
+        newValue.enumerable === undefined && (newValue.enumerable = true);
+        newValue.configurable === undefined && (newValue.configurable = true);
       }
-      return result;
-    }
+      Object.defineProperty(object, prop, newValue);
+      return oldValue;
+    },
 
-    function logDebug() {
+    Error: errors.Error.bind(errors),
+    Fiber: util.Fiber,
+    util: util,
+
+    absId: function (require, id) {
+      return require.module.normalizeId(id);
+    },
+
+    clearTimeout: function (handle) {
+      return clearTimeout(handle);
+    },
+
+    "\x64ebug": logDebug,
+
+    info: function () {
+      koru.logger('INFO', Array.prototype.join.call(arguments, ' '));
+    },
+
+    error: function () {
+      koru.logger('ERROR', Array.prototype.join.call(arguments, ' '));
+    },
+
+    unhandledException: function (ex) {
+      koru.error(util.extractError(ex));
+    },
+
+    logger: function () {
       var args = new Array(arguments.length + 1);
-      args[0] = '\x44EBUG';
+      args[0] = new Date().toISOString();
       for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
 
-      koru.logger.apply(koru, args);
+      console.log.apply(console, args);
+    },
+
+    globalCallback: function (err, result) {
+      if (err) koru.error(err);
+    },
+
+    userId: function () {
+      return util.thread.userId;
+    },
+
+    getHashOrigin: function () {
+      var l = this.getLocation();
+      return l.protocol+'//'+l.host+l.pathname;
+    },
+
+    nullFunc: function () {},
+
+    /**
+     * Converts path to related build path of compiled resource.
+     * @param {string} path source path of resource.
+     *
+     * @returns build path for resource.
+     */
+    buildPath: function (path) {
+      var idx = path.lastIndexOf('/');
+      if (idx === -1)
+        return '.build/' + path;
+
+      return path.slice(0, ++idx) + '.build/' + path.slice(idx);
+    },
+
+    fetchDependants: fetchDependants,
+  };
+
+  function fetchDependants(mod, result) {
+    if (! result) result = {};
+    if (! mod || result[mod.id]) return result;
+    result[mod.id] = true;
+    var modules = mod.ctx.modules;
+    var deps = mod.dependants;
+    for (var id in deps) {
+      var map = {};
+      fetchDependants(modules[id], result);
     }
+    return result;
+  }
 
-    logDebug.inspect = function () {
-      var args = new Array(arguments.length);
-      for(var i = 0; i < arguments.length; ++i)
-        args[i] = util.inspect(arguments[i-1]);
+  function logDebug() {
+    var args = new Array(arguments.length + 1);
+    args[0] = '\x44EBUG';
+    for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
 
-      koru.logger('\x44EBUG ', args.join(', '));
-    };
+    koru.logger.apply(koru, args);
+  }
 
-    return koru;
-  });
-})();
+  logDebug.inspect = function () {
+    var args = new Array(arguments.length);
+    for(var i = 0; i < arguments.length; ++i)
+      args[i] = util.inspect(arguments[i-1]);
+
+    koru.logger('\x44EBUG ', args.join(', '));
+  };
+
+  return koru;
+});

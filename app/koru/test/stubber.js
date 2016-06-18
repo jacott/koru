@@ -321,12 +321,8 @@ define(function(require, exports, module) {
     } else {
       var func = function () {};
     }
-    var desc = {
-      configurable: true,
-      value: func,
-    };
 
-    Object.defineProperty(object, prop, desc);
+    Object.defineProperty(object, prop, {configurable: true, value: func,});
     func.restore = function () {
       if (orig) Object.defineProperty(object, prop, orig);
       else delete object[prop];
