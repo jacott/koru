@@ -898,7 +898,15 @@ function toColumns(table, params, cols) {
       case 'date':
       case 'timestamp with time zone':
       case 'timestamp without time zone':
-        value = value && value.toISOString();
+        if (value) {
+          if (value.toISOString)
+            value = value && value.toISOString();
+          else {
+            let date = new Date(value);
+            if (! isNaN(+date))
+              value = date.toISOString();
+          }
+        }
         break;
       }
     }

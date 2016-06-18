@@ -186,6 +186,10 @@ isServer && define(function (require, exports, module) {
 
       assert.equals(v.foo.count({createdOn: v.date}), 1);
       assert.equals(v.foo.count({createdOn: new Date(2015, 3, 5)}), 0);
+      assert.equals(v.foo.count({createdOn: '2015/04/04'}), 1);
+      assert.equals(v.foo.values({createdOn: '2015/04/04'}), ['2015-04-04T00:00:00.000Z']);
+      assert.equals(v.foo.values({createdOn: new Date('2015/04/04').getTime()}), ['2015-04-04T00:00:00.000Z']);
+
     },
 
     "test $regex": function () {
