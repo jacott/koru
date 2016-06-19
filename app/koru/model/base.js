@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define(function(require, BaseModel, module) {
   var util = require('koru/util');
 
   function BaseModel(attributes, changes) {

@@ -1,39 +1,36 @@
-define(function(require, exports, module) {
-  var util = require('koru/util');
-  var core = require('./core');
-  var assertions = require('./assertions');
-
-  var deepEqual = core._u.deepEqual;
-  var inspect = util.inspect;
+define(function(require, Stubber, module) {
+  const {extend, inspect}  = require('koru/util');
+  require('./assertions');
+  const deepEqual          = require('./core')._u.deepEqual;
 
   var globalCount = 0;
   var globalId = 0;
-  var allListeners = Object.create(null);
+  const allListeners = Object.create(null);
 
-  var stubProto = util.extend(Object.create(Function.prototype), {
-    returns: function (arg) {
+  const stubProto = extend(Object.create(Function.prototype), {
+    returns (arg) {
       this._returns = arg;
       return this;
     },
 
-    throws: function (arg) {
+    throws (arg) {
       this._throws = arg;
       return this;
     },
 
-    yields: function (...args) {
+    yields (...args) {
       this._yields = args;
       return this;
     },
 
-    toString: function () {
+    toString () {
       return typeof this.original === 'function' ? this.original.name : this.original === undefined ?
         this.name :
-        util.inspect(this.original, 1);
+        inspect(this.original, 1);
     },
 
-    withArgs: function (...args) {
-      var spy = function() {
+    withArgs (...args) {
+      function spy () {
         return spy.subject.apply(this, arguments);
       };
       Object.setPrototypeOf(spy, withProto);
@@ -44,8 +41,8 @@ define(function(require, exports, module) {
       return spy;
     },
 
-    onCall: function (count) {
-      var spy = function() {
+    onCall (count) {
+      function spy () {
         return spy.subject.apply(this, arguments);
       };
       Object.setPrototypeOf(spy, withProto);
@@ -56,7 +53,7 @@ define(function(require, exports, module) {
       return spy;
     },
 
-    invoke: function (thisValue, args) {
+    invoke (thisValue, args) {
       var call = addCall(this, thisValue, args);
       call.returnValue = this._replacement ? this._replacement.apply(thisValue, args) : this._returns;
       notifyListeners(this, call, thisValue, args);
@@ -64,13 +61,13 @@ define(function(require, exports, module) {
       return invokeReturn(this, call);
     },
 
-    reset: function () {this._calls = null},
+    reset () {this._calls = null},
 
-    getCall: function (index) {
+    getCall (index) {
       return this._calls && this._calls[index];
     },
 
-    args: function (callIndex, index) {
+    args (callIndex, index) {
       var call = this._calls && this._calls[callIndex];
       return call && call.args[index];
     },
@@ -89,17 +86,17 @@ define(function(require, exports, module) {
     get calledTwice() {return this._calls && this._calls.length === 2},
     get calledThrice() {return this._calls && this._calls.length === 3},
 
-    calledBefore: function (after) {
+    calledBefore (after) {
       return this.called && after.called &&
         this._calls[0].globalCount < after._calls[0].globalCount;
     },
 
-    calledAfter: function (before) {
+    calledAfter (before) {
       return this.called && before.called &&
         this._calls[0].globalCount > before._calls[0].globalCount;
     },
 
-    yield: function () {
+    yield () {
       var args = this._calls && this._calls[0] && this._calls[0].args;
       if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
 
@@ -114,7 +111,7 @@ define(function(require, exports, module) {
       }
     },
 
-    calledWith: function (...args) {
+    calledWith (...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         if (list.length > args.length)
@@ -124,14 +121,14 @@ define(function(require, exports, module) {
       });
     },
 
-    calledWithExactly: function (...args) {
+    calledWithExactly (...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         return deepEqual(list, args);
       });
     },
 
-    printf: function (format) {
+    printf (format) {
       switch(format) {
       case '%n':
         return this.toString();
@@ -139,7 +136,7 @@ define(function(require, exports, module) {
         var calls = this._calls;
         if (calls) {
           return calls.map(function (call) {
-            return "\n    " + call.args.map(function (arg) {return util.inspect(arg, 1)}).join(", ");
+            return "\n    " + call.args.map(function (arg) {return inspect(arg, 1)}).join(", ");
           }).join("");
         }
         return "";
@@ -165,8 +162,8 @@ define(function(require, exports, module) {
     return call.returnValue;
   }
 
-  var spyProto = util.extend(Object.create(stubProto), {
-    invoke: function (thisValue, args) {
+  var spyProto = extend(Object.create(stubProto), {
+    invoke (thisValue, args) {
       var call = addCall(this, thisValue, args);
       call.returnValue = this.original.apply(thisValue, args);
       notifyListeners(this, call, thisValue, args);
@@ -175,16 +172,16 @@ define(function(require, exports, module) {
     },
   });
 
-  var withProto = util.extend(Object.create(stubProto), {
-    withArgs: function () {
+  var withProto = extend(Object.create(stubProto), {
+    withArgs () {
       return this.subject.withArgs.apply(this.subject, arguments);
     },
 
-    onCall: function (count) {
+    onCall (count) {
       return this.subject.onCall.call(this.subject, count);
     },
 
-    invoke: function (call) {
+    invoke (call) {
       (this._calls || (this._calls = []))
         .push(call);
 
@@ -197,7 +194,7 @@ define(function(require, exports, module) {
       if (this.hasOwnProperty('_returns'))
         call.returnValue = this._returns;
     },
-    toString: function () {
+    toString () {
       return this.subject.toString();
     }
   });
@@ -247,7 +244,7 @@ define(function(require, exports, module) {
     return ex;
   }
 
-  exports.stub = function (object, property, repFunc) {
+  Stubber.stub = function (object, property, repFunc) {
     if (repFunc && typeof repFunc !== 'function')
       throw AssertionError(new Error("third argument to stub must be a function or null"));
     if (object) {
@@ -283,7 +280,7 @@ define(function(require, exports, module) {
     return func;
   };
 
-  exports.spy = function (object, property, func) {
+  Stubber.spy = function (object, property, func) {
     if (func && typeof func !== 'function')
       throw AssertionError(new Error("third argument to spy must be a function or null"));
     if (object && typeof property === 'string') {
@@ -304,7 +301,7 @@ define(function(require, exports, module) {
     throw AssertionError(new Error("Attempt to spy on non function"));
   };
 
-  exports.intercept = function (object, prop, replacement, restore) {
+  Stubber.intercept = function (object, prop, replacement, restore) {
     var orig = Object.getOwnPropertyDescriptor(object, prop);
     if (orig && orig.value && typeof orig.value.restore === 'function')
       throw new Error(`Already stubbed ${prop}`);
@@ -338,7 +335,7 @@ define(function(require, exports, module) {
 
   function stubFunction(orig, proto) {
     Object.setPrototypeOf(stub, proto);
-    orig && util.extend(stub, orig);
+    orig && extend(stub, orig);
     stub._stubId = (++globalId).toString(36);
     return stub;
     function stub() {

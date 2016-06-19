@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   TH = koru.util.reverseExtend({
     util: koru.util,
 
-    login: function (id, func) {
+    login (id, func) {
       var oldId = util.thread.userId;
       try {
         util.thread.userId = id;
@@ -19,7 +19,7 @@ define(function(require, exports, module) {
         util.thread.userId = oldId;
       }
     },
-    noInfo: function () {
+    noInfo () {
       if (! koru.info.restore)
         geddon.test.intercept(koru, 'info');
     },

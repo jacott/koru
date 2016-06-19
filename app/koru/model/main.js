@@ -577,7 +577,7 @@ define(function(require, exports, module) {
       }
       if (name in BaseModel) throw new Error("Model '" + name + "' already defined");
       properties  = properties || {};
-      var model = newModel(this, name);
+      const model = newModel(this, name);
 
       model.prototype = Object.create(this.prototype, {
         constructor: { value: model },

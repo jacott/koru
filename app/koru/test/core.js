@@ -1,6 +1,7 @@
-define(function(require, exports, module) {
-  var util = require('koru/util');
-  var geddon = {
+define(function(require, _, module) {
+  const util = require('koru/util');
+
+  const geddon = {
     _init: function () {
       this.testCount = this.skipCount = this.assertCount = 0;
     },

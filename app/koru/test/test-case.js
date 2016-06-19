@@ -4,53 +4,51 @@ define(['./core', './stubber'], function (geddon, stubber) {
     return new TestCase(name, null, option);
   };
 
-  function TestCase (name, tc, option) {
-    this.name = name;
-    this.tc = tc;
-    this.option = option;
-  };
+  class TestCase {
+    constructor(name, tc, option) {
+      this.name = name;
+      this.tc = tc;
+      this.option = option;
+    }
 
-  TestCase.prototype = {
-    constructor: TestCase,
-
-    fullName: function (name) {
+    fullName(name) {
       var ret = this.tc ? this.tc.fullName(this.name) : this.name;
       return name ? ret + ' ' + name : ret;
-    },
+    }
 
-    before: function (func) {
+    before(func) {
       (this._before = this._before || []).push(func);
       return this;
-    },
+    }
 
-    after: function (func) {
+    after(func) {
       (this._after = this._after || []).push(func);
       return this;
-    },
+    }
 
-    startTestCase: function () {
+    startTestCase() {
       var before = this._before;
       if (before) for(var i = 0; i < before.length; ++i) {
         before[i].call(this);
       }
-    },
+    }
 
-    endTestCase: function () {
+    endTestCase() {
       var after = this._after;
       if (after) for(var i = 0; i < after.length; ++i) {
         after[i].call(this);
       }
-    },
+    }
 
-    runSetUp: function (test) {
+    runSetUp(test) {
       if (this.setUpAround) return false;
       if (this.tc && ! this.tc.runSetUp(test))
         return false;
       this.setUp && this.setUp.call(test);
       return true;
-    },
+    }
 
-    runTest: function (test, func, around, done) {
+    runTest(test, func, around, done) {
       if (! around) {
         func.call(test, done);
         return;
@@ -65,9 +63,9 @@ define(['./core', './stubber'], function (geddon, stubber) {
           tc.runSetUpArround(test, func);
         return;
       }
-    },
+    }
 
-    runSetUpArround: function (test, func) {
+    runSetUpArround(test, func) {
       var tex;
       var tc = this;
       if (tc.setUpAround)
@@ -94,9 +92,9 @@ define(['./core', './stubber'], function (geddon, stubber) {
           test.__testEnd = onEnds;
         }
       }
-    },
+    }
 
-    runOnEnds: function (test) {
+    runOnEnds(test) {
       var cbs = test.__testEnd;
       if (cbs) for(var i=0;i < cbs.length;++i) {
         var func = cbs[i];
@@ -107,14 +105,14 @@ define(['./core', './stubber'], function (geddon, stubber) {
         else
           func.stop();
       }
-    },
+    }
 
-    runTearDown: function (test) {
+    runTearDown(test) {
       this.tearDown && this.tearDown.call(test);
       this.tc && this.tc.runTearDown(test);
-    },
+    }
 
-    add: function (name, func) {
+    add(name, func) {
       if (typeof name === 'string' && name.match(/^\/\//)) {
         var skipped = true;
         name = name.slice(2);
@@ -148,41 +146,41 @@ define(['./core', './stubber'], function (geddon, stubber) {
         }
       }
       return this;
-    },
-  };
-
-  function Test(name, tc, func) {
-    this.name = name;
-    this.tc = tc;
-    this.func = func;
+    }
   }
 
-  Test.prototype = {
-    constructor: TestCase,
+  class Test {
+    constructor(name, tc, func) {
+      this.name = name;
+      this.tc = tc;
+      this.func = func;
+    }
 
-    get skipped() {return ! this.func},
+    get skipped() {
+      return ! this.func;
+    }
 
-    onEnd: function (func) {
+    onEnd(func) {
       (this.__testEnd|| (this.__testEnd = [])).push(func);
-    },
+    }
 
-    spy: function () {
+    spy() {
       var spy = stubber.spy.apply(stubber, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
-    },
+    }
 
-    stub: function () {
+    stub() {
       var spy = stubber.stub.apply(stubber, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
-    },
+    }
 
-    intercept: function () {
+    intercept() {
       var spy = stubber.intercept.apply(stubber, arguments);
       this.onEnd(restorSpy(spy));
       return spy;
-    },
+    }
   };
 
   function restorSpy(spy) {
