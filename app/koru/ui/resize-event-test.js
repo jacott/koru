@@ -39,15 +39,15 @@ isClient && define(function (require, exports, module) {
         v.raf.yield();
         assert.calledOnceWith(v.resized, v.html, 110);
         v.resized.reset(); v.raf.reset();
-        assert.same(this.firstChild.scrollLeft, 110);
-        assert.same(this.lastChild.scrollLeft, window.innerWidth*2 - 110);
+        assert.near(this.firstChild.scrollLeft, 110);
+        assert.near(this.lastChild.scrollLeft, window.innerWidth*2 - 110);
 
         v.html.style.width = '90px';
         TH.trigger(this.firstChild, 'scroll');
         v.raf.yield();
         assert.calledOnceWith(v.resized, v.html, 90);
-        assert.same(this.firstChild.scrollLeft, 90);
-        assert.same(this.lastChild.scrollLeft, window.innerWidth*2 - 90);
+        assert.near(this.firstChild.scrollLeft, 90);
+        assert.near(this.lastChild.scrollLeft, window.innerWidth*2 - 90);
 
         v.resized.reset(); v.raf.reset();
         TH.trigger(this.firstChild, 'scroll');
@@ -57,7 +57,7 @@ isClient && define(function (require, exports, module) {
         v.html.style.width = '80px';
         this.firstChild.scrollLeft = 0;
         v.resizer.reset();
-        assert.same(this.firstChild.scrollLeft, 80);
+        assert.near(this.firstChild.scrollLeft, 80);
       });
     },
   });

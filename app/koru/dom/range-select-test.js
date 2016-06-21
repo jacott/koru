@@ -21,18 +21,18 @@ isClient && define(function (require, exports, module) {
     },
 
     "test toggle": function () {
-      assert.dom(v.list, function () {
-        assert.dom('div', 'row 2', function () {
-          var selected = Dom.selectRange(this, {});
-          assert.className(this, 'selected');
-          var foo = Dom.selectRange(this, {}, 'foo');
-          assert.className(this, 'foo');
+      assert.dom(v.list, self => {
+        assert.dom('div', 'row 2', self => {
+          var selected = Dom.selectRange(self, {});
+          assert.className(self, 'selected');
+          var foo = Dom.selectRange(self, {}, 'foo');
+          assert.className(self, 'foo');
 
           refute.same(selected, foo);
 
-          assert.same(Dom.selectRange(this, {}, 'foo'), foo);
+          assert.same(Dom.selectRange(self, {}, 'foo'), foo);
 
-          refute.className(this, 'foo');
+          refute.className(self, 'foo');
 
           // on class should not affect another
           assert.same(selected.length, 1);

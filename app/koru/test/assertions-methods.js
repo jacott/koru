@@ -1,11 +1,11 @@
 define(['./core', '../format', './assertions'], function (geddon, format) {
-  var gu = geddon._u;
-  var ga = geddon.assertions;
+  const gu = geddon._u;
+  const ga = geddon.assertions;
 
-  var util = geddon.util;
+  const util = geddon.util;
 
   ga.add('same', {
-    assert:  function (actual, expected) {
+    assert (actual, expected) {
       var result = actual === expected;
       this.eql = result ? '==' : '!=';
       return result;
@@ -15,7 +15,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('equals', {
-    assert:  function (actual, expected) {
+    assert (actual, expected) {
       var equal = gu.deepEqual(actual, expected);
       if (! equal === this._asserting) {
         gu.deepEqual(actual, expected, this, 'diff');
@@ -27,7 +27,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('isTrue', {
-    assert:  function (actual) {
+    assert (actual) {
       return actual === true;
     },
 
@@ -35,7 +35,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('isFunction', {
-    assert:  function (actual) {
+    assert (actual) {
       return typeof actual === 'function';
     },
 
@@ -43,7 +43,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('isFalse', {
-    assert:  function (actual) {
+    assert (actual) {
       return actual === false;
     },
 
@@ -51,7 +51,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('isNull', {
-    assert:  function (actual) {
+    assert (actual) {
       return actual == null;
     },
 
@@ -59,7 +59,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('near', {
-    assert:  function (actual, expected, delta) {
+    assert (actual, expected, delta) {
       delta = this.delta = delta || 1;
       return withinDelta(actual, expected, delta);
     },
@@ -68,7 +68,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('between', {
-    assert: function (sut, from, to) {
+    assert (sut, from, to) {
       return sut >= from && sut <= to;
     },
 
@@ -113,7 +113,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.match = match;
 
   ga.add("match", {
-    assert: function (actual, matcher) {
+    assert (actual, matcher) {
       return match(actual, matcher);
     },
 
@@ -121,7 +121,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('exception', {
-    assert:  function (func, name, message) {
+    assert (func, name, message) {
       try {
         this.message = (func() || '').toString();
         this.name = 'none was thrown';
@@ -157,7 +157,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add("className", {
-    assert: function (element, className) {
+    assert (element, className) {
       if (typeof element.className == "undefined") {
         return geddon.fail(format("{1} Expected object to have className property", className));
       }
@@ -184,7 +184,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     geddon.refute.sameHtml = geddon.refute.same;
   } else {
     ga.add('sameHtml', {
-      assert: function (actual, expected) {
+      assert (actual, expected) {
         var aElm = document.createElement('div');
         var bElm = document.createElement('div');
         aElm.innerHTML = actual;
@@ -234,7 +234,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   ga.add('colorEqual', {
-    assert:  function (actual, expected, delta) {
+    assert (actual, expected, delta) {
       this.delta = delta = delta || 0.0001;
       this.actual = util.colorToArray(actual);
       this.expected = util.colorToArray(expected);
@@ -252,7 +252,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   // assert.cssNear
   ga.add('cssNear', {
-    assert: function (elm, styleAttr, expected, delta, unit) {
+    assert (elm, styleAttr, expected, delta, unit) {
       if (typeof elm === 'string') {
         var actual = elm;
         unit = delta;
@@ -283,7 +283,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     var selectNode = null;
 
     ga.add('domParent', {
-      assert:  function(elm, options, body /* arguments */) {
+      assert (elm, options, body /* arguments */) {
         if (! selectNode)
           throw new Error('must be inside a dom assertion');
         var old = selectNode;
@@ -343,7 +343,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         self.htmlClue = msg + ' for ' + self.htmlClue;
       }
       try {
-        return inner.call(this);
+        return inner.call(this, this);
       } finally {
         selectNode = old;
       }
@@ -379,7 +379,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           switch (typeof options) {
           case "function":
             if(elm.length === 0) return false;
-            options.call(elm[0]);
+            options.call(elm[0], elm[0]);
             break;
           case "object":
             if (options.constructor === RegExp) {
@@ -400,7 +400,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               }
             }
             if(typeof options.text === 'string') {
-              var ef = filter(elm, function (i) {return options.text === i.textContent.trim()});
+              var ef = filter(elm, i => options.text === i.textContent.trim());
               if (ef.length === 0) {
                 setClue(this, 'text "' + text(elm) + '" to be "' + options.text + '"');
                 return false;
@@ -409,7 +409,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               }
             }
             if(typeof options.text === 'object') {
-              var ef = filter(elm, function (i) {return options.text.test(i.textContent.trim())});
+              var ef = filter(elm, i => options.text.test(i.textContent.trim()));
               if (ef.length === 0) {
                 setClue(this, 'text "' + text(elm) + '" to match ' + options.text);
                 return false;
@@ -419,12 +419,10 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             }
             if(options.hasOwnProperty('data')) {
               var hint = {};
-              var ef = filter(elm, function (i) {
-                return i._koru && gu.deepEqual(i._koru.data, options.data);
-              });
+              var ef = filter(elm, i => i._koru && gu.deepEqual(i._koru.data, options.data));
               if (ef.length === 0) {
                 if (this._asserting !== false) {
-                  Array.prototype.find.call(elm, function (i) {
+                  Array.prototype.find.call(elm, i => {
                     if (i._koru) {
                       gu.deepEqual(i._koru.data, options.data, hint, 'i');
                     }
@@ -449,7 +447,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
                 var pold = selectNode;
                 try {
                   selectNode = [elm[0].parentNode];
-                  options.parent.call(selectNode[0]);
+                  options.parent.call(selectNode[0], selectNode[0]);
                 } finally {
                   selectNode = pold;
                 }
@@ -458,7 +456,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             break;
           case "string":
             if (elm.length === 0) return false;
-            var ef = filter(elm, function (i) {return options === i.textContent.trim()});
+            var ef = filter(elm, i => options === i.textContent.trim());
             if (ef.length === 0) {
               setClue(this, '"' + options + '"; found "' + text(elm) + '"');
               return false;
@@ -470,7 +468,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           if(elm.length === 0) return false;
         }
         if (typeof body === "function") {
-          body.call(elm[0]);
+          body.call(elm[0], elm[0]);
         }
         return !!(elm && elm.length != 0);
       }
@@ -487,7 +485,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   delegate('calledWithExactly');
 
   ga.add('calledOnceWith', {
-    assert:  function (spy, ...args) {
+    assert (spy, ...args) {
       checkSpy(spy);
       this.args = args;
       var result = spy.calledOnce && spy.calledWith.apply(spy, args);
@@ -502,7 +500,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('threw', {
-    assert:  function (spy, something) {
+    assert (spy, something) {
       checkSpy(spy);
       return spy.threw(something);
     },
@@ -512,7 +510,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   function delegate(meth) {
     ga.add(meth, {
-      assert:  function (spy, ...args) {
+      assert (spy, ...args) {
         checkSpy(spy);
         this.args = args;
         var result = spy[meth].apply(spy, args);
@@ -530,7 +528,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   function called(nth) {
     var meth = 'called' + nth;
     ga.add(meth, {
-      assert:  function (spy) {
+      assert (spy) {
         checkSpy(spy);
         var result = spy[meth];
         if (this._asserting === ! result) {

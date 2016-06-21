@@ -153,7 +153,7 @@ define(function (require, exports, module) {
   logDebug.inspect = function () {
     var args = new Array(arguments.length);
     for(var i = 0; i < arguments.length; ++i)
-      args[i] = util.inspect(arguments[i-1]);
+      args[i] = util.inspect(arguments[i]);
 
     koru.logger('\x44EBUG ', args.join(', '));
   };

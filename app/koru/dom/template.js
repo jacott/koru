@@ -84,9 +84,9 @@ define(function(require, exports, module) {
       var prevElm = currentElement;
       currentCtx = this;
       try {
-        util.forEach(this.evals, function (eval) {
-          if (Dom.contains(elm, eval[0])) {
-            updateNode(eval, currentCtx.data);
+        util.forEach(this.evals, function (ev) {
+          if (Dom.contains(elm, ev[0])) {
+            updateNode(ev, currentCtx.data);
           }
         });
       } finally {
