@@ -1,9 +1,5 @@
 define(['./core', './stubber'], function (geddon, stubber) {
 
-  geddon.testCase = function (name, option) {
-    return new TestCase(name, null, option);
-  };
-
   class TestCase {
     constructor(name, tc, option) {
       this.name = name;
@@ -189,5 +185,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     };
   }
 
+  geddon.testCase = function (name, option) {
+    return new TestCase(name, null, option);
+  };
 
 });
