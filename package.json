@@ -39,7 +39,7 @@
     "postcss": "^5.0.21",
     "send": "^0.14.1",
     "ws": "^1.1.0",
-    "yaajs": "^2.0.1"
+    "yaajs": "^2.0.2"
   },
   "devDependencies": {
     "pg-libpq": ">=1.1.0"
