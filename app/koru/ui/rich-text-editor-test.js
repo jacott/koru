@@ -640,9 +640,11 @@ isClient && define(function (require, exports, module) {
 
         v.paste(v.event);
 
-        assert.calledWith(v.insertHTML, 'insertHTML', false,
-                          '<div>contains</div><div> ahttps://false/link and a '+
-                          '<a target="_blank" href="http://foo">my link</a> as</div><div>well</div>');
+        assert.calledWith(v.insertHTML, 'insertHTML', false, TH.match(html => v.html = html));
+
+        assert.match(v.html, />contains<.*<a.*href="http:\/\/foo"/);
+        assert.match(v.html, /<a [^>]*target="_blank"/);
+
       },
 
       "test no clipboard": function () {
