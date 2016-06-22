@@ -222,6 +222,8 @@ define(function (require, exports, module) {
 
       v.ws.onclose({});         // remote close
 
+      assert(sessState.retry.calledAfter(koru._afTimeout));
+
       refute(sessState.isReady());
 
       assert.called(sessState.retry);

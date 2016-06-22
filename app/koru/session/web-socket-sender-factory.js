@@ -1,15 +1,15 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define(function (require, exports, module) {
+define(function (require) {
   const koru    = require('../main');
   const util    = require('../util');
   const message = require('./message');
 
-  module.exports = exports = function (session, sessState, execWrapper, base) {
+  return function (session, sessState, execWrapper, base) {
     base = base || session;
-    var waitSends = [];
-    var retryCount = 0;
-    var reconnTimeout;
+    const waitSends = [];
+    let retryCount = 0;
+    let reconnTimeout;
 
     if (! session.versionHash && typeof KORU_APP_VERSION === 'string')
       session.versionHash = KORU_APP_VERSION;
@@ -29,7 +29,7 @@ define(function (require, exports, module) {
         else waitSends.push([type, util.deepCopy(msg)]);
       },
 
-      connect: connect,
+      connect,
 
       stop () {
         stopReconnTimeout();
@@ -60,9 +60,11 @@ define(function (require, exports, module) {
     }
 
     function connect() {
+      let heartbeatTO, heatbeatTime;
+
       if (session.ws) return;
       stopReconnTimeout();
-      var ws = session.ws = session.newWs();
+      let ws = session.ws = session.newWs();
       ws.binaryType = 'arraybuffer';
       session._queueHeatBeat = queueHeatBeat;
 
@@ -76,12 +78,12 @@ define(function (require, exports, module) {
         // can send queued messages.
         session.globalDict = message.newGlobalDict();
 
-        for(var i = 0; i < waitSends.length; ++i) {
+        for(let i = 0; i < waitSends.length; ++i) {
           // encode here because we may have a different global dictionary
-          var item = waitSends[i];
+          let item = waitSends[i];
           ws.send(typeof item === 'string' ? item : message.encodeMessage.call(message, item[0], item[1], session.globalDict));
         }
-        waitSends = [];
+        waitSends.length = 0;
       };
 
       ws.onmessage = function (event) {
@@ -104,12 +106,10 @@ define(function (require, exports, module) {
         if (sessState.isClosed())
           return;
 
-        sessState.retry();
-
         reconnTimeout = koru._afTimeout(connect, retryCount*500);
-      };
 
-      var heartbeatTO, heatbeatTime;
+        sessState.retry();
+      };
 
       function queueHeatBeat() {
         heartbeatTO = null;
@@ -123,7 +123,7 @@ define(function (require, exports, module) {
           }
           return;
         }
-        var now = util.dateNow();
+        const now = util.dateNow();
         if (now < heatbeatTime) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, heatbeatTime - now);
         } else {
@@ -136,50 +136,44 @@ define(function (require, exports, module) {
 
     if (! base._broadcastFuncs) {
       base.provide('X', function (data) {
-        var session = this;
-        var ws = session.ws;
-        if (session.versionHash && session.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
+        if (this.versionHash && this.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
           koru.reload();
         }
-        session.versionHash = data[1];
-        session.globalDict = message.newGlobalDict();
+        this.versionHash = data[1];
+        this.globalDict = message.newGlobalDict();
 
-        message.decodeDict(data[2], 0, session.globalDict);
-        message.finalizeGlobalDict(session.globalDict);
+        message.decodeDict(data[2], 0, this.globalDict);
+        message.finalizeGlobalDict(this.globalDict);
 
         retryCount = 0;
       });
 
-      base.provide('K', function () {}); // acK function
-      base.provide('L', function (data) {require([data], function() {})});
-      base.provide('U', function (data) {
-        var args = data.split(':');
+      base.provide('K', function ack() {});
+      base.provide('L', function load(data) {require([data], function() {})});
+      base.provide('U', function unload(data) {
+        let args = data.split(':');
         this.versionHash = args[0];
         koru.unload(args[1]);
       });
 
-      base.provide('W', batchedMessages);
-      function batchedMessages(data) {
-        var session = this;
+      base.provide('W', function batchedMessages(data) {
         util.forEach(data, msg => {
           try {
-            var func = session._commands[msg[0]];
-            func.call(session, msg[1]);
+            this._commands[msg[0]].call(this, msg[1]);
           } catch(ex) {
             koru.error(util.extractError(ex));
           }
         });
-      }
+      });
 
       base._broadcastFuncs = {};
 
-      base.provide('B', function (data) {
-        var session = this;
-        var func = base._broadcastFuncs[data[0]];
+      base.provide('B', function broadcast(data) {
+        let func = base._broadcastFuncs[data[0]];
         if (! func)
           koru.error("Broadcast function '"+data[1]+"' not registered");
         else try {
-          func.apply(session, data.slice(1));
+          func.apply(this, data.slice(1));
         } catch(ex) {
           koru.error(util.extractError(ex));
         }
