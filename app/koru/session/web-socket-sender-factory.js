@@ -1,9 +1,9 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define(function (require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var message = require('./message');
+  const koru    = require('../main');
+  const util    = require('../util');
+  const message = require('./message');
 
   module.exports = exports = function (session, sessState, execWrapper, base) {
     base = base || session;
@@ -19,19 +19,19 @@ define(function (require, exports, module) {
 
       state: sessState,
 
-      send: function (type, msg) {
+      send (type, msg) {
         if (this.state.isReady() && this.ws) session.ws.send(type+msg);
         else waitSends.push(type+msg);
       },
 
-      sendBinary: function (type, msg) {
+      sendBinary (type, msg) {
         if (this.state.isReady()) this.ws.send(message.encodeMessage(type, msg, session.globalDict));
         else waitSends.push([type, util.deepCopy(msg)]);
       },
 
       connect: connect,
 
-      stop: function () {
+      stop () {
         stopReconnTimeout();
         sessState.close();
         try {
@@ -46,7 +46,7 @@ define(function (require, exports, module) {
 
       globalDict: message.newGlobalDict(),
 
-      addToDict: function () {}, // no op on client
+      addToDict () {}, // no op on client
 
       // for testing
       get _waitSends() {return waitSends},
@@ -187,12 +187,12 @@ define(function (require, exports, module) {
 
 
       util.extend(base, {
-        registerBroadcast: function (name, func) {
+        registerBroadcast (name, func) {
           if (base._broadcastFuncs[name])
             throw new Error("Broadcast function '"+name+"' alreaady registered");
           base._broadcastFuncs[name] = func;
         },
-        deregisterBroadcast: function (name) {
+        deregisterBroadcast (name) {
           base._broadcastFuncs[name] = null;
         },
       });

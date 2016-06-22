@@ -1,33 +1,31 @@
-define(function(require, exports, module) {
-  var util = require('koru/util');
+define(function(require) {
+  const util = require('koru/util');
 
-  function NthIndex(size) {
-    this.size = size;
-    this.ids = Object.create(null);
-  }
+  class NthIndex {
+    constructor (size) {
+      this.size = size;
+      this.ids = Object.create(null);
+    }
 
-  NthIndex.prototype = {
-    constructor: NthIndex,
-
-    has: function (/* args */) {
+    has (/* args */) {
       var res = this.ids;
       for(var i = 0; res && i < arguments.length; ++i) {
         res = res[arguments[i]];
       }
 
       return !! res;
-    },
+    }
 
-    get: function (/* args */) {
+    get (/* args */) {
       var res = this.ids;
       for(var i = 0; res && i < arguments.length; ++i) {
         res = res[arguments[i]];
       }
 
       return res;
-    },
+    }
 
-    add: function (/* args, value */) {
+    add (/* args, value */) {
       if (arguments.length !== this.size + 1)
         throw new Error("Expected " + (this.size+1) + ' arguments');
 
@@ -40,9 +38,9 @@ define(function(require, exports, module) {
       res[arguments[i]] = arguments[i+1];
 
       return this;
-    },
+    }
 
-    remove: function (/* args, value */) {
+    remove (/* args, value */) {
        if (arguments.length > this.size)
          throw new Error("Expected no more than " + this.size + ' arguments');
 
@@ -60,7 +58,7 @@ define(function(require, exports, module) {
         }
         return true;
       }
-    },
+    }
   };
 
   return NthIndex;

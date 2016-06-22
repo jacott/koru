@@ -1,19 +1,19 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var NthIndex = require('./nth-index');
+  const NthIndex = require('./nth-index');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test use": function () {
+    "test use" () {
       var sut = new NthIndex(2);
 
       assert.same(sut.add(1, 2, '12'), sut);

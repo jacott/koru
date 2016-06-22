@@ -1,22 +1,20 @@
 function noDebug() {}
 
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var koru = require('./main');
+  const util = require('koru/util');
+  const koru = require('./main');
 
-  function Pool(config) {
-    var v = this._private = util.extend({
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30*1000,
-    }, config);
-    v.count = 0;
-  }
+  class Pool {
+    constructor (config) {
+      var v = this._private = util.extend({
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30*1000,
+      }, config);
+      v.count = 0;
+    }
 
-  Pool.prototype = {
-    constructor: Pool,
-
-    acquire: function () {
+    acquire () {
       var v = this._private;
       if (v.draining) throw new Error('The pool is closed for draining');
       var head = fetchHead(v, 'idle');
@@ -46,9 +44,9 @@ define(function(require, exports, module) {
         future.return(conn);
       });
       return future.wait();
-    },
+    }
 
-    release: function (conn) {
+    release (conn) {
       var v = this._private;
 
       var wait = fetchHead(v, 'wait');
@@ -85,9 +83,9 @@ define(function(require, exports, module) {
           }
         }
       }
-    },
+    }
 
-    drain: function () {
+    drain () {
       var v = this._private;
 
       v.draining = true;

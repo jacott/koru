@@ -4,19 +4,17 @@ var Future = requirejs.nodeRequire('fibers/future');
  *
  * Server only
  */
-define(function(require, exports, module) {
+define(function() {
   return function (type) {
     var queues = type === 'single' ? null : {};
 
-    function Queue(name) {
-      this.name = name;
-      this.running = false;
-    }
+    class Queue {
+      constructor (name) {
+        this.name = name;
+        this.running = false;
+      }
 
-    Queue.prototype = {
-      constructor: Queue,
-
-      add: function (func) {
+      add (func) {
         if (this.running) {
           this.isPending = true;
           if (this.queued == null)  {

@@ -20,25 +20,23 @@ define(function(require, exports, module) {
     return ctx.__id || (ctx.__id = (++globalIds).toString(36));
   }
 
-  function DomCtx(template, parentCtx, data) {
-    this.template = template;
-    this.parentCtx = parentCtx;
-    this.data = data;
-    this.evals = [];
-    this.attrEvals = [];
-  }
+  class DomCtx {
+    constructor (template, parentCtx, data) {
+      this.template = template;
+      this.parentCtx = parentCtx;
+      this.data = data;
+      this.evals = [];
+      this.attrEvals = [];
+    }
 
-  DomCtx.prototype = {
-    constructor: DomCtx,
-
-    onDestroy: function (obj) {
+    onDestroy (obj) {
       if (! obj) return;
       var list = this.__onDestroy || (this.__onDestroy = []);
       list.push(obj);
       return this;
-    },
+    }
 
-    element: function () {
+    element () {
       var evals = this.evals;
       evals = evals && this.evals[0];
       var elm = evals && evals[0];
@@ -46,9 +44,9 @@ define(function(require, exports, module) {
         elm = elm.parentNode;
 
       return elm;
-    },
+    }
 
-    updateAllTags: function (data) {
+    updateAllTags (data) {
       var activeElement = document.activeElement;
       var prevCtx = currentCtx;
       var prevElm = currentElement;
@@ -77,9 +75,9 @@ define(function(require, exports, module) {
       }
       activeElement && document.activeElement !== activeElement &&
         activeElement.focus();
-    },
+    }
 
-    updateElement: function (elm) {
+    updateElement (elm) {
       var prevCtx = currentCtx;
       var prevElm = currentElement;
       currentCtx = this;
@@ -93,18 +91,16 @@ define(function(require, exports, module) {
         currentElement = prevElm;
         currentCtx = prevCtx;
       }
-    },
+    }
   };
 
-  function DomTemplate(name, parent) {
-    this.name = name;
-    this.parent = parent !== Dom ? parent : null;
-  }
+  class DomTemplate {
+    constructor(name, parent) {
+      this.name = name;
+      this.parent = parent !== Dom ? parent : null;
+    }
 
-  DomTemplate.prototype = {
-    constructor: DomTemplate,
-
-    $ctx: function (origin) {
+    $ctx (origin) {
       if (typeof origin === 'string') origin = document.getElementById(origin);
       if (! origin)
         origin = currentCtx;
@@ -114,21 +110,21 @@ define(function(require, exports, module) {
       for(; origin; origin = origin.parentCtx) {
         if (origin.template === this) return origin;
       }
-    },
+    }
 
-    $data: function (origin) {
+    $data (origin) {
       var ctx = this.$ctx(origin);
       return ctx && ctx.data;
-    },
+    }
 
-    $initOptions: function (options) {
+    $initOptions (options) {
       this.nodes = options.nodes;
       this._helpers = {};
       this._events = [];
       return this;
-    },
+    }
 
-    $autoRender: function (data, parentCtx) {
+    $autoRender (data, parentCtx) {
       var tpl = this;
       var elm = tpl.$render(data, parentCtx);
 
@@ -140,9 +136,9 @@ define(function(require, exports, module) {
         });
       }
       return elm;
-    },
+    }
 
-    $render: function (data, parentCtx) {
+    $render (data, parentCtx) {
       var prevCtx = currentCtx;
       currentCtx = new DomCtx(this, parentCtx || currentCtx, data);
       try {
@@ -167,70 +163,70 @@ define(function(require, exports, module) {
       } finally {
         currentCtx = prevCtx;
       }
-    },
+    }
 
     get $fullname() {
       return (this.parent ? this.parent.$fullname + "." : "") + this.name;
-    },
+    }
 
-    $helpers: function (properties) {
+    $helpers (properties) {
       extend(this._helpers, properties);
       return this;
-    },
+    }
 
-    $events: function (events) {
+    $events (events) {
       for(var key in events)
         this.$event(key, events[key]);
       return this;
-    },
+    }
 
-    $event: function (key, func) {
+    $event (key, func) {
       var m = /^(\S+)(.*)/.exec(key);
       if (! m) throw new Error("invalid event spec: " + key);
       this._events.push([m[1], m[2].trim(), func]);
       return this;
-    },
+    }
 
-    $findEvent: function (type, css) {
+    $findEvent (type, css) {
       var events = this._events;
       for(var i = 0; i < events.length; ++i) {
         var row = events[i];
         if (row[0] === type && row[1] === css)
           return row;
       }
-    },
+    }
 
-    $actions: function (actions) {
+    $actions (actions) {
       var events = {};
       for(var key in actions) {
         events['click [name='+key+']'] = actions[key];
       }
       return this.$events(events);
-    },
+    }
 
-    $extend: function (properties) {
+    $extend (properties) {
       return extend(this, properties);
-    },
+    }
 
-    $attachEvents: function (parent, selector) {
+    $attachEvents (parent, selector) {
       nativeOnOff(parent, nativeOn, selector, this._events);
       return this;
-    },
+    }
 
-    $detachEvents: function (parent, selector) {
+    $detachEvents (parent, selector) {
       nativeOnOff(parent, nativeOff, selector, this._events);
       return this;
-    },
+    }
 
-    $inspect: function () {
+    $inspect () {
       return "DomTemplate:" + this.$fullname;
-    },
+    }
   };
 
   util.extend(Dom, {
     Ctx: DomCtx,
     current: {
-      data: function (elm) {
+      data (elm) {
         if (elm) {
           var ctx = Dom.getCtx(elm);
           return ctx && ctx.data;
@@ -244,7 +240,7 @@ define(function(require, exports, module) {
       get ctx() {return currentCtx},
       set _ctx(value) {currentCtx = value},
       get element() {return currentElement},
-      isElement: function () {
+      isElement () {
         return currentElement.nodeType === 1;
       },
     },
@@ -252,18 +248,18 @@ define(function(require, exports, module) {
     get element() {return currentElement},
 
     _helpers: {
-      inputValue: function (value) {
+      inputValue (value) {
         Dom.current.element.__koruOrigValue__ = value;
         Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
     },
 
-    registerHelpers: function (helpers) {
+    registerHelpers (helpers) {
       extend(this._helpers, helpers);
       return this;
     },
 
-    newTemplate: function (module, options) {
+    newTemplate (module, options) {
       if (arguments.length === 1)
         return addTemplates(Dom, module);
 
@@ -275,7 +271,7 @@ define(function(require, exports, module) {
       return tpl;
     },
 
-    lookupTemplate: function (name) {
+    lookupTemplate (name) {
       var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
       if (m)
@@ -284,7 +280,7 @@ define(function(require, exports, module) {
       return fetchTemplate(this, name);
     },
 
-    stopEvent: function (event) {
+    stopEvent (event) {
       if (event && event !== currentEvent) {
         event.stopImmediatePropagation();
         event.preventDefault();
@@ -293,11 +289,11 @@ define(function(require, exports, module) {
       }
     },
 
-    stopPropigation: function () {
+    stopPropigation () {
       currentEvent = 'propigation';
     },
 
-    setCtx: function (elm, ctx) {
+    setCtx (elm, ctx) {
       if (! ctx) {
         ctx = new DomCtx(null, Dom.getCtx(elm));
       }
@@ -305,7 +301,7 @@ define(function(require, exports, module) {
       return ctx;
     },
 
-    destroyMeWith: function (elm, ctx) {
+    destroyMeWith (elm, ctx) {
       if (ctx._koru) ctx = ctx._koru;
       var elmCtx = elm._koru;
       var id = getId(elmCtx);
@@ -317,7 +313,7 @@ define(function(require, exports, module) {
       elmCtx.__destoryWith = ctx;
     },
 
-    destroyData: function (elm) {
+    destroyData (elm) {
       var ctx = elm && elm._koru;
       if (ctx) {
         var dw = ctx.__destoryWith;
@@ -362,17 +358,17 @@ define(function(require, exports, module) {
       Dom.destroyChildren(elm);
     },
 
-    removeId: function (id) {
+    removeId (id) {
       return this.remove(document.getElementById(id));
     },
 
-    removeAll: function (elms) {
+    removeAll (elms) {
       for(var i = elms.length - 1; i >= 0; --i) {
         this.remove(elms[i]);
       }
     },
 
-    remove: function (elm) {
+    remove (elm) {
       if (elm) {
         Dom.destroyData(elm);
         elm.parentNode && elm.parentNode.removeChild(elm);
@@ -380,7 +376,7 @@ define(function(require, exports, module) {
       }
     },
 
-    removeInserts: function (start) {
+    removeInserts (start) {
       var parent = start.parentNode;
       if (! parent) return;
       var end = start._koruEnd;
@@ -390,7 +386,7 @@ define(function(require, exports, module) {
       }
     },
 
-    removeChildren: function (elm) {
+    removeChildren (elm) {
       if (! elm) return;
 
       var row;
@@ -400,7 +396,7 @@ define(function(require, exports, module) {
       }
     },
 
-    destroyChildren: function (elm) {
+    destroyChildren (elm) {
       if (! elm) return;
 
       var iter = elm.firstChild;
@@ -411,11 +407,11 @@ define(function(require, exports, module) {
       }
     },
 
-    getMyCtx: function (elm) {
+    getMyCtx (elm) {
       return elm && elm._koru;
     },
 
-    getCtx: function (elm) {
+    getCtx (elm) {
       if (! elm) return;
       if (typeof elm === 'string')
         elm = document.querySelector(elm);
@@ -425,17 +421,17 @@ define(function(require, exports, module) {
       return ctx;
     },
 
-    getCtxById: function (id) {
+    getCtxById (id) {
       var elm = document.getElementById(id);
       return elm && elm._koru;
     },
 
-    updateElement: function (elm) {
+    updateElement (elm) {
       var ctx = Dom.getCtx(elm);
       ctx && ctx.updateElement(elm);
     },
 
-    replaceElement: function (newElm, oldElm, noRemove) {
+    replaceElement (newElm, oldElm, noRemove) {
       var ast = oldElm._koruEnd;
       if (ast) {
         Dom.removeInserts(oldElm);
@@ -454,7 +450,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    fragEnd: function (fragStart) {
+    fragEnd (fragStart) {
       return fragStart._koruEnd;
     },
 
@@ -471,7 +467,7 @@ define(function(require, exports, module) {
     // TODO import by performing a binary search. Also allow passing a
     // hint of the best place to start searching. It might be the upper
     // or lower bound or the point of insertion or not even in the list
-    findFirstByCtxData: function (parent, finder) {
+    findFirstByCtxData (parent, finder) {
       var iter = parent && parent.firstChild;
       while(iter) {
         var row = iter;

@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
+  const Dom    = require('koru/dom/base');
   require('koru/dom/html-doc');
-  const Dom     = require('koru/dom/base');
-  const util    = require('koru/util');
-  const uColor  = require('koru/util-color');
+  const util   = require('koru/util');
+  const uColor = require('koru/util-color');
 
   const ELEMENT_NODE = document.ELEMENT_NODE;
   const TEXT_NODE = document.TEXT_NODE;
@@ -77,31 +77,29 @@ define(function(require, exports, module) {
     return [builder.lines, markup.length ? markup : null];
   }
 
-  function MarkupBuilder() {
-    this.markup = [];
-    this.lines = [];
-    this.inlines = [];
-    this.inlineIdx = 0;
-    this.needNL = true;
-    this._relativePos = 0;
-  }
+  class MarkupBuilder {
+    constructor () {
+      this.markup = [];
+      this.lines = [];
+      this.inlines = [];
+      this.inlineIdx = 0;
+      this.needNL = true;
+      this._relativePos = 0;
+    }
 
-  MarkupBuilder.prototype = {
-    constructor: MarkupBuilder,
-
-    relative: function (pos) {
+    relative (pos) {
       var rel = pos - this._relativePos;
       this._relativePos = pos;
       return rel;
-    },
+    }
 
-    newLine: function () {
+    newLine () {
       this.resetInlines();
       this.needNL = false;
       this.lines.push('');
-    },
+    }
 
-    addInline: function (muIndex, code, index, value) {
+    addInline (muIndex, code, index, value) {
       if (muIndex === this.markup.length) {
         this.markup.push(code, this.relative(index), this.lines[index].length, 0);
         value === undefined || this.markup.push(value);
@@ -118,9 +116,9 @@ define(function(require, exports, module) {
       }
       values.push(code);
       if (value !== undefined) values.push(value);
-    },
+    }
 
-    resetInlines: function () {
+    resetInlines () {
       if (this.inlineIdx === 0) return;
       var lineLength = this.lines[this.lines.length - 1].length;
       for(var i = this.inlineIdx-1; i >= 0; --i) {
@@ -131,9 +129,9 @@ define(function(require, exports, module) {
       }
 
       this.inlineIdx = 0;
-    },
+    }
 
-    applyInlines: function () {
+    applyInlines () {
       var index = this.lines.length - 1;
       for(var i = this.inlineIdx; i < this.inlines.length; ++i) {
         var entry = this.inlines[i];
@@ -147,11 +145,11 @@ define(function(require, exports, module) {
           entry[1] = len;
       }
       this.inlineIdx = i;
-    },
+    }
 
-    ignoreInline: function () {},
+    ignoreInline () {}
 
-    fromChildren: function(parent) {
+    fromChildren(parent) {
       if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) && (parent.getAttribute('align') || parent.style.textAlign))
         var endAlign = textAlign.call(this, parent);
 
@@ -195,7 +193,7 @@ define(function(require, exports, module) {
       }
 
       endAlign && endAlign.call(this, parent);
-    },
+    }
   };
 
   function textAlign(node) {
@@ -518,58 +516,56 @@ define(function(require, exports, module) {
     return new HtmlBuilder(lines, markup, result);
   }
 
-  function HtmlBuilder(lines, markup, html) {
-    html = html || document.createDocumentFragment();
-    lines = typeof lines === 'string' ? lines.split("\n") : lines;
-    this.markup = markup || [];
-    this.lidx = this.midx = 0;
-    this.lineCount = [this.offset(1)];
-    var state = {result: html, rule: toDiv, begun: true};
+  class HtmlBuilder {
+    constructor (lines, markup, html) {
+      html = html || document.createDocumentFragment();
+      lines = typeof lines === 'string' ? lines.split("\n") : lines;
+      this.markup = markup || [];
+      this.lidx = this.midx = 0;
+      this.lineCount = [this.offset(1)];
+      var state = {result: html, rule: toDiv, begun: true};
 
-    var nrule;
-    this.line = null;
-    for(var index = 0; index < lines.length; ++index) {
-      this.line = lines[this.lidx = index];
-      while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
-        state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
+      var nrule;
+      this.line = null;
+      for(var index = 0; index < lines.length; ++index) {
+        this.line = lines[this.lidx = index];
+        while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
+          state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
+          state.rule.call(this, state);
+        }
+        state.inlineStart = 0;
+        state.inlineEnd = this.line.length;
         state.rule.call(this, state);
-      }
-      state.inlineStart = 0;
-      state.inlineEnd = this.line.length;
-      state.rule.call(this, state);
 
-      while (state.last === index) {
-        state.endCall && state.endCall.call(this);
+        while (state.last === index) {
+          state.endCall && state.endCall.call(this);
 
-        state = state.oldState;
+          state = state.oldState;
+        }
       }
+
+      return html;
     }
 
-    return html;
-  }
-
-  HtmlBuilder.prototype = {
-    constructor: HtmlBuilder.constructor,
-
-    offset: function(offset) {
+    offset(offset) {
       return this.markup[this.midx + offset];
-    },
+    }
 
-    nextRule: function (offset) {
+    nextRule (offset) {
       this.midx += offset;
       this.lineCount[this.midx] = this.lidx + this.markup[this.midx + 1];
-    },
+    }
 
-    nextMarkupLine: function () {
+    nextMarkupLine () {
       return this.lineCount[this.midx];
-    },
+    }
 
-    endMarkup: function () {
+    endMarkup () {
       var line = this.lineCount[this.midx] + this.offset(2);
       return line;
-    },
+    }
 
-    toChildren: function(state) {
+    toChildren(state) {
       var nextMarkup = this.nextMarkupLine();
       var startPos = state.inlineStart;
       var endPos = state.inlineEnd;
@@ -611,7 +607,7 @@ define(function(require, exports, module) {
           state.result.appendChild(document.createTextNode(text));
       }
       state.inlineEnd = endPos;
-    },
+    }
   };
 
   const toDiv = toBlock('DIV');
@@ -869,20 +865,20 @@ define(function(require, exports, module) {
     standardFonts: FONT_ID_TO_STD,
     fontIdToFace: FONT_ID_TO_FACE,
 
-    toHtml: toHtml,
+    toHtml,
 
-    fromHtml: function (html, options) {
+    fromHtml (html, options) {
       var rt = fromHtml(html, options);
       rt[0] = rt[0].join("\n");
       return rt;
     },
 
-    fromToHtml: function (html) {
+    fromToHtml (html) {
       var rt = fromHtml(Dom.h({div: html}));
       return toHtml(rt[0], rt[1], document.createElement('div'));
     },
 
-    isValid: function (text, markup) {
+    isValid (text, markup) {
       if (text == null && markup == null) return true;
       if (typeof text !== 'string' || ! (markup == null || Array.isArray(markup)))
         return false;
@@ -895,15 +891,15 @@ define(function(require, exports, module) {
       return result;
     },
 
-    linkType: function (id) {
+    linkType (id) {
       return LINK_TO_HTML[id];
     },
 
-    registerLinkType: function (data) {
+    registerLinkType (data) {
       LINK_TO_HTML[data.id] = data;
       LINK_FROM_HTML[data.class] = data;
     },
-    deregisterLinkType: function (id) {
+    deregisterLinkType (id) {
       var data = LINK_TO_HTML[id];
       if (data) {
         delete LINK_TO_HTML[id];
@@ -911,7 +907,7 @@ define(function(require, exports, module) {
       }
     },
 
-    fontType: function (face) {
+    fontType (face) {
       var id = +face;
       if (id !== id) {
         if (! face) return 'sans-serif';
@@ -922,7 +918,7 @@ define(function(require, exports, module) {
       return FONT_ID_TO_STD[id];
     },
 
-    mapFontNames: function (faces) {
+    mapFontNames (faces) {
       for(var std in faces) {
         var code = FONT_FACE_TO_ID[std];
         if (code === undefined) throw new Error("face not found: " + std);
@@ -932,8 +928,8 @@ define(function(require, exports, module) {
       }
     },
 
-    FONT_SIZE_TO_EM: FONT_SIZE_TO_EM,
+    FONT_SIZE_TO_EM,
 
-    INLINE_TAGS: INLINE_TAGS,
+    INLINE_TAGS,
   };
 });

@@ -7,46 +7,40 @@ define(function(require, exports, module) {
   const makeSubject  = require('koru/make-subject');
 
   exports = function (session) {
-    function Connection(ws, sessId, close) {
-      var conn = this;
-      conn.ws = ws;
-      conn.sessId = sessId;
-      conn._subs = Object.create(null);
-      conn._onClose = null;
-      conn.close = function () {
-        if (conn._onClose) {
-          conn._onClose.notify(conn);
-          conn._onClose = null;
+    const binaryData = {binary: true};
+
+    class Connection {
+      constructor (ws, sessId, close) {
+        this.ws = ws;
+        this.sessId = sessId;
+        this._subs = Object.create(null);
+        this._onClose = null;
+        this.close = () => {
+          if (this._onClose) {
+            this._onClose.notify(this);
+            this._onClose = null;
+          }
+          var subs = this._subs;
+          this._subs = null;
+          this.ws = null;
+          if (subs) for(var key in subs) {
+            try {subs[key].stop();}
+            catch(ex) {koru.error(util.extractError(ex));}
+          }
+          close();
         }
-        var subs = conn._subs;
-        conn._subs = null;
-        conn.ws = null;
-        if (subs) for(var key in subs) {
-          try {subs[key].stop();}
-          catch(ex) {koru.error(util.extractError(ex));}
-        }
-        close();
-      };
-      conn._last = null;
-      conn.match = match();
+        this._last = null;
+        this.match = match();
 
-      ws.on('close', function () {conn.close()});
-    }
+        ws.on('close', () => this.close());
+      }
 
-    var binaryData = {binary: true};
-
-    function batchMessage(type, args, func) {
-    }
-
-    Connection.prototype = {
-      constructor: Connection,
-
-      onClose: function (func) {
+      onClose (func) {
         var subj = this._onClose || (this._onClose = makeSubject({}));
         return subj.onChange(func);
-      },
+      }
 
-      onMessage: function (data, flags) {
+      onMessage (data, flags) {
         var conn = this;
         if (conn._last) {
           conn._last = conn._last[1] = [data];
@@ -62,18 +56,18 @@ define(function(require, exports, module) {
         }
         conn._last = null;
         IdleCheck.dec();
-      },
+      }
 
-      send: function (type, data) {
+      send (type, data) {
         try {
           this.ws && this.ws.send(type + (data === undefined ? '' : data));
         } catch(ex) {
           koru.info('send exception', ex);
           this.close();
         }
-      },
+      }
 
-      sendBinary: function (type, args, func) {
+      sendBinary (type, args, func) {
         var bm = util.thread.batchMessage;
         if (bm) {
           bm.batch(this, type, args, func);
@@ -87,9 +81,9 @@ define(function(require, exports, module) {
 
           this.close();
         }
-      },
+      }
 
-      sendUpdate: function (doc, changes, filter) {
+      sendUpdate (doc, changes, filter) {
         if (changes == null)
           this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
         else if (doc == null)
@@ -97,9 +91,9 @@ define(function(require, exports, module) {
         else {
           this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
         }
-      },
+      }
 
-      sendMatchUpdate: function (doc, changes, filter) {
+      sendMatchUpdate (doc, changes, filter) {
         if (doc && this.match.has(doc)) {
           if (changes && this.match.has(doc.$withChanges(changes))) {
             this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
@@ -112,19 +106,19 @@ define(function(require, exports, module) {
           this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
           return 'removed';
         }
-      },
+      }
 
-      added: function (name, id, attrs, filter) {
+      added (name, id, attrs, filter) {
         this.sendBinary('A', [name, id, filterAttrs(attrs, filter)]);
-      },
+      }
 
-      changed: function (name, id, attrs, filter) {
+      changed (name, id, attrs, filter) {
         this.sendBinary('C', [name, id, filterAttrs(attrs, filter)]);
-      },
+      }
 
-      removed: function (name, id) {
+      removed (name, id) {
         this.sendBinary('R', [name, id]);
-      },
+      }
 
       set userId(userId) {
         this._userId = userId;
@@ -135,9 +129,9 @@ define(function(require, exports, module) {
           subs[key].resubscribe();
         }
         this.send('VC');
-      },
+      }
 
-      get userId() {return this._userId},
+      get userId() {return this._userId}
     };
 
     return Connection;

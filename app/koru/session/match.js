@@ -1,21 +1,18 @@
-define(function(require, exports, module) {
-  var util = require('../util');
+define(function(require) {
+  const util = require('../util');
 
   return function () {
-    var dbs = {};
+    const dbs = {};
     var key = 0;
 
+    class StopFunc {
+      constructor (id, dbId, modelName) {
+        this.id = id;
+        this.dbId = dbId;
+        this.modelName = modelName;
+      }
 
-    function StopFunc(id, dbId, modelName) {
-      this.id = id;
-      this.dbId = dbId;
-      this.modelName = modelName;
-    }
-
-    StopFunc.prototype = {
-      constructor: StopFunc,
-
-      stop: function () {
+      stop () {
         if (! this.id) return;
         var models = dbs[this.dbId];
         var matchFuncs = models[this.modelName];
@@ -27,7 +24,7 @@ define(function(require, exports, module) {
     return {
       get _models() { return dbs[util.dbId]},
 
-      has: function(doc) {
+      has (doc) {
         var models = dbs[util.dbId];
         var mm = models && models[doc.constructor.modelName];
         for(var key in mm) {
@@ -36,7 +33,7 @@ define(function(require, exports, module) {
         return false;
       },
 
-      register: function (modelName, func) {
+      register (modelName, func) {
         var dbId = util.dbId;
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);

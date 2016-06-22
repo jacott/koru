@@ -1,35 +1,35 @@
 define(function(require, exports, module) {
-  var util = require('./util-base');
+  const util = require('./util-base');
 
   function Constructor() {
     function match(test, message) {
       return new Match(test, message);
     }
 
-    function Match(test, message) {
-      if (typeof test === 'function')
-        this.$test = test;
-      else switch(test.constructor) {
-      case RegExp:
-        this.$test = function (value) {
-          return typeof value === 'string' &&
-            test.test(value);
-        };
-        break;
-      default:
-        this.$test = function (value) {
-          return util.deepEqual(value, test);
-        };
+    class Match {
+      constructor (test, message) {
+        if (typeof test === 'function')
+          this.$test = test;
+        else switch(test.constructor) {
+        case RegExp:
+          this.$test = function (value) {
+            return typeof value === 'string' &&
+              test.test(value);
+          };
+          break;
+        default:
+          this.$test = function (value) {
+            return util.deepEqual(value, test);
+          };
+        }
+        this.message = message || 'match('+(test.name||test)+')';
       }
-      this.message = message || 'match('+(test.name||test)+')';
-    }
 
-    Match.prototype = {
-      constructor: Match,
+      toString () {
+        return ''+this.message;
+      }
 
-      toString: toString,
-      $inspect: toString,
-      $throwTest: function (value) {
+      $throwTest (value) {
         if (! this.$test(value, 'throw')) {
           throw this.message;
         }
@@ -37,9 +37,6 @@ define(function(require, exports, module) {
       }
     };
 
-    function toString() {
-      return ''+this.message;
-    }
 
     'string number boolean undefined function'.split(' ').forEach(function (t) {
       match[t] = match(function (value) {
@@ -48,61 +45,47 @@ define(function(require, exports, module) {
     });
 
     util.extend(match, {
-      any: match(function () {return true}, 'match.any'),
-      null: match(function (value) {return value === null}, 'match.null'),
-      nil: match(function (value) {return value == null}, 'match.nil'),
-      date: match(function (value) {
-        return !! value && value.constructor === Date && value.getDate() === value.getDate();
-      }, 'match.date'),
-      baseObject: match(function (value) {return !! value && value.constructor === Object}, 'match.baseObject'),
-      object: match(function (value) {return !! value && typeof value === 'object'}, 'match.object'),
+      any: match(() => true, 'match.any'),
+      null: match(value => value === null, 'match.null'),
+      nil: match(value => value == null, 'match.nil'),
+      date: match(value => !! value && value.constructor === Date && value.getDate() === value.getDate(), 'match.date'),
+      baseObject: match(value => !! value && value.constructor === Object, 'match.baseObject'),
+      object: match(value => !! value && typeof value === 'object', 'match.object'),
       func: match(match.function.$test, 'match.func'),
-      match: match(function (value) {return !! value && value.constructor === Match}, 'match.match'),
-      id: match(function (value) {return /^[a-z0-9]{3,24}$/i.test(value)}, 'match.id'),
-      equal: function (expected, name) {
+      match: match(value => !! value && value.constructor === Match, 'match.match'),
+      id: match(value => /^[a-z0-9]{3,24}$/i.test(value), 'match.id'),
+      equal (expected, name) {
         return match(function (value) {
           return util.deepEqual(value, expected);
         }, name || 'match.equal');
       },
-      is: function (expected, name) {
-        return match(function (value) {
-          return util.is(value, expected);
-        }, name || 'match.is');
+      is (expected, name) {
+        return match(value => util.is(value, expected), name || 'match.is');
       },
-      regExp: function (regexp, name) {
-        return match(function (value) {
-          return typeof value === 'string' &&
-            regexp.test(value);
-        }, name || 'match.regExp');
+      regExp (regexp, name) {
+        return match(value => typeof value === 'string' &&
+                     regexp.test(value), name || 'match.regExp');
       },
-      has: function (set, name) {
-        return match(function (value) {
-          return set.hasOwnProperty(value);
-        }, name || 'match.has');
+      has (set, name) {
+        return match(value => set.hasOwnProperty(value), name || 'match.has');
       },
-      or: function (...args) {
+      or (...args) {
         var len = args.length;
         if (typeof args[len-1] === 'string')
           var name = args.pop();
-        return match(function (value) {
-          return args.some(function (match) {
-            return match.$test(value);
-          });
-        }, name || 'match.or');
+        return match(value => args.some(match => match.$test(value)), name || 'match.or');
       },
-      and: function (...args) {
+      and (...args) {
         var len = args.length;
         if (typeof args[len-1] === 'string')
           var name = args.pop();
-        return match(function (value, msg) {
+        return match((value, msg) => {
           var mthd = msg ? '$throwTest' : '$test';
 
-          return args.every(function (match) {
-            return match[mthd](value, msg);
-          });
+          return args.every(match => match[mthd](value, msg));
         }, name || 'match.and');
       },
-      tuple: function (array, name) {
+      tuple (array, name) {
         var len = array.length;
         return match(function (value, msg) {
           var mthd = msg ? '$throwTest' : '$test';
@@ -125,6 +108,7 @@ define(function(require, exports, module) {
       },
     });
 
+    Match.prototype.$inspect = Match.prototype.toString;
 
     return match;
 

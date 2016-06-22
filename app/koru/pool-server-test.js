@@ -1,13 +1,13 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./pool-server');
-  var koru = require('./main');
-  var util = require('./util');
-  var Future = requirejs.nodeRequire('fibers/future');
+  const koru   = require('./main');
+  const sut    = require('./pool-server');
+  const TH     = require('./test-helper');
+  const util   = require('./util');
+  const Future = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
 
@@ -21,11 +21,11 @@ isServer && define(function (require, exports, module) {
       test.stub(global, 'clearTimeout');
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test acquire, release": function () {
+    "test acquire, release" () {
       v.conn = [1];
       var pool = new sut({
         create: v.create,
@@ -57,7 +57,7 @@ isServer && define(function (require, exports, module) {
       });
     },
 
-    "test destroy": function () {
+    "test destroy" () {
       v.conn = [1];
       var pool = new sut({
         create: v.create,

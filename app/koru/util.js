@@ -35,12 +35,46 @@ define(function(require, exports, module) {
     return x !== x && y !== y;
   };
 
+  class TwoIndex {
+    constructor() {
+      this.ids = Object.create(null);
+    }
+
+    has (groupId, id) {
+      if (id === undefined) return groupId in this.ids;
+      var result = this.ids[groupId];
+      return !! (result && id in result);
+    }
+
+    get (groupId, id) {
+      var result = this.ids[groupId];
+      if (id === undefined) return result;
+      return result && result[id];
+    }
+
+    add (groupId, id, value) {
+      var result = this.ids[groupId];
+      if (! result) result = this.ids[groupId] = {};
+      return result[id] = value;
+    }
+
+    remove (groupId, id) {
+      if (id === undefined) delete this.ids[groupId];
+      var result = this.ids[groupId];
+      if (result) {
+        delete result[id];
+        for (var k in result) return;
+        delete this.ids[groupId];
+      }
+    }
+  };
+
   util.extend(util, {
     DAY: 1000*60*60*24,
 
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
-    extendExclude: function(obj, properties, exclude) {
+    extendExclude(obj, properties, exclude) {
       for(var prop in properties) {
         if (exclude[prop]) continue;
         Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
@@ -48,7 +82,7 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    reverseExtend: function (obj, properties, exclude) {
+    reverseExtend (obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && exclude[prop]) continue;
@@ -58,7 +92,7 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    forEach: function forEach(list, func) {
+    forEach (list, func) {
       if (! list) return;
       var len = list.length;
       for(var i = 0; i < len; ++i) {
@@ -66,7 +100,7 @@ define(function(require, exports, module) {
       }
     },
 
-    reverseForEach: function reverseForEach(list, func) {
+    reverseForEach (list, func) {
       if (! list) return;
       var len = list.length;
       for(var i = len-1; i >= 0 ; --i) {
@@ -74,7 +108,7 @@ define(function(require, exports, module) {
       }
     },
 
-    map: function mymap(list, func) {
+    map (list, func) {
       var len = list.length;
       var result = new Array(len);
       for(var i = 0; i < len; ++i) {
@@ -83,7 +117,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    append: function (list, append) {
+    append (list, append) {
       var len = append.length;
       var dl = list.length;
       list.length = dl + len;
@@ -98,7 +132,7 @@ define(function(require, exports, module) {
      * -0 === +0 (should be false)
      *  http://wiki.ecmascript.org/doku.php?id=harmony:egal
      */
-    egal: egal,
+    egal,
     is: egal,
 
     /**
@@ -109,9 +143,9 @@ define(function(require, exports, module) {
      *
      * Any other types will always return false.
      */
-    deepEqual: deepEqual,
+    deepEqual,
 
-    shallowEqual: function (array1, array2) {
+    shallowEqual (array1, array2) {
       if (! Array.isArray(array1) || ! Array.isArray(array2) || array1.length !== array2.length)
         return false;
       for(var i = 0; i < array1.length; ++i) {
@@ -121,7 +155,7 @@ define(function(require, exports, module) {
       return true;
     },
 
-    invert: function (map, func) {
+    invert (map, func) {
       var result = {};
       for(var prop in map) {
         result[map[prop]] = func ? func(prop) : prop;
@@ -129,7 +163,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    lookupDottedValue: function (key, attributes) {
+    lookupDottedValue (key, attributes) {
       var parts = key.split('.');
       var val = attributes[parts[0]];
       for(var i=1; val && i < parts.length;++i) {
@@ -138,7 +172,7 @@ define(function(require, exports, module) {
       return val;
     },
 
-    applyChanges: function (attrs, changes) {
+    applyChanges (attrs, changes) {
       for(var key in changes) {
         util.applyChange(attrs, key, changes);
       }
@@ -146,7 +180,7 @@ define(function(require, exports, module) {
       return attrs;
     },
 
-    applyChange: function (attrs, key, changes) {
+    applyChange (attrs, key, changes) {
       var index = key.indexOf(".");
 
       var nv = Object.getOwnPropertyDescriptor(changes, key);
@@ -218,7 +252,7 @@ define(function(require, exports, module) {
      * the equality check. In this changes can be tested by passing
      * the arguments: includesAttributes(attrs, changes, doc)
      */
-    includesAttributes: function (attrs/*, docs */) {
+    includesAttributes (attrs/*, docs */) {
       for(var key in attrs) {
         var match = false;
         for(var i = 1; i < arguments.length; ++i) {
@@ -236,22 +270,22 @@ define(function(require, exports, module) {
       return true;
     },
 
-    extractError: function (ex) {
+    extractError (ex) {
       var st = stacktrace(ex);
       return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
     },
-    stacktrace: stacktrace,
+    stacktrace,
 
-    slice: function (list, from, to) {
+    slice (list, from, to) {
       return slice.call(list, from, to);
     },
 
-    isObjEmpty: function (obj) {
+    isObjEmpty (obj) {
       if (obj) for(var noop in obj) {return false;}
       return true;
     },
 
-    keyMatches: function (obj, regex) {
+    keyMatches (obj, regex) {
       var m;
       if (obj) for(var key in obj) {
         if (m = regex.exec(key))
@@ -260,13 +294,13 @@ define(function(require, exports, module) {
       return false;
     },
 
-    addItem: function (list, item) {
+    addItem (list, item) {
       var pos = util.itemIndex(list, item);
       if (pos !== -1) return pos;
       list.push(item);
     },
 
-    itemIndex: function (list, item) {
+    itemIndex (list, item) {
       if (item != null && typeof item === 'object') {
         for(var index = 0; index < list.length; ++index) {
           var row = list[index];
@@ -287,7 +321,7 @@ define(function(require, exports, module) {
       return list.indexOf(item);
     },
 
-    removeItem: function (list, item) {
+    removeItem (list, item) {
       var index = util.itemIndex(list, item);
       if (index === -1) return;
       item = list[index];
@@ -295,13 +329,13 @@ define(function(require, exports, module) {
       return item;
     },
 
-    values: function (map) {
+    values (map) {
       var result = [];
       for(var key in map) result.push(map[key]);
       return result;
     },
 
-    indexOfRegex: function (list, value, fieldName) {
+    indexOfRegex (list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -312,7 +346,7 @@ define(function(require, exports, module) {
       return -1;
     },
 
-    pick: function (map/*, fields */) {
+    pick (map/*, fields */) {
       var result = {};
       for(var i = 1; i < arguments.length; ++i) {
         var field = arguments[i];
@@ -321,13 +355,13 @@ define(function(require, exports, module) {
       return result;
     },
 
-    mapToSearchStr: function (map) {
+    mapToSearchStr (map) {
       return util.map(Object.keys(map), function (key) {
         return util.encodeURIComponent(key) + '=' + util.encodeURIComponent(map[key]);
       }).join('&');
     },
 
-    searchStrToMap: function (query) {
+    searchStrToMap (query) {
       var result = {};
       if (! query) return result;
       util.forEach(query.split('&'), function (item) {
@@ -337,7 +371,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    encodeURIComponent: function (value) {
+    encodeURIComponent (value) {
       if (value == null || value === '') return '';
 
       var result = encodeURIComponent(value);
@@ -349,12 +383,12 @@ define(function(require, exports, module) {
         .replace(/\*/g, "%2A");
     },
 
-    decodeURIComponent: function (value) {
+    decodeURIComponent (value) {
       if (! value) return null;
       return decodeURIComponent(value.replace(/\+/g, " "));
     },
 
-    toMap: function (keyName, valueName /*, lists */) {
+    toMap (keyName, valueName /*, lists */) {
       var result = {};
       if (arguments.length === 1) {
         keyName && util.forEach(keyName, function (item) {
@@ -389,14 +423,14 @@ define(function(require, exports, module) {
       return result;
     },
 
-    mapField: function (list, fieldName) {
+    mapField (list, fieldName) {
       fieldName = fieldName || '_id';
       return list && util.map(list, function (doc) {
         return doc[fieldName];
       });
     },
 
-    idNameListToMap: function (list) {
+    idNameListToMap (list) {
       var result = {};
       util.forEach(list, function (item) {
         result[item[0]] = item[1];
@@ -404,7 +438,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    find: function (list, func) {
+    find (list, func) {
       var len = list.length;
       var result;
       for(var i = 0; i < len; ++i) {
@@ -413,7 +447,7 @@ define(function(require, exports, module) {
       }
     },
 
-    flatten: function (ary, level) {
+    flatten (ary, level) {
       var result = [];
 
       function internal(a, l) {
@@ -429,7 +463,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    findBy: function (list, value, fieldName) {
+    findBy (list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -439,7 +473,7 @@ define(function(require, exports, module) {
       }
     },
 
-    indexOf: function (list, value, fieldName) {
+    indexOf (list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -454,7 +488,7 @@ define(function(require, exports, module) {
     /**
      * Do a shallow copy of a type
      */
-    shallowCopy: function (orig) {
+    shallowCopy (orig) {
       switch(typeof orig) {
       case 'string':
       case 'number':
@@ -482,7 +516,7 @@ define(function(require, exports, module) {
     },
 
     /** Does not deep copy functions */
-    deepCopy: function (orig) {
+    deepCopy (orig) {
       switch(typeof orig) {
       case 'string':
       case 'number':
@@ -515,7 +549,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    intersectp: function (list1, list2) {
+    intersectp (list1, list2) {
       var set = {};
       util.forEach(list1, function (item) {
         set[item]=true;
@@ -526,7 +560,7 @@ define(function(require, exports, module) {
       });
     },
 
-    diff: function (a, b) {
+    diff (a, b) {
       var result = [];
       if (a) for(var i = 0; i < a.length; ++i) {
         var val = a[i];
@@ -535,7 +569,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    symDiff: function (a, b) {
+    symDiff (a, b) {
       var result = [];
       b = util.toMap(b);
       if (a) for(var i = 0; i < a.length; ++i) {
@@ -550,7 +584,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    union: function (args) {
+    union (args) {
       var set = {};
       for(var i = 0; i < arguments.length; ++i) {
         util.forEach(arguments[i], function (elm) {
@@ -560,19 +594,19 @@ define(function(require, exports, module) {
       return Object.keys(set);
     },
 
-    pluralize: function (name, value) {
+    pluralize (name, value) {
       if (value === 1) return name;
       return name+'s';
     },
 
-    humanize: function (name) {
+    humanize (name) {
       name = this.uncapitalize(name);
       return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(/([A-Z])/g, function (_, m1) {
         return ' '+m1.toLowerCase();
       });
     },
 
-    initials: function (name, count, abvr) {
+    initials (name, count, abvr) {
       count = count || 3;
 
       name = (name || '').split(' ');
@@ -589,64 +623,64 @@ define(function(require, exports, module) {
       return result.toUpperCase();
     },
 
-    dasherize: function (name) {
+    dasherize (name) {
       return this.humanize(name).replace(/[\s_]+/g,'-');
     },
 
-    labelize: function (name) {
+    labelize (name) {
       return this.capitalize(this.humanize(name));
     },
 
-    sansId: function (name) {
+    sansId (name) {
       return name.replace(/_ids?$/,'');
     },
 
-    capitalize: function (value) {
+    capitalize (value) {
       if(value == null || value === '')
         return '';
 
       return value.substring(0,1).toUpperCase() + value.substring(1);
     },
 
-    uncapitalize: function (value) {
+    uncapitalize (value) {
       if(value == null || value === '')
         return '';
 
       return value.substring(0,1).toLowerCase() + value.substring(1);
     },
 
-    titleize: function (value) {
+    titleize (value) {
       return this.capitalize(value.replace(/[-._%+A-Z]\w/g, function (w) {
         return ' ' + util.capitalize(w.replace(/^[-._%+]/,''));
       }).trim());
     },
 
 
-    camelize: function (value) {
+    camelize (value) {
       return value.replace(/[-._%+A-Z]\w/g, function (w) {
         return util.capitalize(w.replace(/^[-._%+]/,''));
       });
     },
 
-    niceFilename: function (name) {
+    niceFilename (name) {
       return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g,'-');
     },
 
-    hashToCss: function (hash) {
+    hashToCss (hash) {
       return util.map(Object.keys(hash), function (key) {
         return key+":"+hash[key];
       }).join(";");
     },
 
-    px: function (value) {
+    px (value) {
       return Math.round(value)+'px';
     },
 
-    pc: function (value) {
+    pc (value) {
       return value*100 + '%';
     },
 
-    toDp: function (number, dp, zeroFill) {
+    toDp (number, dp, zeroFill) {
       var scalar = Math.pow(10, dp);
       var decs = ''+(Math.round(number * scalar) % scalar);
 
@@ -666,19 +700,19 @@ define(function(require, exports, module) {
     sansPx: sansSuffix.bind(2),
     sansPc: sansSuffix.bind(1),
 
-    compareByName: function (a, b) {
+    compareByName (a, b) {
       var aname = (a && a.name) || '';
       var bname = (b && b.name) || '';
       return aname === bname ? 0 : aname < bname ? -1 : 1;
     },
 
-    compareByOrder: function (a, b) {
+    compareByOrder (a, b) {
       a = (a && a.order) || 0;
       b = (b && b.order) || 0;
       return a === b ? 0 : a < b ? -1 : 1;
     },
 
-    compareByField: function (field, direction) {
+    compareByField (field, direction) {
       direction = direction === -1 ? -1 : 1;
       return function (a, b) {
         var afield = a && a[field], bfield = b && b[field];
@@ -689,7 +723,7 @@ define(function(require, exports, module) {
       };
     },
 
-    compareBy: function (list) {
+    compareBy (list) {
       var len = list.length;
       return function (a, b) {
         for(var i = 0; i < len; ++i) {
@@ -713,9 +747,9 @@ define(function(require, exports, module) {
       };
     },
 
-    colorToArray: colorToArray,
+    colorToArray,
 
-    setNestedHash: function (value, hash /*, keys */) {
+    setNestedHash (value, hash /*, keys */) {
       var last = arguments.length-1;
       for(var i = 2; i < last; ++i) {
         var key = arguments[i];
@@ -725,7 +759,7 @@ define(function(require, exports, module) {
       return hash[arguments[last]] = value;
     },
 
-    getNestedHash: function (hash /*, keys */) {
+    getNestedHash (hash /*, keys */) {
       var last = arguments.length-1;
       for(var i = 1; i < last; ++i) {
         var key = arguments[i];
@@ -736,7 +770,7 @@ define(function(require, exports, module) {
       return hash[arguments[last]];
     },
 
-    deleteNestedHash: function (hash /*, keys */) {
+    deleteNestedHash (hash /*, keys */) {
       var last = arguments.length-1;
       var prevs = [];
       for(var i = 1; i < last; ++i) {
@@ -759,7 +793,7 @@ define(function(require, exports, module) {
       return value;
     },
 
-    withDateNow: function (date, func) {
+    withDateNow (date, func) {
       date = +date;
       var thread = util.thread;
       var dates = thread.dates || (thread.dates = []);
@@ -772,22 +806,22 @@ define(function(require, exports, module) {
       }
     },
 
-    dateNow: function () {
+    dateNow () {
       return util.thread.date || Date.now();
     },
 
-    newDate: function () {
+    newDate () {
       return new Date(util.dateNow());
     },
 
-    dateInputFormat: function (date) {
+    dateInputFormat (date) {
       if (date && date.constructor === Date)
         return date.getFullYear() + '-' + twoDigits(date.getMonth()+1) +
         '-' + twoDigits(date.getDate());
       return '';
     },
 
-    yyyymmddToDate: function (value) {
+    yyyymmddToDate (value) {
       var m = /^\s*(\d\d\d\d)([\s-/])(\d\d?)\2(\d\d?)\s*$/.exec(value);
       if (! m) return;
       var year = +m[1];
@@ -801,13 +835,13 @@ define(function(require, exports, module) {
         return res;
     },
 
-    twoDigits: twoDigits,
+    twoDigits,
 
-    emailAddress: function (email, name) {
+    emailAddress (email, name) {
       return name.replace(/[<>]/g, '') + " <" + email + ">";
     },
 
-    parseEmailAddresses: function (input) {
+    parseEmailAddresses (input) {
       input = input || "";
       var addresses = [];
 
@@ -822,7 +856,7 @@ define(function(require, exports, module) {
       return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
     },
 
-    TwoIndex: TwoIndex,
+    TwoIndex,
   });
 
   function deepEqual(actual, expected) {
@@ -887,42 +921,6 @@ define(function(require, exports, module) {
       return result;
     }
   }
-
-  function TwoIndex() {
-    this.ids = Object.create(null);
-  }
-
-  TwoIndex.prototype = {
-    constructor: TwoIndex,
-
-    has: function (groupId, id) {
-      if (id === undefined) return groupId in this.ids;
-      var result = this.ids[groupId];
-      return !! (result && id in result);
-    },
-
-    get: function (groupId, id) {
-      var result = this.ids[groupId];
-      if (id === undefined) return result;
-      return result && result[id];
-    },
-
-    add: function (groupId, id, value) {
-      var result = this.ids[groupId];
-      if (! result) result = this.ids[groupId] = {};
-      return result[id] = value;
-    },
-
-    remove: function (groupId, id) {
-      if (id === undefined) delete this.ids[groupId];
-      var result = this.ids[groupId];
-      if (result) {
-        delete result[id];
-        for (var k in result) return;
-        delete this.ids[groupId];
-      }
-    },
-  };
 
   function sansSuffix (value) {
     return value ? typeof value === 'string' ? +value.substring(0, value.length - this) : +value : 0;

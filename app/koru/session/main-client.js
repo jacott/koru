@@ -1,9 +1,9 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define(function (require, exports, module) {
-  var koru = require('../main');
-  var sessState = require('./state');
-  var WebSocketSenderFactory = require('./web-socket-sender-factory');
+  const koru                   = require('../main');
+  const sessState              = require('./state');
+  const WebSocketSenderFactory = require('./web-socket-sender-factory');
 
   koru.onunload(module, 'reload');
 

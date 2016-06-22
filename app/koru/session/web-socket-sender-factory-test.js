@@ -1,30 +1,30 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./web-socket-sender-factory');
-  var SessionBase = require('./base').__initBase__;
-  var SessState = require('./state').__init__;
+  const SessionBase = require('./base').__initBase__;
+  const SessState   = require('./state').__init__;
+  const TH          = require('./test-helper');
+  const sut         = require('./web-socket-sender-factory');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
-      var base = SessionBase('foo');
+      const base = SessionBase('foo');
       test.stub(base, 'provide');
       v.sess = sut(base, v.state = SessState());
       v.sess.newWs = function () {return v.ws = {}};
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test onerror": function () {
+    "test onerror" () {
       v.sess.connect();
       assert.same(v.ws.onerror, v.ws.onclose);
     },
 
-    "test onStop callbacks": function () {
+    "test onStop callbacks" () {
       v.sess.onStop(v.c1 = test.stub());
       v.sess.onStop(v.c2 = test.stub());
 
@@ -33,15 +33,15 @@ define(function (require, exports, module) {
       assert.called(v.c2);
     },
 
-    "test state": function () {
+    "test state" () {
       assert.same(v.state, v.sess.state);
     },
 
-    "test batched messages": function () {
+    "test batched messages" () {
       v.sess._commands.f = v.f = test.stub();
       v.sess._commands.g = v.g = test.stub();
 
-      assert.calledWith(v.sess.provide, 'W', TH.match(function (arg) {
+      assert.calledWith(v.sess.provide, 'W', TH.match(arg => {
         v.func = arg;
         return typeof arg === 'function';
       }));
@@ -55,7 +55,7 @@ define(function (require, exports, module) {
       assert.same(v.g.firstCall.thisValue, v.sess);
     },
 
-    "test using separate base": function () {
+    "test using separate base" () {
       var sess1 = SessionBase('foo1');
       var sess2 = SessionBase('foo2');
       var base = SessionBase('foo3');
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
       assert.same(base._commands.B, bfunc);
     },
 
-    "test server-to-client broadcast messages": function () {
+    "test server-to-client broadcast messages" () {
       v.sess.registerBroadcast("foo", v.foo = test.stub());
       v.sess.registerBroadcast("bar", v.bar = test.stub());
 
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
         v.sess.deregisterBroadcast("bar");
       });
 
-      assert.calledWith(v.sess.provide, 'B', TH.match(function (arg) {
+      assert.calledWith(v.sess.provide, 'B', TH.match(arg => {
         v.func = arg;
         return typeof arg === 'function';
       }));

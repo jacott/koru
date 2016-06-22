@@ -1,14 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var Dom = require('../dom');
-
-  function KeyMap() {
-    this.map = {};
-    this.descMap = {};
-  }
+  const Dom  = require('../dom');
+  const util = require('../util');
 
   exports = function (funcs) {
-    var keyMap = new KeyMap();
+    const keyMap = new KeyMap();
     keyMap.exec = exec.bind(keyMap);
 
     keyMap.addKeys(funcs);
@@ -16,11 +11,14 @@ define(function(require, exports, module) {
     return keyMap;
   };
 
-  KeyMap.prototype = {
-    constructor: KeyMap,
-    addKeys: function (funcs) {
-      var keyMap = this;
-      var top = keyMap.map;
+  class KeyMap {
+    constructor() {
+      this.map = {};
+      this.descMap = {};
+    }
+
+    addKeys(funcs) {
+      const top = this.map;
 
       function procMod() {
         if (mod) {
@@ -52,13 +50,13 @@ define(function(require, exports, module) {
 
         km[keySeq[i]] = [name, line[1]];
       }
-    },
+    }
 
-    getTitle: function(desc, name) {
+    getTitle(desc, name) {
       var sc = this.descMap[name];
       if (! sc) return (this.descMap[name]=['', null, desc])[2];
       return sc[2] || (sc[2] = makeTitle(desc, sc[0]));
-    },
+    }
   };
 
   function makeTitle(name, keySeq) {

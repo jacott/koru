@@ -214,12 +214,6 @@ define(function(require, exports, module) {
     },
   });
 
-  function Widget(options) {
-    var element = this.element = Tpl.$autoRender(options);
-    var ctx = this.ctx = Dom.getCtx(element);
-    ctx._widget = this;
-  }
-
   function cancel(elm) {
     var ctx = Dom.getCtx(elm);
     var data = ctx.data;
@@ -227,24 +221,28 @@ define(function(require, exports, module) {
     ctx._widget.close();
   }
 
-  Widget.prototype = {
-    constructor: Widget,
+  class Widget {
+    constructor (options) {
+      var element = this.element = Tpl.$autoRender(options);
+      var ctx = this.ctx = Dom.getCtx(element);
+      ctx._widget = this;
+    }
 
-    onSubmit: function (func) {
+    onSubmit(func) {
       this._onSubmit = func;
-    },
+    }
 
-    onDelete: function (func) {
+    onDelete(func) {
       this._onDelete = func;
-    },
+    }
 
-    close: function () {
+    close() {
       if (this.swap) {
         this.element.parentNode.replaceChild(this.swap, this.element);
         this.swap = null;
       }
       Dom.remove(this.element);
-    },
+    }
   };
 
   return Tpl;

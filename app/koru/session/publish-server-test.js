@@ -1,15 +1,15 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var koru = require('../main');
-  var TH = require('../test');
-  var publish = require('./publish');
-  var session = require('../session/base');
-  var message = require('./message');
-  var util = require('../util');
-  var serverConnection = require('./server-connection');
+  const koru             = require('../main');
+  const session          = require('../session/base');
+  const TH               = require('../test');
+  const util             = require('../util');
+  const message          = require('./message');
+  const publish          = require('./publish');
+  const serverConnection = require('./server-connection');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
       v.pubFunc = test.stub();
@@ -30,12 +30,12 @@ isServer && define(function (require, exports, module) {
       test.spy(session, 'abortMessages');
     },
 
-    tearDown: function () {
+    tearDown () {
       publish._destroy('foo');
       v = null;
     },
 
-    "test unknown publication": function () {
+    "test unknown publication" () {
       test.intercept(koru, 'info');
       session._onMessage(v.conn = {
         sendBinary: test.stub(),
@@ -46,7 +46,7 @@ isServer && define(function (require, exports, module) {
       assert(session.releaseMessages.calledAfter(session.batchMessages));
     },
 
-    "test session closing before subscribe": function () {
+    "test session closing before subscribe" () {
       refute.exception(function () {
         session._onMessage(v.conn = {
           sendBinary: test.stub(),
@@ -57,7 +57,7 @@ isServer && define(function (require, exports, module) {
       refute.called(session.batchMessages);
     },
 
-    "test publish": function () {
+    "test publish" () {
       assert('a123' in v.conn._subs);
 
       assert.calledWith(v.pubFunc, 1, 2, 3);
@@ -66,7 +66,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123']);
     },
 
-    "test onStop": function () {
+    "test onStop" () {
       v.sub.onStop(v.onStop = test.stub());
 
       refute(v.sub.stopped);
@@ -83,7 +83,7 @@ isServer && define(function (require, exports, module) {
       assert.isTrue(v.sub.stopped);
     },
 
-    "test stop": function () {
+    "test stop" () {
       v.sub.onStop(v.onStop = test.stub());
 
       v.sub.stop();
@@ -95,7 +95,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', false]);
     },
 
-    "test when closed stop": function () {
+    "test when closed stop" () {
       v.sub.onStop(v.onStop = test.stub());
       v.sub.conn._subs = null;
       v.sub.conn.ws = null;
@@ -104,12 +104,12 @@ isServer && define(function (require, exports, module) {
       assert.called(v.onStop);
     },
 
-    "test setUserId": function () {
+    "test setUserId" () {
       v.sub.setUserId('u456');
       assert.same(v.conn.userId, 'u456');
     },
 
-    "test resubscribe": function () {
+    "test resubscribe" () {
       v.pubFunc = function (...args) {
         assert.same(this, v.sub);
         assert.equals(args, [1,2,3]);
@@ -126,7 +126,7 @@ isServer && define(function (require, exports, module) {
       assert.isTrue(v.stopResub);
     },
 
-    "test error on resubscribe": function () {
+    "test error on resubscribe" () {
       test.stub(koru, 'error');
       v.pubFunc = function () {
         throw new Error('foo error');
@@ -143,12 +143,12 @@ isServer && define(function (require, exports, module) {
       assert.calledTwice(v.sub._stop);
     },
 
-    "test userId": function () {
+    "test userId" () {
       v.conn.userId = 'foo';
       assert.same(v.sub.userId, 'foo');
     },
 
-    "test Koru error": function () {
+    "test Koru error" () {
       v.sub.error(new koru.Error(404, 'Not found'));
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 404, 'Not found']);
@@ -156,7 +156,7 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
     },
 
-    "test error on subscribe": function () {
+    "test error on subscribe" () {
       v.pubFunc.reset();
       v.pubFunc = function () {
         this.error(new Error('Foo error'));
@@ -171,7 +171,7 @@ isServer && define(function (require, exports, module) {
       assert(session.releaseMessages.calledAfter(session.batchMessages));
     },
 
-    "test error when conn closed": function () {
+    "test error when conn closed" () {
       v.pubFunc.reset();
       v.pubFunc = function () {
         this.id = null;
@@ -185,7 +185,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "sendMatchUpdate": {
-      setUp: function () {
+      setUp () {
         v.sub.match('Foo', v.m1 = function (doc) {
           return doc.attributes.name === 'John';
         });
@@ -199,7 +199,7 @@ isServer && define(function (require, exports, module) {
           constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 5}};
       },
 
-      "test stop": function () {
+      "test stop" () {
         v.sub.match('Bar', v.m2 = test.stub());
 
         assert.equals(Object.keys(v.conn.match._models).sort(), ['Bar', 'Foo']);
@@ -209,7 +209,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.sub._matches, []);
       },
 
-      "test added via add": function () {
+      "test added via add" () {
         var stub = v.conn.added = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -219,7 +219,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
       },
 
-      "test added via change": function () {
+      "test added via change" () {
         var stub = v.conn.added = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -230,7 +230,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(stub, 'Foo', 'id123', v.attrs);
       },
 
-      "test change": function () {
+      "test change" () {
         var stub = v.conn.changed = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -241,7 +241,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(stub, 'Foo', 'id123', {age: 5}, 'filter');
       },
 
-      "test removed via change": function () {
+      "test removed via change" () {
         var stub = v.conn.removed = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -253,7 +253,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(stub, 'Foo', 'id123');
       },
 
-      "test removed via remove": function () {
+      "test removed via remove" () {
         var stub = v.conn.removed = test.stub();
 
         var old = util.deepCopy(v.docProto);
@@ -263,7 +263,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(stub, 'Foo', 'id123');
       },
 
-      "test remove no match": function () {
+      "test remove no match" () {
         var stub = v.conn.removed = test.stub();
 
         var old = util.deepCopy(v.docProto);
@@ -274,7 +274,7 @@ isServer && define(function (require, exports, module) {
         refute.called(stub);
       },
 
-      "test change no match": function () {
+      "test change no match" () {
         var stub = v.conn.changed = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -286,7 +286,7 @@ isServer && define(function (require, exports, module) {
         refute.called(stub);
       },
 
-      "test add no match": function () {
+      "test add no match" () {
         var stub = v.conn.added = test.stub();
 
         var doc = util.deepCopy(v.docProto);
@@ -297,14 +297,14 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test sendUpdate added": function () {
+    "test sendUpdate added" () {
       var stub = v.conn.added = test.stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}}, null, 'filter');
 
       assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
     },
 
-    "test sendUpdate changed": function () {
+    "test sendUpdate changed" () {
       var stub = v.conn.changed = test.stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', $asChanges: $asChanges,
                         attributes: v.attrs = {name: 'John', age: 7}},
@@ -313,7 +313,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(stub, 'Foo', 'id123', {age: 7}, 'filter');
     },
 
-    "test sendUpdate removed": function () {
+    "test sendUpdate removed" () {
       var stub = v.conn.removed = test.stub();
       v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}});
 

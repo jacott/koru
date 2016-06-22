@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./match');
+  const sut = require('./match');
+  const TH  = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
       v.assertThrows =  function (m, v, msg) {
@@ -18,25 +18,26 @@ define(function (require, exports, module) {
       };
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test match.id": function () {
+    "test match.id" () {
       assert.isTrue(sut.id.$test("123"));
       assert.isTrue(sut.id.$test("aAgGzZqQ8901234567890123"));
       assert.isFalse(sut.id.$test("0123456789012345678901234"));
       assert.isFalse(sut.id.$test("12"));
     },
 
-    "test non function construction": function () {
+    "test non function construction" () {
       assert(sut(/abc/).$test('aabcc'));
       refute(sut(/abc/).$test('aabbcc'));
       assert(sut([1, sut.any]).$test([1, 'foo']));
       refute(sut([2, sut.any]).$test([1, 'foo']));
     },
 
-    "test match naming": function () {
+    "test match naming" () {
+      assert.same(''+sut(arg => true), "match(arg => true)");
       assert.same(''+sut(function (arg) {return true}), "match(function (arg) {return true})");
       assert.same(''+sut(function fooMatch(arg) {return true}), 'match(fooMatch)');
       assert.same(''+sut(function (arg) {return true}, 'my message'), 'my message');
@@ -56,7 +57,7 @@ define(function (require, exports, module) {
       assert.same(''+sut.match, 'match.match');
     },
 
-    "test match.equal": function () {
+    "test match.equal" () {
       var me = sut.equal([1,sut.any]);
       assert.isTrue(me.$test([1,'x']));
       assert.isTrue(me.$test([1, null]));
@@ -67,20 +68,20 @@ define(function (require, exports, module) {
       assert.isTrue(me.$throwTest([1, null]));
     },
 
-    "test match.is": function () {
+    "test match.is" () {
       var me = sut.is(v.foo = {foo: 123});
       assert.isTrue(me.$test(v.foo));
       assert.isFalse(me.$test({foo: 123}));
     },
 
-    "test match.regExp": function () {
+    "test match.regExp" () {
       var mr = sut.regExp(/^ab*c$/i);
 
       assert.isTrue(mr.$test("abbbc"));
       assert.isFalse(mr.$test("abbbcd"));
     },
 
-    "test match.has": function () {
+    "test match.has" () {
       var mi = sut.has({a: 0, b: 2});
 
       assert.isTrue(mi.$test('a'));
@@ -88,7 +89,7 @@ define(function (require, exports, module) {
       assert.isFalse(mi.$test('c'));
     },
 
-    "test match.or": function () {
+    "test match.or" () {
       var mor = sut.or(sut.number, sut.string, sut.boolean, 'mymatch');
 
       assert.same(mor.message, 'mymatch');
@@ -108,7 +109,7 @@ define(function (require, exports, module) {
       assert.isFalse(mor.$test(false));
     },
 
-    "test match.and": function () {
+    "test match.and" () {
       var mand = sut.and(sut.object, sut.baseObject, sut.equal({a: sut.number}), 'mymatch');
 
       assert.same(mand.message, 'mymatch');
@@ -124,7 +125,7 @@ define(function (require, exports, module) {
       v.assertThrows(mand, {a: 'x'}, 'match.equal');
     },
 
-    "test match.tuple": function () {
+    "test match.tuple" () {
       var mtup = sut.tuple([sut.object, sut.number, sut.equal({a: sut.number})]);
 
       assert.same(mtup.message, 'match.tuple');
@@ -140,7 +141,7 @@ define(function (require, exports, module) {
       v.assertThrows(mtup, {}, 'match.tuple');
     },
 
-    "test matching": function () {
+    "test matching" () {
       assert.isTrue(sut.string.$test(''));
       assert.isFalse(sut.string.$test(1));
 

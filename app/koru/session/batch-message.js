@@ -1,20 +1,18 @@
-define(function(require, exports, module) {
-  var util = require('koru/util');
-  var message = require('./message');
-  var koru = require('../main');
+define(function(require) {
+  const util    = require('koru/util');
+  const koru    = require('../main');
+  const message = require('./message');
 
-  function BatchMessage(session) {
-    this.thread = util.thread;
-    this.session = session;
-    this.first = this.last = null;
-  }
+  const BINARY = {binary: true};
 
-  var BINARY = {binary: true};
+  class BatchMessage {
+    constructor (session) {
+      this.thread = util.thread;
+      this.session = session;
+      this.first = this.last = null;
+    }
 
-  BatchMessage.prototype = {
-    constructor: BatchMessage,
-
-    batch: function (conn, type, args, func) {
+    batch (conn, type, args, func) {
       var last = this.last;
       if (last) {
         if (last.type === type && last.func === func && util.shallowEqual(last.args, args)) {
@@ -24,13 +22,13 @@ define(function(require, exports, module) {
         }
       }
       addMessage(this, conn, {type: type, args: args, func: func});
-    },
+    }
 
-    abort: function () {
+    abort () {
       this.first = this.last = null;
-    },
+    }
 
-    release: function () {
+    release () {
       var gDict = this.session.globalDict;
       var curr = this.first;
       for (var curr = this.first; curr; curr = curr && curr.next) {
@@ -64,7 +62,7 @@ define(function(require, exports, module) {
           send(cc.conn, msg);
         }
       }
-    },
+    }
   };
 
   function send(conn, msg) {

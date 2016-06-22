@@ -1,150 +1,36 @@
 define(function(require, exports, module) {
+  const Dom         = require('koru/dom');
+  const koru        = require('koru/main');
+  const makeSubject = require('koru/make-subject');
+  const Trace       = require('koru/trace');
   require('koru/ui/dom-ext');
-  const Dom          = require('koru/dom');
-  const koru         = require('koru/main');
-  const makeSubject  = require('koru/make-subject');
-  const Trace        = require('koru/trace');
-  const util         = require('koru/util');
+  const util        = require('koru/util');
 
   var debug_page = false;
   Trace.debug_page = function (value) {
     debug_page = value;
   };
 
-  function Route(path, template, parent, options) {
-    if (typeof options === 'string') {
-      this.routeVar = options;
-      options = {};
-    } else
-      this.routeVar = options ? options.routeVar : null;
+  class Route {
+    constructor(path, template, parent, options) {
+      if (typeof options === 'string') {
+        this.routeVar = options;
+        options = {};
+      } else
+        this.routeVar = options ? options.routeVar : null;
 
-    this.path = path || '';
-    this.template = template;
-    this.parent = options && options.hasOwnProperty('parent') ? options.parent : parent;
-    this.routes = {};
+      this.path = path || '';
+      this.template = template;
+      this.parent = options && options.hasOwnProperty('parent') ? options.parent : parent;
+      this.routes = {};
 
-    util.reverseExtend(this, options);
-  };
+      util.reverseExtend(this, options);
+    }
 
-  makeSubject(Route);
+    static get pageState() {return pageState}
+    static get pageCount() {return pageCount}
 
-  Route.title = document.title;
-
-  Route.history = window.history;
-
-  Route.prototype = {
-    constructor: Route,
-
-    addTemplate: function (module, template, options) {
-      if (module && ! ('exports' in module)) {
-        options = template;
-        template = module;
-        module = null;
-      }
-      options = addCommon(this, module, template, options);
-      if (! template.onEntry)
-        template.onEntry = onEntryFunc(template, options);
-
-      if (! template.onExit)
-        template.onExit = onExitFunc(template);
-    },
-
-    removeTemplate: function (template, options) {
-      var path = options && options.path;
-      if (path == null) path = templatePath(template);
-      this.routes[path] = null;
-    },
-
-    addDialog: function (module, template, options) {
-      if (module && ! module.exports) {
-        options = template;
-        template = module;
-        module = null;
-      }
-      options = addCommon(this, module, template, options);
-
-      template.isDialog = true;
-    },
-
-    addAlias: function (template, path) {
-      this.routes[path] = template;
-    },
-
-    addBase: function (module, template, options) {
-      if (module) {
-        if ('exports' in module) {
-          koru.onunload(module, function () {
-            this.removeBase(template);
-          }.bind(this));
-        } else {
-          options = template;
-          template = module;
-          module = null;
-        }
-      }
-
-      var path = template.$path || (template.$path = templatePath(template));
-
-      if (template.route) throw new Error(template.name + ' is already a route base');
-      if (this.routes.path) throw new Error('Path already exists! ', path + " for template " + this.path);
-
-      return template.route = this.routes[path] = new Route(path, template, this, options);
-    },
-
-    removeBase: function (template) {
-      template.route = null;
-      this.routes[template.$path] = null;
-    },
-
-    onBaseExit: function(page, location) {
-      var template = this.template;
-      var onBaseExit = template && template.onBaseExit;
-      onBaseExit && onBaseExit.call(template, page, location);
-    },
-
-    onBaseEntry: function(page, location, callback) {
-      var template = this.template;
-      var onBaseEntry = template && template.onBaseEntry;
-      onBaseEntry && onBaseEntry.call(template, page, location, callback);
-    },
-  };
-
-  function addCommon(route, module, template, options) {
-    if (module) koru.onunload(module, function () {
-      route.removeTemplate(template, options);
-    });
-    options = options || {};
-    var path = options.path;
-    if (path == null) path = templatePath(template);
-    if (route.routes.path) throw new Error('Path already exists! ' + path + " for template " + this.path);
-    route.routes[path] = template;
-    template.route = route;
-    template.subPath = path;
-    template.routeOptions = options;
-
-    if (options.defaultPage)
-      route.defaultPage = template;
-
-    return options;
-  }
-
-  const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
-  var inGotoPage = 0;
-  var currentPage = null;
-  var targetPage = null;
-  var currentPageRoute = {};
-  var currentTitle, currentHref;
-  var pageState = 'pushState';
-  var pageCount = 0;
-  var runInstance; // used with async callbacks
-
-  util.extend(Route, {
-    root: new Route(),
-
-    get pageState() {return pageState},
-    get pageCount() {return pageCount},
-
-    waitForPage: function (expectPage, duration) {
+    static waitForPage(expectPage, duration) {
       duration = duration || 2000;
       return new Promise(function (resolve, reject) {
         if (currentPage === expectPage) {
@@ -166,9 +52,9 @@ define(function(require, exports, module) {
                              ', got: ' + (actualPage && actualPage.name)));
         });
       });
-    },
+    }
 
-    abortPage: function (location) {
+    static abortPage(location) {
       if (inGotoPage) {
         var abort = {};
         abort.location = location;
@@ -177,25 +63,23 @@ define(function(require, exports, module) {
       }
 
       return this.replacePath.apply(this, arguments);
-    },
+    }
 
-    _reset: function () {
+    static _reset() {
       Route.replacePage();
       pageCount = 0;
-    },
+    }
 
-    pathname: pathname,
-
-    replacePage: function () {
+    static replacePage() {
       pageState = 'replaceState';
       try {
         return this.gotoPage.apply(this, arguments);
       } finally {
         pageState = 'pushState';
       }
-    },
+    }
 
-    gotoPage: function (page, pageRoute) {
+    static gotoPage(page, pageRoute) {
       if (page && ! page.onEntry) {
         page = page.route ? page.route.defaultPage : page.defaultPage;
       }
@@ -267,9 +151,9 @@ define(function(require, exports, module) {
         Route.loadingArgs = null;
         currentPageRoute = pageRoute;
       }
-    },
+    }
 
-    recordHistory: function (page, href) {
+    static recordHistory(page, href) {
       if (! Route.history) return;
       if (! pageState || (page && page.noPageHistory))
           return;
@@ -281,24 +165,24 @@ define(function(require, exports, module) {
       }
       Route.history[cmd](pageCount, null, href);
       Route.notify(page, href);
-    },
+    }
 
-    setTitle: function (title) {
+    static setTitle(title) {
       currentTitle = document.title = title;
       Dom.setTitle && Dom.setTitle(title);
-    },
+    }
 
-    pushCurrent: function () {
+    static pushCurrent() {
       Route.history.pushState(++pageCount, null, currentHref);
-    },
+    }
 
-    get targetPage() {return targetPage},
-    get currentPage() {return currentPage},
-    get currentPageRoute() {return currentPageRoute},
-    get currentHref() {return currentHref},
-    get currentTitle() {return currentTitle},
+    static get targetPage() {return targetPage}
+    static get currentPage() {return currentPage}
+    static get currentPageRoute() {return currentPageRoute}
+    static get currentHref() {return currentHref}
+    static get currentTitle() {return currentTitle}
 
-    pageChanged: function (state) {
+    static pageChanged(state) {
       pageCount = state || 0;
       pageState = null;
       try {
@@ -306,18 +190,18 @@ define(function(require, exports, module) {
       } finally {
         pageState = 'pushState';
       }
-    },
+    }
 
-    replacePath: function () {
+    static replacePath() {
       pageState = 'replaceState';
       try {
         return this.gotoPath.apply(this, arguments);
       } finally {
         pageState = 'pushState';
       }
-    },
+    }
 
-    gotoPath: function (page) {
+    static gotoPath(page) {
       var pageRoute = {};
       if (page == null)
         page = koru.getLocation();
@@ -381,9 +265,9 @@ define(function(require, exports, module) {
         throw new Error('Page not found: ' + util.inspect(pageRoute));
 
       this.gotoPage(page, pageRoute);
-    },
+    }
 
-    searchParams: function (pageRoute) {
+    static searchParams(pageRoute) {
       var result = {};
 
       var search = pageRoute && pageRoute.search;
@@ -396,7 +280,123 @@ define(function(require, exports, module) {
       });
 
       return result;
-    },
+    }
+
+
+
+
+    addTemplate(module, template, options) {
+      if (module && ! ('exports' in module)) {
+        options = template;
+        template = module;
+        module = null;
+      }
+      options = addCommon(this, module, template, options);
+      if (! template.onEntry)
+        template.onEntry = onEntryFunc(template, options);
+
+      if (! template.onExit)
+        template.onExit = onExitFunc(template);
+    }
+
+    removeTemplate(template, options) {
+      var path = options && options.path;
+      if (path == null) path = templatePath(template);
+      this.routes[path] = null;
+    }
+
+    addDialog(module, template, options) {
+      if (module && ! module.exports) {
+        options = template;
+        template = module;
+        module = null;
+      }
+      options = addCommon(this, module, template, options);
+
+      template.isDialog = true;
+    }
+
+    addAlias(template, path) {
+      this.routes[path] = template;
+    }
+
+    addBase(module, template, options) {
+      if (module) {
+        if ('exports' in module) {
+          koru.onunload(module, function () {
+            this.removeBase(template);
+          }.bind(this));
+        } else {
+          options = template;
+          template = module;
+          module = null;
+        }
+      }
+
+      var path = template.$path || (template.$path = templatePath(template));
+
+      if (template.route) throw new Error(template.name + ' is already a route base');
+      if (this.routes.path) throw new Error('Path already exists! ', path + " for template " + this.path);
+
+      return template.route = this.routes[path] = new Route(path, template, this, options);
+    }
+
+    removeBase(template) {
+      template.route = null;
+      this.routes[template.$path] = null;
+    }
+
+    onBaseExit(page, location) {
+      var template = this.template;
+      var onBaseExit = template && template.onBaseExit;
+      onBaseExit && onBaseExit.call(template, page, location);
+    }
+
+    onBaseEntry(page, location, callback) {
+      var template = this.template;
+      var onBaseEntry = template && template.onBaseEntry;
+      onBaseEntry && onBaseEntry.call(template, page, location, callback);
+    }
+  };
+
+  makeSubject(Route);
+
+  Route.title = document.title;
+
+  Route.history = window.history;
+
+  function addCommon(route, module, template, options) {
+    if (module) koru.onunload(module, function () {
+      route.removeTemplate(template, options);
+    });
+    options = options || {};
+    var path = options.path;
+    if (path == null) path = templatePath(template);
+    if (route.routes.path) throw new Error('Path already exists! ' + path + " for template " + this.path);
+    route.routes[path] = template;
+    template.route = route;
+    template.subPath = path;
+    template.routeOptions = options;
+
+    if (options.defaultPage)
+      route.defaultPage = template;
+
+    return options;
+  }
+
+  const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
+  var inGotoPage = 0;
+  var currentPage = null;
+  var targetPage = null;
+  var currentPageRoute = {};
+  var currentTitle, currentHref;
+  var pageState = 'pushState';
+  var pageCount = 0;
+  var runInstance; // used with async callbacks
+
+  util.extend(Route, {
+    root: new Route(),
+    pathname,
   });
 
   function exitEntry(exit, oldSymbols, entry, pageRoute, page, then) {

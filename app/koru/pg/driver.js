@@ -1,9 +1,9 @@
-var Future = requirejs.nodeRequire('fibers/future');
-var Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
+const Future = requirejs.nodeRequire('fibers/future');
+const Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
 
 var koru, util, makeSubject, match, Pool;
 
-var pools = Object.create(null);
+const pools = Object.create(null);
 var clientCount = 0;
 var cursorCount = 0;
 var autoSchema = false;
@@ -38,9 +38,9 @@ define(function(require, exports, module) {
       return defaultDb;
     },
 
-    closeDefaultDb: closeDefaultDb,
+    closeDefaultDb,
 
-    connect: function (url, name) {
+    connect (url, name) {
       return new Client(url, name);
     },
   };
@@ -95,51 +95,51 @@ function fetchPool(client) {
 }
 
 function Connection(client, callback) {
-  var self = this;
-  var conn = self.conn = new Libpq(client._url, function (err) {
-    callback(err, self);
-  });
-  self.count = 0;
-  self.onAbort = function (func) {
-    if (! self._onAborts) self._onAborts = [func];
+  var conn = this.conn = new Libpq(client._url, err => callback(err, this));
+  this.count = 0;
+  this.onAbort = func => {
+    if (! this._onAborts) this._onAborts = [func];
     else
-      self._onAborts.push(func);
+      this._onAborts.push(func);
   };
 }
 
-function Client(url, name) {
-  this._id = (++clientCount).toString(36);
-  this._url = url;
-  this._weakMap = new WeakMap;
-  this.name = name || this.schemaName;
-}
+class Client {
+  constructor (url, name) {
+    this._id = (++clientCount).toString(36);
+    this._url = url;
+    this._weakMap = new WeakMap;
+    this.name = name || this.schemaName;
+  }
 
-Client.prototype = {
-  constructor: Client,
-
-  $inspect: function () {
+  $inspect () {
     return "Pg:" + this._url;
-  },
+  }
 
   get schemaName() {
     if (! this._schemaName) {
       this._schemaName = this.query("SELECT current_schema")[0].current_schema;
     }
     return this._schemaName;
-  },
+  }
 
-  end: function () {
+  end () {
     var pool = pools[this._id];
     if (pool) {
       pool.drain();
     }
     delete pools[this._id];
-  },
+  }
 
-  _getConn: function () {return getConn(this)},
-  _releaseConn: function () {return releaseConn(this)},
+  _getConn () {
+    return getConn(this);
+  }
 
-  withConn: function(func) {
+  _releaseConn () {
+    return releaseConn(this);
+  }
+
+  withConn (func) {
     var tx = this._weakMap.get(util.thread);
     if (tx)
       return func.call(this, tx.conn);
@@ -148,15 +148,13 @@ Client.prototype = {
     } finally {
       releaseConn(this);
     }
-  },
+  }
 
-  aryToSqlStr: aryToSqlStr,
-
-  findOne: function (text, params) {
+  findOne (text, params) {
     return this.query(text, params).rows[0];
-  },
+  }
 
-  query: function (text, params) {
+  query (text, params) {
     if (params && ! Array.isArray(params)) {
       var fields = params;
       var posMap = {};
@@ -171,36 +169,34 @@ Client.prototype = {
         return pos;
       });
     }
-    return this.withConn(function (conn) {
-      return query(conn, text, params);
-    });
-  },
+    return this.withConn(conn => query(conn, text, params));
+  }
 
-  prepare: function (name, command) {
-    return this.withConn(function (conn) {
+  prepare (name, command) {
+    return this.withConn(conn => {
       var future = new Future;
       conn.prepare(name, command, wait(future));
       return future.wait();
     });
-  },
+  }
 
-  execPrepared: function (name, params) {
-    return this.withConn(function (conn) {
+  execPrepared (name, params) {
+    return this.withConn(conn => {
       var future = new Future;
       conn.execPrepared(name, params, wait(future));
       return future.wait();
     });
-  },
+  }
 
-  table: function (name, schema) {
+  table (name, schema) {
     return new Table(name, schema, this);
-  },
+  }
 
-  dropTable: function (name) {
+  dropTable (name) {
     this.query('DROP TABLE IF EXISTS "' + name + '"');
-  },
+  }
 
-  transaction: function (func) {
+  transaction (func) {
     getConn(this); // ensure connection
     var tx = this._weakMap.get(util.thread);
     try {
@@ -245,17 +241,17 @@ Client.prototype = {
     } finally {
       releaseConn(this);
     }
-  },
+  }
 };
+
+Client.prototype.aryToSqlStr = aryToSqlStr;
 
 function runOnAborts(tx, command) {
   var onAborts = tx._onAborts;
   if (onAborts) {
     tx._onAborts = null;
     if (command === 'ROLLBACK')
-      onAborts.forEach(function (f) {
-        f();
-      });
+      onAborts.forEach(f => f());
   }
 }
 
@@ -269,40 +265,35 @@ function query(conn, text, params) {
   return future.wait();
 }
 
-function Table(name, schema, client) {
-  var table = this;
-  table._name = name;
-  table._client = client;
-  Object.defineProperty(table, 'schema', {
-    get: function () {
-      return schema;
-    },
-    set: function (value) {
-      while (table._ready && table._ready !== true) {
-        table._ensureTable();
-      }
-      schema = value;
-      if (table._ready) {
-        updateSchema(table, schema);
-      }
-    },
-  });
-}
+class Table {
+  constructor (name, schema, client) {
+    var table = this;
+    table._name = name;
+    table._client = client;
+    Object.defineProperty(table, 'schema', {
+      configurable: true,
+      get: function () {
+        return schema;
+      },
+      set: function (value) {
+        while (table._ready && table._ready !== true) {
+          table._ensureTable();
+        }
+        schema = value;
+        if (table._ready) {
+          updateSchema(table, schema);
+        }
+      },
+    });
+  }
 
-Table.prototype = {
-  constructor: Table,
-
-  isPG: true,
-
-  _ensureTable: function () {
+  _ensureTable () {
     if (this._ready === true) return;
 
     var future = new Future;
 
     if (this._ready) {
-      var handle = this._ready.onChange(function () {
-        future.return();
-      });
+      var handle = this._ready.onChange(() => future.return());
       try {
         return future.wait();
       } finally {
@@ -319,15 +310,13 @@ Table.prototype = {
     }
     this._ready = true;
     subject.notify();
-  },
+  }
 
-  aryToSqlStr: aryToSqlStr,
-
-  dbType: function (col) {
+  dbType (col) {
     return pgFieldType(this.schema[col]);
-  },
+  }
 
-  autoCreate: function () {
+  autoCreate () {
     readColumns(this);
     var schema = this.schema;
     if (this._columns.length === 0) {
@@ -347,36 +336,32 @@ Table.prototype = {
     } else if (schema) {
       updateSchema(this, schema);
     }
-  },
+  }
 
-  transaction: function (func) {
+  transaction (func) {
     var table = this;
-    return table._client.transaction(function (tx) {
-      return func.call(table, tx);
-    });
-  },
+    return table._client.transaction(tx => func.call(table, tx));
+  }
 
-  insert: function (params, suffix) {
+  insert (params, suffix) {
     this._ensureTable();
 
     params = toColumns(this, params);
 
-    var sql = 'INSERT INTO "'+this._name+'" ('+params.cols.map(function (col) {
-      return '"'+col+'"';
-    }).join(',')+') values (' +
-          params.cols.map(function (c, i) {return "$"+(i+1)}).join(",")+')';
+    var sql = `INSERT INTO "${this._name}" (${params.cols.map(col => '"'+col+'"')
+  .join(',')}) values (${params.cols.map((c, i) => "$"+(i+1)).join(",")})`;
 
     if (suffix) sql += ` ${suffix}`;
 
     return performTransaction(this, sql, params);
-  },
+  }
 
-  values: function (rowSet, cols) {
+  values (rowSet, cols) {
     this._ensureTable();
     return toColumns(this, rowSet, cols).values;
-  },
+  }
 
-  koruUpdate: function (doc, changes) {
+  koruUpdate (doc, changes) {
     doc = doc.attributes;
     var params = {};
     for (var key in changes) {
@@ -394,25 +379,21 @@ Table.prototype = {
     }
     var sql = 'UPDATE "'+this._name+'" SET ';
     var set = toColumns(this, params);
-    sql += set.cols.map(function (col, i) {
-      return '"'+col+'"=$'+(i+1);
-    }).join(',');
+    sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
 
     set.values.push(doc._id);
 
     sql += ' WHERE _id=$'+set.values.length;
 
     return performTransaction(this, sql, set);
-  },
+  }
 
-  ensureIndex: function (keys, options) {
+  ensureIndex (keys, options) {
     this._ensureTable();
     options = options || {};
     var cols = Object.keys(keys);
     var name = this._name+'_'+cols.join('_');
-    cols = cols.map(function (col) {
-      return '"'+col+(keys[col] === -1 ? '" DESC' : '"');
-    });
+    cols = cols.map(col => '"'+col+(keys[col] === -1 ? '" DESC' : '"'));
     var unique = options.unique ? 'UNIQUE ' : '';
     try {
       this._client.query("CREATE "+unique+"INDEX \""+
@@ -421,17 +402,15 @@ Table.prototype = {
       if (ex.sqlState !== '42P07')
         throw ex;
     }
-  },
+  }
 
-  update: function (where, params) {
+  update (where, params) {
     this._ensureTable();
 
     var sql = 'UPDATE "'+this._name+'" SET ';
 
     var set = toColumns(this, params.$set);
-    sql += set.cols.map(function (col, i) {
-      return '"'+col+'"=$'+(i+1);
-    }).join(',');
+    sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
 
     where = this.where(where, set.values);
 
@@ -439,9 +418,9 @@ Table.prototype = {
       sql += ' WHERE '+where;
 
     return performTransaction(this, sql, set);
-  },
+  }
 
-  where: function (query, whereValues) {
+  where (query, whereValues) {
     if (! query) return;
     var table = this;
     var count = whereValues.length;
@@ -466,8 +445,8 @@ Table.prototype = {
       }
 
       if (fields = query._whereSomes) {
-        query._whereSomes.forEach(function (ors) {
-          whereSql.push("("+ors.map(function (q) {
+        query._whereSomes.forEach(ors => {
+          whereSql.push("("+ors.map(q => {
             var subSql = [];
             foundIn(q, subSql);
             return subSql.join(" AND ");
@@ -505,9 +484,7 @@ Table.prototype = {
           var remKey = key.slice(splitIndex+1);
           key = key.slice(0,splitIndex);
           var qkey = ['"'+key+'"'];
-          remKey.split(".").forEach(function (p) {
-            qkey.push("'"+p+ "'");
-          });
+          remKey.split(".").forEach(p => qkey.push("'"+p+ "'"));
           qkey = qkey.join("->");
           if (value == null) {
             result.push(qkey+' = $'+ ++count);
@@ -523,12 +500,12 @@ Table.prototype = {
               var items = value[1];
               if (Array.isArray(items)) {
                 result.push(value[0]);
-                items.forEach(function (item) {
+                items.forEach(item => {
                   ++count;
                   whereValues.push(item);
                 });
               } else {
-                result.push(value[0].replace(/\{\$([\w]+)\}/g, function (m, key) {
+                result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
                   whereValues.push(items[key]);
                   return '$'+ ++count;
                 }));
@@ -539,7 +516,7 @@ Table.prototype = {
           case '$and':
           case '$nor':
             var parts = [];
-            util.forEach(value, function (w) {
+            util.forEach(value, w => {
               var q = [];
               foundIn(w, q);
               q.length && parts.push('('+q.join(' AND ')+')');
@@ -669,18 +646,18 @@ Table.prototype = {
         }
       }
     }
-  },
+  }
 
-  query: function (where) {
+  query (where) {
     return queryWhere(this, 'SELECT * FROM "'+this._name+'"', where);
-  },
+  }
 
-  findOne: function (where, fields) {
+  findOne (where, fields) {
     return queryWhere(this, 'SELECT '+selectFields(this, fields)+' FROM "'+this._name+'"',
                       where, ' LIMIT 1')[0];
-  },
+  }
 
-  find: function (where, options) {
+  find (where, options) {
     this._ensureTable();
 
     var table = this;
@@ -697,39 +674,35 @@ Table.prototype = {
 
     sql = sql+' WHERE '+where;
     return new Cursor(this, sql, values, options);
-  },
+  }
 
-  show: function (where) {
+  show (where) {
     var values = [];
     return ' WHERE ' + this.where(where, values) + ' ('+ util.inspect(values) + ')';
-  },
+  }
 
-  exists: function (where) {
+  exists (where) {
     return queryWhere(this, 'SELECT EXISTS (SELECT 1 FROM "'+this._name+'"',
                       where, ')')[0].exists;
-  },
+  }
 
-  count: function (where) {
+  count (where) {
     return +queryWhere(this, 'SELECT count(*) FROM "'+this._name+'"',
                       where)[0].count;
-  },
+  }
 
-  remove: function (where) {
-    var table = this;
-    return table._client.withConn(function (conn) {
-      return queryWhere(table, 'DELETE FROM "'+table._name+'"', where);
-    });
-  },
+  remove (where) {
+    return this._client.withConn(conn => queryWhere(this, 'DELETE FROM "'+this._name+'"', where));
+  }
 
-  truncate: function () {
+  truncate () {
     if (this._ready !== true) return;
 
-    var table = this;
-    table._client.withConn(function (conn) {
-      table._client.query('TRUNCATE TABLE "'+table._name+'"');
-    });
-  },
+    this._client.withConn(conn => this._client.query('TRUNCATE TABLE "'+this._name+'"'));
+  }
 };
+
+Table.prototype.aryToSqlStr = aryToSqlStr;
 
 function selectFields(table, fields) {
   if (! fields) return '*';
@@ -751,28 +724,14 @@ function selectFields(table, fields) {
   return result.join(',');
 }
 
-function Cursor(table, sql, values, options) {
-  this.table = table;
-  this._sql = sql;
-  this._values = values;
-
-  if (options) for (var op in options) {
-    var func = this[op];
-    if (typeof func === 'function')
-      func.call(this, options[op]);
-  }
-
-}
-
 function initCursor(cursor) {
   if (cursor._name) return;
   var client = cursor.table._client;
   var tx = client._weakMap.get(util.thread);
   var sql = cursor._sql;
   if (cursor._sort) {
-    sql += ' ORDER BY '+Object.keys(cursor._sort).map(function (k) {
-      return '"'+k+(cursor._sort[k] === -1 ? '" DESC' : '"');
-    }).join(',');
+    sql += ' ORDER BY '+Object.keys(cursor._sort)
+      .map(k => '"'+k+(cursor._sort[k] === -1 ? '" DESC' : '"')).join(',');
   }
   if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
 
@@ -794,10 +753,21 @@ function initCursor(cursor) {
 
 }
 
-Cursor.prototype = {
-  constructor: Cursor,
+class Cursor {
+  constructor (table, sql, values, options) {
+    this.table = table;
+    this._sql = sql;
+    this._values = values;
 
-  close: function () {
+    if (options) for (var op in options) {
+      var func = this[op];
+      if (typeof func === 'function')
+        func.call(this, options[op]);
+    }
+
+  }
+
+  close () {
     if (this._name && this._name !== 'all') {
       try {
         this.table._client.query('CLOSE '+this._name);
@@ -810,9 +780,9 @@ Cursor.prototype = {
         }
       }
     }
-  },
+  }
 
-  next: function (count) {
+  next (count) {
     initCursor(this);
     if (this.hasOwnProperty('_index')) {
       if (count === undefined) {
@@ -829,24 +799,24 @@ Cursor.prototype = {
       var result = this.table._client.query('FETCH '+c+' '+this._name);
       return count === undefined ? result[0] : result;
     }
-  },
+  }
 
-  sort: function (spec) {
+  sort (spec) {
     this._sort = spec;
     return this;
-  },
+  }
 
-  limit: function (value) {
+  limit (value) {
     this._limit = value;
     return this;
-  },
+  }
 
-  batchSize: function (value) {
+  batchSize (value) {
     this._batchSize = value;
     return this;
-  },
+  }
 
-  forEach: function (func) {
+  forEach (func) {
     try {
       for(var doc = this.next(); doc; doc = this.next()) {
         func(doc);
@@ -854,7 +824,7 @@ Cursor.prototype = {
     } finally {
       this.close();
     }
-  },
+  }
 };
 
 

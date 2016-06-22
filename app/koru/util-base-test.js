@@ -1,19 +1,19 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test');
-  var sut = require('./util-base');
+  const TH  = require('./test');
+  const sut = require('./util-base');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test extendNoEnum": function () {
+    "test extendNoEnum" () {
       var foo = {bar: 1};
 
       sut.extendNoEnum(foo, {
@@ -25,7 +25,7 @@ define(function (require, exports, module) {
       assert.equals(Object.keys(foo), ['bar']);
     },
 
-    "test extend": function () {
+    "test extend" () {
       var orig = {a: 1, b: 2};
       var result = {};
       assert.same(sut.extend(result, orig), result);
@@ -37,7 +37,7 @@ define(function (require, exports, module) {
       assert.equals(sut.extend({a: 1}), {a: 1});
     },
 
-    "test last": function () {
+    "test last" () {
       assert.same(sut.last([1, 4]), 4);
     },
   });

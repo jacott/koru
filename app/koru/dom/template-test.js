@@ -1,30 +1,30 @@
 isClient && define(function (require, exports, module) {
   'use strict';
   var test, v;
-  const Dom          = require('../dom');
-  const DomTemplate  = require('./template');
-  const TH           = require('koru/test');
-  const util         = require('koru/util');
+  const TH          = require('koru/test');
+  const util        = require('koru/util');
+  const Dom         = require('../dom');
+  const DomTemplate = require('./template');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
       delete Dom.Foo;
       Dom.removeChildren(document.body);
     },
 
     "evalArgs": {
-      "test constant": function () {
+      "test constant" () {
         assert.equals(Dom._private.evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
       },
     },
 
-    "test stopEvent": function () {
+    "test stopEvent" () {
       var ev = {stopImmediatePropagation: test.stub(), preventDefault: test.stub()};
       Dom.stopEvent(ev);
       assert.called(ev.stopImmediatePropagation);
@@ -78,7 +78,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test relative name": function () {
+    "test relative name" () {
       Dom.newTemplate({
         name: "Bar.Baz.Buzz",
         nodes:[{
@@ -101,7 +101,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "partial": {
-      setUp: function () {
+      setUp () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -132,12 +132,12 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      tearDown: function () {
+      tearDown () {
         Dom.removeChildren(document.body);
         delete Dom.Bar;
       },
 
-      "test setCtx": function () {
+      "test setCtx" () {
         var elm = Dom.Foo.$render({});
         assert.dom(elm, function () {
           v.pCtx = Dom.getMyCtx(this);
@@ -153,7 +153,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test find ctx": function () {
+      "test find ctx" () {
         Dom.Bar.$helpers({
           myFunc: function () {
             v.helperFoundCtx = Dom.Foo.$ctx();
@@ -183,7 +183,7 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.getCtxById('FooId'), elm._koru);
       },
 
-      "test updateAllTags": function () {
+      "test updateAllTags" () {
         var elm = Dom.Foo.$render({myFunc: 'one'});
 
         document.body.appendChild(elm);
@@ -204,7 +204,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test restoring focus": function () {
+      "test restoring focus" () {
         Dom.Bar.$helpers({
           myFunc: function () {
             v.helperFoundCtx = Dom.Foo.$ctx();
@@ -237,7 +237,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test default arg is data": function () {
+      "test default arg is data" () {
         Dom.Bar.$created = test.stub();
 
         var data = {arg: 'me'};
@@ -249,7 +249,7 @@ isClient && define(function (require, exports, module) {
         }));
       },
 
-      "test scoping": function () {
+      "test scoping" () {
         var initials = 'BJ';
         Dom.Bar.$helpers({
           myFunc: function () {
@@ -265,7 +265,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "Dom.current": {
-      "test data": function () {
+      "test data" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -304,7 +304,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test $actions": function () {
+    "test $actions" () {
       Dom.newTemplate({name: "Foo"});
       Dom.Foo.$actions({
         one: v.one = test.stub(),
@@ -322,7 +322,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWithExactly(v.one, event);
     },
 
-    "test event calling": function () {
+    "test event calling" () {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'span'},
@@ -403,7 +403,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "newTemplate": {
-      "test simple": function () {
+      "test simple" () {
         assert.same(Dom.newTemplate({name: "Foo", nodes: "nodes"}), Dom.Foo);
 
         var tpl = Dom.Foo;
@@ -413,12 +413,12 @@ isClient && define(function (require, exports, module) {
         assert.equals(tpl._events, []);
       },
 
-      "test not found": function () {
+      "test not found" () {
         var tp = Dom.newTemplate({name: "Foo.Bar.Baz"});
         assert.same(Dom.lookupTemplate('Foo.Fizz.Bar'), undefined);
       },
 
-      "test nest by name": function () {
+      "test nest by name" () {
         var fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
         var fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});
 
@@ -448,14 +448,14 @@ isClient && define(function (require, exports, module) {
     },
 
     "with template": {
-      setUp: function () {
+      setUp () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{name: "div", attrs:[["=","id",'foo'], ["", 'myHelper']],}],
         });
       },
 
-      "test $created": function () {
+      "test $created" () {
         var pCtx = {foo: 'bar'};
         Dom.Foo.$extend({
           $created: function (ctx, elm) {
@@ -474,7 +474,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test setBoolean": function () {
+      "test setBoolean" () {
         assert.exception(function () {
           Dom.setBoolean('disabled', true);
         });
@@ -502,14 +502,14 @@ isClient && define(function (require, exports, module) {
       },
 
       "with rendered": {
-        setUp: function () {
+        setUp () {
 
           v.foo = Dom.Foo.$render();
 
           document.body.appendChild(v.foo);
         },
 
-        "test focus": function () {
+        "test focus" () {
           document.body.appendChild(Dom.html('<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>'));
           assert.dom('form', function () {
             assert.dom('[name=b2]', function () {
@@ -527,7 +527,7 @@ isClient && define(function (require, exports, module) {
           });
         },
 
-        "test replace element": function () {
+        "test replace element" () {
           Dom.newTemplate({name: 'Foo.Bar', nodes: [{name: 'span'}]});
           Dom.newTemplate({name: 'Foo.Baz', nodes: [{name: 'h1'}]});
 
@@ -568,7 +568,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test removeAll": function () {
+    "test removeAll" () {
       test.stub(Dom, 'remove');
 
       var r1 = Dom.remove.withArgs(1);
@@ -580,7 +580,7 @@ isClient && define(function (require, exports, module) {
       assert(r2.calledBefore(r1));
     },
 
-    "test contains": function () {
+    "test contains" () {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
@@ -588,7 +588,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
     },
 
-    "test modifierKey": function () {
+    "test modifierKey" () {
       refute(Dom.modifierKey({}));
       assert(Dom.modifierKey({ctrlKey: true}));
       assert(Dom.modifierKey({shiftKey: true}));
@@ -596,7 +596,7 @@ isClient && define(function (require, exports, module) {
       assert(Dom.modifierKey({altKey: true}));
     },
 
-    "test forEach": function () {
+    "test forEach" () {
       var elm = Dom.html('<div></div>');
       document.body.appendChild(elm);
       for(var i = 0; i < 5; ++i) {
@@ -618,7 +618,7 @@ isClient && define(function (require, exports, module) {
       assert.same(results, 6);
     },
 
-    "test removeInserts": function () {
+    "test removeInserts" () {
       var parent = document.createElement('div');
       var elm = document.createComment('start');
       elm._koruEnd = document.createComment('end');
@@ -645,7 +645,7 @@ isClient && define(function (require, exports, module) {
       assert.same(elm._koruEnd.parentNode, parent);
     },
 
-    "test rendering fragment": function () {
+    "test rendering fragment" () {
       Dom.newTemplate({
         name: "Foo",
         nodes: [{
@@ -664,7 +664,7 @@ isClient && define(function (require, exports, module) {
       assert(frag._koru);
     },
 
-    "test inserting Document Fragment": function () {
+    "test inserting Document Fragment" () {
       Dom.newTemplate({
         name: "Foo",
         nodes: [{
@@ -722,7 +722,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "DomCtx": {
-      "test onAnimationEnd": function () {
+      "test onAnimationEnd" () {
         var Tpl = Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -795,7 +795,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "$render": {
-      "test autostop": function () {
+      "test autostop" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{name: "div"}],
@@ -819,7 +819,7 @@ isClient && define(function (require, exports, module) {
         refute.called(stub1);
       },
 
-      "test cleanup on exception": function () {
+      "test cleanup on exception" () {
         Dom.newTemplate({
           name: "Foo",
           nodes: [{
@@ -846,7 +846,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "destroyMeWith": {
-        setUp: function () {
+        setUp () {
           v.elm = Dom.h({div: "subject"});
           v.elmCtx = Dom.setCtx(v.elm);
 
@@ -864,7 +864,7 @@ isClient && define(function (require, exports, module) {
           Dom.destroyMeWith(v.dep2, v.elm);
         },
 
-        "test removes with": function () {
+        "test removes with" () {
           Dom.remove(v.elm);
           assert.same(v.elm._koru, null);
           assert.same(v.dep._koru, null);
@@ -873,7 +873,7 @@ isClient && define(function (require, exports, module) {
           assert.same(v.dep2.parentNode, null);
         },
 
-        "test detaches if removed": function () {
+        "test detaches if removed" () {
           Dom.remove(v.dep);
           var obs = {};
           assert(v.dep2Ctx.__id);
@@ -885,7 +885,7 @@ isClient && define(function (require, exports, module) {
         },
       },
 
-      "test no frag if only one child node": function () {
+      "test no frag if only one child node" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{name: "div"}],
@@ -896,7 +896,7 @@ isClient && define(function (require, exports, module) {
         assert.same(elm.tagName, 'DIV');
       },
 
-      "test frag if multi childs": function () {
+      "test frag if multi childs" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{name: "div",}, {name: 'span'}, {name: 'section'}],
@@ -912,7 +912,7 @@ isClient && define(function (require, exports, module) {
       },
 
 
-      "test attributes": function () {
+      "test attributes" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -945,7 +945,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test parent": function () {
+      "test parent" () {
         Dom.newTemplate({
           name: "Foo.Bar",
           nested: [{
@@ -959,7 +959,7 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.Foo.Bar.$fullname, 'Foo.Bar');
       },
 
-      "test updateElement": function () {
+      "test updateElement" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -1000,20 +1000,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-
-      "test body": function () {
-        Dom.newTemplate({
-          name: "Foo",
-          nodes:[{
-            name:"div",
-            children:[['', 'user.initials']],
-          }],
-        });
-
-        assert.dom(Dom.Foo.$render({user: {initials: 'fb'}}), 'fb');
-      },
-
-      "test updateElement": function () {
+      "test updateElement 2" () {
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -1036,9 +1023,21 @@ isClient && define(function (require, exports, module) {
           assert.same(this.textContent, 'foobar');
         });
       },
+
+      "test body" () {
+        Dom.newTemplate({
+          name: "Foo",
+          nodes:[{
+            name:"div",
+            children:[['', 'user.initials']],
+          }],
+        });
+
+        assert.dom(Dom.Foo.$render({user: {initials: 'fb'}}), 'fb');
+      },
     },
 
-    "test inputValue helper": function () {
+    "test inputValue helper" () {
       var elm = Dom._private.currentElement = {};
       TH.stubProperty(elm, 'value', {get: function () {return '34'}, set: v.stub = test.stub()});
       Dom._helpers.inputValue('foo');

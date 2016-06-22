@@ -1,12 +1,12 @@
 define(function (require, exports, module) {
   var test, v;
-  var util = require('koru/util');
-  var TH = require('./test-helper');
-  var match = require('./match');
-  var Model = require('koru/model/main');
+  const Model = require('koru/model/main');
+  const util  = require('koru/util');
+  const match = require('./match');
+  const TH    = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
       v.handles = [];
@@ -14,13 +14,13 @@ define(function (require, exports, module) {
       v.match = match();
     },
 
-    tearDown: function () {
+    tearDown () {
       v.handles.forEach(function (h) {h.stop()});
       util.clearDbId();
       v = null;
     },
 
-    "test false matches": function () {
+    "test false matches" () {
       v.handles.push(v.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
@@ -36,7 +36,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test true matches": function () {
+    "test true matches" () {
       v.handles.push(v.f = v.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;

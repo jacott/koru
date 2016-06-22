@@ -1,44 +1,44 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var koru = require('koru');
+  const koru = require('koru');
+  const util = require('koru/util');
 
   function Dom(cssQuery) {
     return document.body.querySelector(cssQuery);
   }
 
   util.extend(Dom, {
-    html: html,
+    html,
     h: html2,
 
-    escapeHTML: function(text) {
+    escapeHTML(text) {
       var pre = document.createElement('pre');
       pre.appendChild(document.createTextNode(text));
       return pre.innerHTML;
     },
 
-    hasClass: function (elm, name) {
+    hasClass (elm, name) {
       var classList = elm && elm.classList;
       return classList && classList.contains(name);
     },
 
-    addClass: function (elm, name) {
+    addClass (elm, name) {
       var classList = elm && elm.classList;
       classList && classList.add(name);
     },
 
-    addClasses: function (elm, name) {
+    addClasses (elm, name) {
       var classList = elm && elm.classList;
       if (classList)
         for(var i = name.length - 1; i >= 0; --i)
           classList.add(name[i]);
     },
 
-    removeClass: function (elm, name) {
+    removeClass (elm, name) {
       var classList = elm && elm.classList;
       classList && classList.remove(name);
     },
 
-    toggleClass: function (elm, name) {
+    toggleClass (elm, name) {
       if (! elm) return;
       if (Dom.hasClass(elm, name)) {
         Dom.removeClass(elm, name);
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
       return true;
     },
 
-    nodeIndex: function (node) {
+    nodeIndex (node) {
       var nodes = node.parentNode.childNodes;
       for (var count = nodes.length; count >= 0; --count) {
         if (node === nodes[count])
@@ -58,7 +58,7 @@ define(function(require, exports, module) {
       return -1;
     },
 
-    handleException: function(ex) {
+    handleException(ex) {
       if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
         koru.unhandledException(ex);
       }

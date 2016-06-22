@@ -1,6 +1,6 @@
 (function () {
   define({
-    browserVersion: function(ua){
+    browserVersion (ua){
       var tmp;
       var M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
       if(/trident/i.test(M[1])){
@@ -11,14 +11,14 @@
       return M.slice(1).join(' ');
     },
 
-    extend: function(obj, properties) {
+    extend (obj, properties) {
       for(var prop in properties) {
         Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
       }
       return obj;
     },
 
-    extendNoEnum: function (obj, properties) {
+    extendNoEnum (obj, properties) {
       for(var prop in properties) {
         var desc = Object.getOwnPropertyDescriptor(properties,prop);
         desc.enumerable = false;
@@ -27,19 +27,19 @@
       return obj;
     },
 
-    last: function (ary) {
+    last (ary) {
       return ary[ary.length -1];
     },
 
-    regexEscape: function (s) {
+    regexEscape (s) {
       return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     },
 
-    newEscRegex: function (s) {
+    newEscRegex (s) {
       return new RegExp(this.regexEscape(s));
     },
 
-    inspect: function (o, count, len) {
+    inspect (o, count, len) {
       return inspect1(o, count || 4).toString().slice(0, len || 1000);
     },
 

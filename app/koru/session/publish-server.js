@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var session = require('../session/base');
-  var koru = require('../main');
-  var publish = require('./publish-base');
-  var message = require('./message');
+  const koru    = require('../main');
+  const session = require('../session/base');
+  const util    = require('../util');
+  const message = require('./message');
+  const publish = require('./publish-base');
 
   session.provide('P', subscribe);
 
@@ -14,13 +14,14 @@ define(function(require, exports, module) {
   });
 
 
-  var pubs = publish._pubs;
+  const pubs = publish._pubs;
 
   function subscribe(data) {
-    var subId = data[0];
-    var name = data[1];
-    var subs = this._subs;
+    const subId = data[0];
+    const name = data[1];
+    const subs = this._subs;
     if (! subs) return; // we are closed
+
     var sub = subs[subId];
 
     try {
@@ -48,34 +49,32 @@ define(function(require, exports, module) {
     }
   }
 
-  function Sub(conn, subId, subscribe, args) {
-    this.conn = conn;
-    this.id = subId;
-    this._subscribe = subscribe;
-    this.args = args;
-    this._matches = [];
-  }
+  class Sub {
+    constructor (conn, subId, subscribe, args) {
+      this.conn = conn;
+      this.id = subId;
+      this._subscribe = subscribe;
+      this.args = args;
+      this._matches = [];
+    }
 
-  Sub.prototype = {
-    constructor: Sub,
-
-    onStop: function (func) {
+    onStop (func) {
       this._stop = func;
-    },
+    }
 
-    sendUpdate: function (doc, changes, filter) {
+    sendUpdate (doc, changes, filter) {
       this.conn.sendUpdate(doc, changes, filter);
-    },
+    }
 
-    sendMatchUpdate: function (doc, changes, filter) {
+    sendMatchUpdate (doc, changes, filter) {
       this.conn.sendMatchUpdate(doc, changes, filter);
-    },
+    }
 
-    match: function (modelName, func) {
+    match (modelName, func) {
       this._matches.push(this.conn.match.register(modelName, func));
-    },
+    }
 
-    error: function (error) {
+    error (error) {
       var id = this.id;
       var conn = this.conn;
       if (conn.ws) {
@@ -87,18 +86,18 @@ define(function(require, exports, module) {
       }
 
       stopped(this);
-    },
+    }
 
-    stop: function () {
+    stop () {
       this.conn.sendBinary('P', [this.id, false]);
       stopped(this);
-    },
+    }
 
-    setUserId: function (userId) {
+    setUserId (userId) {
       this.conn.userId = userId;
-    },
+    }
 
-    resubscribe: function () {
+    resubscribe () {
       try {
         this.isResubscribe = this._called;
         this._stop && this._stop();
@@ -113,19 +112,15 @@ define(function(require, exports, module) {
       }
       this._called = true;
       this.isResubscribe = false;
-    },
-
-    get userId() {
-      return this.conn.userId;
     }
+
+    get userId() {return this.conn.userId}
   };
 
   function stopped(sub) {
     if (sub.conn._subs) delete sub.conn._subs[sub.id];
     sub._stop && sub._stop();
-    util.forEach(sub._matches, function (m) {
-      m.stop();
-    });
+    util.forEach(sub._matches, m => m.stop());
     sub._matches = [];
     sub.stopped = true;
   }

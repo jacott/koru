@@ -1,12 +1,12 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./key-map');
-  var Dom = require('../dom');
-  var util = require('../util');
+  const Dom  = require('../dom');
+  const util = require('../util');
+  const sut  = require('./key-map');
+  const TH   = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
       v.km = sut({
@@ -18,12 +18,12 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    tearDown: function () {
+    tearDown () {
       TH.domTearDown();
       v = null;
     },
 
-    "test key codes": function () {
+    "test key codes" () {
       assert.same(sut.left, '%');
       assert.same(sut.up, '&');
       assert.same(sut.down, '(');
@@ -31,13 +31,13 @@ isClient && define(function (require, exports, module) {
       assert.same(sut.del, '.');
     },
 
-    "test config": function () {
+    "test config" () {
       assert.equals(v.km.map,
                     {X: ['foo', v.foo], Q: {'\u0003': {2: ['mbar2', v.mbar2]}, X: {1: ['bar', v.bar], 2: ['bar2', v.bar2]}},
                      '\u0002': {A: ['foo2', v.foo2]}});
     },
 
-    "test getTitle": function () {
+    "test getTitle" () {
       assert.same(v.km.getTitle('foo desc', 'foo'), "foo desc [X]");
       assert.same(v.km.getTitle('no key desc', 'nk'), "no key desc");
 
@@ -61,7 +61,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.km.getTitle('esc', 'esc'), "esc [<esc>]");
     },
 
-    "test single key": function () {
+    "test single key" () {
       var event = TH.buildEvent('keydown', {which: 88});
       v.km.exec(event);
       assert.calledOnceWith(v.foo, TH.match(function (ev) {
@@ -70,7 +70,7 @@ isClient && define(function (require, exports, module) {
       refute.called(v.bar);
     },
 
-    "test multi key": function () {
+    "test multi key" () {
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown("X1");
       assert.calledOnceWith(v.bar, TH.match(function (ev) {
@@ -79,19 +79,19 @@ isClient && define(function (require, exports, module) {
       refute.called(v.bar2);
     },
 
-    "test modifier keys": function () {
+    "test modifier keys" () {
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown('2', {shiftKey: true, ctrlKey: true});
       assert.calledOnce(v.mbar2);
       refute.called(v.bar2);
     },
 
-    "test modifier first key": function () {
+    "test modifier first key" () {
       v.km.exec(TH.buildEvent('keydown', {ctrlKey: true, which: 'A'.charCodeAt(0)}));
       assert.calledOnce(v.foo2);
     },
 
-    "test invalid modifier key": function () {
+    "test invalid modifier key" () {
       var elm = Dom.html({tag: 'button'});
       document.body.appendChild(elm);
       elm.addEventListener('keydown', v.stub = test.stub());
@@ -106,7 +106,7 @@ isClient && define(function (require, exports, module) {
       refute.called(v.foo);
     },
 
-    "test input focused": function () {
+    "test input focused" () {
       test.spy(Dom, 'matches');
       document.body.appendChild(Dom.html({tag: 'input', type: 'text'}));
       assert.dom('input', function () {

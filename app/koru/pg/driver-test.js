@@ -1,29 +1,30 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
-  var sut = require('./driver');
-  var util = require('../util');
+  const TH   = require('../test');
+  const util = require('../util');
+  const sut  = require('./driver');
+
   var mf = TH.match.field;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown () {
       sut.defaultDb.dropTable("Foo");
       v = null;
     },
 
-    "test connection": function () {
+    "test connection" () {
       var db = sut.connect("host=/var/run/postgresql dbname=korutest");
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
       assert.same(db.schemaName, 'public');
       assert.same(db.name, 'public');
     },
 
-    "test defaultDb": function () {
+    "test defaultDb" () {
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
       assert.same(db.name, 'default');
@@ -38,22 +39,18 @@ isServer && define(function (require, exports, module) {
       assert.equals(db.query('select 1 as a; select 2 as b'), [{b: 2}]);
     },
 
-    "test isPG": function () {
+    "test isPG" () {
       assert.same(sut.isPG, true);
-      v.foo = sut.defaultDb.table('Foo', {
-        bar_ids: 'has_many',
-      });
-      assert.same(v.foo.isPG, true);
     },
 
-    "test aryToSqlStr": function () {
+    "test aryToSqlStr" () {
       v.foo = sut.defaultDb.table('Foo');
       assert.same(v.foo.aryToSqlStr, sut.defaultDb.aryToSqlStr);
 
       assert.equals(v.foo.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
-    "test insert suffix": function () {
+    "test insert suffix" () {
       v.foo = sut.defaultDb.table('Foo', {
         _id: 'integer',
         name: 'text',
@@ -62,7 +59,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.insert({_id: 123, name: 'a name'}, 'RETURNING name'), [{name: 'a name'}]);
     },
 
-    "test override _id spec": function () {
+    "test override _id spec" () {
       v.foo = sut.defaultDb.table('Foo', {
         _id: 'integer',
       });
@@ -76,7 +73,7 @@ isServer && define(function (require, exports, module) {
       }, {sqlState: '23505', message: TH.match(/violates unique constraint "Foo_pkey"/)});
     },
 
-    "test Array insert": function () {
+    "test Array insert" () {
       v.foo = sut.defaultDb.table('Foo', {
         bar_ids: 'has_many',
       });
@@ -87,7 +84,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.findOne({}).bar_ids, ['1', '2', '3']);
     },
 
-    "test Array in jsonb": function () {
+    "test Array in jsonb" () {
       v.foo = sut.defaultDb.table('Foo', {
         bar_ids: 'object',
       });
@@ -97,7 +94,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.findOne({}).bar_ids, ['1', {a: v.date.toISOString()}]);
     },
 
-    "test $elemMatch": function () {
+    "test $elemMatch" () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'object',
       });
@@ -113,7 +110,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.count({widget: {$elemMatch: {id: "1", value: 100}}}), 1);
     },
 
-    "test multipart key": function () {
+    "test multipart key" () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'object',
       });
@@ -127,7 +124,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.count({'widget.a.b': [{c: 2}, {c: 3}]}), 0);
     },
 
-    "test values": function () {
+    "test values" () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'object',
         lots: 'integer[]',
@@ -145,7 +142,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.values(data, ['createdOn', 'widget']), ["2015-06-12T00:00:00.000Z", '[1,2,{"a":3}]']);
     },
 
-    "test string in json": function () {
+    "test string in json" () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'object',
       });
@@ -155,7 +152,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.count({widget: "wazzit"}), 0);
     },
 
-    "test ARRAY column": function () {
+    "test ARRAY column" () {
       v.foo = sut.defaultDb.table('Foo', {
         widget: 'integer[]',
       });
@@ -175,7 +172,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.count({'widget': {$nin: []}}), 2);
     },
 
-    "test date": function () {
+    "test date" () {
       v.foo = sut.defaultDb.table('Foo', {
         createdOn: 'date',
       });
@@ -192,7 +189,7 @@ isServer && define(function (require, exports, module) {
 
     },
 
-    "test $regex": function () {
+    "test $regex" () {
        v.foo = sut.defaultDb.table('Foo', {
          story: 'text',
       });
@@ -206,7 +203,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "find": {
-      setUp: function () {
+      setUp () {
         v.foo = sut.defaultDb.table('Foo', {
           name: 'text',
           createdAt: 'timestamp',
@@ -223,7 +220,7 @@ isServer && define(function (require, exports, module) {
         assert.called(v.foo._ensureTable);
       },
 
-      "test bad sql": function () {
+      "test bad sql" () {
         var cursor = v.foo.find({age: 'hello'});
 
         assert.exception(function () {
@@ -236,7 +233,7 @@ isServer && define(function (require, exports, module) {
         }, {message: TH.match(/invalid input syntax.*hello/)});
       },
 
-      "test array param": function () {
+      "test array param" () {
         assert.equals(v.foo.count({name: ['one', 'three']}), 2);
         assert.equals(v.foo.count({name: []}), 0);
         assert.equals(v.foo.count({name: ['four']}), 1);
@@ -250,19 +247,19 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.count({name: {$nin: ['four']}}), 4);
       },
 
-      "test named params on _client": function () {
+      "test named params on _client" () {
         var client = v.foo._client;
         assert.equals(client.query('select count(*) from "Foo" where name like {$likeE} OR name = {$four}', {likeE: '%e', four: 'four'}),
                       [{count: '4'}]);
       },
 
-      "test $sql": function () {
+      "test $sql" () {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}", {likeE: '%e', four: 'four'}]}), 4);
         assert.equals(v.foo.count({$sql: ["name like $1 OR name = $2", ['%e', 'four']]}), 4);
       },
 
-      "test fields": function () {
+      "test fields" () {
         assert.equals(v.foo.findOne({_id: 'one0'},{name: true}), {_id: 'one0', name: 'one'});
         assert.equals(v.foo.findOne({_id: 'one0'},{version: false, age: false}), {
           _id: 'one0', name: 'one', createdAt: TH.match.date});
@@ -275,7 +272,7 @@ isServer && define(function (require, exports, module) {
         });
       },
 
-      "test cursor next": function () {
+      "test cursor next" () {
         var cursor = v.foo.find({age: 10});
 
         assert(cursor);
@@ -297,7 +294,7 @@ isServer && define(function (require, exports, module) {
         });
       },
 
-      "test cursor with options": function () {
+      "test cursor with options" () {
         var cursor = v.foo.find({age: 10}, {limit: 1, sort: {name: 1}});
         try {
           assert.equals(cursor.next(2), [mf('name', 'five')]);
@@ -308,7 +305,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "Static table": {
-      setUp: function () {
+      setUp () {
         v.foo = sut.defaultDb.table('Foo', {
           name: 'text',
           age: {type: 'number', default: 10}
@@ -318,7 +315,7 @@ isServer && define(function (require, exports, module) {
         v.foo.insert({_id: "456", name: 'def'});
       },
 
-      "test ensureIndex": function () {
+      "test ensureIndex" () {
         v.foo.ensureIndex({name: -1}, {unique: true});
 
         v.foo.insert({_id: '1', name: "Foo"});
@@ -330,11 +327,11 @@ isServer && define(function (require, exports, module) {
         v.foo.ensureIndex({name: 1, _id: -1});
       },
 
-      "test query all": function () {
+      "test query all" () {
         assert.equals(v.foo.query({}), [{_id: "123", name: "abc", age: 10}, {_id: "456", name: "def", age: 10}]);
       },
 
-      "test $inequality": function () {
+      "test $inequality" () {
         v.foo.insert({_id: "789", name: 'ghi'});
         assert.same(v.foo.count({name: {$regex: '[AG]', $ne: 'ghi', $options: 'i'}}), 1);
         assert.same(v.foo.count({name: {$gt: 'abc', $lt: 'ghi'}}), 1);
@@ -352,13 +349,13 @@ isServer && define(function (require, exports, module) {
         assert.same(v.foo.count({name: {$ne: null}}), 3);
       },
 
-      "test can't add field": function () {
+      "test can't add field" () {
         assert.exception(function () {
           v.foo.update({name: 'abc'}, {$set: {foo: 'eee'}});
         }, {sqlState: '42703'});
       },
 
-      "test nested transactions": function () {
+      "test nested transactions" () {
         try {
           v.foo.transaction(function (tran) {
             v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
@@ -413,7 +410,7 @@ isServer && define(function (require, exports, module) {
         refute.called(v.onAbort);
       },
 
-      "test update schema": function () {
+      "test update schema" () {
         v.foo.schema = {
           name: 'text',
           age: {type: 'number', default: 10},
@@ -427,14 +424,14 @@ isServer && define(function (require, exports, module) {
     },
 
     "Dynamic table": {
-      setUp: function () {
+      setUp () {
         v.foo = sut.defaultDb.table('Foo');
 
         assert.same(v.foo.insert({_id: "123", name: 'abc'}), 1);
         v.foo.insert({_id: "456", name: 'abc'});
       },
 
-      "test transaction rollback": function () {
+      "test transaction rollback" () {
         try {
           v.foo.transaction(function () {
             assert.same(v.foo.update({_id: '123'}, {$set: {foo: 'eee'}}), 1);
@@ -448,11 +445,11 @@ isServer && define(function (require, exports, module) {
           .equals(v.foo.findOne({_id: '123'}), {_id: '123', name: 'abc'});
       },
 
-      "test query all": function () {
+      "test query all" () {
         assert.equals(v.foo.query({}), [{_id: "123", name: "abc"}, {_id: "456", name: "abc"}]);
       },
 
-      "test update": function () {
+      "test update" () {
         assert.same(v.foo.update({name: 'abc'}, {$set: {name: 'def'}}), 2);
 
         assert.equals(v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
@@ -463,16 +460,16 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.findOne({_id: "456"}), {_id: "456", name: "def"});
       },
 
-      "test count": function () {
+      "test count" () {
         assert.same(v.foo.count({name: 'abc'}), 2);
       },
 
-      "test exists": function () {
+      "test exists" () {
         assert.isTrue(v.foo.exists({name: 'abc'}));
         assert.isFalse(v.foo.exists({name: 'abcx'}));
       },
 
-      "test remove": function () {
+      "test remove" () {
         assert.same(v.foo.remove({_id: '123'}), 1);
 
 
@@ -483,7 +480,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.query({}), []);
       },
 
-      "test truncate": function () {
+      "test truncate" () {
         v.foo.truncate();
 
         assert.equals(v.foo.query({}), []);

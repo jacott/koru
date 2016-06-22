@@ -1,21 +1,21 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var koru = require('./main');
-  var TH = require('./test');
-  var Queue = require('./queue');
-  var Future = requirejs.nodeRequire('fibers/future');
+  const koru   = require('./main');
+  const Queue  = require('./queue');
+  const TH     = require('./test');
+  const Future = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
-    "test single": function () {
+    "test single" () {
       var single = Queue('single');
       single.add(v.func = test.stub());
       assert.called(v.func);
@@ -23,7 +23,7 @@ isServer && define(function (require, exports, module) {
       assert.called(v.func);
     },
 
-    "test queing": function () {
+    "test queing" () {
       var q2 = new Future;
       var q3 = new Future;
       var fooFin = new Future;

@@ -2,27 +2,33 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var message = require('./message');
 
-  var proto = {
-    defineRpc: function (name, func) {
+  class Session {
+    constructor (id) {
+      this._id = id;
+      this._rpcs = {};
+      this._commands = {};
+    }
+
+    defineRpc (name, func) {
       this._rpcs[name] = func;
       return this;
-    },
+    }
 
-    provide: function (cmd, func) {
+    provide (cmd, func) {
       var old = this._commands[cmd];
       this._commands[cmd] = func;
       return old;
-    },
+    }
 
-    unprovide: function (cmd) {
+    unprovide (cmd) {
       this._commands[cmd] = null;
-    },
+    }
 
-    onStop: function (func) {
+    onStop (func) {
       (this._onStops || (this._onStops = [])).push(func);
-    },
+    }
 
-    _onMessage: function(conn, data) {
+    _onMessage (conn, data) {
       if (typeof data === 'string') {
         var type = data[0];
         data = data.slice(1);
@@ -37,18 +43,14 @@ define(function(require, exports, module) {
         this.execWrapper(func, conn, data);
       else
         koru.info('Unexpected session message: '+ type, conn.sessId);
-    },
+    }
   };
 
   function Constructor(id) {
-    var base = Object.create(proto);
-    base._rpcs = {};
-    base._commands = {};
-    base._id = id;
-    return base;
+    return new Session(id);
   }
 
-  exports = Constructor('default');
+  exports = new Session('default');
   exports.__initBase__ = Constructor;
   return exports;
 });

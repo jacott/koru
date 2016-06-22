@@ -1,9 +1,9 @@
 var WebSocket = requirejs.nodeRequire('ws');
 
-define(function (require, exports, module) {
-  var koru = require('koru');
-  var WebSocketServerFactory = require('./web-socket-server-factory');
-  var server = require('../web-server').server;
+define(function (require) {
+  const koru                   = require('koru');
+  const server                 = require('../web-server').server;
+  const WebSocketServerFactory = require('./web-socket-server-factory');
 
   return function (session) {
     WebSocketServerFactory(session);
