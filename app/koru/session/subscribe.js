@@ -87,6 +87,7 @@ define(function(require, exports, module) {
         this._matches = [];
         this.name = name;
         this._subscribe = publish._pubs[name];
+        this.stop = stopSub.bind(this);
         const cb = args[args.length - 1];
         if (typeof cb === 'function') {
           this.callback = cb;
@@ -159,20 +160,20 @@ define(function(require, exports, module) {
         publish._filterModels(models);
       }
 
-      stop() {
-        if (! this._id) return;
-        debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
-        session.sendP(this._id);
-        stopped(this);
-        if (! this.waiting) return;
-
-        session.state.decPending();
-        this.waiting = false;
-      }
-
       match(modelName, func) {
         this._matches.push(publish.match.register(modelName, func));
       }
+    }
+
+    function stopSub() {
+      if (! this._id) return;
+      debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
+      session.sendP(this._id);
+      stopped(this);
+      if (! this.waiting) return;
+
+      session.state.decPending();
+      this.waiting = false;
     }
 
     function stopped(sub) {

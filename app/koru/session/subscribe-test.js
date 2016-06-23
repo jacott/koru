@@ -178,7 +178,7 @@ isClient && define(function (require, exports, module) {
 
         refute.called(publish._filterModels);
 
-        v.sub.stop();
+        v.sub.stop.call({}); // ensure binding
 
         assert.calledWith(publish._filterModels, {F1: true, F2: true});
       },
