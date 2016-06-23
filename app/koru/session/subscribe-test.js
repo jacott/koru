@@ -103,7 +103,7 @@ isClient && define(function (require, exports, module) {
       test.stub(v.sessState, 'onConnect');
       subscribe = subscribeFactory(v.sess);
       test.stub(v.sess, 'sendP');
-      assert.calledWith(v.sessState.onConnect, "10", subscribe._onConnect);
+      assert.calledWith(v.sessState.onConnect, "10-subscribe", subscribe._onConnect);
 
       publish("foo2", function () {});
 

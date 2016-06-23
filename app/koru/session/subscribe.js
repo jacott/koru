@@ -14,8 +14,8 @@ define(function(require, exports, module) {
   };
 
   return function(session) {
-    var nextId = 0;
-    var subs = session.subs = Object.create(null);
+    let nextId = 0;
+    const subs = session.subs = Object.create(null);
 
     session.sendP = function (...args) {
       session.state.isReady() && session.sendBinary('P', args);
@@ -29,7 +29,7 @@ define(function(require, exports, module) {
 
     var userId;
 
-    var loginOb = login.onChange(session, function (state, sess) {
+    let loginOb = login.onChange(session, function (state, sess) {
       if (state === 'change') {
         if (koru.userId() === userId) return;
         userId = koru.userId();
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
       }
     });
 
-    session.state.onConnect('10', Subcribe._onConnect = function (session) {
+    session.state.onConnect('10-subscribe', Subcribe._onConnect = function (session) {
       for(var id in subs) {
         var sub = subs[id];
         sub._wait();
@@ -52,8 +52,8 @@ define(function(require, exports, module) {
     function Subcribe(name, ...args) {
       if (! publish._pubs[name]) throw new Error("No client publish of " + name);
 
-      var callback = arguments[arguments.length - 1];
-      var sub = new ClientSub((++nextId).toString(36), name, args);
+      const callback = arguments[arguments.length - 1];
+      const sub = new ClientSub((++nextId).toString(36), name, args);
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
         return sub;
       subs[sub._id] = sub;
@@ -64,12 +64,8 @@ define(function(require, exports, module) {
     };
 
     util.extend(Subcribe, {
-      // test methods
-
-      get _subs() {return subs},
-      get _nextId() {return nextId},
-      unload: function () {
-        session.state.stopOnConnect('10');
+      unload() {
+        session.state.stopOnConnect('10-subscribe');
         loginOb && loginOb.stop();
         loginOb = null;
         session.unprovide('P');
@@ -79,36 +75,38 @@ define(function(require, exports, module) {
         userId = null;
       },
       set _userId(value) {userId = value},
+      // test methods
+
+      get _subs() {return subs},
+      get _nextId() {return nextId},
     });
 
-    function ClientSub(subId, name, args) {
-      this._id = subId;
-      this._matches = [];
-      this.name = name;
-      this._subscribe = publish._pubs[name];
-      var cb = args[args.length - 1];
-      if (typeof cb === 'function') {
-        this.callback = cb;
-        this.args = args.slice(0, -1);
-      } else {
-        this.callback = null;
-        this.args = args;
+    class ClientSub {
+      constructor(subId, name, args) {
+        this._id = subId;
+        this._matches = [];
+        this.name = name;
+        this._subscribe = publish._pubs[name];
+        const cb = args[args.length - 1];
+        if (typeof cb === 'function') {
+          this.callback = cb;
+          this.args = args.slice(0, -1);
+        } else {
+          this.callback = null;
+          this.args = args;
+        }
       }
-    }
-
-    ClientSub.prototype = {
-      constructor: ClientSub,
 
       get userId() {
         return koru.userId();
-      },
+      }
 
-      isStopped: function () {
+      isStopped() {
         return ! this._id;
-      },
+      }
 
-      resubscribe: function (models) {
-        var oldMatches = this._matches;
+      resubscribe(models) {
+        const oldMatches = this._matches;
         this._stop && this._stop();
         this._stop = null;
         this._matches = [];
@@ -122,16 +120,16 @@ define(function(require, exports, module) {
         this.isResubscribe = false;
 
         killMatches(oldMatches, models);
-      },
+      }
 
-      _wait: function () {
+      _wait() {
         debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
         if (this.waiting) return;
         session.state.incPending();
         this.waiting = true;
-      },
+      }
 
-      _received: function (result) {
+      _received(result) {
         debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
         if (result !== undefined) stopped(this);
         if (! this.waiting) return;
@@ -142,26 +140,26 @@ define(function(require, exports, module) {
           this.callback(result || null);
           this.callback = null;
         }
-      },
+      }
 
-      error: function (err) {
+      error(err) {
         koru.error(err);
         this.stop();
-      },
+      }
 
-      onStop: function (func) {
+      onStop(func) {
         this._stop = func;
-      },
+      }
 
-      filterModels: function () {
+      filterModels() {
         var models = {};
         util.forEach(arguments, function (mn) {
           models[mn] = true;
         });
         publish._filterModels(models);
-      },
+      }
 
-      stop: function () {
+      stop() {
         if (! this._id) return;
         debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
         session.sendP(this._id);
@@ -170,18 +168,18 @@ define(function(require, exports, module) {
 
         session.state.decPending();
         this.waiting = false;
-      },
+      }
 
-      match: function (modelName, func) {
+      match(modelName, func) {
         this._matches.push(publish.match.register(modelName, func));
-      },
-    };
+      }
+    }
 
     function stopped(sub) {
       if (! sub._id) return;
 
       delete subs[sub._id];
-      var models = {};
+      const models = {};
       sub._stop && sub._stop();
       killMatches(sub._matches, models);
       sub._stop = sub._matches = sub._id = sub.callback = null;

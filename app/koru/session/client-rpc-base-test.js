@@ -1,14 +1,14 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var util = require('../util');
-  var message = require('./message');
-  var rpc = require('./client-rpc-base');
-  var koru = require('../main');
-  var sessState = require('./state').__init__;
+  const koru      = require('../main');
+  const util      = require('../util');
+  const rpc       = require('./client-rpc-base');
+  const message   = require('./message');
+  const sessState = require('./state').__init__;
+  const TH        = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp () {
       test = this;
       v = {};
       v.state = sessState();
@@ -29,7 +29,7 @@ define(function (require, exports, module) {
       }));
     },
 
-    tearDown: function () {
+    tearDown () {
       v = null;
     },
 
@@ -38,8 +38,8 @@ define(function (require, exports, module) {
      * Any unwanted docs should be removed.
      */
     "reconnect": {
-      "test replay messages": function () {
-        assert.calledWith(v.state.onConnect, "20", TH.match(func => v.onConnect = func));
+      "test replay messages" () {
+        assert.calledWith(v.state.onConnect, "20-rpc", TH.match(func => v.onConnect = func));
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
         v.sess.state._state = 'retry';
@@ -53,7 +53,7 @@ define(function (require, exports, module) {
       },
     },
 
-    "test server only rpc": function () {
+    "test server only rpc" () {
       refute.exception(function () {
         v.sess.rpc('foo.rpc', 1, 2, 3);
       });
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },
 
-    "test callback rpc": function () {
+    "test callback rpc" () {
       test.stub(koru, 'globalCallback');
 
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
@@ -105,7 +105,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test onChange rpc": function () {
+    "test onChange rpc" () {
       v.ready = true;
       test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
 
@@ -135,7 +135,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test rpc": function () {
+    "test rpc" () {
       v.ready = true;
       var fooId;
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
@@ -176,7 +176,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test server only rpc": function () {
+    "test server only rpc" () {
       v.ready = true;
       refute.exception(function () {
         v.sess.rpc('foo.rpc', 1, 2, 3);
@@ -185,7 +185,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },
 
-    "test callback rpc": function () {
+    "test callback rpc" () {
       v.sess._rpcs['foo.rpc'] = rpcSimMethod;
 
       v.sess.rpc('foo.rpc', 'a');
@@ -220,7 +220,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test onChange rpc": function () {
+    "test onChange rpc" () {
       test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
 
       assert.same(v.state.pendingCount(), 0);

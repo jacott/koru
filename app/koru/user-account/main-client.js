@@ -38,12 +38,12 @@ define(function(require, exports, module) {
         }
       });
 
-      session.state.onConnect('05', onConnect);
+      session.state.onConnect('05-login', onConnect);
     },
 
     stop: function () {
       session.unprovide('V');
-      session.state.stopOnConnect('05');
+      session.state.stopOnConnect('05-login');
     },
 
     state: null,

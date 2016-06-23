@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('koru/util');
+define(function(require, _, module) {
+  const util = require('koru/util');
+  const koru = require('../main');
 
-  module.exports = function (session) {
+  module.exports = function init(session) {
     util.extend(session, {
       _waitMs: Object.create(null),
       _msgId: 0,
@@ -11,7 +11,7 @@ define(function(require, exports, module) {
       isRpcPending,
     });
 
-    session.state._onConnect['20'] || session.state.onConnect("20", onConnect);
+    session.state._onConnect['20-rpc'] || session.state.onConnect("20-rpc", onConnect);
 
     session._commands.M || session.provide('M', recvM);
 
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
   function sendM(name, args, func) {
     var msgId = (++this._msgId).toString(36);
     var data = [msgId, name];
-    args && util.forEach(args, function (arg) {data.push(util.deepCopy(arg))});
+    args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
     this._waitMs[msgId] = [data, func];
     this.state.incPending();
     this.state.isReady() && this.sendBinary('M', data);

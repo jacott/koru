@@ -27,7 +27,7 @@ define(function(require, exports, module) {
 
       onConnect: function (priority, func) {
         if (priority in this._onConnect)
-          throw new Error("priority " + priority + " already taken for onConnect");
+          throw new Error("onConnect " + priority + " already taken for onConnect");
         this._onConnect[priority] = func;
       },
 

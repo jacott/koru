@@ -1,17 +1,17 @@
-define(function(require, exports, module) {
-  var session = require('../session/base');
-  var Model = require('../model/main');
-  var koru = require('../main');
-  var SRP = require('../srp/srp');
-  var Val = require('../model/validation');
-  var Random = require('../random');
-  var util = require('../util');
-  var Email = require('../email');
+define(function(require, UserAccount, module) {
+  const Email   = require('../email');
+  const koru    = require('../main');
+  const Model   = require('../model/main');
+  const Val     = require('../model/validation');
+  const Random  = require('../random');
+  const session = require('../session/base');
+  const SRP     = require('../srp/srp');
+  const util    = require('../util');
 
   var emailConfig;
 
-  var model = Model.define('UserLogin', {
-    unexpiredTokens: function () {
+  const model = Model.define('UserLogin', {
+    unexpiredTokens () {
       var tokens = this.tokens;
       var now = util.dateNow();
       var keyVal = [];
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    makeToken: function () {
+    makeToken () {
       var token = Random.id();
       var tokens = this.unexpiredTokens();
       tokens[token] = Date.now()+180*24*1000*60*60;
@@ -68,7 +68,7 @@ define(function(require, exports, module) {
   session.defineRpc('SRPLogin', SRPLogin);
 
   function SRPLogin(response) {
-    exports.assertResponse(this, response);
+    UserAccount.assertResponse(this, response);
     var doc = this.$srpUserAccount;
     var token = doc.makeToken();
     doc.$$save();
@@ -82,9 +82,9 @@ define(function(require, exports, module) {
     return result;
   }
 
-  var VERIFIER_SPEC = exports.VERIFIER_SPEC = {identity: 'string', salt: 'string', verifier: 'string'};
+  var VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {identity: 'string', salt: 'string', verifier: 'string'};
   session.defineRpc('SRPChangePassword', function (response) {
-    exports.assertResponse(this, response);
+    UserAccount.assertResponse(this, response);
 
     Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
@@ -99,24 +99,24 @@ define(function(require, exports, module) {
   });
 
   session.defineRpc('resetPassword', function (token, passwordHash) {
-    var result = exports.resetPassword(token, passwordHash);
+    var result = UserAccount.resetPassword(token, passwordHash);
     var lu = result[0];
     this.send('VT', lu._id + '|' + result[1]);
     this.userId = lu.userId;
   });
 
-  util.extend(exports, {
-    init: function () {
+  util.extend(UserAccount, {
+    init () {
       session.provide('V', onMessage);
     },
 
-    stop: function () {
+    stop () {
       session.unprovide('V');
     },
 
-    model: model,
+    model,
 
-    resetPassword: function (token, passwordHash) {
+    resetPassword (token, passwordHash) {
       Val.ensureString(token);
       Val.assertCheck(passwordHash, VERIFIER_SPEC);
       var parts = token.split('-');
@@ -132,7 +132,7 @@ define(function(require, exports, module) {
       throw new koru.Error(404, 'Expired or invalid reset request');
     },
 
-    verifyClearPassword: function (email, password) {
+    verifyClearPassword (email, password) {
       var doc = model.findBy('email', email);
       if (! doc) return;
 
@@ -150,7 +150,7 @@ define(function(require, exports, module) {
       }
     },
 
-    verifyToken: function (emailOrId, token) {
+    verifyToken (emailOrId, token) {
       if (emailOrId.indexOf('@') === -1) {
         var doc = model.findById(emailOrId);
       } else {
@@ -160,7 +160,7 @@ define(function(require, exports, module) {
         return doc;
     },
 
-    createUserLogin: function (attrs) {
+    createUserLogin (attrs) {
       return model.create({
         email: attrs.email,
         userId: attrs.userId,
@@ -169,7 +169,7 @@ define(function(require, exports, module) {
       });
     },
 
-    sendResetPasswordEmail: function (user) {
+    sendResetPasswordEmail (user) {
       emailConfig || configureEmail();
 
       var lu = model.findBy('userId', user._id);
@@ -188,7 +188,7 @@ define(function(require, exports, module) {
       });
     },
 
-    updateOrCreateUserLogin: function (attrs) {
+    updateOrCreateUserLogin (attrs) {
       var lu = model.findBy('userId', attrs.userId);
       if (! lu) return model.create({
         email: attrs.email,
@@ -204,16 +204,16 @@ define(function(require, exports, module) {
       return lu;
     },
 
-    assertResponse: function (conn, response) {
+    assertResponse (conn, response) {
       if (response && conn.$srp && response.M === conn.$srp.M) return;
       throw new koru.Error(403, 'failure');
     },
 
 
-    SRPBegin: function (state, request) {
+    SRPBegin (state, request) {
       return SRPBegin.call(state, request);
     },
-    SRPLogin: function (state, response) {
+    SRPLogin (state, response) {
       return SRPLogin.call(state, response);
     },
   });
