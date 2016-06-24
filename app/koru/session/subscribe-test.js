@@ -29,14 +29,14 @@ isClient && define(function (require, exports, module) {
       });
       assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
         v.recvP = function (...args) {
-          func.call(v.sess, args.slice());
+          func.call(v.sess, args);
         };
         return true;
       }));
       ['A', 'C', 'R'].forEach(function (type) {
         assert.calledWith(v.sess.provide, type, TH.match(function (func) {
           v['recv'+type] = function (...args) {
-            func(args.slice());
+            func(args);
           };
           return true;
         }));
@@ -294,6 +294,14 @@ isClient && define(function (require, exports, module) {
       refute.called(v.sess.sendP);
 
       v.sub = null;
+    },
+
+    "test callback on error" () {
+      v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
+      refute.called(v.stub);
+      v.recvP(v.sub._id, 304, "error msg");
+      v.recvP(v.sub._id, 304, "error msg");
+      assert.calledOnceWith(v.stub, [304, "error msg"]);
     },
 
     "test remote stop while waiting": function () {

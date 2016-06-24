@@ -24,7 +24,7 @@ define(function(require, exports, module) {
     session._commands.P || session.provide('P', function (data) {
       var handle = this.subs[data[0]];
       if (! handle) return;
-      handle._received(data[1]);
+      handle._received(data[1] && data.slice(1));
     });
 
     var userId;
@@ -132,13 +132,14 @@ define(function(require, exports, module) {
 
       _received(result) {
         debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
+        const callback = this.callback;
         if (result !== undefined) stopped(this);
         if (! this.waiting) return;
 
         session.state.decPending();
         this.waiting = false;
-        if (this.callback) {
-          this.callback(result || null);
+        if (callback) {
+          callback(result || null);
           this.callback = null;
         }
       }
