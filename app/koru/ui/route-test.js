@@ -1,12 +1,12 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  const Dom    = require('../dom');
-  const koru   = require('../main');
-  const Route  = require('./route');
-  const TH     = require('./test-helper');
+  const Dom   = require('../dom');
+  const koru  = require('../main');
+  const Route = require('./route');
+  const TH    = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {
         root: Route.root,
@@ -27,7 +27,7 @@ isClient && define(function (require, exports, module) {
       test.stub(koru, 'userId').returns("123");
     },
 
-    tearDown: function () {
+    tearDown() {
       Route.title = v.origTitle;
       document.title = v.origTitle;
       Route.root = v.root;
@@ -36,14 +36,14 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test title": function () {
+    "test title"() {
       assert.same(v.origTitle, 'Koru Test Mode');
     },
 
-    "test focus": function () {
+    "test focus"() {
       var RootBar = {
         name: 'RootBar',
-        $autoRender: function () {
+        $autoRender() {
           return Dom.html('<div id="RootBar">x</div>');
         },
       };
@@ -54,19 +54,19 @@ isClient && define(function (require, exports, module) {
 
       Route.gotoPage(RootBar);
 
-      assert.dom('#RootBar', function () {
-        assert.calledWith(Dom.focus, this, '[name=foo]');
+      assert.dom('#RootBar', self => {
+        assert.calledWith(Dom.focus, self, '[name=foo]');
       });
     },
 
-    "test searchParams": function () {
+    "test searchParams"() {
       assert.equals(Route.searchParams(), {});
 
       assert.equals(Route.searchParams({search: "?foo=bar&baz=12"}), {foo: "bar", baz: "12"});
     },
 
     "with routeVar": {
-      setUp: function () {
+      setUp() {
         v.Baz = {
           name: 'Baz',
           path: 'baz',
@@ -76,7 +76,7 @@ isClient && define(function (require, exports, module) {
 
         v.RootBar = {
           name: 'RootBar',
-          $autoRender: function () {
+          $autoRender() {
             return Dom.html('<div id="RootBar">x</div>');
           },
           onEntry: test.stub(),
@@ -87,7 +87,7 @@ isClient && define(function (require, exports, module) {
         v.Baz.route.addTemplate(v.RootBar);
       },
 
-      "test async addBase": function () {
+      "test async addBase"() {
         v.Baz.route.async = true;
 
         Route.gotoPath('/baz/an-id/root-bar');
@@ -101,7 +101,7 @@ isClient && define(function (require, exports, module) {
         refute.called(v.RootBar.onEntry);
       },
 
-      "test async page change before callback": function () {
+      "test async page change before callback"() {
         v.Baz.route.async = true;
 
         Route.gotoPath('/baz/an-id/root-bar');
@@ -113,7 +113,7 @@ isClient && define(function (require, exports, module) {
         refute.called(v.RootBar.onEntry);
       },
 
-      "test default root": function () {
+      "test default root"() {
         Route.root.routeVar = 'fooId';
         test.stub(Route, 'gotoPage');
         Route.root.defaultPage = v.RootBar;
@@ -123,7 +123,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Route.gotoPage, v.RootBar, {fooId: "xyz", pathname: "/xyz"});
       },
 
-      "test root pageRoute": function () {
+      "test root pageRoute"() {
         Route.root.routeVar = 'fooId';
         Route.root.onBaseEntry = test.stub();
 
@@ -157,7 +157,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", fooId: "xyz", pathname: "/xyz/baz/an-id/root-bar"});
       },
 
-      "test gotoPath": function () {
+      "test gotoPath"() {
         test.stub(Route, 'gotoPage');
 
         Route.gotoPath('/baz/an-id/root-bar');
@@ -167,7 +167,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Route.gotoPage, v.RootBar, {bazId: "diff-id", pathname: '/baz/diff-id/root-bar'});
       },
 
-      "test search and tag reset": function () {
+      "test search and tag reset"() {
         Route.gotoPath('/baz/an-id/root-bar?search=data#tag');
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar',
                                                          search: '?search=data', hash: '#tag'});
@@ -179,14 +179,14 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar'});
       },
 
-      "test hash encoded": function () {
+      "test hash encoded"() {
         Route.gotoPath('/baz/an-id/root-bar%23tag');
         assert.calledWith(v.RootBar.onEntry, v.RootBar, {bazId: "an-id", pathname: '/baz/an-id/root-bar',
                                                          hash: '#tag'});
       },
 
       "waitForPage": {
-        setUp: function () {
+        setUp() {
           test.spy(Route, 'onChange');
           test.stub(koru, 'setTimeout').returns(123);
           test.stub(koru, 'clearTimeout');
@@ -195,7 +195,7 @@ isClient && define(function (require, exports, module) {
           TH.stubProperty(window, 'Promise', v.MyPromise);
         },
 
-        "test already on page": function () {
+        "test already on page"() {
           var promise = Route.waitForPage(v.RootBar);
           assert.same(promise.constructor, v.MyPromise);
 
@@ -208,7 +208,7 @@ isClient && define(function (require, exports, module) {
           refute.called(koru.setTimeout);
         },
 
-        "test timeout": function () {
+        "test timeout"() {
           var promise = Route.waitForPage(v.FooBar, 150);
 
           promise.func(v.resolve, v.reject);
@@ -226,7 +226,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(v.reject, TH.match.field('message', 'Timed out waiting for: FooBar after 150ms'));
         },
 
-        "test wrong page": function () {
+        "test wrong page"() {
           var promise = Route.waitForPage(v.FooBar);
 
           promise.func(v.resolve, v.reject);
@@ -245,7 +245,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(v.reject, TH.match.field('message', 'expected page: FooBar, got: RootBar'));
         },
 
-        "test page changed": function () {
+        "test page changed"() {
           var promise = Route.waitForPage(v.RootBar);
 
           promise.func(v.resolve, v.reject);
@@ -265,7 +265,7 @@ isClient && define(function (require, exports, module) {
         },
       },
 
-      "test gotoPage, pushCurrent, recordHistory, notify": function () {
+      "test gotoPage, pushCurrent, recordHistory, notify"() {
         var orig = Dom.setTitle;
         Dom.setTitle = test.stub();
         var onChange = Route.onChange(v.routeChanged = test.stub());
@@ -303,7 +303,7 @@ isClient && define(function (require, exports, module) {
         assert.same(Route.currentHref, '/#baz/diff-id/root-bar');
       },
 
-      "test loadingArgs": function () {
+      "test loadingArgs"() {
         v.RootBar.onEntry = function () {
           v.loadingArgs = Route.loadingArgs;
 
@@ -318,7 +318,7 @@ isClient && define(function (require, exports, module) {
 
       },
 
-      "test path append on template": function () {
+      "test path append on template"() {
         v.RootBar.onEntry = function (page, pageRoute) {
           v.append = pageRoute.append;
         };
@@ -329,10 +329,10 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test append": function () {
+    "test append"() {
       var RootBar = {
         name: 'RootBar',
-        $autoRender: function () {
+        $autoRender() {
           return Dom.html('<div id="RootBar">x</div>');
         },
       };
@@ -343,10 +343,10 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.history.pushState, 1, null, '/#root-bar/ap/this');
     },
 
-    "test abort page change": function () {
+    "test abort page change"() {
       var Baz = {
         name: 'Baz',
-        onBaseEntry: function () {
+        onBaseEntry() {
           Route.abortPage(RootBar);
         },
         onBaseExit: test.stub(),
@@ -370,7 +370,7 @@ isClient && define(function (require, exports, module) {
       assert.called(RootBar.onEntry);
     },
 
-    "test abortPage outside of gotoPage": function () {
+    "test abortPage outside of gotoPage"() {
       test.stub(Route, 'replacePath');
 
       Route.abortPage(1, 2,3);
@@ -378,7 +378,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.replacePath, 1, 2, 3);
     },
 
-    "test push history": function () {
+    "test push history"() {
       assert.same(Route._orig_history, window.history);
 
       Route.root.addTemplate(v.FooBar);
@@ -392,7 +392,7 @@ isClient && define(function (require, exports, module) {
       assert.same(document.title, 'foo title');
     },
 
-    "test replace history": function () {
+    "test replace history"() {
       Route.title = "baz bar";
       Route.root.addTemplate(v.FooBar);
       Route.replacePath(v.FooBar);
@@ -401,10 +401,8 @@ isClient && define(function (require, exports, module) {
       assert.same(Route.pageState, 'pushState');
     },
 
-    "test replacePage passes all args": function () {
-      test.stub(Route, 'gotoPage', function () {
-        v.pageState = Route.pageState;
-      });
+    "test replacePage passes all args"() {
+      test.stub(Route, 'gotoPage', () => v.pageState = Route.pageState);
 
       Route.replacePage(1, 2,3);
 
@@ -413,10 +411,8 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPage, 1, 2, 3);
     },
 
-    "test replacePath passes all args": function () {
-      test.stub(Route, 'gotoPath', function () {
-        v.pageState = Route.pageState;
-      });
+    "test replacePath passes all args"() {
+      test.stub(Route, 'gotoPath', () => v.pageState = Route.pageState);
 
       Route.replacePath(1, 2,3);
       assert.same(v.pageState, 'replaceState');
@@ -425,7 +421,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPath, 1, 2, 3);
     },
 
-    "test pageChanged": function () {
+    "test pageChanged"() {
       test.stub(Route, 'gotoPath');
       Route.root.addTemplate(v.FooBar);
       Route.pageChanged();
@@ -454,7 +450,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Route.currentTitle, 'foo bar');
     },
 
-    "test replacePage always changes history": function () {
+    "test replacePage always changes history"() {
       Route.root.addTemplate(v.FooBar);
       Route.gotoPath('/foo-bar');
 
@@ -465,11 +461,11 @@ isClient && define(function (require, exports, module) {
       assert.called(Route.history.replaceState);
     },
 
-    "test root": function () {
+    "test root"() {
       assert.same(v.root.constructor, Route);
     },
 
-    "test setting parent in addBase": function () {
+    "test setting parent in addBase"() {
       var Baz = {
         name: 'Baz',
         onBaseEntry: test.stub(),
@@ -503,7 +499,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(BazBar.onExit, null, {pathname: ''});
     },
 
-    "test noParentRoute": function () {
+    "test noParentRoute"() {
       var BazBar = {
         name: 'BazBar',
         noParentRoute: true,
@@ -530,7 +526,7 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    "test addBase and addAlias": function () {
+    "test addBase and addAlias"() {
       var Baz = {
         name: 'Baz',
         onBaseEntry: test.stub(),
@@ -616,16 +612,14 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(BazBar.onEntry, BazBar, {append: '12345', pathname: "/bazpath/baz/12345"});
     },
 
-    "test privatePage": function () {
+    "test private page"() {
       var origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
-      test.onEnd(function () {
-        Route.SignInPage = origSigninPage;
-      });
+      test.onEnd(() => Route.SignInPage = origSigninPage);
       test.stub(Route, 'replacePage');
       koru.userId.restore();
 
-      Route.root.addTemplate(v.FooBar, {privatePage: true});
+      Route.root.addTemplate(v.FooBar);
 
       Route.gotoPage(v.FooBar, {myArgs: '123'});
 
@@ -634,18 +628,34 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.replacePage, Route.SignInPage, {returnTo: [v.FooBar, {myArgs: '123', pathname: '/foo-bar'}]});
     },
 
-    "test addTemplate": function () {
+    "test public page"() {
+      var origSigninPage = Route.SignInPage;
+      Route.SignInPage = "mySign in page";
+      test.onEnd(() => Route.SignInPage = origSigninPage);
+      test.stub(Route, 'replacePage');
+      koru.userId.restore();
+
+      Route.root.addTemplate(v.FooBar, {publicPage: true});
+
+      Route.gotoPage(v.FooBar, {myArgs: '123'});
+
+      assert.called(v.FooBar.onEntry);
+
+      refute.called(Route.replacePage);
+    },
+
+    "test addTemplate"() {
       var Baz = {
         name: 'Baz',
         parent: v.FooBar,
 
-        $autoRender: function (arg) {
+        $autoRender(arg) {
           return Dom.html('<div id="Baz">'+arg+'</div>');
         },
       };
 
       Route.root.addTemplate(v.FooBar);
-      Route.root.addTemplate(Baz, {data: function () {return 'fooData'}});
+      Route.root.addTemplate(Baz, {data() {return 'fooData'}});
 
       assert.isFunction(Baz.onEntry);
 
@@ -658,7 +668,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('#Baz');
     },
 
-    "test gotoPath default": function () {
+    "test gotoPath default"() {
       Route.root.addTemplate(v.FooBar, {path: "foo-location"});
       test.stub(koru, 'getLocation').returns({pathname: "/foo-location/append-data"});
 
@@ -666,7 +676,7 @@ isClient && define(function (require, exports, module) {
       assert.called(v.FooBar.onEntry);
     },
 
-    "test addDialog gotoPath": function () {
+    "test addDialog gotoPath"() {
       Route.root.addTemplate(v.FooBar);
 
       var FooDialog = {
@@ -694,16 +704,14 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    "test addTemplate gotoPath": function () {
+    "test addTemplate gotoPath"() {
       var Bar = {
         name: 'Bar',
         $autoRender: test.stub(),
         onEntry: test.stub(),
       };
       Route.root.addTemplate(v.FooBar);
-      assert.exception(function () {
-        Route.root.addTemplate('foo-bar', v.FooBar);
-      });
+      assert.exception(() => Route.root.addTemplate('foo-bar', v.FooBar));
 
       Route.root.addTemplate(Bar);
 
@@ -718,7 +726,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Bar.onEntry, Bar, v.loc);
     },
 
-    "test passing string": function () {
+    "test passing string"() {
       Route.root.defaultPage = v.FooBar;
 
       Route.gotoPath('/anything?abc=123&def=456#hash');
@@ -726,7 +734,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.FooBar.onEntry, v.FooBar, {pathname: '', search: '?abc=123&def=456', hash: '#hash'});
     },
 
-    "test passing object": function () {
+    "test passing object"() {
       Route.root.defaultPage = v.FooBar;
 
       Route.gotoPath({pathname: '/anything', search: '?abc=123&def=456', hash: '#hash'});

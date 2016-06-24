@@ -6,6 +6,16 @@ define(function(require, exports, module) {
   require('koru/ui/dom-ext');
   const util        = require('koru/util');
 
+  const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
+  var inGotoPage = 0;
+  var currentPage = null;
+  var targetPage = null;
+  var currentPageRoute = {};
+  var currentTitle, currentHref;
+  var pageState = 'pushState';
+  var pageCount = 0;
+  var runInstance; // used with async callbacks
+
   var debug_page = false;
   Trace.debug_page = function (value) {
     debug_page = value;
@@ -91,7 +101,7 @@ define(function(require, exports, module) {
 
       Route.loadingArgs = [page, pageRoute];
 
-      if (page && page.routeOptions && page.routeOptions.privatePage && ! koru.userId()) {
+      if (page && page.routeOptions && ! page.routeOptions.publicPage && ! koru.userId() && page !== Route.SignInPage) {
         Route.replacePage(Route.SignInPage, {returnTo: Route.loadingArgs});
         return;
       }
@@ -383,16 +393,6 @@ define(function(require, exports, module) {
 
     return options;
   }
-
-  const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
-  var inGotoPage = 0;
-  var currentPage = null;
-  var targetPage = null;
-  var currentPageRoute = {};
-  var currentTitle, currentHref;
-  var pageState = 'pushState';
-  var pageCount = 0;
-  var runInstance; // used with async callbacks
 
   util.extend(Route, {
     root: new Route(),
