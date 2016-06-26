@@ -1,27 +1,27 @@
 define(function (require, exports, module) {
   var test, v;
-  var koru = require('../main');
-  var TH = require('./test-helper');
-  var Model = require('./main');
-  var val = require('./validation');
+  const koru    = require('koru');
+  const session = require('koru/session/base');
+  const util    = require('koru/util');
+  const Model   = require('./main');
+  const TH      = require('./test-helper');
+  const val     = require('./validation');
 
   val.register(module, {required: require('./validators/required-validator')});
-  var util = TH.util;
-  var session = require('../session/base');
 
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
-    "test only models enumerable": function () {
+    "test only models enumerable"() {
       for(var key in Model) {
         assert.same(Model[key].constructor, Model);
       }
@@ -29,11 +29,11 @@ define(function (require, exports, module) {
     },
 
     'with model lock': {
-      setUp: function () {
+      setUp() {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
       },
 
-      "test nesting": function () {
+      "test nesting"() {
         try {
           v.TestModel.lock("a", function () {
             try {
@@ -55,7 +55,7 @@ define(function (require, exports, module) {
         assert.isFalse(v.TestModel.isLocked("a"));
       },
 
-      "test Exception unlocks": function () {
+      "test Exception unlocks"() {
         try {
           v.TestModel.lock("a", function () {
             assert.isTrue(v.TestModel.isLocked("a"));
@@ -69,7 +69,7 @@ define(function (require, exports, module) {
         assert.isFalse(v.TestModel.isLocked("a"));
       },
 
-      "test isLocked": function () {
+      "test isLocked"() {
         v.TestModel.lock("a", function () {
           v.isLocked_a = v.TestModel.isLocked("a");
           v.isLocked_b = v.TestModel.isLocked("b");
@@ -82,7 +82,7 @@ define(function (require, exports, module) {
     },
 
     'with observering': {
-      setUp: function () {
+      setUp() {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
         v.tc = v.TestModel.create({name: 'foo'});
 
@@ -105,7 +105,7 @@ define(function (require, exports, module) {
         }
       },
 
-      "test remove calls": function () {
+      "test remove calls"() {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
         test.onEnd(v.TestModel.afterLocalChange(v.TestModel, v.afterLocalChange = test.stub()));
 
@@ -118,7 +118,7 @@ define(function (require, exports, module) {
         assert.equals(v.obs.afterLocalChange, [[null, {name: 'foo', _id: v.tc._id}]]);
       },
 
-      "test update calls": function () {
+      "test update calls"() {
         test.onEnd(v.TestModel.onChange(function (doc, was) {
           refute(v.docAttrs);
           v.docAttrs = util.extend({}, doc.attributes);
@@ -140,7 +140,7 @@ define(function (require, exports, module) {
         refute(v.obs.beforeCreate);
       },
 
-      "test $put": function () {
+      "test $put"() {
         v.TestModel.defineFields({x: 'jsonb'});
         test.stub(koru, 'userId').returns('u123');
         v.TestModel.prototype.authorizePut = {x: test.stub()};
@@ -159,7 +159,7 @@ define(function (require, exports, module) {
         assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
       },
 
-      "test create calls": function () {
+      "test create calls"() {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()).stop);
 
         v.tc = v.TestModel.create({name: 'foo'});
@@ -175,7 +175,7 @@ define(function (require, exports, module) {
         refute(v.obs.beforeUpdate);
       },
 
-      "test create exception": function () {
+      "test create exception"() {
         v.TestModel.beforeCreate(v.TestModel, function () {throw v.ex = new Error("tex")});
 
         assert.exception(function () {
@@ -186,7 +186,7 @@ define(function (require, exports, module) {
                                            v.ex]]);
       },
 
-      "test update exception": function () {
+      "test update exception"() {
         v.TestModel.beforeUpdate(v.TestModel, function () {throw v.ex = new Error("tex")});
 
         assert.exception(function () {
@@ -199,17 +199,17 @@ define(function (require, exports, module) {
     },
 
     'with versioning': {
-      setUp: function () {
+      setUp() {
         v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
       },
 
-      "test no _version": function () {
+      "test no _version"() {
         var tc = v.TestModel.create({name: 'foo'});
 
         assert.same(tc._version, undefined);
       },
 
-      "test updating": function () {
+      "test updating"() {
         v.TestModel.addVersioning();
 
         var tc = v.TestModel.create({name: 'foo'});
@@ -222,7 +222,7 @@ define(function (require, exports, module) {
         assert.same(tc.$reload()._version, 2);
       },
 
-      "test bumping": function () {
+      "test bumping"() {
         v.TestModel.addVersioning();
 
         var tc = v.TestModel.create({name: 'foo'});
@@ -236,7 +236,7 @@ define(function (require, exports, module) {
       },
     },
 
-    "test ref cache": function () {
+    "test ref cache"() {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
       var foo = TestModel.create();
 
@@ -248,7 +248,7 @@ define(function (require, exports, module) {
 
     },
 
-    "test cache": function () {
+    "test cache"() {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
       var foo = TestModel.create();
 
@@ -259,7 +259,7 @@ define(function (require, exports, module) {
       assert.same(foo.$reload().$cache.boo, undefined);
     },
 
-    'test change recording': function () {
+    'test change recording'() {
       var TestModel = Model.define('TestModel').
         defineFields({
           name: 'text',
@@ -292,7 +292,7 @@ define(function (require, exports, module) {
 
     },
 
-    'test remove': function () {
+    'test remove'() {
       var TestModel = Model.define('TestModel');
       TestModel.defineFields({name: 'text'});
       var doc = TestModel.build({name: 'foo'}).$$save();
@@ -305,12 +305,12 @@ define(function (require, exports, module) {
     },
 
     'with TestModel': {
-      setUp: function () {
+      setUp() {
         v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}});
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
-      "test changesTo": function () {
+      "test changesTo"() {
         var res = v.TestModel.changesTo("foo", v.doc = {foo: {123: {name: 'y'}}},
                                         v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
 
@@ -327,12 +327,12 @@ define(function (require, exports, module) {
         assert.equals(v.TestModel.changesTo("daz", null, {attributes: {daz: 123}}), 'del');
       },
 
-      "test classMethods": function () {
+      "test classMethods"() {
         var doc = v.TestModel.build();
         assert.same(doc.constructor, doc.classMethods);
       },
 
-      "test _id": function () {
+      "test _id"() {
         assert.equals(v.TestModel.$fields._id, {type: 'id'});
 
         var doc = new v.TestModel({_id: "attrId"});
@@ -347,7 +347,7 @@ define(function (require, exports, module) {
         assert.same(doc._id, "chgId");
       },
 
-      "test $hasChanged": function () {
+      "test $hasChanged"() {
         var doc = new v.TestModel({_id: "attrId"});
 
         assert.isFalse(doc.$hasChanged('name'));
@@ -363,7 +363,7 @@ define(function (require, exports, module) {
         assert.isTrue(doc.$hasChanged('age.bob', {age: 5, "age.bob.$+1": 0}));
       },
 
-      "test exists": function () {
+      "test exists"() {
         var doc = v.TestModel.create({name: 'foo'});
 
         assert.isTrue(v.TestModel.exists(doc._id));
@@ -371,13 +371,13 @@ define(function (require, exports, module) {
         assert.isFalse(v.TestModel.exists('bad'));
       },
 
-      "test query": function () {
+      "test query"() {
         var query = v.TestModel.query;
 
         assert.same(query.model, v.TestModel);
       },
 
-      "test $onThis": function () {
+      "test $onThis"() {
         var sut = v.TestModel.create();
 
         var query = sut.$onThis;
@@ -386,33 +386,33 @@ define(function (require, exports, module) {
         assert.same(query.singleId, sut._id);
       },
 
-      "test where": function () {
+      "test where"() {
         var query = v.TestModel.where('t1', 123);
 
         assert.same(query.model, v.TestModel);
         assert.equals(query._wheres, {t1: 123});
       },
 
-      "test findById": function () {
+      "test findById"() {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
         assert[isClient ? 'same' : 'equals'](v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
-      "test findAttrsById": function () {
+      "test findAttrsById"() {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
         var attrs = v.TestModel.findAttrsById(doc._id);
         assert.same(attrs, v.TestModel.findById(doc._id).attributes);
       },
 
-      "test findBy.": function () {
+      "test findBy."() {
         var doc = v.TestModel.create({name: 'Sam', foo: 'bar'});
 
         assert[isClient ? 'same' : 'equals'](v.TestModel.findBy('foo', 'bar').attributes, doc.attributes);
       },
 
-      "test validator passing function": function () {
+      "test validator passing function"() {
         v.TestModel.defineFields({baz: {type: 'text', required: function (field, options) {
           assert.same(this, doc);
           assert.same(field, 'baz');
@@ -429,7 +429,7 @@ define(function (require, exports, module) {
         refute(doc.$isValid());
       },
 
-      "test withChanges on objects": function () {
+      "test withChanges on objects"() {
         v.TestModel.defineFields({queen: 'text'});
 
         var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
@@ -455,14 +455,14 @@ define(function (require, exports, module) {
         assert.same(old.queen, undefined);
       },
 
-      "test withChanges on arrays addItem": function () {
+      "test withChanges on arrays addItem"() {
         var doc = new v.TestModel({_id: 'f123', foo: ['f123']});
         var was = {'foo.$-1': 'f123'};
         var old = doc.$withChanges(was);
         assert.equals(old.foo, []);
       },
 
-      "test withChanges on array removeItem": function () {
+      "test withChanges on array removeItem"() {
         var doc = new v.TestModel({_id: "123", foo: []});
         var was = {"foo.1.bar": 3};
 
@@ -476,7 +476,7 @@ define(function (require, exports, module) {
         assert.equals(old.foo, [{bar: 3}]);
       },
 
-      "test $asChanges": function () {
+      "test $asChanges"() {
         var beforeChange = {a: 1, b: 2, c: 3, "e.1.f": 42};
         var doc = new v.TestModel({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
 
@@ -489,7 +489,7 @@ define(function (require, exports, module) {
         assert.equals(doc.attributes, {_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
       },
 
-      "test addItem $asChanges": function () {
+      "test addItem $asChanges"() {
         var beforeChange = {"a.$-1": "a", "a.$-2": "b"};
         var doc = new v.TestModel({id: "1", a: ["x", "a", "b"]});
 
@@ -498,7 +498,7 @@ define(function (require, exports, module) {
         assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
       },
 
-      "test removeItem $asChanges": function () {
+      "test removeItem $asChanges"() {
         var beforeChange = {"a.$+1": "a", "a.$+2": "b"};
         var doc = new v.TestModel({id: "1", a: ["x"]});
 
@@ -507,7 +507,7 @@ define(function (require, exports, module) {
         assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
       },
 
-      "test change": function () {
+      "test change"() {
         var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
         doc.$change('foo').bar.baz = "new";
@@ -527,7 +527,7 @@ define(function (require, exports, module) {
         assert.equals(doc.attributes.foo, {bar: {baz: 'orig'}});
       },
 
-      "test definePrototypeMethod": function () {
+      "test definePrototypeMethod"() {
         v.TestModel.definePrototypeMethod('fooBar', v.stub = test.stub());
 
         var baz = {_id: "123"};
@@ -542,7 +542,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.stub, sut._id, "123", "abc");
       },
 
-      "test can override and save invalid doc": function () {
+      "test can override and save invalid doc"() {
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build({bar: null});
 
@@ -551,7 +551,7 @@ define(function (require, exports, module) {
         assert(v.TestModel.findById(foo._id));
       },
 
-      "test must be valid save ": function () {
+      "test must be valid save "() {
         TH.noInfo();
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
         var foo = v.TestModel.build();
@@ -566,7 +566,7 @@ define(function (require, exports, module) {
         assert.same(foo.$reload().bar, 'okay');
       },
 
-      'test timestamps': function () {
+      'test timestamps'() {
         v.TestModel.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
 
         assert.equals(v.TestModel.createTimestamps, { createdAt: true });
@@ -603,17 +603,17 @@ define(function (require, exports, module) {
       },
 
       "belongs_to": {
-        setUp: function () {
+        setUp() {
           v.Qux = Model.define('Qux').defineFields({name: 'text'});
           test.onEnd(function () {Model._destroyModel('Qux', 'drop')});
           v.qux = v.Qux.create({name: "qux"});
         },
 
-        tearDown: function () {
+        tearDown() {
           Model._destroyModel('Qux', 'drop');
         },
 
-        "test belongs_to auto": function () {
+        "test belongs_to auto"() {
           v.TestModel.defineFields({qux_id: {type: 'belongs_to'}});
 
           var sut = v.TestModel.build({qux_id: v.qux._id});
@@ -626,7 +626,7 @@ define(function (require, exports, module) {
           assert.calledOnce(quxFind);
         },
 
-        "test belongs_to manual name": function () {
+        "test belongs_to manual name"() {
           v.TestModel.defineFields({baz_id: {type: 'belongs_to', modelName: 'Qux'}});
 
           var sut = v.TestModel.build({baz_id: v.qux._id});
@@ -634,7 +634,7 @@ define(function (require, exports, module) {
           assert.same(sut.baz.name, "qux");
         },
 
-        "test belongs_to manual model": function () {
+        "test belongs_to manual model"() {
           v.TestModel.defineFields({baz_id: {type: 'belongs_to', model: v.Qux}});
 
           var sut = v.TestModel.build({baz_id: v.qux._id});
@@ -643,7 +643,7 @@ define(function (require, exports, module) {
         },
       },
 
-      "test hasMany": function () {
+      "test hasMany"() {
         function fooFinder(query) {
           v.doc = this;
           v.query = query;
@@ -660,7 +660,7 @@ define(function (require, exports, module) {
 
       },
 
-      'test user_id_on_create': function () {
+      'test user_id_on_create'() {
         v.User = Model.define('User');
         test.onEnd(function () {
           Model._destroyModel('User', 'drop');
@@ -684,7 +684,7 @@ define(function (require, exports, module) {
         });
       },
 
-      "test field accessor false": function () {
+      "test field accessor false"() {
         v.TestModel.defineFields({fuzz: {type: 'text', accessor: false}});
         var doc = v.TestModel.build({fuzz: 'bar'});
 
@@ -693,7 +693,7 @@ define(function (require, exports, module) {
         assert.same(v.TestModel.$fields.fuzz.accessor, false);
       },
 
-      'test equality': function () {
+      'test equality'() {
         var OtherClass = Model.define('OtherClass'),
             a = new v.TestModel(),
             b = new v.TestModel(),
@@ -715,7 +715,7 @@ define(function (require, exports, module) {
         refute.isTrue(a.$equals(null));
       },
 
-      'test create': function () {
+      'test create'() {
         var attrs = {name: 'testing'};
 
         isClient && this.spy(session, "rpc");
@@ -731,7 +731,7 @@ define(function (require, exports, module) {
           assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id,{_id: doc._id, name: "testing"});
       },
 
-      "test $reload on removed doc": function () {
+      "test $reload on removed doc"() {
         var doc = v.TestModel.create({name: 'old'});
 
         doc.$remove();
@@ -741,7 +741,7 @@ define(function (require, exports, module) {
         assert.equals(doc.attributes, {});
       },
 
-      "test $clearChanges": function () {
+      "test $clearChanges"() {
         var doc = new v.TestModel({_id: 't1', name: 'foo'});
 
         var changes = doc.changes;
@@ -758,7 +758,7 @@ define(function (require, exports, module) {
         assert(util.isObjEmpty(doc.changes));
       },
 
-      'test update': function () {
+      'test update'() {
         var doc = v.TestModel.create({name: 'old'});
 
         isClient && this.spy(session, "rpc");
@@ -778,7 +778,7 @@ define(function (require, exports, module) {
       },
 
       "put": {
-        setUp: function () {
+        setUp() {
           test.intercept(koru, 'userId', function () {return 'u123'});
           v.TestModel.defineFields({myAry: 'varchar(24) ARRAY', deep: 'object'});
           v.doc = v.TestModel.create({name: 'old', myAry: ['zero', 'three'], deep: {a: 1}});
@@ -786,20 +786,20 @@ define(function (require, exports, module) {
           isClient && this.spy(session, "rpc");
         },
 
-        "test no authorizePut": function () {
+        "test no authorizePut"() {
           test.stub(koru, 'info');
           assert.accessDenied(function () {
             v.doc.$put({name: 'new'});
           });
         },
 
-        "test simple": function () {
+        "test simple"() {
           v.TestModel.prototype.authorizePut = test.stub();
           v.doc.$put('name', 'changed');
           assert.same(v.doc.$reload().name, 'changed');
         },
 
-        "test authorizePut function": function () {
+        "test authorizePut function"() {
           v.TestModel.prototype.authorizePut = v.auth = test.stub();
 
           v.doc.$put({
@@ -835,7 +835,7 @@ define(function (require, exports, module) {
             });
         },
 
-        "test authorizePut object": function () {
+        "test authorizePut object"() {
           v.TestModel.prototype.authorizePut = {
             myAry: v.myAry = test.stub(),
             deep: function (doc, updates, key) {
@@ -873,7 +873,7 @@ define(function (require, exports, module) {
         },
       },
 
-      'test build': function () {
+      'test build'() {
         var doc = v.TestModel.create();
         var copy = v.TestModel.build(doc.attributes);
 
@@ -884,7 +884,7 @@ define(function (require, exports, module) {
         assert.equals(copy.changes._id, null);
       },
 
-      'test setFields': function () {
+      'test setFields'() {
         v.TestModel.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
         var sut = new v.TestModel();
 
@@ -901,14 +901,14 @@ define(function (require, exports, module) {
 
       },
 
-      "test toId": function () {
+      "test toId"() {
         var doc = new v.TestModel({_id: 'theId'});
 
         assert.same(v.TestModel.toId(doc), 'theId');
         assert.same(v.TestModel.toId('astring'), 'astring');
       },
 
-      "test toDoc": function () {
+      "test toDoc"() {
         var doc = new v.TestModel({_id: 'theId'});
 
 
@@ -922,7 +922,7 @@ define(function (require, exports, module) {
       },
     },
 
-    "test define via module": function () {
+    "test define via module"() {
       test.stub(koru, 'onunload');
       var TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
       assert.same(Model.TestModel, TestModel);
@@ -934,7 +934,7 @@ define(function (require, exports, module) {
       refute(Model.TestModel);
     },
 
-    'test define with name': function () {
+    'test define with name'() {
       var TestModel = Model.define('TestModel', {t1: 123});
 
       var testAttrs = {_id: 123, name: 'orig name'};
@@ -970,7 +970,7 @@ define(function (require, exports, module) {
       assert.same(tsc.withDef, 0);
     },
 
-    "test splitUpdateKeys": function () {
+    "test splitUpdateKeys"() {
       var changes = {}, partials = {};
       var updates = {
         single: 1,

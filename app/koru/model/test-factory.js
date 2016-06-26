@@ -4,12 +4,12 @@ define(function(require, exports, module) {
   var test = require('../test');
 
   var Factory = {
-    clear: function () {
+    clear() {
       last = {};
       nameGen = {};
     },
 
-    createList: function (number, creator, ...args) {
+    createList(number, creator, ...args) {
       var list = [];
 
       var func = typeof args[0] === 'function' ? args.shift() : null;
@@ -27,29 +27,29 @@ define(function(require, exports, module) {
       return last;
     },
 
-    setLastNow: function (now) {
+    setLastNow(now) {
       lastNow = now;
     },
 
-    lastOrCreate: function (name) {
+    lastOrCreate(name) {
       return last[name] || Factory['create'+util.capitalize(name)]();
     },
 
     getUniqueNow: getUniqueNow,
     generateName: generateName,
 
-    traits: function (funcs) {
+    traits(funcs) {
       util.extend(traits, funcs);
       return this;
     },
 
     /** Add a function for any action needed to happen after doc created */
-    postCreate: function (funcs) {
+    postCreate(funcs) {
       util.extend(postCreate, funcs);
       return this;
     },
 
-    defines: function (defines) {
+    defines(defines) {
       for(var key in defines) {
         this['build'+key] = buildFunc(key, defines[key]);
         this['create'+key] = createFunc(key, defines[key]);
@@ -145,7 +145,7 @@ define(function(require, exports, module) {
   }
 
   util.extend(BaseBuilder.prototype, {
-    addField: function (field, value) {
+    addField(field, value) {
       if (! this.options.hasOwnProperty(field)) {
         switch(typeof value) {
         case 'undefined': break;
@@ -159,11 +159,11 @@ define(function(require, exports, module) {
       return this;
     },
 
-    field: function (field) {
+    field(field) {
       return (this.options.hasOwnProperty(field) ? this.options : this.default_opts)[field];
     },
 
-    attributes: function () {
+    attributes() {
       var result = {};
       addAttributes(this.default_opts);
       addAttributes(this.options);
@@ -178,7 +178,7 @@ define(function(require, exports, module) {
       }
     },
 
-    field: function (name) {
+    field(name) {
       if (name in this.options) return this.options[name];
       return this.default_opts[name];
     },
@@ -203,16 +203,16 @@ define(function(require, exports, module) {
       return this;
     },
 
-    genName: function (field, prefix) {
+    genName(field, prefix) {
       return this.addField(field || 'name', generateName(prefix || this.model.modelName));
     },
 
-    canSave: function (value) {
+    canSave(value) {
       this._canSave = value;
       return this;
     },
 
-    insert: function () {
+    insert() {
       var id = this.model._insertAttrs(this.attributes());
       var doc = this.model.findById(id);
       if (! doc) {
@@ -224,13 +224,13 @@ define(function(require, exports, module) {
       return doc;
     },
 
-    build: function () {
+    build() {
       var doc = new this.model();
       util.extend(doc.changes, this.attributes());
       return doc;
     },
 
-    create: function () {
+    create() {
       if (this._canSave) {
         var doc = this.model.build({});
         doc.changes = this.attributes();
@@ -247,7 +247,7 @@ define(function(require, exports, module) {
       return doc;
     },
 
-    afterCreate: function (func) {
+    afterCreate(func) {
       this._afterCreate = func;
       return this;
     },

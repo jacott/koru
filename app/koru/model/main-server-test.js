@@ -11,18 +11,18 @@ define(function (require, exports, module) {
   const Future   = util.Future;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       TH.noInfo();
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
-    "test auto Id": function () {
+    "test auto Id"() {
       var TestModel = Model.define('TestModel');
       TestModel.defineFields({
         _id: {type: 'serial', auto: true},
@@ -38,7 +38,7 @@ define(function (require, exports, module) {
       assert.same(doc._id, 2);
     },
 
-    "test invalid findById": function () {
+    "test invalid findById"() {
       var TestModel = Model.define('TestModel');
 
       assert.same(TestModel.findById(null), undefined);
@@ -48,7 +48,7 @@ define(function (require, exports, module) {
       }, 'Error', 'invalid id: [object Object]');
     },
 
-    "test globalDictAdders": function () {
+    "test globalDictAdders"() {
       var adder = session._globalDictAdders[koru.absId(require, './main-server')];
       assert.isFunction(adder);
 
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.stub, 'age');
     },
 
-    "test remote": function () {
+    "test remote"() {
       var TestModel = Model.define('TestModel');
 
       TestModel.remote({foo: v.foo = test.stub().returns('result')});
@@ -84,7 +84,7 @@ define(function (require, exports, module) {
       assert.called(TestModel.db.transaction);
     },
 
-    "test when no changes in save": function () {
+    "test when no changes in save"() {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
@@ -99,7 +99,7 @@ define(function (require, exports, module) {
       refute.called (v.beforeSave);
     },
 
-    "test reload and caching": function () {
+    "test reload and caching"() {
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
@@ -147,7 +147,7 @@ define(function (require, exports, module) {
       assert.same(v.doc.$reload().name, 'fuz');
     },
 
-    "test overrideSave": function () {
+    "test overrideSave"() {
       var TestModel = Model.define('TestModel', {
         overrideSave: v.overrideSave = test.stub()
       }).defineFields({name: 'text'});
@@ -164,7 +164,7 @@ define(function (require, exports, module) {
       refute.called(saveSpy);
     },
 
-    "test saveRpc new": function () {
+    "test saveRpc new"() {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
       }).defineFields({name: 'text'});
@@ -198,7 +198,7 @@ define(function (require, exports, module) {
       assert.calledOnce(TestModel.docs.transaction);
     },
 
-    "test saveRpc existing": function () {
+    "test saveRpc existing"() {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
       }).defineFields({name: 'text'});
@@ -224,7 +224,7 @@ define(function (require, exports, module) {
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
     },
 
-    'test removeRpc': function () {
+    'test removeRpc'() {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
       }).defineFields({name: 'text'});
@@ -249,7 +249,7 @@ define(function (require, exports, module) {
       assert.calledOnce(TestModel.docs.transaction);
     },
 
-    "test addUniqueIndex": function () {
+    "test addUniqueIndex"() {
       var TestModel = Model.define('TestModel');
 
       var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
@@ -263,7 +263,7 @@ define(function (require, exports, module) {
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1}, {sparse: true, unique: true});
     },
 
-    "test addIndex": function () {
+    "test addIndex"() {
       var TestModel = Model.define('TestModel');
 
       var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
@@ -277,7 +277,7 @@ define(function (require, exports, module) {
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
     },
 
-    "test transaction": function () {
+    "test transaction"() {
       var TestModel = Model.define('TestModel');
       var stub = test.stub().returns('result');
       var tx = test.spy(TestModel.docs, 'transaction');

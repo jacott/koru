@@ -1,26 +1,26 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
-  var Model = require('./base');
-  var Future = requirejs.nodeRequire('fibers/future');
+  const koru   = require('../main');
+  const util   = require('../util');
+  const Model  = require('./base');
+  const Future = requirejs.nodeRequire('fibers/future');
 
   return function (Query) {
     util.extend(Query.prototype, {
-      withIndex: function (idx, params) {
+      withIndex(idx, params) {
         return this.where(params);
       },
 
-      limit: function (limit) {
+      limit(limit) {
         this._limit = limit;
         return this;
       },
 
-      batchSize: function (size) {
+      batchSize(size) {
         this._batchSize = size;
         return this;
       },
 
-      fetch: function () {
+      fetch() {
         var results = [];
         this.forEach(function (doc) {
           results.push(doc);
@@ -28,7 +28,7 @@ define(function(require, exports, module) {
         return results;
       },
 
-      waitForOne: function (timeout) {
+      waitForOne(timeout) {
         timeout = timeout || 2000;
         var query = this;
         var future = new Future;
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
         }
       },
 
-      fetchIds: function () {
+      fetchIds() {
         if (this.singleId) throw Error('fetchIds onId not supported');
 
         var model = this.model;
@@ -67,12 +67,12 @@ define(function(require, exports, module) {
         return results;
       },
 
-      show: function (func) {
+      show(func) {
         func(this.model.docs.show(this));
         return this;
       },
 
-      forEach: function (func) {
+      forEach(func) {
         var where = this._wheres;
         if (this.singleId) {
           var doc = this.fetchOne();
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
         return this;
       },
 
-      map: function (func) {
+      map(func) {
         var results = [];
         this.forEach(function (doc) {
           results.push(func(doc));
@@ -104,7 +104,7 @@ define(function(require, exports, module) {
         return results;
       },
 
-      remove: function () {
+      remove() {
         var count = 0;
         var model = this.model;
         var docs = model.docs;
@@ -119,18 +119,18 @@ define(function(require, exports, module) {
         return count;
       },
 
-      count: function (max) {
+      count(max) {
         if (max == null)
           return this.model.docs.count(this);
         else
           return this.model.docs.count(this, {limit: max});
       },
 
-      exists: function () {
+      exists() {
         return this.model.docs.exists(this);
       },
 
-      update: function (origChanges, value) {
+      update(origChanges, value) {
         if (typeof origChanges === 'string') {
           var changes = {};
           changes[origChanges] = value;
@@ -218,7 +218,7 @@ define(function(require, exports, module) {
         return count;
       },
 
-      fetchOne: function() {
+      fetchOne() {
         var opts;
         if (this._sort && ! this.singleId) {
           var options = {limit: 1};

@@ -1,20 +1,20 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('koru/test');
-  var sut = require('./html-doc');
+  const TH  = require('koru/test');
+  const sut = require('./html-doc');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       document.body.textContent = '';
       v = null;
     },
 
-    "test construction": function () {
+    "test construction"() {
       var df = document.createDocumentFragment();
 
       var elm = document.createElement('div');
@@ -56,7 +56,7 @@ define(function (require, exports, module) {
       assert.same(top.textContent, 'hello worldbar');
     },
 
-    "test style backgroundColor": function () {
+    "test style backgroundColor"() {
       var top = document.createElement('div');
       assert.same(top.style.backgroundColor, '');
       top.style.backgroundColor = '#ffff00';
@@ -64,7 +64,7 @@ define(function (require, exports, module) {
       assert.same(top.getAttribute('style'), 'background-color: rgb(255, 255, 0);');
     },
 
-    "test style.cssText": function () {
+    "test style.cssText"() {
       var top = document.createElement('div');
       top.setAttribute('style', 'color:#ff0000;font-weight:bold');
       assert.same(top.style.color, 'rgb(255, 0, 0)');
@@ -83,7 +83,7 @@ define(function (require, exports, module) {
       assert.match(top.style.cssText, /^color: rgb\(255, 0, 0\); font-weight: normal; text-decoration: underline; font-family: ['"]?foo bar["']?;$/);
     },
 
-    "test insertBefore": function () {
+    "test insertBefore"() {
       var top = document.createElement('div');
 
       var b = document.createElement('b');
@@ -101,7 +101,7 @@ define(function (require, exports, module) {
       assert.sameHtml(top.innerHTML, '<i></i><x1></x1><x2></x2><b></b>');
     },
 
-    "test innerHTML": function () {
+    "test innerHTML"() {
       var elm = document.createElement('div');
       elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo></div>';
       assert.same(elm.firstChild.id, "top123");
@@ -109,7 +109,7 @@ define(function (require, exports, module) {
       assert.same(elm.innerHTML, v.exp.replace(/&#62/, '&gt'));
     },
 
-    "test HTML entities": function () {
+    "test HTML entities"() {
       var div = document.createElement('div');
       div.innerHTML = "&lt;&QUOT;&quot;&gt;&#39;&amp;&nbsp;&euro;";
       assert.same(div.firstChild.textContent, '<"">\'&\xa0\u20ac');

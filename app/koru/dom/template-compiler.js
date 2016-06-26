@@ -2,11 +2,11 @@ var Path = require('path');
 var htmlparser = requirejs.nodeRequire("htmlparser2");
 
 var Compiler = {
-  Error: function (message, point) {
+  Error(message, point) {
     this.message = message;
     this.point = point;
   },
-  toJavascript: function (code) {
+  toJavascript(code) {
     var template;
     var result = '';
     try {
@@ -50,27 +50,25 @@ var Compiler = {
   }
 };
 
-function Template(parent, name) {
-  this.nested = [];
-  this.name = name;
-  this.nodes = {children: []};
-  this.parent = parent;
-  if (parent) parent.add(this);
-}
+class Template {
+  constructor(parent, name) {
+    this.nested = [];
+    this.name = name;
+    this.nodes = {children: []};
+    this.parent = parent;
+    if (parent) parent.add(this);
+  }
 
-Template.prototype = {
-  constructor: Template,
-
-  addNode: function (name, attrs) {
+  addNode(name, attrs) {
     attrs = extractAttrs(attrs);
     var newNodes = {name: name, attrs: attrs, children: [], parent: this.nodes};
 
     this.nodes.children.push(newNodes);
 
     this.nodes = newNodes;
-  },
+  }
 
-  addText: function (text) {
+  addText(text) {
     if (text === '' || text === ' ' || text === '  ') return null;
     var nodes = extractBraces(text);
     if (typeof nodes === 'string')
@@ -84,17 +82,17 @@ Template.prototype = {
         elm && chn.push(elm);
       });
     });
-  },
+  }
 
-  endNode: function () {
+  endNode() {
     this.nodes = this.nodes.parent;
-  },
+  }
 
-  toString: function () {
+  toString() {
     return JSON.stringify(this.toHash());
-  },
+  }
 
-  toHash: function () {
+  toHash() {
     var content = {name: this.name};
     if (this.nested.length)
       content.nested = this.nested.map(function (row) {
@@ -107,17 +105,17 @@ Template.prototype = {
       });
 
     return content;
-  },
+  }
 
-  fullName: function () {
+  fullName() {
     return (this.parent ? this.parent.fullName() : '') + "['" + this.name + "']";
-  },
+  }
 
-  add: function (child) {
+  add(child) {
     this.nested.push(child);
     return this;
-  },
-};
+  }
+}
 
 function nodeToHash(node) {
   if (typeof node === 'string' || node.shift)

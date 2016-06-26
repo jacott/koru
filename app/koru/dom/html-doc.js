@@ -1,23 +1,21 @@
 define(function(require, exports, module) {
   if (isClient) return window.document;
-  var util = require('koru/util');
-  var koru = require('koru');
-  var uColor = require('koru/util-color');
+  const koru              = require('koru');
+  const util              = require('koru/util');
+  const uColor            = require('koru/util-color');
+  const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
+  const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
-  var CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
-  var htmlparser = requirejs.nodeRequire("htmlparser2");
-  var cssParser = new CssSelectorParser();
+  const cssParser = new CssSelectorParser();
 
   cssParser.registerSelectorPseudos('has');
   cssParser.registerNestingOperators('>', '+', '~');
   cssParser.registerAttrEqualityMods('^', '$', '*', '~');
   cssParser.enableSubstitutes();
 
-  koru.onunload(module, function () {
-    global.document = null;
-  });
+  koru.onunload(module, () => global.document = null);
 
-  var threadMap = new WeakMap;
+  const threadMap = new WeakMap;
 
   Object.defineProperty(global, 'document', {configurable: true, get: function () {
     var key = util.Fiber.current || global;
@@ -28,35 +26,51 @@ define(function(require, exports, module) {
     return doc;
   }});
 
+  function copyArray(from, to) {
+    util.forEach(from, elm => to.push(elm.cloneNode(true)));
+  }
+
+  const ELEMENT_NODE = 1;
+  const TEXT_NODE = 3;
+  const DOCUMENT_NODE = 9;
+  const DOCUMENT_FRAGMENT_NODE = 11;
+
+  const NOCLOSE = util.toMap("BR HR INPUT LINK".split(' '));
+
+  const NAME_TO_CHAR = {
+    amp: '&',
+    quot: '"',
+    lt: '<',
+    gt: '>',
+    nbsp: '\xa0',
+    euro: '\u20ac',
+  };
+
+  const CHAR_TO_NAME = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '\xa0': '&nbsp;',
+  };
+
   function Document() {
     common(this, DOCUMENT_NODE);
     this.appendChild(this.body = new DocumentElement('body'));
 
   }
 
-  function copyArray(from, to) {
-    util.forEach(from, function (elm) {
-      to.push(elm.cloneNode(true));
-    });
-  }
-
-  var ELEMENT_NODE = 1;
-  var TEXT_NODE = 3;
-  var DOCUMENT_NODE = 9;
-  var DOCUMENT_FRAGMENT_NODE = 11;
-
   Document.prototype = {
     constructor: Document,
 
-    ELEMENT_NODE: ELEMENT_NODE,
-    TEXT_NODE: TEXT_NODE,
-    DOCUMENT_FRAGMENT_NODE: DOCUMENT_FRAGMENT_NODE,
+    ELEMENT_NODE,
+    TEXT_NODE,
+    DOCUMENT_FRAGMENT_NODE,
 
-    createElement: function (tag) {return new DocumentElement(tag)},
-    createTextNode: function (value) {return new TextNode(value)},
-    createDocumentFragment: function () {return new DocumentFragment()},
+    createElement(tag) {return new DocumentElement(tag)},
+    createTextNode(value) {return new TextNode(value)},
+    createDocumentFragment() {return new DocumentFragment()},
 
-    removeChild: function (node) {
+    removeChild(node) {
       var parent = this;
       var nodes = parent.childNodes;
 
@@ -69,7 +83,7 @@ define(function(require, exports, module) {
       }
     },
 
-    insertBefore: function (node, before) {
+    insertBefore(node, before) {
       var parent = this;
       if (! before)
         return parent.appendChild(node);
@@ -103,7 +117,7 @@ define(function(require, exports, module) {
       throw new Error("before node is not a child");
     },
 
-    appendChild: function (node) {
+    appendChild(node) {
       if (node.parentNode)
         node.parentNode.removeChild(node);
       if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
@@ -120,13 +134,13 @@ define(function(require, exports, module) {
       }
     },
 
-    cloneNode: function (deep) {
+    cloneNode(deep) {
       var copy = new this.constructor;
 
       if (deep && copy.nodeType === DOCUMENT_NODE) {
         var to = copy.childNodes;
         to.pop();
-        util.forEach(this.childNodes, function (elm) {
+        util.forEach(this.childNodes, elm => {
           elm = elm.cloneNode(true);
           if (elm.tagName === 'BODY')
             copy.body = elm;
@@ -167,7 +181,7 @@ define(function(require, exports, module) {
       var node = this;
       node.childNodes = [];
       var parser = new htmlparser.Parser({
-        onopentag: function(name, attrs){
+        onopentag(name, attrs){
           var elm = new DocumentElement(name);
           node.appendChild(elm);
           for(var attr in attrs)
@@ -175,10 +189,10 @@ define(function(require, exports, module) {
 
           node = elm;
         },
-        ontext: function(text){
+        ontext(text){
           node.appendChild(new TextNode(unescapeHTML(text)));
         },
-        onclosetag: function(name){
+        onclosetag(name){
           node = node.parentNode;
         }
       });
@@ -200,7 +214,7 @@ define(function(require, exports, module) {
       return result.join('');
     },
 
-    querySelectorAll: function (css) {
+    querySelectorAll(css) {
       css = cssParser.parse(css).rule;
 
       var results = [];
@@ -224,7 +238,7 @@ define(function(require, exports, module) {
     common(this, DOCUMENT_FRAGMENT_NODE);
   }
   buildNodeType(DocumentFragment, {
-    cloneNode: function (deep) {
+    cloneNode(deep) {
       var copy = new DocumentFragment();
 
       deep && copyArray(this.childNodes, copy.childNodes);
@@ -232,7 +246,6 @@ define(function(require, exports, module) {
     },
   });
 
-  var NOCLOSE = util.toMap("BR HR INPUT LINK".split(' '));
 
   function DocumentElement(tag) {
     common(this, ELEMENT_NODE);
@@ -240,7 +253,7 @@ define(function(require, exports, module) {
     this.attributes = {};
   }
   buildNodeType(DocumentElement, {
-    cloneNode: function (deep) {
+    cloneNode(deep) {
       var copy = new DocumentElement(this.tagName);
       copy.attributes = util.deepCopy(this.attributes);
       deep && copyArray(this.childNodes, copy.childNodes);
@@ -274,13 +287,13 @@ define(function(require, exports, module) {
       return "<"+open+">"+this.innerHTML+"</"+tn+">";
     },
 
-    setAttribute: function (name, value) {
+    setAttribute(name, value) {
       if (name === 'style')
         this.style.cssText = value;
       else
         this.attributes[name] = value;
     },
-    getAttribute: function (name) {
+    getAttribute(name) {
       if (name === 'style')
         return this.style._origCssText();
       else
@@ -292,18 +305,16 @@ define(function(require, exports, module) {
     },
   });
 
-  function ClassList(node) {
-    this.node = node;
-  }
+  class ClassList {
+    constructor(node) {
+      this.node = node;
+    }
 
-  ClassList.prototype = {
-    constructor: ClassList,
-
-    contains: function (value) {
+    contains(value) {
       return new RegExp("\\b" + util.regexEscape(value) + "\\b").test(this.node.attributes.class);
-    },
+    }
 
-    add: function (value) {
+    add(value) {
       value = ''+value;
       var attrs = this.node.attributes;
       if (attrs.class) {
@@ -311,20 +322,20 @@ define(function(require, exports, module) {
       } else {
         attrs.class = value;
       }
-    },
+    }
 
-    remove: function (value) {
+    remove(value) {
       var attrs = this.node.attributes;
       attrs.class = attrs.class.replace(new RegExp("\\s?\\b" + util.regexEscape(value) + "\\b"), '');
-    },
-  };
+    }
+  }
 
   function TextNode(value) {
     common(this, TEXT_NODE);
     this.wholeText = value;
   }
   buildNodeType(TextNode, {
-    cloneNode: function (deep) {
+    cloneNode(deep) {
       return new TextNode(this.wholeText);
     },
     get textContent() {return this.wholeText},
@@ -349,22 +360,6 @@ define(function(require, exports, module) {
       .replace(/[&<>\xa0]/g, function (m) {return CHAR_TO_NAME[m]});
   }
 
-  var NAME_TO_CHAR = {
-    amp: '&',
-    quot: '"',
-    lt: '<',
-    gt: '>',
-    nbsp: '\xa0',
-    euro: '\u20ac',
-  };
-
-  var CHAR_TO_NAME = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '\xa0': '&nbsp;',
-  };
-
   function unescapeHTML(html) {
     return html
       .replace(/\&(#\d+|[a-z]+);/gi, function (m, d) {
@@ -388,9 +383,9 @@ define(function(require, exports, module) {
 
     get length() {return this._styleArray.length},
 
-    item: function (index) {return this._styleArray[index]},
+    item(index) {return this._styleArray[index]},
 
-    _setStyle: function (name, dname, value) {
+    _setStyle(name, dname, value) {
       this._needBuild = true;
       var styles = this._styles;
       var oldValue = styles[name];
@@ -402,12 +397,12 @@ define(function(require, exports, module) {
       styles[dname] = styles[name] = value;
     },
 
-    _origCssText: function () {
+    _origCssText() {
       this._needBuild && this._rebuild();
       return this._cssText;
     },
 
-    _rebuild: function () {
+    _rebuild() {
       this._needBuild = false;
       this._cssText = this.cssText;
     },
@@ -447,9 +442,9 @@ define(function(require, exports, module) {
   };
 
   'text-align font-size font-family font-weight font-style text-decoration background-color color'.split(' ').forEach(function (dname) {
-    var name = util.camelize(dname);
-    var get = function () {return this._styles[name] || ''};
-    var set = /color/i.test(name) ? function (value) {
+    const name = util.camelize(dname);
+    function get() {return this._styles[name] || ''};
+    const set = /color/i.test(name) ? function (value) {
       this._setStyle(name, dname, (value && uColor.toRgbStyle(value)) || '');
     } : function (value) {this._setStyle(name, dname, value)};
 

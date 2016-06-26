@@ -31,7 +31,7 @@ define(function(require, exports, module) {
     save: save,
     put: put,
 
-    destroyModel: function (model, drop) {
+    destroyModel(model, drop) {
       if (! model) return;
 
       let modelName = model.modelName;
@@ -41,10 +41,10 @@ define(function(require, exports, module) {
       }
     },
 
-    init: function (BaseModel, supportBase, modelProperties) {
+    init(BaseModel, supportBase, modelProperties) {
       _support = supportBase;
 
-      Object.defineProperty(BaseModel, '_databases', {enumerable: false, get: function () {return dbs}});
+      Object.defineProperty(BaseModel, '_databases', {enumerable: false, get() {return dbs}});
       Object.defineProperty(BaseModel, '_getProp', {enumerable: false, value: getProp});
       Object.defineProperty(BaseModel, '_getSetProp', {enumerable: false, value: getSetProp});
 
@@ -103,22 +103,22 @@ define(function(require, exports, module) {
       });
 
       util.extend(_support, {
-        resetDocs: function () {},
-        bumpVersion: function () {
+        resetDocs() {},
+        bumpVersion() {
           session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
         },
 
-        transaction: function (model, func) {
+        transaction(model, func) {
           return func();
         },
 
-        remote: function (model, name, func) {
+        remote(model, name, func) {
           return func;
         },
       });
     },
 
-    setupModel: function (model) {
+    setupModel(model) {
       var modelName = model.modelName;
       var dbId, docs;
 
@@ -142,7 +142,7 @@ define(function(require, exports, module) {
       var anyChange = makeSubject({});
 
       util.extend(model, {
-        notify: function () {
+        notify() {
           chkdb();
           var subject = getProp(dbId, modelName, 'notify');
           if (subject)
@@ -151,7 +151,7 @@ define(function(require, exports, module) {
           anyChange.notify.apply(subject, arguments);
         },
         onAnyChange: anyChange.onChange,
-        onChange: function () {
+        onChange() {
           chkdb();
           var subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
 
@@ -177,7 +177,7 @@ define(function(require, exports, module) {
 
     insert: Query.insert,
 
-    _insertAttrs: function (model, attrs) {
+    _insertAttrs(model, attrs) {
       if (! attrs._id) attrs._id = Random.id();
       model.docs[attrs._id] = new model(attrs);
     },

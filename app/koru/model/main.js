@@ -1,18 +1,18 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var Val = require('./validation');
-  var ModelEnv = require('../env!./main');
-  var session = require('../session/base');
-  var Random = require('../random');
-  var Query = require('./query');
-  var registerObserveId = require('./register-observe-id');
-  var registerObserveField = require('./register-observe-field');
-  var BaseModel = require('./base');
+  const ModelEnv             = require('../env!./main');
+  const koru                 = require('../main');
+  const Random               = require('../random');
+  const session              = require('../session/base');
+  const util                 = require('../util');
+  const BaseModel            = require('./base');
+  const Query                = require('./query');
+  const registerObserveField = require('./register-observe-field');
+  const registerObserveId    = require('./register-observe-id');
+  const Val                  = require('./validation');
 
-  var modelObservers = {};
+  const modelObservers = {};
 
-  var emptyObject = {};
+  const emptyObject = {};
 
   koru.onunload(module, function () {
     koru.unload(koru.absId(require, './base'));
@@ -23,11 +23,11 @@ define(function(require, exports, module) {
 
     get classMethods() {return this.constructor},
 
-    $inspect: function () {
+    $inspect() {
       return "{Model: " + this.constructor.modelName + "_" + this._id + "  " + this.name + "}";
     },
 
-    $save: function(force) {
+    $save(force) {
       var doc = this;
       switch(force) {
       case 'assert': doc.$assertValid(); break;
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
       return doc;
     },
 
-    $put: function (updates, value) {
+    $put(updates, value) {
       if (arguments.length === 2) {
         var key = updates;
         updates = {};
@@ -52,11 +52,11 @@ define(function(require, exports, module) {
       return this;
     },
 
-    $$save: function() {
+    $$save() {
       return this.$save('assert');
     },
 
-    $isValid: function () {
+    $isValid() {
       var doc = this,
           model = doc.constructor,
           fVTors = model._fieldValidators;
@@ -83,26 +83,26 @@ define(function(require, exports, module) {
       return ! doc._errors;
     },
 
-    $assertValid: function () {
+    $assertValid() {
       Val.allowIfValid(this.$isValid(), this);
     },
 
-    $equals: function (other) {
+    $equals(other) {
       if (this === other) return true;
       return other && other._id && this._id && this._id === other._id && this.constructor === other.constructor;
     },
 
-    $isNewRecord: function () {
+    $isNewRecord() {
       return ! this.attributes._id;
     },
 
-    $change: function (field) {
+    $change(field) {
       if (field in this.changes)
         return this.changes[field];
       return this.changes[field] = util.deepCopy(this[field]);
     },
 
-    $hasChanged: function (field, changes) {
+    $hasChanged(field, changes) {
       changes = changes || this.changes;
 
       if (field in changes) return true;
@@ -122,7 +122,7 @@ define(function(require, exports, module) {
      * If this method is called again with the same changes object
      * then a cached version of the before doc is return.
      */
-    $withChanges: function (changes) {
+    $withChanges(changes) {
       var cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
       if (changes === cache[0]) return cache[1];
 
@@ -178,7 +178,7 @@ define(function(require, exports, module) {
      *
      * @returns new hash of extracted values.
      */
-    $asChanges: function (beforeChange) {
+    $asChanges(beforeChange) {
       var attrs = this.attributes;
       var result = {};
       for(var key in beforeChange) {
@@ -199,20 +199,20 @@ define(function(require, exports, module) {
       return new Query(this.constructor).onId(this._id);
     },
 
-    $update: function () {
+    $update() {
       var query = this.$onThis;
       return query.update.apply(query, arguments);
     },
 
-    $clearChanges: function () {
+    $clearChanges() {
       util.isObjEmpty(this.changes) || (this.changes = {});
     },
 
-    $loadCopy: function () {
+    $loadCopy() {
       return new this.constructor(this.attributes);
     },
 
-    $setFields: function (fields,options) {
+    $setFields(fields,options) {
       for(var i = 0,field;field = fields[i];++i) {
         if (field[0] !== '_' && options.hasOwnProperty(field)) {
           this[field] = options[field];
@@ -224,7 +224,7 @@ define(function(require, exports, module) {
 
     get $cache() {return this._cache || (this._cache = {})},
 
-    $cacheRef: function (key) {
+    $cacheRef(key) {
       return this.$cache[key] || (this.$cache[key] = {});
     },
   };
@@ -300,14 +300,14 @@ define(function(require, exports, module) {
 
 
   var modelProperties = {
-    create: function (attributes) {
+    create(attributes) {
       var doc = new this();
       util.extend(doc.changes, util.deepCopy(attributes));
       doc.$save();
       return isServer ? doc : doc.constructor.findById(doc._id);
     },
 
-    _insertAttrs: function (attrs) {
+    _insertAttrs(attrs) {
       ModelEnv._insertAttrs(this, attrs);
       return attrs._id;
     },
@@ -315,7 +315,7 @@ define(function(require, exports, module) {
     /**
      * Build a new document. Does not copy _id from attributes.
      */
-    build: function(attributes, allow_id) {
+    build(attributes, allow_id) {
       var doc = new this();
       if(attributes) {
         util.extend(doc.changes, util.deepCopy(attributes));
@@ -324,16 +324,16 @@ define(function(require, exports, module) {
       return doc;
     },
 
-    transaction: function (func) {
+    transaction(func) {
       return _support.transaction(this, func);
     },
 
-    toId: function (docOrId) {
+    toId(docOrId) {
       if (! docOrId || typeof docOrId === 'string') return docOrId;
       return docOrId._id;
     },
 
-    toDoc: function (docOrId) {
+    toDoc(docOrId) {
       if (! docOrId || typeof docOrId === 'string') return this.findById(docOrId);
       return docOrId;
     },
@@ -342,16 +342,16 @@ define(function(require, exports, module) {
       return new Query(this);
     },
 
-    where: function () {
+    where() {
       var query = this.query;
       return query.where.apply(query, arguments);
     },
 
-    onId: function (id) {
+    onId(id) {
       return this.query.onId(id);
     },
 
-    exists: function (condition) {
+    exists(condition) {
       var query = new Query(this);
       if (typeof condition === 'string')
         query.onId(condition);
@@ -361,15 +361,15 @@ define(function(require, exports, module) {
       return query.exists();
     },
 
-    findBy: function (field, value) {
+    findBy(field, value) {
       return this.query.where(field, value).fetchOne();
     },
 
-    isLocked: function(id) {
+    isLocked(id) {
       return (this._locks || (this._locks = Object.create(null)))[id] || false;
     },
 
-    lock: function(id, func) {
+    lock(id, func) {
       if (this.isLocked(id))
         func.call(this, id);
       else {
@@ -382,21 +382,21 @@ define(function(require, exports, module) {
       }
     },
 
-    beforeCreate: beforeCreate,
-    beforeUpdate: beforeUpdate,
-    beforeSave: beforeSave,
-    beforeRemove: beforeRemove,
+    beforeCreate,
+    beforeUpdate,
+    beforeSave,
+    beforeRemove,
 
-    afterLocalChange: afterLocalChange,
-    whenFinally: whenFinally,
+    afterLocalChange,
+    whenFinally,
 
     /**
      * Model extension methods
      */
 
-    defineFields: defineFields,
+    defineFields,
 
-    changesTo: function (field, doc, was) {
+    changesTo(field, doc, was) {
       var cache = this._changesToCache;
       if (cache && cache.field === field && cache.doc === doc && cache.was === was)
         return cache.keyMap;
@@ -428,7 +428,7 @@ define(function(require, exports, module) {
       return cache.keyMap;
     },
 
-    addVersioning: function() {
+    addVersioning() {
       var model = this,
           proto = model.prototype;
 
@@ -441,7 +441,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    remote: function(funcs) {
+    remote(funcs) {
       var prefix = this.modelName + '.';
 
       for(var key in funcs) {
@@ -451,7 +451,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    definePrototypeMethod: function(name, func) {
+    definePrototypeMethod(name, func) {
       var fullname = this.modelName+"."+name;
       this.prototype[name] = function() {
         for(var i=0;i < arguments.length;++i) {
@@ -478,7 +478,7 @@ define(function(require, exports, module) {
   var _support = {
     setupExtras: [],
 
-    validatePut: function (doc, updates) {
+    validatePut(doc, updates) {
       var userId = koru.userId();
       Val.allowAccessIf(userId && doc.authorizePut);
       var changes = {};
@@ -501,11 +501,11 @@ define(function(require, exports, module) {
       return [changes, partials];
     },
 
-    performBumpVersion: function(model, _id, _version) {
+    performBumpVersion(model, _id, _version) {
       new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();
     },
 
-    performInsert: function (doc) {
+    performInsert(doc) {
       var model = doc.constructor;
 
       doc.changes = doc.attributes;
@@ -530,7 +530,7 @@ define(function(require, exports, module) {
       if (ex) throw ex;
     },
 
-    performUpdate: function (doc, changes) {
+    performUpdate(doc, changes) {
       var model = doc.constructor;
 
       doc.changes = changes;
@@ -560,7 +560,7 @@ define(function(require, exports, module) {
     /**
      * Define a new model.
      */
-    define: function (module, name, properties, options) {
+    define(module, name, properties, options) {
       if (typeof module === 'string') {
         options = properties;
         properties = name;
@@ -601,9 +601,9 @@ define(function(require, exports, module) {
       return BaseModel[name] = model;
     },
 
-    _support: _support,
+    _support,
 
-    _destroyModel: function (name, drop) {
+    _destroyModel(name, drop) {
       var model = BaseModel[name];
       if (! model) return;
 
@@ -620,7 +620,7 @@ define(function(require, exports, module) {
       model._observing = null;
     },
 
-    _updateTimestamps: function (changes, timestamps, now) {
+    _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
         for(var key in timestamps)  {
           changes[key] = changes[key] || now;
@@ -628,7 +628,7 @@ define(function(require, exports, module) {
       }
     },
 
-    _addUserIds: function (changes, userIds, user_id) {
+    _addUserIds(changes, userIds, user_id) {
       if (userIds) {
         for(var key in userIds)  {
           changes[key] = changes[key] || user_id;
@@ -638,7 +638,7 @@ define(function(require, exports, module) {
 
     _modelProperties: modelProperties,
 
-    splitUpdateKeys: function (changes, partials, updates) {
+    splitUpdateKeys(changes, partials, updates) {
       for (var key in updates) {
         var pos = key.indexOf(".");
         if (pos === -1)
@@ -653,7 +653,7 @@ define(function(require, exports, module) {
   });
 
   var typeMap = {
-    belongs_to: function (model, field, options) {
+    belongs_to(model, field, options) {
       var name = field.replace(/_id/,'');
       var bt = options.model;
       if (! bt) {
@@ -664,13 +664,13 @@ define(function(require, exports, module) {
       Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
     },
 
-    user_id_on_create: function(model, field, options) {
+    user_id_on_create(model, field, options) {
       typeMap.belongs_to.call(this, model, field, options);
       model.userIds = model.userIds || {};
       model.userIds[field] = 'create';
     },
 
-    has_many: function (model, field, options) {
+    has_many(model, field, options) {
       var bt = options.model;
       if (! bt) {
         var name = options.modelName ||
@@ -684,7 +684,7 @@ define(function(require, exports, module) {
       mapFieldType(model, field, bt, name);
     },
 
-    auto_timestamp: function(model, field) {
+    auto_timestamp(model, field) {
       if (/create/i.test(field)) {
         model.createTimestamps = model.createTimestamps || {};
         model.createTimestamps[field] = true;

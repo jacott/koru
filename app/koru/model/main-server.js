@@ -21,7 +21,7 @@ define(function(require, exports, module) {
   });
 
   var ModelEnv = {
-    destroyModel: function (model, drop) {
+    destroyModel(model, drop) {
       if (! model) return;
       if (drop === 'drop')
         model.db.dropTable(model.modelName);
@@ -31,7 +31,7 @@ define(function(require, exports, module) {
       delete indexes[model.modelName];
     },
 
-    init: function (_BaseModel, _baseSupport, modelProperties) {
+    init(_BaseModel, _baseSupport, modelProperties) {
       BaseModel = _BaseModel;
       _support = _baseSupport;
       modelProperties.findById = findById;
@@ -178,19 +178,19 @@ define(function(require, exports, module) {
       });
 
       util.extend(_support, {
-        resetDocs: function (model) {
+        resetDocs(model) {
           if (_resetDocs.hasOwnProperty(model.modelName))
             _resetDocs[model.modelName]();
         },
-        bumpVersion: function () {
+        bumpVersion() {
           _support.performBumpVersion(this.constructor, this._id,this._version);
         },
 
-        transaction: function (model, func) {
+        transaction(model, func) {
           return model.docs.transaction(func);
         },
 
-        remote: function (model, name, func) {
+        remote(model, name, func) {
           return function (/* arguments */) {
             var conn = this;
             var args = arguments;
@@ -203,7 +203,7 @@ define(function(require, exports, module) {
       });
     },
 
-    setupModel: function (model) {
+    setupModel(model) {
 
       _resetDocs[model.modelName] = function () {
         db = docs = null;
@@ -218,7 +218,7 @@ define(function(require, exports, module) {
 
       var docs, db;
       util.extend(model, {
-        notify: function () {
+        notify() {
           var subject = notifyMap.get(model.db);
           if (subject)
             subject.notify.apply(subject, arguments);
@@ -226,7 +226,7 @@ define(function(require, exports, module) {
           anyChange.notify.apply(subject, arguments);
         },
         onAnyChange: anyChange.onChange,
-        onChange: function () {
+        onChange() {
           var subject = notifyMap.get(model.db);
           subject || notifyMap.set(db, subject = makeSubject({}));
 
@@ -255,7 +255,7 @@ define(function(require, exports, module) {
           return doc;
         },
 
-        _$docCacheSet: function (doc) {
+        _$docCacheSet(doc) {
           var thread = util.thread;
           var dc = docCache.get(thread);
           dc || docCache.set(thread, dc = Object.create(null));
@@ -270,13 +270,13 @@ define(function(require, exports, module) {
           }
         },
 
-        _$docCacheClear: function () {
+        _$docCacheClear() {
           return docCache.delete(util.thread);
         },
       });
     },
 
-    insert: function (doc) {
+    insert(doc) {
       var model = doc.constructor;
       var result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
       if (Array.isArray(result))
@@ -287,7 +287,7 @@ define(function(require, exports, module) {
       model.notify(doc, null);
     },
 
-    _insertAttrs: function (model, attrs) {
+    _insertAttrs(model, attrs) {
       if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
       model.docs.insert(attrs);
       model._$docCacheSet(attrs);

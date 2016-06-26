@@ -11,7 +11,7 @@ define(function(require, exports, module) {
       var syncOb, stateOb;
 
       util.extend(Query, {
-        revertSimChanges: function () {
+        revertSimChanges() {
           var dbs = Model._databases[dbBroker.dbId];
           if (! dbs) return;
 
@@ -45,7 +45,7 @@ define(function(require, exports, module) {
           }
         },
 
-        insert: function (doc) {
+        insert(doc) {
           var model = doc.constructor;
           if (session.state.pendingCount()) {
             simDocsFor(model)[doc._id] = 'new';
@@ -55,7 +55,7 @@ define(function(require, exports, module) {
           return doc._id;
         },
 
-        insertFromServer: function (model, id, attrs) {
+        insertFromServer(model, id, attrs) {
           if (session.state.pendingCount()) {
             var changes = fromServer(model, id, attrs);
             var doc = model.docs[id];
@@ -103,7 +103,7 @@ define(function(require, exports, module) {
         get docs() {
           return this._docs || (this._docs = this.model.docs);
         },
-        withIndex: function (idx, params) {
+        withIndex(idx, params) {
           var orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
           this._index = idx(params) || {};
@@ -111,7 +111,7 @@ define(function(require, exports, module) {
           return this;
         },
 
-        withDB: function (dbId) {
+        withDB(dbId) {
           var orig = dbBroker.dbId;
           dbBroker.dbId = dbId;
           this._dbId = dbId;
@@ -120,12 +120,12 @@ define(function(require, exports, module) {
           return this;
         },
 
-        fromServer: function() {
+        fromServer() {
           this.isFromServer = true;
           return this;
         },
 
-        fetch: function () {
+        fetch() {
           var results = [];
           this.forEach(function (doc) {
             results.push(doc);
@@ -133,7 +133,7 @@ define(function(require, exports, module) {
           return results;
         },
 
-        fetchIds: function () {
+        fetchIds() {
           var results = [];
           this.forEach(function (doc) {
             results.push(doc._id);
@@ -141,7 +141,7 @@ define(function(require, exports, module) {
           return results;
         },
 
-        fetchOne: function () {
+        fetchOne() {
           var result;
           this.forEach(function (doc) {
             result = doc;
@@ -150,12 +150,12 @@ define(function(require, exports, module) {
           return result;
         },
 
-        show: function (func) {
+        show(func) {
           func(this);
           return this;
         },
 
-        forEach: function (func) {
+        forEach(func) {
           if (this.singleId) {
             var doc = this.findOne(this.singleId);
             doc && func(doc);
@@ -172,7 +172,7 @@ define(function(require, exports, module) {
           }
         },
 
-        map: function (func) {
+        map(func) {
           var results = [];
           this.forEach(function (doc) {
             results.push(func(doc));
@@ -180,7 +180,7 @@ define(function(require, exports, module) {
           return results;
         },
 
-        count: function (max) {
+        count(max) {
           var count = 0;
           if (! this.model) return 0;
           var docs = this.docs;
@@ -191,11 +191,11 @@ define(function(require, exports, module) {
           return count;
         },
 
-        exists: function () {
+        exists() {
           return this.count(1) === 1;
         },
 
-        findOne: function(id) {
+        findOne(id) {
           var doc = this.docs[id];
           if (! doc) return;
           var attrs = doc.attributes;
@@ -250,7 +250,7 @@ define(function(require, exports, module) {
           }
         },
 
-        remove: function () {
+        remove() {
           var count = 0;
           var self = this;
           var model = self.model;
@@ -277,7 +277,7 @@ define(function(require, exports, module) {
           return count;
         },
 
-        update: function (origChanges, value) {
+        update(origChanges, value) {
           if (typeof origChanges === 'string') {
             var changes = {};
             changes[origChanges] = value;
