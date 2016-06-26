@@ -1,12 +1,13 @@
 define(function(require, exports, module) {
-  const driver       = require('../config!DBDriver');
-  const koru         = require('../main');
-  const makeSubject  = require('../make-subject');
-  const Random       = require('../random');
-  const session      = require('../session');
-  const util         = require('../util');
-  const Query        = require('./query');
-  const Val          = require('./validation');
+  const driver      = require('../config!DBDriver');
+  const koru        = require('../main');
+  const makeSubject = require('../make-subject');
+  const Random      = require('../random');
+  const session     = require('../session');
+  const util        = require('../util');
+  const dbBroker    = require('./db-broker');
+  const Query       = require('./query');
+  const Val         = require('./validation');
 
   var _support, BaseModel;
 
@@ -14,22 +15,6 @@ define(function(require, exports, module) {
   const indexes = {};
 
   session.registerGlobalDictionaryAdder(module, addToDictionary);
-
-  util.extend(util, {
-    get db() {
-      var thread = util.thread;
-      return thread.db || (thread.db = driver.defaultDb);
-    },
-    set db(value) {
-      value = value || driver.defaultDb;
-      var thread = util.thread;
-      thread.db = value;
-      thread.dbId = value.name;
-    },
-    get dbId() {return util.db.name},
-
-    clearDbId: function () {util.db = null}
-  });
 
   koru.onunload(module, function () {
     session.deregisterGlobalDictionaryAdder(module);
@@ -256,7 +241,7 @@ define(function(require, exports, module) {
           return docs;
         },
         get db() {
-          var tdb = util.db;
+          var tdb = dbBroker.db;
           if (tdb !== db) {
             docs = null;
             db = tdb;

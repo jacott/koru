@@ -1,12 +1,13 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var Model = require('../model/base');
-  var Query = require('../model/query');
-  var ModelEnv = require('../model/main-client');
-  var publish = require('./publish');
-  var message = require('./message');
-  var util = require('../util');
-  var Trace = require('../trace');
+  const dbBroker = require('koru/model/db-broker');
+  const koru     = require('../main');
+  const Model    = require('../model/base');
+  const ModelEnv = require('../model/main-client');
+  const Query    = require('../model/query');
+  const Trace    = require('../trace');
+  const util     = require('../util');
+  const message  = require('./message');
+  const publish  = require('./publish');
 
   var debug_clientUpdate = false;
   Trace.debug_clientUpdate = function (value) {
@@ -48,11 +49,11 @@ define(function(require, exports, module) {
         }
         session.isUpdateFromServer = true;
         try {
-          util.pushDbId(session._id);
+          dbBroker.pushDbId(session._id);
           func(Model[data[0]], data[1], data[2]);
         } finally {
           session.isUpdateFromServer = false;
-          util.popDbId();
+          dbBroker.popDbId();
         }
       };
     }

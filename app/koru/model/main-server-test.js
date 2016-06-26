@@ -22,60 +22,6 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test util.db": function () {
-      var TestModel = Model.define('TestModel');
-      TestModel.defineFields({name: 'text'});
-      var defDb = Driver.defaultDb;
-      test.onEnd(revertTodefault);
-      var altDb = Driver.connect(defDb._url + " options='-c search_path=alt'", 'alt');
-      altDb.query('CREATE SCHEMA ALT');
-
-      var obAny = TestModel.onAnyChange(v.anyChanged = test.stub());
-      var obDef = TestModel.onChange(v.defChanged = test.stub());
-
-      v.doc = TestModel.create({name: 'bar1'});
-      v.doc = TestModel.create({name: 'bar2'});
-
-      assert.calledTwice(v.defChanged);
-      assert.calledTwice(v.anyChanged);
-      v.defChanged.reset();
-      v.anyChanged.reset();
-
-      util.db = altDb;
-
-      var obAlt = TestModel.onChange(v.altChanged = test.stub());
-
-      assert.equals(TestModel.docs._client.query('show search_path'), [{search_path: "alt"}]);
-
-      v.doc = TestModel.create({name: 'foo'});
-      assert.same(TestModel.query.count(), 1);
-
-      refute.called(v.defChanged);
-      assert.calledWith(v.altChanged, v.doc);
-      assert.calledWith(v.anyChanged, v.doc);
-
-      util.db = defDb;
-      assert.same(TestModel.query.count(), 2);
-
-      util.db = altDb;
-      assert.same(TestModel.query.count(), 1);
-
-      revertTodefault();
-      assert.same(TestModel.query.count(), 2);
-
-      function revertTodefault() {
-        obAny && obAny.stop();
-        obDef && obDef.stop();
-        obAlt && obAlt.stop();
-        obDef = obAlt = obAny = null;
-        if (altDb) {
-          altDb.query("DROP SCHEMA alt CASCADE");
-          util.db = null;
-          altDb = null;
-        }
-      }
-    },
-
     "test auto Id": function () {
       var TestModel = Model.define('TestModel');
       TestModel.defineFields({

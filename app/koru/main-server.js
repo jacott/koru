@@ -2,8 +2,9 @@ global.isServer = true;
 global.isClient = false;
 
 define(function(require, exports, module) {
-  var util = require('./util-server');
   var koru = global._koru_ = require('./main');
+  const dbBroker = require('koru/model/db-broker');
+  const util     = require('./util-server');
 
   koru.reload = function () {
     if (koru.loadError) throw koru.loadError;
@@ -13,6 +14,8 @@ define(function(require, exports, module) {
     requirejs.nodeRequire('bindings')('koru_restart.node')
       .execv(process.execPath, argv);
   };
+
+  koru.Fiber = util.Fiber;
 
   koru.onunload(module, 'reload');
 
@@ -44,7 +47,7 @@ define(function(require, exports, module) {
         var thread = util.thread;
         thread.userId = conn.userId;
         thread.connection = conn;
-        util.db = conn.db;
+        dbBroker.db = conn.db;
 
         func.call(conn, data);
       } catch(ex) {
@@ -54,7 +57,8 @@ define(function(require, exports, module) {
   };
 
   module.ctx.onError = function (error, mod) {
-    koru.error("error loading: " + mod.id + '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
+    koru.error(util.extractError(error) + "\nerror loading: " + mod.id +
+               '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
     throw error;
   };
 

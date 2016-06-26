@@ -1,8 +1,9 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Model = require('./main');
-  var util = require('koru/util');
+  const util     = require('koru/util');
+  const dbBroker = require('./db-broker');
+  const Model    = require('./main');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
@@ -25,14 +26,14 @@ define(function (require, exports, module) {
 
     "test multi dbs": function () {
       v.TestModel.registerObserveField('toys');
-      var origId = v.dbId = util.dbId;
-      test.intercept(util, 'dbId');
-      Object.defineProperty(util, 'dbId', {configurable: true, get: function () {return v.dbId}});
+      var origId = v.dbId = dbBroker.dbId;
+      test.intercept(dbBroker, 'dbId');
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get: function () {return v.dbId}});
       var oc = test.spy(v.TestModel, 'onChange');
 
       v.obs.push(v.TestModel.observeToys(['robot'], v.origOb = test.stub()));
       v.dbId = 'alt';
-      assert.same(util.dbId, 'alt');
+      assert.same(dbBroker.dbId, 'alt');
 
       assert.calledWith(oc, TH.match(func => v.oFunc = func));
       oc.reset();

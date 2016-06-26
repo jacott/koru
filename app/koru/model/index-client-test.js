@@ -1,9 +1,10 @@
 define(function (require, exports, module) {
   'use strict';
   var test, v;
-  var TH = require('./test-helper');
-  var Model = require('./main');
-  var util = require('../util');
+  const util     = require('../util');
+  const dbBroker = require('./db-broker');
+  const Model    = require('./main');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
@@ -13,7 +14,7 @@ define(function (require, exports, module) {
         id1: 'text',
         id2: 'text',
       });
-      util.setMainDbId('foo');
+      dbBroker.setMainDbId('foo');
 
       v.obSpy = test.spy(v.TestModel._indexUpdate, 'onChange');
       v.idx = v.TestModel.addUniqueIndex('id2', 'id1');
@@ -25,27 +26,27 @@ define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('TestModel', 'drop');
-      util.clearDbId();
+      dbBroker.clearDbId();
       delete Model._databases.foo;
       delete Model._databases.bar;
       v = null;
     },
 
     "test changing dbId": function () {
-      util.dbId = 'bar';
+      dbBroker.dbId = 'bar';
 
       var bar1 = v.TestModel.create({id1: '3', id2: '4'});
 
       assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
 
-      util.dbId = 'foo';
+      dbBroker.dbId = 'foo';
 
       assert.same(v.idx({id1: '3', id2: '4'}), v.doc1._id);
 
       v.doc1.id1 = '4';
       v.doc1.$$save();
 
-      util.dbId = 'bar';
+      dbBroker.dbId = 'bar';
 
       assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
 
@@ -53,7 +54,7 @@ define(function (require, exports, module) {
 
       assert.same(v.idx({id1: '4', id2: '4'}), bar1._id);
 
-      util.dbId = 'foo';
+      dbBroker.dbId = 'foo';
 
       assert.same(v.idx({id1: '4', id2: '4'}), v.doc1._id);
     },

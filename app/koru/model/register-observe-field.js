@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
-  var makeSubject = require('../make-subject');
-  var util = require('../util');
+  const makeSubject = require('../make-subject');
+  const util        = require('../util');
+  const dbBroker    = require('./db-broker');
 
   return function (model) {
     var modelName = model.modelName;
@@ -32,7 +33,7 @@ define(function(require, exports, module) {
       };
 
       function observeValue(value, options) {
-        var observers = dbObservers[util.dbId] || (dbObservers[util.dbId] = {});
+        var observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
         var obs = observers[value] || (observers[value] = Object.create(null));
         obs[options[0]] = options;
         var modelObserver = getModelOb(observers);
@@ -46,10 +47,10 @@ define(function(require, exports, module) {
             for(var key in obs) return;
             delete observers[value];
             for(var key in observers) return;
-          var modelObserver = modelObMap[util.dbId];
+          var modelObserver = modelObMap[dbBroker.dbId];
             if (modelObserver) {
               modelObserver.stop();
-              delete modelObMap[util.dbId];
+              delete modelObMap[dbBroker.dbId];
             }
           },
 
@@ -105,7 +106,7 @@ define(function(require, exports, module) {
       }
 
       function getModelOb(observers) {
-        var ob = modelObMap[util.dbId];
+        var ob = modelObMap[dbBroker.dbId];
         if (ob) return ob;
 
         ob = model.onChange(function (doc, was) {
@@ -134,7 +135,7 @@ define(function(require, exports, module) {
           }
         });
 
-        return modelObMap[util.dbId] = ob;
+        return modelObMap[dbBroker.dbId] = ob;
 
         function callObservers(called, doc, was, value) {
           var cbs = observers[value];

@@ -1,20 +1,21 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Query = require('./query');
-  var sut = require('./query-client');
-  var session = require('../session');
-  var sessionClient = require('../session/main-client');
-  var Model = require('./main');
-  var util = require('../util');
-  var sessState = require('../session/state');
-  var clientRpcBase = require('../session/client-rpc-base');
+  const session       = require('../session');
+  const clientRpcBase = require('../session/client-rpc-base');
+  const sessionClient = require('../session/main-client');
+  const sessState     = require('../session/state');
+  const util          = require('../util');
+  const dbBroker      = require('./db-broker');
+  const Model         = require('./main');
+  const Query         = require('./query');
+  const sut           = require('./query-client');
+  const TH            = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      util.setMainDbId('foo');
+      dbBroker.setMainDbId('foo');
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     },
@@ -23,7 +24,7 @@ define(function (require, exports, module) {
       Model._destroyModel('TestModel', 'drop');
       Model._destroyModel('TestModel2', 'drop');
       sessState._resetPendingCount();
-      util.clearDbId();
+      dbBroker.clearDbId();
       delete Model._databases.foo;
       delete Model._databases.foo2;
       v = null;
@@ -32,18 +33,18 @@ define(function (require, exports, module) {
     "test withIndex, withDB": function () {
       v.idx = v.TestModel.addUniqueIndex('name', 'age');
 
-      util.withDB('foo2', () => v.TestModel.create({name: 'foo', age: 3}));
+      dbBroker.withDB('foo2', () => v.TestModel.create({name: 'foo', age: 3}));
 
       assert.equals(v.TestModel.query.withIndex(v.idx, {name: 'foo'}).fetchField('age'), [5]);
       assert.equals(v.TestModel.query.withDB('foo2').withIndex(v.idx, {name: 'foo'}).fetchField('age'), [3]);
     },
 
     "test withDB": function () {
-      util.withDB('foo2', () => v.TestModel.create({age: 3}));
+      dbBroker.withDB('foo2', () => v.TestModel.create({age: 3}));
 
       var ocDB = [];
       test.onEnd(v.TestModel.onAnyChange((doc, was) => {
-        ocDB.push(util.dbId, was);
+        ocDB.push(dbBroker.dbId, was);
       }).stop);
 
       v.TestModel.query.update('age', 2);

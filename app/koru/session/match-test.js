@@ -1,9 +1,10 @@
 define(function (require, exports, module) {
   var test, v;
-  const Model = require('koru/model/main');
-  const util  = require('koru/util');
-  const match = require('./match');
-  const TH    = require('./test-helper');
+  const dbBroker = require('koru/model/db-broker');
+  const Model    = require('koru/model/main');
+  const util     = require('koru/util');
+  const match    = require('./match');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
     setUp () {
@@ -16,7 +17,7 @@ define(function (require, exports, module) {
 
     tearDown () {
       v.handles.forEach(function (h) {h.stop()});
-      util.clearDbId();
+      dbBroker.clearDbId();
       v = null;
     },
 
@@ -52,11 +53,11 @@ define(function (require, exports, module) {
       refute.same(v.t.id, v.f.id);
 
       if (isClient) {
-        util.pushDbId('foo');
+        dbBroker.pushDbId('foo');
         refute.isTrue(v.match.has(v.doc));
-        util.popDbId();
+        dbBroker.popDbId();
       } else {
-        var orig = util.dbId;
+        var orig = dbBroker.dbId;
         try {
           util.thread.db.name = 'foo';
           refute.isTrue(v.match.has(v.doc));

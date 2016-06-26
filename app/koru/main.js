@@ -64,7 +64,6 @@ define(function (require, exports, module) {
     },
 
     Error: errors.Error.bind(errors),
-    Fiber: util.Fiber,
     util,
 
     absId (require, id) {

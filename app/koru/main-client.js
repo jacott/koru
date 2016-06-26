@@ -12,6 +12,8 @@ define(function(require, exports, module) {
     throw "reloading"; // no point continuing
   };
 
+  koru.Fiber = util.Fiber;
+
   koru.appDir = module.toUrl('').slice(0,-1);
 
   koru.setTimeout = function (func, duration) {

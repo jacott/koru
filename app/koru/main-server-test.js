@@ -1,8 +1,9 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./main');
-  var util = require('koru/util');
+  const dbBroker = require('koru/model/db-broker');
+  const util     = require('koru/util');
+  const sut      = require('./main');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
@@ -52,6 +53,6 @@ define(function (require, exports, module) {
   });
 
   function cleanup() {
-    util.db = util.thread.connection = util.thread.userId = null;
+    dbBroker.db = util.thread.connection = util.thread.userId = null;
   }
 });

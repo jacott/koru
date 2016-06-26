@@ -1,13 +1,14 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../model/test-helper');
-  var session = require('./main');
-  var Model = require('../model/main');
-  var clientUpdate = require('./client-update');
-  var publish = require('./publish');
-  var message = require('./message');
-  var Query = require('../model/query');
-  var util = require('../util');
+  const dbBroker     = require('koru/model/db-broker');
+  const Model        = require('../model/main');
+  const Query        = require('../model/query');
+  const TH           = require('../model/test-helper');
+  const util         = require('../util');
+  const clientUpdate = require('./client-update');
+  const session      = require('./main');
+  const message      = require('./message');
+  const publish      = require('./publish');
 
   TH.testCase(module, {
     setUp: function () {
@@ -42,7 +43,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown: function () {
       Model._destroyModel('Foo', 'drop');
-      util.clearDbId();
+      dbBroker.clearDbId();
       delete Model._databases.foo01;
       v = null;
     },

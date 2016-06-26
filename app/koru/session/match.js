@@ -1,5 +1,5 @@
 define(function(require) {
-  const util = require('../util');
+  const dbBroker = require('koru/model/db-broker');
 
   return function () {
     const dbs = {};
@@ -22,10 +22,10 @@ define(function(require) {
     };
 
     return {
-      get _models() { return dbs[util.dbId]},
+      get _models() { return dbs[dbBroker.dbId]},
 
       has (doc) {
-        var models = dbs[util.dbId];
+        var models = dbs[dbBroker.dbId];
         var mm = models && models[doc.constructor.modelName];
         for(var key in mm) {
           if (mm[key](doc)) return true;
@@ -34,7 +34,7 @@ define(function(require) {
       },
 
       register (modelName, func) {
-        var dbId = util.dbId;
+        var dbId = dbBroker.dbId;
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);
         var models = dbs[dbId] || (dbs[dbId] = {});

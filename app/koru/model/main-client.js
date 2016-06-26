@@ -1,59 +1,15 @@
 define(function(require, exports, module) {
   'use strict';
-  var koru = require('../main');
-  var util = koru.util;
-  var Random = require('../random');
-  var session = require('../session/client-rpc');
-  var clientIndex = require('./index-client');
-  var Query = require('./query');
-  var makeSubject = require('../make-subject');
+  const koru        = require('koru');
+  const makeSubject = require('koru/make-subject');
+  const Random      = require('koru/random');
+  const session     = require('koru/session/client-rpc');
+  const util        = require('koru/util');
+  const dbBroker    = require('./db-broker');
+  const clientIndex = require('./index-client');
+  const Query       = require('./query');
 
   var _support;
-
-  var defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default', dbIdStack = [];
-
-  util.extend(util, {
-    get dbId() {return threadDbId},
-    set dbId(value) {
-      threadDbId = value || defaultDbId;
-    },
-
-    pushDbId: function (value) {
-      dbIdStack.push(threadDbId);
-      threadDbId = value || defaultDbId;
-    },
-
-    popDbId: function () {
-      threadDbId = dbIdStack.pop();
-      if (dbIdStack.length === 0)
-        threadDbId = mainDbId;
-    },
-
-    setMainDbId: function (value) {
-      return threadDbId = mainDbId = value || defaultDbId;
-    },
-
-    setDefaultDbId: function (value) {
-      defaultDbId = mainDbId = threadDbId = value;
-    },
-
-    clearDbId: function () {
-      threadDbId = mainDbId = defaultDbId;
-      dbIdStack.length = 0;
-    },
-
-    withDB: function (dbId, func) {
-      if (dbId === util.dbId)
-        return func();
-
-      try {
-        util.pushDbId(dbId);
-        return func();
-      } finally {
-        util.popDbId();
-      }
-    },
-  });
 
   var dbs = Object.create(null);
 
@@ -167,7 +123,7 @@ define(function(require, exports, module) {
       var dbId, docs;
 
       function chkdb() {
-        var tdbId = threadDbId;
+        var tdbId = dbBroker.dbId;
         if (tdbId !== dbId) {
           docs = null;
           dbId = tdbId;

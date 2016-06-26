@@ -8,28 +8,28 @@ define(function(require, Stubber, module) {
   const allListeners = Object.create(null);
 
   const stubProto = extend(Object.create(Function.prototype), {
-    returns (arg) {
+    returns(arg) {
       this._returns = arg;
       return this;
     },
 
-    throws (arg) {
+    throws(arg) {
       this._throws = arg;
       return this;
     },
 
-    yields (...args) {
+    yields(...args) {
       this._yields = args;
       return this;
     },
 
-    toString () {
+    toString() {
       return typeof this.original === 'function' ? this.original.name : this.original === undefined ?
         this.name :
         inspect(this.original, 1);
     },
 
-    withArgs (...args) {
+    withArgs(...args) {
       function spy () {
         return spy.subject.apply(this, arguments);
       };
@@ -41,7 +41,7 @@ define(function(require, Stubber, module) {
       return spy;
     },
 
-    onCall (count) {
+    onCall(count) {
       function spy () {
         return spy.subject.apply(this, arguments);
       };
@@ -53,7 +53,7 @@ define(function(require, Stubber, module) {
       return spy;
     },
 
-    invoke (thisValue, args) {
+    invoke(thisValue, args) {
       var call = addCall(this, thisValue, args);
       call.returnValue = this._replacement ? this._replacement.apply(thisValue, args) : this._returns;
       notifyListeners(this, call, thisValue, args);
@@ -61,13 +61,13 @@ define(function(require, Stubber, module) {
       return invokeReturn(this, call);
     },
 
-    reset () {this._calls = null},
+    reset() {this._calls = null},
 
-    getCall (index) {
+    getCall(index) {
       return this._calls && this._calls[index];
     },
 
-    args (callIndex, index) {
+    args(callIndex, index) {
       var call = this._calls && this._calls[callIndex];
       return call && call.args[index];
     },
@@ -86,32 +86,27 @@ define(function(require, Stubber, module) {
     get calledTwice() {return this._calls && this._calls.length === 2},
     get calledThrice() {return this._calls && this._calls.length === 3},
 
-    calledBefore (after) {
+    calledBefore(after) {
       return this.called && after.called &&
         this._calls[0].globalCount < after._calls[0].globalCount;
     },
 
-    calledAfter (before) {
+    calledAfter(before) {
       return this.called && before.called &&
         this._calls[0].globalCount > before._calls[0].globalCount;
     },
 
-    yield () {
+    yield(...params) {
       var args = this._calls && this._calls[0] && this._calls[0].args;
       if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
 
-      if (args) {
-        for(var i = 0; i < args.length; ++i) {
-          var arg = args[i];
-          if (typeof arg === 'function') {
-            return arg.apply(null, arguments);
-          }
-        }
 
+      if (args) {
+        yieldCall(args, params);
       }
     },
 
-    calledWith (...args) {
+    calledWith(...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         if (list.length > args.length)
@@ -121,14 +116,14 @@ define(function(require, Stubber, module) {
       });
     },
 
-    calledWithExactly (...args) {
+    calledWithExactly(...args) {
       return this._calls && this._calls.some(function (list) {
         list = list.args;
         return deepEqual(list, args);
       });
     },
 
-    printf (format) {
+    printf(format) {
       switch(format) {
       case '%n':
         return this.toString();
@@ -163,7 +158,7 @@ define(function(require, Stubber, module) {
   }
 
   var spyProto = extend(Object.create(stubProto), {
-    invoke (thisValue, args) {
+    invoke(thisValue, args) {
       var call = addCall(this, thisValue, args);
       call.returnValue = this.original.apply(thisValue, args);
       notifyListeners(this, call, thisValue, args);
@@ -173,15 +168,15 @@ define(function(require, Stubber, module) {
   });
 
   var withProto = extend(Object.create(stubProto), {
-    withArgs () {
+    withArgs() {
       return this.subject.withArgs.apply(this.subject, arguments);
     },
 
-    onCall (count) {
+    onCall(count) {
       return this.subject.onCall.call(this.subject, count);
     },
 
-    invoke (call) {
+    invoke(call) {
       (this._calls || (this._calls = []))
         .push(call);
 
@@ -194,16 +189,28 @@ define(function(require, Stubber, module) {
       if (this.hasOwnProperty('_returns'))
         call.returnValue = this._returns;
     },
-    toString () {
+    toString() {
       return this.subject.toString();
     }
   });
 
   var callProto = {
-    calledWith: function (...args) {
+    calledWith(...args) {
       return deepEqual(this.args, args);
     },
+
+    yield(...params) {yieldCall(this.args, params);},
   };
+
+  function yieldCall(args, callParams) {
+    for(var i = 0; i < args.length; ++i) {
+      var arg = args[i];
+      if (typeof arg === 'function') {
+        return arg.apply(null, callParams);
+      }
+    }
+    throw AssertionError(new Error("Can't yield; no function in arguments"));
+  }
 
   function notifyListeners(proxy, call, thisValue, args) {
     var listeners = allListeners[proxy._stubId];

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var makeSubject = require('koru/make-subject');
+  const makeSubject = require('koru/make-subject');
+  const dbBroker    = require('./db-broker');
 
   return function (model) {
     const dbObservers = Object.create(null);
@@ -13,7 +13,7 @@ define(function(require, exports, module) {
     model.observeIds = observeIds;
 
     function observeId(id, callback) {
-      var dbId = util.dbId;
+      var dbId = dbBroker.dbId;
       var observers = dbObservers[dbId] || (dbObservers[dbId] = {});
 
       var obs = observers[id] || (observers[id] = Object.create(null));
@@ -80,9 +80,9 @@ define(function(require, exports, module) {
     }
 
     function observeModel(observers) {
-      if (modelObMap[util.dbId]) return;
+      if (modelObMap[dbBroker.dbId]) return;
 
-      modelObMap[util.dbId] = model.onChange(function (doc, was) {
+      modelObMap[dbBroker.dbId] = model.onChange(function (doc, was) {
         var cbs = observers[(doc || was)._id];
         if (cbs) for(var i in cbs) {
           var cb = cbs[i];

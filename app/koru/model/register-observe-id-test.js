@@ -1,8 +1,8 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Model = require('./main');
-  var util = require('koru/util');
+  const dbBroker = require('./db-broker');
+  const Model    = require('./main');
+  const TH       = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
@@ -17,7 +17,7 @@ define(function (require, exports, module) {
       v.obs.forEach(row => row.stop());
       Model._destroyModel('TestModel', 'drop');
       v = null;
-      util.clearDbId();
+      dbBroker.clearDbId();
     },
 
     "test observeIds": function () {
@@ -39,14 +39,14 @@ define(function (require, exports, module) {
     },
 
     "test multi dbs": function () {
-      var origId = v.dbId = util.dbId;
-      test.intercept(util, 'dbId');
-      Object.defineProperty(util, 'dbId', {configurable: true, get: function () {return v.dbId}});
+      var origId = v.dbId = dbBroker.dbId;
+      test.intercept(dbBroker, 'dbId');
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get: function () {return v.dbId}});
       var oc = test.spy(v.TestModel, 'onChange');
 
       v.obs.push(v.TestModel.observeIds([v.doc._id], v.origOb = test.stub()));
       v.dbId = 'alt';
-      assert.same(util.dbId, 'alt');
+      assert.same(dbBroker.dbId, 'alt');
 
       assert.calledWith(oc, TH.match(func => v.oFunc = func));
       oc.reset();
