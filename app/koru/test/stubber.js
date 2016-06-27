@@ -81,7 +81,7 @@ define(function(require, Stubber, module) {
     },
 
     get callCount() {return this._calls ? this._calls.length : 0},
-    get called() {return this._calls && this._calls.length !== 0},
+    get called() {return !! this._calls && this._calls.length !== 0},
     get calledOnce() {return this._calls && this._calls.length === 1},
     get calledTwice() {return this._calls && this._calls.length === 2},
     get calledThrice() {return this._calls && this._calls.length === 3},

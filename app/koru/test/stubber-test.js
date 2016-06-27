@@ -161,7 +161,10 @@ define(function (require, exports, module) {
 
     "test basics": function () {
       var x = test.stub();
+      refute.called(x);
+      assert.isFalse(x.called);
       x.call(v.this = {val: "this"}, 123, {x: "123"});
+      assert.isTrue(x.called);
       assert.called(x);
       assert.calledOnce(x);
       assert.calledWith(x, 123);
