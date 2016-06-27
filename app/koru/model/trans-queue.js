@@ -1,31 +1,45 @@
 define(function(require) {
   const util  = require('koru/util');
 
-  const Map = new WeakMap;
+  const successMap = new WeakMap;
+  const abortMap = new WeakMap;
 
   const TransQueue = {
     transaction(db, body) {
-      let array = Map.get(util.thread);
-      let firstLevel = ! array;
+      let list = successMap.get(util.thread);
+      let firstLevel = ! list;
       if (firstLevel)
-        Map.set(util.thread, array = []);
+        successMap.set(util.thread, list = []);
       try {
         var result = db.transaction(tx => body.call(db, tx));
-        if (firstLevel)
-          array.forEach(func => func());
+        firstLevel && list.forEach(f => f());
         return result;
+      } catch (ex) {
+        if (firstLevel) {
+          let list = abortMap.get(util.thread);
+          list.forEach(f => f());
+        }
+        throw ex;
       } finally {
-        if (firstLevel)
-          Map.delete(util.thread);
+        if (firstLevel) {
+          successMap.delete(util.thread);
+          abortMap.delete(util.thread);
+        }
       }
     },
 
-    push(func) {
-      var array = Map.get(util.thread);
-      if (array)
-        array.push(func);
+    onSuccess(func) {
+      const list = successMap.get(util.thread);
+      if (list)
+        list.push(func);
       else
         func();
+    },
+
+    onAbort(func) {
+      let list = abortMap.get(util.thread);
+      if (! list) abortMap.set(util.thread, list = []);
+      list.push(func);
     },
   };
 
