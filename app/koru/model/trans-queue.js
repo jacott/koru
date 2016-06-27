@@ -17,7 +17,7 @@ define(function(require) {
       } catch (ex) {
         if (firstLevel) {
           let list = abortMap.get(util.thread);
-          list.forEach(f => f());
+          list && list.forEach(f => f());
         }
         throw ex;
       } finally {

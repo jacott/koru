@@ -46,6 +46,16 @@ define(function (require, _, module) {
       refute.called(stub2);
     },
 
+    "test simple success"() {
+      assert.same(sut.transaction(v.TestModel, () => "result"), "result");
+    },
+
+    "test simple exception"() {
+      assert.exception(() => {
+        sut.transaction(v.TestModel, () => {throw new Error("an error")});
+      }, {message: 'an error'});
+    },
+
     "test exception"() {
       let stub1 = test.stub();
       let stub2 = test.stub();

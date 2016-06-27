@@ -250,7 +250,7 @@ define(function(require, exports, module) {
           return db;
         },
 
-        _$docCacheGet: function(id) {
+        _$docCacheGet(id) {
           var dc = docCache.get(util.thread);
           var doc = dc && dc[id];
           return doc;
@@ -263,7 +263,7 @@ define(function(require, exports, module) {
           dc[doc._id] = doc;
         },
 
-        _$docCacheDelete: function(doc) {
+        _$docCacheDelete(doc) {
           if (doc._id) {
             var dc = docCache.get(util.thread);
             if (dc)
@@ -284,8 +284,9 @@ define(function(require, exports, module) {
         doc.attributes._id = result[0]._id;
 
       model._$docCacheSet(doc.attributes);
+      TransQueue.onAbort(() => model._$docCacheDelete(doc));
       BaseModel._callAfterObserver(doc, null);
-      TransQueue.push(() => model.notify(doc, null));
+      TransQueue.onSuccess(() => model.notify(doc, null));
     },
 
     _insertAttrs(model, attrs) {

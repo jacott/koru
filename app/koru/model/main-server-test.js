@@ -182,7 +182,8 @@ define(function (require, exports, module) {
 
       test.spy(Val, 'assertCheck');
 
-      var pushStub = test.spy(TransQueue, 'push');
+      test.spy(TransQueue, 'onSuccess');
+      test.spy(TransQueue, 'onAbort');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
 
@@ -191,7 +192,10 @@ define(function (require, exports, module) {
       assert.same(v.doc.name, 'bar');
 
       assert.calledOnce(v.onChangeSpy);
-      pushStub.yield();
+
+      assert(TransQueue.onAbort.calledBefore(TransQueue.onSuccess));
+
+      TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
 
@@ -201,6 +205,10 @@ define(function (require, exports, module) {
       assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
 
       assert.calledOnce(TestModel.db.transaction);
+
+      test.stub(TestModel, '_$docCacheDelete');
+      TransQueue.onAbort.yield();
+      assert.calledWith(TestModel._$docCacheDelete, TH.match.field('_id', 'fooid'));
     },
 
     "test saveRpc existing"() {
@@ -219,14 +227,14 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.$reload().name, 'foo');
 
-      var pushStub = test.spy(TransQueue, 'push');
+      test.spy(TransQueue, 'onSuccess');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {name: 'bar'});
 
       assert.same(v.doc.$reload().name, 'bar');
 
       assert.calledOnce(v.onChangeSpy);
-      pushStub.yield();
+      TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
 
@@ -248,14 +256,14 @@ define(function (require, exports, module) {
         session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
       });
 
-      var pushStub = test.spy(TransQueue, 'push');
+      test.spy(TransQueue, 'onSuccess');
 
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
 
       refute(TestModel.findById(v.doc._id));
 
       assert.calledOnce(v.onChangeSpy);
-      pushStub.yield();
+      TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWith(v.auth, "u123", {remove: true});
 
