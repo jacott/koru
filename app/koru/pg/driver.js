@@ -40,7 +40,7 @@ define(function(require, exports, module) {
 
     closeDefaultDb,
 
-    connect (url, name) {
+    connect(url, name) {
       return new Client(url, name);
     },
   };
@@ -94,25 +94,26 @@ function fetchPool(client) {
   });
 }
 
-function Connection(client, callback) {
-  var conn = this.conn = new Libpq(client._url, err => callback(err, this));
-  this.count = 0;
-  this.onAbort = func => {
-    if (! this._onAborts) this._onAborts = [func];
-    else
-      this._onAborts.push(func);
-  };
+class Connection {
+  constructor(client, callback) {
+    this.conn = new Libpq(client._url, err => callback(err, this));
+    this.count = 0;
+  }
+
+  onAbort(func) {
+    this._onAborts = {func: func, next: this._onAborts};
+  }
 }
 
 class Client {
-  constructor (url, name) {
+  constructor(url, name) {
     this._id = (++clientCount).toString(36);
     this._url = url;
     this._weakMap = new WeakMap;
     this.name = name || this.schemaName;
   }
 
-  $inspect () {
+  $inspect() {
     return "Pg:" + this._url;
   }
 
@@ -123,7 +124,7 @@ class Client {
     return this._schemaName;
   }
 
-  end () {
+  end() {
     var pool = pools[this._id];
     if (pool) {
       pool.drain();
@@ -131,15 +132,15 @@ class Client {
     delete pools[this._id];
   }
 
-  _getConn () {
+  _getConn() {
     return getConn(this);
   }
 
-  _releaseConn () {
+  _releaseConn() {
     return releaseConn(this);
   }
 
-  withConn (func) {
+  withConn(func) {
     var tx = this._weakMap.get(util.thread);
     if (tx)
       return func.call(this, tx.conn);
@@ -150,11 +151,11 @@ class Client {
     }
   }
 
-  findOne (text, params) {
+  findOne(text, params) {
     return this.query(text, params).rows[0];
   }
 
-  query (text, params) {
+  query(text, params) {
     if (params && ! Array.isArray(params)) {
       var fields = params;
       var posMap = {};
@@ -172,7 +173,7 @@ class Client {
     return this.withConn(conn => query(conn, text, params));
   }
 
-  prepare (name, command) {
+  prepare(name, command) {
     return this.withConn(conn => {
       var future = new Future;
       conn.prepare(name, command, wait(future));
@@ -180,7 +181,7 @@ class Client {
     });
   }
 
-  execPrepared (name, params) {
+  execPrepared(name, params) {
     return this.withConn(conn => {
       var future = new Future;
       conn.execPrepared(name, params, wait(future));
@@ -188,15 +189,15 @@ class Client {
     });
   }
 
-  table (name, schema) {
+  table(name, schema) {
     return new Table(name, schema, this);
   }
 
-  dropTable (name) {
+  dropTable(name) {
     this.query('DROP TABLE IF EXISTS "' + name + '"');
   }
 
-  transaction (func) {
+  transaction(func) {
     getConn(this); // ensure connection
     var tx = this._weakMap.get(util.thread);
     try {
@@ -251,7 +252,8 @@ function runOnAborts(tx, command) {
   if (onAborts) {
     tx._onAborts = null;
     if (command === 'ROLLBACK')
-      onAborts.forEach(f => f());
+      for (; onAborts; onAborts = onAborts.next)
+        onAborts.func();
   }
 }
 
@@ -266,7 +268,7 @@ function query(conn, text, params) {
 }
 
 class Table {
-  constructor (name, schema, client) {
+  constructor(name, schema, client) {
     var table = this;
     table._name = name;
     table._client = client;
@@ -287,7 +289,7 @@ class Table {
     });
   }
 
-  _ensureTable () {
+  _ensureTable() {
     if (this._ready === true) return;
 
     var future = new Future;
@@ -312,11 +314,11 @@ class Table {
     subject.notify();
   }
 
-  dbType (col) {
+  dbType(col) {
     return pgFieldType(this.schema[col]);
   }
 
-  autoCreate () {
+  autoCreate() {
     readColumns(this);
     var schema = this.schema;
     if (this._columns.length === 0) {
@@ -338,12 +340,12 @@ class Table {
     }
   }
 
-  transaction (func) {
+  transaction(func) {
     var table = this;
     return table._client.transaction(tx => func.call(table, tx));
   }
 
-  insert (params, suffix) {
+  insert(params, suffix) {
     this._ensureTable();
 
     params = toColumns(this, params);
@@ -356,12 +358,12 @@ class Table {
     return performTransaction(this, sql, params);
   }
 
-  values (rowSet, cols) {
+  values(rowSet, cols) {
     this._ensureTable();
     return toColumns(this, rowSet, cols).values;
   }
 
-  koruUpdate (doc, changes) {
+  koruUpdate(doc, changes) {
     doc = doc.attributes;
     var params = {};
     for (var key in changes) {
@@ -388,7 +390,7 @@ class Table {
     return performTransaction(this, sql, set);
   }
 
-  ensureIndex (keys, options) {
+  ensureIndex(keys, options) {
     this._ensureTable();
     options = options || {};
     var cols = Object.keys(keys);
@@ -404,7 +406,7 @@ class Table {
     }
   }
 
-  update (where, params) {
+  update(where, params) {
     this._ensureTable();
 
     var sql = 'UPDATE "'+this._name+'" SET ';
@@ -420,7 +422,7 @@ class Table {
     return performTransaction(this, sql, set);
   }
 
-  where (query, whereValues) {
+  where(query, whereValues) {
     if (! query) return;
     var table = this;
     var count = whereValues.length;
@@ -648,16 +650,16 @@ class Table {
     }
   }
 
-  query (where) {
+  query(where) {
     return queryWhere(this, 'SELECT * FROM "'+this._name+'"', where);
   }
 
-  findOne (where, fields) {
+  findOne(where, fields) {
     return queryWhere(this, 'SELECT '+selectFields(this, fields)+' FROM "'+this._name+'"',
                       where, ' LIMIT 1')[0];
   }
 
-  find (where, options) {
+  find(where, options) {
     this._ensureTable();
 
     var table = this;
@@ -676,26 +678,26 @@ class Table {
     return new Cursor(this, sql, values, options);
   }
 
-  show (where) {
+  show(where) {
     var values = [];
     return ' WHERE ' + this.where(where, values) + ' ('+ util.inspect(values) + ')';
   }
 
-  exists (where) {
+  exists(where) {
     return queryWhere(this, 'SELECT EXISTS (SELECT 1 FROM "'+this._name+'"',
                       where, ')')[0].exists;
   }
 
-  count (where) {
+  count(where) {
     return +queryWhere(this, 'SELECT count(*) FROM "'+this._name+'"',
                       where)[0].count;
   }
 
-  remove (where) {
+  remove(where) {
     return this._client.withConn(conn => queryWhere(this, 'DELETE FROM "'+this._name+'"', where));
   }
 
-  truncate () {
+  truncate() {
     if (this._ready !== true) return;
 
     this._client.withConn(conn => this._client.query('TRUNCATE TABLE "'+this._name+'"'));
@@ -754,7 +756,7 @@ function initCursor(cursor) {
 }
 
 class Cursor {
-  constructor (table, sql, values, options) {
+  constructor(table, sql, values, options) {
     this.table = table;
     this._sql = sql;
     this._values = values;
@@ -767,7 +769,7 @@ class Cursor {
 
   }
 
-  close () {
+  close() {
     if (this._name && this._name !== 'all') {
       try {
         this.table._client.query('CLOSE '+this._name);
@@ -782,7 +784,7 @@ class Cursor {
     }
   }
 
-  next (count) {
+  next(count) {
     initCursor(this);
     if (this.hasOwnProperty('_index')) {
       if (count === undefined) {
@@ -801,22 +803,22 @@ class Cursor {
     }
   }
 
-  sort (spec) {
+  sort(spec) {
     this._sort = spec;
     return this;
   }
 
-  limit (value) {
+  limit(value) {
     this._limit = value;
     return this;
   }
 
-  batchSize (value) {
+  batchSize(value) {
     this._batchSize = value;
     return this;
   }
 
-  forEach (func) {
+  forEach(func) {
     try {
       for(var doc = this.next(); doc; doc = this.next()) {
         func(doc);

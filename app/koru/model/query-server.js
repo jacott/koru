@@ -1,8 +1,9 @@
 define(function(require, exports, module) {
-  const koru   = require('../main');
-  const util   = require('../util');
-  const Model  = require('./base');
-  const Future = requirejs.nodeRequire('fibers/future');
+  const koru       = require('../main');
+  const util       = require('../util');
+  const Model      = require('./base');
+  const TransQueue = require('./trans-queue');
+  const Future     = requirejs.nodeRequire('fibers/future');
 
   return function (Query) {
     util.extend(Query.prototype, {
@@ -108,13 +109,20 @@ define(function(require, exports, module) {
         var count = 0;
         var model = this.model;
         var docs = model.docs;
-        this.forEach(function (doc) {
-          ++count;
-          Model._callBeforeObserver('beforeRemove', doc);
-          docs.remove({_id: doc._id});
-          model._$docCacheDelete(doc);
-          Model._callAfterObserver(null, doc);
-          model.notify(null, doc);
+        var head;
+        TransQueue.transaction(model.db, tran => {
+          this.forEach(doc => {
+            ++count;
+            Model._callBeforeObserver('beforeRemove', doc);
+            docs.remove({_id: doc._id});
+            model._$docCacheDelete(doc);
+            Model._callAfterObserver(null, doc);
+            head = {doc: doc, next: head};
+          });
+        });
+        TransQueue.push(() => {
+          for(var curr = head; curr; curr = curr.next)
+            model.notify(null, curr.doc);
         });
         return count;
       },
@@ -146,65 +154,66 @@ define(function(require, exports, module) {
 
         var self = this;
         var count = 0;
-        self.forEach(function (doc) {
-          var changes = util.deepCopy(origChanges);
-          ++count;
-          var attrs = doc.attributes;
+        var head;
+        TransQueue.transaction(model.db, tran => {
+          self.forEach(doc => {
+            var changes = util.deepCopy(origChanges);
+            ++count;
+            var attrs = doc.attributes;
 
-          if (self._incs) for (var field in self._incs) {
-            changes[field] = attrs[field] + self._incs[field];
-          }
-
-          util.applyChanges(attrs, changes);
-
-          var itemCount = 0;
-
-          if (items = self._addItems) {
-            var fields = {};
-            var atLeast1 = false;
-            for(var field in items) {
-              var list = attrs[field] || (attrs[field] = []);
-              util.forEach(items[field], function (item) {
-                if (util.addItem(list, item) == null) {
-                  atLeast1 = true;
-                  changes[field + ".$-" + ++itemCount] = item;
-                }
-              });
-              if (atLeast1) fields[field] = {$each: items[field]};
+            if (self._incs) for (var field in self._incs) {
+              changes[field] = attrs[field] + self._incs[field];
             }
-            if (atLeast1)
-              cmd.$addToSet = fields;
-          }
 
-          if (items = self._removeItems) {
-            var pulls = {};
-            var dups = {};
-            for(var field in items) {
-              var matches = [], match;
-              var list = attrs[field];
-              util.forEach(items[field], function (item) {
-                if (list && (match = util.removeItem(list, item)) !== undefined) {
-                  changes[field + ".$+" + ++itemCount] = match;
-                  matches.push(match);
+            util.applyChanges(attrs, changes);
+
+            var itemCount = 0;
+
+            if (items = self._addItems) {
+              var fields = {};
+              var atLeast1 = false;
+              for(var field in items) {
+                var list = attrs[field] || (attrs[field] = []);
+                util.forEach(items[field], function (item) {
+                  if (util.addItem(list, item) == null) {
+                    atLeast1 = true;
+                    changes[field + ".$-" + ++itemCount] = item;
+                  }
+                });
+                if (atLeast1) fields[field] = {$each: items[field]};
+              }
+              if (atLeast1)
+                cmd.$addToSet = fields;
+            }
+
+            if (items = self._removeItems) {
+              var pulls = {};
+              var dups = {};
+              for(var field in items) {
+                var matches = [], match;
+                var list = attrs[field];
+                util.forEach(items[field], function (item) {
+                  if (list && (match = util.removeItem(list, item)) !== undefined) {
+                    changes[field + ".$+" + ++itemCount] = match;
+                    matches.push(match);
+                  }
+                });
+                if (matches.length) {
+                  var upd = matches.length === 1 ? matches[0] : {$in: matches};
+                  if (fields && fields.hasOwnProperty(field))
+                    dups[field] = upd;
+                  else
+                    pulls[field] = upd;
                 }
-              });
-              if (matches.length) {
-                var upd = matches.length === 1 ? matches[0] : {$in: matches};
-                if (fields && fields.hasOwnProperty(field))
-                  dups[field] = upd;
-                else
-                  pulls[field] = upd;
+              }
+              for (var field in pulls) {
+                cmd.$pull = pulls;
+                break;
               }
             }
-            for (var field in pulls) {
-              cmd.$pull = pulls;
-              break;
-            }
-          }
 
-          if (util.isObjEmpty(cmd)) return 0;
+            if (util.isObjEmpty(cmd)) return 0;
 
-          docs.transaction(function (tran) {
             docs.koruUpdate(doc, cmd, dups);
 
             model._$docCacheSet(doc.attributes);
@@ -212,8 +221,12 @@ define(function(require, exports, module) {
               model._$docCacheDelete(doc);
             });
             Model._callAfterObserver(doc, changes);
-            model.notify(doc, changes);
+            head = {doc: doc, changes: changes, next: head};
           });
+        });
+        TransQueue.push(() => {
+          for(var curr = head; curr; curr = curr.next)
+            model.notify(curr.doc, curr.changes);
         });
         return count;
       },

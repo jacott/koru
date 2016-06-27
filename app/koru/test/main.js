@@ -1,19 +1,16 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var match = require('./match');
+  const koru   = require('../main');
+  const util   = require('../util');
+  require('./assertions-methods');
+  require('./callbacks');
+  const geddon = require('./core');
+  const match  = require('./match');
+  require('./runner');
+  require('./test-case');
 
+  const Module = module.constructor;
 
-  require("./assertions-methods");
-  require("./callbacks");
-  require("./test-case");
-  require("./runner");
-
-  var Module = module.constructor;
-  var geddon = require("./core");
-
-  if (isClient)
-    var topDoc = window.top ? window.top.document : document;
+  const topDoc = isClient && (window.top ? window.top.document : document);
 
   Error.stackTraceLimit = 50;
 
@@ -21,14 +18,14 @@ define(function(require, exports, module) {
 
   koru.onunload(module, 'reload');
 
-  var top = isServer ? global : window;
+  const top = isServer ? global : window;
 
   top.assert = geddon.assert;
   top.refute = geddon.refute;
 
-  var count, skipCount, errorCount, timer;
+  let count, skipCount, errorCount, timer;
 
-  var testRunCount = 0;
+  let testRunCount = 0;
 
   module.ctx.onError = function (err, mod) {
     if (err.onload) {
@@ -38,7 +35,7 @@ define(function(require, exports, module) {
         return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
       }).join('\n');
       exports.logHandle("ERROR", koru.util.extractError({
-        toString: function () {
+        toString() {
           return "failed to load module: " + mod.id + '\nwith dependancies:\n';
         },
         stack: stack,
@@ -55,7 +52,7 @@ define(function(require, exports, module) {
 
     if (errEvent && errEvent.filename) {
       exports.logHandle('ERROR', koru.util.extractError({
-        toString: function () {
+        toString() {
           var uer = errEvent && errEvent.error;
           return uer ? uer.toString() : err.toString();
         },
@@ -68,13 +65,13 @@ define(function(require, exports, module) {
   };
 
   exports = {
-    geddon: geddon,
+    geddon,
 
-    match: match,
+    match,
 
     get test() {return geddon.test},
 
-    stubProperty: function (object, prop, newValue) {
+    stubProperty(object, prop, newValue) {
       if (typeof newValue !== 'object')
         newValue = {value: newValue};
       var oldValue = koru.replaceProperty(object, prop, newValue);
@@ -90,7 +87,7 @@ define(function(require, exports, module) {
       return restore;
     },
 
-    run: function (pattern, tests) {
+    run(pattern, tests) {
       if (isClient) {
         topDoc.title = 'Running: ' + topDoc.title;
         window.onbeforeunload = warnFullPageReload;
@@ -110,13 +107,13 @@ define(function(require, exports, module) {
       }
     },
 
-    testCase: function (module, option) {
+    testCase(module, option) {
       var tc = geddon.testCase(module.id.replace(/-test$/, ''), option);
       module.exports = tc;
       return tc;
     },
 
-    normHTMLStr: function (html) {
+    normHTMLStr(html) {
       return html.replace(/(<[^>]+)>/g, function (m, m1) {
         if (m[1] === '/') return m;
         var parts = m1.replace(/="[^"]*"/g, function (m) {

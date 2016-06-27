@@ -1,12 +1,13 @@
 define(function (require, exports, module) {
   var test, v;
-  const koru     = require('../main');
-  const session  = require('../session/base');
-  const util     = require('../util');
-  const Model    = require('./main');
-  const TH       = require('./test-helper');
-  const Val      = require('./validation');
-  const Driver   = require('koru/pg/driver');
+  const Driver     = require('koru/pg/driver');
+  const koru       = require('../main');
+  const session    = require('../session/base');
+  const util       = require('../util');
+  const Model      = require('./main');
+  const TH         = require('./test-helper');
+  const TransQueue = require('./trans-queue');
+  const Val        = require('./validation');
 
   const Future   = util.Future;
 
@@ -170,8 +171,8 @@ define(function (require, exports, module) {
       }).defineFields({name: 'text'});
 
 
-      test.spy(TestModel.docs, 'transaction');
-      TestModel.onChange(v.afterLocalChange = test.stub());
+      test.spy(TestModel.db, 'transaction');
+      TestModel.onChange(v.onChangeSpy = test.stub());
 
       assert.accessDenied(function () {
         session._rpcs.save.call({userId: null}, "TestModel", "fooid", {name: 'bar'});
@@ -181,13 +182,17 @@ define(function (require, exports, module) {
 
       test.spy(Val, 'assertCheck');
 
+      var pushStub = test.spy(TransQueue, 'push');
+
       session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
 
       v.doc = TestModel.findById("fooid");
 
       assert.same(v.doc.name, 'bar');
 
-      assert.called(v.afterLocalChange);
+      assert.calledOnce(v.onChangeSpy);
+      pushStub.yield();
+      assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
@@ -195,7 +200,7 @@ define(function (require, exports, module) {
       assert.calledWith(Val.assertCheck, "fooid", "string", {baseName: "_id"});
       assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
 
-      assert.calledOnce(TestModel.docs.transaction);
+      assert.calledOnce(TestModel.db.transaction);
     },
 
     "test saveRpc existing"() {
@@ -206,7 +211,7 @@ define(function (require, exports, module) {
 
       v.doc = TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.afterLocalChange = test.stub());
+      TestModel.onChange(v.onChangeSpy = test.stub());
 
       assert.accessDenied(function () {
         session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
@@ -214,11 +219,15 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.$reload().name, 'foo');
 
+      var pushStub = test.spy(TransQueue, 'push');
+
       session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {name: 'bar'});
 
       assert.same(v.doc.$reload().name, 'bar');
 
-      assert.called(v.afterLocalChange);
+      assert.calledOnce(v.onChangeSpy);
+      pushStub.yield();
+      assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
@@ -229,24 +238,28 @@ define(function (require, exports, module) {
         authorize: v.auth = test.stub()
       }).defineFields({name: 'text'});
 
-      test.spy(TestModel.docs, 'transaction');
+      test.spy(TestModel.db, 'transaction');
 
       v.doc = TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.afterRemove = test.stub());
+      TestModel.onChange(v.onChangeSpy = test.stub());
 
       assert.accessDenied(function () {
         session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
       });
 
+      var pushStub = test.spy(TransQueue, 'push');
+
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
 
       refute(TestModel.findById(v.doc._id));
 
-      assert.called(v.afterRemove);
+      assert.calledOnce(v.onChangeSpy);
+      pushStub.yield();
+      assert.calledTwice(v.onChangeSpy);
       assert.calledWith(v.auth, "u123", {remove: true});
 
-      assert.calledOnce(TestModel.docs.transaction);
+      assert.calledTwice(TestModel.db.transaction);
     },
 
     "test addUniqueIndex"() {
@@ -280,7 +293,7 @@ define(function (require, exports, module) {
     "test transaction"() {
       var TestModel = Model.define('TestModel');
       var stub = test.stub().returns('result');
-      var tx = test.spy(TestModel.docs, 'transaction');
+      var tx = test.spy(TestModel.db, 'transaction');
       assert.same(TestModel.transaction(stub), 'result');
 
       assert.called(stub);

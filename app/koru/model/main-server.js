@@ -7,6 +7,7 @@ define(function(require, exports, module) {
   const util        = require('../util');
   const dbBroker    = require('./db-broker');
   const Query       = require('./query');
+  const TransQueue  = require('./trans-queue');
   const Val         = require('./validation');
 
   var _support, BaseModel;
@@ -138,7 +139,7 @@ define(function(require, exports, module) {
         Val.assertCheck(modelName, 'string', {baseName: 'modelName'});
         var model = BaseModel[modelName];
         Val.allowIfFound(model);
-        model.docs.transaction(function () {
+        TransQueue.transaction(model.db, function () {
           var doc = model.findById(id);
           if (! doc) {
             doc = new model();
@@ -168,7 +169,7 @@ define(function(require, exports, module) {
         Val.ensureString(modelName);
         var model = BaseModel[modelName];
         Val.allowIfFound(model);
-        model.docs.transaction(function () {
+        TransQueue.transaction(model.db, function () {
           var doc = model.findById(id);
           Val.allowIfFound(doc);
           Val.allowAccessIf(doc.authorize);
@@ -187,7 +188,7 @@ define(function(require, exports, module) {
         },
 
         transaction(model, func) {
-          return model.docs.transaction(func);
+          return model.db.transaction(func);
         },
 
         remote(model, name, func) {
@@ -284,7 +285,7 @@ define(function(require, exports, module) {
 
       model._$docCacheSet(doc.attributes);
       BaseModel._callAfterObserver(doc, null);
-      model.notify(doc, null);
+      TransQueue.push(() => model.notify(doc, null));
     },
 
     _insertAttrs(model, attrs) {

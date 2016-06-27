@@ -150,9 +150,7 @@ Collection.prototype = {
     if (! tx) {
       tx = {
         onAbort: function (func) {
-          if (! tx._onAborts) tx._onAborts = [func];
-          else
-            tx._onAborts.push(func);
+          tx._onAborts = {func: func, next: tx._onAborts};
         },
       };
       this._weakMap.set(util.thread, tx);
@@ -170,13 +168,10 @@ Collection.prototype = {
     } finally {
       var command = tx.transaction;
       tx.transaction = null;
-      var onAborts = tx._onAborts;
-      if (onAborts) {
-        tx._onAborts = null;
-        if (command == 'ROLLBACK')
-          onAborts.forEach(function (f) {
-            f();
-          });
+      let onAborts = tx._onAborts;
+      if (command == 'ROLLBACK') {
+        for (; onAborts; onAborts = onAborts.next)
+          onAborts.func();
       }
     }
   },
