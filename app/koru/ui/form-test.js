@@ -1,36 +1,53 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
-  var Form = require('./form');
-  var formTpl = require('../html!./form-test');
-  var util = require('../util');
-  var Route = require('./route');
+  const Dom     = require('../dom');
+  const formTpl = require('../html!./form-test');
+  const util    = require('../util');
+  const Form    = require('./form');
+  const Route   = require('./route');
+  const TH      = require('./test-helper');
 
-  var $ = Dom.current;
+  const $ = Dom.current;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.Form = Dom.newTemplate(util.deepCopy(formTpl));
       v.selectList = v.Form.TestSelect;
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.removeChildren(document.body);
       delete Dom.Test;
       v = null;
     },
 
-    "test helper elmId": function () {
+    "test fillDoc"() {
+      let form = Dom.h({form: [
+        {button: 'hello', $name: 'foo_id'},
+        {input: '', $name: 'bar', $value: 'barVal'},
+      ]});
+
+      let doc = {
+        constructor: {$fields: {foo_id: 1, bar: 1}},
+        foo_id: 'fv',
+      };
+
+      Form.fillDoc(doc, form);
+
+      assert.equals(doc.bar, 'barVal');
+      assert.equals(doc.foo_id, 'fv');
+    },
+
+    "test helper elmId"() {
       var elmId = Dom._helpers.elmId;
       assert.same(elmId.call({_id: 'fooId'}, "bar"), 'bar_fooId');
 
       assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
     },
 
-    "test submitFunc": function () {
+    "test submitFunc"() {
       var top = Dom.h({
         id: "top",
         div: {
@@ -43,10 +60,17 @@ isClient && define(function (require, exports, module) {
       });
       document.body.appendChild(top);
 
+      let constructor = {
+        $fields: {name: 1, age: 2},
+      };
+
       var ctx = Dom.setCtx(top);
-      ctx.data = {$save: function () {
-        this._errors = {name: [['bad name']]};
-      }};
+      ctx.data = {
+        constructor,
+        $save() {
+          this._errors = {name: [['bad name']]};
+        },
+      };
 
       test.stub(Dom, 'stopEvent');
 
@@ -68,9 +92,12 @@ isClient && define(function (require, exports, module) {
 
       refute.called(v.success);
 
-      ctx.data = {$save: function () {
-        return true;
-      }};
+      ctx.data = {
+        constructor,
+        $save() {
+          return true;
+        },
+      };
 
       sf();
 
@@ -94,11 +121,11 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.replacePath, v.opts.success);
     },
 
-    "test helper checked": function () {
+    "test helper checked"() {
       var elmStub = {tagName: 'INPUT'};
       test.stub(Dom, 'setClass');
       test.stub(Dom, 'setBoolean');
-      TH.stubProperty(Dom.current, 'element', {get: function () {return elmStub}});
+      TH.stubProperty(Dom.current, 'element', {get() {return elmStub}});
       Dom._helpers.checked(true);
       refute.called(Dom.setClass);
       assert.calledWith(Dom.setBoolean, 'checked', true);
@@ -115,7 +142,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "modalize": {
-      setUp: function () {
+      setUp() {
         document.body.appendChild(Dom.html(
           '<div id="top">' +
             '<div class="ta"><input type="text" id="os" value="outside txt"></div>' +
@@ -131,11 +158,11 @@ isClient && define(function (require, exports, module) {
         Dom.Form.modalize(document.querySelector('.bar'), v.func);
       },
 
-      tearDown: function () {
+      tearDown() {
         Dom.Form.cancelModalize('all');
       },
 
-      "test addChangeFields": function () {
+      "test addChangeFields"() {
         Dom.TestData = v.Form.TestData;
         test.onEnd(function () {delete Dom.TestData});
         Form.addChangeFields({template: Dom.TestData, fields: ['fooField'], undo: v.onChange = test.stub()});
@@ -144,7 +171,7 @@ isClient && define(function (require, exports, module) {
             foo: 'x', fooField: 'ff1',
           },
           changes: {changes: 1},
-          $asChanges: function (changes) {
+          $asChanges(changes) {
             return {asChanges: changes};
           },
 
@@ -159,7 +186,7 @@ isClient && define(function (require, exports, module) {
       },
 
 
-      "test mousedown and nesting": function () {
+      "test mousedown and nesting"() {
         var removeEventListener = test.spy(document, 'removeEventListener');
         TH.trigger('#sp', 'mousedown');
 
@@ -200,7 +227,7 @@ isClient && define(function (require, exports, module) {
         assert.called(removeEventListener);
       },
 
-      "test keydown": function () {
+      "test keydown"() {
         TH.trigger('#sp', 'keydown', {which: 26});
         TH.trigger('.foo', 'keydown', {which: 26});
         TH.trigger('#st', 'keydown', {which: 27});
@@ -223,7 +250,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test PlainTextEditor": function () {
+    "test PlainTextEditor"() {
       document.body.appendChild(Dom.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
 
       assert.dom('#TestPlainTextEditor>label', function () {
@@ -238,9 +265,9 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test RichTextEditor": function () {
+    "test RichTextEditor"() {
       Dom.Test.Form.TestRichTextEditor.$helpers({
-        testFormMentions: function () {
+        testFormMentions() {
           return {
             mentions: {'@': 'testMentions'},
           };
@@ -268,7 +295,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test format": function () {
+    "test format"() {
       document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
 
       assert.dom('body>div', function () {
@@ -276,11 +303,11 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test passing data arg": function () {
+    "test passing data arg"() {
       var TestData = v.Form.TestData;
 
       TestData.$helpers({
-        myData: function () {
+        myData() {
           return {
             foo: 'hello foo',
             fooField: 'the field',
@@ -295,7 +322,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test renderError": function () {
+    "test renderError"() {
       var form = Dom.html({content: [{name: 'foo'},{name: 'bar'}]});
 
       Form.renderError(form, 'foo', ['is_required']);
@@ -311,7 +338,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test errorTop renderError": function () {
+    "test errorTop renderError"() {
       var form = Dom.html({
         style: 'width: 300px;height:100px',
         content: ['hello world', '<br>', {name: 'foo'},
@@ -336,7 +363,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test errorRight renderError": function () {
+    "test errorRight renderError"() {
       var form = Dom.html({
         style: 'width: 300px;height:100px',
         content: ['hello world', '<br>', {name: 'foo'},

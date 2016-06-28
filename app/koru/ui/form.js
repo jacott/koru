@@ -170,19 +170,23 @@ define(function(require, exports, module) {
       if (checked) return checked.value;
     },
 
-    fillDoc: function (doc, form) {
-      var fields = form.querySelectorAll('[name]:not([type=radio])');
-      for(var i = 0; i < fields.length; ++i) {
-        var field = fields[i];
-        doc[field.getAttribute('name')] = field.value;
+    fillDoc(doc, form) {
+      const modelFields = doc.constructor.$fields;
+      let fields = form.querySelectorAll('[name]:not([type=radio]):not(button)');
+      for(let i = 0; i < fields.length; ++i) {
+        const fieldElm = fields[i];
+        const name = fieldElm.getAttribute('name');
+        if (modelFields[name])
+          doc[name] = fieldElm.value;
       }
 
-      var fields = form.getElementsByClassName('radioGroup');
-      for(var i = 0; i < fields.length; ++i) {
-        var field = fields[i];
-        var name= field.getAttribute('data-errorField');
+      fields = form.getElementsByClassName('radioGroup');
+      for(let i = 0; i < fields.length; ++i) {
+        const fieldElm = fields[i];
+        const name= field.getAttribute('data-errorField');
 
-        doc[name] = Tpl.getRadioValue(field, name);
+        if (modelFields[name])
+          doc[name] = Tpl.getRadioValue(fieldElm, name);
       }
     },
 
