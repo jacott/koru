@@ -179,11 +179,11 @@ define(function(require, exports, module) {
 
   function watchLess(type, path, top, session) {
     var prefix = Path.dirname(path);
-    while(prefix.length > 1 && ! loadDirs.hasOwnProperty(prefix)) {
+    while(prefix.length > 1 && ! loadDirs[prefix]) {
       prefix = Path.dirname(prefix);
     }
 
-    if (! loadDirs.hasOwnProperty(prefix)) return;
+    if (! loadDirs[prefix]) return;
 
     queue(path, function (queue) {
       extractInfo(path, type === 'less' ? null : path);
