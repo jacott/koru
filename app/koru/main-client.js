@@ -9,7 +9,6 @@ define(function(require, exports, module) {
     if (koru.loadError) throw koru.loadError;
 
     (window.top || window).location.reload(true);
-    throw "reloading"; // no point continuing
   };
 
   koru.Fiber = util.Fiber;

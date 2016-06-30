@@ -24,7 +24,7 @@ isClient && define(function (require, exports, module) {
           Dom.Form.completeList({input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
         });
       });
-      assert.dom('body>ul.complete', function () {
+      assert.dom('body>ul.ui-ul.complete', function () {
         assert.dom('li.selected', 'abc');
         assert.dom('li', 'def');
       });

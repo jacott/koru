@@ -17,7 +17,6 @@ define(function (require, exports, module) {
   window.addEventListener('error', errorListener);
 
   function errorListener(ev) {
-    if (ev.error === 'reloading') return;
     session.send('E',koru.util.extractError(ev.error));
   }
 

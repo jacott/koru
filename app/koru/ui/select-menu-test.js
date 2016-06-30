@@ -386,7 +386,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test content": function () {
-        assert.dom('#SelectMenu ul', function () {
+        assert.dom('#SelectMenu ul.ui-ul', function () {
           refute.dom('input');
           assert.dom('li', 'One');
           assert.dom('li', 'Two');
