@@ -28,7 +28,7 @@ define(function(require, exports, module) {
             catch(ex) {koru.error(util.extractError(ex));}
           }
           close();
-        }
+        };
         this._last = null;
         this.match = match();
 
@@ -41,21 +41,25 @@ define(function(require, exports, module) {
       }
 
       onMessage (data, flags) {
-        var conn = this;
-        if (conn._last) {
-          conn._last = conn._last[1] = [data];
+        if (this._last) {
+          this._last = this._last[1] = [data, null];
           return;
         }
-        var current = conn._last = [data];
-        IdleCheck.inc();
-        var thread = util.thread;
+        let current = this._last = [data, null];
 
-        while(current) {
-          session._onMessage(conn, current[0]);
-          current = current[1];
-        }
-        conn._last = null;
-        IdleCheck.dec();
+        IdleCheck.inc();
+        session.execWrapper(() => {
+          while(current) {
+            try {
+              session._onMessage(this, current[0]);
+            } catch(ex) {
+              koru.error(util.extractError(ex));
+            }
+            current = current[1];
+          }
+          this._last = null;
+          IdleCheck.dec();
+        }, this);
       }
 
       send (type, data) {

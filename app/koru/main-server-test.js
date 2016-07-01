@@ -31,8 +31,8 @@ define(function (require, exports, module) {
       cleanup();
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 
-      sut.fiberWrapper(function (data) {
-        v.thread = util.extend({This: this, data: data}, util.thread);
+      sut.fiberConnWrapper(function (conn, data) {
+        v.thread = util.extend({This: conn, data: data}, util.thread);
       }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
       assert.called(v.run);
       util.Fiber.args(0, 0)();
@@ -46,7 +46,7 @@ define(function (require, exports, module) {
 
       util.Fiber.reset();
       test.stub(sut, 'error');
-      sut.fiberWrapper(function () {throw new Error("Foo")}, v.conn, v.data);
+      sut.fiberConnWrapper(function () {throw new Error("Foo")}, v.conn, v.data);
       util.Fiber.args(0, 0)();
       assert.calledWith(sut.error, TH.match(/Foo/));
     },

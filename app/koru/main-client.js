@@ -25,6 +25,14 @@ define(function(require, exports, module) {
     }, duration);
   };
 
+  koru.fiberConnWrapper = function (func, conn, data) {
+    try {
+      func(conn, data);
+    } catch(ex) {
+      koru.error(util.extractError(ex));
+    }
+  };
+
 
   koru.getLocation = function () {
     return window.location;

@@ -41,7 +41,7 @@ define(function(require, exports, module) {
     return setTimeout(fiber.run.bind(fiber), duration);
   };
 
-  koru.fiberWrapper = function (func, conn, data) {
+  koru.fiberConnWrapper = function (func, conn, data) {
     util.Fiber(function () {
       try {
         var thread = util.thread;
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
         thread.connection = conn;
         dbBroker.db = conn.db;
 
-        func.call(conn, data);
+        func(conn, data);
       } catch(ex) {
         koru.error(util.extractError(ex));
       }

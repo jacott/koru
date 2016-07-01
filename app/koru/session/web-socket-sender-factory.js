@@ -15,7 +15,7 @@ define(function (require) {
       session.versionHash = KORU_APP_VERSION;
 
     util.extend(session, {
-      execWrapper: execWrapper || defaultWrapper,
+      execWrapper: execWrapper || koru.fiberConnWrapper,
 
       state: sessState,
 
@@ -86,12 +86,16 @@ define(function (require) {
         waitSends.length = 0;
       };
 
+      let onMessage = null;
+
       ws.onmessage = function (event) {
         heatbeatTime = util.dateNow() + session.heartbeatInterval;
         if (! heartbeatTO) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
         }
-        session._onMessage(session, event.data);
+        if (! onMessage)
+          onMessage = session._onMessage.bind(session);
+        session.execWrapper(onMessage, session, event.data);
       };
 
       ws.onclose = onclose;
@@ -136,14 +140,15 @@ define(function (require) {
 
     if (! base._broadcastFuncs) {
       base.provide('X', function (data) {
-        if (this.versionHash && this.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
-          koru.reload();
-        }
-        this.versionHash = data[1];
         this.globalDict = message.newGlobalDict();
-
         message.decodeDict(data[2], 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
+        if (this.versionHash && this.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
+          koru.reload();
+          return;
+        }
+        this.versionHash = data[1];
+
 
         retryCount = 0;
       });
@@ -194,12 +199,4 @@ define(function (require) {
 
     return session;
   };
-
-  function defaultWrapper(func, conn, data) {
-    try {
-      func.call(conn, data);
-    } catch(ex) {
-      koru.error(util.extractError(ex));
-    }
-  }
 });

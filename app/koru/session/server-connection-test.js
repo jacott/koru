@@ -39,7 +39,8 @@ isServer && define(function (require, exports, module) {
         session.provide('t', v.tFunc = function () {
           v.tStub.apply(this, arguments);
         });
-        test.intercept(util, 'thread', v.thread = {});
+        v.thread = {};
+        TH.stubProperty(util, 'thread', {get: function () {return v.thread}});
       },
 
       tearDown () {
@@ -77,21 +78,28 @@ isServer && define(function (require, exports, module) {
 
       "test queued" () {
         v.calls = [];
+        let error;
         test.intercept(session, '_onMessage', function (conn, data) {
-          v.calls.push(data);
-          switch(data) {
-          case 't123':
-            assert.equals(v.conn._last, ['t123']);
-            v.conn.onMessage('t456');
-            assert.equals(v.conn._last, ['t456']);
-            assert.equals(v.calls, ['t123']);
-            break;
-          case 't456':
-            assert.equals(v.conn._last, ['t456']);
-            break;
+          try {
+            v.calls.push(data);
+            switch(data) {
+            case 't123':
+              assert.equals(v.conn._last, ['t123', null]);
+              v.conn.onMessage('t456');
+              assert.equals(v.conn._last, ['t456', null]);
+              assert.equals(v.calls, ['t123']);
+              break;
+            case 't456':
+              assert.equals(v.conn._last, ['t456', null]);
+              break;
+            }
+          } catch(ex) {
+            error = error || ex;
           }
         });
         v.conn.onMessage('t123');
+
+        if (error) throw error;
 
         assert.equals(v.calls, ['t123', 't456']);
         assert.equals(v.conn._last, null);

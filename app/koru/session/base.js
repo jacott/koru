@@ -39,8 +39,9 @@ define(function(require, exports, module) {
       }
 
       var func = this._commands[type];
+
       if (func)
-        this.execWrapper(func, conn, data);
+        func.call(conn, data);
       else
         koru.info('Unexpected session message: '+ type, conn.sessId);
     }

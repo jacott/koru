@@ -18,7 +18,7 @@ define(function (require, exports, module) {
     globalDictAdders[module.id] = addToDictionary;
 
     util.extend(session, {
-      execWrapper: execWrapper || koru.fiberWrapper,
+      execWrapper: execWrapper || koru.fiberConnWrapper,
       conns: {},
       sendAll: sendAll,
       versionHash: process.env['KORU_APP_VERSION'] || ''+Date.now(),
