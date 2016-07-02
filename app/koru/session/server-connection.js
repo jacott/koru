@@ -47,19 +47,25 @@ define(function(require, exports, module) {
         }
         let current = this._last = [data, null];
 
-        IdleCheck.inc();
-        session.execWrapper(() => {
-          while(current) {
+        var process = () => {
+          session.execWrapper(() => {
             try {
               session._onMessage(this, current[0]);
             } catch(ex) {
               koru.error(util.extractError(ex));
             }
             current = current[1];
-          }
-          this._last = null;
-          IdleCheck.dec();
-        }, this);
+            if (current)
+              process();
+            else {
+              this._last = null;
+              IdleCheck.dec();
+            }
+          }, this);
+        };
+
+        IdleCheck.inc();
+        process();
       }
 
       send (type, data) {

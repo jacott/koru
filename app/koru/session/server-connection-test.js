@@ -2,28 +2,37 @@ isServer && define(function (require, exports, module) {
   var test, v;
   const IdleCheck  = require('../idle-check').singleton;
   const koru       = require('../main');
-  const session    = require('../session/base');
   const TH         = require('../test');
   const util       = require('../util');
   const match      = require('./match');
   const message    = require('./message');
-  const Connection = require('./server-connection')(session);
+
+  const baseSession = require('../session/base');
+  const session = baseSession.__initBase__('testServerConnection');
+  const Connection  = require('./server-connection')(session);
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
       v.conn = new Connection(v.ws = {
         send: test.stub(), close: test.stub(), on: test.stub(),
       }, 123, v.sessClose = test.stub());
       test.stub(v.conn, 'sendBinary');
+      test.intercept(session, 'execWrapper', function (func, conn) {
+        var thread = util.thread;
+        thread.userId = conn.userId;
+        thread.connection = conn;
+        func(conn);
+      });
+      session.globalDict = baseSession.globalDict;
     },
 
-    tearDown () {
+    tearDown() {
       v = null;
     },
 
-    "test match" () {
+    "test match"() {
       v.conn.match.register('Foo', v.m1 = test.stub().returns(true));
 
       assert.isTrue(v.conn.match.has(v.foo = {constructor: {modelName: 'Foo'}, a: 1}));
@@ -34,7 +43,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "onMessage": {
-      setUp () {
+      setUp() {
         v.tStub = test.stub();
         session.provide('t', v.tFunc = function () {
           v.tStub.apply(this, arguments);
@@ -43,12 +52,12 @@ isServer && define(function (require, exports, module) {
         TH.stubProperty(util, 'thread', {get: function () {return v.thread}});
       },
 
-      tearDown () {
+      tearDown() {
         delete session._commands.t;
       },
 
 
-      "test waitIdle" () {
+      "test waitIdle"() {
         test.spy(IdleCheck, 'inc');
         test.spy(IdleCheck, 'dec');
         test.stub(session, '_onMessage', function (conn) {
@@ -62,7 +71,7 @@ isServer && define(function (require, exports, module) {
         assert(v.success);
       },
 
-      "test thread vars" () {
+      "test thread vars"() {
         v.tStub = function () {
           v.threadUserId = util.thread.userId;
           v.threadConnection = util.thread.connection;
@@ -76,10 +85,17 @@ isServer && define(function (require, exports, module) {
         assert.same(v.thread.userId, 'tcuid');
       },
 
-      "test queued" () {
+      "test queued"() {
         v.calls = [];
         let error;
+        let token = 'first';
+        session.execWrapper.restore();
+        test.intercept(session, 'execWrapper', function (func, conn) {
+          v.calls.push(token);
+          func(conn);
+        });
         test.intercept(session, '_onMessage', function (conn, data) {
+          token = 'second';
           try {
             v.calls.push(data);
             switch(data) {
@@ -87,7 +103,7 @@ isServer && define(function (require, exports, module) {
               assert.equals(v.conn._last, ['t123', null]);
               v.conn.onMessage('t456');
               assert.equals(v.conn._last, ['t456', null]);
-              assert.equals(v.calls, ['t123']);
+              assert.equals(v.calls, ['first', 't123']);
               break;
             case 't456':
               assert.equals(v.conn._last, ['t456', null]);
@@ -101,14 +117,14 @@ isServer && define(function (require, exports, module) {
 
         if (error) throw error;
 
-        assert.equals(v.calls, ['t123', 't456']);
+        assert.equals(v.calls, ['first', 't123', 'second', 't456']);
         assert.equals(v.conn._last, null);
       },
     },
 
-    "test send batched" () {
+    "test send batched"() {
       var bm = util.thread.batchMessage = {batch: test.stub()};
-      test.onEnd(function () {util.thread.batchMessage = null});
+      test.onEnd(() => util.thread.batchMessage = null);
 
       v.conn.sendBinary.restore();
 
@@ -119,7 +135,7 @@ isServer && define(function (require, exports, module) {
       refute.called(v.conn.ws.send);
     },
 
-    "test send" () {
+    "test send"() {
       v.conn.send('X', 'FOO');
       assert.calledWith(v.ws.send, 'XFOO');
 
@@ -143,7 +159,7 @@ isServer && define(function (require, exports, module) {
       refute.called(koru.info);
     },
 
-    "test sendBinary" () {
+    "test sendBinary"() {
       v.conn.sendBinary.restore();
       v.conn.sendBinary('M', [1,2,3]);
 
@@ -174,15 +190,13 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.ws.send, 'OneArg', {binary: true});
     },
 
-    "test when closed sendBinary" () {
+    "test when closed sendBinary"() {
       v.conn.ws = null;
       v.conn.sendBinary.restore();
-      refute.exception(function () {
-        v.conn.sendBinary('M', [1,2,3]);
-      });
+      refute.exception(() => v.conn.sendBinary('M', [1,2,3]));
     },
 
-    "test set userId" () {
+    "test set userId"() {
       var sendUid = v.ws.send.withArgs('VSu456');
       var sendUidCompleted = v.ws.send.withArgs('VC');
       v.conn._subs = {s1: {resubscribe: v.s1 = test.stub()}, s2: {resubscribe: v.s2 = test.stub()}};
@@ -199,7 +213,7 @@ isServer && define(function (require, exports, module) {
       assert(sendUidCompleted.calledAfter(v.s2));
     },
 
-    "test sendMatchUpdate" () {
+    "test sendMatchUpdate"() {
       v.doc = {
         constructor: {modelName: 'Foo'},
         _id: 'f123',
@@ -237,7 +251,7 @@ isServer && define(function (require, exports, module) {
       assert.calledOnceWith(v.conn.sendBinary, 'R', ['Foo', 'f123']);
     },
 
-    "test added" () {
+    "test added"() {
       v.conn.added('Foo', '123', v.attrs = {name: 'bar', age: 5});
 
       assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', v.attrs]);
@@ -247,7 +261,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'A', ['Foo', '123', {name: 'fbar'}]);
     },
 
-    "test changed" () {
+    "test changed"() {
       v.conn.changed('Foo', '123', v.attrs = {name: 'bar'});
 
       assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', v.attrs]);
@@ -257,13 +271,13 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'C', ['Foo', '123', {age: 2}]);
     },
 
-    "test removed" () {
+    "test removed"() {
       v.conn.removed('Foo', '123');
 
       assert.calledWith(v.conn.sendBinary, 'R', ['Foo', '123']);
     },
 
-    "test closed" () {
+    "test closed"() {
       v.conn.onClose(v.close1 = test.stub());
       v.conn.onClose(v.close2 = test.stub());
       v.conn._subs.t1 = {stop: v.t1 = test.stub()};
