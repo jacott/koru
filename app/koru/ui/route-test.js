@@ -644,6 +644,27 @@ isClient && define(function (require, exports, module) {
       refute.called(Route.replacePage);
     },
 
+    "test addTemplate with entry/exit"() {
+      var Baz = {
+        name: 'Baz',
+
+        onEntry: v.onEntry = test.stub(),
+        onExit: v.onExit = test.stub(),
+
+        $autoRender(arg) {
+          return Dom.html('<div id="Baz">'+arg+'</div>');
+        },
+      };
+
+      Route.root.addTemplate(Baz);
+
+      Route.root.removeTemplate(Baz);
+
+      // doesn't change onEntry, onExit
+      assert.same(Baz.onEntry, v.onEntry);
+      assert.same(Baz.onExit, v.onExit);
+    },
+
     "test addTemplate"() {
       var Baz = {
         name: 'Baz',
@@ -666,6 +687,12 @@ isClient && define(function (require, exports, module) {
       Baz.onExit();
 
       refute.dom('#Baz');
+
+      Route.root.removeTemplate(Baz);
+
+      // removes auto onEntry, onExit
+      assert.same(Baz.onEntry, null);
+      assert.same(Baz.onExit, null);
     },
 
     "test gotoPath default"() {

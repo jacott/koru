@@ -37,8 +37,8 @@ define(function(require, exports, module) {
       util.reverseExtend(this, options);
     }
 
-    static get pageState() {return pageState}
-    static get pageCount() {return pageCount}
+    static get pageState() {return pageState;}
+    static get pageCount() {return pageCount;}
 
     static waitForPage(expectPage, duration) {
       duration = duration || 2000;
@@ -302,6 +302,7 @@ define(function(require, exports, module) {
         module = null;
       }
       options = addCommon(this, module, template, options);
+
       if (! template.onEntry)
         template.onEntry = onEntryFunc(template, options);
 
@@ -313,6 +314,10 @@ define(function(require, exports, module) {
       var path = options && options.path;
       if (path == null) path = templatePath(template);
       this.routes[path] = null;
+      if (template.onEntry && template.onEntry.name === 'autoOnEntry')
+        template.onEntry = null;
+      if (template.onExit && template.onExit.name === 'autoOnExit')
+        template.onExit = null;
     }
 
     addDialog(module, template, options) {
@@ -489,7 +494,7 @@ define(function(require, exports, module) {
   }
 
   function onEntryFunc(template, options) {
-    return function (page, pageRoute) {
+    return function autoOnEntry(page, pageRoute) {
       if (options) {
         if (typeof options.data ==='function') {
           var data = options.data.apply(template, arguments);
@@ -514,7 +519,7 @@ define(function(require, exports, module) {
   }
 
   function onExitFunc(template) {
-    return function () {
+    return function autoOnExit() {
       Dom.remove(template._renderedPage || document.getElementById(template.name));
     };
   }
