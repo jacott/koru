@@ -91,6 +91,15 @@ define(function (require, exports, module) {
       assert.equals(v.result, [3,2,1]);
     },
 
+    "test cancelYields"() {
+      var foo = test.stub().yields(1);
+      foo.cancelYields();
+      v.result = 0;
+      foo(function () {v.result = 1});
+
+      assert.same(v.result, 0);
+    },
+
     "test spy": function () {
       var obj = {foo: function (a,b,c) {
         v.thisValue = this;

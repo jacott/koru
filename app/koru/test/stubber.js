@@ -23,6 +23,11 @@ define(function(require, Stubber, module) {
       return this;
     },
 
+    cancelYields() {
+      this._yields = null;
+      return this;
+    },
+
     toString() {
       return typeof this.original === 'function' ? this.original.name : this.original === undefined ?
         this.name :
@@ -30,7 +35,7 @@ define(function(require, Stubber, module) {
     },
 
     withArgs(...args) {
-      function spy () {
+      function spy() {
         return spy.subject.apply(this, arguments);
       };
       Object.setPrototypeOf(spy, withProto);
@@ -42,7 +47,7 @@ define(function(require, Stubber, module) {
     },
 
     onCall(count) {
-      function spy () {
+      function spy() {
         return spy.subject.apply(this, arguments);
       };
       Object.setPrototypeOf(spy, withProto);
