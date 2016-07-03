@@ -10,15 +10,24 @@ define(function(require, exports, module) {
   const registerObserveId    = require('./register-observe-id');
   const Val                  = require('./validation');
 
-  const modelObservers = {};
+  /**
+   * Track before/after/finally observers observing a model.
+   **/
+  const allObservers = new WeakMap;
 
-  const emptyObject = {};
+  /**
+   * Track before/after/finally observers registered to a model. This
+   * allows a observer to be deallocated when a model is destroyed.
+   **/
+  const allObserverHandles = new WeakMap;
 
   koru.onunload(module, function () {
     koru.unload(koru.absId(require, './base'));
   });
 
   BaseModel.prototype = {
+    constructor: BaseModel,
+
     get _id() {return this.attributes._id || this.changes._id;},
 
     get classMethods() {return this.constructor},
@@ -64,12 +73,11 @@ define(function(require, exports, module) {
       doc._errors = null;
 
       if(fVTors) {
-        for(var field in fVTors) {
-          var validators = fVTors[field];
-          for(var vTor in validators) {
-
-            var args = validators[vTor];
-            var options = args[1];
+        for(let field in fVTors) {
+          let validators = fVTors[field];
+          for(let vTor in validators) {
+            let args = validators[vTor];
+            let options = args[1];
 
             if (typeof options === 'function')
               options = options.call(doc, field, args[2]);
@@ -107,9 +115,9 @@ define(function(require, exports, module) {
 
       if (field in changes) return true;
 
-      var len = field.length;
+      const len = field.length;
 
-      for(var key in changes) {
+      for(let key in changes) {
         if (key.length > len && key[len] === "." && key.slice(0, len)  === field) return true;
       }
       return false;
@@ -123,12 +131,12 @@ define(function(require, exports, module) {
      * then a cached version of the before doc is return.
      */
     $withChanges(changes) {
-      var cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
+      const cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
       if (changes === cache[0]) return cache[1];
 
       cache[0] = changes;
 
-      var simple = true;
+      let simple = true;
       for(var attr in changes) {
         if (attr.indexOf(".") !== -1) {
           simple = false;
@@ -179,10 +187,10 @@ define(function(require, exports, module) {
      * @returns new hash of extracted values.
      */
     $asChanges(beforeChange) {
-      var attrs = this.attributes;
-      var result = {};
-      for(var key in beforeChange) {
-        var idx = key.lastIndexOf(".");
+      const attrs = this.attributes;
+      const result = {};
+      for(let key in beforeChange) {
+        const idx = key.lastIndexOf(".");
         if (idx === -1) {
           result[key] = attrs[key];
         } else if (key[idx+1] !== '$') {
@@ -234,20 +242,19 @@ define(function(require, exports, module) {
 
   session.defineRpc("put", function (modelName, id, updates) {
     Val.assertCheck([modelName, id], ['string']);
-    var model = BaseModel[modelName];
+    const model = BaseModel[modelName];
     Val.allowIfFound(model);
-    var doc = model.findById(id);
+    const  doc = model.findById(id);
     Val.allowIfFound(doc);
 
-    var parts = _support.validatePut(doc, updates);
-    var changes = parts[0], pSum = parts[1];
+    const [changes, pSum] = _support.validatePut(doc, updates);
     try {
       var ex;
 
       callBeforeObserver('beforeUpdate', doc, pSum);
       callBeforeObserver('beforeSave', doc, pSum);
-      var query = doc.$onThis;
-      for (var key in pSum) {
+      const query = doc.$onThis;
+      for (let key in pSum) {
         util.extend(changes, pSum[key]);
       }
       doc.changes = {};
@@ -265,43 +272,39 @@ define(function(require, exports, module) {
   Object.defineProperty(BaseModel, '_callAfterObserver', {enumerable: false, value: callAfterObserver});
 
   function callBeforeObserver(type, doc, partials) {
-    var model = doc.constructor;
-    var observers = modelObservers[model.modelName+'.'+type];
-    if (observers) {
-      for(var i=0;i < observers.length;++i) {
-        observers[i].call(model, doc, type, partials);
-      }
+    const model = doc.constructor;
+    const modelObservers = allObservers.get(model);
+    const observers = modelObservers && modelObservers[type];
+    if (observers) for(let observer of observers) {
+      observer[0].call(model, doc, type, partials);
     }
   }
 
   function callAfterObserver(doc, was) {
-    var model = (doc || was).constructor;
-    var observers = modelObservers[model.modelName+'.afterLocalChange'];
-    if (observers) {
-      for(var i=0;i < observers.length;++i) {
-        observers[i].call(model, doc, was);
-      }
+    const model = (doc || was).constructor;
+    const modelObservers = allObservers.get(model);
+    const observers = modelObservers && modelObservers['afterLocalChange'];
+    if (observers) for(let observer of observers) {
+      observer[0].call(model, doc, was);
     }
   }
 
   function callWhenFinally(doc, ex) {
-    var model = doc.constructor;
-    var observers = modelObservers[model.modelName+'.whenFinally'];
-    if (observers) {
-      for(var i=0;i < observers.length;++i) {
-        try {
-          observers[i].call(model, doc, ex);
-        } catch(ex1) {
-          ex = ex || ex1;
-        }
+    const model = doc.constructor;
+    const modelObservers = allObservers.get(model);
+    const observers = modelObservers && modelObservers['whenFinally'];
+    if (observers) for(let observer of observers) {
+      try {
+        observer[0].call(model, doc, ex);
+      } catch(ex1) {
+        ex = ex || ex1;
       }
     }
   }
 
-
-  var modelProperties = {
+  const modelProperties = {
     create(attributes) {
-      var doc = new this();
+      const doc = new this();
       util.extend(doc.changes, util.deepCopy(attributes));
       doc.$save();
       return isServer ? doc : doc.constructor.findById(doc._id);
@@ -316,7 +319,7 @@ define(function(require, exports, module) {
      * Build a new document. Does not copy _id from attributes.
      */
     build(attributes, allow_id) {
-      var doc = new this();
+      const doc = new this();
       if(attributes) {
         util.extend(doc.changes, util.deepCopy(attributes));
         allow_id || (doc.changes._id = null);
@@ -343,7 +346,7 @@ define(function(require, exports, module) {
     },
 
     where() {
-      var query = this.query;
+      const query = this.query;
       return query.where.apply(query, arguments);
     },
 
@@ -352,7 +355,7 @@ define(function(require, exports, module) {
     },
 
     exists(condition) {
-      var query = new Query(this);
+      const query = new Query(this);
       if (typeof condition === 'string')
         query.onId(condition);
       else
@@ -382,14 +385,6 @@ define(function(require, exports, module) {
       }
     },
 
-    beforeCreate,
-    beforeUpdate,
-    beforeSave,
-    beforeRemove,
-
-    afterLocalChange,
-    whenFinally,
-
     /**
      * Model extension methods
      */
@@ -397,7 +392,7 @@ define(function(require, exports, module) {
     defineFields,
 
     changesTo(field, doc, was) {
-      var cache = this._changesToCache;
+      let cache = this._changesToCache;
       if (cache && cache.field === field && cache.doc === doc && cache.was === was)
         return cache.keyMap;
 
@@ -409,8 +404,9 @@ define(function(require, exports, module) {
           if (field in was) {
             cache.keyMap = 'upd';
           } else {
-            var m, regex = new RegExp("^"+field+"\\.([^.]+)");
-            for (var key in was) {
+            const regex = new RegExp("^"+field+"\\.([^.]+)");
+            let m;
+            for (let key in was) {
               if (m = regex.exec(key)) {
                 if (! cache.keyMap) {
                   cache.keyMap = {};
@@ -429,8 +425,8 @@ define(function(require, exports, module) {
     },
 
     addVersioning() {
-      var model = this,
-          proto = model.prototype;
+      const model = this;
+      const proto = model.prototype;
 
       model.hasVersioning = true;
       Object.defineProperty(proto, '_version', versionProperty);
@@ -442,30 +438,36 @@ define(function(require, exports, module) {
     },
 
     remote(funcs) {
-      var prefix = this.modelName + '.';
+      const prefix = this.modelName + '.';
 
-      for(var key in funcs) {
+      for(const key in funcs) {
         session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
       return this;
     },
-
-    definePrototypeMethod(name, func) {
-      var fullname = this.modelName+"."+name;
-      this.prototype[name] = function() {
-        for(var i=0;i < arguments.length;++i) {
-          var curr = arguments[i];
-          if (curr && curr._id) arguments[i] = curr._id;
-        }
-        return session.rpc.apply(session, util.append([fullname, this._id], arguments));
-      };
-      func && session.defineRpc(fullname, func);
-      return this;
-    },
   };
 
-  var versionProperty = {
+  for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
+                    'afterLocalChange','whenFinally']) {
+    modelProperties[type] = function (subject, callback) {
+      registerObserver(this, subject, type, callback);
+      return this;
+    };
+  }
+
+  function registerObserver(model, subject, name, callback) {
+    let modelObservers = allObservers.get(subject);
+    if (! modelObservers)
+      allObservers.set(subject, modelObservers = Object.create(null));
+    (modelObservers[name] || (modelObservers[name] = [])).push([callback, model]);
+    let oh = allObserverHandles.get(model);
+    if (! oh)
+      allObserverHandles.set(model, oh = new Set);
+    oh.add(modelObservers);
+  }
+
+  const versionProperty = {
     get: function () {
       return this.attributes._version;
     },
@@ -475,7 +477,7 @@ define(function(require, exports, module) {
     }
   };
 
-  var _support = {
+  const _support = {
     setupExtras: [],
 
     validatePut(doc, updates) {
@@ -506,10 +508,10 @@ define(function(require, exports, module) {
     },
 
     performInsert(doc) {
-      var model = doc.constructor;
+      const model = doc.constructor;
 
       doc.changes = doc.attributes;
-      var attrs = doc.attributes = {};
+      const attrs = doc.attributes = {};
 
       try {
         var ex;
@@ -531,7 +533,7 @@ define(function(require, exports, module) {
     },
 
     performUpdate(doc, changes) {
-      var model = doc.constructor;
+      const model = doc.constructor;
 
       doc.changes = changes;
 
@@ -539,7 +541,7 @@ define(function(require, exports, module) {
         var ex;
         callBeforeObserver('beforeUpdate', doc);
         callBeforeObserver('beforeSave', doc);
-        var st = new Query(model).onId(doc._id);
+        const st = new Query(model).onId(doc._id);
 
         model.hasVersioning && st.inc("_version", 1);
 
@@ -575,7 +577,7 @@ define(function(require, exports, module) {
           name = util.capitalize(util.camelize(module.id.replace(/^.*\//, '')));
         }
       }
-      if (name in BaseModel) throw new Error("Model '" + name + "' already defined");
+      if (BaseModel[name]) throw new Error("Model '" + name + "' already defined");
       properties  = properties || {};
       const model = newModel(this, name);
 
@@ -604,25 +606,26 @@ define(function(require, exports, module) {
     _support,
 
     _destroyModel(name, drop) {
-      var model = BaseModel[name];
+      const model = BaseModel[name];
       if (! model) return;
 
       ModelEnv.destroyModel(model, drop);
 
       delete BaseModel[name];
 
-      util.forEach(['beforeCreate', 'beforeUpdate', 'beforeSave', 'beforeRemove', 'afterLocalChange'], function (actn) {
-        delete modelObservers[name +"." + actn];
-      });
-      if (model._observing) for(var i = 0; i < model._observing.length; ++i) {
-        delete modelObservers[model._observing[i]];
+      let oh = allObserverHandles.get(model);
+      if (oh) for (let modelObservers of oh) {
+        for (let name in modelObservers) {
+          modelObservers[name] = modelObservers[name].filter(entry => {
+            return entry[1] !== model;
+          });
+        }
       }
-      model._observing = null;
     },
 
     _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
-        for(var key in timestamps)  {
+        for(let key in timestamps)  {
           changes[key] = changes[key] || now;
         }
       }
@@ -630,7 +633,7 @@ define(function(require, exports, module) {
 
     _addUserIds(changes, userIds, user_id) {
       if (userIds) {
-        for(var key in userIds)  {
+        for(let key in userIds)  {
           changes[key] = changes[key] || user_id;
         }
       }
@@ -639,26 +642,26 @@ define(function(require, exports, module) {
     _modelProperties: modelProperties,
 
     splitUpdateKeys(changes, partials, updates) {
-      for (var key in updates) {
-        var pos = key.indexOf(".");
+      for (let key in updates) {
+        const pos = key.indexOf(".");
         if (pos === -1)
           changes[key] = updates[key];
         else {
-          var mainKey = key.slice(0, pos);
-          var section = partials[mainKey] || (partials[mainKey] = {});
+          let mainKey = key.slice(0, pos);
+          let section = partials[mainKey] || (partials[mainKey] = {});
           section[key] = updates[key];
         }
       }
     },
   });
 
-  var typeMap = {
+  const typeMap = {
     belongs_to(model, field, options) {
-      var name = field.replace(/_id/,'');
-      var bt = options.model;
+      const name = field.replace(/_id/,'');
+      let bt = options.model;
       if (! bt) {
         var btName = options.modelName || util.capitalize(name);
-        var bt = BaseModel[btName];
+        bt = BaseModel[btName];
       }
       mapFieldType(model, field, bt, btName);
       Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
@@ -671,7 +674,7 @@ define(function(require, exports, module) {
     },
 
     has_many(model, field, options) {
-      var bt = options.model;
+      let bt = options.model;
       if (! bt) {
         var name = options.modelName ||
               (options.associated &&
@@ -701,13 +704,13 @@ define(function(require, exports, module) {
   }
 
   function defineFields(fields) {
-    var proto = this.prototype;
-    var $fields = this.$fields;
+    const proto = this.prototype;
+    let $fields = this.$fields;
     if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
-    for(var field in fields) {
-      var options = fields[field];
+    for(let field in fields) {
+      let options = fields[field];
       if (! options.type) options = {type: options};
-      var func = typeMap[options.type];
+      const func = typeMap[options.type];
       func && func(this, field, options);
       setUpValidators(this, field, options);
 
@@ -729,14 +732,14 @@ define(function(require, exports, module) {
 
   function belongsTo(model, name, field) {
     return function () {
-      var value = this[field];
+      const value = this[field];
       return value && this.$cacheRef(name)[value] || (this.$cacheRef(name)[value] = model.findById(value));
     };
   }
 
   function hasMany(name, model, finder) {
     Object.defineProperty(this.prototype, name, {get: function () {
-      var query = model.query;
+      const query = model.query;
       finder.call(this, query);
       return query;
     }});
@@ -768,12 +771,12 @@ define(function(require, exports, module) {
   }
 
   function setUpValidators(model, field, options) {
-    var validators = getValidators(model, field),
-        valFunc;
+    const validators = getValidators(model, field);
+    let valFunc;
 
     if (typeof options === 'object') {
 
-      for(var validator in options) {
+      for(let validator in options) {
 
         if(valFunc = Val.validators(validator)) {
           validators[validator]=[valFunc, options[validator], options];
@@ -786,41 +789,6 @@ define(function(require, exports, module) {
     return model._fieldValidators[field] || (model._fieldValidators[field] = {});
   }
 
-  function beforeCreate(subject, callback) {
-    registerObserver(this, subject, 'beforeCreate', callback);
-    return this;
-  };
-
-  function beforeUpdate(subject, callback) {
-    registerObserver(this, subject, 'beforeUpdate', callback);
-    return this;
-  };
-
-  function beforeSave(subject, callback) {
-    registerObserver(this, subject, 'beforeSave', callback);
-    return this;
-  };
-
-  function beforeRemove(subject, callback) {
-    registerObserver(this, subject, 'beforeRemove', callback);
-    return this;
-  };
-
-  function afterLocalChange(subject, callback) {
-    registerObserver(this, subject, 'afterLocalChange', callback);
-    return this;
-  };
-
-  function whenFinally(subject, callback) {
-    registerObserver(this, subject, 'whenFinally', callback);
-    return this;
-  };
-
-  function registerObserver(model, subject, name, callback) {
-    name = subject.modelName + "." + name;
-    (model._observing = model._observing || []).push(name);
-    (modelObservers[name] || (modelObservers[name] = [])).push(callback);
-  }
 
   function newModel(baseModel, name) {
     function Model(attrs, changes) {

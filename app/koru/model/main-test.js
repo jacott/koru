@@ -105,6 +105,23 @@ define(function (require, exports, module) {
         }
       },
 
+      "test remove on destroy for another subject"() {
+        v.TestModel2 = Model.define('TestModel2').defineFields({age: 'number'});
+        test.onEnd(() =>  Model._destroyModel('TestModel2', 'drop'));
+
+        v.TestModel2.beforeCreate(v.TestModel, v.cb = test.stub());
+
+        v.TestModel.create({name: 'foo'});
+        assert.calledWith(v.cb, TH.match(doc => doc.name === 'foo'), 'beforeCreate');
+        v.cb.reset();
+        Model._destroyModel('TestModel2', 'drop');
+
+        v.TestModel.create({name: 'bar'});
+        refute.called(v.cb);
+
+      },
+
+
       "test remove calls"() {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
         test.onEnd(v.TestModel.afterLocalChange(v.TestModel, v.afterLocalChange = test.stub()));
@@ -525,21 +542,6 @@ define(function (require, exports, module) {
 
         assert.equals(doc.changes, {foo: {bar: {baz: 'new', boo: "me too"}, fnord: 123}});
         assert.equals(doc.attributes.foo, {bar: {baz: 'orig'}});
-      },
-
-      "test definePrototypeMethod"() {
-        v.TestModel.definePrototypeMethod('fooBar', v.stub = test.stub());
-
-        var baz = {_id: "123"};
-        var called;
-
-        var sut = v.TestModel.create();
-        var rpcSpy = test.spy(session, 'rpc');
-        sut.fooBar(baz, "abc");
-
-        assert.calledWith(rpcSpy, 'TestModel.fooBar', sut._id, "123", "abc");
-
-        assert.calledWith(v.stub, sut._id, "123", "abc");
       },
 
       "test can override and save invalid doc"() {

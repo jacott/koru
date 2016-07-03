@@ -90,7 +90,7 @@ define(function (require, exports, module) {
 
       v.doc = TestModel.create({name: 'foo'});
       test.onEnd(TestModel.onChange(v.onChange = test.stub()));
-      TestModel.beforeSave('TestModel', v.beforeSave = test.stub());
+      TestModel.beforeSave(TestModel, v.beforeSave = test.stub());
 
       v.doc.$save();
       TestModel.query.onId(v.doc._id).update({});
