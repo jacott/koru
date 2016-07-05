@@ -14,13 +14,44 @@ isClient && define(function (require, exports, module) {
       test = this;
       v = {};
       v.Form = Dom.newTemplate(util.deepCopy(formTpl));
-      v.selectList = v.Form.TestSelect;
     },
 
     tearDown() {
       Dom.removeChildren(document.body);
       delete Dom.Test;
       v = null;
+    },
+
+    "selectList": {
+      "test Select."() {
+        const selectList = v.Form.TestSelect;
+        selectList.$helpers({
+          fooList() {
+            return [['a', 'A'], ['b', 'B']];
+          },
+        });
+        document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
+        assert.dom('select', function () {
+          assert.dom('option:not([selected])', {value: 'a', text: 'A'});
+          assert.dom('option[selected=selected]', {value: 'b', text: 'B'});
+        });
+      },
+
+      "test SelectMenu"() {
+        const selectList = v.Form.TestSelectMenu;
+        selectList.$helpers({
+          fooList() {
+            return [['a', 'A'], ['b', 'B']];
+          },
+        });
+        document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
+        assert.dom('[data-errorField="foo_id"]', function () {
+          assert.dom('button[name=foo_id].select.fuz', 'B');
+          TH.selectMenu('.select', TH.match.field('id', 'a'));
+          assert.dom('.select', 'A');
+          assert.dom('[type=hidden]', {value: 'a'});
+        });
+      },
     },
 
     "test fillDoc"() {

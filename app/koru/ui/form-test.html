@@ -13,6 +13,12 @@
     </div>
   </template>
 
+  <template name="TestSelectMenu">
+    <div id="TestSelectMenu">
+      {{labelField "foo_id" id="fooId" class="fuz" type="selectMenu" selectList=fooList}}
+    </div>
+  </template>
+
   <template name="TestData">
     <div id="TestData">
       {{labelField "foo" id="fooId" data=myData}}

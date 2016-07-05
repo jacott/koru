@@ -639,14 +639,14 @@ define(function(require, exports, module) {
       if(value == null || value === '')
         return '';
 
-      return value.substring(0,1).toUpperCase() + value.substring(1);
+      return value.charAt(0).toUpperCase() + value.substring(1);
     },
 
     uncapitalize (value) {
       if(value == null || value === '')
         return '';
 
-      return value.substring(0,1).toLowerCase() + value.substring(1);
+      return value.charAt(0).toLowerCase() + value.substring(1);
     },
 
     titleize (value) {

@@ -1,12 +1,13 @@
 define(function(require, exports, module) {
-  const Dom                    = require('../dom');
-  const format                 = require('../format');
-  const koru                   = require('../main');
-  const Val                    = require('../model/validation');
-  const util                   = require('../util');
-  const PlainText              = require('./plain-text');
-  const RichTextEditorToolbar  = require('./rich-text-editor-toolbar');
-  const Route                  = require('./route');
+  const SelectMenu            = require('koru/ui/select-menu');
+  const Dom                   = require('../dom');
+  const format                = require('../format');
+  const koru                  = require('../main');
+  const Val                   = require('../model/validation');
+  const util                  = require('../util');
+  const PlainText             = require('./plain-text');
+  const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
+  const Route                 = require('./route');
 
   const Tpl = Dom.newTemplate(require('../html!./form'));
   const $ = Dom.current;
@@ -288,9 +289,48 @@ define(function(require, exports, module) {
   });
 
   helpers('TextInput', {});
-  helpers('Select', {});
   helpers('Radio', {});
 
+  helpers('SelectMenu', {
+    buttonText() {
+      Dom.addClass($.element.parentNode, 'select');
+      const options = this.options;
+      const value = this.doc[this.name];
+
+      for (let [id, name]  of options.selectList) {
+        if (id === value)
+          return name;
+      }
+      const includeBlank = options.includeBlank;
+      if (typeof includeBlank === 'string')
+        return includeBlank;
+
+    },
+  });
+
+  Tpl.SelectMenu.$events({
+    'click'(event) {
+      Dom.stopEvent();
+
+      const options = $.ctx.data.options;
+      const button = event.currentTarget.firstChild;
+      const hidden = event.currentTarget.lastChild;
+
+      SelectMenu.popup(button, {
+        list: options.selectList,
+        onSelect(elm) {
+          const data = $.data(elm);
+          button.textContent = data.name;
+          hidden.value = data._id || data.id;
+
+          return true;
+        },
+      });
+    },
+  });
+
+
+  helpers('Select', {});
   Tpl.Select.$extend({
     $created: function (ctx, elm) {
       buildSelectList(ctx, elm, function (value, content, selected) {
@@ -340,7 +380,7 @@ define(function(require, exports, module) {
       var getValue = function (row) {return row[0]};
       var getContent = function (row) {return row[1]};
     }
-    var includeBlank = options.includeBlank;
+    let includeBlank = options.includeBlank;
     if (('includeBlank' in options) && includeBlank !== 'false') {
       if (typeof includeBlank !== 'string' || includeBlank === 'true')
         includeBlank = '';
@@ -465,7 +505,7 @@ define(function(require, exports, module) {
     options = options || {};
     var data = {name: name, doc: doc, options: options};
     if ('selectList' in options) {
-      return Tpl[options.type === 'radio' ? 'Radio' : 'Select'].$autoRender(data);
+      return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
     }
 
     switch(options.type || 'text') {

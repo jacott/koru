@@ -11,9 +11,9 @@ define(function(require, exports, module) {
 
   Route._orig_history = Route.history;
   Route.history = {
-    pushState: function () {},
-    replaceState: function () {},
-    back: function () {},
+    pushState() {},
+    replaceState() {},
+    back() {},
   };
 
   var geddon = TH.geddon;
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
   var ga = geddon.assertions;
 
   ga.add('rangeEquals', {
-    assert: function (startContainer, startOffset, endContainer, endOffset) {
+    assert(startContainer, startOffset, endContainer, endOffset) {
       if (endContainer === undefined) {
         endContainer = startContainer;
         endOffset = startOffset;
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
   }
 
   TH.util.extend(TH, {
-    domTearDown: function () {
+    domTearDown() {
       Dom.flushNextFrame();
       Route._reset();
       Dom.removeChildren(document.body);
@@ -77,14 +77,14 @@ define(function(require, exports, module) {
       Dom.Test = null;
     },
 
-    stubAfTimeout: function () {
+    stubAfTimeout() {
       if (koru.afTimeout.restore)
         koru.afTimeout.restore();
       else
         TH.geddon.test.stub(koru, 'afTimeout').returns(koru.nullFunc);
     },
 
-    yieldAfTimeout: function () {
+    yieldAfTimeout() {
       koru.afTimeout.yield();
       koru.afTimeout.reset();
     },
@@ -97,7 +97,7 @@ define(function(require, exports, module) {
       }), options || {});
     },
 
-    setColor: function (node, value) {
+    setColor(node, value) {
       TH.click(node);
       assert.elideFromStack.dom(document.body, function () {
         assert.dom('#ColorPicker', function () {
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    findDomEvent: function (template, type) {
+    findDomEvent(template, type) {
       return template._events.filter(function (event) {
         return event[0] === type;
       });
@@ -121,7 +121,7 @@ define(function(require, exports, module) {
         node.textContent = value;
     }),
 
-    keypress: function (elm, keycode, modifiers) {
+    keypress(elm, keycode, modifiers) {
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
       modifiers = modifiers || '';
 
@@ -163,7 +163,7 @@ define(function(require, exports, module) {
         node.textContent = value;
     }),
 
-    trigger: function (node, event, args) {
+    trigger(node, event, args) {
       if (typeof node === 'string') {
         assert.elideFromStack.dom(node, function () {
           TH.trigger(this, event, args);
@@ -176,11 +176,11 @@ define(function(require, exports, module) {
 
     buildEvent: Dom.buildEvent,
 
-    keydown: function (node, key, args) {
+    keydown(node, key, args) {
       keyseq('keydown', node, key, args);
     },
 
-    keyup: function (node, key, args) {
+    keyup(node, key, args) {
       keyseq('keyup', node, key, args);
     },
 
@@ -196,7 +196,7 @@ define(function(require, exports, module) {
       return this;
     },
 
-    mouseDownUp: function (node, args) {
+    mouseDownUp(node, args) {
       if (typeof node === 'string') {
         assert.elideFromStack.dom(node, function () {
           node = this;
@@ -206,7 +206,7 @@ define(function(require, exports, module) {
       TH.trigger(node, 'mouseup', args);
     },
 
-    setRange: function (startContainer, startOffset, endContainer, endOffset) {
+    setRange(startContainer, startOffset, endContainer, endOffset) {
       if (endContainer === undefined) {
         endContainer = startContainer;
         if (startOffset === undefined) {
@@ -221,6 +221,28 @@ define(function(require, exports, module) {
       range.setEnd(endContainer, endOffset);
       Dom.setRange(range);
       return range;
+    },
+
+    selectMenu(node, value, func) {
+      TH.trigger(node, 'mousedown');
+      TH.click(node);
+      const pre = TH.geddon.__elidePoint;
+      if (typeof value === 'string') {
+        const id = value;
+        value = TH.match(arg => (arg._id || arg.id) === id);
+      }
+      assert.elideFromStack.dom(document.body, function () {
+        assert.dom('body>.glassPane>#SelectMenu', function () {
+          assert.dom('li', {data: value}, li => {
+            if (func) {
+              TH.geddon.__elidePoint = pre;
+              func.call(li);
+            } else
+              TH.click(li);
+          });
+        });
+      });
+      return this;
     },
   });
 
