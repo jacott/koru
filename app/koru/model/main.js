@@ -232,6 +232,11 @@ define(function(require, exports, module) {
 
     get $cache() {return this._cache || (this._cache = {})},
 
+    $clearCache() {
+      this._cache = null;
+      return this;
+    },
+
     $cacheRef(key) {
       return this.$cache[key] || (this.$cache[key] = {});
     },

@@ -118,7 +118,6 @@ define(function (require, exports, module) {
 
         v.TestModel.create({name: 'bar'});
         refute.called(v.cb);
-
       },
 
 
@@ -263,6 +262,12 @@ define(function (require, exports, module) {
 
       assert.same(foo.$reload().$cacheRef('bin')["123"], undefined);
 
+      foo.$cacheRef('bin')["123"] = 7;
+      assert.same(foo.$cacheRef('bin')["123"], 7);
+
+      foo.$clearCache();
+
+      assert.same(foo.$reload().$cacheRef('bin')["123"], undefined);
     },
 
     "test cache"() {
