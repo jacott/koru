@@ -49,6 +49,7 @@ define(function(require, exports, module) {
       null: match(value => value === null, 'match.null'),
       nil: match(value => value == null, 'match.nil'),
       date: match(value => !! value && value.constructor === Date && value.getDate() === value.getDate(), 'match.date'),
+      integer: match(value => typeof value === 'number' && Math.floor(value) === value, 'match.integer'),
       baseObject: match(value => !! value && value.constructor === Object, 'match.baseObject'),
       object: match(value => !! value && typeof value === 'object', 'match.object'),
       func: match(match.function.$test, 'match.func'),

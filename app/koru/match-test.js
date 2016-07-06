@@ -162,6 +162,10 @@ define(function (require, exports, module) {
       assert.isFalse(sut.date.$test({}));
       assert.isFalse(sut.date.$test(new Date('invalid')));
 
+      assert.isTrue(sut.integer.$test(1234));
+      assert.isFalse(sut.integer.$test('1234'));
+      assert.isFalse(sut.integer.$test(1.1));
+
       assert.isTrue(sut.any.$test());
       assert.isTrue(sut.any.$test({}));
       assert.isTrue(sut.any.$test('hello'));
