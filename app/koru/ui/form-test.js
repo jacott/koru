@@ -50,7 +50,23 @@ isClient && define(function (require, exports, module) {
           TH.selectMenu('.select', TH.match.field('id', 'a'));
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: 'a'});
+          TH.selectMenu('.select', TH.match.field('id', ''));
+          assert.dom('.select', 'blanky blank');
+          assert.dom('[type=hidden]', {value: ''});
         });
+
+        selectList.$events({
+          'change input[name=foo_id]': v.onchange = test.stub(),
+        });
+        Dom.removeChildren(document.body);
+        document.body.appendChild(selectList.$autoRender({}));
+        assert.dom('[data-errorField="foo_id"]', function () {
+          assert.dom('button[name=foo_id].select.fuz', 'blanky blank');
+          TH.selectMenu('.select', TH.match.field('id', 'a'));
+          assert.dom('.select', 'A');
+          assert.dom('[type=hidden]', {value: 'a'});
+        });
+        assert.called(v.onchange);
       },
     },
 

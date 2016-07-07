@@ -316,12 +316,21 @@ define(function(require, exports, module) {
       const button = event.currentTarget.firstChild;
       const hidden = event.currentTarget.lastChild;
 
+      let list = options.selectList;
+
+      if (options.includeBlank) {
+        const {includeBlank} = options;
+
+        list = [['', typeof includeBlank === 'string' ? includeBlank : ''], ...list];
+      }
+
       SelectMenu.popup(button, {
-        list: options.selectList,
+        list,
         onSelect(elm) {
           const data = $.data(elm);
           button.textContent = data.name;
           hidden.value = data._id || data.id;
+          Dom.triggerEvent(hidden, 'change');
 
           return true;
         },
