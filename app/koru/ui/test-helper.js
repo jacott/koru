@@ -227,9 +227,12 @@ define(function(require, exports, module) {
       TH.trigger(node, 'mousedown');
       TH.click(node);
       const pre = TH.geddon.__elidePoint;
-      if (typeof value === 'string') {
+      switch(typeof value) {
+      case 'string':
+      case 'number':
         const id = value;
         value = TH.match(arg => (arg._id || arg.id) === id);
+        break;
       }
       assert.elideFromStack.dom(document.body, function () {
         assert.dom('body>.glassPane>#SelectMenu', function () {
