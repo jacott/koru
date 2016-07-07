@@ -47,7 +47,12 @@ isClient && define(function (require, exports, module) {
         document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'B');
-          TH.selectMenu('.select', TH.match.field('id', 'a'));
+          TH.selectMenu('.select', TH.match.field('id', 'a'), function () {
+            assert.dom(this.parentNode, function () {
+              assert.dom('li.selected', 'B');
+            });
+            TH.click(this);
+          });
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: 'a'});
           TH.selectMenu('.select', TH.match.field('id', ''));

@@ -326,6 +326,7 @@ define(function(require, exports, module) {
 
       SelectMenu.popup(button, {
         list,
+        selected: hidden.value,
         onSelect(elm) {
           const data = $.data(elm);
           button.textContent = data.name;
