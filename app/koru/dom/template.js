@@ -407,11 +407,11 @@ define(function(require, exports, module) {
       }
     },
 
-    getMyCtx (elm) {
+    myCtx (elm) {
       return elm && elm._koru;
     },
 
-    getCtx (elm) {
+    ctx (elm) {
       if (! elm) return;
       if (typeof elm === 'string')
         elm = document.querySelector(elm);
@@ -421,7 +421,7 @@ define(function(require, exports, module) {
       return ctx;
     },
 
-    getCtxById (id) {
+    ctxById (id) {
       var elm = document.getElementById(id);
       return elm && elm._koru;
     },
@@ -481,6 +481,11 @@ define(function(require, exports, module) {
     set _disable_focusout(value) {return _disable_focusout = value},
     get _disable_focusout() {return _disable_focusout},
   });
+
+  /** @deprecated @alias */
+  Dom.getMyCtx = Dom.myCtx;
+  Dom.getCtx = Dom.ctx;
+  Dom.getCtxById = Dom.ctxById;
 
   function addTemplates(parent, options) {
     var name = options.name;
