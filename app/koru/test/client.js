@@ -40,6 +40,7 @@ define(function(require, exports, module) {
   test.geddon.abort = function (ex) {
     test.logHandle('E', koru.util.extractError(ex)+"\n\n**** Tests aborted! *****");
     test.testHandle('F', test.geddon.testCount + 1);
+    test.geddon.reload = true;
     throw ex;
   };
 

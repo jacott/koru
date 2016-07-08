@@ -88,6 +88,11 @@ define(function(require, exports, module) {
     },
 
     run(pattern, tests) {
+      if (geddon.reload) {
+        exports.testHandle('E', 'Reloading...\x00');
+        exports.testHandle('F', 1);
+        return koru.reload();
+      }
       if (isClient) {
         topDoc.title = 'Running: ' + topDoc.title;
         window.onbeforeunload = warnFullPageReload;
