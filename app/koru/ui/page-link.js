@@ -1,22 +1,23 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var Form = require('./form');
-  var util = require('../util');
-  var Dialog = require('./dialog');
-  var Route = require('./route');
+  const Dom    = require('../dom');
+  const util   = require('../util');
+  const Dialog = require('./dialog');
+  const Form   = require('./form');
+  const Route  = require('./route');
 
-  var Tpl = Dom.newTemplate(require('../html!./page-link'));
-  var $ = Dom.current;
+  const Tpl = Dom.newTemplate(require('../html!./page-link'));
+  const $ = Dom.current;
 
-  var IGNORE = {append: true, search: true, value: true, link: true, template: true};
+  const IGNORE = {append: true, search: true, value: true,
+                  class: true, link: true, template: true};
 
   Tpl.$helpers({
-    content: function () {
+    content() {
       if ('value' in this) return this.value;
       return this.link && this.link.title;
     },
 
-    attrs: function () {
+    attrs() {
       var elm = $.element;
       var data = $.ctx.data;
 
@@ -30,12 +31,12 @@ define(function(require, exports, module) {
         elm.setAttribute(attr, data[attr]);
       }
 
-      Dom.addClass(elm, 'link');
+      elm.className = data.class || 'link';
     },
   });
 
   Tpl.$events({
-    'click': function (event) {
+    'click'(event) {
       Dom.stopEvent();
       var data = $.data();
 

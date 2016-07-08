@@ -1,25 +1,25 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
+  const Dom   = require('../dom');
+  const util  = require('../util');
   require('./page-link');
-  var util = require('../util');
-  var Route = require('./route');
+  const Route = require('./route');
+  const TH    = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       document.body.appendChild(v.parent = document.createElement('div'));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       delete Dom.Foo;
       v = null;
     },
 
-    "test rendering": function () {
+    "test rendering"() {
       test.stub(Route, 'gotoPath');
       document.body.appendChild(Dom._helpers.pageLink({id: "foo", name: 'baz', value: "foo bar", link: "/foo/bar"}));
 
@@ -34,16 +34,16 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPath, '/foo/bar');
     },
 
-    "test use template name": function () {
+    "test use template name"() {
       var tpl = Dom.newTemplate({name: "Foo.Bar"});
       tpl.title = 'template title';
 
-      document.body.appendChild(Dom._helpers.pageLink({id: "foo", var_fooId: 'foo123', template: "Foo.Bar", append: "1234"}));
+      document.body.appendChild(Dom._helpers.pageLink({id: "foo", var_fooId: 'foo123', template: "Foo.Bar", class: 'my class', append: "1234"}));
 
-      assert.dom('#foo', 'template title');
+      assert.dom('#foo', 'template title', elm => assert.same(elm.className, 'my class'));
     },
 
-    "test append": function () {
+    "test append"() {
       Dom.newTemplate({name: "Foo.Bar"});
 
       test.stub(Route, 'gotoPath');
@@ -57,7 +57,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {append: "1234", fooId: 'foo123'});
     },
 
-    "test search": function () {
+    "test search"() {
       Dom.newTemplate({name: "Foo.Bar"});
 
       test.stub(Route, 'gotoPath');
@@ -71,7 +71,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Route.gotoPath, Dom.Foo.Bar, {search: "?foo=bar"});
     },
 
-    "test template": function () {
+    "test template"() {
       Dom.newTemplate({name: "Foo.Bar"});
 
       test.stub(Route, 'gotoPage');
