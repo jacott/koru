@@ -37,6 +37,22 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test lazy list"() {
+        function selectList() {return v.list};
+
+        const elm = Form.field({foo_id: 'b'}, 'foo_id', {
+          displayValue: 'd foo', selectList,
+          type: 'selectMenu'
+        });
+
+        document.body.appendChild(elm);
+
+        v.list = [['a', 'A'], ['b', 'B']];
+        TH.selectMenu('.select', 'a');
+
+        assert.dom('.select', 'A');
+      },
+
       "test SelectMenu"() {
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({

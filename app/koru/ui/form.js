@@ -13,14 +13,14 @@ define(function(require, exports, module) {
   const $ = Dom.current;
   const OnOff = Tpl.OnOff;
 
-  const IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true};
+  const IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true, displayValue: true};
 
   const DEFAULT_HELPERS = {
-    value: function () {
+    value() {
       return this.doc[this.name];
     },
 
-    htmlOptions: function () {
+    htmlOptions() {
       var elm = $.element;
       var options = this.options;
 
@@ -58,11 +58,11 @@ define(function(require, exports, module) {
   };
 
   Tpl.$extend({
-    field: field,
+    field,
     /**
      * @deprecated
      */
-    modalize: function (elm, func) {
+    modalize(elm, func) {
       if (modalize) {
         modalize = {parent: modalize, elm: elm, func: func};
       } else {
@@ -76,7 +76,7 @@ define(function(require, exports, module) {
     /**
      * @deprecated
      */
-    cancelModalize: function (all) {
+    cancelModalize(all) {
       if (! modalize) return null;
       modalize = all === 'all' ? null : modalize.parent;
       if (! modalize) {
@@ -130,19 +130,19 @@ define(function(require, exports, module) {
       };
     },
 
-    disableFields: function (form) {
+    disableFields(form) {
       Dom.forEach(form, Dom.WIDGET_SELECTOR, function (elm) {
         elm.setAttribute('disabled', 'disabled');
       });
     },
 
-    enableFields: function (form) {
+    enableFields(form) {
       Dom.forEach(form, Dom.WIDGET_SELECTOR, function (elm) {
         elm.removeAttribute('disabled');
       });
     },
 
-    saveDoc: function (doc, form) {
+    saveDoc(doc, form) {
       Tpl.fillDoc(doc, form);
       if (doc.$save()) {
         return true;
@@ -151,7 +151,7 @@ define(function(require, exports, module) {
       Tpl.renderErrors(doc, form);
     },
 
-    saveChanges: function (doc, form, onChange) {
+    saveChanges(doc, form, onChange) {
       Tpl.clearErrors(form);
       if (onChange) {
         var changes = doc.changes;
@@ -166,7 +166,7 @@ define(function(require, exports, module) {
       Tpl.renderErrors(doc, form);
     },
 
-    getRadioValue: function (elm, name) {
+    getRadioValue(elm, name) {
       var checked = elm.querySelector('[name="'+name+'"]:checked');
       if (checked) return checked.value;
     },
@@ -191,14 +191,14 @@ define(function(require, exports, module) {
       }
     },
 
-    clearErrors: function (form) {
+    clearErrors(form) {
       var msgs = form.getElementsByClassName('error');
       while(msgs.length) {
         Dom.removeClass(msgs[msgs.length - 1], 'error');
       }
     },
 
-    renderErrors: function (doc, form) {
+    renderErrors(doc, form) {
       var errors = doc._errors;
       var focus = null;
       var otherMsgs = [];
@@ -228,7 +228,7 @@ define(function(require, exports, module) {
       return false;
     },
 
-    renderError: function (form, field, msg) {
+    renderError(form, field, msg) {
       if (arguments.length === 2) {
         var fieldElm = form;
         msg = field;
@@ -271,7 +271,7 @@ define(function(require, exports, module) {
       return fieldElm;
     },
 
-    addChangeFields: function (options) {
+    addChangeFields(options) {
       var action = options.action || 'change';
       var events = {};
       for(var i=0;i < options.fields.length;++i) {
@@ -297,6 +297,7 @@ define(function(require, exports, module) {
       const options = this.options;
       const value = this.doc[this.name];
 
+      if ('displayValue' in options) return options.displayValue;
       for (let [id, name]  of options.selectList) {
         if (id === value)
           return name;
@@ -317,6 +318,9 @@ define(function(require, exports, module) {
       const hidden = event.currentTarget.lastChild;
 
       let list = options.selectList;
+
+      if (typeof list === 'function')
+        list = list();
 
       if (options.includeBlank) {
         const {includeBlank} = options;
@@ -342,7 +346,7 @@ define(function(require, exports, module) {
 
   helpers('Select', {});
   Tpl.Select.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       buildSelectList(ctx, elm, function (value, content, selected) {
         var option = document.createElement('option');
         option.value = value;
@@ -355,13 +359,13 @@ define(function(require, exports, module) {
   });
 
   Tpl.Radio.Button.$helpers({
-    checked: function () {
+    checked() {
       Dom.setBoolean('checked', this.checked);
     },
   });
 
   Tpl.Radio.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       var Button = Tpl.Radio.Button;
       var name = ctx.data.name;
       buildSelectList(ctx, elm, function (value, content, checked) {
@@ -406,32 +410,32 @@ define(function(require, exports, module) {
   errorMsg.className = 'errorMsg';
 
   Dom.registerHelpers({
-    format: function () {
+    format() {
       return format.apply(this, arguments);
     },
 
-    errorMsg: function () {
+    errorMsg() {
       var elm = Dom.current.element;
       return Dom.hasClass(elm, 'errorMsg') ? elm : errorMsg.cloneNode(true);
     },
 
-    checked: function (value, onClass) {
+    checked(value, onClass) {
       if ($.element.tagName === 'BUTTON')
         Dom.setClass(onClass||'on', value);
       else
         Dom.setBoolean('checked', value);
     },
 
-    elmId: function (prefix) {
+    elmId(prefix) {
       return (prefix || this.constructor.modelName) + '_' + this._id;
     },
 
-    field: function (name, options) {
+    field(name, options) {
       var data = (options && options.hasOwnProperty('data')) ? options.data : this;
       return field(data, name, options);
     },
 
-    labelField: function (name, options, arg3) {
+    labelField(name, options, arg3) {
       if (arg3) {
         var extend = options;
         options = arg3;
@@ -447,7 +451,7 @@ define(function(require, exports, module) {
       });
     },
 
-    displayField: function (name, options) {
+    displayField(name, options) {
       options = options || {};
       var data = options.hasOwnProperty('data') ? options.data : this;
 
@@ -463,35 +467,35 @@ define(function(require, exports, module) {
       });
     },
 
-    genderList: function () {
+    genderList() {
       return [['', ''], ["m", "Male"], ["f", "Female"]];
     },
   });
 
   Tpl.Button.$helpers({
-    type: function () {
+    type() {
       return this.type || 'button';
     },
   });
 
   OnOff.$helpers({
-    classes: function () {
+    classes() {
       var on = this.doc[this.name];
       if (this.options && this.options.hasOwnProperty('on')) on = on === this.options.on;
       return on ? 'on onOff' : 'onOff';
     },
 
-    on: function () {
+    on() {
       return this.options.onLabel || 'On';
     },
 
-    off: function () {
+    off() {
       return this.options.offLabel || 'Off';
     },
   });
 
   OnOff.$events({
-    'click': function (event) {
+    'click'(event) {
       var data = $.ctx.data;
       Dom.toggleClass(this, 'on');
       var on = Dom.hasClass(this, 'on');
@@ -513,7 +517,7 @@ define(function(require, exports, module) {
 
   function field(doc, name, options, extend) {
     options = options || {};
-    var data = {name: name, doc: doc, options: options};
+    var data = {name, doc, options};
     if ('selectList' in options) {
       return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
     }

@@ -35,11 +35,11 @@ define(function(require, exports, module) {
 
     MOUSEWHEEL_EVENT: vendorFuncPrefix === 'moz' ? 'wheel' : 'mousewheel',
 
-    wheelDelta: function (event) {
+    wheelDelta(event) {
       return Math.max(-1, Math.min(1, event.wheelDelta || -(event.deltaY || event.deltaX)));
     },
 
-    clonePosition: function (from, to, offsetParent, where) {
+    clonePosition(from, to, offsetParent, where) {
       where = where || 'tl';
 
       var bbox = this.offsetPosition(from, offsetParent || to.offsetParent);
@@ -59,7 +59,7 @@ define(function(require, exports, module) {
       return bbox;
     },
 
-    offsetPosition: function (from, offsetParent) {
+    offsetPosition(from, offsetParent) {
       if ('nodeType' in from) {
         offsetParent = offsetParent || from.offsetParent;
         var bbox = from.getBoundingClientRect();
@@ -79,7 +79,7 @@ define(function(require, exports, module) {
       };
     },
 
-    isInView: function (elm, region) {
+    isInView(elm, region) {
       if ('getBoundingClientRect' in region)
         region = region.getBoundingClientRect();
       var bb = elm.getBoundingClientRect();
@@ -89,7 +89,7 @@ define(function(require, exports, module) {
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
 
-    setClassBySuffix: function (name, suffix, elm) {
+    setClassBySuffix(name, suffix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;
       var classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '').replace(/(^ | $)/g,'');
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
         elm.className = classes;
     },
 
-    setClassByPrefix: function (name, prefix, elm) {
+    setClassByPrefix(name, prefix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;
 
@@ -112,11 +112,11 @@ define(function(require, exports, module) {
         elm.className = classes;
     },
 
-    setClass: function (name, isAdd, elm) {
+    setClass(name, isAdd, elm) {
       (isAdd ? Dom.addClass : Dom.removeClass)(elm || Dom.element, name);
     },
 
-    setBoolean: function (name, isAdd, elm) {
+    setBoolean(name, isAdd, elm) {
       elm = elm || Dom.element;
       if (isAdd)
         elm.setAttribute(name, name);
@@ -124,7 +124,7 @@ define(function(require, exports, module) {
         elm.removeAttribute(name);
     },
 
-    focus: function (elm, selector) {
+    focus(elm, selector) {
       if (!elm) return;
       if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
       var focus = elm.querySelector(selector);
@@ -201,7 +201,7 @@ define(function(require, exports, module) {
       }
     },
 
-    forEach: function (elm, querySelector, func) {
+    forEach(elm, querySelector, func) {
       if (! elm) return;
       var elms = elm.querySelectorAll(querySelector);
       var len = elms.length;
@@ -210,7 +210,7 @@ define(function(require, exports, module) {
       }
     },
 
-    mapToData: function (list) {
+    mapToData(list) {
       var len = list.length;
       var result = [];
       for(var i = 0; i < len; ++i) {
@@ -219,17 +219,17 @@ define(function(require, exports, module) {
       return result;
     },
 
-    getClosest: function (elm, selector) {
+    getClosest(elm, selector) {
       if (elm && elm.nodeType !== document.ELEMENT_NODE)
         elm = elm.parentNode;
       return elm && elm.closest(selector);
     },
 
-    getClosestCtx: function (elm, selector) {
+    getClosestCtx(elm, selector) {
       return this.getCtx(this.getClosest(elm, selector));
     },
 
-    searchUpFor: function (elm, func, stopClass) {
+    searchUpFor(elm, func, stopClass) {
       if (! elm) return null;
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
         if (func(elm)) return elm;
@@ -239,42 +239,42 @@ define(function(require, exports, module) {
       return null;
     },
 
-    getClosestClass: function (elm, className) {
+    getClosestClass(elm, className) {
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
         if (Dom.hasClass(elm, className)) return elm;
         elm = elm.parentNode;
       }
     },
 
-    getUpDownByClass: function (elm, upClass, downClass) {
+    getUpDownByClass(elm, upClass, downClass) {
       elm = Dom.getClosestClass(elm, upClass);
       return elm && elm.getElementsByClassName(downClass)[0];
     },
 
-    matches: function (elm, selector) {
+    matches(elm, selector) {
       return matches.call(elm, selector);
     },
 
-    nextSibling: function (elm, selector) {
+    nextSibling(elm, selector) {
       if (elm) for(var next = elm.nextElementSibling; next; next = next.nextElementSibling) {
         if (matches.call(next, selector)) return next;
       }
       return null;
     },
 
-    childElementIndex: function (child) {
+    childElementIndex(child) {
       var i = 0;
       while( (child = child.previousElementSibling) != null ) i++;
       return i;
     },
 
-    transformTranslate: function (elm , x, y) {
+    transformTranslate(elm , x, y) {
       elm.style[vendorTransform] = elm.style[vendorTransform].replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
     },
 
     buildEvent: buildEvent,
 
-    triggerEvent: function (node, event, args) {
+    triggerEvent(node, event, args) {
       if (typeof event === 'string')
         event = buildEvent(event, args);
 

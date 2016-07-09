@@ -4,12 +4,12 @@ isClient && define(function (require, exports, module) {
   var Dom = require('./dom-client');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.flushNextFrame();
       document.body.className = '';
       Dom.removeChildren(document.body);
@@ -17,7 +17,7 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test isInView": function () {
+    "test isInView"() {
       var x = Dom.html({style: "position:absolute;left:-12px;width:20px;height:30px", content: "x"});
       document.body.appendChild(x);
 
@@ -46,7 +46,7 @@ isClient && define(function (require, exports, module) {
       assert(Dom.isInView(x, rect));
     },
 
-    "test wheelDelta": function () {
+    "test wheelDelta"() {
       assert.same(Dom.wheelDelta({wheelDelta: 50}), 1);
       assert.same(Dom.wheelDelta({deltaY: -50}), 1);
       assert.same(Dom.wheelDelta({deltaX: -50}), 1);
@@ -56,7 +56,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.wheelDelta({deltaX: 50}), -1);
     },
 
-    "test getClosest": function () {
+    "test getClosest"() {
       document.body.appendChild(Dom.html({class: 'foo', content: [{tag: 'span', text: 'hello'}]}));
 
       assert.dom('span', function () {
@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test html string": function () {
+    "test html string"() {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
@@ -85,7 +85,7 @@ isClient && define(function (require, exports, module) {
       assert.same(nested.firstChild.textContent, 'hello');
     },
 
-    "test childElementIndex": function () {
+    "test childElementIndex"() {
       var elm = Dom.html({});
       var child;
       elm.appendChild(child = document.createElement('b'));
@@ -100,7 +100,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.childElementIndex(child), 2);
     },
 
-    "test mapToData": function () {
+    "test mapToData"() {
       var elm = Dom.html({});
 
       'one two three'.split(' ').forEach(function (data) {
@@ -112,7 +112,7 @@ isClient && define(function (require, exports, module) {
       assert.equals(Dom.mapToData(elm.children), ['one', 'two', 'three']);
     },
 
-    "test setClassBySuffix": function () {
+    "test setClassBySuffix"() {
       var elm = {className: ''};
 
       Dom.setClassBySuffix('use', 'Mode', elm);
@@ -140,7 +140,7 @@ isClient && define(function (require, exports, module) {
       assert.same(elm.className, '');
     },
 
-    "test setClassByPrefix": function () {
+    "test setClassByPrefix"() {
       var elm = {className: ''};
 
       Dom.setClassByPrefix('use', 'mode-', elm);
@@ -166,7 +166,7 @@ isClient && define(function (require, exports, module) {
       assert.same(elm.className, '');
     },
 
-    "test getUpDownByClass": function () {
+    "test getUpDownByClass"() {
       var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div><div class="dest"></div></div></div>');
 
       assert.dom(elm, function () {
@@ -176,7 +176,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test searchUpFor": function () {
+    "test searchUpFor"() {
       var top = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.isNull(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
@@ -192,12 +192,12 @@ isClient && define(function (require, exports, module) {
     },
 
 
-    "test INPUT_SELECTOR, WIDGET_SELECTOR": function () {
+    "test INPUT_SELECTOR, WIDGET_SELECTOR"() {
       assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
       assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"],button,a');
     },
 
-    "test $getClosest": function () {
+    "test $getClosest"() {
       document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar"><button type="button" id="sp"></button></div></div></div>'));
 
       var button = document.getElementById('sp');
@@ -210,7 +210,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
     },
 
-    "test animationEndEventName": function () {
+    "test animationEndEventName"() {
       var name = Dom.animationEndEventName;
 
       assert.match(name, /^(ms|webkit)?animationend$/i);
