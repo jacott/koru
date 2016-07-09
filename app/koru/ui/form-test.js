@@ -37,20 +37,21 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test lazy list"() {
+      "test lazy list, popupClass"() {
         function selectList() {return v.list};
 
         const elm = Form.field({foo_id: 'b'}, 'foo_id', {
           displayValue: 'd foo', selectList,
           type: 'selectMenu',
-          includeBlank: Dom.h({i: 'none'}),
+          includeBlank: 'none',
+          popupClass: 'fooClass',
         });
 
         document.body.appendChild(elm);
 
         v.list = [['a', 'A'], ['b', 'B']];
         TH.selectMenu('.select', 'a', function () {
-          assert.dom(this.parentNode.querySelector('i'), 'none');
+          assert(document.querySelector('#SelectMenu.fooClass'));
           TH.click(this);
         });
 

@@ -13,7 +13,11 @@ define(function(require, exports, module) {
   const $ = Dom.current;
   const OnOff = Tpl.OnOff;
 
-  const IGNORE = {type: true, data: true, label: true, includeBlank: true, selectList: true, value: true, displayValue: true};
+  const IGNORE = {
+    type: true, data: true, label: true,
+    includeBlank: true, selectList: true, value: true,
+    displayValue: true, popupClass: true,
+  };
 
   const DEFAULT_HELPERS = {
     value() {
@@ -293,19 +297,37 @@ define(function(require, exports, module) {
 
   helpers('SelectMenu', {
     buttonText() {
-      Dom.addClass($.element.parentNode, 'select');
+      const button = $.element;
       const options = this.options;
-      const value = this.doc[this.name];
+      let found = false;
+      let result;
 
-      if ('displayValue' in options) return options.displayValue;
-      for (let [id, name]  of options.selectList) {
-        if (id === value)
-          return name;
+      Dom.addClass(button, 'select');
+      if ('displayValue' in options) {
+        if (options.displayValue) {
+          result = options.displayValue;
+          found = true;
+        }
+
+      } else {
+        const value = this.doc[this.name];
+        for (let [id, name]  of options.selectList) {
+          if (id === value) {
+            result = name;
+            found = true;
+            break;
+          }
+        }
       }
-      const includeBlank = options.includeBlank;
-      if (typeof includeBlank === 'string')
-        return includeBlank;
 
+      if (! found) {
+        const includeBlank = options.includeBlank;
+        if (typeof includeBlank === 'string')
+          result = includeBlank;
+      }
+
+      Dom.setClass('noValue', ! found);
+      button.textContent = result || '';
     },
   });
 
@@ -325,16 +347,19 @@ define(function(require, exports, module) {
       if (options.includeBlank) {
         const {includeBlank} = options;
 
-        list = [['', typeof includeBlank === 'boolean' ? '' : includeBlank], ...list];
+        list = [['', typeof includeBlank === 'string' ? includeBlank : ''], ...list];
       }
 
       SelectMenu.popup(button, {
         list,
         selected: hidden.value,
+        classes: options.popupClass,
         onSelect(elm) {
           const data = $.data(elm);
           button.textContent = data.name;
-          hidden.value = data._id || data.id;
+          const id = data._id || data.id;
+          hidden.value = id;
+          Dom.setClass('noValue', ! id, button);
           Dom.triggerEvent(hidden, 'change');
 
           return true;
