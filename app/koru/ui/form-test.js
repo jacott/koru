@@ -42,13 +42,17 @@ isClient && define(function (require, exports, module) {
 
         const elm = Form.field({foo_id: 'b'}, 'foo_id', {
           displayValue: 'd foo', selectList,
-          type: 'selectMenu'
+          type: 'selectMenu',
+          includeBlank: Dom.h({i: 'none'}),
         });
 
         document.body.appendChild(elm);
 
         v.list = [['a', 'A'], ['b', 'B']];
-        TH.selectMenu('.select', 'a');
+        TH.selectMenu('.select', 'a', function () {
+          assert.dom(this.parentNode.querySelector('i'), 'none');
+          TH.click(this);
+        });
 
         assert.dom('.select', 'A');
       },

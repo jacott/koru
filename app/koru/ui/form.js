@@ -325,7 +325,7 @@ define(function(require, exports, module) {
       if (options.includeBlank) {
         const {includeBlank} = options;
 
-        list = [['', typeof includeBlank === 'string' ? includeBlank : ''], ...list];
+        list = [['', typeof includeBlank === 'boolean' ? '' : includeBlank], ...list];
       }
 
       SelectMenu.popup(button, {
