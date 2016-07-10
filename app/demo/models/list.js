@@ -1,14 +1,14 @@
 define(function(require, exports, module) {
-  var Model = require('koru/model');
+  const {BaseModel} = require('koru/model');
 
-  var model = Model.define(module, {
-    authorize: function () {
+  class List extends BaseModel {
+    authorize() {}
+  }
+
+  module.exports = List.$init({
+    module,
+    fields: {
+      name: 'text',
     },
   });
-
-  model.defineFields({
-    name: 'text',
-  });
-
-  return model;
 });

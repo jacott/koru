@@ -1,25 +1,23 @@
 define(function(require, exports, module) {
-  var koru =     require('koru/main');
-  var util =    require('koru/util');
-  var Query =   require('koru/model/query');
-  var Dom =     require('koru/dom');
-  var Route =   require('koru/ui/route');
-                require('koru/ui/each');
-
-  var $ = Dom.current;
-
-  var List =    require('models/list');
-  var Todo =    require('models/todo');
-  var ListTpl = require('./lists');
-  var okcancel = require('./okcancel');
+  const Dom      = require('koru/dom');
+  const koru     = require('koru/main');
+  const Query    = require('koru/model/query');
+  require('koru/ui/each');
+  const Route    = require('koru/ui/route');
+  const util     = require('koru/util');
+  const List     = require('models/list');
+  const Todo     = require('models/todo');
+  const ListTpl  = require('./lists');
+  const okcancel = require('./okcancel');
 
   koru.onunload(module, onExit);
 
-  var Tpl = Dom.newTemplate(require('koru/html!./item-list'));
-  var Tag = Tpl.Row.Tag;
+  const Tpl = Dom.newTemplate(require('koru/html!./item-list'));
+  const $ = Dom.current;
+  const Tag = Tpl.Row.Tag;
 
   Tpl.$extend({
-    onEntry: function (page, pageRoute) {
+    onEntry(page, pageRoute) {
       var listId = pageRoute.listId;
       var list = (listId && List.findById(listId)) || new Query(List).fetchOne();
 
@@ -39,18 +37,18 @@ define(function(require, exports, module) {
   Route.root.routeVar = "listId";
 
   Tpl.$helpers({
-    todos: function (callback) {
+    todos(callback) {
       if (! this.list) return;
       var self = this;
       var listId = self.list._id;
       callback.render({
         model: Todo,
         sort: util.compareByField('timestamp'),
-        filter: function (todo) {
+        filter(todo) {
           return todo.list_id === listId &&
             (! self.filter || todo.tags.indexOf(self.filter) !== -1);
         },
-        changed: function () {
+        changed() {
           Dom.getCtxById('tag-filter').updateAllTags();
         },
       });
@@ -58,7 +56,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.Row.$helpers({
-    tags: function (callback) {
+    tags(callback) {
       var frag = document.createDocumentFragment();
       for(var i = 0; i < this.tags.length; ++i) {
         frag.appendChild(Tag.$autoRender({tag: this.tags[i]}));
@@ -66,17 +64,17 @@ define(function(require, exports, module) {
       return frag;
     },
 
-    done: function () {
+    done() {
       $.element.checked = !! this.done;
     },
 
-    doneClass: function () {
+    doneClass() {
       Dom.setClass('done', this.done);
     },
   });
 
   Tpl.NewTodo.$events(okcancel('', {
-    ok: function (value, event) {
+    ok(value, event) {
       var ctx = Dom.getCtxById('item-list');
       if (! ctx) return;
       var data = ctx.data;
@@ -88,31 +86,31 @@ define(function(require, exports, module) {
       this.value = "";
     },
 
-    cancel: function (event) {
+    cancel(event) {
       this.value = "";
     },
   }));
 
   Tpl.Row.$events({
-    'click .addtag': function (event) {
+    'click .addtag'(event) {
       Dom.stopEvent();
       Dom.removeId('AddTag');
       var elm = Tpl.Row.AddTag.$autoRender($.ctx.data);
       this.parentNode.insertBefore(elm, this);
       elm.focus();
     },
-    'click .destroy': function (event) {
+    'click .destroy'(event) {
       Dom.stopEvent();
       $.ctx.data.$remove();
     },
 
-    'click .check': function (event) {
+    'click .check'(event) {
       var todo = $.ctx.data;
       todo.done = ! todo.done;
       todo.$$save();
     },
 
-    'click .remove': function (event) {
+    'click .remove'(event) {
       Dom.stopEvent();
       var todo = $.ctx.data;
       var remove = $.data(this).tag;
@@ -124,7 +122,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.Row.AddTag.$events({
-    'change': function (event) {
+    'change'(event) {
       Dom.stopEvent();
 
       var value = this.value;
@@ -135,11 +133,11 @@ define(function(require, exports, module) {
       todo.$$save();
     },
 
-    'focusout': function (event) {
+    'focusout'(event) {
       Dom.remove(this);
     },
 
-    'keydown': function (event) {
+    'keydown'(event) {
       if (event.which !== 27) return;
       Dom.stopEvent();
       Dom.remove(this);

@@ -1,20 +1,19 @@
 define(function(require, exports, module) {
-  var Model = require('koru/model');
+  const {BaseModel} = require('koru/model');
+  const List        = require('./list');
 
-  var List = require('./list');
+  class Todo extends BaseModel {
+    authorize() {}
+  }
 
-  var model = Model.define(module, {
-    authorize: function () {
+  module.exports = Todo.$init({
+    module,
+    fields: {
+      list_id: 'belongs_to',
+      text: 'text',
+      timestamp: 'bigint',
+      tags: 'text[]',
+      done: 'boolean',
     },
   });
-
-  model.defineFields({
-    list_id: 'belongs_to',
-    text: 'text',
-    timestamp: 'bigint',
-    tags: 'text[]',
-    done: 'boolean',
-  });
-
-  return model;
 });

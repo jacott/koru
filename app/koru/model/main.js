@@ -470,9 +470,6 @@ define(function(require, exports, module) {
     }
   }
 
-  /** @deprecated @alias */
-  BaseModel.prototype.$asBefore = BaseModel.prototype.$withChanges;
-
   session.defineRpc("put", function (modelName, id, updates) {
     Val.assertCheck([modelName, id], ['string']);
     const model = ModelMap[modelName];

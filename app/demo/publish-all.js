@@ -1,15 +1,15 @@
 define(function(require, exports, module) {
-  var publish = require('koru/session/publish');
-  var List = require('models/list');
-  var Query = require('koru/model/query');
-  var Todo = require('models/todo');
+  const Query   = require('koru/model/query');
+  const publish = require('koru/session/publish');
+  const List    = require('models/list');
+  const Todo    = require('models/todo');
 
-  publish('all', function () {
+  publish(module, 'all', function () {
     var sub = this;
 
     if (isClient) {
-      sub.match('List', function (doc) {return true});
-      sub.match('Todo', function (doc) {return true});
+      sub.match('List', doc => true);
+      sub.match('Todo', doc => true);
 
       return;
     }
@@ -19,19 +19,15 @@ define(function(require, exports, module) {
       return;
     }
 
-    var handles = [];
+    const handles = [];
 
     sub.onStop(function () {
-      handles.forEach(function (handle) {
-        handle.stop();
-      });
+      handles.forEach(handle => handle.stop());
     });
 
-    [List, Todo].forEach(function (model) {
+    for (let model of [List, Todo]) {
       handles.push(model.onChange(sub.sendUpdate.bind(sub)));
-      new Query(model).forEach(function (doc) {
-        sub.sendUpdate(doc);
-      });
-    });
+      new Query(model).forEach(doc => sub.sendUpdate(doc));
+    }
   });
 });
