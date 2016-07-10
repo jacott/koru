@@ -29,6 +29,34 @@ define(function (require, exports, module) {
       assert(true);
     },
 
+    "test auto define"() {
+      test.stub(koru, 'onunload');
+
+      let TestModel = Model.define({
+        module: v.mod = {id: 'test-model'},
+        fields: {name: 'text'},
+        proto: {
+          foo() {return this.name;}
+        },
+      });
+
+      assert.calledWith(koru.onunload, v.mod, TH.match.func);
+
+      assert.same(Model.TestModel, TestModel);
+      assert.same(TestModel.name, 'TestModel');
+      assert.same(TestModel.modelName, 'TestModel');
+
+
+      let tm = TestModel.create({name: 'my name'});
+
+      assert.same(tm.foo(), 'my name');
+
+      koru.onunload.yield();
+
+      refute(Model.TestModel);
+
+    },
+
     "test using a class"() {
       class TestModel extends Model.BaseModel {
         foo() {return this.name;}
@@ -36,8 +64,8 @@ define(function (require, exports, module) {
 
       test.stub(koru, 'onunload');
 
-      TestModel.$init({
-        module: v.mod = {id: 'TestModule'},
+      TestModel.define({
+        module: v.mod = {id: 'test-module-x'},
         fields: {name: 'text'},
       });
 

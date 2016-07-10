@@ -5,7 +5,7 @@ define(function(require, exports, module) {
     authorize() {}
   }
 
-  module.exports = List.$init({
+  module.exports = List.define({
     module,
     fields: {
       name: 'text',

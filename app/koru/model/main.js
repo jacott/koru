@@ -130,7 +130,7 @@ define(function(require, exports, module) {
      */
 
     /**
-     * Initialize module with options
+     * Completes the definition of a model
      *
      * Options can be:
      *
@@ -138,7 +138,7 @@ define(function(require, exports, module) {
      * name: name of model (otherwise will derive from function name or module
      * fields: Calls defineFields with fields
      **/
-    static $init({module, name, fields}) {
+    static define({module, name, fields}) {
       if (! name)
         name = this.name || moduleName(module);
       if (! name)
@@ -148,6 +148,7 @@ define(function(require, exports, module) {
       if (module) {
         koru.onunload(module, () => ModelMap._destroyModel(name));
       }
+
       ModelMap[name] = this;
 
       this.modelName = name;
@@ -663,39 +664,49 @@ define(function(require, exports, module) {
 
     /**
      * Define a new model.
-     * @deprecated Use BaseModel#$init
+     * define(options) or
+     * define(module, [name, [proto]])
+     * @see BaseModel.define
      */
-    define(module, name, properties) {
+    define(module, name, proto) {
       let model;
-      if (typeof module === 'string' || module.create) {
-        properties = name;
-        name = module;
-        module = null;
+      if (typeof module === 'object' && ! module.id) {
+        name = module.name;
+        proto = module.proto;
+        var fields = module.fields;
+        module = module.module;
       } else {
-        koru.onunload(module, function () {
-          ModelMap._destroyModel(name);
-        });
+        if (typeof module === 'string' || module.create) {
+          proto = name;
+          name = module;
+          module = null;
+        }
+        switch(typeof name) {
+        case 'string':
+          break;
+        case 'function':
+          model = name;
+          name = model.name;
+          break;
+        default:
+          proto = name;
+          name = null;
+          break;
+        }
       }
-      switch(typeof name) {
-      case 'string':
-        break;
-      case 'function':
-        model = name;
-        name = model.name;
-        break;
-      default:
-        properties = name;
-        name = null;
-        break;
-      }
-      if (! model)
-        model = class extends BaseModel {};
-      properties && util.extend(model.prototype, properties);
+
+      module && koru.onunload(module, () => ModelMap._destroyModel(name));
 
       if (! name)
         name =  moduleName(module);
 
-      return model.$init({module, name});
+      if (! model) {
+        model = {[name]: class extends BaseModel {}}[name];
+      }
+
+      proto && util.extend(model.prototype, proto);
+
+      return model.define({module, name, fields});
     },
 
     _support,

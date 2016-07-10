@@ -6,7 +6,7 @@ define(function(require, exports, module) {
     authorize() {}
   }
 
-  module.exports = Todo.$init({
+  module.exports = Todo.define({
     module,
     fields: {
       list_id: 'belongs_to',
