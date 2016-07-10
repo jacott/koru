@@ -487,6 +487,16 @@ define(function (require, exports, module) {
       function func() {}
       assert.same(util.shallowCopy(func), func);
 
+      /** Complex object */
+      const X = Object.create({xx() {return 4}});
+      X.yy = a => 2*a;
+
+      let Xcopy = util.shallowCopy(X);
+      assert.same(Xcopy.xx(), 4);
+      assert.same(Xcopy.yy(3), 6);
+      assert.same(Object.getPrototypeOf(Xcopy).xx(), 4);
+
+      /** Date */
       var orig = new Date(123);
       assert.equals(util.shallowCopy(orig), orig);
       refute.same(util.shallowCopy(orig), orig);

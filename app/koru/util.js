@@ -507,9 +507,10 @@ define(function(require, exports, module) {
         return orig.slice();
       }
 
-      var result = {};
+      var result = Object.create(Object.getPrototypeOf(orig));
       for(var key in orig) {
-        Object.defineProperty(result, key, Object.getOwnPropertyDescriptor(orig, key));
+        const desc = Object.getOwnPropertyDescriptor(orig, key);
+        desc && Object.defineProperty(result, key, desc);
       }
 
       return result;
@@ -541,7 +542,7 @@ define(function(require, exports, module) {
         return dst;
       }
 
-      var result = {};
+      var result = Object.create(Object.getPrototypeOf(orig));
       for(var key in orig) {
         result[key] = util.deepCopy(orig[key]);
       }
