@@ -18,7 +18,8 @@ isClient && define(function (require, exports, module) {
     },
 
     "test isInView"() {
-      var x = Dom.html({style: "position:absolute;left:-12px;width:20px;height:30px", content: "x"});
+      var x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
+                     div: "x"});
       document.body.appendChild(x);
 
       refute(Dom.isInView(x, document.body));
@@ -57,7 +58,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test getClosest"() {
-      document.body.appendChild(Dom.html({class: 'foo', content: [{tag: 'span', text: 'hello'}]}));
+      document.body.appendChild(Dom.h({class: 'foo', div: {span: 'hello'}}));
 
       assert.dom('span', function () {
         assert.same(Dom.getClosest(this.firstChild, '.foo>span'), this);
@@ -78,15 +79,15 @@ isClient && define(function (require, exports, module) {
         });
       });
 
-      assert.same(Dom.html(elm), elm);
+      assert.same(Dom.h(elm), elm);
 
-      var nested = Dom.html({content: ['<div>hello</div>', elm]});
+      var nested = Dom.h({div: [Dom.html('<div>hello</div>'), elm]});
       assert.same(nested.firstChild.nextSibling, elm);
       assert.same(nested.firstChild.textContent, 'hello');
     },
 
     "test childElementIndex"() {
-      var elm = Dom.html({});
+      var elm = Dom.h({});
       var child;
       elm.appendChild(child = document.createElement('b'));
       assert.same(Dom.childElementIndex(child), 0);
@@ -101,10 +102,10 @@ isClient && define(function (require, exports, module) {
     },
 
     "test mapToData"() {
-      var elm = Dom.html({});
+      var elm = Dom.h({});
 
       'one two three'.split(' ').forEach(function (data) {
-        var child = Dom.html({});
+        var child = Dom.h({});
         Dom.setCtx(child, {data: data});
         elm.appendChild(child);
       });

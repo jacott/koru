@@ -666,7 +666,7 @@ define(function(require, exports, module) {
         Dom.stopEvent();
         var ch = String.fromCharCode(event.which);
         var range = Dom.getRange();
-        var span = Dom.html({tag: 'span', "class": 'ln', text: ch});
+        var span = Dom.h({class: 'ln', span: ch});
         range.insertNode(span);
         ctx.mentionState = 3;
         ctx.selectItem = RichTextMention.selectItem({

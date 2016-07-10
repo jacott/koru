@@ -141,7 +141,7 @@ isClient && define(function (require, exports, module) {
         var elm = Dom.Foo.$render({});
         assert.dom(elm, function () {
           v.pCtx = Dom.getMyCtx(this);
-          this.appendChild(Dom.html({class: 'ins'}));
+          this.appendChild(Dom.h({class: 'ins'}));
           assert.dom('.ins', function () {
             v.iCtx = Dom.setCtx(this);
             assert.same(v.iCtx.parentCtx, v.pCtx);
@@ -289,7 +289,7 @@ isClient && define(function (require, exports, module) {
 
         var data = {me: true};
 
-        v.elm = Dom.html({});
+        v.elm = Dom.h({});
         v.elm._koru = {data: data};
 
         v.isElement = false;
@@ -733,7 +733,7 @@ isClient && define(function (require, exports, module) {
 
         Tpl.$helpers({
           bar: function () {
-            return Dom.html({class: this.name});
+            return Dom.h({class: this.name});
           },
         });
 

@@ -1,25 +1,25 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var Modal = require('./modal');
-  var util = require('../util');
+  const Dom   = require('../dom');
+  const util  = require('../util');
+  const Modal = require('./modal');
 
-  var Tpl = Dom.newTemplate(module, require('koru/html!./calendar'));
-  var $ = Dom.current;
+  const Tpl = Dom.newTemplate(module, require('koru/html!./calendar'));
+  const $ = Dom.current;
 
-  var MONTH_NAMES = [
+  const MONTH_NAMES = [
     'January','February','March','April','May','June','July','August','September','October','November','December'
   ];
-  var DAY = 24*60*60*1000;
-  var TR = Dom.html({tag: 'tr'});
-  var TD = Dom.html({tag: 'td'});
-  var MCLASS = ['previous', 'current', 'next'];
+  const DAY = 24*60*60*1000;
+  const TR = Dom.h({tr: ''});
+  const TD = Dom.h({td: ''});
+  const MCLASS = ['previous', 'current', 'next'];
 
   Tpl.$helpers({
-    monthName: function () {
+    monthName() {
       return MONTH_NAMES[this.getMonth()];
     },
 
-    dates: function () {
+    dates() {
       var today = util.newDate();
       var som = new Date(Date.UTC(this.getFullYear(), this.getMonth(), 1));
       var day = (som.getUTCDay() + 6) % 7;
@@ -65,7 +65,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'click [name=previous],[name=next]': function (event) {
+    'click [name=previous],[name=next]'(event) {
       Dom.stopEvent();
 
       var date = $.ctx.data;
@@ -78,7 +78,7 @@ define(function(require, exports, module) {
       $.ctx.updateAllTags(nd);
     },
 
-    'mousedown': function (event) {
+    'mousedown'(event) {
       Dom.stopEvent();
     },
 
@@ -105,7 +105,7 @@ define(function(require, exports, module) {
   }
 
   Tpl.$extend({
-    register: function (template, css, options) {
+    register(template, css, options) {
       if (css)
         css = ' '+css;
       else

@@ -27,7 +27,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test description": function () {
-      sut.show('with desc', test.stub(), {description: Dom.html({text: 'how now brown cow'})});
+      sut.show('with desc', test.stub(), {description: Dom.h({div: 'how now brown cow'})});
 
       assert.dom('.Dialog', function () {
         assert.dom('div', 'how now brown cow');

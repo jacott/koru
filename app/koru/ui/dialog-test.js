@@ -118,7 +118,7 @@ isClient && define(function (require, exports, module) {
 
     'test cancel confirmDialog with defaults ': function () {
       var data = {
-        content: '<span>bla</span>',
+        content: 'bla',
         callback: function(value) {
           v.result = value;
         }
@@ -132,7 +132,7 @@ isClient && define(function (require, exports, module) {
         });
         assert.dom('.dialogContainer .ui-dialog', function () {
 
-          assert.dom('span', 'bla');
+          assert.dom('div', 'bla');
           assert.dom('.actions', function () {
             assert.dom('button#cancel[name=cancel]', 'Cancel', function () {
               TH.click(this);

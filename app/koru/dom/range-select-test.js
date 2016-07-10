@@ -8,10 +8,8 @@ isClient && define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      document.body.appendChild(v.list = Dom.html({
-        content: [0,1,2,3,4,5].map(function (i) {
-          return Dom.html({textContent: "row "+i});
-        })
+      document.body.appendChild(v.list = Dom.h({
+        div: [0,1,2,3,4,5].map(i => Dom.h({div: "row "+i}))
       }));
     },
 

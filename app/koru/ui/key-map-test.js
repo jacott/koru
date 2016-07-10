@@ -92,7 +92,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test invalid modifier key" () {
-      var elm = Dom.html({tag: 'button'});
+      var elm = Dom.h({button: ''});
       document.body.appendChild(elm);
       elm.addEventListener('keydown', v.stub = test.stub());
       test.onEnd(function () {
@@ -108,7 +108,7 @@ isClient && define(function (require, exports, module) {
 
     "test input focused" () {
       test.spy(Dom, 'matches');
-      document.body.appendChild(Dom.html({tag: 'input', type: 'text'}));
+      document.body.appendChild(Dom.h({input: '', $type: 'text'}));
       assert.dom('input', function () {
         this.focus();
         var event = TH.buildEvent('keydown', {which: 88});

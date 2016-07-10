@@ -1,14 +1,15 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./calendar');
-  var Dom = require('../dom');
-  var Each = require('./each');
-  var $ = Dom.current;
-  var util = require('../util');
+  const Dom  = require('../dom');
+  const util = require('../util');
+  const sut  = require('./calendar');
+  const Each = require('./each');
+  const TH   = require('./test-helper');
+
+  const $ = Dom.current;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./calendar-test'));
@@ -21,19 +22,19 @@ isClient && define(function (require, exports, module) {
         });
       };
 
-      sut.register(v.TestTpl, 'input.date', {customize: function (cal) {
+      sut.register(v.TestTpl, 'input.date', {customize(cal) {
         cal.style.position = 'absolute';
       }});
 
       document.body.appendChild(v.testSelectMenu = v.TestTpl.$autoRender({}));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test no options": function () {
+    "test no options"() {
       TH.click('[name=other]');
       refute.dom('#Calendar');
       Dom.remove(v.testSelectMenu);
@@ -44,7 +45,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('.Calendar');
     },
 
-    "test click opens": function () {
+    "test click opens"() {
       assert.dom('#TestCalendar [name=testField]', function () {
         TH.input(this, '2014-10-05');
         TH.click(this);
@@ -68,7 +69,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('.Calendar');
     },
 
-    "test change Month": function () {
+    "test change Month"() {
       v.open(new Date(2015, 0, 31));
       assert.dom('body>.Calendar', function () {
         assert.dom('header', function () {
@@ -84,7 +85,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test pick date": function () {
+    "test pick date"() {
       v.open(new Date(2015, 11, 31));
       Dom('[name=testField]').addEventListener('change', v.change = test.stub());
       assert.dom('body>.Calendar td', '25', function () {
@@ -101,7 +102,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('.Calendar');
     },
 
-    "test rendering": function () {
+    "test rendering"() {
       v.open(new Date(2015, 2, 23));
       assert.dom('input.date', function () {
         v.ibox = this.getBoundingClientRect();
@@ -160,14 +161,14 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test focusout": function () {
+    "test focusout"() {
       v.open(new Date(2013-01-02));
       TH.trigger('[name=testField]', 'focusout');
 
       refute.dom('.Calendar');
     },
 
-    "test up down escape": function () {
+    "test up down escape"() {
       function keydown(code) {TH.trigger(v.input, 'keydown', {which: code})}
 
       assert.dom('[name=testField]', function () {

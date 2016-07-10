@@ -396,7 +396,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test renderError"() {
-      var form = Dom.html({content: [{name: 'foo'},{name: 'bar'}]});
+      var form = Dom.h({div: [{$name: 'foo'}, {$name: 'bar'}]});
 
       Form.renderError(form, 'foo', ['is_required']);
       Form.renderError(form, 'bar', 'bar msg');
@@ -412,10 +412,12 @@ isClient && define(function (require, exports, module) {
     },
 
     "test errorTop renderError"() {
-      var form = Dom.html({
-        style: 'width: 300px;height:100px',
-        content: ['hello world', '<br>', {name: 'foo'},
-                  {tag: 'input', name: 'bar', style: 'margin-left:200;width:50px;height:20px', class: 'errorTop'}],
+      var form = Dom.h({
+        $style: 'width: 300px;height:100px',
+        div: ['hello world', {br: ''}, {$name: 'foo'},
+              {input: '', $name: 'bar',
+               $style: 'margin-left:200;width:50px;height:20px',
+               class: 'errorTop'}],
       });
       document.body.appendChild(form);
 
@@ -437,10 +439,12 @@ isClient && define(function (require, exports, module) {
     },
 
     "test errorRight renderError"() {
-      var form = Dom.html({
-        style: 'width: 300px;height:100px',
-        content: ['hello world', '<br>', {name: 'foo'},
-                  {tag: 'input', name: 'bar', style: 'margin-left:200px;width:50px;height:20px', class: 'errorTop errorRight'}],
+      var form = Dom.h({
+        $style: 'width: 300px;height:100px',
+        div: ['hello world', {br: ''}, {$name: 'foo'},
+              {input: '', $name: 'bar',
+               $style: 'margin-left:200px;width:50px;height:20px',
+               class: 'errorTop errorRight'}],
       });
       document.body.appendChild(form);
 

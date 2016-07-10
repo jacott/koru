@@ -16,7 +16,8 @@ define(function (require, exports, module) {
     },
 
     "test Dom cssQuery": function () {
-      document.body.appendChild(v.result = Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
+      document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123",
+                                                  section: {span: "Goodbye"}}));
 
       if (isClient)
         assert.same(Dom('body>.bar>span').textContent, "Goodbye");
@@ -25,38 +26,17 @@ define(function (require, exports, module) {
     },
 
     "test nodeIndex": function () {
-      var node = Dom.html({div: ['one', 'two',  'three']});
+      var node = Dom.h({div: ['one', 'two',  'three']});
 
       assert.same(Dom.nodeIndex(node.firstChild), 0);
       assert.same(Dom.nodeIndex(node.childNodes[1]), 1);
       assert.same(Dom.nodeIndex(node.childNodes[2]), 2);
     },
 
-    "test undefined textConent": function () {
-      assert.same(Dom.html({text: undefined}).outerHTML, '<div>undefined</div>');
-    },
-
     "test html": function () {
-      document.body.appendChild(v.result = Dom.html({"class": 'bar', id: "s123", tag: 'section', span: {text: "Goodbye"}}));
+      document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123", section: {span: "Goodbye"}}));
 
       assert.sameHtml(v.result.outerHTML, '<section class="bar" id="s123"><span>Goodbye</span></section>');
-
-      assert.same(Dom.html({html: ["hello ", undefined, {tag: 'span', text: 'cruel'}, ' world']}).outerHTML,
-                  '<div>hello <span>cruel</span> world</div>');
-
-      assert.same(Dom.html({content: ["one", {tag: "b"}, "two"]}).outerHTML, "<div>one<b></b>two</div>");
-      assert.same(Dom.html({content: Dom.html(["one", undefined, "two"])}).outerHTML, "<div>onetwo</div>");
-      assert.same(Dom.html({content: {content: "x"}}).outerHTML, '<div><div>x</div></div>');
-
-
-
-      assert.same(Dom.html('<div id="d123" class="foo">bar</div>').outerHTML, '<div id="d123" class="foo">bar</div>');
-
-      var frag = Dom.html(['one', {text: 'two'}, 'three']);
-      assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
-      var div = document.createElement('div');
-      div.appendChild(frag);
-      assert.same(div.innerHTML, 'one<div>two</div>three');
     },
 
     "test escapeHTML": function () {

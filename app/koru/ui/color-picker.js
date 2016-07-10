@@ -54,7 +54,7 @@ define(function(require, exports, module) {
   Tpl.$helpers({
     customButton: function () {
       if (this.custom)
-        return Dom.html({tag: 'button', name: 'custom', text: this.custom[0]});
+        return Dom.h({$name: 'custom', button: this.custom[0]});
     },
 
     palette: function (color) {

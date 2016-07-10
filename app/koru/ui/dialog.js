@@ -87,10 +87,9 @@ define(function(require, exports, module) {
 
     content: function () {
       var content = this.content;
-      if (typeof content === 'string')
-        return Dom.html(content);
-      else
+      if (content.$autoRender)
         return content.$autoRender(this.data || this);
+      return Dom.h(content);
     },
   });
 
