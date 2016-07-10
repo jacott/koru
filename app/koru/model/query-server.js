@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
+  const Model      = require('koru/model/map');
   const koru       = require('../main');
   const util       = require('../util');
-  const Model      = require('./base');
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
@@ -113,10 +113,10 @@ define(function(require, exports, module) {
         TransQueue.transaction(model.db, tran => {
           this.forEach(doc => {
             ++count;
-            Model._callBeforeObserver('beforeRemove', doc);
+            Model._support.callBeforeObserver('beforeRemove', doc);
             docs.remove({_id: doc._id});
             model._$docCacheDelete(doc);
-            Model._callAfterObserver(null, doc);
+            Model._support.callAfterObserver(null, doc);
             onSuccess.push(doc);
           });
         });
@@ -219,7 +219,7 @@ define(function(require, exports, module) {
 
             model._$docCacheSet(doc.attributes);
             onAbort.push(doc);
-            Model._callAfterObserver(doc, changes);
+            Model._support.callAfterObserver(doc, changes);
             onSuccess.push([doc, changes]);
           });
         });

@@ -1,10 +1,9 @@
 define(function(require, exports, module) {
+  const Model    = require('koru/model/map');
   const session  = require('koru/session/client-rpc');
   const koru     = require('../main');
   const util     = require('../util');
-  const Model    = require('./base');
   const dbBroker = require('./db-broker');
-
 
   function Constructor(session) {
     return function(Query) {
@@ -266,7 +265,7 @@ define(function(require, exports, module) {
             }
             self.forEach(doc => {
               ++count;
-              Model._callBeforeObserver('beforeRemove', doc);
+              Model._support.callBeforeObserver('beforeRemove', doc);
               if (session.state.pendingCount()) {
                 recordChange(model, doc.attributes);
               }
@@ -352,7 +351,7 @@ define(function(require, exports, module) {
       function notify(model, doc, changes, isFromServer) {
         model._indexUpdate.notify(doc, changes); // first: update indexes
         isFromServer ||
-          Model._callAfterObserver(doc, changes); // next:  changes originated here
+          Model._support.callAfterObserver(doc, changes); // next:  changes originated here
         model.notify(doc, changes, isFromServer); // last:  Notify everything else
       }
 

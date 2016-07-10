@@ -7,7 +7,10 @@ define(function(require, exports, module) {
   };
 
   test.logHandle = function (type, msg) {
-    session.remoteControl.logHandle(msg);
+    if (session.remoteControl.logHandle)
+      session.remoteControl.logHandle(msg);
+    else
+      console.log(msg);
   };
 
   return test;

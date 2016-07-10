@@ -2,16 +2,16 @@ define(function(require, exports, module) {
   'use strict';
   const koru        = require('koru');
   const makeSubject = require('koru/make-subject');
+  const Query       = require('koru/model/query');
   const Random      = require('koru/random');
   const session     = require('koru/session/client-rpc');
   const util        = require('koru/util');
   const dbBroker    = require('./db-broker');
   const clientIndex = require('./index-client');
-  const Query       = require('./query');
 
-  var _support;
+  let _support, ModelMap;
 
-  var dbs = Object.create(null);
+  const dbs = Object.create(null);
 
   function getProp(dbId, modelName, prop) {
     var obj = dbs[dbId];
@@ -41,16 +41,17 @@ define(function(require, exports, module) {
       }
     },
 
-    init(BaseModel, supportBase, modelProperties) {
+    init(_ModelMap, BaseModel, supportBase) {
+      ModelMap = _ModelMap;
       _support = supportBase;
 
-      Object.defineProperty(BaseModel, '_databases', {enumerable: false, get() {return dbs}});
-      Object.defineProperty(BaseModel, '_getProp', {enumerable: false, value: getProp});
-      Object.defineProperty(BaseModel, '_getSetProp', {enumerable: false, value: getSetProp});
+      Object.defineProperty(ModelMap, '_databases', {enumerable: false, get() {return dbs}});
+      Object.defineProperty(ModelMap, '_getProp', {enumerable: false, value: getProp});
+      Object.defineProperty(ModelMap, '_getSetProp', {enumerable: false, value: getSetProp});
 
-      util.extend(modelProperties, {
-        findById: findById,
-        findAttrsById: findAttrsById,
+      util.extend(BaseModel, {
+        findById,
+        findAttrsById,
         get serverQuery() {
           var query = new Query(this);
           query.isFromServer = true;
@@ -58,48 +59,50 @@ define(function(require, exports, module) {
         }
       });
 
-      BaseModel.prototype.$remove =  function () {
-        session.rpc("remove", this.constructor.modelName, this._id,
-                    koru.globalCallback);
-      };
+      util.extend(BaseModel.prototype, {
+        $remove() {
+          session.rpc("remove", this.constructor.modelName, this._id,
+                      koru.globalCallback);
+        },
 
-      /**
-       * Warning: $reload does not ensure that this doc belongs to the
-       * current database.
-       **/
-      BaseModel.prototype.$reload = function () {
-        var doc = this.constructor.findById(this._id);
-        this.attributes = doc ? doc.attributes : {};
-        this.changes = {};
-        this._errors = null;
-        this._cache = null;
-        return this;
-      };
+        /**
+         * Warning: $reload does not ensure that this doc belongs to the
+         * current database.
+         **/
+        $reload() {
+          var doc = this.constructor.findById(this._id);
+          this.attributes = doc ? doc.attributes : {};
+          this.changes = {};
+          this._errors = null;
+          this._cache = null;
+          return this;
+        }
+      });
 
       session.defineRpc("save", function (modelName, id, changes) {
-        var model = BaseModel[modelName],
+        var model = ModelMap[modelName],
             docs = model.docs,
             doc = docs[id],
             now = util.newDate();
 
-        BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
+        _support._updateTimestamps(changes, model.updateTimestamps, now);
 
         if(doc) {
           _support.performUpdate(doc, changes);
         } else {
-          BaseModel._addUserIds(changes, model.userIds, this.userId);
-          BaseModel._updateTimestamps(changes, model.createTimestamps, now);
+          _support._addUserIds(changes, model.userIds, this.userId);
+          _support._updateTimestamps(changes, model.createTimestamps, now);
           changes._id = id;
           _support.performInsert(new model(changes));
         }
       });
 
       session.defineRpc("remove", function (modelName, id) {
-        return new Query(BaseModel[modelName]).onId(id).remove();
+        return new Query(ModelMap[modelName]).onId(id).remove();
       });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
-        _support.performBumpVersion(BaseModel[modelName], id, version);
+        _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
       util.extend(_support, {

@@ -1,14 +1,16 @@
 define(function(require, exports, module) {
-  const ModelEnv             = require('../env!./main');
+  const ModelEnv             = require('koru/env!./main');
+  const Query                = require('koru/model/query');
   const koru                 = require('../main');
   const Random               = require('../random');
   const session              = require('../session/base');
   const util                 = require('../util');
-  const BaseModel            = require('./base');
-  const Query                = require('./query');
+  const ModelMap             = require('./map');
   const registerObserveField = require('./register-observe-field');
   const registerObserveId    = require('./register-observe-id');
   const Val                  = require('./validation');
+
+  module.exports = ModelMap;
 
   /**
    * Track before/after/finally observers observing a model.
@@ -22,19 +24,245 @@ define(function(require, exports, module) {
   const allObserverHandles = new WeakMap;
 
   koru.onunload(module, function () {
-    koru.unload(koru.absId(require, './base'));
+    koru.unload(koru.absId(require, './map'));
   });
 
-  BaseModel.prototype = {
-    constructor: BaseModel,
+  class BaseModel {
+    constructor(attributes, changes) {
+      if(attributes && attributes.hasOwnProperty('_id')) {
+        // existing record
+        this.attributes = attributes;
+        this.changes = changes || {};
+      } else {
+        // new record
+        this.attributes = {};
+        this.changes = attributes || {};
+        util.extend(this.changes, this.constructor._defaults);
+      }
+    }
 
-    get _id() {return this.attributes._id || this.changes._id;},
+    static create(attributes) {
+      const doc = new this({});
+      attributes && util.extend(doc.changes, util.deepCopy(attributes));
+      doc.$save();
+      return isServer ? doc : (doc.constructor.findById(doc._id) || doc);
+    }
 
-    get classMethods() {return this.constructor},
+    static _insertAttrs(attrs) {
+      ModelEnv._insertAttrs(this, attrs);
+      return attrs._id;
+    }
+
+    /**
+     * Build a new document. Does not copy _id from attributes.
+     */
+    static build(attributes, allow_id) {
+      const doc = new this({});
+      attributes = attributes ? util.deepCopy(attributes) : {};
+
+      if (attributes._id && ! allow_id)
+        attributes._id = null;
+      attributes && util.extend(doc.changes, util.deepCopy(attributes));
+      return doc;
+    }
+
+    static transaction(func) {
+      return _support.transaction(this, func);
+    }
+
+    static toId(docOrId) {
+      if (! docOrId || typeof docOrId === 'string') return docOrId;
+      return docOrId._id;
+    }
+
+    static toDoc(docOrId) {
+      if (! docOrId || typeof docOrId === 'string') return this.findById(docOrId);
+      return docOrId;
+    }
+
+    static get query() {
+      return new Query(this);
+    }
+
+    static where() {
+      const query = this.query;
+      return query.where.apply(query, arguments);
+    }
+
+    static onId(id) {
+      return this.query.onId(id);
+    }
+
+    static exists(condition) {
+      const query = new Query(this);
+      if (typeof condition === 'string')
+        query.onId(condition);
+      else
+        query.where(condition);
+
+      return query.exists();
+    }
+
+    static findBy(field, value) {
+      return this.query.where(field, value).fetchOne();
+    }
+
+    static isLocked(id) {
+      return (this._locks || (this._locks = Object.create(null)))[id] || false;
+    }
+
+    static lock(id, func) {
+      if (this.isLocked(id))
+        func.call(this, id);
+      else {
+        this._locks[id] = true;
+        try {
+          func.call(this, id);
+        } finally {
+          delete this._locks[id];
+        }
+      }
+    }
+
+
+    /**
+     * Model extension methods
+     */
+
+    /**
+     * Initialize module with options
+     *
+     * Options can be:
+     *
+     * module: For auto unloading and auto naming
+     * name: name of model (otherwise will derive from function name or module
+     * fields: Calls defineFields with fields
+     **/
+    static $init({module, name, fields}) {
+      if (! name)
+        name = this.name || moduleName(module);
+      if (! name)
+        throw new Error("Model requires a name");
+      if (ModelMap[name])
+        throw new Error(`Model '${name}' already defined`);
+      if (module) {
+        koru.onunload(module, () => ModelMap._destroyModel(name));
+      }
+      ModelMap[name] = this;
+
+      this.modelName = name;
+      this._fieldValidators = {};
+      this._defaults = {};
+      ModelEnv.setupModel(this);
+
+      this.fieldTypeMap = {};
+
+      registerObserveId(this);
+      registerObserveField(this);
+
+      fields && this.defineFields(fields);
+
+      return this;
+    }
+
+
+    static defineFields(fields) {
+      const proto = this.prototype;
+      let $fields = this.$fields;
+      if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
+      for(let field in fields) {
+        let options = fields[field];
+        if (! options.type) options = {type: options};
+        const func = typeMap[options.type];
+        func && func(this, field, options);
+        setUpValidators(this, field, options);
+
+        if (options['default'] !== undefined) this._defaults[field] = options['default'];
+        $fields[field] = options;
+        if (options.accessor !== false) defineField(proto,field);
+      }
+      _support.resetDocs(this);
+      return this;
+    }
+
+    static hasMany(name, model, finder) {
+      Object.defineProperty(this.prototype, name, {get: function () {
+        const query = model.query;
+        finder.call(this, query);
+        return query;
+      }});
+    }
+
+    static changesTo(field, doc, was) {
+      let cache = this._changesToCache;
+      if (cache && cache.field === field && cache.doc === doc && cache.was === was)
+        return cache.keyMap;
+
+      cache = this._changesToCache = {field: field, doc: doc, was: was};
+
+      if (doc) {
+
+        if (was) {
+          if (field in was) {
+            cache.keyMap = 'upd';
+          } else {
+            const regex = new RegExp("^"+field+"\\.([^.]+)");
+            let m;
+            for (let key in was) {
+              if (m = regex.exec(key)) {
+                if (! cache.keyMap) {
+                  cache.keyMap = {};
+                };
+                cache.keyMap[m[1]] = key;
+              }
+            }
+          }
+        } else if (field in doc.attributes) {
+          cache.keyMap = 'add';
+        }
+      } else if (field in was.attributes) {
+        cache.keyMap = 'del';
+      }
+      return cache.keyMap;
+    }
+
+    static addVersioning() {
+      const model = this;
+      const proto = model.prototype;
+
+      model.hasVersioning = true;
+      Object.defineProperty(proto, '_version', versionProperty);
+
+      proto.$bumpVersion = _support.bumpVersion;
+      model.$fields._version = {type: 'integer', $system: true};
+      _support.resetDocs(model);
+      return this;
+    }
+
+    static remote(funcs) {
+      const prefix = this.modelName + '.';
+
+      for(const key in funcs) {
+        session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
+      }
+
+      return this;
+    }
+
+
+
+
+    /**
+     * Instance methods
+     **/
+
+    get _id() {return this.attributes._id || this.changes._id;}
+
+    get classMethods() {return this.constructor;}
 
     $inspect() {
       return "{Model: " + this.constructor.modelName + "_" + this._id + "  " + this.name + "}";
-    },
+    }
 
     $save(force) {
       var doc = this;
@@ -48,7 +276,7 @@ define(function(require, exports, module) {
       ModelEnv.save(doc);
 
       return doc;
-    },
+    }
 
     $put(updates, value) {
       if (arguments.length === 2) {
@@ -59,11 +287,11 @@ define(function(require, exports, module) {
 
       ModelEnv.put(this, updates);
       return this;
-    },
+    }
 
     $$save() {
       return this.$save('assert');
-    },
+    }
 
     $isValid() {
       var doc = this,
@@ -89,26 +317,26 @@ define(function(require, exports, module) {
       doc.validate && doc.validate();
 
       return ! doc._errors;
-    },
+    }
 
     $assertValid() {
       Val.allowIfValid(this.$isValid(), this);
-    },
+    }
 
     $equals(other) {
       if (this === other) return true;
       return other && other._id && this._id && this._id === other._id && this.constructor === other.constructor;
-    },
+    }
 
     $isNewRecord() {
       return ! this.attributes._id;
-    },
+    }
 
     $change(field) {
       if (field in this.changes)
         return this.changes[field];
       return this.changes[field] = util.deepCopy(this[field]);
-    },
+    }
 
     $hasChanged(field, changes) {
       changes = changes || this.changes;
@@ -121,7 +349,7 @@ define(function(require, exports, module) {
         if (key.length > len && key[len] === "." && key.slice(0, len)  === field) return true;
       }
       return false;
-    },
+    }
 
     /**
      * Return a doc representing this doc with the supplied changes
@@ -179,7 +407,7 @@ define(function(require, exports, module) {
         }
       }
       return cache[1] = new this.constructor(attrs, cc);
-    },
+    }
 
     /**
      * Use the {beforeChange} keys to extract the new values.
@@ -201,24 +429,24 @@ define(function(require, exports, module) {
 
       }
       return result;
-    },
+    }
 
     get $onThis() {
       return new Query(this.constructor).onId(this._id);
-    },
+    }
 
     $update() {
       var query = this.$onThis;
       return query.update.apply(query, arguments);
-    },
+    }
 
     $clearChanges() {
       util.isObjEmpty(this.changes) || (this.changes = {});
-    },
+    }
 
     $loadCopy() {
       return new this.constructor(this.attributes);
-    },
+    }
 
     $setFields(fields,options) {
       for(var i = 0,field;field = fields[i];++i) {
@@ -228,26 +456,26 @@ define(function(require, exports, module) {
       }
 
       return this;
-    },
+    }
 
-    get $cache() {return this._cache || (this._cache = {})},
+    get $cache() {return this._cache || (this._cache = {})}
 
     $clearCache() {
       this._cache = null;
       return this;
-    },
+    }
 
     $cacheRef(key) {
       return this.$cache[key] || (this.$cache[key] = {});
-    },
-  };
+    }
+  }
 
   /** @deprecated @alias */
   BaseModel.prototype.$asBefore = BaseModel.prototype.$withChanges;
 
   session.defineRpc("put", function (modelName, id, updates) {
     Val.assertCheck([modelName, id], ['string']);
-    const model = BaseModel[modelName];
+    const model = ModelMap[modelName];
     Val.allowIfFound(model);
     const  doc = model.findById(id);
     Val.allowIfFound(doc);
@@ -272,9 +500,6 @@ define(function(require, exports, module) {
     if (ex) throw ex;
   });
 
-
-  Object.defineProperty(BaseModel, '_callBeforeObserver', {enumerable: false, value: callBeforeObserver});
-  Object.defineProperty(BaseModel, '_callAfterObserver', {enumerable: false, value: callAfterObserver});
 
   function callBeforeObserver(type, doc, partials) {
     const model = doc.constructor;
@@ -307,155 +532,9 @@ define(function(require, exports, module) {
     }
   }
 
-  const modelProperties = {
-    create(attributes) {
-      const doc = new this();
-      util.extend(doc.changes, util.deepCopy(attributes));
-      doc.$save();
-      return isServer ? doc : doc.constructor.findById(doc._id);
-    },
-
-    _insertAttrs(attrs) {
-      ModelEnv._insertAttrs(this, attrs);
-      return attrs._id;
-    },
-
-    /**
-     * Build a new document. Does not copy _id from attributes.
-     */
-    build(attributes, allow_id) {
-      const doc = new this();
-      if(attributes) {
-        util.extend(doc.changes, util.deepCopy(attributes));
-        allow_id || (doc.changes._id = null);
-      }
-      return doc;
-    },
-
-    transaction(func) {
-      return _support.transaction(this, func);
-    },
-
-    toId(docOrId) {
-      if (! docOrId || typeof docOrId === 'string') return docOrId;
-      return docOrId._id;
-    },
-
-    toDoc(docOrId) {
-      if (! docOrId || typeof docOrId === 'string') return this.findById(docOrId);
-      return docOrId;
-    },
-
-    get query() {
-      return new Query(this);
-    },
-
-    where() {
-      const query = this.query;
-      return query.where.apply(query, arguments);
-    },
-
-    onId(id) {
-      return this.query.onId(id);
-    },
-
-    exists(condition) {
-      const query = new Query(this);
-      if (typeof condition === 'string')
-        query.onId(condition);
-      else
-        query.where(condition);
-
-      return query.exists();
-    },
-
-    findBy(field, value) {
-      return this.query.where(field, value).fetchOne();
-    },
-
-    isLocked(id) {
-      return (this._locks || (this._locks = Object.create(null)))[id] || false;
-    },
-
-    lock(id, func) {
-      if (this.isLocked(id))
-        func.call(this, id);
-      else {
-        this._locks[id] = true;
-        try {
-          func.call(this, id);
-        } finally {
-          delete this._locks[id];
-        }
-      }
-    },
-
-    /**
-     * Model extension methods
-     */
-
-    defineFields,
-
-    changesTo(field, doc, was) {
-      let cache = this._changesToCache;
-      if (cache && cache.field === field && cache.doc === doc && cache.was === was)
-        return cache.keyMap;
-
-      cache = this._changesToCache = {field: field, doc: doc, was: was};
-
-      if (doc) {
-
-        if (was) {
-          if (field in was) {
-            cache.keyMap = 'upd';
-          } else {
-            const regex = new RegExp("^"+field+"\\.([^.]+)");
-            let m;
-            for (let key in was) {
-              if (m = regex.exec(key)) {
-                if (! cache.keyMap) {
-                  cache.keyMap = {};
-                };
-                cache.keyMap[m[1]] = key;
-              }
-            }
-          }
-        } else if (field in doc.attributes) {
-          cache.keyMap = 'add';
-        }
-      } else if (field in was.attributes) {
-        cache.keyMap = 'del';
-      }
-      return cache.keyMap;
-    },
-
-    addVersioning() {
-      const model = this;
-      const proto = model.prototype;
-
-      model.hasVersioning = true;
-      Object.defineProperty(proto, '_version', versionProperty);
-
-      proto.$bumpVersion = _support.bumpVersion;
-      model.$fields._version = {type: 'integer', $system: true};
-      _support.resetDocs(model);
-      return this;
-    },
-
-    remote(funcs) {
-      const prefix = this.modelName + '.';
-
-      for(const key in funcs) {
-        session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
-      }
-
-      return this;
-    },
-  };
-
   for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
                     'afterLocalChange','whenFinally']) {
-    modelProperties[type] = function (subject, callback) {
+    BaseModel[type] = function (subject, callback) {
       registerObserver(this, subject, type, callback);
       return this;
     };
@@ -490,7 +569,7 @@ define(function(require, exports, module) {
       Val.allowAccessIf(userId && doc.authorizePut);
       var changes = {};
       var partials = {};
-      BaseModel.splitUpdateKeys(changes, partials, updates);
+      ModelMap.splitUpdateKeys(changes, partials, updates);
       doc.changes = changes;
       if (typeof doc.authorizePut === 'function')
         doc.authorizePut(userId, partials);
@@ -559,74 +638,6 @@ define(function(require, exports, module) {
       }
       if (ex) throw ex;
     },
-  };
-
-  ModelEnv.init(BaseModel, _support, modelProperties);
-
-  util.extendNoEnum(BaseModel, {
-    /**
-     * Define a new model.
-     */
-    define(module, name, properties, options) {
-      if (typeof module === 'string') {
-        options = properties;
-        properties = name;
-        name = module;
-      } else {
-        koru.onunload(module, function () {
-          BaseModel._destroyModel(name);
-        });
-        if (typeof name !== 'string') {
-          options = properties;
-          properties = name;
-          name = util.capitalize(util.camelize(module.id.replace(/^.*\//, '')));
-        }
-      }
-      if (BaseModel[name]) throw new Error("Model '" + name + "' already defined");
-      properties  = properties || {};
-      const model = newModel(this, name);
-
-      model.prototype = Object.create(this.prototype, {
-        constructor: { value: model },
-      });
-
-      util.extend(model.prototype, properties);
-
-      util.extend(model, modelProperties);
-      model.constructor = BaseModel;
-      model.modelName = name;
-      model._fieldValidators = {};
-      model._defaults = {};
-      model.hasMany = hasMany;
-      ModelEnv.setupModel(model);
-
-      model.fieldTypeMap = {};
-
-      registerObserveId(model);
-      registerObserveField(model);
-
-      return BaseModel[name] = model;
-    },
-
-    _support,
-
-    _destroyModel(name, drop) {
-      const model = BaseModel[name];
-      if (! model) return;
-
-      ModelEnv.destroyModel(model, drop);
-
-      delete BaseModel[name];
-
-      let oh = allObserverHandles.get(model);
-      if (oh) for (let modelObservers of oh) {
-        for (let name in modelObservers) {
-          modelObservers[name] = modelObservers[name].filter(entry => {
-            return entry[1] !== model;
-          });
-        }
-      }
-    },
 
     _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
@@ -644,7 +655,71 @@ define(function(require, exports, module) {
       }
     },
 
-    _modelProperties: modelProperties,
+    callBeforeObserver,
+    callAfterObserver,
+  };
+
+  ModelEnv.init(ModelMap, BaseModel, _support);
+
+  util.extendNoEnum(ModelMap, {
+    BaseModel,
+
+    /**
+     * Define a new model.
+     * @deprecated Use BaseModel#$init
+     */
+    define(module, name, properties) {
+      let model;
+      if (typeof module === 'string' || module.create) {
+        properties = name;
+        name = module;
+        module = null;
+      } else {
+        koru.onunload(module, function () {
+          ModelMap._destroyModel(name);
+        });
+      }
+      switch(typeof name) {
+      case 'string':
+        break;
+      case 'function':
+        model = name;
+        name = model.name;
+        break;
+      default:
+        properties = name;
+        name = null;
+        break;
+      }
+      if (! model)
+        model = class extends BaseModel {};
+      properties && util.extend(model.prototype, properties);
+
+      if (! name)
+        name =  moduleName(module);
+
+      return model.$init({module, name});
+    },
+
+    _support,
+
+    _destroyModel(name, drop) {
+      const model = ModelMap[name];
+      if (! model) return;
+
+      ModelEnv.destroyModel(model, drop);
+
+      delete ModelMap[name];
+
+      let oh = allObserverHandles.get(model);
+      if (oh) for (let modelObservers of oh) {
+        for (let name in modelObservers) {
+          modelObservers[name] = modelObservers[name].filter(entry => {
+            return entry[1] !== model;
+          });
+        }
+      }
+    },
 
     splitUpdateKeys(changes, partials, updates) {
       for (let key in updates) {
@@ -666,7 +741,7 @@ define(function(require, exports, module) {
       let bt = options.model;
       if (! bt) {
         var btName = options.modelName || util.capitalize(name);
-        bt = BaseModel[btName];
+        bt = ModelMap[btName];
       }
       mapFieldType(model, field, bt, btName);
       Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
@@ -687,7 +762,7 @@ define(function(require, exports, module) {
                 options.associated : options.associated.modelName)) ||
               util.capitalize(util.sansId(field));
 
-        bt = BaseModel[name];
+        bt = ModelMap[name];
       }
       mapFieldType(model, field, bt, name);
     },
@@ -708,24 +783,7 @@ define(function(require, exports, module) {
     model.fieldTypeMap[field] = bt;
   }
 
-  function defineFields(fields) {
-    const proto = this.prototype;
-    let $fields = this.$fields;
-    if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
-    for(let field in fields) {
-      let options = fields[field];
-      if (! options.type) options = {type: options};
-      const func = typeMap[options.type];
-      func && func(this, field, options);
-      setUpValidators(this, field, options);
 
-      if (options['default'] !== undefined) this._defaults[field] = options['default'];
-      $fields[field] = options;
-      if (options.accessor !== false) defineField(proto,field);
-    }
-    _support.resetDocs(this);
-    return this;
-  };
 
   function defineField(proto, field) {
     Object.defineProperty(proto, field,{
@@ -740,14 +798,6 @@ define(function(require, exports, module) {
       const value = this[field];
       return value && this.$cacheRef(name)[value] || (this.$cacheRef(name)[value] = model.findById(value));
     };
-  }
-
-  function hasMany(name, model, finder) {
-    Object.defineProperty(this.prototype, name, {get: function () {
-      const query = model.query;
-      finder.call(this, query);
-      return query;
-    }});
   }
 
   function getValue(field) {
@@ -794,13 +844,8 @@ define(function(require, exports, module) {
     return model._fieldValidators[field] || (model._fieldValidators[field] = {});
   }
 
-
-  function newModel(baseModel, name) {
-    function Model(attrs, changes) {
-      BaseModel.call(this, attrs||{}, changes);
-    };
-    return Model;
+  function moduleName(module) {
+    return module && util.capitalize(util.camelize(module.id.replace(/^.*\//, '')));
   }
 
-  return BaseModel;
 });

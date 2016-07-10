@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   const dbBroker = require('koru/model/db-broker');
   const koru     = require('../main');
-  const Model    = require('../model/base');
+  const Model    = require('../model/main');
   const ModelEnv = require('../model/main-client');
   const Query    = require('../model/query');
   const Trace    = require('../trace');

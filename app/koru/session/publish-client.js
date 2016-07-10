@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
-  var publish = require('./publish-base');
-  var Model = require('../model/base');
-  var match = require('./match');
+  const Model   = require('koru/model/main');
+  const koru    = require('../main');
+  const util    = require('../util');
+  const match   = require('./match');
+  const publish = require('./publish-base');
 
 
   util.extend(publish, {

@@ -1,6 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
   const koru    = require('koru');
+  const Query   = require('koru/model/query');
   const session = require('koru/session/base');
   const util    = require('koru/util');
   const Model   = require('./main');
@@ -23,9 +24,37 @@ define(function (require, exports, module) {
 
     "test only models enumerable"() {
       for(var key in Model) {
-        assert.same(Model[key].constructor, Model);
+        assert.same(Object.getPrototypeOf(Model[key]), Model.BaseModel);
       }
       assert(true);
+    },
+
+    "test using a class"() {
+      class TestModel extends Model.BaseModel {
+        foo() {return this.name;}
+      }
+
+      test.stub(koru, 'onunload');
+
+      TestModel.$init({
+        module: v.mod = {id: 'TestModule'},
+        fields: {name: 'text'},
+      });
+
+      assert.calledWith(koru.onunload, v.mod, TH.match.func);
+
+      assert.same(Model.TestModel, TestModel);
+      assert.same(TestModel.name, 'TestModel');
+      assert.same(TestModel.modelName, 'TestModel');
+
+
+      let tm = TestModel.create({name: 'my name'});
+
+      assert.same(tm.foo(), 'my name');
+
+      koru.onunload.yield();
+
+      refute(Model.TestModel);
     },
 
     'with model lock': {
@@ -123,7 +152,7 @@ define(function (require, exports, module) {
 
       "test remove calls"() {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
-        test.onEnd(v.TestModel.afterLocalChange(v.TestModel, v.afterLocalChange = test.stub()));
+        v.TestModel.afterLocalChange(v.TestModel, v.afterLocalChange = test.stub());
 
         v.tc.$onThis.remove();
 

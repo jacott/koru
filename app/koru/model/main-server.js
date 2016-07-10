@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const Query       = require('koru/model/query');
   const driver      = require('../config!DBDriver');
   const koru        = require('../main');
   const makeSubject = require('../make-subject');
@@ -6,11 +7,10 @@ define(function(require, exports, module) {
   const session     = require('../session');
   const util        = require('../util');
   const dbBroker    = require('./db-broker');
-  const Query       = require('./query');
   const TransQueue  = require('./trans-queue');
   const Val         = require('./validation');
 
-  var _support, BaseModel;
+  let _support, BaseModel, ModelMap;
 
   const uniqueIndexes = {};
   const indexes = {};
@@ -32,13 +32,14 @@ define(function(require, exports, module) {
       delete indexes[model.modelName];
     },
 
-    init(_BaseModel, _baseSupport, modelProperties) {
+    init(_ModelMap, _BaseModel, _baseSupport) {
+      ModelMap = _ModelMap;
       BaseModel = _BaseModel;
       _support = _baseSupport;
-      modelProperties.findById = findById;
-      modelProperties.findAttrsById = findAttrsById;
-      modelProperties.addUniqueIndex = addUniqueIndex;
-      modelProperties.addIndex = addIndex;
+      BaseModel.findById = findById;
+      BaseModel.findAttrsById = findAttrsById;
+      BaseModel.addUniqueIndex = addUniqueIndex;
+      BaseModel.addIndex = addIndex;
 
       function addUniqueIndex() {
         prepareIndex(uniqueIndexes, this, arguments);
@@ -66,7 +67,7 @@ define(function(require, exports, module) {
       function _ensureIndexes(type, options) {
         for(var name in type) {
           var queue = type[name];
-          var model = BaseModel[name];
+          var model = ModelMap[name];
           util.forEach(queue, function (args) {
             ensureIndex(model, args, options);
           });
@@ -78,7 +79,7 @@ define(function(require, exports, module) {
         _ensureIndexes(indexes);
       }
 
-      Object.defineProperty(BaseModel, 'ensureIndexes', {enumerable: false, value: ensureIndexes});
+      Object.defineProperty(ModelMap, 'ensureIndexes', {enumerable: false, value: ensureIndexes});
 
       BaseModel.prototype.$remove =  function () {
         return new Query(this.constructor).onId(this._id).remove();
@@ -110,12 +111,12 @@ define(function(require, exports, module) {
         var now = util.newDate();
         doc.changes = {};
 
-        BaseModel._updateTimestamps(changes, model.updateTimestamps, now);
+        _support._updateTimestamps(changes, model.updateTimestamps, now);
         if(doc.attributes._id == null) {
           if (! model.$fields._id.auto)
             changes._id = changes._id || Random.id();
-          BaseModel._addUserIds(changes, model.userIds, util.thread.userId);
-          BaseModel._updateTimestamps(changes, model.createTimestamps, now);
+          _support._addUserIds(changes, model.userIds, util.thread.userId);
+          _support._updateTimestamps(changes, model.createTimestamps, now);
 
           changes = util.extend(doc.attributes, changes);
           _support.performInsert(doc);
@@ -133,11 +134,11 @@ define(function(require, exports, module) {
       };
 
       session.defineRpc("save", function (modelName, id, changes) {
-        var userId = this.userId;
+        const userId = this.userId;
         Val.allowAccessIf(userId);
         Val.assertCheck(id, 'string', {baseName: '_id'});
         Val.assertCheck(modelName, 'string', {baseName: 'modelName'});
-        var model = BaseModel[modelName];
+        const model = ModelMap[modelName];
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, function () {
           var doc = model.findById(id);
@@ -159,7 +160,7 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("bumpVersion", function(modelName, id, version) {
-        _support.performBumpVersion(BaseModel[modelName], id, version);
+        _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
       session.defineRpc("remove", function (modelName, id) {
@@ -167,7 +168,7 @@ define(function(require, exports, module) {
         Val.allowAccessIf(userId);
         Val.ensureString(id);
         Val.ensureString(modelName);
-        var model = BaseModel[modelName];
+        var model = ModelMap[modelName];
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, function () {
           var doc = model.findById(id);
@@ -285,7 +286,7 @@ define(function(require, exports, module) {
 
       model._$docCacheSet(doc.attributes);
       TransQueue.onAbort(() => model._$docCacheDelete(doc));
-      BaseModel._callAfterObserver(doc, null);
+      _support.callAfterObserver(doc, null);
       TransQueue.onSuccess(() => model.notify(doc, null));
     },
 
@@ -327,9 +328,9 @@ define(function(require, exports, module) {
   }
 
   function addToDictionary(adder) {
-    for (var mname in BaseModel) {
+    for (var mname in ModelMap) {
       adder(mname);
-      var model = BaseModel[mname];
+      var model = ModelMap[mname];
       for (var name in model.$fields) {
         adder(name);
       }
