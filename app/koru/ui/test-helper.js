@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var TH = require('../test-helper');
-  var koru = require('../main');
-  var Route = require('./route');
-  var util = require('../util');
-  var Dom = require('../dom');
+  const Dom   = require('../dom');
+  const koru  = require('../main');
+  const TH    = require('../test-helper');
+  const util  = require('../util');
+  const Route = require('./route');
 
   koru.onunload(module, function () {
     Route.history = TH._orig_history;
@@ -16,9 +16,8 @@ define(function(require, exports, module) {
     back() {},
   };
 
-  var geddon = TH.geddon;
-
-  var ga = geddon.assertions;
+  const geddon = TH.geddon;
+  const ga = geddon.assertions;
 
   ga.add('rangeEquals', {
     assert(startContainer, startOffset, endContainer, endOffset) {
@@ -68,7 +67,7 @@ define(function(require, exports, module) {
     }
   }
 
-  TH.util.extend(TH, {
+  util.extend(TH, {
     domTearDown() {
       Dom.flushNextFrame();
       Route._reset();
@@ -109,9 +108,7 @@ define(function(require, exports, module) {
     },
 
     findDomEvent(template, type) {
-      return template._events.filter(function (event) {
-        return event[0] === type;
-      });
+      return template._events.filter(event => event[0] === type);
     },
 
     input: domEvent('input', function (node, value) {
@@ -126,7 +123,7 @@ define(function(require, exports, module) {
       modifiers = modifiers || '';
 
 
-      var pressEvent = document.createEvent ("KeyboardEvent");  //https://developer.mozilla.org/en/DOM/event.initKeyEvent
+      const pressEvent = document.createEvent ("KeyboardEvent");  //https://developer.mozilla.org/en/DOM/event.initKeyEvent
 
 
 
@@ -275,11 +272,8 @@ define(function(require, exports, module) {
     }
   }
 
-  var ga = TH.geddon.assertions;
-
-
   function dispatchEvent(elm, event) {
-    var old_unhandledException = koru.unhandledException;
+    const old_unhandledException = koru.unhandledException;
     var evex;
     koru.unhandledException = unhandledException;
     try {
