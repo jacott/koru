@@ -138,8 +138,7 @@ define(function(require, exports, module) {
             pageRoute = {};
           } else {
             page = page.Index || page;
-            var href = page.onEntry(page, pageRoute) || Route.pageRouteToHref(pageRoute);
-            if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
+            var href = Route.pageRouteToHref(page.onEntry(page, pageRoute) || pageRoute);
             var title = page.title || Route.title;
           }
 
@@ -187,7 +186,9 @@ define(function(require, exports, module) {
     }
 
     static pageRouteToHref(pageRoute) {
-      return pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+      let href = typeof pageRoute ==='string' ? pageRoute : pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+      if (! /^\/#/.test(href)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
+      return href;
     }
 
     static pushHistory(pageRoute) {
