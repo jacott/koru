@@ -180,7 +180,7 @@ define(function(require, exports, module) {
 
         if (options['default'] !== undefined) this._defaults[field] = options['default'];
         $fields[field] = options;
-        if (options.accessor !== false) defineField(proto,field);
+        if (options.accessor !== false) defineField(proto,field, options.accessor);
       }
       _support.resetDocs(this);
       return this;
@@ -745,6 +745,15 @@ define(function(require, exports, module) {
 
   const typeMap = {
     belongs_to(model, field, options) {
+      if (! options.accessor) {
+        const setv = setValue(field);
+        options.accessor = {
+          get: getValue(field),
+          set: function (value) {
+            return setv.call(this, value || undefined);
+          },
+        };
+      }
       const name = field.replace(/_id/,'');
       let bt = options.model;
       if (! bt) {
@@ -793,8 +802,8 @@ define(function(require, exports, module) {
 
 
 
-  function defineField(proto, field) {
-    Object.defineProperty(proto, field,{
+  function defineField(proto, field, accessor) {
+    Object.defineProperty(proto, field, accessor || {
       get: getValue(field),
 
       set: setValue(field),

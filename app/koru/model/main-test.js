@@ -389,6 +389,15 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
+      "test accessor false"() {
+        v.TestModel.defineFields({starSign: {type: 'text', accessor: false}});
+
+        var sut = v.TestModel.build();
+        sut.starSign = '123';
+        assert.same(sut.changes.starSign, undefined);
+        assert.same(sut.starSign, '123');
+      },
+
       "test changesTo"() {
         var res = v.TestModel.changesTo("foo", v.doc = {foo: {123: {name: 'y'}}},
                                         v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
@@ -675,6 +684,14 @@ define(function (require, exports, module) {
 
         tearDown() {
           Model._destroyModel('Qux', 'drop');
+        },
+
+        "test accessor"() {
+          v.TestModel.defineFields({qux_id: {type: 'belongs_to'}});
+
+          var sut = v.TestModel.build();
+          sut.qux_id = '';
+          assert.same(sut.changes.qux_id, undefined);
         },
 
         "test belongs_to auto"() {
