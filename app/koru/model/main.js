@@ -54,7 +54,7 @@ define(function(require, exports, module) {
     }
 
     /**
-     * Build a new document. Does not copy _id from attributes.
+     * Build a new model. Does not copy _id from attributes.
      */
     static build(attributes, allow_id) {
       const doc = new this({});
@@ -357,7 +357,7 @@ define(function(require, exports, module) {
      * staged against it such that calling doc.$save will apply the changes.
      *
      * If this method is called again with the same changes object
-     * then a cached version of the before doc is return.
+     * then a cached version of the before doc is returned.
      */
     $withChanges(changes) {
       const cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
