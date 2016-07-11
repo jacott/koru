@@ -265,6 +265,20 @@ isClient && define(function (require, exports, module) {
         },
       },
 
+      "test pushHistory"() {
+        Route.pushHistory(v.pageRoute = {pathname: '/foo', hash: '#bar'});
+        assert.calledWith(Route.history.pushState, 1, null, '/foo#bar');
+        assert.same(Route.currentPageRoute, v.pageRoute);
+        assert.same(Route.currentHref, '/foo#bar');
+      },
+
+      "test replaceHistory"() {
+        Route.replaceHistory(v.pageRoute = {pathname: '/foo', hash: '#bar'});
+        assert.calledWith(Route.history.replaceState, 0, null, '/foo#bar');
+        assert.same(Route.currentPageRoute, v.pageRoute);
+        assert.same(Route.currentHref, '/foo#bar');
+      },
+
       "test gotoPage, pushCurrent, recordHistory, notify"() {
         var orig = Dom.setTitle;
         Dom.setTitle = test.stub();

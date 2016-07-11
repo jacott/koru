@@ -138,7 +138,7 @@ define(function(require, exports, module) {
             pageRoute = {};
           } else {
             page = page.Index || page;
-            var href = page.onEntry(page, pageRoute) || pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+            var href = page.onEntry(page, pageRoute) || Route.pageRouteToHref(pageRoute);
             if (! href.match(/^\/#/)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
             var title = page.title || Route.title;
           }
@@ -184,6 +184,21 @@ define(function(require, exports, module) {
 
     static pushCurrent() {
       Route.history.pushState(++pageCount, null, currentHref);
+    }
+
+    static pageRouteToHref(pageRoute) {
+      return pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+    }
+
+    static pushHistory(pageRoute) {
+      currentPageRoute = pageRoute;
+      currentHref = this.pageRouteToHref(pageRoute);
+      this.pushCurrent();
+    }
+    static replaceHistory(pageRoute) {
+      currentPageRoute = pageRoute;
+      currentHref = this.pageRouteToHref(pageRoute);
+      Route.history.replaceState(pageCount, null, currentHref);
     }
 
     static get targetPage() {return targetPage}
