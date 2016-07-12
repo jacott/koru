@@ -40,25 +40,25 @@ define(function(require, exports, module) {
       this.ids = Object.create(null);
     }
 
-    has (groupId, id) {
+    has(groupId, id) {
       if (id === undefined) return groupId in this.ids;
       var result = this.ids[groupId];
       return !! (result && id in result);
     }
 
-    get (groupId, id) {
+    get(groupId, id) {
       var result = this.ids[groupId];
       if (id === undefined) return result;
       return result && result[id];
     }
 
-    add (groupId, id, value) {
+    add(groupId, id, value) {
       var result = this.ids[groupId];
       if (! result) result = this.ids[groupId] = {};
       return result[id] = value;
     }
 
-    remove (groupId, id) {
+    remove(groupId, id) {
       if (id === undefined) delete this.ids[groupId];
       var result = this.ids[groupId];
       if (result) {
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    reverseExtend (obj, properties, exclude) {
+    reverseExtend(obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && exclude[prop]) continue;
@@ -92,7 +92,7 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    forEach (list, func) {
+    forEach(list, func) {
       if (! list) return;
       var len = list.length;
       for(var i = 0; i < len; ++i) {
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
       }
     },
 
-    reverseForEach (list, func) {
+    reverseForEach(list, func) {
       if (! list) return;
       var len = list.length;
       for(var i = len-1; i >= 0 ; --i) {
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
       }
     },
 
-    map (list, func) {
+    map(list, func) {
       var len = list.length;
       var result = new Array(len);
       for(var i = 0; i < len; ++i) {
@@ -117,7 +117,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    append (list, append) {
+    append(list, append) {
       var len = append.length;
       var dl = list.length;
       list.length = dl + len;
@@ -145,7 +145,7 @@ define(function(require, exports, module) {
      */
     deepEqual,
 
-    shallowEqual (array1, array2) {
+    shallowEqual(array1, array2) {
       if (! Array.isArray(array1) || ! Array.isArray(array2) || array1.length !== array2.length)
         return false;
       for(var i = 0; i < array1.length; ++i) {
@@ -155,7 +155,7 @@ define(function(require, exports, module) {
       return true;
     },
 
-    invert (map, func) {
+    invert(map, func) {
       var result = {};
       for(var prop in map) {
         result[map[prop]] = func ? func(prop) : prop;
@@ -163,7 +163,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    lookupDottedValue (key, attributes) {
+    lookupDottedValue(key, attributes) {
       var parts = key.split('.');
       var val = attributes[parts[0]];
       for(var i=1; val && i < parts.length;++i) {
@@ -172,7 +172,7 @@ define(function(require, exports, module) {
       return val;
     },
 
-    applyChanges (attrs, changes) {
+    applyChanges(attrs, changes) {
       for(var key in changes) {
         util.applyChange(attrs, key, changes);
       }
@@ -180,7 +180,7 @@ define(function(require, exports, module) {
       return attrs;
     },
 
-    applyChange (attrs, key, changes) {
+    applyChange(attrs, key, changes) {
       var index = key.indexOf(".");
 
       var nv = Object.getOwnPropertyDescriptor(changes, key);
@@ -252,7 +252,7 @@ define(function(require, exports, module) {
      * the equality check. In this changes can be tested by passing
      * the arguments: includesAttributes(attrs, changes, doc)
      */
-    includesAttributes (attrs/*, docs */) {
+    includesAttributes(attrs/*, docs */) {
       for(var key in attrs) {
         var match = false;
         for(var i = 1; i < arguments.length; ++i) {
@@ -270,37 +270,37 @@ define(function(require, exports, module) {
       return true;
     },
 
-    extractError (ex) {
+    extractError(ex) {
       var st = stacktrace(ex);
       return ex.toString() + "\n" + (st ? st.join("\n") : util.inspect(ex));
     },
     stacktrace,
 
-    slice (list, from, to) {
+    slice(list, from, to) {
       return slice.call(list, from, to);
     },
 
-    isObjEmpty (obj) {
+    isObjEmpty(obj) {
       if (obj) for(var noop in obj) {return false;}
       return true;
     },
 
-    keyMatches (obj, regex) {
+    keyMatches(obj, regex) {
       var m;
-      if (obj) for(var key in obj) {
+      if (obj) for (var key in obj) {
         if (m = regex.exec(key))
           return m;
       }
       return false;
     },
 
-    addItem (list, item) {
+    addItem(list, item) {
       var pos = util.itemIndex(list, item);
       if (pos !== -1) return pos;
       list.push(item);
     },
 
-    itemIndex (list, item) {
+    itemIndex(list, item) {
       if (item != null && typeof item === 'object') {
         for(var index = 0; index < list.length; ++index) {
           var row = list[index];
@@ -321,7 +321,7 @@ define(function(require, exports, module) {
       return list.indexOf(item);
     },
 
-    removeItem (list, item) {
+    removeItem(list, item) {
       var index = util.itemIndex(list, item);
       if (index === -1) return;
       item = list[index];
@@ -329,13 +329,13 @@ define(function(require, exports, module) {
       return item;
     },
 
-    values (map) {
+    values(map) {
       var result = [];
       for(var key in map) result.push(map[key]);
       return result;
     },
 
-    indexOfRegex (list, value, fieldName) {
+    indexOfRegex(list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -355,13 +355,13 @@ define(function(require, exports, module) {
       return result;
     },
 
-    mapToSearchStr (map) {
+    mapToSearchStr(map) {
       return util.map(Object.keys(map), function (key) {
         return util.encodeURIComponent(key) + '=' + util.encodeURIComponent(map[key]);
       }).join('&');
     },
 
-    searchStrToMap (query) {
+    searchStrToMap(query) {
       var result = {};
       if (! query) return result;
       util.forEach(query.split('&'), function (item) {
@@ -371,7 +371,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    encodeURIComponent (value) {
+    encodeURIComponent(value) {
       if (value == null || value === '') return '';
 
       var result = encodeURIComponent(value);
@@ -383,7 +383,7 @@ define(function(require, exports, module) {
         .replace(/\*/g, "%2A");
     },
 
-    decodeURIComponent (value) {
+    decodeURIComponent(value) {
       if (! value) return null;
       return decodeURIComponent(value.replace(/\+/g, " "));
     },
@@ -423,14 +423,14 @@ define(function(require, exports, module) {
       return result;
     },
 
-    mapField (list, fieldName) {
+    mapField(list, fieldName) {
       fieldName = fieldName || '_id';
       return list && util.map(list, function (doc) {
         return doc[fieldName];
       });
     },
 
-    idNameListToMap (list) {
+    idNameListToMap(list) {
       var result = {};
       util.forEach(list, function (item) {
         result[item[0]] = item[1];
@@ -438,7 +438,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    find (list, func) {
+    find(list, func) {
       var len = list.length;
       var result;
       for(var i = 0; i < len; ++i) {
@@ -447,7 +447,7 @@ define(function(require, exports, module) {
       }
     },
 
-    flatten (ary, level) {
+    flatten(ary, level) {
       var result = [];
 
       function internal(a, l) {
@@ -463,7 +463,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    findBy (list, value, fieldName) {
+    findBy(list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -473,7 +473,7 @@ define(function(require, exports, module) {
       }
     },
 
-    indexOf (list, value, fieldName) {
+    indexOf(list, value, fieldName) {
       if (!list) return;
       fieldName = fieldName || '_id';
       for(var i=0; i < list.length; ++i) {
@@ -488,7 +488,7 @@ define(function(require, exports, module) {
     /**
      * Do a shallow copy of a type
      */
-    shallowCopy (orig) {
+    shallowCopy(orig) {
       switch(typeof orig) {
       case 'string':
       case 'number':
@@ -517,7 +517,7 @@ define(function(require, exports, module) {
     },
 
     /** Does not deep copy functions */
-    deepCopy (orig) {
+    deepCopy(orig) {
       switch(typeof orig) {
       case 'string':
       case 'number':
@@ -561,7 +561,7 @@ define(function(require, exports, module) {
       });
     },
 
-    diff (a, b) {
+    diff(a, b) {
       var result = [];
       if (a) for(var i = 0; i < a.length; ++i) {
         var val = a[i];
@@ -570,7 +570,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    symDiff (a, b) {
+    symDiff(a, b) {
       var result = [];
       b = util.toMap(b);
       if (a) for(var i = 0; i < a.length; ++i) {
@@ -585,7 +585,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    union (args) {
+    union(args) {
       var set = {};
       for(var i = 0; i < arguments.length; ++i) {
         util.forEach(arguments[i], function (elm) {
@@ -595,19 +595,19 @@ define(function(require, exports, module) {
       return Object.keys(set);
     },
 
-    pluralize (name, value) {
+    pluralize(name, value) {
       if (value === 1) return name;
       return name+'s';
     },
 
-    humanize (name) {
+    humanize(name) {
       name = this.uncapitalize(name);
       return name.replace(/_id$/,'').replace(/[_-]/g,' ').replace(/([A-Z])/g, function (_, m1) {
         return ' '+m1.toLowerCase();
       });
     },
 
-    initials (name, count, abvr) {
+    initials(name, count, abvr) {
       count = count || 3;
 
       name = (name || '').split(' ');
@@ -624,64 +624,64 @@ define(function(require, exports, module) {
       return result.toUpperCase();
     },
 
-    dasherize (name) {
+    dasherize(name) {
       return this.humanize(name).replace(/[\s_]+/g,'-');
     },
 
-    labelize (name) {
+    labelize(name) {
       return this.capitalize(this.humanize(name));
     },
 
-    sansId (name) {
+    sansId(name) {
       return name.replace(/_ids?$/,'');
     },
 
-    capitalize (value) {
+    capitalize(value) {
       if(value == null || value === '')
         return '';
 
       return value.charAt(0).toUpperCase() + value.substring(1);
     },
 
-    uncapitalize (value) {
+    uncapitalize(value) {
       if(value == null || value === '')
         return '';
 
       return value.charAt(0).toLowerCase() + value.substring(1);
     },
 
-    titleize (value) {
+    titleize(value) {
       return this.capitalize(value.replace(/[-._%+A-Z]\w/g, function (w) {
         return ' ' + util.capitalize(w.replace(/^[-._%+]/,''));
       }).trim());
     },
 
 
-    camelize (value) {
+    camelize(value) {
       return value.replace(/[-._%+A-Z]\w/g, function (w) {
         return util.capitalize(w.replace(/^[-._%+]/,''));
       });
     },
 
-    niceFilename (name) {
+    niceFilename(name) {
       return name && name.toLowerCase().replace(/[^a-zA-Z0-9-]+/g,'-');
     },
 
-    hashToCss (hash) {
+    hashToCss(hash) {
       return util.map(Object.keys(hash), function (key) {
         return key+":"+hash[key];
       }).join(";");
     },
 
-    px (value) {
+    px(value) {
       return Math.round(value)+'px';
     },
 
-    pc (value) {
+    pc(value) {
       return value*100 + '%';
     },
 
-    toDp (number, dp, zeroFill) {
+    toDp(number, dp, zeroFill) {
       var scalar = Math.pow(10, dp);
       var decs = ''+(Math.round(number * scalar) % scalar);
 
@@ -701,30 +701,49 @@ define(function(require, exports, module) {
     sansPx: sansSuffix.bind(2),
     sansPc: sansSuffix.bind(1),
 
-    compareByName (a, b) {
-      var aname = (a && a.name) || '';
-      var bname = (b && b.name) || '';
+    compareByName(a, b) {
+      const aname = (a && a.name) || '';
+      const bname = (b && b.name) || '';
       return aname === bname ? 0 : aname < bname ? -1 : 1;
     },
 
-    compareByOrder (a, b) {
+    compareByOrder(a, b) {
       a = (a && a.order) || 0;
       b = (b && b.order) || 0;
       return a === b ? 0 : a < b ? -1 : 1;
     },
 
-    compareByField (field, direction) {
+    compareByField(field, direction) {
       direction = direction === -1 ? -1 : 1;
       return function (a, b) {
-        var afield = a && a[field], bfield = b && b[field];
-        var atype = typeorder(afield), btype = typeorder(bfield);
+        const afield = a && a[field], bfield = b && b[field];
+        const atype = typeorder(afield), btype = typeorder(bfield);
         if (atype !== btype)
           return atype < btype ? -direction : direction;
         return afield === bfield ? 0 : afield < bfield ? -direction : direction;
       };
     },
 
-    compareBy (list) {
+    compareByFields(...fields) {
+      return function (a, b) {
+        let direction = 1;
+        for (let field of fields) {
+          if (typeof field === 'number') {
+            direction = field;
+            continue;
+          }
+          var afield = a && a[field], bfield = b && b[field];
+          const atype = typeorder(afield), btype = typeorder(bfield);
+          if (atype !== btype)
+            return atype < btype ? -direction : direction;
+          if (afield !== bfield)
+            return afield < bfield ? -direction : direction;
+        }
+        return 0;
+      };
+    },
+
+    compareBy(list) {
       var len = list.length;
       return function (a, b) {
         for(var i = 0; i < len; ++i) {
@@ -750,7 +769,7 @@ define(function(require, exports, module) {
 
     colorToArray,
 
-    setNestedHash (value, hash /*, keys */) {
+    setNestedHash(value, hash /*, keys */) {
       var last = arguments.length-1;
       for(var i = 2; i < last; ++i) {
         var key = arguments[i];
@@ -760,7 +779,7 @@ define(function(require, exports, module) {
       return hash[arguments[last]] = value;
     },
 
-    getNestedHash (hash /*, keys */) {
+    getNestedHash(hash /*, keys */) {
       var last = arguments.length-1;
       for(var i = 1; i < last; ++i) {
         var key = arguments[i];
@@ -771,7 +790,7 @@ define(function(require, exports, module) {
       return hash[arguments[last]];
     },
 
-    deleteNestedHash (hash /*, keys */) {
+    deleteNestedHash(hash /*, keys */) {
       var last = arguments.length-1;
       var prevs = [];
       for(var i = 1; i < last; ++i) {
@@ -794,7 +813,7 @@ define(function(require, exports, module) {
       return value;
     },
 
-    withDateNow (date, func) {
+    withDateNow(date, func) {
       date = +date;
       var thread = util.thread;
       var dates = thread.dates || (thread.dates = []);
@@ -807,22 +826,22 @@ define(function(require, exports, module) {
       }
     },
 
-    dateNow () {
+    dateNow() {
       return util.thread.date || Date.now();
     },
 
-    newDate () {
+    newDate() {
       return new Date(util.dateNow());
     },
 
-    dateInputFormat (date) {
+    dateInputFormat(date) {
       if (date && date.constructor === Date)
         return date.getFullYear() + '-' + twoDigits(date.getMonth()+1) +
         '-' + twoDigits(date.getDate());
       return '';
     },
 
-    yyyymmddToDate (value) {
+    yyyymmddToDate(value) {
       var m = /^\s*(\d\d\d\d)([\s-/])(\d\d?)\2(\d\d?)\s*$/.exec(value);
       if (! m) return;
       var year = +m[1];
@@ -838,11 +857,11 @@ define(function(require, exports, module) {
 
     twoDigits,
 
-    emailAddress (email, name) {
+    emailAddress(email, name) {
       return name.replace(/[<>]/g, '') + " <" + email + ">";
     },
 
-    parseEmailAddresses (input) {
+    parseEmailAddresses(input) {
       input = input || "";
       var addresses = [];
 

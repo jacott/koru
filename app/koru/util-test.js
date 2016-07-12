@@ -653,6 +653,23 @@ define(function (require, exports, module) {
       assert.same(util.compareByField('f2')(b,a), -1);
     },
 
+    "test compareByFields" () {
+      var a = {f1: "Bob", f2: 1};
+      var b = {f1: "Bob", f2: 2};
+
+      assert.same(util.compareByFields('f2', 'f1')(a,b), -1);
+      assert.same(util.compareByFields('f1')(a,b), 0);
+      assert.same(util.compareByFields('f2')(a,b), -1);
+      assert.same(util.compareByFields('f1', 'f2')(a,b), -1);
+      assert.same(util.compareByFields('f1', -1, 'f2')(a,b), 1);
+      assert.same(util.compareByFields('f1', 'f2')({f1: 'Bab'}, a), -1);
+      assert.same(util.compareByFields('f1', 'f2')(a, a), 0);
+
+      b.f1 = 'Cary';
+      assert.same(util.compareByFields(1, 'f1')(a,b), -1);
+      assert.same(util.compareByFields(-1, 'f1')(a,b), 1);
+    },
+
     "test compareBy list" () {
       var a = {f1: "Bob", f2: 1};
       var b = {f1: "Bob", f2: 2};
