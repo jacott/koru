@@ -479,6 +479,20 @@ isClient && define(function (require, exports, module) {
       assert.same(v.root.constructor, Route);
     },
 
+    "test addBase without defaultPage"() {
+      var Baz = {
+        name: 'Baz',
+        onBaseEntry: test.stub(),
+        onBaseExit: test.stub(),
+      };
+
+      Route.root.addBase(Baz);
+
+      Route.gotoPage(Baz);
+
+      assert.calledWith(Baz.onBaseEntry, Baz, {pathname: '/baz'});
+    },
+
     "test setting parent in addBase"() {
       var Baz = {
         name: 'Baz',

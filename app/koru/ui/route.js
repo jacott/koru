@@ -26,8 +26,10 @@ define(function(require, exports, module) {
       if (typeof options === 'string') {
         this.routeVar = options;
         options = {};
-      } else
-        this.routeVar = options ? options.routeVar : null;
+      } else {
+        const routeVar = options && options.routeVar;
+        if (routeVar) this.routeVar = routeVar;
+      }
 
       this.path = path || '';
       this.template = template;
@@ -91,7 +93,7 @@ define(function(require, exports, module) {
 
     static gotoPage(page, pageRoute) {
       if (page && ! page.onEntry) {
-        page = page.route ? page.route.defaultPage : page.defaultPage;
+        page = (page.route ? page.route.defaultPage : page.defaultPage) || page;
       }
 
       pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
@@ -138,7 +140,7 @@ define(function(require, exports, module) {
             pageRoute = {};
           } else {
             page = page.Index || page;
-            var href = Route.pageRouteToHref(page.onEntry(page, pageRoute) || pageRoute);
+            var href = Route.pageRouteToHref(page.onEntry && page.onEntry(page, pageRoute) || pageRoute);
             var title = page.title || Route.title;
           }
 
@@ -237,7 +239,7 @@ define(function(require, exports, module) {
           return this.gotoPage.apply(this, arguments);
 
         if (page.pathname !== '/') {
-          page = '/#'+page.pathname+(page.search || '')+ (page.hash || '');
+          page = this.pageRouteToHref(page);
         } else {
           page = page.hash || '/';
         }
@@ -460,7 +462,7 @@ define(function(require, exports, module) {
       if (item.async)
         item.onBaseEntry(page, pageRoute, callback);
       else {
-        item.onBaseEntry(page, pageRoute);
+        item.onBaseEntry && item.onBaseEntry(page, pageRoute);
         callback();
       }
     }
@@ -469,7 +471,9 @@ define(function(require, exports, module) {
 
   function pathname(template, pageRoute) {
     if (template && template.route) {
-      var path = routePath(template.route, pageRoute)+'/'+template.subPath;
+      var path = routePath(template.route, pageRoute);
+      if (template.subPath)
+        path += '/'+template.subPath;
     } else
       var path = '';
 
