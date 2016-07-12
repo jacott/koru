@@ -693,13 +693,36 @@ isClient && define(function (require, exports, module) {
       assert.same(Baz.onExit, v.onExit);
     },
 
+    "test insertPage function option"() {
+      var Baz = {
+        name: 'Baz',
+        parent: v.FooBar,
+
+        $autoRender() {
+          return Dom.h({id: 'Baz'});
+        },
+      };
+
+      const insertPoint = Dom.h({});
+
+      Route.root.addTemplate(Baz, {
+        insertPage(elm) {insertPoint.appendChild(elm)}
+      });
+
+      Baz.onEntry(Baz);
+
+      assert.dom(insertPoint, function () {
+        assert.dom('#Baz');
+      });
+    },
+
     "test addTemplate"() {
       var Baz = {
         name: 'Baz',
         parent: v.FooBar,
 
         $autoRender(arg) {
-          return Dom.html('<div id="Baz">'+arg+'</div>');
+          return Dom.h({div: arg, id: "Baz"});
         },
       };
 
@@ -708,11 +731,11 @@ isClient && define(function (require, exports, module) {
 
       assert.isFunction(Baz.onEntry);
 
-      Baz.onEntry();
+      Baz.onEntry(Baz);
 
       assert.dom('#Baz', 'fooData');
 
-      Baz.onExit();
+      Baz.onExit(Baz);
 
       refute.dom('#Baz');
 

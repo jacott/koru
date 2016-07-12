@@ -322,10 +322,10 @@ define(function(require, exports, module) {
       options = addCommon(this, module, template, options);
 
       if (! template.onEntry)
-        template.onEntry = onEntryFunc(template, options);
+        template.onEntry = onEntryFunc(options);
 
       if (! template.onExit)
-        template.onExit = onExitFunc(template);
+        template.onExit = autoOnExit;
     }
 
     removeTemplate(template, options) {
@@ -513,35 +513,39 @@ define(function(require, exports, module) {
     return util.dasherize(template.name);
   }
 
-  function onEntryFunc(template, options) {
+  function onEntryFunc(options) {
     return function autoOnEntry(page, pageRoute) {
+      let parent;
+
       if (options) {
         if (typeof options.data ==='function') {
-          var data = options.data.apply(template, arguments);
+          var data = options.data.apply(page, arguments);
         } else {
           var data = options.data;
         }
       }
-      var route = template.route;
+      page._renderedPage = page.$autoRender(data||{});
+      if (options.insertPage) {
+        options.insertPage(page._renderedPage);
+      } else {
+        var route = page.route;
 
-
-      if (route && route.template) {
-        var parent = document.getElementById(route.template.name);
-        if (parent)
-          parent = parent.getElementsByClassName('body')[0] || parent;
+        if (route && route.template) {
+          parent = document.getElementById(route.template.name);
+          if (parent)
+            parent = parent.getElementsByClassName('body')[0] || parent;
+        }
+        (parent || document.body).appendChild(page._renderedPage);
       }
-      (parent || document.body).appendChild(template._renderedPage = template.$autoRender(data||{}));
       if (options.focus) {
-        Dom.focus(template._renderedPage, options.focus);
+        Dom.focus(page._renderedPage, options.focus);
       }
-      options.afterRendered && options.afterRendered(template._renderedPage, pageRoute);
+      options.afterRendered && options.afterRendered(page._renderedPage, pageRoute);
     };
   }
 
-  function onExitFunc(template) {
-    return function autoOnExit() {
-      Dom.remove(template._renderedPage || document.getElementById(template.name));
-    };
+  function autoOnExit() {
+    Dom.remove(this._renderedPage || document.getElementById(this.name));
   }
 
   return Route;
