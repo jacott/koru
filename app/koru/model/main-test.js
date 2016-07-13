@@ -389,13 +389,31 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
-      "test accessor false"() {
-        v.TestModel.defineFields({starSign: {type: 'text', accessor: false}});
+      "test accessor"() {
+        v.TestModel.defineFields({
+          starSign: {type: 'text', accessor: {get: function () {
+            const ans = v.TestModel.getField(this, 'starSign');
+            return ans === 'Gemini' ? 'Virgo' : ans;
+          }}},
+          luckyNumber: ({type: 'number', accessor: {set: function (value) {
+            v.TestModel.setField(this, 'luckyNumber', value === 13 ? 7 : value);
+          }}})
+        });
 
         var sut = v.TestModel.build();
-        sut.starSign = '123';
-        assert.same(sut.changes.starSign, undefined);
-        assert.same(sut.starSign, '123');
+        sut.starSign = 'Gemini';
+        assert.same(sut.changes.starSign, 'Gemini');
+        assert.same(sut.starSign, 'Virgo');
+        sut.starSign = 'Taurus';
+        assert.same(sut.starSign, 'Taurus');
+
+        sut.luckyNumber = 13;
+        assert.same(sut.luckyNumber, 7);
+        sut.luckyNumber = 3;
+        assert.same(sut.luckyNumber, 3);
+        v.TestModel.setField(sut, 'luckyNumber', 42);
+        assert.same(sut.changes.luckyNumber, 42);
+        assert.same(v.TestModel.getField(sut, 'luckyNumber'), 42);
       },
 
       "test changesTo"() {

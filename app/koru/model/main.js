@@ -471,6 +471,9 @@ define(function(require, exports, module) {
     }
   }
 
+  BaseModel.getField = getField;
+  BaseModel.setField = setField;
+
   session.defineRpc("put", function (modelName, id, updates) {
     Val.assertCheck([modelName, id], ['string']);
     const model = ModelMap[modelName];
@@ -803,10 +806,10 @@ define(function(require, exports, module) {
 
 
   function defineField(proto, field, accessor) {
-    Object.defineProperty(proto, field, accessor || {
-      get: getValue(field),
+    Object.defineProperty(proto, field, {
+      get: (accessor && accessor.get) || getValue(field),
 
-      set: setValue(field),
+      set: (accessor && accessor.set) || setValue(field),
     });
   }
 
@@ -817,29 +820,33 @@ define(function(require, exports, module) {
     };
   }
 
+  function getField(doc, field) {
+    return doc.changes.hasOwnProperty(field) ? doc.changes[field] : doc.attributes[field];
+  }
+
+  function setField(doc, field, value) {
+    if (value === doc.attributes[field]) {
+      if (doc.changes.hasOwnProperty(field)) {
+        if (value === undefined && doc.constructor._defaults[field] !== undefined)
+          doc.changes[field] = util.deepCopy(doc.constructor._defaults[field]);
+        else
+          delete doc.changes[field];
+
+        doc._setChanges && doc._setChanges(field, value);
+      }
+    } else {
+      doc.changes[field] = value;
+      doc._setChanges && doc._setChanges(field, value);
+    }
+    return value;
+  }
+
   function getValue(field) {
-    return function () {
-      return this.changes.hasOwnProperty(field) ? this.changes[field] : this.attributes[field];
-    };
+    return function () {return getField(this, field)};
   }
 
   function setValue(field) {
-    return function (value) {
-      if (value === this.attributes[field]) {
-        if (this.changes.hasOwnProperty(field)) {
-          if (value === undefined && this.constructor._defaults[field] !== undefined)
-            this.changes[field] = util.deepCopy(this.constructor._defaults[field]);
-          else
-            delete this.changes[field];
-
-          this._setChanges && this._setChanges(field, value);
-        }
-      } else {
-        this.changes[field] = value;
-        this._setChanges && this._setChanges(field, value);
-      }
-      return value;
-    };
+    return function (value) {return setField(this, field, value)};
   }
 
   function setUpValidators(model, field, options) {
