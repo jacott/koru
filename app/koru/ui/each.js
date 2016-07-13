@@ -1,11 +1,12 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var $ = Dom.current;
-  var Query = require('../model/query');
-  var util = require('../util');
+  const Dom   = require('../dom');
+  const Query = require('../model/query');
+  const util  = require('../util');
+
+  const $ = Dom.current;
 
   function each(startEach, data, func, options) {
-    var each = startEach._each;
+    let each = startEach._each;
     if (! each) {
       startEach = createEach(startEach, func, options);
       each = startEach._each;
@@ -97,10 +98,10 @@ define(function(require, exports, module) {
     }
 
     function callback(doc, old, sort) {
-      var id = (doc || old);
-      if (! id) return; // can't do anything if id can not be determined
-      id = id._id || id.id;
-      var elm = rows[id];
+      const data = (doc || old);
+      if (! data) return;
+      const id = data._id || data.id;
+      const elm = id && rows[id];
       if (elm) {
         if (doc) {
           Dom.getCtx(elm).updateAllTags(doc);
@@ -115,12 +116,14 @@ define(function(require, exports, module) {
       if (! doc) return;
       var parentNode = endEach.parentNode;
       if (! parentNode) return;
-      insert(rows[id] = row.$autoRender(doc, eachCtx), sort);
+      const rendered = row.$autoRender(doc, eachCtx);
+      if (id) rows[id] = rendered;
+      insert(rendered, sort);
     }
   }
 
   function setDefaultDestroy() {
-    var callback = this;
+    const callback = this;
     if (callback._destroy) {
       callback._destroy();
     } else {
@@ -132,27 +135,21 @@ define(function(require, exports, module) {
     }
   }
 
-  function callbackRender(options) {
+  function callbackRender({model,  params,  filter,  changed,  intercept, sort, index}) {
     var callback = this;
-    var model = options.model;
-    var params = options.params;
-    var filter = options.filter;
-    var changed = options.changed;
-    var intercept = options.intercept;
 
-    var sortFunc = options.sort;
-    if (typeof sortFunc === 'string')
-      sortFunc = util.compareByField(sortFunc);
+    if (typeof sort === 'string')
+      sort = util.compareByField(sort);
 
     callback.setDefaultDestroy();
 
     params = params || {};
-    var results = options.index ? options.index.fetch(params) : model.where(params).fetch();
+    var results = index ? index.fetch(params) : model.where(params).fetch();
     if (filter) results = results.filter(function (doc) {
       return filter(doc);
     });
 
-    util.forEach(results.sort(sortFunc), function (doc) {
+    util.forEach(results.sort(sort), function (doc) {
       if (! (intercept && intercept(doc)))
         callback(doc);
     });
@@ -168,7 +165,7 @@ define(function(require, exports, module) {
       }
 
       if ((doc || old) && ! (intercept && intercept(doc, old))) {
-        callback(doc, old, sortFunc);
+        callback(doc, old, sort);
         changed && changed(doc, was);
       }
     });

@@ -1,14 +1,14 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../model/test-helper');
-  var eachTpl = require('../html!./each-test');
-  var Dom = require('../dom');
-  var Model = require('../model/main');
-  var each = require('./each');
-  var util = require('../util');
+  const Dom     = require('../dom');
+  const eachTpl = require('../html!./each-test');
+  const Model   = require('../model/main');
+  const TH      = require('../model/test-helper');
+  const util    = require('../util');
+  const each    = require('./each');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.Each = Dom.newTemplate(util.deepCopy(eachTpl));
@@ -18,13 +18,13 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.removeChildren(document.body);
       delete Dom.Test;
       v = null;
     },
 
-    "test default template": function () {
+    "test default template"() {
       v.Each.nodes[0].children[1].pop();
 
       Dom.newTemplate({
@@ -42,7 +42,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test calling global helper": function () {
+    "test calling global helper"() {
       delete v.Each._helpers.fooList;
       Dom.registerHelpers({
         fooList: test.stub(),
@@ -58,7 +58,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "callback.render": {
-      setUp: function () {
+      setUp() {
         v.TestModel = Model.define('TestModel').defineFields({
           id1: 'text',
           id2: 'text',
@@ -72,13 +72,13 @@ isClient && define(function (require, exports, module) {
         v.other = v.TestModel.create({id1: '2', id2: '3', name: 'Caprice'});
       },
 
-      tearDown: function () {
+      tearDown() {
         Model._destroyModel('TestModel', 'drop');
       },
 
-      "test sort by field name": function () {
+      "test sort by field name"() {
          v.Each.$helpers({
-          fooList: function (callback) {
+          fooList(callback) {
             return callback.render({
               model: v.TestModel,
               index: v.index,
@@ -96,9 +96,9 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test params and index": function () {
+      "test params and index"() {
         v.Each.$helpers({
-          fooList: function (callback) {
+          fooList(callback) {
             if (! v.spy) v.spy = test.spy(callback, 'setDefaultDestroy');
             return callback.render({
               model: v.TestModel,
@@ -159,13 +159,13 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test intercept": function () {
+      "test intercept"() {
         v.Each.$helpers({
-          fooList: function (callback) {
+          fooList(callback) {
             return callback.render({
               model: v.TestModel,
               params: {id1: Dom.current.data().major, id2: '2'},
-              intercept: function (doc, old) {
+              intercept(doc, old) {
                 if (old && old.name === 'bob')
                   return v.bob = true;
                 return /ice/.test(doc.name);
@@ -185,13 +185,13 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test filter and model": function () {
+      "test filter and model"() {
          v.Each.$helpers({
-          fooList: function (callback) {
+          fooList(callback) {
             return callback.render({
               model: v.TestModel,
               params: {id1: Dom.current.data().major, id2: '2'},
-              filter: function (doc) {
+              filter(doc) {
                 return doc.name.match(/ice/);
               },
             });
@@ -229,7 +229,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test sets parentCtx": function () {
+    "test sets parentCtx"() {
       assert.dom(v.Each.$render({}), function () {
         var eachCtx = Dom.getCtx(this);
         v.fooList.yield({id: 1, name: 'r1'});
@@ -239,7 +239,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test simple adding and deleting": function () {
+    "test simple adding and deleting"() {
       assert.dom(v.Each.$render({}), function () {
         refute.dom('li');
         assert.calledOnceWith(v.fooList, TH.match.func, {template: "Row"},
@@ -275,18 +275,21 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test clear intially": function () {
+    "test no data id"() {
       v.Each.$helpers({
-        fooList: function (callback) {
-          callback.clear();
+        fooList(callback) {
+          callback({name: 'r1'});
+          callback({name: 'r2'});
+          callback.clear(); // does not work
         }
       });
       assert.dom(v.Each.$render({}), function () {
-        refute.dom('li', {count: 0});
+        assert.dom('li', 'r1');
+        assert.dom('li+li', 'r2');
       });
     },
 
-    "test clear rows": function () {
+    "test clear rows"() {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args(0, 0);
         v.fooList.yield({id: 1, name: 'r1'});
@@ -319,7 +322,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test update of helper": function () {
+    "test update of helper"() {
       assert.dom(v.Each.$render({}), function () {
         refute.dom('li');
         assert.calledOnceWith(v.fooList, TH.match.func);
@@ -337,7 +340,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test doc and old null": function () {
+    "test doc and old null"() {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args(0, 0);
 
@@ -347,14 +350,14 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test works with removeInserts": function () {
+    "test works with removeInserts"() {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args(0, 0);
 
         callback({id: 1, name: 'r1'});
         callback({id: 2, name: 'r2'});
 
-        assert.dom('li', {text: 'r1', parent: function () {
+        assert.dom('li', {text: 'r1', parent() {
           var start = this.firstChild.nextSibling;
           Dom.removeInserts(start);
           assert.same(start.nextSibling, start._koruEnd);
@@ -365,7 +368,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test ordered": function () {
+    "test ordered"() {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args(0, 0);
 
@@ -396,7 +399,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test before": function () {
+    "test before"() {
       assert.dom(v.Each.$render({}), function () {
         var callback = v.fooList.args(0, 0);
 
@@ -410,9 +413,9 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test initial insert with sort": function () {
+    "test initial insert with sort"() {
       v.Each.$helpers({
-        fooList: function (callback) {
+        fooList(callback) {
           // -1 will force search list to look until start comment reached
           callback({id: 'x', value: 'init'}, null, function (a, b) {return -1});
         },
