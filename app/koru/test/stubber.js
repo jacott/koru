@@ -258,12 +258,12 @@ define(function(require, Stubber, module) {
 
   Stubber.stub = function (object, property, repFunc) {
     if (repFunc && typeof repFunc !== 'function')
-      throw AssertionError(new Error("third argument to stub must be a function or null"));
+      throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
     if (object) {
       if (typeof property !== 'string')
-        throw AssertionError(new Error(inspect(property) + "is not a string"));
+        throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} is not a string`));
       if (! (property in object))
-        throw AssertionError(new Error(inspect(property) + "does not exist in "+inspect(object, 1)));
+        throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
 
       var desc = Object.getOwnPropertyDescriptor(object, property);
       var orig = desc ? desc.value : object[property];

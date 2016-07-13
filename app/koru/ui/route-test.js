@@ -706,14 +706,24 @@ isClient && define(function (require, exports, module) {
       const insertPoint = Dom.h({});
 
       Route.root.addTemplate(Baz, {
-        insertPage(elm) {insertPoint.appendChild(elm)}
+        insertPage(elm) {insertPoint.appendChild(elm)},
+        afterRendered(elm, pageRoute) {
+          assert.same(elm.parentNode, insertPoint);
+          assert.same(pageRoute, v.pageRoute);
+          assert.same(this, Baz);
+
+          v.afterRendered = elm;
+        },
       });
 
-      Baz.onEntry(Baz);
+      Baz.onEntry(Baz, v.pageRoute = {foo: 123});
 
       assert.dom(insertPoint, function () {
-        assert.dom('#Baz');
+        assert.dom('#Baz', function () {
+          assert.same(v.afterRendered, this);
+        });
       });
+
     },
 
     "test addTemplate"() {

@@ -540,7 +540,7 @@ define(function(require, exports, module) {
       if (options.focus) {
         Dom.focus(page._renderedPage, options.focus);
       }
-      options.afterRendered && options.afterRendered(page._renderedPage, pageRoute);
+      options.afterRendered && options.afterRendered.call(page, page._renderedPage, pageRoute);
     };
   }
 
