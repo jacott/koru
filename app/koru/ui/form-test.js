@@ -22,6 +22,19 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test labelField"() {
+      const label = Form.LabelField.$autoRender({
+        name: 'foo',
+        value: Dom.h({button: 'val'}),
+        label: 'my foo',
+      });
+      assert.dom(label, function () {
+        assert.className(this, 'label_foo');
+        assert.dom('span.name', 'my foo');
+        assert.dom('button', 'val');
+      });
+    },
+
     "selectList": {
       "test Select."() {
         const selectList = v.Form.TestSelect;

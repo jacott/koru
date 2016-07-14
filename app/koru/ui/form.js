@@ -399,6 +399,12 @@ define(function(require, exports, module) {
     },
   });
 
+  Tpl.LabelField.$extend({
+    $created(ctx, elm) {
+      Dom.addClass(elm, 'label_'+ctx.data.name);
+    },
+  });
+
 
   function buildSelectList(ctx, elm, optionFunc) {
     var data = ctx.data;
