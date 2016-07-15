@@ -100,6 +100,7 @@ define(function(require, exports, module) {
       case 'T':
         testClientCount = +args[3];
         koru.Fiber(function () {
+          try {
           buildCmd.runTests(session, args[1], args[2], function (mode, exec) {
             testMode = mode;
             testExec = exec;
@@ -125,6 +126,11 @@ define(function(require, exports, module) {
             }
             testWhenReady();
           });
+          } catch(ex) {
+            koru.error(util.extractError(ex));
+            ws.send('FServer\x00' + ex.toString());
+            ws.close();
+          }
         }).run();
         break;
       case 'I':

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 process.chdir(__dirname + "/..");
 
 var net = require('net'),
@@ -9,6 +10,14 @@ var runTime;
 
 var exitCode = 0;
 var WebSocket = require('ws');
+
+switch (ARGV.length) {
+case 0: ARGV = ['both', '']; break;
+case 1: ARGV.push(''); break;
+default:
+  ARGV = [ARGV[0], ARGV.slice(1).join(' ')];
+}
+
 
 var sessionCount = ARGV[0] === 'both' ? 2 : 1;
 
