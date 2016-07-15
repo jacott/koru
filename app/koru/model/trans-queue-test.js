@@ -1,4 +1,4 @@
-define(function (require, _, module) {
+define(function (require, exports, module) {
   var test, v;
   const Model = require('koru/model/main');
   const sut   = require('./trans-queue');

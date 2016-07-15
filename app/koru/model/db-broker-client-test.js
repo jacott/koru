@@ -1,4 +1,4 @@
-define(function (require, _, module) {
+define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   const util = require('koru/util');

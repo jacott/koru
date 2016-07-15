@@ -158,5 +158,7 @@ define(function (require, exports, module) {
     koru.logger('\x44EBUG ', args.join(', '));
   };
 
+  require('koru/env!./main')(koru);
+
   return koru;
 });

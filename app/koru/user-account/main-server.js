@@ -1,4 +1,4 @@
-define(function(require, UserAccount, module) {
+define(function(require, exports, module) {
   const Email   = require('../email');
   const koru    = require('../main');
   const Model   = require('../model/main');
@@ -9,6 +9,8 @@ define(function(require, UserAccount, module) {
   const util    = require('../util');
 
   var emailConfig;
+
+  const UserAccount = exports;
 
   const model = Model.define('UserLogin', {
     unexpiredTokens () {

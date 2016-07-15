@@ -2,7 +2,7 @@
  * Load client or server related file.
  */
 (function () {
-  var suffix = (typeof isServer !== 'undefined') && isServer ? '-server' : '-client';
+  var suffix = (typeof global !== 'undefined') &&  this === global ? '-server' : '-client';
   define({
     /**
      * Load a module for the current koru -- client or server -- and

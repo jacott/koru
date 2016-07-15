@@ -1,71 +1,70 @@
-window.isClient = true;
-window.isServer = false;
-
 define(function(require, exports, module) {
   var util = require('./util-client');
-  var koru = window._koru_ = require('./main');
 
-  koru.reload = function () {
-    if (koru.loadError) throw koru.loadError;
+  return function (koru) {
+    window._koru_ = koru;
 
-    (window.top || window).location.reload(true);
-  };
+    koru.reload = function () {
+      if (koru.loadError) throw koru.loadError;
 
-  koru.Fiber = util.Fiber;
+      (window.top || window).location.reload(true);
+    };
 
-  koru.appDir = module.toUrl('').slice(0,-1);
+    koru.Fiber = util.Fiber;
 
-  koru.setTimeout = function (func, duration) {
-    return setTimeout(function () {
-      try {
-        func();
-      } catch(ex) {
-        koru.error(util.extractError(ex));
-      }
-    }, duration);
-  };
+    koru.appDir = module.toUrl('').slice(0,-1);
 
-  koru.fiberConnWrapper = function (func, conn, data) {
-    try {
-      func(conn, data);
-    } catch(ex) {
-      koru.error(util.extractError(ex));
-    }
-  };
-
-
-  koru.getLocation = function () {
-    return window.location;
-  };
-
-  koru.onunload(module, 'reload');
-
-  // _afTimeout is used by client session; do not override in tests
-  koru._afTimeout = koru.afTimeout = function (func, duration) {
-    var af = null;
-    if (duration && duration > 0)
-      var timeout = setTimeout(inner, duration);
-    else
-      inner();
-
-    function inner() {
-      timeout = null;
-      af = window.requestAnimationFrame(function () {
-        af = null;
+    koru.setTimeout = function (func, duration) {
+      return setTimeout(function () {
         try {
           func();
         } catch(ex) {
           koru.error(util.extractError(ex));
         }
-      });
-    }
-
-    return function () {
-      if (timeout) window.clearTimeout(timeout);
-      if (af) window.cancelAnimationFrame(af);
-      af = timeout = null;
+      }, duration);
     };
-  };
 
-  return koru;
+    koru.fiberConnWrapper = function (func, conn, data) {
+      try {
+        func(conn, data);
+      } catch(ex) {
+        koru.error(util.extractError(ex));
+      }
+    };
+
+
+    koru.getLocation = function () {
+      return window.location;
+    };
+
+    koru.onunload(module, 'reload');
+
+    // _afTimeout is used by client session; do not override in tests
+    koru._afTimeout = koru.afTimeout = function (func, duration) {
+      var af = null;
+      if (duration && duration > 0)
+        var timeout = setTimeout(inner, duration);
+      else
+        inner();
+
+      function inner() {
+        timeout = null;
+        af = window.requestAnimationFrame(function () {
+          af = null;
+          try {
+            func();
+          } catch(ex) {
+            koru.error(util.extractError(ex));
+          }
+        });
+      }
+
+      return function () {
+        if (timeout) window.clearTimeout(timeout);
+        if (af) window.cancelAnimationFrame(af);
+        af = timeout = null;
+      };
+    };
+
+  };
 });

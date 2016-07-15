@@ -1,4 +1,4 @@
 define(function(require) {
-  require('koru/main-client');
+  require('koru/main');
   require('ui/todos');
 });

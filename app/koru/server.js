@@ -1,5 +1,5 @@
 define(function (require, exports, module) {
-  var koru = require('./main-server');
+  var koru = require('./main');
 
   var session = require('./session/main');
   var htmlCompiler = require('./dom/template-auto-compiler');

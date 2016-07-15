@@ -10,7 +10,7 @@ window.yaajs.config({
 window.history.replaceState(null, '', '/');
 
 define(function(require, exports, module) {
-  var koru = require('koru/main-client');
+  var koru = require('koru');
   require('koru/test/client');
 
   document.title = 'Koru Test Mode';

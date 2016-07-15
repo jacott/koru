@@ -1,7 +1,9 @@
-define(function(require, Stubber, module) {
+define(function(require, exports, module) {
   const {extend, inspect}  = require('koru/util');
   require('./assertions');
   const deepEqual          = require('./core')._u.deepEqual;
+
+  const Stubber = exports;
 
   var globalCount = 0;
   var globalId = 0;
