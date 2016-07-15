@@ -37,22 +37,22 @@ define(function (require, exports, module) {
   const koru = {
     onunload,
 
-    unload (id) {
+    unload(id) {
       var mod = module.ctx.modules[id];
       mod && mod.unload();
     },
 
     config: module.config(),
 
-    throwConfigMissing (name) {
+    throwConfigMissing(name) {
       throw new Error(module.id + ' config is missing for: ' + name);
     },
 
-    throwConfigError (name, reason) {
+    throwConfigError(name, reason) {
       throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
     },
 
-    replaceProperty (object, prop, newValue) {
+    replaceProperty(object, prop, newValue) {
       var oldValue = Object.getOwnPropertyDescriptor(object, prop);
       if (! oldValue) {
         newValue.writeable === undefined && (newValue.writeable = true);
@@ -66,29 +66,29 @@ define(function (require, exports, module) {
     Error: errors.Error.bind(errors),
     util,
 
-    absId (require, id) {
+    absId(require, id) {
       return require.module.normalizeId(id);
     },
 
-    clearTimeout (handle) {
+    clearTimeout(handle) {
       return clearTimeout(handle);
     },
 
     "\x64ebug": logDebug,
 
-    info () {
+    info() {
       koru.logger('INFO', Array.prototype.join.call(arguments, ' '));
     },
 
-    error () {
+    error() {
       koru.logger('ERROR', Array.prototype.join.call(arguments, ' '));
     },
 
-    unhandledException (ex) {
+    unhandledException(ex) {
       koru.error(util.extractError(ex));
     },
 
-    logger () {
+    logger() {
       var args = new Array(arguments.length + 1);
       args[0] = new Date().toISOString();
       for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
@@ -96,11 +96,12 @@ define(function (require, exports, module) {
       console.log.apply(console, args);
     },
 
-    globalCallback (err, result) {
-      if (err) koru.error(err);
+    globalCallback(err, result) {
+      if (err)
+        koru.globalErrorCatch ? koru.globalErrorCatch(err) : koru.error(err);
     },
 
-    userId () {
+    userId() {
       return util.thread.userId;
     },
 
@@ -109,7 +110,7 @@ define(function (require, exports, module) {
       return l.protocol+'//'+l.host+l.pathname;
     },
 
-    nullFunc () {},
+    nullFunc() {},
 
     /**
      * Converts path to related build path of compiled resource.
@@ -117,7 +118,7 @@ define(function (require, exports, module) {
      *
      * @returns build path for resource.
      */
-    buildPath (path) {
+    buildPath(path) {
       var idx = path.lastIndexOf('/');
       if (idx === -1)
         return '.build/' + path;

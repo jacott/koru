@@ -222,5 +222,52 @@ isClient && define(function (require, exports, module) {
       default: assert.same(name, 'animationend');
       }
     },
+
+    "hideAndRemove": {
+      setUp: function () {
+        v.onAnimationEnd = test.stub(Dom.Ctx.prototype, 'onAnimationEnd');
+      },
+
+      "test non existent": function () {
+        Dom.hideAndRemove('Foo');
+
+        refute.called(v.onAnimationEnd);
+      },
+
+      "test remove by id": function () {
+        document.body.appendChild(Dom.h({id: 'Foo'}));
+
+        assert.dom('#Foo', function () {
+          Dom.setCtx(v.elm = this, v.ctx = new Dom.Ctx);
+          Dom.hideAndRemove('Foo');
+
+          assert.className(this, 'remElm');
+        });
+
+        assert.calledWith(v.onAnimationEnd, TH.match.func);
+
+        v.onAnimationEnd.yield(v.ctx, v.elm);
+
+        refute.dom('#Foo');
+      },
+
+      "test remove by elm": function () {
+        document.body.appendChild(v.elm = Dom.h({id: 'Foo'}));
+
+        Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
+
+        test.spy(v.ctx, 'onDestroy');
+
+        Dom.hideAndRemove(v.elm);
+
+        assert.dom('#Foo.remElm');
+
+        assert.calledWith(v.onAnimationEnd, TH.match.func);
+
+        v.onAnimationEnd.yield(v.ctx, v.elm);
+
+        refute.dom('#Foo');
+      },
+    },
   });
 });

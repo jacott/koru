@@ -286,6 +286,26 @@ define(function(require, exports, module) {
       return event;
     },
 
+    hideAndRemove(elm) {
+      if (typeof elm === 'string')
+        elm = document.getElementById(elm);
+      var ctx = Dom.getMyCtx(elm);
+      if (! ctx) return;
+      Dom.addClass(elm, 'remElm');
+      ctx.onAnimationEnd(remElm);
+    },
+
+    show(elm) {
+      if (typeof elm === 'string')
+        elm = document.getElementById(elm);
+
+      var ctx = Dom.getMyCtx(elm);
+      if (! ctx) return;
+      Dom.addClass(elm, 'addElm');
+      ctx.onAnimationEnd(addElm);
+    },
+
+
     vendorTransform: vendorTransform,
     vendorTransformOrigin: vendorTransform+'Origin',
 
@@ -294,7 +314,15 @@ define(function(require, exports, module) {
     hasPointerEvents: true,
   });
 
-  var DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
+  function addElm(ctx, elm) {
+    Dom.removeClass(elm, 'addElm');
+  }
+
+  function remElm(ctx, elm) {
+    Dom.remove(elm);
+  }
+
+  const DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
 
   function buildEvent(event, args) {
     if (event === 'mousewheel')
