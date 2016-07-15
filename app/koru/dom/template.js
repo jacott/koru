@@ -94,10 +94,27 @@ define(function(require, exports, module) {
     }
   };
 
+  function initOptions(tpl, options) {
+    let helpers;
+    if (options.extends) {
+      const sup = lookupTemplate(tpl.parent, options.extends);
+      if (! sup)
+        throw new Error(`Invalid extends '${options.extends}' in Template ${tpl.name}`);
+      helpers = sup._helpers && Object.create(sup._helpers);
+      Object.setPrototypeOf(tpl, sup);
+      tpl._helpers = helpers;
+    }
+    tpl.nodes = options.nodes;
+  }
+
   class DomTemplate {
-    constructor(name, parent) {
+    constructor(name, parent, options) {
       this.name = name;
       this.parent = parent !== Dom ? parent : null;
+      this._events = [];
+      this.nodes = undefined;
+      this._helpers = undefined;
+      options && initOptions(this, options);
     }
 
     $ctx(origin) {
@@ -117,13 +134,6 @@ define(function(require, exports, module) {
       return ctx && ctx.data;
     }
 
-    $initOptions(options) {
-      this.nodes = options.nodes;
-      this._helpers = {};
-      this._events = [];
-      return this;
-    }
-
     $autoRender(data, parentCtx) {
       var tpl = this;
       var elm = tpl.$render(data, parentCtx);
@@ -139,6 +149,7 @@ define(function(require, exports, module) {
     }
 
     $render(data, parentCtx) {
+      ensureHelper(this);
       var prevCtx = currentCtx;
       currentCtx = new DomCtx(this, parentCtx || currentCtx, data);
       try {
@@ -170,6 +181,7 @@ define(function(require, exports, module) {
     }
 
     $helpers(properties) {
+      ensureHelper(this);
       extend(this._helpers, properties);
       return this;
     }
@@ -223,6 +235,11 @@ define(function(require, exports, module) {
     }
   };
 
+  function ensureHelper(tpl) {
+    if (! tpl._helpers)
+      tpl._helpers = Object.create(Dom._helpers);
+  }
+
   util.extend(Dom, {
     Ctx: DomCtx,
     current: {
@@ -271,14 +288,7 @@ define(function(require, exports, module) {
       return tpl;
     },
 
-    lookupTemplate(name) {
-      var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
-
-      if (m)
-        return fetchTemplate(this, m[1], m[2].split("."));
-
-      return fetchTemplate(this, name);
-    },
+    lookupTemplate(name) {return lookupTemplate(this, name)},
 
     stopEvent(event) {
       if (event && event !== currentEvent) {
@@ -488,18 +498,23 @@ define(function(require, exports, module) {
   Dom.getCtxById = Dom.ctxById;
 
   function addTemplates(parent, options) {
-    var name = options.name;
+    let name = options.name;
     if (name.match(/\./)) {
-      var names = name.split('.');
+      const names = name.split('.');
       name = names.pop();
       util.forEach(names, function (nm) {
         parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }
-    parent[name] = parent = (parent[name] || new DomTemplate(name, parent)).$initOptions(options);
-    var nested = options.nested;
+    if (parent.hasOwnProperty(name) && parent[name]) {
+      parent = parent[name];
+      initOptions(parent, options);
+    } else {
+      parent[name] = parent = new DomTemplate(name, parent, options);
+    }
+    const nested = options.nested;
 
-    if (options.nested) for(var i=0; i < nested.length; ++i) {
+    if (options.nested) for(let i = 0; i < nested.length; ++i) {
       addTemplates(parent, nested[i]);
     }
 
@@ -594,7 +609,7 @@ define(function(require, exports, module) {
 
       var value = data && data[func];
       if (value === undefined) {
-        value = currentCtx.template._helpers[func] || Dom._helpers[func];
+        value = currentCtx.template._helpers[func];
       }
       if (parts) {
         for(var i = 2; value !== undefined && i < parts.length; ++i) {
@@ -790,9 +805,9 @@ define(function(require, exports, module) {
   }
 
   function parseNode(template, node, result) {
-    var origName = node[1];
-    var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(origName);
-    var partial = node[0] === '>';
+    const origName = node[1];
+    const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(origName);
+    const partial = node[0] === '>';
 
     if (m) {
       var name = m[1];
@@ -803,7 +818,7 @@ define(function(require, exports, module) {
     }
 
     if (partial) {
-      var pt = fetchTemplate(template, name, m && node.dotted);
+      const pt = fetchTemplate(template, name, m && node.dotted);
       if (! pt) throw new Error("Invalid partial '"  + origName + "' in Template: " + template.name);
 
       result.push(pt);
@@ -816,15 +831,24 @@ define(function(require, exports, module) {
     return result;
   }
 
+  function lookupTemplate(tpl, name) {
+      var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
+
+      if (m)
+        return fetchTemplate(tpl, m[1], m[2].split("."));
+
+      return fetchTemplate(tpl, name);
+  }
+
   function fetchTemplate(template, name, rest) {
     if (name[0] === '/') {
       var result = Dom[name.slice(1)];
     } else {
       var result = template[name];
-      while (! result && name.slice(0,3) === '../' && template.parent) {
+      while (! result && name.slice(0,3) === '../' && template) {
         name = name.slice(3);
         template = template.parent;
-        result = template[name];
+        result = (template || Dom)[name];
       }
     }
     if (rest) for(var i = 0; i < rest.length; ++i) {

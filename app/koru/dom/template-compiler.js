@@ -1,7 +1,7 @@
-var Path = require('path');
-var htmlparser = requirejs.nodeRequire("htmlparser2");
+const Path = require('path');
+const htmlparser = requirejs.nodeRequire("htmlparser2");
 
-var Compiler = {
+const Compiler = {
   Error(message, point) {
     this.message = message;
     this.point = point;
@@ -18,7 +18,7 @@ var Compiler = {
               throw new Compiler.Error("Template name is missing", parser.startIndex);
             if (! name.match(/^([A-Z]\w*\.?)+$/))
               throw new Compiler.Error("Template name must match the format: Foo(.Bar)*  " + name, parser.startIndex);
-            template = new Template(template, attrs.name);
+            template = new Template(template, attrs);
 
           } else {
             if (! template)
@@ -51,9 +51,10 @@ var Compiler = {
 };
 
 class Template {
-  constructor(parent, name) {
+  constructor(parent, attrs) {
     this.nested = [];
-    this.name = name;
+    this.name = attrs.name;
+    this.extends = attrs.extends;
     this.nodes = {children: []};
     this.parent = parent;
     if (parent) parent.add(this);
@@ -93,7 +94,8 @@ class Template {
   }
 
   toHash() {
-    var content = {name: this.name};
+    const content = {name: this.name};
+    if (this.extends) content.extends = this.extends;
     if (this.nested.length)
       content.nested = this.nested.map(function (row) {
         return row.toHash();

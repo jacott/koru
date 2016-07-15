@@ -409,7 +409,7 @@ isClient && define(function (require, exports, module) {
         var tpl = Dom.Foo;
         assert.same(tpl.name, "Foo");
         assert.same(tpl.nodes, "nodes");
-        assert.equals(tpl._helpers, {});
+        assert.equals(tpl._helpers, null);
         assert.equals(tpl._events, []);
       },
 
@@ -442,7 +442,7 @@ isClient && define(function (require, exports, module) {
         Dom.newTemplate({name: "Foo.Bar"});
 
         assert.same(Dom.Foo.Bar.name, 'Bar');
-        assert.equals(tpl._helpers, {});
+        assert.equals(tpl._helpers, null);
         assert.same(Dom.Foo.Bar.Baz.name, 'Baz');
       },
     },
@@ -1035,6 +1035,74 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(Dom.Foo.$render({user: {initials: 'fb'}}), 'fb');
       },
+    },
+
+    "test registerHelpers"() {
+      const Foo = Dom.newTemplate({
+        name: "Foo.Super",
+        nodes:[],
+      });
+
+      Foo.$helpers({
+        _test_name() {
+          return this.name.toUpperCase();
+        },
+      });
+
+      Dom.registerHelpers({
+        _test_name() {return "global name"},
+        _test_age() {return "global age"},
+      });
+
+      test.onEnd(function () {
+        Dom._helpers._test_name = null;
+        Dom._helpers._test_age = null;
+      });
+
+      const data = {name: 'sally'};
+
+      assert.same(Foo._helpers._test_name.call(data), "SALLY");
+      assert.same(Foo._helpers._test_age.call(data), "global age");
+      assert.same(Dom._helpers._test_name.call(data), "global name");
+    },
+
+    "test extends"() {
+      const Super = Dom.newTemplate({
+        name: "Foo.Super",
+      });
+
+      Dom.newTemplate({
+        name: "Foo.Super.Duper"
+      });
+
+      Super.$helpers({
+        superFoo() {
+          return this.name.toUpperCase();
+        },
+      });
+
+      Super.$extend({
+        fuz() {
+          return "fuz";
+        },
+      });
+
+      const Sub = Dom.newTemplate({
+        name: "Foo.Sub",
+        extends: "../Foo.Super", // test lookup works
+        nodes:[{
+          name:"div",
+          children:[['', 'superFoo']],
+        }],
+        nested: [{
+          name: "Duper"
+        }]
+      });
+
+      assert.same(Sub.Duper.parent, Sub);
+
+      assert.same(Sub.fuz(), "fuz");
+      assert.dom(Sub.$render({name: 'susan'}), 'SUSAN');
     },
 
     "test inputValue helper"() {
