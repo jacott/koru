@@ -358,10 +358,10 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             elm = document.querySelectorAll(elm);
           }
         } else {
+          msg = {elm, toString() {return this.elm.innerHTML}};
           if (elm.nodeType) elm = [elm];
-          msg = elm[0].innerHTML;
         }
-        this.htmlClue = {toString: function () {
+        this.htmlClue = {toString() {
           if (old != null) {
             var html;
             try {
