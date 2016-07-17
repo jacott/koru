@@ -89,7 +89,14 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: 'a'});
-          TH.selectMenu('.select', TH.match.field('id', ''));
+          TH.selectMenu('.select', TH.match.field('id', ''), function () {
+            assert.dom(this.parentNode, function () {
+              assert.dom('li:first-child>i.blank', 'blanky blank');
+              assert.dom('li:nth-child(2).selected', 'A');
+              assert.dom('li:last-child:not(.selected)', 'B');
+            });
+            TH.click(this);
+          });
           assert.dom('.select', 'blanky blank');
           assert.dom('[type=hidden]', {value: ''});
         });
@@ -107,6 +114,15 @@ isClient && define(function (require, exports, module) {
         });
         assert.called(v.onchange);
       },
+    },
+
+    "test genderList"() {
+      assert.equals(Dom._helpers.genderList(), [
+        ['', TH.match(elm => elm.outerHTML === '<i class="blank"></i>')],
+        ['f', 'Female'],
+        ['m', 'Male'],
+      ]);
+
     },
 
     "test fillDoc"() {

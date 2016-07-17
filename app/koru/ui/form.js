@@ -347,7 +347,7 @@ define(function(require, exports, module) {
       if (options.includeBlank) {
         const {includeBlank} = options;
 
-        list = [['', typeof includeBlank === 'string' ? includeBlank : ''], ...list];
+        list = [['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})], ...list];
       }
 
       SelectMenu.popup(button, {
@@ -356,7 +356,7 @@ define(function(require, exports, module) {
         classes: options.popupClass,
         onSelect(elm) {
           const data = $.data(elm);
-          button.textContent = data.name;
+          button.textContent = data.name && data.name.nodeType ? data.name.textContent : data.name;
           const id = data._id || data.id;
           hidden.value = id;
           Dom.setClass('noValue', ! id, button);
@@ -499,7 +499,7 @@ define(function(require, exports, module) {
     },
 
     genderList() {
-      return [['', ''], ["m", "Male"], ["f", "Female"]];
+      return [['', Dom.h({i: '', class: 'blank'})], ["f", "Female"], ["m", "Male"]];
     },
   });
 
