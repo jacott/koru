@@ -199,6 +199,7 @@ define(function (require, exports, module) {
       assert.isTrue(util.deepEqual({}, {}));
       assert.isFalse(util.deepEqual(0, -0));
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
+      assert.isFalse(util.deepEqual({a: null}, {b: null}));
 
       var matcher = match(function (v) {return v % 2 === 0});
       assert.isTrue(util.deepEqual([1, 2, null], [1, matcher, match.any]));

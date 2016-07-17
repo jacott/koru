@@ -133,8 +133,7 @@ define(function(require, exports, module) {
   }
 
   function deepEqual(actual, expected, hint, hintField) {
-
-    if (egal(actual, expected) || actual == expected) {
+    if (egal(actual, expected)) {
       return true;
     }
 
@@ -165,14 +164,20 @@ define(function(require, exports, module) {
     var ekeys = Object.keys(expected);
     if (ekeys.length !== akeys.length)
       return hint ? setHint(actual, expected, 'lengths differ: ' + akeys.length + ' != ' + ekeys.length) : false;
-    return akeys.every(function (key) {
-      return deepEqual(actual[key], expected[key], hint, hintField) ||
-        badKey(key);
-    });
+
+    for (let key of ekeys) {
+      if (! deepEqual(actual[key], expected[key]))
+        return badKey(key);
+    }
+    for (let key of akeys) {
+      if (! expected.hasOwnProperty(key))
+        return badKey(key);
+    }
+    return true;
 
     function badKey(key) {
       if (hint) {
-        hint[hintField] = 'at key = ' + util.qstr(key) + hint[hintField];
+        hint[hintField] = `at key = ${util.qstr(key)}${hint[hintField]||''}`;
         setHint();
       }
       return false;
@@ -186,7 +191,5 @@ define(function(require, exports, module) {
       hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) + (prev ? "\n" + prev : '');
       return false;
     }
-
-    return setHint();
   }
 });

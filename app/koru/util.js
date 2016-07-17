@@ -551,13 +551,10 @@ define(function(require, exports, module) {
     },
 
     intersectp (list1, list2) {
-      var set = {};
-      util.forEach(list1, function (item) {
-        set[item]=true;
-      });
+      const set = new Set(list1);
 
       return list2.some(function (item) {
-        return item in set;
+        return set.has(item);
       });
     },
 
@@ -571,28 +568,35 @@ define(function(require, exports, module) {
     },
 
     symDiff(a, b) {
-      var result = [];
-      b = util.toMap(b);
-      if (a) for(var i = 0; i < a.length; ++i) {
-        var val = a[i];
-        if (b[val] ) b[val] = 1;
-        else result.push(val);
+      const ans = [];
+      const bMap = new Set(b);
+
+      if (a) for(let val of a) {
+        if (bMap.has(val))
+          bMap.delete(val);
+        else
+          ans.push(val);
       }
 
-      for (var val in b) {
-        b[val] === true && result.push(val);
+      for (let val of bMap.values()) {
+        ans.push(val);
       }
-      return result;
+      return ans;
     },
 
-    union(args) {
-      var set = {};
-      for(var i = 0; i < arguments.length; ++i) {
-        util.forEach(arguments[i], function (elm) {
-          set[elm] = true;
-        });
+    union(first, ...rest) {
+      const ans = first.slice();
+      const objSet = new Set(first);
+
+      for (let list of rest) {
+        for (let i of list) {
+          if (! objSet.has(i)) {
+            objSet.add(i);
+            ans.push(i);
+          }
+        }
       }
-      return Object.keys(set);
+      return ans;
     },
 
     pluralize(name, value) {
@@ -896,20 +900,26 @@ define(function(require, exports, module) {
 
     if (Array.isArray(actual)) {
       if (! Array.isArray(expected)) return false;
-      var len = actual.length;
+      const len = actual.length;
       if (expected.length !== len) return false;
-      for(var i = 0; i < len; ++i) {
+      for(let i = 0; i < len; ++i) {
         if (! deepEqual(actual[i], expected[i])) return false;
       }
       return true;
     }
 
-    var ekeys = Object.keys(actual);
+    const ekeys = Object.keys(actual);
 
     if (Object.keys(expected).length !== ekeys.length) return false;
-    return ekeys.every(function (key) {
-      return deepEqual(actual[key], expected[key]);
-    });
+    for (let key of ekeys) {
+      if (! deepEqual(actual[key], expected[key]))
+        return false;
+    }
+    for (let key of Object.keys(actual)) {
+      if (! expected.hasOwnProperty(key))
+        return false;
+    }
+    return true;
   }
 
   function colorToArray(color) {
