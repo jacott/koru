@@ -1,12 +1,12 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test-helper');
-  var sut = require('./migration');
-  var DBDriver = require('../pg/driver');
-  var Model = require('../model/main');
+  const Model    = require('../model/main');
+  const DBDriver = require('../pg/driver');
+  const TH       = require('../test-helper');
+  const sut      = require('./migration');
 
   TH.testCase(module, {
-    setUpAround: function (run) {
+    setUpAround(run) {
       test = this;
       v = {};
       v.client = DBDriver.defaultDb;
@@ -18,8 +18,8 @@ isServer && define(function (require, exports, module) {
       sut.migrations = null;
     },
 
-    "test create": function () {
-      sut.addMigration(v.client, '20151003T20:30:20-create-TestModel', v.migBody = function (mig) {
+    "test create"() {
+      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           myName: {type: 'text'}
         }, [['*unique', 'myName DESC', '_id'], ['myName']]);
@@ -36,7 +36,7 @@ isServer && define(function (require, exports, module) {
       var migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 1);
 
-      assert.equals(migs[0].name, '20151003T20:30:20-create-TestModel');
+      assert.equals(migs[0].name, '20151003T20-30-20-create-TestModel');
 
       var indexes = v.client.query('select * from pg_indexes where tablename = $1 ORDER BY indexname', ['TestTable']);
       assert.same(indexes.length, 3);
@@ -46,13 +46,13 @@ isServer && define(function (require, exports, module) {
       assert.same(indexes[0].indexdef, 'CREATE INDEX "TestTable_myName" ON "TestTable" USING btree ("myName")');
       assert.same(indexes[1].indexdef, 'CREATE UNIQUE INDEX "TestTable_myName__id" ON "TestTable" USING btree ("myName" DESC, _id)');
 
-      sut.addMigration(v.client, '20151003T20:30:20-create-TestModel', function (mig) {
+      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', function (mig) {
         assert(false, "should not run twice");
       });
 
       // reverse
 
-      sut.revertMigration(v.client, '20151003T20:30:20-create-TestModel', v.migBody);
+      sut.revertMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody);
 
       var migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 0);
@@ -64,8 +64,8 @@ isServer && define(function (require, exports, module) {
 
     },
 
-    "test explict primary key in create": function () {
-      sut.addMigration(v.client, '20151003T20:30:20-create-TestModel', v.migBody = function (mig) {
+    "test explict primary key in create"() {
+      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           name: {type: 'text'},
           foo: {type: 'integer primary KEY'},
@@ -77,8 +77,8 @@ isServer && define(function (require, exports, module) {
       assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
-    "test reversible": function () {
-      sut.addMigration(v.client, '20151004T20:30:20-reversible', v.migBody = function (mig) {
+    "test reversible"() {
+      sut.addMigration(v.client, '20151004T20-30-20-reversible', v.migBody = function (mig) {
         mig.reversible({
           add: v.add = test.stub(),
           revert: v.revert = test.stub(),
@@ -91,20 +91,20 @@ isServer && define(function (require, exports, module) {
 
       // reverse
 
-      sut.revertMigration(v.client, '20151004T20:30:20-reversible', v.migBody);
+      sut.revertMigration(v.client, '20151004T20-30-20-reversible', v.migBody);
 
       assert.calledWith(v.revert, DBDriver.defaultDb);
       refute.called(v.add);
     },
 
-    "test migrateTo": function () {
+    "test migrateTo"() {
       var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
-      sut.migrateTo(v.client, dir, "2015-06-19T17:57:32");
+      sut.migrateTo(v.client, dir, "2015-06-19T17-57-32");
 
       v.client.query('INSERT INTO "TestTable" (_id, name, baz) values ($1,$2,$3)', ["1", "foo", v.date = new Date(2015,3, 4)]);
 
-      sut.migrateTo(v.client, dir, "2015-06-19T17:49:31~");
+      sut.migrateTo(v.client, dir, "2015-06-19T17-49-31~");
 
       assert.equals(v.client.query('SELECT bar from "TestTable"')[0].bar, v.date);
 
@@ -114,7 +114,7 @@ isServer && define(function (require, exports, module) {
                                  ["TestTable"])[0].exists, false);
     },
 
-    "test rollback on error": function () {
+    "test rollback on error"() {
       var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
       assert.exception(function () {
