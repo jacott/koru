@@ -187,11 +187,14 @@ define(function(require, exports, module) {
     }
 
     static hasMany(name, model, finder) {
-      Object.defineProperty(this.prototype, name, {get: function () {
-        const query = model.query;
-        finder.call(this, query);
-        return query;
-      }});
+      Object.defineProperty(this.prototype, name, {
+        configurable: true,
+        get: function () {
+          const query = model.query;
+          finder.call(this, query);
+          return query;
+        }
+      });
     }
 
     static changesTo(field, doc, was) {
@@ -553,6 +556,7 @@ define(function(require, exports, module) {
   }
 
   const versionProperty = {
+    configurable: true,
     get: function () {
       return this.attributes._version;
     },
@@ -764,7 +768,10 @@ define(function(require, exports, module) {
         bt = ModelMap[btName];
       }
       mapFieldType(model, field, bt, btName);
-      Object.defineProperty(model.prototype, name, {get: belongsTo(bt, name, field)});
+      Object.defineProperty(model.prototype, name, {
+        configurable: true,
+        get: belongsTo(bt, name, field),
+      });
     },
 
     user_id_on_create(model, field, options) {
@@ -807,6 +814,7 @@ define(function(require, exports, module) {
 
   function defineField(proto, field, accessor) {
     Object.defineProperty(proto, field, {
+      configurable: true,
       get: (accessor && accessor.get) || getValue(field),
 
       set: (accessor && accessor.set) || setValue(field),
