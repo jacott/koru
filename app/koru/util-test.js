@@ -122,7 +122,7 @@ define(function (require, exports, module) {
       assert.equals(util.diff(), []);
       assert.equals(util.diff([1, 2]), [1, 2]);
 
-      assert.equals(util.diff([1,2,3], [2,4]), [1, 3]);
+      assert.equals(util.diff([1,"2",3, null], ["2",4]), [1, 3, null]);
     },
 
     "test symDiff" () {

@@ -559,10 +559,12 @@ define(function(require, exports, module) {
     },
 
     diff(a, b) {
-      var result = [];
-      if (a) for(var i = 0; i < a.length; ++i) {
-        var val = a[i];
-        (! b || b.indexOf(val) === -1) && result.push(val);
+      if (! b) return a ? a.slice() : [];
+      const result = [];
+      if (! a) return result;
+      const bMap = new Set(b);
+      for (const val of a) {
+        bMap.has(val) || result.push(val);
       }
       return result;
     },
