@@ -1,101 +1,20 @@
-var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
-var fs = require('fs');
-var Path = require('path');
-var readdir = Future.wrap(fs.readdir);
-var stat = Future.wrap(fs.stat);
+const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+const fs = require('fs');
+const Path = require('path');
+const readdir = Future.wrap(fs.readdir);
+const stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
+  const koru = require('../main');
+  const util = require('../util');
 
-  exports.addMigration = function (client, name, options) {
-    doMigration(client, true, name, options);
-  };
-
-
-  exports.revertMigration = function (client, name, options) {
-    doMigration(client, false, name, options);
-  };
-
-  exports.migrateTo = function (client, dirPath, pos, verbose) {
-    if (! pos) throw new Error("Please specifiy where to migrate to");
-    try {
-      var filenames = readdir(dirPath).wait().filter(function (fn) {
-        return /.js$/.test(fn);
-      }).sort();
-
-      var migrations = getMigrations(client);
-
-      for(var i = 0; i < filenames.length; ++i) {
-        var row = filenames[i].replace(/\.js$/,'');
-        if (row > pos)
-          break;
-        if (! migrations[row]) {
-          verbose && console.log("Adding " + row);
-          exports.addMigration(client, row, readMigration(dirPath+'/'+row));
-        }
-      }
-      util.reverseForEach(Object.keys(migrations).sort(), function (row) {
-        if (row > pos) {
-          verbose && console.log("Reverting " + row);
-          exports.revertMigration(client, row, readMigration(dirPath+'/'+row));
-        }
-        });
-    } finally {
-      exports.migrations = null;
+  class MigrationControl {
+    constructor(add, client) {
+      this.client = client;
+      this.add = add;
     }
-  };
 
-  function readMigration(mig) {
-    var future = new Future;
-    var id = mig+'.js';
-    try {
-      require([id], function (mig) {
-        future.return(mig);
-      });
-      return future.wait();
-    } finally {
-      koru.unload(id);
-    }
-  }
-
-  function getMigrations(client) {
-    if (exports.migrations) return exports.migrations;
-    client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
-    var migrations = exports.migrations = Object.create(null);
-    client.query('SELECT name FROM "Migration"').
-      forEach(function (row) {migrations[row.name] = true});
-    return migrations;
-  }
-
-  function doMigration(client, add, name, change) {
-    client.transaction(function (tx) {
-      if (migrationExists(client, name) === add) return;
-
-      change(new MigrationControl(add, client));
-      if (add) {
-        client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
-        exports.migrations[name] = true;
-      } else {
-        client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
-        delete exports.migrations[name];
-      }
-    });
-  }
-
-  function migrationExists(client, name) {
-    return !! getMigrations(client)[name];
-  }
-
-  function MigrationControl(add, client) {
-    this.client = client;
-    this.add = add;
-  }
-
-  MigrationControl.prototype = {
-    constructor: MigrationControl,
-
-    createTable: function (name, fields, indexes) {
+    createTable(name, fields, indexes) {
       var qname = '"'+name+'"';
       if (this.add) {
         var list = ['_id varchar(24) PRIMARY KEY'];
@@ -123,13 +42,95 @@ define(function(require, exports, module) {
       } else {
         this.client.query('DROP TABLE IF EXISTS '+qname);
       }
-    },
+    }
 
-    reversible: function (options) {
+    reversible(options) {
       if (this.add && options.add)
         options.add(this.client);
       if (! this.add && options.revert)
         options.revert(this.client);
-    },
-  };
+    }
+  }
+
+  class Migration {
+    constructor(client) {
+      this._client = client;
+    }
+
+    addMigration(name, options) {
+      this._doMigration(true, name, options);
+    }
+
+    revertMigration(name, options) {
+      this._doMigration(false, name, options);
+    }
+
+    migrateTo(dirPath, pos, verbose) {
+      if (! pos) throw new Error("Please specifiy where to migrate to");
+      const filenames = readdir(dirPath).wait().filter(function (fn) {
+        return /.js$/.test(fn);
+      }).sort();
+
+      const migrations = this._getMigrations();
+
+      for(var i = 0; i < filenames.length; ++i) {
+        var row = filenames[i].replace(/\.js$/,'');
+        if (row > pos)
+          break;
+        if (! migrations[row]) {
+          verbose && console.log("Adding " + row);
+          this.addMigration(row, readMigration(dirPath+'/'+row));
+        }
+      }
+      util.reverseForEach(Object.keys(migrations).sort(), row => {
+        if (row > pos) {
+          verbose && console.log("Reverting " + row);
+          this.revertMigration(row, readMigration(dirPath+'/'+row));
+        }
+      });
+    }
+
+    migrationExists(name) {
+      return !! this._getMigrations()[name];
+    }
+
+    _getMigrations() {
+      if (this._migrations) return this._migrations;
+      this._client.query('CREATE TABLE IF NOT EXISTS "Migration" (name text PRIMARY KEY)');
+      this._migrations = Object.create(null);
+      this._client.query('SELECT name FROM "Migration"').
+        forEach(row => this._migrations[row.name] = true);
+      return this._migrations;
+    }
+
+    _doMigration(add, name, change) {
+      this._client.transaction(tx => {
+        if (this.migrationExists(name) === add) return;
+
+        change(new MigrationControl(add, this._client));
+        if (add) {
+          this._client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
+          this._migrations[name] = true;
+        } else {
+          this._client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
+          delete this._migrations[name];
+        }
+      });
+    }
+  }
+
+  function readMigration(mig) {
+    var future = new Future;
+    var id = mig+'.js';
+    try {
+      require([id], function (mig) {
+        future.return(mig);
+      });
+      return future.wait();
+    } finally {
+      koru.unload(id);
+    }
+  }
+
+  return Migration;
 });

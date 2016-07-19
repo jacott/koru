@@ -1,25 +1,25 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  const Model    = require('../model/main');
-  const DBDriver = require('../pg/driver');
-  const TH       = require('../test-helper');
-  const sut      = require('./migration');
+  const Model     = require('koru/model/main');
+  const DBDriver  = require('koru/pg/driver');
+  const TH        = require('koru/test-helper');
+  const Migration = require('./migration');
 
   TH.testCase(module, {
     setUpAround(run) {
       test = this;
       v = {};
       v.client = DBDriver.defaultDb;
+      v.sut = new Migration(v.client);
       v.client.transaction(function (tx) {
         run();
         tx.transaction = 'ROLLBACK';
       });
       v = null;
-      sut.migrations = null;
     },
 
     "test create"() {
-      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           myName: {type: 'text'}
         }, [['*unique', 'myName DESC', '_id'], ['myName']]);
@@ -46,13 +46,13 @@ isServer && define(function (require, exports, module) {
       assert.same(indexes[0].indexdef, 'CREATE INDEX "TestTable_myName" ON "TestTable" USING btree ("myName")');
       assert.same(indexes[1].indexdef, 'CREATE UNIQUE INDEX "TestTable_myName__id" ON "TestTable" USING btree ("myName" DESC, _id)');
 
-      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', function (mig) {
         assert(false, "should not run twice");
       });
 
       // reverse
 
-      sut.revertMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody);
+      v.sut.revertMigration('20151003T20-30-20-create-TestModel', v.migBody);
 
       var migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 0);
@@ -65,7 +65,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test explict primary key in create"() {
-      sut.addMigration(v.client, '20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           name: {type: 'text'},
           foo: {type: 'integer primary KEY'},
@@ -78,7 +78,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test reversible"() {
-      sut.addMigration(v.client, '20151004T20-30-20-reversible', v.migBody = function (mig) {
+      v.sut.addMigration('20151004T20-30-20-reversible', v.migBody = function (mig) {
         mig.reversible({
           add: v.add = test.stub(),
           revert: v.revert = test.stub(),
@@ -91,7 +91,7 @@ isServer && define(function (require, exports, module) {
 
       // reverse
 
-      sut.revertMigration(v.client, '20151004T20-30-20-reversible', v.migBody);
+      v.sut.revertMigration('20151004T20-30-20-reversible', v.migBody);
 
       assert.calledWith(v.revert, DBDriver.defaultDb);
       refute.called(v.add);
@@ -100,15 +100,15 @@ isServer && define(function (require, exports, module) {
     "test migrateTo"() {
       var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
-      sut.migrateTo(v.client, dir, "2015-06-19T17-57-32");
+      v.sut.migrateTo(dir, "2015-06-19T17-57-32");
 
       v.client.query('INSERT INTO "TestTable" (_id, name, baz) values ($1,$2,$3)', ["1", "foo", v.date = new Date(2015,3, 4)]);
 
-      sut.migrateTo(v.client, dir, "2015-06-19T17-49-31~");
+      v.sut.migrateTo(dir, "2015-06-19T17-49-31~");
 
       assert.equals(v.client.query('SELECT bar from "TestTable"')[0].bar, v.date);
 
-      sut.migrateTo(v.client, dir, " ");
+      v.sut.migrateTo(dir, " ");
 
       assert.same(v.client.query('select exists(select 1 from pg_catalog.pg_class where relname = $1)',
                                  ["TestTable"])[0].exists, false);
@@ -118,7 +118,7 @@ isServer && define(function (require, exports, module) {
       var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
       assert.exception(function () {
-        sut.migrateTo(v.client, dir, "zz");
+        v.sut.migrateTo(dir, "zz");
       }, {sqlState: "42703"});
 
       refute.exception(function () {
