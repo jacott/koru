@@ -6,16 +6,16 @@ isServer && define(function (require, exports, module) {
   const Future = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown () {
+    tearDown() {
       v = null;
     },
 
-    "test single" () {
+    "test single"() {
       var single = Queue('single');
       single.add(v.func = test.stub());
       assert.called(v.func);
@@ -23,7 +23,7 @@ isServer && define(function (require, exports, module) {
       assert.called(v.func);
     },
 
-    "test queing" () {
+    "test queing"() {
       var q2 = new Future;
       var q3 = new Future;
       var fooFin = new Future;

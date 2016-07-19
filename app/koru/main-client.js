@@ -1,70 +1,75 @@
 define(function(require, exports, module) {
-  var util = require('./util-client');
+  const util = require('./util-client');
 
   return function (koru) {
     window._koru_ = koru;
 
-    koru.reload = function () {
-      if (koru.loadError) throw koru.loadError;
-
-      (window.top || window).location.reload(true);
-    };
-
-    koru.Fiber = util.Fiber;
-
-    koru.appDir = module.toUrl('').slice(0,-1);
-
-    koru.setTimeout = function (func, duration) {
-      return setTimeout(function () {
-        try {
-          func();
-        } catch(ex) {
-          koru.error(util.extractError(ex));
-        }
-      }, duration);
-    };
-
-    koru.fiberConnWrapper = function (func, conn, data) {
-      try {
-        func(conn, data);
-      } catch(ex) {
-        koru.error(util.extractError(ex));
-      }
-    };
-
-
-    koru.getLocation = function () {
-      return window.location;
-    };
-
     koru.onunload(module, 'reload');
 
-    // _afTimeout is used by client session; do not override in tests
-    koru._afTimeout = koru.afTimeout = function (func, duration) {
-      var af = null;
-      if (duration && duration > 0)
-        var timeout = setTimeout(inner, duration);
-      else
-        inner();
+    util.extend(koru, {
+      reload() {
+        if (koru.loadError) throw koru.loadError;
 
-      function inner() {
-        timeout = null;
-        af = window.requestAnimationFrame(function () {
-          af = null;
+        (window.top || window).location.reload(true);
+      },
+
+      Fiber: util.Fiber,
+
+      appDir: module.toUrl('').slice(0,-1),
+
+      setTimeout(func, duration) {
+        return setTimeout(function () {
           try {
             func();
           } catch(ex) {
             koru.error(util.extractError(ex));
           }
-        });
-      }
+        }, duration);
+      },
 
-      return function () {
-        if (timeout) window.clearTimeout(timeout);
-        if (af) window.cancelAnimationFrame(af);
-        af = timeout = null;
-      };
-    };
+      fiberConnWrapper(func, conn, data) {
+        try {
+          func(conn, data);
+        } catch(ex) {
+          koru.error(util.extractError(ex));
+        }
+      },
 
+
+      getLocation() {
+        return window.location;
+      },
+
+      afTimeout(func, duration) {
+        let af = null;
+        if (duration && duration > 0)
+          var timeout = setTimeout(inner, duration);
+        else
+          inner();
+
+        function inner() {
+          timeout = null;
+          af = window.requestAnimationFrame(function () {
+            af = null;
+            try {
+              func();
+            } catch(ex) {
+              koru.error(util.extractError(ex));
+            }
+          });
+        }
+
+        return function () {
+          if (timeout) window.clearTimeout(timeout);
+          if (af) window.cancelAnimationFrame(af);
+          af = timeout = null;
+        };
+      },
+    });
+
+    /**
+     * _afTimeout is used by client session; do not override in tests
+     **/
+    koru._afTimeout = koru.afTimeout;
   };
 });

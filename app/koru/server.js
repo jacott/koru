@@ -1,9 +1,8 @@
 define(function (require, exports, module) {
-  var koru = require('./main');
-
-  var session = require('./session/main');
-  var htmlCompiler = require('./dom/template-auto-compiler');
-  var cssCompiler = require('./css/less-compiler');
+  const cssCompiler  = require('./css/less-compiler');
+  const htmlCompiler = require('./dom/template-auto-compiler');
+  const koru         = require('./main');
+  const session      = require('./session/main');
 
   koru.onunload(module, 'reload');
   return koru;

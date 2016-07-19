@@ -105,7 +105,7 @@ define(function (require, exports, module) {
       return util.thread.userId;
     },
 
-    getHashOrigin: function () {
+    getHashOrigin() {
       var l = this.getLocation();
       return l.protocol+'//'+l.host+l.pathname;
     },

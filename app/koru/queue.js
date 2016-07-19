@@ -6,15 +6,15 @@ var Future = requirejs.nodeRequire('fibers/future');
  */
 define(function() {
   return function (type) {
-    var queues = type === 'single' ? null : {};
+    const queues = type === 'single' ? null : {};
 
     class Queue {
-      constructor (name) {
+      constructor(name) {
         this.name = name;
         this.running = false;
       }
 
-      add (func) {
+      add(func) {
         if (this.running) {
           this.isPending = true;
           if (this.queued == null)  {

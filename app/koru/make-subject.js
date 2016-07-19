@@ -1,13 +1,13 @@
 define(['module', './main'], function(module, koru) {
-  koru.onunload(module, 'reload');
+
   return  function (subject, observeName, notifyName) {
     observeName = observeName || 'onChange';
     notifyName = notifyName || 'notify';
-    var allStopped = subject['allStopped_'+observeName];
-    var init = subject['init_'+observeName];
+    const allStopped = subject['allStopped_'+observeName];
+    const init = subject['init_'+observeName];
 
-    var firstOb = true;
-    var observers = new Set;
+    let firstOb = true;
+    const observers = new Set;
 
     subject['stopAll_'+observeName] = function () {
       firstOb = true;
@@ -21,27 +21,26 @@ define(['module', './main'], function(module, koru) {
         init && init.call(subject);
       }
 
-      var obj = handle(func);
+      const obj = handle(func);
       observers.add(obj);
 
       return obj;
     };
 
     subject[notifyName] = function (first) {
-      var result = first;
-      for(var handle of observers) {
+      for(const handle of observers) {
         handle.function.apply(handle, arguments);
       }
 
-      return result;
+      return first;
     };
 
     return subject;
 
     function handle(func) {
-      var key = {
+      let key = {
         function: func,
-        stop: function () {
+        stop() {
           if (! key) return;
           observers.delete(key);
           if (observers.length) return;

@@ -1,22 +1,22 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var koru = require('./main');
-  var util = require('./util');
+  const koru = require('./main');
+  const TH   = require('./test-helper');
+  const util = require('./util');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test setTimeout": function () {
+    "test setTimeout"() {
       test.stub(isServer ? global : window, 'setTimeout').returns(123);
-      test.stub(util, 'Fiber').returns({run: function () {
+      test.stub(util, 'Fiber').returns({run() {
         util.Fiber.lastCall.args[0]();
       }});
 
@@ -35,7 +35,7 @@ define(function (require, exports, module) {
       assert.called(v.stub);
     },
 
-    "test clearTimeout": function () {
+    "test clearTimeout"() {
       test.stub(isServer ? global : window, 'clearTimeout');
 
       koru.clearTimeout(1234);

@@ -1,16 +1,16 @@
-var Future = requirejs.nodeRequire('fibers/future');
-var fs = require('fs');
+const fs = require('fs');
 
 isServer && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test');
-  var webServer = require('./web-server');
-  var koru = require('koru/main');
-  var fst = require('./fs-tools');
-  var IdleCheck = require('./idle-check').singleton;
+  const koru      = require('koru/main');
+  const fst       = require('./fs-tools');
+  const IdleCheck = require('./idle-check').singleton;
+  const TH        = require('./test');
+  const webServer = require('./web-server');
+  const Future    = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.future = new Future();
@@ -26,7 +26,7 @@ isServer && define(function (require, exports, module) {
         emit: test.stub(),
         write: test.stub(),
         writeHead: test.stub(),
-        end: function (data) {
+        end(data) {
           v.future.return(data);
         },
       };
@@ -34,7 +34,7 @@ isServer && define(function (require, exports, module) {
 
       v.replaceSend = function (func) {
         v.sendRet = {
-          pipe: function (res) {
+          pipe(res) {
             v.future.return(res);
           },
         };
@@ -48,12 +48,12 @@ isServer && define(function (require, exports, module) {
       };
     },
 
-    tearDown: function () {
+    tearDown() {
       webServer._replaceSend(v.origSend);
       v = null;
     },
 
-    "test not found html": function () {
+    "test not found html"() {
       v.req.url = '/koru/.build/notFound.html.js';
 
       v.replaceSend();
@@ -64,7 +64,7 @@ isServer && define(function (require, exports, module) {
       assert.same(v.res.statusCode, 404);
     },
 
-    "test waitIdle": function () {
+    "test waitIdle"() {
       webServer.registerHandler('foox', function (req, res, error) {
         assert.called(IdleCheck.inc);
         refute.called(IdleCheck.dec);
@@ -86,7 +86,7 @@ isServer && define(function (require, exports, module) {
     },
 
 
-    "test compilation no build": function () {
+    "test compilation no build"() {
       test.stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});
       test.stub(fst, 'mkdir');
       var foo = webServer.compilers.foo = test.stub();
@@ -107,7 +107,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "error": {
-      setUp: function () {
+      setUp() {
         webServer.registerHandler('foo', function (req, res, path, error) {
           v.res.called = true;
           v.req.called = true;
@@ -118,11 +118,11 @@ isServer && define(function (require, exports, module) {
         v.replaceSend();
       },
 
-      tearDown: function () {
+      tearDown() {
         webServer.deregisterHandler('foo');
       },
 
-      "test string": function () {
+      "test string"() {
         v.msg = 'my message';
 
         webServer.requestListener(v.req, v.res);
@@ -133,7 +133,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.res.end, 'my message');
       },
 
-      "test json": function () {
+      "test json"() {
         v.msg = {json: 'object'};
 
         webServer.requestListener(v.req, v.res);
@@ -145,7 +145,7 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test exception": function () {
+    "test exception"() {
       test.stub(koru, 'error');
       webServer.registerHandler('foo', function (req, res, path, error) {
         v.res.called = true;
@@ -172,7 +172,7 @@ isServer && define(function (require, exports, module) {
       assert.isTrue(v.req.called);
     },
 
-    "test found html": function () {
+    "test found html"() {
       v.req.url = '/koru/.build/web-server-test.html.js';
 
       v.replaceSend(function (req, path, options) {

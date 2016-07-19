@@ -1,16 +1,17 @@
-var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
-var fs = require('fs');
-var Path = require('path');
-var readdir = Future.wrap(fs.readdir);
-var stat = Future.wrap(fs.stat);
+const fs = require('fs');
+const Path = require('path');
 
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var topDir = koru.appDir;
-  var util = require('../util');
+  const koru   = require('../main');
+  const util   = require('../util');
+  const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+
+  const topDir = koru.appDir;
+  const readdir = Future.wrap(fs.readdir);
+  const stat = Future.wrap(fs.stat);
 
   return exports = {
-    runTests: function(session, type, pattern, callback) {
+    runTests(session, type, pattern, callback) {
       if (type !== 'server') {
         var cTests = [];
       }
@@ -64,30 +65,30 @@ define(function(require, exports, module) {
       }
 
       callback(type, {
-        server: function () {
+        server() {
           require(['./server', 'test/server-ready'], function (TH, serverReady) {
             serverReady(koru, exports);
             TH.run(pattern, sTests);
           });
         },
         clientTests: cTests,
-        client: function (conn, clientTests) {
+        client(conn, clientTests) {
           conn.sendBinary('T', [pattern, clientTests]);
         }
       });
 
       function findAll(dir) {
-        var dirPath = Path.join(topDir, dir);
-        var filenames = readdir(dirPath).wait().filter(function (fn) {
+        const dirPath = Path.join(topDir, dir);
+        const filenames = readdir(dirPath).wait().filter(function (fn) {
           return /^[\w-]*(?:-test\.js$|$)/.test(fn);
         });
-        var stats = filenames.map(function (filename) {
+        const stats = filenames.map(function (filename) {
           return stat(Path.join(dirPath, filename));
         });
 
         wait(stats);
 
-        for(var i = 0; i < filenames.length; ++i) {
+        for(let i = 0; i < filenames.length; ++i) {
           if (stats[i].get().isDirectory()) {
             findAll(Path.join(dir, filenames[i]));
           } else if (filenames[i].match(/^\w.*-test\.js$/)) {
@@ -98,7 +99,5 @@ define(function(require, exports, module) {
         }
       }
     },
-
   };
-
 });

@@ -7,7 +7,7 @@ isServer && define(function (require, exports, module) {
   const Future = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
 
@@ -21,11 +21,11 @@ isServer && define(function (require, exports, module) {
       test.stub(global, 'clearTimeout');
     },
 
-    tearDown () {
+    tearDown() {
       v = null;
     },
 
-    "test acquire, release" () {
+    "test acquire, release"() {
       v.conn = [1];
       var pool = new sut({
         create: v.create,
@@ -57,7 +57,7 @@ isServer && define(function (require, exports, module) {
       });
     },
 
-    "test destroy" () {
+    "test destroy"() {
       v.conn = [1];
       var pool = new sut({
         create: v.create,

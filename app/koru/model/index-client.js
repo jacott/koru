@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
   'use strict';
-  var util = require('koru/util');
-  var makeSubject = require('../make-subject');
+  const util        = require('koru/util');
+  const makeSubject = require('../make-subject');
 
   return function (model) {
     model._indexUpdate = makeSubject({
       indexes: new Map,
-      reloadAll: function () {
+      reloadAll() {
         for(var idx of this.indexes.values()) {
           idx.reload();
         }

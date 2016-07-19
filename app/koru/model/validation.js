@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  const format          = require('../format');
-  const koru            = require('../main');
-  const match           = require('../match');
-  const ResourceString  = require('../resource-string');
-  const util            = require('../util');
+  const format         = require('../format');
+  const koru           = require('../main');
+  const match          = require('../match');
+  const ResourceString = require('../resource-string');
+  const util           = require('../util');
 
   const validators = {};
 
@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   const Val = {
     Error: {
-      msgFor: function (doc, field, other_error) {
+      msgFor(doc, field, other_error) {
         var errors = doc._errors ? doc._errors[field] : typeof doc === 'string' ? [[doc]] : doc;
         if (errors) {
           return errors.map(Val.text).join(", ");
@@ -24,13 +24,13 @@ define(function(require, exports, module) {
 
     },
 
-    text: function (msg) {
+    text(msg) {
       if (Array.isArray(msg))
         return format(ResourceString.en[msg[0]] || msg[0], msg.slice(1));
       return ResourceString.en[msg] || msg;
     },
 
-    check: function (obj, spec, options) {
+    check(obj, spec, options) {
       if (arguments.length === 3 && options) {
         var error = options.onError;
         var altSpec = options.altSpec;
@@ -91,13 +91,13 @@ define(function(require, exports, module) {
       }
     },
 
-    nestedFieldValidator: function (func) {
+    nestedFieldValidator(func) {
       return function (field) {
         var doc = this;
         var value = doc.changes[field];
         if (value !== undefined) {
           var opts = {
-            onError: function (name, obj) {
+            onError(name, obj) {
               if (name)
                 Val.addError(doc, field, 'is_invalid',
                              name, typeof obj === 'string' ? obj : obj && obj._errors);
@@ -111,10 +111,10 @@ define(function(require, exports, module) {
       };
     },
 
-    assertCheck: function (obj, spec, options) {
+    assertCheck(obj, spec, options) {
       var error;
       if (! options || ! options.hasOwnProperty('onError'))
-        options = util.extend({onError: function (name, obj) {
+        options = util.extend({onError(name, obj) {
           if (obj && obj._errors) {
             var reason = obj._errors;
           } else if (name) {
@@ -128,14 +128,14 @@ define(function(require, exports, module) {
         throw error;
     },
 
-    assertDocChanges: function (doc, spec, new_spec) {
+    assertDocChanges(doc, spec, new_spec) {
       if (doc.$isNewRecord())
         this.assertCheck(doc.changes, spec, {altSpec : new_spec || ID_SPEC});
       else
         this.assertCheck(doc.changes, spec);
     },
 
-    matchFields: function (fieldSpec, name) {
+    matchFields(fieldSpec, name) {
       var m = match(function (doc) {
         if (! doc) return false;
         doc._errors = undefined;
@@ -151,12 +151,12 @@ define(function(require, exports, module) {
           Val.validateField(doc, field, fieldSpec[field]);
 
         return ! doc._errors;
-      }, name || {toString: function () {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
+      }, name || {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
     },
 
-    validateField: function (doc, field, spec) {
+    validateField(doc, field, spec) {
       for(var name in spec) {
         var validator = validators[name];
         validator && validator(doc, field, spec[name]);
@@ -173,12 +173,12 @@ define(function(require, exports, module) {
       return ! doc._errors;
     },
 
-    denyAccessIf: function (falsey, message) {
+    denyAccessIf(falsey, message) {
       this.allowAccessIf(! falsey, message);
     },
 
     /** Simple is not objects {} or functions */
-    allowIfSimple: function (/* arguments */) {
+    allowIfSimple(/* arguments */) {
       for(var i=0;i < arguments.length;++i) {
         switch (typeof arguments[i]) {
         case 'object':
@@ -196,16 +196,16 @@ define(function(require, exports, module) {
       return true;
     },
 
-    allowAccessIf: function (truthy, message) {
+    allowAccessIf(truthy, message) {
       return truthy || accessDenied(message);
     },
 
-    ensureString: function (...args) {ensure(match.string, arguments)},
-    ensureNumber: function (...args) {ensure(match.number, args)},
-    ensureDate: function (...args) {ensure(match.date, args)},
-    ensure: function (type, ...args) {ensure(type, args)},
+    ensureString(...args) {ensure(match.string, arguments)},
+    ensureNumber(...args) {ensure(match.number, args)},
+    ensureDate(...args) {ensure(match.date, args)},
+    ensure(type, ...args) {ensure(type, args)},
 
-    errorsToString: function (doc) {
+    errorsToString(doc) {
       var errs = doc._errors;
 
       if (! errs) return;
@@ -221,13 +221,13 @@ define(function(require, exports, module) {
       return result.join(', ');
     },
 
-    inspectErrors: function (doc) {
+    inspectErrors(doc) {
       var errs = this.errorsToString(doc);
 
       return doc.constructor.modelName + (errs ? ": Errors: " + errs : ": No errors");
     },
 
-    allowIfValid: function (truthy, doc) {
+    allowIfValid(truthy, doc) {
       if (! truthy) {
         if (doc) {
           if (doc._errors)
@@ -243,7 +243,7 @@ define(function(require, exports, module) {
       return truthy;
     },
 
-    allowIfFound: function (truthy, field) {
+    allowIfFound(truthy, field) {
       if (! truthy) {
         if (field) {
           var reason = {}; reason[field] = [['not_found']];
@@ -254,7 +254,7 @@ define(function(require, exports, module) {
       }
     },
 
-    validateName: function (name, length) {
+    validateName(name, length) {
       if (typeof name !== 'string')
         return ['is_required'];
 
@@ -269,11 +269,11 @@ define(function(require, exports, module) {
       return name;
     },
 
-    validators: function (validator) {
+    validators(validator) {
       return validators[validator];
     },
 
-    register: function (module, map) {
+    register(module, map) {
       var registered = [];
       for (var regName in map) {
         var item = map[regName];
@@ -295,11 +295,11 @@ define(function(require, exports, module) {
       });
     },
 
-    deregister: function (key) {
+    deregister(key) {
       delete validators[key];
     },
 
-    addError: function (doc,field, ...args) {
+    addError(doc,field, ...args) {
       var errors = doc._errors || (doc._errors = {}),
           fieldErrors = errors[field] || (errors[field] = []);
 

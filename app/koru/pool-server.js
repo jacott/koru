@@ -1,12 +1,10 @@
-function noDebug() {}
-
 define(function(require, exports, module) {
   const util = require('koru/util');
   const koru = require('./main');
 
   class Pool {
-    constructor (config) {
-      var v = this._private = util.extend({
+    constructor(config) {
+      const v = this._private = util.extend({
         max: 10,
         min: 0,
         idleTimeoutMillis: 30*1000,
@@ -14,7 +12,7 @@ define(function(require, exports, module) {
       v.count = 0;
     }
 
-    acquire () {
+    acquire() {
       var v = this._private;
       if (v.draining) throw new Error('The pool is closed for draining');
       var head = fetchHead(v, 'idle');
@@ -46,7 +44,7 @@ define(function(require, exports, module) {
       return future.wait();
     }
 
-    release (conn) {
+    release(conn) {
       var v = this._private;
 
       var wait = fetchHead(v, 'wait');
@@ -85,12 +83,12 @@ define(function(require, exports, module) {
       }
     }
 
-    drain () {
-      var v = this._private;
+    drain() {
+      const v = this._private;
 
       v.draining = true;
       clearWait(v, new Error('The pool is closed for draining'));
-      var idle;
+      let idle;
       if (v.idleTimeout)
         global.clearTimeout(v.idleTimeout);
       v.idleTimeout = null;
@@ -109,9 +107,9 @@ define(function(require, exports, module) {
   }
 
   function fetchHead(v, name) {
-    var nameHead = name+'Head';
+    const nameHead = name+'Head';
 
-    var head = v[nameHead];
+    const head = v[nameHead];
     if (! head) return;
 
     if (! (v[nameHead] = head.next))
@@ -123,8 +121,8 @@ define(function(require, exports, module) {
   }
 
   function addTail(v, name, node) {
-    var nameHead = name+'Head';
-    var nameTail = name+'Tail';
+    const nameHead = name+'Head';
+    const nameTail = name+'Tail';
     node.prev = v[nameTail];
     v[nameTail] = node;
     if (v[nameTail].prev) {

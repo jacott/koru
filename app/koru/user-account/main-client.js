@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var session = require('../session/client-rpc');
-  var localStorage = require('../local-storage');
-  var login = require('./client-login');
-  var SRP = require('../srp/srp');
-  var koru = require('../main');
+  const localStorage = require('../local-storage');
+  const koru         = require('../main');
+  const session      = require('../session/client-rpc');
+  const SRP          = require('../srp/srp');
+  const login        = require('./client-login');
 
   koru.onunload(module, function () {
     exports.stop();
@@ -20,7 +20,7 @@ define(function(require, exports, module) {
   }
 
   exports = {
-    init: function () {
+    init() {
       session.provide('V', function (data) {
         switch(data[0]) {
         case 'T':
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
       session.state.onConnect('05-login', onConnect);
     },
 
-    stop: function () {
+    stop() {
       session.unprovide('V');
       session.state.stopOnConnect('05-login');
     },
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
     state: null,
     _onConnect: onConnect,
 
-    loginWithPassword: function (email, password, callback) {
+    loginWithPassword(email, password, callback) {
       SRPCall(
         'SRPLogin', email, password, callback,
         function() {},
@@ -61,7 +61,7 @@ define(function(require, exports, module) {
       );
     },
 
-    changePassword: function (email, oldPassword, newPassword, callback) {
+    changePassword(email, oldPassword, newPassword, callback) {
       SRPCall(
         'SRPChangePassword', email, oldPassword, callback,
         function (response) {
@@ -71,20 +71,20 @@ define(function(require, exports, module) {
       );
     },
 
-    resetPassword: function (key, secret, callback) {
+    resetPassword(key, secret, callback) {
       session.rpc('resetPassword', key, SRP.generateVerifier(secret), callback);
     },
 
-    logout: function () {
+    logout() {
       session.send('VX'+localStorage.getItem('koru.loginToken'));
       localStorage.removeItem('koru.loginToken');
     },
 
-    logoutOtherClients: function () {
+    logoutOtherClients() {
       session.send('VO'+localStorage.getItem('koru.loginToken'));
     },
 
-    secureCall: function (method, email, password, payload, callback) {
+    secureCall(method, email, password, payload, callback) {
       SRPCall(method, email, password, callback, function (response) {
         response.payload = payload;
       });
@@ -92,8 +92,8 @@ define(function(require, exports, module) {
   };
 
   function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
-    var srp = new SRP.Client(password);
-    var request = srp.startExchange();
+    const srp = new SRP.Client(password);
+    const request = srp.startExchange();
     request.email = email;
     session.rpc('SRPBegin', request, function (err, result) {
       if (err) {

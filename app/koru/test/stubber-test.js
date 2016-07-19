@@ -1,20 +1,20 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test-helper');
-  var sut = require('./stubber');
-  var util = require('koru/util');
+  const util = require('koru/util');
+  const TH   = require('../test-helper');
+  const sut  = require('./stubber');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test withArgs, calledAfter/Before": function () {
+    "test withArgs, calledAfter/Before"() {
       var base = test.stub();
 
       var argOne = base.withArgs(1);
@@ -48,7 +48,7 @@ define(function (require, exports, module) {
       refute(argDiff.calledBefore(argOne));
     },
 
-    "test withArgs returns": function () {
+    "test withArgs returns"() {
       var obj = {
         foo: test.stub().returns(null).withArgs('foo').returns('bar')
           .withArgs("bar").throws(new Error("bar error")),
@@ -66,7 +66,7 @@ define(function (require, exports, module) {
       assert.same(obj.foo.callCount, 1);
     },
 
-    "test onCall": function () {
+    "test onCall"() {
       var obj = {
         foo: test.stub().onCall(0).returns(0).onCall(1).returns(1).onCall(2).returns(2)
       };
@@ -82,7 +82,7 @@ define(function (require, exports, module) {
       refute(call.calledWith(4, 2));
     },
 
-    "test yields": function () {
+    "test yields"() {
       var obj = {
         foo: test.stub().yields(1,2,3)
       };
@@ -100,8 +100,8 @@ define(function (require, exports, module) {
       assert.same(v.result, 0);
     },
 
-    "test spy": function () {
-      var obj = {foo: function (a,b,c) {
+    "test spy"() {
+      var obj = {foo(a,b,c) {
         v.thisValue = this;
         v.args = [a,b,c];
         return 123;
@@ -137,8 +137,8 @@ define(function (require, exports, module) {
       assert.same(spy.args(1,0), 'a');
     },
 
-    "test replace func": function () {
-      var obj = {foo: function () {v.args = 'orig'}};
+    "test replace func"() {
+      var obj = {foo() {v.args = 'orig'}};
       var stub = test.stub(obj, 'foo', function (a,b,c) {v.args = [a,b,c]});
 
       assert.same(stub, obj.foo);
@@ -154,21 +154,21 @@ define(function (require, exports, module) {
       assert.equals(v.args, 'orig');
     },
 
-    "test yield": function () {
+    "test yield"() {
       var x = test.stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});
       x.yield(1,2);
       assert.same(v.foo, 2);
     },
 
-    "test stub with function": function () {
+    "test stub with function"() {
       var obj = {foo: function() {}};
       test.stub(obj, 'foo', function (a, b) {return [a,b]});
       assert.equals(obj.foo(1,2), [1,2]);
       assert.calledWith(obj.foo, 1, 2);
     },
 
-    "test basics": function () {
+    "test basics"() {
       var x = test.stub();
       refute.called(x);
       assert.isFalse(x.called);

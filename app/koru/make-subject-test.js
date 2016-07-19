@@ -1,23 +1,23 @@
 define(function (require, exports, module) {
   var test, v;
-  var geddon = require('./test');
-  var makeSubject = require('./make-subject');
+  const makeSubject = require('./make-subject');
+  const geddon      = require('./test');
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.foo = makeSubject({}, 'onFoo', 'notify');
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test observing": function () {
+    "test observing"() {
       v.foo.onFoo(v.stub1 = test.stub());
-      var handle = v.foo.onFoo(v.stub2 = test.stub());
-      var h2 = v.foo.onFoo(v.stub3 = test.stub());
+      const handle = v.foo.onFoo(v.stub2 = test.stub());
+      const h2 = v.foo.onFoo(v.stub3 = test.stub());
 
       handle.stop();
 

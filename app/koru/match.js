@@ -7,7 +7,7 @@ define(function(require, exports, module) {
     }
 
     class Match {
-      constructor (test, message) {
+      constructor(test, message) {
         if (typeof test === 'function')
           this.$test = test;
         else switch(test.constructor) {
@@ -25,11 +25,11 @@ define(function(require, exports, module) {
         this.message = message || 'match('+(test.name||test)+')';
       }
 
-      toString () {
+      toString() {
         return ''+this.message;
       }
 
-      $throwTest (value) {
+      $throwTest(value) {
         if (! this.$test(value, 'throw')) {
           throw this.message;
         }

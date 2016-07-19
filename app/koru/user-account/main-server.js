@@ -12,8 +12,8 @@ define(function(require, exports, module) {
 
   const UserAccount = exports;
 
-  const model = Model.define('UserLogin', {
-    unexpiredTokens () {
+  class UserLogin extends Model.BaseModel {
+    unexpiredTokens() {
       var tokens = this.tokens;
       var now = util.dateNow();
       var keyVal = [];
@@ -33,33 +33,33 @@ define(function(require, exports, module) {
       }
 
       return result;
-    },
+    }
 
-    makeToken () {
+    makeToken() {
       var token = Random.id();
       var tokens = this.unexpiredTokens();
       tokens[token] = Date.now()+180*24*1000*60*60;
       this.tokens = tokens;
       return token;
-    },
-  })
-  .defineFields({
-    userId: 'text',
-    email: 'text',
-    srp: 'object',
-    tokens: 'object',
-    resetToken: 'text',
-    resetTokenExpire: 'bigint',
-  });
+    }
+  }
 
-  koru.onunload(module, function () {
-    Model._destroyModel('UserLogin');
+  UserLogin.define({
+    module,
+    fields: {
+      userId: 'text',
+      email: 'text',
+      srp: 'object',
+      tokens: 'object',
+      resetToken: 'text',
+      resetTokenExpire: 'bigint',
+    },
   });
 
   session.defineRpc('SRPBegin', SRPBegin);
 
   function SRPBegin(request) {
-    var doc = model.findBy('email', request.email);
+    var doc = UserLogin.findBy('email', request.email);
     if (! doc) throw new koru.Error(403, 'failure');
     var srp = new SRP.Server(doc.srp);
     this.$srp = srp;
@@ -108,21 +108,26 @@ define(function(require, exports, module) {
   });
 
   util.extend(UserAccount, {
-    init () {
+    init() {
       session.provide('V', onMessage);
     },
 
-    stop () {
+    stop() {
       session.unprovide('V');
     },
 
-    model,
+    /**
+     * @deprecated
+     **/
+    model: UserLogin,
 
-    resetPassword (token, passwordHash) {
+    UserLogin,
+
+    resetPassword(token, passwordHash) {
       Val.ensureString(token);
       Val.assertCheck(passwordHash, VERIFIER_SPEC);
       var parts = token.split('-');
-      var lu = model.findById(parts[0]);
+      var lu = UserLogin.findById(parts[0]);
 
       if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
         lu.srp = passwordHash;
@@ -134,8 +139,8 @@ define(function(require, exports, module) {
       throw new koru.Error(404, 'Expired or invalid reset request');
     },
 
-    verifyClearPassword (email, password) {
-      var doc = model.findBy('email', email);
+    verifyClearPassword(email, password) {
+      var doc = UserLogin.findBy('email', email);
       if (! doc) return;
 
       var C = new SRP.Client(password);
@@ -152,18 +157,18 @@ define(function(require, exports, module) {
       }
     },
 
-    verifyToken (emailOrId, token) {
+    verifyToken(emailOrId, token) {
       if (emailOrId.indexOf('@') === -1) {
-        var doc = model.findById(emailOrId);
+        var doc = UserLogin.findById(emailOrId);
       } else {
-        var doc = model.findBy('email', emailOrId);
+        var doc = UserLogin.findBy('email', emailOrId);
       }
       if (doc && doc.unexpiredTokens()[token])
         return doc;
     },
 
-    createUserLogin (attrs) {
-      return model.create({
+    createUserLogin(attrs) {
+      return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
@@ -171,10 +176,10 @@ define(function(require, exports, module) {
       });
     },
 
-    sendResetPasswordEmail (user) {
+    sendResetPasswordEmail(user) {
       emailConfig || configureEmail();
 
-      var lu = model.findBy('userId', user._id);
+      var lu = UserLogin.findBy('userId', user._id);
 
       var rand = Random.create();
 
@@ -190,9 +195,9 @@ define(function(require, exports, module) {
       });
     },
 
-    updateOrCreateUserLogin (attrs) {
-      var lu = model.findBy('userId', attrs.userId);
-      if (! lu) return model.create({
+    updateOrCreateUserLogin(attrs) {
+      var lu = UserLogin.findBy('userId', attrs.userId);
+      if (! lu) return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
         tokens: {},
@@ -206,16 +211,16 @@ define(function(require, exports, module) {
       return lu;
     },
 
-    assertResponse (conn, response) {
+    assertResponse(conn, response) {
       if (response && conn.$srp && response.M === conn.$srp.M) return;
       throw new koru.Error(403, 'failure');
     },
 
 
-    SRPBegin (state, request) {
+    SRPBegin(state, request) {
       return SRPBegin.call(state, request);
     },
-    SRPLogin (state, response) {
+    SRPLogin(state, response) {
       return SRPLogin.call(state, response);
     },
   });
@@ -235,7 +240,7 @@ define(function(require, exports, module) {
     switch(cmd) {
     case 'L':
       var pair = data.slice(1).toString().split('|');
-      var lu = model.findById(pair[0]);
+      var lu = UserLogin.findById(pair[0]);
 
       if (lu && lu.unexpiredTokens()[pair[1]]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
@@ -248,7 +253,7 @@ define(function(require, exports, module) {
       if (token) {
         var mod = {};
         mod['tokens.'+token] = undefined;
-        model.where({userId: conn.userId}).update(mod);
+        UserLogin.where({userId: conn.userId}).update(mod);
       }
       conn.userId = null; // will send a VS + VC. See server-connection
       break;
@@ -256,12 +261,12 @@ define(function(require, exports, module) {
       if (conn.userId == null) return;
       var token = getToken(data);
       if (token) {
-        var lu = model.findBy('userId', conn.userId);
+        var lu = UserLogin.findBy('userId', conn.userId);
         if (lu) {
           var mod = {};
           if (token in lu.tokens)
             mod[token] = lu.tokens[token];
-          model.where({_id: lu._id}).update('tokens', mod);
+          UserLogin.where({_id: lu._id}).update('tokens', mod);
         }
       }
       var conns = session.conns;

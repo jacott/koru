@@ -1,39 +1,39 @@
 define(function (require, exports, module) {
   var test, v;
-  const koru   = require('../main');
-  const match  = require('../match');
-  const util   = require('../util');
-  const Model  = require('./main');
-  const TH     = require('./test-helper');
-  const Val    = require('./validation');
+  const koru  = require('../main');
+  const match = require('../match');
+  const util  = require('../util');
+  const Model = require('./main');
+  const TH    = require('./test-helper');
+  const Val   = require('./validation');
 
   var Module = module.constructor;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       TH.noInfo();
       v.myModule = new Module(module.ctx, 'mymodule');
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    'test msgFor': function () {
+    'test msgFor'() {
       var doc = {_errors: {foo: [['too_long', 34]]}};
 
       assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
     },
 
-    'test msgFor': function () {
+    'test msgFor'() {
       var doc = {_errors: {foo: [['too_long', 34]]}};
 
       assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
     },
 
-    'test text': function () {
+    'test text'() {
       assert.same(Val.text('foo'), 'foo');
       assert.same(Val.text(['foo']), 'foo');
 
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
       assert.same(Val.text(['unexpected_error', 'foo']), 'An unexpected error has occurred: foo');
     },
 
-    "test check": function () {
+    "test check"() {
       var spec = {foo: 'string'};
       refute(Val.check('dfsfd', spec));
       assert(Val.check({foo: ''}, spec));
@@ -58,7 +58,7 @@ define(function (require, exports, module) {
 
       // types
       var spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
-      assert(Val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any: function () {}}, spec));
+      assert(Val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
 
 
       refute(Val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
@@ -84,7 +84,7 @@ define(function (require, exports, module) {
       var data = {foo: {a: 1, b: 2, c: '3'}};
       assert(Val.check(data, v.spec = {foo: {a: 'number', b: 'string'}}, {
         baseName: 'x',
-        onError: function (name, obj, spec, key) {
+        onError(name, obj, spec, key) {
           if (key === 'c') {
             assert.same(name, 'x.foo.c');
             assert.same(obj, data.foo);
@@ -93,7 +93,7 @@ define(function (require, exports, module) {
             return true;
           }
         },
-        filter: function (obj, key, spec, name) {
+        filter(obj, key, spec, name) {
           obj[key] = 'hello there';
         },
       }));
@@ -101,7 +101,7 @@ define(function (require, exports, module) {
       assert.equals(data, {foo: {a: 1, b: 'hello there'}});
     },
 
-    "test assertCheck": function () {
+    "test assertCheck"() {
       assert.exception(function () {
         Val.assertCheck(1, 'string');
       }, {error: 400, reason: 'is_invalid'});
@@ -114,7 +114,7 @@ define(function (require, exports, module) {
       }, {error: 400, reason: {_id: [['is_invalid']]}});
 
 
-      Val.register(v.myModule, {valAbc: function (doc, field) {
+      Val.register(v.myModule, {valAbc(doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
       test.onEnd(function () {Val.register(v.myModule)});
@@ -124,14 +124,14 @@ define(function (require, exports, module) {
       }, {error: 400, reason: {name: [['is_abc']]}});
     },
 
-    "test assertDocChanges": function () {
+    "test assertDocChanges"() {
       test.spy(Val, 'assertCheck');
-      var existing = {changes: {name: 'new name'}, $isNewRecord: function () {return false}};
+      var existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
       Val.assertDocChanges(existing, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, existing.changes, {name: 'string'});
 
-      var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord: function () {return true}};
+      var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
       Val.assertDocChanges(newDoc, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
@@ -142,14 +142,14 @@ define(function (require, exports, module) {
     },
 
 
-    "test validateName": function () {
+    "test validateName"() {
       assert.equals(Val.validateName(), ['is_required']);
       assert.equals(Val.validateName(' ', 300), ['is_required']);
       assert.equals(Val.validateName('1234', 3), ['cant_be_greater_than', 3]);
       assert.equals(Val.validateName('   1234  ', 4), '1234');
     },
 
-    "test allowIfSimple": function () {
+    "test allowIfSimple"() {
       assert.accessDenied(function () {Val.allowIfSimple([12, {}])});
       assert.accessDenied(function () {Val.allowIfSimple({})});
       refute.accessDenied(function () {Val.allowIfSimple('sdfs')});
@@ -157,12 +157,12 @@ define(function (require, exports, module) {
       refute.accessDenied(function () {Val.allowIfSimple([], ['abc', 1234])});
     },
 
-    "test allowAccessIf": function () {
+    "test allowAccessIf"() {
       assert.accessDenied(function () {Val.allowAccessIf(false);});
       refute.accessDenied(function () {Val.allowAccessIf(true);});
     },
 
-    "test ensureString": function () {
+    "test ensureString"() {
       refute.accessDenied(function () {
         Val.ensureString("a", "b");
       });
@@ -172,7 +172,7 @@ define(function (require, exports, module) {
       });
     },
 
-    "test ensure": function () {
+    "test ensure"() {
       refute.accessDenied(function () {
         Val.ensure(match.string, "a", "b");
         Val.ensure('func', function () {});
@@ -184,7 +184,7 @@ define(function (require, exports, module) {
       }, {error: 403, details: 'expected match.number'});
     },
 
-    "test ensureDate": function () {
+    "test ensureDate"() {
       refute.accessDenied(function () {
         Val.ensureDate(new Date(), new Date(2000, 1, 1));
       });
@@ -194,7 +194,7 @@ define(function (require, exports, module) {
       });
     },
 
-    "test invalidRequest": function () {
+    "test invalidRequest"() {
       assert.invalidRequest(function () {Val.allowIfValid(false);});
       assert.exception(function () {
         Val.allowIfValid(false, 'foo');
@@ -205,13 +205,13 @@ define(function (require, exports, module) {
       refute.invalidRequest(function () {Val.allowIfValid(true);});
     },
 
-    'test validators': function () {
+    'test validators'() {
       var fooStub = function () {
         v.Val = this;
       };
       var barStub = {
-        bar1: function () {v.bar1 = this},
-        bar2: function () {},
+        bar1() {v.bar1 = this},
+        bar2() {},
       };
 
       var myunload = test.stub(koru, 'onunload').withArgs('mymod');
@@ -241,8 +241,8 @@ define(function (require, exports, module) {
       refute(Val.validators('bar1'));
     },
 
-    "test validateField": function () {
-      Val.register(v.myModule, {addIt: function (doc, field, x) {
+    "test validateField"() {
+      Val.register(v.myModule, {addIt(doc, field, x) {
         doc[field] += x;
         doc._errors = errors;
       }});
@@ -263,7 +263,7 @@ define(function (require, exports, module) {
       assert.same(doc.age, 'x5');
     },
 
-    "test nestedFieldValidator": function () {
+    "test nestedFieldValidator"() {
       var sut = Val.nestedFieldValidator(v.func = test.stub());
 
       sut.call({changes: {}}, 'foo');
@@ -295,8 +295,8 @@ define(function (require, exports, module) {
       assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
     },
 
-    "test matchFields": function () {
-      Val.register(v.myModule, {divByx: function (doc, field, x) {
+    "test matchFields"() {
+      Val.register(v.myModule, {divByx(doc, field, x) {
         if (doc[field] % x !== 0)
           this.addError(doc, field, 'is_invalid');
       }});

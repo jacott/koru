@@ -1,16 +1,16 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test-helper');
-  var userAccount = require('./main');
-  var session = require('../session');
-  var localStorage = require('../local-storage');
-  var SRP = require('../srp/srp');
-  var util = require('../util');
-  var koru = require('../main');
-  var login = require('./client-login');
+  const localStorage = require('../local-storage');
+  const koru         = require('../main');
+  const session      = require('../session');
+  const SRP          = require('../srp/srp');
+  const TH           = require('../test-helper');
+  const util         = require('../util');
+  const login        = require('./client-login');
+  const userAccount  = require('./main');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.oldUserId = util.thread.userId;
@@ -18,14 +18,14 @@ isClient && define(function (require, exports, module) {
       test.stub(session, 'rpc');
     },
 
-    tearDown: function () {
+    tearDown() {
       util.thread.userId = v.oldUserId;
       v.handle && v.handle.stop();
       v = null;
       login.wait(session);
     },
 
-    "test secureCall": function () {
+    "test secureCall"() {
       userAccount.secureCall('fooBar', 'email@obeya.co', 'secret', [1, 2], v.callback = test.stub());
 
       assert.calledWithExactly(
@@ -62,7 +62,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "changePassword": {
-      setUp: function () {
+      setUp() {
         userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = test.stub());
 
         assert.calledWithExactly(
@@ -81,7 +81,7 @@ isClient && define(function (require, exports, module) {
 
       },
 
-      "test success": function () {
+      "test success"() {
         var verifier = SRP.generateVerifier('secret');
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
@@ -102,7 +102,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWithExactly(v.callback);
       },
 
-      "test failure": function () {
+      "test failure"() {
         var verifier = SRP.generateVerifier('bad');
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
@@ -122,7 +122,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "loginWithPassword": {
-      setUp: function () {
+      setUp() {
         userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = test.stub());
 
         assert.calledWithExactly(
@@ -140,7 +140,7 @@ isClient && define(function (require, exports, module) {
         );
       },
 
-      "test success": function () {
+      "test success"() {
         var verifier = SRP.generateVerifier('secret');
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
@@ -165,7 +165,7 @@ isClient && define(function (require, exports, module) {
         assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
       },
 
-      "test bad username": function () {
+      "test bad username"() {
         v.sutCallback('Xfailure');
 
         assert.calledWith(v.callback, 'Xfailure');
@@ -173,7 +173,7 @@ isClient && define(function (require, exports, module) {
         refute.calledWith(session.rpc, 'SRPLogin');
       },
 
-      "test bad password": function () {
+      "test bad password"() {
         var orig = util.thread.userId;
         var verifier = SRP.generateVerifier('bad');
         var srp = new SRP.Server(verifier);
@@ -194,7 +194,7 @@ isClient && define(function (require, exports, module) {
         assert.same(util.thread.userId, orig);
       },
 
-      "test bad final response": function () {
+      "test bad final response"() {
         var orig = util.thread.userId;
         var verifier = SRP.generateVerifier('secret');
         var srp = new SRP.Server(verifier);
@@ -213,25 +213,25 @@ isClient && define(function (require, exports, module) {
     },
 
     "token login/logout": {
-      setUp: function () {
+      setUp() {
         session.state._state = 'ready';
         test.stub(session, 'send');
         userAccount.init();
       },
 
-      tearDown: function () {
+      tearDown() {
         userAccount.stop();
 
       },
 
-      "test resetPassword": function () {
+      "test resetPassword"() {
         userAccount.resetPassword('the key', 'new password', v.callback = test.stub());
         assert.calledWith(session.rpc, 'resetPassword', 'the key', TH.match(function (hash) {
           return SRP.checkPassword('new password', hash);
         }), v.callback);
       },
 
-      "test logout ": function () {
+      "test logout "() {
         util.thread.userId = 'userId456';
         localStorage.setItem('koru.loginToken', 'abc|def');
 
@@ -244,7 +244,7 @@ isClient && define(function (require, exports, module) {
         assert.same(localStorage.getItem('koru.loginToken'), undefined);
       },
 
-      "test logoutOtherClients": function () {
+      "test logoutOtherClients"() {
         localStorage.setItem('koru.loginToken', 'abc|def');
         userAccount.logoutOtherClients();
         assert.calledWith(session.send, 'VO' + 'abc|def');
@@ -252,7 +252,7 @@ isClient && define(function (require, exports, module) {
         assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
       },
 
-      "test sending login token": function () {
+      "test sending login token"() {
         assert.same(session.state._onConnect['05-login'], userAccount._onConnect);
 
         refute.calledWith(session.send, 'VL');
@@ -279,13 +279,13 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.onChange, 'ready');
       },
 
-      "test receiving token": function () {
+      "test receiving token"() {
         session._onMessage(session, 'VTthe_token');
 
         assert.same(localStorage.getItem('koru.loginToken'), 'the_token');
       },
 
-      "test no loginToken onConnect": function () {
+      "test no loginToken onConnect"() {
         test.stub(login, 'ready');
 
         userAccount._onConnect();
@@ -293,7 +293,7 @@ isClient && define(function (require, exports, module) {
         assert.called(login.ready);
       },
 
-      "test login failure": function () {
+      "test login failure"() {
         localStorage.setItem('koru.loginToken', 'tokenId|token123');
         userAccount._onConnect(session);
 

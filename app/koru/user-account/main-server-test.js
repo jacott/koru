@@ -10,7 +10,7 @@ isServer && define(function (require, exports, module) {
   const userAccount = require('./main');
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
       v.ws = TH.mockWs();
@@ -24,7 +24,7 @@ isServer && define(function (require, exports, module) {
       test.spy(Val, 'ensureString');
     },
 
-    tearDown () {
+    tearDown() {
       userAccount.model.docs.remove({});
       test.intercept(koru, 'logger');
       v.conn.close();
@@ -33,7 +33,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "sendResetPasswordEmail": {
-      setUp () {
+      setUp() {
         test.stub(Email, 'send');
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
@@ -48,11 +48,11 @@ isServer && define(function (require, exports, module) {
         };
       },
 
-      tearDown () {
+      tearDown() {
         koru.config.userAccount = v.userAccountConfig;
       },
 
-      "test send" () {
+      "test send"() {
         userAccount.sendResetPasswordEmail({_id: 'uid111'});
 
         var tokenExp =  v.lu.$reload().resetTokenExpire;
@@ -68,7 +68,7 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test createUserLogin" () {
+    "test createUserLogin"() {
       var spy = test.spy(SRP, 'generateVerifier');
       var lu = userAccount.createUserLogin({email: 'alice@obeya.co', userId: "uid1", password: 'test pw'});
 
@@ -80,7 +80,7 @@ isServer && define(function (require, exports, module) {
       assert.equals(lu.tokens, {});
     },
 
-    "test updateOrCreateUserLogin" () {
+    "test updateOrCreateUserLogin"() {
       var lu = userAccount.updateOrCreateUserLogin({email: 'alice@obeya.co', userId: "uid1", srp: 'test srp'});
 
       assert.equals(lu.$reload().srp, 'test srp');
@@ -101,7 +101,7 @@ isServer && define(function (require, exports, module) {
       assert.same(lu.userId, 'uid1');
     },
 
-    "test too many unexpiredTokens" () {
+    "test too many unexpiredTokens"() {
       var tokens = v.lu.tokens = {};
       for(var i = 0; i < 15; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
@@ -109,7 +109,7 @@ isServer && define(function (require, exports, module) {
       assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '), 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9');
     },
 
-    "test expired tokens" () {
+    "test expired tokens"() {
       var tokens = v.lu.tokens = {};
       for(var i = 0; i < 5; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
@@ -122,7 +122,7 @@ isServer && define(function (require, exports, module) {
       assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '), 't0 t1 t2 t3 t4');
     },
 
-    "test verifyClearPassword" () {
+    "test verifyClearPassword"() {
       var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
       assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
@@ -130,7 +130,7 @@ isServer && define(function (require, exports, module) {
       assert.same(docToken, undefined);
     },
 
-    "test verifyToken" () {
+    "test verifyToken"() {
       var doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
       assert.equals(doc && doc._id, v.lu._id);
       var doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
@@ -140,13 +140,13 @@ isServer && define(function (require, exports, module) {
     },
 
     "loginWithPassword": {
-      setUp () {
+      setUp() {
         v.srp = new SRP.Client('secret');
         v.request = v.srp.startExchange();
         v.request.email = 'foo@bar.co';
       },
 
-      "test direct calling" () {
+      "test direct calling"() {
         var storage = {};
         var result = userAccount.SRPBegin(storage, v.request);
 
@@ -157,7 +157,7 @@ isServer && define(function (require, exports, module) {
         assert.same(result.userId, 'uid111');
       },
 
-      "test success" () {
+      "test success"() {
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -176,7 +176,7 @@ isServer && define(function (require, exports, module) {
         assert.same(v.conn.userId, 'uid111');
       },
 
-      "test wrong password" () {
+      "test wrong password"() {
         v.lu.$update({srp: 'wrong'});
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
@@ -189,7 +189,7 @@ isServer && define(function (require, exports, module) {
         assert.same(v.conn.userId, undefined);
       },
 
-      "test wrong email" () {
+      "test wrong email"() {
         v.lu.$update({email: 'bad@bar.co'});
         assert.exception(function () {
           session._rpcs.SRPBegin.call(v.conn, v.request);
@@ -198,7 +198,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "resetPassword": {
-      "test invalid resetToken" () {
+      "test invalid resetToken"() {
         assert.exception(function () {
           session._rpcs.resetPassword.call(v.conn, 'token', {identity: 'abc123'});
         }, {error: 404, reason: 'Expired or invalid reset request'});
@@ -208,7 +208,7 @@ isServer && define(function (require, exports, module) {
         }, {error: 404, reason: 'Expired or invalid reset request'});
       },
 
-      "test expired token" () {
+      "test expired token"() {
         assert.equals(userAccount.model.$fields.resetTokenExpire, {type: 'bigint'});
 
         v.lu.resetToken = 'secretToken';
@@ -220,7 +220,7 @@ isServer && define(function (require, exports, module) {
         }, {error: 404, reason: 'Expired or invalid reset request'});
       },
 
-      "test success" () {
+      "test success"() {
         test.spy(userAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
@@ -253,13 +253,13 @@ isServer && define(function (require, exports, module) {
     },
 
     "changePassword": {
-      setUp () {
+      setUp() {
         v.srp = new SRP.Client('secret');
         v.request = v.srp.startExchange();
         v.request.email = 'foo@bar.co';
       },
 
-      "test success" () {
+      "test success"() {
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -274,7 +274,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(response.newPassword, v.lu.srp);
       },
 
-      "test wrong password" () {
+      "test wrong password"() {
         v.lu.$update({srp: 'wrong'});
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
@@ -288,7 +288,7 @@ isServer && define(function (require, exports, module) {
         assert.same('wrong', v.lu.$reload().srp);
       },
 
-      "test bad newPassword" () {
+      "test bad newPassword"() {
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -304,11 +304,11 @@ isServer && define(function (require, exports, module) {
     },
 
     "login with token": {
-      setUp () {
+      setUp() {
         userAccount.init();
       },
 
-      tearDown () {
+      tearDown() {
         userAccount.stop();
         test.intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
@@ -317,7 +317,7 @@ isServer && define(function (require, exports, module) {
         koru.logger.restore();
       },
 
-      "test logout with token" () {
+      "test logout with token"() {
         v.conn.userId = 'uid111';
 
         session._commands.V.call(v.conn, 'X' + v.lu._id+'|abc');
@@ -327,7 +327,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws.send, 'VS');
       },
 
-      "test logout without token" () {
+      "test logout without token"() {
         v.conn.userId = 'uid111';
 
         session._commands.V.call(v.conn, 'X');
@@ -337,7 +337,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws.send, 'VS');
       },
 
-      "test logoutOtherClients" () {
+      "test logoutOtherClients"() {
         v.ws2 = TH.mockWs();
         v.ws3 = TH.mockWs();
         v.ws4 = TH.mockWs();
@@ -366,7 +366,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
       },
 
-      "test when not logged in logoutOtherClients does nothing" () {
+      "test when not logged in logoutOtherClients does nothing"() {
         v.ws2 = TH.mockWs();
         v.conn2 = TH.sessionConnect(v.ws2);
         v.conn2.userId = 'uid111';
@@ -378,7 +378,7 @@ isServer && define(function (require, exports, module) {
         refute.calledWith(v.ws2.send, 'VS');
       },
 
-      "test valid session login" () {
+      "test valid session login"() {
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
@@ -386,7 +386,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws.send, 'VSuid111');
       },
 
-      "test invalid session login" () {
+      "test invalid session login"() {
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abcd');
 
         assert.same(v.conn.userId, undefined);
@@ -394,7 +394,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws.send, 'VF');
       },
 
-      "test invalid userId" () {
+      "test invalid userId"() {
         session._commands.V.call(v.conn, 'L1122|abc');
 
         assert.same(v.conn.userId, undefined);

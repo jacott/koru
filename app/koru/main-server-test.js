@@ -6,17 +6,17 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       cleanup();
       v = null;
     },
 
-    "test afTimeout": function () {
+    "test afTimeout"() {
       test.stub(sut, 'setTimeout').returns(123);
       var stop = sut._afTimeout(v.stub = test.stub, 1000);
 
@@ -27,7 +27,7 @@ define(function (require, exports, module) {
       assert.calledWith(global.clearTimeout, 123);
     },
 
-    "test fiberWrapper": function () {
+    "test fiberWrapper"() {
       cleanup();
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 

@@ -7,7 +7,7 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({
@@ -24,7 +24,7 @@ define(function (require, exports, module) {
       v.doc3 = v.TestModel.create({id1: '1', id2: '4'});
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       dbBroker.clearDbId();
       delete Model._databases.foo;
@@ -32,7 +32,7 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test changing dbId": function () {
+    "test changing dbId"() {
       dbBroker.dbId = 'bar';
 
       var bar1 = v.TestModel.create({id1: '3', id2: '4'});
@@ -59,13 +59,13 @@ define(function (require, exports, module) {
       assert.same(v.idx({id1: '4', id2: '4'}), v.doc1._id);
     },
 
-    "test adding": function () {
+    "test adding"() {
       assert.same(v.idx({id1: '3', id2: '4'}), v.doc1._id);
 
       assert.equals(v.idx({id2: '4'}), {'1': v.doc3._id, '3': v.doc1._id});
     },
 
-    "test changing": function () {
+    "test changing"() {
       v.doc1.id1 = '4';
       v.doc1.$$save();
 
@@ -77,19 +77,19 @@ define(function (require, exports, module) {
       assert.equals(v.idx({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
     },
 
-    "test null in data": function () {
+    "test null in data"() {
       var doc = v.TestModel.create({id1: '1', id2: null});
 
       assert.same(v.idx({id1: '1', id2: null}), doc._id);
     },
 
-    "test deleting": function () {
+    "test deleting"() {
       v.doc1.$remove();
 
       assert.equals(v.idx({}), {'4': {'1': v.doc3._id}, '2': {'2': v.doc2._id}});
     },
 
-    "test removing wrong object": function () {
+    "test removing wrong object"() {
       assert.calledOnce(v.obSpy);
 
       v.obSpy.yield(null, {_id: 'diff', id2: '4', id1: '3'});
@@ -97,7 +97,7 @@ define(function (require, exports, module) {
       assert.equals(v.idx({id2: '4', id1: '3'}), v.doc1._id);
     },
 
-    "test fetch": function () {
+    "test fetch"() {
       assert.equals(util.mapField(v.idx.fetch({id2: '4'})
                                      .sort(util.compareByField('id1')), 'attributes'),
                     [v.doc3.attributes, v.doc1.attributes]);
@@ -107,7 +107,7 @@ define(function (require, exports, module) {
                     [v.doc3.attributes, v.doc2.attributes, v.doc1.attributes]);
     },
 
-    "test reload": function () {
+    "test reload"() {
       var docs = v.idx({});
       docs['x'] = 'junk';
 
@@ -118,7 +118,7 @@ define(function (require, exports, module) {
       assert.equals(util.mapField(v.idx.fetch({id2: '4'})).sort(), [v.doc1._id, v.doc3._id].sort());
     },
 
-    "test addIndex": function () {
+    "test addIndex"() {
       var id1Idx = v.TestModel.addIndex('id1');
 
       v.TestModel.create({id1: '2', id2: '5'});
@@ -129,7 +129,7 @@ define(function (require, exports, module) {
       assert.equals(util.mapField(docs, 'id2').sort(), ["2", "5"]);
     },
 
-    "test reloadAll": function () {
+    "test reloadAll"() {
       var id1Idx = v.TestModel.addIndex('id1');
 
       assert.same(v.TestModel._indexUpdate.indexes.size, 2);

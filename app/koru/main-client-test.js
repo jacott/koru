@@ -1,26 +1,26 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var koru = require('./main');
+  const koru = require('./main');
+  const TH   = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test getHashOrigin": function () {
+    "test getHashOrigin"() {
       test.stub(koru, 'getLocation').returns({protocol: 'p', host: 'h', pathname: 'n'});
 
       assert.same(koru.getHashOrigin(), 'p//hn');
     },
 
     "afTimeout": {
-      setUp: function () {
+      setUp() {
         assert.same(TH.geddon._origAfTimeout, koru._afTimeout);
         test.stub(window, 'setTimeout').returns(7766);
         test.stub(window, 'clearTimeout');
@@ -29,7 +29,7 @@ define(function (require, exports, module) {
         test.stub(window, 'cancelAnimationFrame');
       },
 
-      "test zero timeout": function () {
+      "test zero timeout"() {
         koru._afTimeout(v.stub = test.stub());
 
         refute.called(setTimeout);
@@ -39,14 +39,14 @@ define(function (require, exports, module) {
         assert.called(v.stub);
       },
 
-      "test -ve timeout": function () {
+      "test -ve timeout"() {
         koru._afTimeout(v.stub = test.stub(), -3);
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame);
       },
 
-      "test running": function () {
+      "test running"() {
         var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         assert.calledWith(setTimeout, TH.match.func, 1234);
@@ -67,7 +67,7 @@ define(function (require, exports, module) {
         refute.called(window.cancelAnimationFrame);
       },
 
-      "test canceling before timeout": function () {
+      "test canceling before timeout"() {
         var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         stop();
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
         refute.called(window.cancelAnimationFrame);
       },
 
-      "test canceling after timeout": function () {
+      "test canceling after timeout"() {
         var stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         setTimeout.yield();

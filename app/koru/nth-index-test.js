@@ -4,16 +4,16 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown () {
+    tearDown() {
       v = null;
     },
 
-    "test use" () {
+    "test use"() {
       var sut = new NthIndex(2);
 
       assert.same(sut.add(1, 2, '12'), sut);

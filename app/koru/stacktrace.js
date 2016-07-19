@@ -1,17 +1,18 @@
 define(['require', 'koru/util-base'], function (require, util) {
-  var originRe;
-  var ANON_FUNCTION = 'anonymous';
+  const ANON_FUNCTION = 'anonymous';
 
-  var node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;
-  var chrome = /^\s*at (?:(.+) \()?((?:file|http|https):\/\/.+):(\d+):(\d+)\)?\s*$/i;
-  var geckoSafari =  /^(?:(.*)@)?((?:file|http|https):\/\/.+):(\d+):(\d+)$/i;
+  const node = /^\s*at (?:(.+)? \()?(.*):(\d+):(\d+)\)?\s*$/i;
+  const chrome = /^\s*at (?:(.+) \()?((?:file|http|https):\/\/.+):(\d+):(\d+)\)?\s*$/i;
+  const geckoSafari =  /^(?:(.*)@)?((?:file|http|https):\/\/.+):(\d+):(\d+)$/i;
+
+  let originRe;
 
   return function(ex) {
     if (!ex.stack) return;
 
-    var lines = ex.stack.split('\n'),
-        stack = [],
-        parts, m,
+    const lines = ex.stack.split('\n'),
+          stack = [];
+    let parts, m,
         notUs = ex.name === 'AssertionError',
         url, func, line, column;
 
@@ -19,13 +20,13 @@ define(['require', 'koru/util-base'], function (require, util) {
       if (isServer) {
         originRe = new RegExp(require('./main').appDir+'/');
       } else {
-        var lcn = window.location;
+        const lcn = window.location;
         originRe = new RegExp('^'+util.regexEscape(lcn.protocol+'//'+lcn.host+'/'));
       }
     }
 
-    for (var i = 0; i < lines.length; ++i) {
-      if ((parts = (isServer ? node : chrome).exec(lines[i]))) {
+    for (const row of lines) {
+      if ((parts = (isServer ? node : chrome).exec(row))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).trim();
         if (m = /\.testCase\.(.*)/.exec(func)) {
@@ -34,7 +35,7 @@ define(['require', 'koru/util-base'], function (require, util) {
         line = parts[3];
         column = parts[4];
 
-      } else if ((parts = geckoSafari.exec(lines[i]))) {
+      } else if ((parts = geckoSafari.exec(row))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).replace(/\/</, '').replace(/[\[\]]/g, '');
         line = parts[3];
