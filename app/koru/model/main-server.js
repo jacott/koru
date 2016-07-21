@@ -173,9 +173,13 @@ define(function(require, exports, module) {
         TransQueue.transaction(model.db, function () {
           var doc = model.findById(id);
           Val.allowIfFound(doc);
-          Val.allowAccessIf(doc.authorize);
-          doc.authorize(userId, {remove: true});
-          doc.$remove();
+          if (doc.overrideRemove)
+            doc.overrideRemove(userId);
+          else {
+            Val.allowAccessIf(doc.authorize);
+            doc.authorize(userId, {remove: true});
+            doc.$remove();
+          }
         });
       });
 

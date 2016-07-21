@@ -165,6 +165,24 @@ define(function (require, exports, module) {
       refute.called(saveSpy);
     },
 
+    "test overrideRemove"() {
+      const TestModel = Model.define('TestModel', {
+        overrideRemove: v.overrideRemove = test.stub()
+      }).defineFields({name: 'text'});
+
+      const removeSpy = test.spy(TestModel.prototype, '$remove');
+      const doc = TestModel.create({name: 'remove me'});
+
+      session._rpcs.remove.call({userId: 'u123'}, "TestModel", doc._id);
+
+      assert.calledWith(v.overrideRemove, 'u123');
+      var model = v.overrideRemove.firstCall.thisValue;
+      assert.same(model.constructor, TestModel);
+      assert.same(model.name, 'remove me');
+
+      refute.called(removeSpy);
+    },
+
     "test saveRpc new"() {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()
