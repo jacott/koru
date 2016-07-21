@@ -563,7 +563,8 @@ define(function(require, exports, module) {
       const result = [];
       if (! a) return result;
       const bMap = new Set(b);
-      for (const val of a) {
+      for (let i = 0; i < a.length; ++i) {
+        const val = a[i];
         bMap.has(val) || result.push(val);
       }
       return result;
@@ -573,7 +574,8 @@ define(function(require, exports, module) {
       const ans = [];
       const bMap = new Set(b);
 
-      if (a) for(let val of a) {
+      if (a) for(let i = 0; i < a.length; ++i) {
+        const val = a[i];
         if (bMap.has(val))
           bMap.delete(val);
         else
@@ -590,11 +592,13 @@ define(function(require, exports, module) {
       const ans = first ? first.slice() : [];
       const objSet = new Set(first);
 
-      for (let list of rest) {
-        if (list) for (let i of list) {
-          if (! objSet.has(i)) {
-            objSet.add(i);
-            ans.push(i);
+      for (let i = 0; i < rest.length; ++i) {
+        const list = rest[i];
+        if (list) for (let j = 0; j < list.length; ++j) {
+          const val = list[j];
+          if (! objSet.has(val)) {
+            objSet.add(val);
+            ans.push(val);
           }
         }
       }
@@ -733,7 +737,8 @@ define(function(require, exports, module) {
     compareByFields(...fields) {
       return function (a, b) {
         let direction = 1;
-        for (let field of fields) {
+        for (let i = 0; i < fields.length; ++i) {
+          const field = fields[i];
           if (typeof field === 'number') {
             direction = field;
             continue;
@@ -913,11 +918,14 @@ define(function(require, exports, module) {
     const ekeys = Object.keys(actual);
 
     if (Object.keys(expected).length !== ekeys.length) return false;
-    for (let key of ekeys) {
+    for (let i = 0; i < ekeys.length; ++i) {
+      const key = ekeys[i];
       if (! deepEqual(actual[key], expected[key]))
         return false;
     }
-    for (let key of Object.keys(actual)) {
+    const akeys = Object.keys(actual);
+    for (let i = 0; i < akeys.length; ++i) {
+      const key = akeys[i];
       if (! expected.hasOwnProperty(key))
         return false;
     }

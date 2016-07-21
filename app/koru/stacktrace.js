@@ -25,7 +25,8 @@ define(['require', 'koru/util-base'], function (require, util) {
       }
     }
 
-    for (const row of lines) {
+    for (let i = 0; i < lines.length; ++ i) {
+      const row = lines[i];
       if ((parts = (isServer ? node : chrome).exec(row))) {
         url = parts[2];
         func = (parts[1] || ANON_FUNCTION).trim();

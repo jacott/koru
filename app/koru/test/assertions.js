@@ -165,11 +165,13 @@ define(function(require, exports, module) {
     if (ekeys.length !== akeys.length)
       return hint ? setHint(actual, expected, 'lengths differ: ' + akeys.length + ' != ' + ekeys.length) : false;
 
-    for (let key of ekeys) {
+    for (let i = 0; i < ekeys.length; ++i) {
+      const key = ekeys[i];
       if (! deepEqual(actual[key], expected[key]))
         return badKey(key);
     }
-    for (let key of akeys) {
+    for (let i = 0; i < akeys.length; ++i) {
+      const key = akeys[i];
       if (! expected.hasOwnProperty(key))
         return badKey(key);
     }

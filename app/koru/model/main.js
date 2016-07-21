@@ -509,8 +509,8 @@ define(function(require, exports, module) {
     const model = doc.constructor;
     const modelObservers = allObservers.get(model);
     const observers = modelObservers && modelObservers[type];
-    if (observers) for(let observer of observers) {
-      observer[0].call(model, doc, type, partials);
+    if (observers) for (let i = 0; i < observers.length; ++i) {
+      observers[i][0].call(model, doc, type, partials);
     }
   }
 
@@ -518,8 +518,8 @@ define(function(require, exports, module) {
     const model = (doc || was).constructor;
     const modelObservers = allObservers.get(model);
     const observers = modelObservers && modelObservers['afterLocalChange'];
-    if (observers) for(let observer of observers) {
-      observer[0].call(model, doc, was);
+    if (observers) for (let i = 0; i < observers.length; ++i) {
+      observers[i][0].call(model, doc, was);
     }
   }
 
@@ -527,9 +527,9 @@ define(function(require, exports, module) {
     const model = doc.constructor;
     const modelObservers = allObservers.get(model);
     const observers = modelObservers && modelObservers['whenFinally'];
-    if (observers) for(let observer of observers) {
+    if (observers) for (let i = 0; i < observers.length; ++i) {
       try {
-        observer[0].call(model, doc, ex);
+        observers[i][0].call(model, doc, ex);
       } catch(ex1) {
         ex = ex || ex1;
       }

@@ -9,8 +9,8 @@ define(function(require) {
 
     has(...args) {
       var res = this.ids;
-      if (res) for(const arg of args) {
-        res = res[arg];
+      if (res) for (let i = 0; i < args.length; ++i) {
+        res = res[args[i]];
         if (! res) return false;
       }
 
@@ -19,8 +19,8 @@ define(function(require) {
 
     get(...args) {
       var res = this.ids;
-      if (res) for(const arg of args) {
-        res = res[arg];
+      if (res) for (let i = 0; i < args.length; ++i) {
+        res = res[args[i]];
         if (! res) return;
       }
 
