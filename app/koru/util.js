@@ -587,11 +587,11 @@ define(function(require, exports, module) {
     },
 
     union(first, ...rest) {
-      const ans = first.slice();
+      const ans = first ? first.slice() : [];
       const objSet = new Set(first);
 
       for (let list of rest) {
-        for (let i of list) {
+        if (list) for (let i of list) {
           if (! objSet.has(i)) {
             objSet.add(i);
             ans.push(i);

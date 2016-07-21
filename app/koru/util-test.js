@@ -116,6 +116,10 @@ define(function (require, exports, module) {
 
     "test union" () {
       assert.equals(util.union([1,2,3], [3, 4, 5], [3, 6]).sort(), [1, 2, 3, 4, 5, 6]);
+      assert.equals(util.union([1,2]), [1, 2]);
+      assert.equals(util.union([1,2], null), [1, 2]);
+      assert.equals(util.union(null, [1,2]), [1, 2]);
+      assert.equals(util.union(null, null), []);
     },
 
     "test diff" () {
