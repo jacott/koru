@@ -1,23 +1,149 @@
 define(function(require, exports, module) {
-  var Model = require('./main');
-  var util = require('../util');
-  var test = require('../test');
+  const test  = require('../test');
+  const util  = require('../util');
+  const Model = require('./main');
 
-  var Factory = {
+  const traits = {};
+  const postCreate = {};
+  const defines = {};
+
+  let nameGen, last, lastNow;
+
+  class BaseBuilder {
+    constructor(options={}, default_opts={}) {
+      this.options = options;
+      this.default_opts = default_opts;
+    }
+
+    addField(field, value) {
+      if (! this.options.hasOwnProperty(field)) {
+        switch(typeof value) {
+        case 'undefined': break;
+        case 'function':
+          this.default_opts[field] = value();
+          break;
+        default:
+          this.default_opts[field] = value;
+        }
+      }
+      return this;
+    }
+
+    field(field) {
+      return (this.options.hasOwnProperty(field) ? this.options : this.default_opts)[field];
+    }
+
+    attributes() {
+      var result = {};
+      addAttributes(this.default_opts);
+      addAttributes(this.options);
+      return result;
+
+      function addAttributes(attrs) {
+        for(var key in attrs) {
+          var value = attrs[key];
+          if (value !== undefined)
+            result[key] = value;
+        }
+      }
+    }
+
+    field(name) {
+      if (name in this.options) return this.options[name];
+      return this.default_opts[name];
+    }
+  }
+
+  class Builder extends BaseBuilder {
+    constructor(modelName, options, default_opts={}) {
+      super(options, {});
+      this.model = Model[modelName];
+      if (! this.model) throw new Error('Model: "'+modelName+'" not found');
+      util.extend(util.extend(this.default_opts, this.model._defaults), default_opts);
+    }
+
+    addRef(ref, doc) {
+      var refId = ref+'_id';
+      if (! this.options.hasOwnProperty(refId)) {
+        var model = this.model.fieldTypeMap[refId];
+        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
+        var modelName = model.modelName;
+        if (typeof doc === 'function')
+          doc = doc(this);
+        doc = doc ||
+          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
+          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
+        this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
+      }
+      return this;
+    }
+
+    genName(field, prefix) {
+      return this.addField(field || 'name', generateName(prefix || this.model.modelName));
+    }
+
+    canSave(value) {
+      this._canSave = value;
+      return this;
+    }
+
+    insert() {
+      var id = this.model._insertAttrs(this.attributes());
+      var doc = this.model.findById(id);
+      if (! doc) {
+        throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
+      }
+      isClient && this.model._indexUpdate.notify(doc);
+      Model._support.callAfterObserver(doc);
+      this.model.notify(doc);
+      return doc;
+    }
+
+    build() {
+      var doc = new this.model();
+      util.extend(doc.changes, this.attributes());
+      return doc;
+    }
+
+    create() {
+      if (this._canSave) {
+        var doc = this.model.build({});
+        doc.changes = this.attributes();
+        if (this._canSave === 'force')
+          doc.$save('force');
+        else
+          doc.$$save();
+        doc = this.model.findById(doc._id) || doc;
+      } else
+        var doc = this.insert();
+
+
+      this._afterCreate && this._afterCreate.call(this, doc);
+      return doc;
+    }
+
+    afterCreate(func) {
+      this._afterCreate = func;
+      return this;
+    }
+  }
+
+  const Factory = module.exports = {
     clear() {
       last = {};
       nameGen = {};
     },
 
     createList(number, creator, ...args) {
-      var list = [];
+      const list = [];
 
-      var func = typeof args[0] === 'function' ? args.shift() : null;
+      const func = typeof args[0] === 'function' ? args.shift() : null;
 
-      args[0] = args[0] || {};
+      if (args.length === 0 || typeof args[args.length - 1] === 'string')
+        args.push({});
 
-      for(var i=0;i < number;++i) {
-        func && func.apply(args, [i].concat(args));
+      for(let i = 0; i < number; ++i) {
+        func && func.apply(args, [i, args[args.length - 1]]);
         list.push(this[creator].apply(this,args));
       }
       return list;
@@ -35,8 +161,8 @@ define(function(require, exports, module) {
       return last[name] || Factory['create'+util.capitalize(name)]();
     },
 
-    getUniqueNow: getUniqueNow,
-    generateName: generateName,
+    getUniqueNow,
+    generateName,
 
     traits(funcs) {
       util.extend(traits, funcs);
@@ -57,27 +183,15 @@ define(function(require, exports, module) {
       return this;
     },
 
-    BaseBuilder: BaseBuilder,
-    Builder: Builder,
+    BaseBuilder,
+    Builder,
   };
-
-  var traits = {};
-  var postCreate = {};
-
-  var nameGen, last, lastNow;
 
   test.geddon.onTestStart(function () {
     nameGen = {};
     last = {};
     lastNow = null;
   });
-
-  var defines = {};
-
-  for(var key in defines) {
-    Factory['build'+key] = buildFunc(key, defines[key]);
-    Factory['create'+key] = createFunc(key, defines[key]);
-  }
 
   function buildFunc(key, def) {
     return function (/** traits and options */) {
@@ -127,131 +241,4 @@ define(function(require, exports, module) {
     if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
     return prefix + (space == null ? ' ' : space) + ++nameGen[prefix];
   }
-
-  function BaseBuilder(options, default_opts) {
-    this.options = options || {};
-    this.default_opts = default_opts || {};
-  }
-
-  /**
-   * Builder
-   *
-   **/
-
-  function Builder(modelName, options, default_opts) {
-    this.model = Model[modelName];
-    if (! this.model) throw new Error('Model: "'+modelName+'" not found');
-    BaseBuilder.call(this, options, util.extend(util.extend({}, this.model._defaults), default_opts || {}));
-  }
-
-  util.extend(BaseBuilder.prototype, {
-    addField(field, value) {
-      if (! this.options.hasOwnProperty(field)) {
-        switch(typeof value) {
-        case 'undefined': break;
-        case 'function':
-          this.default_opts[field] = value();
-          break;
-        default:
-          this.default_opts[field] = value;
-        }
-      }
-      return this;
-    },
-
-    field(field) {
-      return (this.options.hasOwnProperty(field) ? this.options : this.default_opts)[field];
-    },
-
-    attributes() {
-      var result = {};
-      addAttributes(this.default_opts);
-      addAttributes(this.options);
-      return result;
-
-      function addAttributes(attrs) {
-        for(var key in attrs) {
-          var value = attrs[key];
-          if (value !== undefined)
-            result[key] = value;
-        }
-      }
-    },
-
-    field(name) {
-      if (name in this.options) return this.options[name];
-      return this.default_opts[name];
-    },
-  });
-
-  Builder.prototype = util.extend(Object.create(BaseBuilder.prototype), {
-    constructor: Builder,
-
-    addRef: function(ref, doc) {
-      var refId = ref+'_id';
-      if (! this.options.hasOwnProperty(refId)) {
-        var model = this.model.fieldTypeMap[refId];
-        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
-        var modelName = model.modelName;
-        if (typeof doc === 'function')
-          doc = doc(this);
-        doc = doc ||
-          (doc === undefined && (last[ref] || last[util.uncapitalize(modelName)])) ||
-          (Factory['create'+util.capitalize(ref)] || Factory['create'+modelName])();
-        this.default_opts[refId] = doc._id === undefined ? doc : doc._id;
-      }
-      return this;
-    },
-
-    genName(field, prefix) {
-      return this.addField(field || 'name', generateName(prefix || this.model.modelName));
-    },
-
-    canSave(value) {
-      this._canSave = value;
-      return this;
-    },
-
-    insert() {
-      var id = this.model._insertAttrs(this.attributes());
-      var doc = this.model.findById(id);
-      if (! doc) {
-        throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
-      }
-      isClient && this.model._indexUpdate.notify(doc);
-      Model._support.callAfterObserver(doc);
-      this.model.notify(doc);
-      return doc;
-    },
-
-    build() {
-      var doc = new this.model();
-      util.extend(doc.changes, this.attributes());
-      return doc;
-    },
-
-    create() {
-      if (this._canSave) {
-        var doc = this.model.build({});
-        doc.changes = this.attributes();
-        if (this._canSave === 'force')
-          doc.$save('force');
-        else
-          doc.$$save();
-        doc = this.model.findById(doc._id) || doc;
-      } else
-        var doc = this.insert();
-
-
-      this._afterCreate && this._afterCreate.call(this, doc);
-      return doc;
-    },
-
-    afterCreate(func) {
-      this._afterCreate = func;
-      return this;
-    },
-  });
-
-  return Factory;
 });
