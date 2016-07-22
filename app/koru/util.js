@@ -484,6 +484,9 @@ define(function(require, exports, module) {
       return -1;
     },
 
+    protoCopy(source, attributes) {
+      return util.extend(Object.create(source), attributes);
+    },
 
     /**
      * Do a shallow copy of a type

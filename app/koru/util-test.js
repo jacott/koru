@@ -482,6 +482,22 @@ define(function (require, exports, module) {
       assert.same(util.indexOf(data, 3, 'age'), -1);
     },
 
+    "test protoCopy"() {
+      const source = {a: new Date(), b: "two"};
+
+      const dest = util.protoCopy(source, {get c() {return "cc"}});
+      assert.same(dest.a, source.a);
+      assert.same(dest.b, "two");
+      assert.same(dest.c, "cc");
+      assert.same(source.c, undefined);
+
+      dest.b = 'bb';
+      assert.same(source.b, "two");
+
+      source.a = 'aa';
+      assert.same(dest.a, 'aa');
+    },
+
     "test shallowCopy" () {
       assert.same(util.shallowCopy(1), 1);
       assert.same(util.shallowCopy(true), true);
