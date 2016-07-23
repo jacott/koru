@@ -463,7 +463,7 @@ class Table {
     return whereSql.join(' AND ');
 
     function inArray(qkey, result, value, isIn) {
-      switch (value.length) {
+      switch (value ? value.length : 0) {
       case 0:
         result.push(isIn ? 'FALSE' : 'TRUE');
         return;
