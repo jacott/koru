@@ -24,7 +24,9 @@ define(function (require, exports, module) {
       var result = sut.transaction(v.TestModel, () => {
         sut.onAbort(err1);
         sut.onSuccess(stub1);
-        sut.transaction(v.TestModel, () => sut.onSuccess(stub2));
+        sut.transaction(v.TestModel, () => sut.onSuccess(function () {
+          sut.onSuccess(stub2); // double nested should still fire
+        }));
         refute.called(stub1);
         refute.called(stub2);
         return "success";

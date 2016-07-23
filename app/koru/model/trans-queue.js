@@ -7,12 +7,15 @@ define(function(require) {
   const TransQueue = {
     transaction(db, body) {
       let list = successMap.get(util.thread);
-      let firstLevel = ! list;
+      let firstLevel = list === undefined;
       if (firstLevel)
         successMap.set(util.thread, list = []);
       try {
         var result = db.transaction(tx => body.call(db, tx));
-        firstLevel && list.forEach(f => f());
+        if (firstLevel) {
+          successMap.set(util.thread, false);
+          list.forEach(f => f());
+        }
         return result;
       } catch (ex) {
         if (firstLevel) {
