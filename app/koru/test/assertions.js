@@ -167,7 +167,7 @@ define(function(require, exports, module) {
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key]))
+      if (! deepEqual(actual[key], expected[key], hint, hintField))
         return badKey(key);
     }
     for (let i = 0; i < akeys.length; ++i) {
