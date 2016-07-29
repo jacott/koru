@@ -220,9 +220,11 @@ define(function (require, exports, module) {
       test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
       TH.noInfo();
 
-      v.ws.onclose({});         // remote close
+      v.ws.onclose({code: 4404, reason: 'not found'});         // remote close
 
       assert(sessState.retry.calledAfter(koru._afTimeout));
+
+      assert.calledWith(sessState.retry, 4404, 'not found');
 
       refute(sessState.isReady());
 

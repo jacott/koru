@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var makeSubject = require('../make-subject');
-  var koru = require('koru');
-  var Trace = require('../trace');
+  const koru        = require('koru');
+  const makeSubject = require('koru/make-subject');
+  const Trace       = require('koru/trace');
+  const util        = require('koru/util');
 
   function Constructor() {
     var state = 'startup';
@@ -25,17 +25,17 @@ define(function(require, exports, module) {
     return makeSubject({
       _onConnect: {},
 
-      onConnect: function (priority, func) {
+      onConnect(priority, func) {
         if (priority in this._onConnect)
           throw new Error("onConnect " + priority + " already taken for onConnect");
         this._onConnect[priority] = func;
       },
 
-      stopOnConnect: function (priority) {
+      stopOnConnect(priority) {
         delete this._onConnect[priority];
       },
 
-      connected: function (session) {
+      connected(session) {
         this.session = session;
         state = 'ready';
         var onConnect = this._onConnect;
@@ -45,37 +45,37 @@ define(function(require, exports, module) {
         this.notify(true);
       },
 
-      close: function () {
-        var was = state;
+      close() {
+        let was = state;
         state = 'closed';
         if (was === 'ready')
           this.notify(false);
       },
 
-      retry: function () {
+      retry(code, reason) {
         var was = state;
         state = 'retry';
         if (was !== 'retry')
-          this.notify(false);
+          this.notify(false, code, reason);
       },
 
-      isReady: function() {return state === 'ready'},
-      isClosed: function() {return state === 'closed'},
+      isReady() {return state === 'ready'},
+      isClosed() {return state === 'closed'},
 
       get _state() {return state},
       set _state(value) {state = value},
 
-      pendingCount: function() {return count},
+      pendingCount() {return count},
 
       pending: makeSubject({}),
 
-      incPending: function () {
+      incPending() {
         debug_pending && koru._incPendingStack.push(util.extractError(new Error(count)));
         if (++count === 1)
           this.pending.notify(true);
       },
 
-      decPending: function () {
+      decPending() {
         debug_pending && koru._decPendingStack.push(util.extractError(new Error(count)));
         if (--count === 0) {
           if (debug_pending) {
@@ -89,7 +89,7 @@ define(function(require, exports, module) {
       },
 
       // for test use only
-      _resetPendingCount: function () {
+      _resetPendingCount() {
         count = 0;
       },
 

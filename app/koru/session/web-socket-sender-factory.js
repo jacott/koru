@@ -112,7 +112,7 @@ define(function (require) {
 
         reconnTimeout = koru._afTimeout(connect, retryCount*500);
 
-        sessState.retry();
+        sessState.retry(event.code, event.reason);
       };
 
       function queueHeatBeat() {
