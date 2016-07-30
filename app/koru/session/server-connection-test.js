@@ -60,10 +60,13 @@ isServer && define(function (require, exports, module) {
       "test waitIdle"() {
         test.spy(IdleCheck, 'inc');
         test.spy(IdleCheck, 'dec');
+        test.stub(koru, 'error');
         test.stub(session, '_onMessage', function (conn) {
           assert.called(IdleCheck.inc);
           refute.called(IdleCheck.dec);
           v.success = true;
+          v.conn.onMessage('t456');
+          throw new Error("I can handle this");
         });
         v.conn.onMessage('t123');
         assert.called(IdleCheck.inc);

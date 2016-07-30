@@ -49,22 +49,23 @@ define(function(require, exports, module) {
 
         var process = () => {
           session.execWrapper(() => {
+            IdleCheck.inc();
             try {
               session._onMessage(this, current[0]);
             } catch(ex) {
               koru.error(util.extractError(ex));
             }
+            IdleCheck.dec();
+
             current = current[1];
             if (current)
               process();
             else {
               this._last = null;
-              IdleCheck.dec();
             }
           }, this);
         };
 
-        IdleCheck.inc();
         process();
       }
 
