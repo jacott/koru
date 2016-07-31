@@ -1,5 +1,9 @@
 define(function (require, exports, module) {
+  /**
+   * The util module provides commonly performed utility functions.
+   **/
   var test, v;
+  const api   = require('koru/test/api');
   const match = require('./match');
   const TH    = require('./test');
   const util  = require('./util');
@@ -15,13 +19,23 @@ define(function (require, exports, module) {
     },
 
     "test toDp" () {
+      /**
+       * Return a floating point <number> as a string to
+       * <dp> decimal places.
+       *
+       * @param {boolean} zerofill - pad with zeros.
+       **/
+      api.method('toDp');
       assert.same(util.toDp(10.7, 0), "11");
       assert.same(util.toDp(2.6, 1), "2.6");
       assert.same(util.toDp(1.2345, 3, true), "1.235");
       assert.same(util.toDp(1.2, 3, true), "1.200");
-      assert.same(util.toDp(1.0021, 3, true), "1.002");
       assert.same(util.toDp(10, 3), "10");
+
+      api.done();
+
       assert.same(util.toDp(10.2, 3), "10.2");
+      assert.same(util.toDp(1.0021, 3, true), "1.002");
     },
 
     "test DAY" () {

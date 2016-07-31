@@ -1,25 +1,37 @@
 define(['./core', '../main'], function (geddon, koru) {
-  var callbacks = {};
+  const callbacks = {};
 
-  geddon.onStart = registerCallBack('start');
-  geddon.onEnd = registerCallBack('end');
-  geddon.onTestStart = registerCallBack('testStart');
-  geddon.onTestEnd = registerCallBack('testEnd');
+  registerCallBack('start');
+  registerCallBack('end');
+  registerCallBack('testStart');
+  registerCallBack('testEnd');
 
 
   function registerCallBack(name) {
-    return function(func) {
+    const capped = name[0].toUpperCase()+name.slice(1);
+    geddon['cancel'+capped] = deregister;
+    function deregister(func) {
+      callbacks[name] = callbacks[name].filter(i => {
+        return i !== func;
+      });
+    }
+    geddon['on'+capped] = function(module, func) {
+      if (func) {
+        koru.onunload(module, () => deregister(func));
+      } else {
+        func = module;
+      }
       (callbacks[name] = callbacks[name] || []).push(func);
     };
   }
 
 
   geddon.runCallBacks = function(name, test) {
-    var cbs = callbacks[name] || [];
+    const cbs = callbacks[name];
 
-    var firstEx;
+    let firstEx;
 
-    for(var i=cbs.length - 1; i >= 0; --i) {
+    if (cbs) for(let i = cbs.length - 1; i >= 0; --i) {
       try {
         cbs[i](test);
       } catch(ex) {

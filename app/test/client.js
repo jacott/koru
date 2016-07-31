@@ -4,6 +4,8 @@ window.yaajs.config({
     "koru", "koru/test", "koru/session",
   ],
 
+  recordExports: true,
+
   baseUrl: '/',
 });
 

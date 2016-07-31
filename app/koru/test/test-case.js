@@ -5,6 +5,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
       this.name = name;
       this.tc = tc;
       this.option = option;
+      this._before = null;
+      this._after = null;
     }
 
     fullName(name) {
@@ -40,6 +42,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
       if (this.setUpAround) return false;
       if (this.tc && ! this.tc.runSetUp(test))
         return false;
+      test._currentTestCase = this;
       this.setUp && this.setUp.call(test);
       return true;
     }
@@ -64,9 +67,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
     runSetUpArround(test, func) {
       var tex;
       var tc = this;
-      if (tc.setUpAround)
+      if (tc.setUpAround) {
+        test._currentTestCase = tc;
         tc.setUpAround.call(test, doit);
-      else
+      } else
         doit();
 
       if (tex) throw tex;
@@ -75,7 +79,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
         var onEnds = test.__testEnd;
         test.__testEnd = null;
         try {
-          tc.setUp && tc.setUp.call(test);
+          if (tc.setUp) {
+            test._currentTestCase = tc;
+            tc.setUp.call(test);
+          }
           try {
             func.call(test);
           } finally {
@@ -104,6 +111,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     runTearDown(test) {
+      test._currentTestCase = this;
       this.tearDown && this.tearDown.call(test);
       this.tc && this.tc.runTearDown(test);
     }
@@ -143,6 +151,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
       }
       return this;
     }
+
+    get moduleId() {
+      return this.tc ? this.tc.moduleId : this.name+'-test';
+    }
   }
 
   class Test {
@@ -150,6 +162,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
       this.name = name;
       this.tc = tc;
       this.func = func;
+      this._currentTestCase = this.__testEnd = null;
     }
 
     get skipped() {
@@ -177,6 +190,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
       this.onEnd(restorSpy(spy));
       return spy;
     }
+
+    get moduleId() {return this.tc.moduleId;}
   };
 
   function restorSpy(spy) {

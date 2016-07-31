@@ -5,6 +5,8 @@ exports.server = function (cfg) {
   cfg.merge('requirejs', {
     baseUrl: appDir,
 
+    recordExports: true,
+
     config: {
       "koru/config": {
         DBDriver: "koru/"+(process.env['KORUTEST_DBDRIVER'] || "pg")+"/driver",
