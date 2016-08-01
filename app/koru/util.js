@@ -918,6 +918,9 @@ define(function(require, exports, module) {
       return true;
     }
 
+    if (Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected))
+      return false;
+
     const ekeys = Object.keys(actual);
 
     if (Object.keys(expected).length !== ekeys.length) return false;

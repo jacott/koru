@@ -160,8 +160,11 @@ define(function(require, exports, module) {
       return true;
     }
 
-    var akeys = Object.keys(actual);
-    var ekeys = Object.keys(expected);
+    if (Array.isArray(expected))
+      return setHint(actual, expected);
+
+    const akeys = Object.keys(actual);
+    const ekeys = Object.keys(expected);
     if (ekeys.length !== akeys.length)
       return hint ? setHint(actual, expected, 'lengths differ: ' + akeys.length + ' != ' + ekeys.length) : false;
 

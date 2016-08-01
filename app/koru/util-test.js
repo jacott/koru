@@ -201,6 +201,7 @@ define(function (require, exports, module) {
       assert.isTrue(util.deepEqual(null, undefined));
       assert.isFalse(util.deepEqual(null, ""));
       assert.isTrue(util.deepEqual({}, {}));
+      refute.isTrue(util.deepEqual({}, []));
       assert.isFalse(util.deepEqual(0, -0));
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
       assert.isFalse(util.deepEqual({a: null}, {b: null}));
