@@ -32,10 +32,11 @@ define(function(require, exports, module) {
 
   const ELEMENT_NODE = 1;
   const TEXT_NODE = 3;
+  const COMMENT_NODE = 8;
   const DOCUMENT_NODE = 9;
   const DOCUMENT_FRAGMENT_NODE = 11;
 
-  const NOCLOSE = util.toMap("BR HR INPUT LINK".split(' '));
+  const NOCLOSE = util.toMap("BR HR INPUT LINK META".split(' '));
 
   const NAME_TO_CHAR = {
     amp: '&',
@@ -64,6 +65,7 @@ define(function(require, exports, module) {
 
     ELEMENT_NODE,
     TEXT_NODE,
+    COMMENT_NODE,
     DOCUMENT_FRAGMENT_NODE,
 
     createElement(tag) {return new DocumentElement(tag)},
@@ -189,8 +191,11 @@ define(function(require, exports, module) {
 
           node = elm;
         },
-        ontext(text){
+        ontext(text) {
           node.appendChild(new TextNode(unescapeHTML(text)));
+        },
+        oncomment(text) {
+          node.appendChild(new CommentNode(unescapeHTML(text)));
         },
         onclosetag(name){
           node = node.parentNode;
@@ -342,6 +347,20 @@ define(function(require, exports, module) {
     set textContent(value) {this.wholeText = value},
     get innerHTML() {return escapeHTML(this.wholeText)},
     set innerHTML(value) {this.wholeText = unescapeHTML(value)},
+  });
+
+  function CommentNode(value) {
+    common(this, COMMENT_NODE);
+    this.data = value;
+  }
+  buildNodeType(CommentNode, {
+    cloneNode(deep) {
+      return new CommentNode(this.data);
+    },
+    get textContent() {return this.data},
+    set textContent(value) {this.data = value},
+    get innerHTML() {return `<!--${escapeHTML(this.data)}-->`},
+    set innerHTML(value) {this.data = unescapeHTML(value)},
   });
 
   function buildNodeType(func, proto) {

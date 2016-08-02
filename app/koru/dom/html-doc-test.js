@@ -56,6 +56,18 @@ define(function (require, exports, module) {
       assert.same(top.textContent, 'hello worldbar');
     },
 
+    "test comments"() {
+      assert.same(document.COMMENT_NODE, 8);
+
+      const div = document.createElement('div');
+      div.innerHTML = "<!-- my comment-->";
+
+      assert.equals(div.firstChild.textContent, ' my comment');
+
+
+      assert.same(div.innerHTML, "<!-- my comment-->");
+    },
+
     "test style backgroundColor"() {
       var top = document.createElement('div');
       assert.same(top.style.backgroundColor, '');
