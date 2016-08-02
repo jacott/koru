@@ -16,29 +16,29 @@ define(function(require, exports, module) {
       return pre.innerHTML;
     },
 
-    hasClass (elm, name) {
+    hasClass(elm, name) {
       var classList = elm && elm.classList;
       return classList && classList.contains(name);
     },
 
-    addClass (elm, name) {
+    addClass(elm, name) {
       var classList = elm && elm.classList;
       classList && classList.add(name);
     },
 
-    addClasses (elm, name) {
+    addClasses(elm, name) {
       var classList = elm && elm.classList;
       if (classList)
         for(var i = name.length - 1; i >= 0; --i)
           classList.add(name[i]);
     },
 
-    removeClass (elm, name) {
+    removeClass(elm, name) {
       var classList = elm && elm.classList;
       classList && classList.remove(name);
     },
 
-    toggleClass (elm, name) {
+    toggleClass(elm, name) {
       if (! elm) return;
       if (Dom.hasClass(elm, name)) {
         Dom.removeClass(elm, name);
@@ -49,13 +49,29 @@ define(function(require, exports, module) {
       return true;
     },
 
-    nodeIndex (node) {
+    nodeIndex(node) {
       var nodes = node.parentNode.childNodes;
       for (var count = nodes.length; count >= 0; --count) {
         if (node === nodes[count])
           return count;
       }
       return -1;
+    },
+
+    walkNode(node, visitor) {
+      var childNodes = node.childNodes;
+      var len = childNodes.length;
+
+      for(var i = 0; i < len; ++i) {
+        var elm = childNodes[i];
+        switch(visitor(elm, i)) {
+        case true: return true;
+        case false: continue;
+        default:
+          if (this.walkNode(elm, visitor))
+            return true;
+        }
+      }
     },
 
     handleException(ex) {

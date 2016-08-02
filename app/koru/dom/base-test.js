@@ -5,17 +5,17 @@ define(function (require, exports, module) {
   var Dom = require('./base');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       document.body.textContent = '';
       v = null;
     },
 
-    "test Dom cssQuery": function () {
+    "test Dom cssQuery"() {
       document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123",
                                                   section: {span: "Goodbye"}}));
 
@@ -25,7 +25,7 @@ define(function (require, exports, module) {
         assert("no server css query yet");
     },
 
-    "test nodeIndex": function () {
+    "test nodeIndex"() {
       var node = Dom.h({div: ['one', 'two',  'three']});
 
       assert.same(Dom.nodeIndex(node.firstChild), 0);
@@ -33,17 +33,36 @@ define(function (require, exports, module) {
       assert.same(Dom.nodeIndex(node.childNodes[2]), 2);
     },
 
-    "test html": function () {
+    "test walkNode"() {
+      var node = Dom.h({div: ['one', {span: ['two', '2.5']}, 'three', {B: [{I: 'i'}, {U: 'not me'}, {div: 'not here'}]}, 'nor me']});
+
+      let ans = "";
+
+      Dom.walkNode(node, function (node, i) {
+        ans += node.nodeType === document.TEXT_NODE ? node.textContent : node.tagName;
+        switch (node.tagName ) {
+        case 'I': return false; // don't visit
+        case 'U':
+          ans+=i;
+          return true; // stop walking
+        }
+      });
+
+      assert.same(ans, "oneSPANtwo2.5threeBIU1");
+
+    },
+
+    "test html"() {
       document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123", section: {span: "Goodbye"}}));
 
       assert.sameHtml(v.result.outerHTML, '<section class="bar" id="s123"><span>Goodbye</span></section>');
     },
 
-    "test escapeHTML": function () {
+    "test escapeHTML"() {
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
     },
 
-    "test classList": function () {
+    "test classList"() {
       var elm = document.createElement('div');
 
       refute(Dom.hasClass(null, 'foo'));
