@@ -100,11 +100,11 @@ define(function(require, exports, module) {
       }
     },
 
-    reverseForEach(list, func) {
+    reverseForEach(list, visitor) {
       if (! list) return;
       var len = list.length;
       for(var i = len-1; i >= 0 ; --i) {
-        func(list[i], i);
+        visitor(list[i], i);
       }
     },
 
@@ -690,8 +690,8 @@ define(function(require, exports, module) {
       return Math.round(value)+'px';
     },
 
-    pc(value) {
-      return value*100 + '%';
+    pc(fraction) {
+      return fraction*100 + '%';
     },
 
     toDp(number, dp, zeroFill) {

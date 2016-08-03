@@ -18,12 +18,13 @@ define(function(require, exports, module) {
       this.__afterTestCase = new WeakSet;
       this._apiMap = new Map;
       this._instance = null;
+      this._objCache = new Map;
     }
 
     static module(subject, subjectName, subjectModules) {
       const tc = TH.test._currentTestCase;
       if (subject === undefined) {
-        subject = ctx.modules[tc.moduleId.replace(/-test$/, '')].exports;
+        subject = ctx.modules[toId(tc)].exports;
       }
 
       this._instance = this._apiMap.get(subject);
@@ -34,7 +35,7 @@ define(function(require, exports, module) {
       afterTestCase.add(tc);
 
       this._apiMap.set(subject, this._instance =
-                       new API(tc, subject, subjectName || createSubjectName(subject),
+                       new API(tc, subject, subjectName || createSubjectName(subject, tc),
                                subjectModules || ctx.exportsModule(subject)));
       return this._instance;
     }
@@ -43,6 +44,42 @@ define(function(require, exports, module) {
     static done() {this.instance.done()}
 
     static get instance() {return this._instance || this.module()}
+
+    static resolveObject(value, displayName, orig=value) {
+      if (value === null || value === Object)
+        return ['O', displayName];
+
+      if (this._coreTypes.has(value))
+        return [relType(orig, value), displayName, value.name];
+
+      let api = this._apiMap.get(value);
+      if (api) {
+        return cache(this, value, orig, [relType(orig, value), displayName, api.testCase.name]);
+      }
+
+      let cValue = this._objCache.get(value);
+      if (cValue) {
+        if (cValue[0] === 'C' || orig !== value)
+          return cache(this, orig, orig, [relType(orig, value), displayName, cValue[2]]);
+        return cValue;
+      }
+
+      if (typeof value === 'function') {
+        const proto = Object.getPrototypeOf(value);
+        if (! proto)
+          return ['O', displayName];
+        let api = this._apiMap.get(proto);
+        if (api) {
+          return cache(this, value, orig, ['Os', displayName, api.testCase.name]);
+        }
+
+        return this.resolveObject(proto, displayName, orig);
+      }
+      if (! value.constructor || value.constructor === value)
+        return ['O', displayName];
+      value = value.constructor;
+      return this.resolveObject(value, displayName, orig);
+    }
 
     method(methodName) {
       const api = this;
@@ -93,6 +130,10 @@ define(function(require, exports, module) {
     testCaseFinished() {
     }
 
+    $inspect() {
+      return `{API(${this.subjectName})}`;
+    }
+
     serialize() {
       const ids = (this.subjectModules||[]).map(m => m.id);
       const abstracts = ids.map(id => {
@@ -109,10 +150,10 @@ define(function(require, exports, module) {
           intro: row.intro,
           calls: row.calls.map(([args, ans]) => {
             args = args.map(arg => this.serializeValue(arg));
-            if (ans)
-              return [args, this.serializeValue(ans)];
-            else
+            if (ans === undefined)
               return [args];
+            else
+              return [args, this.serializeValue(ans)];
           }),
         };
       }
@@ -132,7 +173,7 @@ define(function(require, exports, module) {
         return ['M', obj];
       switch (typeof obj) {
       case 'function':
-        return ['F', obj, obj.name];
+        return ['F', obj, obj.name || obj.toString()];
       case 'object':
         return ['O', obj, util.inspect(obj)];
       default:
@@ -141,8 +182,21 @@ define(function(require, exports, module) {
     }
 
     serializeValue(value) {
-      if (Array.isArray(value))
-        return [value[0], value[0] === 'M' ? this.bestId(value[1]): value[2]];
+      if (Array.isArray(value)) {
+        switch(value[0]) {
+        case 'M':
+          return ['M', this.bestId(value[1])];
+        case 'O':
+          const map = this.constructor._apiMap;
+          let api =  map.get(value[1]);
+          if (api)
+            return ['M', api.testCase.name];
+
+          return this.constructor.resolveObject(value[1], value[2]);
+        default:
+          return [value[0], value[2]];
+        }
+      }
 
       return value;
     }
@@ -152,6 +206,41 @@ define(function(require, exports, module) {
     }
   }
 
+  API._coreTypes = new Set([
+    Array,
+    ArrayBuffer,
+    Boolean,
+    Date,
+    Error,
+    EvalError,
+    Float32Array,
+    Float64Array,
+    Function,
+    Int16Array,
+    Int32Array,
+    Int8Array,
+    Map,
+    Math,
+    Number,
+    Object,
+    Promise,
+    RangeError,
+    ReferenceError,
+    RegExp,
+    Set,
+    String,
+    Symbol,
+    SyntaxError,
+    TypeError,
+    Uint16Array,
+    Uint32Array,
+    Uint8Array,
+    Uint8ClampedArray,
+    URIError,
+    WeakMap,
+    WeakSet,
+  ]);
+
   API.reset();
 
   TH.geddon.onEnd(module, function () {
@@ -159,12 +248,20 @@ define(function(require, exports, module) {
     API.reset();
   });
 
-  function createSubjectName(subject) {
+  function relType(orig, value) {
+    return orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
+  }
+
+  function createSubjectName(subject, tc) {
     const mods = ctx.exportsModule(subject);
     if (mods) {
-      return fileToCamel(mods[mods.length-1].id);
+      const id = toId(tc);
+      const mod = mods.find(mod => id === mod.id) || mods[0];
+      return fileToCamel(mod.id);
     }
   }
+
+  function toId(tc) {return tc.moduleId.replace(/-test$/, '');}
 
   function fileToCamel(fn) {
     return fn.replace(/-(\w)/g, (m, l) => l.toUpperCase())
@@ -181,6 +278,13 @@ define(function(require, exports, module) {
       this._instance.testCaseFinished();
       this._instance = null;
     }
+  }
+
+  function cache(API, value, orig, result) {
+    if (value !== orig)
+      API._objCache.set(value, ['C', result[1], result[2]]);
+    API._objCache.set(orig, result);
+    return result;
   }
 
   module.exports = API;

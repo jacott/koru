@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+branch="test"
+
+. `dirname "$0"`/environ.sh
+
+cd app
+exec node ${NODEDEBUG} --es_staging ../lib/api-to-html.js $branch "$@"

@@ -23,7 +23,7 @@ define(function (require, exports, module) {
        * Return a floating point <number> as a string to
        * <dp> decimal places.
        *
-       * @param {boolean} zerofill - pad with zeros.
+       * @param {boolean} zeroFill - pad with zeros.
        **/
       api.method('toDp');
       assert.same(util.toDp(10.7, 0), "11");
@@ -45,6 +45,10 @@ define(function (require, exports, module) {
     },
 
     "test pc" () {
+      /**
+       * Convert a <fraction> into css % string
+       **/
+      api.method('pc');
       assert.same(util.pc('1.2345678'), '123.45678%');
     },
 
@@ -94,7 +98,15 @@ define(function (require, exports, module) {
     },
 
     "test removeItem" () {
-      var foo = [1,2,3];
+      /**
+       * remove an <item> from a <list>. <list> is modified.
+       *
+       * Returns <item> if found
+       *
+       * @param item - can be a key-value object to compare the given keys.
+       **/
+      api.method('removeItem');
+      const foo = [1,2,3];
 
       assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
 
@@ -106,7 +118,7 @@ define(function (require, exports, module) {
 
       util.removeItem(foo); assert.equals(foo, []);
 
-      var bar = [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}];
+      const bar = [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}];
 
       assert.same(util.removeItem(bar, {name: 'bar', x: 1}), undefined);
       assert.equals(bar, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
@@ -124,6 +136,10 @@ define(function (require, exports, module) {
     },
 
     'test intersectp' () {
+      /**
+       * Determine if <list1> and <list2> intersect
+       **/
+      api.method('intersectp');
       assert(util.intersectp([1,4],[4,5]));
       refute(util.intersectp([1,2],['a']));
     },
@@ -406,10 +422,16 @@ define(function (require, exports, module) {
     },
 
     "test reverseForEach" () {
+      /**
+       * Visit <list> in reverse order.
+       *
+       * @param visitor - called with the list <item> and <index>
+       **/
+      api.method('reverseForEach');
       util.reverseForEach(null, v.stub = test.stub());
       refute.called(v.stub);
       var results = [];
-      util.reverseForEach(v.list = [1,2,3], function (val, index) {
+      util.reverseForEach(v.list = [1,2,3], (val, index) => {
         results.push(val+"."+index);
       });
 

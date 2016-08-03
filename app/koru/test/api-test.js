@@ -20,9 +20,30 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test module"() {
+      /**
+       * Specify the <subject> to be documented
+       *
+       * @param {[module,...]} subjectModules - list of modules that define the subject
+       **/
+      API.module(API, 'API');
+      API.method('module');
+
+      v.api.module();
+      const api = v.api._apiMap.get(API);
+      assert(api);
+      assert.same(api.subject, API);
+
+      const myHelper = {
+        clean() {}
+      };
+
+      v.api.module(myHelper, 'myHelper');
+    },
+
     "test method"() {
       /**
-       * Document <method> for the current subject
+       * Document <methodName> for the current subject
        **/
       API.module(API, 'API');
       API.method('method');
@@ -41,7 +62,7 @@ define(function (require, exports, module) {
       assert.equals(v.api.instance.methods.fnord, {
         test,
         sig: 'fnord(a)',
-        intro: 'Document <method> for the current subject',
+        intro: 'Document <methodName> for the current subject',
         subject: ['O', fooBar, '{fnord: => fnord}'],
         calls: [[
           [5], 10
@@ -53,7 +74,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.methods.method, {
         test,
         sig: 'method(methodName)',
-        intro: 'Document <method> for the current subject',
+        intro: 'Document <methodName> for the current subject',
         subject: ['M', API],
         calls: [[
           ['fnord'], undefined
@@ -83,11 +104,44 @@ define(function (require, exports, module) {
       assert.same(api.subjectName, 'fooBar');
     },
 
+    "test resolveObject"() {
+      assert.equals(v.api.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
+      v.api._apiMap.set(v.api, v.myApi = new v.api(test.tc, API, 'API', [{id: 'koru/test/api'}]));
+
+      assert.equals(v.ans = v.api.resolveObject(v.myApi, 'myApi'), ['Oi', 'myApi', 'koru/test/api']);
+      assert.msg('should cache').same(v.api.resolveObject(v.myApi), v.ans);
+
+      const foo = {foo: 123};
+
+      assert.equals(v.ans = v.api.resolveObject(foo, 'foo'), ['O', 'foo']);
+      assert.equals(v.ans = v.api.resolveObject(util.protoCopy(foo), 'ext foo'), ['O', 'ext foo']);
+
+      class SubApi extends v.api {}
+
+      assert.equals(v.ans = v.api.resolveObject(SubApi, 'sub'), ['Os', 'sub', 'koru/test/api']);
+
+      class S2ubApi extends SubApi {}
+      class S3ubApi extends S2ubApi {}
+
+      assert.equals(v.ans = v.api.resolveObject(S3ubApi, 's3'), ['Os', 's3', 'koru/test/api']);
+      assert.msg('should cache').same(v.api.resolveObject(S3ubApi), v.ans);
+
+      assert.equals(v.api.resolveObject(new S2ubApi(), 's2()'), ['Oi', 's2()', 'koru/test/api']);
+
+      assert.equals(v.api.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'), ['Oi', 'ext s2()', 'koru/test/api']);
+
+      assert.equals(v.api.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
+      assert.equals(v.api.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
+    },
+
     "test serialize"() {
       const fooBar = {
-        fnord(a, b) {return API}
+        fnord(a, b) {return new v.api()}
       };
       const api = new v.api(test.tc, fooBar, 'fooBar', [{id: 'koru/test/api'}]);
+
+      // map in superClass: API
+      v.api._apiMap.set(v.api, new v.api(test.tc, API, 'API', [{id: 'koru/test/api'}]));
 
       api.methods.fnord = {
         test,
@@ -97,7 +151,11 @@ define(function (require, exports, module) {
         calls: [[
           [2, ['F', test.stub, 'stub'], ['O', Date, '{special}']], ['M', API],
         ], [
-          ["x", true], undefined,
+          [
+            "x", true,
+            ['O', v.api, '{api extends API}'],
+          ],
+          undefined,
         ]]
       };
 
@@ -114,9 +172,12 @@ define(function (require, exports, module) {
             sig: 'fnord(a, b)',
             intro: 'Fnord ignores args; returns API',
             calls: [[
-              [2, ['F', 'stub'], ['O', '{special}']], ['M', 'koru/test/api'],
+              [2, ['F', 'stub'], ['O', '{special}', 'Date']], ['M', 'koru/test/api'],
             ],[
-              ['x', true]
+              [
+                'x', true,
+                ['M', 'koru/test/api'], // is actually a documented subject
+              ]
             ]],
           }
         },

@@ -23,13 +23,15 @@ define(function (require, exports, module) {
       };
       const api = v.api.module(fooBar, 'fooBar', [{id: 'koru/test/api'}]);
 
+      const Special = {};
+
       api.methods.fnord = {
         test,
         sig: 'fnord(a, b)',
         intro: 'Fnord ignores args; returns API',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [2, ['F', test.stub, 'stub'], ['O', Date, '{special}']], ['M', API]
+          [2, ['F', test.stub, 'stub'], ['O', Special, '{special}']], ['M', API]
         ]]
       };
 
