@@ -1,6 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
 define(function (require, exports, module) {
   var test, v;
   const TH   = require('./main');
@@ -36,21 +33,13 @@ define(function (require, exports, module) {
         ]]
       };
 
-
-      assert.same(v.api.OUT_DIR, path.resolve(module.toUrl('.'), '../../../../doc'));
-
-      v.api.OUT_DIR = 'out_dir';
-
-      test.stub(fs, 'readFileSync').throws(new Error("not found"));
-      test.stub(fs, 'writeFileSync');
+      test.stub(TH.session, 'sendBinary');
 
       v.api._record();
 
-      assert.calledWith(fs.readFileSync, 'out_dir/api.json');
-
-      assert.calledWith(fs.writeFileSync, 'out_dir/api.json', TH.match(out => {
-        assert.equals(JSON.parse(out), {
-          'koru/test/api-server': {
+      assert.calledWith(TH.session.sendBinary, 'G', [TH.match(out => {
+        assert.equals(out, {
+          'koru/test/api-client': {
             subject: {
               ids: ['koru/test/api'],
               name: 'fooBar',
@@ -58,7 +47,7 @@ define(function (require, exports, module) {
             },
             methods: {
               fnord: {
-                test: 'koru/test/api-server test _record',
+                test: 'koru/test/api-client test _record',
                 sig: 'fnord(a, b)',
                 intro: 'Fnord ignores args; returns API',
                 calls: [[
@@ -69,7 +58,7 @@ define(function (require, exports, module) {
           },
         });
         return true;
-      }));
+      })]);
     },
   });
 });

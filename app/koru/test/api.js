@@ -134,14 +134,14 @@ define(function(require, exports, module) {
       return `{API(${this.subjectName})}`;
     }
 
-    serialize() {
+    serialize(subject={}) {
+      const methods = subject.methods || (subject.methods = {});
       const ids = (this.subjectModules||[]).map(m => m.id);
       const abstracts = ids.map(id => {
         const mod = ctx.modules[id+'-test'];
         if (mod && mod.body)
           return docComment(mod.body);
       });
-      const methods = {};
       for (const methodName in this.methods) {
         const row = this.methods[methodName];
         methods[methodName] = {

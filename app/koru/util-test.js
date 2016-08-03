@@ -53,6 +53,10 @@ define(function (require, exports, module) {
     },
 
     "test px" () {
+      /**
+       * Convert a <fraction> into css % string
+       **/
+      api.method('px');
       assert.same(util.px('123.2345678'), '123px');
     },
 

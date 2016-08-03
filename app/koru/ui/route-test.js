@@ -1,5 +1,10 @@
 isClient && define(function (require, exports, module) {
+  /**
+   * Route is a paginging system within a one page app. It manages
+   * creating and destroying pages and recording history.
+   **/
   var test, v;
+  const api   = require('koru/test/api');
   const Dom   = require('../dom');
   const koru  = require('../main');
   const Route = require('./route');
@@ -25,6 +30,7 @@ isClient && define(function (require, exports, module) {
       test.stub(Route.history, 'pushState');
       test.stub(Route.history, 'replaceState');
       test.stub(koru, 'userId').returns("123");
+      api.module();
     },
 
     tearDown() {
@@ -277,6 +283,19 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Route.history.replaceState, 0, null, '/#foo#bar');
         assert.same(Route.currentPageRoute, v.pageRoute);
         assert.same(Route.currentHref, '/#foo#bar');
+      },
+
+      "test setTitle"() {
+        /**
+         * Set the <document.title> for the current page.
+         **/
+        api.method('setTitle');
+
+        test.intercept(Dom, 'setTitle', function (title) {v.title = title});
+
+        Route.setTitle('my title');
+
+        assert.same(v.title, 'my title');
       },
 
       "test gotoPage, pushCurrent, recordHistory, notify"() {

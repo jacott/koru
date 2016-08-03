@@ -159,7 +159,7 @@ define(function (require, exports, module) {
         ]]
       };
 
-      assert.equals(api.serialize(), {
+      assert.equals(api.serialize({methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}}), {
         subject: {
           ids: ['koru/test/api'],
           name: 'fooBar',
@@ -167,6 +167,7 @@ define(function (require, exports, module) {
                       'unit-tests to determine types and values at test time.'],
         },
         methods: {
+          foo: {sig: 'foo()'},
           fnord: {
             test: 'koru/test/api test serialize',
             sig: 'fnord(a, b)',
