@@ -8,12 +8,16 @@ define(function (require, exports, module) {
   const util = require('koru/util');
   const API  = require('./api');
 
+  const ctx = module.ctx;
+
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
       v.api = class extends API {};
+      v.api.isRecord = true;
       v.api.reset();
+      test.stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
     },
 
     tearDown() {
@@ -30,6 +34,7 @@ define(function (require, exports, module) {
       API.method('module');
 
       v.api.module();
+      assert.calledWith(ctx.exportsModule, API);
       const api = v.api._apiMap.get(API);
       assert(api);
       assert.same(api.subject, API);
@@ -51,6 +56,7 @@ define(function (require, exports, module) {
         fnord(a) {return a*2}
       };
 
+
       v.api.module(fooBar, 'fooBar');
       v.api.method('fnord');
 
@@ -70,31 +76,20 @@ define(function (require, exports, module) {
           [-1], -2
         ]]
       });
-
-      assert.equals(API.instance.methods.method, {
-        test,
-        sig: 'method(methodName)',
-        intro: 'Document <methodName> for the current subject',
-        subject: ['M', API],
-        calls: [[
-          ['fnord'], undefined
-        ]]
-      });
     },
 
     "test auto subject"() {
       TH.stubProperty(test.tc, "moduleId", {get() {
         return "foo-bar-test";
       }});
-      TH.stubProperty(module.ctx.modules, 'foo-bar', {value: v.subject = {
+      TH.stubProperty(ctx.modules, 'foo-bar', {value: v.subject = {
         id: 'foo-bar',
         exports: {},
       }});
-      TH.stubProperty(module.ctx.modules, 'foo-bar-test',
+      TH.stubProperty(ctx.modules, 'foo-bar-test',
                       {value: v.testModule = {}});
-      const exportsModule = test.spy(module.ctx, 'exportsModule');
 
-      exportsModule.withArgs(TH.match.is(v.subject.exports))
+      ctx.exportsModule.withArgs(TH.match.is(v.subject.exports))
         .returns([v.subject]);
 
       var api = v.api.instance;

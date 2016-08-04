@@ -3,12 +3,16 @@ define(function (require, exports, module) {
   const TH   = require('./main');
   const API  = require('./api');
 
+  const ctx = module.ctx;
+
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
       v.api = class extends API {};
+      v.api.isRecord = true;
       v.api.reset();
+      test.stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
     },
 
     tearDown() {

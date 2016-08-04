@@ -4,7 +4,6 @@ define(function(require) {
   require('koru/css/less-watcher');
   require('koru/server-rc');
   var webServer = require('koru/web-server');
-  var koru = require('koru/main');
   require('koru/test/server');
   require('koru/test/api');
 

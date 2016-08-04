@@ -22,6 +22,9 @@ define(function(require, exports, module) {
     }
 
     static module(subject, subjectName, subjectModules) {
+      if (! this.isRecord) {
+        return this._instance;
+      }
       const tc = TH.test._currentTestCase;
       if (subject === undefined) {
         subject = ctx.modules[toId(tc)].exports;
@@ -243,9 +246,22 @@ define(function(require, exports, module) {
 
   API.reset();
 
+  API.isRecord = module.config().record;
+
+  class APIOff extends API {
+    method() {}
+    done() {}
+  }
+
+  if (! API.isRecord) {
+    API._instance = new APIOff();
+  }
+
   TH.geddon.onEnd(module, function () {
-    API._record();
-    API.reset();
+    if (API.isRecord) {
+      API._record();
+      API.reset();
+    }
   });
 
   function relType(orig, value) {

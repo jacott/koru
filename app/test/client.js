@@ -1,13 +1,4 @@
-window.requirejs = window.yaajs
-window.yaajs.config({
-  packages: [
-    "koru", "koru/test", "koru/session",
-  ],
-
-  recordExports: true,
-
-  baseUrl: '/',
-});
+window.requirejs = window.yaajs;
 
 window.history.replaceState(null, '', '/');
 
