@@ -29,7 +29,7 @@ define(function(require, exports, module) {
     const json = JSON.parse(fs.readFileSync(`${OUT_DIR}/api.json`));
 
     const index = document.createElement();
-    index.innerHTML = fs.readFileSync(`${OUT_DIR}/index-template.html`).toString();
+    index.innerHTML = fs.readFileSync(`${OUT_DIR}/api-template.html`).toString();
 
     const tags = {};
 
@@ -114,7 +114,7 @@ define(function(require, exports, module) {
       }));
     });
 
-    fs.writeFileSync(`${OUT_DIR}/index.html`, `<!DOCTYPE html>\n${index.innerHTML}`);
+    fs.writeFileSync(`${OUT_DIR}/api.html`, `<!DOCTYPE html>\n${index.innerHTML}`);
   };
 
   function argProfile(method, i, arg) {

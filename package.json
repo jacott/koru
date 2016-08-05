@@ -18,6 +18,7 @@
   ],
   "author": "Geoff Jacobsen <geoffj@obeya.co>",
   "main": "lib/koru",
+  "bin": "./bin/koru",
   "gypfile": true,
   "dependencies": {
     "autoprefixer": "^6.3.6",
@@ -27,6 +28,7 @@
     "babylon": "^6.8.1",
     "bindings": "^1.2.1",
     "clean-css": "^3.4.17",
+    "commander": "^2.9.0",
     "css-selector-parser": "^1.1.0",
     "fibers": "^1.0.13",
     "htmlparser2": "^3.9.1",

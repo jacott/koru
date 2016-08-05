@@ -1,0 +1,28 @@
+<div class="koru-content">
+  <h1>Getting started</h1>
+
+  <abstract>
+    This guide describes how to build a koru one page application. We
+    will be building a simple todo application
+    called <b>koru-todo</b>.
+  </abstract>
+
+  <h2>Create initial System</h2>
+
+  Ensure you have admin access to postgresql
+  <tt>sudo -u postgres createuser -drs $USER</tt>
+
+  <h3>Method one</h3>
+  <ul>
+    <li>npm install --global koru</li>
+    <li>koru new koru-todo</li>
+    <li>cd koru-todo</li>
+  </ul>
+
+  <h3>Method two</h3>
+  <ul>
+    <li>mkdir koru-todo && cd koru-todo && npm init -y</li>
+    <li>npm install --save koru</li>
+    <li>node_modules/.bin/koru new</li>
+  </ul>
+</div>
