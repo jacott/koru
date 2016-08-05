@@ -1,18 +1,23 @@
 isClient && define(function (require, exports, module) {
+  /**
+   * css/loader allows dynamic replacement of css and less files when
+   * their contents change.
+   **/
   var test, v;
-  var TH = require('../test');
-  var koru = require('../main');
-  var sessionBase = require('../session/base').__initBase__;
-  var sut = require('./loader');
+  const api         = require('koru/test/api');
+  const koru        = require('../main');
+  const sessionBase = require('../session/base').__initBase__;
+  const TH          = require('../test');
+  const sut         = require('./loader');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.session = sessionBase('loader');
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
       var head = document.head;
       var sheets = document.querySelectorAll('head>link[rel=stylesheet]');
@@ -22,8 +27,13 @@ isClient && define(function (require, exports, module) {
       sut.removeAllCss();
     },
 
-    "test load all": function (done) {
+    "test load all"(done) {
+      /**
+       * Load all css and less files under <dir>
+       **/
       var loader = sut(v.session);
+      api.module(loader, "CssLoader");
+      api.method('loadAll');
       test.intercept(v.session, 'send', function (cmd, data) {
         TH.session.send(cmd, data);
       });
@@ -37,7 +47,7 @@ isClient && define(function (require, exports, module) {
       loader.loadAll('koru/css');
     },
 
-    "test loading css": function (done) {
+    "test loading css"(done) {
       refute.dom('head>link[rel=stylesheet]');
 
       var provide = test.stub(v.session, "provide");

@@ -1,0 +1,418 @@
+{
+  "koru/test/api": {
+    "subject": {
+      "ids": [
+        "koru/test/api"
+      ],
+      "name": "API",
+      "abstracts": [
+        "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
+      ]
+    },
+    "methods": {
+      "module": {
+        "test": "koru/test/api test module",
+        "sig": "module(subject, subjectName, subjectModules)",
+        "intro": "Specify the <subject> to be documented\n@param {[module,...]} subjectModules - list of modules that define the subject",
+        "calls": [
+          [
+            [],
+            [
+              "Oi",
+              "{API(API)}",
+              "koru/test/api"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{clean: => clean}"
+              ],
+              "myHelper"
+            ],
+            [
+              "Oi",
+              "{API(myHelper)}",
+              "koru/test/api"
+            ]
+          ],
+          [
+            [
+              [
+                "F",
+                "Elf"
+              ]
+            ],
+            [
+              "Oi",
+              "{API(Elf)}",
+              "koru/test/api"
+            ]
+          ]
+        ]
+      },
+      "new": {
+        "test": "koru/test/api test new",
+        "sig": "new()",
+        "intro": "Document <constructor> for the current subject\n@returns a ProxyClass which is to be used instead of `new Class`",
+        "calls": [
+          [
+            [],
+            [
+              "F",
+              "newProxy"
+            ]
+          ]
+        ]
+      },
+      "method": {
+        "test": "koru/test/api test method",
+        "sig": "method(methodName)",
+        "intro": "Document <methodName> for the current subject",
+        "calls": [
+          [
+            [
+              "fnord"
+            ]
+          ]
+        ]
+      }
+    }
+  },
+  "koru/util": {
+    "subject": {
+      "ids": [
+        "koru/util-base",
+        "koru/util",
+        "koru/util-server"
+      ],
+      "name": "util",
+      "abstracts": [
+        null,
+        "The util module provides commonly performed utility functions.",
+        null
+      ]
+    },
+    "methods": {
+      "toDp": {
+        "test": "koru/util test toDp",
+        "sig": "toDp(number, dp, zeroFill)",
+        "intro": "Return a floating point <number> as a string to\n<dp> decimal places.\n@param {boolean} zeroFill - pad with zeros.",
+        "calls": [
+          [
+            [
+              10.7,
+              0
+            ],
+            "11"
+          ],
+          [
+            [
+              2.6,
+              1
+            ],
+            "2.6"
+          ],
+          [
+            [
+              1.2345,
+              3,
+              true
+            ],
+            "1.235"
+          ],
+          [
+            [
+              1.2,
+              3,
+              true
+            ],
+            "1.200"
+          ],
+          [
+            [
+              10,
+              3
+            ],
+            "10"
+          ]
+        ]
+      },
+      "pc": {
+        "test": "koru/util test pc",
+        "sig": "pc(fraction)",
+        "intro": "Convert a <fraction> into css % string",
+        "calls": [
+          [
+            [
+              "1.2345678"
+            ],
+            "123.45678%"
+          ]
+        ]
+      },
+      "px": {
+        "test": "koru/util test px",
+        "sig": "px(value)",
+        "intro": "Convert a <fraction> into css % string",
+        "calls": [
+          [
+            [
+              "123.2345678"
+            ],
+            "123px"
+          ]
+        ]
+      },
+      "removeItem": {
+        "test": "koru/util test removeItem",
+        "sig": "removeItem(list, item)",
+        "intro": "remove an <item> from a <list>. <list> is modified.\nReturns <item> if found\n@param item - can be a key-value object to compare the given keys.",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "[1, 2, 3]",
+                "Array"
+              ],
+              2
+            ],
+            2
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 3]",
+                "Array"
+              ],
+              4
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 3]",
+                "Array"
+              ],
+              1
+            ],
+            1
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[3]",
+                "Array"
+              ],
+              3
+            ],
+            3
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[]",
+                "Array"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{name: 'bar', x: 1}"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{name: 'bar'}"
+              ]
+            ],
+            [
+              "O",
+              "{id: 5, name: 'bar'}"
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{id: 4, name: 'foo'}"
+              ]
+            ],
+            [
+              "O",
+              "{id: 4, name: 'foo'}"
+            ]
+          ]
+        ]
+      },
+      "intersectp": {
+        "test": "koru/util test intersectp",
+        "sig": "intersectp(list1, list2)",
+        "intro": "Determine if <list1> and <list2> intersect",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "[1, 4]",
+                "Array"
+              ],
+              [
+                "Oi",
+                "[4, 5]",
+                "Array"
+              ]
+            ],
+            true
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 2]",
+                "Array"
+              ],
+              [
+                "Oi",
+                "['a']",
+                "Array"
+              ]
+            ],
+            false
+          ]
+        ]
+      },
+      "reverseForEach": {
+        "test": "koru/util test reverseForEach",
+        "sig": "reverseForEach(list, visitor)",
+        "intro": "Visit <list> in reverse order.\n@param visitor - called with the list <item> and <index>",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "null"
+              ],
+              [
+                "F",
+                "stub"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 2, 3]",
+                "Array"
+              ],
+              [
+                "F",
+                "(val, index) => {\n        results.push(val+\".\"+index);\n      }"
+              ]
+            ]
+          ]
+        ]
+      }
+    }
+  },
+  "koru/ui/route": {
+    "subject": {
+      "ids": [
+        "koru/ui/route"
+      ],
+      "name": "Route",
+      "abstracts": [
+        "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
+      ]
+    },
+    "methods": {
+      "setTitle": {
+        "test": "koru/ui/route with routeVar test setTitle",
+        "sig": "setTitle(title)",
+        "intro": "Set the <document.title> for the current page.",
+        "calls": [
+          [
+            [
+              "my title"
+            ]
+          ]
+        ]
+      }
+    }
+  },
+  "koru/css/loader": {
+    "subject": {
+      "ids": [],
+      "name": "CssLoader",
+      "abstracts": []
+    },
+    "methods": {
+      "loadAll": {
+        "test": "koru/css/loader test load all",
+        "sig": "loadAll(dir)",
+        "intro": "Load all css and less files under <dir>",
+        "calls": [
+          [
+            [
+              "koru/css"
+            ]
+          ]
+        ]
+      }
+    }
+  },
+  "koru/idle-check": {
+    "subject": {
+      "ids": [
+        "koru/idle-check"
+      ],
+      "name": "IdleCheck",
+      "abstracts": [
+        "IdleCheck keeps count of usage and notifies when idle"
+      ]
+    },
+    "newInstance": {
+      "test": "koru/idle-check test constructor",
+      "sig": "constructor()",
+      "intro": null,
+      "calls": [
+        [
+          [],
+          [
+            "Oi",
+            "{_count: 0, _waitIdle: null}",
+            "koru/idle-check"
+          ]
+        ]
+      ]
+    },
+    "methods": {}
+  }
+}

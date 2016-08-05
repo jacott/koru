@@ -22,6 +22,7 @@ define(function(require, exports, module) {
     }
 
     static module(subject, subjectName, subjectModules) {
+
       if (! this.isRecord) {
         return this._instance;
       }
@@ -43,12 +44,14 @@ define(function(require, exports, module) {
       return this._instance;
     }
 
+    static new() {return this.instance.new()}
     static method(methodName) {this.instance.method(methodName)}
     static done() {this.instance.done()}
 
     static get instance() {return this._instance || this.module()}
 
     static resolveObject(value, displayName, orig=value) {
+
       if (value === null || value === Object)
         return ['O', displayName];
 
@@ -84,9 +87,40 @@ define(function(require, exports, module) {
       return this.resolveObject(value, displayName, orig);
     }
 
+    new() {
+      const api = this;
+      const {test} = TH;
+      const calls = [];
+
+      if (! api.newInstance) {
+        api.newInstance = {
+          test,
+          sig: funcToSig(api.subject),
+          intro: docComment(test.func),
+          calls
+        };
+      }
+
+      if (typeof api.subject !== 'function')
+        throw new Error("api.new called on non function");
+
+      return newProxy;
+
+      function newProxy(...args) {
+        const entry = [
+           args.map(obj => api.valueTag(obj)),
+           undefined,
+         ];
+        calls.push(entry);
+        const ans = new api.subject(...args);
+        entry[1] = api.valueTag(ans);
+        return ans;
+      };
+    }
+
     method(methodName) {
       const api = this;
-      const test = TH.test;
+      const {test} = TH;
       const calls = [];
       const func = api.subject[methodName];
 
@@ -94,7 +128,7 @@ define(function(require, exports, module) {
       if (! details) {
         details = api.methods[methodName] = {
           test,
-          sig: func.toString().replace(/\s*{[\s\S]*$/, ''),
+          sig: funcToSig(func),
           intro: docComment(test.func),
           subject: api.valueTag(api.subject),
           calls
@@ -151,21 +185,21 @@ define(function(require, exports, module) {
           test: row.test.name,
           sig: row.sig,
           intro: row.intro,
-          calls: row.calls.map(([args, ans]) => {
-            args = args.map(arg => this.serializeValue(arg));
-            if (ans === undefined)
-              return [args];
-            else
-              return [args, this.serializeValue(ans)];
-          }),
+          calls: serializeCalls(this, row.calls),
         };
+      }
+      const {newInstance} = this;
+      if (newInstance) {
+        newInstance.test = newInstance.test.name;
+        newInstance.calls = serializeCalls(this, newInstance.calls);
       }
       return {
         subject: {
           ids,
           name: this.subjectName,
-          abstracts,
+            abstracts,
         },
+        newInstance,
         methods,
       };
     }
@@ -194,6 +228,7 @@ define(function(require, exports, module) {
           let api =  map.get(value[1]);
           if (api)
             return ['M', api.testCase.name];
+
 
           return this.constructor.resolveObject(value[1], value[2]);
         default:
@@ -269,6 +304,8 @@ define(function(require, exports, module) {
   }
 
   function createSubjectName(subject, tc) {
+    if (typeof subject === 'function') return subject.name;
+
     const mods = ctx.exportsModule(subject);
     if (mods) {
       const id = toId(tc);
@@ -278,6 +315,19 @@ define(function(require, exports, module) {
   }
 
   function toId(tc) {return tc.moduleId.replace(/-test$/, '');}
+
+  function funcToSig(func) {
+    const code = func.toString();
+    let m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{[\s\S]*$/.exec(code);
+    if (m) return `constructor${m[1]}`;
+
+    m = /^([^(]+\([^\)]*\))\s*\{[\s\S]*$/.exec(code);
+
+    if (! m)
+      throw new Error("Can't find signature of "+code);
+
+    return m[1];
+  }
 
   function fileToCamel(fn) {
     return fn.replace(/-(\w)/g, (m, l) => l.toUpperCase())
@@ -301,6 +351,16 @@ define(function(require, exports, module) {
       API._objCache.set(value, ['C', result[1], result[2]]);
     API._objCache.set(orig, result);
     return result;
+  }
+
+  function serializeCalls(api, calls) {
+    return calls.map(([args, ans]) => {
+      args = args.map(arg => api.serializeValue(arg));
+      if (ans === undefined)
+        return [args];
+      else
+        return [args, api.serializeValue(ans)];
+    });
   }
 
   module.exports = API;

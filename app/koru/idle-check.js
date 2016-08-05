@@ -1,35 +1,38 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
+  class IdleCheck {
+    constructor() {
+      this._count = 0;
+      this._waitIdle = null;
+    }
 
-  function idleCheck() {
-    var count = 0;
-    var waitIdle = null;
+    get count() {return this._count;}
 
-    return {
-      get count() {return count},
-      waitIdle: function (func) {
-        if (count === 0) func();
-        else {
-          if (! waitIdle)
-            waitIdle = [func];
-          else
-            waitIdle.push(func);
-        }
-      },
-      inc: function () {
-        return ++count;
-      },
-      dec: function () {
-        if (--count === 0 & waitIdle !== null) {
-          var funcs = waitIdle;
-          waitIdle = null;
-          util.forEach(funcs, function (func) {func()});
-        }
-      },
-    };
+    waitIdle(func) {
+      if (this._count === 0) func();
+      else {
+        if (! this._waitIdle)
+          this._waitIdle = [func];
+        else
+          this._waitIdle.push(func);
+      }
+    }
+
+    inc() {
+      return ++this._count;
+    }
+
+    dec() {
+      if (--this._count === 0 & this._waitIdle !== null) {
+        var funcs = this._waitIdle;
+        this._waitIdle = null;
+        util.forEach(funcs, function (func) {func()});
+      }
+    }
   }
 
-  idleCheck.singleton = idleCheck();
-  return idleCheck;
+  module.exports = IdleCheck;
+
+  IdleCheck.singleton = new IdleCheck();
 });

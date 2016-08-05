@@ -7,4 +7,3 @@ TAG*
 /build
 /app/cmd-client.js
 /app/test/server-ready.js
-doc/api.json

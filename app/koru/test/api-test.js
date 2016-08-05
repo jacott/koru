@@ -44,6 +44,49 @@ define(function (require, exports, module) {
       };
 
       v.api.module(myHelper, 'myHelper');
+
+      class Elf {
+      }
+
+      v.api.module(Elf);
+
+      assert.same(v.api.instance.subjectName, 'Elf');
+    },
+
+    "test new"() {
+      /**
+       * Document <constructor> for the current subject
+       *
+       * @returns a ProxyClass which is to be used instead of `new Class`
+       **/
+      API.module(API, 'API');
+      API.method('new');
+
+      class Hobbit {
+        constructor(name) {
+          this.name = name;
+        }
+        $inspect() {return `{Hobbit:${this.name}}`;}
+      }
+
+      v.api.module(Hobbit);
+      var newHobbit = v.api.new();
+
+      var bilbo = newHobbit('Bilbo');
+
+      assert.same(bilbo.name, 'Bilbo');
+
+      v.api.done();
+
+      assert.equals(v.api.instance.newInstance, {
+        test,
+        sig: 'constructor(name)',
+        intro: 'Document <constructor> for the current subject\n@returns a ProxyClass which is to be used instead of `new Class`',
+        calls: [[
+          ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
+        ]],
+      });
+
     },
 
     "test method"() {
@@ -138,6 +181,21 @@ define(function (require, exports, module) {
       // map in superClass: API
       v.api._apiMap.set(v.api, new v.api(test.tc, API, 'API', [{id: 'koru/test/api'}]));
 
+      class Hobbit {
+        constructor(name) {this.name = name;}
+      }
+      v.api._apiMap.set(Hobbit, new v.api({name: 'koru/test/hobbit'}, Hobbit, 'Hobbit',
+                                         [{id: 'koru/test/hobbit'}]));
+
+      api.newInstance = {
+        test,
+        sig: 'new fooBar(foo)',
+        intro: 'intro for foobar newInstance',
+        calls: [[
+          ['name'], ['O', new Hobbit('Pippin'), '{Hobbit:instance}']
+        ]]
+      },
+
       api.methods.fnord = {
         test,
         sig: 'fnord(a, b)',
@@ -160,6 +218,15 @@ define(function (require, exports, module) {
           name: 'fooBar',
           abstracts: ['API is a semi-automatic API document generator. It uses\n'+
                       'unit-tests to determine types and values at test time.'],
+        },
+        newInstance: {
+          test: 'koru/test/api test serialize',
+          sig: 'new fooBar(foo)',
+          intro: 'intro for foobar newInstance',
+          calls: [[
+            ['name'], ['Oi', '{Hobbit:instance}', 'koru/test/hobbit']
+          ]]
+
         },
         methods: {
           foo: {sig: 'foo()'},

@@ -4,7 +4,6 @@ define(function (require, exports, module) {
   var koru = require('../main');
   var util = require('../util');
   var message = require('./message');
-  var IdleCheck = require('../idle-check').singleton;
   var makeSubject = require('../make-subject');
   var BatchMessage = require('./batch-message');
 

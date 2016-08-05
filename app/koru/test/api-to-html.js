@@ -45,8 +45,11 @@ define(function(require, exports, module) {
 
     const {header, links, pages} = tags;
 
+
+
     Object.keys(json).sort().forEach(id => {
-      const {subject, methods} = json[id];
+      const {newInstance, subject, methods} = json[id];
+      const requireLine = {class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]};
 
       const idIdx = subject.ids.indexOf(id);
 
@@ -58,56 +61,8 @@ define(function(require, exports, module) {
           {h2: subject.name},
           {abstract: jsdocToHtml(subject.abstracts[idIdx])},
           {div: [
-            {h4: "Methods"},
-            {div: Object.keys(methods).map(name => {
-              const method = methods[name];
-              const ast = parse(method.sig);
-              let args;
-              const argMap = {};
-              traverse(ast, {
-                CallExpression (path) {
-                  path.shouldSkip = true;
-                  args = path.node.arguments.map((arg, i) => {
-                    if (arg.type === 'Identifier') {
-                      argMap[arg.name] = argProfile(method, i, arg);
-                      return arg.name;
-                    }
-                  });
-                }
-              });
-              const examples = method.calls.length ? [
-                {h6: "Example"},
-                {class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]},
-                {table: {tbody: method.calls.map(call => Dom.h({
-                class: 'jsdoc-example',
-                tr: [{td: `${subject.name}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
-                     call[1] === undefined ? '' : {td: ['// returns ', valueToLink(call[1])]}],
-                }))}},
-              ] : [];
-
-              return {
-                div: [
-                  {h5: `${subject.name}.${method.sig}`},
-                  {abstract: jsdocToHtml(method.intro, argMap, id)},
-                  args && args.length ? {class: "jsdoc-args", div: [
-                    {h6: "Parameters"},
-                    {table: {tbody: args.map(arg => {
-                      const am = argMap[arg];
-                      return {
-                        class: "jsdoc-arg", tr: [
-                          {td: arg},
-                          {td: [{a: am.type, $href: am.href},
-                                am.optional ? '(optional) ' : '']
-                          },
-                          {td: am.info}
-                        ]
-                      };
-                    })}},
-                    ...examples,
-                  ]} : "",
-                ]
-              };
-            })},
+            newInstance && buildConstructor(id, subject, newInstance, requireLine),
+            util.isObjEmpty(methods) || buildMethods(id, subject, methods, requireLine),
           ]},
           // {pre: JSON.stringify(json, null, 2)}
         ],
@@ -117,10 +72,101 @@ define(function(require, exports, module) {
     fs.writeFileSync(`${OUT_DIR}/api.html`, `<!DOCTYPE html>\n${index.innerHTML}`);
   };
 
-  function argProfile(method, i, arg) {
+  function buildConstructor(id, subject, {sig, intro, calls}, requireLine) {
+    const {args, argMap} = mapArgs(sig, calls);
+    const examples = calls.length && {div: [
+      {h6: "Example"},
+      requireLine,
+      {table: {tbody: calls.map(call => Dom.h({
+        class: 'jsdoc-example',
+        tr: [{td: `new ${subject.name}(${call[0].map(arg => valueToText(arg)).join(", ")});`}],
+      }))}},
+    ]};
+    return {div: [
+      {h5: sig},
+      {abstract: jsdocToHtml(intro, argMap, id)},
+      buildParams(args, argMap),
+      examples,
+    ]};
+  }
+
+  function buildMethods(id, subject, methods, requireLine) {
+    return {div: [
+      {h4: "Methods"},
+      {div: Object.keys(methods).map(name => {
+        const {sig, intro, calls} = methods[name];
+        const {args, argMap} = mapArgs(sig, calls);
+        const examples = calls.length && {div: [
+          {h6: "Example"},
+          requireLine,
+          {table: {tbody: calls.map(call => Dom.h({
+            class: 'jsdoc-example',
+            tr: [{td: `${subject.name}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
+                 call[1] === undefined ? '' : {td: ['// returns ', valueToLink(call[1])]}],
+          }))}},
+        ]};
+
+        return {
+          div: [
+            {h5: `${subject.name}.${sig}`},
+            {abstract: jsdocToHtml(intro, argMap, id)},
+            buildParams(args, argMap),
+            examples,
+          ]
+        };
+      })},
+    ]};
+  }
+
+  function mapArgs(sig, calls) {
+    sig = /^function\b/.test(sig) ? sig + '{}' : '__'+sig;
+    try {
+      var ast = parse(sig);
+    } catch(ex) {
+      const msg = `Error parsing ${sig}`;
+      if (ex.name === 'SyntaxError')
+        throw new Error(`${msg}:\n${ex}`);
+      koru.error(msg);
+      throw ex;
+    }
+    let args;
+    const argMap = {};
+    traverse(ast, {
+      CallExpression (path) {
+        path.shouldSkip = true;
+        args = path.node.arguments.map((arg, i) => {
+          if (arg.type === 'Identifier') {
+            argMap[arg.name] = argProfile(calls, i, arg);
+            return arg.name;
+          }
+        });
+      }
+    });
+    return {args, argMap};
+  }
+
+  function buildParams(args, argMap) {
+    return args && args.length && {class: "jsdoc-args", div: [
+      {h6: "Parameters"},
+      {table: {tbody: args.map(arg => {
+        const am = argMap[arg];
+        return {
+          class: "jsdoc-arg", tr: [
+            {td: arg},
+            {td: [{a: am.type, $href: am.href},
+                  am.optional ? '(optional) ' : '']
+            },
+            {td: am.info}
+          ]
+        };
+      })}},
+    ]};
+  }
+
+  function argProfile(calls, i, arg) {
     let optional = false;
     let types = {};
-    method.calls.forEach(call => {
+    calls.forEach(call => {
       const entry = call[0][i];
       if (entry === undefined) {
         optional = true;
@@ -159,7 +205,7 @@ define(function(require, exports, module) {
 
   function jsdocToHtml(text, argMap, apiId) {
     const div = document.createElement('div');
-    const [info, ...meta] = text.split(/[\n\r]\s*@(?=\w+)/);
+    const [info, ...meta] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
     if (meta.length) {
       const params = meta
