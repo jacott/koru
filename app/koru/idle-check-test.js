@@ -1,6 +1,7 @@
 isServer && define(function (require, exports, module) {
   /**
-   * IdleCheck keeps count of usage and notifies when idle
+   * IdleCheck keeps count of usage and notifies when idle.
+   *
    **/
   var test, v;
   const api = require('koru/test/api');
@@ -20,11 +21,11 @@ isServer && define(function (require, exports, module) {
 
     "test singleton"() {
       /**
-       * An instance of <IdleCheck> used by
-       * {@module:koru/web-server-factory} and
-       * {@module:session/server-connection}
+       * The default <IdleCheck>. It is used by {@module
+       * koru/web-server-factory} and {@module
+       * session/server-connection}
        **/
-// FIMXE      api.property('singleton');
+      api.property('singleton');
       assert.same(IdleCheck.singleton, IdleCheck.singleton);
       assert(IdleCheck.singleton instanceof IdleCheck);
     },
@@ -36,7 +37,7 @@ isServer && define(function (require, exports, module) {
 
     "waitIdle": {
       setUp() {
-        //   FIMXE     api.protoMethod('waitIdle');
+        //   FIXME     api.protoMethod('waitIdle');
         v.idleCheck = new IdleCheck();
       },
 

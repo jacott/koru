@@ -60,6 +60,8 @@ define(function (require, exports, module) {
               name: 'fooBar',
               abstracts: TH.match.any,
             },
+            newInstance: undefined,
+            properties: undefined,
             methods: {
               fnord: {
                 test: 'koru/test/api-server test _record',

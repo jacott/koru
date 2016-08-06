@@ -153,7 +153,7 @@ define(function(require, exports, module) {
         return setHint();
       var len = actual.length;
       if (expected.length !== len)
-        return hint ? setHint(actual, expected, 'lengths differ: ' + actual.length + ' != ' + expected.length) : false;
+        return hint ? setHint(actual, expected, ' lengths differ: ' + actual.length + ' != ' + expected.length) : false;
       for(var i = 0; i < len; ++i) {
         if (! deepEqual(actual[i], expected[i], hint, hintField)) return setHint();
       }
@@ -166,7 +166,10 @@ define(function(require, exports, module) {
     const akeys = Object.keys(actual);
     const ekeys = Object.keys(expected);
     if (ekeys.length !== akeys.length)
-      return hint ? setHint(actual, expected, 'lengths differ: ' + akeys.length + ' != ' + ekeys.length) : false;
+      return hint ?
+      setHint(actual, expected, ' keys differ:\n    ' +
+              util.inspect(akeys.sort()) + '\n != ' + util.inspect(ekeys.sort()))
+      : false;
 
     for (let i = 0; i < ekeys.length; ++i) {
       const key = ekeys[i];

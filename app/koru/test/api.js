@@ -11,6 +11,8 @@ define(function(require, exports, module) {
       this.subject = subject;
       this.subjectName = subjectName;
       this.subjectModules = subjectModules;
+      this.newInstance = this.properties = this.currentComment =
+        this.lastMethod = null;
       this.methods = {};
     }
 
@@ -45,6 +47,9 @@ define(function(require, exports, module) {
     }
 
     static new() {return this.instance.new()}
+    static property(name, options) {this.instance.property(name, options)}
+    static comment(comment) {this.instance.comment(comment)}
+    static example(body) {this.instance.example(body)}
     static method(methodName) {this.instance.method(methodName)}
     static done() {this.instance.done()}
 
@@ -118,15 +123,74 @@ define(function(require, exports, module) {
       };
     }
 
+    property(name, options) {
+      const api = this;
+      inner(name, options, this.subject[name],
+                   this.properties || (this.properties = {}));
+
+      function inner(name, options, value, properties) {
+        const property = properties[name] || (properties[name] = {});
+        property.value = api.valueTag(value);
+        switch (typeof options) {
+        case 'string':
+          property.info = options;
+          break;
+        case 'undefined':
+          property.info = docComment(TH.test.func);
+          break;
+        case 'function':
+          property.info = options(value);
+          break;
+        case 'object':
+          if (options != null) {
+            if (options.info) property.info = options.info;
+            if (options.properties) {
+              const properties = property.properties ||
+                      (property.properties = {});
+              for (let name in options.properties) {
+                inner(name, options.properties[name],
+                      value[name], properties);
+              }
+            }
+            break;
+          }
+        default:
+          throw new Error("invalid options supplied for property "+name);
+        }
+      }
+    }
+
+    comment(comment) {
+      this.currentComment = comment;
+    }
+
+    example(body) {
+      if (! this.lastMethod)
+        throw new Error("API.method has not been called!");
+      const callLength = this.lastMethod.calls.length;
+      try {
+        body();
+      } finally {
+        const calls = this.lastMethod.calls.slice(callLength);
+        this.lastMethod.calls.length = callLength;
+        this.lastMethod.calls.push({
+          body: body.toString().replace(/^.*{/, '').replace(/}\s*$/, ''),
+          calls,
+        });
+      }
+    }
+
     method(methodName) {
       const api = this;
       const {test} = TH;
-      const calls = [];
       const func = api.subject[methodName];
+      if (! func)
+        throw new Error(`method "${methodName}" not found`);
 
       let details = api.methods[methodName];
+      const calls = details ? details.calls : [];
       if (! details) {
-        details = api.methods[methodName] = {
+        details = api.lastMethod = api.methods[methodName] = {
           test,
           sig: funcToSig(func),
           intro: docComment(test.func),
@@ -135,13 +199,17 @@ define(function(require, exports, module) {
         };
       }
 
-
       const orig = koru.replaceProperty(api.subject, methodName, {
         value: function (...args) {
           const entry = [
             args.map(obj => api.valueTag(obj)),
             undefined,
           ];
+          const {currentComment} = api;
+          if (currentComment) {
+            entry.push(currentComment);
+            api.currentComment = null;
+          }
           calls.push(entry);
           const ans = func.apply(this, args);
           entry[1] = api.valueTag(ans);
@@ -188,11 +256,12 @@ define(function(require, exports, module) {
           calls: serializeCalls(this, row.calls),
         };
       }
-      const {newInstance} = this;
+      const {newInstance, properties} = this;
       if (newInstance) {
         newInstance.test = newInstance.test.name;
         newInstance.calls = serializeCalls(this, newInstance.calls);
       }
+      properties && serializeProperties(this, properties);
       return {
         subject: {
           ids,
@@ -200,6 +269,7 @@ define(function(require, exports, module) {
             abstracts,
         },
         newInstance,
+        properties,
         methods,
       };
     }
@@ -210,7 +280,7 @@ define(function(require, exports, module) {
         return ['M', obj];
       switch (typeof obj) {
       case 'function':
-        return ['F', obj, obj.name || obj.toString()];
+        return ['F', obj, obj.name || funcToSig(obj)];
       case 'object':
         return ['O', obj, util.inspect(obj)];
       default:
@@ -318,15 +388,20 @@ define(function(require, exports, module) {
 
   function funcToSig(func) {
     const code = func.toString();
-    let m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{[\s\S]*$/.exec(code);
+    let m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{/.exec(code);
     if (m) return `constructor${m[1]}`;
 
-    m = /^([^(]+\([^\)]*\))\s*\{[\s\S]*$/.exec(code);
+    m = /^([^(]+\([^\)]*\))\s*\{/.exec(code);
+
+    if (m)
+      return m[1];
+
+    m = /^(\([^\)]*\)|\w+)\s*=>/.exec(code);
 
     if (! m)
-      throw new Error("Can't find signature of "+code);
+    throw new Error("Can't find signature of "+code);
 
-    return m[1];
+    return m[1] += ' => {...}';
   }
 
   function fileToCamel(fn) {
@@ -335,8 +410,9 @@ define(function(require, exports, module) {
   }
 
   function docComment(func) {
+
     let m = /\/\*\*\s*([\s\S]*?)\s*\*\*\//.exec(func.toString());
-    return m && m[1].slice(2).replace(/^\s*\*\s/mg, '');
+    return m && m[1].slice(2).replace(/^\s*\* ?/mg, '');
   }
 
   function testCaseFinished() {
@@ -354,13 +430,34 @@ define(function(require, exports, module) {
   }
 
   function serializeCalls(api, calls) {
-    return calls.map(([args, ans]) => {
-      args = args.map(arg => api.serializeValue(arg));
+    return calls.map(row => {
+      if (Array.isArray(row))
+        return serializeCall(api, row);
+
+      row.calls = serializeCalls(api, row.calls);
+      return row;
+    });
+  }
+
+  function serializeCall(api, [args, ans, comment]) {
+    args = args.map(arg => api.serializeValue(arg));
+    if (comment === undefined) {
       if (ans === undefined)
         return [args];
       else
         return [args, api.serializeValue(ans)];
-    });
+    }
+    return [args, api.serializeValue(ans), comment];
+  }
+
+  function serializeProperties(api, properties) {
+    for (const name in properties) {
+      const property = properties[name];
+      if (property.value !== undefined)
+        property.value = api.serializeValue(property.value);
+      property.properties &&
+        serializeProperties(api, property.properties);
+    }
   }
 
   module.exports = API;

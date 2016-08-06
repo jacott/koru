@@ -9,11 +9,13 @@
         "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
       ]
     },
+    "newInstance": null,
+    "properties": null,
     "methods": {
       "module": {
         "test": "koru/test/api test module",
         "sig": "module(subject, subjectName, subjectModules)",
-        "intro": "Specify the <subject> to be documented\n@param {[module,...]} subjectModules - list of modules that define the subject",
+        "intro": "Specify the <subject> to be documented\n\n@param {[module,...]} subjectModules - list of modules that define the subject",
         "calls": [
           [
             [],
@@ -52,10 +54,87 @@
           ]
         ]
       },
+      "example": {
+        "test": "koru/test/api test example",
+        "sig": "example(body)",
+        "intro": "Run a section of as an example of a method call.",
+        "calls": [
+          [
+            [
+              [
+                "F",
+                "body"
+              ]
+            ]
+          ],
+          {
+            "body": "\n        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module(Color);\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "() => {...}"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "comment": {
+        "test": "koru/test/api test comment",
+        "sig": "comment(comment)",
+        "intro": "Add a comment before the next example",
+        "calls": [
+          {
+            "body": "\n        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module(Excercise);\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
+            "calls": [
+              [
+                [
+                  "Optionally set the default duration"
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "property": {
+        "test": "koru/test/api test property",
+        "sig": "property(name, options)",
+        "intro": "Document a property of the current subject",
+        "calls": [
+          [
+            [
+              "theme",
+              [
+                "O",
+                "{info: 'The default theme', properties: {name: => name, primaryColor: 'The primary color is ${value}'}}"
+              ]
+            ]
+          ],
+          [
+            [
+              "logger",
+              [
+                "F",
+                "value => {...}"
+              ]
+            ]
+          ],
+          [
+            [
+              "width"
+            ],
+            null,
+            "If no info supplied then the test description is used"
+          ]
+        ]
+      },
       "new": {
         "test": "koru/test/api test new",
         "sig": "new()",
-        "intro": "Document <constructor> for the current subject\n@returns a ProxyClass which is to be used instead of `new Class`",
+        "intro": "Document <constructor> for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`",
         "calls": [
           [
             [],
@@ -94,11 +173,13 @@
         null
       ]
     },
+    "newInstance": null,
+    "properties": null,
     "methods": {
       "toDp": {
         "test": "koru/util test toDp",
         "sig": "toDp(number, dp, zeroFill)",
-        "intro": "Return a floating point <number> as a string to\n<dp> decimal places.\n@param {boolean} zeroFill - pad with zeros.",
+        "intro": "Return a floating point <number> as a string to\n<dp> decimal places.\n\n@param {boolean} zeroFill - pad with zeros.",
         "calls": [
           [
             [
@@ -168,7 +249,7 @@
       "removeItem": {
         "test": "koru/util test removeItem",
         "sig": "removeItem(list, item)",
-        "intro": "remove an <item> from a <list>. <list> is modified.\nReturns <item> if found\n@param item - can be a key-value object to compare the given keys.",
+        "intro": "remove an <item> from a <list>. <list> is modified.\n\nReturns <item> if found\n\n@param item - can be a key-value object to compare the given keys.",
         "calls": [
           [
             [
@@ -311,7 +392,7 @@
       "reverseForEach": {
         "test": "koru/util test reverseForEach",
         "sig": "reverseForEach(list, visitor)",
-        "intro": "Visit <list> in reverse order.\n@param visitor - called with the list <item> and <index>",
+        "intro": "Visit <list> in reverse order.\n\n@param visitor - called with the list <item> and <index>",
         "calls": [
           [
             [
@@ -334,7 +415,7 @@
               ],
               [
                 "F",
-                "(val, index) => {\n        results.push(val+\".\"+index);\n      }"
+                "(val, index) => {...}"
               ]
             ]
           ]
@@ -352,6 +433,8 @@
         "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
       ]
     },
+    "newInstance": null,
+    "properties": null,
     "methods": {
       "setTitle": {
         "test": "koru/ui/route with routeVar test setTitle",
@@ -373,6 +456,8 @@
       "name": "CssLoader",
       "abstracts": []
     },
+    "newInstance": null,
+    "properties": null,
     "methods": {
       "loadAll": {
         "test": "koru/css/loader test load all",
@@ -395,7 +480,7 @@
       ],
       "name": "IdleCheck",
       "abstracts": [
-        "IdleCheck keeps count of usage and notifies when idle"
+        "IdleCheck keeps count of usage and notifies when idle.\n"
       ]
     },
     "newInstance": {
@@ -412,6 +497,16 @@
           ]
         ]
       ]
+    },
+    "properties": {
+      "singleton": {
+        "value": [
+          "Oi",
+          "{_count: 0, _waitIdle: null}",
+          "koru/idle-check"
+        ],
+        "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
+      }
     },
     "methods": {}
   }

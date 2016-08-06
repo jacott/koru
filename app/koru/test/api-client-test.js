@@ -50,6 +50,7 @@ define(function (require, exports, module) {
               abstracts: TH.match.any,
             },
             newInstance: undefined,
+            properties: undefined,
             methods: {
               fnord: {
                 test: 'koru/test/api-client test _record',

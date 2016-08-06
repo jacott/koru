@@ -48,20 +48,21 @@ define(function(require, exports, module) {
 
 
     Object.keys(json).sort().forEach(id => {
-      const {newInstance, subject, methods} = json[id];
-      const requireLine = {class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]};
+      const {subject, newInstance, properties, methods} = json[id];
+      const requireLine = Dom.h({class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]});
 
       const idIdx = subject.ids.indexOf(id);
 
       links.appendChild(idToLink(id));
       pages.appendChild(Dom.h({
         id: id,
-        class: "mdl-layout__content",
-        main: [
+        class: "",
+        section: [
           {h2: subject.name},
           {abstract: jsdocToHtml(subject.abstracts[idIdx])},
           {div: [
             newInstance && buildConstructor(id, subject, newInstance, requireLine),
+            properties && buildProperties(id, subject, properties),
             util.isObjEmpty(methods) || buildMethods(id, subject, methods, requireLine),
           ]},
           // {pre: JSON.stringify(json, null, 2)}
@@ -72,11 +73,35 @@ define(function(require, exports, module) {
     fs.writeFileSync(`${OUT_DIR}/api.html`, `<!DOCTYPE html>\n${index.innerHTML}`);
   };
 
+  function buildProperties(id, subject, properties) {
+    const rows = [];
+    addRows(properties);
+
+    function addRows(properties) {
+      const argMap = {};
+      for (const name in properties) {
+        const property = properties[name];
+        const info = jsdocToHtml(property.info, argMap, id);
+        rows.push({tr: [
+          {td: name},
+          {td: info}
+        ]});
+
+        property.properties && addRows(property.properties);
+      }
+    }
+
+    return {div: [
+      {h5: 'Properies'},
+      {table: {tbody: rows}}
+    ]};
+  }
+
   function buildConstructor(id, subject, {sig, intro, calls}, requireLine) {
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
       {h6: "Example"},
-      requireLine,
+      requireLine.cloneNode(true),
       {table: {tbody: calls.map(call => Dom.h({
         class: 'jsdoc-example',
         tr: [{td: `new ${subject.name}(${call[0].map(arg => valueToText(arg)).join(", ")});`}],
@@ -98,11 +123,14 @@ define(function(require, exports, module) {
         const {args, argMap} = mapArgs(sig, calls);
         const examples = calls.length && {div: [
           {h6: "Example"},
-          requireLine,
+          requireLine.cloneNode(true),
           {table: {tbody: calls.map(call => Dom.h({
             class: 'jsdoc-example',
-            tr: [{td: `${subject.name}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
-                 call[1] === undefined ? '' : {td: ['// returns ', valueToLink(call[1])]}],
+            tr: Array.isArray(call) ?
+              [{td: `${subject.name}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
+               call[1] === undefined ? '' : {td: ['// returns ', valueToLink(call[1])]}]
+            : [{$colspan: 2, class: 'jsdoc-code-body', td: [
+              {pre: call.body}]}],
           }))}},
         ]};
 
@@ -166,24 +194,33 @@ define(function(require, exports, module) {
   function argProfile(calls, i, arg) {
     let optional = false;
     let types = {};
-    calls.forEach(call => {
-      const entry = call[0][i];
-      if (entry === undefined) {
-        optional = true;
-      } else {
-        if (Array.isArray(entry)) {
-          let value;
-          switch (entry[0]) {
-          case 'O': value = 'object'; break;
-          case 'F': value = 'function'; break;
-          default: value = entry[entry.length-1];
+
+    function iterCalls(calls) {
+      calls.forEach(call => {
+        if (Array.isArray(call)) {
+          const entry = call[0][i];
+          if (entry === undefined) {
+            optional = true;
+          } else {
+            if (Array.isArray(entry)) {
+              let value;
+              switch (entry[0]) {
+              case 'O': value = 'object'; break;
+              case 'F': value = 'function'; break;
+              default: value = entry[entry.length-1];
+              }
+              types[`${entry[0]}:${entry[entry.length-1]}`] = value;
+            } else {
+              types[typeof entry] = typeof entry;
+            }
           }
-          types[`${entry[0]}:${entry[entry.length-1]}`] = value;
-        } else {
-          types[typeof entry] = typeof entry;
-        }
-      }
-    });
+        } else
+          iterCalls(call.calls);
+      });
+    }
+
+    iterCalls(calls);
+
     for (let typeId in types) {
       var type = types[typeId];
       break;
@@ -221,14 +258,14 @@ define(function(require, exports, module) {
               });
     }
 
-    info.split(/[\r\n]{2}/).forEach((t,index) => {
-      if (index)
-        div.appendChild(document.createElement('br'));
+    info.split(/(?:\r?\n\r?){2}/).forEach((t) => {
+      const p = document.createElement('p');
+      div.appendChild(p);
       t.split(/(<[^>]*>)/).forEach(part => {
         if (part[0] === '<' && part[part.length-1] === '>')
-          div.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
+          p.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
         else
-          div.appendChild(document.createTextNode(part));
+          p.appendChild(document.createTextNode(part));
       });
     });
     return div;

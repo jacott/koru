@@ -4,20 +4,21 @@ define(function (require, exports, module) {
    * unit-tests to determine types and values at test time.
    **/
   var test, v;
-  const TH   = require('koru/test');
-  const util = require('koru/util');
-  const API  = require('./api');
+  const TH      = require('koru/test');
+  const util    = require('koru/util');
+  const MainAPI = require('./api');
 
   const ctx = module.ctx;
+  let API;
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
-      v.api = class extends API {};
-      v.api.isRecord = true;
-      v.api.reset();
-      test.stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
+      API = class extends MainAPI {};
+      API.isRecord = true;
+      API.reset();
+      test.stub(ctx, 'exportsModule').withArgs(MainAPI).returns([ctx.modules['koru/test/api']]);
     },
 
     tearDown() {
@@ -30,27 +31,183 @@ define(function (require, exports, module) {
        *
        * @param {[module,...]} subjectModules - list of modules that define the subject
        **/
-      API.module(API, 'API');
-      API.method('module');
+      MainAPI.module(MainAPI);
+      MainAPI.method('module');
 
-      v.api.module();
-      assert.calledWith(ctx.exportsModule, API);
-      const api = v.api._apiMap.get(API);
+      API.module();
+      assert.calledWith(ctx.exportsModule, MainAPI);
+      const api = API._apiMap.get(MainAPI);
       assert(api);
-      assert.same(api.subject, API);
+      assert.same(api.subject, MainAPI);
 
       const myHelper = {
         clean() {}
       };
 
-      v.api.module(myHelper, 'myHelper');
+      API.module(myHelper, 'myHelper');
 
       class Elf {
       }
 
-      v.api.module(Elf);
+      API.module(Elf);
 
-      assert.same(v.api.instance.subjectName, 'Elf');
+      assert.same(API.instance.subjectName, 'Elf');
+    },
+
+    "test example"() {
+      /**
+       * Run a section of as an example of a method call.
+       **/
+      MainAPI.module();
+      MainAPI.method('example');
+
+      MainAPI.example(function body() {
+        class Color {
+          static define(name, value) {
+            this.colors[name] = value;
+          }
+          // ...
+        }
+        Color.colors = {};
+
+        API.module(Color);
+        API.method('define');
+
+        API.example(() => {
+          // this body of code is executed
+          Color.define('red', '#f00');
+          Color.define('blue', '#00f');
+          assert.same(Color.colors.red, '#f00');
+        });
+      });
+
+      API.done();
+
+      assert.equals(API.instance.methods.define, {
+        test,
+        sig: TH.match.any,
+        intro: TH.match.any,
+        subject: TH.match.any,
+        calls: [{
+          body: `
+          // this body of code is executed
+          Color.define('red', '#f00');
+          Color.define('blue', '#00f');
+          assert.same(Color.colors.red, '#f00');
+        `,
+          calls: [[
+            ['red', '#f00'], undefined
+          ],[
+            ['blue', '#00f'], undefined
+          ]]
+        }]
+      });
+    },
+
+    "test comment"() {
+      /**
+       * Add a comment before the next example
+       **/
+      MainAPI.module();
+      MainAPI.method('comment');
+
+      test.onEnd(() => {});
+
+      MainAPI.example(() => {
+        class Excercise {
+          static register(name, minutes) {}
+          begin() {}
+        }
+
+        API.module(Excercise);
+        API.method('register');
+
+        API.comment('Optionally set the default duration');
+        Excercise.register('Jogging', 5); // This call gets the comment
+        Excercise.register('Skipping'); // This call get no comment
+      });
+
+      API.done();
+
+      assert.equals(API.instance.methods.register, {
+        test,
+        sig: TH.match.any,
+        intro: TH.match.any,
+        subject: TH.match.any,
+        calls: [[
+          ['Jogging', 5], undefined, 'Optionally set the default duration'
+        ],[
+          ['Skipping'], undefined
+        ]]
+      });
+    },
+
+    "test property"() {
+      /**
+       * Document a property of the current subject
+       **/
+      MainAPI.module(MainAPI);
+      MainAPI.method('property');
+
+      const defaults = {
+        logger: function () {},
+        width: 800,
+        height: 600,
+        theme: {
+          name: 'light',
+          primaryColor: '#aaf'
+        }
+      };
+
+      API.module(defaults, 'defaults');
+      API.property('theme', {
+        info: 'The default theme',
+        properties: {
+          name: value => {
+            v.name = value;
+            return 'The theme name is ${value}';
+          },
+          primaryColor: 'The primary color is ${value}'
+        },
+      });
+      assert.same(v.name, 'light');
+
+      API.property('logger', value => {
+        v.logger = value;
+        return 'The default logger is ${value}';
+      });
+
+      assert.same(v.logger, defaults.logger);
+
+      MainAPI.comment("If no info supplied then the test description is used");
+      API.property('width');
+
+      API.done();
+
+      assert.equals(API.instance.properties, {
+        theme: {
+          info: 'The default theme',
+          value: ['O', defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
+          properties: {
+            name: {
+              info: 'The theme name is ${value}',
+              value: v.name,
+            },
+            primaryColor: {
+              info: 'The primary color is ${value}',
+              value: '#aaf',
+            },
+          },
+        },
+        logger: {
+          info: 'The default logger is ${value}',
+          value: ['F', v.logger, 'logger']
+        },
+        width: {
+          info: 'Document a property of the current subject',
+          value: 800,
+        }
+      });
     },
 
     "test new"() {
@@ -59,8 +216,8 @@ define(function (require, exports, module) {
        *
        * @returns a ProxyClass which is to be used instead of `new Class`
        **/
-      API.module(API, 'API');
-      API.method('new');
+      MainAPI.module(MainAPI);
+      MainAPI.method('new');
 
       class Hobbit {
         constructor(name) {
@@ -69,19 +226,19 @@ define(function (require, exports, module) {
         $inspect() {return `{Hobbit:${this.name}}`;}
       }
 
-      v.api.module(Hobbit);
-      var newHobbit = v.api.new();
+      API.module(Hobbit);
+      var newHobbit = API.new();
 
       var bilbo = newHobbit('Bilbo');
 
       assert.same(bilbo.name, 'Bilbo');
 
-      v.api.done();
+      API.done();
 
-      assert.equals(v.api.instance.newInstance, {
+      assert.equals(API.instance.newInstance, {
         test,
         sig: 'constructor(name)',
-        intro: 'Document <constructor> for the current subject\n@returns a ProxyClass which is to be used instead of `new Class`',
+        intro: 'Document <constructor> for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`',
         calls: [[
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
         ]],
@@ -93,22 +250,22 @@ define(function (require, exports, module) {
       /**
        * Document <methodName> for the current subject
        **/
-      API.module(API, 'API');
-      API.method('method');
+      MainAPI.module(MainAPI);
+      MainAPI.method('method');
       const fooBar = {
         fnord(a) {return a*2}
       };
 
 
-      v.api.module(fooBar, 'fooBar');
-      v.api.method('fnord');
+      API.module(fooBar, 'fooBar');
+      API.method('fnord');
 
       assert.same(fooBar.fnord(5), 10);
       assert.same(fooBar.fnord(-1), -2);
 
-      v.api.done();
+      API.done();
 
-      assert.equals(v.api.instance.methods.fnord, {
+      assert.equals(API.instance.methods.fnord, {
         test,
         sig: 'fnord(a)',
         intro: 'Document <methodName> for the current subject',
@@ -135,7 +292,7 @@ define(function (require, exports, module) {
       ctx.exportsModule.withArgs(TH.match.is(v.subject.exports))
         .returns([v.subject]);
 
-      var api = v.api.instance;
+      var api = API.instance;
 
       assert(api);
       assert.same(api.subject, v.subject.exports);
@@ -143,48 +300,52 @@ define(function (require, exports, module) {
     },
 
     "test resolveObject"() {
-      assert.equals(v.api.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
-      v.api._apiMap.set(v.api, v.myApi = new v.api(test.tc, API, 'API', [{id: 'koru/test/api'}]));
+      assert.equals(API.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
+      API._apiMap.set(API, v.myApi = new API(test.tc, MainAPI, 'MainAPI', [{id: 'koru/test/api'}]));
 
-      assert.equals(v.ans = v.api.resolveObject(v.myApi, 'myApi'), ['Oi', 'myApi', 'koru/test/api']);
-      assert.msg('should cache').same(v.api.resolveObject(v.myApi), v.ans);
+      assert.equals(v.ans = API.resolveObject(v.myApi, 'myApi'), ['Oi', 'myApi', 'koru/test/api']);
+      assert.msg('should cache').same(API.resolveObject(v.myApi), v.ans);
 
       const foo = {foo: 123};
 
-      assert.equals(v.ans = v.api.resolveObject(foo, 'foo'), ['O', 'foo']);
-      assert.equals(v.ans = v.api.resolveObject(util.protoCopy(foo), 'ext foo'), ['O', 'ext foo']);
+      assert.equals(v.ans = API.resolveObject(foo, 'foo'), ['O', 'foo']);
+      assert.equals(v.ans = API.resolveObject(util.protoCopy(foo), 'ext foo'), ['O', 'ext foo']);
 
-      class SubApi extends v.api {}
+      class SubApi extends API {}
 
-      assert.equals(v.ans = v.api.resolveObject(SubApi, 'sub'), ['Os', 'sub', 'koru/test/api']);
+      assert.equals(v.ans = API.resolveObject(SubApi, 'sub'), ['Os', 'sub', 'koru/test/api']);
 
       class S2ubApi extends SubApi {}
       class S3ubApi extends S2ubApi {}
 
-      assert.equals(v.ans = v.api.resolveObject(S3ubApi, 's3'), ['Os', 's3', 'koru/test/api']);
-      assert.msg('should cache').same(v.api.resolveObject(S3ubApi), v.ans);
+      assert.equals(v.ans = API.resolveObject(S3ubApi, 's3'), ['Os', 's3', 'koru/test/api']);
+      assert.msg('should cache').same(API.resolveObject(S3ubApi), v.ans);
 
-      assert.equals(v.api.resolveObject(new S2ubApi(), 's2()'), ['Oi', 's2()', 'koru/test/api']);
+      assert.equals(API.resolveObject(new S2ubApi(), 's2()'), ['Oi', 's2()', 'koru/test/api']);
 
-      assert.equals(v.api.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'), ['Oi', 'ext s2()', 'koru/test/api']);
+      assert.equals(API.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'), ['Oi', 'ext s2()', 'koru/test/api']);
 
-      assert.equals(v.api.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
-      assert.equals(v.api.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
+      assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
+      assert.equals(API.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
     },
 
     "test serialize"() {
       const fooBar = {
-        fnord(a, b) {return new v.api()}
+        defaults: {
+          theme: MainAPI,
+          color: 'blue'
+        },
+        fnord(a, b) {return new API()}
       };
-      const api = new v.api(test.tc, fooBar, 'fooBar', [{id: 'koru/test/api'}]);
+      const api = new API(test.tc, fooBar, 'fooBar', [{id: 'koru/test/api'}]);
 
-      // map in superClass: API
-      v.api._apiMap.set(v.api, new v.api(test.tc, API, 'API', [{id: 'koru/test/api'}]));
+      // map in superClass: MainAPI
+      API._apiMap.set(API, new API(test.tc, MainAPI, 'MainAPI', [{id: 'koru/test/api'}]));
 
       class Hobbit {
         constructor(name) {this.name = name;}
       }
-      v.api._apiMap.set(Hobbit, new v.api({name: 'koru/test/hobbit'}, Hobbit, 'Hobbit',
+      API._apiMap.set(Hobbit, new API({name: 'koru/test/hobbit'}, Hobbit, 'Hobbit',
                                          [{id: 'koru/test/hobbit'}]));
 
       api.newInstance = {
@@ -194,22 +355,43 @@ define(function (require, exports, module) {
         calls: [[
           ['name'], ['O', new Hobbit('Pippin'), '{Hobbit:instance}']
         ]]
-      },
+      };
+
+      api.properties = {
+        defaults: {
+          info: 'the defaults',
+          value: ['O', fooBar.defaults, '{defs}'],
+          properties: {
+            theme: {
+              info: 'theme info',
+              value: ['O', MainAPI, 'MainAPI'],
+            },
+            color: {
+              info: 'color info',
+              value: 'blue',
+            },
+          }
+        }
+      };
 
       api.methods.fnord = {
         test,
         sig: 'fnord(a, b)',
-        intro: 'Fnord ignores args; returns API',
+        intro: 'Fnord ignores args; returns MainAPI',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [2, ['F', test.stub, 'stub'], ['O', Date, '{special}']], ['M', API],
-        ], [
-          [
-            "x", true,
-            ['O', v.api, '{api extends API}'],
-          ],
-          undefined,
-        ]]
+          [2, ['F', test.stub, 'stub'], ['O', Date, '{special}']], ['M', MainAPI], 'my comment'
+        ], {
+          intro: 'example intro',
+          body: 'example source code here',
+          calls: [[
+            [
+              "x", true,
+              ['O', API, '{api extends MainAPI}'],
+            ],
+            undefined,
+          ]]
+        }]
       };
 
       assert.equals(api.serialize({methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}}), {
@@ -228,20 +410,40 @@ define(function (require, exports, module) {
           ]]
 
         },
+        properties: {
+          defaults: {
+            info: 'the defaults',
+            value: ['O', '{defs}'],
+            properties: {
+              theme: {
+                info: 'theme info',
+                value: ['O', 'MainAPI'],
+              },
+              color: {
+                info: 'color info',
+                value: 'blue',
+              },
+            }
+          }
+        },
         methods: {
           foo: {sig: 'foo()'},
           fnord: {
             test: 'koru/test/api test serialize',
             sig: 'fnord(a, b)',
-            intro: 'Fnord ignores args; returns API',
+            intro: 'Fnord ignores args; returns MainAPI',
             calls: [[
-              [2, ['F', 'stub'], ['O', '{special}', 'Date']], ['M', 'koru/test/api'],
-            ],[
-              [
-                'x', true,
-                ['M', 'koru/test/api'], // is actually a documented subject
-              ]
-            ]],
+              [2, ['F', 'stub'], ['O', '{special}', 'Date']], ['M', 'koru/test/api'], 'my comment'
+            ], {
+              intro: 'example intro',
+              body: 'example source code here',
+              calls: [[
+                [
+                  'x', true,
+                  ['M', 'koru/test/api'], // is actually a documented subject
+                ],
+              ]]
+            }],
           }
         },
       });
