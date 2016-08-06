@@ -17,6 +17,20 @@ define(function(require, exports, module) {
   const script = noContent('script');
   const async = 'async';
 
+  const tagRe = /(\{@\w+\s*[^}]*\})/;
+  const tagPartsRe = /\{@(\w+)\s*([^}]*)\}/;
+
+  const TAGS = {
+    module(data) {
+      return idToLink(data);
+    }
+  };
+
+  function execTag(tagName, data) {
+    const tag = TAGS[tagName];
+    return tag ? tag(data) : document.createTextNode(`{@${tagName} ${data}}`);
+  }
+
   function noContent(tag) {
     return function (opts) {
       const attrs = {[tag]: ''};
@@ -305,8 +319,15 @@ define(function(require, exports, module) {
       t.split(/(<[^>]*>)/).forEach(part => {
         if (part[0] === '<' && part[part.length-1] === '>')
           p.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
-        else
-          p.appendChild(document.createTextNode(part));
+        else {
+          part.split(tagRe).forEach(p2 => {
+            const m = tagPartsRe.exec(p2);
+            if (m) {
+              p.appendChild(execTag(m[1], m[2]));
+            } else
+              p.appendChild(document.createTextNode(p2));
+          });
+        }
       });
     });
     return div;
