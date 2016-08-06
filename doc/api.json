@@ -68,7 +68,7 @@
             ]
           ],
           {
-            "body": "\n        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module(Color);\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
+            "body": "        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module(Color);\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
             "calls": [
               [
                 [
@@ -88,7 +88,7 @@
         "intro": "Add a comment before the next example",
         "calls": [
           {
-            "body": "\n        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module(Excercise);\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
+            "body": "        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module(Excercise);\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
             "calls": [
               [
                 [
@@ -104,24 +104,29 @@
         "sig": "property(name, options)",
         "intro": "Document a property of the current subject",
         "calls": [
-          [
-            [
-              "theme",
+          {
+            "body": "        v.defaults = {\n          logger: function () {},\n          width: 800,\n          height: 600,\n          theme: {\n            name: 'light',\n            primaryColor: '#aaf'\n          }\n        };\n\n        API.module(v.defaults, 'defaults');\n        API.property('theme', {\n          info: 'The default theme',\n          properties: {\n            name: value => {\n              v.name = value;\n              return 'The theme name is ${value}';\n            },\n            primaryColor: 'The primary color is ${value}'\n          },\n        });\n        assert.same(v.name, 'light');\n\n        API.property('logger', value => {\n          v.logger = value;\n          return 'The default logger is ${value}';\n        });\n\n        assert.same(v.logger, v.defaults.logger);\n      ",
+            "calls": [
               [
-                "O",
-                "{info: 'The default theme', properties: {name: => name, primaryColor: 'The primary color is ${value}'}}"
+                [
+                  "theme",
+                  [
+                    "O",
+                    "{info: 'The default theme', properties: {name: => name, primaryColor: 'The primary color is ${value}'}}"
+                  ]
+                ]
+              ],
+              [
+                [
+                  "logger",
+                  [
+                    "F",
+                    "value => {...}"
+                  ]
+                ]
               ]
             ]
-          ],
-          [
-            [
-              "logger",
-              [
-                "F",
-                "value => {...}"
-              ]
-            ]
-          ],
+          },
           [
             [
               "width"
@@ -156,8 +161,26 @@
             ]
           ]
         ]
+      },
+      "protoMethod": {
+        "test": "koru/test/api test protoMethod",
+        "sig": "protoMethod(methodName)",
+        "intro": "Document prototype <methodName> for the current subject",
+        "calls": [
+          {
+            "body": "        class Tree {\n          constructor(name) {\n            this.name = name;\n            this.branches = 10;\n          }\n\n          prune(branchCount) {\n            return this.branches -= branchCount;\n          }\n        };\n\n        API.module(Tree);\n        API.protoMethod('prune');\n\n        const plum = new Tree('Plum');\n        assert.same(plum.prune(3), 7);\n        assert.same(plum.prune(2), 5);\n      ",
+            "calls": [
+              [
+                [
+                  "prune"
+                ]
+              ]
+            ]
+          }
+        ]
       }
-    }
+    },
+    "protoMethods": {}
   },
   "koru/util": {
     "subject": {
@@ -394,34 +417,40 @@
         "sig": "reverseForEach(list, visitor)",
         "intro": "Visit <list> in reverse order.\n\n@param visitor - called with the list <item> and <index>",
         "calls": [
-          [
-            [
+          {
+            "body": "        var results = [];\n        util.reverseForEach(v.list = [1,2,3], (val, index) => {\n          results.push(val+\".\"+index);\n        });\n        assert.equals(results, ['3.2', '2.1', '1.0']);\n\n        // ignores null list\n        util.reverseForEach(null, v.stub = test.stub());\n        refute.called(v.stub);\n      ",
+            "calls": [
               [
-                "O",
-                "null"
+                [
+                  [
+                    "Oi",
+                    "[1, 2, 3]",
+                    "Array"
+                  ],
+                  [
+                    "F",
+                    "(val, index) => {...}"
+                  ]
+                ]
               ],
               [
-                "F",
-                "stub"
+                [
+                  [
+                    "O",
+                    "null"
+                  ],
+                  [
+                    "F",
+                    "stub"
+                  ]
+                ]
               ]
             ]
-          ],
-          [
-            [
-              [
-                "Oi",
-                "[1, 2, 3]",
-                "Array"
-              ],
-              [
-                "F",
-                "(val, index) => {...}"
-              ]
-            ]
-          ]
+          }
         ]
       }
-    }
+    },
+    "protoMethods": {}
   },
   "koru/ui/route": {
     "subject": {
@@ -448,7 +477,8 @@
           ]
         ]
       }
-    }
+    },
+    "protoMethods": {}
   },
   "koru/css/loader": {
     "subject": {
@@ -471,7 +501,8 @@
           ]
         ]
       }
-    }
+    },
+    "protoMethods": {}
   },
   "koru/idle-check": {
     "subject": {
@@ -508,6 +539,28 @@
         "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
       }
     },
-    "methods": {}
+    "methods": {},
+    "protoMethods": {
+      "waitIdle": {
+        "test": "koru/idle-check waitIdle test already Idle",
+        "sig": "waitIdle(func)",
+        "intro": "waitIdle waits until <this.count> drops to zero.",
+        "calls": [
+          {
+            "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "stub"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    }
   }
 }

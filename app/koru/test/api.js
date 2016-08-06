@@ -14,6 +14,7 @@ define(function(require, exports, module) {
       this.newInstance = this.properties = this.currentComment =
         this.lastMethod = null;
       this.methods = {};
+      this.protoMethods = {};
     }
 
     static reset() {
@@ -51,6 +52,7 @@ define(function(require, exports, module) {
     static comment(comment) {this.instance.comment(comment)}
     static example(body) {this.instance.example(body)}
     static method(methodName) {this.instance.method(methodName)}
+    static protoMethod(methodName) {this.instance.protoMethod(methodName)}
     static done() {this.instance.done()}
 
     static get instance() {return this._instance || this.module()}
@@ -166,7 +168,7 @@ define(function(require, exports, module) {
 
     example(body) {
       if (! this.lastMethod)
-        throw new Error("API.method has not been called!");
+        throw new Error("API.(proto)method has not been called!");
       const callLength = this.lastMethod.calls.length;
       try {
         body();
@@ -174,58 +176,18 @@ define(function(require, exports, module) {
         const calls = this.lastMethod.calls.slice(callLength);
         this.lastMethod.calls.length = callLength;
         this.lastMethod.calls.push({
-          body: body.toString().replace(/^.*{/, '').replace(/}\s*$/, ''),
+          body: body.toString().replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''),
           calls,
         });
       }
     }
 
     method(methodName) {
-      const api = this;
-      const {test} = TH;
-      const func = api.subject[methodName];
-      if (! func)
-        throw new Error(`method "${methodName}" not found`);
+      method(this, methodName, this.subject, this.methods);
+    }
 
-      let details = api.methods[methodName];
-      const calls = details ? details.calls : [];
-      if (! details) {
-        details = api.lastMethod = api.methods[methodName] = {
-          test,
-          sig: funcToSig(func),
-          intro: docComment(test.func),
-          subject: api.valueTag(api.subject),
-          calls
-        };
-      }
-
-      const orig = koru.replaceProperty(api.subject, methodName, {
-        value: function (...args) {
-          const entry = [
-            args.map(obj => api.valueTag(obj)),
-            undefined,
-          ];
-          const {currentComment} = api;
-          if (currentComment) {
-            entry.push(currentComment);
-            api.currentComment = null;
-          }
-          calls.push(entry);
-          const ans = func.apply(this, args);
-          entry[1] = api.valueTag(ans);
-          return ans;
-        }
-      });
-
-      test.onEnd(api._onEnd = () => {
-        if (! api._onEnd) return;
-        api._onEnd = null;
-        if (orig) {
-          Object.defineProperty(api.subject, methodName, orig);
-        } else {
-          delete api.subject[methodName];
-        }
-      });
+    protoMethod(methodName) {
+      method(this, methodName, this.subject.prototype, this.protoMethods);
     }
 
     done() {
@@ -240,22 +202,30 @@ define(function(require, exports, module) {
     }
 
     serialize(subject={}) {
-      const methods = subject.methods || (subject.methods = {});
+      const {methods, protoMethods} = this;
       const ids = (this.subjectModules||[]).map(m => m.id);
       const abstracts = ids.map(id => {
         const mod = ctx.modules[id+'-test'];
         if (mod && mod.body)
           return docComment(mod.body);
       });
-      for (const methodName in this.methods) {
-        const row = this.methods[methodName];
-        methods[methodName] = {
-          test: row.test.name,
-          sig: row.sig,
-          intro: row.intro,
-          calls: serializeCalls(this, row.calls),
-        };
-      }
+
+      const procMethods = list => {
+        for (const methodName in list) {
+          const row = list[methodName];
+          list[methodName] = {
+            test: row.test.name,
+            sig: row.sig,
+            intro: row.intro,
+            calls: serializeCalls(this, row.calls),
+          };
+        }
+      };
+
+      procMethods(this.methods);
+      procMethods(this.protoMethods);
+
+
       const {newInstance, properties} = this;
       if (newInstance) {
         newInstance.test = newInstance.test.name;
@@ -271,6 +241,7 @@ define(function(require, exports, module) {
         newInstance,
         properties,
         methods,
+        protoMethods,
       };
     }
 
@@ -458,6 +429,53 @@ define(function(require, exports, module) {
       property.properties &&
         serializeProperties(api, property.properties);
     }
+  }
+
+  function method(api, methodName, obj, methods) {
+    const {test} = TH;
+    const func = obj[methodName];
+    if (! func)
+      throw new Error(`method "${methodName}" not found`);
+
+    let details = methods[methodName];
+    const calls = details ? details.calls : [];
+    if (! details) {
+      details = api.lastMethod = methods[methodName] = {
+        test,
+        sig: funcToSig(func),
+        intro: docComment(test.func),
+        subject: api.valueTag(api.subject),
+        calls
+      };
+    }
+
+    const orig = koru.replaceProperty(obj, methodName, {
+      value: function (...args) {
+        const entry = [
+          args.map(obj => api.valueTag(obj)),
+          undefined,
+        ];
+        const {currentComment} = api;
+        if (currentComment) {
+          entry.push(currentComment);
+          api.currentComment = null;
+        }
+        calls.push(entry);
+        const ans = func.apply(this, args);
+        entry[1] = api.valueTag(ans);
+        return ans;
+      }
+    });
+
+    test.onEnd(api._onEnd = () => {
+      if (! api._onEnd) return;
+      api._onEnd = null;
+      if (orig) {
+        Object.defineProperty(obj, methodName, orig);
+      } else {
+        delete obj[methodName];
+      }
+    });
   }
 
   module.exports = API;

@@ -72,6 +72,7 @@ define(function (require, exports, module) {
                 ]],
               }
             },
+            protoMethods: {},
           },
         });
         return true;

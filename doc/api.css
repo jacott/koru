@@ -1,3 +1,60 @@
 span.jsdoc-param {
   color: rgb(124,77,255);
 }
+
+pre {
+  margin: 0;
+}
+
+.page-content {
+  margin: 20px 10px;
+}
+
+[data-api="links"] {
+  margin: 0 10px;
+}
+
+.jsdoc-example {
+  display: inline-block;
+  max-width: calc(100% - 40px);
+  background: #F7F7F7;
+  color: black;
+  font-family: monospace;
+  border: 1px solid #ddd;
+  padding: 1em;
+  margin: .5em 0;
+  overflow: auto;
+  tab-size: 2;
+  text-align: left;
+  white-space: pre-wrap;
+  word-spacing: normal;
+  word-break: normal;
+  line-height: 1.5;
+}
+
+.jsdoc-example-call {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-flow: row nowrap;
+  -ms-flex-flow: row nowrap;
+  flex-flow: row nowrap;
+  -webkit-box-align: start;
+  -webkit-align-items: flex-start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+}
+
+.jsdoc-example-call >:first-child {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 auto;
+  -ms-flex: 1 1 auto;
+  flex: 1 1 auto;
+}
+
+.jsdoc-returns {
+  -webkit-flex-shrink: 0;
+  -ms-flex-shrink: 0;
+  flex-shrink: 0;
+}

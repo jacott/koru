@@ -89,8 +89,8 @@ define(function (require, exports, module) {
         intro: TH.match.any,
         subject: TH.match.any,
         calls: [{
-          body: `
-          // this body of code is executed
+          body:
+`          // this body of code is executed
           Color.define('red', '#f00');
           Color.define('blue', '#00f');
           assert.same(Color.colors.red, '#f00');
@@ -149,35 +149,37 @@ define(function (require, exports, module) {
       MainAPI.module(MainAPI);
       MainAPI.method('property');
 
-      const defaults = {
-        logger: function () {},
-        width: 800,
-        height: 600,
-        theme: {
-          name: 'light',
-          primaryColor: '#aaf'
-        }
-      };
+      MainAPI.example(() => {
+        v.defaults = {
+          logger: function () {},
+          width: 800,
+          height: 600,
+          theme: {
+            name: 'light',
+            primaryColor: '#aaf'
+          }
+        };
 
-      API.module(defaults, 'defaults');
-      API.property('theme', {
-        info: 'The default theme',
-        properties: {
-          name: value => {
-            v.name = value;
-            return 'The theme name is ${value}';
+        API.module(v.defaults, 'defaults');
+        API.property('theme', {
+          info: 'The default theme',
+          properties: {
+            name: value => {
+              v.name = value;
+              return 'The theme name is ${value}';
+            },
+            primaryColor: 'The primary color is ${value}'
           },
-          primaryColor: 'The primary color is ${value}'
-        },
-      });
-      assert.same(v.name, 'light');
+        });
+        assert.same(v.name, 'light');
 
-      API.property('logger', value => {
-        v.logger = value;
-        return 'The default logger is ${value}';
-      });
+        API.property('logger', value => {
+          v.logger = value;
+          return 'The default logger is ${value}';
+        });
 
-      assert.same(v.logger, defaults.logger);
+        assert.same(v.logger, v.defaults.logger);
+      });
 
       MainAPI.comment("If no info supplied then the test description is used");
       API.property('width');
@@ -187,7 +189,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.properties, {
         theme: {
           info: 'The default theme',
-          value: ['O', defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
+          value: ['O', v.defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
           properties: {
             name: {
               info: 'The theme name is ${value}',
@@ -274,6 +276,48 @@ define(function (require, exports, module) {
           [5], 10
         ],[
           [-1], -2
+        ]]
+      });
+    },
+
+    "test protoMethod"() {
+      /**
+       * Document prototype <methodName> for the current subject
+       **/
+      MainAPI.module(MainAPI);
+      MainAPI.method('protoMethod');
+
+      MainAPI.example(() => {
+        class Tree {
+          constructor(name) {
+            this.name = name;
+            this.branches = 10;
+          }
+
+          prune(branchCount) {
+            return this.branches -= branchCount;
+          }
+        };
+
+        API.module(Tree);
+        API.protoMethod('prune');
+
+        const plum = new Tree('Plum');
+        assert.same(plum.prune(3), 7);
+        assert.same(plum.prune(2), 5);
+      });
+
+      API.done();
+
+      assert.equals(API.instance.protoMethods.prune, {
+        test,
+        sig: 'prune(branchCount)',
+        intro: 'Document prototype <methodName> for the current subject',
+        subject: ['F', TH.match.func, 'Tree'],
+        calls: [[
+          [3], 7
+        ],[
+          [2], 5
         ]]
       });
     },
@@ -394,6 +438,16 @@ define(function (require, exports, module) {
         }]
       };
 
+      api.protoMethods.zord = {
+        test,
+        sig: 'zord(a)',
+        intro: 'introducing zord',
+        subject: ['O', 'fooBar', fooBar],
+        calls: [[
+          [false], undefined
+        ]]
+      };
+
       assert.equals(api.serialize({methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}}), {
         subject: {
           ids: ['koru/test/api'],
@@ -427,7 +481,6 @@ define(function (require, exports, module) {
           }
         },
         methods: {
-          foo: {sig: 'foo()'},
           fnord: {
             test: 'koru/test/api test serialize',
             sig: 'fnord(a, b)',
@@ -444,6 +497,16 @@ define(function (require, exports, module) {
                 ],
               ]]
             }],
+          }
+        },
+        protoMethods: {
+          zord: {
+            test: 'koru/test/api test serialize',
+            sig: 'zord(a)',
+            intro: 'introducing zord',
+            calls: [[
+              [false]
+            ]],
           }
         },
       });

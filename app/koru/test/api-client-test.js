@@ -37,6 +37,16 @@ define(function (require, exports, module) {
         ]]
       };
 
+      api.protoMethods.zord = {
+        test,
+        sig: 'zord(a)',
+        intro: 'introducing zord',
+        subject: ['O', 'fooBar', fooBar],
+        calls: [[
+          [false], undefined
+        ]]
+      };
+
       test.stub(TH.session, 'sendBinary');
 
       v.api._record();
@@ -58,6 +68,16 @@ define(function (require, exports, module) {
                 intro: 'Fnord ignores args; returns API',
                 calls: [[
                   [2, ['F', 'stub'], ['O', '{special}']], ['M', 'koru/test/api']
+                ]],
+              }
+            },
+            protoMethods: {
+              zord: {
+                test: 'koru/test/api-client test _record',
+                sig: 'zord(a)',
+                intro: 'introducing zord',
+                calls: [[
+                  [false]
                 ]],
               }
             },

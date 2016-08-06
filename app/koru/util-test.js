@@ -432,14 +432,17 @@ define(function (require, exports, module) {
        * @param visitor - called with the list <item> and <index>
        **/
       api.method('reverseForEach');
-      util.reverseForEach(null, v.stub = test.stub());
-      refute.called(v.stub);
-      var results = [];
-      util.reverseForEach(v.list = [1,2,3], (val, index) => {
-        results.push(val+"."+index);
-      });
+      api.example(() => {
+        var results = [];
+        util.reverseForEach(v.list = [1,2,3], (val, index) => {
+          results.push(val+"."+index);
+        });
+        assert.equals(results, ['3.2', '2.1', '1.0']);
 
-      assert.equals(results, ['3.2', '2.1', '1.0']);
+        // ignores null list
+        util.reverseForEach(null, v.stub = test.stub());
+        refute.called(v.stub);
+      });
     },
 
 

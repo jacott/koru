@@ -37,16 +37,22 @@ isServer && define(function (require, exports, module) {
 
     "waitIdle": {
       setUp() {
-        //   FIXME     api.protoMethod('waitIdle');
-        v.idleCheck = new IdleCheck();
       },
 
       "test already Idle"() {
-        v.idleCheck.waitIdle(v.stub = test.stub());
-        assert.called(v.stub);
+        /**
+         * waitIdle waits until <this.count> drops to zero.
+         **/
+        api.protoMethod('waitIdle');
+        api.example(() => {
+          const check = new IdleCheck();
+          check.waitIdle(v.stub = test.stub());
+          assert.called(v.stub);
+        });
       },
 
       "test multiple listeners"() {
+        v.idleCheck = new IdleCheck();
         v.idleCheck = new IdleCheck();
         v.idleCheck.inc();
         v.idleCheck.inc();

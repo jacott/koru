@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const {parse} = require('babylon');
 const traverse = require('babel-traverse').default;
+const generate = require('babel-generator').default;
 
 define(function(require, exports, module) {
   const koru    = require('koru');
@@ -48,10 +49,16 @@ define(function(require, exports, module) {
 
 
     Object.keys(json).sort().forEach(id => {
-      const {subject, newInstance, properties, methods} = json[id];
+      const {subject, newInstance, properties, methods, protoMethods} = json[id];
       const requireLine = Dom.h({class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]});
 
       const idIdx = subject.ids.indexOf(id);
+
+      let functions = [];
+      util.isObjEmpty(methods) ||
+        (functions = functions.concat(buildMethods(id, subject, methods, requireLine)));
+      util.isObjEmpty(protoMethods) ||
+        (functions = functions.concat(buildMethods(id, subject, protoMethods, requireLine, 'proto')));
 
       links.appendChild(idToLink(id));
       pages.appendChild(Dom.h({
@@ -63,7 +70,10 @@ define(function(require, exports, module) {
           {div: [
             newInstance && buildConstructor(id, subject, newInstance, requireLine),
             properties && buildProperties(id, subject, properties),
-            util.isObjEmpty(methods) || buildMethods(id, subject, methods, requireLine),
+            functions && {div: [
+              {h4: "Methods"},
+              {div: functions},
+            ]},
           ]},
           // {pre: JSON.stringify(json, null, 2)}
         ],
@@ -92,7 +102,7 @@ define(function(require, exports, module) {
     }
 
     return {div: [
-      {h5: 'Properies'},
+      {h5: 'Properties'},
       {table: {tbody: rows}}
     ]};
   }
@@ -101,11 +111,12 @@ define(function(require, exports, module) {
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
       {h6: "Example"},
-      requireLine.cloneNode(true),
-      {table: {tbody: calls.map(call => Dom.h({
-        class: 'jsdoc-example',
-        tr: [{td: `new ${subject.name}(${call[0].map(arg => valueToText(arg)).join(", ")});`}],
-      }))}},
+      {class: 'jsdoc-example', pre: [
+        requireLine.cloneNode(true),
+        ...calls.map(call => Dom.h({
+          div: newSig(subject.name, call[0]),
+        }))
+      ]},
     ]};
     return {div: [
       {h5: sig},
@@ -115,35 +126,67 @@ define(function(require, exports, module) {
     ]};
   }
 
-  function buildMethods(id, subject, methods, requireLine) {
-    return {div: [
-      {h4: "Methods"},
-      {div: Object.keys(methods).map(name => {
+  function newSig(name, args) {
+    return `new ${name}(${args.map(arg => valueToText(arg)).join(", ")});`;
+  }
+
+  function buildMethods(id, subject, methods, requireLine, proto) {
+    if (proto) {
+      var needInit = true;
+      var initInst = function () {
+        if (! needInit) return [];
+        needInit = false;
+        return [
+          {div: `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`}
+        ];
+      };
+      var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
+      var sigJoin = '#';
+    } else {
+      var initInst = () => [];
+      var inst = subject.name;
+      var sigJoin = '.';
+    }
+    return Object.keys(methods).map(name => {
         const {sig, intro, calls} = methods[name];
         const {args, argMap} = mapArgs(sig, calls);
         const examples = calls.length && {div: [
           {h6: "Example"},
-          requireLine.cloneNode(true),
-          {table: {tbody: calls.map(call => Dom.h({
-            class: 'jsdoc-example',
-            tr: Array.isArray(call) ?
-              [{td: `${subject.name}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
-               call[1] === undefined ? '' : {td: ['// returns ', valueToLink(call[1])]}]
-            : [{$colspan: 2, class: 'jsdoc-code-body', td: [
-              {pre: call.body}]}],
-          }))}},
+          {class: 'jsdoc-example', pre: [
+            requireLine.cloneNode(true),
+            ...calls.map(call => Dom.h({
+              div: Array.isArray(call) ?
+                [...initInst(),
+                 {class: 'jsdoc-example-call', div: [
+                   {span: `${inst}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
+                   call[1] && {class: 'jsdoc-returns', span: ` // returns ${valueToLink(call[1])}`}
+                 ]}
+                ]
+              : codeToHtml(call.body),
+            })),
+          ]}
         ]};
 
         return {
           div: [
-            {h5: `${subject.name}.${sig}`},
+            {h5: `${subject.name}${sigJoin}${sig}`},
             {abstract: jsdocToHtml(intro, argMap, id)},
             buildParams(args, argMap),
             examples,
           ]
         };
-      })},
-    ]};
+    });
+  }
+
+  function codeToHtml(codeIn) {
+    if (! codeIn) return;
+    var ast = parse(codeIn);
+    const {code} = generate(ast, {
+      comments: true,
+      compact: false,
+      sourceMaps: false,
+    }, []);
+    return {div: code};
   }
 
   function mapArgs(sig, calls) {
@@ -180,10 +223,8 @@ define(function(require, exports, module) {
         const am = argMap[arg];
         return {
           class: "jsdoc-arg", tr: [
-            {td: arg},
-            {td: [{a: am.type, $href: am.href},
-                  am.optional ? '(optional) ' : '']
-            },
+            {td: am.optional ? `[${arg}]` : arg},
+            {td: {a: am.type, $href: am.href}},
             {td: am.info}
           ]
         };
