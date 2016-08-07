@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
-  const koru             = require('./main');
-  const WebServerFactory = require('./web-server-factory');
+  const koru             = require('koru');
+  const WebServerFactory = require('koru/web-server-factory');
   const Path             = requirejs.nodeRequire('path');
 
   const root = module.toUrl('');

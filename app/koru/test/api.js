@@ -442,7 +442,7 @@ define(function(require, exports, module) {
     if (! details) {
       details = api.lastMethod = methods[methodName] = {
         test,
-        sig: funcToSig(func),
+        sig: funcToSig(func).replace(/^function\s*(?=\()/, methodName),
         intro: docComment(test.func),
         subject: api.valueTag(api.subject),
         calls

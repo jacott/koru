@@ -1,13 +1,32 @@
 const fs = require('fs');
 
 isServer && define(function (require, exports, module) {
+  /**
+   * The default web-server created from {@module koru/web-server-factory}.
+   * {@module koru/idle-check} is used to keep track of active requests.
+   *
+   * Config:
+   *
+   * `{host, port}`: listens on the specified address.
+   *
+   * `{defaultPage} defaults to `/index.html`: used when no path is
+   * supplied in the url.
+   *
+   * `{index.js, require.js}` defaults to `yaajs.js`: the file to serve for
+   * `index.js` or `require.js`
+   *
+   * `{koru}` defaults to `app/koru`: where to find koru files.
+   *
+   **/
   var test, v;
-  const koru      = require('koru/main');
-  const fst       = require('./fs-tools');
-  const IdleCheck = require('./idle-check').singleton;
-  const TH        = require('./test');
-  const webServer = require('./web-server');
-  const Future    = requirejs.nodeRequire('fibers/future');
+  const koru             = require('koru/main');
+  const api              = require('koru/test/api');
+  const WebServerFactory = require('koru/web-server-factory');
+  const fst              = require('./fs-tools');
+  const IdleCheck        = require('./idle-check').singleton;
+  const TH               = require('./test');
+  const webServer        = require('./web-server');
+  const Future           = requirejs.nodeRequire('fibers/future');
 
   TH.testCase(module, {
     setUp() {
@@ -143,6 +162,21 @@ isServer && define(function (require, exports, module) {
           'Content-Length': 17,
         });
       },
+    },
+
+    "test usage"() {
+      api.module();
+      api.method('start');
+
+      const webServerModule = module.ctx.modules['koru/web-server'];
+
+      api.example(() => {
+        const {Server} = requirejs.nodeRequire('http');
+
+        const listen = test.stub(Server.prototype, 'listen').yields();
+        webServer.start();
+        assert.calledWith(listen, webServerModule.config().port);
+      });
     },
 
     "test exception"() {
