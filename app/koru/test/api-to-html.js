@@ -1,16 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const {parse} = require('babylon');
-const traverse = require('babel-traverse').default;
-const generate = require('babel-generator').default;
-
 define(function(require, exports, module) {
-  const koru    = require('koru');
-  const Dom     = require('koru/dom');
-  const htmlDoc = require('koru/dom/html-doc');
-  const util    = require('koru/util');
-
-  const OUT_DIR = path.resolve(module.toUrl('.'), '../../../../doc');
+  const marked = requirejs.nodeRequire('marked');
+  const koru     = require('koru');
+  const Dom      = require('koru/dom');
+  const htmlDoc  = require('koru/dom/html-doc');
+  const util     = require('koru/util');
+  const generate = requirejs.nodeRequire('babel-generator').default;
+  const traverse = requirejs.nodeRequire('babel-traverse').default;
+  const {parse}  = requirejs.nodeRequire('babylon');
 
   const meta = noContent('meta');
   const link = noContent('link');
@@ -40,11 +36,12 @@ define(function(require, exports, module) {
     };
   }
 
-  return function (title="Koru API") {
-    const json = JSON.parse(fs.readFileSync(`${OUT_DIR}/api.json`));
+  module.exports = toHtml;
 
+  function toHtml(title, json, sourceHtml) {
     const index = document.createElement();
-    index.innerHTML = fs.readFileSync(`${OUT_DIR}/api-template.html`).toString();
+
+    index.innerHTML = sourceHtml;
 
     const tags = {};
 
@@ -94,7 +91,7 @@ define(function(require, exports, module) {
       }));
     });
 
-    fs.writeFileSync(`${OUT_DIR}/api.html`, `<!DOCTYPE html>\n${index.innerHTML}`);
+    return index.innerHTML;
   };
 
   function buildProperties(id, subject, properties) {
@@ -204,7 +201,7 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    sig = /^function\b/.test(sig) ? sig + '{}' : '__'+sig;
+    sig = /^function\b/.test(sig) ? `(${sig}{})()` : '__'+sig;
     try {
       var ast = parse(sig);
     } catch(ex) {
@@ -313,24 +310,47 @@ define(function(require, exports, module) {
               });
     }
 
-    info.split(/(?:\r?\n\r?){2}/).forEach((t) => {
-      const p = document.createElement('p');
-      div.appendChild(p);
-      t.split(/(<[^>]*>)/).forEach(part => {
-        if (part[0] === '<' && part[part.length-1] === '>')
-          p.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
-        else {
-          part.split(tagRe).forEach(p2 => {
-            const m = tagPartsRe.exec(p2);
-            if (m) {
-              p.appendChild(execTag(m[1], m[2]));
-            } else
-              p.appendChild(document.createTextNode(p2));
-          });
-        }
-      });
+    info.split(/(<[^>]*>)/).forEach(part => {
+      if (part[0] === '<' && part[part.length-1] === '>')
+        div.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
+      else {
+        part.split(tagRe).forEach(p2 => {
+          const m = tagPartsRe.exec(p2);
+          if (m) {
+            div.appendChild(execTag(m[1], m[2]));
+          } else
+            markdown(div, p2);
+        });
+      }
     });
     return div;
+  }
+
+  toHtml.markdown = markdown;
+
+  const mdRenderer = new marked.Renderer();
+  const mdOptions = {renderer: mdRenderer};
+
+  function markdown(div, text) {
+    if (! text) return;
+
+    if (text.endsWith('\n'))
+      text=text.slice(0, -1)+' \n';
+    const tokens = marked.lexer('x '+text, {});
+    const oneToken = tokens.length === 1;
+    const html = '<p>'+marked.parser(tokens).slice(5);
+    const nodes = oneToken ? [Dom.html(html)] : Dom.html(`<div>${html}</div>`).childNodes.slice(0);
+
+    const fcs = nodes[0].childNodes.slice(0);
+    if (fcs[0] && fcs[0].textContent)
+      div.appendChild(fcs[0]);
+    for(let i = 1; i < fcs.length; ++i) {
+      div.appendChild(fcs[i]);
+    }
+
+    for(let i = 1; i < nodes.length; ++i) {
+      div.appendChild(nodes[i]);
+    }
   }
 
   function idToLink(id) {

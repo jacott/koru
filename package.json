@@ -33,6 +33,7 @@
     "fibers": "^1.0.13",
     "htmlparser2": "^3.9.1",
     "less": "^2.7.1",
+    "marked": "^0.3.6",
     "nan": "^2.3.5",
     "nodemailer": "^2.4.2",
     "nodemailer-smtp-pool": "^2.6.0",

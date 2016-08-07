@@ -570,7 +570,7 @@
       ],
       "name": "webServer",
       "abstracts": [
-        "The default web-server created from {@module koru/web-server-factory}.\n{@module koru/idle-check} is used to keep track of active requests.\n\nConfig:\n\n`{host, port}`: listens on the specified address.\n\n`{defaultPage} defaults to `/index.html`: used when no path is\nsupplied in the url.\n\n`{index.js, require.js}` defaults to `yaajs.js`: the file to serve for\n`index.js` or `require.js`\n\n{`koru`} defaults to `app/koru`: where to find koru files.\n"
+        "The default web-server created from {@module\nkoru/web-server-factory}.  {@module koru/idle-check} is used to\nkeep track of active requests.\n\n#### Config ####\n\n* `{host, port}`: listens on the specified address.\n* `{defaultPage} defaults to `/index.html`: used when no path is\nsupplied in the url.\n* `{index.js, require.js}` defaults to `yaajs.js`: the file to serve for\n* `index.js` or `require.js`\n* `{koru}` defaults to `app/koru`: where to find koru files.\n"
       ]
     },
     "newInstance": null,
