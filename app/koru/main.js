@@ -1,11 +1,3 @@
-/**
- * Main koru module. Responsible for:
- *
- *   Fibers
- *   Logging
- *   Dependency tracking and load/unload manager
- *   AppDir location
- */
 define(function (require, exports, module) {
   const errors = require('./errors');
   const util   = require('./util');
@@ -13,11 +5,11 @@ define(function (require, exports, module) {
   /**
    * Map of module dependencies. Entries list what to unload when
    * module unloaded. key is module.id.
-   */
+   **/
   const providerMap = {};
   /**
    * Functions to call when module is unloaded
-   */
+   **/
   const unloads = {};
   const loaded = {};
   const waitLoad = {};
@@ -26,13 +18,14 @@ define(function (require, exports, module) {
     return koru.reload(mod);
   }
 
-  function onunload(subm, func) {
-    if (func === 'reload')
-      func = reload;
-    if (typeof subm === 'string')
-      subm = module.ctx.modules[subm];
-
-    subm && subm.onUnload(typeof func === 'function' ? func : func.stop);
+  function onunload(moduleOrId, callback) {
+    if (callback === 'reload')
+      callback = reload;
+    const subm = typeof moduleOrId === 'string' ?
+            module.ctx.modules[moduleOrId] : moduleOrId;
+    if (! subm)
+      throw new Error('module not found! '+ moduleOrId);
+    subm.onUnload(typeof callback === 'function' ? callback : callback.stop);
   }
 
   const koru = {

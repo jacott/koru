@@ -1,7 +1,12 @@
 isClient && define(function (require, exports, module) {
   'use strict';
+  /**
+   * DomTemplate is used to create interactive [Dom
+   * Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
+   **/
   var test, v;
   const TH          = require('koru/test');
+  const api         = require('koru/test/api');
   const util        = require('koru/util');
   const Dom         = require('../dom');
   const DomTemplate = require('./template');
@@ -10,6 +15,7 @@ isClient && define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
+      api.module();
     },
 
     tearDown() {
@@ -403,14 +409,41 @@ isClient && define(function (require, exports, module) {
     },
 
     "newTemplate": {
-      "test simple"() {
-        assert.same(Dom.newTemplate({name: "Foo", nodes: "nodes"}), Dom.Foo);
+      setUp() {
+      },
 
-        var tpl = Dom.Foo;
+      "test construction"() {
+        /**
+         * New Dom templates should be created by calling
+         * `Dom.newTemplate([module], blueprint)` and not by calling
+         * the constructor directly.
+         *
+         * @param blueprint A blue print is usually built by {@module
+         * koru/dom/template-compiler} which is called automatically
+         * on html files loaded using
+         * `require('koru/html!path/to/my-template.html')`
+         **/
+        const Dom_newTemplate = api.new();
+        Dom_newTemplate("Foo", {name: "Foo", nodes: [{name: "div"}]}, Dom);
+
+        api.example(() => {
+          const myMod = {onUnload: test.stub()};
+          assert.same(Dom.newTemplate(myMod, {name: "Foo", nodes: [{name: "div"}]}), Dom.Foo);
+        });
+      },
+
+      "test simple"() {
+        const myMod = {onUnload: test.stub()};
+        assert.same(Dom.newTemplate(myMod, {name: "Foo", nodes: [{name: "div"}]}), Dom.Foo);
+
+        const tpl = Dom.Foo;
         assert.same(tpl.name, "Foo");
-        assert.same(tpl.nodes, "nodes");
+        assert.equals(tpl.nodes, [{name: "div"}]);
         assert.equals(tpl._helpers, null);
         assert.equals(tpl._events, []);
+
+        myMod.onUnload.yield();
+        refute(Dom.Foo);
       },
 
       "test not found"() {

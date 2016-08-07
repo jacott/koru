@@ -49,7 +49,7 @@ define(function (require, exports, module) {
        * Convert a <fraction> into css % string
        **/
       api.method('pc');
-      assert.same(util.pc('1.2345678'), '123.45678%');
+      assert.same(util.pc(1.2345678), '123.45678%');
     },
 
     "test px" () {
@@ -57,7 +57,7 @@ define(function (require, exports, module) {
        * Convert a <fraction> into css % string
        **/
       api.method('px');
-      assert.same(util.px('123.2345678'), '123px');
+      assert.same(util.px(123.2345678), '123px');
     },
 
     "test sansPx" () {

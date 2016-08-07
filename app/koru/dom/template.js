@@ -94,27 +94,27 @@ define(function(require, exports, module) {
     }
   };
 
-  function initOptions(tpl, options) {
+  function initBlueprint(tpl, blueprint) {
     let helpers;
-    if (options.extends) {
-      const sup = lookupTemplate(tpl.parent, options.extends);
+    if (blueprint.extends) {
+      const sup = lookupTemplate(tpl.parent, blueprint.extends);
       if (! sup)
-        throw new Error(`Invalid extends '${options.extends}' in Template ${tpl.name}`);
+        throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
       helpers = sup._helpers && Object.create(sup._helpers);
       Object.setPrototypeOf(tpl, sup);
       tpl._helpers = helpers;
     }
-    tpl.nodes = options.nodes;
+    tpl.nodes = blueprint.nodes;
   }
 
   class DomTemplate {
-    constructor(name, parent, options) {
+    constructor(name, parent, blueprint) {
       this.name = name;
       this.parent = parent !== Dom ? parent : null;
       this._events = [];
       this.nodes = undefined;
       this._helpers = undefined;
-      options && initOptions(this, options);
+      blueprint && initBlueprint(this, blueprint);
     }
 
     $ctx(origin) {
@@ -276,12 +276,12 @@ define(function(require, exports, module) {
       return this;
     },
 
-    newTemplate(module, options) {
+    newTemplate(module, blueprint) {
       if (arguments.length === 1)
         return addTemplates(Dom, module);
 
 
-      var tpl = addTemplates(Dom, options);
+      var tpl = addTemplates(Dom, blueprint);
       koru.onunload(module, function () {
         (tpl.parent || Dom)[tpl.name] = null;
       });
@@ -497,8 +497,8 @@ define(function(require, exports, module) {
   Dom.getCtx = Dom.ctx;
   Dom.getCtxById = Dom.ctxById;
 
-  function addTemplates(parent, options) {
-    let name = options.name;
+  function addTemplates(parent, blueprint) {
+    let name = blueprint.name;
     if (name.match(/\./)) {
       const names = name.split('.');
       name = names.pop();
@@ -508,13 +508,13 @@ define(function(require, exports, module) {
     }
     if (parent.hasOwnProperty(name) && parent[name]) {
       parent = parent[name];
-      initOptions(parent, options);
+      initBlueprint(parent, blueprint);
     } else {
-      parent[name] = parent = new DomTemplate(name, parent, options);
+      parent[name] = parent = new DomTemplate(name, parent, blueprint);
     }
-    const nested = options.nested;
+    const nested = blueprint.nested;
 
-    if (options.nested) for(let i = 0; i < nested.length; ++i) {
+    if (blueprint.nested) for(let i = 0; i < nested.length; ++i) {
       addTemplates(parent, nested[i]);
     }
 

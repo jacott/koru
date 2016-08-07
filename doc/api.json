@@ -1,4 +1,181 @@
 {
+  "koru/css/loader": {
+    "subject": {
+      "ids": [],
+      "name": "CssLoader",
+      "abstracts": []
+    },
+    "newInstance": null,
+    "properties": null,
+    "methods": {
+      "loadAll": {
+        "test": "koru/css/loader test load all",
+        "sig": "loadAll(dir)",
+        "intro": "Load all css and less files under <dir>",
+        "calls": [
+          [
+            [
+              "koru/css"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/dom/template": {
+    "subject": {
+      "ids": [
+        "koru/dom/template"
+      ],
+      "name": "DomTemplate",
+      "abstracts": [
+        "DomTemplate is used to create interactive [Dom\nTrees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+      ]
+    },
+    "newInstance": {
+      "test": "koru/dom/template newTemplate test construction",
+      "sig": "constructor(name, parent, blueprint)",
+      "intro": "New Dom templates should be created by calling\n`Dom.newTemplate([module], blueprint)` and not by calling\nthe constructor directly.\n\n@param blueprint A blue print is usually built by {@module\nkoru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
+      "calls": [
+        [
+          [
+            "Foo",
+            [
+              "O",
+              "{name: 'Foo', nodes: [{name: 'div'}]}"
+            ],
+            [
+              "M",
+              "koru/dom/base"
+            ]
+          ],
+          [
+            "Oi",
+            "DomTemplate:undefined.Foo",
+            "koru/dom/template"
+          ]
+        ],
+        {
+          "body": "          const myMod = {onUnload: test.stub()};\n          assert.same(Dom.newTemplate(myMod, {name: \"Foo\", nodes: [{name: \"div\"}]}), Dom.Foo);\n        ",
+          "calls": []
+        }
+      ]
+    },
+    "properties": null,
+    "methods": {},
+    "protoMethods": {}
+  },
+  "koru/idle-check": {
+    "subject": {
+      "ids": [
+        "koru/idle-check"
+      ],
+      "name": "IdleCheck",
+      "abstracts": [
+        "IdleCheck keeps count of usage and notifies when idle.\n"
+      ]
+    },
+    "newInstance": {
+      "test": "koru/idle-check test constructor",
+      "sig": "constructor()",
+      "intro": null,
+      "calls": [
+        [
+          [],
+          [
+            "Oi",
+            "{_count: 0, _waitIdle: null}",
+            "koru/idle-check"
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "singleton": {
+        "value": [
+          "Oi",
+          "{_count: 0, _waitIdle: null}",
+          "koru/idle-check"
+        ],
+        "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
+      }
+    },
+    "methods": {},
+    "protoMethods": {
+      "waitIdle": {
+        "test": "koru/idle-check waitIdle test already Idle",
+        "sig": "waitIdle(func)",
+        "intro": "waitIdle waits until <this.count> drops to zero.",
+        "calls": [
+          {
+            "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "stub"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "koru/main": {
+    "subject": {
+      "ids": [
+        "koru/main",
+        "koru/server"
+      ],
+      "name": "koru",
+      "abstracts": [
+        "Main koru module. Responsible for:\n\n* Fibers\n* Logging\n* Dependency tracking and load/unload manager\n* AppDir location",
+        null
+      ]
+    },
+    "newInstance": null,
+    "properties": null,
+    "methods": {
+      "onunload": {
+        "test": "koru/main test onunload",
+        "sig": "function onunload(moduleOrId, callback)",
+        "intro": "A wrapper around <module#onUnload>. see https://www.npmjs.com/package/yaajs",
+        "calls": [
+          {
+            "body": "        const myModule = {id: 'myModule', onUnload: test.stub()};\n        const callback = {stop() {}};\n        koru.onunload(myModule, callback);\n        assert.calledWith(myModule.onUnload, callback.stop);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{id: 'myModule', onUnload: => stub}"
+                  ],
+                  [
+                    "O",
+                    "{stop: => stop}"
+                  ]
+                ]
+              ]
+            ]
+          },
+          [
+            [
+              "koru/main-test",
+              [
+                "F",
+                "stub"
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
   "koru/test/api": {
     "subject": {
       "ids": [
@@ -182,6 +359,71 @@
     },
     "protoMethods": {}
   },
+  "koru/ui/route": {
+    "subject": {
+      "ids": [
+        "koru/ui/route"
+      ],
+      "name": "Route",
+      "abstracts": [
+        "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
+      ]
+    },
+    "newInstance": null,
+    "properties": null,
+    "methods": {
+      "setTitle": {
+        "test": "koru/ui/route with routeVar test setTitle",
+        "sig": "setTitle(title)",
+        "intro": "Set the <document.title> for the current page.",
+        "calls": [
+          [
+            [
+              "my title"
+            ]
+          ]
+        ]
+      },
+      "gotoPage": {
+        "test": "koru/ui/route test append",
+        "sig": "gotoPage(page, pageRoute)",
+        "intro": "Goto the specified <page> and record in <window.history>.",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "DomTemplate:Test.AdminProfile",
+                "koru/dom/template"
+              ],
+              [
+                "O",
+                "{append: 'my/id'}"
+              ]
+            ]
+          ]
+        ]
+      },
+      "replacePage": {
+        "test": "koru/ui/route test replacePage passes all args",
+        "sig": "replacePage()",
+        "intro": "Like {@method gotoPage} but replaces to <window.history>\nrather than adding to it.",
+        "calls": [
+          [
+            [
+              "myPage",
+              [
+                "O",
+                "{append: 'myId'}"
+              ]
+            ],
+            "replaceState"
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
   "koru/util": {
     "subject": {
       "ids": [
@@ -250,7 +492,7 @@
         "calls": [
           [
             [
-              "1.2345678"
+              1.2345678
             ],
             "123.45678%"
           ]
@@ -263,7 +505,7 @@
         "calls": [
           [
             [
-              "123.2345678"
+              123.2345678
             ],
             "123px"
           ]
@@ -451,117 +693,6 @@
       }
     },
     "protoMethods": {}
-  },
-  "koru/ui/route": {
-    "subject": {
-      "ids": [
-        "koru/ui/route"
-      ],
-      "name": "Route",
-      "abstracts": [
-        "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
-      ]
-    },
-    "newInstance": null,
-    "properties": null,
-    "methods": {
-      "setTitle": {
-        "test": "koru/ui/route with routeVar test setTitle",
-        "sig": "setTitle(title)",
-        "intro": "Set the <document.title> for the current page.",
-        "calls": [
-          [
-            [
-              "my title"
-            ]
-          ]
-        ]
-      }
-    },
-    "protoMethods": {}
-  },
-  "koru/css/loader": {
-    "subject": {
-      "ids": [],
-      "name": "CssLoader",
-      "abstracts": []
-    },
-    "newInstance": null,
-    "properties": null,
-    "methods": {
-      "loadAll": {
-        "test": "koru/css/loader test load all",
-        "sig": "loadAll(dir)",
-        "intro": "Load all css and less files under <dir>",
-        "calls": [
-          [
-            [
-              "koru/css"
-            ]
-          ]
-        ]
-      }
-    },
-    "protoMethods": {}
-  },
-  "koru/idle-check": {
-    "subject": {
-      "ids": [
-        "koru/idle-check"
-      ],
-      "name": "IdleCheck",
-      "abstracts": [
-        "IdleCheck keeps count of usage and notifies when idle.\n"
-      ]
-    },
-    "newInstance": {
-      "test": "koru/idle-check test constructor",
-      "sig": "constructor()",
-      "intro": null,
-      "calls": [
-        [
-          [],
-          [
-            "Oi",
-            "{_count: 0, _waitIdle: null}",
-            "koru/idle-check"
-          ]
-        ]
-      ]
-    },
-    "properties": {
-      "singleton": {
-        "value": [
-          "Oi",
-          "{_count: 0, _waitIdle: null}",
-          "koru/idle-check"
-        ],
-        "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
-      }
-    },
-    "methods": {},
-    "protoMethods": {
-      "waitIdle": {
-        "test": "koru/idle-check waitIdle test already Idle",
-        "sig": "waitIdle(func)",
-        "intro": "waitIdle waits until <this.count> drops to zero.",
-        "calls": [
-          {
-            "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
-            "calls": [
-              [
-                [
-                  [
-                    "F",
-                    "stub"
-                  ]
-                ]
-              ]
-            ]
-          }
-        ]
-      }
-    }
   },
   "koru/web-server": {
     "subject": {

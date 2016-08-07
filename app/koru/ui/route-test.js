@@ -39,6 +39,7 @@ isClient && define(function (require, exports, module) {
       Route.root = v.root;
       Route._onGotoPath = v.onGotoPath;
       Route._reset();
+      delete Dom.Test;
       v = null;
     },
 
@@ -363,17 +364,19 @@ isClient && define(function (require, exports, module) {
     },
 
     "test append"() {
-      var RootBar = {
-        name: 'RootBar',
-        $autoRender() {
-          return Dom.html('<div id="RootBar">x</div>');
-        },
-      };
+      /**
+       * Goto the specified <page> and record in <window.history>.
+       **/
+      api.method('gotoPage');
+      const AdminProfile = Dom.newTemplate({
+        name: 'Test.AdminProfile',
+        nodes: [{name: 'div'}]
+      });
 
-      Route.root.addTemplate(RootBar);
-      Route.gotoPage(RootBar, {append: "ap/this"});
+      Route.root.addTemplate(AdminProfile);
+      Route.gotoPage(AdminProfile, {append: "my/id"});
 
-      assert.calledWith(Route.history.pushState, 1, null, '/#root-bar/ap/this');
+      assert.calledWith(Route.history.pushState, 1, null, '/#admin-profile/my/id');
     },
 
     "test abort page change"() {
@@ -435,13 +438,18 @@ isClient && define(function (require, exports, module) {
     },
 
     "test replacePage passes all args"() {
+      /**
+       * Like {@method gotoPage} but replaces to <window.history>
+       * rather than adding to it.
+       **/
+      api.method('replacePage');
       test.stub(Route, 'gotoPage', () => v.pageState = Route.pageState);
 
-      Route.replacePage(1, 2,3);
+      Route.replacePage('myPage', {append: 'myId'});
 
       assert.same(v.pageState, 'replaceState');
       assert.same(Route.pageState, 'pushState');
-      assert.calledWith(Route.gotoPage, 1, 2, 3);
+      assert.calledWith(Route.gotoPage, 'myPage', {append: 'myId'});
     },
 
     "test replacePath passes all args"() {

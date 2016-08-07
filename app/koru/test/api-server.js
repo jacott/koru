@@ -39,7 +39,11 @@ define(function(require, exports, module) {
   };
 
   function writeApi(jsonFile, json) {
-    fs.writeFileSync(jsonFile, JSON.stringify(json, null, 2));
+    const jsonOut = {};
+    for (const key of Object.keys(json).sort()) {
+      jsonOut[key] = json[key];
+    }
+    fs.writeFileSync(jsonFile, JSON.stringify(jsonOut, null, 2));
   }
 
   function loadApi(jsonFile) {

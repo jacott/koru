@@ -17,14 +17,18 @@ define(function(require, exports, module) {
   const tagPartsRe = /\{@(\w+)\s*([^}]*)\}/;
 
   const TAGS = {
-    module(data) {
+    module(api, data) {
       return idToLink(data);
+    },
+
+    method(api, data) {
+      return Dom.h({a: data+'()', $href: `#${api.id}:${data}`});
     }
   };
 
-  function execTag(tagName, data) {
+  function execTag(api, tagName, data) {
     const tag = TAGS[tagName];
-    return tag ? tag(data) : document.createTextNode(`{@${tagName} ${data}}`);
+    return tag ? tag(api, data) : document.createTextNode(`{@${tagName} ${data}}`);
   }
 
   function noContent(tag) {
@@ -57,31 +61,34 @@ define(function(require, exports, module) {
 
     const {header, links, pages} = tags;
 
-
-
     Object.keys(json).sort().forEach(id => {
-      const {subject, newInstance, properties, methods, protoMethods} = json[id];
+      const api = json[id]; api.id = id;
+      const {subject, newInstance, properties, methods, protoMethods} = api;
       const requireLine = Dom.h({class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]});
 
       const idIdx = subject.ids.indexOf(id);
 
+      const constructor = newInstance && buildConstructor(api, subject, newInstance, requireLine);
       let functions = [];
       util.isObjEmpty(methods) ||
-        (functions = functions.concat(buildMethods(id, subject, methods, requireLine)));
+        (functions = functions.concat(buildMethods(api, subject, methods, requireLine)));
       util.isObjEmpty(protoMethods) ||
-        (functions = functions.concat(buildMethods(id, subject, protoMethods, requireLine, 'proto')));
+        (functions = functions.concat(buildMethods(api, subject, protoMethods, requireLine, 'proto')));
 
-      links.appendChild(idToLink(id));
+      links.appendChild(Dom.h({class: 'jsdoc-nav-module', div: [
+        idToLink(id),
+        {nav: [constructor, ...functions].map(func => func && Dom.h({a: func.$name, $href: '#'+func.id}))},
+      ]}));
       pages.appendChild(Dom.h({
         id: id,
-        class: "",
+        class: "jsdoc-module",
         section: [
-          {h2: subject.name},
-          {abstract: jsdocToHtml(subject.abstracts[idIdx])},
+          {class: 'jsdoc-module-title', h2: subject.name},
+          {abstract: jsdocToHtml(api, subject.abstracts[idIdx])},
           {div: [
-            newInstance && buildConstructor(id, subject, newInstance, requireLine),
-            properties && buildProperties(id, subject, properties),
-            functions && {div: [
+            constructor,
+            properties && buildProperties(api, subject, properties),
+            functions.length && {class: 'jsdoc-methods', div: [
               {h4: "Methods"},
               {div: functions},
             ]},
@@ -94,7 +101,7 @@ define(function(require, exports, module) {
     return index.innerHTML;
   };
 
-  function buildProperties(id, subject, properties) {
+  function buildProperties(api, subject, properties) {
     const rows = [];
     addRows(properties);
 
@@ -102,7 +109,7 @@ define(function(require, exports, module) {
       const argMap = {};
       for (const name in properties) {
         const property = properties[name];
-        const info = jsdocToHtml(property.info, argMap, id);
+        const info = jsdocToHtml(api, property.info, argMap);
         rows.push({tr: [
           {td: name},
           {td: info}
@@ -112,13 +119,13 @@ define(function(require, exports, module) {
       }
     }
 
-    return {div: [
+    return {class: 'jsdoc-properties', div: [
       {h5: 'Properties'},
       {table: {tbody: rows}}
     ]};
   }
 
-  function buildConstructor(id, subject, {sig, intro, calls}, requireLine) {
+  function buildConstructor(api, subject, {sig, intro, calls}, requireLine) {
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
       {h6: "Example"},
@@ -130,19 +137,19 @@ define(function(require, exports, module) {
         }))
       ]},
     ]};
-    return {div: [
-      {h5: sig},
-      {abstract: jsdocToHtml(intro, argMap, id)},
-      buildParams(args, argMap),
+    return section(api, {$name: 'constructor', div: [
+      {h4: sig},
+      {abstract: jsdocToHtml(api, intro, argMap)},
+      buildParams(api, args, argMap),
       examples,
-    ]};
+    ]});
   }
 
   function newSig(name, args) {
     return `new ${name}(${args.map(arg => valueToText(arg)).join(", ")});`;
   }
 
-  function buildMethods(id, subject, methods, requireLine, proto) {
+  function buildMethods(api, subject, methods, requireLine, proto) {
     if (proto) {
       var needInit = true;
       var initInst = function () {
@@ -160,9 +167,10 @@ define(function(require, exports, module) {
       var sigJoin = '.';
     }
     return Object.keys(methods).map(name => {
-        const {sig, intro, calls} = methods[name];
-        const {args, argMap} = mapArgs(sig, calls);
-        const examples = calls.length && {div: [
+      const {sig, intro, calls} = methods[name];
+      const {args, argMap} = mapArgs(sig, calls);
+      const examples = calls.length && {
+        div: [
           {h6: "Example"},
           {class: 'jsdoc-example', pre: [
             requireLine.cloneNode(true),
@@ -179,15 +187,20 @@ define(function(require, exports, module) {
           ]}
         ]};
 
-        return {
-          div: [
-            {h5: `${subject.name}${sigJoin}${sig}`},
-            {abstract: jsdocToHtml(intro, argMap, id)},
-            buildParams(args, argMap),
-            examples,
-          ]
-        };
+      return section(api, {$name: proto ? '#'+name : name, div: [
+          {h5: `${subject.name}${sigJoin}${sig}`},
+          {abstract: jsdocToHtml(api, intro, argMap)},
+          buildParams(api, args, argMap),
+          examples,
+        ]
+      });
     });
+  }
+
+  function section(api, div) {
+    div.id = `${api.id}:${div.$name}`;
+    div.class = `${div.class||''} jsdoc-module-section`;
+    return div;
   }
 
   function codeToHtml(codeIn) {
@@ -236,16 +249,22 @@ define(function(require, exports, module) {
     return {args, argMap};
   }
 
-  function buildParams(args, argMap) {
+  function buildParams(api, args, argMap) {
     return args && args.length && {class: "jsdoc-args", div: [
       {h6: "Parameters"},
       {table: {tbody: args.map(arg => {
         const am = argMap[arg];
+        const types = [];
+        for (const type in am.types) {
+          if (types.length)
+            types.push(' or ');
+          types.push({a: am.types[type], $href: am.href(type)});
+        }
         return {
           class: "jsdoc-arg", tr: [
             {td: am.optional ? `[${arg}]` : arg},
-            {td: {a: am.type, $href: am.href}},
-            {td: am.info}
+            {td: types},
+            {td: jsdocToHtml(api, am.info)}
           ]
         };
       })}},
@@ -266,14 +285,22 @@ define(function(require, exports, module) {
             if (Array.isArray(entry)) {
               let value;
               switch (entry[0]) {
-              case 'O': value = 'object'; break;
+              case 'O':
+                value = entry[1] === 'null' ? 'null' : 'object';
+                break;
               case 'F': value = 'function'; break;
-              default: value = entry[entry.length-1];
+              default:
+                value = entry[entry.length-1];
+                types[`<${entry[0]}>${entry[entry.length-1]}`] = value;
+                return;
               }
-              types[`${entry[0]}:${entry[entry.length-1]}`] = value;
-            } else {
-              types[typeof entry] = typeof entry;
+              types[value] = value;
+              return;
             }
+            if (entry === null)
+              types['null'] = 'null';
+            else
+              types[typeof entry] = typeof entry;
           }
         } else
           iterCalls(call.calls);
@@ -286,8 +313,16 @@ define(function(require, exports, module) {
       var type = types[typeId];
       break;
     }
-    const href = `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/${util.capitalize(type)}`;
-    return {optional, i, types, type, href};
+    return {optional, i, types, type, href: typeHRef};
+  }
+
+  function typeHRef(type) {
+    if (type[0] === '<') {
+      const [tag, value] = type.split('>');
+      return '#'+value;
+    }
+
+    return `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/${util.capitalize(type)}`;
   }
 
   function valueToText(arg) {
@@ -301,17 +336,17 @@ define(function(require, exports, module) {
     return valueToText(arg);
   }
 
-  function jsdocToHtml(text, argMap, apiId) {
+  function jsdocToHtml(api, text, argMap) {
     const div = document.createElement('div');
     const [info, ...meta] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
-    if (meta.length) {
+    if (meta.length && argMap) {
       const params = meta
               .filter(row => /^param\b/.test(row))
               .forEach(row => {
                 const m = /^param\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
                 if (! m)
-                  koru.error(`Invalid param for api: ${apiId} line @${row}`);
+                  koru.error(`Invalid param for api: ${api.id} line @${row}`);
                 const profile = argMap[m[3]] || (argMap[m[3]] = {});
                 if (m[4]) profile.info = m[4];
                 if (m[2]) profile.optional = true;
@@ -326,7 +361,7 @@ define(function(require, exports, module) {
         part.split(tagRe).forEach(p2 => {
           const m = tagPartsRe.exec(p2);
           if (m) {
-            div.appendChild(execTag(m[1], m[2]));
+            div.appendChild(execTag(api, m[1], m[2]));
           } else
             markdown(div, p2);
         });
