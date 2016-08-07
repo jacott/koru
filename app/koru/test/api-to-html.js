@@ -125,7 +125,8 @@ define(function(require, exports, module) {
       {class: 'jsdoc-example', pre: [
         requireLine.cloneNode(true),
         ...calls.map(call => Dom.h({
-          div: newSig(subject.name, call[0]),
+          div: Array.isArray(call) ?
+            newSig(subject.name, call[0]) : codeToHtml(call.body)
         }))
       ]},
     ]};
@@ -201,7 +202,7 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    sig = /^function\b/.test(sig) ? `(${sig}{})()` : '__'+sig;
+    sig = '_x_'+sig.replace(/^function\s*/, '');
     try {
       var ast = parse(sig);
     } catch(ex) {
@@ -215,11 +216,19 @@ define(function(require, exports, module) {
     const argMap = {};
     traverse(ast, {
       CallExpression (path) {
-        path.shouldSkip = true;
         args = path.node.arguments.map((arg, i) => {
-          if (arg.type === 'Identifier') {
+          switch (arg.type) {
+          case 'AssignmentExpression':
+            arg = arg.left;
+            if (arg.type !== 'Identifier')
+              throw new Error("Unsupported arg in "+ sig );
+          case 'Identifier':
             argMap[arg.name] = argProfile(calls, i, arg);
             return arg.name;
+          default:
+            koru.info(`unsupported node in `+sig, util.inspect(arg));
+
+            throw new Error("Unsupported arg in "+ sig );
           }
         });
       }

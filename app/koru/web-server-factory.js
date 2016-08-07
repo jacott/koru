@@ -1,18 +1,17 @@
-const Path      = requirejs.nodeRequire('path');
-const http      = requirejs.nodeRequire('http');
-var   send      = requirejs.nodeRequire('send');
-const parseurl  = requirejs.nodeRequire('parseurl');
-const Future    = requirejs.nodeRequire('fibers/future');
-
 define(function (require, exports, module) {
   const fst        = require('./fs-tools');
   const IdleCheck  = require('./idle-check').singleton;
   const koru       = require('./main');
   const queue      = require('./queue')();
   const util       = require('./util');
+  const Path      = requirejs.nodeRequire('path');
+  const http      = requirejs.nodeRequire('http');
+  const parseurl  = requirejs.nodeRequire('parseurl');
+  const Future    = requirejs.nodeRequire('fibers/future');
 
-  module.exports = function (host, port, root, DEFAULT_PAGE, SPECIALS) {
-    SPECIALS = SPECIALS || {};
+  var   send      = requirejs.nodeRequire('send');
+
+  module.exports = function (host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
     const koruParent = Path.join(koru.libDir, 'app');
 
     const handlers = {};
@@ -20,11 +19,11 @@ define(function (require, exports, module) {
     const server = http.createServer(requestListener);
 
     const webServer = {
-      start: function () {
+      start() {
         Future.wrap(server.listen).call(server, port, host).wait();
       },
 
-      stop: function () {
+      stop() {
         server.close();
       },
 
@@ -36,16 +35,16 @@ define(function (require, exports, module) {
       parseurl: parseurl,
       notFound: notFound,
 
-      parseUrlParams: function (req) {
+      parseUrlParams(req) {
         return util.searchStrToMap((typeof req === 'string' ? req : req.url).split('?', 2)[1]);
       },
 
       // testing
-      _replaceSend: function (value) {
+      _replaceSend(value) {
         webServer.send = send = value;
       },
 
-      registerHandler: function (module, key, func) {
+      registerHandler(module, key, func) {
         if (typeof module === 'string') {
           func = key;
           key = module;
@@ -58,11 +57,11 @@ define(function (require, exports, module) {
         handlers[key] = func;
       },
 
-      deregisterHandler: function (key) {
+      deregisterHandler(key) {
         delete handlers[key];
       },
 
-      getHandler: function (key) {
+      getHandler(key) {
         return handlers[key];
       },
     };

@@ -52,7 +52,7 @@ define(function(require, exports, module) {
     static comment(comment) {this.instance.comment(comment)}
     static example(body) {this.instance.example(body)}
     static method(methodName) {this.instance.method(methodName)}
-    static protoMethod(methodName) {this.instance.protoMethod(methodName)}
+    static protoMethod(methodName, subject) {this.instance.protoMethod(methodName, subject)}
     static done() {this.instance.done()}
 
     static get instance() {return this._instance || this.module()}
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
       const calls = [];
 
       if (! api.newInstance) {
-        api.newInstance = {
+        api.lastMethod = api.newInstance = {
           test,
           sig: funcToSig(api.subject),
           intro: docComment(test.func),
@@ -186,8 +186,8 @@ define(function(require, exports, module) {
       method(this, methodName, this.subject, this.methods);
     }
 
-    protoMethod(methodName) {
-      method(this, methodName, this.subject.prototype, this.protoMethods);
+    protoMethod(methodName, subject=this.subject.prototype) {
+      method(this, methodName, subject, this.protoMethods);
     }
 
     done() {

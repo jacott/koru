@@ -164,7 +164,7 @@
       },
       "protoMethod": {
         "test": "koru/test/api test protoMethod",
-        "sig": "protoMethod(methodName)",
+        "sig": "protoMethod(methodName, subject)",
         "intro": "Document prototype <methodName> for the current subject",
         "calls": [
           {
@@ -593,5 +593,89 @@
       }
     },
     "protoMethods": {}
+  },
+  "koru/web-server-factory": {
+    "subject": {
+      "ids": [
+        "koru/web-server-factory"
+      ],
+      "name": "WebServerFactory",
+      "abstracts": [
+        "Factory for creating web-servers.\n"
+      ]
+    },
+    "newInstance": {
+      "test": "koru/web-server-factory test construction",
+      "sig": "function (host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
+      "intro": "Create a new web server. The npm package\n[send](https://www.npmjs.com/package/send) is used to serve\nfiles.\n\n@param root Serve files relative to path.",
+      "calls": [
+        {
+          "body": "        const http = requirejs.nodeRequire('http');\n        test.stub(http, 'createServer');\n        v.webServer = WebServerFactory('0.0.0.0', '80', '/rootDir/',\n                                           '/index2.html',\n                                           {gem(match) {return [match[0], '/path-to-gems']}});\n        assert.calledWith(http.createServer, v.webServer.requestListener);\n      ",
+          "calls": [
+            [
+              [
+                "0.0.0.0",
+                "80",
+                "/rootDir/",
+                "/index2.html",
+                [
+                  "O",
+                  "{gem: => gem}"
+                ]
+              ],
+              [
+                "O",
+                "{start: => start, stop: => stop, server: undefined, compilers: {}, requestListener: => requestListener, send: => send, parseurl: => parseurl, notFound: => notFound, parseUrlParams: => parseUrlParams, _replaceSend: => _replaceSend, registerHandler: => registerHandler, deregisterHandler: => deregisterHandler, getHandler: => getHandler}"
+              ]
+            ]
+          ]
+        },
+        [
+          [
+            "localhost",
+            "9876",
+            "/"
+          ],
+          [
+            "O",
+            "{start: => start, stop: => stop, server: undefined, compilers: {}, requestListener: => requestListener, send: => send, parseurl: => parseurl, notFound: => notFound, parseUrlParams: => parseUrlParams, _replaceSend: => _replaceSend, registerHandler: => registerHandler, deregisterHandler: => deregisterHandler, getHandler: => getHandler}"
+          ]
+        ]
+      ]
+    },
+    "properties": null,
+    "methods": {},
+    "protoMethods": {
+      "start": {
+        "test": "koru/web-server-factory test start",
+        "sig": "start()",
+        "intro": null,
+        "calls": [
+          {
+            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const listen = test.stub(Server.prototype, 'listen').yields();\n\n        v.webServer.start();\n        assert.calledWith(listen, '9876', 'localhost');\n      ",
+            "calls": [
+              [
+                []
+              ]
+            ]
+          }
+        ]
+      },
+      "stop": {
+        "test": "koru/web-server-factory test stop",
+        "sig": "stop()",
+        "intro": null,
+        "calls": [
+          {
+            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const close = test.stub(Server.prototype, 'close');\n\n        v.webServer.stop();\n        assert.called(close);\n      ",
+            "calls": [
+              [
+                []
+              ]
+            ]
+          }
+        ]
+      }
+    }
   }
 }
