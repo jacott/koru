@@ -25,13 +25,13 @@ define(function(require, exports, module) {
     }
 
     static module(subject, subjectName, subjectModules) {
-
-      if (! this.isRecord) {
-        return this._instance;
-      }
       const tc = TH.test._currentTestCase;
       if (subject === undefined) {
         subject = ctx.modules[toId(tc)].exports;
+      }
+      if (! this.isRecord) {
+        this._instance.subject = subject;
+        return this._instance;
       }
 
       this._instance = this._apiMap.get(subject);
@@ -58,9 +58,12 @@ define(function(require, exports, module) {
     static get instance() {return this._instance || this.module()}
 
     static resolveObject(value, displayName, orig=value) {
-
       if (value === null || value === Object)
         return ['O', displayName];
+
+      const resolveFunc = this._resolveFuncs.get(value);
+      if (resolveFunc)
+        return resolveFunc(relType(orig, value), displayName, orig);
 
       if (this._coreTypes.has(value))
         return [relType(orig, value), displayName, value.name];
@@ -320,12 +323,29 @@ define(function(require, exports, module) {
     WeakSet,
   ]);
 
+  API._resolveFuncs = new Map([
+    [module.constructor, (type, _, value) => {
+      if (type === 'Oi')
+        return [type, `{Module:${value.id}}`, 'Module'];
+      return [type, value.name, 'Module'];
+    }]
+  ]);
+
   API.reset();
 
   API.isRecord = module.config().record;
 
   class APIOff extends API {
+    new() {
+      return (...args) => {
+        return new this.subject(...args);
+      };
+    }
+    property() {}
+    comment() {}
+    example(body) {body();}
     method() {}
+    protoMethod() {}
     done() {}
   }
 

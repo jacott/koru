@@ -19,6 +19,10 @@ define(function (require, exports, module) {
       assert.same(koru.getHashOrigin(), 'p//hn');
     },
 
+    "test koru.global"() {
+      assert.same(koru.global, window);
+    },
+
     "afTimeout": {
       setUp() {
         assert.same(TH.geddon._origAfTimeout, koru._afTimeout);

@@ -47,6 +47,14 @@ isClient && define(function (require, exports, module) {
         assert.same(v.ctx, null);
       });
     },
+
+    "test modifierKey"() {
+      refute(Dom.modifierKey({}));
+      assert(Dom.modifierKey({ctrlKey: true}));
+      assert(Dom.modifierKey({shiftKey: true}));
+      assert(Dom.modifierKey({metaKey: true}));
+      assert(Dom.modifierKey({altKey: true}));
+    },
   });
 
   function trigger(elm, event, args) {

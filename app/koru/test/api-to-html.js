@@ -26,6 +26,11 @@ define(function(require, exports, module) {
     }
   };
 
+  const hrefMap = {
+    Module: 'https://www.npmjs.com/package/yaajs#api_Module',
+  };
+
+
   function execTag(api, tagName, data) {
     const tag = TAGS[tagName];
     return tag ? tag(api, data) : document.createTextNode(`{@${tagName} ${data}}`);
@@ -319,7 +324,7 @@ define(function(require, exports, module) {
   function typeHRef(type) {
     if (type[0] === '<') {
       const [tag, value] = type.split('>');
-      return '#'+value;
+      return hrefMap[value] || '#'+value;
     }
 
     return `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/${util.capitalize(type)}`;

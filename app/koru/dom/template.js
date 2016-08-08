@@ -1,111 +1,15 @@
 define(function(require, exports, module) {
-  const Dom          = require('./base');
-  const koru         = require('koru');
-  const makeSubject  = require('koru/make-subject');
-  const util         = require('koru/util');
+  const koru        = require('koru');
+  const Ctx         = require('koru/dom/ctx');
+  const makeSubject = require('koru/make-subject');
+  const util        = require('koru/util');
+  const Dom         = require('./base');
 
   const extend = util.extend;
-
-  const TEXT_NODE = document.TEXT_NODE;
-  const COMMENT_NODE = document.COMMENT_NODE;
   const DOCUMENT_NODE = document.DOCUMENT_NODE;
-  const DOCUMENT_FRAGMENT_NODE = document.DOCUMENT_FRAGMENT_NODE;
+  const TEXT_NODE = document.TEXT_NODE;
 
-  var currentCtx, currentElement, currentEvent;
-  var _disable_focusout = false;
-
-  var globalIds = 0;
-
-  function getId(ctx) {
-    return ctx.__id || (ctx.__id = (++globalIds).toString(36));
-  }
-
-  class DomCtx {
-    constructor(template, parentCtx, data) {
-      this.template = template;
-      this.parentCtx = parentCtx;
-      this.data = data;
-      this.evals = [];
-      this.attrEvals = [];
-    }
-
-    onDestroy(obj) {
-      if (! obj) return;
-      var list = this.__onDestroy || (this.__onDestroy = []);
-      list.push(obj);
-      return this;
-    }
-
-    element() {
-      var evals = this.evals;
-      evals = evals && this.evals[0];
-      var elm = evals && evals[0];
-      while(elm && elm.nodeType !== DOCUMENT_NODE && elm._koru !== this)
-        elm = elm.parentNode;
-
-      return elm;
-    }
-
-    updateAllTags(data) {
-      var activeElement = document.activeElement;
-      var prevCtx = currentCtx;
-      var prevElm = currentElement;
-      currentCtx = this;
-      if (data === undefined)
-        data = this.data;
-      else
-        this.data = data;
-      try {
-        var evals = this.attrEvals;
-        for(var i=0; i < evals.length; ++i) {
-          var node = evals[i];
-          currentElement = node[0];
-          var value = (getValue(data, node[2], node[3])||'').toString();
-          if (node[1] && node[0].getAttribute(node[1]) !== value)
-            node[0].setAttribute(node[1], value);
-        }
-        evals = this.evals;
-
-        for(var i=0; i < evals.length; ++i) {
-          updateNode(evals[i], data);
-        }
-      } finally {
-        currentElement = prevElm;
-        currentCtx = prevCtx;
-      }
-      activeElement && document.activeElement !== activeElement &&
-        activeElement.focus();
-    }
-
-    updateElement(elm) {
-      var prevCtx = currentCtx;
-      var prevElm = currentElement;
-      currentCtx = this;
-      try {
-        util.forEach(this.evals, function (ev) {
-          if (Dom.contains(elm, ev[0])) {
-            updateNode(ev, currentCtx.data);
-          }
-        });
-      } finally {
-        currentElement = prevElm;
-        currentCtx = prevCtx;
-      }
-    }
-  };
-
-  function initBlueprint(tpl, blueprint) {
-    let helpers;
-    if (blueprint.extends) {
-      const sup = lookupTemplate(tpl.parent, blueprint.extends);
-      if (! sup)
-        throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
-      helpers = sup._helpers && Object.create(sup._helpers);
-      Object.setPrototypeOf(tpl, sup);
-      tpl._helpers = helpers;
-    }
-    tpl.nodes = blueprint.nodes;
-  }
+  let currentEvent;
 
   class DomTemplate {
     constructor(name, parent, blueprint) {
@@ -117,10 +21,35 @@ define(function(require, exports, module) {
       blueprint && initBlueprint(this, blueprint);
     }
 
+    static newTemplate(module, blueprint) {
+      if (arguments.length === 1)
+        return addTemplates(Dom, module);
+
+
+      var tpl = addTemplates(Dom, blueprint);
+      koru.onunload(module, function () {
+        (tpl.parent || Dom)[tpl.name] = null;
+      });
+      return tpl;
+    }
+
+    static stopEvent(event) {
+      if (event && event !== currentEvent) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      } else {
+        currentEvent = null;
+      }
+    }
+
+    static stopPropigation() {
+      currentEvent = 'propigation';
+    }
+
     $ctx(origin) {
       if (typeof origin === 'string') origin = document.getElementById(origin);
       if (! origin)
-        origin = currentCtx;
+        origin = Ctx._currentCtx;
       else if ('nodeType' in origin)
         origin = Dom.getCtx(origin);
 
@@ -150,8 +79,8 @@ define(function(require, exports, module) {
 
     $render(data, parentCtx) {
       ensureHelper(this);
-      var prevCtx = currentCtx;
-      currentCtx = new DomCtx(this, parentCtx || currentCtx, data);
+      var prevCtx = Ctx._currentCtx;
+      Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       try {
         var frag = document.createDocumentFragment();
         this.nodes && addNodes.call(this, frag, this.nodes);
@@ -159,10 +88,10 @@ define(function(require, exports, module) {
           if (frag.lastChild === frag.firstChild)
             frag = frag.firstChild;
 
-          frag._koru = currentCtx;
+          frag._koru = Ctx._currentCtx;
         }
-        this.$created && this.$created(currentCtx, frag);
-        currentCtx.data === undefined || currentCtx.updateAllTags(currentCtx.data);
+        this.$created && this.$created(Ctx._currentCtx, frag);
+        Ctx._currentCtx.data === undefined || Ctx._currentCtx.updateAllTags(Ctx._currentCtx.data);
         return frag;
       } catch(ex) {
         ex.message = 'while rendering: '+this.$fullname+'\n' + ex.message;
@@ -172,7 +101,7 @@ define(function(require, exports, module) {
         } catch(ex2) {}
         throw ex;
       } finally {
-        currentCtx = prevCtx;
+        Ctx._currentCtx = prevCtx;
       }
     }
 
@@ -233,447 +162,16 @@ define(function(require, exports, module) {
     $inspect() {
       return "DomTemplate:" + this.$fullname;
     }
-  };
+
+    static get _currentEvent() {return currentEvent}
+    static set _currentEvent(value) {currentEvent =  value}
+  }; module.exports = DomTemplate;
+
+  DomTemplate.lookupTemplate = lookupTemplate;
 
   function ensureHelper(tpl) {
     if (! tpl._helpers)
       tpl._helpers = Object.create(Dom._helpers);
-  }
-
-  util.extend(Dom, {
-    Ctx: DomCtx,
-    current: {
-      data(elm) {
-        if (elm) {
-          var ctx = Dom.getCtx(elm);
-          return ctx && ctx.data;
-        }
-
-        return currentCtx.data;
-      },
-
-      get event(){return currentEvent},
-      get template() {return currentCtx.template},
-      get ctx() {return currentCtx},
-      set _ctx(value) {currentCtx = value},
-      get element() {return currentElement},
-      isElement() {
-        return currentElement.nodeType === 1;
-      },
-    },
-
-    get element() {return currentElement},
-
-    _helpers: {
-      inputValue(value) {
-        Dom.current.element.__koruOrigValue__ = value;
-        Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
-      },
-    },
-
-    registerHelpers(helpers) {
-      extend(this._helpers, helpers);
-      return this;
-    },
-
-    newTemplate(module, blueprint) {
-      if (arguments.length === 1)
-        return addTemplates(Dom, module);
-
-
-      var tpl = addTemplates(Dom, blueprint);
-      koru.onunload(module, function () {
-        (tpl.parent || Dom)[tpl.name] = null;
-      });
-      return tpl;
-    },
-
-    lookupTemplate(name) {return lookupTemplate(this, name)},
-
-    stopEvent(event) {
-      if (event && event !== currentEvent) {
-        event.stopImmediatePropagation();
-        event.preventDefault();
-      } else {
-        currentEvent = null;
-      }
-    },
-
-    stopPropigation() {
-      currentEvent = 'propigation';
-    },
-
-    setCtx(elm, ctx) {
-      if (! ctx) {
-        ctx = new DomCtx(null, Dom.getCtx(elm));
-      }
-      elm._koru = ctx;
-      return ctx;
-    },
-
-    destroyMeWith(elm, ctx) {
-      if (ctx._koru) ctx = ctx._koru;
-      var elmCtx = elm._koru;
-      var id = getId(elmCtx);
-      var observers = ctx.__destoryObservers;
-      if (! observers) {
-        observers = ctx.__destoryObservers = Object.create(null);
-      }
-      observers[id] = elm;
-      elmCtx.__destoryWith = ctx;
-    },
-
-    destroyData(elm) {
-      var ctx = elm && elm._koru;
-      if (ctx) {
-        var dw = ctx.__destoryWith;
-        if (dw) {
-          ctx.__destoryWith = null;
-          var observers = dw.__destoryObservers;
-          if (observers) {
-            delete observers[ctx.__id];
-            if (util.isObjEmpty(observers))
-              dw.__destoryObservers = null;
-          }
-        }
-        var observers = ctx && ctx.__destoryObservers;
-        if (observers) {
-          ctx.__destoryObservers = null;
-          for (var id in observers) {
-            var withElm = observers[id];
-            var withCtx = withElm._koru;
-            if (withCtx)  {
-              withCtx.__destoryWith = null;
-            }
-            Dom.remove(withElm);
-          }
-        }
-
-        if (ctx.__onDestroy) {
-          var list = ctx.__onDestroy;
-          ctx.__onDestroy = null;
-          for(var i = list.length - 1; i >=0; --i) {
-            var row = list[i];
-            if (typeof row === 'function')
-              row.call(ctx);
-            else
-              row.stop();
-          }
-        }
-        ctx.destroyed && ctx.destroyed(ctx, elm);
-        var tpl = ctx.template;
-        tpl && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
-        elm._koru = null;
-      }
-      Dom.destroyChildren(elm);
-    },
-
-    removeId(id) {
-      return this.remove(document.getElementById(id));
-    },
-
-    removeAll(elms) {
-      for(var i = elms.length - 1; i >= 0; --i) {
-        this.remove(elms[i]);
-      }
-    },
-
-    remove(elm) {
-      if (elm) {
-        Dom.destroyData(elm);
-        elm.parentNode && elm.parentNode.removeChild(elm);
-        return true;
-      }
-    },
-
-    removeInserts(start) {
-      var parent = start.parentNode;
-      if (! parent) return;
-      var end = start._koruEnd;
-      for(var elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
-        parent.removeChild(elm);
-        Dom.destroyData(elm);
-      }
-    },
-
-    removeChildren(elm) {
-      if (! elm) return;
-
-      var row;
-      while(row = elm.firstChild) {
-        Dom.destroyData(row);
-        elm.removeChild(row);
-      }
-    },
-
-    destroyChildren(elm) {
-      if (! elm) return;
-
-      var iter = elm.firstChild;
-      while (iter) {
-        var row = iter;
-        iter = iter.nextSibling; // incase side affect
-        Dom.destroyData(row);
-      }
-    },
-
-    myCtx(elm) {
-      return elm && elm._koru;
-    },
-
-    ctx(elm) {
-      if (! elm) return;
-      if (typeof elm === 'string')
-        elm = document.querySelector(elm);
-      var ctx = elm._koru;
-      while(! ctx && elm.parentNode)
-        ctx = (elm = elm.parentNode)._koru;
-      return ctx;
-    },
-
-    ctxById(id) {
-      var elm = document.getElementById(id);
-      return elm && elm._koru;
-    },
-
-    updateElement(elm) {
-      var ctx = Dom.getCtx(elm);
-      ctx && ctx.updateElement(elm);
-    },
-
-    replaceElement(newElm, oldElm, noRemove) {
-      var ast = oldElm._koruEnd;
-      if (ast) {
-        Dom.removeInserts(oldElm);
-        Dom.remove(ast);
-      }
-
-      var parentCtx = (oldElm._koru && oldElm._koru.parentCtx) || Dom.getCtx(oldElm.parentNode);
-      if (parentCtx) {
-        var ctx = newElm._koru;
-        if (ctx) ctx.parentCtx = parentCtx;
-      }
-
-      noRemove === 'noRemove' || Dom.destroyData(oldElm);
-
-      oldElm.parentNode && oldElm.parentNode.replaceChild(newElm, oldElm);
-      return this;
-    },
-
-    fragEnd(fragStart) {
-      return fragStart._koruEnd;
-    },
-
-    contains: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
-      return parent && parent.contains(elm) ? parent : null;
-    } : function (parent, elm) {
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
-        if (parent === elm) return parent;
-        elm = elm.parentNode;
-      }
-      return null;
-    },
-
-    // TODO import by performing a binary search. Also allow passing a
-    // hint of the best place to start searching. It might be the upper
-    // or lower bound or the point of insertion or not even in the list
-    findFirstByCtxData(parent, finder) {
-      var iter = parent && parent.firstChild;
-      while(iter) {
-        var row = iter;
-        iter = iter.nextSibling; // incase side affect
-        var b = row._koru;
-        if (b && finder(b.data)) return row;
-      }
-      return null; // need null for IE
-    },
-
-    set _disable_focusout(value) {return _disable_focusout = value},
-    get _disable_focusout() {return _disable_focusout},
-  });
-
-  /** @deprecated @alias */
-  Dom.getMyCtx = Dom.myCtx;
-  Dom.getCtx = Dom.ctx;
-  Dom.getCtxById = Dom.ctxById;
-
-  function addTemplates(parent, blueprint) {
-    let name = blueprint.name;
-    if (name.match(/\./)) {
-      const names = name.split('.');
-      name = names.pop();
-      util.forEach(names, function (nm) {
-        parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
-      });
-    }
-    if (parent.hasOwnProperty(name) && parent[name]) {
-      parent = parent[name];
-      initBlueprint(parent, blueprint);
-    } else {
-      parent[name] = parent = new DomTemplate(name, parent, blueprint);
-    }
-    const nested = blueprint.nested;
-
-    if (blueprint.nested) for(let i = 0; i < nested.length; ++i) {
-      addTemplates(parent, nested[i]);
-    }
-
-    return parent;
-  }
-
-  function updateNode(node, data) {
-    currentElement = node[0];
-
-    var value = getValue(data, node[1], node[2]);
-
-    if (value === undefined || value === currentElement)
-      return;
-
-    if (value === null)  {
-      if (currentElement.nodeType === COMMENT_NODE)
-        value = currentElement;
-      else
-        value = document.createComment('empty');
-
-    } else if (typeof value === 'object' && value.nodeType === DOCUMENT_FRAGMENT_NODE) {
-      if ('_koruEnd' in currentElement) {
-        Dom.removeInserts(currentElement);
-      } else {
-        if (currentElement.nodeType !== COMMENT_NODE) {
-          var start = document.createComment('start');
-          Dom.replaceElement(start, currentElement);
-          currentElement = start;
-        } else
-          currentElement.textContent = 'start';
-        currentElement._koruEnd = document.createComment('end');
-        currentElement.parentNode.insertBefore(currentElement._koruEnd, currentElement.nextSibling);
-      }
-
-      currentElement.parentNode.insertBefore(value, currentElement._koruEnd);
-      value = currentElement;
-
-    } else if (typeof value !== 'object' || ! ('nodeType' in value)) {
-
-      // ***  Text output ***
-      if (currentElement.nodeType === TEXT_NODE) {
-        currentElement.textContent = value.toString();
-        value = currentElement;
-      } else {
-        value = document.createTextNode(value.toString());
-      }
-    } // else *** User created node
-
-    if (currentElement !== value) {
-      Dom.replaceElement(value, currentElement);
-    }
-    node[0] = value;
-  }
-
-  function getValue(data, func, args) {
-    if (! args) {
-      return;
-    }
-    if (args.dotted) {
-      var value = getValue(data, func, []);
-      if (value == null) return value;
-      var dotted = args.dotted;
-      var last = dotted.length -1;
-      for(var i = 0; i <= last ; ++i) {
-        var row = dotted[i];
-        var lv = value;
-        var value = lv[dotted[i]];
-        if (value == null) {
-          return value;
-        }
-        if (typeof value === 'function') {
-          value = i === last ?
-            value.apply(lv, evalArgs(data, args)) :
-            value.call(lv);
-        }
-      }
-      return value;
-    }
-
-    switch(typeof func) {
-    case 'function':
-      return func.apply(data, evalArgs(data, args));
-    case 'string':
-      switch(func[0]) {
-      case '"': return func.slice(1);
-      case '.':
-        var parts = func.split('.');
-        func = parts[1];
-      }
-
-      if (func === 'this') return data;
-
-      var value = data && data[func];
-      if (value === undefined) {
-        value = currentCtx.template._helpers[func];
-      }
-      if (parts) {
-        for(var i = 2; value !== undefined && i < parts.length; ++i) {
-          data = value;
-          value = value[parts[i]];
-        }
-      }
-      if (value !== undefined) {
-        if (typeof value === 'function')
-          return value.apply(data, evalArgs(data, args));
-        return value;
-      }
-      return;
-    case 'number':
-      return func;
-    case 'object':
-      if ('$autoRender' in func) {
-        return evalPartial.call(data, func, args);
-      }
-    default:
-      throw new Error('Unexpected type: '+ (typeof func));
-    }
-  }
-
-  function evalPartial(func, args) {
-    if (args.length === 0) {
-      args = this;
-    } else {
-      args = evalArgs(this, args);
-      if (args.length === 1) args = args[0];
-    }
-
-    if (currentElement._koru) {
-      return currentElement._koru.updateAllTags(args);
-    }
-
-
-
-    if ('$autoRender' in func)
-      return func.$autoRender(args);
-    else
-      return func.call(this, args);
-  }
-
-  function evalArgs(data, args) {
-    if (args.length === 0) return args;
-
-    var output = [];
-    var hash;
-
-    for(var i = 0; i < args.length; ++i) {
-      var arg = args[i];
-      if (arg != null && typeof arg === 'object' && arg[0] === '=') {
-        hash = hash || {};
-        hash[arg[1]] = getValue(data, arg[2], []);
-      } else {
-        output.push(getValue(data, arg, []));
-      }
-    }
-    if (hash) for(var key in hash) {
-      output.push(hash);
-      break;
-    }
-    return output;
   }
 
   function nativeOn(parent, eventType, selector, func) {
@@ -697,12 +195,11 @@ define(function(require, exports, module) {
   }
 
   function onEvent(event) {
-    if (_disable_focusout && event.type == 'focusout') return;
     var prevEvent = currentEvent;
-    var prevCtx = currentCtx;
+    var prevCtx = Ctx._currentCtx;
     currentEvent = event;
-    currentCtx = event.currentTarget._koru;
-    var eventTypes = currentCtx.__events[event.type];
+    Ctx._currentCtx = event.currentTarget._koru;
+    var eventTypes = Ctx._currentCtx.__events[event.type];
     var matches = Dom._matchesFunc;
 
     var later = Object.create(null);
@@ -746,7 +243,7 @@ define(function(require, exports, module) {
       Dom.handleException(ex);
     } finally {
       currentEvent = prevEvent;
-      currentCtx = prevCtx;
+      Ctx._currentCtx = prevCtx;
     }
   }
 
@@ -868,12 +365,12 @@ define(function(require, exports, module) {
       var elm = document.createComment('empty');
     }
 
-    currentCtx.evals.push(parseNode(template, node, [elm]));
+    Ctx._currentCtx.evals.push(parseNode(template, node, [elm]));
     return elm;
   }
 
   function addAttrEval(template, id, node, elm) {
-    currentCtx.attrEvals.push(parseNode(template, node, [elm, id]));
+    Ctx._currentCtx.attrEvals.push(parseNode(template, node, [elm, id]));
   }
 
   function setAttrs(elm, attrs) {
@@ -898,13 +395,40 @@ define(function(require, exports, module) {
     }
   }
 
-  Dom._private = {
-    getValue: getValue,
-    evalArgs: evalArgs,
-    set currentElement(value) {
-      return currentElement = value;
+  function addTemplates(parent, blueprint) {
+    let name = blueprint.name;
+    if (name.match(/\./)) {
+      const names = name.split('.');
+      name = names.pop();
+      util.forEach(names, function (nm) {
+        parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
+      });
     }
-  };
+    if (parent.hasOwnProperty(name) && parent[name]) {
+      parent = parent[name];
+      initBlueprint(parent, blueprint);
+    } else {
+      parent[name] = parent = new DomTemplate(name, parent, blueprint);
+    }
+    const nested = blueprint.nested;
 
-  return DomTemplate;
+    if (blueprint.nested) for(let i = 0; i < nested.length; ++i) {
+      addTemplates(parent, nested[i]);
+    }
+
+    return parent;
+  }
+
+  function initBlueprint(tpl, blueprint) {
+    let helpers;
+    if (blueprint.extends) {
+      const sup = lookupTemplate(tpl.parent, blueprint.extends);
+      if (! sup)
+        throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
+      helpers = sup._helpers && Object.create(sup._helpers);
+      Object.setPrototypeOf(tpl, sup);
+      tpl._helpers = helpers;
+    }
+    tpl.nodes = blueprint.nodes;
+  }
 });

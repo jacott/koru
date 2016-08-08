@@ -5,10 +5,11 @@ isClient && define(function (require, exports, module) {
    * Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
   var test, v;
+  const Dom         = require('koru/dom');
+  const Ctx         = require('koru/dom/ctx');
   const TH          = require('koru/test');
   const api         = require('koru/test/api');
   const util        = require('koru/util');
-  const Dom         = require('../dom');
   const DomTemplate = require('./template');
 
   TH.testCase(module, {
@@ -22,12 +23,6 @@ isClient && define(function (require, exports, module) {
       v = null;
       delete Dom.Foo;
       Dom.removeChildren(document.body);
-    },
-
-    "evalArgs": {
-      "test constant"() {
-        assert.equals(Dom._private.evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
-      },
     },
 
     "test stopEvent"() {
@@ -44,20 +39,20 @@ isClient && define(function (require, exports, module) {
 
       Tpl.$events({
         'click': function (event) {
-          assert.same(Dom.current.event, event);
+          assert.same(Dom.event, event);
           Dom.stopEvent(event);
           refute.called(event.stopImmediatePropagation);
           refute.called(event.preventDefault);
-          assert.same(Dom.current.event, null);
+          assert.same(Dom.event, null);
           v.success = true;
         },
 
         'keydown': function (event) {
-          assert.same(Dom.current.event, event);
+          assert.same(Dom.event, event);
           Dom.stopEvent();
           refute.called(event.stopImmediatePropagation);
           refute.called(event.preventDefault);
-          assert.same(Dom.current.event, null);
+          assert.same(Dom.event, null);
           v.success = true;
         },
       });
@@ -270,46 +265,6 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "Dom.current": {
-      "test data"() {
-        Dom.newTemplate({
-          name: "Foo",
-          nodes:[{
-            name:"section",
-            children:[['', "testMe"]],
-          }],
-        });
-        Dom.Foo.$helpers({
-          testMe: function () {
-            assert.same(this, Dom.current.data());
-            assert.same(this, v.x);
-            assert.same(Dom.current.isElement(), v.isElement);
-            v.isElement || assert.same(Dom.current.ctx, Dom.getCtx(Dom.current.element));
-
-
-            v.data = Dom.current.data(v.elm);
-
-            return v.elm;
-          },
-        });
-
-        var data = {me: true};
-
-        v.elm = Dom.h({});
-        v.elm._koru = {data: data};
-
-        v.isElement = false;
-
-        var foo = Dom.Foo.$render(v.x = {x: 1});
-
-        assert.same(v.data, data);
-
-        v.isElement = true;
-
-        Dom.getMyCtx(foo).updateAllTags(v.x = {x: 2});
-      },
-    },
-
     "test $actions"() {
       Dom.newTemplate({name: "Foo"});
       Dom.Foo.$actions({
@@ -412,29 +367,24 @@ isClient && define(function (require, exports, module) {
       setUp() {
       },
 
-      "test construction"() {
+      "test simple"() {
         /**
-         * New Dom templates should be created by calling
-         * `Dom.newTemplate([module], blueprint)` and not by calling
-         * the constructor directly.
+         * Create a new <DomTemplate> from an html <blueprint>.
+         *
+         * @param [module] if supplied the template will be deleted if
+         * <module> is unloaded
          *
          * @param blueprint A blue print is usually built by {@module
          * koru/dom/template-compiler} which is called automatically
          * on html files loaded using
          * `require('koru/html!path/to/my-template.html')`
          **/
-        const Dom_newTemplate = api.new();
-        Dom_newTemplate("Foo", {name: "Foo", nodes: [{name: "div"}]}, Dom);
-
-        api.example(() => {
-          const myMod = {onUnload: test.stub()};
-          assert.same(Dom.newTemplate(myMod, {name: "Foo", nodes: [{name: "div"}]}), Dom.Foo);
-        });
-      },
-
-      "test simple"() {
-        const myMod = {onUnload: test.stub()};
-        assert.same(Dom.newTemplate(myMod, {name: "Foo", nodes: [{name: "div"}]}), Dom.Foo);
+        api.method('newTemplate');
+        const myMod = {id: 'myMod', onUnload: test.stub(),
+                       __proto__: module.constructor.prototype};
+        assert.same(DomTemplate.newTemplate(myMod, {
+          name: "Foo", nodes: [{name: "div"}]
+        }), Dom.Foo);
 
         const tpl = Dom.Foo;
         assert.same(tpl.name, "Foo");
@@ -601,85 +551,8 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test removeAll"() {
-      test.stub(Dom, 'remove');
-
-      var r1 = Dom.remove.withArgs(1);
-      var r2 = Dom.remove.withArgs(2);
-
-      Dom.removeAll([1, 2]);
-
-      assert.called(r2);
-      assert(r2.calledBefore(r1));
-    },
-
-    "test contains"() {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
-
-      assert.same(Dom.contains(elm, elm), elm);
-      assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
-      assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
-    },
-
-    "test modifierKey"() {
-      refute(Dom.modifierKey({}));
-      assert(Dom.modifierKey({ctrlKey: true}));
-      assert(Dom.modifierKey({shiftKey: true}));
-      assert(Dom.modifierKey({metaKey: true}));
-      assert(Dom.modifierKey({altKey: true}));
-    },
-
-    "test forEach"() {
-      var elm = Dom.html('<div></div>');
-      document.body.appendChild(elm);
-      for(var i = 0; i < 5; ++i) {
-        elm.appendChild(Dom.html('<div class="foo">'+i+'</div>'));
-      }
-
-      var results = [];
-      Dom.forEach(elm, '.foo', function (e) {
-        results.push(e.textContent);
-      });
-
-      assert.same(results.join(','), '0,1,2,3,4');
-
-      results = 0;
-      Dom.forEach(document, 'div', function (e) {
-        ++results;
-      });
-
-      assert.same(results, 6);
-    },
-
-    "test removeInserts"() {
-      var parent = document.createElement('div');
-      var elm = document.createComment('start');
-      elm._koruEnd = document.createComment('end');
-
-      assert.same(Dom.fragEnd(elm), elm._koruEnd);
-
-      parent.appendChild(elm);
-      [1,2,3].forEach(function (i) {
-        parent.appendChild(document.createElement('p'));
-      });
-      parent.appendChild(elm._koruEnd);
-      parent.appendChild(document.createElement('i'));
-
-      test.spy(Dom, 'destroyChildren');
-
-      Dom.removeInserts(elm);
-
-      assert.calledThrice(Dom.destroyChildren);
-
-      assert.same(parent.querySelectorAll('p').length, 0);
-      assert.same(parent.querySelectorAll('i').length, 1);
-
-      assert.same(elm.parentNode, parent);
-      assert.same(elm._koruEnd.parentNode, parent);
-    },
-
     "test rendering fragment"() {
-      Dom.newTemplate({
+      DomTemplate.newTemplate({
         name: "Foo",
         nodes: [{
           name:"div",
@@ -698,7 +571,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test inserting Document Fragment"() {
-      Dom.newTemplate({
+      DomTemplate.newTemplate({
         name: "Foo",
         nodes: [{
           name:"div",
@@ -752,79 +625,6 @@ isClient && define(function (require, exports, module) {
           assert.same(this.nextSibling.nodeType, document.TEXT_NODE);
         });
       });
-    },
-
-    "DomCtx": {
-      "test onAnimationEnd"() {
-        var Tpl = Dom.newTemplate({
-          name: "Foo",
-          nodes:[{
-            name: "div",
-            children:[['', "bar"]],
-          }],
-        });
-
-        Tpl.$helpers({
-          bar: function () {
-            return Dom.h({class: this.name});
-          },
-        });
-
-        document.body.appendChild(v.elm = Dom.Foo.$render({}));
-
-        test.stub(document.body, 'addEventListener');
-        test.stub(document.body, 'removeEventListener');
-
-        // Repeatable
-        Dom.getMyCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
-        assert.calledWith(document.body.addEventListener, Dom.animationEndEventName, TH.match(function (arg) {
-          return v.animationEndFunc = arg;
-        }), true);
-
-        // Element removed
-        document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
-        Dom.getMyCtx(v.elm2).onAnimationEnd(v.stub2 = test.stub());
-
-        // Set twice
-        document.body.appendChild(v.elm3 = Dom.Foo.$render({name: 'bar'}));
-
-        var ctx = Dom.getMyCtx(v.elm3);
-        ctx.onAnimationEnd(v.stub3old = test.stub());
-        ctx.onAnimationEnd(v.stub3 = test.stub());
-
-        assert.calledWith(v.stub3old, ctx, v.elm3);
-
-
-        // Cancelled before called
-        document.body.appendChild(v.elm4 = Dom.Foo.$render({}));
-        Dom.getMyCtx(v.elm4).onAnimationEnd(v.stub4 = test.stub());
-        Dom.getMyCtx(v.elm4).onAnimationEnd('cancel');
-
-        // Body listener only set once
-        assert.calledOnce(document.body.addEventListener);
-
-        // fire events...
-
-        // should repeat fire
-        document.body.addEventListener.yield({target: v.elm});
-        assert.calledWith(v.stub, Dom.getMyCtx(v.elm), v.elm);
-        document.body.addEventListener.yield({target: v.elm});
-        assert.calledTwice(v.stub);
-        refute.called(v.stub2);
-
-        Dom.remove(v.elm);
-
-        // only last func fires
-        document.body.addEventListener.yield({target: v.elm3});
-        assert.called(v.stub3);
-
-        // stil one listener
-        refute.called(document.body.removeEventListener);
-
-        // should remove body listener since last element
-        Dom.remove(v.elm2);
-        assert.calledWith(document.body.removeEventListener, Dom.animationEndEventName, v.animationEndFunc, true);
-      },
     },
 
     "$render": {
@@ -1139,7 +939,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test inputValue helper"() {
-      var elm = Dom._private.currentElement = {};
+      var elm = Ctx._private.currentElement = {};
       TH.stubProperty(elm, 'value', {get: function () {return '34'}, set: v.stub = test.stub()});
       Dom._helpers.inputValue('foo');
 

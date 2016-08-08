@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   const dbBroker = require('koru/model/db-broker');
   const util     = require('koru/util');
-  const sut      = require('./main');
+  const koru     = require('./main');
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
@@ -16,11 +16,15 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test afTimeout"() {
-      test.stub(sut, 'setTimeout').returns(123);
-      var stop = sut._afTimeout(v.stub = test.stub, 1000);
+    "test koru.global"() {
+      assert.same(koru.global, global);
+    },
 
-      assert.calledWith(sut.setTimeout, v.stub, 1000);
+    "test afTimeout"() {
+      test.stub(koru, 'setTimeout').returns(123);
+      var stop = koru._afTimeout(v.stub = test.stub, 1000);
+
+      assert.calledWith(koru.setTimeout, v.stub, 1000);
 
       test.spy(global, 'clearTimeout');
       stop();
@@ -31,7 +35,7 @@ define(function (require, exports, module) {
       cleanup();
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 
-      sut.fiberConnWrapper(function (conn, data) {
+      koru.fiberConnWrapper(function (conn, data) {
         v.thread = util.extend({This: conn, data: data}, util.thread);
       }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
       assert.called(v.run);
@@ -45,10 +49,10 @@ define(function (require, exports, module) {
       assert.same(v.thread.data, v.data);
 
       util.Fiber.reset();
-      test.stub(sut, 'error');
-      sut.fiberConnWrapper(function () {throw new Error("Foo")}, v.conn, v.data);
+      test.stub(koru, 'error');
+      koru.fiberConnWrapper(function () {throw new Error("Foo")}, v.conn, v.data);
       util.Fiber.args(0, 0)();
-      assert.calledWith(sut.error, TH.match(/Foo/));
+      assert.calledWith(koru.error, TH.match(/Foo/));
     },
   });
 

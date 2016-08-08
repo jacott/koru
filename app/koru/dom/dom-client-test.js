@@ -1,7 +1,8 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('koru/test-helper');
-  var Dom = require('./dom-client');
+  const Ctx = require('koru/dom/ctx');
+  const TH  = require('koru/test-helper');
+  const Dom = require('./dom-client');
 
   TH.testCase(module, {
     setUp() {
@@ -125,7 +126,7 @@ isClient && define(function (require, exports, module) {
       Dom.setClassBySuffix('discard', 'Avatar', elm);
       assert.same(elm.className, 'designMode discardAvatar');
 
-      Dom._private.currentElement = elm;
+      Ctx._private.currentElement = elm;
 
       Dom.setClassBySuffix('use', 'Mode');
       assert.same(elm.className, 'discardAvatar useMode');
@@ -150,7 +151,7 @@ isClient && define(function (require, exports, module) {
       Dom.setClassByPrefix('design', 'mode-', elm);
       assert.same(elm.className, 'mode-design');
 
-      Dom._private.currentElement = elm;
+      Ctx._private.currentElement = elm;
 
       Dom.setClassByPrefix('discard', 'avatar-');
       assert.same(elm.className, 'mode-design avatar-discard');
@@ -269,5 +270,75 @@ isClient && define(function (require, exports, module) {
         refute.dom('#Foo');
       },
     },
+
+    "test forEach"() {
+      var elm = Dom.html('<div></div>');
+      document.body.appendChild(elm);
+      for(var i = 0; i < 5; ++i) {
+        elm.appendChild(Dom.html('<div class="foo">'+i+'</div>'));
+      }
+
+      var results = [];
+      Dom.forEach(elm, '.foo', function (e) {
+        results.push(e.textContent);
+      });
+
+      assert.same(results.join(','), '0,1,2,3,4');
+
+      results = 0;
+      Dom.forEach(document, 'div', function (e) {
+        ++results;
+      });
+
+      assert.same(results, 6);
+    },
+
+    "test removeAll"() {
+      test.stub(Dom, 'remove');
+
+      var r1 = Dom.remove.withArgs(1);
+      var r2 = Dom.remove.withArgs(2);
+
+      Dom.removeAll([1, 2]);
+
+      assert.called(r2);
+      assert(r2.calledBefore(r1));
+    },
+
+    "test contains"() {
+      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+
+      assert.same(Dom.contains(elm, elm), elm);
+      assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
+      assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
+    },
+
+    "test removeInserts"() {
+      var parent = document.createElement('div');
+      var elm = document.createComment('start');
+      elm._koruEnd = document.createComment('end');
+
+      assert.same(Dom.fragEnd(elm), elm._koruEnd);
+
+      parent.appendChild(elm);
+      [1,2,3].forEach(function (i) {
+        parent.appendChild(document.createElement('p'));
+      });
+      parent.appendChild(elm._koruEnd);
+      parent.appendChild(document.createElement('i'));
+
+      test.spy(Dom, 'destroyChildren');
+
+      Dom.removeInserts(elm);
+
+      assert.calledThrice(Dom.destroyChildren);
+
+      assert.same(parent.querySelectorAll('p').length, 0);
+      assert.same(parent.querySelectorAll('i').length, 1);
+
+      assert.same(elm.parentNode, parent);
+      assert.same(elm._koruEnd.parentNode, parent);
+    },
+
   });
 });

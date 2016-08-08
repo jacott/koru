@@ -23,6 +23,21 @@
     },
     "protoMethods": {}
   },
+  "koru/dom/ctx": {
+    "subject": {
+      "ids": [
+        "koru/dom/ctx"
+      ],
+      "name": "Ctx",
+      "abstracts": [
+        "Ctx is used to track [DOM\nelements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+      ]
+    },
+    "newInstance": null,
+    "properties": null,
+    "methods": {},
+    "protoMethods": {}
+  },
   "koru/dom/template": {
     "subject": {
       "ids": [
@@ -33,37 +48,35 @@
         "DomTemplate is used to create interactive [Dom\nTrees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
       ]
     },
-    "newInstance": {
-      "test": "koru/dom/template newTemplate test construction",
-      "sig": "constructor(name, parent, blueprint)",
-      "intro": "New Dom templates should be created by calling\n`Dom.newTemplate([module], blueprint)` and not by calling\nthe constructor directly.\n\n@param blueprint A blue print is usually built by {@module\nkoru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
-      "calls": [
-        [
+    "newInstance": null,
+    "properties": null,
+    "methods": {
+      "newTemplate": {
+        "test": "koru/dom/template newTemplate test simple",
+        "sig": "newTemplate(module, blueprint)",
+        "intro": "Create a new <DomTemplate> from an html <blueprint>.\n\n@param [module] if supplied the template will be deleted if\n<module> is unloaded\n\n@param blueprint A blue print is usually built by {@module\nkoru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
+        "calls": [
           [
-            "Foo",
             [
-              "O",
-              "{name: 'Foo', nodes: [{name: 'div'}]}"
+              [
+                "Oi",
+                "{Module:myMod}",
+                "Module"
+              ],
+              [
+                "O",
+                "{name: 'Foo', nodes: [{name: 'div'}]}"
+              ]
             ],
             [
-              "M",
-              "koru/dom/base"
+              "Oi",
+              "DomTemplate:Foo",
+              "koru/dom/template"
             ]
-          ],
-          [
-            "Oi",
-            "DomTemplate:undefined.Foo",
-            "koru/dom/template"
           ]
-        ],
-        {
-          "body": "          const myMod = {onUnload: test.stub()};\n          assert.same(Dom.newTemplate(myMod, {name: \"Foo\", nodes: [{name: \"div\"}]}), Dom.Foo);\n        ",
-          "calls": []
-        }
-      ]
+        ]
+      }
     },
-    "properties": null,
-    "methods": {},
     "protoMethods": {}
   },
   "koru/idle-check": {

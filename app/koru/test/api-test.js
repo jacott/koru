@@ -371,6 +371,11 @@ define(function (require, exports, module) {
 
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
+      assert.equals(API.resolveObject({id: 'myModule', __proto__: module.constructor.prototype}),
+                    ['Oi', '{Module:myModule}', 'Module']);
+      class MyExt extends module.constructor {}
+      assert.equals(API.resolveObject(MyExt),
+                    ['Os', 'MyExt', 'Module']);
     },
 
     "test serialize"() {

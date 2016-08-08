@@ -9,6 +9,7 @@ define(function(require, exports, module) {
     let dbBroker;
 
     util.extend(koru, {
+      global,
       reload() {
         if (koru.loadError) throw koru.loadError;
         console.log('=> Reloading');

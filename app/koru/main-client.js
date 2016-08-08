@@ -7,6 +7,7 @@ define(function(require, exports, module) {
     koru.onunload(module, 'reload');
 
     util.extend(koru, {
+      global: window,
       reload() {
         if (koru.loadError) throw koru.loadError;
 

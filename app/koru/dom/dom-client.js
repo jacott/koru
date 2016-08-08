@@ -1,6 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var Dom = require('./dom');
+  const koru        = require('koru');
+  const Ctx         = require('koru/dom/ctx');
+  const DomTemplate = require('koru/dom/template');
+  const util        = require('koru/util');
+  const Dom         = require('./dom');
 
   var vendorTransform;
   var vendorStylePrefix = (function () {
@@ -31,6 +34,11 @@ define(function(require, exports, module) {
   }
 
   util.extend(Dom, {
+    Ctx: Ctx,
+    current: Ctx.current,
+
+    get element() {return Ctx._currentElement},
+
     _matchesFunc: matches,
 
     MOUSEWHEEL_EVENT: vendorFuncPrefix === 'moz' ? 'wheel' : 'mousewheel',
@@ -312,7 +320,218 @@ define(function(require, exports, module) {
     vendorPrefix: vendorFuncPrefix,
 
     hasPointerEvents: true,
+
+    get event(){return DomTemplate._currentEvent},
+
+    _helpers: {
+      inputValue(value) {
+        Dom.current.element.__koruOrigValue__ = value;
+        Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
+      },
+    },
+
+    registerHelpers(helpers) {
+      util.extend(this._helpers, helpers);
+      return this;
+    },
+
+    newTemplate: DomTemplate.newTemplate,
+
+    lookupTemplate(name) {return DomTemplate.lookupTemplate(this, name)},
+
+    stopEvent: DomTemplate.stopEvent,
+    stopPropigation: DomTemplate.stopPropigation,
+
+    setCtx(elm, ctx) {
+      if (! ctx) {
+        ctx = new Ctx(null, Dom.getCtx(elm));
+      }
+      elm._koru = ctx;
+      return ctx;
+    },
+
+    destroyMeWith(elm, ctx) {
+      if (ctx._koru) ctx = ctx._koru;
+      var elmCtx = elm._koru;
+      var id = getId(elmCtx);
+      var observers = ctx.__destoryObservers;
+      if (! observers) {
+        observers = ctx.__destoryObservers = Object.create(null);
+      }
+      observers[id] = elm;
+      elmCtx.__destoryWith = ctx;
+    },
+
+    destroyData(elm) {
+      var ctx = elm && elm._koru;
+      if (ctx) {
+        var dw = ctx.__destoryWith;
+        if (dw) {
+          ctx.__destoryWith = null;
+          var observers = dw.__destoryObservers;
+          if (observers) {
+            delete observers[ctx.__id];
+            if (util.isObjEmpty(observers))
+              dw.__destoryObservers = null;
+          }
+        }
+        var observers = ctx && ctx.__destoryObservers;
+        if (observers) {
+          ctx.__destoryObservers = null;
+          for (var id in observers) {
+            var withElm = observers[id];
+            var withCtx = withElm._koru;
+            if (withCtx)  {
+              withCtx.__destoryWith = null;
+            }
+            Dom.remove(withElm);
+          }
+        }
+
+        if (ctx.__onDestroy) {
+          var list = ctx.__onDestroy;
+          ctx.__onDestroy = null;
+          for(var i = list.length - 1; i >=0; --i) {
+            var row = list[i];
+            if (typeof row === 'function')
+              row.call(ctx);
+            else
+              row.stop();
+          }
+        }
+        ctx.destroyed && ctx.destroyed(ctx, elm);
+        var tpl = ctx.template;
+        tpl && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
+        elm._koru = null;
+      }
+      Dom.destroyChildren(elm);
+    },
+
+    removeId(id) {
+      return this.remove(document.getElementById(id));
+    },
+
+    removeAll(elms) {
+      for(var i = elms.length - 1; i >= 0; --i) {
+        this.remove(elms[i]);
+      }
+    },
+
+    remove(elm) {
+      if (elm) {
+        Dom.destroyData(elm);
+        elm.parentNode && elm.parentNode.removeChild(elm);
+        return true;
+      }
+    },
+
+    removeInserts(start) {
+      var parent = start.parentNode;
+      if (! parent) return;
+      var end = start._koruEnd;
+      for(var elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
+        parent.removeChild(elm);
+        Dom.destroyData(elm);
+      }
+    },
+
+    removeChildren(elm) {
+      if (! elm) return;
+
+      var row;
+      while(row = elm.firstChild) {
+        Dom.destroyData(row);
+        elm.removeChild(row);
+      }
+    },
+
+    destroyChildren(elm) {
+      if (! elm) return;
+
+      var iter = elm.firstChild;
+      while (iter) {
+        var row = iter;
+        iter = iter.nextSibling; // incase side affect
+        Dom.destroyData(row);
+      }
+    },
+
+    myCtx(elm) {
+      return elm && elm._koru;
+    },
+
+    ctx(elm) {
+      if (! elm) return;
+      if (typeof elm === 'string')
+        elm = document.querySelector(elm);
+      var ctx = elm._koru;
+      while(! ctx && elm.parentNode)
+        ctx = (elm = elm.parentNode)._koru;
+      return ctx;
+    },
+
+    ctxById(id) {
+      var elm = document.getElementById(id);
+      return elm && elm._koru;
+    },
+
+    updateElement(elm) {
+      var ctx = Dom.getCtx(elm);
+      ctx && ctx.updateElement(elm);
+    },
+
+    replaceElement(newElm, oldElm, noRemove) {
+      var ast = oldElm._koruEnd;
+      if (ast) {
+        Dom.removeInserts(oldElm);
+        Dom.remove(ast);
+      }
+
+      var parentCtx = (oldElm._koru && oldElm._koru.parentCtx) || Dom.getCtx(oldElm.parentNode);
+      if (parentCtx) {
+        var ctx = newElm._koru;
+        if (ctx) ctx.parentCtx = parentCtx;
+      }
+
+      noRemove === 'noRemove' || Dom.destroyData(oldElm);
+
+      oldElm.parentNode && oldElm.parentNode.replaceChild(newElm, oldElm);
+      return this;
+    },
+
+    fragEnd(fragStart) {
+      return fragStart._koruEnd;
+    },
+
+    contains: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
+      return parent && parent.contains(elm) ? parent : null;
+    } : function (parent, elm) {
+      while(elm && elm.nodeType !== DOCUMENT_NODE) {
+        if (parent === elm) return parent;
+        elm = elm.parentNode;
+      }
+      return null;
+    },
+
+    // TODO import by performing a binary search. Also allow passing a
+    // hint of the best place to start searching. It might be the upper
+    // or lower bound or the point of insertion or not even in the list
+    findFirstByCtxData(parent, finder) {
+      var iter = parent && parent.firstChild;
+      while(iter) {
+        var row = iter;
+        iter = iter.nextSibling; // incase side affect
+        var b = row._koru;
+        if (b && finder(b.data)) return row;
+      }
+      return null; // need null for IE
+    },
   });
+
+  /** @deprecated @alias */
+  Dom.getMyCtx = Dom.myCtx;
+  Dom.getCtx = Dom.ctx;
+  Dom.getCtxById = Dom.ctxById;
 
   function addElm(ctx, elm) {
     Dom.removeClass(elm, 'addElm');
@@ -395,5 +614,11 @@ define(function(require, exports, module) {
     var ctx = elm && Dom.getCtx(elm);
     return ctx && ctx.data;
   }
+
+  let globalIds = 0;
+  function getId(ctx) {
+    return ctx.__id || (ctx.__id = (++globalIds).toString(36));
+  }
+
   return Dom;
 });

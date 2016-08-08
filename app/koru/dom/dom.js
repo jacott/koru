@@ -41,27 +41,6 @@ define(function(require, exports, module) {
 
   require('./next-frame')(Dom);
 
-  Dom.Ctx.prototype.onAnimationEnd = function (func, repeat) {
-    if (! this.animationEnd) {
-      if(++animationEndCount === 1)
-        document.body.addEventListener(Dom.animationEndEventName, animationEnd, true);
-      this.onDestroy(removeOnAnmiationEnd);
-    } else {
-      if (func !== 'cancel')
-        var old = this.animationEnd;
-
-      if (! func || func === 'cancel') {
-        removeOnAnmiationEnd.call(this);
-        func = null;
-      }
-    }
-    this.animationEnd = func;
-    this.animationEndRepeat = func && repeat === 'repeat';
-    old && old(this, this.element());
-  };
-
-
-
   Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
   Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
   Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
@@ -103,27 +82,6 @@ define(function(require, exports, module) {
       }
     }
   }
-
-  var animationEndCount = 0;
-  function animationEnd(event) {
-    var target = event.target;
-    var ctx = target._koru;
-    var func = ctx && ctx.animationEnd;
-
-    if (! func) return;
-    if (! ctx.animationEndRepeat)
-      removeOnAnmiationEnd.call(ctx);
-
-    func(ctx, target);
-  }
-
-  function removeOnAnmiationEnd() {
-    if (! this.animationEnd) return;
-    this.animationEnd = null;
-    if (--animationEndCount === 0)
-      document.body.removeEventListener(Dom.animationEndEventName, animationEnd, true);
-  }
-
 
   return Dom;
 });
