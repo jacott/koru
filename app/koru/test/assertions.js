@@ -140,8 +140,27 @@ define(function(require, exports, module) {
     if (match.match.$test(expected) && expected.$test(actual))
       return true;
 
-    if (typeof actual !== 'object' || typeof expected !== 'object')
-      return ((actual === undefined || expected === undefined) && actual == expected) || setHint();
+    if (typeof actual !== 'object' || typeof expected !== 'object') {
+      if ((actual === undefined || expected === undefined) && actual == expected)
+        return true;
+      if (hint) {
+        if (typeof actual === 'string' && typeof expected === 'string') {
+          const al = actual.length, el = expected.length;
+          const len = Math.min(al, el);
+          let s = 0;
+          while(s < len && actual[s] === expected[s])
+            ++s;
+          let e = -1;
+          while(e + len - s >= 0 && actual[e + al] === expected[e + el])
+            --e;
+          setHint(actual.slice(s, e+1 || undefined), expected.slice(s, e+1 || undefined),
+                  'diff '+JSON.stringify(actual.slice(0, s)).slice(1, -1)
+                  .replace(/./g, '-')+'^');
+          setHint();
+        }
+      }
+      return false;
+    }
 
     if (actual == null || expected == null) return setHint();
 
@@ -191,11 +210,10 @@ define(function(require, exports, module) {
       return false;
     }
 
-    function setHint(aobj, eobj, prefix) {
+    function setHint(aobj=actual, eobj=expected, prefix) {
       if (! hint) return false;
       var prev = hint[hintField];
 
-      aobj = aobj || actual; eobj = eobj || expected;
       hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) + (prev ? "\n" + prev : '');
       return false;
     }

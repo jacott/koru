@@ -1,14 +1,5 @@
 (function () {
   var index = document.getElementById('jsdoc-index');
-  // document.addEventListener('click', function (event) {
-  //   var target = searchUpFor('jsdoc-nav-module', event.target);
-  //   if (target) {
-  //     var active = index.querySelector('.jsdoc-active');
-  //     active && active.classList.remove('jsdoc-active');
-  //     target.classList.add('jsdoc-active');
-  //   }
-  // });
-
   window.addEventListener('hashchange', highlightPage);
 
   document.addEventListener("DOMContentLoaded", function () {

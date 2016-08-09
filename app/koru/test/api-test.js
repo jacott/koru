@@ -61,7 +61,7 @@ define(function (require, exports, module) {
       MainAPI.module();
       MainAPI.method('example');
 
-      MainAPI.example(function body() {
+      MainAPI.example(() => {
         class Color {
           static define(name, value) {
             this.colors[name] = value;
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
         });
       });
 
-      API.done();
+      MainAPI.done();
 
       assert.equals(API.instance.methods.define, {
         test,

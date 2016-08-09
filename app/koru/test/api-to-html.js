@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   const koru     = require('koru');
   const Dom      = require('koru/dom');
   const htmlDoc  = require('koru/dom/html-doc');
+  const jsParser = require('koru/parse/js-parser');
   const util     = require('koru/util');
   const generate = requirejs.nodeRequire('babel-generator').default;
   const traverse = requirejs.nodeRequire('babel-traverse').default;
@@ -69,7 +70,10 @@ define(function(require, exports, module) {
     Object.keys(json).sort().forEach(id => {
       const api = json[id]; api.id = id;
       const {subject, newInstance, properties, methods, protoMethods} = api;
-      const requireLine = Dom.h({class: 'jsdoc-require', div: [`const ${subject.name} = require('`, idToLink(id),`');`]});
+      const requireLine = Dom.h({class: 'jsdoc-require highlight', div: [
+        hl('const', 'kd'), ' ', hl(subject.name, 'nx'), ' ', hl('=', 'o'), ' ',
+        hl('require', 'k'), '(', hl(`"${id}"`, 's'), ');'
+      ]});
 
       const idIdx = subject.ids.indexOf(id);
 
@@ -134,7 +138,7 @@ define(function(require, exports, module) {
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
       {h6: "Example"},
-      {class: 'jsdoc-example', pre: [
+      {class: 'jsdoc-example highlight', pre: [
         requireLine.cloneNode(true),
         ...calls.map(call => Dom.h({
           div: Array.isArray(call) ?
@@ -179,16 +183,15 @@ define(function(require, exports, module) {
           {h6: "Example"},
           {class: 'jsdoc-example', pre: [
             requireLine.cloneNode(true),
-            ...calls.map(call => Dom.h({
-              div: Array.isArray(call) ?
-                [...initInst(),
-                 {class: 'jsdoc-example-call', div: [
-                   {span: `${inst}.${name}(${call[0].map(arg => valueToText(arg)).join(", ")});`},
-                   call[1] && {class: 'jsdoc-returns', span: ` // returns ${valueToLink(call[1])}`}
-                 ]}
-                ]
-              : codeToHtml(call.body),
-            })),
+            ...calls.map(call => Array.isArray(call) ? {div: [
+              ...initInst(),
+              {class: 'jsdoc-example-call highlight', div: [
+                {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
+                       '(', ...hlArgList(call[0]), ');']},
+                call[1] && {class: 'jsdoc-returns c1',
+                            span: [' // returns ', valueToHtml(call[1])]}
+              ]}
+            ]} : {class: 'jsdoc-example-call', div: codeToHtml(call.body)}),
           ]}
         ]};
 
@@ -209,14 +212,7 @@ define(function(require, exports, module) {
   }
 
   function codeToHtml(codeIn) {
-    if (! codeIn) return;
-    var ast = parse(codeIn);
-    const {code} = generate(ast, {
-      comments: true,
-      compact: false,
-      sourceMaps: false,
-    }, []);
-    return {div: code};
+    return jsParser.highlight(codeIn);
   }
 
   function mapArgs(sig, calls) {
@@ -330,6 +326,21 @@ define(function(require, exports, module) {
     return `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/${util.capitalize(type)}`;
   }
 
+  function valueToHtml(arg) {
+    const text = valueToText(arg);
+    return hl(text, arg == null ? 'kc' : jsParser.HL_MAP[typeof arg] || 'ge nx');
+  }
+
+  function hlArgList(list) {
+    const ans = [];
+    list.forEach(arg => {
+      if (ans.length !== 0)
+        ans.push(", ");
+      ans.push(valueToHtml(arg));
+    });
+    return ans;
+  }
+
   function valueToText(arg) {
     if (Array.isArray(arg))
       return arg[1];
@@ -400,6 +411,13 @@ define(function(require, exports, module) {
     for(let i = 1; i < nodes.length; ++i) {
       div.appendChild(nodes[i]);
     }
+  }
+
+  function hl(text, hl) {
+    const span = document.createElement('span');
+    span.className = hl;
+    span.textContent = text;
+    return span;
   }
 
   function idToLink(id) {
