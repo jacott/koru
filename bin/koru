@@ -7,6 +7,7 @@ let program = require('commander');
 program
   .command('new [name]')
   .option('--link', 'link to global koru instead of local install')
+  .option('--force', 'overwrite existing files')
   .description('create a new application called name')
   .action(load('new'));
 

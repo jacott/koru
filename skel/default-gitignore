@@ -1,0 +1,8 @@
+/node_modules/
+*~
+*#
+TAG*
+/tmp/
+.build/
+/build/
+/app/test/server-ready.js
