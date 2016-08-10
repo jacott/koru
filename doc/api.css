@@ -10,6 +10,10 @@ pre {
   margin: 0;
 }
 
+.jsdoc-info, abstract>div {
+  max-width: 780px;
+}
+
 #jsdoc-index {
   margin: 0 10px;
 }
@@ -47,7 +51,6 @@ pre {
   line-height: 32px;
   margin-top: 0;
   margin-bottom: 30px;
-  overflow: hidden;
   padding-top: 50px;
 }
 
@@ -65,7 +68,6 @@ pre {
 .jsdoc-methods>h4:first-child {
   margin-bottom: 0;
 }
-
 
 .jsdoc-example {
   display: inline-block;

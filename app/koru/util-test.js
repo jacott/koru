@@ -108,6 +108,7 @@ define(function (require, exports, module) {
        * Returns <item> if found
        *
        * @param item - can be a key-value object to compare the given keys.
+       * @returns {object|primitive} the removed item.
        **/
       api.method('removeItem');
       const foo = [1,2,3];

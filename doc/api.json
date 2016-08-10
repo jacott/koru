@@ -527,7 +527,7 @@
       "removeItem": {
         "test": "koru/util test removeItem",
         "sig": "removeItem(list, item)",
-        "intro": "remove an <item> from a <list>. <list> is modified.\n\nReturns <item> if found\n\n@param item - can be a key-value object to compare the given keys.",
+        "intro": "remove an <item> from a <list>. <list> is modified.\n\nReturns <item> if found\n\n@param item - can be a key-value object to compare the given keys.\n@returns {object|primitive} the removed item.",
         "calls": [
           [
             [

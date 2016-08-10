@@ -14,10 +14,31 @@ define(function(require, exports, module) {
   const script = noContent('script');
   const async = 'async';
 
-  const tagRe = /(\{@\w+\s*[^}]*\})/;
-  const tagPartsRe = /\{@(\w+)\s*([^}]*)\}/;
+  const BLOCK_TAGS = {
+    param(api, row, argMap) {
+      const m = /^\w+\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
+      if (! m)
+        koru.error(`Invalid param for api: ${api.id} line @${row}`);
+      const profile = argMap[m[3]] || (argMap[m[3]] = {});
+      if (m[4]) profile.info = m[4];
+      if (m[2]) profile.optional = true;
+      if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
+    },
+    returns(api, row, argMap) {
+       const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
+      if (! m)
+        koru.error(`Invalid param for api: ${api.id} line @${row}`);
+      const profile = argMap[':return:'] || (argMap[':return:'] = {});
+      if (m[2]) profile.info = m[2];
+      if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
+    }
+  };
 
-  const TAGS = {
+  BLOCK_TAGS.arg = BLOCK_TAGS.param;
+  BLOCK_TAGS.argument = BLOCK_TAGS.param;
+  BLOCK_TAGS.return = BLOCK_TAGS.returns;
+
+  const INLINE_TAGS = {
     module(api, data) {
       return idToLink(data);
     },
@@ -27,13 +48,24 @@ define(function(require, exports, module) {
     }
   };
 
+  const INLINE_TAG_RE = /(\{@\w+\s*[^}]*\})/;
+  const INLINE_TAG_PARTS_RE = /\{@(\w+)\s*([^}]*)\}/;
+
   const hrefMap = {
     Module: 'https://www.npmjs.com/package/yaajs#api_Module',
   };
 
+  function overrideTypes(profile, typeArg) {
+    const oldTypes = profile.types;
+    const types = profile.types = {};
+    typeArg.split('|').forEach(type => {
+      types[type] = oldTypes[type] || type;
+    });
+  }
 
-  function execTag(api, tagName, data) {
-    const tag = TAGS[tagName];
+
+  function execInlineTag(api, tagName, data) {
+    const tag = INLINE_TAGS[tagName];
     return tag ? tag(api, data) : document.createTextNode(`{@${tagName} ${data}}`);
   }
 
@@ -121,7 +153,7 @@ define(function(require, exports, module) {
         const info = jsdocToHtml(api, property.info, argMap);
         rows.push({tr: [
           {td: name},
-          {td: info}
+          {class: 'jsdoc-info', td: info}
         ]});
 
         property.properties && addRows(property.properties);
@@ -147,7 +179,7 @@ define(function(require, exports, module) {
       ]},
     ]};
     return section(api, {$name: 'constructor', div: [
-      {h4: sig},
+      {h4: sig.replace(/^[^(]*/, 'constructor')},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
       examples,
@@ -178,6 +210,10 @@ define(function(require, exports, module) {
     return Object.keys(methods).map(name => {
       const {sig, intro, calls} = methods[name];
       const {args, argMap} = mapArgs(sig, calls);
+      const ret = argProfile(calls, function (call) {return call[1]});
+      if (! util.isObjEmpty(ret.types))
+        argMap[':return:'] = ret;
+
       const examples = calls.length && {
         div: [
           {h6: "Example"},
@@ -195,10 +231,15 @@ define(function(require, exports, module) {
           ]}
         ]};
 
-      return section(api, {$name: proto ? '#'+name : name, div: [
+
+      const abstract = jsdocToHtml(api, intro, argMap);
+      const params = buildParams(api, args, argMap);
+
+      return section(api, {
+        $name: proto ? '#'+name : name, div: [
           {h5: `${subject.name}${sigJoin}${sig}`},
-          {abstract: jsdocToHtml(api, intro, argMap)},
-          buildParams(api, args, argMap),
+          {abstract},
+          params,
           examples,
         ]
       });
@@ -231,13 +272,16 @@ define(function(require, exports, module) {
     traverse(ast, {
       CallExpression (path) {
         args = path.node.arguments.map((arg, i) => {
+          function extract(call) {
+            return call[0][i];
+          }
           switch (arg.type) {
           case 'AssignmentExpression':
             arg = arg.left;
             if (arg.type !== 'Identifier')
               throw new Error("Unsupported arg in "+ sig );
           case 'Identifier':
-            argMap[arg.name] = argProfile(calls, i, arg);
+            argMap[arg.name] = argProfile(calls, extract);
             return arg.name;
           default:
             koru.info(`unsupported node in `+sig, util.inspect(arg));
@@ -251,35 +295,58 @@ define(function(require, exports, module) {
   }
 
   function buildParams(api, args, argMap) {
-    return args && args.length && {class: "jsdoc-args", div: [
+    const ret = argMap[':return:'];
+
+    if (args.length === 0 && ! ret)
+      return;
+
+
+    const retTypes = ret && extractTypes(ret);
+    return {class: "jsdoc-args", div: [
       {h6: "Parameters"},
-      {table: {tbody: args.map(arg => {
-        const am = argMap[arg];
-        const types = [];
-        for (const type in am.types) {
-          if (types.length)
-            types.push(' or ');
-          types.push({a: am.types[type], $href: am.href(type)});
-        }
-        return {
-          class: "jsdoc-arg", tr: [
-            {td: am.optional ? `[${arg}]` : arg},
-            {td: types},
-            {td: jsdocToHtml(api, am.info)}
-          ]
-        };
-      })}},
+      {table: {
+        tbody: [
+          ...args.map(arg => {
+            const am = argMap[arg];
+            const types = extractTypes(am);
+            return {
+              class: "jsdoc-arg", tr: [
+                {td: am.optional ? `[${arg}]` : arg},
+                {td: types},
+                {class: 'jsdoc-info', td: jsdocToHtml(api, am.info)}
+              ]
+            };
+          }),
+          ret && {
+            class: "jsdoc-method-returns", tr: [
+              {td: {h6: 'Returns'}},
+              {td: retTypes},
+              {class: 'jsdoc-info', td: jsdocToHtml(api, ret.info)}
+            ]
+          }
+        ],
+      }},
     ]};
   }
 
-  function argProfile(calls, i, arg) {
+  function extractTypes(am) {
+    const types = [];
+    for (const type in am.types) {
+      if (types.length)
+        types.push(' or ');
+      types.push({a: am.types[type], $href: am.href(type)});
+    }
+    return types;
+  }
+
+  function argProfile(calls, extract) {
     let optional = false;
     let types = {};
 
     function iterCalls(calls) {
       calls.forEach(call => {
         if (Array.isArray(call)) {
-          const entry = call[0][i];
+          const entry = extract(call);
           if (entry === undefined) {
             optional = true;
           } else {
@@ -310,20 +377,16 @@ define(function(require, exports, module) {
 
     iterCalls(calls);
 
-    for (let typeId in types) {
-      var type = types[typeId];
-      break;
-    }
-    return {optional, i, types, type, href: typeHRef};
+    return {optional, types, type: null, href: typeHRef};
   }
 
   function typeHRef(type) {
     if (type[0] === '<') {
-      const [tag, value] = type.split('>');
+      const value = type.split('>')[1];
       return hrefMap[value] || '#'+value;
     }
 
-    return `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/${util.capitalize(type)}`;
+    return `https://developer.mozilla.org/en-US/docs/Glossary/${util.capitalize(type)}`;
   }
 
   function valueToHtml(arg) {
@@ -354,30 +417,26 @@ define(function(require, exports, module) {
 
   function jsdocToHtml(api, text, argMap) {
     const div = document.createElement('div');
-    const [info, ...meta] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
+    const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
 
-    if (meta.length && argMap) {
-      const params = meta
-              .filter(row => /^param\b/.test(row))
-              .forEach(row => {
-                const m = /^param\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
-                if (! m)
-                  koru.error(`Invalid param for api: ${api.id} line @${row}`);
-                const profile = argMap[m[3]] || (argMap[m[3]] = {});
-                if (m[4]) profile.info = m[4];
-                if (m[2]) profile.optional = true;
-                if (m[1]) profile.type = m[1].slice(1,-1);
-              });
+    if (blockTags.length && argMap) {
+      blockTags.forEach(row => {
+        const tag = /^\w+/.exec(row);
+        if (tag) {
+          const tagFunc = BLOCK_TAGS[tag[0]];
+          tagFunc && tagFunc(api, row, argMap);
+        }
+      });
     }
 
     info.split(/(<[^>]*>)/).forEach(part => {
       if (part[0] === '<' && part[part.length-1] === '>')
         div.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
       else {
-        part.split(tagRe).forEach(p2 => {
-          const m = tagPartsRe.exec(p2);
+        part.split(INLINE_TAG_RE).forEach(p2 => {
+          const m = INLINE_TAG_PARTS_RE.exec(p2);
           if (m) {
-            div.appendChild(execTag(api, m[1], m[2]));
+            div.appendChild(execInlineTag(api, m[1], m[2]));
           } else
             markdown(div, p2);
         });
