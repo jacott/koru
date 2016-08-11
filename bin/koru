@@ -4,33 +4,45 @@ const path = require('path');
 const fs = require('fs');
 let program = require('commander');
 
-program
-  .command('new [name]')
-  .option('--link', 'link to global koru instead of local install')
-  .option('--force', 'overwrite existing files')
-  .description('create a new application called name')
-  .action(load('new'));
-
-program
-  .command('test')
-  .usage('[-s] [-c] [testModule] [testNamePrefix]')
-  .option('-s, --server', 'Only run server tests')
-  .option('-c, --client', 'Only run client tests')
-  .description('Run tests.')
-  .action(load('test'));
-
 const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
 
-program.parse(process.argv);
+switch (process.argv[2]) {
+case 'generate': case 'g':
+  load('generate').call(program);
+  break;
+default:
 
-program && program.help();
+  program
+    .command('new [name]')
+    .option('--link', 'link to global koru instead of local install')
+    .option('--force', 'overwrite existing files')
+    .description('create a new (or update an existing) application called name')
+    .action(load('new'));
+
+  program
+    .command('generate', null)
+    .alias('g')
+    .usage('GENERATOR [args] [options]')
+    .description(`create things in you project`);
+
+  program
+    .command('test')
+    .usage('[-s] [-c] [testModule] [testNamePrefix]')
+    .option('-s, --server', 'Only run server tests')
+    .option('-c, --client', 'Only run client tests')
+    .description('run tests.')
+    .action(load('test'));
 
 
+  program.parse(process.argv);
 
-function load(command) {
-  return function () {
-    this.koruVersion = koruPackage.version;
-    program = null;
-    require('../lib/'+command).apply(this, arguments);
-  };
+  program && program.help();
+
+  function load(command) {
+    return function () {
+      this.koruVersion = koruPackage.version;
+      program = null;
+      require('../lib/'+command).apply(this, arguments);
+    };
+  }
 }

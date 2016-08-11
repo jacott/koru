@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const koru     = require('koru');
   const htmlDoc  = require('koru/dom/html-doc');
   const util     = require('koru/util');
   const generate = requirejs.nodeRequire('babel-generator').default;
@@ -38,8 +39,7 @@ define(function(require, exports, module) {
     }
 
     function unknown(node) {
-      _koru_.debug(`unknown`, node.type, nodeKeys(node));
-//      throw new Error('Unexpected node: '+node.type);
+      koru.error(`Unexpected node ${node.type} parsing javascript`);
     }
 
     function FunctionExpression(node) {
