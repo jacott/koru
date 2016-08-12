@@ -108,7 +108,7 @@ define(function(require, exports, module) {
 
       function errorLoading(err) {
         ++errorCount;
-        endTest();
+        endRun();
       }
     },
 
@@ -137,7 +137,7 @@ define(function(require, exports, module) {
     exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
   };
 
-  geddon.onEnd(endTest);
+  geddon.onEnd(endRun);
 
   geddon.onTestStart(function (test) {
     timer = Date.now();
@@ -162,14 +162,14 @@ define(function(require, exports, module) {
     exports.testHandle('R', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
-  function endTest() {
+  function endRun() {
     if (geddon.testCount === 0) {
       errorCount = 1;
       exports.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
     }
 
     if (isClient) {
-      topDoc.title = topDoc.title.replace(/Running: /, '');
+      topDoc.title = topDoc.title.replace(/Running:\s*/, '');
       window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {
         window.onbeforeunload = null;
       }, 1);

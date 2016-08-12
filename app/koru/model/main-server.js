@@ -79,7 +79,10 @@ define(function(require, exports, module) {
         _ensureIndexes(indexes);
       }
 
-      Object.defineProperty(ModelMap, 'ensureIndexes', {enumerable: false, value: ensureIndexes});
+      util.extendNoEnum(ModelMap, {
+        ensureIndexes,
+        get defaultDb() {return driver.defaultDb},
+      });
 
       BaseModel.prototype.$remove =  function () {
         return new Query(this.constructor).onId(this._id).remove();

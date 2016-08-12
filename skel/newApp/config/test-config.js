@@ -19,6 +19,8 @@ exports.server = function (cfg) {
       port: 3000,
       defaultPage: 'test/index.html',
     },
+
+    "koru/test/build-cmd": {excludeDirs: ['koru']}
   });
 
   cfg.merge('extraRequires', [
