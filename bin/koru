@@ -6,15 +6,23 @@ let program = require('commander');
 
 const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
 
-switch (process.argv[2]) {
-case 'generate': case 'g':
-  load('generate').call(program);
-  break;
-default:
+const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
+switch (match ? match[1] : process.argv[2]) {
+
+case 'generate': case 'g':
+  load('generate')(program);
+  break;
+
+case 'db-':
+  load('db-commands')(program);
+  break;
+
+default:
   program
     .command('new [name]')
     .option('--link', 'link to global koru instead of local install')
+    .option('-p, --pretend', 'Run but do not make any changes')
     .option('--force', 'overwrite existing files')
     .description('create a new (or update an existing) application called name')
     .action(load('new'));
@@ -33,10 +41,20 @@ default:
     .description('run tests.')
     .action(load('test'));
 
+  program
+    .command('db-migrate')
+    .description('Apply migration scripts to the database');
+
 
   program.parse(process.argv);
 
-  program && program.help();
+  if (program) {
+    if (program.rawArgs.length > 2) {
+      console.error("Unexpected command: ", program.rawArgs[2]);
+      process.exit(1);
+    }
+    program.help();
+  }
 
   function load(command) {
     return function () {

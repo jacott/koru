@@ -1,7 +1,7 @@
 set -e
 cd `dirname "$0"`/..
 
-export KORU_APP_NAME=_{app_name}_
+export KORU_APP_NAME=$$appName$$
 export TZ=UTC
 export KORU_HOME=$PWD
 export KORU_MODULE=$(realpath node_modules/koru)

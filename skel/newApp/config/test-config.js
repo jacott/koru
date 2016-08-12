@@ -12,7 +12,7 @@ exports.server = function (cfg) {
       url: `host=/var/run/postgresql dbname=${env.KORU_APP_NAME}test`,
 
       // auto build database schema from models
-      autoSchema: true,
+      // autoSchema: false,
     },
 
     "koru/web-server": {

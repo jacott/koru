@@ -10,7 +10,9 @@ exports.server = function (cfg) {
     },
     "koru/pg/driver": {
       url: `host=/var/run/postgresql dbname=${env.KORU_APP_NAME}demo`,
-      autoSchema: true,
+
+      // auto build database schema from models
+      // autoSchema: false,
     },
 
     "koru/web-server": {

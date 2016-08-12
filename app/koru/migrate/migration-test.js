@@ -67,7 +67,7 @@ isServer && define(function (require, exports, module) {
     "test explict primary key in create"() {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
-          name: {type: 'text'},
+          name: 'text',
           foo: {type: 'integer primary KEY'},
         });
       });
