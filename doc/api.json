@@ -189,6 +189,58 @@
     },
     "protoMethods": {}
   },
+  "koru/pg/driver": {
+    "subject": {
+      "ids": [],
+      "name": "Client",
+      "abstracts": []
+    },
+    "newInstance": null,
+    "properties": null,
+    "methods": {},
+    "protoMethods": {
+      "jsFieldToPg": {
+        "test": "koru/pg/driver test jsFieldToPg",
+        "sig": "jsFieldToPg(col, type)",
+        "intro": null,
+        "calls": [
+          [
+            [
+              "runs",
+              "number"
+            ],
+            "\"runs\" double precision"
+          ],
+          [
+            [
+              "name"
+            ],
+            "\"name\" text"
+          ],
+          [
+            [
+              "dob",
+              [
+                "O",
+                "{type: 'date'}"
+              ]
+            ],
+            "\"dob\" date"
+          ],
+          [
+            [
+              "map",
+              [
+                "O",
+                "{type: 'object', default: {treasure: 'lost'}}"
+              ]
+            ],
+            "\"map\" jsonb DEFAULT '{\"treasure\":\"lost\"}'::jsonb"
+          ]
+        ]
+      }
+    }
+  },
   "koru/test/api": {
     "subject": {
       "ids": [

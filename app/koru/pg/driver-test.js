@@ -1,5 +1,9 @@
 isServer && define(function (require, exports, module) {
+  /**
+   * Interface to PostgreSQL.
+   **/
   var test, v;
+  const api  = require('koru/test/api');
   const TH   = require('../test');
   const util = require('../util');
   const sut  = require('./driver');
@@ -10,11 +14,23 @@ isServer && define(function (require, exports, module) {
     setUp () {
       test = this;
       v = {};
+      api.module();
     },
 
     tearDown () {
       sut.defaultDb.dropTable("Foo");
       v = null;
+    },
+
+    "test jsFieldToPg"() {
+      api.module(sut.defaultDb.constructor);
+      api.protoMethod('jsFieldToPg');
+
+      assert.equals(sut.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
+      assert.equals(sut.defaultDb.jsFieldToPg('name'), '"name" text');
+      assert.equals(sut.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
+      assert.equals(sut.defaultDb.jsFieldToPg('map', {type: 'object', default: {treasure: 'lost'}}),
+                    `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
     },
 
     "test connection" () {

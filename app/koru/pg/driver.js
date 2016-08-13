@@ -117,6 +117,10 @@ class Client {
     return "Pg:" + this._url;
   }
 
+  jsFieldToPg(col, type) {
+    return jsFieldToPg(col, type, this);
+  }
+
   get schemaName() {
     if (! this._schemaName) {
       this._schemaName = this.query("SELECT current_schema")[0].current_schema;
