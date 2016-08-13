@@ -21,7 +21,7 @@ isServer && define(function (require, exports, module) {
     "test create"() {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
-          myName: {type: 'text'}
+          myName: {type: 'text', default: 'George'}
         }, [['*unique', 'myName DESC', '_id'], ['myName']]);
       });
       v.client.query('INSERT INTO "TestTable" (_id, "myName") values ($1,$2)', ["12345670123456789", "foo"]);
@@ -32,6 +32,12 @@ isServer && define(function (require, exports, module) {
                                ['TestTable', '_id'])[0];
       assert.equals(row.character_maximum_length, 24);
       assert.equals(row.data_type, "character varying");
+
+      var row = v.client.query("SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
+                               ['TestTable', 'myName'])[0];
+      assert.equals(row.column_default, "'George'::text");
+      assert.equals(row.data_type, "text");
+
 
       var migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 1);

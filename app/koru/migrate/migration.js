@@ -19,10 +19,8 @@ define(function(require, exports, module) {
       if (this.add) {
         var list = ['_id varchar(24) PRIMARY KEY'];
         for (var col in fields) {
-          const field = fields[col];
-          var desc = typeof field === 'string' ? field : fields[col].type;
-          var colspec = '"'+col+'" '+desc;
-          if (/\bprimary key\b/i.test(desc))
+          const colspec = this.client.jsFieldToPg(col, fields[col]);
+          if (/\bprimary key\b/i.test(colspec))
             list[0] = colspec;
           else
             list.push(colspec);
