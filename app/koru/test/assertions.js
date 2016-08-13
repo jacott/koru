@@ -156,8 +156,8 @@ define(function(require, exports, module) {
           setHint(actual.slice(s, e+1 || undefined), expected.slice(s, e+1 || undefined),
                   'diff '+JSON.stringify(actual.slice(0, s)).slice(1, -1)
                   .replace(/./g, '-')+'^');
-          setHint();
         }
+        setHint();
       }
       return false;
     }
