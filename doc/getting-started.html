@@ -14,15 +14,27 @@
 
   <h3>Method one</h3>
   <ul>
-    <li>npm install --global koru</li>
-    <li>koru new koru-todo</li>
-    <li>cd koru-todo</li>
+    <li><code>npm install --global koru</code></li>
+    <li><code>koru new library</code></li>
+    <li><code>cd library</code></li>
   </ul>
 
   <h3>Method two</h3>
   <ul>
-    <li>mkdir koru-todo && cd koru-todo && npm init -y</li>
-    <li>npm install --save koru</li>
-    <li>node_modules/.bin/koru new</li>
+    <li><code>mkdir library && cd library && npm init -y</code></li>
+    <li><code>npm install --save koru</code></li>
+    <li><code>node_modules/.bin/koru new</code></li>
   </ul>
+
+  <h2>Generate a new Model</h2>
+
+  To generate a model, say, a Book; run the following
+
+  <ul>
+    <li><code>./scripts/koru g model Book title author published:date pages:integer</code></li>
+    <li>Create the database if needed: <code>createdb librarydemo</code></li>
+    <li>Migrate the database: <code>./scripts/koru db-migrate</code></li>
+    <li>Dump datgabase schema to disk: <code>./scripts/koru db-schema-dump</code></li>
+  </ul>
+
 </div>
