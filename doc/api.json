@@ -191,55 +191,57 @@
   },
   "koru/pg/driver": {
     "subject": {
-      "ids": [],
-      "name": "Client",
-      "abstracts": []
+      "ids": [
+        "koru/pg/driver",
+        "koru/config!DBDriver"
+      ],
+      "name": "driver",
+      "abstracts": [
+        "Interface to PostgreSQL.",
+        null
+      ]
     },
     "newInstance": null,
-    "properties": null,
-    "methods": {},
-    "protoMethods": {
-      "jsFieldToPg": {
-        "test": "koru/pg/driver test jsFieldToPg",
-        "sig": "jsFieldToPg(col, type)",
-        "intro": null,
+    "properties": {
+      "defaultDb": {
+        "calls": [
+          [
+            [],
+            [
+              "O",
+              "Pg:host=/var/run/postgresql dbname=korutest"
+            ]
+          ],
+          [
+            [],
+            [
+              "O",
+              "Pg:host=/var/run/postgresql dbname=korutest"
+            ]
+          ]
+        ],
+        "info": "Return the default Client database connection.\n\n@config url The url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
+      }
+    },
+    "methods": {
+      "connect": {
+        "test": "koru/pg/driver test connection",
+        "sig": "connect(url, name)",
+        "intro": "Create a new database Client connected to the <url>\n\n@param [name] The name to give to the connection. By default\nit is the schema name.",
         "calls": [
           [
             [
-              "runs",
-              "number"
+              "host=/var/run/postgresql dbname=korutest"
             ],
-            "\"runs\" double precision"
-          ],
-          [
             [
-              "name"
-            ],
-            "\"name\" text"
-          ],
-          [
-            [
-              "dob",
-              [
-                "O",
-                "{type: 'date'}"
-              ]
-            ],
-            "\"dob\" date"
-          ],
-          [
-            [
-              "map",
-              [
-                "O",
-                "{type: 'object', default: {treasure: 'lost'}}"
-              ]
-            ],
-            "\"map\" jsonb DEFAULT '{\"treasure\":\"lost\"}'::jsonb"
+              "O",
+              "Pg:host=/var/run/postgresql dbname=korutest"
+            ]
           ]
         ]
       }
-    }
+    },
+    "protoMethods": {}
   },
   "koru/test/api": {
     "subject": {
@@ -342,12 +344,12 @@
         ]
       },
       "property": {
-        "test": "koru/test/api test property",
+        "test": "koru/test/api property test value property",
         "sig": "property(name, options)",
-        "intro": "Document a property of the current subject",
+        "intro": "Document a value property of the current subject",
         "calls": [
           {
-            "body": "        v.defaults = {\n          logger: function () {},\n          width: 800,\n          height: 600,\n          theme: {\n            name: 'light',\n            primaryColor: '#aaf'\n          }\n        };\n\n        API.module(v.defaults, 'defaults');\n        API.property('theme', {\n          info: 'The default theme',\n          properties: {\n            name: value => {\n              v.name = value;\n              return 'The theme name is ${value}';\n            },\n            primaryColor: 'The primary color is ${value}'\n          },\n        });\n        assert.same(v.name, 'light');\n\n        API.property('logger', value => {\n          v.logger = value;\n          return 'The default logger is ${value}';\n        });\n\n        assert.same(v.logger, v.defaults.logger);\n      ",
+            "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module(v.defaults, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
             "calls": [
               [
                 [
@@ -375,7 +377,21 @@
             ],
             null,
             "If no info supplied then the test description is used"
-          ]
+          ],
+          {
+            "body": "          const book = {\n            get title() {return this._title;},\n            set title(value) {this._title = value;},\n          };\n\n          API.module(book, 'Room');\n          API.property('title', {\n            info: 'Get/set the book title',\n          });\n          API.comment('sets title');\n          book.title = 'Room';\n          assert.same(book._title, 'Room');\n          assert.same(book.title, book._title);\n        ",
+            "calls": [
+              [
+                [
+                  "title",
+                  [
+                    "O",
+                    "{info: 'Get/set the book title'}"
+                  ]
+                ]
+              ]
+            ]
+          }
         ]
       },
       "new": {

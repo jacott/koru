@@ -142,75 +142,121 @@ define(function (require, exports, module) {
       });
     },
 
-    "test property"() {
-      /**
-       * Document a property of the current subject
-       **/
-      MainAPI.module(MainAPI);
-      MainAPI.method('property');
+    "property": {
+      setUp() {
+        /**
+         * Document a property of the current subject. The property
+         * can be either plain value or a get/set function.
+         **/
+        MainAPI.module(MainAPI);
+        MainAPI.method('property');
+      },
 
-      MainAPI.example(() => {
-        v.defaults = {
-          logger: function () {},
-          width: 800,
-          height: 600,
+      "test value property"() {
+        /**
+         * Document a value property of the current subject
+         **/
+        MainAPI.example(() => {
+          v.defaults = {
+            logger: function () {},
+            width: 800,
+            height: 600,
+            theme: {
+              name: 'light',
+              primaryColor: '#aaf'
+            }
+          };
+
+          API.module(v.defaults, 'defaults');
+          API.property('theme', {
+            info: 'The default theme',
+            properties: {
+              name: value => {
+                v.name = value;
+                return 'The theme name is ${value}';
+              },
+              primaryColor: 'The primary color is ${value}'
+            },
+          });
+          assert.same(v.name, 'light');
+
+          API.property('logger', value => {
+            v.logger = value;
+            return 'The default logger is ${value}';
+          });
+
+          assert.same(v.logger, v.defaults.logger);
+        });
+
+        MainAPI.comment("If no info supplied then the test description is used");
+        API.property('width');
+
+        API.done();
+
+        assert.equals(API.instance.properties, {
           theme: {
-            name: 'light',
-            primaryColor: '#aaf'
+            info: 'The default theme',
+            value: ['O', v.defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
+            properties: {
+              name: {
+                info: 'The theme name is ${value}',
+                value: v.name,
+              },
+              primaryColor: {
+                info: 'The primary color is ${value}',
+                value: '#aaf',
+              },
+            },
+          },
+          logger: {
+            info: 'The default logger is ${value}',
+            value: ['F', v.logger, 'logger']
+          },
+          width: {
+            info: 'Document a value property of the current subject',
+            value: 800,
           }
-        };
+        });
+      },
 
-        API.module(v.defaults, 'defaults');
-        API.property('theme', {
-          info: 'The default theme',
-          properties: {
-            name: value => {
-              v.name = value;
-              return 'The theme name is ${value}';
-            },
-            primaryColor: 'The primary color is ${value}'
+      "test get/set property"() {
+        MainAPI.example(() => {
+          const book = {
+            get title() {return this._title;},
+            set title(value) {this._title = value;},
+          };
+
+          API.module(book, 'Room');
+          API.property('title', {
+            info: 'Get/set the book title',
+          });
+          API.comment('sets title');
+          book.title = 'Room';
+          assert.same(book._title, 'Room');
+          assert.same(book.title, book._title);
+        });
+
+        assert.equals(API.instance.properties, {
+          title: {
+            info: 'Get/set the book title',
+            calls: [
+              [['Room'], undefined, 'sets title'],
+              [[], 'Room'],
+            ],
           },
         });
-        assert.same(v.name, 'light');
-
-        API.property('logger', value => {
-          v.logger = value;
-          return 'The default logger is ${value}';
-        });
-
-        assert.same(v.logger, v.defaults.logger);
-      });
-
-      MainAPI.comment("If no info supplied then the test description is used");
-      API.property('width');
-
-      API.done();
-
-      assert.equals(API.instance.properties, {
-        theme: {
-          info: 'The default theme',
-          value: ['O', v.defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
-          properties: {
-            name: {
-              info: 'The theme name is ${value}',
-              value: v.name,
-            },
-            primaryColor: {
-              info: 'The primary color is ${value}',
-              value: '#aaf',
-            },
-          },
-        },
-        logger: {
-          info: 'The default logger is ${value}',
-          value: ['F', v.logger, 'logger']
-        },
-        width: {
-          info: 'Document a property of the current subject',
-          value: 800,
-        }
-      });
+      },
     },
+
+    "protoProperty": {
+      "//test value property"() {
+
+      },
+
+      "//test get/set property"() {
+      },
+    },
+
 
     "test new"() {
       /**
@@ -417,7 +463,7 @@ define(function (require, exports, module) {
             },
             color: {
               info: 'color info',
-              value: 'blue',
+              calls: [[[], ['O', {r:0, g: 0, b: 1}, 'rgb:blue']], [['green'], undefined]],
             },
           }
         }
@@ -480,7 +526,7 @@ define(function (require, exports, module) {
               },
               color: {
                 info: 'color info',
-                value: 'blue',
+                calls: [[[], ['O', 'rgb:blue']], [['green']]],
               },
             }
           }

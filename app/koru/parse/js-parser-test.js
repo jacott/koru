@@ -13,6 +13,17 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test extractParams"() {
+      assert.equals(jsParser.extractParams('1|{x() {}}'),
+                    []);
+
+      assert.equals(jsParser.extractParams('1|{x(a, b) {}}'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('1|{x({a: {aa: d=123}}, [b, c=d*2], ...rest) {}}'),
+                    ['d', 'b', 'c', 'rest']);
+    },
+
     "test comments"() {
       assert.equals(markupBody(() => {
         v.example(() => {

@@ -3,8 +3,8 @@
 
   <abstract>
     This guide describes how to build a koru one page application. We
-    will be building a simple todo application
-    called <b>koru-todo</b>.
+    will be building a simple home library application
+    called <b>my-library</b>.
   </abstract>
 
   <h2>Create initial System</h2>
@@ -15,13 +15,13 @@
   <h3>Method one</h3>
   <ul>
     <li><code>npm install --global koru</code></li>
-    <li><code>koru new library</code></li>
-    <li><code>cd library</code></li>
+    <li><code>koru new my-library</code></li>
+    <li><code>cd my-library</code></li>
   </ul>
 
   <h3>Method two</h3>
   <ul>
-    <li><code>mkdir library && cd library && npm init -y</code></li>
+    <li><code>mkdir my-library && cd my-library && npm init -y</code></li>
     <li><code>npm install --save koru</code></li>
     <li><code>node_modules/.bin/koru new</code></li>
   </ul>
@@ -32,9 +32,9 @@
 
   <ul>
     <li><code>./scripts/koru g model Book title author published:date pages:integer</code></li>
-    <li>Create the database if needed: <code>createdb librarydemo</code></li>
-    <li>Migrate the database: <code>./scripts/koru db-migrate</code></li>
-    <li>Dump datgabase schema to disk: <code>./scripts/koru db-schema-dump</code></li>
+    <li><nosel>Create the database if needed: </nosel><code>createdb my-librarydemo</code></li>
+    <li><nosel>Migrate the database: </nosel><code>./scripts/koru db-migrate</code></li>
+    <li><nosel>Dump datgabase schema to disk: </nosel><code>./scripts/koru db-schema-dump</code></li>
   </ul>
 
 </div>

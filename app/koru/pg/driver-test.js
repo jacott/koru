@@ -23,8 +23,9 @@ isServer && define(function (require, exports, module) {
     },
 
     "test jsFieldToPg"() {
-      api.module(sut.defaultDb.constructor);
-      api.protoMethod('jsFieldToPg');
+      // FIXME
+      // api.module(sut.defaultDb.constructor);
+      // api.protoMethod('jsFieldToPg');
 
       assert.equals(sut.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
       assert.equals(sut.defaultDb.jsFieldToPg('name'), '"name" text');
@@ -34,6 +35,13 @@ isServer && define(function (require, exports, module) {
     },
 
     "test connection" () {
+      /**
+       * Create a new database Client connected to the <url>
+       *
+       * @param [name] The name to give to the connection. By default
+       * it is the schema name.
+       **/
+      api.method('connect');
       var db = sut.connect("host=/var/run/postgresql dbname=korutest");
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
       assert.same(db.schemaName, 'public');
@@ -41,8 +49,18 @@ isServer && define(function (require, exports, module) {
     },
 
     "test defaultDb" () {
+      /**
+       * Return the default Client database connection.
+       *
+       * @config url The url to connect to; see
+       * [pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -
+       * PQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)
+       *
+       **/
+      api.property('defaultDb');
       var db = sut.defaultDb;
       assert.same(db, sut.defaultDb);
+      api.done();
       assert.same(db.name, 'default');
 
 

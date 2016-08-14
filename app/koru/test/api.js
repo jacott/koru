@@ -130,12 +130,38 @@ define(function(require, exports, module) {
 
     property(name, options) {
       const api = this;
-      inner(name, options, this.subject[name],
-                   this.properties || (this.properties = {}));
+      inner(name, options,
+            Object.getOwnPropertyDescriptor(this.subject, name),
+            this.subject[name],
+            this.properties || (this.properties = {}));
 
-      function inner(name, options, value, properties) {
+      function inner(name, options, desc, value, properties) {
         const property = properties[name] || (properties[name] = {});
-        property.value = api.valueTag(value);
+        if (desc && desc.get || desc.set) {
+          const calls = property.calls || (property.calls = []);
+          const {subject} = api;
+          Object.defineProperty(subject, name, {
+            get() {
+              const entry = [[], null];
+              addComment(api, entry);
+              calls.push(entry);
+              const ans = desc.get.call(this);
+              entry[1] = api.valueTag(ans);
+              return ans;
+            },
+            set(value) {
+              const entry = [[api.valueTag(value)], undefined];
+              addComment(api, entry);
+              calls.push(entry);
+              desc.set.call(this, value);
+            }
+          });
+
+          onTestEnd(api, () => Object.defineProperty(subject, name, desc));
+
+        } else {
+          property.value = api.valueTag(value);
+        }
         switch (typeof options) {
         case 'string':
           property.info = options;
@@ -154,6 +180,7 @@ define(function(require, exports, module) {
                       (property.properties = {});
               for (let name in options.properties) {
                 inner(name, options.properties[name],
+                      Object.getOwnPropertyDescriptor(value, name),
                       value[name], properties);
               }
             }
@@ -194,7 +221,7 @@ define(function(require, exports, module) {
     }
 
     done() {
-      this._onEnd && this._onEnd();
+      TH.test._apiOnEnd && TH.test._apiOnEnd();
     }
 
     testCaseFinished() {
@@ -446,6 +473,8 @@ define(function(require, exports, module) {
       const property = properties[name];
       if (property.value !== undefined)
         property.value = api.serializeValue(property.value);
+      if (property.calls)
+        property.calls = serializeCalls(api, property.calls);
       property.properties &&
         serializeProperties(api, property.properties);
     }
@@ -469,17 +498,13 @@ define(function(require, exports, module) {
       };
     }
 
-    const orig = koru.replaceProperty(obj, methodName, {
+    const desc = koru.replaceProperty(obj, methodName, {
       value: function (...args) {
         const entry = [
           args.map(obj => api.valueTag(obj)),
           undefined,
         ];
-        const {currentComment} = api;
-        if (currentComment) {
-          entry.push(currentComment);
-          api.currentComment = null;
-        }
+        addComment(api, entry);
         calls.push(entry);
         const ans = func.apply(this, args);
         entry[1] = api.valueTag(ans);
@@ -487,15 +512,40 @@ define(function(require, exports, module) {
       }
     });
 
-    test.onEnd(api._onEnd = () => {
-      if (! api._onEnd) return;
-      api._onEnd = null;
-      if (orig) {
-        Object.defineProperty(obj, methodName, orig);
+    onTestEnd(api, () => {
+      if (desc) {
+        Object.defineProperty(obj, methodName, desc);
       } else {
         delete obj[methodName];
       }
     });
+  }
+
+  function addComment(api, entry) {
+    const {currentComment} = api;
+    if (currentComment) {
+      entry.push(currentComment);
+      api.currentComment = null;
+    }
+  }
+
+  function onTestEnd(api, func) {
+    const {test} = TH;
+    let onEnd = test._apiOnEnd;
+    if (! onEnd) {
+      onEnd = test._apiOnEnd = function run() {
+        const callbacks = run.callbacks;
+        if (callbacks.length === 0)
+          return;
+
+        run.callbacks = [];
+        callbacks.forEach(cb => cb());
+      };
+      onEnd.callbacks = [];
+      test.onEnd(onEnd);
+    }
+
+    onEnd.callbacks.push(func);
   }
 
   module.exports = API;

@@ -5,9 +5,6 @@ define(function(require, exports, module) {
   const htmlDoc  = require('koru/dom/html-doc');
   const jsParser = require('koru/parse/js-parser');
   const util     = require('koru/util');
-  const generate = requirejs.nodeRequire('babel-generator').default;
-  const traverse = requirejs.nodeRequire('babel-traverse').default;
-  const {parse}  = requirejs.nodeRequire('babylon');
 
   const meta = noContent('meta');
   const link = noContent('link');
@@ -227,7 +224,7 @@ define(function(require, exports, module) {
                 call[1] && {class: 'jsdoc-returns c1',
                             span: [' // returns ', valueToHtml(call[1])]}
               ]}
-            ]} : {class: 'jsdoc-example-call', div: codeToHtml(call.body)}),
+            ]} : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
           ]}
         ]};
 
@@ -257,40 +254,10 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    sig = '_x_'+sig.replace(/^function\s*/, '');
-    try {
-      var ast = parse(sig);
-    } catch(ex) {
-      const msg = `Error parsing ${sig}`;
-      if (ex.name === 'SyntaxError')
-        throw new Error(`${msg}:\n${ex}`);
-      koru.error(msg);
-      throw ex;
-    }
-    let args;
+    sig = '1|{_x_'+sig.replace(/^function\s*/, '')+' {}}';
+    const args = jsParser.extractParams(sig);
     const argMap = {};
-    traverse(ast, {
-      CallExpression (path) {
-        args = path.node.arguments.map((arg, i) => {
-          function extract(call) {
-            return call[0][i];
-          }
-          switch (arg.type) {
-          case 'AssignmentExpression':
-            arg = arg.left;
-            if (arg.type !== 'Identifier')
-              throw new Error("Unsupported arg in "+ sig );
-          case 'Identifier':
-            argMap[arg.name] = argProfile(calls, extract);
-            return arg.name;
-          default:
-            koru.info(`unsupported node in `+sig, util.inspect(arg));
-
-            throw new Error("Unsupported arg in "+ sig );
-          }
-        });
-      }
-    });
+    args.forEach((arg, i) => argMap[arg] = argProfile(calls, call => call[0][i]));
     return {args, argMap};
   }
 

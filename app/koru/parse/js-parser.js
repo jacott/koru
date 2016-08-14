@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
-  const koru     = require('koru');
-  const htmlDoc  = require('koru/dom/html-doc');
-  const util     = require('koru/util');
-  const generate = requirejs.nodeRequire('babel-generator').default;
-  const {parse}  = requirejs.nodeRequire('babylon');
+  const koru           = require('koru');
+  const htmlDoc        = require('koru/dom/html-doc');
+  const util           = require('koru/util');
+  const generate       = requirejs.nodeRequire('babel-generator').default;
+  const {VISITOR_KEYS} = requirejs.nodeRequire('babel-types/lib/definitions');
+  const {parse}        = requirejs.nodeRequire('babylon');
 
   const HL_MAP = {
     string: 's',
@@ -247,5 +248,77 @@ define(function(require, exports, module) {
     return util.diff(Object.keys(node), ['type', 'start', 'end', 'loc', 'sourceType']);
   }
 
-  module.exports = {highlight, funcBody, HL_MAP};
+  function findFirstType(type, node) {
+    if (! node) return;
+    if (Array.isArray(node)) {
+      for(let n of node) {
+        if (n = findFirstType(type, n))
+          return n;
+      }
+    }
+    if (node.type === type) {
+      return node;
+    } else for(const key of VISITOR_KEYS[node.type]) {
+      let n = findFirstType(type, node[key]);
+      if (n)
+        return n;
+    }
+  }
+
+  function extractParams(sig, entryType='ObjectMethod') {
+    try {
+      var ast = parse(sig);
+    } catch(ex) {
+      const msg = `Error parsing ${sig}`;
+      if (ex.name === 'SyntaxError')
+        throw new Error(`${msg}:\n${ex}`);
+      koru.error(msg);
+      throw ex;
+    }
+    let args = [];
+
+    const node = findFirstType(entryType, ast.program.body);
+
+    expr(node.params, true);
+
+    return args;
+
+    function expr(node, param) {
+      if (! node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        node.forEach(n => expr(n, param));
+        return;
+      }
+
+      switch(node.type) {
+      case 'RestElement':
+        expr(node.argument, param);
+        break;
+
+      case 'Identifier':
+        param && args.push(node.name);
+        break;
+
+      case 'AssignmentPattern':
+        expr(node.left, param);
+        break;
+
+      case 'ArrayPattern':
+        expr(node.elements, true);
+        break;
+
+      case 'ObjectProperty':
+        expr(node.value, true);
+        break;
+
+      default:
+        VISITOR_KEYS[node.type].forEach(key => {
+          const sub = node[key];
+          sub && expr(sub);
+        });
+      }
+    }
+  }
+
+  module.exports = {highlight, funcBody, HL_MAP, extractParams};
 });
