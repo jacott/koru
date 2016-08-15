@@ -629,6 +629,7 @@ define(function(require, exports, module) {
     onEnd.callbacks.push(func);
   }
 
+  API._docComment = docComment;
   module.exports = API;
   require('koru/env!./api')(API);
 });

@@ -46,6 +46,45 @@
       ]
     }
   },
+  "koru/dom/base": {
+    "subject": {
+      "ids": [
+        "koru/dom/base",
+        "koru/dom/dom-server",
+        "koru/env!koru/dom/dom",
+        "koru/dom"
+      ],
+      "name": "Dom",
+      "abstracts": [
+        "Convert an <Element> to a plain <object>",
+        null,
+        null,
+        null
+      ]
+    },
+    "methods": {
+      "htmlToJson": {
+        "test": "koru/dom/base test htmlToJson",
+        "sig": "function htmlToJson(node)",
+        "intro": "Convert an <Element> to a plain <object>",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>"
+              ]
+            ],
+            [
+              "O",
+              "{section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, class: 'greeting', id: 'gId', $data-lang: 'en'}"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
   "koru/dom/ctx": {
     "subject": {
       "ids": [

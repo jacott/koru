@@ -11,6 +11,9 @@ define(function(require, exports, module) {
   const script = noContent('script');
   const async = 'async';
 
+  const mdRenderer = new marked.Renderer();
+  const mdOptions = {renderer: mdRenderer};
+
   const BLOCK_TAGS = {
     param(api, row, argMap) {
       const m = /^\w+\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
@@ -45,7 +48,6 @@ define(function(require, exports, module) {
     }
   };
 
-  const INLINE_TAG_RE = /(\{@\w+\s*[^}]*\})/;
   const INLINE_TAG_PARTS_RE = /\{@(\w+)\s*([^}]*)\}/;
 
   const hrefMap = {
@@ -75,9 +77,7 @@ define(function(require, exports, module) {
     };
   }
 
-  module.exports = toHtml;
-
-  function toHtml(title, json, sourceHtml) {
+  function apiToHtml(title, json, sourceHtml) {
     const index = document.createElement();
 
     index.innerHTML = sourceHtml;
@@ -417,48 +417,30 @@ define(function(require, exports, module) {
       });
     }
 
-    info.split(/(<[^>]*>)/).forEach(part => {
-      if (part[0] === '<' && part[part.length-1] === '>')
-        div.appendChild(Dom.h({span: part.slice(1,-1), class: 'jsdoc-param'}));
-      else {
-        part.split(INLINE_TAG_RE).forEach(p2 => {
-          const m = INLINE_TAG_PARTS_RE.exec(p2);
-          if (m) {
-            div.appendChild(execInlineTag(api, m[1], m[2]));
-          } else
-            markdown(div, p2);
-        });
+    mdRenderer.link = function (href, title, text) {
+      switch (href) {
+      case '#jsdoc-tag':
+        return execInlineTag(api, ...text.split(' ')).outerHTML;
+      case '#jsdoc-param':
+        return Dom.h({span: text.slice(1,-1), class: 'jsdoc-param'}).outerHTML;
+      default:
+        const a = {a: text, $href: href};
+        if (title) a.$title = title;
+        return Dom.h(a).outerHTML;
       }
-    });
+    };
+
+    const md = marked.parse(
+      info.replace(/(<[^>]*>)/g, '[$1](#jsdoc-param)')
+        .replace(INLINE_TAG_PARTS_RE, '[$1 $2](#jsdoc-tag)'),
+
+      mdOptions
+    );
+
+    div.innerHTML = md;
     return div;
   }
 
-  toHtml.markdown = markdown;
-
-  const mdRenderer = new marked.Renderer();
-  const mdOptions = {renderer: mdRenderer};
-
-  function markdown(div, text) {
-    if (! text) return;
-
-    if (text.endsWith('\n'))
-      text=text.slice(0, -1)+' \n';
-    const tokens = marked.lexer('x '+text, {});
-    const oneToken = tokens.length === 1;
-    const html = '<p>'+marked.parser(tokens).slice(5);
-    const nodes = oneToken ? [Dom.html(html)] : Dom.html(`<div>${html}</div>`).childNodes.slice(0);
-
-    const fcs = nodes[0].childNodes.slice(0);
-    if (fcs[0] && fcs[0].textContent)
-      div.appendChild(fcs[0]);
-    for(let i = 1; i < fcs.length; ++i) {
-      div.appendChild(fcs[i]);
-    }
-
-    for(let i = 1; i < nodes.length; ++i) {
-      div.appendChild(nodes[i]);
-    }
-  }
 
   function hl(text, hl) {
     const span = document.createElement('span');
@@ -470,4 +452,7 @@ define(function(require, exports, module) {
   function idToLink(id) {
     return Dom.h({a: id.replace(/\/main$/, ''), class: "jsdoc-idLink", $href: '#'+id});
   }
+
+  apiToHtml.jsdocToHtml = jsdocToHtml;
+  module.exports = apiToHtml;
 });
