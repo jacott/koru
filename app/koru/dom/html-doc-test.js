@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
   var test, v;
-  const TH  = require('koru/test');
-  const sut = require('./html-doc');
+  const TH   = require('koru/test');
+  const util = require('koru/util');
+  const sut  = require('./html-doc');
 
   TH.testCase(module, {
     setUp() {
@@ -50,6 +51,9 @@ define(function (require, exports, module) {
       assert.same(elm.className, "un deux trois");
 
       top.appendChild(df);
+
+      assert.equals(util.map(top.childNodes[0].attributes, a => a.name+':'+a.value).sort(), ['class:un deux trois', 'id:top123']);
+
 
       assert.sameHtml(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
 

@@ -255,12 +255,12 @@ define(function(require, exports, module) {
   function DocumentElement(tag) {
     common(this, ELEMENT_NODE);
     this.tagName = (''+tag).toUpperCase();
-    this.attributes = {};
+    this._attributes = {};
   }
   buildNodeType(DocumentElement, {
     cloneNode(deep) {
       var copy = new DocumentElement(this.tagName);
-      copy.attributes = util.deepCopy(this.attributes);
+      copy._attributes = util.deepCopy(this._attributes);
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;
     },
@@ -270,7 +270,7 @@ define(function(require, exports, module) {
     get className() {return this.getAttribute('class') || ''},
     get outerHTML() {
       var tn = this.tagName.toLowerCase();
-      var attrs = this.attributes;
+      var attrs = this._attributes;
       if (this.__style) {
         var cssText = this.style._origCssText();
       }
@@ -296,13 +296,20 @@ define(function(require, exports, module) {
       if (name === 'style')
         this.style.cssText = value;
       else
-        this.attributes[name] = value;
+        this._attributes[name] = value;
     },
     getAttribute(name) {
       if (name === 'style')
         return this.style._origCssText();
       else
-        return this.attributes[name];
+        return this._attributes[name];
+    },
+
+    get attributes() {
+      const ans = [];
+      for (const name in this._attributes)
+        ans.push({name, value: this._attributes[name]});
+      return ans;
     },
 
     get classList() {
@@ -316,12 +323,12 @@ define(function(require, exports, module) {
     }
 
     contains(value) {
-      return new RegExp("\\b" + util.regexEscape(value) + "\\b").test(this.node.attributes.class);
+      return new RegExp("\\b" + util.regexEscape(value) + "\\b").test(this.node._attributes.class);
     }
 
     add(value) {
       value = ''+value;
-      var attrs = this.node.attributes;
+      var attrs = this.node._attributes;
       if (attrs.class) {
         this.contains(value) || (attrs.class += ' ' + value);
       } else {
@@ -330,7 +337,7 @@ define(function(require, exports, module) {
     }
 
     remove(value) {
-      var attrs = this.node.attributes;
+      var attrs = this.node._attributes;
       attrs.class = attrs.class.replace(new RegExp("\\s?\\b" + util.regexEscape(value) + "\\b"), '');
     }
   }
