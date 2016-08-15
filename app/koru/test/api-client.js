@@ -6,7 +6,7 @@ define(function(require, exports, module) {
     API._record = function () {
       const json = {};
       for (const api of this._apiMap.values()) {
-        json[api.testCase.name] = api.serialize((json[api.testCase.name]||{}));
+        json[api.moduleName] = api.serialize((json[api.moduleName]||{}));
       }
       TH.session.sendBinary('G', [json]);
     };

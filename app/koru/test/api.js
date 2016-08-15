@@ -6,15 +6,25 @@ define(function(require, exports, module) {
   const ctx = module.ctx;
 
   class API {
-    constructor(testCase, subject, subjectName, subjectModules) {
-      this.testCase = testCase;
-      this.subject = subject;
+    constructor(parent, moduleOrSubject, subjectName, subjectModules) {
+      this.parent = parent;
+      if (parent) {
+        this.module = undefined;
+        this.subject = moduleOrSubject;
+      } else {
+        this.module = moduleOrSubject;
+        this.subject = moduleOrSubject && moduleOrSubject.exports;
+      }
       this.subjectName = subjectName;
       this.subjectModules = subjectModules;
-      this.newInstance = this.properties = this.currentComment =
-        this.lastMethod = null;
+
+      this.newInstance = this.properties =
+        this.currentComment = this.lastMethod =
+        this.initExample = this.abstract = undefined;
+
       this.methods = {};
       this.protoMethods = {};
+      this.innerSubjects = {};
     }
 
     static reset() {
@@ -24,11 +34,12 @@ define(function(require, exports, module) {
       this._objCache = new Map;
     }
 
-    static module(subject, subjectName, subjectModules) {
+    static module(module, subjectName, subjectModules) {
       const tc = TH.test._currentTestCase;
-      if (subject === undefined) {
-        subject = ctx.modules[toId(tc)].exports;
+      if (module == null) {
+        module = ctx.modules[toId(tc)];
       }
+      const subject = module.exports;
       if (! this.isRecord) {
         this._instance.subject = subject;
         return this._instance;
@@ -42,11 +53,12 @@ define(function(require, exports, module) {
       afterTestCase.add(tc);
 
       this._apiMap.set(subject, this._instance =
-                       new API(tc, subject, subjectName || createSubjectName(subject, tc),
+                       new this(null, module, subjectName || createSubjectName(subject, tc),
                                subjectModules || ctx.exportsModule(subject)));
       return this._instance;
     }
 
+    static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
     static new() {return this.instance.new()}
     static property(name, options) {this.instance.property(name, options)}
     static comment(comment) {this.instance.comment(comment)}
@@ -70,7 +82,7 @@ define(function(require, exports, module) {
 
       let api = this._apiMap.get(value);
       if (api) {
-        return cache(this, value, orig, [relType(orig, value), displayName, api.testCase.name]);
+        return cache(this, value, orig, [relType(orig, value), displayName, api.moduleName]);
       }
 
       let cValue = this._objCache.get(value);
@@ -86,7 +98,7 @@ define(function(require, exports, module) {
           return ['O', displayName];
         let api = this._apiMap.get(proto);
         if (api) {
-          return cache(this, value, orig, ['Os', displayName, api.testCase.name]);
+          return cache(this, value, orig, ['Os', displayName, api.moduleName]);
         }
 
         return this.resolveObject(proto, displayName, orig);
@@ -95,6 +107,50 @@ define(function(require, exports, module) {
         return ['O', displayName];
       value = value.constructor;
       return this.resolveObject(value, displayName, orig);
+    }
+
+    get moduleName() {
+      if (this.module)
+        return this.module.id;
+      const {parent} = this;
+      return parent.moduleName+
+        (parent.properties && parent.properties[this.subjectName] ? '.' : '::')
+        +this.subjectName;
+    }
+
+    innerSubject(subject, subjectName, options) {
+      subjectName = subjectName || createSubjectName(subject);
+      if (typeof subject === 'string') {
+        if (! (this.properties && this.properties[subject]))
+          this.property(subject, options);
+        subject = this.subject[subject];
+      }
+      if (! subjectName)
+        throw new Error("Don't know the name of the subject!");
+
+      const ThisAPI = this.constructor;
+
+      let ans = this.innerSubjects[subjectName];
+      ans || ThisAPI._apiMap.set(
+        subject,
+        this.innerSubjects[subjectName] = ans =
+          new ThisAPI(this, subject, subjectName)
+      );
+
+      if (options) {
+        if (options.abstract) {
+          if (ans.subjectModules)
+            throw new Error("Absract already supplied");
+          ans.subjectModules = [{id: ans.moduleName}];
+          ans.abstract = typeof options.abstract === 'string' ?
+            options.abstract :
+            docComment(options.abstract);
+        }
+
+        if (options.initExample)
+          ans.initExample = options.initExample;
+      }
+      return ans;
     }
 
     new() {
@@ -175,6 +231,7 @@ define(function(require, exports, module) {
         case 'object':
           if (options != null) {
             if (options.info) property.info = options.info;
+            if (options.intro) property.info = options.intro;
             if (options.properties) {
               const properties = property.properties ||
                       (property.properties = {});
@@ -206,7 +263,7 @@ define(function(require, exports, module) {
         const calls = this.lastMethod.calls.slice(callLength);
         this.lastMethod.calls.length = callLength;
         this.lastMethod.calls.push({
-          body: body.toString().replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''),
+          body: extractFnBody(body),
           calls,
         });
       }
@@ -224,21 +281,23 @@ define(function(require, exports, module) {
       TH.test._apiOnEnd && TH.test._apiOnEnd();
     }
 
-    testCaseFinished() {
-    }
-
     $inspect() {
       return `{API(${this.subjectName})}`;
     }
 
-    serialize(subject={}) {
+    serialize() {
       const {methods, protoMethods} = this;
+      let abstracts;
       const ids = (this.subjectModules||[]).map(m => m.id);
-      const abstracts = ids.map(id => {
-        const mod = ctx.modules[id+'-test'];
-        if (mod && mod.body)
-          return docComment(mod.body);
-      });
+      if (this.parent) {
+        abstracts = [this.abstract];
+      } else {
+        abstracts = ids.map(id => {
+          const mod = ctx.modules[id+'-test'];
+          if (mod && mod.body)
+            return docComment(mod.body);
+        });
+      }
 
       const procMethods = list => {
         for (const methodName in list) {
@@ -252,27 +311,33 @@ define(function(require, exports, module) {
         }
       };
 
-      procMethods(this.methods);
-      procMethods(this.protoMethods);
+      procMethods(methods);
+      procMethods(protoMethods);
 
+      const ans = {
+        subject: {
+          ids,
+          name: this.subjectName,
+          abstracts,
+        },
+        methods,
+        protoMethods,
+      };
+
+      if (this.initExample) ans.initExample = extractFnBody(this.initExample);
 
       const {newInstance, properties} = this;
       if (newInstance) {
         newInstance.test = newInstance.test.name;
         newInstance.calls = serializeCalls(this, newInstance.calls);
+        ans.newInstance = newInstance;
       }
-      properties && serializeProperties(this, properties);
-      return {
-        subject: {
-          ids,
-          name: this.subjectName,
-            abstracts,
-        },
-        newInstance,
-        properties,
-        methods,
-        protoMethods,
-      };
+      if (properties) {
+        serializeProperties(this, properties);
+        ans.properties = properties;
+      }
+
+      return ans;
     }
 
     valueTag(obj) {
@@ -298,7 +363,7 @@ define(function(require, exports, module) {
           const map = this.constructor._apiMap;
           let api =  map.get(value[1]);
           if (api)
-            return ['M', api.testCase.name];
+            return ['M', api.moduleName];
 
 
           return this.constructor.resolveObject(value[1], value[2]);
@@ -306,6 +371,9 @@ define(function(require, exports, module) {
           return [value[0], value[2]];
         }
       }
+
+      if (value === undefined)
+        return ['U', 'undefined'];
 
       return value;
     }
@@ -392,17 +460,25 @@ define(function(require, exports, module) {
   }
 
   function createSubjectName(subject, tc) {
-    if (typeof subject === 'function') return subject.name;
-
+    switch (typeof subject) {
+    case 'function': return subject.name;
+    case 'string': return subject;
+    }
     const mods = ctx.exportsModule(subject);
     if (mods) {
-      const id = toId(tc);
+      const id = tc && toId(tc);
       const mod = mods.find(mod => id === mod.id) || mods[0];
       return fileToCamel(mod.id);
     }
   }
 
   function toId(tc) {return tc.moduleId.replace(/-test$/, '');}
+
+  function extractFnBody(body) {
+    if (typeof body === 'string')
+      return body;
+    return body.toString().replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, '');
+  }
 
   function funcToSig(func) {
     const code = func.toString();
@@ -428,14 +504,12 @@ define(function(require, exports, module) {
   }
 
   function docComment(func) {
-
     let m = /\/\*\*\s*([\s\S]*?)\s*\*\*\//.exec(func.toString());
     return m && m[1].slice(2).replace(/^\s*\* ?/mg, '');
   }
 
   function testCaseFinished() {
     if (this._instance) {
-      this._instance.testCaseFinished();
       this._instance = null;
     }
   }

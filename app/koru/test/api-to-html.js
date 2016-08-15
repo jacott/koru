@@ -98,13 +98,13 @@ define(function(require, exports, module) {
 
     Object.keys(json).sort().forEach(id => {
       const api = json[id]; api.id = id;
-      const {subject, newInstance, properties, methods, protoMethods} = api;
+      const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
       const requireLine = Dom.h({class: 'jsdoc-require highlight', div: [
         hl('const', 'kd'), ' ', hl(subject.name, 'nx'), ' ', hl('=', 'o'), ' ',
         hl('require', 'k'), '(', hl(`"${id}"`, 's'), ');'
       ]});
 
-      const idIdx = subject.ids.indexOf(id);
+      const idIdx = subject.ids.length ? subject.ids.indexOf(id) : 0;
 
       const constructor = newInstance && buildConstructor(api, subject, newInstance, requireLine);
       let functions = [];
@@ -113,9 +113,11 @@ define(function(require, exports, module) {
       util.isObjEmpty(protoMethods) ||
         (functions = functions.concat(buildMethods(api, subject, protoMethods, requireLine, 'proto')));
 
+      const linkNav = {nav: [constructor, ...functions].map(func => func && Dom.h({a: func.$name, $href: '#'+func.id}))};
+
       links.appendChild(Dom.h({class: 'jsdoc-nav-module', div: [
         idToLink(id),
-        {nav: [constructor, ...functions].map(func => func && Dom.h({a: func.$name, $href: '#'+func.id}))},
+        linkNav,
       ]}));
       pages.appendChild(Dom.h({
         id: id,
@@ -130,6 +132,7 @@ define(function(require, exports, module) {
               {h4: "Methods"},
               {div: functions},
             ]},
+            innerSubjects && buildInnerSubjects(api, innerSubjects, linkNav),
           ]},
           // {pre: JSON.stringify(json, null, 2)}
         ],
@@ -138,6 +141,16 @@ define(function(require, exports, module) {
 
     return index.innerHTML;
   };
+
+  function buildInnerSubjects(parent, innerSubjects, linkNav) {
+    return {
+      class: 'jsdoc-inner-subjects',
+      div: Object.keys(innerSubjects).sort().map(name => {
+        const api = innerSubjects[name];
+
+      }),
+    };
+  }
 
   function buildProperties(api, subject, properties) {
     const rows = [];
@@ -298,9 +311,12 @@ define(function(require, exports, module) {
 
   function extractTypes(am) {
     const types = [];
+    const typeMap = {};
     for (const type in am.types) {
+      if (typeMap[am.types[type]]) continue;
+      typeMap[am.types[type]] = true;
       if (types.length)
-        types.push(' or ');
+        types.push('\u00a0or', {br: ''});
       types.push({a: am.types[type], $href: am.href(type)});
     }
     return types;
@@ -324,6 +340,7 @@ define(function(require, exports, module) {
                 value = entry[1] === 'null' ? 'null' : 'object';
                 break;
               case 'F': value = 'function'; break;
+              case 'U': value = 'undefined'; break;
               default:
                 value = entry[entry.length-1];
                 types[`<${entry[0]}>${entry[entry.length-1]}`] = value;
@@ -349,11 +366,14 @@ define(function(require, exports, module) {
 
   function typeHRef(type) {
     if (type[0] === '<') {
-      const value = type.split('>')[1];
-      return hrefMap[value] || '#'+value;
+      type = type.replace(/^[^>]*>(?:\.{3})?/, '');
+      return hrefMap[type] || '#'+type;
     }
 
-    return `https://developer.mozilla.org/en-US/docs/Glossary/${util.capitalize(type)}`;
+    if (type.startsWith('...'))
+      type = type.slice(3);
+
+    return hrefMap[type] || `https://developer.mozilla.org/en-US/docs/Glossary/${util.capitalize(type)}`;
   }
 
   function valueToHtml(arg) {

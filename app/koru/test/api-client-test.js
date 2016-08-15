@@ -23,7 +23,8 @@ define(function (require, exports, module) {
       const fooBar = {
         fnord(a, b) {return API}
       };
-      const api = v.api.module(fooBar, 'fooBar', [{id: 'koru/test/api'}]);
+      const fooBarMod = {id: 'koru/test/api', exports: fooBar};
+      const api = v.api.module(null, 'fooBar', [fooBarMod]);
 
       const Special = {};
 
@@ -59,8 +60,6 @@ define(function (require, exports, module) {
               name: 'fooBar',
               abstracts: TH.match.any,
             },
-            newInstance: undefined,
-            properties: undefined,
             methods: {
               fnord: {
                 test: 'koru/test/api-client test _record',

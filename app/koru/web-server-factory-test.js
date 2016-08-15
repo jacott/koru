@@ -49,7 +49,7 @@ isServer && define(function (require, exports, module) {
           return v.sendRet;
         });
       };
-      api.module(WebServerFactory, 'WebServerFactory');
+      api.module();
     },
 
     tearDown() {

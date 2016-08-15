@@ -17,7 +17,7 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      api.module(koru, 'koru');
+      api.module(null, 'koru');
     },
 
     tearDown() {

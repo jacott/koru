@@ -8,7 +8,7 @@ isClient && define(function (require, exports, module) {
   const koru        = require('../main');
   const sessionBase = require('../session/base').__initBase__;
   const TH          = require('../test');
-  const sut         = require('./loader');
+  const CssLoader   = require('./loader');
 
   TH.testCase(module, {
     setUp() {
@@ -24,16 +24,17 @@ isClient && define(function (require, exports, module) {
       for(var i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
-      sut.removeAllCss();
+      CssLoader.removeAllCss();
     },
 
     "test load all"(done) {
       /**
        * Load all css and less files under <dir>
        **/
-      var loader = sut(v.session);
-      api.module(loader, "CssLoader");
-      api.method('loadAll');
+      api.module(null, "CssLoader");
+      const loader = CssLoader(v.session);
+      api.innerSubject(loader, 'cssLoader', 'const cssLoader = CssLoader(session);')
+        .method('loadAll');
       test.intercept(v.session, 'send', function (cmd, data) {
         TH.session.send(cmd, data);
       });
@@ -51,7 +52,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('head>link[rel=stylesheet]');
 
       var provide = test.stub(v.session, "provide");
-      var loader = sut(v.session);
+      var loader = CssLoader(v.session);
 
       assert.calledWith(provide, "S");
 

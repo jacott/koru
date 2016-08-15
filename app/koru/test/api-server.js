@@ -32,7 +32,7 @@ define(function(require, exports, module) {
       const jsonFile = `${this.OUT_DIR}/api.json`;
       const json = loadApi(jsonFile);
       for (const api of this._apiMap.values()) {
-        json[api.testCase.name] = api.serialize((json[api.testCase.name]||{}));
+        json[api.moduleName] = api.serialize((json[api.moduleName]||{}));
       }
       writeApi(jsonFile, json);
     };

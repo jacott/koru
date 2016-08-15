@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 
   const ctx = module.ctx;
   let API;
+  const APIModule = ctx.modules['koru/test/api'];
 
   TH.testCase(module, {
     setUp() {
@@ -18,7 +19,8 @@ define(function (require, exports, module) {
       API = class extends MainAPI {};
       API.isRecord = true;
       API.reset();
-      test.stub(ctx, 'exportsModule').withArgs(MainAPI).returns([ctx.modules['koru/test/api']]);
+      test.stub(ctx, 'exportsModule').withArgs(MainAPI).returns([APIModule]);
+      MainAPI.module();
     },
 
     tearDown() {
@@ -27,16 +29,17 @@ define(function (require, exports, module) {
 
     "test module"() {
       /**
-       * Specify the <subject> to be documented
+       * Initiate documentation of the module
        *
-       * @param {[module,...]} subjectModules - list of modules that define the subject
+       * @param {...Module} [subjectModules] - list of modules that define the subject
        **/
-      MainAPI.module(MainAPI);
       MainAPI.method('module');
 
       API.module();
       assert.calledWith(ctx.exportsModule, MainAPI);
       const api = API._apiMap.get(MainAPI);
+      refute.same(API._apiMap, MainAPI._apiMap);
+
       assert(api);
       assert.same(api.subject, MainAPI);
 
@@ -44,21 +47,108 @@ define(function (require, exports, module) {
         clean() {}
       };
 
-      API.module(myHelper, 'myHelper');
+      API.module({id: 'myMod1', exports: myHelper}, 'myHelper');
 
-      class Elf {
+      assert.same(API._instance.constructor, API);
+
+
+      class Book {
       }
 
-      API.module(Elf);
+      API.module({id: 'myMod2', exports: Book});
 
-      assert.same(API.instance.subjectName, 'Elf');
+      assert.same(API.instance.subjectName, 'Book');
+    },
+
+    "test innerSubject"() {
+      /**
+       * Document a subject within a module.
+       *
+       * @param subject either the actual subject or the property name
+       * of the subject if accessible from the current subject.
+       * @param options
+       *
+       * * `intro|info` - property info line (if subject is a <string>)
+
+       * * `abstract` - introduction to the subject. If abstract is a
+       * <function> then the initial doc comment is used.
+
+       * * `initExample` - code that can be used to initialize
+       * <subject>
+       **/
+      MainAPI.method('innerSubject');
+      API.module();
+      MainAPI.comment("hello");
+      function abstract() {
+        /**
+         * An example abstract
+         **/
+      }
+      API.innerSubject(v.anything = {anything: 'is allowed'},
+                       'Anything can be documented', {
+                         initExample: `const init = {sample: 'code'};`,
+                         abstract,
+                       });
+      let subject = API._apiMap.get(v.anything);
+      assert.same(subject.moduleName, 'koru/test/api::Anything can be documented');
+      assert.equals(subject.initExample, `const init = {sample: 'code'};`);
+      assert.equals(subject.abstract, 'An example abstract');
+
+      MainAPI.example(() => {
+        class Book {
+          constructor() {this._chapters = [];}
+          newChapter() {
+            const chapter = new this.constructor
+                    .Chapter(10);
+            this._chapters.push(chapter);
+            return chapter;
+          }
+        };
+        Book.Chapter = class {
+          constructor(startPage) {this.page = startPage;}
+          goto() {return this.page;}
+        };;
+
+        API.module({id: 'myMod1', exports: Book}, 'myHelper');
+        API.innerSubject('Chapter', null, {info: 'Chapter info'})
+          .protoMethod('goto');
+
+        const book = new Book();
+        const chapter = book.newChapter();
+        assert.same(chapter.goto(), 10);
+      });
+
+      API.done();
+      MainAPI.done();
+
+      subject = API.instance.innerSubjects.Chapter;
+
+      assert.match(subject.subject.toString(), /startPage/);
+
+      const matchSubject = ['F', TH.match(arg => arg.prototype.goto),
+                            'constructor(startPage)'];
+
+      assert.equals(API.instance.properties, {
+        Chapter: {
+          info: 'Chapter info',
+          value: matchSubject,
+        }
+      });
+
+
+      assert.equals(subject.protoMethods.goto, {
+        intro: TH.match(/Document a subject within a module./),
+        sig: 'goto()',
+        subject: matchSubject,
+        test: TH.test,
+        calls: [[[], 10]],
+      });
     },
 
     "test example"() {
       /**
        * Run a section of as an example of a method call.
        **/
-      MainAPI.module();
       MainAPI.method('example');
 
       MainAPI.example(() => {
@@ -70,7 +160,7 @@ define(function (require, exports, module) {
         }
         Color.colors = {};
 
-        API.module(Color);
+        API.module({id: 'myMod', exports: Color});
         API.method('define');
 
         API.example(() => {
@@ -108,7 +198,6 @@ define(function (require, exports, module) {
       /**
        * Add a comment before the next example
        **/
-      MainAPI.module();
       MainAPI.method('comment');
 
       test.onEnd(() => {});
@@ -119,7 +208,7 @@ define(function (require, exports, module) {
           begin() {}
         }
 
-        API.module(Excercise);
+        API.module({id: 'myMod', exports: Excercise});
         API.method('register');
 
         API.comment('Optionally set the default duration');
@@ -144,17 +233,24 @@ define(function (require, exports, module) {
 
     "property": {
       setUp() {
-        /**
-         * Document a property of the current subject. The property
-         * can be either plain value or a get/set function.
-         **/
-        MainAPI.module(MainAPI);
         MainAPI.method('property');
       },
 
       "test value property"() {
         /**
-         * Document a value property of the current subject
+         * Document a property of the current subject. The property
+         * can be either plain value or a get/set function.
+         *
+         * @param [options] details about the property.
+         *
+         * When <object> can contain the following:
+         *
+         * * `info` (or `intro`): description of property
+         * * `properties`: document child properties
+         *
+         * When <function> should return an info <string>. The info
+         * <string> can contain `${value}` which will be substituted
+         * with a description of the properties value.
          **/
         MainAPI.example(() => {
           v.defaults = {
@@ -167,7 +263,7 @@ define(function (require, exports, module) {
             }
           };
 
-          API.module(v.defaults, 'defaults');
+          API.module({id: 'myMod', exports: v.defaults}, 'defaults');
           API.property('theme', {
             info: 'The default theme',
             properties: {
@@ -213,7 +309,7 @@ define(function (require, exports, module) {
             value: ['F', v.logger, 'logger']
           },
           width: {
-            info: 'Document a value property of the current subject',
+            info: TH.match(/Document a property/),
             value: 800,
           }
         });
@@ -226,7 +322,7 @@ define(function (require, exports, module) {
             set title(value) {this._title = value;},
           };
 
-          API.module(book, 'Room');
+          API.module({id: 'myMod', exports: book}, 'Room');
           API.property('title', {
             info: 'Get/set the book title',
           });
@@ -264,7 +360,6 @@ define(function (require, exports, module) {
        *
        * @returns a ProxyClass which is to be used instead of `new Class`
        **/
-      MainAPI.module(MainAPI);
       MainAPI.method('new');
 
       class Hobbit {
@@ -274,7 +369,7 @@ define(function (require, exports, module) {
         $inspect() {return `{Hobbit:${this.name}}`;}
       }
 
-      API.module(Hobbit);
+      API.module({id: 'myMod', exports: Hobbit});
       var newHobbit = API.new();
 
       var bilbo = newHobbit('Bilbo');
@@ -298,14 +393,13 @@ define(function (require, exports, module) {
       /**
        * Document <methodName> for the current subject
        **/
-      MainAPI.module(MainAPI);
       MainAPI.method('method');
       const fooBar = {
         fnord(a) {return a*2}
       };
 
 
-      API.module(fooBar, 'fooBar');
+      API.module({id: 'myMod', exports: fooBar}, 'fooBar');
       API.method('fnord');
 
       assert.same(fooBar.fnord(5), 10);
@@ -330,7 +424,6 @@ define(function (require, exports, module) {
       /**
        * Document prototype <methodName> for the current subject
        **/
-      MainAPI.module(MainAPI);
       MainAPI.method('protoMethod');
 
       MainAPI.example(() => {
@@ -345,7 +438,7 @@ define(function (require, exports, module) {
           }
         };
 
-        API.module(Tree);
+        API.module({id: 'myMod', exports: Tree});
         API.protoMethod('prune');
 
         const plum = new Tree('Plum');
@@ -389,17 +482,33 @@ define(function (require, exports, module) {
       assert.same(api.subjectName, 'fooBar');
     },
 
+    "test serializeValue"() {
+      const api = MainAPI._instance;
+      assert.equals(api.serializeValue(undefined), ['U', 'undefined']);
+      assert.equals(api.serializeValue(null), null);
+      assert.equals(api.serializeValue("number"), 'number');
+      assert.equals(api.serializeValue(["O", MainAPI]), ["M", 'koru/test/api']);
+      assert.equals(api.serializeValue(["M", MainAPI]), ["M", 'koru/test/api']);
+      assert.equals(api.serializeValue(["O", api, 'my api']),
+                    ["Oi", 'my api', 'koru/test/api']);
+      assert.equals(api.serializeValue(["x", MainAPI, 'arg 2']), ["x", 'arg 2']);
+    },
+
     "test resolveObject"() {
       assert.equals(API.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
-      API._apiMap.set(API, v.myApi = new API(test.tc, MainAPI, 'MainAPI', [{id: 'koru/test/api'}]));
 
-      assert.equals(v.ans = API.resolveObject(v.myApi, 'myApi'), ['Oi', 'myApi', 'koru/test/api']);
+      API._apiMap.set(API, v.myApi = new API(null, ctx.modules['koru/test/api'],
+                                             'MainAPI', [{id: 'koru/test/api'}]));
+
+      assert.equals(v.ans = API.resolveObject(v.myApi, 'myApi'),
+                    ['Oi', 'myApi', 'koru/test/api']);
       assert.msg('should cache').same(API.resolveObject(v.myApi), v.ans);
 
       const foo = {foo: 123};
 
       assert.equals(v.ans = API.resolveObject(foo, 'foo'), ['O', 'foo']);
-      assert.equals(v.ans = API.resolveObject(util.protoCopy(foo), 'ext foo'), ['O', 'ext foo']);
+      assert.equals(v.ans = API.resolveObject(util.protoCopy(foo), 'ext foo'),
+                    ['O', 'ext foo']);
 
       class SubApi extends API {}
 
@@ -411,13 +520,17 @@ define(function (require, exports, module) {
       assert.equals(v.ans = API.resolveObject(S3ubApi, 's3'), ['Os', 's3', 'koru/test/api']);
       assert.msg('should cache').same(API.resolveObject(S3ubApi), v.ans);
 
-      assert.equals(API.resolveObject(new S2ubApi(), 's2()'), ['Oi', 's2()', 'koru/test/api']);
+      assert.equals(API.resolveObject(new S2ubApi(), 's2()'),
+                    ['Oi', 's2()', 'koru/test/api']);
 
-      assert.equals(API.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'), ['Oi', 'ext s2()', 'koru/test/api']);
+      assert.equals(API.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'),
+                    ['Oi', 'ext s2()', 'koru/test/api']);
 
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
+      assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
       assert.equals(API.resolveObject(new Date(), 'dd/mm/yy'), ['Oi', 'dd/mm/yy', 'Date']);
-      assert.equals(API.resolveObject({id: 'myModule', __proto__: module.constructor.prototype}),
+      assert.equals(API.resolveObject({id: 'myModule',
+                                       __proto__: module.constructor.prototype}),
                     ['Oi', '{Module:myModule}', 'Module']);
       class MyExt extends module.constructor {}
       assert.equals(API.resolveObject(MyExt),
@@ -432,16 +545,18 @@ define(function (require, exports, module) {
         },
         fnord(a, b) {return new API()}
       };
-      const api = new API(test.tc, fooBar, 'fooBar', [{id: 'koru/test/api'}]);
+      const fooBarMod = {id: 'koru/test/api', exports: fooBar};
+      const api = new API(null, fooBarMod, 'fooBar', [fooBarMod]);
 
       // map in superClass: MainAPI
-      API._apiMap.set(API, new API(test.tc, MainAPI, 'MainAPI', [{id: 'koru/test/api'}]));
+
+      API._apiMap.set(API, new API(null, APIModule, 'MainAPI', [APIModule]));
 
       class Hobbit {
         constructor(name) {this.name = name;}
       }
-      API._apiMap.set(Hobbit, new API({name: 'koru/test/hobbit'}, Hobbit, 'Hobbit',
-                                         [{id: 'koru/test/hobbit'}]));
+      const HobbitMod = {id: 'koru/test/hobbit', exports: Hobbit};
+      API._apiMap.set(Hobbit, new API(null, HobbitMod, 'Hobbit', [HobbitMod]));
 
       api.newInstance = {
         test,
@@ -499,7 +614,12 @@ define(function (require, exports, module) {
         ]]
       };
 
+      api.initExample = () => {
+        const example = 'init';
+      };
+
       assert.equals(api.serialize({methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}}), {
+        initExample: TH.match(/const example = 'init';/),
         subject: {
           ids: ['koru/test/api'],
           name: 'fooBar',
@@ -561,6 +681,20 @@ define(function (require, exports, module) {
           }
         },
       });
+    },
+
+    "test #moduleName"() {
+      class Foo {}
+      class Bar {}
+      class Qux {}
+      const FooMod = {id: 'my/mod/foo', exports: Foo};
+      const api = new API(null, FooMod);
+      const subApi = new API(api, Bar, 'Bar');
+      subApi.properties = {Qux: {}};
+      const sub2Api = new API(subApi, Qux, 'Qux');
+      assert.same(api.moduleName, 'my/mod/foo');
+      assert.same(subApi.moduleName, 'my/mod/foo::Bar');
+      assert.same(sub2Api.moduleName, 'my/mod/foo::Bar.Qux');
     },
   });
 });

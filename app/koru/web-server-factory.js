@@ -11,7 +11,7 @@ define(function (require, exports, module) {
 
   var   send      = requirejs.nodeRequire('send');
 
-  module.exports = function (host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
+  module.exports = function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
     const koruParent = Path.join(koru.libDir, 'app');
 
     const handlers = {};

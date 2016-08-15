@@ -1,12 +1,25 @@
 {
   "koru/css/loader": {
     "subject": {
-      "ids": [],
+      "ids": [
+        "koru/css/loader"
+      ],
       "name": "CssLoader",
-      "abstracts": []
+      "abstracts": [
+        "css/loader allows dynamic replacement of css and less files when\ntheir contents change."
+      ]
     },
-    "newInstance": null,
-    "properties": null,
+    "methods": {},
+    "protoMethods": {}
+  },
+  "koru/css/loader::cssLoader": {
+    "subject": {
+      "ids": [],
+      "name": "cssLoader",
+      "abstracts": [
+        null
+      ]
+    },
     "methods": {
       "loadAll": {
         "test": "koru/css/loader test load all",
@@ -33,8 +46,6 @@
         "Ctx is used to track [DOM\nelements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {},
     "protoMethods": {}
   },
@@ -48,8 +59,6 @@
         "DomTemplate is used to create interactive [Dom\nTrees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "newTemplate": {
         "test": "koru/dom/template newTemplate test simple",
@@ -89,6 +98,29 @@
         "IdleCheck keeps count of usage and notifies when idle.\n"
       ]
     },
+    "methods": {},
+    "protoMethods": {
+      "waitIdle": {
+        "test": "koru/idle-check waitIdle test already Idle",
+        "sig": "waitIdle(func)",
+        "intro": "waitIdle waits until <this.count> drops to zero.",
+        "calls": [
+          {
+            "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "stub"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
     "newInstance": {
       "test": "koru/idle-check test constructor",
       "sig": "constructor()",
@@ -113,29 +145,6 @@
         ],
         "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
       }
-    },
-    "methods": {},
-    "protoMethods": {
-      "waitIdle": {
-        "test": "koru/idle-check waitIdle test already Idle",
-        "sig": "waitIdle(func)",
-        "intro": "waitIdle waits until <this.count> drops to zero.",
-        "calls": [
-          {
-            "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
-            "calls": [
-              [
-                [
-                  [
-                    "F",
-                    "stub"
-                  ]
-                ]
-              ]
-            ]
-          }
-        ]
-      }
     }
   },
   "koru/main": {
@@ -150,8 +159,6 @@
         null
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "onunload": {
         "test": "koru/main test onunload",
@@ -201,28 +208,6 @@
         null
       ]
     },
-    "newInstance": null,
-    "properties": {
-      "defaultDb": {
-        "calls": [
-          [
-            [],
-            [
-              "O",
-              "Pg:host=/var/run/postgresql dbname=korutest"
-            ]
-          ],
-          [
-            [],
-            [
-              "O",
-              "Pg:host=/var/run/postgresql dbname=korutest"
-            ]
-          ]
-        ],
-        "info": "Return the default Client database connection.\n\n@config url The url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
-      }
-    },
     "methods": {
       "connect": {
         "test": "koru/pg/driver test connection",
@@ -234,14 +219,92 @@
               "host=/var/run/postgresql dbname=korutest"
             ],
             [
-              "O",
-              "Pg:host=/var/run/postgresql dbname=korutest"
+              "Oi",
+              "Pg:host=/var/run/postgresql dbname=korutest",
+              "koru/pg/driver::Client"
             ]
           ]
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "properties": {
+      "defaultDb": {
+        "calls": [
+          [
+            [],
+            [
+              "Oi",
+              "Pg:host=/var/run/postgresql dbname=korutest",
+              "koru/pg/driver::Client"
+            ]
+          ],
+          [
+            [],
+            [
+              "Oi",
+              "Pg:host=/var/run/postgresql dbname=korutest",
+              "koru/pg/driver::Client"
+            ]
+          ]
+        ],
+        "info": "Return the default Client database connection.\n\n@config url The url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
+      }
+    }
+  },
+  "koru/pg/driver::Client": {
+    "subject": {
+      "ids": [
+        "koru/pg/driver::Client"
+      ],
+      "name": "Client",
+      "abstracts": [
+        "A connection to a database.\n\nSee {@module koru/pg/driver:connect}"
+      ]
+    },
+    "methods": {},
+    "protoMethods": {
+      "jsFieldToPg": {
+        "test": "koru/pg/driver test jsFieldToPg",
+        "sig": "jsFieldToPg(col, type)",
+        "intro": null,
+        "calls": [
+          [
+            [
+              "runs",
+              "number"
+            ],
+            "\"runs\" double precision"
+          ],
+          [
+            [
+              "name"
+            ],
+            "\"name\" text"
+          ],
+          [
+            [
+              "dob",
+              [
+                "O",
+                "{type: 'date'}"
+              ]
+            ],
+            "\"dob\" date"
+          ],
+          [
+            [
+              "map",
+              [
+                "O",
+                "{type: 'object', default: {treasure: 'lost'}}"
+              ]
+            ],
+            "\"map\" jsonb DEFAULT '{\"treasure\":\"lost\"}'::jsonb"
+          ]
+        ]
+      }
+    }
   },
   "koru/test/api": {
     "subject": {
@@ -253,18 +316,16 @@
         "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "module": {
         "test": "koru/test/api test module",
-        "sig": "module(subject, subjectName, subjectModules)",
-        "intro": "Specify the <subject> to be documented\n\n@param {[module,...]} subjectModules - list of modules that define the subject",
+        "sig": "module(module, subjectName, subjectModules)",
+        "intro": "Initiate documentation of the module\n\n@param {...Module} [subjectModules] - list of modules that define the subject",
         "calls": [
           [
             [],
             [
-              "Oi",
+              "Os",
               "{API(API)}",
               "koru/test/api"
             ]
@@ -273,7 +334,7 @@
             [
               [
                 "O",
-                "{clean: => clean}"
+                "{id: 'myMod1', exports: {clean: => clean}}"
               ],
               "myHelper"
             ],
@@ -286,16 +347,65 @@
           [
             [
               [
-                "F",
-                "Elf"
+                "O",
+                "{id: 'myMod2', exports: => Book}"
               ]
             ],
             [
               "Oi",
-              "{API(Elf)}",
+              "{API(Book)}",
               "koru/test/api"
             ]
           ]
+        ]
+      },
+      "innerSubject": {
+        "test": "koru/test/api test innerSubject",
+        "sig": "innerSubject(subject, subjectName, options)",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a <string>)\n* `abstract` - introduction to the subject. If abstract is a\n<function> then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n<subject>",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{anything: 'is allowed'}"
+              ],
+              "Anything can be documented",
+              [
+                "O",
+                "{initExample: 'const init = {sample: 'code'};', abstract: => abstract}"
+              ]
+            ],
+            [
+              "Os",
+              "{API(Anything can be documented)}",
+              "koru/test/api"
+            ],
+            "hello"
+          ],
+          {
+            "body": "        class Book {\n          constructor() {this._chapters = [];}\n          newChapter() {\n            const chapter = new this.constructor\n                    .Chapter(10);\n            this._chapters.push(chapter);\n            return chapter;\n          }\n        };\n        Book.Chapter = class {\n          constructor(startPage) {this.page = startPage;}\n          goto() {return this.page;}\n        };;\n\n        API.module({id: 'myMod1', exports: Book}, 'myHelper');\n        API.innerSubject('Chapter', null, {info: 'Chapter info'})\n          .protoMethod('goto');\n\n        const book = new Book();\n        const chapter = book.newChapter();\n        assert.same(chapter.goto(), 10);\n      ",
+            "calls": [
+              [
+                [
+                  "Chapter",
+                  [
+                    "O",
+                    "null"
+                  ],
+                  [
+                    "O",
+                    "{info: 'Chapter info'}"
+                  ]
+                ],
+                [
+                  "Oi",
+                  "{API(Chapter)}",
+                  "koru/test/api"
+                ]
+              ]
+            ]
+          }
         ]
       },
       "example": {
@@ -312,7 +422,7 @@
             ]
           ],
           {
-            "body": "        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module(Color);\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
+            "body": "        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module({id: 'myMod', exports: Color});\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
             "calls": [
               [
                 [
@@ -332,7 +442,7 @@
         "intro": "Add a comment before the next example",
         "calls": [
           {
-            "body": "        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module(Excercise);\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
+            "body": "        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module({id: 'myMod', exports: Excercise});\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
             "calls": [
               [
                 [
@@ -346,10 +456,10 @@
       "property": {
         "test": "koru/test/api property test value property",
         "sig": "property(name, options)",
-        "intro": "Document a value property of the current subject",
+        "intro": "Document a property of the current subject. The property\ncan be either plain value or a get/set function.\n\n@param [options] details about the property.\n\nWhen <object> can contain the following:\n\n* `info` (or `intro`): description of property\n* `properties`: document child properties\n\nWhen <function> should return an info <string>. The info\n<string> can contain `${value}` which will be substituted\nwith a description of the properties value.",
         "calls": [
           {
-            "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module(v.defaults, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
+            "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module({id: 'myMod', exports: v.defaults}, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
             "calls": [
               [
                 [
@@ -375,11 +485,14 @@
             [
               "width"
             ],
-            null,
+            [
+              "U",
+              "undefined"
+            ],
             "If no info supplied then the test description is used"
           ],
           {
-            "body": "          const book = {\n            get title() {return this._title;},\n            set title(value) {this._title = value;},\n          };\n\n          API.module(book, 'Room');\n          API.property('title', {\n            info: 'Get/set the book title',\n          });\n          API.comment('sets title');\n          book.title = 'Room';\n          assert.same(book._title, 'Room');\n          assert.same(book.title, book._title);\n        ",
+            "body": "          const book = {\n            get title() {return this._title;},\n            set title(value) {this._title = value;},\n          };\n\n          API.module({id: 'myMod', exports: book}, 'Room');\n          API.property('title', {\n            info: 'Get/set the book title',\n          });\n          API.comment('sets title');\n          book.title = 'Room';\n          assert.same(book._title, 'Room');\n          assert.same(book.title, book._title);\n        ",
             "calls": [
               [
                 [
@@ -426,7 +539,7 @@
         "intro": "Document prototype <methodName> for the current subject",
         "calls": [
           {
-            "body": "        class Tree {\n          constructor(name) {\n            this.name = name;\n            this.branches = 10;\n          }\n\n          prune(branchCount) {\n            return this.branches -= branchCount;\n          }\n        };\n\n        API.module(Tree);\n        API.protoMethod('prune');\n\n        const plum = new Tree('Plum');\n        assert.same(plum.prune(3), 7);\n        assert.same(plum.prune(2), 5);\n      ",
+            "body": "        class Tree {\n          constructor(name) {\n            this.name = name;\n            this.branches = 10;\n          }\n\n          prune(branchCount) {\n            return this.branches -= branchCount;\n          }\n        };\n\n        API.module({id: 'myMod', exports: Tree});\n        API.protoMethod('prune');\n\n        const plum = new Tree('Plum');\n        assert.same(plum.prune(3), 7);\n        assert.same(plum.prune(2), 5);\n      ",
             "calls": [
               [
                 [
@@ -450,8 +563,6 @@
         "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "setTitle": {
         "test": "koru/ui/route with routeVar test setTitle",
@@ -519,8 +630,6 @@
         null
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "toDp": {
         "test": "koru/util test toDp",
@@ -785,8 +894,6 @@
         "The default web-server created from {@module\nkoru/web-server-factory}.  {@module koru/idle-check} is used to\nkeep track of active requests.\n\n#### Config ####\n\n* `{host, port}`: listens on the specified address.\n* `{defaultPage} defaults to `/index.html`: used when no path is\nsupplied in the url.\n* `{index.js, require.js}` defaults to `yaajs.js`: the file to serve for\n* `index.js` or `require.js`\n* `{koru}` defaults to `app/koru`: where to find koru files.\n"
       ]
     },
-    "newInstance": null,
-    "properties": null,
     "methods": {
       "start": {
         "test": "koru/web-server test usage",
@@ -816,9 +923,42 @@
         "Factory for creating web-servers.\n"
       ]
     },
+    "methods": {},
+    "protoMethods": {
+      "start": {
+        "test": "koru/web-server-factory test start",
+        "sig": "start()",
+        "intro": null,
+        "calls": [
+          {
+            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const listen = test.stub(Server.prototype, 'listen').yields();\n\n        v.webServer.start();\n        assert.calledWith(listen, '9876', 'localhost');\n      ",
+            "calls": [
+              [
+                []
+              ]
+            ]
+          }
+        ]
+      },
+      "stop": {
+        "test": "koru/web-server-factory test stop",
+        "sig": "stop()",
+        "intro": null,
+        "calls": [
+          {
+            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const close = test.stub(Server.prototype, 'close');\n\n        v.webServer.stop();\n        assert.called(close);\n      ",
+            "calls": [
+              [
+                []
+              ]
+            ]
+          }
+        ]
+      }
+    },
     "newInstance": {
       "test": "koru/web-server-factory test construction",
-      "sig": "function (host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
+      "sig": "function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
       "intro": "Create a new web server. The npm package\n[send](https://www.npmjs.com/package/send) is used to serve\nfiles.\n\n@param root Serve files relative to path.",
       "calls": [
         {
@@ -854,40 +994,6 @@
           ]
         ]
       ]
-    },
-    "properties": null,
-    "methods": {},
-    "protoMethods": {
-      "start": {
-        "test": "koru/web-server-factory test start",
-        "sig": "start()",
-        "intro": null,
-        "calls": [
-          {
-            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const listen = test.stub(Server.prototype, 'listen').yields();\n\n        v.webServer.start();\n        assert.calledWith(listen, '9876', 'localhost');\n      ",
-            "calls": [
-              [
-                []
-              ]
-            ]
-          }
-        ]
-      },
-      "stop": {
-        "test": "koru/web-server-factory test stop",
-        "sig": "stop()",
-        "intro": null,
-        "calls": [
-          {
-            "body": "        const {Server} = requirejs.nodeRequire('http');\n        const close = test.stub(Server.prototype, 'close');\n\n        v.webServer.stop();\n        assert.called(close);\n      ",
-            "calls": [
-              [
-                []
-              ]
-            ]
-          }
-        ]
-      }
     }
   }
 }

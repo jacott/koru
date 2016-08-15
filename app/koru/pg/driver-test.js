@@ -22,15 +22,36 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test ::Client"() {
+      function abstract() {
+        /**
+         * A connection to a database.
+         *
+         * See {@module koru/pg/driver:connect}
+         **/
+      }
+      const Client = sut.defaultDb.constructor;
+      api.innerSubject(Client, null, {abstract});
+
+      const client = new Client('host=/var/run/postgresql dbname=korutest');
+      const client2 = new Client(undefined, 'my name');
+
+      assert.same(client._url, 'host=/var/run/postgresql dbname=korutest');
+      assert.same(client.name, 'public');
+      assert.same(client2.name, 'my name');
+
+      assert(client._id < client2._id );
+    },
+
     "test jsFieldToPg"() {
-      // FIXME
-      // api.module(sut.defaultDb.constructor);
-      // api.protoMethod('jsFieldToPg');
+      api.innerSubject(sut.defaultDb.constructor)
+        .protoMethod('jsFieldToPg');
 
       assert.equals(sut.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
       assert.equals(sut.defaultDb.jsFieldToPg('name'), '"name" text');
       assert.equals(sut.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
-      assert.equals(sut.defaultDb.jsFieldToPg('map', {type: 'object', default: {treasure: 'lost'}}),
+      assert.equals(sut.defaultDb.jsFieldToPg('map', {type: 'object',
+                                                      default: {treasure: 'lost'}}),
                     `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
     },
 

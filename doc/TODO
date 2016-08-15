@@ -1,19 +1,10 @@
+* bugs
+  ** Fix api constructorconstructor syntax highlighting
 * try running with not-found html file - hangs
 * try running client only test on server
  eg; rich-text-editor-test on server - stack trace is unhelpful (hint: remove isClient)
 
 * Is weakref id map still needed to cache docs on server since cache is tied to thread?
-
-* Rich text editor
-
-* Partiioning
-  + Try with separte dbs on client.
-  + Need to handle onChange for different db than setup
-
-
-
-* Tidy up model callbacks
-   replace ".before..." with nested hashmaps
 
 * Lock doc by id before update
    Do in query-server.js. lock waits if already locked.
