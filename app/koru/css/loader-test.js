@@ -4,17 +4,18 @@ isClient && define(function (require, exports, module) {
    * their contents change.
    **/
   var test, v;
-  const api         = require('koru/test/api');
-  const koru        = require('../main');
-  const sessionBase = require('../session/base').__initBase__;
-  const TH          = require('../test');
-  const CssLoader   = require('./loader');
+  const api           = require('koru/test/api');
+  const koru          = require('../main');
+  const SessionBase   = require('../session/base').constructor;
+  const TH            = require('../test');
+  const CssLoader     = require('./loader');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
-      v.session = sessionBase('loader');
+      v.session = new SessionBase('loader');
+      api.module();
     },
 
     tearDown() {
@@ -27,14 +28,26 @@ isClient && define(function (require, exports, module) {
       CssLoader.removeAllCss();
     },
 
+    "test construction"() {
+      /**
+       * Construct a css loader
+       * @param session listen for load messages from this session
+       **/
+
+
+      test.stub(v.session, 'provide');
+      const loader = api.new()(v.session);
+      assert.calledWith(v.session.provide, 'S', TH.match.func);
+
+      assert.same(loader.session, v.session);
+    },
+
     "test load all"(done) {
       /**
        * Load all css and less files under <dir>
        **/
-      api.module(null, "CssLoader");
-      const loader = CssLoader(v.session);
-      api.innerSubject(loader, 'cssLoader', 'const cssLoader = CssLoader(session);')
-        .method('loadAll');
+      api.protoMethod('loadAll');
+      const loader = new CssLoader(v.session);
       test.intercept(v.session, 'send', function (cmd, data) {
         TH.session.send(cmd, data);
       });
@@ -52,7 +65,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('head>link[rel=stylesheet]');
 
       var provide = test.stub(v.session, "provide");
-      var loader = CssLoader(v.session);
+      var loader = new CssLoader(v.session);
 
       assert.calledWith(provide, "S");
 

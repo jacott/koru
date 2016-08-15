@@ -2,33 +2,33 @@ define(function(require, exports, module) {
   var koru = require('../main');
   var message = require('./message');
 
-  class Session {
-    constructor (id) {
+  class SessionBase {
+    constructor(id) {
       this._id = id;
       this._rpcs = {};
       this._commands = {};
     }
 
-    defineRpc (name, func) {
+    defineRpc(name, func) {
       this._rpcs[name] = func;
       return this;
     }
 
-    provide (cmd, func) {
+    provide(cmd, func) {
       var old = this._commands[cmd];
       this._commands[cmd] = func;
       return old;
     }
 
-    unprovide (cmd) {
+    unprovide(cmd) {
       this._commands[cmd] = null;
     }
 
-    onStop (func) {
+    onStop(func) {
       (this._onStops || (this._onStops = [])).push(func);
     }
 
-    _onMessage (conn, data) {
+    _onMessage(conn, data) {
       if (typeof data === 'string') {
         var type = data[0];
         data = data.slice(1);
@@ -47,11 +47,6 @@ define(function(require, exports, module) {
     }
   };
 
-  function Constructor(id) {
-    return new Session(id);
-  }
-
-  exports = new Session('default');
-  exports.__initBase__ = Constructor;
+  exports = new SessionBase('default');
   return exports;
 });

@@ -1,11 +1,12 @@
 define(function(require, exports, module) {
-  var test = require('./main');
-  var sessionBase = require('koru/session/base').__initBase__('test');
-  var sessState = require('koru/session/state').__init__();
-  var session = require('koru/session/main-client').__init__(sessState)(sessionBase);
-  var localStorage = require('koru/local-storage');
-  var koru = require('koru');
-  var Module = module.constructor;
+  const SessionBase  = new (require('koru/session/base').constructor)('test');
+  const koru         = require('koru');
+  const localStorage = require('koru/local-storage');
+  const sessState    = require('koru/session/state').__init__();
+  const test         = require('./main');
+
+  const Module = module.constructor;
+  const session = require('koru/session/main-client').__init__(sessState)(SessionBase);
 
   test.session = session;
 

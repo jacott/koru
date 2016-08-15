@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  const SessionBase = require('./base').__initBase__;
+  const SessionBase = require('./base').constructor;
   const SessState   = require('./state').__init__;
   const TH          = require('./test-helper');
   const sut         = require('./web-socket-sender-factory');
@@ -9,7 +9,7 @@ define(function (require, exports, module) {
     setUp () {
       test = this;
       v = {};
-      const base = SessionBase('foo');
+      const base = new SessionBase('foo');
       test.stub(base, 'provide');
       v.sess = sut(base, v.state = SessState());
       v.sess.newWs = function () {return v.ws = {}};
@@ -56,9 +56,9 @@ define(function (require, exports, module) {
     },
 
     "test using separate base" () {
-      var sess1 = SessionBase('foo1');
-      var sess2 = SessionBase('foo2');
-      var base = SessionBase('foo3');
+      var sess1 = new SessionBase('foo1');
+      var sess2 = new SessionBase('foo2');
+      var base = new SessionBase('foo3');
       sut(sess1, v.state = SessState(), v.wrapper1 = test.stub(), base);
       var bfunc = base._commands.B;
       sut(sess2, v.state = SessState(), v.wrapper2 = test.stub(), base);

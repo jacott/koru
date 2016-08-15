@@ -10,17 +10,7 @@
       ]
     },
     "methods": {},
-    "protoMethods": {}
-  },
-  "koru/css/loader::cssLoader": {
-    "subject": {
-      "ids": [],
-      "name": "cssLoader",
-      "abstracts": [
-        null
-      ]
-    },
-    "methods": {
+    "protoMethods": {
       "loadAll": {
         "test": "koru/css/loader test load all",
         "sig": "loadAll(dir)",
@@ -34,7 +24,27 @@
         ]
       }
     },
-    "protoMethods": {}
+    "newInstance": {
+      "test": "koru/css/loader test construction",
+      "sig": "constructor(session)",
+      "intro": "Construct a css loader\n@param session listen for load messages from this session",
+      "calls": [
+        [
+          [
+            [
+              "Oi",
+              "{_id: 'loader', _rpcs: {}, _commands: {}}",
+              "koru/session/main.constructor"
+            ]
+          ],
+          [
+            "Oi",
+            "{session: {_id: 'loader', _rpcs: {}, _commands: {}}}",
+            "koru/css/loader"
+          ]
+        ]
+      ]
+    }
   },
   "koru/dom/ctx": {
     "subject": {
@@ -304,6 +314,78 @@
           ]
         ]
       }
+    }
+  },
+  "koru/session/main": {
+    "subject": {
+      "ids": [
+        "koru/session/base",
+        "koru/session/main"
+      ],
+      "name": "session",
+      "abstracts": [
+        null,
+        "The main or active session for client server communication.\nSee {@module koru/session/main.constructor}"
+      ]
+    },
+    "methods": {
+      "defineRpc": {
+        "test": "koru/session/main test defining",
+        "sig": "defineRpc(name, func)",
+        "intro": "Define a remote proceedure call",
+        "calls": [
+          [
+            [
+              "Book.list",
+              [
+                "F",
+                "func"
+              ]
+            ],
+            [
+              "M",
+              "koru/session/base"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "properties": {
+      "_id": {
+        "value": "default",
+        "info": "The session _id: \"default\""
+      }
+    }
+  },
+  "koru/session/main.constructor": {
+    "subject": {
+      "ids": [
+        "koru/session/main.constructor"
+      ],
+      "name": "BaseSession",
+      "abstracts": [
+        "The constructor for {@module koru/session/main}. This is\nalso used by {@module\nkoru/session/web-socket-sender-factory} and {@module\nkoru/session/web-socket-server-factory}.\n"
+      ]
+    },
+    "methods": {},
+    "protoMethods": {},
+    "newInstance": {
+      "test": "koru/session/main test Session",
+      "sig": "constructor(id)",
+      "intro": "Create a new session",
+      "calls": [
+        [
+          [
+            "mySession"
+          ],
+          [
+            "Oi",
+            "{_id: 'mySession', _rpcs: {}, _commands: {}}",
+            "koru/session/main.constructor"
+          ]
+        ]
+      ]
     }
   },
   "koru/test/api": {

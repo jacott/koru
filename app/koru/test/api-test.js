@@ -84,12 +84,15 @@ define(function (require, exports, module) {
          * An example abstract
          **/
       }
-      API.innerSubject(v.anything = {anything: 'is allowed'},
+      const anythingApi = API.innerSubject(v.anything = {anything: 'is allowed'},
                        'Anything can be documented', {
                          initExample: `const init = {sample: 'code'};`,
                          abstract,
                        });
+      assert.same(anythingApi.propertyName, undefined);
+
       let subject = API._apiMap.get(v.anything);
+      assert.same(anythingApi, subject);
       assert.same(subject.moduleName, 'koru/test/api::Anything can be documented');
       assert.equals(subject.initExample, `const init = {sample: 'code'};`);
       assert.equals(subject.abstract, 'An example abstract');
@@ -122,6 +125,8 @@ define(function (require, exports, module) {
       MainAPI.done();
 
       subject = API.instance.innerSubjects.Chapter;
+
+      assert.same(subject.propertyName, 'Chapter');
 
       assert.match(subject.subject.toString(), /startPage/);
 
@@ -692,9 +697,10 @@ define(function (require, exports, module) {
       const subApi = new API(api, Bar, 'Bar');
       subApi.properties = {Qux: {}};
       const sub2Api = new API(subApi, Qux, 'Qux');
+      sub2Api.propertyName = 'qux';
       assert.same(api.moduleName, 'my/mod/foo');
       assert.same(subApi.moduleName, 'my/mod/foo::Bar');
-      assert.same(sub2Api.moduleName, 'my/mod/foo::Bar.Qux');
+      assert.same(sub2Api.moduleName, 'my/mod/foo::Bar.qux');
     },
   });
 });

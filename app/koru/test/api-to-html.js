@@ -467,6 +467,6 @@ define(function(require, exports, module) {
   }
 
   function idToLink(id) {
-    return Dom.h({a: id, class: "jsdoc-idLink", $href: '#'+id});
+    return Dom.h({a: id.replace(/\/main$/, ''), class: "jsdoc-idLink", $href: '#'+id});
   }
 });

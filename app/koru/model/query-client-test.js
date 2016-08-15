@@ -122,7 +122,7 @@ define(function (require, exports, module) {
 
     "test nested update after connection lost"() {
       var _sessState = sessState.__init__();
-      var _session = session.__init__(sessionClient.__init__(_sessState), session.__initBase__('foo'));
+      var _session = session.__init__(sessionClient.__init__(_sessState), new (session.constructor)('foo'));
       _session.ws = {send: test.stub()};
       clientRpcBase(_session);
       _session.defineRpc('fooUpdate',function () {

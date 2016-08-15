@@ -8,7 +8,7 @@ isServer && define(function (require, exports, module) {
   const message    = require('./message');
 
   const baseSession = require('../session/base');
-  const session = baseSession.__initBase__('testServerConnection');
+  const session = new (baseSession.constructor)('testServerConnection');
   const Connection  = require('./server-connection')(session);
 
   TH.testCase(module, {

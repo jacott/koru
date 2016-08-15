@@ -20,11 +20,12 @@ define(function(require, exports, module) {
 
       this.newInstance = this.properties =
         this.currentComment = this.lastMethod =
+        this.propertyName =
         this.initExample = this.abstract = undefined;
 
-      this.methods = {};
-      this.protoMethods = {};
-      this.innerSubjects = {};
+      this.methods = Object.create(null);
+      this.protoMethods = Object.create(null);
+      this.innerSubjects = Object.create(null);
     }
 
     static reset() {
@@ -113,18 +114,22 @@ define(function(require, exports, module) {
       if (this.module)
         return this.module.id;
       const {parent} = this;
-      return parent.moduleName+
-        (parent.properties && parent.properties[this.subjectName] ? '.' : '::')
-        +this.subjectName;
+      return parent.moduleName +
+        (parent.properties && this.propertyName ?
+         '.'+this.propertyName : '::'+this.subjectName);
     }
 
     innerSubject(subject, subjectName, options) {
-      subjectName = subjectName || createSubjectName(subject);
       if (typeof subject === 'string') {
+        var propertyName = subject;
         if (! (this.properties && this.properties[subject]))
           this.property(subject, options);
+        if (! subjectName)
+          subjectName = subject;
         subject = this.subject[subject];
       }
+      subjectName = subjectName || createSubjectName(subject);
+
       if (! subjectName)
         throw new Error("Don't know the name of the subject!");
 
@@ -137,6 +142,8 @@ define(function(require, exports, module) {
           new ThisAPI(this, subject, subjectName)
       );
 
+
+      if (propertyName) ans.propertyName = propertyName;
       if (options) {
         if (options.abstract) {
           if (ans.subjectModules)
@@ -193,7 +200,7 @@ define(function(require, exports, module) {
 
       function inner(name, options, desc, value, properties) {
         const property = properties[name] || (properties[name] = {});
-        if (desc && desc.get || desc.set) {
+        if (desc && (desc.get || desc.set)) {
           const calls = property.calls || (property.calls = []);
           const {subject} = api;
           Object.defineProperty(subject, name, {

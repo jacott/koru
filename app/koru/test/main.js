@@ -71,6 +71,10 @@ define(function(require, exports, module) {
 
     get test() {return geddon.test},
 
+    logHandle(type, msg) {
+      console.error(type, msg);
+    },
+
     stubProperty(object, prop, newValue) {
       if (typeof newValue !== 'object')
         newValue = {value: newValue};
