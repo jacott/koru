@@ -85,7 +85,7 @@ isServer && define(function (require, exports, module) {
         }
       }), `
 ~k#class# ~nx#A# ~k#extends# ~nx#v#(~m#5#) {
-  ~k#constructor#~nf#constructor#(~nx#a#) {
+  ~k#constructor#(~nx#a#) {
     ~k#super#(~nx#a#);
   }
 
@@ -97,6 +97,18 @@ isServer && define(function (require, exports, module) {
 }
 
 ~k#class# ~nx#B# {}`);
+
+    },
+
+    "test ClassExpression"() {
+      assert.equals(markupBody(() => {
+        const A = class extends v(5) {
+          static cm() {}
+        };
+      }), `
+~kd#const# ~nx#A# = ~k#class# ~k#extends# ~nx#v#(~m#5#) {
+  ~k#static# ~nf#cm#() {}
+};`);
 
     },
 

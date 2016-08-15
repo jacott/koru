@@ -39,10 +39,6 @@ define(function(require, exports, module) {
       expr(node.right);
     }
 
-    function unknown(node) {
-      koru.error(`Unexpected node ${node.type} parsing javascript`);
-    }
-
     function FunctionExpression(node) {
       addHlString('function', node.start, 'kd');
       expr(node.id);
@@ -59,34 +55,13 @@ define(function(require, exports, module) {
       Super: 'k',
       ThisExpression: 'k',
       BinaryExpression: binaryExpr,
-      CallExpression(node) {
-        expr(node.callee);
-        expr(node.arguments);
-      },
       FunctionDeclaration: FunctionExpression,
-      ArrayExpression(node) {
-        expr(node.elements);
-      },
-      ArrayPattern(node) {
-        expr(node.elements);
-      },
       ArrowFunctionExpression(node) {
         expr(node.params);
         addHlString('=>', srcPos, 'o');
         expr(node.body);
       },
       AssignmentExpression: binaryExpr,
-      // Directive(node) {},
-      // DirectiveLiteral(node) {},
-      BlockStatement(node) {
-        expr(node.directives);
-        expr(node.body);
-      },
-      // BreakStatement(node) {},
-      // CatchClause(node) {},
-      ClassBody(node) {
-        expr(node.body);
-      },
       ClassDeclaration(node) {
         addHlString('class', node.start, 'k');
         expr(node.id, 'nx');
@@ -100,22 +75,15 @@ define(function(require, exports, module) {
         node.static && addHlString('static', node.start, 'k');
         TYPES.ObjectMethod(node);
       },
-      // ConditionalExpression(node) {},
-      // ContinueStatement(node) {},
-      // DebuggerStatement(node) {},
-      // DoWhileStatement(node) {},
-      EmptyStatement(node) {},
-      ExpressionStatement(node) {
-        expr(node.expression);
+      ClassExpression(node) {
+        addHlString('class', node.start, 'k');
+        if (node.superClass) {
+          addHlString('extends', srcPos, 'k');
+          expr(node.superClass);
+        }
+        expr(node.body);
       },
-      // File(node) {},
-      // ForInStatement(node) {},
-      // ForStatement(node) {},
       FunctionExpression,
-      // IfStatement(node) {},
-      // LabeledStatement(node) {},
-      // RegExpLiteral(node) {},
-      // LogicalExpression(node) {},
       MemberExpression(node) {
         expr(node.object);
         expr(node.property, ! node.computed && 'na');
@@ -125,20 +93,13 @@ define(function(require, exports, module) {
         expr(node.callee);
         expr(node.arguments);
       },
-      // Program(node) {},
-      ObjectExpression(node) {
-        expr(node.properties);
-      },
       ObjectMethod(node) {
         if (node.kind !== 'method')
           addHlString(node.kind, node.start, 'k');
-        expr(node.key, 'nf');
+        node.kind === 'constructor' ||
+          expr(node.key, 'nf');
         expr(node.params);
         expr(node.body);
-      },
-      ObjectPattern(node) {
-        expr(node.properties);
-        expr(node.decorators);
       },
       ObjectProperty(node) {
         const {key, value} = node;
@@ -146,36 +107,23 @@ define(function(require, exports, module) {
         expr(key, shorthand ? 'nx' : 'na');
         shorthand || expr(value);
       },
-      // RestElement(node) {},
       ReturnStatement(node) {
         addHlString('return', node.start, 'k');
         expr(node.argument);
       },
-      // SequenceExpression(node) {},
       SpreadElement(node) {
         addHlString('...', node.start, 'k');
         expr(node.argument);
       },
-      // SwitchCase(node) {},
-      // SwitchStatement(node) {},
-      // ThrowStatement(node) {},
-      // TryStatement(node) {},
       UnaryExpression(node) {
         node.prefix || expr(node.argument);
         addHlString(node.operator, node.start, 'o');
         node.prefix && expr(node.argument);
       },
-      // UpdateExpression(node) {},
       VariableDeclaration(node) {
         addHlString(node.kind, node.start, 'kd');
         expr(node.declarations);
       },
-      VariableDeclarator(node) {
-        expr(node.id);
-        expr(node.init);
-      },
-      // WhileStatement(node) {},
-      // WithStatement(node) {},
     };
 
     function expr(node, idkw) {
@@ -189,7 +137,11 @@ define(function(require, exports, module) {
       switch (typeof hl) {
       case 'string': addHl(node, idkw || hl); break;
       case 'function': hl(node); break;
-      default: unknown(node);
+      default:
+        VISITOR_KEYS[node.type].forEach(key => {
+          const sub = node[key];
+          sub && expr(sub);
+        });
       }
       trailingComments(node);
     }
