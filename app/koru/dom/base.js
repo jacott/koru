@@ -74,12 +74,53 @@ define(function(require, exports, module) {
       }
     },
 
+    htmlToJson,
+
     handleException(ex) {
       if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
         koru.unhandledException(ex);
       }
     },
   });
+
+  function htmlToJson(node) {
+    if (typeof node === 'string')
+      return node;
+
+    if (node.nodeType !== 1)
+      return node.textContent;
+
+    const ans = {};
+    let body;
+
+
+    switch (node.childNodes.length) {
+    case 0: body = node.textContent; break;
+    case 1:
+      body = htmlToJson(node.childNodes[0]);
+      break;
+    default:
+      body = util.map(node.childNodes, n => htmlToJson(n));
+      break;
+    }
+
+    ans[node.tagName.toLowerCase()] = body;
+
+    util.forEach(node.attributes, attr => {
+      switch(attr.name) {
+      case 'id': case 'class':
+        ans[attr.name] = attr.value;
+        break;
+      default:
+        ans['$'+attr.name] = attr.value;
+        break;
+      }
+    });
+
+    return ans;
+  }
+
+
 
 
   /**

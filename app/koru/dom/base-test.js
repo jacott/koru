@@ -1,13 +1,15 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  const api = require('koru/test/api');
+  const TH  = require('../test');
+  const Dom = require('./base');
   require('./html-doc');
-  var Dom = require('./base');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
+      api.module();
     },
 
     tearDown() {
@@ -49,7 +51,19 @@ define(function (require, exports, module) {
       });
 
       assert.same(ans, "oneSPANtwo2.5threeBIU1");
+    },
 
+    "test htmlToJson"() {
+      /**
+       * Convert an <Element> to a plain <object>
+       **/
+
+      const obj = {class: 'greeting', id: "gId", section: {
+        ul: [{li: {span: "Hello"}}, {li: 'two'}],
+      }, '$data-lang': 'en'};
+
+      api.method('htmlToJson');
+      assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
     },
 
     "test html"() {
