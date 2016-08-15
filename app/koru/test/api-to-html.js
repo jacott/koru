@@ -183,8 +183,9 @@ define(function(require, exports, module) {
       {class: 'jsdoc-example highlight', pre: [
         requireLine.cloneNode(true),
         ...calls.map(call => Dom.h({
-          div: Array.isArray(call) ?
-            newSig(subject.name, call[0]) : codeToHtml(call.body)
+          div: codeToHtml(Array.isArray(call) ?
+                          newSig(subject.name, call[0]) :
+                          call.body)
         }))
       ]},
     ]};
@@ -207,7 +208,7 @@ define(function(require, exports, module) {
         if (! needInit) return [];
         needInit = false;
         return [
-          {div: `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`}
+          codeToHtml(`const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`)
         ];
       };
       var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
