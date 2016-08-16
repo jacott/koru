@@ -1,12 +1,4 @@
 (function () {
-  if ((typeof global !== 'undefined') &&  this === global) {
-    global.isServer = true;
-    global.isClient = false;
-  } else {
-    window.isClient = true;
-    window.isServer = false;
-  }
-
   define({
     browserVersion (ua){
       var tmp;

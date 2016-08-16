@@ -146,8 +146,6 @@ define(function(require, exports, module) {
       if (propertyName) ans.propertyName = propertyName;
       if (options) {
         if (options.abstract) {
-          if (ans.subjectModules)
-            throw new Error("Absract already supplied");
           ans.subjectModules = [{id: ans.moduleName}];
           ans.abstract = typeof options.abstract === 'string' ?
             options.abstract :
