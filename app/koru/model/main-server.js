@@ -226,6 +226,12 @@ define(function(require, exports, module) {
       var dbMap = new WeakMap;
 
       var docs, db;
+
+      function getDc() {
+        const dc = docCache.get(util.thread);
+        return dc && model.db === dc.$db && dc;
+      }
+
       util.extend(model, {
         notify() {
           var subject = notifyMap.get(model.db);
@@ -259,21 +265,26 @@ define(function(require, exports, module) {
         },
 
         _$docCacheGet(id) {
-          var dc = docCache.get(util.thread);
-          var doc = dc && dc[id];
-          return doc;
+          const dc = getDc();
+          if (dc)
+            return dc[id];
         },
 
         _$docCacheSet(doc) {
           var thread = util.thread;
-          var dc = docCache.get(thread);
-          dc || docCache.set(thread, dc = Object.create(null));
+          var dc = getDc();
+          if (! dc || dc.$db !== model.db) {
+            dc = Object.create(null);
+            dc.$db = null; delete dc.$db; // de-op object
+            dc.$db = model.db;
+            docCache.set(thread, dc);
+          }
           dc[doc._id] = doc;
         },
 
         _$docCacheDelete(doc) {
           if (doc._id) {
-            var dc = docCache.get(util.thread);
+            const dc = getDc();
             if (dc)
               delete dc[doc._id];
           }

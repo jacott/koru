@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
+  const dbBroker   = require('koru/model/db-broker');
   const Driver     = require('koru/pg/driver');
   const koru       = require('../main');
   const session    = require('../session/base');
@@ -21,6 +22,46 @@ define(function (require, exports, module) {
     tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
+    },
+
+    "$docCache": {
+      setUp() {
+        v.defDb = Driver.defaultDb;
+        v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
+        v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
+      },
+
+      tearDown() {
+        if (v.altDb) {
+          v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
+          dbBroker.clearDbId();
+        }
+      },
+
+      "test switching db"() {
+        const TestModel = Model.define('TestModel').defineFields({
+          name: 'text',
+        });
+        assert.same(TestModel._$docCacheGet('fooId'), undefined);
+        TestModel.create({_id: 'fooId', name: 'foo'});
+        assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
+        dbBroker.db = v.altDb;
+        assert.same(TestModel._$docCacheGet('fooId'), undefined);
+        dbBroker.db = v.defDb;
+        assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
+        const future = new Future;
+        koru.fiberConnWrapper(() => {
+          try {
+            v.ans = TestModel._$docCacheGet('fooId');
+            future.return('success');
+          } catch(ex) {
+            future.throw(ex);
+          }
+        }, v.conn = {});
+        assert.same(future.wait(), 'success');
+        assert.same(v.ans, undefined);
+
+      },
     },
 
     "test auto Id"() {
