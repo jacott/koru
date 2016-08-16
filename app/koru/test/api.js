@@ -307,7 +307,7 @@ define(function(require, exports, module) {
       }
 
       const procMethods = list => {
-        for (const methodName in list) {
+        for (let methodName in list) {
           const row = list[methodName];
           list[methodName] = {
             test: row.test.name,
@@ -550,7 +550,7 @@ define(function(require, exports, module) {
   }
 
   function serializeProperties(api, properties) {
-    for (const name in properties) {
+    for (let name in properties) {
       const property = properties[name];
       if (property.value !== undefined)
         property.value = api.serializeValue(property.value);

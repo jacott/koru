@@ -54,7 +54,7 @@ define(function(require) {
         if (idx >= len || del(idx+1, res[args[idx]]))
           delete res[args[idx]];
 
-        for (const noop in res) {
+        for (let noop in res) {
           return false;
         }
         return true;

@@ -210,7 +210,7 @@ define(function(require, exports, module) {
     }
     if (node.type === type) {
       return node;
-    } else for(const key of VISITOR_KEYS[node.type]) {
+    } else for(let key of VISITOR_KEYS[node.type]) {
       let n = findFirstType(type, node[key]);
       if (n)
         return n;

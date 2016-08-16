@@ -71,7 +71,7 @@ define(function(require, exports, module) {
   function noContent(tag) {
     return function (opts) {
       const attrs = {[tag]: ''};
-      for (const attr in opts)
+      for (let attr in opts)
         attrs['$'+attr] = opts[attr];
       return Dom.h(attrs);
     };
@@ -158,7 +158,7 @@ define(function(require, exports, module) {
 
     function addRows(properties) {
       const argMap = {};
-      for (const name in properties) {
+      for (let name in properties) {
         const property = properties[name];
         const info = jsdocToHtml(api, property.info, argMap);
         rows.push({tr: [
@@ -313,7 +313,7 @@ define(function(require, exports, module) {
   function extractTypes(am) {
     const types = [];
     const typeMap = {};
-    for (const type in am.types) {
+    for (let type in am.types) {
       if (typeMap[am.types[type]]) continue;
       typeMap[am.types[type]] = true;
       if (types.length)

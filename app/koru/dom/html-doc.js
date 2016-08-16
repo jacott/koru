@@ -307,7 +307,7 @@ define(function(require, exports, module) {
 
     get attributes() {
       const ans = [];
-      for (const name in this._attributes)
+      for (let name in this._attributes)
         ans.push({name, value: this._attributes[name]});
       return ans;
     },

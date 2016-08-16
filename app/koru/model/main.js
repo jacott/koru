@@ -246,7 +246,7 @@ define(function(require, exports, module) {
     static remote(funcs) {
       const prefix = this.modelName + '.';
 
-      for(const key in funcs) {
+      for(let key in funcs) {
         session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
       }
 

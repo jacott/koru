@@ -43,8 +43,8 @@ define(function (require, exports, module) {
       assert.calledWith(koru.onunload, v.mod, TH.match.func);
 
       assert.same(Model.TestModel, TestModel);
-      assert.same(TestModel.name, 'TestModel');
       assert.same(TestModel.modelName, 'TestModel');
+      isServer && assert.same(TestModel.name, 'TestModel');
 
 
       let tm = TestModel.create({name: 'my name'});

@@ -28,7 +28,7 @@ define(['module', './main'], function(module, koru) {
     };
 
     subject[notifyName] = function (first) {
-      for(const handle of observers) {
+      for(let handle of observers) {
         handle.function.apply(handle, arguments);
       }
 

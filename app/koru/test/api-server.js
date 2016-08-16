@@ -10,14 +10,14 @@ define(function(require, exports, module) {
       const jsonFile = `${API.OUT_DIR}/api.json`;
       const json = loadApi(jsonFile);
       const cj = data[0];
-      for (const testName in cj) {
+      for (let testName in cj) {
         const clientTest = cj[testName];
         let serverTest = json[testName];
         json[testName] = clientTest;
         if (serverTest) {
           const serverMethods = serverTest.methods;
           const clientMethods = clientTest.methods;
-          for (const methodName in serverMethods) {
+          for (let methodName in serverMethods) {
             clientMethods[methodName] || (clientMethods[methodName] = serverMethods[methodName]);
           }
         } else {
@@ -31,7 +31,7 @@ define(function(require, exports, module) {
     API._record = function () {
       const jsonFile = `${this.OUT_DIR}/api.json`;
       const json = loadApi(jsonFile);
-      for (const api of this._apiMap.values()) {
+      for (let api of this._apiMap.values()) {
         json[api.moduleName] = api.serialize((json[api.moduleName]||{}));
       }
       writeApi(jsonFile, json);
@@ -40,7 +40,7 @@ define(function(require, exports, module) {
 
   function writeApi(jsonFile, json) {
     const jsonOut = {};
-    for (const key of Object.keys(json).sort()) {
+    for (let key of Object.keys(json).sort()) {
       jsonOut[key] = json[key];
     }
     fs.writeFileSync(jsonFile, JSON.stringify(jsonOut, null, 2));
