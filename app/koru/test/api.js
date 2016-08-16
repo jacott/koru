@@ -114,7 +114,7 @@ define(function(require, exports, module) {
       if (this.module)
         return this.module.id;
       const {parent} = this;
-      return parent.moduleName +
+      return parent && parent.moduleName +
         (parent.properties && this.propertyName ?
          '.'+this.propertyName : '::'+this.subjectName);
     }

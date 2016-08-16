@@ -492,11 +492,15 @@ define(function (require, exports, module) {
       assert.equals(api.serializeValue(undefined), ['U', 'undefined']);
       assert.equals(api.serializeValue(null), null);
       assert.equals(api.serializeValue("number"), 'number');
-      assert.equals(api.serializeValue(["O", MainAPI]), ["M", 'koru/test/api']);
       assert.equals(api.serializeValue(["M", MainAPI]), ["M", 'koru/test/api']);
+      assert.equals(api.serializeValue(["x", MainAPI, 'arg 2']), ["x", 'arg 2']);
+
+      if (! MainAPI.isRecord)
+        return;
+
       assert.equals(api.serializeValue(["O", api, 'my api']),
                     ["Oi", 'my api', 'koru/test/api']);
-      assert.equals(api.serializeValue(["x", MainAPI, 'arg 2']), ["x", 'arg 2']);
+      assert.equals(api.serializeValue(["O", MainAPI]), ["M", 'koru/test/api']);
     },
 
     "test resolveObject"() {
