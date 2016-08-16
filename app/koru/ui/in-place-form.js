@@ -7,6 +7,30 @@ define(function(require, exports, module) {
   var Tpl = Dom.newTemplate(require('../html!./in-place-form'));
   var $ = Dom.current;
 
+  class Widget {
+    constructor (options) {
+      var element = this.element = Tpl.$autoRender(options);
+      var ctx = this.ctx = Dom.getCtx(element);
+      ctx._widget = this;
+    }
+
+    onSubmit(func) {
+      this._onSubmit = func;
+    }
+
+    onDelete(func) {
+      this._onDelete = func;
+    }
+
+    close() {
+      if (this.swap) {
+        this.element.parentNode.replaceChild(this.swap, this.element);
+        this.swap = null;
+      }
+      Dom.remove(this.element);
+    }
+  };
+
   Tpl.$helpers({
     htmlAttrs: function () {
       var options = this;
@@ -220,30 +244,6 @@ define(function(require, exports, module) {
     data && data.doc && data.doc.$reload();
     ctx._widget.close();
   }
-
-  class Widget {
-    constructor (options) {
-      var element = this.element = Tpl.$autoRender(options);
-      var ctx = this.ctx = Dom.getCtx(element);
-      ctx._widget = this;
-    }
-
-    onSubmit(func) {
-      this._onSubmit = func;
-    }
-
-    onDelete(func) {
-      this._onDelete = func;
-    }
-
-    close() {
-      if (this.swap) {
-        this.element.parentNode.replaceChild(this.swap, this.element);
-        this.swap = null;
-      }
-      Dom.remove(this.element);
-    }
-  };
 
   return Tpl;
 });

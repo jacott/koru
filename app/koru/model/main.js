@@ -536,13 +536,18 @@ define(function(require, exports, module) {
     }
   }
 
-  for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
-                    'afterLocalChange','whenFinally']) {
-    BaseModel[type] = function (subject, callback) {
-      registerObserver(this, subject, type, callback);
-      return this;
-    };
-  }
+  (() => {
+    for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
+                    'afterLocalChange','whenFinally'])
+      registerType(type);
+
+    function registerType(type) {
+      BaseModel[type] = function (subject, callback) {
+        registerObserver(this, subject, type, callback);
+        return this;
+      };
+    }
+  })();
 
   function registerObserver(model, subject, name, callback) {
     let modelObservers = allObservers.get(subject);

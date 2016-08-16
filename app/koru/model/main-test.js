@@ -184,8 +184,8 @@ define(function (require, exports, module) {
 
         v.tc.$onThis.remove();
 
-        assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
         assert.calledOnceWith(v.afterLocalChange, null, TH.matchModel(v.tc));
+        assert.calledOnceWith(v.onChange, null, TH.matchModel(v.tc));
         assert(v.afterLocalChange.calledBefore(v.onChange));
 
         assert.equals(v.obs.afterLocalChange, [[null, {name: 'foo', _id: v.tc._id}]]);

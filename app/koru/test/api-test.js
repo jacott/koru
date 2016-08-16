@@ -131,7 +131,7 @@ define(function (require, exports, module) {
       assert.match(subject.subject.toString(), /startPage/);
 
       const matchSubject = ['F', TH.match(arg => arg.prototype.goto),
-                            'constructor(startPage)'];
+                            TH.match(/(constructor|function)\s*\(startPage\)/)];
 
       assert.equals(API.instance.properties, {
         Chapter: {
@@ -143,7 +143,7 @@ define(function (require, exports, module) {
 
       assert.equals(subject.protoMethods.goto, {
         intro: TH.match(/Document a subject within a module./),
-        sig: 'goto()',
+        sig: TH.match(/goto\(\)/),
         subject: matchSubject,
         test: TH.test,
         calls: [[[], 10]],
@@ -311,7 +311,7 @@ define(function (require, exports, module) {
           },
           logger: {
             info: 'The default logger is ${value}',
-            value: ['F', v.logger, 'logger']
+            value: ['F', v.logger, TH.match(/(logger|function)/)]
           },
           width: {
             info: TH.match(/Document a property/),
@@ -385,7 +385,7 @@ define(function (require, exports, module) {
 
       assert.equals(API.instance.newInstance, {
         test,
-        sig: 'constructor(name)',
+        sig: TH.match(/(constructor|function Hobbit)\(name\)/),
         intro: 'Document <constructor> for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`',
         calls: [[
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
@@ -414,7 +414,7 @@ define(function (require, exports, module) {
 
       assert.equals(API.instance.methods.fnord, {
         test,
-        sig: 'fnord(a)',
+        sig: TH.match(/(function )?fnord\(a\)/),
         intro: 'Document <methodName> for the current subject',
         subject: ['O', fooBar, '{fnord: => fnord}'],
         calls: [[
@@ -455,7 +455,7 @@ define(function (require, exports, module) {
 
       assert.equals(API.instance.protoMethods.prune, {
         test,
-        sig: 'prune(branchCount)',
+        sig: TH.match(/(function )?prune\(branchCount\)/),
         intro: 'Document prototype <methodName> for the current subject',
         subject: ['F', TH.match.func, 'Tree'],
         calls: [[
