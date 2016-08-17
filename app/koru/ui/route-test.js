@@ -288,7 +288,7 @@ isClient && define(function (require, exports, module) {
 
       "test setTitle"() {
         /**
-         * Set the <document.title> for the current page.
+         * Set the `document.title` for the current page.
          **/
         api.method('setTitle');
 
@@ -365,7 +365,7 @@ isClient && define(function (require, exports, module) {
 
     "test append"() {
       /**
-       * Goto the specified <page> and record in <window.history>.
+       * Goto the specified `page` and record in `window.history`.
        **/
       api.method('gotoPage');
       const AdminProfile = Dom.newTemplate({
@@ -439,7 +439,7 @@ isClient && define(function (require, exports, module) {
 
     "test replacePage passes all args"() {
       /**
-       * Like {@method gotoPage} but replaces to <window.history>
+       * Like {#.gotoPage} but replaces to `window.history`
        * rather than adding to it.
        **/
       api.method('replacePage');

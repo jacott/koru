@@ -2,9 +2,9 @@ const fs = require('fs');
 
 isServer && define(function (require, exports, module) {
   /**
-   * The default web-server created from {@module
-   * koru/web-server-factory}.  {@module koru/idle-check} is used to
-   * keep track of active requests.
+   * The default web-server created from {#koru/web-server-factory}.
+   * {#koru/idle-check} is used to keep track of active
+   * requests.
    *
    * @config host listen on the specified address
 
@@ -16,7 +16,7 @@ isServer && define(function (require, exports, module) {
    * @config index.js the file to serve for `index.js` or
    * `require.js`; defaults to `yaajs.js`
 
-   * @config require.js alias for <index.js>
+   * @config require.js alias for `index.js`
 
    * @config koru where to find koru files; defaults to `app/koru`
    *

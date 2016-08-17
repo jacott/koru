@@ -9,7 +9,7 @@
      * call {@unload} when ready.
      *
      * This function is used by requirejs to load a dependency of the
-     * format: koru/env!<name> as <name>-client.js
+     * format: `koru/env!name` as `name-client.js`
      */
     load: function (name, req, onload, config) {
       var provider = name + suffix;

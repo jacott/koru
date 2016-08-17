@@ -21,9 +21,9 @@ isServer && define(function (require, exports, module) {
 
     "test singleton"() {
       /**
-       * The default <IdleCheck>. It is used by {@module
-       * koru/web-server-factory} and {@module
-       * session/server-connection}
+       * The default `IdleCheck`. It is used by
+       * {#koru/web-server-factory} and
+       * {#koru/session/server-connection}
        **/
       api.property('singleton');
       assert.same(IdleCheck.singleton, IdleCheck.singleton);
@@ -41,7 +41,7 @@ isServer && define(function (require, exports, module) {
 
       "test already Idle"() {
         /**
-         * waitIdle waits until <this.count> drops to zero.
+         * waitIdle waits until `this.count` drops to zero.
          **/
         api.protoMethod('waitIdle');
         api.example(() => {

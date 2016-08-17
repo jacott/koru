@@ -1,8 +1,8 @@
 isClient && define(function (require, exports, module) {
   'use strict';
   /**
-   * Ctx is used to track [DOM
-   * elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
+   * Ctx is used to track
+   * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
   var test, v;
   const TH   = require('koru/test');

@@ -55,7 +55,7 @@ define(function (require, exports, module) {
 
     "test htmlToJson"() {
       /**
-       * Convert an <Element> to a plain <object>
+       * Convert an `Element` to a plain `object`
        **/
 
       const obj = {class: 'greeting', id: "gId", section: {
@@ -78,7 +78,7 @@ define(function (require, exports, module) {
 
     "test Dom.h"() {
       /**
-       * Convert an <object> into a html node.
+       * Convert an `object` into a html node.
        *
        * `id` and `class` convert to attributes but other attributes
        * must be prefixed with a `$`.

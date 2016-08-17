@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   /**
    * The main or active session for client server communication.
-   * See {@module koru/session/main.constructor}
+   * See {#koru/session/main.constructor}
    **/
   var test, v;
   const api     = require('koru/test/api');
@@ -55,10 +55,9 @@ define(function (require, exports, module) {
        **/
       function abstract() {
         /**
-         * The constructor for {@module koru/session/main}. This is
-         * also used by {@module
-         * koru/session/web-socket-sender-factory} and {@module
-         * koru/session/web-socket-server-factory}.
+         * The constructor for {#koru/session/main}. This is also used
+         * by {#koru/session/web-socket-sender-factory} and
+         * {#koru/session/web-socket-server-factory}.
          *
          **/
       }

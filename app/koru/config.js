@@ -7,7 +7,7 @@ define(function(require, exports, module) {
      * Load a module cooresponding to the config setting of name.
      *
      * This function is used by requirejs to load a dependency of the
-     * format: koru/config!<name> as <nameValue>.js
+     * format: `koru/config!name` as `nameValue.js`
      */
     load: function (name, req, onload, config) {
       var provider = module.config()[name];

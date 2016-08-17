@@ -44,7 +44,7 @@ isClient && define(function (require, exports, module) {
 
     "test load all"(done) {
       /**
-       * Load all css and less files under <dir>
+       * Load all css and less files under `dir`
        **/
       api.protoMethod('loadAll');
       const loader = new CssLoader(v.session);

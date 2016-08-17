@@ -20,8 +20,8 @@ define(function (require, exports, module) {
 
     "test toDp" () {
       /**
-       * Return a floating point <number> as a string to
-       * <dp> decimal places.
+       * Return a floating point `number` as a string to
+       * `dp` decimal places.
        *
        * @param {boolean} zeroFill - pad with zeros.
        **/
@@ -46,7 +46,7 @@ define(function (require, exports, module) {
 
     "test pc" () {
       /**
-       * Convert a <fraction> into css % string
+       * Convert a `fraction` into css % string
        **/
       api.method('pc');
       assert.same(util.pc(1.2345678), '123.45678%');
@@ -54,7 +54,7 @@ define(function (require, exports, module) {
 
     "test px" () {
       /**
-       * Convert a <fraction> into css % string
+       * Convert a `fraction` into css % string
        **/
       api.method('px');
       assert.same(util.px(123.2345678), '123px');
@@ -103,9 +103,8 @@ define(function (require, exports, module) {
 
     "test removeItem" () {
       /**
-       * remove an <item> from a <list>. <list> is modified.
+       * remove an `item` from a `list`. `list` is modified.
        *
-       * Returns <item> if found
        *
        * @param item - can be a key-value object to compare the given keys.
        * @returns {object|primitive} the removed item.
@@ -142,7 +141,7 @@ define(function (require, exports, module) {
 
     'test intersectp' () {
       /**
-       * Determine if <list1> and <list2> intersect
+       * Determine if `list1` and `list2` intersect
        **/
       api.method('intersectp');
       assert(util.intersectp([1,4],[4,5]));
@@ -428,9 +427,9 @@ define(function (require, exports, module) {
 
     "test reverseForEach" () {
       /**
-       * Visit <list> in reverse order.
+       * Visit `list` in reverse order.
        *
-       * @param visitor - called with the list <item> and <index>
+       * @param visitor - called with the list `item` and `index`
        **/
       api.method('reverseForEach');
       api.example(() => {

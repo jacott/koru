@@ -14,7 +14,7 @@
       "loadAll": {
         "test": "koru/css/loader test load all",
         "sig": "loadAll(dir)",
-        "intro": "Load all css and less files under <dir>",
+        "intro": "Load all css and less files under `dir`",
         "calls": [
           [
             [
@@ -56,7 +56,7 @@
       ],
       "name": "Dom",
       "abstracts": [
-        "Convert an <Element> to a plain <object>",
+        "Convert an `Element` to a plain `object`",
         null,
         null,
         null
@@ -66,7 +66,7 @@
       "htmlToJson": {
         "test": "koru/dom/base test htmlToJson",
         "sig": "htmlToJson(node)",
-        "intro": "Convert an <Element> to a plain <object>",
+        "intro": "Convert an `Element` to a plain `object`",
         "calls": [
           [
             [
@@ -86,7 +86,7 @@
       "h": {
         "test": "koru/dom/base test Dom.h",
         "sig": "h(body)",
-        "intro": "Convert an <object> into a html node.\n\n`id` and `class` convert to attributes but other attributes\nmust be prefixed with a `$`.\n\nArray is used when multiple children.\nNon prefixed key is used for `tagName`.",
+        "intro": "Convert an `object` into a html node.\n\n`id` and `class` convert to attributes but other attributes\nmust be prefixed with a `$`.\n\nArray is used when multiple children.\nNon prefixed key is used for `tagName`.",
         "calls": [
           [
             [
@@ -113,7 +113,7 @@
       ],
       "name": "Ctx",
       "abstracts": [
-        "Ctx is used to track [DOM\nelements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+        "Ctx is used to track\n[DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
       ]
     },
     "methods": {},
@@ -202,7 +202,7 @@
       "getElementsByClassName": {
         "test": "koru/dom/html-doc test getElementsByClassName",
         "sig": "getElementsByClassName(className)",
-        "intro": "Returns a list of all elements which have <className>.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
+        "intro": "Returns a list of all elements which have `className`.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
         "calls": [
           {
             "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
@@ -257,7 +257,7 @@
       "getElementsByClassName": {
         "test": "koru/dom/html-doc test getElementsByClassName",
         "sig": "getElementsByClassName()",
-        "intro": "Returns a list of all elements which have <className>.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
+        "intro": "Returns a list of all elements which have `className`.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
         "calls": [
           {
             "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
@@ -303,14 +303,14 @@
       ],
       "name": "DomTemplate",
       "abstracts": [
-        "DomTemplate is used to create interactive [Dom\nTrees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+        "DomTemplate is used to create interactive\n[Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
       ]
     },
     "methods": {
       "newTemplate": {
         "test": "koru/dom/template newTemplate test simple",
         "sig": "newTemplate(module, blueprint)",
-        "intro": "Create a new <DomTemplate> from an html <blueprint>.\n\n@param [module] if supplied the template will be deleted if\n<module> is unloaded\n\n@param blueprint A blue print is usually built by {@module\nkoru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
+        "intro": "Create a new `DomTemplate` from an html blueprint.\n\n@param [module] if supplied the template will be deleted if\n`module` is unloaded\n\n@param blueprint A blue print is usually built by\n{#koru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
         "calls": [
           [
             [
@@ -350,7 +350,7 @@
       "waitIdle": {
         "test": "koru/idle-check waitIdle test already Idle",
         "sig": "waitIdle(func)",
-        "intro": "waitIdle waits until <this.count> drops to zero.",
+        "intro": "waitIdle waits until `this.count` drops to zero.",
         "calls": [
           {
             "body": "          const check = new IdleCheck();\n          check.waitIdle(v.stub = test.stub());\n          assert.called(v.stub);\n        ",
@@ -390,7 +390,7 @@
           "{_count: 0, _waitIdle: null}",
           "koru/idle-check"
         ],
-        "info": "The default <IdleCheck>. It is used by {@module\nkoru/web-server-factory} and {@module\nsession/server-connection}"
+        "info": "The default `IdleCheck`. It is used by\n{#koru/web-server-factory} and\n{#koru/session/server-connection}"
       }
     }
   },
@@ -410,7 +410,7 @@
       "onunload": {
         "test": "koru/main test onunload",
         "sig": "onunload(moduleOrId, callback)",
-        "intro": "A wrapper around <module#onUnload>. see https://www.npmjs.com/package/yaajs",
+        "intro": "A wrapper around `module#onUnload`. see https://www.npmjs.com/package/yaajs",
         "calls": [
           {
             "body": "        const myModule = {id: 'myModule', onUnload: test.stub()};\n        const callback = {stop() {}};\n        koru.onunload(myModule, callback);\n        assert.calledWith(myModule.onUnload, callback.stop);\n      ",
@@ -459,15 +459,26 @@
       "connect": {
         "test": "koru/pg/driver test connection",
         "sig": "connect(url, name)",
-        "intro": "Create a new database Client connected to the <url>\n\n@param [name] The name to give to the connection. By default\nit is the schema name.",
+        "intro": "Create a new database Client connected to the `url`\n\n@param [name] The name to give to the connection. By default\nit is the schema name.",
         "calls": [
           [
             [
-              "host=/var/run/postgresql dbname=korutest"
+              "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'"
             ],
             [
               "Oi",
-              "Pg:host=/var/run/postgresql dbname=korutest",
+              "Pg:host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'",
+              "koru/pg/driver::Client"
+            ]
+          ],
+          [
+            [
+              "postgresql://localhost/korutest",
+              "conn2"
+            ],
+            [
+              "Oi",
+              "Pg:postgresql://localhost/korutest",
               "koru/pg/driver::Client"
             ]
           ]
@@ -506,7 +517,7 @@
       ],
       "name": "Client",
       "abstracts": [
-        "A connection to a database.\n\nSee {@module koru/pg/driver:connect}"
+        "A connection to a database.\n\nSee {#koru/pg/driver.connect}"
       ]
     },
     "methods": {},
@@ -564,7 +575,7 @@
       "name": "session",
       "abstracts": [
         null,
-        "The main or active session for client server communication.\nSee {@module koru/session/main.constructor}"
+        "The main or active session for client server communication.\nSee {#koru/session/main.constructor}"
       ]
     },
     "methods": {
@@ -604,7 +615,7 @@
       ],
       "name": "BaseSession",
       "abstracts": [
-        "The constructor for {@module koru/session/main}. This is\nalso used by {@module\nkoru/session/web-socket-sender-factory} and {@module\nkoru/session/web-socket-server-factory}.\n"
+        "The constructor for {#koru/session/main}. This is also used\nby {#koru/session/web-socket-sender-factory} and\n{#koru/session/web-socket-server-factory}.\n"
       ]
     },
     "methods": {},
@@ -683,7 +694,7 @@
       "innerSubject": {
         "test": "koru/test/api test innerSubject",
         "sig": "innerSubject(subject, subjectName, options)",
-        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a <string>)\n* `abstract` - introduction to the subject. If abstract is a\n<function> then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n<subject>\n* `initInstExample` - code that can be used to initialize\nan instance of <subject>",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
         "calls": [
           [
             [
@@ -777,7 +788,7 @@
       "property": {
         "test": "koru/test/api property test value property",
         "sig": "property(name, options)",
-        "intro": "Document a property of the current subject. The property\ncan be either plain value or a get/set function.\n\n@param [options] details about the property.\n\nWhen <object> can contain the following:\n\n* `info` (or `intro`): description of property\n* `properties`: document child properties\n\nWhen <function> should return an info <string>. The info\n<string> can contain `${value}` which will be substituted\nwith a description of the properties value.",
+        "intro": "Document a property of the current subject. The property\ncan be either plain value or a get/set function.\n\n@param [options] details about the property.\n\nWhen `object` can contain the following:\n\n* `info` (or `intro`): description of property\n* `properties`: document child properties\n\nWhen `function` should return an info `string`. The info\n`string` can contain `${value}` which will be substituted\nwith a description of the properties value.",
         "calls": [
           {
             "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module({id: 'myMod', exports: v.defaults}, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
@@ -831,7 +842,7 @@
       "new": {
         "test": "koru/test/api test new",
         "sig": "new()",
-        "intro": "Document <constructor> for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`",
+        "intro": "Document `constructor` for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`",
         "calls": [
           [
             [],
@@ -845,7 +856,7 @@
       "method": {
         "test": "koru/test/api test method",
         "sig": "method(methodName)",
-        "intro": "Document <methodName> for the current subject",
+        "intro": "Document `methodName` for the current subject",
         "calls": [
           [
             [
@@ -857,7 +868,7 @@
       "protoMethod": {
         "test": "koru/test/api test protoMethod",
         "sig": "protoMethod(methodName, subject)",
-        "intro": "Document prototype <methodName> for the current subject",
+        "intro": "Document prototype `methodName` for the current subject",
         "calls": [
           {
             "body": "        class Tree {\n          constructor(name) {\n            this.name = name;\n            this.branches = 10;\n          }\n\n          prune(branchCount) {\n            return this.branches -= branchCount;\n          }\n        };\n\n        API.module({id: 'myMod', exports: Tree});\n        API.protoMethod('prune');\n\n        const plum = new Tree('Plum');\n        assert.same(plum.prune(3), 7);\n        assert.same(plum.prune(2), 5);\n      ",
@@ -888,7 +899,7 @@
       "setTitle": {
         "test": "koru/ui/route with routeVar test setTitle",
         "sig": "setTitle(title)",
-        "intro": "Set the <document.title> for the current page.",
+        "intro": "Set the `document.title` for the current page.",
         "calls": [
           [
             [
@@ -900,7 +911,7 @@
       "gotoPage": {
         "test": "koru/ui/route test append",
         "sig": "gotoPage(page, pageRoute)",
-        "intro": "Goto the specified <page> and record in <window.history>.",
+        "intro": "Goto the specified `page` and record in `window.history`.",
         "calls": [
           [
             [
@@ -920,7 +931,7 @@
       "replacePage": {
         "test": "koru/ui/route test replacePage passes all args",
         "sig": "replacePage()",
-        "intro": "Like {@method gotoPage} but replaces to <window.history>\nrather than adding to it.",
+        "intro": "Like {#.gotoPage} but replaces to `window.history`\nrather than adding to it.",
         "calls": [
           [
             [
@@ -955,7 +966,7 @@
       "toDp": {
         "test": "koru/util test toDp",
         "sig": "toDp(number, dp, zeroFill)",
-        "intro": "Return a floating point <number> as a string to\n<dp> decimal places.\n\n@param {boolean} zeroFill - pad with zeros.",
+        "intro": "Return a floating point `number` as a string to\n`dp` decimal places.\n\n@param {boolean} zeroFill - pad with zeros.",
         "calls": [
           [
             [
@@ -999,7 +1010,7 @@
       "pc": {
         "test": "koru/util test pc",
         "sig": "pc(fraction)",
-        "intro": "Convert a <fraction> into css % string",
+        "intro": "Convert a `fraction` into css % string",
         "calls": [
           [
             [
@@ -1012,7 +1023,7 @@
       "px": {
         "test": "koru/util test px",
         "sig": "px(value)",
-        "intro": "Convert a <fraction> into css % string",
+        "intro": "Convert a `fraction` into css % string",
         "calls": [
           [
             [
@@ -1025,7 +1036,7 @@
       "removeItem": {
         "test": "koru/util test removeItem",
         "sig": "removeItem(list, item)",
-        "intro": "remove an <item> from a <list>. <list> is modified.\n\nReturns <item> if found\n\n@param item - can be a key-value object to compare the given keys.\n@returns {object|primitive} the removed item.",
+        "intro": "remove an `item` from a `list`. `list` is modified.\n\n\n@param item - can be a key-value object to compare the given keys.\n@returns {object|primitive} the removed item.",
         "calls": [
           [
             [
@@ -1131,7 +1142,7 @@
       "intersectp": {
         "test": "koru/util test intersectp",
         "sig": "intersectp(list1, list2)",
-        "intro": "Determine if <list1> and <list2> intersect",
+        "intro": "Determine if `list1` and `list2` intersect",
         "calls": [
           [
             [
@@ -1168,7 +1179,7 @@
       "reverseForEach": {
         "test": "koru/util test reverseForEach",
         "sig": "reverseForEach(list, visitor)",
-        "intro": "Visit <list> in reverse order.\n\n@param visitor - called with the list <item> and <index>",
+        "intro": "Visit `list` in reverse order.\n\n@param visitor - called with the list `item` and `index`",
         "calls": [
           {
             "body": "        var results = [];\n        util.reverseForEach(v.list = [1,2,3], (val, index) => {\n          results.push(val+\".\"+index);\n        });\n        assert.equals(results, ['3.2', '2.1', '1.0']);\n\n        // ignores null list\n        util.reverseForEach(null, v.stub = test.stub());\n        refute.called(v.stub);\n      ",
@@ -1212,7 +1223,7 @@
       ],
       "name": "webServer",
       "abstracts": [
-        "The default web-server created from {@module\nkoru/web-server-factory}.  {@module koru/idle-check} is used to\nkeep track of active requests.\n\n@config host listen on the specified address\n@config port listen on the specified port\n@config defaultPage defaults to `/index.html`: used when no path\nis supplied in the url.\n@config index.js the file to serve for `index.js` or\n`require.js`; defaults to `yaajs.js`\n@config require.js alias for <index.js>\n@config koru where to find koru files; defaults to `app/koru`\n"
+        "The default web-server created from {#koru/web-server-factory}.\n{#koru/idle-check} is used to keep track of active\nrequests.\n\n@config host listen on the specified address\n@config port listen on the specified port\n@config defaultPage defaults to `/index.html`: used when no path\nis supplied in the url.\n@config index.js the file to serve for `index.js` or\n`require.js`; defaults to `yaajs.js`\n@config require.js alias for `index.js`\n@config koru where to find koru files; defaults to `app/koru`\n"
       ]
     },
     "methods": {

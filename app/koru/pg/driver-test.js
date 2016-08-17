@@ -32,7 +32,7 @@ isServer && define(function (require, exports, module) {
         /**
          * A connection to a database.
          *
-         * See {@module koru/pg/driver:connect}
+         * See {#koru/pg/driver.connect}
          **/
       }
       const Client = driver.defaultDb.constructor;
@@ -70,16 +70,21 @@ isServer && define(function (require, exports, module) {
 
     "test connection" () {
       /**
-       * Create a new database Client connected to the <url>
+       * Create a new database Client connected to the `url`
        *
        * @param [name] The name to give to the connection. By default
        * it is the schema name.
        **/
       api.method('connect');
-      var db = driver.connect("host=/var/run/postgresql dbname=korutest");
+      var db = driver.connect(
+        "host=/var/run/postgresql dbname=korutest options='-c search_path=public,pg_catalog'"
+      );
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
       assert.same(db.schemaName, 'public');
       assert.same(db.name, 'public');
+
+      var conn2 = driver.connect("postgresql://localhost/korutest", 'conn2');
+      assert.same(conn2.name, 'conn2');
     },
 
     "test defaultDb" () {

@@ -45,18 +45,6 @@ define(function(require, exports, module) {
   BLOCK_TAGS.argument = BLOCK_TAGS.param;
   BLOCK_TAGS.return = BLOCK_TAGS.returns;
 
-  const INLINE_TAGS = {
-    module(api, data) {
-      return idToLink(data);
-    },
-
-    method(api, data) {
-      return Dom.h({a: data+'()', $href: `#${api.id}:${data}`});
-    }
-  };
-
-  const INLINE_TAG_PARTS_RE = /\{@(\w+)\s*([^}]*)\}/g;
-
   const hrefMap = {
     Module: 'https://www.npmjs.com/package/yaajs#api_Module',
   };
@@ -70,9 +58,19 @@ define(function(require, exports, module) {
   }
 
 
-  function execInlineTag(api, tagName, data) {
-    const tag = INLINE_TAGS[tagName];
-    return tag ? tag(api, data) : document.createTextNode(`{@${tagName} ${data}}`);
+  function execInlineTag(api, text) {
+    let [mod, type, method] = text.split(/([.#])/);
+    let href = text;
+    if (mod) {
+      const destMod = mod && api.parent && api.parent[mod];
+      if (destMod)
+        mod = mod.replace(/\/[^/]*$/, '/'+destMod.subject.name);
+      text = `${mod}${type||''}${method||''}`;
+    } else {
+      href = api.id+href;
+    }
+
+    return Dom.h({class: 'jsdoc-link', a: text, $href: '#'+href});
   }
 
   function noContent(tag) {
@@ -104,7 +102,7 @@ define(function(require, exports, module) {
     const {header, links, pages} = tags;
 
     Object.keys(json).sort().forEach(id => {
-      const api = json[id]; api.id = id;
+      const api = json[id]; api.id = id; api.parent = json;
       const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
 
       const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
@@ -291,7 +289,7 @@ define(function(require, exports, module) {
       const params = buildParams(api, args, argMap);
 
       return section(api, {
-        $name: proto ? '#'+name : name, div: [
+        $name: (proto ? '#'+name : name), div: [
           {h5: `${subject.name}${sigJoin}${sig}`},
           {abstract},
           params,
@@ -302,7 +300,7 @@ define(function(require, exports, module) {
   }
 
   function section(api, div) {
-    div.id = `${api.id}:${div.$name}`;
+    div.id = `${api.id}${div.$name[0]==='#' ? '' : '.'}${div.$name}`;
     div.class = `${div.class||''} jsdoc-module-section`;
     return div;
   }
@@ -464,9 +462,7 @@ define(function(require, exports, module) {
     mdRenderer.link = function (href, title, text) {
       switch (href) {
       case '#jsdoc-tag':
-        return execInlineTag(api, ...text.split(' ')).outerHTML;
-      case '#jsdoc-param':
-        return Dom.h({span: text.slice(1,-1), class: 'jsdoc-param'}).outerHTML;
+        return execInlineTag(api, text).outerHTML;
       default:
         const a = {a: text, $href: href};
         if (title) a.$title = title;
@@ -474,9 +470,9 @@ define(function(require, exports, module) {
       }
     };
 
+
     const md = marked.parse(
-      info.replace(/(<[^>]*>)/g, '[$1](#jsdoc-param)')
-        .replace(INLINE_TAG_PARTS_RE, '[$1 $2](#jsdoc-tag)'),
+      info.replace(/\{#([^}{]*)\}/g, '[$1](#jsdoc-tag)'),
 
       mdOptions
     );

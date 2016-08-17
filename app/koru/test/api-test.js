@@ -68,16 +68,16 @@ define(function (require, exports, module) {
        * of the subject if accessible from the current subject.
        * @param options
        *
-       * * `intro|info` - property info line (if subject is a <string>)
+       * * `intro|info` - property info line (if subject is a `string`)
 
        * * `abstract` - introduction to the subject. If abstract is a
-       * <function> then the initial doc comment is used.
+       * `function` then the initial doc comment is used.
 
        * * `initExample` - code that can be used to initialize
-       * <subject>
+       * `subject`
 
        * * `initInstExample` - code that can be used to initialize
-       * an instance of <subject>
+       * an instance of `subject`
        **/
       MainAPI.method('innerSubject');
       API.module();
@@ -255,13 +255,13 @@ define(function (require, exports, module) {
          *
          * @param [options] details about the property.
          *
-         * When <object> can contain the following:
+         * When `object` can contain the following:
          *
          * * `info` (or `intro`): description of property
          * * `properties`: document child properties
          *
-         * When <function> should return an info <string>. The info
-         * <string> can contain `${value}` which will be substituted
+         * When `function` should return an info `string`. The info
+         * `string` can contain `${value}` which will be substituted
          * with a description of the properties value.
          **/
         MainAPI.example(() => {
@@ -368,7 +368,7 @@ define(function (require, exports, module) {
 
     "test new"() {
       /**
-       * Document <constructor> for the current subject
+       * Document `constructor` for the current subject
        *
        * @returns a ProxyClass which is to be used instead of `new Class`
        **/
@@ -393,7 +393,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.newInstance, {
         test,
         sig: TH.match(/(constructor|function Hobbit)\(name\)/),
-        intro: 'Document <constructor> for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`',
+        intro: 'Document `constructor` for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`',
         calls: [[
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
         ]],
@@ -403,7 +403,7 @@ define(function (require, exports, module) {
 
     "test method"() {
       /**
-       * Document <methodName> for the current subject
+       * Document `methodName` for the current subject
        **/
       MainAPI.method('method');
       const fooBar = {
@@ -422,7 +422,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.methods.fnord, {
         test,
         sig: TH.match(/(function )?fnord\(a\)/),
-        intro: 'Document <methodName> for the current subject',
+        intro: 'Document `methodName` for the current subject',
         subject: ['O', fooBar, '{fnord: => fnord}'],
         calls: [[
           [5], 10
@@ -434,7 +434,7 @@ define(function (require, exports, module) {
 
     "test protoMethod"() {
       /**
-       * Document prototype <methodName> for the current subject
+       * Document prototype `methodName` for the current subject
        **/
       MainAPI.method('protoMethod');
 
@@ -463,7 +463,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.protoMethods.prune, {
         test,
         sig: TH.match(/(function )?prune\(branchCount\)/),
-        intro: 'Document prototype <methodName> for the current subject',
+        intro: 'Document prototype `methodName` for the current subject',
         subject: ['F', TH.match.func, 'Tree'],
         calls: [[
           [3], 7

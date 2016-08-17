@@ -111,7 +111,6 @@ isServer && define(function (require, exports, module) {
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
 
       },
-
     },
 
     "jsdocToHtml": {
@@ -129,17 +128,21 @@ isServer && define(function (require, exports, module) {
           ]});
       },
 
-      "test @module link"() {
+      "test {#module/link}"() {
         function abstract() {
           /**
            * Abstract
            *
-           * See {@module my/module}
+           * See {#my/module} {#my/module.method}
+           * {#my/mod#protoMethod} {#.thisModMethod}
+           * {##thisModeProtoMethod}
            **/
         }
 
         const div = apiToHtml.jsdocToHtml(
-          {id: 'this/module'},
+          {id: 'this/module', parent: {
+            'my/module': {subject: {name: 'Module'}}
+          }},
           api._docComment(abstract),
           {}
         );
@@ -147,28 +150,58 @@ isServer && define(function (require, exports, module) {
         assert.equals(Dom.htmlToJson(div), {
           div: [
             {p: 'Abstract'}, '\n',
-            {p: ['See ', {a: 'my/module', class: 'jsdoc-idLink', $href: '#my/module'}]},
+            {p: [
+              'See ',
+              {a: 'my/Module', class: 'jsdoc-link', $href: '#my/module'},
+              ' ',
+              {a: 'my/Module.method', class: 'jsdoc-link', $href: '#my/module.method'},
+              '\n', {a: 'my/mod#protoMethod', class: 'jsdoc-link',
+                     $href: '#my/mod#protoMethod'}
+              , ' ',
+              {a: '.thisModMethod', class: 'jsdoc-link',
+               $href: '#this/module.thisModMethod'},
+              '\n',
+              {a: '#thisModeProtoMethod', class: 'jsdoc-link',
+               $href: '#this/module#thisModeProtoMethod'}]},
             '\n'
           ]});
       },
 
-      "test <param>"() {
+      "test config"() {
         function abstract() {
           /**
-           * I handle <params> too.
+           * Abstract
+           *
+           * @config cfg1 markup {#this/module}
            **/
         }
+
+        const apiMap = {};
+
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           api._docComment(abstract),
-          {}
+          apiMap
         );
 
         assert.equals(Dom.htmlToJson(div), {
           div: [
-            {p: ['I handle ', {span: 'params', class: 'jsdoc-param'}, ' too.']},
-            '\n'
-          ]});
+            {p: 'Abstract'}, '\n',
+          ]
+        });
+
+        assert.equals(apiMap, {
+          ':config:': {cfg1: TH.match(html => {
+            assert.equals(Dom.htmlToJson(html), {div: [
+              {p: [
+                'markup ',
+                {a: 'this/module', class: 'jsdoc-link', $href: '#this/module'}
+              ]}, '\n',
+            ]});
+            return true;
+          })}
+        });
+
       },
 
       "test normal link"() {

@@ -1,8 +1,8 @@
 isClient && define(function (require, exports, module) {
   'use strict';
   /**
-   * DomTemplate is used to create interactive [Dom
-   * Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
+   * DomTemplate is used to create interactive
+   * [Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
   var test, v;
   const Dom         = require('koru/dom');
@@ -369,13 +369,13 @@ isClient && define(function (require, exports, module) {
 
       "test simple"() {
         /**
-         * Create a new <DomTemplate> from an html <blueprint>.
+         * Create a new `DomTemplate` from an html blueprint.
          *
          * @param [module] if supplied the template will be deleted if
-         * <module> is unloaded
+         * `module` is unloaded
          *
-         * @param blueprint A blue print is usually built by {@module
-         * koru/dom/template-compiler} which is called automatically
+         * @param blueprint A blue print is usually built by
+         * {#koru/dom/template-compiler} which is called automatically
          * on html files loaded using
          * `require('koru/html!path/to/my-template.html')`
          **/

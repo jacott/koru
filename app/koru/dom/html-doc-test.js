@@ -23,7 +23,7 @@ define(function (require, exports, module) {
 
     "test getElementsByClassName"() {
       /**
-       * Returns a list of all elements which have <className>.
+       * Returns a list of all elements which have `className`.
        *
        * See [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)
        **/
