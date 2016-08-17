@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
   if (isClient) return window.document;
   const koru              = require('koru');
+  const Dom               = require('koru/dom/base');
   const util              = require('koru/util');
   const uColor            = require('koru/util-color');
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
@@ -315,6 +316,20 @@ define(function(require, exports, module) {
     get classList() {
       return new ClassList(this);
     },
+
+    getElementsByClassName(className) {
+      const ans = [];
+      const re = new RegExp("(?:^|\\s)" + util.regexEscape(className) + "(?=\\s|$)");
+
+      Dom.walkNode(this, node => {
+        if (node.nodeType !== ELEMENT_NODE)
+          return false;
+
+        re.test(node._attributes.class) &&
+          ans.push(node);
+      });
+      return ans;
+    },
   });
 
   class ClassList {
@@ -322,8 +337,9 @@ define(function(require, exports, module) {
       this.node = node;
     }
 
-    contains(value) {
-      return new RegExp("\\b" + util.regexEscape(value) + "\\b").test(this.node._attributes.class);
+    contains(className) {
+      return new RegExp("(?:^|\\s)" + util.regexEscape(className) + "(?=\\s|$)")
+        .test(this.node._attributes.class);
     }
 
     add(value) {

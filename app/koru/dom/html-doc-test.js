@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
+  const Dom  = require('koru/dom');
   const TH   = require('koru/test');
   const util = require('koru/util');
   const sut  = require('./html-doc');
@@ -13,6 +14,13 @@ define(function (require, exports, module) {
     tearDown() {
       document.body.textContent = '';
       v = null;
+    },
+
+    "test getElementsByClassName"() {
+      const html = Dom.h({div: [{}, {div: [{class: 'foo bar'}, {div: {class: 'foo bar-foo'}}]}]});
+      assert.equals(html.getElementsByClassName('foo').length, 2);
+      assert.equals(html.getElementsByClassName('bar').length, 1);
+      assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
     },
 
     "test construction"() {
