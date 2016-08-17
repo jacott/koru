@@ -76,6 +76,25 @@ define(function (require, exports, module) {
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
     },
 
+    "test Dom.h"() {
+      /**
+       * Convert an <object> into a html node.
+       *
+       * `id` and `class` convert to attributes but other attributes
+       * must be prefixed with a `$`.
+       *
+       * Array is used when multiple children.
+       * Non prefixed key is used for `tagName`.
+       **/
+      api.method('h');
+
+      const obj = {class: 'greeting', id: "gId", section: {
+        ul: [{li: {span: "Hello"}}, {li: 'two'}],
+      }, '$data-lang': 'en'};
+
+      assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
+    },
+
     "test classList"() {
       var elm = document.createElement('div');
 

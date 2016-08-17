@@ -120,17 +120,6 @@ define(function(require, exports, module) {
     return ans;
   }
 
-
-
-
-  /**
-   * Convert an Object into a html node.
-   *
-   * id, class convert to attributes but other attributes must be
-   * prefixed with a $.
-   * Array is used when multiple children.
-   * Non prefixed key is used for tagName.
-   **/
   function h(body) {
     if (typeof body === "string") {
       if (body.indexOf("\n") !== -1) {

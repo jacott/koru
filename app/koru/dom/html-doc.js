@@ -57,7 +57,7 @@ define(function(require, exports, module) {
 
   function Document() {
     common(this, DOCUMENT_NODE);
-    this.appendChild(this.body = new DocumentElement('body'));
+    this.appendChild(this.body = new Element('body'));
 
   }
 
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
     COMMENT_NODE,
     DOCUMENT_FRAGMENT_NODE,
 
-    createElement(tag) {return new DocumentElement(tag)},
+    createElement(tag) {return new Element(tag)},
     createTextNode(value) {return new TextNode(value)},
     createDocumentFragment() {return new DocumentFragment()},
 
@@ -185,7 +185,7 @@ define(function(require, exports, module) {
       node.childNodes = [];
       var parser = new htmlparser.Parser({
         onopentag(name, attrs){
-          var elm = new DocumentElement(name);
+          var elm = new Element(name);
           node.appendChild(elm);
           for(var attr in attrs)
             elm.setAttribute(attr, attrs[attr]);
@@ -253,14 +253,14 @@ define(function(require, exports, module) {
   });
 
 
-  function DocumentElement(tag) {
+  function Element(tag) {
     common(this, ELEMENT_NODE);
     this.tagName = (''+tag).toUpperCase();
     this._attributes = {};
   }
-  buildNodeType(DocumentElement, {
+  buildNodeType(Element, {
     cloneNode(deep) {
-      var copy = new DocumentElement(this.tagName);
+      var copy = new Element(this.tagName);
       copy._attributes = util.deepCopy(this._attributes);
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;

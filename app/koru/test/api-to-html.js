@@ -24,10 +24,17 @@ define(function(require, exports, module) {
       if (m[2]) profile.optional = true;
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
     },
+    config(api, row, argMap) {
+       const m = /^\w+\s*(\S+)(?:\s*-)?\s*([\s\S]*)$/.exec(row);
+      if (! m)
+        koru.error(`Invalid config for api: ${api.id} line @${row}`);
+      const profile = argMap[':config:'] || (argMap[':config:'] = {});
+      profile[m[1]] = jsdocToHtml(api, m[2], argMap);
+    },
     returns(api, row, argMap) {
        const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
-        koru.error(`Invalid param for api: ${api.id} line @${row}`);
+        koru.error(`Invalid returns for api: ${api.id} line @${row}`);
       const profile = argMap[':return:'] || (argMap[':return:'] = {});
       if (m[2]) profile.info = m[2];
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
@@ -48,7 +55,7 @@ define(function(require, exports, module) {
     }
   };
 
-  const INLINE_TAG_PARTS_RE = /\{@(\w+)\s*([^}]*)\}/;
+  const INLINE_TAG_PARTS_RE = /\{@(\w+)\s*([^}]*)\}/g;
 
   const hrefMap = {
     Module: 'https://www.npmjs.com/package/yaajs#api_Module',
@@ -132,13 +139,26 @@ define(function(require, exports, module) {
         idToLink(id),
         linkNav,
       ]}));
+      const abstractMap = {};
+      const abstract = jsdocToHtml(api, subject.abstracts[idIdx], abstractMap);
+      const configMap = abstractMap[':config:'];
+      if (configMap) {
+        var config = {class: 'jsdoc-config', table: [
+          {tr: {$colspan: 2, td: {h5: 'Config'}}},
+          ...Object.keys(configMap).sort().map(key => Dom.h({
+            class: 'jsdoc-config-item',
+            tr: [{td: key}, {td: configMap[key]}]
+          }))
+        ]};
+      }
       pages.appendChild(Dom.h({
         id: id,
         class: "jsdoc-module",
         section: [
           {class: 'jsdoc-module-title', h2: subject.name},
-          {abstract: jsdocToHtml(api, subject.abstracts[idIdx])},
+          {abstract},
           {div: [
+            config,
             constructor,
             properties && buildProperties(api, subject, properties),
             functions.length && {class: 'jsdoc-methods', div: [
@@ -259,7 +279,7 @@ define(function(require, exports, module) {
             {class: 'jsdoc-example-call highlight', div: [
               {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
                      '(', ...hlArgList(call[0]), ');']},
-              call[1] && {class: 'jsdoc-returns c1',
+              call[1] === undefined || {class: 'jsdoc-returns c1',
                           span: [' // returns ', valueToHtml(call[1])]}
             ]}
           ] : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
@@ -464,7 +484,6 @@ define(function(require, exports, module) {
     div.innerHTML = md;
     return div;
   }
-
 
   function hl(text, hl) {
     const span = document.createElement('span');

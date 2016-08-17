@@ -6,14 +6,19 @@ isServer && define(function (require, exports, module) {
    * koru/web-server-factory}.  {@module koru/idle-check} is used to
    * keep track of active requests.
    *
-   * #### Config ####
-   *
-   * * `{host, port}`: listens on the specified address.
-   * * `{defaultPage} defaults to `/index.html`: used when no path is
-   * supplied in the url.
-   * * `{index.js, require.js}` defaults to `yaajs.js`: the file to serve for
-   * * `index.js` or `require.js`
-   * * `{koru}` defaults to `app/koru`: where to find koru files.
+   * @config host listen on the specified address
+
+   * @config port listen on the specified port
+
+   * @config defaultPage defaults to `/index.html`: used when no path
+   * is supplied in the url.
+
+   * @config index.js the file to serve for `index.js` or
+   * `require.js`; defaults to `yaajs.js`
+
+   * @config require.js alias for <index.js>
+
+   * @config koru where to find koru files; defaults to `app/koru`
    *
    **/
   var test, v;

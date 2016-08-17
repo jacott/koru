@@ -1,6 +1,11 @@
 isServer && define(function (require, exports, module) {
   /**
    * Interface to PostgreSQL.
+   *
+   * @config url The default url to connect to; see
+   * [pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -
+   * PQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)
+   *
    **/
   var test, v;
   const api  = require('koru/test/api');
@@ -80,10 +85,6 @@ isServer && define(function (require, exports, module) {
     "test defaultDb" () {
       /**
        * Return the default Client database connection.
-       *
-       * @config url The url to connect to; see
-       * [pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -
-       * PQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)
        *
        **/
       api.property('defaultDb');

@@ -1,4 +1,4 @@
-span.jsdoc-param {
+.jsdoc-param {
   color: rgb(124,77,255);
 }
 
@@ -97,6 +97,19 @@ pre {
   flex-flow: row wrap;
   margin-top: .5em;
   padding-top: .5em;
+}
+
+.jsdoc-config-item>td>div>p:last-child {
+  margin-bottom: 0;
+}
+
+.jsdoc-config-item>td:first-child {
+  color: rgb(124,77,255);
+  font-family: monospace;
+}
+
+code {
+  background-color: rgba(0,0,0,0.04);
 }
 
 .jsdoc-example-call>:first-child {

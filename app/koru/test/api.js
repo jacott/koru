@@ -490,8 +490,13 @@ define(function(require, exports, module) {
   }
 
   function funcToSig(func) {
-    const code = func.toString();
-    let m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{/.exec(code);
+    let code = func.toString();
+
+    let m = /^function\s*(?=\w)/.exec(code);
+    if (m)
+      code = code.slice(m[0].length);
+
+    m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{/.exec(code);
     if (m) return `constructor${m[1]}`;
 
     m = /^([^(]+\([^\)]*\))\s*\{/.exec(code);

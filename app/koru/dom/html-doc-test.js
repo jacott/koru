@@ -1,7 +1,11 @@
 define(function (require, exports, module) {
+  /**
+   * Server side implementation of the DOM tree.
+   **/
   var test, v;
   const Dom  = require('koru/dom');
   const TH   = require('koru/test');
+  const api  = require('koru/test/api');
   const util = require('koru/util');
   const sut  = require('./html-doc');
 
@@ -9,6 +13,7 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
+      api.module();
     },
 
     tearDown() {
@@ -17,10 +22,30 @@ define(function (require, exports, module) {
     },
 
     "test getElementsByClassName"() {
-      const html = Dom.h({div: [{}, {div: [{class: 'foo bar'}, {div: {class: 'foo bar-foo'}}]}]});
-      assert.equals(html.getElementsByClassName('foo').length, 2);
-      assert.equals(html.getElementsByClassName('bar').length, 1);
-      assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
+      /**
+       * Returns a list of all elements which have <className>.
+       *
+       * See [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)
+       **/
+
+      const iapi = api.innerSubject(document.createElement('div').constructor, null, {
+        initInstExample() {
+          const element = document.createElement('div');
+        },
+      });
+      iapi.protoMethod('getElementsByClassName');
+
+      iapi.example(() => {
+        const html = Dom.h({div: [
+          {},
+          {div: [{class: 'foo bar'},
+                 {div: {class: 'foo bar-foo'}}]}
+        ]});
+
+        assert.equals(html.getElementsByClassName('foo').length, 2);
+        assert.equals(html.getElementsByClassName('bar').length, 1);
+        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
+      });
     },
 
     "test construction"() {

@@ -65,19 +65,40 @@
     "methods": {
       "htmlToJson": {
         "test": "koru/dom/base test htmlToJson",
-        "sig": "function htmlToJson(node)",
+        "sig": "htmlToJson(node)",
         "intro": "Convert an <Element> to a plain <object>",
         "calls": [
           [
             [
               [
-                "O",
-                "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>"
+                "Oi",
+                "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>",
+                "koru/dom/html-doc::Element"
               ]
             ],
             [
               "O",
               "{section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, class: 'greeting', id: 'gId', $data-lang: 'en'}"
+            ]
+          ]
+        ]
+      },
+      "h": {
+        "test": "koru/dom/base test Dom.h",
+        "sig": "h(body)",
+        "intro": "Convert an <object> into a html node.\n\n`id` and `class` convert to attributes but other attributes\nmust be prefixed with a `$`.\n\nArray is used when multiple children.\nNon prefixed key is used for `tagName`.",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, $data-lang: 'en'}"
+              ]
+            ],
+            [
+              "Oi",
+              "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>",
+              "koru/dom/html-doc::Element"
             ]
           ]
         ]
@@ -97,6 +118,183 @@
     },
     "methods": {},
     "protoMethods": {}
+  },
+  "koru/dom/dom-client": {
+    "subject": {
+      "ids": [
+        "koru/dom/base",
+        "koru/dom/dom",
+        "koru/dom/dom-client",
+        "koru/env!koru/dom/dom",
+        "koru/dom",
+        "koru/dom/range-select"
+      ],
+      "name": "Dom",
+      "abstracts": [
+        "Convert an <Element> to a plain <object>",
+        null,
+        "Client only extension to {@module koru/dom/base}",
+        null,
+        null,
+        null
+      ]
+    },
+    "methods": {
+      "isInView": {
+        "test": "koru/dom/dom-client test isInView",
+        "sig": "isInView(elm, region)",
+        "intro": "Determin if a element is within the viewable area of the\nbrowser window.",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>"
+              ],
+              [
+                "O",
+                "<body class=\"\"><div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div></body>"
+              ]
+            ],
+            false
+          ],
+          [
+            [
+              [
+                "O",
+                "<div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div>"
+              ],
+              [
+                "O",
+                "<body class=\"\"><div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div></body>"
+              ]
+            ],
+            true
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/dom/html-doc": {
+    "subject": {
+      "ids": [
+        "koru/dom/html-doc"
+      ],
+      "name": "Document",
+      "abstracts": [
+        "Server side implementation of the DOM tree."
+      ]
+    },
+    "methods": {},
+    "protoMethods": {}
+  },
+  "koru/dom/html-doc::Element": {
+    "subject": {
+      "ids": [],
+      "name": "Element",
+      "abstracts": [
+        null
+      ]
+    },
+    "methods": {},
+    "protoMethods": {
+      "getElementsByClassName": {
+        "test": "koru/dom/html-doc test getElementsByClassName",
+        "sig": "getElementsByClassName(className)",
+        "intro": "Returns a list of all elements which have <className>.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
+        "calls": [
+          {
+            "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
+            "calls": [
+              [
+                [
+                  "foo"
+                ],
+                [
+                  "Oi",
+                  "[<div class=\"foo bar\"></div>, <div class=\"foo bar-foo\"></div>]",
+                  "Array"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "Oi",
+                  "[<div class=\"foo bar\"></div>]",
+                  "Array"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "Oi",
+                  "[<div class=\"foo bar\"></div>]",
+                  "Array"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "initInstExample": "          const element = document.createElement('div');\n        "
+  },
+  "koru/dom/html-doc::HTMLDivElement": {
+    "subject": {
+      "ids": [],
+      "name": "HTMLDivElement",
+      "abstracts": [
+        null
+      ]
+    },
+    "methods": {},
+    "protoMethods": {
+      "getElementsByClassName": {
+        "test": "koru/dom/html-doc test getElementsByClassName",
+        "sig": "getElementsByClassName()",
+        "intro": "Returns a list of all elements which have <className>.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
+        "calls": [
+          {
+            "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
+            "calls": [
+              [
+                [
+                  "foo"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>, length: 2, item: => item, namedItem: => namedItem}"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "initInstExample": "          const element = document.createElement('div');\n        "
   },
   "koru/dom/template": {
     "subject": {
@@ -211,7 +409,7 @@
     "methods": {
       "onunload": {
         "test": "koru/main test onunload",
-        "sig": "function onunload(moduleOrId, callback)",
+        "sig": "onunload(moduleOrId, callback)",
         "intro": "A wrapper around <module#onUnload>. see https://www.npmjs.com/package/yaajs",
         "calls": [
           {
@@ -253,7 +451,7 @@
       ],
       "name": "driver",
       "abstracts": [
-        "Interface to PostgreSQL.",
+        "Interface to PostgreSQL.\n\n@config url The default url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n",
         null
       ]
     },
@@ -297,7 +495,7 @@
             ]
           ]
         ],
-        "info": "Return the default Client database connection.\n\n@config url The url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
+        "info": "Return the default Client database connection.\n"
       }
     }
   },
@@ -1014,7 +1212,7 @@
       ],
       "name": "webServer",
       "abstracts": [
-        "The default web-server created from {@module\nkoru/web-server-factory}.  {@module koru/idle-check} is used to\nkeep track of active requests.\n\n#### Config ####\n\n* `{host, port}`: listens on the specified address.\n* `{defaultPage} defaults to `/index.html`: used when no path is\nsupplied in the url.\n* `{index.js, require.js}` defaults to `yaajs.js`: the file to serve for\n* `index.js` or `require.js`\n* `{koru}` defaults to `app/koru`: where to find koru files.\n"
+        "The default web-server created from {@module\nkoru/web-server-factory}.  {@module koru/idle-check} is used to\nkeep track of active requests.\n\n@config host listen on the specified address\n@config port listen on the specified port\n@config defaultPage defaults to `/index.html`: used when no path\nis supplied in the url.\n@config index.js the file to serve for `index.js` or\n`require.js`; defaults to `yaajs.js`\n@config require.js alias for <index.js>\n@config koru where to find koru files; defaults to `app/koru`\n"
       ]
     },
     "methods": {
@@ -1081,7 +1279,7 @@
     },
     "newInstance": {
       "test": "koru/web-server-factory test construction",
-      "sig": "function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
+      "sig": "WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
       "intro": "Create a new web server. The npm package\n[send](https://www.npmjs.com/package/send) is used to serve\nfiles.\n\n@param root Serve files relative to path.",
       "calls": [
         {

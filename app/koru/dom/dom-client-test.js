@@ -1,13 +1,18 @@
 isClient && define(function (require, exports, module) {
+  /**
+   * Client only extension to {@module koru/dom/base}
+   **/
   var test, v;
   const Ctx = require('koru/dom/ctx');
   const TH  = require('koru/test-helper');
+  const api = require('koru/test/api');
   const Dom = require('./dom-client');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
+      api.module();
     },
 
     tearDown() {
@@ -19,6 +24,11 @@ isClient && define(function (require, exports, module) {
     },
 
     "test isInView"() {
+      /**
+       * Determin if a element is within the viewable area of the
+       * browser window.
+       **/
+      api.method('isInView');
       var x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
                      div: "x"});
       document.body.appendChild(x);
@@ -26,6 +36,8 @@ isClient && define(function (require, exports, module) {
       refute(Dom.isInView(x, document.body));
       x.style.left = "-9px";
       assert(Dom.isInView(x, document.body));
+
+      api.done();
 
       x.style.left = '';
       x.style.right = '-9px';
