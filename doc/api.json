@@ -353,7 +353,9 @@
           ]
         ]
       }
-    }
+    },
+    "initExample": "          const Client = driver.defaultDb.constructor;\n        ",
+    "initInstExample": "          const client = driver.defaultDb;\n        "
   },
   "koru/session/main": {
     "subject": {
@@ -483,7 +485,7 @@
       "innerSubject": {
         "test": "koru/test/api test innerSubject",
         "sig": "innerSubject(subject, subjectName, options)",
-        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a <string>)\n* `abstract` - introduction to the subject. If abstract is a\n<function> then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n<subject>",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a <string>)\n* `abstract` - introduction to the subject. If abstract is a\n<function> then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n<subject>\n* `initInstExample` - code that can be used to initialize\nan instance of <subject>",
         "calls": [
           [
             [
@@ -494,7 +496,7 @@
               "Anything can be documented",
               [
                 "O",
-                "{initExample: 'const init = {sample: 'code'};', abstract: => abstract}"
+                "{initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();', abstract: => abstract}"
               ]
             ],
             [
@@ -505,7 +507,7 @@
             "hello"
           ],
           {
-            "body": "        class Book {\n          constructor() {this._chapters = [];}\n          newChapter() {\n            const chapter = new this.constructor\n                    .Chapter(10);\n            this._chapters.push(chapter);\n            return chapter;\n          }\n        };\n        Book.Chapter = class {\n          constructor(startPage) {this.page = startPage;}\n          goto() {return this.page;}\n        };;\n\n        API.module({id: 'myMod1', exports: Book}, 'myHelper');\n        API.innerSubject('Chapter', null, {info: 'Chapter info'})\n          .protoMethod('goto');\n\n        const book = new Book();\n        const chapter = book.newChapter();\n        assert.same(chapter.goto(), 10);\n      ",
+            "body": "        class Book {\n          constructor() {this._chapters = [];}\n          newChapter() {\n            const chapter = new this.constructor\n                    .Chapter(10);\n            this._chapters.push(chapter);\n            return chapter;\n          }\n        };\n        Book.Chapter = class {\n          constructor(startPage) {this.page = startPage;}\n          goto() {return this.page;}\n        };;\n\n        API.module({id: 'myMod1', exports: Book}, 'myHelper');\n        API.innerSubject('Chapter', null, {\n          info: 'Chapter info',\n        })\n          .protoMethod('goto');\n\n        const book = new Book();\n        const chapter = book.newChapter();\n        assert.same(chapter.goto(), 10);\n      ",
             "calls": [
               [
                 [

@@ -6,7 +6,7 @@ isServer && define(function (require, exports, module) {
   const api  = require('koru/test/api');
   const TH   = require('../test');
   const util = require('../util');
-  const sut  = require('./driver');
+  const driver  = require('./driver');
 
   var mf = TH.match.field;
 
@@ -18,7 +18,7 @@ isServer && define(function (require, exports, module) {
     },
 
     tearDown () {
-      sut.defaultDb.dropTable("Foo");
+      driver.defaultDb.dropTable("Foo");
       v = null;
     },
 
@@ -30,8 +30,16 @@ isServer && define(function (require, exports, module) {
          * See {@module koru/pg/driver:connect}
          **/
       }
-      const Client = sut.defaultDb.constructor;
-      api.innerSubject(Client, null, {abstract});
+      const Client = driver.defaultDb.constructor;
+      api.innerSubject(Client, null, {
+        abstract,
+        initExample() {
+          const Client = driver.defaultDb.constructor;
+        },
+        initInstExample() {
+          const client = driver.defaultDb;
+        },
+      });
 
       const client = new Client('host=/var/run/postgresql dbname=korutest');
       const client2 = new Client(undefined, 'my name');
@@ -44,13 +52,13 @@ isServer && define(function (require, exports, module) {
     },
 
     "test jsFieldToPg"() {
-      api.innerSubject(sut.defaultDb.constructor)
+      api.innerSubject(driver.defaultDb.constructor)
         .protoMethod('jsFieldToPg');
 
-      assert.equals(sut.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
-      assert.equals(sut.defaultDb.jsFieldToPg('name'), '"name" text');
-      assert.equals(sut.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
-      assert.equals(sut.defaultDb.jsFieldToPg('map', {type: 'object',
+      assert.equals(driver.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
+      assert.equals(driver.defaultDb.jsFieldToPg('name'), '"name" text');
+      assert.equals(driver.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
+      assert.equals(driver.defaultDb.jsFieldToPg('map', {type: 'object',
                                                       default: {treasure: 'lost'}}),
                     `"map" jsonb DEFAULT '{"treasure":"lost"}'::jsonb`);
     },
@@ -63,7 +71,7 @@ isServer && define(function (require, exports, module) {
        * it is the schema name.
        **/
       api.method('connect');
-      var db = sut.connect("host=/var/run/postgresql dbname=korutest");
+      var db = driver.connect("host=/var/run/postgresql dbname=korutest");
       assert.equals(db.query('select 1 as a'), [{a: 1}]);
       assert.same(db.schemaName, 'public');
       assert.same(db.name, 'public');
@@ -79,8 +87,8 @@ isServer && define(function (require, exports, module) {
        *
        **/
       api.property('defaultDb');
-      var db = sut.defaultDb;
-      assert.same(db, sut.defaultDb);
+      var db = driver.defaultDb;
+      assert.same(db, driver.defaultDb);
       api.done();
       assert.same(db.name, 'default');
 
@@ -95,18 +103,18 @@ isServer && define(function (require, exports, module) {
     },
 
     "test isPG" () {
-      assert.same(sut.isPG, true);
+      assert.same(driver.isPG, true);
     },
 
     "test aryToSqlStr" () {
-      v.foo = sut.defaultDb.table('Foo');
-      assert.same(v.foo.aryToSqlStr, sut.defaultDb.aryToSqlStr);
+      v.foo = driver.defaultDb.table('Foo');
+      assert.same(v.foo.aryToSqlStr, driver.defaultDb.aryToSqlStr);
 
       assert.equals(v.foo.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
     "test insert suffix" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         _id: 'integer',
         name: 'text',
       });
@@ -115,7 +123,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test override _id spec" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         _id: 'integer',
       });
 
@@ -129,7 +137,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test Array insert" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         bar_ids: 'has_many',
       });
 
@@ -140,7 +148,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test Array in jsonb" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         bar_ids: 'object',
       });
 
@@ -150,7 +158,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test $elemMatch" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         widget: 'object',
       });
 
@@ -167,7 +175,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test multipart key" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         widget: 'object',
       });
       v.foo.insert({_id: '123', widget: {a: {b: {c: 1}}}});
@@ -181,7 +189,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test values" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         widget: 'object',
         lots: 'integer[]',
         createdOn: 'date',
@@ -199,7 +207,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test string in json" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         widget: 'object',
       });
       v.foo.insert({_id: '123', widget: "dodacky"});
@@ -209,7 +217,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test ARRAY column" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         widget: 'integer[]',
       });
 
@@ -229,7 +237,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test date" () {
-      v.foo = sut.defaultDb.table('Foo', {
+      v.foo = driver.defaultDb.table('Foo', {
         createdOn: 'date',
       });
 
@@ -246,7 +254,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test $regex" () {
-       v.foo = sut.defaultDb.table('Foo', {
+       v.foo = driver.defaultDb.table('Foo', {
          story: 'text',
       });
 
@@ -260,7 +268,7 @@ isServer && define(function (require, exports, module) {
 
     "find": {
       setUp () {
-        v.foo = sut.defaultDb.table('Foo', {
+        v.foo = driver.defaultDb.table('Foo', {
           name: 'text',
           createdAt: 'timestamp',
           version: 'integer',
@@ -362,7 +370,7 @@ isServer && define(function (require, exports, module) {
 
     "Static table": {
       setUp () {
-        v.foo = sut.defaultDb.table('Foo', {
+        v.foo = driver.defaultDb.table('Foo', {
           name: 'text',
           age: {type: 'number', default: 10}
         });
@@ -481,7 +489,7 @@ isServer && define(function (require, exports, module) {
 
     "Dynamic table": {
       setUp () {
-        v.foo = sut.defaultDb.table('Foo');
+        v.foo = driver.defaultDb.table('Foo');
 
         assert.same(v.foo.insert({_id: "123", name: 'abc'}), 1);
         v.foo.insert({_id: "456", name: 'abc'});

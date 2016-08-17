@@ -75,6 +75,9 @@ define(function (require, exports, module) {
 
        * * `initExample` - code that can be used to initialize
        * <subject>
+
+       * * `initInstExample` - code that can be used to initialize
+       * an instance of <subject>
        **/
       MainAPI.method('innerSubject');
       API.module();
@@ -87,6 +90,7 @@ define(function (require, exports, module) {
       const anythingApi = API.innerSubject(v.anything = {anything: 'is allowed'},
                        'Anything can be documented', {
                          initExample: `const init = {sample: 'code'};`,
+                         initInstExample: `const inst = initCode();`,
                          abstract,
                        });
       assert.same(anythingApi.propertyName, undefined);
@@ -95,6 +99,7 @@ define(function (require, exports, module) {
       assert.same(anythingApi, subject);
       assert.same(subject.moduleName, 'koru/test/api::Anything can be documented');
       assert.equals(subject.initExample, `const init = {sample: 'code'};`);
+      assert.equals(subject.initInstExample, `const inst = initCode();`);
       assert.equals(subject.abstract, 'An example abstract');
 
       MainAPI.example(() => {
@@ -113,7 +118,9 @@ define(function (require, exports, module) {
         };;
 
         API.module({id: 'myMod1', exports: Book}, 'myHelper');
-        API.innerSubject('Chapter', null, {info: 'Chapter info'})
+        API.innerSubject('Chapter', null, {
+          info: 'Chapter info',
+        })
           .protoMethod('goto');
 
         const book = new Book();
@@ -627,8 +634,14 @@ define(function (require, exports, module) {
         const example = 'init';
       };
 
+      api.initInstExample = () => {
+        const exampleInst = 'initInst';
+      };
+
+
       assert.equals(api.serialize({methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}}), {
         initExample: TH.match(/const example = 'init';/),
+        initInstExample: TH.match(/const exampleInst = 'initInst';/),
         subject: {
           ids: ['koru/test/api'],
           name: 'fooBar',

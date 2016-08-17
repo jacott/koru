@@ -99,10 +99,23 @@ define(function(require, exports, module) {
     Object.keys(json).sort().forEach(id => {
       const api = json[id]; api.id = id;
       const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
-      const requireLine = Dom.h({class: 'jsdoc-require highlight', div: [
+
+      const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
+      const reqParts = [
         hl('const', 'kd'), ' ', hl(subject.name, 'nx'), ' ', hl('=', 'o'), ' ',
-        hl('require', 'k'), '(', hl(`"${id}"`, 's'), ');'
-      ]});
+        hl('require', 'k'), '(', hl(`"${idParts[1]}"`, 's'), ')'
+      ];
+      switch (idParts[2]) {
+      case '.':
+        reqParts.push('.', hl(idParts[3], 'na'));
+        break;
+      case '::':
+        const ref = json[idParts[1]];
+        if (ref)
+          reqParts[2].textContent = ref.subject.name;
+      }
+      reqParts.push(';');
+      const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
 
       const idIdx = subject.ids.length ? subject.ids.indexOf(id) : 0;
 
@@ -207,14 +220,26 @@ define(function(require, exports, module) {
       var initInst = function () {
         if (! needInit) return [];
         needInit = false;
-        return [
-          codeToHtml(`const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`)
-        ];
+        const mu = codeToHtml(
+          api.initInstExample || `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`
+        );
+        mu.classList.add('jsdoc-inst-init');
+        return [mu];
       };
       var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
       var sigJoin = '#';
     } else {
-      var initInst = () => [];
+      if (api.initExample) {
+        var needInit = true;
+        var initInst = function () {
+          if (! needInit) return [];
+          needInit = false;
+          const mu = codeToHtml(api.initExample);
+          mu.classList.add('jsdoc-init');
+          return [mu];
+        };
+      } else
+        var initInst = () => [];
       var inst = subject.name;
       var sigJoin = '.';
     }
@@ -225,22 +250,21 @@ define(function(require, exports, module) {
       if (! util.isObjEmpty(ret.types))
         argMap[':return:'] = ret;
 
-      const examples = calls.length && {
-        div: [
-          {h6: "Example"},
-          {class: 'jsdoc-example', pre: [
-            requireLine.cloneNode(true),
-            ...calls.map(call => Array.isArray(call) ? {div: [
-              ...initInst(),
-              {class: 'jsdoc-example-call highlight', div: [
-                {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
-                       '(', ...hlArgList(call[0]), ');']},
-                call[1] && {class: 'jsdoc-returns c1',
-                            span: [' // returns ', valueToHtml(call[1])]}
-              ]}
-            ]} : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
-          ]}
-        ]};
+      const examples = calls.length && {div: [
+        {h6: "Example"},
+        {class: 'jsdoc-example', pre: [
+          requireLine.cloneNode(true),
+          ...calls.map(call => Array.isArray(call) ? [
+            ...initInst(),
+            {class: 'jsdoc-example-call highlight', div: [
+              {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
+                     '(', ...hlArgList(call[0]), ');']},
+              call[1] && {class: 'jsdoc-returns c1',
+                          span: [' // returns ', valueToHtml(call[1])]}
+            ]}
+          ] : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
+        ]}
+      ]};
 
 
       const abstract = jsdocToHtml(api, intro, argMap);

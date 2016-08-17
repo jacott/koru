@@ -20,7 +20,7 @@ define(function(require, exports, module) {
 
       this.newInstance = this.properties =
         this.currentComment = this.lastMethod =
-        this.propertyName =
+        this.propertyName = this.initInstExample =
         this.initExample = this.abstract = undefined;
 
       this.methods = Object.create(null);
@@ -154,6 +154,9 @@ define(function(require, exports, module) {
 
         if (options.initExample)
           ans.initExample = options.initExample;
+
+        if (options.initInstExample)
+          ans.initInstExample = options.initInstExample;
       }
       return ans;
     }
@@ -330,6 +333,7 @@ define(function(require, exports, module) {
       };
 
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
+      if (this.initInstExample) ans.initInstExample = extractFnBody(this.initInstExample);
 
       const {newInstance, properties} = this;
       if (newInstance) {

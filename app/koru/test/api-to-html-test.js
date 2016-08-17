@@ -5,6 +5,10 @@ isServer && define(function (require, exports, module) {
   const apiToHtml = require('./api-to-html');
   const TH        = require('./main');
 
+  const sourceHtml = Dom.h({div: [{'$data-api': 'header'},
+                                  {'$data-api': 'links'},
+                                  {'$data-api': 'pages'}]}).outerHTML;
+
   TH.testCase(module, {
     setUp() {
       test = this;
@@ -15,23 +19,99 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
-    "markdown": {
-      // "test simple text"() {
-      //   const div = document.createElement('div');
-      //   apiToHtml.markdown(div, 'hello');
-      //   apiToHtml.markdown(div, 'world');
-      //   apiToHtml.markdown(div, ' *bold*');
-      //   apiToHtml.markdown(div, '.\n');
-      //   apiToHtml.markdown(div, 'nlBefore');
-      //   assert.equals(div.outerHTML, '<div>helloworld <em>bold</em>. nlBefore</div>');
+    "requireLine": {
+      "test simple"() {
+        const json = {
+          'my/mod': {
+            subject: {name: 'MyMod', ids: [], abstracts: [],},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
+          }
+        };
 
-      // },
+        const html = apiToHtml('Foo', json, sourceHtml);
+        const result = Dom.html(html).getElementsByClassName('jsdoc-require')[0].textContent;
 
-      // "test list"() {
-      //   const div = document.createElement('div');
-      //   apiToHtml.markdown(div, ' before\n\n* one\n* two');
-      //   assert.equals(div.outerHTML, '<div> before\n<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n</div>');
-      // },
+        assert.equals(result, 'const MyMod = require('+
+                      '"my/mod");'); // stop yaajs thinking it's a require
+      },
+
+      "test property subject"() {
+        const json = {
+          'my/mod.m1': {
+            subject: {name: 'MyMod', ids: [], abstracts: [],},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
+          }
+        };
+
+        const html = apiToHtml('Foo', json, sourceHtml);
+        const result = Dom.html(html).getElementsByClassName('jsdoc-require')[0];
+
+        assert.equals(result.textContent, 'const MyMod = require('+
+                      '"my/mod").m1;');
+
+        assert.equals(Dom.htmlToJson(result).div.length, 12);
+      },
+
+      "test :: subject no initExample"() {
+        const json = {
+          'my/mod': {
+            subject: {name: 'MyMod', ids: [], abstracts: [],},
+          },
+          'my/mod::m1': {
+            subject: {name: 'M1', ids: [], abstracts: [],},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
+            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}}
+          }
+        };
+
+        const html = apiToHtml('Foo', json, sourceHtml);
+
+        let meth = Dom.html(html).getElementsByClassName('jsdoc-example')[0];
+        let req = meth.childNodes[0];
+
+        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(Dom.htmlToJson(req).div.length, 10);
+
+        let pmeth = Dom.html(html).getElementsByClassName('jsdoc-inst-init')[0];
+        assert.equals(pmeth.textContent, 'const m1 = new M1();');
+
+        req = pmeth.parentNode.childNodes[0];
+
+        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(Dom.htmlToJson(req).div.length, 10);
+      },
+
+      "test :: subject with initExample"() {
+        const json = {
+          'my/mod': {
+            subject: {name: 'MyMod', ids: [], abstracts: [],},
+          },
+          'my/mod::m1': {
+            initExample: 'const myM1 = MyMod.Foo();',
+            initInstExample: 'const m1Inst = myM1.instance();',
+            subject: {name: 'M1', ids: [], abstracts: [],},
+            methods: {m1: {sig: 'm1(a)', calls: [[[1]]],}},
+            protoMethods: {i1: {sig: 'i1()', calls: [[[]]]}}
+          }
+        };
+
+        const html = apiToHtml('Foo', json, sourceHtml);
+
+        let meth = Dom.html(html).getElementsByClassName('jsdoc-example')[0];
+
+        let req = meth.childNodes[0];
+        assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
+        assert.equals(Dom.htmlToJson(req).div.length, 10);
+
+        let ex = meth.childNodes[1];
+        assert.className(ex, 'highlight jsdoc-init');
+        assert.equals(ex.textContent, 'const myM1 = MyMod.Foo();');
+
+        let pmeth = Dom.html(html).getElementsByClassName('jsdoc-inst-init')[0];
+        assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
+
+      },
+
     },
 
     "jsdocToHtml": {
