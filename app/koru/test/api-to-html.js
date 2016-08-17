@@ -14,6 +14,44 @@ define(function(require, exports, module) {
   const mdRenderer = new marked.Renderer();
   const mdOptions = {renderer: mdRenderer};
 
+  const CORE_TYPES = {
+    Array: true,
+    ArrayBuffer: true,
+    Boolean: true,
+    Date: true,
+    Error: true,
+    EvalError: true,
+    Float32Array: true,
+    Float64Array: true,
+    Function: true,
+    Int16Array: true,
+    Int32Array: true,
+    Int8Array: true,
+    Map: true,
+    Math: true,
+    Null: true,
+    Number: true,
+    Object: true,
+    Primitive: 'Glossary',
+    Promise: true,
+    RangeError: true,
+    ReferenceError: true,
+    RegExp: true,
+    Set: true,
+    String: true,
+    Symbol: true,
+    SyntaxError: true,
+    TypeError: true,
+    Uint16Array: true,
+    Uint32Array: true,
+    Uint8Array: true,
+    Uint8ClampedArray: true,
+    Undefined: true,
+    URIError: true,
+    WeakMap: true,
+    WeakSet: true,
+  };
+
   const BLOCK_TAGS = {
     param(api, row, argMap) {
       const m = /^\w+\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
@@ -189,16 +227,35 @@ define(function(require, exports, module) {
 
     function addRows(properties) {
       const argMap = {};
-      for (let name in properties) {
+      Object.keys(properties).sort().forEach(name => {
         const property = properties[name];
-        const info = jsdocToHtml(api, property.info, argMap);
+        const value = Dom.h({class: 'jsdoc-value', code: valueToText(property.value)});
+        const info = property.info ? jsdocToHtml(
+          api,
+          property.info
+            .replace(/\$\{value\}/, '[](#jsdoc-value)'),
+          argMap
+        ) : value;
+        if (property.info) {
+          const vref = findHref(info, '#jsdoc-value', true);
+          if (vref)
+            vref.parentNode.replaceChild(value, vref);
+        }
+        const ap = extractTypes(
+          property.calls ?
+            argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
+          : argProfile([[property.value]], value => value[0])
+        );
         rows.push({tr: [
           {td: name},
-          {class: 'jsdoc-info', td: info}
+          {td: ap},
+          {class: 'jsdoc-info',
+           td: info
+           }
         ]});
 
         property.properties && addRows(property.properties);
-      }
+      });
     }
 
     return {class: 'jsdoc-properties', div: [
@@ -410,13 +467,21 @@ define(function(require, exports, module) {
   function typeHRef(type) {
     if (type[0] === '<') {
       type = type.replace(/^[^>]*>(?:\.{3})?/, '');
-      return hrefMap[type] || '#'+type;
     }
 
     if (type.startsWith('...'))
       type = type.slice(3);
 
-    return hrefMap[type] || `https://developer.mozilla.org/en-US/docs/Glossary/${util.capitalize(type)}`;
+    let ans = hrefMap[type];
+    if (ans) return ans;
+    type = util.capitalize(type);
+
+    const ct = CORE_TYPES[type];
+    if (ct)
+      return 'https://developer.mozilla.org/en-US/docs/'+
+      (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
+      type;
+    return '#'+type;
   }
 
   function valueToHtml(arg) {
@@ -490,6 +555,26 @@ define(function(require, exports, module) {
 
   function idToLink(id) {
     return Dom.h({a: id.replace(/\/main$/, ''), class: "jsdoc-idLink", $href: '#'+id});
+  }
+
+  function findHref(node, href, returnOnFirst) {
+    let ans = returnOnFirst ? undefined : [];
+    Dom.walkNode(node, node => {
+      switch(node.nodeType) {
+      case document.TEXT_NODE: case document.COMMENT_NODE:
+        return false;
+      default:
+        if (node.tagName === 'A' && node.getAttribute('href') === href) {
+          if (returnOnFirst) {
+            ans = node;
+            return true;
+          } else
+            ans.push(node);
+        }
+      }
+    });
+
+    return ans;
   }
 
   apiToHtml.jsdocToHtml = jsdocToHtml;

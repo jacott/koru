@@ -119,63 +119,6 @@
     "methods": {},
     "protoMethods": {}
   },
-  "koru/dom/dom-client": {
-    "subject": {
-      "ids": [
-        "koru/dom/base",
-        "koru/dom/dom",
-        "koru/dom/dom-client",
-        "koru/env!koru/dom/dom",
-        "koru/dom",
-        "koru/dom/range-select"
-      ],
-      "name": "Dom",
-      "abstracts": [
-        "Convert an <Element> to a plain <object>",
-        null,
-        "Client only extension to {@module koru/dom/base}",
-        null,
-        null,
-        null
-      ]
-    },
-    "methods": {
-      "isInView": {
-        "test": "koru/dom/dom-client test isInView",
-        "sig": "isInView(elm, region)",
-        "intro": "Determin if a element is within the viewable area of the\nbrowser window.",
-        "calls": [
-          [
-            [
-              [
-                "O",
-                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>"
-              ],
-              [
-                "O",
-                "<body class=\"\"><div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div></body>"
-              ]
-            ],
-            false
-          ],
-          [
-            [
-              [
-                "O",
-                "<div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div>"
-              ],
-              [
-                "O",
-                "<body class=\"\"><div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div></body>"
-              ]
-            ],
-            true
-          ]
-        ]
-      }
-    },
-    "protoMethods": {}
-  },
   "koru/dom/html-doc": {
     "subject": {
       "ids": [
@@ -187,7 +130,39 @@
       ]
     },
     "methods": {},
-    "protoMethods": {}
+    "protoMethods": {
+      "replaceChild": {
+        "test": "koru/dom/html-doc test replaceChild",
+        "sig": "replaceChild(newNode, oldNode)",
+        "intro": "Replace the `oldChild` with the `newChild`\n\nSee [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)",
+        "calls": [
+          {
+            "body": "        const parent = Dom.h({div: [\n          {class: 'foo'},\n          {class: 'old-node'},\n        ]});\n        const oldParent = Dom.h({div: {class: 'new-node'}});\n        const newNode = oldParent.firstChild;\n\n        const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);\n        assert.className(oldNode, 'old-node');\n        refute(oldNode.parentNode);\n        assert.same(newNode.parentNode, parent);\n        assert.same(parent.lastChild, newNode);\n        assert.same(oldParent.childNodes.length, 0);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "Oi",
+                    "<div class=\"new-node\"></div>",
+                    "koru/dom/html-doc::Element"
+                  ],
+                  [
+                    "Oi",
+                    "<div class=\"old-node\"></div>",
+                    "koru/dom/html-doc::Element"
+                  ]
+                ],
+                [
+                  "Oi",
+                  "<div class=\"old-node\"></div>",
+                  "koru/dom/html-doc::Element"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    }
   },
   "koru/dom/html-doc::Element": {
     "subject": {

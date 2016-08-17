@@ -48,6 +48,30 @@ define(function (require, exports, module) {
       });
     },
 
+    "test replaceChild"() {
+      /**
+       * Replace the `oldChild` with the `newChild`
+       *
+       * See [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)
+       **/
+      api.protoMethod('replaceChild');
+      api.example(() => {
+        const parent = Dom.h({div: [
+          {class: 'foo'},
+          {class: 'old-node'},
+        ]});
+        const oldParent = Dom.h({div: {class: 'new-node'}});
+        const newNode = oldParent.firstChild;
+
+        const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
+        assert.className(oldNode, 'old-node');
+        refute(oldNode.parentNode);
+        assert.same(newNode.parentNode, parent);
+        assert.same(parent.lastChild, newNode);
+        assert.same(oldParent.childNodes.length, 0);
+      });
+    },
+
     "test construction"() {
       var df = document.createDocumentFragment();
 

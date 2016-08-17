@@ -19,6 +19,47 @@ isServer && define(function (require, exports, module) {
       v = null;
     },
 
+    "test properties"() {
+      const json = {
+        'my/mod': {
+          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          properties: {
+            singleton: {
+              value: ["Oi", "{my:singleton}", 'my/mod'],
+              "info": "prints ${value}"
+            },
+            _id: {value: 'id-value'},
+          }
+        }
+      };
+
+      const html = apiToHtml('Foo', json, sourceHtml);
+      const properties = Dom.html(html).getElementsByClassName('jsdoc-properties');
+
+      assert.equals(Dom.htmlToJson(properties[0]).div, [
+        {h5: 'Properties'},
+        {table: {tbody: [
+          {tr: [
+            {td: '_id'},
+            {td: {a: 'string', $href: TH.match(/mozilla.*String/)}},
+            {class: 'jsdoc-info',
+             td: {class: 'jsdoc-value', code: '"id-value"'}},
+          ]},
+          {tr: [
+            {td: 'singleton'},
+            {td: {a: 'my/mod', $href: '#my/mod'}},
+            {class: 'jsdoc-info', td: {div: [
+              {p: [
+                'prints ',
+                {class: 'jsdoc-value', code: '{my:singleton}'},
+              ]},
+              '\n'
+            ]}},
+          ]},
+        ]}},
+      ]);
+    },
+
     "requireLine": {
       "test simple"() {
         const json = {

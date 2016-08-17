@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  if (isClient) return window.document;
+  if (isClient) return window.document.constructor;
   const koru              = require('koru');
   const Dom               = require('koru/dom/base');
   const util              = require('koru/util');
@@ -74,14 +74,28 @@ define(function(require, exports, module) {
     createDocumentFragment() {return new DocumentFragment()},
 
     removeChild(node) {
-      var parent = this;
-      var nodes = parent.childNodes;
+      const nodes = this.childNodes;
 
-      for(var i = 0; i < nodes.length; ++i) {
+      for(let i = 0; i < nodes.length; ++i) {
         if (nodes[i] === node) {
           node.parentNode = null;
           nodes.splice(i, 1);
           return;
+        }
+      }
+    },
+
+    replaceChild(newNode, oldNode) {
+      const nodes = this.childNodes;
+
+      for(let i = 0; i < nodes.length; ++i) {
+        if (nodes[i] === oldNode) {
+          oldNode.parentNode = null;
+          if (newNode.parentNode)
+            newNode.parentNode.removeChild(newNode);
+          nodes[i] = newNode;
+          newNode.parentNode = this;
+          return oldNode;
         }
       }
     },
