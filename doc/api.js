@@ -21,8 +21,8 @@
     target.classList.add('jsdoc-active-page');
     target.scrollIntoView(true);
 
-    var nav = index.querySelector('[href="#'+id.replace(/[.#].*$/, '')+'"]');
-    nav && nav.parentNode.classList.add('jsdoc-nav-active-page');
+    var nav = index.querySelector('[href="#'+id+'"]');
+    nav && searchUpFor('jsdoc-nav-module', nav).classList.add('jsdoc-nav-active-page');
   }
 
   function searchUpFor(className, node) {

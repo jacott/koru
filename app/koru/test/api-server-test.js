@@ -50,15 +50,15 @@ define(function (require, exports, module) {
 
       v.api._record();
 
-      assert.calledWith(fs.readFileSync, 'out_dir/api.json');
+      assert.calledWith(fs.readFileSync, 'out_dir/api-server.json');
 
-      assert.calledWith(fs.writeFileSync, 'out_dir/api.json', TH.match(out => {
+      assert.calledWith(fs.writeFileSync, 'out_dir/api-server.json', TH.match(out => {
         assert.equals(JSON.parse(out), {
           'koru/test/api-server': {
+            id: 'koru/test/api-server',
             subject: {
-              ids: ['koru/test/api'],
               name: 'fooBar',
-              abstracts: TH.match.any,
+              abstract: TH.match.any,
             },
             methods: {
               fnord: {

@@ -23,6 +23,15 @@ pre {
   display: block;
 }
 
+.jsdoc-nav-common {
+  opacity: .2;
+}
+
+.jsdoc-nav-module.jsdoc-nav-active-page .jsdoc-nav-common,
+.jsdoc-nav-module:hover .jsdoc-nav-common {
+  opacity: 1;
+}
+
 .jsdoc-nav-module {
   margin-bottom: 3px;
   padding-left: 5px;

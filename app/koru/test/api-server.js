@@ -7,34 +7,24 @@ define(function(require, exports, module) {
     const session = require('koru/session');
 
     session.provide('G', function (data) {
-      const jsonFile = `${API.OUT_DIR}/api.json`;
-      const json = loadApi(jsonFile);
-      const cj = data[0];
-      for (let testName in cj) {
-        const clientTest = cj[testName];
-        let serverTest = json[testName];
-        json[testName] = clientTest;
-        if (serverTest) {
-          const serverMethods = serverTest.methods;
-          const clientMethods = clientTest.methods;
-          for (let methodName in serverMethods) {
-            clientMethods[methodName] || (clientMethods[methodName] = serverMethods[methodName]);
-          }
-        } else {
-        }
+      const updates = data[0];
+      const filename = `${API.OUT_DIR}/api-client.json`;
+      const json = loadApi(filename);
+      for (let testName in updates) {
+        json[testName] = updates[testName];
       }
-      writeApi(jsonFile, json);
+      writeApi(filename, json);
     });
 
     API.OUT_DIR = path.resolve(module.toUrl('.'), '../../../../doc');
 
     API._record = function () {
-      const jsonFile = `${this.OUT_DIR}/api.json`;
-      const json = loadApi(jsonFile);
-      for (let api of this._apiMap.values()) {
+      const filename = `${this.OUT_DIR}/api-server.json`;
+      const json = loadApi(filename);
+      for (let api of this._moduleMap.values()) {
         json[api.moduleName] = api.serialize((json[api.moduleName]||{}));
       }
-      writeApi(jsonFile, json);
+      writeApi(filename, json);
     };
   };
 

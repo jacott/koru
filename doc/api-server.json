@@ -1,66 +1,9 @@
 {
-  "koru/css/loader": {
-    "subject": {
-      "ids": [
-        "koru/css/loader"
-      ],
-      "name": "CssLoader",
-      "abstracts": [
-        "css/loader allows dynamic replacement of css and less files when\ntheir contents change."
-      ]
-    },
-    "methods": {},
-    "protoMethods": {
-      "loadAll": {
-        "test": "koru/css/loader test load all",
-        "sig": "loadAll(dir)",
-        "intro": "Load all css and less files under `dir`",
-        "calls": [
-          [
-            [
-              "koru/css"
-            ]
-          ]
-        ]
-      }
-    },
-    "newInstance": {
-      "test": "koru/css/loader test construction",
-      "sig": "constructor(session)",
-      "intro": "Construct a css loader\n@param session listen for load messages from this session",
-      "calls": [
-        [
-          [
-            [
-              "Oi",
-              "{_id: 'loader', _rpcs: {}, _commands: {}}",
-              "koru/session/main.constructor"
-            ]
-          ],
-          [
-            "Oi",
-            "{session: {_id: 'loader', _rpcs: {}, _commands: {}}}",
-            "koru/css/loader"
-          ]
-        ]
-      ]
-    }
-  },
   "koru/dom/base": {
+    "id": "koru/dom/base",
     "subject": {
-      "ids": [
-        "koru/dom/base",
-        "koru/dom/dom-server",
-        "koru/env!koru/dom/dom",
-        "koru/dom"
-      ],
       "name": "Dom",
-      "abstracts": [
-        "Convert an `Element` to a plain `object`",
-        null,
-        null,
-        null
-      ]
+      "abstract": "Convert an `Element` to a plain `object`"
     },
     "methods": {
       "htmlToJson": {
@@ -106,28 +49,11 @@
     },
     "protoMethods": {}
   },
-  "koru/dom/ctx": {
-    "subject": {
-      "ids": [
-        "koru/dom/ctx"
-      ],
-      "name": "Ctx",
-      "abstracts": [
-        "Ctx is used to track\n[DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
-      ]
-    },
-    "methods": {},
-    "protoMethods": {}
-  },
   "koru/dom/html-doc": {
+    "id": "koru/dom/html-doc",
     "subject": {
-      "ids": [
-        "koru/dom/html-doc"
-      ],
       "name": "Document",
-      "abstracts": [
-        "Server side implementation of the DOM tree."
-      ]
+      "abstract": "Server side implementation of the DOM tree."
     },
     "methods": {},
     "protoMethods": {
@@ -165,12 +91,10 @@
     }
   },
   "koru/dom/html-doc::Element": {
+    "id": "koru/dom/html-doc",
     "subject": {
-      "ids": [],
       "name": "Element",
-      "abstracts": [
-        null
-      ]
+      "abstract": "Server side implementation of the DOM tree."
     },
     "methods": {},
     "protoMethods": {
@@ -217,108 +141,16 @@
         ]
       }
     },
+    "otherIds": [
+      null
+    ],
     "initInstExample": "          const element = document.createElement('div');\n        "
-  },
-  "koru/dom/html-doc::HTMLDivElement": {
-    "subject": {
-      "ids": [],
-      "name": "HTMLDivElement",
-      "abstracts": [
-        null
-      ]
-    },
-    "methods": {},
-    "protoMethods": {
-      "getElementsByClassName": {
-        "test": "koru/dom/html-doc test getElementsByClassName",
-        "sig": "getElementsByClassName()",
-        "intro": "Returns a list of all elements which have `className`.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
-        "calls": [
-          {
-            "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
-            "calls": [
-              [
-                [
-                  "foo"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>, length: 2, item: => item, namedItem: => namedItem}"
-                ]
-              ],
-              [
-                [
-                  "bar"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
-                ]
-              ],
-              [
-                [
-                  "bar"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
-                ]
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "initInstExample": "          const element = document.createElement('div');\n        "
-  },
-  "koru/dom/template": {
-    "subject": {
-      "ids": [
-        "koru/dom/template"
-      ],
-      "name": "DomTemplate",
-      "abstracts": [
-        "DomTemplate is used to create interactive\n[Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
-      ]
-    },
-    "methods": {
-      "newTemplate": {
-        "test": "koru/dom/template newTemplate test simple",
-        "sig": "newTemplate(module, blueprint)",
-        "intro": "Create a new `DomTemplate` from an html blueprint.\n\n@param [module] if supplied the template will be deleted if\n`module` is unloaded\n\n@param blueprint A blue print is usually built by\n{#koru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
-        "calls": [
-          [
-            [
-              [
-                "Oi",
-                "{Module:myMod}",
-                "Module"
-              ],
-              [
-                "O",
-                "{name: 'Foo', nodes: [{name: 'div'}]}"
-              ]
-            ],
-            [
-              "Oi",
-              "DomTemplate:Foo",
-              "koru/dom/template"
-            ]
-          ]
-        ]
-      }
-    },
-    "protoMethods": {}
   },
   "koru/idle-check": {
+    "id": "koru/idle-check",
     "subject": {
-      "ids": [
-        "koru/idle-check"
-      ],
       "name": "IdleCheck",
-      "abstracts": [
-        "IdleCheck keeps count of usage and notifies when idle.\n"
-      ]
+      "abstract": "IdleCheck keeps count of usage and notifies when idle.\n"
     },
     "methods": {},
     "protoMethods": {
@@ -370,16 +202,10 @@
     }
   },
   "koru/main": {
+    "id": "koru/main",
     "subject": {
-      "ids": [
-        "koru/main",
-        "koru/server"
-      ],
       "name": "koru",
-      "abstracts": [
-        "Main koru module. Responsible for:\n\n* Fibers\n* Logging\n* Dependency tracking and load/unload manager\n* AppDir location",
-        null
-      ]
+      "abstract": "Main koru module. Responsible for:\n\n* Fibers\n* Logging\n* Dependency tracking and load/unload manager\n* AppDir location"
     },
     "methods": {
       "onunload": {
@@ -419,16 +245,10 @@
     "protoMethods": {}
   },
   "koru/pg/driver": {
+    "id": "koru/pg/driver",
     "subject": {
-      "ids": [
-        "koru/pg/driver",
-        "koru/config!DBDriver"
-      ],
       "name": "driver",
-      "abstracts": [
-        "Interface to PostgreSQL.\n\n@config url The default url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n",
-        null
-      ]
+      "abstract": "Interface to PostgreSQL.\n\n@config url The default url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
     },
     "methods": {
       "connect": {
@@ -486,14 +306,10 @@
     }
   },
   "koru/pg/driver::Client": {
+    "id": "koru/pg/driver",
     "subject": {
-      "ids": [
-        "koru/pg/driver::Client"
-      ],
       "name": "Client",
-      "abstracts": [
-        "A connection to a database.\n\nSee {#koru/pg/driver.connect}"
-      ]
+      "abstract": "A connection to a database.\n\nSee {#koru/pg/driver.connect}"
     },
     "methods": {},
     "protoMethods": {
@@ -538,20 +354,17 @@
         ]
       }
     },
+    "otherIds": [
+      null
+    ],
     "initExample": "          const Client = driver.defaultDb.constructor;\n        ",
     "initInstExample": "          const client = driver.defaultDb;\n        "
   },
   "koru/session/main": {
+    "id": "koru/session/main",
     "subject": {
-      "ids": [
-        "koru/session/base",
-        "koru/session/main"
-      ],
       "name": "session",
-      "abstracts": [
-        null,
-        "The main or active session for client server communication.\nSee {#koru/session/main.constructor}"
-      ]
+      "abstract": "The main or active session for client server communication.\nSee {#koru/session/main.constructor}"
     },
     "methods": {
       "defineRpc": {
@@ -584,17 +397,16 @@
     }
   },
   "koru/session/main.constructor": {
+    "id": "koru/session/main",
     "subject": {
-      "ids": [
-        "koru/session/main.constructor"
-      ],
       "name": "BaseSession",
-      "abstracts": [
-        "The constructor for {#koru/session/main}. This is also used\nby {#koru/session/web-socket-sender-factory} and\n{#koru/session/web-socket-server-factory}.\n"
-      ]
+      "abstract": "The constructor for {#koru/session/main}. This is also used\nby {#koru/session/web-socket-sender-factory} and\n{#koru/session/web-socket-server-factory}.\n"
     },
     "methods": {},
     "protoMethods": {},
+    "otherIds": [
+      null
+    ],
     "newInstance": {
       "test": "koru/session/main test Session",
       "sig": "constructor(id)",
@@ -614,20 +426,16 @@
     }
   },
   "koru/test/api": {
+    "id": "koru/test/api",
     "subject": {
-      "ids": [
-        "koru/test/api"
-      ],
       "name": "API",
-      "abstracts": [
-        "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
-      ]
+      "abstract": "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
     },
     "methods": {
       "module": {
         "test": "koru/test/api test module",
-        "sig": "module(module, subjectName, subjectModules)",
-        "intro": "Initiate documentation of the module\n\n@param {...Module} [subjectModules] - list of modules that define the subject",
+        "sig": "module(module, subjectName)",
+        "intro": "Initiate documentation of the module\n",
         "calls": [
           [
             [],
@@ -724,7 +532,7 @@
             [
               [
                 "F",
-                "() => {...}"
+                "() => {/*...*/}"
               ]
             ]
           ],
@@ -735,7 +543,7 @@
                 [
                   [
                     "F",
-                    "() => {...}"
+                    "() => {/*...*/}"
                   ]
                 ]
               ]
@@ -782,7 +590,7 @@
                   "logger",
                   [
                     "F",
-                    "value => {...}"
+                    "value => {/*...*/}"
                   ]
                 ]
               ]
@@ -860,82 +668,11 @@
     },
     "protoMethods": {}
   },
-  "koru/ui/route": {
-    "subject": {
-      "ids": [
-        "koru/ui/route"
-      ],
-      "name": "Route",
-      "abstracts": [
-        "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
-      ]
-    },
-    "methods": {
-      "setTitle": {
-        "test": "koru/ui/route with routeVar test setTitle",
-        "sig": "setTitle(title)",
-        "intro": "Set the `document.title` for the current page.",
-        "calls": [
-          [
-            [
-              "my title"
-            ]
-          ]
-        ]
-      },
-      "gotoPage": {
-        "test": "koru/ui/route test append",
-        "sig": "gotoPage(page, pageRoute)",
-        "intro": "Goto the specified `page` and record in `window.history`.",
-        "calls": [
-          [
-            [
-              [
-                "Oi",
-                "DomTemplate:Test.AdminProfile",
-                "koru/dom/template"
-              ],
-              [
-                "O",
-                "{append: 'my/id'}"
-              ]
-            ]
-          ]
-        ]
-      },
-      "replacePage": {
-        "test": "koru/ui/route test replacePage passes all args",
-        "sig": "replacePage()",
-        "intro": "Like {#.gotoPage} but replaces to `window.history`\nrather than adding to it.",
-        "calls": [
-          [
-            [
-              "myPage",
-              [
-                "O",
-                "{append: 'myId'}"
-              ]
-            ],
-            "replaceState"
-          ]
-        ]
-      }
-    },
-    "protoMethods": {}
-  },
   "koru/util": {
+    "id": "koru/util",
     "subject": {
-      "ids": [
-        "koru/util-base",
-        "koru/util",
-        "koru/util-server"
-      ],
       "name": "util",
-      "abstracts": [
-        null,
-        "The util module provides commonly performed utility functions.",
-        null
-      ]
+      "abstract": "The util module provides commonly performed utility functions."
     },
     "methods": {
       "toDp": {
@@ -1168,7 +905,7 @@
                   ],
                   [
                     "F",
-                    "(val, index) => {...}"
+                    "(val, index) => {/*...*/}"
                   ]
                 ]
               ],
@@ -1192,14 +929,10 @@
     "protoMethods": {}
   },
   "koru/web-server": {
+    "id": "koru/web-server",
     "subject": {
-      "ids": [
-        "koru/web-server"
-      ],
       "name": "webServer",
-      "abstracts": [
-        "The default web-server created from {#koru/web-server-factory}.\n{#koru/idle-check} is used to keep track of active\nrequests.\n\n@config host listen on the specified address\n@config port listen on the specified port\n@config defaultPage defaults to `/index.html`: used when no path\nis supplied in the url.\n@config index.js the file to serve for `index.js` or\n`require.js`; defaults to `yaajs.js`\n@config require.js alias for `index.js`\n@config koru where to find koru files; defaults to `app/koru`\n"
-      ]
+      "abstract": "The default web-server created from {#koru/web-server-factory}.\n{#koru/idle-check} is used to keep track of active\nrequests.\n\n@config host listen on the specified address\n@config port listen on the specified port\n@config defaultPage defaults to `/index.html`: used when no path\nis supplied in the url.\n@config index.js the file to serve for `index.js` or\n`require.js`; defaults to `yaajs.js`\n@config require.js alias for `index.js`\n@config koru where to find koru files; defaults to `app/koru`\n"
     },
     "methods": {
       "start": {
@@ -1221,14 +954,10 @@
     "protoMethods": {}
   },
   "koru/web-server-factory": {
+    "id": "koru/web-server-factory",
     "subject": {
-      "ids": [
-        "koru/web-server-factory"
-      ],
       "name": "WebServerFactory",
-      "abstracts": [
-        "Factory for creating web-servers.\n"
-      ]
+      "abstract": "Factory for creating web-servers.\n"
     },
     "methods": {},
     "protoMethods": {

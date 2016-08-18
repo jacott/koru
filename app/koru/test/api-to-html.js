@@ -138,8 +138,13 @@ define(function(require, exports, module) {
     });
 
     const {header, links, pages} = tags;
+    const moduleList = [];
 
-    Object.keys(json).sort().forEach(id => {
+    Object.keys(json).sort(function (a,b) {
+      a = a.replace(/\/main$/, '');
+      b = b.replace(/\/main$/, '');
+      return a === b ? 0 : a < b ? -1 : 1;
+    }).forEach(id => {
       const api = json[id]; api.id = id; api.parent = json;
       const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
 
@@ -160,8 +165,6 @@ define(function(require, exports, module) {
       reqParts.push(';');
       const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
 
-      const idIdx = subject.ids.length ? subject.ids.indexOf(id) : 0;
-
       const constructor = newInstance && buildConstructor(api, subject, newInstance, requireLine);
       let functions = [];
       util.isObjEmpty(methods) ||
@@ -171,12 +174,9 @@ define(function(require, exports, module) {
 
       const linkNav = {nav: [constructor, ...functions].map(func => func && Dom.h({a: func.$name, $href: '#'+func.id}))};
 
-      links.appendChild(Dom.h({class: 'jsdoc-nav-module', div: [
-        idToLink(id),
-        linkNav,
-      ]}));
+      moduleList.push([id, linkNav]);
       const abstractMap = {};
-      const abstract = jsdocToHtml(api, subject.abstracts[idIdx], abstractMap);
+      const abstract = jsdocToHtml(api, subject.abstract, abstractMap);
       const configMap = abstractMap[':config:'];
       if (configMap) {
         var config = {class: 'jsdoc-config', table: [
@@ -206,6 +206,16 @@ define(function(require, exports, module) {
           // {pre: JSON.stringify(json, null, 2)}
         ],
       }));
+    });
+
+    let prevId = '';
+    moduleList.forEach(([id, linkNav]) => {
+
+      links.appendChild(Dom.h({class: 'jsdoc-nav-module', div: [
+        idToLink(id, prevId),
+        linkNav,
+      ]}));
+      prevId = id;
     });
 
     return index.innerHTML;
@@ -246,6 +256,7 @@ define(function(require, exports, module) {
             argProfile(property.calls, call => call[0].length ? call[0][0] : call[1])
           : argProfile([[property.value]], value => value[0])
         );
+
         rows.push({tr: [
           {td: name},
           {td: ap},
@@ -442,8 +453,7 @@ define(function(require, exports, module) {
               case 'F': value = 'function'; break;
               case 'U': value = 'undefined'; break;
               default:
-                value = entry[entry.length-1];
-                types[`<${entry[0]}>${entry[entry.length-1]}`] = value;
+                types[`<${entry[0]}>${entry[entry.length-1]}`] = entry[entry.length-1];
                 return;
               }
               types[value] = value;
@@ -467,6 +477,8 @@ define(function(require, exports, module) {
   function typeHRef(type) {
     if (type[0] === '<') {
       type = type.replace(/^[^>]*>(?:\.{3})?/, '');
+      let ans = hrefMap[type];
+      if (ans) return ans;
     }
 
     if (type.startsWith('...'))
@@ -474,13 +486,13 @@ define(function(require, exports, module) {
 
     let ans = hrefMap[type];
     if (ans) return ans;
-    type = util.capitalize(type);
+    const cType = util.capitalize(type);
 
-    const ct = CORE_TYPES[type];
+    const ct = CORE_TYPES[cType];
     if (ct)
       return 'https://developer.mozilla.org/en-US/docs/'+
       (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
-      type;
+      cType;
     return '#'+type;
   }
 
@@ -553,8 +565,25 @@ define(function(require, exports, module) {
     return span;
   }
 
-  function idToLink(id) {
-    return Dom.h({a: id.replace(/\/main$/, ''), class: "jsdoc-idLink", $href: '#'+id});
+  function idToLink(id, prevId) {
+    let text = id.replace(/\/main(?=\.|::|$)/, '').split(/(\/)/);
+    prevId = prevId.replace(/\/main(?=\.|::|$)/, '').split(/(\/)/);
+    const len = Math.min(text.length, prevId.length);
+    for(var i = 0; i < len; ++i) {
+      if (text[i] !== prevId[i]) break;
+    }
+    _koru_.debug(`id, prevId`, text, prevId, i, len);
+
+    if (i === 0) {
+      text = text.join('');
+    } else {
+      text = Dom.h({span: [
+        {class: 'jsdoc-nav-common', span: text.slice(0, i).join('')},
+        text.slice(i).join('')
+      ]});
+    }
+
+    return Dom.h({a: text, class: "jsdoc-idLink", $href: '#'+id});
   }
 
   function findHref(node, href, returnOnFirst) {

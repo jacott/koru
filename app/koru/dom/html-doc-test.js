@@ -28,7 +28,7 @@ define(function (require, exports, module) {
        * See [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)
        **/
 
-      const iapi = api.innerSubject(document.createElement('div').constructor, null, {
+      const iapi = api.innerSubject(document.createElement('div').constructor, 'Element', {
         initInstExample() {
           const element = document.createElement('div');
         },

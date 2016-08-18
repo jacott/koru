@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const ctx = module.ctx;
 
   class API {
-    constructor(parent, moduleOrSubject, subjectName, subjectModules) {
+    constructor(parent, moduleOrSubject, subjectName, testModule) {
       this.parent = parent;
       if (parent) {
         this.module = undefined;
@@ -16,12 +16,15 @@ define(function(require, exports, module) {
         this.subject = moduleOrSubject && moduleOrSubject.exports;
       }
       this.subjectName = subjectName;
-      this.subjectModules = subjectModules;
+      this.testModule = testModule || (this.parent && this.parent.testModule);
+      this.abstract = docComment(
+        (this.testModule && this.testModule.body) || ''
+      );
 
       this.newInstance = this.properties =
         this.currentComment = this.lastMethod =
         this.propertyName = this.initInstExample =
-        this.initExample = this.abstract = undefined;
+        this.initExample = undefined;
 
       this.methods = Object.create(null);
       this.protoMethods = Object.create(null);
@@ -29,13 +32,14 @@ define(function(require, exports, module) {
     }
 
     static reset() {
-      this.__afterTestCase = new WeakSet;
-      this._apiMap = new Map;
       this._instance = null;
+      this.__afterTestCase = new WeakSet;
+      this._moduleMap = new Map;
+      this._subjectMap = new Map;
       this._objCache = new Map;
     }
 
-    static module(module, subjectName, subjectModules) {
+    static module(module, subjectName) {
       const tc = TH.test._currentTestCase;
       if (module == null) {
         module = ctx.modules[toId(tc)];
@@ -46,16 +50,21 @@ define(function(require, exports, module) {
         return this._instance;
       }
 
-      this._instance = this._apiMap.get(subject);
+      this._instance = this._moduleMap.get(module);
       if (this._instance) return;
 
       const afterTestCase = this.__afterTestCase;
       afterTestCase.has(tc) || tc.after(testCaseFinished.bind(this));
       afterTestCase.add(tc);
 
-      this._apiMap.set(subject, this._instance =
-                       new this(null, module, subjectName || createSubjectName(subject, tc),
-                               subjectModules || ctx.exportsModule(subject)));
+      this._mapSubject(subject, module);
+      this._moduleMap.set(
+        module, this._instance = new this(
+          null, module,
+          subjectName || createSubjectName(subject, tc),
+          ctx.modules[tc.moduleId]
+        )
+      );
       return this._instance;
     }
 
@@ -81,7 +90,7 @@ define(function(require, exports, module) {
       if (this._coreTypes.has(value))
         return [relType(orig, value), displayName, value.name];
 
-      let api = this._apiMap.get(value);
+      let api = this.valueToApi(value);
       if (api) {
         return cache(this, value, orig, [relType(orig, value), displayName, api.moduleName]);
       }
@@ -97,7 +106,7 @@ define(function(require, exports, module) {
         const proto = Object.getPrototypeOf(value);
         if (! proto)
           return ['O', displayName];
-        let api = this._apiMap.get(proto);
+        let api = this.valueToApi(proto);
         if (api) {
           return cache(this, value, orig, ['Os', displayName, api.moduleName]);
         }
@@ -108,6 +117,28 @@ define(function(require, exports, module) {
         return ['O', displayName];
       value = value.constructor;
       return this.resolveObject(value, displayName, orig);
+    }
+
+    static valueToApi(value) {
+      const entry = this._subjectMap.get(value);
+      if (! entry)
+        return;
+
+      const item = entry[0];
+      if (item instanceof API)
+        return item;
+      return this._moduleMap.get(item);
+    }
+
+    static _mapSubject(subject, module) {
+      const smap = this._subjectMap.get(subject);
+
+      if (smap) {
+        if (smap[0] === module)
+          return;
+        this._subjectMap.set(subject, [module, smap]);
+      } else
+        this._subjectMap.set(subject, [module, null]);
     }
 
     get moduleName() {
@@ -136,17 +167,20 @@ define(function(require, exports, module) {
       const ThisAPI = this.constructor;
 
       let ans = this.innerSubjects[subjectName];
-      ans || ThisAPI._apiMap.set(
-        subject,
+      if (! ans) {
         this.innerSubjects[subjectName] = ans =
-          new ThisAPI(this, subject, subjectName)
-      );
-
+          new ThisAPI(this, subject, subjectName);
+        ThisAPI._moduleMap.set({
+          id: this.id +
+            (propertyName ? '.' : '::') +
+            subjectName
+        }, ans);
+        ThisAPI._mapSubject(subject, ans);
+      }
 
       if (propertyName) ans.propertyName = propertyName;
       if (options) {
         if (options.abstract) {
-          ans.subjectModules = [{id: ans.moduleName}];
           ans.abstract = typeof options.abstract === 'string' ?
             options.abstract :
             docComment(options.abstract);
@@ -294,18 +328,7 @@ define(function(require, exports, module) {
     }
 
     serialize() {
-      const {methods, protoMethods} = this;
-      let abstracts;
-      const ids = (this.subjectModules||[]).map(m => m.id);
-      if (this.parent) {
-        abstracts = [this.abstract];
-      } else {
-        abstracts = ids.map(id => {
-          const mod = ctx.modules[id+'-test'];
-          if (mod && mod.body)
-            return docComment(mod.body);
-        });
-      }
+      const {methods, protoMethods, abstract} = this;
 
       const procMethods = list => {
         for (let methodName in list) {
@@ -322,15 +345,29 @@ define(function(require, exports, module) {
       procMethods(methods);
       procMethods(protoMethods);
 
+      const id = this.testModule.id.replace(/-test$/, '');
+
       const ans = {
+        id,
         subject: {
-          ids,
           name: this.subjectName,
-          abstracts,
+          abstract,
         },
         methods,
         protoMethods,
       };
+
+      let otherMods = this.constructor._subjectMap.get(this.subject);
+      if (otherMods) {
+        const otherIds = [];
+        while (otherMods) {
+          if (otherMods[0].id !== id)
+            otherIds.push(otherMods[0].id);
+          otherMods = otherMods[1];
+        }
+        if (otherIds.length)
+          ans.otherIds = otherIds.sort();
+      }
 
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
       if (this.initInstExample) ans.initInstExample = extractFnBody(this.initInstExample);
@@ -369,8 +406,7 @@ define(function(require, exports, module) {
         case 'M':
           return ['M', this.bestId(value[1])];
         case 'O':
-          const map = this.constructor._apiMap;
-          let api =  map.get(value[1]);
+          let api =  this.constructor.valueToApi(value[1]);
           if (api)
             return ['M', api.moduleName];
 
@@ -509,7 +545,7 @@ define(function(require, exports, module) {
     if (! m)
     throw new Error("Can't find signature of "+code);
 
-    return m[1] += ' => {...}';
+    return m[1] += ' => {/*...*/}';
   }
 
   function fileToCamel(fn) {

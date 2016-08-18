@@ -55,10 +55,10 @@ define(function (require, exports, module) {
       assert.calledWith(TH.session.sendBinary, 'G', [TH.match(out => {
         assert.equals(out, {
           'koru/test/api-client': {
+            id: 'koru/test/api-client',
             subject: {
-              ids: ['koru/test/api'],
               name: 'fooBar',
-              abstracts: TH.match.any,
+              abstract: TH.match.any,
             },
             methods: {
               fnord: {

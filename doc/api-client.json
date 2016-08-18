@@ -1,0 +1,932 @@
+{
+  "koru/css/loader": {
+    "id": "koru/css/loader",
+    "subject": {
+      "name": "CssLoader",
+      "abstract": "css/loader allows dynamic replacement of css and less files when\ntheir contents change."
+    },
+    "methods": {},
+    "protoMethods": {
+      "loadAll": {
+        "test": "koru/css/loader test load all",
+        "sig": "loadAll(dir)",
+        "intro": "Load all css and less files under `dir`",
+        "calls": [
+          [
+            [
+              "koru/css"
+            ]
+          ]
+        ]
+      }
+    },
+    "newInstance": {
+      "test": "koru/css/loader test construction",
+      "sig": "constructor(session)",
+      "intro": "Construct a css loader\n@param session listen for load messages from this session",
+      "calls": [
+        [
+          [
+            [
+              "Oi",
+              "{_id: 'loader', _rpcs: {}, _commands: {}}",
+              "koru/session/main.constructor"
+            ]
+          ],
+          [
+            "Oi",
+            "{session: {_id: 'loader', _rpcs: {}, _commands: {}}}",
+            "koru/css/loader"
+          ]
+        ]
+      ]
+    }
+  },
+  "koru/dom/base": {
+    "id": "koru/dom/base",
+    "subject": {
+      "name": "Dom",
+      "abstract": "Convert an `Element` to a plain `object`"
+    },
+    "methods": {
+      "htmlToJson": {
+        "test": "koru/dom/base test htmlToJson",
+        "sig": "htmlToJson(node)",
+        "intro": "Convert an `Element` to a plain `object`",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>"
+              ]
+            ],
+            [
+              "O",
+              "{section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, class: 'greeting', id: 'gId', $data-lang: 'en'}"
+            ]
+          ]
+        ]
+      },
+      "h": {
+        "test": "koru/dom/base test Dom.h",
+        "sig": "h(body)",
+        "intro": "Convert an `object` into a html node.\n\n`id` and `class` convert to attributes but other attributes\nmust be prefixed with a `$`.\n\nArray is used when multiple children.\nNon prefixed key is used for `tagName`.",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, $data-lang: 'en'}"
+              ]
+            ],
+            [
+              "O",
+              "<section class=\"greeting\" id=\"gId\" data-lang=\"en\"><ul><li><span>Hello</span></li><li>two</li></ul></section>"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "otherIds": [
+      "koru/dom/dom-client"
+    ]
+  },
+  "koru/dom/ctx": {
+    "id": "koru/dom/ctx",
+    "subject": {
+      "name": "Ctx",
+      "abstract": "Ctx is used to track\n[DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+    },
+    "methods": {},
+    "protoMethods": {}
+  },
+  "koru/dom/dom-client": {
+    "id": "koru/dom/dom-client",
+    "subject": {
+      "name": "Dom",
+      "abstract": "Client only extension to {#koru/dom/base}"
+    },
+    "methods": {
+      "isInView": {
+        "test": "koru/dom/dom-client test isInView",
+        "sig": "isInView(elm, region)",
+        "intro": "Determin if a element is within the viewable area of the\nbrowser window.",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
+                "koru/dom/html-doc::Element"
+              ],
+              [
+                "O",
+                "<body><div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div></body>"
+              ]
+            ],
+            false
+          ],
+          [
+            [
+              [
+                "Oi",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
+                "koru/dom/html-doc::Element"
+              ],
+              [
+                "O",
+                "<body><div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div></body>"
+              ]
+            ],
+            true
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "otherIds": [
+      "koru/dom/base"
+    ]
+  },
+  "koru/dom/html-doc": {
+    "id": "koru/dom/html-doc",
+    "subject": {
+      "name": "HTMLDocument",
+      "abstract": "Server side implementation of the DOM tree."
+    },
+    "methods": {},
+    "protoMethods": {
+      "replaceChild": {
+        "test": "koru/dom/html-doc test replaceChild",
+        "sig": "replaceChild()",
+        "intro": "Replace the `oldChild` with the `newChild`\n\nSee [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)",
+        "calls": [
+          {
+            "body": "        const parent = Dom.h({div: [\n          {class: 'foo'},\n          {class: 'old-node'},\n        ]});\n        const oldParent = Dom.h({div: {class: 'new-node'}});\n        const newNode = oldParent.firstChild;\n\n        const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);\n        assert.className(oldNode, 'old-node');\n        refute(oldNode.parentNode);\n        assert.same(newNode.parentNode, parent);\n        assert.same(parent.lastChild, newNode);\n        assert.same(oldParent.childNodes.length, 0);\n      ",
+            "calls": []
+          }
+        ]
+      }
+    }
+  },
+  "koru/dom/html-doc::Element": {
+    "id": "koru/dom/html-doc",
+    "subject": {
+      "name": "Element",
+      "abstract": "Server side implementation of the DOM tree."
+    },
+    "methods": {},
+    "protoMethods": {
+      "getElementsByClassName": {
+        "test": "koru/dom/html-doc test getElementsByClassName",
+        "sig": "getElementsByClassName()",
+        "intro": "Returns a list of all elements which have `className`.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
+        "calls": [
+          {
+            "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
+            "calls": [
+              [
+                [
+                  "foo"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>, length: 2, item: => item, namedItem: => namedItem}"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                ]
+              ],
+              [
+                [
+                  "bar"
+                ],
+                [
+                  "O",
+                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "otherIds": [
+      null
+    ],
+    "initInstExample": "          const element = document.createElement('div');\n        "
+  },
+  "koru/dom/template": {
+    "id": "koru/dom/template",
+    "subject": {
+      "name": "DomTemplate",
+      "abstract": "DomTemplate is used to create interactive\n[Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+    },
+    "methods": {
+      "newTemplate": {
+        "test": "koru/dom/template newTemplate test simple",
+        "sig": "newTemplate(module, blueprint)",
+        "intro": "Create a new `DomTemplate` from an html blueprint.\n\n@param [module] if supplied the template will be deleted if\n`module` is unloaded\n\n@param blueprint A blue print is usually built by\n{#koru/dom/template-compiler} which is called automatically\non html files loaded using\n`require('koru/html!path/to/my-template.html')`",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "{Module:myMod}",
+                "Module"
+              ],
+              [
+                "O",
+                "{name: 'Foo', nodes: [{name: 'div'}]}"
+              ]
+            ],
+            [
+              "Oi",
+              "DomTemplate:Foo",
+              "koru/dom/template"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/main": {
+    "id": "koru/main",
+    "subject": {
+      "name": "koru",
+      "abstract": "Main koru module. Responsible for:\n\n* Fibers\n* Logging\n* Dependency tracking and load/unload manager\n* AppDir location"
+    },
+    "methods": {
+      "onunload": {
+        "test": "koru/main test onunload",
+        "sig": "onunload(moduleOrId, callback)",
+        "intro": "A wrapper around `module#onUnload`. see https://www.npmjs.com/package/yaajs",
+        "calls": [
+          {
+            "body": "        const myModule = {id: 'myModule', onUnload: test.stub()};\n        const callback = {stop() {}};\n        koru.onunload(myModule, callback);\n        assert.calledWith(myModule.onUnload, callback.stop);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{id: 'myModule', onUnload: => stub}"
+                  ],
+                  [
+                    "O",
+                    "{stop: => stop}"
+                  ]
+                ]
+              ]
+            ]
+          },
+          [
+            [
+              "koru/main-test",
+              [
+                "F",
+                "stub"
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/session/main": {
+    "id": "koru/session/main",
+    "subject": {
+      "name": "session",
+      "abstract": "The main or active session for client server communication.\nSee {#koru/session/main.constructor}"
+    },
+    "methods": {
+      "defineRpc": {
+        "test": "koru/session/main test defining",
+        "sig": "defineRpc(name, func)",
+        "intro": "Define a remote proceedure call",
+        "calls": [
+          [
+            [
+              "Book.list",
+              [
+                "F",
+                "func"
+              ]
+            ],
+            [
+              "M",
+              "koru/session/base"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "properties": {
+      "_id": {
+        "value": "default",
+        "info": "The session _id: \"default\""
+      }
+    }
+  },
+  "koru/session/main.constructor": {
+    "id": "koru/session/main",
+    "subject": {
+      "name": "BaseSession",
+      "abstract": "The constructor for {#koru/session/main}. This is also used\nby {#koru/session/web-socket-sender-factory} and\n{#koru/session/web-socket-server-factory}.\n"
+    },
+    "methods": {},
+    "protoMethods": {},
+    "otherIds": [
+      null
+    ],
+    "newInstance": {
+      "test": "koru/session/main test Session",
+      "sig": "constructor(id)",
+      "intro": "Create a new session",
+      "calls": [
+        [
+          [
+            "mySession"
+          ],
+          [
+            "Oi",
+            "{_id: 'mySession', _rpcs: {}, _commands: {}}",
+            "koru/session/main.constructor"
+          ]
+        ]
+      ]
+    }
+  },
+  "koru/test/api": {
+    "id": "koru/test/api",
+    "subject": {
+      "name": "API",
+      "abstract": "API is a semi-automatic API document generator. It uses\nunit-tests to determine types and values at test time."
+    },
+    "methods": {
+      "module": {
+        "test": "koru/test/api test module",
+        "sig": "module(module, subjectName)",
+        "intro": "Initiate documentation of the module\n",
+        "calls": [
+          [
+            [],
+            [
+              "Os",
+              "{API(API)}",
+              "koru/test/api"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{id: 'myMod1', exports: {clean: => clean}}"
+              ],
+              "myHelper"
+            ],
+            [
+              "Oi",
+              "{API(myHelper)}",
+              "koru/test/api"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{id: 'myMod2', exports: => Book}"
+              ]
+            ],
+            [
+              "Oi",
+              "{API(Book)}",
+              "koru/test/api"
+            ]
+          ]
+        ]
+      },
+      "innerSubject": {
+        "test": "koru/test/api test innerSubject",
+        "sig": "innerSubject(subject, subjectName, options)",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{anything: 'is allowed'}"
+              ],
+              "Anything can be documented",
+              [
+                "O",
+                "{initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();', abstract: => abstract}"
+              ]
+            ],
+            [
+              "Os",
+              "{API(Anything can be documented)}",
+              "koru/test/api"
+            ],
+            "hello"
+          ],
+          {
+            "body": "        class Book {\n          constructor() {this._chapters = [];}\n          newChapter() {\n            const chapter = new this.constructor\n                    .Chapter(10);\n            this._chapters.push(chapter);\n            return chapter;\n          }\n        };\n        Book.Chapter = class {\n          constructor(startPage) {this.page = startPage;}\n          goto() {return this.page;}\n        };;\n\n        API.module({id: 'myMod1', exports: Book}, 'myHelper');\n        API.innerSubject('Chapter', null, {\n          info: 'Chapter info',\n        })\n          .protoMethod('goto');\n\n        const book = new Book();\n        const chapter = book.newChapter();\n        assert.same(chapter.goto(), 10);\n      ",
+            "calls": [
+              [
+                [
+                  "Chapter",
+                  [
+                    "O",
+                    "null"
+                  ],
+                  [
+                    "O",
+                    "{info: 'Chapter info'}"
+                  ]
+                ],
+                [
+                  "Oi",
+                  "{API(Chapter)}",
+                  "koru/test/api"
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "example": {
+        "test": "koru/test/api test example",
+        "sig": "example(body)",
+        "intro": "Run a section of as an example of a method call.",
+        "calls": [
+          [
+            [
+              [
+                "F",
+                "() => {/*...*/}"
+              ]
+            ]
+          ],
+          {
+            "body": "        class Color {\n          static define(name, value) {\n            this.colors[name] = value;\n          }\n          // ...\n        }\n        Color.colors = {};\n\n        API.module({id: 'myMod', exports: Color});\n        API.method('define');\n\n        API.example(() => {\n          // this body of code is executed\n          Color.define('red', '#f00');\n          Color.define('blue', '#00f');\n          assert.same(Color.colors.red, '#f00');\n        });\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "() => {/*...*/}"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "comment": {
+        "test": "koru/test/api test comment",
+        "sig": "comment(comment)",
+        "intro": "Add a comment before the next example",
+        "calls": [
+          {
+            "body": "        class Excercise {\n          static register(name, minutes) {}\n          begin() {}\n        }\n\n        API.module({id: 'myMod', exports: Excercise});\n        API.method('register');\n\n        API.comment('Optionally set the default duration');\n        Excercise.register('Jogging', 5); // This call gets the comment\n        Excercise.register('Skipping'); // This call get no comment\n      ",
+            "calls": [
+              [
+                [
+                  "Optionally set the default duration"
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "property": {
+        "test": "koru/test/api property test value property",
+        "sig": "property(name, options)",
+        "intro": "Document a property of the current subject. The property\ncan be either plain value or a get/set function.\n\n@param [options] details about the property.\n\nWhen `object` can contain the following:\n\n* `info` (or `intro`): description of property\n* `properties`: document child properties\n\nWhen `function` should return an info `string`. The info\n`string` can contain `${value}` which will be substituted\nwith a description of the properties value.",
+        "calls": [
+          {
+            "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module({id: 'myMod', exports: v.defaults}, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
+            "calls": [
+              [
+                [
+                  "theme",
+                  [
+                    "O",
+                    "{info: 'The default theme', properties: {name: => name, primaryColor: 'The primary color is ${value}'}}"
+                  ]
+                ]
+              ],
+              [
+                [
+                  "logger",
+                  [
+                    "F",
+                    "value => {/*...*/}"
+                  ]
+                ]
+              ]
+            ]
+          },
+          [
+            [
+              "width"
+            ],
+            [
+              "U",
+              "undefined"
+            ],
+            "If no info supplied then the test description is used"
+          ],
+          {
+            "body": "          const book = {\n            get title() {return this._title;},\n            set title(value) {this._title = value;},\n          };\n\n          API.module({id: 'myMod', exports: book}, 'Room');\n          API.property('title', {\n            info: 'Get/set the book title',\n          });\n          API.comment('sets title');\n          book.title = 'Room';\n          assert.same(book._title, 'Room');\n          assert.same(book.title, book._title);\n        ",
+            "calls": [
+              [
+                [
+                  "title",
+                  [
+                    "O",
+                    "{info: 'Get/set the book title'}"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "new": {
+        "test": "koru/test/api test new",
+        "sig": "new()",
+        "intro": "Document `constructor` for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`",
+        "calls": [
+          [
+            [],
+            [
+              "F",
+              "newProxy"
+            ]
+          ]
+        ]
+      },
+      "method": {
+        "test": "koru/test/api test method",
+        "sig": "method(methodName)",
+        "intro": "Document `methodName` for the current subject",
+        "calls": [
+          [
+            [
+              "fnord"
+            ]
+          ]
+        ]
+      },
+      "protoMethod": {
+        "test": "koru/test/api test protoMethod",
+        "sig": "protoMethod(methodName, subject)",
+        "intro": "Document prototype `methodName` for the current subject",
+        "calls": [
+          {
+            "body": "        class Tree {\n          constructor(name) {\n            this.name = name;\n            this.branches = 10;\n          }\n\n          prune(branchCount) {\n            return this.branches -= branchCount;\n          }\n        };\n\n        API.module({id: 'myMod', exports: Tree});\n        API.protoMethod('prune');\n\n        const plum = new Tree('Plum');\n        assert.same(plum.prune(3), 7);\n        assert.same(plum.prune(2), 5);\n      ",
+            "calls": [
+              [
+                [
+                  "prune"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/ui/route": {
+    "id": "koru/ui/route",
+    "subject": {
+      "name": "Route",
+      "abstract": "Route is a paginging system within a one page app. It manages\ncreating and destroying pages and recording history."
+    },
+    "methods": {
+      "setTitle": {
+        "test": "koru/ui/route with routeVar test setTitle",
+        "sig": "setTitle(title)",
+        "intro": "Set the `document.title` for the current page.",
+        "calls": [
+          [
+            [
+              "my title"
+            ]
+          ]
+        ]
+      },
+      "gotoPage": {
+        "test": "koru/ui/route test append",
+        "sig": "gotoPage(page, pageRoute)",
+        "intro": "Goto the specified `page` and record in `window.history`.",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "DomTemplate:Test.AdminProfile",
+                "koru/dom/template"
+              ],
+              [
+                "O",
+                "{append: 'my/id'}"
+              ]
+            ]
+          ]
+        ]
+      },
+      "replacePage": {
+        "test": "koru/ui/route test replacePage passes all args",
+        "sig": "replacePage()",
+        "intro": "Like {#.gotoPage} but replaces to `window.history`\nrather than adding to it.",
+        "calls": [
+          [
+            [
+              "myPage",
+              [
+                "O",
+                "{append: 'myId'}"
+              ]
+            ],
+            "replaceState"
+          ]
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
+  "koru/util": {
+    "id": "koru/util",
+    "subject": {
+      "name": "util",
+      "abstract": "The util module provides commonly performed utility functions."
+    },
+    "methods": {
+      "toDp": {
+        "test": "koru/util test toDp",
+        "sig": "toDp(number, dp, zeroFill)",
+        "intro": "Return a floating point `number` as a string to\n`dp` decimal places.\n\n@param {boolean} zeroFill - pad with zeros.",
+        "calls": [
+          [
+            [
+              10.7,
+              0
+            ],
+            "11"
+          ],
+          [
+            [
+              2.6,
+              1
+            ],
+            "2.6"
+          ],
+          [
+            [
+              1.2345,
+              3,
+              true
+            ],
+            "1.235"
+          ],
+          [
+            [
+              1.2,
+              3,
+              true
+            ],
+            "1.200"
+          ],
+          [
+            [
+              10,
+              3
+            ],
+            "10"
+          ]
+        ]
+      },
+      "pc": {
+        "test": "koru/util test pc",
+        "sig": "pc(fraction)",
+        "intro": "Convert a `fraction` into css % string",
+        "calls": [
+          [
+            [
+              1.2345678
+            ],
+            "123.45678%"
+          ]
+        ]
+      },
+      "px": {
+        "test": "koru/util test px",
+        "sig": "px(value)",
+        "intro": "Convert a `fraction` into css % string",
+        "calls": [
+          [
+            [
+              123.2345678
+            ],
+            "123px"
+          ]
+        ]
+      },
+      "removeItem": {
+        "test": "koru/util test removeItem",
+        "sig": "removeItem(list, item)",
+        "intro": "remove an `item` from a `list`. `list` is modified.\n\n\n@param item - can be a key-value object to compare the given keys.\n@returns {object|primitive} the removed item.",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "[1, 2, 3]",
+                "Array"
+              ],
+              2
+            ],
+            2
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 3]",
+                "Array"
+              ],
+              4
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 3]",
+                "Array"
+              ],
+              1
+            ],
+            1
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[3]",
+                "Array"
+              ],
+              3
+            ],
+            3
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[]",
+                "Array"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{name: 'bar', x: 1}"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{name: 'bar'}"
+              ]
+            ],
+            [
+              "O",
+              "{id: 5, name: 'bar'}"
+            ]
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[{id: 4, name: 'foo'}, {x: 1}]",
+                "Array"
+              ],
+              [
+                "O",
+                "{id: 4, name: 'foo'}"
+              ]
+            ],
+            [
+              "O",
+              "{id: 4, name: 'foo'}"
+            ]
+          ]
+        ]
+      },
+      "intersectp": {
+        "test": "koru/util test intersectp",
+        "sig": "intersectp(list1, list2)",
+        "intro": "Determine if `list1` and `list2` intersect",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "[1, 4]",
+                "Array"
+              ],
+              [
+                "Oi",
+                "[4, 5]",
+                "Array"
+              ]
+            ],
+            true
+          ],
+          [
+            [
+              [
+                "Oi",
+                "[1, 2]",
+                "Array"
+              ],
+              [
+                "Oi",
+                "['a']",
+                "Array"
+              ]
+            ],
+            false
+          ]
+        ]
+      },
+      "reverseForEach": {
+        "test": "koru/util test reverseForEach",
+        "sig": "reverseForEach(list, visitor)",
+        "intro": "Visit `list` in reverse order.\n\n@param visitor - called with the list `item` and `index`",
+        "calls": [
+          {
+            "body": "        var results = [];\n        util.reverseForEach(v.list = [1,2,3], (val, index) => {\n          results.push(val+\".\"+index);\n        });\n        assert.equals(results, ['3.2', '2.1', '1.0']);\n\n        // ignores null list\n        util.reverseForEach(null, v.stub = test.stub());\n        refute.called(v.stub);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "Oi",
+                    "[1, 2, 3]",
+                    "Array"
+                  ],
+                  [
+                    "F",
+                    "(val, index) => {/*...*/}"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "O",
+                    "null"
+                  ],
+                  [
+                    "F",
+                    "stub"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "protoMethods": {}
+  }
+}

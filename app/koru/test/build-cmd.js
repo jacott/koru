@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   const koru   = require('../main');
   const util   = require('../util');
   const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+  const fst = require('koru/fs-tools');
 
   const topDir = koru.appDir;
   const readdir = Future.wrap(fs.readdir);
@@ -22,6 +23,13 @@ define(function(require, exports, module) {
       pattern = pattern || '';
 
       if (pattern === '') {
+        if (process.env.KORUAPI) {
+          // clear api files
+          type === 'server' ||
+            fst.rm_f(Path.resolve(koru.appDir, '../doc/api-client.json'));
+          type === 'client' ||
+            fst.rm_f(Path.resolve(koru.appDir, '../doc/api-server.json'));
+        }
         // all
         var config = module.config();
         var exDirs = koru.util.toMap(config.excludeDirs||[]);
