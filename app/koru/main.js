@@ -1,6 +1,7 @@
 define(function (require, exports, module) {
-  const errors = require('./errors');
-  const util   = require('./util');
+  const yaajsGraph = require('koru/yaajs-graph');
+  const errors     = require('./errors');
+  const util       = require('./util');
 
   /**
    * Map of module dependencies. Entries list what to unload when
@@ -121,6 +122,9 @@ define(function (require, exports, module) {
     },
 
     fetchDependants: fetchDependants,
+
+    findPath: yaajsGraph.findPath,
+    isRequiredBy: yaajsGraph.isRequiredBy,
   };
 
   function fetchDependants(mod, result) {
@@ -128,7 +132,7 @@ define(function (require, exports, module) {
     if (! mod || result[mod.id]) return result;
     result[mod.id] = true;
     var modules = mod.ctx.modules;
-    var deps = mod.dependants;
+    var deps = mod._requiredBy;
     for (var id in deps) {
       var map = {};
       fetchDependants(modules[id], result);

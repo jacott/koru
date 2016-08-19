@@ -21,7 +21,7 @@
             ],
             [
               "O",
-              "{section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, class: 'greeting', id: 'gId', $data-lang: 'en'}"
+              "{\"$data-lang\": 'en', class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}}"
             ]
           ]
         ]
@@ -35,7 +35,7 @@
             [
               [
                 "O",
-                "{class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, $data-lang: 'en'}"
+                "{\"$data-lang\": 'en', class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}}"
               ]
             ],
             [
@@ -47,7 +47,11 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/main",
+      "koru/util"
+    ]
   },
   "koru/dom/html-doc": {
     "id": "koru/dom/html-doc",
@@ -88,7 +92,13 @@
           }
         ]
       }
-    }
+    },
+    "requires": [
+      "koru/dom/base",
+      "koru/main",
+      "koru/util",
+      "koru/util-color"
+    ]
   },
   "koru/dom/html-doc::Element": {
     "id": "koru/dom/html-doc",
@@ -141,9 +151,6 @@
         ]
       }
     },
-    "otherIds": [
-      null
-    ],
     "initInstExample": "          const element = document.createElement('div');\n        "
   },
   "koru/idle-check": {
@@ -199,7 +206,10 @@
         ],
         "info": "The default `IdleCheck`. It is used by\n{#koru/web-server-factory} and\n{#koru/session/server-connection}"
       }
-    }
+    },
+    "requires": [
+      "koru/util"
+    ]
   },
   "koru/main": {
     "id": "koru/main",
@@ -240,9 +250,78 @@
             ]
           ]
         ]
+      },
+      "findPath": {
+        "test": "koru/main test findPath",
+        "sig": "findPath(start, goal)",
+        "intro": "Finds shortest dependency path from one module to another\nmodule that it (indirectly) requires.\n\n@param start the module to start from\n@param goal the module to look for\n@returns {[Module,...]} from `start` to `goal`",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ]
+            ],
+            [
+              "Oi",
+              "[{Module:koru/main-test}, {Module:koru/util}, {Module:koru/util-base}]",
+              "Array"
+            ]
+          ]
+        ]
+      },
+      "isRequiredBy": {
+        "test": "koru/main test isRequiredBy",
+        "sig": "isRequiredBy(supplier, user)",
+        "intro": "Test if `supplier` is required by `user`.\n\n@param supplier the module to look for\n@param user the module to start from\n@returns true if path found from user to supplier",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ]
+            ],
+            true
+          ],
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ]
+            ],
+            false
+          ]
+        ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/env!koru/main",
+      "koru/errors",
+      "koru/util",
+      "koru/yaajs-graph"
+    ]
   },
   "koru/pg/driver": {
     "id": "koru/pg/driver",
@@ -303,7 +382,14 @@
         ],
         "info": "Return the default Client database connection.\n"
       }
-    }
+    },
+    "requires": [
+      "koru/main",
+      "koru/make-subject",
+      "koru/match",
+      "koru/pool-server",
+      "koru/util"
+    ]
   },
   "koru/pg/driver::Client": {
     "id": "koru/pg/driver",
@@ -346,7 +432,7 @@
               "map",
               [
                 "O",
-                "{type: 'object', default: {treasure: 'lost'}}"
+                "{default: {treasure: 'lost'}, type: 'object'}"
               ]
             ],
             "\"map\" jsonb DEFAULT '{\"treasure\":\"lost\"}'::jsonb"
@@ -354,9 +440,6 @@
         ]
       }
     },
-    "otherIds": [
-      null
-    ],
     "initExample": "          const Client = driver.defaultDb.constructor;\n        ",
     "initInstExample": "          const client = driver.defaultDb;\n        "
   },
@@ -394,7 +477,12 @@
         "value": "default",
         "info": "The session _id: \"default\""
       }
-    }
+    },
+    "requires": [
+      "koru/env!koru/session/main",
+      "koru/main",
+      "koru/session/base"
+    ]
   },
   "koru/session/main.constructor": {
     "id": "koru/session/main",
@@ -404,9 +492,6 @@
     },
     "methods": {},
     "protoMethods": {},
-    "otherIds": [
-      null
-    ],
     "newInstance": {
       "test": "koru/session/main test Session",
       "sig": "constructor(id)",
@@ -418,7 +503,7 @@
           ],
           [
             "Oi",
-            "{_id: 'mySession', _rpcs: {}, _commands: {}}",
+            "{_commands: {}, _id: 'mySession', _rpcs: {}}",
             "koru/session/main.constructor"
           ]
         ]
@@ -435,7 +520,7 @@
       "module": {
         "test": "koru/test/api test module",
         "sig": "module(module, subjectName)",
-        "intro": "Initiate documentation of the module\n",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [module] defaults to the module corresponding to the\ncurrent test module\n@param [subjectName] defaults to a hopefully reasonable name",
         "calls": [
           [
             [],
@@ -449,7 +534,7 @@
             [
               [
                 "O",
-                "{id: 'myMod1', exports: {clean: => clean}}"
+                "{exports: {clean: => clean}, id: 'myMod1'}"
               ],
               "myHelper"
             ],
@@ -463,7 +548,7 @@
             [
               [
                 "O",
-                "{id: 'myMod2', exports: => Book}"
+                "{exports: => Book, id: 'myMod2'}"
               ]
             ],
             [
@@ -477,7 +562,7 @@
       "innerSubject": {
         "test": "koru/test/api test innerSubject",
         "sig": "innerSubject(subject, subjectName, options)",
-        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject\n@param [subjectName] override the subject name\n@param [options] adornments to the documentation:\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`\n@returns an API instance for the given `subject`. Subsequent\nAPI calls should be made directly on this API instance and\n**not** the API Class itself",
         "calls": [
           [
             [
@@ -488,7 +573,7 @@
               "Anything can be documented",
               [
                 "O",
-                "{initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();', abstract: => abstract}"
+                "{abstract: => abstract, initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();'}"
               ]
             ],
             [
@@ -504,10 +589,7 @@
               [
                 [
                   "Chapter",
-                  [
-                    "O",
-                    "null"
-                  ],
+                  null,
                   [
                     "O",
                     "{info: 'Chapter info'}"
@@ -666,7 +748,13 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/env!koru/test/api",
+      "koru/main",
+      "koru/test/main",
+      "koru/util"
+    ]
   },
   "koru/util": {
     "id": "koru/util",
@@ -754,7 +842,7 @@
             [
               [
                 "Oi",
-                "[1, 2, 3]",
+                "[]",
                 "Array"
               ],
               2
@@ -765,7 +853,7 @@
             [
               [
                 "Oi",
-                "[1, 3]",
+                "[]",
                 "Array"
               ],
               4
@@ -775,7 +863,7 @@
             [
               [
                 "Oi",
-                "[1, 3]",
+                "[]",
                 "Array"
               ],
               1
@@ -786,7 +874,7 @@
             [
               [
                 "Oi",
-                "[3]",
+                "[]",
                 "Array"
               ],
               3
@@ -806,7 +894,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -819,7 +907,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -836,7 +924,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -911,10 +999,7 @@
               ],
               [
                 [
-                  [
-                    "O",
-                    "null"
-                  ],
+                  null,
                   [
                     "F",
                     "stub"
@@ -926,7 +1011,12 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/match",
+      "koru/stacktrace",
+      "koru/util-base"
+    ]
   },
   "koru/web-server": {
     "id": "koru/web-server",
@@ -951,7 +1041,11 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/main",
+      "koru/web-server-factory"
+    ]
   },
   "koru/web-server-factory": {
     "id": "koru/web-server-factory",
@@ -1013,7 +1107,7 @@
               ],
               [
                 "O",
-                "{start: => start, stop: => stop, server: undefined, compilers: {}, requestListener: => requestListener, send: => send, parseurl: => parseurl, notFound: => notFound, parseUrlParams: => parseUrlParams, _replaceSend: => _replaceSend, registerHandler: => registerHandler, deregisterHandler: => deregisterHandler, getHandler: => getHandler}"
+                "{_replaceSend: => _replaceSend, compilers: {}, deregisterHandler: => deregisterHandler, getHandler: => getHandler, notFound: => notFound, parseUrlParam}"
               ]
             ]
           ]
@@ -1026,10 +1120,17 @@
           ],
           [
             "O",
-            "{start: => start, stop: => stop, server: undefined, compilers: {}, requestListener: => requestListener, send: => send, parseurl: => parseurl, notFound: => notFound, parseUrlParams: => parseUrlParams, _replaceSend: => _replaceSend, registerHandler: => registerHandler, deregisterHandler: => deregisterHandler, getHandler: => getHandler}"
+            "{_replaceSend: => _replaceSend, compilers: {}, deregisterHandler: => deregisterHandler, getHandler: => getHandler, notFound: => notFound, parseUrlParam}"
           ]
         ]
       ]
-    }
+    },
+    "requires": [
+      "koru/fs-tools",
+      "koru/idle-check",
+      "koru/main",
+      "koru/queue",
+      "koru/util"
+    ]
   }
 }

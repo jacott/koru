@@ -148,6 +148,23 @@ define(function(require, exports, module) {
       const api = json[id]; api.id = id; api.parent = json;
       const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
 
+      const asside = [];
+      addModuleList('Modules required', api.requires);
+      addModuleList('Modifies modules', api.modifies);
+      addModuleList('Modified by modules', api.modifiedBy);
+
+      function addModuleList(heading, list) {
+        if (list) {
+          asside.push({div: [
+            {h5: heading},
+
+            {class: 'jsdoc-list', div: list.map(id => Dom.h({
+              class: 'jsdoc-link', a: id, $href: '#'+id
+            }))},
+          ]});
+        }
+      }
+
       const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
       const reqParts = [
         hl('const', 'kd'), ' ', hl(subject.name, 'nx'), ' ', hl('=', 'o'), ' ',
@@ -187,12 +204,15 @@ define(function(require, exports, module) {
           }))
         ]};
       }
+
+
       pages.appendChild(Dom.h({
         id: id,
         class: "jsdoc-module",
         section: [
           {class: 'jsdoc-module-title', h2: subject.name},
           {abstract},
+          {class: 'jsdoc-module-sidebar', asside},
           {div: [
             config,
             constructor,
@@ -484,6 +504,10 @@ define(function(require, exports, module) {
     if (type.startsWith('...'))
       type = type.slice(3);
 
+    const m = /^\[(\w+)(?:,\.\.\.)\]$/.exec(type);
+    if (m)
+      type = m[1];
+
     let ans = hrefMap[type];
     if (ans) return ans;
     const cType = util.capitalize(type);
@@ -572,8 +596,6 @@ define(function(require, exports, module) {
     for(var i = 0; i < len; ++i) {
       if (text[i] !== prevId[i]) break;
     }
-    _koru_.debug(`id, prevId`, text, prevId, i, len);
-
     if (i === 0) {
       text = text.join('');
     } else {

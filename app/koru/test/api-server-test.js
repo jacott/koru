@@ -56,6 +56,7 @@ define(function (require, exports, module) {
         assert.equals(JSON.parse(out), {
           'koru/test/api-server': {
             id: 'koru/test/api-server',
+            requires: ['koru/session/main', 'koru/util'],
             subject: {
               name: 'fooBar',
               abstract: TH.match.any,

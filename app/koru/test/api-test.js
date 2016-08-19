@@ -30,8 +30,12 @@ define(function (require, exports, module) {
 
     "test module"() {
       /**
-       * Initiate documentation of the module
+       * Initiate documentation of the module. Subsequent calls to API
+       * methods will act of the given `module`.
        *
+       * @param [module] defaults to the module corresponding to the
+       * current test module
+       * @param [subjectName] defaults to a hopefully reasonable name
        **/
       MainAPI.method('module');
 
@@ -68,8 +72,9 @@ define(function (require, exports, module) {
        * Document a subject within a module.
        *
        * @param subject either the actual subject or the property name
-       * of the subject if accessible from the current subject.
-       * @param options
+       * of the subject if accessible from the current subject
+       * @param [subjectName] override the subject name
+       * @param [options] adornments to the documentation:
        *
        * * `intro|info` - property info line (if subject is a `string`)
 
@@ -81,6 +86,10 @@ define(function (require, exports, module) {
 
        * * `initInstExample` - code that can be used to initialize
        * an instance of `subject`
+
+       * @returns an API instance for the given `subject`. Subsequent
+       * API calls should be made directly on this API instance and
+       * **not** the API Class itself
        **/
       MainAPI.method('innerSubject');
       API.module();
@@ -513,6 +522,8 @@ define(function (require, exports, module) {
     },
 
     "test resolveObject"() {
+      assert.equals(MainAPI.resolveObject(ctx.modules['koru/util-base']), ['Oi', '{Module:koru/util-base}', 'Module']);
+
       assert.equals(API.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
 
       const foo = {foo: 123};
@@ -558,6 +569,7 @@ define(function (require, exports, module) {
     },
 
     "test serialize"() {
+      const myCtx = {modules: {}};
       const fooBar = {
         defaults: {
           theme: MainAPI,
@@ -565,13 +577,24 @@ define(function (require, exports, module) {
         },
         fnord(a, b) {return new API()}
       };
-      const fooBarMod = {id: 'koru/test/foo-bar', exports: fooBar};
-      const otherMod = {id: 'koru/test/other-foo-bar', exports: fooBar};
+      const fooBarMod = {
+        id: 'koru/test/foo-bar',
+        exports: fooBar,
+        _requires: {'koru/test/other-foo-bar' : 1},
+        ctx: myCtx,
+      };
+      const otherMod = {
+        id: 'koru/test/other-foo-bar',
+        exports: fooBar,
+        ctx: myCtx,
+      };
       const FooTestMod = {
         id: 'koru/test/foo-bar-test',
         exports: function () {},
         body: `function () {/**\n * foo bar comment **/}`
       };
+      myCtx.modules[otherMod.id] = otherMod;
+      myCtx.modules[fooBarMod.id] = fooBarMod;
       API._mapSubject(fooBar, otherMod);
       API._mapSubject(fooBar, fooBarMod);
       const api = new API(null, fooBarMod, 'fooBar', FooTestMod);
@@ -657,9 +680,10 @@ define(function (require, exports, module) {
         methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}
       }), {
         id: 'koru/test/foo-bar',
-        otherIds: ['koru/test/other-foo-bar'],
         initExample: TH.match(/const example = 'init';/),
         initInstExample: TH.match(/const exampleInst = 'initInst';/),
+        requires: [otherMod.id],
+        modifies: [otherMod.id],
         subject: {
           name: 'fooBar',
           abstract: 'foo bar comment',

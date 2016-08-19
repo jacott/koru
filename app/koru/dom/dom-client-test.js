@@ -25,8 +25,10 @@ isClient && define(function (require, exports, module) {
 
     "test isInView"() {
       /**
-       * Determin if a element is within the viewable area of the
-       * browser window.
+       * Determine if a element is within the viewable area of a
+       * `region`.
+       *
+       * @param {koru/dom/html-doc::Element|object} region either a Dom `Element` or a `boundingClientRect`
        **/
       api.method('isInView');
       var x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
@@ -37,8 +39,15 @@ isClient && define(function (require, exports, module) {
       x.style.left = "-9px";
       assert(Dom.isInView(x, document.body));
 
+      x.style.bottom = '-17px';
+      var rect = {top: 0, bottom: 50, left: 0, right: 40};
+      refute(Dom.isInView(x, rect));
+      rect.bottom = 2000;
+      assert(Dom.isInView(x, rect));
+
       api.done();
 
+      x.style.bottom = '';
       x.style.left = '';
       x.style.right = '-9px';
       assert(Dom.isInView(x, document.body));
@@ -53,11 +62,6 @@ isClient && define(function (require, exports, module) {
       x.style.top = '';
       x.style.bottom = '-14px';
       assert(Dom.isInView(x, document.body));
-      x.style.bottom = '-17px';
-      var rect = {top: 0, bottom: 50, left: 0, right: 40};
-      refute(Dom.isInView(x, rect));
-      rect.bottom = 2000;
-      assert(Dom.isInView(x, rect));
     },
 
     "test wheelDelta"() {

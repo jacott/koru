@@ -80,6 +80,7 @@ define(function (require, exports, module) {
                 ]],
               }
             },
+            requires: ['koru/test/main', 'koru/util'],
           },
         });
         return true;

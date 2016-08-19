@@ -85,7 +85,7 @@ define(function(require, exports, module) {
 
       const resolveFunc = this._resolveFuncs.get(value);
       if (resolveFunc)
-        return resolveFunc(relType(orig, value), displayName, orig);
+        return resolveFunc(relType(orig, value), orig);
 
       if (this._coreTypes.has(value))
         return [relType(orig, value), displayName, value.name];
@@ -357,18 +357,6 @@ define(function(require, exports, module) {
         protoMethods,
       };
 
-      let otherMods = this.constructor._subjectMap.get(this.subject);
-      if (otherMods) {
-        const otherIds = [];
-        while (otherMods) {
-          if (otherMods[0].id !== id)
-            otherIds.push(otherMods[0].id);
-          otherMods = otherMods[1];
-        }
-        if (otherIds.length)
-          ans.otherIds = otherIds.sort();
-      }
-
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
       if (this.initInstExample) ans.initInstExample = extractFnBody(this.initInstExample);
 
@@ -383,6 +371,36 @@ define(function(require, exports, module) {
         ans.properties = properties;
       }
 
+      if (this.module) {
+        if (this.module._requires)
+          ans.requires = Object.keys(this.module._requires).sort();
+
+        let otherMods = this.constructor._subjectMap.get(this.subject);
+        if (otherMods) {
+          const otherIds = [];
+          for (; otherMods; otherMods = otherMods[1]) {
+            if (! (otherMods[0] instanceof API) &&
+                otherMods[0].id && otherMods[0].id !== id)
+              otherIds.push(otherMods[0].id);
+          }
+          if (otherIds) {
+            const modifies = [], modifiedBy = [];
+            const {modules} = this.module.ctx;
+            otherIds.forEach(oId => {
+              const oMod = modules[oId];
+              if (oMod && koru.isRequiredBy(oMod, this.module))
+                modifies.push(oId);
+              else if (oMod && koru.isRequiredBy(this.module, oMod))
+                modifiedBy.push(oId);
+            });
+            if (modifies.length)
+              ans.modifies = modifies.sort();
+            if (modifiedBy.length)
+              ans.modifiedBy = modifiedBy.sort();
+          }
+        }
+      }
+
       return ans;
     }
 
@@ -394,7 +412,12 @@ define(function(require, exports, module) {
       case 'function':
         return ['F', obj, obj.name || funcToSig(obj)];
       case 'object':
-        return ['O', obj, util.inspect(obj)];
+        if (obj === null)
+          return obj;
+        let resolveFunc = this.constructor._resolveFuncs.get(obj) ||
+              this.constructor._resolveFuncs.get(obj.constructor);
+
+        return ['O', obj, resolveFunc ? resolveFunc('O', obj)[1] : inspect(obj)];
       default:
         return obj;
       }
@@ -464,11 +487,27 @@ define(function(require, exports, module) {
   ]);
 
   API._resolveFuncs = new Map([
-    [module.constructor, (type, _, value) => {
+    [module.constructor, (type, value) => {
       if (type === 'Oi')
         return [type, `{Module:${value.id}}`, 'Module'];
       return [type, value.name, 'Module'];
-    }]
+    }],
+
+    [Array, (type, value) => {
+      if (type === 'Oi') {
+        if (value.length > 20)
+          value = value.slice(0, 20);
+        const display = value.map(item => {
+          let resolveFunc = API._resolveFuncs.get(item.constructor);
+          if (resolveFunc)
+            return resolveFunc('Oi', item)[1];
+          else
+            return inspect(item);
+        });
+        return [type, `[${display.join(", ").slice(0, 150)}]`, 'Array'];
+      }
+      return [type, 'Array', 'Array'];
+    }],
   ]);
 
   API.reset();
@@ -670,6 +709,27 @@ define(function(require, exports, module) {
     }
 
     onEnd.callbacks.push(func);
+  }
+
+  function inspect(obj) {
+    if (typeof obj !== 'object' || obj === null ||
+        obj.$inspect || ('outerHTML' in obj) || obj.nodeType === 3)
+      return util.inspect(obj, 4, 150);
+
+    let keys = Object.keys(obj).sort();
+    if (keys.length > 20)
+      keys = keys.slice(0, 20);
+
+    const display = keys.map(key => {
+      const item = obj[key];
+      if (/[^$\w]/.test(key))
+        key = JSON.stringify(key);
+      let resolveFunc = item && API._resolveFuncs.get(item.constructor);
+      return `${key}: ${resolveFunc ?
+resolveFunc('Oi', item)[1] :
+util.inspect(item, 3, 150)}`;
+    });
+    return `{${display.join(", ").slice(0, 150)}}`;
   }
 
   API._docComment = docComment;

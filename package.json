@@ -42,7 +42,7 @@
     "postcss": "^5.0.21",
     "send": "^0.14.1",
     "ws": "^1.1.0",
-    "yaajs": "^2.0.4"
+    "yaajs": "^2.1.2"
   },
   "devDependencies": {
     "pg-libpq": ">=1.1.0"
@@ -50,5 +50,5 @@
   "engines": {
     "node": ">=6.2.1"
   },
-  "version": "0.7.2"
+  "version": "0.8.0"
 }

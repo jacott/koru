@@ -14,6 +14,24 @@ pre {
   margin: 0 10px;
 }
 
+.jsdoc-list>* {
+  display: block;
+}
+
+@media screen and (min-width: 1200px) {
+  .jsdoc-module-sidebar {
+    float: right;
+    margin-left: 20px;
+  }
+}
+
+.jsdoc-nav-module {
+  opacity: .8;
+  margin-bottom: 3px;
+  padding-left: 5px;
+  border-left: 2px solid transparent;
+}
+
 .jsdoc-nav-module>nav a {
   display: none;
   margin-left: 20px;
@@ -23,20 +41,27 @@ pre {
   display: block;
 }
 
+
+.jsdoc-nav-module.jsdoc-nav-active-page {
+  opacity: 1;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+
+
+.jsdoc-nav-module:hover {
+  opacity: 1;
+}
+
 .jsdoc-nav-common {
   opacity: .2;
 }
 
-.jsdoc-nav-module.jsdoc-nav-active-page .jsdoc-nav-common,
-.jsdoc-nav-module:hover .jsdoc-nav-common {
-  opacity: 1;
+.jsdoc-nav-module.jsdoc-nav-active-page .jsdoc-nav-common {
+  opacity: .6;
 }
 
-.jsdoc-nav-module {
-  margin-bottom: 3px;
-  padding-left: 5px;
-  border-left: 2px solid transparent;
-}
 
 .jsdoc-nav-module.jsdoc-nav-active-page,
 .jsdoc-active-page {
@@ -44,6 +69,7 @@ pre {
 }
 
 .jsdoc-module {
+  overflow: auto;
   margin: 0 !important;
   padding: 0 20px 20px;
   border-left: solid 5px transparent;

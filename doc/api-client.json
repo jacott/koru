@@ -29,7 +29,7 @@
           [
             [
               "Oi",
-              "{_id: 'loader', _rpcs: {}, _commands: {}}",
+              "{_commands: {}, _id: 'loader', _rpcs: {}}",
               "koru/session/main.constructor"
             ]
           ],
@@ -40,7 +40,10 @@
           ]
         ]
       ]
-    }
+    },
+    "requires": [
+      "koru/main"
+    ]
   },
   "koru/dom/base": {
     "id": "koru/dom/base",
@@ -63,7 +66,7 @@
             ],
             [
               "O",
-              "{section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, class: 'greeting', id: 'gId', $data-lang: 'en'}"
+              "{\"$data-lang\": 'en', class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}}"
             ]
           ]
         ]
@@ -77,7 +80,7 @@
             [
               [
                 "O",
-                "{class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}, $data-lang: 'en'}"
+                "{\"$data-lang\": 'en', class: 'greeting', id: 'gId', section: {ul: [{li: {span=Hello,...}}, {li: 'two'}]}}"
               ]
             ],
             [
@@ -89,7 +92,11 @@
       }
     },
     "protoMethods": {},
-    "otherIds": [
+    "requires": [
+      "koru/main",
+      "koru/util"
+    ],
+    "modifiedBy": [
       "koru/dom/dom-client"
     ]
   },
@@ -100,7 +107,11 @@
       "abstract": "Ctx is used to track\n[DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
     },
     "methods": {},
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/dom/base",
+      "koru/util"
+    ]
   },
   "koru/dom/dom-client": {
     "id": "koru/dom/dom-client",
@@ -112,7 +123,7 @@
       "isInView": {
         "test": "koru/dom/dom-client test isInView",
         "sig": "isInView(elm, region)",
-        "intro": "Determin if a element is within the viewable area of the\nbrowser window.",
+        "intro": "Determine if a element is within the viewable area of a\n`region`.\n\n@param {koru/dom/html-doc::Element|object} region either a Dom `Element` or a `boundingClientRect`",
         "calls": [
           [
             [
@@ -141,12 +152,47 @@
               ]
             ],
             true
+          ],
+          [
+            [
+              [
+                "Oi",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
+                "koru/dom/html-doc::Element"
+              ],
+              [
+                "O",
+                "{bottom: 50, left: 0, right: 40, top: 0}"
+              ]
+            ],
+            false
+          ],
+          [
+            [
+              [
+                "Oi",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
+                "koru/dom/html-doc::Element"
+              ],
+              [
+                "O",
+                "{bottom: 2000, left: 0, right: 40, top: 0}"
+              ]
+            ],
+            true
           ]
         ]
       }
     },
     "protoMethods": {},
-    "otherIds": [
+    "requires": [
+      "koru/dom/ctx",
+      "koru/dom/dom",
+      "koru/dom/template",
+      "koru/main",
+      "koru/util"
+    ],
+    "modifies": [
       "koru/dom/base"
     ]
   },
@@ -169,7 +215,13 @@
           }
         ]
       }
-    }
+    },
+    "requires": [
+      "koru/dom/base",
+      "koru/main",
+      "koru/util",
+      "koru/util-color"
+    ]
   },
   "koru/dom/html-doc::Element": {
     "id": "koru/dom/html-doc",
@@ -193,7 +245,7 @@
                 ],
                 [
                   "O",
-                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>, length: 2, item: => item, namedItem: => namedItem}"
+                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>}"
                 ]
               ],
               [
@@ -202,7 +254,7 @@
                 ],
                 [
                   "O",
-                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                  "{0: <div class=\"foo bar\"></div>}"
                 ]
               ],
               [
@@ -211,7 +263,7 @@
                 ],
                 [
                   "O",
-                  "{0: <div class=\"foo bar\"></div>, length: 1, item: => item, namedItem: => namedItem}"
+                  "{0: <div class=\"foo bar\"></div>}"
                 ]
               ]
             ]
@@ -219,9 +271,6 @@
         ]
       }
     },
-    "otherIds": [
-      null
-    ],
     "initInstExample": "          const element = document.createElement('div');\n        "
   },
   "koru/dom/template": {
@@ -257,7 +306,14 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/dom/base",
+      "koru/dom/ctx",
+      "koru/main",
+      "koru/make-subject",
+      "koru/util"
+    ]
   },
   "koru/main": {
     "id": "koru/main",
@@ -298,9 +354,78 @@
             ]
           ]
         ]
+      },
+      "findPath": {
+        "test": "koru/main test findPath",
+        "sig": "findPath(start, goal)",
+        "intro": "Finds shortest dependency path from one module to another\nmodule that it (indirectly) requires.\n\n@param start the module to start from\n@param goal the module to look for\n@returns {[Module,...]} from `start` to `goal`",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ]
+            ],
+            [
+              "Oi",
+              "[{Module:koru/main-test}, {Module:koru/util}, {Module:koru/util-base}]",
+              "Array"
+            ]
+          ]
+        ]
+      },
+      "isRequiredBy": {
+        "test": "koru/main test isRequiredBy",
+        "sig": "isRequiredBy(supplier, user)",
+        "intro": "Test if `supplier` is required by `user`.\n\n@param supplier the module to look for\n@param user the module to start from\n@returns true if path found from user to supplier",
+        "calls": [
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ]
+            ],
+            true
+          ],
+          [
+            [
+              [
+                "Oi",
+                "{Module:koru/main-test}",
+                "Module"
+              ],
+              [
+                "Oi",
+                "{Module:koru/util-base}",
+                "Module"
+              ]
+            ],
+            false
+          ]
+        ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "",
+      "koru/errors",
+      "koru/util",
+      "koru/yaajs-graph"
+    ]
   },
   "koru/session/main": {
     "id": "koru/session/main",
@@ -336,7 +461,12 @@
         "value": "default",
         "info": "The session _id: \"default\""
       }
-    }
+    },
+    "requires": [
+      "koru/env!koru/session/main",
+      "koru/main",
+      "koru/session/base"
+    ]
   },
   "koru/session/main.constructor": {
     "id": "koru/session/main",
@@ -346,9 +476,6 @@
     },
     "methods": {},
     "protoMethods": {},
-    "otherIds": [
-      null
-    ],
     "newInstance": {
       "test": "koru/session/main test Session",
       "sig": "constructor(id)",
@@ -360,7 +487,7 @@
           ],
           [
             "Oi",
-            "{_id: 'mySession', _rpcs: {}, _commands: {}}",
+            "{_commands: {}, _id: 'mySession', _rpcs: {}}",
             "koru/session/main.constructor"
           ]
         ]
@@ -377,7 +504,7 @@
       "module": {
         "test": "koru/test/api test module",
         "sig": "module(module, subjectName)",
-        "intro": "Initiate documentation of the module\n",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [module] defaults to the module corresponding to the\ncurrent test module\n@param [subjectName] defaults to a hopefully reasonable name",
         "calls": [
           [
             [],
@@ -391,7 +518,7 @@
             [
               [
                 "O",
-                "{id: 'myMod1', exports: {clean: => clean}}"
+                "{exports: {clean: => clean}, id: 'myMod1'}"
               ],
               "myHelper"
             ],
@@ -405,7 +532,7 @@
             [
               [
                 "O",
-                "{id: 'myMod2', exports: => Book}"
+                "{exports: => Book, id: 'myMod2'}"
               ]
             ],
             [
@@ -419,7 +546,7 @@
       "innerSubject": {
         "test": "koru/test/api test innerSubject",
         "sig": "innerSubject(subject, subjectName, options)",
-        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject.\n@param options\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "intro": "Document a subject within a module.\n\n@param subject either the actual subject or the property name\nof the subject if accessible from the current subject\n@param [subjectName] override the subject name\n@param [options] adornments to the documentation:\n\n* `intro|info` - property info line (if subject is a `string`)\n* `abstract` - introduction to the subject. If abstract is a\n`function` then the initial doc comment is used.\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`\n@returns an API instance for the given `subject`. Subsequent\nAPI calls should be made directly on this API instance and\n**not** the API Class itself",
         "calls": [
           [
             [
@@ -430,7 +557,7 @@
               "Anything can be documented",
               [
                 "O",
-                "{initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();', abstract: => abstract}"
+                "{abstract: => abstract, initExample: 'const init = {sample: 'code'};', initInstExample: 'const inst = initCode();'}"
               ]
             ],
             [
@@ -446,10 +573,7 @@
               [
                 [
                   "Chapter",
-                  [
-                    "O",
-                    "null"
-                  ],
+                  null,
                   [
                     "O",
                     "{info: 'Chapter info'}"
@@ -608,7 +732,13 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/env!koru/test/api",
+      "koru/main",
+      "koru/test/main",
+      "koru/util"
+    ]
   },
   "koru/ui/route": {
     "id": "koru/ui/route",
@@ -667,7 +797,15 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/dom",
+      "koru/main",
+      "koru/make-subject",
+      "koru/trace",
+      "koru/ui/dom-ext",
+      "koru/util"
+    ]
   },
   "koru/util": {
     "id": "koru/util",
@@ -755,7 +893,7 @@
             [
               [
                 "Oi",
-                "[1, 2, 3]",
+                "[]",
                 "Array"
               ],
               2
@@ -766,7 +904,7 @@
             [
               [
                 "Oi",
-                "[1, 3]",
+                "[]",
                 "Array"
               ],
               4
@@ -776,7 +914,7 @@
             [
               [
                 "Oi",
-                "[1, 3]",
+                "[]",
                 "Array"
               ],
               1
@@ -787,7 +925,7 @@
             [
               [
                 "Oi",
-                "[3]",
+                "[]",
                 "Array"
               ],
               3
@@ -807,7 +945,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -820,7 +958,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {id: 5, name: 'bar'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -837,7 +975,7 @@
             [
               [
                 "Oi",
-                "[{id: 4, name: 'foo'}, {x: 1}]",
+                "[{x: 1}]",
                 "Array"
               ],
               [
@@ -912,10 +1050,7 @@
               ],
               [
                 [
-                  [
-                    "O",
-                    "null"
-                  ],
+                  null,
                   [
                     "F",
                     "stub"
@@ -927,6 +1062,11 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "requires": [
+      "koru/match",
+      "koru/stacktrace",
+      "koru/util-base"
+    ]
   }
 }
