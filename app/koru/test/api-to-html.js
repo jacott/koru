@@ -148,14 +148,18 @@ define(function(require, exports, module) {
       const api = json[id]; api.id = id; api.parent = json;
       const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
 
-      const asside = [];
+      const aside = [];
+      api.clientServer === 'both' || aside.push({
+        class: 'jsdoc-availability',
+        div: api.clientServer + ' only',
+      });
       addModuleList('Modules required', api.requires);
       addModuleList('Modifies modules', api.modifies);
       addModuleList('Modified by modules', api.modifiedBy);
 
       function addModuleList(heading, list) {
         if (list) {
-          asside.push({div: [
+          aside.push({div: [
             {h5: heading},
 
             {class: 'jsdoc-list', div: list.map(id => Dom.h({
@@ -211,8 +215,8 @@ define(function(require, exports, module) {
         class: "jsdoc-module",
         section: [
           {class: 'jsdoc-module-title', h2: subject.name},
+          {class: 'jsdoc-module-sidebar', aside},
           {abstract},
-          {class: 'jsdoc-module-sidebar', asside},
           {div: [
             config,
             constructor,

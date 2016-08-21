@@ -21,8 +21,14 @@ pre {
 @media screen and (min-width: 1200px) {
   .jsdoc-module-sidebar {
     float: right;
-    margin-left: 20px;
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 2px solid rgb(96, 125, 139);
   }
+}
+
+.jsdoc-module-sidebar>:first-child>:first-child {
+  margin-top: 0;
 }
 
 .jsdoc-nav-module {
