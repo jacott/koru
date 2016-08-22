@@ -36,6 +36,13 @@ define(function (require, exports, module) {
        * @param [module] defaults to the module corresponding to the
        * current test module
        * @param [subjectName] defaults to a hopefully reasonable name
+       * @param [options] adornments to the documentation:
+       *
+       * * `initExample` - code that can be used to initialize
+       * `subject`
+
+       * * `initInstExample` - code that can be used to initialize
+       * an instance of `subject`
        **/
       MainAPI.method('module');
 
@@ -54,9 +61,14 @@ define(function (require, exports, module) {
         clean() {}
       };
 
-      API.module({id: 'myMod1', exports: myHelper}, 'myHelper');
+      API.module({id: 'myMod1', exports: myHelper}, 'myHelper', {
+        initExample: 'Init example',
+        initInstExample: 'Init inst example',
+      });
 
       assert.same(API._instance.constructor, API);
+      assert.same(API._instance.initExample, 'Init example');
+      assert.same(API._instance.initInstExample, 'Init inst example');
 
 
       class Book {
@@ -396,6 +408,7 @@ define(function (require, exports, module) {
       /**
        * Document `constructor` for the current subject
        *
+       * @param [sig] override the call signature
        * @returns a ProxyClass which is to be used instead of `new Class`
        **/
       MainAPI.method('new');
@@ -419,7 +432,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.newInstance, {
         test,
         sig: TH.match(/(constructor|function Hobbit)\(name\)/),
-        intro: 'Document `constructor` for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`',
+        intro: TH.match(/Document `constructor`/),
         calls: [[
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
         ]],

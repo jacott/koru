@@ -1,12 +1,12 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define(function (require) {
+define(function(require, exports, module) {
   const koru    = require('../main');
   const util    = require('../util');
   const message = require('./message');
 
-  return function (session, sessState, execWrapper, base) {
-    base = base || session;
+  function webSocketSenderFactory(session, sessState,
+                                  execWrapper=koru.fiberConnWrapper, base=session) {
     const waitSends = [];
     let retryCount = 0;
     let reconnTimeout;
@@ -15,23 +15,23 @@ define(function (require) {
       session.versionHash = KORU_APP_VERSION;
 
     util.extend(session, {
-      execWrapper: execWrapper || koru.fiberConnWrapper,
+      execWrapper,
 
       state: sessState,
 
-      send (type, msg) {
+      send(type, msg) {
         if (this.state.isReady() && this.ws) session.ws.send(type+msg);
         else waitSends.push(type+msg);
       },
 
-      sendBinary (type, msg) {
+      sendBinary(type, msg) {
         if (this.state.isReady()) this.ws.send(message.encodeMessage(type, msg, session.globalDict));
         else waitSends.push([type, util.deepCopy(msg)]);
       },
 
       connect,
 
-      stop () {
+      stop() {
         stopReconnTimeout();
         sessState.close();
         try {
@@ -46,7 +46,7 @@ define(function (require) {
 
       globalDict: message.newGlobalDict(),
 
-      addToDict () {}, // no op on client
+      addToDict() {}, // no op on client
 
       // for testing
       get _waitSends() {return waitSends},
@@ -186,12 +186,12 @@ define(function (require) {
 
 
       util.extend(base, {
-        registerBroadcast (name, func) {
+        registerBroadcast(name, func) {
           if (base._broadcastFuncs[name])
             throw new Error("Broadcast function '"+name+"' alreaady registered");
           base._broadcastFuncs[name] = func;
         },
-        deregisterBroadcast (name) {
+        deregisterBroadcast(name) {
           base._broadcastFuncs[name] = null;
         },
       });
@@ -199,4 +199,6 @@ define(function (require) {
 
     return session;
   };
+
+  module.exports = webSocketSenderFactory;
 });

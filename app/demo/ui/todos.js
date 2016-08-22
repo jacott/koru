@@ -19,8 +19,6 @@ define(function(require, exports, module) {
 
   session.connect();
 
-  subscribe = subscribe(session);
-
   Route.title = 'Todos';
 
   window.addEventListener('popstate', function (event) {

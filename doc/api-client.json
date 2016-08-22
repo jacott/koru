@@ -28,9 +28,8 @@
         [
           [
             [
-              "Oi",
-              "{_commands: {}, _id: 'loader', _rpcs: {}}",
-              "koru/session/main.constructor"
+              "O",
+              "{_commands: {}, _id: 'loader', _rpcs: {}}"
             ]
           ],
           [
@@ -447,11 +446,41 @@
       "koru/yaajs-graph"
     ]
   },
+  "koru/session/client-sub": {
+    "id": "koru/session/client-sub",
+    "subject": {
+      "name": "ClientSub",
+      "abstract": "A subscription to a publication\n\n##### Construction #####\n\nSee {#koru/session/subscribe}"
+    },
+    "methods": {},
+    "protoMethods": {
+      "filterModels": {
+        "test": "koru/session/client-sub test filterModels",
+        "sig": "filterModels()",
+        "intro": "Remove model documents that do not match this subscription",
+        "calls": [
+          [
+            [
+              "Book",
+              "Catalog"
+            ]
+          ]
+        ]
+      }
+    },
+    "initInstExample": "\n          const subscribe = require('koru/session/subscribe');\n          const clientSub = subscribe(\"Library\");\n",
+    "requires": [
+      "koru/main",
+      "koru/session/publish",
+      "koru/trace",
+      "koru/util"
+    ]
+  },
   "koru/session/main": {
     "id": "koru/session/main",
     "subject": {
       "name": "session",
-      "abstract": "The main or active session for client server communication.\nSee {#koru/session/main.constructor}"
+      "abstract": "The main or active session for client server communication.\nSee {#koru/session/web-socket-sender-factory}"
     },
     "methods": {
       "defineRpc": {
@@ -484,35 +513,121 @@
     },
     "requires": [
       "koru/env!koru/session/main",
-      "koru/main",
       "koru/session/base"
     ]
   },
-  "koru/session/main.constructor": {
-    "id": "koru/session/main",
+  "koru/session/publish-test-helper-client": {
+    "id": "koru/session/publish-test-helper-client",
     "subject": {
-      "name": "BaseSession",
-      "abstract": "The constructor for {#koru/session/main}. This is also used\nby {#koru/session/web-socket-sender-factory} and\n{#koru/session/web-socket-server-factory}.\n"
+      "name": "publishTH",
+      "abstract": "Utilities to help test publish/subscribe"
+    },
+    "methods": {
+      "mockSubscribe": {
+        "test": "koru/session/publish-test-helper-client test mockSubscribe",
+        "sig": "mockSubscribe()",
+        "intro": "Subscribe to a publication but do not call server.",
+        "calls": [
+          [
+            [
+              "Foo"
+            ],
+            [
+              "O",
+              "{}"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "requires": [
+      "koru/util"
+    ]
+  },
+  "koru/session/subscribe": {
+    "id": "koru/session/subscribe",
+    "subject": {
+      "name": "subcribe",
+      "abstract": "Main publication subscriber. An instance of\n[subscribeFactory](#koru/session/subscribe-factory) on the\n[main session](#koru/session/main)"
+    },
+    "methods": {},
+    "protoMethods": {},
+    "requires": [
+      "koru/session/main",
+      "koru/session/subscribe-factory"
+    ]
+  },
+  "koru/session/subscribe-factory": {
+    "id": "koru/session/subscribe-factory",
+    "subject": {
+      "name": "subscribeFactory",
+      "abstract": "Build a subscriber for a `session`."
     },
     "methods": {},
     "protoMethods": {},
     "newInstance": {
-      "test": "koru/session/main test Session",
-      "sig": "constructor(id)",
-      "intro": "Create a new session",
+      "test": "koru/session/subscribe-factory test build subscribe",
+      "sig": "subscribeFactory(session)",
+      "intro": null,
       "calls": [
-        [
-          [
-            "mySession"
-          ],
-          [
-            "Oi",
-            "{_commands: {}, _id: 'mySession', _rpcs: {}}",
-            "koru/session/main.constructor"
-          ]
-        ]
+        {
+          "body": "        const subscribe = subscribeFactory(mySession);\n        const sub = subscribe(\"Library\");\n\n        assert(sub instanceof ClientSub);\n      ",
+          "calls": []
+        }
       ]
-    }
+    },
+    "requires": [
+      "koru/main",
+      "koru/session/client-sub",
+      "koru/session/client-update",
+      "koru/session/message",
+      "koru/session/publish",
+      "koru/user-account/client-login",
+      "koru/util"
+    ]
+  },
+  "koru/session/web-socket-sender-factory": {
+    "id": "koru/session/web-socket-sender-factory",
+    "subject": {
+      "name": "webSocketSenderFactory",
+      "abstract": "Build WebSocket clients (senders)."
+    },
+    "methods": {},
+    "protoMethods": {},
+    "newInstance": {
+      "test": "koru/session/web-socket-sender-factory test initialization",
+      "sig": "webSocketSenderFactory(session, sessState,\n                                  execWrapper=koru.fiberConnWrapper, base=session)",
+      "intro": "",
+      "calls": [
+        {
+          "body": "        const mySession = webSocketSenderFactory(new SessionBase('foo'), stateFactory());\n        const wsConnection = {};\n        mySession.newWs = test.stub().returns(wsConnection);\n\n        mySession.connect();\n\n        assert.called(mySession.newWs);\n        assert.same(wsConnection.binaryType, 'arraybuffer');\n      ",
+          "calls": [
+            [
+              [
+                [
+                  "O",
+                  "{_commands: {}, _id: 'foo', _rpcs: {}}"
+                ],
+                [
+                  "O",
+                  "{_onConnect: {}, _resetPendingCount: => _resetPendingCount, _state: 'startup', close: => close, connected: => connected, constructor: => stateFactory, }"
+                ]
+              ],
+              [
+                "O",
+                "{_broadcastFuncs: {}, _commands: {X: => , K: => ack, L: => load, U: => unload, W: => batchedMessages, B: => broadcast}, _id: 'foo', _rpcs: {}, _waitSen}"
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    "requires": [
+      "koru/main",
+      "koru/session/message",
+      "koru/util"
+    ]
   },
   "koru/test/api": {
     "id": "koru/test/api",
@@ -523,8 +638,8 @@
     "methods": {
       "module": {
         "test": "koru/test/api test module",
-        "sig": "module(module, subjectName)",
-        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [module] defaults to the module corresponding to the\ncurrent test module\n@param [subjectName] defaults to a hopefully reasonable name",
+        "sig": "module(module, subjectName, options)",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [module] defaults to the module corresponding to the\ncurrent test module\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
         "calls": [
           [
             [],
@@ -540,7 +655,11 @@
                 "O",
                 "{exports: {clean: => clean}, id: 'myMod1'}"
               ],
-              "myHelper"
+              "myHelper",
+              [
+                "O",
+                "{initExample: 'Init example', initInstExample: 'Init inst example'}"
+              ]
             ],
             [
               "Oi",
@@ -731,8 +850,8 @@
       },
       "new": {
         "test": "koru/test/api test new",
-        "sig": "new()",
-        "intro": "Document `constructor` for the current subject\n\n@returns a ProxyClass which is to be used instead of `new Class`",
+        "sig": "new(sig)",
+        "intro": "Document `constructor` for the current subject\n\n@param [sig] override the call signature\n@returns a ProxyClass which is to be used instead of `new Class`",
         "calls": [
           [
             [],

@@ -7,7 +7,7 @@ define(function (require, exports, module) {
   var makeSubject = require('../make-subject');
   var BatchMessage = require('./batch-message');
 
-  return function (session, execWrapper) {
+  function webSocketServerFactory(session, execWrapper) {
     var Connection = require('./server-connection')(session);
 
     koru.onunload(module, 'reload');
@@ -189,4 +189,6 @@ define(function (require, exports, module) {
 
     return session;
   };
+
+  module.exports = webSocketServerFactory;
 });

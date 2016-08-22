@@ -1,12 +1,11 @@
-var WebSocket = requirejs.nodeRequire('ws');
-
-define(function (require) {
+define(function(require, exports, module) {
   const koru                   = require('koru');
   const server                 = require('../web-server').server;
-  const WebSocketServerFactory = require('./web-socket-server-factory');
+  const webSocketServerFactory = require('./web-socket-server-factory');
+  const WebSocket              = requirejs.nodeRequire('ws');
 
-  return function (session) {
-    WebSocketServerFactory(session);
+  function sessionServerFactory(session) {
+    webSocketServerFactory(session);
 
     session.provide('L', function (data) {
       koru.logger('INFO', this.engine, data);
@@ -31,4 +30,6 @@ define(function (require) {
 
     return session;
   };
+
+  module.exports = sessionServerFactory;
 });

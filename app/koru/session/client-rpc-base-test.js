@@ -1,17 +1,17 @@
 define(function (require, exports, module) {
   var test, v;
-  const koru      = require('../main');
-  const util      = require('../util');
-  const rpc       = require('./client-rpc-base');
-  const message   = require('./message');
-  const sessState = require('./state').__init__;
-  const TH        = require('./test-helper');
+  const koru         = require('../main');
+  const util         = require('../util');
+  const rpc          = require('./client-rpc-base');
+  const message      = require('./message');
+  const stateFactory = require('./state').constructor;
+  const TH           = require('./test-helper');
 
   TH.testCase(module, {
     setUp () {
       test = this;
       v = {};
-      v.state = sessState();
+      v.state = stateFactory();
       TH.mockConnectState(v, v.state);
       v.sess = rpc({
         provide: test.stub(),

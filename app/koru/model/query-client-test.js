@@ -1,15 +1,15 @@
 define(function (require, exports, module) {
   var test, v;
-  const session       = require('../session');
-  const clientRpcBase = require('../session/client-rpc-base');
-  const sessionClient = require('../session/main-client');
-  const sessState     = require('../session/state');
-  const util          = require('../util');
-  const dbBroker      = require('./db-broker');
-  const Model         = require('./main');
-  const Query         = require('./query');
-  const sut           = require('./query-client');
-  const TH            = require('./test-helper');
+  const session              = require('../session');
+  const clientRpcBase        = require('../session/client-rpc-base');
+  const sessionClientFactory = require('../session/main-client');
+  const sessState            = require('../session/state');
+  const util                 = require('../util');
+  const dbBroker             = require('./db-broker');
+  const Model                = require('./main');
+  const Query                = require('./query');
+  const sut                  = require('./query-client');
+  const TH                   = require('./test-helper');
 
   TH.testCase(module, {
     setUp() {
@@ -121,8 +121,8 @@ define(function (require, exports, module) {
     },
 
     "test nested update after connection lost"() {
-      var _sessState = sessState.__init__();
-      var _session = session.__init__(sessionClient.__init__(_sessState), new (session.constructor)('foo'));
+      var _sessState = sessState.constructor();
+      var _session = sessionClientFactory(new (session.constructor)('foo'), _sessState);
       _session.ws = {send: test.stub()};
       clientRpcBase(_session);
       _session.defineRpc('fooUpdate',function () {

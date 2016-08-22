@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const Trace       = require('koru/trace');
   const util        = require('koru/util');
 
-  function Constructor() {
+  function stateFactory() {
     var state = 'startup';
     var count = 0;
 
@@ -22,7 +22,8 @@ define(function(require, exports, module) {
       }
     };
 
-    return makeSubject({
+    const sessionState = {
+      constructor: stateFactory,
       _onConnect: {},
 
       onConnect(priority, func) {
@@ -92,12 +93,12 @@ define(function(require, exports, module) {
       _resetPendingCount() {
         count = 0;
       },
+    };
 
-    });
+    return makeSubject(sessionState);
   }
 
-  exports = Constructor();
-  exports.__init__ = Constructor;
+  exports = stateFactory();
 
   return exports;
 });

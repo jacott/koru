@@ -1,9 +1,13 @@
 define(function (require, exports, module) {
+  /**
+   * Build WebSocket clients (senders).
+   **/
   var test, v;
-  const SessionBase = require('./base').constructor;
-  const SessState   = require('./state').__init__;
-  const TH          = require('./test-helper');
-  const sut         = require('./web-socket-sender-factory');
+  const api          = require('koru/test/api');
+  const SessionBase  = require('./base').constructor;
+  const stateFactory = require('./state').constructor;
+  const TH           = require('./test-helper');
+  const sut          = require('./web-socket-sender-factory');
 
   TH.testCase(module, {
     setUp () {
@@ -11,20 +15,38 @@ define(function (require, exports, module) {
       v = {};
       const base = new SessionBase('foo');
       test.stub(base, 'provide');
-      v.sess = sut(base, v.state = SessState());
+      v.sess = sut(base, v.state = stateFactory());
       v.sess.newWs = function () {return v.ws = {}};
+      api.module();
     },
 
     tearDown () {
       v = null;
     },
 
-    "test onerror" () {
+    "test initialization"() {
+      /**
+       *
+       **/
+      const webSocketSenderFactory = api.new(sut);
+      api.example(() => {
+        const mySession = webSocketSenderFactory(new SessionBase('foo'), stateFactory());
+        const wsConnection = {};
+        mySession.newWs = test.stub().returns(wsConnection);
+
+        mySession.connect();
+
+        assert.called(mySession.newWs);
+        assert.same(wsConnection.binaryType, 'arraybuffer');
+      });
+    },
+
+    "test onerror"() {
       v.sess.connect();
       assert.same(v.ws.onerror, v.ws.onclose);
     },
 
-    "test onStop callbacks" () {
+    "test onStop callbacks"() {
       v.sess.onStop(v.c1 = test.stub());
       v.sess.onStop(v.c2 = test.stub());
 
@@ -33,11 +55,11 @@ define(function (require, exports, module) {
       assert.called(v.c2);
     },
 
-    "test state" () {
+    "test state"() {
       assert.same(v.state, v.sess.state);
     },
 
-    "test batched messages" () {
+    "test batched messages"() {
       v.sess._commands.f = v.f = test.stub();
       v.sess._commands.g = v.g = test.stub();
 
@@ -55,13 +77,14 @@ define(function (require, exports, module) {
       assert.same(v.g.firstCall.thisValue, v.sess);
     },
 
-    "test using separate base" () {
+    "test using separate base"() {
+      const webSocketSenderFactory = api.new(sut);
       var sess1 = new SessionBase('foo1');
       var sess2 = new SessionBase('foo2');
       var base = new SessionBase('foo3');
-      sut(sess1, v.state = SessState(), v.wrapper1 = test.stub(), base);
+      webSocketSenderFactory(sess1, v.state = stateFactory(), v.wrapper1 = test.stub(), base);
       var bfunc = base._commands.B;
-      sut(sess2, v.state = SessState(), v.wrapper2 = test.stub(), base);
+      webSocketSenderFactory(sess2, v.state = stateFactory(), v.wrapper2 = test.stub(), base);
 
       assert.equals(sess1._rpcs, {});
       assert.equals(sess1._commands, {});
@@ -70,7 +93,7 @@ define(function (require, exports, module) {
       assert.same(base._commands.B, bfunc);
     },
 
-    "test server-to-client broadcast messages" () {
+    "test server-to-client broadcast messages"() {
       v.sess.registerBroadcast("foo", v.foo = test.stub());
       v.sess.registerBroadcast("bar", v.bar = test.stub());
 

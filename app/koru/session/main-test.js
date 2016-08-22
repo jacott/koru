@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   /**
    * The main or active session for client server communication.
-   * See {#koru/session/main.constructor}
+   * See {#koru/session/web-socket-sender-factory}
    **/
   var test, v;
   const api     = require('koru/test/api');
@@ -47,26 +47,6 @@ define(function (require, exports, module) {
       test.onEnd(() => delete session._rpcs['Book.list']);
 
       assert.same(session._rpcs['Book.list'], func);
-    },
-
-    "test Session"() {
-      /**
-       * Create a new session
-       **/
-      function abstract() {
-        /**
-         * The constructor for {#koru/session/main}. This is also used
-         * by {#koru/session/web-socket-sender-factory} and
-         * {#koru/session/web-socket-server-factory}.
-         *
-         **/
-      }
-
-      const bsApi = api.innerSubject('constructor', 'BaseSession', {abstract});
-
-      const mySession = bsApi.new()('mySession');
-
-      assert.same(mySession.constructor, session.constructor);
     },
   });
 });

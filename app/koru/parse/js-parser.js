@@ -21,7 +21,15 @@ define(function(require, exports, module) {
     if (! codeIn) return;
 
     let srcPos = 0;
-    var ast = parse(codeIn);
+    try {
+      var ast = parse(codeIn);
+    } catch(ex) {
+      const msg = `Error parsing ${codeIn}`;
+      if (ex.name === 'SyntaxError')
+        throw new Error(`${msg}:\n${ex}`);
+      koru.error(msg);
+      throw ex;
+    }
     codeIn = generate(ast, {
       comments: true,
       compact: false,

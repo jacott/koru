@@ -1,11 +1,11 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var util = require('../util');
-  var message = require('./message');
-  var clientSession = require('./main-client');
-  var koru = require('../main');
-  var SessState = require('./state').__init__;
+  const koru                 = require('../main');
+  const util                 = require('../util');
+  const sessionClientFactory = require('./main-client');
+  const message              = require('./message');
+  const stateFactory         = require('./state').constructor;
+  const TH                   = require('./test-helper');
 
   var sessState;
 
@@ -13,13 +13,13 @@ define(function (require, exports, module) {
     setUp: function () {
       test = this;
       v = {};
-      sessState = SessState();
-      v.sess = clientSession.__init__(sessState)({
+      sessState = stateFactory();
+      v.sess = sessionClientFactory({
         provide: test.stub(),
         _rpcs: {},
         globalDict: v.gDict = message.newGlobalDict(),
         _commands: {},
-      });
+      }, sessState);
       v.sess.newWs = test.stub().returns(v.ws = {
         send: test.stub(),
         close: test.stub(),
@@ -40,10 +40,10 @@ define(function (require, exports, module) {
 
       window.KORU_APP_VERSION = "hash,v1";
 
-       v.sess = clientSession({
+       v.sess = sessionClientFactory({
          provide: test.stub(),
          _rpcs: {},
-       });
+       }, sessState);
 
       assert.same(v.sess.versionHash, "hash,v1");
     },
@@ -94,7 +94,7 @@ define(function (require, exports, module) {
             assert.same(data, v.data);
           },
         };
-        clientSession(v.sess);
+        sessionClientFactory(v.sess, sessState);
 
         v.sess.newWs = test.stub().returns(v.ws);
 
@@ -206,7 +206,7 @@ define(function (require, exports, module) {
       v.sess.connect();         // connect
 
       assert.called(v.sess.newWs);
-      assert.same(clientSession._url(), 'wss://test.host:123/ws');
+      assert.same(sessionClientFactory._url(), 'wss://test.host:123/ws');
 
       refute.called(sessState.connected);
 

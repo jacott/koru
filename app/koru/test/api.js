@@ -40,7 +40,7 @@ define(function(require, exports, module) {
       this._objCache = new Map;
     }
 
-    static module(module, subjectName) {
+    static module(module, subjectName, options) {
       const tc = TH.test._currentTestCase;
       if (module == null) {
         module = ctx.modules[toId(tc)];
@@ -66,11 +66,19 @@ define(function(require, exports, module) {
           ctx.modules[tc.moduleId]
         )
       );
+      if (options) {
+        if (options.initExample)
+          this._instance.initExample = options.initExample;
+
+        if (options.initInstExample)
+          this._instance.initInstExample = options.initInstExample;
+      }
+
       return this._instance;
     }
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
-    static new() {return this.instance.new()}
+    static new(sig) {return this.instance.new(sig)}
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options) {this.instance.protoProperty(name, options)}
     static comment(comment) {this.instance.comment(comment)}
@@ -197,15 +205,24 @@ define(function(require, exports, module) {
       return ans;
     }
 
-    new() {
+    new(sig) {
       const api = this;
       const {test} = TH;
       const calls = [];
 
+      switch(typeof sig) {
+      case 'function':
+        sig = funcToSig(api.subject);
+        break;
+      case 'undefined':
+        sig = funcToSig(api.subject).replace(/^[^(]*/, 'constructor');
+        break;
+      }
+
       if (! api.newInstance) {
         api.lastMethod = api.newInstance = {
           test,
-          sig: funcToSig(api.subject),
+          sig,
           intro: docComment(test.func),
           calls
         };

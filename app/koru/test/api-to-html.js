@@ -138,7 +138,7 @@ define(function(require, exports, module) {
     });
 
     const {header, links, pages} = tags;
-    const moduleList = [];
+    const linkModules = [];
 
     Object.keys(json).sort(function (a,b) {
       a = a.replace(/\/main$/, '');
@@ -215,7 +215,7 @@ define(function(require, exports, module) {
         func => func && Dom.h({a: func.$name, $href: '#'+func.id})
       )};
 
-      moduleList.push([id, linkNav]);
+      linkModules.push([id, linkNav]);
       const abstractMap = {};
       const abstract = jsdocToHtml(api, subject.abstract, abstractMap);
       const configMap = abstractMap[':config:'];
@@ -240,6 +240,7 @@ define(function(require, exports, module) {
         id: id,
         class: "jsdoc-module",
         section: [
+          {class: 'jsdoc-module-path', a: id, $href: '#'+id},
           {class: 'jsdoc-module-title', h2: subject.name},
           {abstract},
           {class: 'jsdoc-module-sidebar', aside},
@@ -261,15 +262,7 @@ define(function(require, exports, module) {
       }));
     });
 
-    let prevId = '';
-    moduleList.forEach(([id, linkNav]) => {
-
-      links.appendChild(Dom.h({class: 'jsdoc-nav-module', div: [
-        idToLink(id, prevId),
-        linkNav,
-      ]}));
-      prevId = id;
-    });
+    buildLinks(links, linkModules);
 
     return index.innerHTML;
   };
@@ -339,7 +332,7 @@ define(function(require, exports, module) {
       ]},
     ]};
     return section(api, {$name: 'constructor', div: [
-      {h4: sig.replace(/^[^(]*/, 'constructor')},
+      {h4: sig},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
       examples,
@@ -619,23 +612,42 @@ define(function(require, exports, module) {
     return span;
   }
 
-  function idToLink(id, prevId) {
-    let text = id.replace(/\/main(?=\.|::|$)/, '').split(/(\/)/);
-    prevId = prevId.replace(/\/main(?=\.|::|$)/, '').split(/(\/)/);
-    const len = Math.min(text.length, prevId.length);
-    for(var i = 0; i < len; ++i) {
-      if (text[i] !== prevId[i]) break;
-    }
-    if (i === 0) {
-      text = text.join('');
-    } else {
-      text = Dom.h({span: [
-        {class: 'jsdoc-nav-common', span: text.slice(0, i).join('')},
-        text.slice(i).join('')
-      ]});
-    }
+  function buildLinks(parent, list) {
+    let prevId = '', nodeModule;
+    list.forEach(([id, linkNav]) => {
+      const link = idToLink(id, prevId);
+      (link.nodeType ? parent : nodeModule)
+        .appendChild(nodeModule = Dom.h({class: 'jsdoc-nav-module', div: [
+          link,
+          linkNav,
+        ]}));
+      prevId = id;
+    });
 
-    return Dom.h({a: text, class: "jsdoc-idLink", $href: '#'+id});
+    function idToLink(id) {
+      let text = id.replace(/\/main(?=\.|::|$)/, '').split(/([\/\.]|::)/);
+      prevId = prevId.replace(/\/main(?=\.|::|$)/, '').split(/([\/\.]|::)/);
+      const len = Math.min(text.length, prevId.length);
+      for(var i = 0; i < len; ++i) {
+        if (text[i] !== prevId[i]) break;
+      }
+      if (i === 0) {
+        text = text.join('');
+      } else {
+        switch (text[i]) {
+        case '::': case '.':
+          return {a: text.slice(i).join(''), class: "jsdoc-idLink", $href: '#'+id};
+        case '/': ++i;
+        default:
+          text = Dom.h({span: [
+            {class: 'jsdoc-nav-spacer', span: new Array(i).join("\xa0")},
+            text.slice(i).join('')
+          ]});
+        }
+      }
+
+      return Dom.h({a: text, class: "jsdoc-idLink", $href: '#'+id});
+    }
   }
 
   function findHref(node, href, returnOnFirst) {

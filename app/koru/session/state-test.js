@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
-  const TH               = require('../test');
-  const defaultSessState = require('./state');
+  const TH           = require('../test');
+  const stateFactory = require('./state').constructor;
 
   var sessState;
 
@@ -9,7 +9,7 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      sessState = new defaultSessState.__init__();
+      sessState = new stateFactory();
     },
 
     tearDown() {

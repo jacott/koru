@@ -10,6 +10,22 @@ pre {
   max-width: 780px;
 }
 
+/* .mdl-layout__drawer { */
+/*   overflow-x: auto; */
+/*   width: 300px; */
+/*   transform: translateX(-300px); */
+/* } */
+
+/* .mdl-layout--fixed-drawer>.mdl-layout__content { */
+/*   margin-left: 300px; */
+/* } */
+
+/* @media screen and (max-width: 1024px) { */
+/*   .mdl-layout--fixed-drawer>.mdl-layout__content { */
+/*     margin-left: 0 !important; */
+/*   } */
+/* } */
+
 #jsdoc-index {
   margin: 0 10px;
 }
@@ -36,6 +52,7 @@ pre {
   margin-bottom: 3px;
   padding-left: 5px;
   border-left: 2px solid transparent;
+  white-space: nowrap;
 }
 
 .jsdoc-nav-module>nav a {
@@ -54,14 +71,16 @@ pre {
   margin-bottom: 1em;
 }
 
-
+.jsdoc-nav-module>.jsdoc-nav-module {
+  padding-left: 1em;
+}
 
 .jsdoc-nav-module:hover {
   opacity: 1;
 }
 
-.jsdoc-nav-common {
-  opacity: .2;
+.jsdoc-nav-spacer {
+  visibility: hidden;
 }
 
 .jsdoc-nav-module.jsdoc-nav-active-page .jsdoc-nav-common {
@@ -81,9 +100,13 @@ pre {
   border-left: solid 5px transparent;
 }
 
-.jsdoc-module-title {
+.jsdoc-module-path {
   color: rgb(96, 125, 139);
   border-top: 1px solid rgba(0,0,0,0.12);
+}
+
+.jsdoc-module-title {
+  color: rgb(96, 125, 139);
   font-weight: 400;
   line-height: 32px;
   margin-top: 0;

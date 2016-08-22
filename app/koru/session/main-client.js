@@ -2,28 +2,23 @@
 
 define(function (require, exports, module) {
   const koru                   = require('../main');
-  const sessState              = require('./state');
-  const WebSocketSenderFactory = require('./web-socket-sender-factory');
+  const webSocketSenderFactory = require('./web-socket-sender-factory');
 
   koru.onunload(module, 'reload');
 
-  function Constructor(sessState) {
-    return function (session) {
-      session._url = url;
-      session.newWs = function () {
-        return new WebSocket(session._url());
-      };
-      return WebSocketSenderFactory(session, sessState);
+  function sessionClientFactory(session, state=require('./state')) {
+    session._url = url;
+    session.newWs = function () {
+      return new WebSocket(session._url());
     };
-  }
-
-  module.exports = exports = Constructor(sessState);
-  exports._url = url;
+    return webSocketSenderFactory(session, state);
+  };
+  sessionClientFactory._url = url;
 
   function url() {
     var location = koru.getLocation();
     return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
   }
 
-  exports.__init__ = Constructor;
+  module.exports = sessionClientFactory;
 });
