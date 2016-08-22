@@ -17,7 +17,7 @@ define(function (require, exports, module) {
 
     tearDown() {
       Dom.flushNextFrame();
-      document.body.className = '';
+      document.body.removeAttribute('class');
       Dom.removeChildren(document.body);
       delete Dom.Foo;
       v = null;
