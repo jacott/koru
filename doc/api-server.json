@@ -365,7 +365,7 @@
   "koru/pg/driver": {
     "id": "koru/pg/driver",
     "subject": {
-      "name": "driver",
+      "name": "pg",
       "abstract": "Interface to PostgreSQL.\n\n@config url The default url to connect to; see\n[pg-libpq](https://www.npmjs.com/package/pg-libpq), [libpq -\nPQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)\n"
     },
     "methods": {
@@ -479,8 +479,8 @@
         ]
       }
     },
-    "initExample": "          const Client = driver.defaultDb.constructor;\n        ",
-    "initInstExample": "          const client = driver.defaultDb;\n        "
+    "initExample": "          const Client = pg.defaultDb.constructor;\n        ",
+    "initInstExample": "          const client = pg.defaultDb;\n        "
   },
   "koru/session/main": {
     "id": "koru/session/main",
