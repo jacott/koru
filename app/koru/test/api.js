@@ -21,7 +21,8 @@ define(function(require, exports, module) {
         (this.testModule && this.testModule.body) || ''
       );
 
-      this.newInstance = this.properties =
+      this.newInstance =
+        this.properties = this.protoProperties =
         this.currentComment = this.lastMethod =
         this.propertyName = this.initInstExample =
         this.initExample = undefined;
@@ -71,6 +72,7 @@ define(function(require, exports, module) {
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
     static new() {return this.instance.new()}
     static property(name, options) {this.instance.property(name, options)}
+    static protoProperty(name, options) {this.instance.protoProperty(name, options)}
     static comment(comment) {this.instance.comment(comment)}
     static example(body) {this.instance.example(body)}
     static method(methodName) {this.instance.method(methodName)}
@@ -226,69 +228,12 @@ define(function(require, exports, module) {
       };
     }
 
+    protoProperty(name, options, subject=this.subject.prototype) {
+      return property(this, 'protoProperties', subject, name, options);
+    }
+
     property(name, options) {
-      const api = this;
-      inner(name, options,
-            Object.getOwnPropertyDescriptor(this.subject, name),
-            this.subject[name],
-            this.properties || (this.properties = {}));
-
-      function inner(name, options, desc, value, properties) {
-        const property = properties[name] || (properties[name] = {});
-        if (desc && (desc.get || desc.set)) {
-          const calls = property.calls || (property.calls = []);
-          const {subject} = api;
-          Object.defineProperty(subject, name, {
-            get() {
-              const entry = [[], null];
-              addComment(api, entry);
-              calls.push(entry);
-              const ans = desc.get.call(this);
-              entry[1] = api.valueTag(ans);
-              return ans;
-            },
-            set(value) {
-              const entry = [[api.valueTag(value)], undefined];
-              addComment(api, entry);
-              calls.push(entry);
-              desc.set.call(this, value);
-            }
-          });
-
-          onTestEnd(api, () => Object.defineProperty(subject, name, desc));
-
-        } else {
-          property.value = api.valueTag(value);
-        }
-        switch (typeof options) {
-        case 'string':
-          property.info = options;
-          break;
-        case 'undefined':
-          property.info = docComment(TH.test.func);
-          break;
-        case 'function':
-          property.info = options(value);
-          break;
-        case 'object':
-          if (options != null) {
-            if (options.info) property.info = options.info;
-            if (options.intro) property.info = options.intro;
-            if (options.properties) {
-              const properties = property.properties ||
-                      (property.properties = {});
-              for (let name in options.properties) {
-                inner(name, options.properties[name],
-                      Object.getOwnPropertyDescriptor(value, name),
-                      value[name], properties);
-              }
-            }
-            break;
-          }
-        default:
-          throw new Error("invalid options supplied for property "+name);
-        }
-      }
+      return property(this, 'properties', this.subject, name, options);
     }
 
     comment(comment) {
@@ -360,7 +305,7 @@ define(function(require, exports, module) {
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
       if (this.initInstExample) ans.initInstExample = extractFnBody(this.initInstExample);
 
-      const {newInstance, properties} = this;
+      const {newInstance, properties, protoProperties} = this;
       if (newInstance) {
         newInstance.test = newInstance.test.name;
         newInstance.calls = serializeCalls(this, newInstance.calls);
@@ -369,6 +314,10 @@ define(function(require, exports, module) {
       if (properties) {
         serializeProperties(this, properties);
         ans.properties = properties;
+      }
+      if (protoProperties) {
+        serializeProperties(this, protoProperties);
+        ans.protoProperties = protoProperties;
       }
 
       if (this.module) {
@@ -640,6 +589,70 @@ define(function(require, exports, module) {
         property.calls = serializeCalls(api, property.calls);
       property.properties &&
         serializeProperties(api, property.properties);
+    }
+  }
+
+  function property(api, field, subject, name, options) {
+    inner(name, options,
+          Object.getOwnPropertyDescriptor(subject, name),
+          subject[name],
+          api[field] || (api[field] = {}));
+
+    function inner(name, options, desc, value, properties) {
+      const property = properties[name] || (properties[name] = {});
+      if (desc && (desc.get || desc.set)) {
+        const calls = property.calls || (property.calls = []);
+        const {subject} = api;
+        Object.defineProperty(subject, name, {
+          get() {
+            const entry = [[], null];
+            addComment(api, entry);
+            calls.push(entry);
+            const ans = desc.get.call(this);
+            entry[1] = api.valueTag(ans);
+            return ans;
+          },
+          set(value) {
+            const entry = [[api.valueTag(value)], undefined];
+            addComment(api, entry);
+            calls.push(entry);
+            desc.set.call(this, value);
+          }
+        });
+
+        onTestEnd(api, () => Object.defineProperty(subject, name, desc));
+
+      } else {
+        property.value = api.valueTag(value);
+      }
+      switch (typeof options) {
+      case 'string':
+        property.info = options;
+        break;
+      case 'undefined':
+        property.info = docComment(TH.test.func);
+        break;
+      case 'function':
+        property.info = options(value);
+        break;
+      case 'object':
+        if (options != null) {
+          if (options.info) property.info = options.info;
+          if (options.intro) property.info = options.intro;
+          if (options.properties) {
+            const properties = property.properties ||
+                    (property.properties = {});
+            for (let name in options.properties) {
+              inner(name, options.properties[name],
+                    Object.getOwnPropertyDescriptor(value, name),
+                    value[name], properties);
+            }
+          }
+          break;
+        }
+      default:
+        throw new Error("invalid options supplied for property "+name);
+      }
     }
   }
 

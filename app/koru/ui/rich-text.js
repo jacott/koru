@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
-  const Dom    = require('koru/dom/base');
-  require('koru/dom/html-doc');
+  const Dom    = require('koru/dom');
   const util   = require('koru/util');
   const uColor = require('koru/util-color');
 

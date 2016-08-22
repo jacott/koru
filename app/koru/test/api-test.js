@@ -40,7 +40,7 @@ define(function (require, exports, module) {
       MainAPI.method('module');
 
       API.module();
-      assert.calledWith(ctx.exportsModule, MainAPI);
+      if (MainAPI.isRecord) assert.calledWith(ctx.exportsModule, MainAPI);
       refute.same(API._moduleMap, MainAPI._moduleMap);
       refute.same(API._subjectMap, MainAPI._subjectMap);
 
@@ -367,13 +367,28 @@ define(function (require, exports, module) {
       },
     },
 
-    "protoProperty": {
-      "//test value property"() {
+    "test protoProperty"() {
+      /**
+       * Document a property of the current subject's prototype. The
+       * property can be either plain value or a get/set function.
+       *
+       * See {#.property}
+       **/
+      MainAPI.method('protoProperty');
+      MainAPI.example(() => {
+        class Book {
+          constructor(pages) {
+            this.pages = pages;
+          }
+        }
 
-      },
+        API.module({id: 'myMod', exports: Book});
+        API.protoProperty('page', {info: 'The number of pages'});
+        const book = new Book(504);
+        assert.same(book.pages, 504);
+      });
 
-      "//test get/set property"() {
-      },
+      API.done();
     },
 
 
@@ -637,6 +652,13 @@ define(function (require, exports, module) {
         }
       };
 
+      api.protoProperties = {
+        dateProp: {
+          info: 'proto property',
+          value: ['O', new Date(), '2016/08/22'],
+        }
+      };
+
       api.methods.fnord = {
         test,
         sig: 'fnord(a, b)',
@@ -712,6 +734,9 @@ define(function (require, exports, module) {
               },
             }
           }
+        },
+        protoProperties: {
+          dateProp: {info: 'proto property', value: ['Oi', '2016/08/22', 'Date']}
         },
         methods: {
           fnord: {

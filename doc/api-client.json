@@ -45,6 +45,22 @@
       "koru/main"
     ]
   },
+  "koru/dom": {
+    "id": "koru/dom",
+    "subject": {
+      "name": "Dom",
+      "abstract": "Main module to require for full Dom utilities.\n\nSee {#koru/dom/base}, [koru/dom/dom-client](#koru/dom/dom-client)\nand [koru/dom/dom-server](#koru/dom/dom-server)"
+    },
+    "methods": {},
+    "protoMethods": {},
+    "requires": [
+      "koru/env!koru/dom/dom"
+    ],
+    "modifies": [
+      "koru/dom/base",
+      "koru/dom/dom-client"
+    ]
+  },
   "koru/dom/base": {
     "id": "koru/dom/base",
     "subject": {
@@ -97,6 +113,7 @@
       "koru/util"
     ],
     "modifiedBy": [
+      "koru/dom",
       "koru/dom/dom-client"
     ]
   },
@@ -117,7 +134,7 @@
     "id": "koru/dom/dom-client",
     "subject": {
       "name": "Dom",
-      "abstract": "Client only extension to {#koru/dom/base}"
+      "abstract": "Adorn {#koru/dom/base} with extra utility functions"
     },
     "methods": {
       "isInView": {
@@ -194,6 +211,9 @@
     ],
     "modifies": [
       "koru/dom/base"
+    ],
+    "modifiedBy": [
+      "koru/dom"
     ]
   },
   "koru/dom/html-doc": {
@@ -681,6 +701,27 @@
                   [
                     "O",
                     "{info: 'Get/set the book title'}"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "protoProperty": {
+        "test": "koru/test/api test protoProperty",
+        "sig": "protoProperty(name, options)",
+        "intro": "Document a property of the current subject's prototype. The\nproperty can be either plain value or a get/set function.\n\nSee {#.property}",
+        "calls": [
+          {
+            "body": "        class Book {\n          constructor(pages) {\n            this.pages = pages;\n          }\n        }\n\n        API.module({id: 'myMod', exports: Book});\n        API.protoProperty('page', {info: 'The number of pages'});\n        const book = new Book(504);\n        assert.same(book.pages, 504);\n      ",
+            "calls": [
+              [
+                [
+                  "page",
+                  [
+                    "O",
+                    "{info: 'The number of pages'}"
                   ]
                 ]
               ]

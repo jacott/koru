@@ -146,7 +146,7 @@ define(function(require, exports, module) {
       return a === b ? 0 : a < b ? -1 : 1;
     }).forEach(id => {
       const api = json[id]; api.id = id; api.parent = json;
-      const {subject, newInstance, properties, methods, protoMethods, innerSubjects} = api;
+      const {subject, newInstance, methods, protoMethods, innerSubjects} = api;
 
       const aside = [];
       api.clientServer === 'both' || aside.push({
@@ -162,9 +162,24 @@ define(function(require, exports, module) {
           aside.push({div: [
             {h5: heading},
 
-            {class: 'jsdoc-list', div: list.map(id => Dom.h({
-              class: 'jsdoc-link', a: id, $href: '#'+id
-            }))},
+            {class: 'jsdoc-list', div: list.map(id => {
+              const m = id.split('!');
+              if (m.length === 2) {
+                if (m[0] === 'koru/env') {
+                  const idc = m[1]+'-client';
+                  const ids = m[1]+'-server';
+                  return {span: [
+                    {class: 'jsdoc-link', a: idc, $href: '#'+idc},
+                    {br: ''},
+                    {class: 'jsdoc-link', a: ids, $href: '#'+ids},
+                  ]};
+                }
+                return id;
+              }
+              return {
+                class: 'jsdoc-link', a: id, $href: '#'+id
+              };
+            })},
           ]});
         }
       }
@@ -186,14 +201,19 @@ define(function(require, exports, module) {
       reqParts.push(';');
       const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
 
-      const constructor = newInstance && buildConstructor(api, subject, newInstance, requireLine);
-      let functions = [];
-      util.isObjEmpty(methods) ||
-        (functions = functions.concat(buildMethods(api, subject, methods, requireLine)));
-      util.isObjEmpty(protoMethods) ||
-        (functions = functions.concat(buildMethods(api, subject, protoMethods, requireLine, 'proto')));
+      const constructor = newInstance && buildConstructor(
+        api, subject, newInstance, requireLine
+      );
 
-      const linkNav = {nav: [constructor, ...functions].map(func => func && Dom.h({a: func.$name, $href: '#'+func.id}))};
+      let functions = util.isObjEmpty(methods) ? [] :
+            buildMethods(api, subject, methods, requireLine);
+      util.isObjEmpty(protoMethods) ||
+        (functions = functions.concat(
+          buildMethods(api, subject, protoMethods, requireLine, 'proto')));
+
+      const linkNav = {nav: [constructor, ...functions].map(
+        func => func && Dom.h({a: func.$name, $href: '#'+func.id})
+      )};
 
       moduleList.push([id, linkNav]);
       const abstractMap = {};
@@ -209,18 +229,27 @@ define(function(require, exports, module) {
         ]};
       }
 
+      let properties = util.isObjEmpty(api.properties) ? [] :
+            buildProperties(api, subject, api.properties);
+
+      util.isObjEmpty(api.protoProperties) ||
+        (properties = properties.concat(
+          properties, buildProperties(api, subject, api.protoProperties, 'proto')));
 
       pages.appendChild(Dom.h({
         id: id,
         class: "jsdoc-module",
         section: [
           {class: 'jsdoc-module-title', h2: subject.name},
-          {class: 'jsdoc-module-sidebar', aside},
           {abstract},
+          {class: 'jsdoc-module-sidebar', aside},
           {div: [
             config,
             constructor,
-            properties && buildProperties(api, subject, properties),
+            properties.length && {class: 'jsdoc-properties', div: [
+              {h5: 'Properties'},
+              {table: {tbody: properties}}
+            ]},
             functions.length && {class: 'jsdoc-methods', div: [
               {h4: "Methods"},
               {div: functions},
@@ -255,7 +284,7 @@ define(function(require, exports, module) {
     };
   }
 
-  function buildProperties(api, subject, properties) {
+  function buildProperties(api, subject, properties, proto) {
     const rows = [];
     addRows(properties);
 
@@ -282,7 +311,7 @@ define(function(require, exports, module) {
         );
 
         rows.push({tr: [
-          {td: name},
+          {td: proto ? '#'+name : name},
           {td: ap},
           {class: 'jsdoc-info',
            td: info
@@ -293,10 +322,7 @@ define(function(require, exports, module) {
       });
     }
 
-    return {class: 'jsdoc-properties', div: [
-      {h5: 'Properties'},
-      {table: {tbody: rows}}
-    ]};
+    return rows;
   }
 
   function buildConstructor(api, subject, {sig, intro, calls}, requireLine) {

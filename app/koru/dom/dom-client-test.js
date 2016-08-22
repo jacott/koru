@@ -1,6 +1,6 @@
-isClient && define(function (require, exports, module) {
+define(function (require, exports, module) {
   /**
-   * Client only extension to {#koru/dom/base}
+   * Adorn {#koru/dom/base} with extra utility functions
    **/
   var test, v;
   const Ctx = require('koru/dom/ctx');
