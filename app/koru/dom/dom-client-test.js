@@ -1,18 +1,16 @@
 define(function (require, exports, module) {
-  /**
-   * Adorn {#koru/dom/base} with extra utility functions
-   **/
+  // Adorn koru/dom/base with extra client only utilities
   var test, v;
-  const Ctx = require('koru/dom/ctx');
-  const TH  = require('koru/test-helper');
-  const api = require('koru/test/api');
-  const Dom = require('./dom-client');
+  const Ctx  = require('koru/dom/ctx');
+  const TH   = require('koru/test-helper');
+  const api  = require('koru/test/api');
+  const Dom  = require('../dom');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
-      api.module();
+      api.module('../dom');
     },
 
     tearDown() {
@@ -241,17 +239,17 @@ define(function (require, exports, module) {
     },
 
     "hideAndRemove": {
-      setUp: function () {
+      setUp() {
         v.onAnimationEnd = test.stub(Dom.Ctx.prototype, 'onAnimationEnd');
       },
 
-      "test non existent": function () {
+      "test non existent"() {
         Dom.hideAndRemove('Foo');
 
         refute.called(v.onAnimationEnd);
       },
 
-      "test remove by id": function () {
+      "test remove by id"() {
         document.body.appendChild(Dom.h({id: 'Foo'}));
 
         assert.dom('#Foo', function () {
@@ -268,7 +266,7 @@ define(function (require, exports, module) {
         refute.dom('#Foo');
       },
 
-      "test remove by elm": function () {
+      "test remove by elm"() {
         document.body.appendChild(v.elm = Dom.h({id: 'Foo'}));
 
         Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
@@ -356,5 +354,45 @@ define(function (require, exports, module) {
       assert.same(elm._koruEnd.parentNode, parent);
     },
 
+
+    "test onMouseUp"() {
+      Dom.newTemplate({name: 'Foo', nodes: [{
+        name: 'div', children: [
+          {name: 'span'},
+        ]
+      }]});
+      Dom.Foo.$events({
+        'mousedown span'(event) {
+          Dom.onMouseUp(function (e2) {
+            v.ctx = Dom.current.ctx;
+            v.target = e2.target;
+          });
+        },
+      });
+
+      document.body.appendChild(Dom.Foo.$autoRender({}));
+
+      assert.dom('div>span', function () {
+        Dom.triggerEvent(this, 'mousedown');
+        Dom.triggerEvent(this, 'mouseup');
+
+        assert.same(v.ctx, Dom.Foo.$ctx(this));
+        assert.same(v.target, this);
+
+        v.ctx = null;
+
+        Dom.triggerEvent(this, 'mouseup');
+
+        assert.same(v.ctx, null);
+      });
+    },
+
+    "test modifierKey"() {
+      refute(Dom.modifierKey({}));
+      assert(Dom.modifierKey({ctrlKey: true}));
+      assert(Dom.modifierKey({shiftKey: true}));
+      assert(Dom.modifierKey({metaKey: true}));
+      assert(Dom.modifierKey({altKey: true}));
+    },
   });
 });

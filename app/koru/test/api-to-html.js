@@ -149,10 +149,6 @@ define(function(require, exports, module) {
       const {subject, newInstance, methods, protoMethods, innerSubjects} = api;
 
       const aside = [];
-      api.clientServer === 'both' || aside.push({
-        class: 'jsdoc-availability',
-        div: api.clientServer + ' only',
-      });
       addModuleList('Modules required', api.requires);
       addModuleList('Modifies modules', api.modifies);
       addModuleList('Modified by modules', api.modifiedBy);
@@ -238,6 +234,7 @@ define(function(require, exports, module) {
 
       pages.appendChild(Dom.h({
         id: id,
+        '$data-env': env(api),
         class: "jsdoc-module",
         section: [
           {class: 'jsdoc-module-path', a: id, $href: '#'+id},
@@ -272,7 +269,6 @@ define(function(require, exports, module) {
       class: 'jsdoc-inner-subjects',
       div: Object.keys(innerSubjects).sort().map(name => {
         const api = innerSubjects[name];
-
       }),
     };
   }
@@ -306,7 +302,7 @@ define(function(require, exports, module) {
         rows.push({tr: [
           {td: proto ? '#'+name : name},
           {td: ap},
-          {class: 'jsdoc-info',
+          {class: 'jsdoc-info', '$data-env': env(property),
            td: info
            }
         ]});
@@ -317,6 +313,8 @@ define(function(require, exports, module) {
 
     return rows;
   }
+
+  function env(obj) {return obj.env || 'server';}
 
   function buildConstructor(api, subject, {sig, intro, calls}, requireLine) {
     const {args, argMap} = mapArgs(sig, calls);
@@ -373,7 +371,8 @@ define(function(require, exports, module) {
       var sigJoin = '.';
     }
     return Object.keys(methods).map(name => {
-      const {sig, intro, calls} = methods[name];
+      const method = methods[name];
+      const {sig, intro, calls} = method;
       const {args, argMap} = mapArgs(sig, calls);
       const ret = argProfile(calls, function (call) {return call[1]});
       if (! util.isObjEmpty(ret.types))
@@ -400,6 +399,7 @@ define(function(require, exports, module) {
       const params = buildParams(api, args, argMap);
 
       return section(api, {
+        '$data-env': env(method),
         $name: (proto ? '#'+name : name), div: [
           {h5: `${subject.name}${sigJoin}${sig}`},
           {abstract},

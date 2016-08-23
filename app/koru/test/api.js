@@ -40,28 +40,30 @@ define(function(require, exports, module) {
       this._objCache = new Map;
     }
 
-    static module(module, subjectName, options) {
+    static module(subjectModule, subjectName, options) {
       const tc = TH.test._currentTestCase;
-      if (module == null) {
-        module = ctx.modules[toId(tc)];
+      if (subjectModule == null) {
+        subjectModule = ctx.modules[toId(tc)];
+      } else if (typeof subjectModule === 'string') {
+        subjectModule = module.get(subjectModule);
       }
-      const subject = module.exports;
+      const subject = subjectModule.exports;
       if (! this.isRecord) {
         this._instance.subject = subject;
         return this._instance;
       }
 
-      this._instance = this._moduleMap.get(module);
-      if (this._instance) return;
+      this._instance = this._moduleMap.get(subjectModule);
+      if (this._instance) return this._instance;
 
       const afterTestCase = this.__afterTestCase;
       afterTestCase.has(tc) || tc.after(testCaseFinished.bind(this));
       afterTestCase.add(tc);
 
-      this._mapSubject(subject, module);
+      this._mapSubject(subject, subjectModule);
       this._moduleMap.set(
-        module, this._instance = new this(
-          null, module,
+        subjectModule, this._instance = new this(
+          null, subjectModule,
           subjectName || createSubjectName(subject, tc),
           ctx.modules[tc.moduleId]
         )

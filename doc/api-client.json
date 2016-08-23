@@ -45,26 +45,10 @@
     ]
   },
   "koru/dom": {
-    "id": "koru/dom",
-    "subject": {
-      "name": "Dom",
-      "abstract": "Main module to require for full Dom utilities.\n\nSee {#koru/dom/base}, [koru/dom/dom-client](#koru/dom/dom-client)\nand [koru/dom/dom-server](#koru/dom/dom-server)"
-    },
-    "methods": {},
-    "protoMethods": {},
-    "requires": [
-      "koru/env!koru/dom/dom"
-    ],
-    "modifies": [
-      "koru/dom/base",
-      "koru/dom/dom-client"
-    ]
-  },
-  "koru/dom/base": {
     "id": "koru/dom/base",
     "subject": {
       "name": "Dom",
-      "abstract": "Convert an `Element` to a plain `object`"
+      "abstract": "Utilities for interacting with the\n[Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)\n"
     },
     "methods": {
       "htmlToJson": {
@@ -104,16 +88,70 @@
             ]
           ]
         ]
+      },
+      "isInView": {
+        "test": "koru/dom/dom-client test isInView",
+        "sig": "isInView(elm, region)",
+        "intro": "Determine if a element is within the viewable area of a\n`region`.\n\n@param {koru/dom/html-doc::Element|object} region either a Dom `Element` or a `boundingClientRect`",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>"
+              ],
+              [
+                "O",
+                "<body><div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div></body>"
+              ]
+            ],
+            false
+          ],
+          [
+            [
+              [
+                "O",
+                "<div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div>"
+              ],
+              [
+                "O",
+                "<body><div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div></body>"
+              ]
+            ],
+            true
+          ],
+          [
+            [
+              [
+                "O",
+                "<div style=\"position: absolute; left: -9px; width: 20px; height: 30px; bottom: -17px;\">x</div>"
+              ],
+              [
+                "O",
+                "{bottom: 50, left: 0, right: 40, top: 0}"
+              ]
+            ],
+            false
+          ],
+          [
+            [
+              [
+                "O",
+                "<div style=\"position: absolute; left: -9px; width: 20px; height: 30px; bottom: -17px;\">x</div>"
+              ],
+              [
+                "O",
+                "{bottom: 2000, left: 0, right: 40, top: 0}"
+              ]
+            ],
+            true
+          ]
+        ]
       }
     },
     "protoMethods": {},
     "requires": [
-      "koru/main",
-      "koru/util"
-    ],
-    "modifiedBy": [
-      "koru/dom",
-      "koru/dom/dom-client"
+      "koru/env!koru/dom/dom"
     ]
   },
   "koru/dom/ctx": {
@@ -128,169 +166,6 @@
       "koru/dom/base",
       "koru/util"
     ]
-  },
-  "koru/dom/dom-client": {
-    "id": "koru/dom/dom-client",
-    "subject": {
-      "name": "Dom",
-      "abstract": "Adorn {#koru/dom/base} with extra utility functions"
-    },
-    "methods": {
-      "isInView": {
-        "test": "koru/dom/dom-client test isInView",
-        "sig": "isInView(elm, region)",
-        "intro": "Determine if a element is within the viewable area of a\n`region`.\n\n@param {koru/dom/html-doc::Element|object} region either a Dom `Element` or a `boundingClientRect`",
-        "calls": [
-          [
-            [
-              [
-                "Oi",
-                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
-                "koru/dom/html-doc::Element"
-              ],
-              [
-                "O",
-                "<body><div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div></body>"
-              ]
-            ],
-            false
-          ],
-          [
-            [
-              [
-                "Oi",
-                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
-                "koru/dom/html-doc::Element"
-              ],
-              [
-                "O",
-                "<body><div style=\"position: absolute; left: -9px; width: 20px; height: 30px;\">x</div></body>"
-              ]
-            ],
-            true
-          ],
-          [
-            [
-              [
-                "Oi",
-                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
-                "koru/dom/html-doc::Element"
-              ],
-              [
-                "O",
-                "{bottom: 50, left: 0, right: 40, top: 0}"
-              ]
-            ],
-            false
-          ],
-          [
-            [
-              [
-                "Oi",
-                "<div style=\"position:absolute;left:-12px;width:20px;height:30px\">x</div>",
-                "koru/dom/html-doc::Element"
-              ],
-              [
-                "O",
-                "{bottom: 2000, left: 0, right: 40, top: 0}"
-              ]
-            ],
-            true
-          ]
-        ]
-      }
-    },
-    "protoMethods": {},
-    "requires": [
-      "koru/dom/ctx",
-      "koru/dom/dom",
-      "koru/dom/template",
-      "koru/main",
-      "koru/util"
-    ],
-    "modifies": [
-      "koru/dom/base"
-    ],
-    "modifiedBy": [
-      "koru/dom"
-    ]
-  },
-  "koru/dom/html-doc": {
-    "id": "koru/dom/html-doc",
-    "subject": {
-      "name": "HTMLDocument",
-      "abstract": "Server side implementation of the DOM tree."
-    },
-    "methods": {},
-    "protoMethods": {
-      "replaceChild": {
-        "test": "koru/dom/html-doc test replaceChild",
-        "sig": "replaceChild()",
-        "intro": "Replace the `oldChild` with the `newChild`\n\nSee [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)",
-        "calls": [
-          {
-            "body": "        const parent = Dom.h({div: [\n          {class: 'foo'},\n          {class: 'old-node'},\n        ]});\n        const oldParent = Dom.h({div: {class: 'new-node'}});\n        const newNode = oldParent.firstChild;\n\n        const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);\n        assert.className(oldNode, 'old-node');\n        refute(oldNode.parentNode);\n        assert.same(newNode.parentNode, parent);\n        assert.same(parent.lastChild, newNode);\n        assert.same(oldParent.childNodes.length, 0);\n      ",
-            "calls": []
-          }
-        ]
-      }
-    },
-    "requires": [
-      "koru/dom/base",
-      "koru/main",
-      "koru/util",
-      "koru/util-color"
-    ]
-  },
-  "koru/dom/html-doc::Element": {
-    "id": "koru/dom/html-doc",
-    "subject": {
-      "name": "Element",
-      "abstract": "Server side implementation of the DOM tree."
-    },
-    "methods": {},
-    "protoMethods": {
-      "getElementsByClassName": {
-        "test": "koru/dom/html-doc test getElementsByClassName",
-        "sig": "getElementsByClassName()",
-        "intro": "Returns a list of all elements which have `className`.\n\nSee [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)",
-        "calls": [
-          {
-            "body": "        const html = Dom.h({div: [\n          {},\n          {div: [{class: 'foo bar'},\n                 {div: {class: 'foo bar-foo'}}]}\n        ]});\n\n        assert.equals(html.getElementsByClassName('foo').length, 2);\n        assert.equals(html.getElementsByClassName('bar').length, 1);\n        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');\n      ",
-            "calls": [
-              [
-                [
-                  "foo"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>, 1: <div class=\"foo bar-foo\"></div>}"
-                ]
-              ],
-              [
-                [
-                  "bar"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>}"
-                ]
-              ],
-              [
-                [
-                  "bar"
-                ],
-                [
-                  "O",
-                  "{0: <div class=\"foo bar\"></div>}"
-                ]
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "initInstExample": "          const element = document.createElement('div');\n        "
   },
   "koru/dom/template": {
     "id": "koru/dom/template",
@@ -638,11 +513,21 @@
     "methods": {
       "module": {
         "test": "koru/test/api test module",
-        "sig": "module(module, subjectName, options)",
-        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [module] defaults to the module corresponding to the\ncurrent test module\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "sig": "module(subjectModule, subjectName, options)",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [subjectModule] defaults to the module corresponding\nto the current test module. Can be a module id\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
         "calls": [
           [
             [],
+            [
+              "Os",
+              "{API(API)}",
+              "koru/test/api"
+            ]
+          ],
+          [
+            [
+              "./api"
+            ],
             [
               "Os",
               "{API(API)}",

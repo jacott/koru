@@ -98,11 +98,25 @@ pre {
   margin: 0 !important;
   padding: 0 20px 20px;
   border-left: solid 5px transparent;
+  border-top: 1px solid rgba(0,0,0,0.12);
+}
+
+
+
+.jsdoc-module[data-env="server"]:before,
+.jsdoc-module:not([data-env="server"]) [data-env="server"]:before {
+  display: block;
+  content: "server only";
+}
+
+.jsdoc-module[data-env="client"]:before,
+.jsdoc-module:not([data-env="client"]) [data-env="client"]:before {
+  display: block;
+  content: "client only";
 }
 
 .jsdoc-module-path {
   color: rgb(96, 125, 139);
-  border-top: 1px solid rgba(0,0,0,0.12);
 }
 
 .jsdoc-module-title {
@@ -118,6 +132,10 @@ pre {
   margin: 0;
   padding: 20px;
   border-left: solid 5px transparent;
+}
+
+.jsdoc-module-section>:first-child {
+  margin-top: 0 !important;
 }
 
 .jsdoc-module-section[name=constructor]>h4:first-child {

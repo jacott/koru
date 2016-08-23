@@ -5,7 +5,6 @@ define(function (require, exports, module) {
   var test, v;
   const Dom  = require('koru/dom');
   const TH   = require('koru/test');
-  const api  = require('koru/test/api');
   const util = require('koru/util');
   const sut  = require('./html-doc');
 
@@ -13,7 +12,6 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      api.module();
     },
 
     tearDown() {
@@ -28,24 +26,15 @@ define(function (require, exports, module) {
        * See [Element.getElementsByClassName()](https://developer.mozilla.org/en-US/docs/Web/API/Element/getElementsByClassName)
        **/
 
-      const iapi = api.innerSubject(document.createElement('div').constructor, 'Element', {
-        initInstExample() {
-          const element = document.createElement('div');
-        },
-      });
-      iapi.protoMethod('getElementsByClassName');
+      const html = Dom.h({div: [
+        {},
+        {div: [{class: 'foo bar'},
+               {div: {class: 'foo bar-foo'}}]}
+      ]});
 
-      iapi.example(() => {
-        const html = Dom.h({div: [
-          {},
-          {div: [{class: 'foo bar'},
-                 {div: {class: 'foo bar-foo'}}]}
-        ]});
-
-        assert.equals(html.getElementsByClassName('foo').length, 2);
-        assert.equals(html.getElementsByClassName('bar').length, 1);
-        assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
-      });
+      assert.equals(html.getElementsByClassName('foo').length, 2);
+      assert.equals(html.getElementsByClassName('bar').length, 1);
+      assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
     },
 
     "test replaceChild"() {
@@ -54,22 +43,19 @@ define(function (require, exports, module) {
        *
        * See [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)
        **/
-      api.protoMethod('replaceChild');
-      api.example(() => {
-        const parent = Dom.h({div: [
-          {class: 'foo'},
-          {class: 'old-node'},
-        ]});
-        const oldParent = Dom.h({div: {class: 'new-node'}});
-        const newNode = oldParent.firstChild;
+      const parent = Dom.h({div: [
+        {class: 'foo'},
+        {class: 'old-node'},
+      ]});
+      const oldParent = Dom.h({div: {class: 'new-node'}});
+      const newNode = oldParent.firstChild;
 
-        const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
-        assert.className(oldNode, 'old-node');
-        refute(oldNode.parentNode);
-        assert.same(newNode.parentNode, parent);
-        assert.same(parent.lastChild, newNode);
-        assert.same(oldParent.childNodes.length, 0);
-      });
+      const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
+      assert.className(oldNode, 'old-node');
+      refute(oldNode.parentNode);
+      assert.same(newNode.parentNode, parent);
+      assert.same(parent.lastChild, newNode);
+      assert.same(oldParent.childNodes.length, 0);
     },
 
     "test construction"() {

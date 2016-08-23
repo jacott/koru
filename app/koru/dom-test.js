@@ -1,10 +1,4 @@
 define(function (require, exports, module) {
-  /**
-   * Main module to require for full Dom utilities.
-   *
-   * See {#koru/dom/base}, [koru/dom/dom-client](#koru/dom/dom-client)
-   * and [koru/dom/dom-server](#koru/dom/dom-server)
-   **/
   var test, v;
   const api  = require('koru/test/api');
   const TH   = require('koru/test');
@@ -24,7 +18,6 @@ define(function (require, exports, module) {
     "test "() {
       api.module();
       assert.same(base, sut);
-
     },
   });
 });

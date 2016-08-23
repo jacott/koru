@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const Ctx         = require('koru/dom/ctx');
   const DomTemplate = require('koru/dom/template');
   const util        = require('koru/util');
-  const Dom         = require('./dom');
+  const Dom         = require('./base');
 
   var vendorTransform;
   var vendorStylePrefix = (function () {
@@ -30,6 +30,27 @@ define(function(require, exports, module) {
           return elm;
         elm = elm.parentNode;
       }
+    };
+  }
+  require('./next-frame')(Dom);
+
+  Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
+  Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
+  Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
+
+  if (! document.head.classList) {
+    Dom.hasClass = function (elm, name) {
+      return elm && new RegExp("\\b" + name + "\\b").test(elm.className);
+    };
+    Dom.addClass = function (elm, name) {
+      if (! elm || elm.nodeType !== 1) return;
+      var className = " " + elm.className + " ";
+      elm.className = (className.replace(" " + name + " ", " ") + name).trim();
+    };
+    Dom.removeClass = function (elm, name) {
+      if (! elm || elm.nodeType !== 1) return;
+      var className = " " + elm.className + " ";
+      elm.className = (className.replace(" " + name + " ", " ")).trim();
     };
   }
 
@@ -139,7 +160,7 @@ define(function(require, exports, module) {
       focus && focus.focus();
     },
 
-    setRange: function(range) {
+    setRange(range) {
       var sel = window.getSelection();
       try {
         sel.removeAllRanges();
@@ -150,13 +171,13 @@ define(function(require, exports, module) {
       sel.addRange(range);
     },
 
-    getRange: function() {
+    getRange() {
       var sel = window.getSelection();
       if (sel.rangeCount === 0) return null;
       return sel.getRangeAt(0);
     },
 
-    getRangeClientRect: function(range) {
+    getRangeClientRect(range) {
       if (range.collapsed) {
         var sc = range.startContainer;
         var so = range.startOffset;
@@ -200,7 +221,7 @@ define(function(require, exports, module) {
       }
     },
 
-    selectElm: function(elm) {
+    selectElm(elm) {
       if (elm) {
         var range = document.createRange();
         range.selectNode(elm);
@@ -525,6 +546,55 @@ define(function(require, exports, module) {
         if (b && finder(b.data)) return row;
       }
       return null; // need null for IE
+    },
+
+    updateInput(input, value) {
+      if (value !== input.value) {
+        input.value = value;
+      }
+      return value;
+    },
+
+    modifierKey(event) {
+      return event.ctrlKey || event.shiftKey || event.metaKey || event.altKey;
+    },
+
+    onMouseUp(func, elm) {
+      document.addEventListener('mouseup', omu, true);
+
+      var $ = Dom.current;
+
+      var ctx = $.ctx;
+
+      function omu(event) {
+        document.removeEventListener('mouseup', omu, true);
+
+        var orig = $.ctx;
+        $._ctx = ctx;
+        try {
+          func(event);
+        } catch(ex) {
+          Dom.handleException(ex);
+        } finally {
+          $._ctx = orig;
+        }
+      }
+    },
+
+    /**
+     * Remove an element and provide a function that inserts it into its original position
+     * @param element {Element} The element to be temporarily removed
+     * @return {Function} A function that inserts the element into its original position
+     **/
+    removeToInsertLater(element) {
+      var parentNode = element.parentNode;
+      var nextSibling = element.nextSibling;
+      parentNode.removeChild(element);
+      if (nextSibling) {
+        return function() {parentNode.insertBefore(element, nextSibling)};
+      } else {
+        return function() {parentNode.appendChild(element)};
+      };
     },
   });
 

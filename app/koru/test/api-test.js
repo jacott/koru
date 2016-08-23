@@ -33,9 +33,11 @@ define(function (require, exports, module) {
        * Initiate documentation of the module. Subsequent calls to API
        * methods will act of the given `module`.
        *
-       * @param [module] defaults to the module corresponding to the
-       * current test module
+       * @param [subjectModule] defaults to the module corresponding
+       * to the current test module. Can be a module id
+
        * @param [subjectName] defaults to a hopefully reasonable name
+
        * @param [options] adornments to the documentation:
        *
        * * `initExample` - code that can be used to initialize
@@ -55,6 +57,9 @@ define(function (require, exports, module) {
       assert(api);
       assert.same(api.subject, MainAPI);
       assert.equals(API._subjectMap.get(MainAPI), [APIModule, null]);
+
+      assert.same(API.module('./api'), API.instance);
+      assert.same(API.instance.subjectName, 'API');
 
 
       const myHelper = {

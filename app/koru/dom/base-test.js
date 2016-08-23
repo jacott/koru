@@ -1,15 +1,19 @@
 define(function (require, exports, module) {
+  /**
+   * Utilities for interacting with the
+   * [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)
+   *
+   **/
   var test, v;
   const api = require('koru/test/api');
   const TH  = require('../test');
-  const Dom = require('./base');
-  require('./html-doc');
+  const Dom = require('../dom');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
-      api.module();
+      api.module('../dom');
     },
 
     tearDown() {
