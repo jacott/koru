@@ -428,6 +428,17 @@
     },
     "methods": {},
     "protoMethods": {},
+    "newInstance": {
+      "test": "koru/session/subscribe test wired correctly",
+      "sig": "subcribe(name, ...args)",
+      "intro": "Subscribe to a publication (see {#koru/session/publish}).\n\n@param name the name of the publication\n@param {[anything...]} [args] a list of arguments to send to\nthe publication.\n\nThe last argument can be a `callback` which will be called\nafter the subscription has received the initial data from the\npublication. If an error occured the error object will be\npassed to the callback.",
+      "calls": [
+        {
+          "body": "        const sub = subscribe('Books', {author: 'Jane Austen'}, error => {\n          console.error(\"got error \" + error);\n        });\n        assert.same(sub.constructor, ClientSub);\n      ",
+          "calls": []
+        }
+      ]
+    },
     "requires": [
       "koru/session/main",
       "koru/session/subscribe-factory"
@@ -437,7 +448,7 @@
     "id": "koru/session/subscribe-factory",
     "subject": {
       "name": "subscribeFactory",
-      "abstract": "Build a subscriber for a `session`."
+      "abstract": "Build a subscriber for a `session`.\n\nSee {#koru/session/subscribe}"
     },
     "methods": {},
     "protoMethods": {},

@@ -24,12 +24,28 @@ isClient && define(function (require, exports, module) {
     },
 
     "test wired correctly"() {
-      TH.stubProperty(publish._pubs, 'Foo', v.Foo = test.stub());
-      const sub = subscribe('Foo', 'x');
-      assert.same(sub.constructor, ClientSub);
-      assert.same(sub.session, session);
+      /**
+       * Subscribe to a publication (see {#koru/session/publish}).
+       *
+       * @param name the name of the publication
 
-      assert.calledWith(v.Foo, 'x');
+       * @param {[anything...]} [args] a list of arguments to send to
+       * the publication.
+       *
+       * The last argument can be a `callback` which will be called
+       * after the subscription has received the initial data from the
+       * publication. If an error occured the error object will be
+       * passed to the callback.
+       **/
+      TH.stubProperty(session, 'interceptSubscribe', function () {return true});
+      TH.stubProperty(publish._pubs, 'Books', v.Foo = test.stub());
+      api.new(subscribe);
+      api.example(() => {
+        const sub = subscribe('Books', {author: 'Jane Austen'}, error => {
+          console.error("got error " + error);
+        });
+        assert.same(sub.constructor, ClientSub);
+      });
     },
   });
 });

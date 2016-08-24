@@ -91,7 +91,7 @@ define(function(require, exports, module) {
     const oldTypes = profile.types;
     const types = profile.types = {};
     typeArg.split('|').forEach(type => {
-      types[type] = oldTypes[type] || type;
+      types[type] = (oldTypes && oldTypes[type]) || type;
     });
   }
 
@@ -149,7 +149,7 @@ define(function(require, exports, module) {
       const {subject, newInstance, methods, protoMethods, innerSubjects} = api;
 
       const aside = [];
-      addModuleList('Modules required', api.requires);
+//      addModuleList('Modules required', api.requires);
       addModuleList('Modifies modules', api.modifies);
       addModuleList('Modified by modules', api.modifiedBy);
 

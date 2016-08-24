@@ -1,6 +1,8 @@
 isClient && define(function (require, exports, module) {
   /**
    * Build a subscriber for a `session`.
+   *
+   * See {#koru/session/subscribe}
    **/
   var test, v;
   const ClientSub        = require('koru/session/client-sub');
