@@ -79,7 +79,7 @@ define(function(require, exports, module) {
         _ensureIndexes(indexes);
       }
 
-      util.extendNoEnum(ModelMap, {
+      util.mergeNoEnum(ModelMap, {
         ensureIndexes,
         get defaultDb() {return driver.defaultDb},
       });

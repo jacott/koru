@@ -1,12 +1,13 @@
-define(function (require, exports, module) {
+isClient && define(function (require, exports, module) {
   /**
    * A subscription to a publication
    *
-   * ##### Construction #####
+   * ##### Construction
    *
    * See {#koru/session/subscribe}
    **/
   var test, v;
+  const Model        = require('koru/model');
   const publish      = require('koru/session/publish');
   const api          = require('koru/test/api');
   const ClientSub    = require('./client-sub');
@@ -28,13 +29,33 @@ define(function (require, exports, module) {
       api.module(null, null, {
         initInstExample: `
           const subscribe = ${'require'}('koru/session/subscribe');
-          const clientSub = subscribe("Library");
-`
+          const clientSub = subscribe("Library");`
       });
     },
 
     tearDown() {
       v = null;
+    },
+
+    "test #match"() {
+      /**
+       * Register a match function used to check if a document should
+       * be in the database.
+       **/
+      api.protoMethod('match');
+
+      class Book extends Model.BaseModel {
+      }
+
+      const regBook = test.stub(publish.match, "register").withArgs(Book, TH.match.func)
+              .returns("registered Book");
+      const sub1 = new ClientSub(v.sess, "1", "Library", []);
+
+
+      sub1.match(Book, doc => /lord/i.test(doc.name));
+
+      assert.equals(sub1._matches, ['registered Book']);
+      assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
     },
 
     "test filterModels": function () {
@@ -44,7 +65,6 @@ define(function (require, exports, module) {
       api.protoMethod('filterModels');
 
       test.stub(publish, '_filterModels');
-
       var sub1 = new ClientSub(v.sess, "1", "Library", []);
 
       sub1.filterModels('Book', 'Catalog');

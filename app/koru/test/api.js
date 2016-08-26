@@ -1,7 +1,8 @@
 define(function(require, exports, module) {
-  const koru    = require('koru');
-  const util    = require('koru/util');
-  const TH      = require('./main');
+  const koru     = require('koru');
+  const jsParser = require('koru/parse/js-parser');
+  const util     = require('koru/util');
+  const TH       = require('./main');
 
   const ctx = module.ctx;
 
@@ -44,8 +45,6 @@ define(function(require, exports, module) {
       const tc = TH.test._currentTestCase;
       if (subjectModule == null) {
         subjectModule = ctx.modules[toId(tc)];
-      } else if (typeof subjectModule === 'string') {
-        subjectModule = module.get(subjectModule);
       }
       const subject = subjectModule.exports;
       if (! this.isRecord) {
@@ -454,12 +453,16 @@ define(function(require, exports, module) {
     WeakSet,
   ]);
 
+  function resolveModule(type, value) {
+    if (type === 'Oi')
+      return [type, `{Module:${value.id}}`, 'Module'];
+    return [type, value.name, 'Module'];
+  }
+
   API._resolveFuncs = new Map([
-    [module.constructor, (type, value) => {
-      if (type === 'Oi')
-        return [type, `{Module:${value.id}}`, 'Module'];
-      return [type, value.name, 'Module'];
-    }],
+    [TH.MockModule, resolveModule],
+
+    [module.constructor, resolveModule],
 
     [Array, (type, value) => {
       if (type === 'Oi') {
@@ -533,26 +536,7 @@ define(function(require, exports, module) {
   }
 
   function funcToSig(func) {
-    let code = func.toString();
-
-    let m = /^function\s*(?=\w)/.exec(code);
-    if (m)
-      code = code.slice(m[0].length);
-
-    m = /^class[^{]*\{[\s\S]*constructor\s*(\([^\)]*\))\s*\{/.exec(code);
-    if (m) return `constructor${m[1]}`;
-
-    m = /^([^(]+\([^\)]*\))\s*\{/.exec(code);
-
-    if (m)
-      return m[1];
-
-    m = /^(\([^\)]*\)|\w+)\s*=>/.exec(code);
-
-    if (! m)
-    throw new Error("Can't find signature of "+code);
-
-    return m[1] += ' => {/*...*/}';
+    return jsParser.extractCallSignature(func);
   }
 
   function fileToCamel(fn) {
@@ -561,7 +545,13 @@ define(function(require, exports, module) {
   }
 
   function docComment(func) {
-    let m = /\/\*\*\s*([\s\S]*?)\s*\*\*\//.exec(func.toString());
+    const code = func.toString();
+    let m = /\)\s*{\s*/.exec(code);
+    if (! m)
+      return;
+    let re = /\/\*\*\s*([\s\S]*?)\s*\*\*\//y;
+    re.lastIndex = m.index+m[0].length;
+    m = re.exec(func.toString());
     return m && m[1].slice(2).replace(/^\s*\* ?/mg, '');
   }
 

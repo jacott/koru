@@ -1,11 +1,10 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
-  require('./dom-ext');
-  var util = require('../util');
-  var Model = require('../model/main');
-  var session = require('../session/base');
+  const Model   = require('koru/model/main');
+  const session = require('koru/session');
+  const util    = require('koru/util');
+  const Dom     = require('./dom-ext');
+  const TH      = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {

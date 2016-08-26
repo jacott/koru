@@ -70,13 +70,13 @@ define(function(require, exports, module) {
       profile[m[1]] = jsdocToHtml(api, m[2], argMap);
     },
     returns(api, row, argMap) {
-       const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
+      const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid returns for api: ${api.id} line @${row}`);
       const profile = argMap[':return:'] || (argMap[':return:'] = {});
       if (m[2]) profile.info = m[2];
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
-    }
+    },
   };
 
   BLOCK_TAGS.arg = BLOCK_TAGS.param;
@@ -342,35 +342,35 @@ define(function(require, exports, module) {
   }
 
   function buildMethods(api, subject, methods, requireLine, proto) {
-    if (proto) {
-      var needInit = true;
-      var initInst = function () {
-        if (! needInit) return [];
-        needInit = false;
-        const mu = codeToHtml(
-          api.initInstExample || `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`
-        );
-        mu.classList.add('jsdoc-inst-init');
-        return [mu];
-      };
-      var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
-      var sigJoin = '#';
-    } else {
-      if (api.initExample) {
+    return Object.keys(methods).map(name => {
+      if (proto) {
         var needInit = true;
         var initInst = function () {
           if (! needInit) return [];
           needInit = false;
-          const mu = codeToHtml(api.initExample);
-          mu.classList.add('jsdoc-init');
+          const mu = codeToHtml(
+            api.initInstExample || `const ${inst} = ${newSig(subject.name, subject.newInstance ? subject.newInstance.calls[0][0] : [])}`
+          );
+          mu.classList.add('jsdoc-inst-init');
           return [mu];
         };
-      } else
-        var initInst = () => [];
-      var inst = subject.name;
-      var sigJoin = '.';
-    }
-    return Object.keys(methods).map(name => {
+        var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
+        var sigJoin = '#';
+      } else {
+        if (api.initExample) {
+          var needInit = true;
+          var initInst = function () {
+            if (! needInit) return [];
+            needInit = false;
+            const mu = codeToHtml(api.initExample);
+            mu.classList.add('jsdoc-init');
+            return [mu];
+          };
+        } else
+          var initInst = () => [];
+        var inst = subject.name;
+        var sigJoin = '.';
+      }
       const method = methods[name];
       const {sig, intro, calls} = method;
       const {args, argMap} = mapArgs(sig, calls);
@@ -388,7 +388,7 @@ define(function(require, exports, module) {
               {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
                      '(', ...hlArgList(call[0]), ');']},
               call[1] === undefined || {class: 'jsdoc-returns c1',
-                          span: [' // returns ', valueToHtml(call[1])]}
+                                        span: [' // returns ', valueToHtml(call[1])]}
             ]}
           ] : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
         ]}

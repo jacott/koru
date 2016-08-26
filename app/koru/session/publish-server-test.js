@@ -1,12 +1,12 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  const koru             = require('../main');
-  const session          = require('../session/base');
-  const TH               = require('../test');
-  const util             = require('../util');
-  const message          = require('./message');
-  const publish          = require('./publish');
-  const serverConnection = require('./server-connection');
+  const koru      = require('koru/main');
+  const session   = require('koru/session');
+  const TH        = require('koru/test');
+  const util      = require('koru/util');
+  const message   = require('./message');
+  const publish   = require('./publish');
+  const scFactory = require('./server-connection-factory');
 
   TH.testCase(module, {
     setUp () {
@@ -19,7 +19,7 @@ isServer && define(function (require, exports, module) {
       });
 
       v.callSub = function () {
-        v.conn = new (serverConnection({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
+        v.conn = new (scFactory({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
         v.conn.sendBinary = test.stub();
         session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       };

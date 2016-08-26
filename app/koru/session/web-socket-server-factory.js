@@ -8,7 +8,7 @@ define(function (require, exports, module) {
   var BatchMessage = require('./batch-message');
 
   function webSocketServerFactory(session, execWrapper) {
-    var Connection = require('./server-connection')(session);
+    var Connection = require('./server-connection-factory')(session);
 
     koru.onunload(module, 'reload');
 

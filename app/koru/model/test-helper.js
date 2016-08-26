@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var TH = require('../test-helper');
-  var session = require('../session/base');
-  var Query = require('./query');
+  const session = require('koru/session/base');
+  const koru    = require('../main');
+  const TH      = require('../test-helper');
+  const Query   = require('./query');
 
-  var testCase = TH.testCase;
-  var sendM;
+  const testCase = TH.testCase;
+  let sendM;
 
   return TH.util.reverseExtend({
     testCase: function () {

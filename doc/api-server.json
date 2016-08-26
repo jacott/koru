@@ -101,7 +101,7 @@
           "{_count: 0, _waitIdle: null}",
           "koru/idle-check"
         ],
-        "info": "The default `IdleCheck`. It is used by\n{#koru/web-server-factory} and\n{#koru/session/server-connection}"
+        "info": "The default `IdleCheck`. It is used by\n{#koru/web-server-factory} and\n{#koru/session/server-connection-factory}"
       }
     },
     "requires": [
@@ -219,6 +219,69 @@
       "koru/util",
       "koru/yaajs-graph"
     ]
+  },
+  "koru/model/main": {
+    "id": "koru/model/main",
+    "subject": {
+      "name": "Model",
+      "abstract": "Object persistence manager. Defines application models."
+    },
+    "methods": {},
+    "protoMethods": {},
+    "properties": {
+      "BaseModel": {
+        "value": [
+          "F",
+          "BaseModel"
+        ]
+      }
+    },
+    "requires": [
+      "koru/env!koru/model/main",
+      "koru/main",
+      "koru/model/map",
+      "koru/model/query",
+      "koru/model/register-observe-field",
+      "koru/model/register-observe-id",
+      "koru/model/validation",
+      "koru/random",
+      "koru/session/base",
+      "koru/util"
+    ]
+  },
+  "koru/model/main.BaseModel": {
+    "id": "koru/model/main",
+    "subject": {
+      "name": "BaseModel",
+      "abstract": "The base class for all models"
+    },
+    "methods": {
+      "define": {
+        "test": "koru/model/main BaseModel test using a class",
+        "sig": "define({module, name, fields})",
+        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to class name or derive from module name.\n@param {object} [fields] call defineFields with fields\n@returns {BaseModel} the model",
+        "calls": [
+          {
+            "body": "          class TestModel extends BaseModel {\n            foo() {return this.name;}\n          }\n\n          TestModel.define({\n            module,\n            fields: {name: 'text'},\n          });\n\n          assert.same(Model.TestModel, TestModel);\n          assert.same(TestModel.name, 'TestModel'); // not all browsers support this\n          assert.same(TestModel.modelName, 'TestModel');\n\n          let tm = TestModel.create({name: 'my name'});\n\n          assert.same(tm.foo(), 'my name');\n        ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{fields: {name: 'text'}, module: {Module:test-model}}"
+                  ]
+                ],
+                [
+                  "F",
+                  "TestModel"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "protoMethods": {}
   },
   "koru/pg/driver": {
     "id": "koru/pg/driver",
@@ -380,6 +443,100 @@
       "koru/session/base"
     ]
   },
+  "koru/session/publish-test-helper-server": {
+    "id": "koru/session/publish-test-helper-server",
+    "subject": {
+      "name": "publishTH",
+      "abstract": "Utilities to help test server publish/subscribe"
+    },
+    "methods": {
+      "mockSession": {
+        "test": "koru/session/publish-test-helper-server test mockSession",
+        "sig": "mockSession(id=\"mock\")",
+        "intro": "Create mock [Session](#koru/session/main)",
+        "calls": [
+          [
+            [
+              "myMockSession"
+            ],
+            [
+              "O",
+              "{_commands: {P: => subscribe}, _id: 'myMockSession', _rpcs: {}, globalDict: 'stubbedGlobalDict'}"
+            ]
+          ],
+          [
+            [],
+            [
+              "O",
+              "{_commands: {P: => subscribe}, _id: 'mock', _rpcs: {}, globalDict: 'stubbedGlobalDict'}"
+            ]
+          ]
+        ]
+      },
+      "mockConnection": {
+        "test": "koru/session/publish-test-helper-server test mockConnection",
+        "sig": "mockConnection(sessId, session=this.mockSession())",
+        "intro": "Create mock\n[SeverConnection](#koru/session/server-connection-factory::ServerConnection)",
+        "calls": [
+          [
+            [
+              "s456",
+              [
+                "O",
+                "{_commands: {P: => subscribe}, _id: 'mock', _rpcs: {}, globalDict: {index: 0, k2c: {}, c2k: [], limit: 65520}}"
+              ]
+            ],
+            [
+              "O",
+              "{_last: null, _onClose: null, _session: {_id: 'mock', _rpcs: {}, _commands: {P: => subscribe}, globalDict: {index: 0, k2c: {}, c2k: [], limit: 65520}},}"
+            ]
+          ],
+          [
+            [],
+            [
+              "O",
+              "{_last: null, _onClose: null, _session: {}, _subs: {}, _userId: 'u123', added: => stub, changed: => stub, close: => , match: {_models: undefined, has: }"
+            ]
+          ]
+        ]
+      },
+      "mockSubscribe": {
+        "test": "koru/session/publish-test-helper-server test mockSubscribe",
+        "sig": "mockSubscribe(v, id, name, ...args)",
+        "intro": "Simulate a client subscribing to a publication\n\n@param v a holder for test variables. Expects `v.session` to\nbe a mockSession. `v.conn` will be set to a `mockConnection`\nunless it already exists.\n@param id the id of the subscription\n@param name the name of the publication\n\n@param {object|primitive} [args] any arguments to send to the publication",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{args: {author: 'Jane Austen'}, session: {_id: 'mock', _rpcs: {}, _commands: {P: => subscribe}, globalDict: {index: 0, k2c: {}, c2k: [], limit: 65520}}}"
+              ],
+              "s123",
+              "Book",
+              [
+                "O",
+                "{author: 'Jane Austen'}"
+              ]
+            ],
+            [
+              "O",
+              "{_called: true, _matches: [], _subscribe: => stub, args: [{author: 'Jane Austen'}], conn: {ws: {send: => stub, on: => stub}, sessId: 's123', _subs: {s1}"
+            ]
+          ]
+        ]
+      }
+    },
+    "protoMethods": {},
+    "requires": [
+      "koru/main",
+      "koru/session/main",
+      "koru/session/message",
+      "koru/session/publish",
+      "koru/session/server-connection-factory",
+      "koru/test/main",
+      "koru/util"
+    ]
+  },
   "koru/session/web-socket-sender-factory": {
     "id": "koru/session/web-socket-sender-factory",
     "subject": {
@@ -390,7 +547,7 @@
     "protoMethods": {},
     "newInstance": {
       "test": "koru/session/web-socket-sender-factory test initialization",
-      "sig": "webSocketSenderFactory(session, sessState,\n                                  execWrapper=koru.fiberConnWrapper, base=session)",
+      "sig": "webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper, base=session)",
       "intro": "",
       "calls": [
         {
@@ -432,20 +589,10 @@
       "module": {
         "test": "koru/test/api test module",
         "sig": "module(subjectModule, subjectName, options)",
-        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [subjectModule] defaults to the module corresponding\nto the current test module. Can be a module id\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [subjectModule] defaults to the module corresponding\nto the current test module.\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
         "calls": [
           [
             [],
-            [
-              "Os",
-              "{API(API)}",
-              "koru/test/api"
-            ]
-          ],
-          [
-            [
-              "./api"
-            ],
             [
               "Os",
               "{API(API)}",
@@ -540,7 +687,7 @@
             [
               [
                 "F",
-                "() => {/*...*/}"
+                "()"
               ]
             ]
           ],
@@ -551,7 +698,7 @@
                 [
                   [
                     "F",
-                    "() => {/*...*/}"
+                    "()"
                   ]
                 ]
               ]
@@ -699,17 +846,97 @@
     "requires": [
       "koru/env!koru/test/api",
       "koru/main",
+      "koru/parse/js-parser",
       "koru/test/main",
       "koru/util"
     ]
   },
   "koru/util": {
-    "id": "koru/util",
+    "id": "koru/util-base",
     "subject": {
       "name": "util",
-      "abstract": "The util module provides commonly performed utility functions."
+      "abstract": null
     },
     "methods": {
+      "mergeNoEnum": {
+        "test": "koru/util-base test mergeNoEnum",
+        "sig": "mergeNoEnum(dest, source)",
+        "intro": "Merge `source` into `dest` but do not set `enumerable` on the\ndescriptor.\n",
+        "calls": [
+          {
+            "body": "        const foo = {bar: 1};\n\n        sut.mergeNoEnum(foo, {\n          baz: 2,\n\n          get fnord() {return 3},\n        });\n\n        assert.equals(Object.keys(foo), ['bar']);\n        assert.same(foo.baz, 2);\n        assert.same(foo.fnord, 3);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{bar: 1}"
+                  ],
+                  [
+                    "O",
+                    "{baz: 2, fnord: 3}"
+                  ]
+                ],
+                [
+                  "O",
+                  "{bar: 1}"
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "merge": {
+        "test": "koru/util-base test merge",
+        "sig": "merge(dest, source)",
+        "intro": "Merge `source` into `dest`.\n\n@alias extend deprecated",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{}"
+              ],
+              [
+                "O",
+                "{a: 1, b: 2}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1, b: 2}"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{a: 1}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1}"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{a: 1, b: 2}"
+              ],
+              [
+                "O",
+                "{b: 3, c: 4}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1, b: 3, c: 4}"
+            ]
+          ]
+        ]
+      },
       "toDp": {
         "test": "koru/util test toDp",
         "sig": "toDp(number, dp, zeroFill)",
@@ -940,7 +1167,7 @@
                   ],
                   [
                     "F",
-                    "(val, index) => {/*...*/}"
+                    "(val, index)"
                   ]
                 ]
               ],

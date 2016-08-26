@@ -82,7 +82,7 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    reverseExtend(obj, properties, exclude) {
+    reverseMixin(obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && exclude[prop]) continue;
@@ -892,6 +892,11 @@ define(function(require, exports, module) {
 
     TwoIndex,
   });
+
+  /**
+   * @deprecated reverseExtend
+   */
+  util.reverseExtend = util.reverseMixin;
 
   function deepEqual(actual, expected) {
     if (egal(actual, expected)) {

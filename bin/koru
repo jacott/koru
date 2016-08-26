@@ -4,6 +4,9 @@ const path = require('path');
 const fs = require('fs');
 let program = require('commander');
 
+global.isServer = true;
+global.isClient = false;
+
 const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
 
 const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);

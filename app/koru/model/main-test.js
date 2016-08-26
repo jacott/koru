@@ -1,12 +1,20 @@
 define(function (require, exports, module) {
+  /**
+   * Object persistence manager. Defines application models.
+   **/
   var test, v;
   const koru    = require('koru');
   const Query   = require('koru/model/query');
-  const session = require('koru/session/base');
+  const session = require('koru/session');
+  const api     = require('koru/test/api');
   const util    = require('koru/util');
   const Model   = require('./main');
   const TH      = require('./test-helper');
   const val     = require('./validation');
+
+  const BaseModel = Model.BaseModel;
+
+  const Module = module.constructor;
 
   val.register(module, {required: require('./validators/required-validator')});
 
@@ -15,6 +23,7 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
+      api.module(null, 'Model');
     },
 
     tearDown() {
@@ -24,7 +33,7 @@ define(function (require, exports, module) {
 
     "test only models enumerable"() {
       for(var key in Model) {
-        assert.same(Object.getPrototypeOf(Model[key]), Model.BaseModel);
+        assert.same(Object.getPrototypeOf(Model[key]), BaseModel);
       }
       assert(true);
     },
@@ -57,32 +66,62 @@ define(function (require, exports, module) {
 
     },
 
-    "test using a class"() {
-      class TestModel extends Model.BaseModel {
-        foo() {return this.name;}
-      }
+    "BaseModel": {
+      setUp() {
+        v.bmApi = api.innerSubject("BaseModel", null, {
+          abstract() {
+            /**
+             * The base class for all models
+             **/
+          }
+        });
+      },
 
-      test.stub(koru, 'onunload');
+      "test using a class"() {
+        /**
+         * Define and register a model.
+         *
+         * @param {Module} [module] needed to auto unload module when file changed
 
-      TestModel.define({
-        module: v.mod = {id: 'test-module-x'},
-        fields: {name: 'text'},
-      });
+         * @param {string} [name] name of model. Defaults to class name or derive from module name.
 
-      assert.calledWith(koru.onunload, v.mod, TH.match.func);
+         * @param {object} [fields] call defineFields with fields
 
-      assert.same(Model.TestModel, TestModel);
-      assert.same(TestModel.name, 'TestModel');
-      assert.same(TestModel.modelName, 'TestModel');
+         * @returns {BaseModel} the model
+         **/
+        v.bmApi.method("define");
 
+        test.stub(koru, 'onunload');
 
-      let tm = TestModel.create({name: 'my name'});
+        const module = new TH.MockModule("test-model");
 
-      assert.same(tm.foo(), 'my name');
+        v.bmApi.example(() => {
+          class TestModel extends BaseModel {
+            foo() {return this.name;}
+          }
 
-      koru.onunload.yield();
+          TestModel.define({
+            module,
+            fields: {name: 'text'},
+          });
 
-      refute(Model.TestModel);
+          assert.same(Model.TestModel, TestModel);
+          assert.same(TestModel.name, 'TestModel'); // not all browsers support this
+          assert.same(TestModel.modelName, 'TestModel');
+
+          let tm = TestModel.create({name: 'my name'});
+
+          assert.same(tm.foo(), 'my name');
+        });
+
+        const TestModel = Model.TestModel;
+
+        assert.calledWith(koru.onunload, module, TH.match.func);
+
+        koru.onunload.yield();
+
+        refute(Model.TestModel);
+      },
     },
 
     'with model lock': {

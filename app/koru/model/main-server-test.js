@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
   var test, v;
+  const koru       = require('koru/main');
   const dbBroker   = require('koru/model/db-broker');
   const Driver     = require('koru/pg/driver');
-  const koru       = require('../main');
-  const session    = require('../session/base');
-  const util       = require('../util');
+  const session    = require('koru/session');
+  const util       = require('koru/util');
   const Model      = require('./main');
   const TH         = require('./test-helper');
   const TransQueue = require('./trans-queue');

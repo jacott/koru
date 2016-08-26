@@ -1,12 +1,12 @@
-isServer && define(function (require, exports, module) {
+define(function (require, exports, module) {
   var test, v;
-  const Email       = require('../email');
-  const koru        = require('../main');
-  const Model       = require('../model/main');
-  const Val         = require('../model/validation');
-  const session     = require('../session/base');
-  const TH          = require('../session/test-helper');
-  const SRP         = require('../srp/srp');
+  const Email       = require('koru/email');
+  const koru        = require('koru/main');
+  const Model       = require('koru/model/main');
+  const Val         = require('koru/model/validation');
+  const session     = require('koru/session');
+  const TH          = require('koru/session/test-helper');
+  const SRP         = require('koru/srp/srp');
   const userAccount = require('./main');
 
   TH.testCase(module, {

@@ -5,14 +5,15 @@ var readdir = Future.wrap(fs.readdir);
 var stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var fw = require('../file-watch');
-  var fst = require('../fs-tools');
-  var session = require('../session/base');
+  const koru    = require('koru');
+  const fw      = require('koru/file-watch');
+  const fst     = require('koru/fs-tools');
+  const queue   = require('koru/queue')();
+  const session = require('koru/session');
+  const util    = require('koru/util');
+
   var topDir = koru.appDir;
   var topDirLen = koru.appDir.length + 1;
-  var queue = require('../queue')();
-  var util = require('koru/util');
 
   var loads = Object.create(null);
   var imports = Object.create(null);

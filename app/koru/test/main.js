@@ -27,6 +27,15 @@ define(function(require, exports, module) {
 
   let testRunCount = 0;
 
+  class MockModule {
+    constructor(id, exports={}) {
+      this.id = id;
+      this.exports = exports;
+    }
+
+    $inspect() {return `{Module: ${this.id}}`;}
+  }
+
   module.ctx.onError = function (err, mod) {
     if (err.onload) {
       var ctx = mod.ctx;
@@ -68,6 +77,8 @@ define(function(require, exports, module) {
     geddon,
 
     match,
+
+    MockModule,
 
     get test() {return geddon.test},
 
@@ -187,5 +198,5 @@ define(function(require, exports, module) {
     exports.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   }
 
-  return exports;
+  module.exports = exports;
 });

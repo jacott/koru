@@ -129,15 +129,6 @@ define(function(require, exports, module) {
      * Model extension methods
      */
 
-    /**
-     * Completes the definition of a model
-     *
-     * Options can be:
-     *
-     * module: For auto unloading and auto naming
-     * name: name of model (otherwise will derive from function name or module
-     * fields: Calls defineFields with fields
-     **/
     static define({module, name, fields}) {
       if (! name)
         name = this.name || moduleName(module);
@@ -671,7 +662,7 @@ define(function(require, exports, module) {
 
   ModelEnv.init(ModelMap, BaseModel, _support);
 
-  util.extendNoEnum(ModelMap, {
+  util.mergeNoEnum(ModelMap, {
     BaseModel,
 
     /**

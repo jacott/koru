@@ -1,5 +1,6 @@
 pre {
   margin: 0;
+  white-space: pre-wrap;
 }
 
 .page-content {
@@ -8,6 +9,10 @@ pre {
 
 .jsdoc-info, abstract>div {
   max-width: 780px;
+}
+
+.jsdoc-info>div>p:last-child {
+  margin-bottom: 0;
 }
 
 /* .mdl-layout__drawer { */
@@ -159,7 +164,6 @@ pre {
   overflow: auto;
   tab-size: 2;
   text-align: left;
-  white-space: pre-wrap;
   word-spacing: normal;
   word-break: normal;
   line-height: 1.5;

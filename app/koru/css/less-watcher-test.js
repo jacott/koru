@@ -1,17 +1,16 @@
 isServer && define(function (require, exports, module) {
-  var Future = requirejs.nodeRequire('fibers/future');
-  var Path = requirejs.nodeRequire('path');
-  var fs = requirejs.nodeRequire('fs');
+  const util    = require('koru/util');
+  const fw      = require('koru/file-watch');
+  const fst     = require('koru/fs-tools');
+  const koru    = require('koru/main');
+  const session = require('koru/session/main');
+  const TH      = require('koru/test');
+  const sut     = require('./less-watcher');
+  const Future  = requirejs.nodeRequire('fibers/future');
+  const fs      = requirejs.nodeRequire('fs');
+  const Path    = requirejs.nodeRequire('path');
 
   var test, v;
-
-  var sut = require('./less-watcher');
-  var koru = require('../main');
-  var TH = require('../test');
-  var fw = require('../file-watch');
-  var session = require('../session/main');
-  var fst = require('../fs-tools');
-  var util = require('koru/util');
 
   TH.testCase(module, {
     setUp: function () {

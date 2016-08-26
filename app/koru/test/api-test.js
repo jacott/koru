@@ -34,7 +34,7 @@ define(function (require, exports, module) {
        * methods will act of the given `module`.
        *
        * @param [subjectModule] defaults to the module corresponding
-       * to the current test module. Can be a module id
+       * to the current test module.
 
        * @param [subjectName] defaults to a hopefully reasonable name
 
@@ -58,7 +58,6 @@ define(function (require, exports, module) {
       assert.same(api.subject, MainAPI);
       assert.equals(API._subjectMap.get(MainAPI), [APIModule, null]);
 
-      assert.same(API.module('./api'), API.instance);
       assert.same(API.instance.subjectName, 'API');
 
 

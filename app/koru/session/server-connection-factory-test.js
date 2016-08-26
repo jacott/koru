@@ -7,9 +7,9 @@ isServer && define(function (require, exports, module) {
   const match      = require('./match');
   const message    = require('./message');
 
-  const baseSession = require('../session/base');
+  const baseSession = require('koru/session');
   const session = new (baseSession.constructor)('testServerConnection');
-  const Connection  = require('./server-connection')(session);
+  const Connection  = require('./server-connection-factory')(session);
 
   TH.testCase(module, {
     setUp() {

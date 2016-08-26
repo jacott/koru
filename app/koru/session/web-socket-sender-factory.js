@@ -5,8 +5,7 @@ define(function(require, exports, module) {
   const util    = require('../util');
   const message = require('./message');
 
-  function webSocketSenderFactory(session, sessState,
-                                  execWrapper=koru.fiberConnWrapper, base=session) {
+  function webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper, base=session) {
     const waitSends = [];
     let retryCount = 0;
     let reconnTimeout;

@@ -1,9 +1,9 @@
 isClient && define(function (require, exports, module) {
-  'use strict';
   /**
    * DomTemplate is used to create interactive
    * [Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
+  'use strict';
   var test, v;
   const Dom         = require('koru/dom');
   const Ctx         = require('koru/dom/ctx');

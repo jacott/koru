@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   'use strict';
   var test, v;
   const util     = require('koru/util');
-  const session  = require('../session/base');
+  const session  = require('koru/session');
   const dbBroker = require('./db-broker');
   const Model    = require('./main');
   const TH       = require('./test-helper');

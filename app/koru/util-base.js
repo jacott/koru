@@ -1,6 +1,6 @@
-(function () {
-  define({
-    browserVersion (ua){
+define(function(require, exports, module) {
+  module.exports = {
+    browserVersion(ua){
       var tmp;
       var M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
       if(/trident/i.test(M[1])){
@@ -11,40 +11,44 @@
       return M.slice(1).join(' ');
     },
 
-    extend (obj, properties) {
-      for(var prop in properties) {
-        Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+    merge(dest, source) {
+      for(var prop in source) {
+        Object.defineProperty(dest, prop,Object.getOwnPropertyDescriptor(source, prop));
       }
-      return obj;
+      return dest;
     },
 
-    extendNoEnum (obj, properties) {
-      for(var prop in properties) {
-        var desc = Object.getOwnPropertyDescriptor(properties,prop);
+    mergeNoEnum(dest, source) {
+      for(var prop in source) {
+        var desc = Object.getOwnPropertyDescriptor(source, prop);
         desc.enumerable = false;
-        Object.defineProperty(obj,prop,desc);
+        Object.defineProperty(dest, prop, desc);
       }
-      return obj;
+      return dest;
     },
 
-    last (ary) {
+    last(ary) {
       return ary[ary.length -1];
     },
 
-    regexEscape (s) {
+    regexEscape(s) {
       return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     },
 
-    newEscRegex (s) {
+    newEscRegex(s) {
       return new RegExp(this.regexEscape(s));
     },
 
-    inspect (o, count, len) {
+    inspect(o, count, len) {
       return inspect1(o, count || 4).toString().slice(0, len || 1000);
     },
 
-    qstr: qstr,
-  });
+    qstr,
+  };
+  /**
+   * @deprecated extend - too confusing with class extends so use merge
+   **/
+  module.exports.extend = module.exports.merge;
 
   function qstr(s) {
     return JSON.stringify(s).slice(1, -1);
@@ -99,4 +103,4 @@
       return '??';
     }
   }
-})();
+});

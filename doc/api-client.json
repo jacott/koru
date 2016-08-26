@@ -158,7 +158,7 @@
     "id": "koru/dom/ctx",
     "subject": {
       "name": "Ctx",
-      "abstract": "Ctx is used to track\n[DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)"
+      "abstract": null
     },
     "methods": {},
     "protoMethods": {},
@@ -321,14 +321,96 @@
       "koru/yaajs-graph"
     ]
   },
+  "koru/model/main": {
+    "id": "koru/model/main",
+    "subject": {
+      "name": "Model",
+      "abstract": "Object persistence manager. Defines application models."
+    },
+    "methods": {},
+    "protoMethods": {},
+    "properties": {
+      "BaseModel": {
+        "value": [
+          "F",
+          "BaseModel"
+        ]
+      }
+    },
+    "requires": [
+      "koru/env!koru/model/main",
+      "koru/main",
+      "koru/model/map",
+      "koru/model/query",
+      "koru/model/register-observe-field",
+      "koru/model/register-observe-id",
+      "koru/model/validation",
+      "koru/random",
+      "koru/session/base",
+      "koru/util"
+    ]
+  },
+  "koru/model/main.BaseModel": {
+    "id": "koru/model/main",
+    "subject": {
+      "name": "BaseModel",
+      "abstract": "The base class for all models"
+    },
+    "methods": {
+      "define": {
+        "test": "koru/model/main BaseModel test using a class",
+        "sig": "define({module, name, fields})",
+        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to class name or derive from module name.\n@param {object} [fields] call defineFields with fields\n@returns {BaseModel} the model",
+        "calls": [
+          {
+            "body": "          class TestModel extends BaseModel {\n            foo() {return this.name;}\n          }\n\n          TestModel.define({\n            module,\n            fields: {name: 'text'},\n          });\n\n          assert.same(Model.TestModel, TestModel);\n          assert.same(TestModel.name, 'TestModel'); // not all browsers support this\n          assert.same(TestModel.modelName, 'TestModel');\n\n          let tm = TestModel.create({name: 'my name'});\n\n          assert.same(tm.foo(), 'my name');\n        ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{fields: {name: 'text'}, module: {Module:test-model}}"
+                  ]
+                ],
+                [
+                  "F",
+                  "TestModel"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "protoMethods": {}
+  },
   "koru/session/client-sub": {
     "id": "koru/session/client-sub",
     "subject": {
       "name": "ClientSub",
-      "abstract": "A subscription to a publication\n\n##### Construction #####\n\nSee {#koru/session/subscribe}"
+      "abstract": "A subscription to a publication\n\n##### Construction\n\nSee {#koru/session/subscribe}"
     },
     "methods": {},
     "protoMethods": {
+      "match": {
+        "test": "koru/session/client-sub test #match",
+        "sig": "match(modelName, func)",
+        "intro": "Register a match function used to check if a document should\nbe in the database.",
+        "calls": [
+          [
+            [
+              [
+                "F",
+                "Book"
+              ],
+              [
+                "F",
+                "doc => {/*...*/}"
+              ]
+            ]
+          ]
+        ]
+      },
       "filterModels": {
         "test": "koru/session/client-sub test filterModels",
         "sig": "filterModels()",
@@ -343,7 +425,7 @@
         ]
       }
     },
-    "initInstExample": "\n          const subscribe = require('koru/session/subscribe');\n          const clientSub = subscribe(\"Library\");\n",
+    "initInstExample": "\n          const subscribe = require('koru/session/subscribe');\n          const clientSub = subscribe(\"Library\");",
     "requires": [
       "koru/main",
       "koru/session/publish",
@@ -395,21 +477,24 @@
     "id": "koru/session/publish-test-helper-client",
     "subject": {
       "name": "publishTH",
-      "abstract": "Utilities to help test publish/subscribe"
+      "abstract": "Utilities to help test client publish/subscribe"
     },
     "methods": {
       "mockSubscribe": {
         "test": "koru/session/publish-test-helper-client test mockSubscribe",
-        "sig": "mockSubscribe()",
+        "sig": "mockSubscribe(name, ...args)",
         "intro": "Subscribe to a publication but do not call server.",
         "calls": [
           [
             [
-              "Foo"
+              "Foo",
+              1,
+              2
             ],
             [
-              "O",
-              "{}"
+              "Oi",
+              "{MockSub:\"Foo\"}",
+              "koru/session/publish-test-helper-client::MockClientSub"
             ]
           ]
         ]
@@ -417,8 +502,46 @@
     },
     "protoMethods": {},
     "requires": [
+      "koru/session/client-sub",
+      "koru/session/publish",
+      "koru/test/main",
       "koru/util"
     ]
+  },
+  "koru/session/publish-test-helper-client::MockClientSub": {
+    "id": "koru/session/publish-test-helper-client",
+    "subject": {
+      "name": "MockClientSub",
+      "abstract": "MockClientSub replaces {#koru/session/client-sub};\nthe return from {#koru/session/subscribe}"
+    },
+    "methods": {},
+    "protoMethods": {
+      "match": {
+        "test": "koru/session/publish-test-helper-client test MockClientSub#match",
+        "sig": "match(model, func)",
+        "intro": "Record the match calls in a client publish function in\n`#_mockMatches`.\n\nSee {#koru/session/client-sub}",
+        "calls": [
+          {
+            "body": "        const sub = publishTH.mockSubscribe(\"books\");\n\n        class Book {\n          constructor(name) {\n            this.name = name;\n          }\n        }\n        sub.match(Book, book => {\n          return /é/.test(book.name);\n        });\n        assert.isTrue(sub._mockMatches.get(Book)({name: 'Les Misérables'}));\n        assert.isFalse(sub._mockMatches.get(Book)({name: 'The Bluest Eye'}));\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "F",
+                    "Book"
+                  ],
+                  [
+                    "F",
+                    "book => {/*...*/}"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "initInstExample": "        "
   },
   "koru/session/subscribe": {
     "id": "koru/session/subscribe",
@@ -483,7 +606,7 @@
     "protoMethods": {},
     "newInstance": {
       "test": "koru/session/web-socket-sender-factory test initialization",
-      "sig": "webSocketSenderFactory(session, sessState,\n                                  execWrapper=koru.fiberConnWrapper, base=session)",
+      "sig": "webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper, base=session)",
       "intro": "",
       "calls": [
         {
@@ -525,20 +648,10 @@
       "module": {
         "test": "koru/test/api test module",
         "sig": "module(subjectModule, subjectName, options)",
-        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [subjectModule] defaults to the module corresponding\nto the current test module. Can be a module id\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
+        "intro": "Initiate documentation of the module. Subsequent calls to API\nmethods will act of the given `module`.\n\n@param [subjectModule] defaults to the module corresponding\nto the current test module.\n@param [subjectName] defaults to a hopefully reasonable name\n@param [options] adornments to the documentation:\n\n* `initExample` - code that can be used to initialize\n`subject`\n* `initInstExample` - code that can be used to initialize\nan instance of `subject`",
         "calls": [
           [
             [],
-            [
-              "Os",
-              "{API(API)}",
-              "koru/test/api"
-            ]
-          ],
-          [
-            [
-              "./api"
-            ],
             [
               "Os",
               "{API(API)}",
@@ -633,7 +746,7 @@
             [
               [
                 "F",
-                "() => {/*...*/}"
+                "()"
               ]
             ]
           ],
@@ -644,7 +757,7 @@
                 [
                   [
                     "F",
-                    "() => {/*...*/}"
+                    "()"
                   ]
                 ]
               ]
@@ -792,6 +905,7 @@
     "requires": [
       "koru/env!koru/test/api",
       "koru/main",
+      "koru/parse/js-parser",
       "koru/test/main",
       "koru/util"
     ]
@@ -864,12 +978,91 @@
     ]
   },
   "koru/util": {
-    "id": "koru/util",
+    "id": "koru/util-base",
     "subject": {
       "name": "util",
-      "abstract": "The util module provides commonly performed utility functions."
+      "abstract": null
     },
     "methods": {
+      "mergeNoEnum": {
+        "test": "koru/util-base test mergeNoEnum",
+        "sig": "mergeNoEnum(dest, source)",
+        "intro": "Merge `source` into `dest` but do not set `enumerable` on the\ndescriptor.\n",
+        "calls": [
+          {
+            "body": "        const foo = {bar: 1};\n\n        sut.mergeNoEnum(foo, {\n          baz: 2,\n\n          get fnord() {return 3},\n        });\n\n        assert.equals(Object.keys(foo), ['bar']);\n        assert.same(foo.baz, 2);\n        assert.same(foo.fnord, 3);\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "O",
+                    "{bar: 1}"
+                  ],
+                  [
+                    "O",
+                    "{baz: 2, fnord: 3}"
+                  ]
+                ],
+                [
+                  "O",
+                  "{bar: 1}"
+                ]
+              ]
+            ]
+          }
+        ]
+      },
+      "merge": {
+        "test": "koru/util-base test merge",
+        "sig": "merge(dest, source)",
+        "intro": "Merge `source` into `dest`.\n\n@alias extend deprecated",
+        "calls": [
+          [
+            [
+              [
+                "O",
+                "{}"
+              ],
+              [
+                "O",
+                "{a: 1, b: 2}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1, b: 2}"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{a: 1}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1}"
+            ]
+          ],
+          [
+            [
+              [
+                "O",
+                "{a: 1, b: 2}"
+              ],
+              [
+                "O",
+                "{b: 3, c: 4}"
+              ]
+            ],
+            [
+              "O",
+              "{a: 1, b: 3, c: 4}"
+            ]
+          ]
+        ]
+      },
       "toDp": {
         "test": "koru/util test toDp",
         "sig": "toDp(number, dp, zeroFill)",
@@ -1100,7 +1293,7 @@
                   ],
                   [
                     "F",
-                    "(val, index) => {/*...*/}"
+                    "(val, index)"
                   ]
                 ]
               ],

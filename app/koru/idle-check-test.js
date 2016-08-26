@@ -23,7 +23,7 @@ isServer && define(function (require, exports, module) {
       /**
        * The default `IdleCheck`. It is used by
        * {#koru/web-server-factory} and
-       * {#koru/session/server-connection}
+       * {#koru/session/server-connection-factory}
        **/
       api.property('singleton');
       assert.same(IdleCheck.singleton, IdleCheck.singleton);

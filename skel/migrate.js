@@ -5,7 +5,7 @@ define(function(require, exports, module) {
       add() {
       },
 
-      remove() {
+      revert() {
       },
     });
   };

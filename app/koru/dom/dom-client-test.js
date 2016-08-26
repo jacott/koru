@@ -1,16 +1,16 @@
 define(function (require, exports, module) {
   // Adorn koru/dom/base with extra client only utilities
   var test, v;
-  const Ctx  = require('koru/dom/ctx');
-  const TH   = require('koru/test-helper');
-  const api  = require('koru/test/api');
-  const Dom  = require('../dom');
+  const Dom = require('koru/dom');
+  const Ctx = require('koru/dom/ctx');
+  const TH  = require('koru/test-helper');
+  const api = require('koru/test/api');
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
-      api.module('../dom');
+      api.module(module.get('koru/dom'));
     },
 
     tearDown() {

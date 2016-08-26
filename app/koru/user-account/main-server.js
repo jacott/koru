@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
-  const Email   = require('../email');
-  const koru    = require('../main');
-  const Model   = require('../model/main');
-  const Val     = require('../model/validation');
-  const Random  = require('../random');
-  const session = require('../session/base');
-  const SRP     = require('../srp/srp');
-  const util    = require('../util');
+  const Email   = require('koru/email');
+  const koru    = require('koru/main');
+  const Model   = require('koru/model/main');
+  const Val     = require('koru/model/validation');
+  const Random  = require('koru/random');
+  const session = require('koru/session');
+  const SRP     = require('koru/srp/srp');
+  const util    = require('koru/util');
 
   var emailConfig;
 

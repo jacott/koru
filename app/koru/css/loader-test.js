@@ -4,11 +4,11 @@ isClient && define(function (require, exports, module) {
    * their contents change.
    **/
   var test, v;
-  const api           = require('koru/test/api');
-  const koru          = require('../main');
-  const SessionBase   = require('../session/base').constructor;
-  const TH            = require('../test');
-  const CssLoader     = require('./loader');
+  const koru        = require('koru/main');
+  const SessionBase = require('koru/session/base').constructor;
+  const TH          = require('koru/test');
+  const api         = require('koru/test/api');
+  const CssLoader   = require('./loader');
 
   TH.testCase(module, {
     setUp() {
