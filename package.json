@@ -1,14 +1,13 @@
 {
   "name": "koru",
-  "homepage": "http://koru.obeya.co/",
   "description": "Koru is a: test-driven, reactive, fast, web app framework",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@dev.obeya.co:koru.git"
+    "url": "git://github.com/jacott/koru.git"
   },
   "bugs": {
-    "url": "https://koru.obeya.co/issues"
+    "url": "https://github.com/jacott/koru/issues"
   },
   "keywords": [
     "templates",
@@ -16,7 +15,7 @@
     "js",
     "javascript"
   ],
-  "author": "Geoff Jacobsen <geoffj@obeya.co>",
+  "author": "Geoff Jacobsen <geoffjacobsen@gmail.com>",
   "main": "lib/koru",
   "bin": "./bin/koru",
   "gypfile": true,
@@ -48,7 +47,7 @@
     "pg-libpq": ">=1.1.0"
   },
   "engines": {
-    "node": ">=6.2.1"
+    "node": ">=6.4.0"
   },
-  "version": "0.8.1"
+  "version": "0.8.2"
 }
