@@ -327,7 +327,11 @@ define(function(require, exports, module) {
       }
 
       Dom.setClass('noValue', ! found);
-      button.textContent = result || '';
+      Dom.removeChildren(button);
+      if (result && result.cloneNode) {
+        button.appendChild(result.cloneNode(true));
+      } else
+        button.textContent = result || '';
     },
   });
 

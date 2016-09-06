@@ -75,7 +75,7 @@ isClient && define(function (require, exports, module) {
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({
           fooList() {
-            return [['a', 'A'], ['b', 'B']];
+            return [['a', 'A'], ['b', Dom.h({i: 'B'})]];
           },
         });
         document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
