@@ -292,11 +292,15 @@ isClient && define(function (require, exports, module) {
          **/
         api.method('setTitle');
 
-        test.intercept(Dom, 'setTitle', function (title) {v.title = title});
+        test.intercept(Dom, 'setTitle', function (title) {
+          v.title = title+' etc';
+          return "returned title";
+        });
 
         Route.setTitle('my title');
 
-        assert.same(v.title, 'my title');
+        assert.same(v.title, 'my title etc');
+        assert.same(document.title, 'returned title');
       },
 
       "test gotoPage, pushCurrent, recordHistory, notify"() {

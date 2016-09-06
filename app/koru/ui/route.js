@@ -179,8 +179,8 @@ define(function(require, exports, module) {
     }
 
     static setTitle(title) {
-      currentTitle = document.title = title;
-      Dom.setTitle && Dom.setTitle(title);
+      currentTitle = document.title =
+        (Dom.setTitle && Dom.setTitle(title)) || title;
     }
 
     static pushCurrent() {
