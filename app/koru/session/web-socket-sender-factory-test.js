@@ -3,6 +3,7 @@ define(function (require, exports, module) {
    * Build WebSocket clients (senders).
    **/
   var test, v;
+  const koru         = require('koru');
   const api          = require('koru/test/api');
   const SessionBase  = require('./base').constructor;
   const stateFactory = require('./state').constructor;
@@ -95,7 +96,8 @@ define(function (require, exports, module) {
 
     "test server-to-client broadcast messages"() {
       v.sess.registerBroadcast("foo", v.foo = test.stub());
-      v.sess.registerBroadcast("bar", v.bar = test.stub());
+      test.spy(koru, 'onunload');
+      v.sess.registerBroadcast(module, "bar", v.bar = test.stub());
 
       assert.equals(v.sess._broadcastFuncs, {foo: TH.match.func, bar: TH.match.func});
 
@@ -123,7 +125,9 @@ define(function (require, exports, module) {
 
       v.sess.deregisterBroadcast('foo');
       assert.equals(v.sess._broadcastFuncs, {foo: null, bar: TH.match.func});
-
+      assert.calledWith(koru.onunload, module);
+      koru.onunload.yield();
+      assert.equals(v.sess._broadcastFuncs, {foo: null, bar: null});
     },
   });
 });

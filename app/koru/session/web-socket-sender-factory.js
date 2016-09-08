@@ -175,7 +175,7 @@ define(function(require, exports, module) {
       base.provide('B', function broadcast(data) {
         let func = base._broadcastFuncs[data[0]];
         if (! func)
-          koru.error("Broadcast function '"+data[1]+"' not registered");
+          koru.error("Broadcast function '"+data[0]+"' not registered");
         else try {
           func.apply(this, data.slice(1));
         } catch(ex) {
@@ -185,7 +185,13 @@ define(function(require, exports, module) {
 
 
       util.extend(base, {
-        registerBroadcast(name, func) {
+        registerBroadcast(module, name, func) {
+          if (arguments.length === 2) {
+            func = name;
+            name = module;
+          } else {
+            koru.onunload(module, () => base.deregisterBroadcast(name));
+          }
           if (base._broadcastFuncs[name])
             throw new Error("Broadcast function '"+name+"' alreaady registered");
           base._broadcastFuncs[name] = func;
