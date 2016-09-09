@@ -54,7 +54,7 @@ define(function(require, exports, module) {
           reject(new Error('Timed out waiting for: ' + (expectPage && expectPage.name) +
                            ' after ' + duration + 'ms'));
         }, duration);
-        var handle = Route.onChange(function (actualPage, href) {
+        var handle = Route.onChange(function (actualPage, pageRoute, href) {
           handle.stop();
           koru.clearTimeout(timeout);
           if (actualPage === expectPage)
@@ -144,10 +144,11 @@ define(function(require, exports, module) {
             var title = page.title || Route.title;
           }
 
-          Route.recordHistory(page, href);
+          Route.recordHistory(page, href, pageRoute);
           currentHref = href;
           currentPage = page;
           Route.setTitle(title);
+          Route.notify(page, pageRoute, href);
         }
       }
       catch(ex) {
@@ -164,7 +165,7 @@ define(function(require, exports, module) {
       }
     }
 
-    static recordHistory(page, href) {
+    static recordHistory(page, href, pageRoute) {
       if (! Route.history) return;
       if (! pageState || (page && page.noPageHistory))
           return;
@@ -175,7 +176,6 @@ define(function(require, exports, module) {
         ++pageCount;
       }
       Route.history[cmd](pageCount, null, href);
-      Route.notify(page, href);
     }
 
     static setTitle(title) {

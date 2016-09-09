@@ -317,7 +317,7 @@ isClient && define(function (require, exports, module) {
         Route.gotoPage(v.RootBar, {bazId: "an-id", append: 'one/two'});
         assert.calledWith(Route.history.pushState, 1, null, '/#baz/an-id/root-bar/one/two');
         assert.same(document.title, 'Root bar');
-        assert.calledWith(v.routeChanged, v.RootBar, '/#baz/an-id/root-bar/one/two');
+        assert.calledWith(v.routeChanged, v.RootBar, {bazId: "an-id", append: 'one/two', pathname: TH.match.any}, '/#baz/an-id/root-bar/one/two');
 
         Route.gotoPage(v.RootBar, {bazId: "diff-id"});
         assert.calledWith(Route.history.pushState, 2, null, '/#baz/diff-id/root-bar');
