@@ -790,6 +790,10 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.Foo, Dom.Foo.Bar.parent);
         assert.same(Dom.Foo.Bar, Dom.Foo.Bar.Baz.parent);
         assert.same(Dom.Foo.Bar.$fullname, 'Foo.Bar');
+
+        assert.isTrue(Dom.Foo.$contains(Dom.Foo));
+        assert.isTrue(Dom.Foo.$contains(Dom.Foo.Bar.Baz));
+        assert.isFalse(Dom.Foo.Bar.$contains(Dom.Foo));
       },
 
       "test updateElement"() {

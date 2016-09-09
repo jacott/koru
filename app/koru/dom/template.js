@@ -163,6 +163,15 @@ define(function(require, exports, module) {
       return "DomTemplate:" + this.$fullname;
     }
 
+    $contains(subTemplate) {
+      while (subTemplate) {
+        if (this === subTemplate)
+          return true;
+        subTemplate = subTemplate.parent;
+      }
+      return false;
+    }
+
     static get _currentEvent() {return currentEvent}
     static set _currentEvent(value) {currentEvent =  value}
   }; module.exports = DomTemplate;
