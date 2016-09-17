@@ -84,11 +84,7 @@ define(function (require, exports, module) {
     },
 
     logger() {
-      var args = new Array(arguments.length + 1);
-      args[0] = new Date().toISOString();
-      for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
-
-      console.log.apply(console, args);
+      console.log.apply(console, arguments);
     },
 
     globalCallback(err, result) {
