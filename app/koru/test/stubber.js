@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  const {extend, inspect}  = require('koru/util');
+  const {merge, inspect}  = require('koru/util');
   require('./assertions');
   const deepEqual          = require('./core')._u.deepEqual;
 
@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   var globalId = 0;
   const allListeners = Object.create(null);
 
-  const stubProto = extend(Object.create(Function.prototype), {
+  const stubProto = merge(Object.create(Function.prototype), {
     returns(arg) {
       this._returns = arg;
       return this;
@@ -41,8 +41,9 @@ define(function(require, exports, module) {
         return spy.subject.apply(this, arguments);
       };
       Object.setPrototypeOf(spy, withProto);
-      spy._stubId = "-";
+      spy._stubId = newId();
       spy.spyArgs = args;
+      spy.onCall = this.onCall;
       spy.subject = this;
       (allListeners[this._stubId] || (allListeners[this._stubId] = [])).push(spy);
       return spy;
@@ -52,8 +53,9 @@ define(function(require, exports, module) {
       function spy() {
         return spy.subject.apply(this, arguments);
       };
-      Object.setPrototypeOf(spy, withProto);
-      spy._stubId = "-";
+      Object.setPrototypeOf(spy, onCallProto);
+
+      spy._stubId = newId();
       spy.spyCount = count;
       spy.subject = this;
       (allListeners[this._stubId] || (allListeners[this._stubId] = [])).push(spy);
@@ -164,7 +166,7 @@ define(function(require, exports, module) {
     return call.returnValue;
   }
 
-  var spyProto = extend(Object.create(stubProto), {
+  var spyProto = merge(Object.create(stubProto), {
     invoke(thisValue, args) {
       var call = addCall(this, thisValue, args);
       call.returnValue = this.original.apply(thisValue, args);
@@ -174,13 +176,9 @@ define(function(require, exports, module) {
     },
   });
 
-  var withProto = extend(Object.create(stubProto), {
+  var withProto = merge(Object.create(stubProto), {
     withArgs() {
       return this.subject.withArgs.apply(this.subject, arguments);
-    },
-
-    onCall(count) {
-      return this.subject.onCall.call(this.subject, count);
     },
 
     invoke(call) {
@@ -193,12 +191,21 @@ define(function(require, exports, module) {
       if (this._yields)
         call.yields = this._yields;
 
+      notifyListeners(this, call);
+
       if (this.hasOwnProperty('_returns'))
         call.returnValue = this._returns;
     },
+
     toString() {
       return this.subject.toString();
     }
+  });
+
+  var onCallProto = merge(Object.create(withProto), {
+    onCall(count) {
+      return this.subject.onCall.call(this.subject, count);
+    },
   });
 
   var callProto = {
@@ -227,11 +234,13 @@ define(function(require, exports, module) {
       if (spyCount !== undefined) {
         spyCount + 1 === proxy._calls.length && listener.invoke(call);
       } else {
-        var spyArgs = listener.spyArgs;
-        for(var j = 0; j < spyArgs.length; ++j) {
-          if (! deepEqual(args[j], spyArgs[j])) {
-            j = -1;
-            break;
+        if (arguments.length !== 2) {
+          var spyArgs = listener.spyArgs;
+          for(var j = 0; j < spyArgs.length; ++j) {
+            if (! deepEqual(args[j], spyArgs[j])) {
+              j = -1;
+              break;
+            }
           }
         }
         j === -1 || listener.invoke(call);
@@ -349,11 +358,13 @@ define(function(require, exports, module) {
 
   function stubFunction(orig, proto) {
     Object.setPrototypeOf(stub, proto);
-    orig && extend(stub, orig);
-    stub._stubId = (++globalId).toString(36);
+    orig && merge(stub, orig);
+    stub._stubId = newId();
     return stub;
     function stub() {
       return stub.invoke(this, arguments);
     };
   }
+
+  function newId() {return (++globalId).toString(36)}
 });

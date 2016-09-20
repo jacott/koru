@@ -68,18 +68,20 @@ define(function (require, exports, module) {
 
     "test onCall"() {
       var obj = {
-        foo: test.stub().onCall(0).returns(0).onCall(1).returns(1).onCall(2).returns(2)
+        foo: test.stub().onCall(0).returns(0)
       };
 
+      obj.foo.withArgs(1).onCall(0).returns(1).onCall(1).returns(2);
+
       assert.same(obj.foo(), 0);
-      assert.same(obj.foo(4), 1);
-      assert.same(obj.foo(), 2);
+      assert.same(obj.foo(1, 4), 1);
+      assert.same(obj.foo(1), 2);
       assert.calledOnce(obj.foo);
       assert.same(obj.foo.subject.callCount, 3);
 
       var call = obj.foo.subject.getCall(1);
-      assert(call.calledWith(4));
-      refute(call.calledWith(4, 2));
+      assert(call.calledWith(1, 4));
+      refute(call.calledWith(1, 4, 2));
     },
 
     "test yields"() {
