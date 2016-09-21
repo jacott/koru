@@ -1,50 +1,30 @@
-var Future = requirejs.nodeRequire('fibers/future');
-var spawn = require('child_process').spawn;
+const Future = requirejs.nodeRequire('fibers/future');
+const {execFile} = require('child_process');
 
 define({
-  system: function (cmd, args, outFunc) {
-    var code;
-    var proc = spawn(cmd, args);
+  system(cmd, ...args) {
+    const future = new Future;
+    const callback = args.length && typeof args[args.length - 1] === 'function' &&
+            args.pop();
 
-    switch(typeof outFunc) {
-    case 'function':
-      proc.stdout.on('data', outFunc);
-      break;
-    case 'object':
-      if (outFunc !== null) {
-        collectData(proc, outFunc, 'stdout');
-        collectData(proc, outFunc, 'stderr');
-        if (outFunc.stdin) {
-          proc.stdin.write(outFunc.stdin);
-        }
-        proc.stdin.end();
-      }
-      break;
-    }
+    let options = args.length && args[args.length - 1];
+    if (! options || typeof options === 'string')
+      options = {};
+    else
+      args.pop();
 
-    var future = new Future;
-    proc.on('close', function (c) {
-      code = c;
-      future.return();
+    const proc = execFile(cmd, args, options, (error, stdout, stderr) => {
+      future.return({error, stdout, stderr});
     });
 
-    future.wait();
-    return code;
+    callback && callback(proc);
+
+    return future.wait();
   },
 
-  sleep: function (ms) {
-    var future = new Future;
-    setTimeout(function() {
-      future.return();
-    }, ms);
+  sleep(ms) {
+    const future = new Future;
+    setTimeout(function() {future.return()}, ms);
     return future.wait();
   },
 });
-
-
-function collectData(proc, out, stream) {
-  out[stream] = '';
-  proc[stream].on('data', function (data) {
-    out[stream] += data.toString();
-  });
-}
