@@ -8,10 +8,10 @@ define({
             args.pop();
 
     let options = args.length && args[args.length - 1];
-    if (! options || typeof options === 'string')
-      options = {};
-    else
+    if (options && typeof options === 'object')
       args.pop();
+    else
+      options = {};
 
     const proc = execFile(cmd, args, options, (error, stdout, stderr) => {
       future.return({error, stdout, stderr});
