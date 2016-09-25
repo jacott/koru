@@ -503,10 +503,10 @@ define(function(require, exports, module) {
 
       if (orig === null) return orig;
 
-      switch(Object.prototype.toString.call(orig)) {
-      case "[object Date]":
-        return new Date(orig.getTime());
-      case "[object Array]":
+      switch(orig.constructor) {
+      case Date: case Uint8Array:
+        return new orig.constructor(orig);
+      case Array:
         return orig.slice();
       }
 
@@ -532,17 +532,13 @@ define(function(require, exports, module) {
 
       if (orig === null) return orig;
 
-      switch(Object.prototype.toString.call(orig)) {
-      case "[object Date]":
-        return new Date(orig.getTime());
-      case "[object Array]":
+      switch(orig.constructor) {
+      case Date: case Uint8Array:
+        return new orig.constructor(orig);
+      case Array:
         return orig.map(function (item) {
           return util.deepCopy(item);
         });
-      case "[object Uint8Array]":
-        var dst = new Uint8Array(new ArrayBuffer(orig.byteLength));
-        dst.set(orig);
-        return dst;
       }
 
       var result = Object.create(Object.getPrototypeOf(orig));
