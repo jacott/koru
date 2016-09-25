@@ -140,7 +140,7 @@ define(function(require, exports, module) {
         var calls = this._calls;
         if (calls) {
           return calls.map(function (call) {
-            return "\n    " + call.args.map(function (arg) {return inspect(arg, 1)}).join(", ");
+            return "\n    " + inspect(call.args, 2);
           }).join("");
         }
         return "";

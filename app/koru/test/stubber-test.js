@@ -184,7 +184,7 @@ define(function (require, exports, module) {
       assert.calledWithExactly(x, 123, {x: "123"});
       refute.calledWith(x, 123, {x: "122"});
 
-      assert.equals(x.printf("%C"), "\n    123, {x: '123'}");
+      assert.equals(x.printf("%C"), "\n    [123, {x: '123'}]");
       assert.equals(x.printf("%n"), "stub");
 
       x.reset();
