@@ -32,6 +32,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     endTestCase() {
+      if (this._setUpOnce) {
+        this._setUpOnce = null;
+        this.tc && this.tc.runTearDown();
+      }
       var after = this._after;
       if (after) for(var i = 0; i < after.length; ++i) {
         after[i].call(this);
@@ -40,9 +44,15 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
     runSetUp(test) {
       if (this.setUpAround) return false;
-      if (this.tc && ! this.tc.runSetUp(test))
-        return false;
-      test._currentTestCase = this;
+      if (! this._setUpOnce) {
+        if (this.tc && ! this.tc.runSetUp(test))
+          return false;
+        test._currentTestCase = this;
+        if (this.setUpOnce) {
+          this._setUpOnce = true;
+          this.setUpOnce.call(test);
+        }
+      }
       this.setUp && this.setUp.call(test);
       return true;
     }
@@ -111,8 +121,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     runTearDown(test) {
-      test._currentTestCase = this;
       this.tearDown && this.tearDown.call(test);
+      if (this._setUpOnce) return;
       this.tc && this.tc.runTearDown(test);
     }
 
@@ -126,6 +136,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
         switch(name) {
         case 'setUp': case 'tearDown': case 'setUpAround':
+        case 'setUpOnce': case 'tearDownOnce':
           skipped || (this[name] = func);
           break;
         default:

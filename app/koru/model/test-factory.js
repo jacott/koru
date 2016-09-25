@@ -128,8 +128,24 @@ define(function(require, exports, module) {
     }
   }
 
+  const tx = [];
+
   const Factory = module.exports = {
+    startTransaction() {
+      tx.push([last, nameGen]);
+      last = util.merge({}, last);
+      nameGen = util.merge({}, nameGen);
+    },
+
+    endTransaction() {
+      if (tx.length === 0)
+        throw new Error("No transaction in progress!");
+      [last, nameGen] = tx.pop();
+    },
+
     clear() {
+      if (tx.length !== 0)
+        throw new Error("Transaction in progress!");
       last = {};
       nameGen = {};
     },

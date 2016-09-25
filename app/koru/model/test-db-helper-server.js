@@ -5,31 +5,36 @@ define(function(require, exports, module) {
   const Factory  = require('./test-factory');
   const BaseTH   = require('./test-helper');
 
-  let txSave, txClient, inTran=false;
+  let txSave, txClient, inTran = 0;
 
   const TH = util.protoCopy(BaseTH, {
     startTransaction() {
-      if (inTran)
-        throw new Error("Transaction still in progress!");
-
       dbBroker.db = txClient;
-      txSave && txClient.query('BEGIN');
-      inTran=true;
+      if (++inTran === 1) {
+        txSave && txClient.query('BEGIN');
+      } else {
+        Factory.startTransaction();
+        txSave && txClient.query("SAVEPOINT s"+inTran);
+      }
     },
 
     endTransaction() {
-      if (! inTran)
+      if (--inTran < 0)
         throw new Error("NO Transaction is in progress!");
 
-      Factory.clear();
       for(var name in Model) {
         var model = Model[name];
         if ('docs' in model) {
           model._$docCacheClear();
         }
       }
-      txSave && txClient.query('ROLLBACK');
-      inTran=false;
+      if (inTran === 0) {
+        Factory.clear();
+        txSave && txClient.query('ROLLBACK');
+      } else {
+        Factory.endTransaction();
+        txSave && txClient.query("ROLLBACK TO SAVEPOINT s"+(inTran+1));
+      }
     },
   });
 
