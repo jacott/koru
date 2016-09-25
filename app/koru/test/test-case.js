@@ -116,9 +116,9 @@ define(['./core', './stubber'], function (geddon, stubber) {
       this.tc && this.tc.runTearDown(test);
     }
 
-    add(name, func) {
+    add(name, func, skipped) {
       if (typeof name === 'string' && name.match(/^\/\//)) {
-        var skipped = true;
+        skipped = true;
         name = name.slice(2);
       }
 
