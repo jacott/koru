@@ -74,7 +74,7 @@ define(function(require, exports, module) {
 
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
-    extendExclude(obj, properties, exclude) {
+    mergeExclude(obj, properties, exclude) {
       for(var prop in properties) {
         if (exclude[prop]) continue;
         Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
@@ -82,14 +82,25 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    reverseMixin(obj, properties, exclude) {
+    reverseMerge(obj, properties, exclude) {
       if (properties == null) return obj;
       for(var prop in properties) {
         if (exclude && exclude[prop]) continue;
-        if (! (prop in obj))
-          Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties, prop));
+        if (! (prop in obj)) {
+          const desc = Object.getOwnPropertyDescriptor(properties, prop);
+          desc && Object.defineProperty(obj, prop, desc);
+        }
       }
       return obj;
+    },
+
+    mergeOwnDescriptors(dest, src) {
+      const names = Object.getOwnPropertyNames(src);
+      for(let i = names.length - 1; i >= 0 ; --i) {
+        const name = names[i];
+        Object.defineProperty(dest, name, Object.getOwnPropertyDescriptor(src, name));
+      }
+      return dest;
     },
 
     forEach(list, func) {
@@ -892,7 +903,7 @@ define(function(require, exports, module) {
   /**
    * @deprecated reverseExtend
    */
-  util.reverseExtend = util.reverseMixin;
+  util.reverseExtend = util.reverseMerge;
 
   function deepEqual(actual, expected) {
     if (egal(actual, expected)) {

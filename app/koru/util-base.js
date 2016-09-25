@@ -13,7 +13,8 @@ define(function(require, exports, module) {
 
     merge(dest, source) {
       for(var prop in source) {
-        Object.defineProperty(dest, prop,Object.getOwnPropertyDescriptor(source, prop));
+        const desc = Object.getOwnPropertyDescriptor(source, prop);
+        desc && Object.defineProperty(dest, prop, desc);
       }
       return dest;
     },
@@ -21,8 +22,10 @@ define(function(require, exports, module) {
     mergeNoEnum(dest, source) {
       for(var prop in source) {
         var desc = Object.getOwnPropertyDescriptor(source, prop);
-        desc.enumerable = false;
-        Object.defineProperty(dest, prop, desc);
+        if (desc) {
+          desc.enumerable = false;
+          Object.defineProperty(dest, prop, desc);
+        }
       }
       return dest;
     },

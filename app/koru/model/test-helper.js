@@ -7,7 +7,7 @@ define(function(require, exports, module) {
   const testCase = TH.testCase;
   let sendM;
 
-  return TH.util.reverseExtend({
+  return TH.util.protoCopy(TH, {
     testCase: function () {
       var tc = testCase.apply(TH, arguments);
       tc.before(stubSendM);
@@ -24,7 +24,7 @@ define(function(require, exports, module) {
         }
       });
     },
-  }, TH);
+  });
 
   function stubSendM() {
     if (session.hasOwnProperty('sendM')) {

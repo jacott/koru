@@ -121,7 +121,7 @@ define(function(require, exports, module) {
 
       var hsla = hex2hsl(color) || {h: 0, s: 0, l: 1, a: 1};
       if (! alpha) hsla.a = 1;
-      var data = util.reverseExtend({orig: color, color: hsla, callback: callback}, options);
+      var data = util.reverseMerge({orig: color, color: hsla, callback: callback}, options);
       var elm = Tpl.$autoRender(data);
       document.body.appendChild(elm);
       Modal.init({
@@ -149,18 +149,18 @@ define(function(require, exports, module) {
 
   var BG_STYLES = {
     s: function (color) {
-      return [hsl2hex(util.reverseExtend({s: 0, a: 1}, color), '#'),
-              hsl2hex(util.reverseExtend({s: 1, a: 1}, color), '#')];
+      return [hsl2hex(util.reverseMerge({s: 0, a: 1}, color), '#'),
+              hsl2hex(util.reverseMerge({s: 1, a: 1}, color), '#')];
     },
 
     l: function (color) {
       return ["#000000",
-              hsl2hex(util.reverseExtend({l: 0.5, a: 1}, color), '#') + " 50%, #FFFFFF"];
+              hsl2hex(util.reverseMerge({l: 0.5, a: 1}, color), '#') + " 50%, #FFFFFF"];
     },
 
     a: function (color) {
-      return [uColor.hex2Style(hsl2hex(util.reverseExtend({a: 0}, color)), '#'),
-              hsl2hex(util.reverseExtend({a: 1}, color), '#')];
+      return [uColor.hex2Style(hsl2hex(util.reverseMerge({a: 0}, color)), '#'),
+              hsl2hex(util.reverseMerge({a: 1}, color), '#')];
     },
   };
 

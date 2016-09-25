@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   const Dom   = require('../dom');
   const koru  = require('../main');
-  const TH    = require('../test-helper');
+  const TH    = Object.create(require('../test-helper'));
   const util  = require('../util');
   const Route = require('./route');
 
@@ -67,7 +67,7 @@ define(function(require, exports, module) {
     }
   }
 
-  util.extend(TH, {
+  module.exports = util.merge(TH, {
     domTearDown() {
       Dom.flushNextFrame();
       Route._reset();
@@ -288,6 +288,4 @@ define(function(require, exports, module) {
 
     function unhandledException(ex) {evex = ex}
   }
-
-  return TH;
 });

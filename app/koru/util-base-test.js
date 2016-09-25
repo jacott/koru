@@ -54,6 +54,17 @@ define(function (require, exports, module) {
 
       assert.equals(sut.merge({a: 1}), {a: 1});
       assert.equals(sut.merge({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4});
+
+      const a = {a: 1, b: 2};
+      const b = sut.merge(Object.create(a), {b: 3, c: 4});
+
+      const c = {d: 5};
+
+      const ans = sut.merge(c, b);
+
+      assert.same(ans, c);
+      assert.equals(ans, {d: 5, b: 3, c: 4});
+
     },
 
     "test last"() {

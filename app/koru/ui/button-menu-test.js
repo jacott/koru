@@ -1,16 +1,16 @@
 isClient && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test-helper');
-  var buttonMenuTpl = require('../html!./button-menu-test');
-  var Dom = require('../dom');
-  require('./button-menu');
-  var util = require('../util');
+  const Dom               = require('../dom');
+  const buttonMenuTestTpl = require('../html!./button-menu-test');
+  const util              = require('../util');
+  const ButtonMenu        = require('./button-menu');
+  const TH                = require('./test-helper');
 
   TH.testCase(module, {
     setUp: function () {
       test = this;
       v = {};
-      v.menu = Dom.newTemplate(util.deepCopy(buttonMenuTpl));
+      v.menu = Dom.newTemplate(util.deepCopy(buttonMenuTestTpl));
     },
 
     tearDown: function () {

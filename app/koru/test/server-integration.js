@@ -13,7 +13,7 @@ define(function(require, exports, module) {
     cmFuture && cmFuture.return('');
   });
 
-  TH = util.reverseExtend({
+  TH = util.reverseMerge({
     cleanup: function () {
       clientMessage = null;
     },

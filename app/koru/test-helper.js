@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   var geddon = TH.geddon;
   var gu = geddon._u;
 
-  TH = koru.util.reverseExtend({
+  TH = koru.util.reverseMerge({
     util: koru.util,
 
     login (id, func) {

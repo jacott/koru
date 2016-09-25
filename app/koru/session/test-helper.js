@@ -5,7 +5,7 @@ define(function(require, exports, module) {
 
   var geddon = TH.geddon;
 
-  return TH.util.reverseExtend({
+  return TH.util.protoCopy(TH, {
     sessionConnect: function (ws) {
       session.onConnection(ws);
 
@@ -34,5 +34,5 @@ define(function(require, exports, module) {
         return v.ready;
       });
     },
-  }, TH);
+  });
 });

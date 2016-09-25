@@ -33,7 +33,7 @@ isClient && define(function (require, exports, module) {
 
       var foo2 = v.TestModel.create();
 
-      obs.yield(util.reverseExtend({foo_ids: [1]}, foo2.attributes), foo2.attributes);
+      obs.yield(util.reverseMerge({foo_ids: [1]}, foo2.attributes), foo2.attributes);
 
       refute.called(foo.$reload);
       refute.called(ctx.updateAllTags);

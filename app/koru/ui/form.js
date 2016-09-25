@@ -542,7 +542,7 @@ define(function(require, exports, module) {
   });
 
   function helpers(name, funcs) {
-    Tpl[name].$helpers(util.reverseExtend(funcs, DEFAULT_HELPERS));
+    Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
   }
 
   var EDITORS = {

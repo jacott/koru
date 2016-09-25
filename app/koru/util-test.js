@@ -18,6 +18,19 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test mergeOwnDescriptors"() {
+      const a = {a: 1, b: 2};
+      const b = util.mergeNoEnum(util.protoCopy(a, {b: 3, c: 4}), {e: 6});
+
+      const c = {d: 5};
+
+      const ans = util.mergeOwnDescriptors(c, b);
+
+      assert.same(ans, c);
+      assert.equals(ans, {d: 5, b: 3, c: 4});
+      assert.same(ans.e, 6);
+    },
+
     "test toDp" () {
       /**
        * Return a floating point `number` as a string to
@@ -185,12 +198,12 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
-    'test extendExclude' () {
+    'test mergeExclude' () {
       var item = 5,
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
 
-      util.extendExclude(sub,sup, {d: true, e: true});
+      util.mergeExclude(sub,sup, {d: true, e: true});
 
       item = 6;
 
@@ -801,12 +814,12 @@ define(function (require, exports, module) {
       },
     },
 
-    'test reverseExtend' () {
+    'test reverseMerge' () {
       var item = 5,
           sub={a: 1, b: 2},
           sup = {d: 'd', b: 3, get c() {return item;}};
 
-      util.reverseExtend(sub,sup, {d: 1});
+      util.reverseMerge(sub,sup, {d: 1});
 
       item = 6;
 

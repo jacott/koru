@@ -36,7 +36,7 @@ define(function(require, exports, module) {
       this.parent = options && options.hasOwnProperty('parent') ? options.parent : parent;
       this.routes = {};
 
-      util.reverseExtend(this, options);
+      util.reverseMerge(this, options);
     }
 
     static get pageState() {return pageState;}
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
         page = (page.route ? page.route.defaultPage : page.defaultPage) || page;
       }
 
-      pageRoute = util.reverseExtend(pageRoute || {},  currentPageRoute, excludes);
+      pageRoute = util.reverseMerge(pageRoute || {},  currentPageRoute, excludes);
       pageRoute.pathname = pathname(page, pageRoute || {});
 
       debug_page && koru.logger('D', 'gotoPage', util.inspect(pageRoute, 2));
