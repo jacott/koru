@@ -164,6 +164,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWithExactly(v.callback);
         assert.same(util.thread.userId, 'uid123');
         assert.same(localStorage.getItem('koru.loginToken'), 'tokenId|token123');
+        assert.same(userAccount.token, 'tokenId|token123');
       },
 
       "test bad username"() {
@@ -251,7 +252,8 @@ isClient && define(function (require, exports, module) {
 
       "test logout "() {
         util.thread.userId = 'userId456';
-        localStorage.setItem('koru.loginToken', 'abc|def');
+        userAccount.token = 'abc|def';
+        assert.same(localStorage.getItem('koru.loginToken'), 'abc|def');
 
         userAccount.logout();
         assert.calledWith(session.send, 'VX' + 'abc|def');

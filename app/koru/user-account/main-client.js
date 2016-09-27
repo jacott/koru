@@ -12,7 +12,7 @@ define(function(require, exports, module) {
   let storage = localStorage;
 
   function onConnect(session) {
-    var token = storage.getItem('koru.loginToken');
+    var token = exports.token;
     if (token) {
       session.send('VL', token);
       login.wait(session);
@@ -22,13 +22,18 @@ define(function(require, exports, module) {
   }
 
   exports = {
+    get token() {return storage.getItem('koru.loginToken')},
+    set token(value) {
+      return value ? storage.setItem('koru.loginToken', value) :
+        storage.removeItem('koru.loginToken');
+    },
     get storage() {return storage},
     set storage(value) {storage=value},
     init() {
       session.provide('V', function (data) {
         switch(data[0]) {
         case 'T':
-          storage.setItem('koru.loginToken', data.slice(1).toString());
+          exports.token = data.slice(1).toString();
           break;
         case 'S':
           login.setUserId(this, data.slice(1).toString() || null);
@@ -58,7 +63,7 @@ define(function(require, exports, module) {
         'SRPLogin', email, password, callback,
         function() {},
         function (err, result) {
-          storage.setItem('koru.loginToken', result.loginToken);
+          exports.token = result.loginToken;
           login.setUserId(session, result.userId);
           callback();
         }
@@ -80,12 +85,12 @@ define(function(require, exports, module) {
     },
 
     logout() {
-      session.send('VX'+storage.getItem('koru.loginToken'));
-      storage.removeItem('koru.loginToken');
+      session.send('VX'+exports.token);
+      exports.token = null;
     },
 
     logoutOtherClients() {
-      session.send('VO'+storage.getItem('koru.loginToken'));
+      session.send('VO'+exports.token);
     },
 
     secureCall(method, email, password, payload, callback) {
