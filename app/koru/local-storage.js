@@ -1,13 +1,13 @@
 define({
-  setItem: function (key, value) {
+  setItem(key, value) {
     window.localStorage.setItem(key,value);
   },
 
-  getItem: function (key) {
+  getItem(key) {
     return window.localStorage.getItem(key);
   },
 
-  removeItem: function (key) {
+  removeItem(key) {
     window.localStorage.removeItem(key);
   },
 });

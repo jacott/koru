@@ -25,6 +25,7 @@ isClient && define(function (require, exports, module) {
       login.wait(session);
     },
 
+
     "test secureCall"() {
       userAccount.secureCall('fooBar', 'email@obeya.co', 'secret', [1, 2], v.callback = test.stub());
 
@@ -212,6 +213,24 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test setSessionPersistence"() {
+      test.onEnd(() => {
+        userAccount.stop();
+        userAccount.storage = localStorage;
+      });
+      assert.same(userAccount.storage, localStorage);
+      const myStorage = {
+        getItem: this.stub().returns('my token'),
+        removeItem: this.stub(),
+      };
+      userAccount.storage = myStorage;
+      assert.same(userAccount.storage, myStorage);
+      test.stub(session, 'send');
+      userAccount.logout();
+      assert.calledWith(myStorage.removeItem, 'koru.loginToken');
+      assert.calledWith(session.send, 'VXmy token');
+    },
+
     "token login/logout": {
       setUp() {
         session.state._state = 'ready';
@@ -221,7 +240,6 @@ isClient && define(function (require, exports, module) {
 
       tearDown() {
         userAccount.stop();
-
       },
 
       "test resetPassword"() {
