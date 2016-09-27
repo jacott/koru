@@ -392,6 +392,8 @@ define(function(require, exports, module) {
     }
   };
 
+  Route.pageParent = document.body;
+
   makeSubject(Route);
 
   Route.title = document.title;
@@ -535,7 +537,7 @@ define(function(require, exports, module) {
           if (parent)
             parent = parent.getElementsByClassName('body')[0] || parent;
         }
-        (parent || document.body).appendChild(page._renderedPage);
+        (parent || Route.pageParent).appendChild(page._renderedPage);
       }
       if (options.focus) {
         Dom.focus(page._renderedPage, options.focus);

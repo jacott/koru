@@ -40,6 +40,7 @@ isClient && define(function (require, exports, module) {
       Route._onGotoPath = v.onGotoPath;
       Route._reset();
       delete Dom.Test;
+      Dom.removeChildren(document.body);
       v = null;
     },
 
@@ -758,6 +759,8 @@ isClient && define(function (require, exports, module) {
     },
 
     "test addTemplate"() {
+      Route.pageParent.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
+      this.onEnd(() => {Route.pageParent = document.body});
       var Baz = {
         name: 'Baz',
         parent: v.FooBar,
@@ -774,7 +777,7 @@ isClient && define(function (require, exports, module) {
 
       Baz.onEntry(Baz);
 
-      assert.dom('#Baz', 'fooData');
+      assert.dom('#the-pageParent>#Baz', 'fooData');
 
       Baz.onExit(Baz);
 
