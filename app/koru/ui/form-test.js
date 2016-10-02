@@ -71,6 +71,40 @@ isClient && define(function (require, exports, module) {
         assert.dom('.select', 'A');
       },
 
+
+      "test inclusionIn"() {
+        const selectList = v.Form.TestSelectMenu;
+        selectList.$helpers({
+          fooList() {
+            return "inclusionIn";
+          },
+        });
+
+        const doc = {
+          constructor: {
+            $fields: {
+              foo_id: {inclusion: {in: ['a', 'b']}}
+            }
+          },
+          foo_id: 'b',
+        };
+
+        document.body.appendChild(selectList.$autoRender(doc));
+
+        assert.dom('[data-errorField="foo_id"]', function () {
+          assert.dom('button[name=foo_id].select.fuz', 'b');
+          TH.selectMenu('.select', TH.match.field('id', 'a'), function () {
+            assert.dom(this.parentNode, function () {
+              assert.dom('li.selected', 'b');
+            });
+            TH.click(this);
+          });
+          assert.dom('.select', 'a');
+          assert.dom('[type=hidden]', {value: 'a'});
+        });
+      },
+
+
       "test SelectMenu"() {
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({

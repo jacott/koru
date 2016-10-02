@@ -311,7 +311,7 @@ define(function(require, exports, module) {
 
       } else {
         const value = this.doc[this.name];
-        for (let [id, name]  of options.selectList) {
+        for (let [id, name]  of this.selectList()) {
           if (id === value) {
             result = name;
             found = true;
@@ -335,27 +335,53 @@ define(function(require, exports, module) {
     },
   });
 
+  Tpl.SelectMenu.$extend({
+    $created(ctx, elm) {
+      const data = ctx.data;
+      const list = data.options.selectList;
+
+      switch (typeof list) {
+      case 'function':
+        data.selectList = includeBlank => selectMenuList(list(), includeBlank);
+        break;
+      case 'string':
+        switch (list) {
+        case 'inclusionIn':
+          data.selectList = includeBlank => selectMenuList(
+            data.doc.constructor.$fields[data.name].inclusion.in
+              .map(v => [v, v]),
+            includeBlank
+          );
+          break;
+        default:
+          throw new Error(`Invalid value for selectList: ${list}`);
+        }
+        break;
+      default:
+        data.selectList = includeBlank => selectMenuList(list, includeBlank);
+        break;
+      }
+    },
+  });
+
+  function selectMenuList(list, includeBlank) {
+    return includeBlank ? [
+      ['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
+      ...list
+    ] : list;
+  }
+
   Tpl.SelectMenu.$events({
     'click'(event) {
       Dom.stopEvent();
 
-      const options = $.ctx.data.options;
+      const data = $.ctx.data;
+      const options = data.options;
       const button = event.currentTarget.firstChild;
       const hidden = event.currentTarget.lastChild;
 
-      let list = options.selectList;
-
-      if (typeof list === 'function')
-        list = list();
-
-      if (options.includeBlank) {
-        const {includeBlank} = options;
-
-        list = [['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})], ...list];
-      }
-
       SelectMenu.popup(button, {
-        list,
+        list: data.selectList(options.includeBlank),
         selected: hidden.value,
         classes: options.popupClass,
         onSelect(elm) {
@@ -552,7 +578,7 @@ define(function(require, exports, module) {
 
   function field(doc, name, options, extend) {
     options = options || {};
-    var data = {name, doc, options};
+    const data = {name, doc, options};
     if ('selectList' in options) {
       return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
     }
