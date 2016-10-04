@@ -8,43 +8,9 @@ var stat_w = Future.wrap(fs.stat);
 var unlink_w = Future.wrap(fs.unlink);
 var utimes_w = Future.wrap(fs.utimes);
 
-define({
-  mkdir: mkdir,
-  mkdir_p: mkdir_p,
-  appendData: appendData,
-  readdir: readdir,
-  readFile: readFile,
-  rename: rename,
-  rmdir: rmdir,
-  stat: stat,
-  truncate: truncate,
-  unlink: unlink,
-  link: link,
-  writeFile: writeFile,
-  setMtime: function (path, time) {
-    time = new Date(time);
-    utimes_w(path, time, time).wait();
-  },
-
-  rm_r: function (dir) {
-    stat(dir) && rm_rf_w(dir).wait();
-  },
-
-  rm_f: function (file) {
-    try {
-      unlink(file);
-      return true;
-    } catch(ex) {
-      if (ex.code !== 'ENOENT')
-        throw ex;
-      return false;
-    }
-  },
-});
-
-function stat(path) {
+function waitMethod(method, ...args) {
   try {
-    return futureWrap(fs, fs.stat, [path]);
+    return futureWrap(fs, method, args);
   } catch (ex) {
     if (ex.code === 'ENOENT')
       return;
@@ -53,7 +19,15 @@ function stat(path) {
   }
 }
 
-var rm_rf_w = Future.wrap(function (dir, callback) {
+function stat(path) {
+  return waitMethod(fs.stat, path);
+}
+
+function lstat(path) {
+  return waitMethod(fs.lstat, path);
+}
+
+const rm_rf_w = Future.wrap(function (dir, callback) {
   Fiber(function () {
     try {
       var filenames = readdir_w(dir).wait();
@@ -152,19 +126,54 @@ function mkdir_p(path) {
 }
 
 function futureWrap(obj, func, args) {
-  var future = new Future;
-  var results;
+  const future = new Future;
 
   var callback = function (error, data) {
     if (error) {
       future.throw(error);
       return;
     }
-    results = data;
-    future.return();
+    future.return(data);
   };
   args.push(callback);
   func.apply(obj, args);
-  future.wait();
-  return results;
+  return future.wait();
 }
+
+define({
+  mkdir,
+  mkdir_p,
+  appendData,
+  readdir,
+  readFile,
+  rename,
+  rmdir,
+  stat,
+  lstat,
+  readlink(path) {
+    return waitMethod(fs.readlink, path);
+  },
+  truncate,
+  unlink,
+  link,
+  writeFile,
+  setMtime(path, time) {
+    time = new Date(time);
+    utimes_w(path, time, time).wait();
+  },
+
+  rm_r(dir) {
+    stat(dir) && rm_rf_w(dir).wait();
+  },
+
+  rm_f(file) {
+    try {
+      unlink(file);
+      return true;
+    } catch(ex) {
+      if (ex.code !== 'ENOENT')
+        throw ex;
+      return false;
+    }
+  },
+});

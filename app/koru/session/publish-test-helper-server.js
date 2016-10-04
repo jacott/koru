@@ -17,9 +17,6 @@ define(function(require, exports, module) {
   }
 
   const publishTH = {
-    mockSubscribe() {
-    },
-
     mockConnection (sessId, session=this.mockSession()) {
       const test = TH.test;
       const conn = new (SCFactory(session))(
