@@ -43,17 +43,6 @@ define(function(require, exports, module) {
         return setTimeout(() => koru.fiberRun(func), duration);
       },
 
-      fiberRun(func) {
-        util.Fiber(() => {
-          try {
-            func();
-          } catch(ex) {
-            koru.error(util.extractError(ex));
-          }
-        }).run();
-      },
-
-
       fiberConnWrapper(func, conn, data) {
         dbBroker || require(['koru/model/db-broker'], value => dbBroker = value);
         util.Fiber(function () {

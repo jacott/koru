@@ -100,5 +100,20 @@ define(function (require, exports, module) {
 
       assert.calledWith(clearTimeout, 1234);
     },
+
+    "test fiberRun"() {
+      test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
+
+      koru.fiberRun(() => {v.success = true});
+      assert.called(v.run);
+      util.Fiber.args(0, 0)();
+      assert(v.success);
+
+      util.Fiber.reset();
+      test.stub(koru, 'error');
+      koru.fiberRun(function () {throw new Error("Foo")}, v.conn, v.data);
+      util.Fiber.args(0, 0)();
+      assert.calledWith(koru.error, TH.match(/Foo/));
+    },
   });
 });

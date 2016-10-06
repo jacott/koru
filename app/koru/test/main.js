@@ -118,7 +118,7 @@ define(function(require, exports, module) {
       count = skipCount = errorCount = 0;
 
       require(tests, function (...args) {
-        koru.Fiber(() => {geddon.start(args)}).run();
+        koru.fiberRun(() => {geddon.start(args)});
       }, errorLoading);
 
       function errorLoading(err) {
