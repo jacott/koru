@@ -131,7 +131,7 @@ define(function(require, exports, module) {
 
     static define({module, name, fields}) {
       if (! name)
-        name = this.name || moduleName(module);
+        name = moduleName(module);
       if (! name)
         throw new Error("Model requires a name");
       if (ModelMap[name])

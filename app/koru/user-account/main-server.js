@@ -46,6 +46,7 @@ define(function(require, exports, module) {
 
   UserLogin.define({
     module,
+    name: 'UserLogin',
     fields: {
       userId: 'text',
       email: 'text',

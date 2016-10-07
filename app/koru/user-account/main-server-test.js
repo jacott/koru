@@ -68,6 +68,10 @@ define(function (require, exports, module) {
       },
     },
 
+    "test UserLogin"() {
+      assert.same(Model.UserLogin.modelName, "UserLogin");
+    },
+
     "test createUserLogin"() {
       var spy = test.spy(SRP, 'generateVerifier');
       var lu = userAccount.createUserLogin({email: 'alice@obeya.co', userId: "uid1", password: 'test pw'});
