@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   const session = require('koru/session/base');
+  const util    = require('koru/util');
   const koru    = require('../main');
   const TH      = require('../test-helper');
   const Query   = require('./query');
@@ -22,7 +23,7 @@ define(function(require, exports, module) {
             expect._id === actual._id) {
           return TH.geddon._u.deepEqual(actual.attributes, expect.attributes);
         }
-      });
+      }, {toString() {return util.inspect(expect)}});
     },
   });
 
