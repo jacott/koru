@@ -873,7 +873,9 @@ define(function(require, exports, module) {
   }
 
   function moduleName(module) {
-    return module && util.capitalize(util.camelize(module.id.replace(/^.*\//, '')));
+    return module && util.capitalize(util.camelize(
+      module.id.replace(/^.*\//, '').replace(/-(?:server|client)$/, '')
+    ));
   }
 
 });

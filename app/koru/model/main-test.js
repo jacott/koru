@@ -83,7 +83,7 @@ define(function (require, exports, module) {
          *
          * @param {Module} [module] needed to auto unload module when file changed
 
-         * @param {string} [name] name of model. Defaults to class name or derive from module name.
+         * @param {string} [name] name of model. Defaults to derived from module name.
 
          * @param {object} [fields] call defineFields with fields
 
@@ -93,7 +93,7 @@ define(function (require, exports, module) {
 
         test.stub(koru, 'onunload');
 
-        const module = new TH.MockModule("test-model");
+        const module = new TH.MockModule("test-model-server");
 
         v.bmApi.example(() => {
           class TestModel extends BaseModel {
@@ -106,7 +106,6 @@ define(function (require, exports, module) {
           });
 
           assert.same(Model.TestModel, TestModel);
-          assert.same(TestModel.name, 'TestModel'); // not all browsers support this
           assert.same(TestModel.modelName, 'TestModel');
 
           let tm = TestModel.create({name: 'my name'});

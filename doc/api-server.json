@@ -259,16 +259,16 @@
       "define": {
         "test": "koru/model/main BaseModel test using a class",
         "sig": "define({module, name, fields})",
-        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to class name or derive from module name.\n@param {object} [fields] call defineFields with fields\n@returns {BaseModel} the model",
+        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to derived from module name.\n@param {object} [fields] call defineFields with fields\n@returns {BaseModel} the model",
         "calls": [
           {
-            "body": "          class TestModel extends BaseModel {\n            foo() {return this.name;}\n          }\n\n          TestModel.define({\n            module,\n            fields: {name: 'text'},\n          });\n\n          assert.same(Model.TestModel, TestModel);\n          assert.same(TestModel.name, 'TestModel'); // not all browsers support this\n          assert.same(TestModel.modelName, 'TestModel');\n\n          let tm = TestModel.create({name: 'my name'});\n\n          assert.same(tm.foo(), 'my name');\n        ",
+            "body": "          class TestModel extends BaseModel {\n            foo() {return this.name;}\n          }\n\n          TestModel.define({\n            module,\n            fields: {name: 'text'},\n          });\n\n          assert.same(Model.TestModel, TestModel);\n          assert.same(TestModel.modelName, 'TestModel');\n\n          let tm = TestModel.create({name: 'my name'});\n\n          assert.same(tm.foo(), 'my name');\n        ",
             "calls": [
               [
                 [
                   [
                     "O",
-                    "{fields: {name: 'text'}, module: {Module:test-model}}"
+                    "{fields: {name: 'text'}, module: {Module:test-model-server}}"
                   ]
                 ],
                 [
