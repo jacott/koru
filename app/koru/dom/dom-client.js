@@ -524,7 +524,7 @@ define(function(require, exports, module) {
       return fragStart._koruEnd;
     },
 
-    contains: document.body.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
+    contains: Element.prototype.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
       return parent && parent.contains(elm) ? parent : null;
     } : function (parent, elm) {
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
