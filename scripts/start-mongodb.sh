@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-. `dirname "$0"`/environ.sh
+. `dirname "$0"`/../config/environ.sh
 
 if [ ! -e "$MONGO_DIR" ];then
     mkdir -p "$MONGO_DIR"

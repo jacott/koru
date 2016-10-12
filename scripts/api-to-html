@@ -2,8 +2,7 @@
 set -e
 
 branch="test"
-
-. `dirname "$0"`/environ.sh
+. `dirname "$0"`/../config/environ.sh
 
 cd app
-exec node ${NODEDEBUG} --es_staging ../lib/api-to-html.js $branch "$@"
+exec ${NODE} --es_staging ../lib/api-to-html.js $branch "$@"

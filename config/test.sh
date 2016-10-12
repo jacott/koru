@@ -1,4 +1,3 @@
-# -*- mode: shell-script -*-
 export MONGO_DIR=/tmp/testdb
 export MONGO_PORT=3004
 export LOG_DIR=/tmp

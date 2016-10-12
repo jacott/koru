@@ -1,25 +1,17 @@
 #!/bin/bash
 set -e
 
-branch="${1-demo}"
+. `dirname "$0"`/../config/environ.sh
 
-if [ "$MONGO_DIR" = "" ];then
-    . `dirname "$0"`/environ.sh
-fi
-
-# export NODE_OPTIONS='--prof'
-# send SIGUSR1 to debug
-
-# export UV_THREADPOOL_SIZE=8
-export KORUAPI=on
-
-
-if [ "`type -p mongod`" != "" ];then
-    export KORU_USE_MONGO=1
-    fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
+if test -e tmp/yarn.lock && ${NODE} -v | cat - yarn.lock | diff -q - tmp/yarn.lock >/dev/null;then
+    echo 'node_modules okay'
 else
-    unset KORU_USE_MONGO
+    echo 'yarn install...'
+    rm -rf node_modules
+    yarn
+    ${NODE} -v | cat - yarn.lock >tmp/yarn.lock
 fi
+
 cd app
 echo -e "starting ${branch}...\c"
-exec node --inspect --es_staging --expose-gc ../lib/koru.js "$@"
+exec ${NODE} --inspect --es_staging ../lib/koru.js "$@"

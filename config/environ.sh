@@ -13,8 +13,8 @@ if [ ! -e "$tmpdir" ];then
     mkdir -p "$tmpdir"
 fi
 
-branch=${branch-$1}
-. config/${branch}.cfg
+branch=${branch-${1-demo}}
+. config/${branch}.sh
 
 if [ "$LOG_DIR" = "" ];then
     LOG_DIR=/u/log
@@ -23,4 +23,12 @@ fi
 if [ ! -d "$LOG_DIR" ];then
     echo "no log dir: $LOG_DIR"
     exit 1
+fi
+
+export KORU_LOG_DIR=$LOG_DIR
+export PATH=$NODE_PATH:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+
+if [ "$2" = "--config" ];then
+    env|grep -e '^KORU_'
+    echo -e "NODE=$NODE\nNPM=$NPM\nNODE_PATH=$NODE_PATH"
 fi
