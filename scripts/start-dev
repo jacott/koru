@@ -14,7 +14,7 @@ fi
 export KORUAPI=on
 
 
-if [ "`which mongod`" != "" ];then
+if [ "`type -p mongod`" != "" ];then
     export KORU_USE_MONGO=1
     fuser -s "$MONGO_DIR/mongod.lock" || ./scripts/startdb.sh $branch
 else
