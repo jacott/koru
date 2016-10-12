@@ -64,6 +64,22 @@ define(function(require, exports, module) {
       this._doMigration(false, name, options);
     }
 
+    recordAllMigrations(dirPath) {
+      const filenames = readdir(dirPath).wait().filter(function (fn) {
+        return /.js$/.test(fn);
+      }).sort();
+
+      const migrations = this._getMigrations();
+
+      for(var i = 0; i < filenames.length; ++i) {
+        var row = filenames[i].replace(/\.js$/,'');
+        if (! migrations[row]) {
+          this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
+          this._migrations[row] = true;
+        }
+      }
+    }
+
     migrateTo(dirPath, pos, verbose) {
       if (! pos) throw new Error("Please specifiy where to migrate to");
       const filenames = readdir(dirPath).wait().filter(function (fn) {

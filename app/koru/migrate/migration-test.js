@@ -120,6 +120,29 @@ isServer && define(function (require, exports, module) {
                                  ["TestTable"])[0].exists, false);
     },
 
+    "test recordAllMigrations"() {
+      var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
+
+      v.sut.recordAllMigrations(dir);
+
+      assert.equals(v.client.query('SELECT name from "Migration" order by name').map(d => d.name), [
+        '2015-06-19T17-48-41-create',
+        '2015-06-19T17-49-31-add-column',
+        '2015-06-19T17-54-18-rename-column',
+        '2015-06-20T08-11-03-i-fail'
+      ]);
+
+      refute.exception(() => {
+        v.sut.recordAllMigrations(dir);
+      });
+
+      v.sut._migrations = null;
+
+      refute.exception(() => {
+        v.sut.recordAllMigrations(dir);
+      });
+    },
+
     "test rollback on error"() {
       var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
