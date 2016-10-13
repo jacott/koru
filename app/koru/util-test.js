@@ -92,6 +92,12 @@ define(function (require, exports, module) {
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
 
+    "test firstParam"() {
+      assert.same(util.firstParam({a: 1, b: 2}), 1);
+      assert.same(util.firstParam({}), undefined);
+      assert.same(util.firstParam(), undefined);
+    },
+
     "test keyMatches" () {
       assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(c)/)[1], 'c');
       assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));

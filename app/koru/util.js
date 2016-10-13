@@ -296,6 +296,10 @@ define(function(require, exports, module) {
       return true;
     },
 
+    firstParam(obj) {
+      if (obj) for(var key in obj) {return obj[key];}
+    },
+
     keyMatches(obj, regex) {
       var m;
       if (obj) for (var key in obj) {
