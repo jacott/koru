@@ -1,5 +1,7 @@
 define(['./core', './stubber'], function (geddon, stubber) {
 
+  let onSetUpOnceEnd;
+
   class TestCase {
     constructor(name, tc, option) {
       this.name = name;
@@ -34,6 +36,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
     endTestCase() {
       if (this._setUpOnce) {
         this._setUpOnce = null;
+        if (this.tearDownOnce)
+          this.tearDownOnce.call(geddon.test);
+        this.runOnEnds(geddon.test, onSetUpOnceEnd);
+        onSetUpOnceEnd = null;
         this.tc && this.tc.runTearDown();
       }
       var after = this._after;
@@ -50,7 +56,12 @@ define(['./core', './stubber'], function (geddon, stubber) {
         test._currentTestCase = this;
         if (this.setUpOnce) {
           this._setUpOnce = true;
+          const testEnd = test.__testEnd;
+          onSetUpOnceEnd = test.__testEnd = [];
           this.setUpOnce.call(test);
+          test.__testEnd = testEnd;
+        } else if (this.tearDownOnce) {
+          this._setUpOnce = true;
         }
       }
       this.setUp && this.setUp.call(test);
@@ -107,8 +118,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
       }
     }
 
-    runOnEnds(test) {
-      var cbs = test.__testEnd;
+    runOnEnds(test, cbs = test.__testEnd) {
       if (cbs) for(var i=0;i < cbs.length;++i) {
         var func = cbs[i];
         if (typeof func === 'function')
@@ -122,7 +132,9 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
     runTearDown(test) {
       this.tearDown && this.tearDown.call(test);
-      if (this._setUpOnce) return;
+      if (this._setUpOnce) {
+        return;
+      }
       this.tc && this.tc.runTearDown(test);
     }
 
@@ -154,11 +166,14 @@ define(['./core', './stubber'], function (geddon, stubber) {
       } else if (func != null) {
 
         new TestCase(name, this).add(func, null, skipped);
-      } else {
-
-        for(var opId in name) {
-          this.add(opId, name[opId], skipped);
+      } else if (typeof name === 'function') {
+        this.add(name.name, name, skipped);
+      } else for(var opId in name) {
+        if (opId === 'testCase') {
+          skipped || name.testCase(this);
+          break;
         }
+        this.add(opId, name[opId], skipped);
       }
       return this;
     }
