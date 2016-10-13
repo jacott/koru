@@ -1,22 +1,23 @@
 define(function (require, exports, module) {
   var test, v;
   const TH   = require('./test');
-  const sut  = require('./util');
+
+  const util  = require('./util');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test waitCallback": function () {
+    "test waitCallback"() {
       var future = {throw: test.stub(), return: test.stub()};
 
-      var func = sut.waitCallback(future);
+      var func = util.waitCallback(future);
 
       func(v.foo = new Error("foo"));
 
@@ -30,8 +31,29 @@ define(function (require, exports, module) {
       assert.calledWith(future.throw, TH.match(err => err.message === "123"));
     },
 
-    "test engine": function () {
-      assert.same(sut.engine, 'Server');
+    "test callWait"() {
+      const wait = this.stub().returns("success");
+      const future = {wait};
+      function myFuture() {return future}
+      const method = this.stub();
+      this.stub(util, "waitCallback").returns("waitCallback-call");
+      const myThis = {method};
+
+      this.intercept(util, 'Future', myFuture);
+
+      assert.same(util.callWait(method, myThis, "foo", 1, 2), "success");
+
+
+      assert.calledWith(method, "foo", 1, 2, "waitCallback-call");
+      assert.same(method.firstCall.thisValue, myThis);
+
+      assert.calledWith(util.waitCallback, future);
+      assert.called(wait);
+      assert(method.calledBefore(wait));
+    },
+
+    "test engine"() {
+      assert.same(util.engine, 'Server');
     },
   });
 });
