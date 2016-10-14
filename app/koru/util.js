@@ -886,6 +886,19 @@ define(function(require, exports, module) {
       return name.replace(/[<>]/g, '') + " <" + email + ">";
     },
 
+    extractFromEmail(email) {
+      const ans = {};
+      var match = /^(.*)<(.*)>$/.exec(email);
+      if (match) {
+        ans.name = match[1].trim();
+        email = match[2];
+      } else {
+        ans.name = util.titleize(email.trim().split('@')[0]);
+      }
+      ans.email = email.trim().toLowerCase();
+      return ans;
+    },
+
     parseEmailAddresses(input) {
       input = input || "";
       var addresses = [];

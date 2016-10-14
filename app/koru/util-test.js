@@ -889,6 +889,29 @@ define(function (require, exports, module) {
       assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
     },
 
+    "test extractFromEmail": function () {
+      assert.equals(util.extractFromEmail("abc@Def.Co"), {
+        email: "abc@def.co",
+        name: "Abc",
+      });
+
+      assert.equals(util.extractFromEmail("abc-def_xyz.qqq@obeya.co"), {
+        email: "abc-def_xyz.qqq@obeya.co",
+        name: "Abc Def Xyz Qqq",
+      });
+
+      assert.equals(util.extractFromEmail("helenReddy@Delta.dawn.co"), {
+        email: "helenreddy@delta.dawn.co",
+        name: "Helen Reddy",
+      });
+
+      assert.equals(util.extractFromEmail("Nick Nolte <helenReddy@Delta.dawn.co>"), {
+        email: "helenreddy@delta.dawn.co",
+        name: "Nick Nolte",
+      });
+    },
+
+
     "test parseEmailAddresses" () {
       assert.isNull(util.parseEmailAddresses("foo@bar baz"));
       assert.isNull(util.parseEmailAddresses("foo@ba_r.com"));
