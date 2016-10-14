@@ -177,16 +177,22 @@ define(function(require, exports, module) {
       });
     },
 
-    sendResetPasswordEmail(user) {
-      emailConfig || configureEmail();
+    makeResetPasswordKey(user) {
+      const lu = UserLogin.findBy('userId', user._id);
 
-      var lu = UserLogin.findBy('userId', user._id);
-
-      var rand = Random.create();
+      const rand = Random.create();
 
       lu.resetToken = Random.id()+rand.id();
       lu.resetTokenExpire = Date.now() + 24*60*60*1000;
       lu.$$save();
+
+      return lu;
+    },
+
+    sendResetPasswordEmail(user) {
+      emailConfig || configureEmail();
+
+      const lu = this.makeResetPasswordKey(user);
 
       Email.send({
         from: emailConfig.from,

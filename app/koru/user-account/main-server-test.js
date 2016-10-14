@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   const koru        = require('koru/main');
   const Model       = require('koru/model/main');
   const Val         = require('koru/model/validation');
+  const Random      = require('koru/random');
   const session     = require('koru/session');
   const TH          = require('koru/session/test-helper');
   const SRP         = require('koru/srp/srp');
@@ -17,7 +18,7 @@ define(function (require, exports, module) {
       TH.noInfo();
       v.conn = TH.sessionConnect(v.ws);
       v.lu = userAccount.model.create({
-        userId: 'uid111', srp: SRP.generateVerifier('secret'), email: 'foo@bar.co',
+        userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
       test.spy(Val, 'assertCheck');
@@ -32,13 +33,25 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test makeResetPasswordKey"() {
+      this.stub(Random, 'id').returns('randid=');
+      this.stub(Random, 'create').returns({id() {return 'CreateId'}});
+
+
+      const ans = userAccount.makeResetPasswordKey({_id: 'uid111'});
+      assert.equals(ans.attributes, v.lu.$reload().attributes);
+
+      assert.between(ans.resetTokenExpire, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
+      assert.equals(ans.resetToken, 'randid=CreateId');
+    },
+
     "sendResetPasswordEmail": {
       setUp() {
         test.stub(Email, 'send');
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
           emailConfig: {
-            sendResetPasswordEmailText: function (user, token) {
+            sendResetPasswordEmailText(user, token) {
               return "userid: " + user._id + " token: " + token;
             },
 
@@ -127,6 +140,7 @@ define(function (require, exports, module) {
     },
 
     "test verifyClearPassword"() {
+      v.lu.$update('srp', SRP.generateVerifier('secret'));
       var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
       assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
@@ -151,6 +165,7 @@ define(function (require, exports, module) {
       },
 
       "test direct calling"() {
+        v.lu.$update('srp', SRP.generateVerifier('secret'));
         var storage = {};
         var result = userAccount.SRPBegin(storage, v.request);
 
@@ -162,6 +177,7 @@ define(function (require, exports, module) {
       },
 
       "test success"() {
+        v.lu.$update('srp', SRP.generateVerifier('secret'));
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -181,7 +197,6 @@ define(function (require, exports, module) {
       },
 
       "test wrong password"() {
-        v.lu.$update({srp: 'wrong'});
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -264,6 +279,7 @@ define(function (require, exports, module) {
       },
 
       "test success"() {
+        v.lu.$update('srp', SRP.generateVerifier('secret'));
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -279,7 +295,6 @@ define(function (require, exports, module) {
       },
 
       "test wrong password"() {
-        v.lu.$update({srp: 'wrong'});
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
@@ -293,6 +308,7 @@ define(function (require, exports, module) {
       },
 
       "test bad newPassword"() {
+        v.lu.$update('srp', SRP.generateVerifier('secret'));
         var result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         var response = v.srp.respondToChallenge(result);
