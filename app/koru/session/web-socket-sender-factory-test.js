@@ -5,6 +5,7 @@ define(function (require, exports, module) {
   var test, v;
   const koru         = require('koru');
   const api          = require('koru/test/api');
+  const util         = require('koru/util');
   const SessionBase  = require('./base').constructor;
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
@@ -23,6 +24,19 @@ define(function (require, exports, module) {
 
     tearDown () {
       v = null;
+    },
+
+    "test compareVersion override"() {
+      assert.calledWith(v.sess.provide, 'X', TH.match(f => v.func = f));
+      this.stub(util, 'compareVersion');
+
+      const conn = {versionHash: 'v1.2.2'};
+      const compareVersion = v.sess.compareVersion = this.stub();
+
+      v.func.call(conn, [2, 'v1.2.3', []]);
+
+      refute.called(util.compareVersion);
+      assert.calledWith(compareVersion, conn, 'v1.2.3');
     },
 
     "test initialization"() {

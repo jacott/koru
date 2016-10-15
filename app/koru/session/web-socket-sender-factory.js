@@ -143,7 +143,9 @@ define(function(require, exports, module) {
         message.decodeDict(data[2], 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
         if (this.versionHash) {
-          if (util.compareVersion(this.versionHash, data[1]) < 1) {
+          if (session.compareVersion) {
+            session.compareVersion(this, data[1]);
+          } else if (util.compareVersion(this.versionHash, data[1]) < 1) {
             koru.reload();
             return;
           }
