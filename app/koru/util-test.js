@@ -911,6 +911,25 @@ define(function (require, exports, module) {
       });
     },
 
+    "test compareVersion"() {
+      assert.same(util.compareVersion('v1.0.0', 'v1.0.0'), 0);
+
+      // simple string compare
+      assert.same(util.compareVersion('xv1.0.10', 'xv1.0.9'), -1);
+
+      // only /^v(\d+\.)*(?:-(\d+))?(.*)$/ is special
+      assert.same(util.compareVersion('v1.0.10', 'v1.0.9'), 1);
+      assert.same(util.compareVersion('v1.0.9', 'v1.0.10'), -1);
+      assert.same(util.compareVersion('v1.0', 'v1'), 0);
+      assert.same(util.compareVersion('v1', 'v1.0'), 0);
+      assert.same(util.compareVersion('v1.10.0', 'v1.9.0'), 1);
+      assert.same(util.compareVersion('v1.9.0', 'v1.10.0'), -1);
+
+      assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-4'), 1);
+      assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-40'), -1);
+      assert.same(util.compareVersion('v1.0.0-36-2', 'v1.0.0-36-12'), 1);
+    },
+
 
     "test parseEmailAddresses" () {
       assert.isNull(util.parseEmailAddresses("foo@bar baz"));

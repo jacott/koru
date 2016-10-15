@@ -166,6 +166,34 @@ define(function(require, exports, module) {
       return true;
     },
 
+    compareVersion(a, b) {
+      if (a === b) return 0;
+
+      const re = /^v([\d.]+)(?:-(\d+))?(.*)$/;
+      const ma = re.exec(a);
+      const mb = re.exec(b);
+
+      if (ma && mb) {
+        const pa = ma[1].split('.');
+        const pb = mb[1].split('.');
+        const len = Math.max(pa.length, pb.length);
+        for(let i = 0; i < len; ++i) {
+          if (pa[i] !== pb[i]) {
+            const an = +pa[i] || 0, bn = +pb[i] || 0;
+            if (an !== bn)
+              return an > bn ? 1 : -1;
+          }
+        }
+
+        const an = +ma[2] || 0, bn = +mb[2] || 0;
+        if (an !== bn)
+          return an > bn ? 1 : -1;
+
+        return ma[3] === mb[3] ? 0 : ma[3] > mb[3] ? 1 : 1;
+      }
+      return a > b ? 1 : -1;
+    },
+
     invert(map, func) {
       var result = {};
       for(var prop in map) {
