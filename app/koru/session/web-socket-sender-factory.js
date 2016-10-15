@@ -69,7 +69,7 @@ define(function(require, exports, module) {
 
       ws.onerror = onclose;
       ws.onopen = function () {
-        ws.send('X1');
+        ws.send('X2');
         sessState.connected(session);
 
 
@@ -142,12 +142,13 @@ define(function(require, exports, module) {
         this.globalDict = message.newGlobalDict();
         message.decodeDict(data[2], 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
-        if (this.versionHash && this.versionHash.replace(/,.*$/,'') !== data[1].replace(/,.*$/,'')) {
-          koru.reload();
-          return;
-        }
-        this.versionHash = data[1];
-
+        if (this.versionHash) {
+          if (util.compareVersion(this.versionHash, data[1]) < 1) {
+            koru.reload();
+            return;
+          }
+        } else
+          this.versionHash = data[1];
 
         retryCount = 0;
       });

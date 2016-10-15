@@ -78,7 +78,9 @@ isServer && define(function (require, exports, module) {
           adder('g1'); adder('g2');
         });
 
-        assert.between(v.sess.versionHash, Date.now() - 2000, Date.now() + 2000);
+        assert.same(v.sess.versionHash[0], 'v');
+
+        assert.between(v.sess.versionHash.slice(1), Date.now() - 2000, Date.now() + 2000);
 
         v.sess.versionHash = 'hash,v1';
 
@@ -88,7 +90,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.ws.send, TH.match(function (arg) {
           v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);
           assert.equals(v.msg,
-                        [1, 'hash,v1', TH.match.any]);
+                        [2, 'hash,v1', TH.match.any]);
 
           return arg[0] === 88;
         }), {binary: true});

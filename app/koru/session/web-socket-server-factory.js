@@ -20,7 +20,7 @@ define(function (require, exports, module) {
       execWrapper: execWrapper || koru.fiberConnWrapper,
       conns: {},
       sendAll: sendAll,
-      versionHash: process.env['KORU_APP_VERSION'] || ''+Date.now(),
+      versionHash: process.env.KORU_APP_VERSION || 'v'+Date.now(),
       unload: unload,
       load: load,
       totalSessions: 0,
@@ -151,7 +151,7 @@ define(function (require, exports, module) {
         var onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage ? wrapOnMessage(onMessage) : onMessage);
 
-        conn.sendBinary('X', [1, session.versionHash, globalDictEncoded()]);
+        conn.sendBinary('X', [2, session.versionHash, globalDictEncoded()]);
         koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
         session.countNotify.notify(conn, true);
         return conn;
@@ -176,7 +176,7 @@ define(function (require, exports, module) {
       var mod = ctx.modules[id];
       if (mod) {
         mod.unload();
-        this.versionHash = ''+Date.now();
+        this.versionHash = 'v'+Date.now();
       }
       this.sendAll('U', this.versionHash + ':' + id);
     }

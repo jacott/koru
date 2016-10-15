@@ -65,21 +65,21 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func.call(v.sess, [1, 'hash,version', endict]);
+      v.func.call(v.sess, [1, 'v3', endict]);
 
       assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
       assert.same(v.sess.globalDict.k2c['foo'], undefined);
 
       refute.called(koru.reload);
-      assert.same(v.sess.versionHash, 'hash,version');
+      assert.same(v.sess.versionHash, 'v3');
 
-      v.func.call(v.sess, [1, 'hash,v2', dict]);
+      v.func.call(v.sess, [1, 'v2', dict]);
 
       refute.called(koru.reload);
-      assert.same(v.sess.versionHash, 'hash,v2');
+      assert.same(v.sess.versionHash, 'v3');
 
-      v.func.call(v.sess, [1, 'hashdiff,v2', dict]);
+      v.func.call(v.sess, [1, 'v10', dict]);
 
       assert.called(koru.reload);
     },
@@ -266,7 +266,7 @@ define(function (require, exports, module) {
       v.ready = true;
       v.ws.onopen();
 
-      assert.calledWith(v.ws.send, 'X1');
+      assert.calledWith(v.ws.send, 'X2');
       assert.calledWith(v.ws.send, ["x", "P", [null]]);
       assert.calledWith(v.ws.send, ["x", "M", [1]]);
       assert.calledWith(v.ws.send, 'SLabc');
