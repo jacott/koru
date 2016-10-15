@@ -26,17 +26,42 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test compareVersion override"() {
-      assert.calledWith(v.sess.provide, 'X', TH.match(f => v.func = f));
-      this.stub(util, 'compareVersion');
+    "compareVersion": {
+      setUp() {
+        assert.calledWith(v.sess.provide, 'X', TH.match(f => v.func = f));
+        v.conn = {versionHash: 'v1.2.2'};
+        this.stub(koru, 'reload');
+      },
 
-      const conn = {versionHash: 'v1.2.2'};
-      const compareVersion = v.sess.compareVersion = this.stub();
+      "test override"() {
+        this.stub(util, 'compareVersion');
+        const compareVersion = v.sess.compareVersion = this.stub();
 
-      v.func.call(conn, [2, 'v1.2.3', []]);
+        v.func.call(v.conn, [2, 'v1.2.3', []]);
 
-      refute.called(util.compareVersion);
-      assert.calledWith(compareVersion, conn, 'v1.2.3');
+        refute.called(util.compareVersion);
+        assert.calledWith(compareVersion, v.conn, 'v1.2.3');
+      },
+
+      "test  compareVersion"() {
+        v.func.call(v.conn, [2, 'v1.2.2', []]);
+        v.func.call(v.conn, [2, 'v1.2.1', []]);
+
+        refute.called(koru.reload);
+
+        v.func.call(v.conn, [2, 'v1.2.10', []]);
+
+        assert.called(koru.reload);
+      },
+
+      "test no versionHash"() {
+        v.conn.versionHash = null;
+        v.func.call(v.conn, [2, 'v123', []]);
+
+        refute.called(koru.reload);
+
+        assert.same(v.conn.versionHash, 'v123');
+      },
     },
 
     "test initialization"() {

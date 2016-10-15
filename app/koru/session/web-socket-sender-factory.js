@@ -142,17 +142,16 @@ define(function(require, exports, module) {
         this.globalDict = message.newGlobalDict();
         message.decodeDict(data[2], 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
+        retryCount = 0;
         if (this.versionHash) {
           if (session.compareVersion) {
             session.compareVersion(this, data[1]);
-          } else if (util.compareVersion(this.versionHash, data[1]) < 1) {
+          } else if (util.compareVersion(this.versionHash, data[1]) < 0) {
             koru.reload();
             return;
           }
         } else
           this.versionHash = data[1];
-
-        retryCount = 0;
       });
 
       base.provide('K', function ack() {});
