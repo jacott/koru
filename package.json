@@ -22,7 +22,6 @@
   "dependencies": {
     "autoprefixer": "^6.3.6",
     "babel-generator": "^6.10.2",
-    "babel-traverse": "^6.9.0",
     "babel-types": "^6.10.2",
     "babylon": "^6.8.1",
     "bindings": "^1.2.1",
@@ -49,5 +48,5 @@
   "engines": {
     "node": ">=6.4.0"
   },
-  "version": "0.9.8"
+  "version": "0.9.9"
 }
