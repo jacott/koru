@@ -13,12 +13,18 @@ if [ ! -e "$tmpdir" ];then
     mkdir -p "$tmpdir"
 fi
 
-branch=${branch-${1-demo}}
-. config/${branch}.sh
+export MONGO_DIR=/tmp/testdb
+export MONGO_PORT=3004
+export MONGO_CFG=test-mongo.yml
 
-if [ "$LOG_DIR" = "" ];then
-    LOG_DIR=/u/log
-fi
+branch=${branch-${1-demo}}
+[ -e config/${branch}.sh ] && . config/${branch}.sh
+
+export NODE=${NODE-`type -p node`}
+export NODE_PATH=$(dirname $NODE)
+export NPM=$NODE_PATH/npm
+
+LOG_DIR=${LOG_DIR-/u/log}
 
 if [ ! -d "$LOG_DIR" ];then
     echo "no log dir: $LOG_DIR"

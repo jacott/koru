@@ -1,44 +1,48 @@
-* bugs
-  ** Fix api constructorconstructor syntax highlighting
-* try running with not-found html file - hangs
-* try running client only test on server
+* Bugs
+** Fix api constructorconstructor syntax highlighting
+** try running with not-found html file - hangs
+** try running client only test on server
  eg; rich-text-editor-test on server - stack trace is unhelpful (hint: remove isClient)
 
-* Is weakref id map still needed to cache docs on server since cache is tied to thread?
+** Is weakref id map still needed to cache docs on server since cache is tied to thread?
 
-* Lock doc by id before update
+** Lock doc by id before update
    Do in query-server.js. lock waits if already locked.
 
-* Server side publish should batch sends to client
-  Redundant; see [[Batch client messages until end of transaction]]
 
-  When mutilple subscriptions are interested in the same doc we should
-  only send once to client. We can have a feature in the notify that
-  allows the pub to register a callback if it wants to send data to
-  client. The callback is run once all observers are notified.
-
-  We want to register it via the sessId so that only one callback is
-  registered per session.
-
-  More thoughts:
-
-  notify should pass an extra arg: an Inform func which if called is
-  passed a callback to call after everyone notified.
-
-  This is used by the publish logic to actually send data to the
-  client. if two observers match the same doc then only one message
-  needs to be sent to client. Also fields can be filtered here.
-
-   The publish should only call the Inform func if not already called.
-
-* Server update multiple records
-   could do one fetch then one update then proceed similar to client.
-
-
-* SRP is CPU intensive and blocks node;
+** SRP is CPU intensive and blocks node;
    is this true for server logic?
    consider handing off to worker thread on server
 
 -------
 
-* Footnotes
+
+* Feature Ideas
+** Put test hooks in WeakMap on module
+
+   Test is only
+
+** Server update multiple records
+   could do one fetch then one update then proceed similar to client.
+
+** Server side publish should batch sends to client
+   Redundant; see [[Batch client messages until end of transaction]]
+
+   When mutilple subscriptions are interested in the same doc we should
+   only send once to client. We can have a feature in the notify that
+   allows the pub to register a callback if it wants to send data to
+   client. The callback is run once all observers are notified.
+
+   We want to register it via the sessId so that only one callback is
+   registered per session.
+
+   More thoughts:
+
+   notify should pass an extra arg: an Inform func which if called is
+   passed a callback to call after everyone notified.
+
+   This is used by the publish logic to actually send data to the
+   client. if two observers match the same doc then only one message
+   needs to be sent to client. Also fields can be filtered here.
+
+   The publish should only call the Inform func if not already called.
