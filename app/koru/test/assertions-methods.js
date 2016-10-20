@@ -517,6 +517,9 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");
           this.calls = spy.printf("%C");
+          if (this._asserting && spy.callCount === 1) {
+            gu.deepEqual(spy.firstCall.args, args, this, 'calls');
+          }
         }
         return result;
       },
