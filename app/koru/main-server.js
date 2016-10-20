@@ -33,13 +33,6 @@ define(function(require, exports, module) {
       },
 
       setTimeout(func, duration) {
-        var fiber = util.Fiber(function () {
-          try {
-            func();
-          } catch(ex) {
-            koru.error(util.extractError(ex));
-          }
-        });
         return setTimeout(() => koru.fiberRun(func), duration);
       },
 

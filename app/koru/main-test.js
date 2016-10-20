@@ -73,22 +73,23 @@ define(function (require, exports, module) {
     },
 
     "test setTimeout"() {
+      this.stub(koru, 'error');
+      this.stub(util, 'extractError').returns("EXTRACT CATCH ME");
       test.stub(isServer ? global : window, 'setTimeout').returns(123);
-      test.stub(util, 'Fiber').returns({run() {
-        util.Fiber.lastCall.args[0]();
-      }});
 
-      var token = koru.setTimeout(v.stub = test.stub(), 123000);
+      var token = koru.setTimeout(v.stub = this.stub(null, null, function () {
+        throw "CATCH ME";
+      }), 123000);
 
       assert.calledWith(setTimeout, TH.match.func, 123000);
 
       assert.same(token, setTimeout.firstCall.returnValue);
 
-      if (isServer) assert.calledWith(util.Fiber, TH.match.func);
-
       refute.called(v.stub);
 
+      refute.called(koru.error);
       setTimeout.yield();
+      assert.calledWith(koru.error, 'EXTRACT CATCH ME');
 
       assert.called(v.stub);
     },

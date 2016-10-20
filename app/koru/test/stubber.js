@@ -283,6 +283,7 @@ define(function(require, exports, module) {
       if (typeof orig === 'function') {
         var func = stubFunction(orig, stubProto);
         func._replacement = repFunc;
+        repFunc && (func._replacement = repFunc);
       } else {
         if (repFunc) {
           throw AssertionError(new Error("Attempt to stub non function with a function"));
@@ -295,6 +296,7 @@ define(function(require, exports, module) {
       Object.defineProperty(object, property, {value: func, configurable: true});
     } else {
       var func = stubFunction(null, stubProto);
+      repFunc && (func._replacement = repFunc);
     }
     func.restore = function () {
       restore(object, property, desc, orig, func);

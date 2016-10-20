@@ -1,21 +1,16 @@
 * Bugs
 ** Fix api constructorconstructor syntax highlighting
-** try running with not-found html file - hangs
 ** try running client only test on server
  eg; rich-text-editor-test on server - stack trace is unhelpful (hint: remove isClient)
 
-** Is weakref id map still needed to cache docs on server since cache is tied to thread?
-
 ** Lock doc by id before update
    Do in query-server.js. lock waits if already locked.
-
 
 ** SRP is CPU intensive and blocks node;
    is this true for server logic?
    consider handing off to worker thread on server
 
 -------
-
 
 * Feature Ideas
 ** Put test hooks in WeakMap on module
