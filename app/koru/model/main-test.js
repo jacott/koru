@@ -3,14 +3,15 @@ define(function (require, exports, module) {
    * Object persistence manager. Defines application models.
    **/
   var test, v;
-  const koru    = require('koru');
-  const Query   = require('koru/model/query');
-  const session = require('koru/session');
-  const api     = require('koru/test/api');
-  const util    = require('koru/util');
-  const Model   = require('./main');
-  const TH      = require('./test-helper');
-  const val     = require('./validation');
+  const koru     = require('koru');
+  const dbBroker = require('koru/model/db-broker');
+  const Query    = require('koru/model/query');
+  const session  = require('koru/session');
+  const api      = require('koru/test/api');
+  const util     = require('koru/util');
+  const Model    = require('./main');
+  const TH       = require('./test-helper');
+  const val      = require('./validation');
 
   const BaseModel = Model.BaseModel;
 
@@ -740,6 +741,21 @@ define(function (require, exports, module) {
 
         tearDown() {
           Model._destroyModel('Qux', 'drop');
+        },
+
+        "test belongs_to_dbId"() {
+          v.TestModel.defineFields({
+            qux_id: {type: 'belongs_to_dbId'},
+            name: 'text',
+          });
+
+          var sut = v.TestModel.create({name: 'sam'});
+          assert.equals(sut.$reload().attributes, {name: 'sam', _id: TH.match.any});
+          assert.same(sut.qux_id, dbBroker.dbId);
+
+          v.Qux.create({name: 'dbQux', _id: 'default'});
+
+          assert.same(sut.qux.name, "dbQux");
         },
 
         "test accessor"() {

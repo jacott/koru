@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   const ModelEnv             = require('koru/env!./main');
+  const dbBroker             = require('koru/model/db-broker');
   const Query                = require('koru/model/query');
   const koru                 = require('../main');
   const Random               = require('../random');
@@ -29,6 +30,10 @@ define(function(require, exports, module) {
 
   class BaseModel {
     constructor(attributes, changes) {
+      const dbIdField = this.constructor.$dbIdField;
+      if (dbIdField) {
+        this[dbIdField] = dbBroker.dbId;
+      }
       if(attributes && attributes.hasOwnProperty('_id')) {
         // existing record
         this.attributes = attributes;
@@ -170,8 +175,10 @@ define(function(require, exports, module) {
         setUpValidators(this, field, options);
 
         if (options['default'] !== undefined) this._defaults[field] = options['default'];
-        $fields[field] = options;
-        if (options.accessor !== false) defineField(proto,field, options.accessor);
+        if (! options.not_a_real_field) {
+          $fields[field] = options;
+          if (options.accessor !== false) defineField(proto,field, options.accessor);
+        }
       }
       _support.resetDocs(this);
       return this;
@@ -180,7 +187,7 @@ define(function(require, exports, module) {
     static hasMany(name, model, finder) {
       Object.defineProperty(this.prototype, name, {
         configurable: true,
-        get: function () {
+        get() {
           const query = model.query;
           finder.call(this, query);
           return query;
@@ -553,11 +560,11 @@ define(function(require, exports, module) {
 
   const versionProperty = {
     configurable: true,
-    get: function () {
+    get() {
       return this.attributes._version;
     },
 
-    set: function (value) {
+    set(value) {
       this.attributes._version = value;
     }
   };
@@ -747,12 +754,20 @@ define(function(require, exports, module) {
   });
 
   const typeMap = {
+    belongs_to_dbId(model, field, options) {
+      options.not_a_real_field = true;
+      if (model.$dbIdField)
+        throw new Error("belongs_to_dbId already defined!");
+      model.$dbIdField = field;
+      options.accessor = {set() {}};
+      typeMap.belongs_to(model, field, options);}
+    ,
     belongs_to(model, field, options) {
-      if (! options.accessor) {
+      if (options.accessor === undefined) {
         const setv = setValue(field);
         options.accessor = {
           get: getValue(field),
-          set: function (value) {
+          set(value) {
             return setv.call(this, value || undefined);
           },
         };
