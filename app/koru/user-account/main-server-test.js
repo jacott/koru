@@ -9,6 +9,7 @@ define(function (require, exports, module) {
   const TH          = require('koru/session/test-helper');
   const SRP         = require('koru/srp/srp');
   const userAccount = require('./main');
+  const crypto      = requirejs.nodeRequire('crypto');
 
   TH.testCase(module, {
     setUp() {
@@ -23,6 +24,12 @@ define(function (require, exports, module) {
 
       test.spy(Val, 'assertCheck');
       test.spy(Val, 'ensureString');
+      this.stub(crypto, 'randomBytes', (num, cb) => {
+        if (cb) {
+          cb(null, {toString: this.stub().withArgs('base64').returns('crypto64Id')});
+        } else
+          return new Uint8Array(num);
+      });
     },
 
     tearDown() {
@@ -267,7 +274,7 @@ define(function (require, exports, module) {
         assert.same(v.lu.resetTokenExpire, undefined);
 
 
-        assert.calledWith(v.ws.send, 'VS' + v.lu.userId);
+        assert.calledWith(v.ws.send, matchStart('VS' + v.lu.userId));
       },
     },
 
@@ -339,10 +346,13 @@ define(function (require, exports, module) {
 
       "test logout with token"() {
         v.conn.userId = 'uid111';
+        v.conn.sessAuth = 'sessauth';
 
         session._commands.V.call(v.conn, 'X' + v.lu._id+'|abc');
 
         assert.same(v.conn.userId, null);
+        assert.same(v.conn.sessAuth, null);
+
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
       },
@@ -382,7 +392,6 @@ define(function (require, exports, module) {
         assert.calledWith(v.ws3.send, 'VS');
         refute.calledWith(v.ws4.send, 'VS');
 
-
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
       },
 
@@ -403,7 +412,7 @@ define(function (require, exports, module) {
 
         assert.same(v.conn.userId, 'uid111');
 
-        assert.calledWith(v.ws.send, 'VSuid111');
+        assert.calledWith(v.ws.send, matchStart('VSuid111:'));
       },
 
       "test invalid session login"() {
@@ -423,4 +432,8 @@ define(function (require, exports, module) {
       },
     },
   });
+
+  function matchStart(exp) {
+    return TH.match(s => typeof s === 'string' && s.startsWith(exp));
+  }
 });

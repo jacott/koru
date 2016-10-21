@@ -285,13 +285,13 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.onChange, 'wait');
         assert.calledWith(session.send, 'VL', 'tokenId|token123');
 
-        session._onMessage(session, 'VSuid123');
+        session._onMessage(session, 'VSuid123:sid|crypto');
 
         assert.calledWith(v.onChange, 'change');
         assert.same(login.getState(session), 'change');
 
         assert.same(koru.userId(), 'uid123');
-
+        assert.same(session.sessAuth, 'sid|crypto');
 
         session._onMessage(session, 'VC');
 

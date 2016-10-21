@@ -524,7 +524,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         return result;
       },
 
-      message: "{$spy} to be " + meth + " {i$args}{$calls}"
+      message: "{$spy} to be " + meth + " {i$args}\n{$calls}"
     });
   }
 

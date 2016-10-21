@@ -36,7 +36,9 @@ define(function(require, exports, module) {
           exports.token = data.slice(1).toString();
           break;
         case 'S':
-          login.setUserId(this, data.slice(1).toString() || null);
+          const [userId, crypto] = data.slice(1).toString().split(':');
+          login.setUserId(this, userId || null);
+          this.sessAuth = crypto;
           break;
         case 'F':
           login.failed(this);

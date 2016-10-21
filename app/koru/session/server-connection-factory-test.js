@@ -1,11 +1,12 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  const IdleCheck  = require('../idle-check').singleton;
-  const koru       = require('../main');
-  const TH         = require('../test');
-  const util       = require('../util');
-  const match      = require('./match');
-  const message    = require('./message');
+  const IdleCheck = require('../idle-check').singleton;
+  const koru      = require('../main');
+  const TH        = require('../test');
+  const util      = require('../util');
+  const match     = require('./match');
+  const message   = require('./message');
+  const crypto    = requirejs.nodeRequire('crypto');
 
   const baseSession = require('koru/session');
   const session = new (baseSession.constructor)('testServerConnection');
@@ -200,7 +201,8 @@ isServer && define(function (require, exports, module) {
     },
 
     "test set userId"() {
-      var sendUid = v.ws.send.withArgs('VSu456');
+      this.stub(crypto, 'randomBytes').yields(null, {toString: this.stub().withArgs('base64').returns('crypto64Id==')});
+      var sendUid = v.ws.send.withArgs('VSu456:123|crypto64Id');
       var sendUidCompleted = v.ws.send.withArgs('VC');
       v.conn._subs = {s1: {resubscribe: v.s1 = test.stub()}, s2: {resubscribe: v.s2 = test.stub()}};
 
@@ -211,6 +213,10 @@ isServer && define(function (require, exports, module) {
 
       assert.called(v.s1);
       assert.called(v.s2);
+
+      assert.calledWith(crypto.randomBytes, 36);
+      assert.calledWith(v.ws.send, 'VSu456:123|crypto64Id');
+      assert.same(v.conn.sessAuth, '123|crypto64Id');
 
       assert(sendUid.calledBefore(v.s1));
       assert(sendUidCompleted.calledAfter(v.s2));

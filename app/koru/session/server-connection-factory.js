@@ -1,10 +1,11 @@
 define(function(require, exports, module) {
-  const IdleCheck    = require('../idle-check').singleton;
-  const koru         = require('../main');
-  const util         = require('../util');
-  const match        = require('./match');
-  const message      = require('./message');
-  const makeSubject  = require('koru/make-subject');
+  const makeSubject = require('koru/make-subject');
+  const IdleCheck   = require('../idle-check').singleton;
+  const koru        = require('../main');
+  const util        = require('../util');
+  const match       = require('./match');
+  const message     = require('./message');
+  const crypto      = requirejs.nodeRequire('crypto');
 
   class ServerConnectionBase {
     constructor (ws, sessId, close) {
@@ -28,6 +29,7 @@ define(function(require, exports, module) {
       };
       this._last = null;
       this.match = match();
+      this.sessAuth = null;
 
       ws.on('close', () => this.close());
     }
@@ -130,7 +132,19 @@ define(function(require, exports, module) {
     set userId(userId) {
       this._userId = userId;
       util.thread.userId = userId;
-      this.send('VS', userId || '');
+      if (userId) {
+        const future = new util.Future;
+        crypto.randomBytes(36, (err, ans) => {
+          if (err) future.throw(err);
+          else future.return(ans);
+        });
+        this.sessAuth = this.sessId+'|'+future.wait().toString('base64')
+          .replace(/\=+$/, ''); // js2-mode doesn't like /=.../
+        this.send('VS', `${userId}:${this.sessAuth}`);
+      } else {
+        this.send('VS', '');
+        this.sessAuth = null;
+      }
       var subs = this._subs;
       for(var key in subs) {
         subs[key].resubscribe();
