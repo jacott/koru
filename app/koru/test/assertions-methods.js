@@ -516,10 +516,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         var result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");
-          this.calls = spy.printf("%C");
-          if (this._asserting && spy.callCount === 1) {
-            gu.deepEqual(spy.firstCall.args, args, this, 'calls');
-          }
+          if (this._asserting && spy.callCount < 2) {
+            if (spy.callCount === 0) {
+              this.calls = "but was not called.";
+            } else
+              gu.deepEqual(spy.firstCall.args, args, this, 'calls');
+          } else
+            this.calls = spy.printf("%C");
         }
         return result;
       },
