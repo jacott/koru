@@ -5,13 +5,17 @@ define(function(require, exports, module) {
   const util    = require('../util');
   const message = require('./message');
 
-  function webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper, base=session) {
+  function webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper,
+                                  base=session) {
     const waitSends = [];
     let retryCount = 0;
     let reconnTimeout;
 
-    if (! session.versionHash && typeof KORU_APP_VERSION === 'string')
-      session.versionHash = KORU_APP_VERSION;
+    if (! session.version && typeof KORU_APP_VERSION === 'string') {
+      const [version, hash] = KORU_APP_VERSION.split(",", 2);
+      session.version = version;
+      session.hash = hash;
+    }
 
     util.extend(session, {
       execWrapper,
@@ -143,23 +147,31 @@ define(function(require, exports, module) {
         message.decodeDict(data[2], 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
         retryCount = 0;
-        if (this.versionHash) {
+        const [version, hash] = data[1].split(",", 2);
+        if (this.version) {
           if (session.compareVersion) {
-            session.compareVersion(this, data[1]);
-          } else if (util.compareVersion(this.versionHash, data[1]) < 0) {
-            koru.reload();
-            return;
+            session.compareVersion(this, version, hash);
+          } else {
+            if ((! hash || this.hash !== hash) &&
+                util.compareVersion(this.version, version) < 0) {
+              koru.reload();
+              return;
+            }
           }
-        } else
-          this.versionHash = data[1];
+        } else {
+          this.version = version;
+          this.hash = hash;
+        }
+
       });
 
       base.provide('K', function ack() {});
       base.provide('L', function load(data) {require([data], function() {})});
       base.provide('U', function unload(data) {
-        let args = data.split(':');
-        this.versionHash = args[0];
-        koru.unload(args[1]);
+        const [[version, hash], modId] = data.split(':', 2);
+        this.version = version;
+        this.hash = hash;
+        koru.unload(modId);
       });
 
       base.provide('W', function batchedMessages(data) {

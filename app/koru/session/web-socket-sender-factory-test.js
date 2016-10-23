@@ -29,7 +29,7 @@ define(function (require, exports, module) {
     "compareVersion": {
       setUp() {
         assert.calledWith(v.sess.provide, 'X', TH.match(f => v.func = f));
-        v.conn = {versionHash: 'v1.2.2'};
+        v.conn = {version: 'v1.2.2', hash: 'h123'};
         this.stub(koru, 'reload');
       },
 
@@ -43,7 +43,7 @@ define(function (require, exports, module) {
         assert.calledWith(compareVersion, v.conn, 'v1.2.3');
       },
 
-      "test  compareVersion"() {
+      "test compareVersion"() {
         v.func.call(v.conn, [2, 'v1.2.2', []]);
         v.func.call(v.conn, [2, 'v1.2.1', []]);
 
@@ -54,13 +54,19 @@ define(function (require, exports, module) {
         assert.called(koru.reload);
       },
 
-      "test no versionHash"() {
-        v.conn.versionHash = null;
+      "test no version,hash"() {
+        v.conn.version = null;
         v.func.call(v.conn, [2, 'v123', []]);
 
         refute.called(koru.reload);
 
-        assert.same(v.conn.versionHash, 'v123');
+        assert.same(v.conn.version, 'v123');
+      },
+
+      "test old version but good hash"() {
+        v.func.call(v.conn, [2, 'v1.2.3,h123', []]);
+
+        refute.called(koru.reload);
       },
     },
 

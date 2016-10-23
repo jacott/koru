@@ -1,60 +1,56 @@
 define(function (require, exports, module) {
-  var test, v;
   const koru                 = require('../main');
   const util                 = require('../util');
-  const sessionClientFactory = require('./main-client');
   const message              = require('./message');
   const stateFactory         = require('./state').constructor;
   const TH                   = require('./test-helper');
 
-  var sessState;
+  const sessionClientFactory = require('./main-client');
+  var v, sessState;
 
   TH.testCase(module, {
-    setUp: function () {
-      test = this;
+    setUp() {
       v = {};
       sessState = stateFactory();
       v.sess = sessionClientFactory({
-        provide: test.stub(),
+        provide: this.stub(),
         _rpcs: {},
         globalDict: v.gDict = message.newGlobalDict(),
         _commands: {},
       }, sessState);
-      v.sess.newWs = test.stub().returns(v.ws = {
-        send: test.stub(),
-        close: test.stub(),
+      v.sess.newWs = this.stub().returns(v.ws = {
+        send: this.stub(),
+        close: this.stub(),
       });
       v.ready = false;
       TH.mockConnectState(v);
     },
 
-    tearDown: function () {
+    tearDown() {
       sessState._resetPendingCount();
       v = null;
     },
 
-    "test initial KORU_APP_VERSION": function () {
-      test.onEnd(function () {
-        delete window.KORU_APP_VERSION;
-      });
+    "test initial KORU_APP_VERSION"() {
+      this.onEnd(() => delete window.KORU_APP_VERSION);
 
-      window.KORU_APP_VERSION = "hash,v1";
+      window.KORU_APP_VERSION = "v1,hash";
 
        v.sess = sessionClientFactory({
-         provide: test.stub(),
+         provide: this.stub(),
          _rpcs: {},
        }, sessState);
 
-      assert.same(v.sess.versionHash, "hash,v1");
+      assert.same(v.sess.version, "v1");
+      assert.same(v.sess.hash, "hash");
     },
 
-    "test version reconciliation": function () {
-      assert.same(v.sess.versionHash, undefined);
+    "test version reconciliation"() {
+      assert.same(v.sess.version, undefined);
+      assert.same(v.sess.hash, undefined);
 
-      test.stub(koru, 'reload');
-      assert.calledWith(v.sess.provide, 'X', TH.match(function (func) {
-        return v.func = func;
-      }));
+      this.stub(koru, 'reload');
+      assert.calledWith(v.sess.provide, 'X', TH.match(func => v.func = func));
 
       v.sess.addToDict('foo'); // does nothing
 
@@ -72,12 +68,12 @@ define(function (require, exports, module) {
       assert.same(v.sess.globalDict.k2c['foo'], undefined);
 
       refute.called(koru.reload);
-      assert.same(v.sess.versionHash, 'v3');
+      assert.same(v.sess.version, 'v3');
 
       v.func.call(v.sess, [1, 'v2', dict]);
 
       refute.called(koru.reload);
-      assert.same(v.sess.versionHash, 'v3');
+      assert.same(v.sess.version, 'v3');
 
       v.func.call(v.sess, [1, 'v10', dict]);
 
@@ -85,25 +81,25 @@ define(function (require, exports, module) {
     },
 
     "onmessage": {
-      setUp: function () {
-        v.ws = {send: test.stub()};
+      setUp() {
+        v.ws = {send: this.stub()};
         v.sess = {
-          provide: test.stub(),
-          _onMessage: function (conn, data) {
+          provide: this.stub(),
+          _onMessage(conn, data) {
             v.actualConn = conn;
             assert.same(data, v.data);
           },
         };
         sessionClientFactory(v.sess, sessState);
 
-        v.sess.newWs = test.stub().returns(v.ws);
+        v.sess.newWs = this.stub().returns(v.ws);
 
-        test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
+        this.stub(koru, '_afTimeout').returns(v.afTimeoutStop = this.stub());
 
         v.sess.connect();
 
-        v.readyHeatbeat = function () {
-          util.withDateNow(util.dateNow(), function () {
+        v.readyHeatbeat = () => {
+          util.withDateNow(util.dateNow(), () => {
             var event = {data: v.data = "foo"};
             v.ws.onmessage(event);
             util.thread.date += 21000;
@@ -114,7 +110,7 @@ define(function (require, exports, module) {
         };
       },
 
-      "test setup": function () {
+      "test setup"() {
         assert.calledWith(v.sess.provide, 'K', TH.match.func);
         assert.same(v.sess.ws, v.ws);
 
@@ -127,8 +123,8 @@ define(function (require, exports, module) {
         assert.same(v.actualConn.ws, v.ws);
       },
 
-      "test heartbeat when idle": function () {
-        util.withDateNow(util.dateNow(), function () {
+      "test heartbeat when idle"() {
+        util.withDateNow(util.dateNow(), () => {
           var event = {data: v.data = "foo"};
           v.ws.onmessage(event);
 
@@ -168,28 +164,26 @@ define(function (require, exports, module) {
         });
       },
 
-      "test no response close fails": function () {
+      "test no response close fails"() {
         v.time = v.readyHeatbeat();
 
-        v.ws.close = function () {
-          throw new Error("close fail");
-        };
-        test.spy(v.ws, 'onclose');
-        assert.exception(function () {
+        v.ws.close = () => {throw new Error("close fail")};
+        this.spy(v.ws, 'onclose');
+        assert.exception(() => {
           v.actualConn._queueHeatBeat();
         }, "Error", "close fail");
 
         assert.called(v.ws.onclose);
       },
 
-      "test no response close succeeds": function () {
+      "test no response close succeeds"() {
         v.time = v.readyHeatbeat();
 
-        v.ws.close = function () {
+        v.ws.close = () => {
           v.ws.onclose({});
         };
-        test.spy(v.ws, 'close');
-        test.spy(v.ws, 'onclose');
+        this.spy(v.ws, 'close');
+        this.spy(v.ws, 'onclose');
         v.actualConn._queueHeatBeat();
 
         assert.calledOnce(v.ws.close);
@@ -197,11 +191,11 @@ define(function (require, exports, module) {
       },
     },
 
-    "test connection cycle": function () {
-      test.spy(sessState, 'connected');
-      test.spy(sessState, 'retry');
-      test.spy(sessState, 'close');
-      test.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
+    "test connection cycle"() {
+      this.spy(sessState, 'connected');
+      this.spy(sessState, 'retry');
+      this.spy(sessState, 'close');
+      this.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
       v.sess.connect();         // connect
 
@@ -213,11 +207,9 @@ define(function (require, exports, module) {
       v.ready = true;
       v.ws.onopen();            // connect success
 
-      assert.calledWith(sessState.connected, TH.match(function (conn) {
-        return conn.ws === v.ws;
-      }));
+      assert.calledWith(sessState.connected, TH.match(conn => conn.ws === v.ws));
 
-      test.stub(koru, '_afTimeout').returns(v.afTimeoutStop = test.stub());
+      this.stub(koru, '_afTimeout').returns(v.afTimeoutStop = this.stub());
       TH.noInfo();
 
       v.ws.onclose({code: 4404, reason: 'not found'});         // remote close
@@ -252,10 +244,8 @@ define(function (require, exports, module) {
       assert.called(v.afTimeoutStop);
     },
 
-    "test before connected": function () {
-      test.stub(message, 'encodeMessage', function (type, msg) {
-        return ['x', type, msg];
-      });
+    "test before connected"() {
+      this.stub(message, 'encodeMessage', (type, msg) => ['x', type, msg]);
       v.sess.sendBinary('P', [null]);
       v.sess.sendBinary('M', [1]);
       v.sess.send('S', 'Labc');
@@ -274,24 +264,24 @@ define(function (require, exports, module) {
 
 
     "open connection": {
-      setUp: function () {
+      setUp() {
         v.sess.connect();
         v.ws.onopen();
-        v.sendBinary = test.stub(v.sess, 'sendBinary');
+        v.sendBinary = this.stub(v.sess, 'sendBinary');
       },
 
-      "test stop": function () {
+      "test stop"() {
         v.sess.stop();
 
         assert.calledOnce(v.ws.close);
       },
 
-      "test sendBinary": function () {
+      "test sendBinary"() {
         v.ready = true;
         v.sendBinary.restore();
         v.sess.sendBinary('M', [1,2,3,4]);
 
-        assert.calledWith(v.ws.send, TH.match(function (data) {
+        assert.calledWith(v.ws.send, TH.match(data  => {
           if (data[0] === 'M'.charCodeAt(0)) {
             assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [1,2,3,4]);
             return true;
