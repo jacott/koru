@@ -46,7 +46,8 @@ define(function(require, exports, module) {
         exports._transport = NodeMailer.createTransport(SmtpPool({
           port: port || 25,
           host: mailUrl.hostname || 'localhost',
-          secure: (port === 465),
+          secure: false,
+          requireTLS: port == 465,
           auth: auth
         }));
 

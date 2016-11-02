@@ -67,7 +67,7 @@ isServer && define(function (require, exports, module) {
 
       Email.initPool("smtp://foo:bar@obeya.co:465");
 
-      assert.equals(v.smtpPollArgs, [{port: 465, host: "obeya.co", auth: {user: 'foo', pass: 'bar'}, secure: true}]);
+      assert.equals(v.smtpPollArgs, [{port: 465, host: "obeya.co", auth: {user: 'foo', pass: 'bar'}, secure: false, requireTLS: true}]);
     },
   });
 });
