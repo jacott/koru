@@ -137,6 +137,19 @@ define(function (require, exports, module) {
       assert.calledTwice(count);
     },
 
+    "test belongs_to"() {
+      var count = test.stub(Query.prototype, 'count').returns(1);
+      var doc = {foo_id: "x", constructor: {$fields: {foo_id: {type: 'belongs_to'}}}};
+
+      sut(doc,'foo_id', true);
+      refute(doc._errors);
+
+      var query = count.firstCall.thisValue;
+
+      assert.equals(query._wheres, {_id: ["x"]});
+      assert.same(query.model, Model.Foo);
+    },
+
     'test using model default': function () {
       var foo_ids = ['x', 'y'];
 
