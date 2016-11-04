@@ -15,9 +15,9 @@ define(function(require, exports, module) {
     }
 
     createTable(name, fields, indexes) {
-      var qname = '"'+name+'"';
+      const qname = '"'+name+'"';
       if (this.add) {
-        var list = ['_id varchar(24) PRIMARY KEY'];
+        const list = ['_id varchar(24) PRIMARY KEY'];
         for (var col in fields) {
           const colspec = this.client.jsFieldToPg(col, fields[col]);
           if (/\bprimary key\b/i.test(colspec))
@@ -28,14 +28,13 @@ define(function(require, exports, module) {
         this.client.query('CREATE TABLE '+qname+' ('+list.join(',')+')');
         if (indexes) {
           indexes.forEach(spec => {
-            var i = 0;
-            var unique = spec[0] === '*unique';
+            let i = 0;
+            const unique = spec[0] === '*unique';
             if (unique) spec = spec.slice(1);
-            var iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
-            this.client.query((unique ? 'CREATE UNIQUE' : 'CREATE')+
-                              ' INDEX "'+iname+'" ON '+qname+' USING btree ('+
-                              spec.map(field => field.replace(/(^\S+)/, '"$1"'))
-                              .join(',')+')');
+            const iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
+            this.client.query(`${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON ${qname} USING btree (${
+spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
+})`);
           });
         }
       } else {
@@ -48,6 +47,19 @@ define(function(require, exports, module) {
         options.add(this.client);
       if (! this.add && options.revert)
         options.revert(this.client);
+    }
+
+    addColumns(tableName, fields) {
+      const {client} = this;
+      if (this.add) {
+        client.query(`ALTER TABLE "${tableName}" ${
+Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(",")
+}`);
+      } else {
+        client.query(`ALTER TABLE "${tableName}" ${
+Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
+}`);
+      }
     }
   }
 

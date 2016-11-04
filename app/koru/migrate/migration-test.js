@@ -83,6 +83,22 @@ isServer && define(function (require, exports, module) {
       assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
+    "test addColumns"() {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
+
+      v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
+                         .addColumns('TestTable', {myAge: 'number'}));
+
+      v.client.query('INSERT INTO "TestTable" (_id, "myAge") values ($1,$2)', ['foo', 12]);
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.myAge, 12);
+
+      v.sut.revertMigration('20151004T20-30-20-add-column', v.migBody);
+
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.myAge, undefined);
+    },
+
     "test reversible"() {
       v.sut.addMigration('20151004T20-30-20-reversible', v.migBody = function (mig) {
         mig.reversible({
