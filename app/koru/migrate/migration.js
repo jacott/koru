@@ -5,8 +5,9 @@ const readdir = Future.wrap(fs.readdir);
 const stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
-  const koru = require('../main');
-  const util = require('../util');
+  const ModelMap = require('koru/model/map');
+  const koru     = require('../main');
+  const util     = require('../util');
 
   class MigrationControl {
     constructor(add, client) {
@@ -40,6 +41,7 @@ spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
       } else {
         this.client.query('DROP TABLE IF EXISTS '+qname);
       }
+      resetTable(name);
     }
 
     reversible(options) {
@@ -47,6 +49,7 @@ spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
         options.add(this.client);
       if (! this.add && options.revert)
         options.revert(this.client);
+      util.forEach(options.resetTables, name => resetTable(name));
     }
 
     addColumns(tableName, fields) {
@@ -60,7 +63,13 @@ Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col]
 Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 }`);
       }
+      resetTable(tableName);
     }
+  }
+
+  function resetTable(tableName) {
+    const model = ModelMap[tableName];
+    model && model.docs._resetTable();
   }
 
   class Migration {

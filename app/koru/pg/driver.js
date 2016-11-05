@@ -1,12 +1,12 @@
 const Future = requirejs.nodeRequire('fibers/future');
 const Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
 
-var koru, util, makeSubject, match, Pool;
+let koru, util, makeSubject, match, Pool;
 
 const pools = Object.create(null);
-var clientCount = 0;
-var cursorCount = 0;
-var autoSchema = false;
+let clientCount = 0;
+let cursorCount = 0;
+let autoSchema = false;
 
 define(function(require, exports, module) {
   koru = require('../main');
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
 
   autoSchema = module.config().autoSchema || false;
 
-  var defaultDb = null;
+  let defaultDb = null;
 
   function closeDefaultDb() {
     defaultDb && defaultDb.end();
@@ -52,9 +52,7 @@ function aryToSqlStr(value) {
   if (! Array.isArray(value))
     throw new Error('Value is not an array: '+util.inspect(value));
 
-  return '{'+value.map(function (v) {
-    return JSON.stringify(v);
-  }).join(',')+'}';
+  return '{'+value.map(v => JSON.stringify(v)).join(',')+'}';
 }
 
 function getConn(client) {
@@ -82,11 +80,11 @@ function fetchPool(client) {
   if (pool) return pool;
   return pools[client._id] = new Pool({
     name: client._id,
-    create: function (callback) {
+    create(callback) {
       ++conns;
       new Connection(client, callback);
     },
-    destroy: function (tx) {
+    destroy(tx) {
       --conns;
       tx.conn.finish();
     },
@@ -161,9 +159,9 @@ class Client {
 
   query(text, params) {
     if (params && ! Array.isArray(params)) {
-      var fields = params;
-      var posMap = {};
-      var count = 0;
+      const fields = params;
+      const posMap = {};
+      let count = 0;
       params = [];
       text = text.replace(/\{\$(\w+)\}/g, function (m, key) {
         var pos = posMap[key];
@@ -273,18 +271,14 @@ function query(conn, text, params) {
 
 class Table {
   constructor(name, schema, client) {
-    var table = this;
+    const table = this;
     table._name = name;
     table._client = client;
     Object.defineProperty(table, 'schema', {
       configurable: true,
-      get: function () {
-        return schema;
-      },
-      set: function (value) {
-        while (table._ready && table._ready !== true) {
-          table._ensureTable();
-        }
+      get() {return schema},
+      set(value) {
+        table._ensureTable();
         schema = value;
         if (table._ready) {
           updateSchema(table, schema);
@@ -293,28 +287,34 @@ class Table {
     });
   }
 
+  _resetTable() {
+    this._ready = null;
+  }
+
   _ensureTable() {
     if (this._ready === true) return;
 
-    var future = new Future;
 
     if (this._ready) {
-      var handle = this._ready.onChange(() => future.return());
+      const future = new Future;
+      const handle = this._ready.onChange(() => future.return());
       try {
-        return future.wait();
+        future.wait();
       } finally {
         handle.stop();
       }
+      return this._ensureTable();
     }
 
-    var subject = this._ready = makeSubject({});
+    const subject = this._ready = makeSubject({});
 
     if (autoSchema) {
       this.autoCreate();
     } else {
       readColumns(this);
     }
-    this._ready = true;
+    if (this._ready)
+      this._ready = true;
     subject.notify();
   }
 
@@ -732,9 +732,9 @@ function selectFields(table, fields) {
 
 function initCursor(cursor) {
   if (cursor._name) return;
-  var client = cursor.table._client;
-  var tx = client._weakMap.get(util.thread);
-  var sql = cursor._sql;
+  const client = cursor.table._client;
+  const tx = client._weakMap.get(util.thread);
+  let sql = cursor._sql;
   if (cursor._sort) {
     sql += ' ORDER BY '+Object.keys(cursor._sort)
       .map(k => '"'+k+(cursor._sort[k] === -1 ? '" DESC' : '"')).join(',');
@@ -742,7 +742,7 @@ function initCursor(cursor) {
   if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
 
   if (cursor._batchSize) {
-    var cname = 'c'+(++cursorCount).toString(36);
+    const cname = 'c'+(++cursorCount).toString(36);
     if (tx && tx.transaction) {
       cursor._inTran = true;
       client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
@@ -1020,9 +1020,7 @@ function addColumns(table, needCols) {
   var prefix = 'ALTER TABLE "'+table._name+'" ADD COLUMN ';
   var client = table._client;
 
-  client.query(Object.keys(needCols).map(function (col) {
-    return prefix + needCols[col];
-  }).join(';'));
+  client.query(Object.keys(needCols).map(col => prefix + needCols[col]).join(';'));
 
   readColumns(table);
 }
@@ -1036,9 +1034,7 @@ function readColumns(table) {
 
 function wait(future) {
   return function (err, result) {
-    if (err) {
-      future.throw(err);
-    }
+    if (err) future.throw(err);
     else future.return(result);
   };
 }

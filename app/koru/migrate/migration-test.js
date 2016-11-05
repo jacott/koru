@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  const Model     = require('koru/model/main');
+  const ModelMap  = require('koru/model/map');
   const DBDriver  = require('koru/pg/driver');
   const TH        = require('koru/test-helper');
   const Migration = require('./migration');
@@ -19,11 +19,15 @@ isServer && define(function (require, exports, module) {
     },
 
     "test create"() {
+      this.onEnd(() => delete ModelMap.TestTable);
+      ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           myName: {type: 'text', default: 'George'}
         }, [['*unique', 'myName DESC', '_id'], ['myName']]);
       });
+      assert.called(v.resetTable);
+
       v.client.query('INSERT INTO "TestTable" (_id, "myName") values ($1,$2)', ["12345670123456789", "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc._id, "12345670123456789");
@@ -86,8 +90,12 @@ isServer && define(function (require, exports, module) {
     "test addColumns"() {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
+      this.onEnd(() => delete ModelMap.TestTable);
+      ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
       v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
                          .addColumns('TestTable', {myAge: 'number'}));
+
+      assert.called(v.resetTable);
 
       v.client.query('INSERT INTO "TestTable" (_id, "myAge") values ($1,$2)', ['foo', 12]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
@@ -100,10 +108,18 @@ isServer && define(function (require, exports, module) {
     },
 
     "test reversible"() {
+      this.onEnd(() => {
+        delete ModelMap.Foo;
+        delete ModelMap.Bar;
+      });
+      ModelMap.Foo = {docs: {_resetTable: v.resetFoo = this.stub()}};
+      ModelMap.Bar = {docs: {_resetTable: v.resetBar = this.stub()}};
+
       v.sut.addMigration('20151004T20-30-20-reversible', v.migBody = function (mig) {
         mig.reversible({
           add: v.add = test.stub(),
           revert: v.revert = test.stub(),
+          resetTables: ['Foo', 'Bar'],
         });
       });
 
@@ -117,6 +133,9 @@ isServer && define(function (require, exports, module) {
 
       assert.calledWith(v.revert, DBDriver.defaultDb);
       refute.called(v.add);
+
+      assert.calledTwice(v.resetFoo);
+      assert.calledTwice(v.resetBar);
     },
 
     "test migrateTo"() {

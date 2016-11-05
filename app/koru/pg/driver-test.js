@@ -393,6 +393,15 @@ isServer && define(function (require, exports, module) {
         v.foo._client.query('truncate "Foo"');
       },
 
+      "test _resetTable"() {
+        assert.same(v.foo._ready, true);
+        v.foo._resetTable();
+        assert.same(v.foo._ready, null);
+
+        assert.equals(v.foo.find({name: 'abc'}).next(), {_id: '123', name: 'abc', age: 10});
+        assert.same(v.foo._ready, true);
+      },
+
 
       "test ensureIndex"() {
         v.foo.ensureIndex({name: -1}, {unique: true});
