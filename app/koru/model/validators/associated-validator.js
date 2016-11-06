@@ -27,6 +27,9 @@ define(function(require, exports, module) {
       var modelName = options;
       break;
     }
+    if (belongs_to && ! modelName) {
+      modelName = fieldOpts.model && fieldOpts.model.modelName;
+    }
 
     if (! modelName) {
       var scopeName = util.sansId(field);

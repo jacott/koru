@@ -139,7 +139,7 @@ define(function (require, exports, module) {
 
     "test belongs_to"() {
       var count = test.stub(Query.prototype, 'count').returns(1);
-      var doc = {foo_id: "x", constructor: {$fields: {foo_id: {type: 'belongs_to'}}}};
+      var doc = {foo_id: "x", constructor: {$fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}}};
 
       sut(doc,'foo_id', true);
       refute(doc._errors);
