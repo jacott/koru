@@ -775,6 +775,7 @@ define(function (require, exports, module) {
 
           assert.same(sut.qux.name, "qux");
           assert.same(sut.qux.name, "qux");
+          assert.same(v.TestModel.$fields.qux_id.model, v.Qux);
 
           assert.calledOnce(quxFind);
         },

@@ -760,7 +760,7 @@ define(function(require, exports, module) {
         throw new Error("belongs_to_dbId already defined!");
       model.$dbIdField = field;
       options.accessor = {set() {}};
-      typeMap.belongs_to(model, field, options);}
+      typeMap.belongs_to.call(this, model, field, options);}
     ,
     belongs_to(model, field, options) {
       if (options.accessor === undefined) {
@@ -777,6 +777,7 @@ define(function(require, exports, module) {
       if (! bt) {
         var btName = options.modelName || util.capitalize(name);
         bt = ModelMap[btName];
+        options.model = bt;
       }
       mapFieldType(model, field, bt, btName);
       Object.defineProperty(model.prototype, name, {
