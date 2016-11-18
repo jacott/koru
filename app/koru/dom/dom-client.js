@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   var vendorTransform;
   var vendorStylePrefix = (function () {
     var style = document.documentElement.style;
-    var styles = ['webkit', 'Moz',  'ms', 'o', ''];
+    var styles = ['Moz', 'ms',  'webkit', 'o', ''];
     for(var i = 0; i < styles.length; ++i) {
       if (styles[i]+'Transform' in style) break;
     }
