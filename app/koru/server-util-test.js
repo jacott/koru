@@ -24,8 +24,8 @@ define(function (require, exports, module) {
         const io = sUtil.system('date', '--badarg');
 
         assert.same(io.error.code, 1);
-        assert.match(io.error.toString(), /unrecognised option/);
-        assert.match(io.stderr, /unrecognised option/);
+        assert.match(io.error.toString(), /unrecogni.ed option/);
+        assert.match(io.stderr, /unrecogni.ed option/);
       },
 
       "test collecting stdout stderr"() {
