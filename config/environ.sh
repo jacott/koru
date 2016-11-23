@@ -24,7 +24,7 @@ export NODE=${NODE-`type -p node`}
 export NODE_PATH=$(dirname $NODE)
 export NPM=$NODE_PATH/npm
 
-LOG_DIR=${LOG_DIR-/u/log}
+LOG_DIR=${LOG_DIR-$tmpdir}
 
 if [ ! -d "$LOG_DIR" ];then
     echo "no log dir: $LOG_DIR"
