@@ -24,12 +24,6 @@ exports.server = function (cfg) {
       "koru/main": {
         "urlRoot": 'http://localhost:3000/',
         appDir: appDir,
-        "userAccount" : {
-          emailConfig: {
-            from: 'obeya-demo@obeya.co',
-            siteName: 'Obeya demo',
-          },
-        },
       },
     },
   });

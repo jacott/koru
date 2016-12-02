@@ -62,7 +62,7 @@ define(function (require, exports, module) {
               return "userid: " + user._id + " token: " + token;
             },
 
-            from: 'Koru <koru@obeya.co>',
+            from: 'Koru <koru@vimaly.com>',
             siteName: 'Koru',
           },
         };
@@ -80,7 +80,7 @@ define(function (require, exports, module) {
         assert.between(tokenExp, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
 
         assert.calledWith(Email.send, {
-          from: 'Koru <koru@obeya.co>',
+          from: 'Koru <koru@vimaly.com>',
           to: 'foo@bar.co',
           subject: 'How to reset your password on Koru',
           text: 'userid: uid111 token: ' + v.lu._id+'-'+v.lu.resetToken,
@@ -94,34 +94,34 @@ define(function (require, exports, module) {
 
     "test createUserLogin"() {
       var spy = test.spy(SRP, 'generateVerifier');
-      var lu = userAccount.createUserLogin({email: 'alice@obeya.co', userId: "uid1", password: 'test pw'});
+      var lu = userAccount.createUserLogin({email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
 
       assert.calledWith(spy, 'test pw');
 
       assert.equals(lu.$reload().srp, spy.firstCall.returnValue);
-      assert.same(lu.email, 'alice@obeya.co');
+      assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
     },
 
     "test updateOrCreateUserLogin"() {
-      var lu = userAccount.updateOrCreateUserLogin({email: 'alice@obeya.co', userId: "uid1", srp: 'test srp'});
+      var lu = userAccount.updateOrCreateUserLogin({email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
 
       assert.equals(lu.$reload().srp, 'test srp');
-      assert.same(lu.email, 'alice@obeya.co');
+      assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
 
-      lu = userAccount.updateOrCreateUserLogin({email: 'bob@obeya.co', userId: "uid1", srp: 'new srp'});
+      lu = userAccount.updateOrCreateUserLogin({email: 'bob@vimaly.com', userId: "uid1", srp: 'new srp'});
 
       assert.equals(lu.$reload().srp, 'new srp');
-      assert.same(lu.email, 'bob@obeya.co');
+      assert.same(lu.email, 'bob@vimaly.com');
       assert.same(lu.userId, 'uid1');
 
-      lu = userAccount.updateOrCreateUserLogin({email: 'bob@obeya.com', userId: "uid1"});
+      lu = userAccount.updateOrCreateUserLogin({email: 'bob@vimaly.comm', userId: "uid1"});
 
       assert.equals(lu.$reload().srp, 'new srp');
-      assert.same(lu.email, 'bob@obeya.com');
+      assert.same(lu.email, 'bob@vimaly.comm');
       assert.same(lu.userId, 'uid1');
     },
 

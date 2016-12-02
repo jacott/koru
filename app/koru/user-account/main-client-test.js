@@ -27,13 +27,13 @@ isClient && define(function (require, exports, module) {
 
 
     "test secureCall"() {
-      userAccount.secureCall('fooBar', 'email@obeya.co', 'secret', [1, 2], v.callback = test.stub());
+      userAccount.secureCall('fooBar', 'email@vimaly.com', 'secret', [1, 2], v.callback = test.stub());
 
       assert.calledWithExactly(
         session.rpc, 'SRPBegin',
         TH.match(function (request) {
           v.request = request;
-          assert.same(request.email, 'email@obeya.co');
+          assert.same(request.email, 'email@vimaly.com');
           return ('A' in request);
 
         }),

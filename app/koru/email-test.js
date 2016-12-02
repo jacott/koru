@@ -28,7 +28,7 @@ isServer && define(function (require, exports, module) {
           callback();
         },
       };
-      Email.send(v.options = {from: "foo@obeya.co"});
+      Email.send(v.options = {from: "foo@vimaly.com"});
 
       assert.same(v.sendOpts, v.options);
     },
@@ -43,14 +43,14 @@ isServer && define(function (require, exports, module) {
 
       Email.initPool(stub);
       Email.send(v.options = {
-        from: "foo@obeya.co",
-        to: "bar@obeya.co",
+        from: "foo@vimaly.com",
+        to: "bar@vimaly.com",
         subject: "The subject",
         text: "The text body",
       });
 
       assert.same(logCount, 4);
-      assert.equals(JSON.parse(v.info.message), {from: "foo@obeya.co", to: ["bar@obeya.co"]});
+      assert.equals(JSON.parse(v.info.message), {from: "foo@vimaly.com", to: ["bar@vimaly.com"]});
 
     },
 
@@ -65,9 +65,9 @@ isServer && define(function (require, exports, module) {
       };
 
 
-      Email.initPool("smtp://foo:bar@obeya.co:465");
+      Email.initPool("smtp://foo:bar@vimaly.com:465");
 
-      assert.equals(v.smtpPollArgs, [{port: 465, host: "obeya.co", auth: {user: 'foo', pass: 'bar'}, secure: false, requireTLS: true}]);
+      assert.equals(v.smtpPollArgs, [{port: 465, host: "vimaly.com", auth: {user: 'foo', pass: 'bar'}, secure: false, requireTLS: true}]);
     },
   });
 });

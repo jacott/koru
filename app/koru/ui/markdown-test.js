@@ -27,14 +27,14 @@ define(function (require, exports, module) {
       },
 
       "test href": function () {
-        assert.same(v.c('<div><a href="http://obeya.co">Obeya <b>Limited</b></a> link</div>'),
-                    '[Obeya **Limited**](http://obeya.co) link');
+        assert.same(v.c('<div><a href="http://vimaly.com">Vimaly <b>Limited</b></a> link</div>'),
+                    '[Vimaly **Limited**](http://vimaly.com) link');
 
-        assert.same(v.c('<div><a href="http://obeya.co">Obeya_Limited_link</a> click it</div>'),
-                    '[Obeya_Limited_link](http://obeya.co) click it');
+        assert.same(v.c('<div><a href="http://vimaly.com">Vimaly_Limited_link</a> click it</div>'),
+                    '[Vimaly_Limited_link](http://vimaly.com) click it');
 
-        assert.same(v.c('<div><a href="http://obeya.co">Obeya **Limited**</a> link</div>'),
-                    '[Obeya \\**Limited**](http://obeya.co) link');
+        assert.same(v.c('<div><a href="http://vimaly.com">Vimaly **Limited**</a> link</div>'),
+                    '[Vimaly \\**Limited**](http://vimaly.com) link');
 
       },
 
@@ -108,25 +108,25 @@ define(function (require, exports, module) {
       },
 
       "test hyperlink": function () {
-        test.stub(koru, 'getHashOrigin').returns('http://getobeya.com/');
-        assert.sameHtml(v.c('[l1](/l1) text [O][b\n]eya](http://obeya.co)[link2](/a)[int](http://getobeya.com/#int/ernal)'),
+        test.stub(koru, 'getHashOrigin').returns('http://getvimaly.comm/');
+        assert.sameHtml(v.c('[l1](/l1) text [O][b\n]eya](http://vimaly.com)[link2](/a)[int](http://getvimaly.comm/#int/ernal)'),
                         '<a href="/l1" target="_blank">l1</a> text [O]'+
-                        '<a href="http://obeya.co" target="_blank">b<br>]eya</a>'+
+                        '<a href="http://vimaly.com" target="_blank">b<br>]eya</a>'+
                         '<a href="/a" target="_blank">link2</a>'+
                         '<a '+
-                        (isClient ? 'href="/#int/ernal"' : 'href="http://getobeya.com/#int/ernal" target="_blank"')+
+                        (isClient ? 'href="/#int/ernal"' : 'href="http://getvimaly.comm/#int/ernal" target="_blank"')+
                         '>int</a>');
       },
 
       "test underscores in link text": function () {
-        assert.sameHtml(v.c('[Obeya_Limited_link](http://obeya.co) click it'),
-                        '<a href="http://obeya.co" target="_blank">Obeya_Limited_link</a> click it');
+        assert.sameHtml(v.c('[Vimaly_Limited_link](http://vimaly.com) click it'),
+                        '<a href="http://vimaly.com" target="_blank">Vimaly_Limited_link</a> click it');
 
-        assert.sameHtml(v.c('[Obeya **Limited**](http://obeya.co) link'),
-                        '<a href="http://obeya.co" target="_blank">Obeya <b>Limited</b></a> link');
+        assert.sameHtml(v.c('[Vimaly **Limited**](http://vimaly.com) link'),
+                        '<a href="http://vimaly.com" target="_blank">Vimaly <b>Limited</b></a> link');
 
-        assert.sameHtml(v.c('[Obeya \\**Limited**](http://obeya.co) link'),
-                        '<a href="http://obeya.co" target="_blank">Obeya **Limited**</a> link');
+        assert.sameHtml(v.c('[Vimaly \\**Limited**](http://vimaly.com) link'),
+                        '<a href="http://vimaly.com" target="_blank">Vimaly **Limited**</a> link');
       },
 
       "test complex": function () {

@@ -895,8 +895,8 @@ define(function (require, exports, module) {
         name: "Abc",
       });
 
-      assert.equals(util.extractFromEmail("abc-def_xyz.qqq@obeya.co"), {
-        email: "abc-def_xyz.qqq@obeya.co",
+      assert.equals(util.extractFromEmail("abc-def_xyz.qqq@vimaly.com"), {
+        email: "abc-def_xyz.qqq@vimaly.com",
         name: "Abc Def Xyz Qqq",
       });
 
@@ -939,8 +939,8 @@ define(function (require, exports, module) {
       assert.equals(util.parseEmailAddresses("foo@bar.baz.com fnord"),
                     {addresses: ["foo@bar.baz.com"], remainder: "fnord"});
 
-      assert.equals(util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@obeya-test.co, "),
-                    {addresses: ["a b c <abc@def.com>", "foo-_+%bar@obeya-test.co"], remainder: "" });
+      assert.equals(util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@vimaly-test.com, "),
+                    {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
     },
 
     "test TwoIndex" () {
