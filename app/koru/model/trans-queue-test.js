@@ -1,12 +1,13 @@
 define(function (require, exports, module) {
-  var test, v;
   const Model = require('koru/model/main');
-  const sut   = require('./trans-queue');
+  const util  = require('koru/util');
   const TH    = require('./test-helper');
+
+  const sut   = require('./trans-queue');
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({name: 'text'});
     },
@@ -14,23 +15,33 @@ define(function (require, exports, module) {
     tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
+      util.thread.date = null;
     },
 
     "test success"() {
-      let stub1 = test.stub();
-      let stub2 = test.stub();
-      let err1 = test.stub();
+      const stub1 = this.stub();
+      const stub2 = this.stub();
+      const err1 = this.stub();
 
-      var result = sut.transaction(v.TestModel, () => {
+      const now = util.thread.date = Date.now();
+
+      const result = sut.transaction(v.TestModel, () => {
+        assert.same(now, util.dateNow());
+
         sut.onAbort(err1);
         sut.onSuccess(stub1);
         sut.transaction(v.TestModel, () => sut.onSuccess(function () {
+          assert.same(now, util.dateNow()); // ensure same time as top transaction
+
           sut.onSuccess(stub2); // double nested should still fire
         }));
         refute.called(stub1);
         refute.called(stub2);
         return "success";
       });
+
+      assert.same(now, util.dateNow());
+
 
       assert.same(result, "success");
       assert.called(stub1);
@@ -41,6 +52,8 @@ define(function (require, exports, module) {
       stub2.reset();
 
       sut.transaction(v.TestModel, () => {
+        assert.same(now+1, util.dateNow()); // ensure time unique to transaction
+
         sut.onSuccess(stub1);
       });
 
@@ -59,11 +72,11 @@ define(function (require, exports, module) {
     },
 
     "test exception"() {
-      let stub1 = test.stub();
-      let stub2 = test.stub();
-      let err1 = test.stub();
-      let err2 = test.stub();
-      let err3 = test.stub();
+      const stub1 = this.stub();
+      const stub2 = this.stub();
+      const err1 = this.stub();
+      const err2 = this.stub();
+      const err3 = this.stub();
 
       assert.exception(() => sut.transaction(v.TestModel, () => {
         sut.onAbort(err1);
@@ -98,7 +111,7 @@ define(function (require, exports, module) {
     },
 
     "test no transaction"() {
-      let stub1 = test.stub();
+      const stub1 = this.stub();
 
       sut.onSuccess(stub1);
 

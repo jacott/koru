@@ -3,13 +3,20 @@ define(function(require) {
 
   const successMap = new WeakMap;
   const abortMap = new WeakMap;
+  let lastTime;
 
   const TransQueue = {
     transaction(db, body) {
       let list = successMap.get(util.thread);
-      let firstLevel = list === undefined;
-      if (firstLevel)
+      const firstLevel = list === undefined;
+      if (firstLevel) {
         successMap.set(util.thread, list = []);
+        var prevTime = util.thread.date;
+        let now = util.dateNow();
+        if (now === lastTime)
+          now = lastTime+=1;
+        util.thread.date = lastTime = now;
+      }
       try {
         var result = db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
@@ -25,6 +32,7 @@ define(function(require) {
         throw ex;
       } finally {
         if (firstLevel) {
+          util.thread.date = prevTime;
           successMap.delete(util.thread);
           abortMap.delete(util.thread);
         }
