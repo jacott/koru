@@ -23,9 +23,9 @@ define(function(require, exports, module) {
   });
 
   function createEach(insertPoint, func, options) {
-    var eachCtx = $.ctx;
-    var ctpl = $.template;
-    var helper = ctpl._helpers[func] || Dom._helpers[func];
+    const eachCtx = $.ctx;
+    const ctpl = $.template;
+    const helper = ctpl._helpers[func] || Dom._helpers[func];
     if (! helper)
       throw new Error("helper '" + func +
                       "' not found in template '" + ctpl.name + "'");
@@ -33,14 +33,14 @@ define(function(require, exports, module) {
     if (typeof func !== 'string')
       throw new Error("first argument must be name of helper method to call");
 
-    var startEach = document.createComment('start');
-    var endEach = startEach._koruEnd = document.createComment('end');
+    const startEach = document.createComment('start');
+    const endEach = startEach._koruEnd = document.createComment('end');
     insertPoint.parentNode.insertBefore(endEach, insertPoint.nextSibling);
     insertPoint.parentNode.insertBefore(startEach, endEach);
 
-    var rows = Object.create(null);
+    const rows = Object.create(null);
     options = options || {};
-    var templateName = options.template || "Each_" + func;
+    const templateName = options.template || "Each_" + func;
 
     if (typeof templateName === 'object') {
       if ('$autoRender' in templateName)
@@ -59,10 +59,10 @@ define(function(require, exports, module) {
     callback.setDefaultDestroy = setDefaultDestroy;
     callback.render = callbackRender;
     callback.clear = function (func) {
-      var parent = startEach.parentNode;
+      const parent = startEach.parentNode;
       if (! parent) return;
-      for(var key in rows) {
-        var row = rows[key];
+      for(let key in rows) {
+        const row = rows[key];
         if (! func || func(row)) {
           delete rows[key];
           Dom.remove(row);
@@ -83,12 +83,11 @@ define(function(require, exports, module) {
     }
 
     function insert(elm, sort) {
-      var a = $.data(elm);
-      var before = endEach;
+      const a = $.data(elm);
+      let before = endEach;
       if (typeof sort === 'function') {
-        var prev;
-        for(var prev; (prev = before.previousSibling) !== startEach; before = prev)  {
-          var b = $.data(prev);
+        for(let prev; (prev = before.previousSibling) !== startEach; before = prev)  {
+          const b = $.data(prev);
           if (a !== b && sort(a, b) >= 0) break;
         }
       } else if (sort)
@@ -105,8 +104,10 @@ define(function(require, exports, module) {
       if (elm) {
         if (doc) {
           Dom.getCtx(elm).updateAllTags(doc);
-          if (! old || (sort && sort(doc, old) != 0))
+          if (! old || (sort && sort(doc, old) != 0)) {
             insert(elm, sort);
+            return elm;
+          }
         } else {
           delete rows[id];
           Dom.remove(elm);
@@ -114,11 +115,12 @@ define(function(require, exports, module) {
         return;
       }
       if (! doc) return;
-      var parentNode = endEach.parentNode;
+      const parentNode = endEach.parentNode;
       if (! parentNode) return;
       const rendered = row.$autoRender(doc, eachCtx);
       if (id) rows[id] = rendered;
       insert(rendered, sort);
+      return rendered;
     }
   }
 
@@ -136,7 +138,7 @@ define(function(require, exports, module) {
   }
 
   function callbackRender({model,  params,  filter,  changed,  intercept, sort, index}) {
-    var callback = this;
+    const callback = this;
 
     if (typeof sort === 'string')
       sort = util.compareByField(sort);
@@ -145,11 +147,9 @@ define(function(require, exports, module) {
 
     params = params || {};
     var results = index ? index.fetch(params) : model.where(params).fetch();
-    if (filter) results = results.filter(function (doc) {
-      return filter(doc);
-    });
+    if (filter) results = results.filter(doc => filter(doc));
 
-    util.forEach(results.sort(sort), function (doc) {
+    util.forEach(results.sort(sort), doc => {
       if (! (intercept && intercept(doc)))
         callback(doc);
     });
