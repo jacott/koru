@@ -3,18 +3,17 @@ isClient && define(function (require, exports, module) {
    * DomTemplate is used to create interactive
    * [Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  'use strict';
-  var test, v;
   const Dom         = require('koru/dom');
   const Ctx         = require('koru/dom/ctx');
   const TH          = require('koru/test');
   const api         = require('koru/test/api');
   const util        = require('koru/util');
+
   const DomTemplate = require('./template');
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       api.module();
     },
@@ -26,7 +25,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test stopEvent"() {
-      var ev = {stopImmediatePropagation: test.stub(), preventDefault: test.stub()};
+      var ev = {stopImmediatePropagation: this.stub(), preventDefault: this.stub()};
       Dom.stopEvent(ev);
       assert.called(ev.stopImmediatePropagation);
       assert.called(ev.preventDefault);
@@ -38,7 +37,7 @@ isClient && define(function (require, exports, module) {
       });
 
       Tpl.$events({
-        'click': function (event) {
+        'click'(event) {
           assert.same(Dom.event, event);
           Dom.stopEvent(event);
           refute.called(event.stopImmediatePropagation);
@@ -47,7 +46,7 @@ isClient && define(function (require, exports, module) {
           v.success = true;
         },
 
-        'keydown': function (event) {
+        'keydown'(event) {
           assert.same(Dom.event, event);
           Dom.stopEvent();
           refute.called(event.stopImmediatePropagation);
@@ -60,8 +59,8 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(Tpl.$autoRender({}));
       assert.dom('div', function () {
         var ev = Dom.buildEvent('click');
-        test.stub(ev, 'stopImmediatePropagation');
-        test.stub(ev, 'preventDefault');
+        TH.test.stub(ev, 'stopImmediatePropagation');
+        TH.test.stub(ev, 'preventDefault');
         this.dispatchEvent(ev);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
@@ -70,8 +69,8 @@ isClient && define(function (require, exports, module) {
         v.success = false;
 
         var ev = Dom.buildEvent('keydown');
-        test.stub(ev, 'stopImmediatePropagation');
-        test.stub(ev, 'preventDefault');
+        TH.test.stub(ev, 'stopImmediatePropagation');
+        TH.test.stub(ev, 'preventDefault');
         this.dispatchEvent(ev);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
@@ -156,7 +155,7 @@ isClient && define(function (require, exports, module) {
 
       "test find ctx"() {
         Dom.Bar.$helpers({
-          myFunc: function () {
+          myFunc() {
             v.helperFoundCtx = Dom.Foo.$ctx();
 
             return 'one';
@@ -207,7 +206,7 @@ isClient && define(function (require, exports, module) {
 
       "test restoring focus"() {
         Dom.Bar.$helpers({
-          myFunc: function () {
+          myFunc() {
             v.helperFoundCtx = Dom.Foo.$ctx();
 
             document.activeElement.blur(); // same effect as moving the focused element
@@ -239,7 +238,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test default arg is data"() {
-        Dom.Bar.$created = test.stub();
+        Dom.Bar.$created = this.stub();
 
         var data = {arg: 'me'};
         Dom.Foo.$render(data);
@@ -253,7 +252,7 @@ isClient && define(function (require, exports, module) {
       "test scoping"() {
         var initials = 'BJ';
         Dom.Bar.$helpers({
-          myFunc: function () {
+          myFunc() {
             return initials;
           },
         });
@@ -268,8 +267,8 @@ isClient && define(function (require, exports, module) {
     "test $actions"() {
       Dom.newTemplate({name: "Foo"});
       Dom.Foo.$actions({
-        one: v.one = test.stub(),
-        two: test.stub(),
+        one: v.one = this.stub(),
+        two: this.stub(),
       });
 
       assert.same(Dom.Foo._events.length, 2);
@@ -290,23 +289,23 @@ isClient && define(function (require, exports, module) {
           {name: 'button'},
         ]
       }]});
-      v.spanCall = test.stub();
+      v.spanCall = this.stub();
       Dom.Foo.$events({
-        'click div': v.divCall = test.stub(),
+        'click div': v.divCall = this.stub(),
 
-        'click span': function (event) {
+        'click span'(event) {
           v.spanCall();
           v.stop && Dom[v.stop].call(Dom);
         },
       });
-      Dom.Foo.$event('click button', v.buttonCall = test.stub());
+      Dom.Foo.$event('click button', v.buttonCall = this.stub());
 
       document.body.appendChild(Dom.Foo.$render({}));
 
       assert.dom('body>div', function () {
         var top = this;
-        test.onEnd(function () {Dom.remove(top)});
-        test.spy(top, 'addEventListener');
+        TH.test.onEnd(function () {Dom.remove(top)});
+        TH.test.spy(top, 'addEventListener');
         Dom.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
         Dom.getCtx(top).onDestroy(function () {
@@ -315,8 +314,8 @@ isClient && define(function (require, exports, module) {
         assert.dom('span', function () {
           top.addEventListener.yield({
             currentTarget: top, target: this, type: 'click',
-            stopImmediatePropagation: v.sip = test.stub(),
-            preventDefault: v.pd = test.stub(),
+            stopImmediatePropagation: v.sip = TH.test.stub(),
+            preventDefault: v.pd = TH.test.stub(),
           });
         });
         assert.called(v.spanCall);
@@ -331,8 +330,8 @@ isClient && define(function (require, exports, module) {
         assert.dom('span', function () {
           top.addEventListener.yield({
             currentTarget: top, target: this, type: 'click',
-            stopImmediatePropagation: v.sip = test.stub(),
-            preventDefault: v.pd = test.stub(),
+            stopImmediatePropagation: v.sip = TH.test.stub(),
+            preventDefault: v.pd = TH.test.stub(),
           });
         });
         assert.called(v.spanCall);
@@ -347,8 +346,8 @@ isClient && define(function (require, exports, module) {
         assert.dom('span', function () {
           top.addEventListener.yield({
             currentTarget: top, target: this, type: 'click',
-            stopImmediatePropagation: v.sip = test.stub(),
-            preventDefault: v.pd = test.stub(),
+            stopImmediatePropagation: v.sip = TH.test.stub(),
+            preventDefault: v.pd = TH.test.stub(),
           });
         });
         assert.called(v.spanCall);
@@ -380,7 +379,7 @@ isClient && define(function (require, exports, module) {
          * `require('koru/html!path/to/my-template.html')`
          **/
         api.method('newTemplate');
-        const myMod = {id: 'myMod', onUnload: test.stub(),
+        const myMod = {id: 'myMod', onUnload: this.stub(),
                        __proto__: module.constructor.prototype};
         assert.same(DomTemplate.newTemplate(myMod, {
           name: "Foo", nodes: [{name: "div"}]
@@ -441,12 +440,12 @@ isClient && define(function (require, exports, module) {
       "test $created"() {
         var pCtx = {foo: 'bar'};
         Dom.Foo.$extend({
-          $created: function (ctx, elm) {
+          $created(ctx, elm) {
             v.ctx = ctx;
             assert.same(ctx.parentCtx, pCtx);
 
             v.elm = elm;
-            ctx.data = {myHelper: v.myHelper = test.stub()};
+            ctx.data = {myHelper: v.myHelper = TH.test.stub()};
           },
         });
 
@@ -470,7 +469,7 @@ isClient && define(function (require, exports, module) {
         });
 
         Dom.Foo.$helpers({
-          myHelper: function () {
+          myHelper() {
             Dom.setBoolean('disabled', this.on);
           },
         });
@@ -581,7 +580,7 @@ isClient && define(function (require, exports, module) {
       });
 
       Dom.Foo.$helpers({
-        bar: function () {
+        bar() {
           return content.apply(this, arguments);
         },
       });
@@ -636,8 +635,8 @@ isClient && define(function (require, exports, module) {
 
         var elm = Dom.Foo.$render({});
         var ctx = Dom.getCtx(elm);
-        var stub1 = test.stub();
-        var stub2 = test.stub();
+        var stub1 = this.stub();
+        var stub2 = this.stub();
         ctx.onDestroy({stop: stub1})
           .onDestroy(stub2);
 
@@ -662,12 +661,12 @@ isClient && define(function (require, exports, module) {
         });
 
         Dom.Foo.$helpers({
-          bar: function () {
+          bar() {
             throw new Error('bang');
           },
         });
 
-        test.spy(Dom, 'destroyData');
+        this.spy(Dom, 'destroyData');
 
         assert.exception(function () {
           Dom.Foo.$render({});
@@ -760,11 +759,11 @@ isClient && define(function (require, exports, module) {
         });
 
         Dom.Foo.$helpers({
-          classes: function () {
+          classes() {
             return "the classes";
           },
 
-          draggable: function () {
+          draggable() {
             Dom.current.element.setAttribute('draggable', 'true');
           },
         });
@@ -817,12 +816,12 @@ isClient && define(function (require, exports, module) {
         });
 
         Dom.Foo.$helpers({
-          foo: function (arg) {
+          foo(arg) {
             Dom.current.element.setAttribute('data-foo', arg);
           },
         });
 
-        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc: function () {
+        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc() {
           return this.name;
         }}});
         document.body.appendChild(elm);
@@ -891,7 +890,7 @@ isClient && define(function (require, exports, module) {
         _test_age() {return "global age"},
       });
 
-      test.onEnd(function () {
+      this.onEnd(function () {
         Dom._helpers._test_name = null;
         Dom._helpers._test_age = null;
       });
@@ -944,7 +943,7 @@ isClient && define(function (require, exports, module) {
 
     "test inputValue helper"() {
       var elm = Ctx._private.currentElement = {};
-      TH.stubProperty(elm, 'value', {get: function () {return '34'}, set: v.stub = test.stub()});
+      TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = this.stub()});
       Dom._helpers.inputValue('foo');
 
       assert.same(elm.__koruOrigValue__, 'foo');

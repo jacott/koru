@@ -5,9 +5,8 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
-  const extend = util.extend;
-  const DOCUMENT_NODE = document.DOCUMENT_NODE;
-  const TEXT_NODE = document.TEXT_NODE;
+  const {mergeNoEnum} = util;
+  const {DOCUMENT_NODE, TEXT_NODE} = document;
 
   let currentEvent;
 
@@ -26,9 +25,16 @@ define(function(require, exports, module) {
         return addTemplates(Dom, module);
 
 
-      var tpl = addTemplates(Dom, blueprint);
+      const tpl = addTemplates(Dom, blueprint);
+      tpl.$module = module;
       koru.onunload(module, function () {
         (tpl.parent || Dom)[tpl.name] = null;
+        for (let name in tpl) {
+          const sub = tpl[name];
+          if (sub && sub.$module && sub instanceof DomTemplate) {
+            koru.unload(sub.$module.id);
+          }
+        }
       });
       return tpl;
     }
@@ -59,27 +65,25 @@ define(function(require, exports, module) {
     }
 
     $data(origin) {
-      var ctx = this.$ctx(origin);
+      const ctx = this.$ctx(origin);
       return ctx && ctx.data;
     }
 
     $autoRender(data, parentCtx) {
-      var tpl = this;
-      var elm = tpl.$render(data, parentCtx);
+      const elm = this.$render(data, parentCtx);
 
-      if (tpl._events.length > 0) {
-        if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE) throw new Error("attempt to attach events to document fragment: " + tpl.$fullname);
-        tpl.$attachEvents(elm);
-        Dom.getCtx(elm).onDestroy(function () {
-          tpl.$detachEvents(elm);
-        });
+      if (this._events.length > 0) {
+        if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE)
+          throw new Error("attempt to attach events to document fragment: " + this.$fullname);
+        this.$attachEvents(elm);
+        Dom.getCtx(elm).onDestroy(() => this.$detachEvents(elm));
       }
       return elm;
     }
 
     $render(data, parentCtx) {
       ensureHelper(this);
-      var prevCtx = Ctx._currentCtx;
+      const prevCtx = Ctx._currentCtx;
       Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       try {
         var frag = document.createDocumentFragment();
@@ -111,7 +115,7 @@ define(function(require, exports, module) {
 
     $helpers(properties) {
       ensureHelper(this);
-      extend(this._helpers, properties);
+      mergeNoEnum(this._helpers, properties);
       return this;
     }
 
@@ -122,23 +126,23 @@ define(function(require, exports, module) {
     }
 
     $event(key, func) {
-      var m = /^(\S+)(.*)/.exec(key);
+      const m = /^(\S+)(.*)/.exec(key);
       if (! m) throw new Error("invalid event spec: " + key);
       this._events.push([m[1], m[2].trim(), func]);
       return this;
     }
 
     $findEvent(type, css) {
-      var events = this._events;
+      const events = this._events;
       for(var i = 0; i < events.length; ++i) {
-        var row = events[i];
+        const row = events[i];
         if (row[0] === type && row[1] === css)
           return row;
       }
     }
 
     $actions(actions) {
-      var events = {};
+      const events = {};
       for(var key in actions) {
         events['click [name='+key+']'] = actions[key];
       }
@@ -146,7 +150,7 @@ define(function(require, exports, module) {
     }
 
     $extend(properties) {
-      return extend(this, properties);
+      return mergeNoEnum(this, properties);
     }
 
     $attachEvents(parent, selector) {
@@ -184,13 +188,13 @@ define(function(require, exports, module) {
   }
 
   function nativeOn(parent, eventType, selector, func) {
-    var events = parent._koru.__events;
+    let events = parent._koru.__events;
 
     if (! events) {
       events = parent._koru.__events = {};
     }
 
-    var eventTypes = events[eventType];
+    let eventTypes = events[eventType];
 
     if (! eventTypes) {
       eventTypes = events[eventType] = {};
@@ -204,16 +208,16 @@ define(function(require, exports, module) {
   }
 
   function onEvent(event) {
-    var prevEvent = currentEvent;
-    var prevCtx = Ctx._currentCtx;
+    const prevEvent = currentEvent;
+    const prevCtx = Ctx._currentCtx;
     currentEvent = event;
     Ctx._currentCtx = event.currentTarget._koru;
-    var eventTypes = Ctx._currentCtx.__events[event.type];
-    var matches = Dom._matchesFunc;
+    const eventTypes = Ctx._currentCtx.__events[event.type];
+    const matches = Dom._matchesFunc;
 
-    var later = Object.create(null);
+    const later = Object.create(null);
     later.x = true; delete later.x; // force dictionary
-    var elm = event.target;
+    let elm = event.target;
 
     try {
       for(var key in eventTypes) {
@@ -265,10 +269,10 @@ define(function(require, exports, module) {
   }
 
   function nativeOff(parent, eventType, selector, func) {
-    var events = parent._koru && parent._koru.__events;
+    const events = parent._koru && parent._koru.__events;
 
     if (events) {
-      var eventTypes = events[eventType];
+      const eventTypes = events[eventType];
       events[eventType] = null;
       if (eventType === 'focus' || eventType === 'blur')
         parent.removeEventListener(eventType, onEvent, true);
@@ -283,18 +287,18 @@ define(function(require, exports, module) {
     if (selector) {
       selector = selector+' ';
       for(var i = 0; i < events.length; ++i) {
-        var row = events[i];
+        const row = events[i];
         func(parent, row[0],  selector+row[1], row[row.length -1]);
       }
     } else for(var i = 0; i < events.length; ++i) {
-      var row = events[i];
+      const row = events[i];
       func(parent, row[0], row[1], row[row.length -1]);
     }
   }
 
   function addNodes(parent, nodes) {
     for ( var i = 0; i < nodes.length; ++i ) {
-      var node = nodes[i];
+      const node = nodes[i];
 
       if (typeof node === 'string') {
         var elm = document.createTextNode(node);
@@ -338,12 +342,12 @@ define(function(require, exports, module) {
   }
 
   function lookupTemplate(tpl, name) {
-      var m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
+    const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
-      if (m)
-        return fetchTemplate(tpl, m[1], m[2].split("."));
+    if (m)
+      return fetchTemplate(tpl, m[1], m[2].split("."));
 
-      return fetchTemplate(tpl, name);
+    return fetchTemplate(tpl, name);
   }
 
   function fetchTemplate(template, name, rest) {
@@ -384,7 +388,7 @@ define(function(require, exports, module) {
 
   function setAttrs(elm, attrs) {
     if (attrs) for(var j=0; j < attrs.length; ++j) {
-      var attr = attrs[j];
+      const attr = attrs[j];
 
       if (typeof attr === 'string') {
         elm.setAttribute(attr, '');
