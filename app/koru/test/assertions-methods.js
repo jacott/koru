@@ -59,12 +59,23 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   });
 
   ga.add('near', {
-    assert (actual, expected, delta) {
-      delta = this.delta = delta || 1;
-      return withinDelta(actual, expected, delta);
+    assert (actual, expected, delta=1) {
+      this.delta = delta;
+      if (typeof expected === 'object') {
+        for (let key in expected) {
+          if (! withinDelta(actual[key], expected[key], delta)) {
+            this.va = actual[key]; this.ve = `${expected[key]} at key ${key}`;
+            return false;
+          }
+        }
+        return true;
+      } else {
+        this.va = actual; this.ve = expected;
+        return withinDelta(actual, expected, delta);
+      }
     },
 
-    message: "{0} to be near {1} by delta {$delta}"
+    message: "{$va} to be near {$ve} by delta {$delta}"
   });
 
   ga.add('between', {
