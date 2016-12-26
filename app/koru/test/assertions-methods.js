@@ -61,7 +61,31 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   ga.add('near', {
     assert (actual, expected, delta=1) {
       this.delta = delta;
-      if (typeof expected === 'object') {
+      switch(typeof expected) {
+      case 'string':
+        const expParts = expected.split(/([\d.]+)/);
+        const actParts = actual.split(/([\d.]+)/);
+        for(let i = 0; i < expParts.length; ++i) {
+          const e = expParts[i], a = actParts[i];
+          if (i%2) {
+            const [w,f] = e.split('.');
+            delta = 1/Math.pow(10, f.length);
+            if (! withinDelta(+a, +e, delta)) {
+              this.delta = delta;
+              this.va = a; this.ve = `${e} at ${expParts[i-1]}`;
+              return false;
+            }
+          } else {
+            if (e !== a) {
+              this.va = actual; this.ve = expected;
+              this.delta = "n/a";
+              return false;
+            }
+          }
+        }
+        return true;
+
+      case 'object':
         for (let key in expected) {
           if (! withinDelta(actual[key], expected[key], delta)) {
             this.va = actual[key]; this.ve = `${expected[key]} at key ${key}`;
@@ -69,7 +93,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           }
         }
         return true;
-      } else {
+      default:
         this.va = actual; this.ve = expected;
         return withinDelta(actual, expected, delta);
       }
