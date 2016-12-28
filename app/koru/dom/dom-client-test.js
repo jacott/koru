@@ -1,14 +1,14 @@
 define(function (require, exports, module) {
   // Adorn koru/dom/base with extra client only utilities
-  var test, v;
-  const Dom = require('koru/dom');
   const Ctx = require('koru/dom/ctx');
   const TH  = require('koru/test-helper');
   const api = require('koru/test/api');
 
+  const Dom = require('koru/dom');
+  var v;
+
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       api.module(module.get('koru/dom'));
     },
@@ -26,10 +26,11 @@ define(function (require, exports, module) {
        * Determine if a element is within the viewable area of a
        * `region`.
        *
-       * @param {koru/dom/html-doc::Element|object} region either a Dom `Element` or a `boundingClientRect`
+       * @param {koru/dom/html-doc::Element|object} region either a
+       * Dom `Element` or a `boundingClientRect`
        **/
       api.method('isInView');
-      var x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
+      const x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
                      div: "x"});
       document.body.appendChild(x);
 
@@ -38,7 +39,7 @@ define(function (require, exports, module) {
       assert(Dom.isInView(x, document.body));
 
       x.style.bottom = '-17px';
-      var rect = {top: 0, bottom: 50, left: 0, right: 40};
+      const rect = {top: 0, bottom: 50, left: 0, right: 40};
       refute(Dom.isInView(x, rect));
       rect.bottom = 2000;
       assert(Dom.isInView(x, rect));
@@ -82,7 +83,8 @@ define(function (require, exports, module) {
     },
 
     "test html string"() {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+                           '<button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
 
@@ -96,14 +98,14 @@ define(function (require, exports, module) {
 
       assert.same(Dom.h(elm), elm);
 
-      var nested = Dom.h({div: [Dom.html('<div>hello</div>'), elm]});
+      const nested = Dom.h({div: [Dom.html('<div>hello</div>'), elm]});
       assert.same(nested.firstChild.nextSibling, elm);
       assert.same(nested.firstChild.textContent, 'hello');
     },
 
     "test childElementIndex"() {
-      var elm = Dom.h({});
-      var child;
+      const elm = Dom.h({});
+      let child;
       elm.appendChild(child = document.createElement('b'));
       assert.same(Dom.childElementIndex(child), 0);
 
@@ -117,10 +119,10 @@ define(function (require, exports, module) {
     },
 
     "test mapToData"() {
-      var elm = Dom.h({});
+      const elm = Dom.h({});
 
       'one two three'.split(' ').forEach(function (data) {
-        var child = Dom.h({});
+        const child = Dom.h({});
         Dom.setCtx(child, {data: data});
         elm.appendChild(child);
       });
@@ -129,7 +131,7 @@ define(function (require, exports, module) {
     },
 
     "test setClassBySuffix"() {
-      var elm = {className: ''};
+      const elm = {className: ''};
 
       Dom.setClassBySuffix('use', 'Mode', elm);
       assert.same(elm.className, 'useMode');
@@ -157,7 +159,7 @@ define(function (require, exports, module) {
     },
 
     "test setClassByPrefix"() {
-      var elm = {className: ''};
+      const elm = {className: ''};
 
       Dom.setClassByPrefix('use', 'mode-', elm);
       assert.same(elm.className, 'mode-use');
@@ -183,7 +185,9 @@ define(function (require, exports, module) {
     },
 
     "test getUpDownByClass"() {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div><div class="dest"></div></div></div>');
+      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+                           '<button type="button" id="sp">Hello</button></div>'+
+                           '<div class="dest"></div></div></div>');
 
       assert.dom(elm, function () {
         assert.dom('#sp', function () {
@@ -193,7 +197,8 @@ define(function (require, exports, module) {
     },
 
     "test searchUpFor"() {
-      var top = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+      const top = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+                           '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.isNull(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
         return elm === top;
@@ -210,24 +215,27 @@ define(function (require, exports, module) {
 
     "test INPUT_SELECTOR, WIDGET_SELECTOR"() {
       assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
-      assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"],button,a');
+      assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,'+
+                  '[contenteditable="true"],button,a');
     },
 
     "test $getClosest"() {
-      document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar"><button type="button" id="sp"></button></div></div></div>'));
+      document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar">'+
+                                         '<button type="button" id="sp"></button>'+
+                                         '</div></div></div>'));
 
-      var button = document.getElementById('sp');
+      const button = document.getElementById('sp');
 
-      var foobar = document.querySelector('.foo>.bar');
+      const foobar = document.querySelector('.foo>.bar');
 
-      test.stub(Dom, 'getCtx').withArgs(foobar).returns('the ctx');
+      this.stub(Dom, 'getCtx').withArgs(foobar).returns('the ctx');
 
       assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
     },
 
     "test animationEndEventName"() {
-      var name = Dom.animationEndEventName;
+      const name = Dom.animationEndEventName;
 
       assert.match(name, /^(ms|webkit)?animationend$/i);
 
@@ -240,7 +248,7 @@ define(function (require, exports, module) {
 
     "hideAndRemove": {
       setUp() {
-        v.onAnimationEnd = test.stub(Dom.Ctx.prototype, 'onAnimationEnd');
+        v.onAnimationEnd = this.stub(Dom.Ctx.prototype, 'onAnimationEnd');
       },
 
       "test non existent"() {
@@ -271,7 +279,7 @@ define(function (require, exports, module) {
 
         Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
 
-        test.spy(v.ctx, 'onDestroy');
+        this.spy(v.ctx, 'onDestroy');
 
         Dom.hideAndRemove(v.elm);
 
@@ -286,13 +294,13 @@ define(function (require, exports, module) {
     },
 
     "test forEach"() {
-      var elm = Dom.html('<div></div>');
+      const elm = Dom.html('<div></div>');
       document.body.appendChild(elm);
       for(var i = 0; i < 5; ++i) {
         elm.appendChild(Dom.html('<div class="foo">'+i+'</div>'));
       }
 
-      var results = [];
+      let results = [];
       Dom.forEach(elm, '.foo', function (e) {
         results.push(e.textContent);
       });
@@ -308,10 +316,10 @@ define(function (require, exports, module) {
     },
 
     "test removeAll"() {
-      test.stub(Dom, 'remove');
+      this.stub(Dom, 'remove');
 
-      var r1 = Dom.remove.withArgs(1);
-      var r2 = Dom.remove.withArgs(2);
+      const r1 = Dom.remove.withArgs(1);
+      const r2 = Dom.remove.withArgs(2);
 
       Dom.removeAll([1, 2]);
 
@@ -320,7 +328,8 @@ define(function (require, exports, module) {
     },
 
     "test contains"() {
-      var elm = Dom.html('<div id="top"><div class="foo"><div class="bar"><button type="button" id="sp">Hello</button></div></div></div>');
+      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+                           '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
       assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
@@ -328,8 +337,8 @@ define(function (require, exports, module) {
     },
 
     "test removeInserts"() {
-      var parent = document.createElement('div');
-      var elm = document.createComment('start');
+      const parent = document.createElement('div');
+      const elm = document.createComment('start');
       elm._koruEnd = document.createComment('end');
 
       assert.same(Dom.fragEnd(elm), elm._koruEnd);
@@ -341,7 +350,7 @@ define(function (require, exports, module) {
       parent.appendChild(elm._koruEnd);
       parent.appendChild(document.createElement('i'));
 
-      test.spy(Dom, 'destroyChildren');
+      this.spy(Dom, 'destroyChildren');
 
       Dom.removeInserts(elm);
 
@@ -393,6 +402,40 @@ define(function (require, exports, module) {
       assert(Dom.modifierKey({shiftKey: true}));
       assert(Dom.modifierKey({metaKey: true}));
       assert(Dom.modifierKey({altKey: true}));
+    },
+
+
+    "inputValue helper": {
+      "test restore"() {
+        const elm = Ctx._private.currentElement = {};
+        TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = this.stub()});
+        Dom.restoreOriginalValue(elm);
+        refute.called(v.stub);
+
+        Dom._helpers.inputValue('foo');
+
+        assert.same(Dom.originalValue(elm), 'foo');
+
+        assert.calledWith(v.stub, 'foo');
+
+        Dom._helpers.inputValue();
+
+        assert.calledWith(v.stub, '');
+
+        v.stub.reset();
+        Dom._helpers.inputValue(34);
+
+        refute.called(v.stub);
+
+        assert.same(Dom.originalValue(elm), 34);
+
+        Dom.setOriginalValue(elm, 'bar');
+        assert.same(Dom.originalValue(elm), 'bar');
+        v.stub.reset();
+        Dom.restoreOriginalValue(elm);
+        assert.calledWith(v.stub, 'bar');
+
+      },
     },
   });
 });

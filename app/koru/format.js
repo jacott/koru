@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var util = require('./util');
+  const util = require('./util');
 
   format.compile = compile;
   format.escape = escape;
@@ -8,25 +8,27 @@ define(function(require, exports, module) {
     if (typeof fmt === 'string')
       fmt = compile(fmt);
 
-    var i = 1,
-        result ='',
-        len = fmt.length,
-        last = arguments[arguments.length -1],
-        lit =fmt[0];
+    let i = 1, result ='';
+
+    const len = fmt.length;
+    let last = arguments[arguments.length -1],
+        lit = fmt[0];
 
     if (last === fmt || ! last || typeof last !== 'object')
       last = this;
 
-    for(var i =0, lit = fmt[0];
+    for(let i =0, lit = fmt[0];
         i < len;
         lit = fmt[++i]) {
 
-      var spec = fmt[++i],
-          argIndex = spec && +spec.substring(1);
-
       result += lit;
 
+      let spec = fmt[++i];
       if (spec === undefined) return result;
+
+
+      let argIndex = spec && +spec.substring(1);
+
 
       if (argIndex != null && argIndex === argIndex) {
         var arg = arguments[argIndex+1];
@@ -42,6 +44,9 @@ define(function(require, exports, module) {
         try {result += util.inspect(arg);}
         catch(ex) {result += arg;}
         break;
+      case 'f':
+        result += precision(fmt[++i], arg);
+        break;
       default:
         if (arg != null)
           result += arg;
@@ -51,9 +56,34 @@ define(function(require, exports, module) {
     return result;
   }
 
+  const zeros = '00000000000000000000';
+
+  function precision(format, value) {
+    if (! value && value !== 0) return '';
+    const [padding, dpfmt] = format.split('.');
+
+    const dpPad = dpfmt.slice(-1) !== 'z';
+    const dpLen = +(dpPad ? dpfmt : dpfmt.slice(0, -1));
+
+    const precision = Math.pow(10, +dpLen);
+    const absVal = Math.abs(value);
+    let sig = Math.floor(absVal);
+    let dp = ''+Math.round((absVal - sig)*precision);
+
+    if (dp.length > dpLen) {
+      sig = Math.round(absVal);
+      dp = dp.slice(1);
+    }
+
+    if (dpPad)
+      return `${sig*Math.sign(value)}.${dp}${zeros.slice(0,dpLen-dp.length)}`;
+
+    return `${sig*Math.sign(value)}.${dp}`.replace(/\.?0*$/, '');
+  }
+
   function nested(key, values) {
     key = key.split('.');
-    for(var i=0;values && i < key.length;++i) {
+    for(let i=0;values && i < key.length;++i) {
       values = values[key[i]];
     }
 
@@ -61,17 +91,18 @@ define(function(require, exports, module) {
   }
 
   function compile(fmt) {
-    var parts = fmt.split('{'),
-        len = parts.length,
-        result = [parts[0]],
-        reg = /^([ei])?([0-9]+|\$[\w.]+)}([\s\S]*)$/;
+    const parts = fmt.split('{'),
+          len = parts.length,
+          result = [parts[0]],
+          reg = /^([eif])?([0-9]+|\$[\w.]+)(?:,([0-9]*\.[0-9]+z?))?}([\s\S]*)$/;
 
-    for(var i=1,item;i < len;++i) {
-      item = parts[i];
-      var m = reg.exec(item);
+    for(let i = 1;i < len;++i) {
+      let item = parts[i];
+      let m = reg.exec(item);
       if (m) {
         result.push((m[1] || 's') + m[2]);
-        result.push(m[3]);
+        if (m[3]) result.push(m[3]);
+        result.push(m[4]);
       } else if (item.substring(0,1) === '}') {
         result[result.length-1] = result[result.length-1] + '{' + item.substring(1);
       } else if (item) {
@@ -87,7 +118,7 @@ define(function(require, exports, module) {
     return str != null ? str.toString().replace(/[<>"'`&]/g, escaped) : '';
   }
 
-  var escapes = {
+  const escapes = {
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",

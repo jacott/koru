@@ -68,7 +68,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {
-            const [w,f] = e.split('.');
+            const [,f=''] = e.split('.');
             delta = 1/Math.pow(10, f.length);
             if (! withinDelta(+a, +e, delta)) {
               this.delta = delta;

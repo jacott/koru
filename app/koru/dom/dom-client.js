@@ -5,26 +5,29 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
-  var vendorTransform;
-  var vendorStylePrefix = (function () {
-    var style = document.documentElement.style;
-    var styles = ['Moz', 'ms',  'webkit', 'o', ''];
+  let vendorTransform;
+  const vendorStylePrefix = (function () {
+    const style = document.documentElement.style;
+    const styles = ['Moz', 'ms',  'webkit', 'o', ''];
     for(var i = 0; i < styles.length; ++i) {
       if (styles[i]+'Transform' in style) break;
     }
-    vendorTransform = ('transform' in style) || ! vendorStylePrefix ? 'transform' : vendorStylePrefix + 'Transform';
+    vendorTransform = ('transform' in style) || ! vendorStylePrefix ? 'transform'
+      : vendorStylePrefix + 'Transform';
     return styles[i];
   })();
 
-  var vendorFuncPrefix = vendorStylePrefix.toLowerCase();
+  const vendorFuncPrefix = vendorStylePrefix.toLowerCase();
 
-  var matches = document.documentElement[vendorFuncPrefix+'MatchesSelector'] || document.documentElement.matchesSelector;
+  const matches = document.documentElement[vendorFuncPrefix+'MatchesSelector'] ||
+        document.documentElement.matchesSelector;
 
-  var DOCUMENT_NODE = document.DOCUMENT_NODE;
+  const {DOCUMENT_NODE} = document;
+  const origValueSym = Symbol();
 
   if (! document.documentElement.closest) {
     Element.prototype.closest = function (selector) {
-      var elm = this;
+      let elm = this;
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
         if (matches.call(elm, selector))
           return elm;
@@ -71,9 +74,8 @@ define(function(require, exports, module) {
     clonePosition(from, to, offsetParent, where) {
       where = where || 'tl';
 
-      var bbox = this.offsetPosition(from, offsetParent || to.offsetParent);
-
-      var style = to.style;
+      const bbox = this.offsetPosition(from, offsetParent || to.offsetParent);
+      const style = to.style;
 
       if (where[0] === 't')
         style.top  = bbox.top+'px';
@@ -89,14 +91,14 @@ define(function(require, exports, module) {
     },
 
     offsetPosition(from, offsetParent) {
-      if ('nodeType' in from) {
+      if (from.nodeType) {
         offsetParent = offsetParent || from.offsetParent;
         var bbox = from.getBoundingClientRect();
       } else {
         var bbox = from;
       }
 
-      var offset = offsetParent.getBoundingClientRect();
+      const offset = offsetParent.getBoundingClientRect();
 
       return {
         top: bbox.top - offset.top - offsetParent.scrollTop,
@@ -111,9 +113,9 @@ define(function(require, exports, module) {
     isInView(elm, region) {
       if ('getBoundingClientRect' in region)
         region = region.getBoundingClientRect();
-      var bb = elm.getBoundingClientRect();
-      var cx = (bb.left+bb.width/2);
-      var cy = (bb.top+bb.height/2);
+      const bb = elm.getBoundingClientRect();
+      const cx = (bb.left+bb.width/2);
+      const cy = (bb.top+bb.height/2);
 
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
@@ -121,7 +123,8 @@ define(function(require, exports, module) {
     setClassBySuffix(name, suffix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;
-      var classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '').replace(/(^ | $)/g,'');
+      var classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')
+            .replace(/(^ | $)/g,'');
 
       if (name)
         elm.className = (classes.length ? classes + ' ' : '') + name + suffix;
@@ -133,7 +136,8 @@ define(function(require, exports, module) {
       elm = elm || Dom.element;
       if (!elm) return;
 
-      var classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '').replace(/(^ | $)/g,'');
+      var classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '')
+            .replace(/(^ | $)/g,'');
 
       if (name)
         elm.className = (classes.length ? classes + ' ' : '') + prefix + name;
@@ -298,7 +302,8 @@ define(function(require, exports, module) {
     },
 
     transformTranslate(elm , x, y) {
-      elm.style[vendorTransform] = elm.style[vendorTransform].replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
+      elm.style[vendorTransform] = elm.style[vendorTransform]
+        .replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
     },
 
     buildEvent: buildEvent,
@@ -346,9 +351,16 @@ define(function(require, exports, module) {
 
     _helpers: {
       inputValue(value) {
-        Dom.current.element.__koruOrigValue__ = value;
+        Dom.setOriginalValue(Dom.current.element, value);
         Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
+    },
+
+    originalValue(elm) {return elm[origValueSym]},
+    setOriginalValue(elm, value) {elm[origValueSym] = value},
+    restoreOriginalValue(elm) {
+      if (elm.hasOwnProperty(origValueSym))
+        elm.value = elm[origValueSym];
     },
 
     registerHelpers(helpers) {
@@ -665,7 +677,8 @@ define(function(require, exports, module) {
         e.target.dispatchEvent( event );
       }
       function removePolyfill(e){
-        if(!e.c1Generated){ // focus after focusin, so chrome will the first time trigger tow times focusin
+        if(!e.c1Generated){
+          // focus after focusin, so chrome will the first time trigger tow times focusin
           d.removeEventListener('focus'    ,addPolyfill    ,true);
           d.removeEventListener('blur'     ,addPolyfill    ,true);
           d.removeEventListener('focusin'  ,removePolyfill ,true);

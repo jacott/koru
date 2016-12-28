@@ -940,24 +940,5 @@ isClient && define(function (require, exports, module) {
       assert.same(Sub.fuz(), "fuz");
       assert.dom(Sub.$render({name: 'susan'}), 'SUSAN');
     },
-
-    "test inputValue helper"() {
-      var elm = Ctx._private.currentElement = {};
-      TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = this.stub()});
-      Dom._helpers.inputValue('foo');
-
-      assert.same(elm.__koruOrigValue__, 'foo');
-
-      assert.calledWith(v.stub, 'foo');
-
-      Dom._helpers.inputValue();
-
-      assert.calledWith(v.stub, '');
-
-      v.stub.reset();
-      Dom._helpers.inputValue(34);
-
-      refute.called(v.stub);
-    },
  });
 });
