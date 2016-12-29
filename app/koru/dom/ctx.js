@@ -116,7 +116,7 @@ define(function(require, exports, module) {
         return ctx && ctx.data;
       }
 
-      return currentCtx.data;
+      return currentCtx && currentCtx.data;
     },
 
     get template() {return currentCtx.template},
