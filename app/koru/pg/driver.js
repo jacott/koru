@@ -31,6 +31,8 @@ define(function(require, exports, module) {
   return {
     isPG: true,
 
+    aryToSqlStr,
+
     get defaultDb() {
       if (! defaultDb) {
         defaultDb = new Client(module.config().url, 'default');

@@ -114,9 +114,9 @@ isServer && define(function (require, exports, module) {
 
     "test aryToSqlStr"() {
       v.foo = pg.defaultDb.table('Foo');
-      assert.same(v.foo.aryToSqlStr, pg.defaultDb.aryToSqlStr);
+      assert.same(v.foo.aryToSqlStr, pg.aryToSqlStr);
 
-      assert.equals(v.foo.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
+      assert.equals(pg.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
     "test insert suffix"() {
