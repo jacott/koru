@@ -123,6 +123,10 @@ define(function(require, exports, module) {
 
       function errorLoading(err) {
         ++errorCount;
+        if (err.module) {
+          koru.error(`Error loading dependancies:
+${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
+        }
         endRun();
       }
     },
