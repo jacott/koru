@@ -195,14 +195,14 @@ define(function(require, exports, module) {
     return doc && doc.attributes;
   }
 
-  function save(doc) {
+  function save(doc, callback=koru.globalCallback) {
     var _id = doc.attributes._id;
 
     if(_id == null) {
       _id = (doc.changes && doc.changes._id) || Random.id();
       session.rpc("save", doc.constructor.modelName, _id,
                   doc.changes,
-                  koru.globalCallback);
+                  callback);
       doc.attributes._id = _id;
     } else for(var noop in doc.changes) {
       // only call if at least one change
@@ -210,7 +210,7 @@ define(function(require, exports, module) {
       doc.changes = {}; // reset changes here for callbacks
       session.rpc("save", doc.constructor.modelName, doc._id,
                   changes,
-                  koru.globalCallback);
+                  callback);
       break;
     }
     doc.$reload();

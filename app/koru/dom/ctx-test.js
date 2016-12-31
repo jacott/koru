@@ -32,7 +32,8 @@ isClient && define(function (require, exports, module) {
 
     "Ctx.current": {
       "test no currentCtx data"() {
-        assert.same(Ctx.current.data(null), undefined);
+        Ctx._currentCtx = undefined;
+        assert.equals(Ctx.current.data(null), undefined);
       },
 
       "test data"() {

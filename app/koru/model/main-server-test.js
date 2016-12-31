@@ -224,6 +224,14 @@ define(function (require, exports, module) {
       refute.called(removeSpy);
     },
 
+    "test $save with callback"() {
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const doc = TestModel.build({name: 'foo'});
+      doc.$save({callback: v.callback = this.stub()});
+
+      assert.calledWith(v.callback, doc);
+    },
+
     "test saveRpc new"() {
       var TestModel = Model.define('TestModel', {
         authorize: v.auth = test.stub()

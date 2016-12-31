@@ -106,7 +106,7 @@ define(function(require, exports, module) {
         return this;
       };
 
-      ModelEnv.save = function (doc) {
+      ModelEnv.save = function (doc, callback) {
         if (util.isObjEmpty(doc.changes)) return doc;
         var model = doc.constructor;
         var _id = doc._id;
@@ -130,6 +130,7 @@ define(function(require, exports, module) {
           // This a bit of a hack; should we bother?
           util.applyChanges(doc.attributes, copy);
         }
+        if (callback) callback(doc);
       };
 
       ModelEnv.put = function (doc, updates) {

@@ -45,6 +45,15 @@ define(function (require, exports, module) {
 
     },
 
+    "test $save with callback"() {
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const save = this.stub(session, 'rpc').withArgs('save');
+      const doc = TestModel.build({name: 'foo'});
+      doc.$save({callback: v.callback = this.stub()});
+
+      assert.calledWith(save, 'save', 'TestModel', TH.match.id, {name: 'foo'}, v.callback);
+    },
+
     "test transaction"() {
       var TestModel = Model.define('TestModel');
       var stub = test.stub().returns('result');

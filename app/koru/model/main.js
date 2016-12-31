@@ -268,6 +268,8 @@ define(function(require, exports, module) {
 
     $save(force) {
       var doc = this;
+      var callback = force && force.callback;
+
       switch(force) {
       case 'assert': doc.$assertValid(); break;
       case 'force': break;
@@ -275,7 +277,7 @@ define(function(require, exports, module) {
         if (! doc.$isValid())
           return false;
       }
-      ModelEnv.save(doc);
+      ModelEnv.save(doc, callback);
 
       return doc;
     }
