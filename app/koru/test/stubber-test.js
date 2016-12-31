@@ -102,6 +102,27 @@ define(function (require, exports, module) {
       assert.same(v.result, 0);
     },
 
+    "test prototype function"() {
+      class Foo {
+        bar() {}
+      }
+
+      class Bar extends Foo {
+      }
+
+      const spy = this.spy(Bar.prototype, 'bar');
+
+      assert(Bar.prototype.hasOwnProperty('bar'));
+
+      new Bar().bar();
+
+      assert.called(spy);
+
+      spy.restore();
+
+      refute(Bar.prototype.hasOwnProperty('bar'));
+    },
+
     "test spy"() {
       var obj = {foo(a,b,c) {
         v.thisValue = this;

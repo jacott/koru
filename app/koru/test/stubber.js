@@ -354,7 +354,12 @@ define(function(require, exports, module) {
   };
 
   function restore(object, property, desc, orig, func) {
-    object && Object.defineProperty(object, property, desc || {value: orig, configurable: true});
+    if (object) {
+      if (desc)
+        Object.defineProperty(object, property, desc);
+      else
+        delete object[property];
+    }
     delete allListeners[func._stubId];
   }
 
