@@ -327,7 +327,7 @@ define(function(require, exports, module) {
             }
           }
         } else {
-          for(const key in item) {
+          for(let key in item) {
             let list = item[key];
             if (Array.isArray(list))
               output[key] = convertPermitSpec(list);
