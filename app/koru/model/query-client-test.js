@@ -1,5 +1,4 @@
 define(function (require, exports, module) {
-  var test, v;
   const session              = require('../session');
   const clientRpcBase        = require('../session/client-rpc-base');
   const sessionClientFactory = require('../session/main-client');
@@ -8,15 +7,17 @@ define(function (require, exports, module) {
   const dbBroker             = require('./db-broker');
   const Model                = require('./main');
   const Query                = require('./query');
-  const sut                  = require('./query-client');
   const TH                   = require('./test-helper');
+
+  const sut                  = require('./query-client');
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       dbBroker.setMainDbId('foo');
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
+      v.TestModel = Model.define('TestModel').defineFields({
+        name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     },
 
@@ -36,14 +37,15 @@ define(function (require, exports, module) {
       dbBroker.withDB('foo2', () => v.TestModel.create({name: 'foo', age: 3}));
 
       assert.equals(v.TestModel.query.withIndex(v.idx, {name: 'foo'}).fetchField('age'), [5]);
-      assert.equals(v.TestModel.query.withDB('foo2').withIndex(v.idx, {name: 'foo'}).fetchField('age'), [3]);
+      assert.equals(v.TestModel.query.withDB('foo2').withIndex(v.idx, {name: 'foo'})
+                    .fetchField('age'), [3]);
     },
 
     "test withDB"() {
       dbBroker.withDB('foo2', () => v.TestModel.create({age: 3}));
 
-      var ocDB = [];
-      test.onEnd(v.TestModel.onAnyChange((doc, was) => {
+      const ocDB = [];
+      this.onEnd(v.TestModel.onAnyChange((doc, was) => {
         ocDB.push(dbBroker.dbId, was);
       }).stop);
 
@@ -58,26 +60,22 @@ define(function (require, exports, module) {
     },
 
     "test empty Query"() {
-      var query = new Query();
+      const query = new Query();
       assert.same(query.count(), 0);
 
       assert.equals(query.fetch(), []);
     },
 
     "test where func"() {
-      assert.same(v.TestModel.query.where(function (doc) {
-        return doc.name !== 'foo';
-      }).count(), 0);
+      assert.same(v.TestModel.query.where(doc => doc.name !== 'foo').count(), 0);
 
-      assert.same(v.TestModel.query.where(function (doc) {
-        return doc.name === 'foo';
-      }).count(), 1);
+      assert.same(v.TestModel.query.where(doc => doc.name === 'foo').count(), 1);
     },
 
 
     "publishes from server should not call afterLocalChange": {
       setUp() {
-        v.TestModel.afterLocalChange(v.TestModel, v.stub = test.stub());
+        v.TestModel.afterLocalChange(v.TestModel, v.stub = this.stub());
       },
 
       "test insertFromServer"() {
@@ -121,23 +119,23 @@ define(function (require, exports, module) {
     },
 
     "test nested update after connection lost"() {
-      var _sessState = sessState.constructor();
-      var _session = sessionClientFactory(new (session.constructor)('foo'), _sessState);
-      _session.ws = {send: test.stub()};
+      const _sessState = sessState.constructor();
+      const _session = sessionClientFactory(new (session.constructor)('foo'), _sessState);
+      _session.ws = {send: this.stub()};
       clientRpcBase(_session);
-      _session.defineRpc('fooUpdate',function () {
+      _session.defineRpc('fooUpdate', function () {
         new _Query(v.TestModel).onId('foo2').update('nested.b', 3);
       });
 
-      var _QueryClient = sut.__init__(_session);
-      var _Query = Query.__init__(_QueryClient);
+      const _QueryClient = sut.__init__(_session);
+      const _Query = Query.__init__(_QueryClient);
       _sessState.connected(_session);
       _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
       _sessState.retry();
       _session.rpc('fooUpdate');
       _sessState.connected(_session);
       _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
-      var query = new _Query(v.TestModel).onId('foo2');
+      const query = new _Query(v.TestModel).onId('foo2');
       query.isFromServer = true;
       query.update({'nested.b': 3});
 
@@ -146,26 +144,28 @@ define(function (require, exports, module) {
     },
 
     "test insertFromServer doc already exists"() {
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
       Query.insertFromServer(v.TestModel, v.foo._id, {name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledOnce(v.onChange);
 
       assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
-      assert.equals(v.onChange.args(0, 1), {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+      assert.equals(v.onChange.args(0, 1), {
+        name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     },
 
     "test insertFromServer doc already exists and pending"() {
       sessState.incPending();
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
       Query.insertFromServer(v.TestModel, v.foo._id, {name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledOnce(v.onChange);
 
       assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
-      assert.equals(v.onChange.args(0, 1), {name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+      assert.equals(v.onChange.args(0, 1), {
+        name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
       refute.msg("Should update fromServer; not client")(Model._databases.foo.TestModel.simDocs);
@@ -201,13 +201,14 @@ define(function (require, exports, module) {
     },
 
     "test reconcile docs"() {
-      var stateOC = test.stub(sessState, 'onChange').returns(v.stateOb = {stop: test.stub()});
-      var syncOC = test.stub(sessState.pending, 'onChange').returns(v.syncOb = {stop: test.stub()});
+      const stateOC = this.stub(sessState, 'onChange').returns(v.stateOb = {stop: this.stub()});
+      const syncOC = this.stub(sessState.pending, 'onChange')
+              .returns(v.syncOb = {stop: this.stub()});
 
       function MockQuery() {}
       sut(MockQuery);
 
-      test.spy(MockQuery, 'revertSimChanges');
+      this.spy(MockQuery, 'revertSimChanges');
 
       assert.calledOnce(stateOC);
       assert.calledOnce(syncOC);
@@ -219,11 +220,11 @@ define(function (require, exports, module) {
 
       v.TestModel2 = Model.define('TestModel2').defineFields({moe: 'text'});
 
-      var moe =  MockQuery.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
+      const moe =  MockQuery.insertFromServer(v.TestModel2, 'moe1', {moe: 'Curly'});
 
       stateOC.yield(false);
 
-      var simDocs = Model._databases.foo.TestModel.simDocs;
+      const simDocs = Model._databases.foo.TestModel.simDocs;
 
       assert(simDocs);
 
@@ -231,11 +232,9 @@ define(function (require, exports, module) {
       assert.same(simDocs.foo2, 'new');
       assert.same(Model._databases.foo.TestModel2.simDocs.moe1, 'new');
 
-      var pending = true;
+      let pending = true;
 
-      test.stub(sessState, 'pendingCount', function () {
-        return pending;
-      });
+      this.stub(sessState, 'pendingCount', () => pending);
       stateOC.yield(true);
 
       refute.called(MockQuery.revertSimChanges);
@@ -257,7 +256,7 @@ define(function (require, exports, module) {
 
         assert.same(v.foo.name, 'bar');
 
-        var tmchanges = Model._databases.foo.TestModel.simDocs;
+        const tmchanges = Model._databases.foo.TestModel.simDocs;
 
         assert.equals(tmchanges[v.foo._id].name, 'foo');
 
@@ -269,7 +268,7 @@ define(function (require, exports, module) {
         assert.equals(tmchanges[v.foo._id].age, 5);
 
 
-        test.onEnd(v.TestModel.onChange(v.change = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
 
         sessState.decPending();
 
@@ -288,11 +287,12 @@ define(function (require, exports, module) {
 
         sessState.decPending();
 
-        assert.equals(v.foo.attributes, {_id: v.foo._id, age: 5, name: 'baz', nested: [{ary: ['m']}]});
+        assert.equals(v.foo.attributes, {
+          _id: v.foo._id, age: 5, name: 'baz', nested: [{ary: ['m']}]});
       },
 
       "test matching update"() {
-        test.onEnd(v.TestModel.onChange(v.change = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
 
         v.TestModel.query.update({age: 7, name: 'baz'});
         v.TestModel.serverQuery.onId(v.foo._id).update({age: 7, name: 'baz'});
@@ -309,7 +309,7 @@ define(function (require, exports, module) {
       "test nested structures"() {
         v.TestModel.query.update({"nested.0.arg.0": 'f'});
 
-        var tmchanges = Model._databases.foo.TestModel.simDocs;
+        const tmchanges = Model._databases.foo.TestModel.simDocs;
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['m']}]);
 
@@ -328,18 +328,18 @@ define(function (require, exports, module) {
       },
 
       "test client only add"() {
-        var bar = v.TestModel.create({name: 'bar'});
+        const bar = v.TestModel.create({name: 'bar'});
 
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         sessState.decPending();
 
         assert.calledWith(v.changed, null, TH.matchModel(bar));
       },
 
       "test matching add "() {
-        test.onEnd(v.TestModel.onChange(v.change = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
 
-        var bar = v.TestModel.create({name: 'baz', age: 7});
+        const bar = v.TestModel.create({name: 'baz', age: 7});
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, age: 7, name: 'baz'});
 
         sessState.decPending();
@@ -351,9 +351,9 @@ define(function (require, exports, module) {
       },
 
       "test add where server fields differ"() {
-        var bar = v.TestModel.create({name: 'bar', age: 5});
+        const bar = v.TestModel.create({name: 'bar', age: 5});
 
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
 
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, name: 'sam'});
 
@@ -369,7 +369,7 @@ define(function (require, exports, module) {
       },
 
       "test matching remove "() {
-        test.onEnd(v.TestModel.onChange(v.change = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
 
         v.TestModel.query.onId(v.foo._id).remove();
         v.TestModel.serverQuery.onId(v.foo._id).remove();
@@ -388,7 +388,7 @@ define(function (require, exports, module) {
 
         assert.same(v.TestModel.query.count(), 0);
 
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         sessState.decPending();
 
         assert.same(v.TestModel.query.count(), 1);
@@ -402,7 +402,7 @@ define(function (require, exports, module) {
       "test remote removed changed doc"() {
         v.TestModel.query.onId(v.foo._id).update({name: 'Mary'});
 
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
         refute.called(v.changed);
@@ -416,7 +416,7 @@ define(function (require, exports, module) {
       },
 
       "test remote removed non existant"() {
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         v.TestModel.onId('noDoc').fromServer().remove();
 
         refute.calledWith(v.changed, null, v.foo, true);
@@ -425,7 +425,7 @@ define(function (require, exports, module) {
       "test notification of different fields"() {
         v.TestModel.query.update({age: 7});
 
-        test.onEnd(v.TestModel.onChange(v.changed = test.stub()));
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
 
         v.TestModel.serverQuery.onId(v.foo._id).update({age: 9});
 

@@ -7,23 +7,23 @@ define(function(require, exports, module) {
 
   function Constructor(session) {
     return function(Query) {
-      var syncOb, stateOb;
+      let syncOb, stateOb;
 
       util.extend(Query, {
         revertSimChanges() {
-          var dbs = Model._databases[dbBroker.dbId];
+          const dbs = Model._databases[dbBroker.dbId];
           if (! dbs) return;
 
-          for (var modelName in dbs) {
-            var model = Model[modelName];
-            var modelDocs = model && model.docs;
+          for (let modelName in dbs) {
+            const model = Model[modelName];
+            const modelDocs = model && model.docs;
             if (! modelDocs) continue;
-            var docs = dbs[modelName].simDocs;
+            const docs = dbs[modelName].simDocs;
             if (! docs) continue;
             dbs[modelName].simDocs = Object.create(null);
-            for(var id in docs) {
-              var doc = modelDocs[id];
-              var fields = docs[id];
+            for(let id in docs) {
+              let doc = modelDocs[id];
+              const fields = docs[id];
               if (fields === 'new') {
                 if (id in modelDocs) {
                   delete modelDocs[id];
@@ -31,11 +31,11 @@ define(function(require, exports, module) {
                   notify(model, null, doc, true);
                 }
               } else {
-                var newDoc = ! doc;
+                const newDoc = ! doc;
                 if (newDoc)
-                  var doc  = modelDocs[id] = new model({_id: id});
+                  doc = modelDocs[id] = new model({_id: id});
                 util.applyChanges(doc.attributes, fields);
-                for (var noop in fields) {
+                for (let noop in fields) {
                   notify(model, doc, newDoc ? null : fields, true);
                   break;
                 }
@@ -45,7 +45,7 @@ define(function(require, exports, module) {
         },
 
         insert(doc) {
-          var model = doc.constructor;
+          const model = doc.constructor;
           if (session.state.pendingCount()) {
             simDocsFor(model)[doc._id] = 'new';
           }
@@ -56,11 +56,11 @@ define(function(require, exports, module) {
 
         insertFromServer(model, id, attrs) {
           if (session.state.pendingCount()) {
-            var changes = fromServer(model, id, attrs);
-            var doc = model.docs[id];
+            const changes = fromServer(model, id, attrs);
+            const doc = model.docs[id];
             if (doc && changes !== attrs) { // found existing
               util.applyChanges(doc.attributes, changes);
-              for(var noop in changes) {
+              for (let noop in changes) {
                 notify(model, doc, changes, true);
                 break;
               }
@@ -71,8 +71,8 @@ define(function(require, exports, module) {
           // otherwise new doc
           if (model.docs[id]) {
             // already exists; convert to update
-            var old = model.docs[id].attributes;
-            for(var key in old) {
+            const old = model.docs[id].attributes;
+            for (let key in old) {
               if (attrs.hasOwnProperty(key)) {
                 if (util.deepEqual(old[key], attrs[key]))
                   delete attrs[key];
@@ -84,7 +84,7 @@ define(function(require, exports, module) {
           } else {
             // insert doc
             attrs._id = id;
-            var doc = new model(attrs);
+            const doc = new model(attrs);
             model.docs[doc._id] = doc;
             notify(model, doc, null, true);
           }
@@ -103,7 +103,7 @@ define(function(require, exports, module) {
           return this._docs || (this._docs = this.model.docs);
         },
         withIndex(idx, params) {
-          var orig = dbBroker.dbId;
+          const orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
           this._index = idx(params) || {};
           dbBroker.dbId = orig;
@@ -111,7 +111,7 @@ define(function(require, exports, module) {
         },
 
         withDB(dbId) {
-          var orig = dbBroker.dbId;
+          const orig = dbBroker.dbId;
           dbBroker.dbId = dbId;
           this._dbId = dbId;
           this._docs = this.model.docs;
@@ -125,27 +125,20 @@ define(function(require, exports, module) {
         },
 
         fetch() {
-          var results = [];
-          this.forEach(function (doc) {
-            results.push(doc);
-          });
+          const results = [];
+          this.forEach(doc => {results.push(doc)});
           return results;
         },
 
         fetchIds() {
-          var results = [];
-          this.forEach(function (doc) {
-            results.push(doc._id);
-          });
+          const results = [];
+          this.forEach(doc => {results.push(doc._id)});
           return results;
         },
 
         fetchOne() {
-          var result;
-          this.forEach(function (doc) {
-            result = doc;
-            return true;
-          });
+          let result;
+          this.forEach(doc => (result = doc, true));
           return result;
         },
 
@@ -156,15 +149,13 @@ define(function(require, exports, module) {
 
         forEach(func) {
           if (this.singleId) {
-            var doc = this.findOne(this.singleId);
+            const doc = this.findOne(this.singleId);
             doc && func(doc);
           } else {
             if (this._sort) {
-              var results = [];
-              var compare = sortFunc(this._sort);
-              findMatching.call(this, function (doc) {
-                results.push(doc);
-              });
+              const results = [];
+              const compare = sortFunc(this._sort);
+              findMatching.call(this, doc => results.push(doc));
               results.sort(compare).some(func);
 
             } else findMatching.call(this, func);
@@ -172,21 +163,16 @@ define(function(require, exports, module) {
         },
 
         map(func) {
-          var results = [];
-          this.forEach(function (doc) {
-            results.push(func(doc));
-          });
+          const results = [];
+          this.forEach(doc => {results.push(func(doc))});
           return results;
         },
 
         count(max) {
-          var count = 0;
+          let count = 0;
           if (! this.model) return 0;
-          var docs = this.docs;
-          this.forEach(function (doc) {
-            ++count;
-            return count === max;
-          });
+          const docs = this.docs;
+          this.forEach(doc => ++count === max);
           return count;
         },
 
@@ -195,27 +181,26 @@ define(function(require, exports, module) {
         },
 
         findOne(id) {
-          var doc = this.docs[id];
+          const doc = this.docs[id];
           if (! doc) return;
-          var attrs = doc.attributes;
+          const attrs = doc.attributes;
 
           if (this._whereNots && foundIn(this._whereNots, false)) return;
 
           if (this._wheres && ! foundIn(this._wheres)) return;
 
-          if (this._whereFuncs && this._whereFuncs.some(function (func) {return ! func(doc)}))
+          if (this._whereFuncs && this._whereFuncs.some(func => ! func(doc)))
             return;
 
           if (this._whereSomes &&
-              ! this._whereSomes.some(function (ors) {
-                return ors.some(function (o) {return foundIn(o)});
-              })) return;
+              ! this._whereSomes.some(
+                ors => ors.some(o => foundIn(o)))) return;
 
           return doc;
 
           function foundIn(fields, affirm) {
             if (affirm === undefined) affirm = true;
-            for(var key in fields) {
+            for (let key in fields) {
               if (foundItem(attrs[key], fields[key]) !== affirm)
                 return ! affirm;
             }
@@ -225,11 +210,11 @@ define(function(require, exports, module) {
           function foundItem(value, expected) {
             if (typeof expected === 'object') {
               if (Array.isArray(expected)) {
-                var av = Array.isArray(value);
-                for(var i = 0; i < expected.length; ++i) {
-                  var exv = expected[i];
+                const av = Array.isArray(value);
+                for (let i = 0; i < expected.length; ++i) {
+                  const exv = expected[i];
                   if (av) {
-                    if (value.some(function (item) {return util.deepEqual(item, exv)}))
+                    if (value.some(item => util.deepEqual(item, exv)))
                       return true;
                   } else if (util.deepEqual(exv, value))
                     return true;
@@ -237,12 +222,10 @@ define(function(require, exports, module) {
                 return false;
               }
               if (Array.isArray(value))
-                return value.some(function (item) {return util.deepEqual(item, expected)});
+                return value.some(item => util.deepEqual(item, expected));
 
             } else if (Array.isArray(value)) {
-              return ! value.every(function (item) {
-                return ! util.deepEqual(item, expected);
-              });
+              return ! value.every(item => ! util.deepEqual(item, expected));
             }
 
             return util.deepEqual(expected, value);
@@ -250,14 +233,14 @@ define(function(require, exports, module) {
         },
 
         remove() {
-          var count = 0;
-          var self = this;
-          var model = self.model;
+          let count = 0;
+          const self = this;
+          const model = self.model;
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-            var docs = this.docs;
+            const docs = this.docs;
             if (session.state.pendingCount() && self.isFromServer) {
               if (fromServer(model, self.singleId, null) === null) {
-                var doc = docs[self.singleId];
+                const doc = docs[self.singleId];
                 delete docs[self.singleId];
                 doc && notify(model, null, doc, self.isFromServer);
               }
@@ -278,24 +261,24 @@ define(function(require, exports, module) {
 
         update(origChanges, value) {
           if (typeof origChanges === 'string') {
-            var changes = {};
+            const changes = {};
             changes[origChanges] = value;
             origChanges = changes;
           } else
             origChanges = origChanges || {};
 
-          var self = this;
-          var count = 0;
-          var model = self.model;
-          var docs = this.docs;
-          var items;
+          const self = this;
+          let count = 0;
+          const model = self.model;
+          const docs = this.docs;
+          let items;
           if (session.state.pendingCount() && self.isFromServer) {
-            var changes = fromServer(model, self.singleId, origChanges);
-            var doc = docs[self.singleId];
+            const changes = fromServer(model, self.singleId, origChanges);
+            const doc = docs[self.singleId];
             if (doc) {
               util.applyChanges(doc.attributes, changes);
               dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-                for(var noop in changes) {
+                for (let noop in changes) {
                   notify(model, doc, changes, self.isFromServer);
                   break;
                 }
@@ -304,23 +287,23 @@ define(function(require, exports, module) {
             return 1;
           }
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-            self.forEach(function (doc) {
-              var changes = util.deepCopy(origChanges);
+            self.forEach(doc => {
+              const changes = util.deepCopy(origChanges);
               ++count;
-              var attrs = doc.attributes;
+              const attrs = doc.attributes;
 
-              if (self._incs) for (var field in self._incs) {
+              if (self._incs) for (let field in self._incs) {
                 changes[field] = attrs[field] + self._incs[field];
               }
 
               session.state.pendingCount() && recordChange(model, attrs, changes);
               util.applyChanges(attrs, changes);
 
-              var itemCount = 0;
+              let itemCount = 0;
 
-              if (items = self._addItems) for(var field in items) {
-                var list = attrs[field] || (attrs[field] = []);
-                util.forEach(items[field], function (item) {
+              if (items = self._addItems) for (let field in items) {
+                const list = attrs[field] || (attrs[field] = []);
+                util.forEach(items[field], item => {
                   if (util.addItem(list, item) == null) {
                     session.state.pendingCount() && recordItemChange(model, attrs, field);
                     changes[field + ".$-" + ++itemCount] = item;
@@ -328,9 +311,10 @@ define(function(require, exports, module) {
                 });
               }
 
-              if (items = self._removeItems) for(var field in items) {
-                var match, list = attrs[field];
-                util.forEach(items[field], function (item) {
+              if (items = self._removeItems) for (let field in items) {
+                const list = attrs[field];
+                let match;
+                util.forEach(items[field], item => {
                   if (list && (match = util.removeItem(list, item)) !== undefined) {
                     session.state.pendingCount() && recordItemChange(model, attrs, field);
                     changes[field + ".$+" + ++itemCount] = match;
@@ -338,7 +322,7 @@ define(function(require, exports, module) {
                 });
               }
 
-              for(var key in changes) {
+              for (let key in changes) {
                 notify(model, doc, changes, self.isFromServer);
                 break;
               }
@@ -361,18 +345,18 @@ define(function(require, exports, module) {
         if (this._index) {
           findByIndex(this, this._index, func);
 
-        } else for(var id in this.docs) {
-          var doc = this.findOne(id);
+        } else for (let id in this.docs) {
+          const doc = this.findOne(id);
           if (doc && func(doc) === true)
             break;
         }
       }
 
       function findByIndex(query, idx, func) {
-        for(var key in idx) {
-          var value = idx[key];
+        for (let key in idx) {
+          const value = idx[key];
           if (typeof value === 'string') {
-            var doc = query.findOne(value);
+            const doc = query.findOne(value);
             if (doc && func(doc) === true)
               return true;
 
@@ -382,21 +366,21 @@ define(function(require, exports, module) {
       }
 
       function fromServer(model, id, changes) {
-        var modelName = model.modelName;
-        var docs = Model._getProp(model.dbId, modelName, 'simDocs');
+        const modelName = model.modelName;
+        const docs = Model._getProp(model.dbId, modelName, 'simDocs');
         if (! docs) return changes;
 
         if (! changes) {
           return docs[id] = 'new';
         }
-        var keys = docs[id];
+        const keys = docs[id];
         if (! keys) return changes;
         if (keys === 'new') {
           changes = util.deepCopy(changes);
           delete changes._id;
-          var nc = {};
-          var doc = model.docs[id];
-          if (doc) for (var key in doc.attributes) {
+          const nc = {};
+          const doc = model.docs[id];
+          if (doc) for (let key in doc.attributes) {
             if (key === '_id') continue;
             if (! changes.hasOwnProperty(key))
               nc[key] = undefined;
@@ -409,12 +393,12 @@ define(function(require, exports, module) {
           return changes;
         }
 
-        var nc = {};
+        const nc = {};
 
-        for (var key in changes) {
+        for (let key in changes) {
           if (key === '_id') continue;
-          var m = key.match(/^([^.]+)\./);
-          m = m ? m[1] : key;
+          const _m = key.match(/^([^.]+)\./);
+          const m = _m ? _m[1] : key;
 
           if (! keys.hasOwnProperty(m)) {
             nc[key] = changes[key];
@@ -426,18 +410,18 @@ define(function(require, exports, module) {
       }
 
       function recordChange(model, attrs, changes) {
-        var docs = simDocsFor(model);
-        var keys = docs[attrs._id] || (docs[attrs._id] = {});
+        const docs = simDocsFor(model);
+        const keys = docs[attrs._id] || (docs[attrs._id] = {});
         if (changes) {
-          for (var key in changes) {
-            var m = key.match(/^([^.]+)\./);
+          for (let key in changes) {
+            const m = key.match(/^([^.]+)\./);
             if (m) key=m[1];
             if (! keys.hasOwnProperty(key))
               keys[key] = util.deepCopy(attrs[key]);
           }
         } else {
           // remove
-          for (var key in attrs) {
+          for (let key in attrs) {
             if (! (key === '_id' || keys.hasOwnProperty(key)))
               keys[key] = util.deepCopy(attrs[key]);
           }
@@ -445,9 +429,9 @@ define(function(require, exports, module) {
       }
 
       function recordItemChange(model, attrs, key) {
-        var docs = simDocsFor(model);
-        var keys = docs[attrs._id] || (docs[attrs._id] = {});
-        var m = key.match(/^([^.]+)\./);
+        const docs = simDocsFor(model);
+        const keys = docs[attrs._id] || (docs[attrs._id] = {});
+        const m = key.match(/^([^.]+)\./);
         if (m) key=m[1];
         if (! keys.hasOwnProperty(key))
           keys[key] = util.deepCopy(attrs[key]);
@@ -462,21 +446,20 @@ define(function(require, exports, module) {
       function reset() {
         unload();
 
-        syncOb = session.state.pending.onChange(function (pending) {
-          pending || Query.revertSimChanges();
-        });
+        syncOb = session.state.pending.onChange(
+          pending => pending || Query.revertSimChanges());
 
-        stateOb = session.state.onChange(function (ready) {
+        stateOb = session.state.onChange(ready => {
           if (ready) return;
 
-          var dbs = Model._databases[dbBroker.dbId];
+          const dbs = Model._databases[dbBroker.dbId];
           if (! dbs) return;
-          for(var name in dbs) {
-            var model = Model[name];
+          for (let name in dbs) {
+            const model = Model[name];
             if (! model) continue;
-            var docs = model.docs;
-            var sd = dbs[name].simDocs = {};
-            for (var id in docs) {
+            const docs = model.docs;
+            const sd = dbs[name].simDocs = {};
+            for (let id in docs) {
               sd[id] = 'new';
             }
           }
@@ -489,9 +472,9 @@ define(function(require, exports, module) {
       }
 
       function sortFunc(params) {
-        return function (a, b) {
-          for(var key in params) {
-            var aVal = a[key]; var bVal = b[key];
+        return (a, b) => {
+          for (let key in params) {
+            const aVal = a[key]; const bVal = b[key];
             if (aVal !== bVal) return  (aVal < bVal) ? -params[key]  : params[key];
           }
           return 0;

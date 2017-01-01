@@ -1,13 +1,13 @@
 define(function (require, exports, module) {
-  var test, v;
   const util  = require('../util');
   const Model = require('./main');
-  const Query = require('./query');
   const TH    = require('./test-helper');
+
+  const Query = require('./query');
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', gender: 'text'});
 
@@ -64,14 +64,14 @@ define(function (require, exports, module) {
       },
 
       "test last"() {
-        var result = v.TestModel.query.whereNot('_id', '1')
+        const result = v.TestModel.query.whereNot('_id', '1')
               .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(result, ['2']);
       },
 
       "test only major"() {
-        var result = v.TestModel.query.whereNot('_id', '1')
+        const result = v.TestModel.query.whereNot('_id', '1')
               .withIndex(v.idx, {gender: 'm'}).fetchIds();
 
         assert.equals(result.sort(), ['2', '3']);
@@ -112,18 +112,14 @@ define(function (require, exports, module) {
     },
 
     "test forEach"() {
-      var results = [];
-      new Query(v.TestModel).forEach(function (doc) {
-        results.push(doc);
-      });
+      const results = [];
+      new Query(v.TestModel).forEach(doc => {results.push(doc)});
       assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
 
     'test fetchIds'() {
       v.TestModel.query.remove();
-      var exp_ids = [1,2,3].map(function (num) {
-        return v.TestModel.create({age: num})._id;
-      });
+      const exp_ids = [1,2,3].map(num => v.TestModel.create({age: num})._id);
 
       assert.equals(v.TestModel.query.fetchIds().sort(), exp_ids.slice(0).sort());
       assert.equals(v.TestModel.query.whereNot('age', 1).fetchIds().sort(), exp_ids.slice(1,4).sort());
@@ -147,7 +143,7 @@ define(function (require, exports, module) {
     },
 
     "test onId exists"() {
-      var st = new Query(v.TestModel);
+      const st = new Query(v.TestModel);
 
       assert.same(st.onId(v.foo._id), st);
 
@@ -155,7 +151,7 @@ define(function (require, exports, module) {
     },
 
     "test onModel"() {
-      var st = new Query();
+      const st = new Query();
 
       assert.same(st.onModel(v.TestModel).onId(v.foo._id), st);
 
@@ -163,7 +159,7 @@ define(function (require, exports, module) {
     },
 
     "test onId does not exist"() {
-      var st = new Query(v.TestModel);
+      const st = new Query(v.TestModel);
 
       assert.same(st.onId("notfound"), st);
 
@@ -171,7 +167,7 @@ define(function (require, exports, module) {
     },
 
     "test update one"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.update({name: 'new name'}), 1);
 
@@ -183,11 +179,9 @@ define(function (require, exports, module) {
     "test update partial field"() {
       v.TestModel.defineFields({foo: 'object'});
 
-      var handle = v.TestModel.onChange(v.ob = test.stub());
-      test.onEnd(function () {
-        handle.stop();
-      });
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const handle = v.TestModel.onChange(v.ob = this.stub());
+      this.onEnd(() => handle.stop());
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       st.update("foo.bar", {baz: 'fnord', alice: 'rabbit', delme: 'please'});
 
@@ -201,11 +195,11 @@ define(function (require, exports, module) {
 
     "test update arrays"() {
       v.TestModel.defineFields({foo: 'jsonb', x: 'integer[]'});
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       st.update({name: 'new Name', 'foo.bar.baz': 123, 'x.$+1': 11, 'x.$+2': 22});
 
-      var attrs = v.foo.$reload().attributes;
+      const attrs = v.foo.$reload().attributes;
 
       assert.same(attrs.name, 'new Name');
       assert.equals(attrs.foo.bar.baz, 123);
@@ -213,7 +207,7 @@ define(function (require, exports, module) {
     },
 
     "test update deletes fields"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.update({name: 'new name', age: undefined}), 1);
 
@@ -221,7 +215,7 @@ define(function (require, exports, module) {
     },
 
     "test inc"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
       assert.same(st.inc("age", 2), st);
 
       st.update({name: 'x'});
@@ -237,7 +231,7 @@ define(function (require, exports, module) {
 
     "test addItem removeItem"() {
       v.TestModel.defineFields({cogs: 'text[]'});
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
 
       v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
       assert.equals(v.foo.$reload().cogs, ['a']);
@@ -274,7 +268,7 @@ define(function (require, exports, module) {
     "test 1st removeItem"() {
       v.TestModel.defineFields({cogs: 'text[]'});
       v.TestModel.query.onId(v.foo._id).update({cogs: ['a', 'b', 'c']});
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
 
 
       v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
@@ -286,11 +280,11 @@ define(function (require, exports, module) {
 
     "test removeItem object"() {
       v.TestModel.defineFields({cogs: 'jsonb'});
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
 
       v.foo = v.TestModel.create({_id: 'foo2', cogs: [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]});
 
-      test.onEnd(v.TestModel.onChange(v.onChange = test.stub()));
+      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
 
       v.TestModel.query.onId(v.foo._id).removeItem('cogs', {x: 2});
       assert.equals(v.foo.$reload().cogs, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
@@ -312,7 +306,7 @@ define(function (require, exports, module) {
     },
 
     "test whereNot"() {
-      var st = new Query(v.TestModel).where('gender', 'm');
+      let st = new Query(v.TestModel).where('gender', 'm');
 
       assert.same(st.count(), 2);
 
@@ -320,7 +314,7 @@ define(function (require, exports, module) {
 
       assert.equals(st.fetchField('age'), [10]);
 
-      var st = new Query(v.TestModel).where('gender', 'm');
+      st = new Query(v.TestModel).where('gender', 'm');
 
       st.whereNot('age', [5, 7]);
 
@@ -331,17 +325,17 @@ define(function (require, exports, module) {
     },
 
     "test where with array"() {
-      var st = new Query(v.TestModel).where('age', [5, 10]);
+      let st = new Query(v.TestModel).where('age', [5, 10]);
 
       assert.equals(st.fetchField('age').sort(), [10, 5]);
 
-      var st = new Query(v.TestModel).where('age', [5, 7]);
+      st = new Query(v.TestModel).where('age', [5, 7]);
 
       assert.equals(st.fetchField('age'), [5]);
     },
 
     "test where on fetch"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'foo'}), st);
 
@@ -351,7 +345,7 @@ define(function (require, exports, module) {
     },
 
     "test where with field, value"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where('name', 'foo'), st);
 
@@ -361,10 +355,10 @@ define(function (require, exports, module) {
     },
 
     "test whereSome"() {
-      var ids = new Query(v.TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm').fetchIds().sort();
+      let ids = new Query(v.TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm').fetchIds().sort();
       assert.equals(ids, ['bar456', 'foo123']);
 
-      var ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm').fetchIds();
+      ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm').fetchIds();
 
       assert.equals(ids, ['bar456']);
 
@@ -373,13 +367,13 @@ define(function (require, exports, module) {
     },
 
     "test where on forEach"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'foo'}), st);
 
-      st.forEach(v.stub = test.stub());
+      st.forEach(v.stub = this.stub());
       assert.calledOnce(v.stub);
-      assert.calledWith(v.stub, TH.match(function (doc) {
+      assert.calledWith(v.stub, TH.match(doc => {
         if (doc._id === v.foo._id) {
           assert.equals(doc.attributes, v.foo.attributes);
           return true;
@@ -390,7 +384,7 @@ define(function (require, exports, module) {
     },
 
     "test where on update"() {
-      var st = new Query(v.TestModel).onId(v.foo._id);
+      const st = new Query(v.TestModel).onId(v.foo._id);
 
       assert.same(st.where({name: 'bar'}).update({name: 'new name'}), 0);
       v.foo.$reload();

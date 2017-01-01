@@ -7,6 +7,7 @@ const pools = Object.create(null);
 let clientCount = 0;
 let cursorCount = 0;
 let autoSchema = false;
+let conns = 0;
 
 define(function(require, exports, module) {
   koru = require('../main');
@@ -58,7 +59,7 @@ function aryToSqlStr(value) {
 }
 
 function getConn(client) {
-  var tx = client._weakMap.get(util.thread);
+  let tx = client._weakMap.get(util.thread);
   if (! tx) {
     client._weakMap.set(util.thread, tx = fetchPool(client).acquire());
   }
@@ -68,17 +69,15 @@ function getConn(client) {
 }
 
 function releaseConn(client) {
-  var tx = client._weakMap.get(util.thread);
+  const tx = client._weakMap.get(util.thread);
   if (tx && --tx.count === 0) {
     fetchPool(client).release(tx);
     client._weakMap.set(util.thread, null);
   }
 }
 
-var conns = 0;
-
 function fetchPool(client) {
-  var pool = pools[client._id];
+  const pool = pools[client._id];
   if (pool) return pool;
   return pools[client._id] = new Pool({
     name: client._id,
@@ -129,7 +128,7 @@ class Client {
   }
 
   end() {
-    var pool = pools[this._id];
+    const pool = pools[this._id];
     if (pool) {
       pool.drain();
     }
@@ -145,7 +144,7 @@ class Client {
   }
 
   withConn(func) {
-    var tx = this._weakMap.get(util.thread);
+    const tx = this._weakMap.get(util.thread);
     if (tx)
       return func.call(this, tx.conn);
     try {
@@ -165,21 +164,16 @@ class Client {
       const posMap = {};
       let count = 0;
       params = [];
-      text = text.replace(/\{\$(\w+)\}/g, function (m, key) {
-        var pos = posMap[key];
-        if (! pos) {
-          pos = posMap[key] = '$' + ++count;
-          params.push(fields[key]);
-        }
-        return pos;
-      });
+      text = text.replace(/\{\$(\w+)\}/g, (m, key) => posMap[key] || (
+        params.push(fields[key]),
+        (posMap[key] = '$' + ++count)));
     }
     return this.withConn(conn => query(conn, text, params));
   }
 
   prepare(name, command) {
     return this.withConn(conn => {
-      var future = new Future;
+      const future = new Future;
       conn.prepare(name, command, wait(future));
       return future.wait();
     });
@@ -187,7 +181,7 @@ class Client {
 
   execPrepared(name, params) {
     return this.withConn(conn => {
-      var future = new Future;
+      const future = new Future;
       conn.execPrepared(name, params, wait(future));
       return future.wait();
     });
@@ -203,19 +197,19 @@ class Client {
 
   transaction(func) {
     getConn(this); // ensure connection
-    var tx = this._weakMap.get(util.thread);
+    const tx = this._weakMap.get(util.thread);
     try {
       if (tx.transaction) {
-        var onAborts = tx._onAborts;
+        const onAborts = tx._onAborts;
         tx._onAborts = null;
         if(tx.savepoint)
           ++tx.savepoint;
         else
           tx.savepoint = 1;
+        let ex;
         try {
-          var ex;
           query(tx.conn, "SAVEPOINT s"+tx.savepoint);
-          var result = func.call(this, tx);
+          const result = func.call(this, tx);
           query(tx.conn, "RELEASE SAVEPOINT s"+tx.savepoint);
           return result;
         } catch(ex1) {
@@ -238,7 +232,7 @@ class Client {
         if (ex !== 'abort')
           throw ex;
       } finally {
-        var command = tx.transaction;
+        const command = tx.transaction;
         tx.transaction = null;
         query(tx.conn, command);
         runOnAborts(tx, command);
@@ -252,7 +246,7 @@ class Client {
 Client.prototype.aryToSqlStr = aryToSqlStr;
 
 function runOnAborts(tx, command) {
-  var onAborts = tx._onAborts;
+  let onAborts = tx._onAborts;
   if (onAborts) {
     tx._onAborts = null;
     if (command === 'ROLLBACK')
@@ -262,7 +256,7 @@ function runOnAborts(tx, command) {
 }
 
 function query(conn, text, params) {
-  var future = new Future;
+  const future = new Future;
   if (params)
     conn.execParams(text, params, wait(future));
   else
@@ -326,12 +320,12 @@ class Table {
 
   autoCreate() {
     readColumns(this);
-    var schema = this.schema;
+    const {schema} = this;
     if (this._columns.length === 0) {
-      var fields = ['_id varchar(24) PRIMARY KEY'];
+      const fields = ['_id varchar(24) PRIMARY KEY'];
       if (schema) {
-        for (var col in schema) {
-          var spec = jsFieldToPg(col, schema[col], this._client);
+        for (let col in schema) {
+          const spec = jsFieldToPg(col, schema[col], this._client);
           if (col === '_id')
             fields[0] = spec + ' PRIMARY KEY';
           else
@@ -347,8 +341,7 @@ class Table {
   }
 
   transaction(func) {
-    var table = this;
-    return table._client.transaction(tx => func.call(table, tx));
+    return this._client.transaction(tx => func.call(this, tx));
   }
 
   insert(params, suffix) {
@@ -356,7 +349,7 @@ class Table {
 
     params = toColumns(this, params);
 
-    var sql = `INSERT INTO "${this._name}" (${params.cols.map(col => '"'+col+'"')
+    let sql = `INSERT INTO "${this._name}" (${params.cols.map(col => '"'+col+'"')
   .join(',')}) values (${params.cols.map((c, i) => "$"+(i+1)).join(",")})`;
 
     if (suffix) sql += ` ${suffix}`;
@@ -371,11 +364,11 @@ class Table {
 
   koruUpdate(doc, changes) {
     doc = doc.attributes;
-    var params = {};
-    for (var key in changes) {
-      var sc = changes[key];
+    const params = {};
+    for (let key in changes) {
+      const sc = changes[key];
       for (key in  sc) {
-        var di = key.indexOf('.');
+        const di = key.indexOf('.');
         if (di === -1)
           params[key] = doc[key];
         else {
@@ -385,8 +378,8 @@ class Table {
         }
       }
     }
-    var sql = 'UPDATE "'+this._name+'" SET ';
-    var set = toColumns(this, params);
+    let sql = 'UPDATE "'+this._name+'" SET ';
+    const set = toColumns(this, params);
     sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
 
     set.values.push(doc._id);
@@ -399,10 +392,10 @@ class Table {
   ensureIndex(keys, options) {
     this._ensureTable();
     options = options || {};
-    var cols = Object.keys(keys);
-    var name = this._name+'_'+cols.join('_');
+    let cols = Object.keys(keys);
+    const name = this._name+'_'+cols.join('_');
     cols = cols.map(col => '"'+col+(keys[col] === -1 ? '" DESC' : '"'));
-    var unique = options.unique ? 'UNIQUE ' : '';
+    const unique = options.unique ? 'UNIQUE ' : '';
     try {
       this._client.query("CREATE "+unique+"INDEX \""+
                          name+'" ON "'+this._name+'" ('+cols.join(',')+")");
@@ -415,9 +408,9 @@ class Table {
   update(where, params) {
     this._ensureTable();
 
-    var sql = 'UPDATE "'+this._name+'" SET ';
+    let sql = 'UPDATE "'+this._name+'" SET ';
 
-    var set = toColumns(this, params.$set);
+    const set = toColumns(this, params.$set);
     sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
 
     where = this.where(where, set.values);
@@ -430,12 +423,12 @@ class Table {
 
   where(query, whereValues) {
     if (! query) return;
-    var table = this;
-    var count = whereValues.length;
-    var colMap = table._colMap;
-    var fields;
+    const table = this;
+    let count = whereValues.length;
+    const colMap = table._colMap;
+    let fields;
 
-    var whereSql = [];
+    const whereSql = [];
     if (query.constructor === Object) {
       foundIn(query, whereSql);
     } else {
@@ -447,7 +440,7 @@ class Table {
       query._wheres && foundIn(query._wheres, whereSql);
 
       if (fields = query._whereNots) {
-        var subSql = [];
+        const subSql = [];
         foundIn(fields, subSql);
         whereSql.push("(" + subSql.join(" OR ") + ") IS NOT TRUE");
       }
@@ -455,7 +448,7 @@ class Table {
       if (fields = query._whereSomes) {
         query._whereSomes.forEach(ors => {
           whereSql.push("("+ors.map(q => {
-            var subSql = [];
+            const subSql = [];
             foundIn(q, subSql);
             return subSql.join(" AND ");
           }).join(' OR ')+") IS TRUE");
@@ -469,29 +462,31 @@ class Table {
     return whereSql.join(' AND ');
 
     function inArray(qkey, result, value, isIn) {
+      let where;
       switch (value ? value.length : 0) {
       case 0:
         result.push(isIn ? 'FALSE' : 'TRUE');
         return;
       case 1:
         whereValues.push(value[0]);
-        var where = qkey+" IN ($"+ ++count + ')';
+        where = qkey+" IN ($"+ ++count + ')';
         break;
       default:
         whereValues.push(aryToSqlStr(value));
-        var where = qkey+" = ANY($"+ ++count + ")";
+        where = qkey+" = ANY($"+ ++count + ")";
       }
       result.push(isIn ? where : 'NOT ('+where+')');
     }
 
     function foundIn(fields, result) {
-      for(var key in fields) {
-        var value = fields[key];
-        var splitIndex = key.indexOf(".");
+      let qkey;
+      for(let key in fields) {
+        let value = fields[key];
+        const splitIndex = key.indexOf(".");
         if (splitIndex !== -1) {
-          var remKey = key.slice(splitIndex+1);
+          const remKey = key.slice(splitIndex+1);
           key = key.slice(0,splitIndex);
-          var qkey = ['"'+key+'"'];
+          qkey = ['"'+key+'"'];
           remKey.split(".").forEach(p => qkey.push("'"+p+ "'"));
           qkey = qkey.join("->");
           if (value == null) {
@@ -505,7 +500,7 @@ class Table {
             if (typeof value === 'string')
               result.push(value);
             else {
-              var items = value[1];
+              const items = value[1];
               if (Array.isArray(items)) {
                 result.push(value[0]);
                 items.forEach(item => {
@@ -523,23 +518,23 @@ class Table {
           case '$or':
           case '$and':
           case '$nor':
-            var parts = [];
+            const parts = [];
             util.forEach(value, w => {
-              var q = [];
+              const q = [];
               foundIn(w, q);
               q.length && parts.push('('+q.join(' AND ')+')');
             });
             result.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
             continue;
           }
-          var qkey = '"'+key+'"';
+          qkey = '"'+key+'"';
           if (value == null) {
             result.push(qkey+' IS NULL');
             continue;
           }
         }
 
-        var colSpec = colMap[key];
+        const colSpec = colMap[key];
 
         if (value != null) switch(colSpec && colSpec.data_type) {
         case 'ARRAY':
@@ -549,7 +544,7 @@ class Table {
               whereValues.push(aryToSqlStr(value));
               continue;
             } else {
-              for (var vk in value) {break;}
+              let vk; for (vk in value) {break;}
               switch(vk) {
               case '$in':
                 result.push(qkey+' && $'+ ++count);
@@ -569,19 +564,19 @@ class Table {
         case 'jsonb':
           if (typeof value === 'object') {
             if (value.$elemMatch) {
-              var subvalue = value.$elemMatch;
-              var columns = [];
-              for (var subcol in subvalue) {
+              const subvalue = value.$elemMatch;
+              const columns = [];
+              for (let subcol in subvalue) {
                 columns.push(mapType(subcol, subvalue[subcol]));
               }
-              var q = [];
+              const q = [];
               foundIn(subvalue, q);
               result.push('jsonb_typeof('+qkey+
                             ') = \'array\' AND EXISTS(SELECT 1 FROM jsonb_to_recordset('+qkey+
                             ') as __x('+columns.join(',')+') where '+q.join(' AND ')+')');
               continue;
             }
-            var q = [];
+            const q = [];
             ++count; whereValues.push(value);
             q.push(qkey+'=$'+count);
             if (Array.isArray(value))
@@ -605,13 +600,14 @@ class Table {
               break;
 
             } else if (value.constructor === Object) {
-              for(var vk in value) {
+              let op, regex;
+              for(let vk in value) {
                 switch(vk) {
                 case '$regex':
                 case '$options':
                   if (regex) break;
-                  var regex = value.$regex;
-                  var options = value.$options;
+                  regex = value.$regex;
+                  const options = value.$options;
                   result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
                   whereValues.push(regex);
                   continue;
@@ -625,7 +621,7 @@ class Table {
                   }
                   continue;
                 case '$gt':
-                  var op = '>';
+                  op = '>';
                 case '$gte':
                   op = op || '>=';
                 case '$lt':
@@ -668,12 +664,12 @@ class Table {
   find(where, options) {
     this._ensureTable();
 
-    var table = this;
-    var sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
+    const table = this;
+    let sql = 'SELECT '+selectFields(this, options && options.fields)+' FROM "'+this._name+'"';
 
-
+    let values;
     if (where) {
-      var values = [];
+      values = [];
       where = table.where(where, values);
     }
 
@@ -685,7 +681,7 @@ class Table {
   }
 
   show(where) {
-    var values = [];
+    const values = [];
     return ' WHERE ' + this.where(where, values) + ' ('+ util.inspect(values) + ')';
   }
 
@@ -714,9 +710,9 @@ Table.prototype.aryToSqlStr = aryToSqlStr;
 
 function selectFields(table, fields) {
   if (! fields) return '*';
-  var add;
-  var result = ['_id'];
-  for (var col in fields) {
+  let add, col;
+  const result = ['_id'];
+  for (col in fields) {
     if (add === undefined) {
       add = !! fields[col];
     } else if (add !== !! fields[col])
@@ -725,7 +721,7 @@ function selectFields(table, fields) {
       result.push('"'+col+'"');
     }
   }
-  if (! add) for(var col in table._colMap) {
+  if (! add) for(col in table._colMap) {
     if (col === '_id') continue;
     fields.hasOwnProperty(col) || result.push('"'+col+'"');
   }
@@ -767,8 +763,8 @@ class Cursor {
     this._sql = sql;
     this._values = values;
 
-    if (options) for (var op in options) {
-      var func = this[op];
+    if (options) for (let op in options) {
+      const func = this[op];
       if (typeof func === 'function')
         func.call(this, options[op]);
     }
@@ -803,8 +799,8 @@ class Cursor {
         return this._rows.slice(this._index - count, this._index);
       }
     } else {
-      var c = count === undefined ? 1 : count;
-      var result = this.table._client.query('FETCH '+c+' '+this._name);
+      const c = count === undefined ? 1 : count;
+      const result = this.table._client.query('FETCH '+c+' '+this._name);
       return count === undefined ? result[0] : result;
     }
   }
@@ -826,7 +822,7 @@ class Cursor {
 
   forEach(func) {
     try {
-      for(var doc = this.next(); doc; doc = this.next()) {
+      for(let doc = this.next(); doc; doc = this.next()) {
         func(doc);
       }
     } finally {
@@ -839,8 +835,9 @@ class Cursor {
 function queryWhere(table, sql, where, suffix) {
   table._ensureTable();
 
+  let values;
   if (where) {
-    var values = [];
+    values = [];
     where = table.where(where, values);
   }
   if (where === undefined) {
@@ -855,15 +852,15 @@ function queryWhere(table, sql, where, suffix) {
 }
 
 function toColumns(table, params, cols) {
-  var needCols = autoSchema && {};
+  const needCols = autoSchema && {};
   cols = cols || Object.keys(params);
-  var values = new Array(cols.length);
-  var colMap = table._colMap;
+  const values = new Array(cols.length);
+  const colMap = table._colMap;
 
   util.forEach(cols, function (col, i) {
-    var value = params[col];
+    let value = params[col];
     if (value === undefined) value = null;
-    var desc = colMap[col];
+    const desc = colMap[col];
     if (desc) {
       switch (desc.data_type) {
       case 'ARRAY':
@@ -895,7 +892,7 @@ function toColumns(table, params, cols) {
     }
   });
 
-  var res = {cols: cols, values: values};
+  const res = {cols: cols, values: values};
   if (needCols) res.needCols = needCols;
   return res;
 }
@@ -918,14 +915,15 @@ function toBaseType(value) {
   switch(typeof(value)) {
   case 'object':
     if (Array.isArray(value)) {
-      var type = value.length ? toBaseType(value[0]) : 'text';
+      const type = value.length ? toBaseType(value[0]) : 'text';
       return type+'[]';
     }
     if (match.date.$test(value))
       return 'timestamp with time zone';
-    for (var key in value) {
+    for (let key in value) {
+      let type;
       if (key.slice(0,1) === '$')
-        var type = toBaseType(value[key]);
+        type = toBaseType(value[key]);
       if (type && type.slice(-2) === '[]')
         return type.slice(0, -2);
       return type;
@@ -943,15 +941,12 @@ function toBaseType(value) {
 }
 
 function mapType(col, value) {
-  var type = toBaseType(value);
+  const type = toBaseType(value);
   return jsFieldToPg(col, type);
 }
 
 function pgFieldType(colSchema) {
-  if (typeof colSchema === 'string')
-    var type = colSchema;
-  else
-    var type = colSchema ? colSchema.type : 'text';
+  const type = (typeof colSchema === 'string') ? colSchema : colSchema ? colSchema.type : 'text';
 
   switch(type) {
   case 'string':
@@ -977,12 +972,12 @@ function pgFieldType(colSchema) {
 }
 
 function jsFieldToPg(col, colSchema, client) {
-  var defaultVal = '';
+  let defaultVal = '';
 
-  var type = pgFieldType(colSchema);
+  const type = pgFieldType(colSchema);
 
   if(typeof colSchema === 'object' && colSchema.default != null) {
-    var literal = colSchema.default;
+    let literal = colSchema.default;
     client.withConn(function (conn) {
       if (type === 'jsonb')
         literal = conn.escapeLiteral(JSON.stringify(literal))+'::jsonb';
@@ -1005,9 +1000,9 @@ function jsFieldToPg(col, colSchema, client) {
 }
 
 function updateSchema(table, schema) {
-  var needCols = {};
-  var colMap = table._colMap;
-  for (var col in schema) {
+  const needCols = {};
+  const colMap = table._colMap;
+  for ( let col in schema) {
     colMap.hasOwnProperty(col) ||
       (needCols[col] = jsFieldToPg(col, schema[col], table._client));
   }
@@ -1019,8 +1014,8 @@ function updateSchema(table, schema) {
 }
 
 function addColumns(table, needCols) {
-  var prefix = 'ALTER TABLE "'+table._name+'" ADD COLUMN ';
-  var client = table._client;
+  const prefix = 'ALTER TABLE "'+table._name+'" ADD COLUMN ';
+  const client = table._client;
 
   client.query(Object.keys(needCols).map(col => prefix + needCols[col]).join(';'));
 
@@ -1028,8 +1023,8 @@ function addColumns(table, needCols) {
 }
 
 function readColumns(table) {
-  var colQuery = "SELECT * FROM information_schema.columns WHERE table_name = '" +
-        table._name + "' AND table_schema = '"+table._client.schemaName+"'";
+  const colQuery = `SELECT * FROM information_schema.columns
+WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaName}'`;
   table._columns = table._client.query(colQuery);
   table._colMap = util.toMap('column_name', null, table._columns);
 }

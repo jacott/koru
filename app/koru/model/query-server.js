@@ -22,27 +22,24 @@ define(function(require, exports, module) {
       },
 
       fetch() {
-        var results = [];
-        this.forEach(function (doc) {
-          results.push(doc);
-        });
+        const results = [];
+        this.forEach(doc => {results.push(doc)});
         return results;
       },
 
       waitForOne(timeout) {
         timeout = timeout || 2000;
-        var query = this;
-        var future = new Future;
+        const query = this;
+        const future = new Future;
+        const handle = this.model.onChange(() => {
+          const doc = query.fetchOne();
+          if (doc) future.return(doc);
+        });
+        let timer;
         try {
-          var handle = this.model.onChange(function () {
-            var doc = query.fetchOne();
-            if (doc) future.return(doc);
-          });
-          var doc = this.fetchOne();
+          const doc = this.fetchOne();
           if (doc) return doc;
-          var timer = koru.setTimeout(function () {
-            future.return();
-          }, timeout);
+          timer = koru.setTimeout(() => {future.return()}, timeout);
           return future.wait();
         } finally {
           handle.stop();
@@ -53,13 +50,12 @@ define(function(require, exports, module) {
       fetchIds() {
         if (this.singleId) throw Error('fetchIds onId not supported');
 
-        var model = this.model;
-        var cursor = model.docs.find(this, {fields: {_id: 1}});
+        const cursor = this.model.docs.find(this, {fields: {_id: 1}});
         applyCursorOptions(this, cursor);
 
-        var results = [];
+        const results = [];
         try {
-          for(var doc = cursor.next(); doc; doc = cursor.next()) {
+          for(let doc = cursor.next(); doc; doc = cursor.next()) {
             results.push(doc._id);
           }
         } finally {
@@ -74,18 +70,18 @@ define(function(require, exports, module) {
       },
 
       forEach(func) {
-        var where = this._wheres;
+        const where = this._wheres;
         if (this.singleId) {
-          var doc = this.fetchOne();
+          const doc = this.fetchOne();
           doc && func(doc);
         } else {
-          var model = this.model;
-          var options = {};
+          const {model} = this;
+          const options = {};
           if (this._fields) options.fields = this._fields;
-          var cursor = model.docs.find(this, options);
+          const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for(var doc = cursor.next(); doc; doc = cursor.next()) {
+            for(let doc = cursor.next(); doc; doc = cursor.next()) {
               if (func(new model(doc)) === true)
                 break;
             }
@@ -98,18 +94,16 @@ define(function(require, exports, module) {
       },
 
       map(func) {
-        var results = [];
-        this.forEach(function (doc) {
-          results.push(func(doc));
-        });
+        const results = [];
+        this.forEach(doc => {results.push(func(doc))});
         return results;
       },
 
       remove() {
-        var count = 0;
-        var model = this.model;
-        var docs = model.docs;
-        var onSuccess = [];
+        let count = 0;
+        const {model} = this;
+        const {docs} = model;
+        const onSuccess = [];
         TransQueue.transaction(model.db, tran => {
           this.forEach(doc => {
             ++count;
@@ -139,7 +133,7 @@ define(function(require, exports, module) {
 
       update(origChanges, value) {
         if (typeof origChanges === 'string') {
-          var changes = {};
+          const changes = {};
           changes[origChanges] = value;
           origChanges = changes;
         } else
@@ -158,6 +152,7 @@ define(function(require, exports, module) {
             onAbort.forEach(doc => model._$docCacheDelete(doc));
           });
           this.forEach(doc => {
+            let fields, dups;
             let changes = util.deepCopy(origChanges);
             ++count;
             const attrs = doc.attributes;
@@ -171,11 +166,11 @@ define(function(require, exports, module) {
             let itemCount = 0;
 
             if (items = this._addItems) {
-              var fields = {};
+              fields = {};
               let atLeast1 = false;
               for(let field in items) {
                 let list = attrs[field] || (attrs[field] = []);
-                util.forEach(items[field], function (item) {
+                util.forEach(items[field], item => {
                   if (util.addItem(list, item) == null) {
                     atLeast1 = true;
                     changes[field + ".$-" + ++itemCount] = item;
@@ -189,11 +184,11 @@ define(function(require, exports, module) {
 
             if (items = this._removeItems) {
               const pulls = {};
-              var dups = {};
+              dups = {};
               for(let field in items) {
                 const matches = [];
                 let match, list = attrs[field];
-                util.forEach(items[field], function (item) {
+                util.forEach(items[field], item => {
                   if (list && (match = util.removeItem(list, item)) !== undefined) {
                     changes[field + ".$+" + ++itemCount] = match;
                     matches.push(match);
@@ -230,20 +225,20 @@ define(function(require, exports, module) {
       },
 
       fetchOne() {
-        let opts;
+        let opts, doc;
         if (this._sort && ! this.singleId) {
           const options = {limit: 1};
           if (this._sort) options.sort = this._sort;
           if (this._fields) options.fields = this._fields;
           let cursor = this.model.docs.find(this, options);
           try {
-            var doc = cursor.next();
+            doc = cursor.next();
           } finally {
             cursor.close();
           }
         } else {
           if (this._fields) opts = this._fields;
-          var doc = this.model.docs.findOne(this, opts);
+          doc = this.model.docs.findOne(this, opts);
         }
         if (! doc) return;
         return new this.model(doc);
@@ -258,13 +253,13 @@ define(function(require, exports, module) {
   }
 
   function buildUpdate(query, changes) {
-    var cmd = {};
+    const cmd = {};
 
     if (query._incs) cmd.$inc = query._incs;
 
-    var set, unset;
-    for(var field in changes) {
-      var value = changes[field];
+    let set, unset;
+    for(let field in changes) {
+      const value = changes[field];
       if (value === undefined)
         (unset = unset || {})[field] = '';
       else
