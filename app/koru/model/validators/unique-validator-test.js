@@ -46,6 +46,27 @@ define(function (require, exports, module) {
       assert.equals(v.query._whereNots, {_id: 'idid'});
     },
 
+    "test function scope"() {
+      this.stub(v.query, 'count').withArgs(1).returns(1);
+
+      v.doc.org = 'abc';
+      v.doc.foo = ['bar'];
+
+      function scopeFunc(query, doc, field, options) {
+        assert.same(doc, v.doc);
+        assert.equals(options, {scope: scopeFunc});
+
+        query.where(field+'x', 123);
+      }
+
+      sut(v.doc,'name', {scope: scopeFunc});
+
+      assert(v.doc._errors);
+
+      assert.equals(v.query._wheres, {name: 'foo', namex: 123});
+      assert.equals(v.query._whereNots, {_id: 'idid'});
+    },
+
     "test multi scope"() {
       this.stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.bar = 'baz';

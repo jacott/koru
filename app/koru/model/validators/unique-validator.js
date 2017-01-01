@@ -10,13 +10,18 @@ define(function(require, exports, module) {
 
     var scope = options.scope;
     if (scope) {
-      if (typeof scope === 'string') scope = [scope];
-      if (Array.isArray(scope))
-        scope.forEach(f => query.where(f, doc[f]));
-      else {
-        const copy = util.deepCopy(scope);
-        insertData(doc, copy);
-        util.merge(query._wheres, copy);
+      switch (typeof scope) {
+      case 'string': query.where(scope, doc[scope]); break;
+      case 'function': scope(query, doc, field, options); break;
+      case 'object':
+        if (Array.isArray(scope))
+          scope.forEach(f => query.where(f, doc[f]));
+        else {
+          const copy = util.deepCopy(scope);
+          insertData(doc, copy);
+          util.merge(query._wheres, copy);
+        }
+        break;
       }
     }
 
