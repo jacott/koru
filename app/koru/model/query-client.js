@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const dbBroker = require('./db-broker');
 
   function Constructor(session) {
-    return function(Query) {
+    return function(Query, condition) {
       let syncOb, stateOb;
 
       util.extend(Query, {
@@ -98,10 +98,29 @@ define(function(require, exports, module) {
 
       reset();
 
+      const origWhere = Query.prototype.where;
+
       util.extend(Query.prototype, {
         get docs() {
           return this._docs || (this._docs = this.model.docs);
         },
+
+        where(params, value) {
+          if (typeof params === 'function') {
+            const funcs = this._whereFuncs || (this._whereFuncs = []);
+            funcs.push(params);
+            return this;
+          } else {
+            const wheres = this._wheres || (this._wheres = {});
+            if (typeof params === 'string') {
+              value = exprToFunc(params, value);
+              if (typeof value === 'function')
+                return this.where(value);
+            }
+            return condition(this, '_wheres', params, value);
+          }
+        },
+
         withIndex(idx, params) {
           const orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
@@ -206,30 +225,6 @@ define(function(require, exports, module) {
             }
             return affirm;
           }
-
-          function foundItem(value, expected) {
-            if (typeof expected === 'object') {
-              if (Array.isArray(expected)) {
-                const av = Array.isArray(value);
-                for (let i = 0; i < expected.length; ++i) {
-                  const exv = expected[i];
-                  if (av) {
-                    if (value.some(item => util.deepEqual(item, exv)))
-                      return true;
-                  } else if (util.deepEqual(exv, value))
-                    return true;
-                }
-                return false;
-              }
-              if (Array.isArray(value))
-                return value.some(item => util.deepEqual(item, expected));
-
-            } else if (Array.isArray(value)) {
-              return ! value.every(item => ! util.deepEqual(item, expected));
-            }
-
-            return util.deepEqual(expected, value);
-          }
         },
 
         remove() {
@@ -331,6 +326,30 @@ define(function(require, exports, module) {
           return count;
         },
       });
+
+      function foundItem(value, expected) {
+        if (typeof expected === 'object') {
+          if (Array.isArray(expected)) {
+            const av = Array.isArray(value);
+            for (let i = 0; i < expected.length; ++i) {
+              const exv = expected[i];
+              if (av) {
+                if (value.some(item => util.deepEqual(item, exv)))
+                  return true;
+              } else if (util.deepEqual(exv, value))
+                return true;
+            }
+            return false;
+          }
+          if (Array.isArray(value))
+            return value.some(item => util.deepEqual(item, expected));
+
+        } else if (Array.isArray(value)) {
+          return ! value.every(item => ! util.deepEqual(item, expected));
+        }
+
+        return util.deepEqual(expected, value);
+      }
 
       function notify(model, doc, changes, isFromServer) {
         model._indexUpdate.notify(doc, changes); // first: update indexes
@@ -469,6 +488,26 @@ define(function(require, exports, module) {
       function unload() {
         syncOb && syncOb.stop();
         stateOb && stateOb.stop();
+      }
+
+      const EXPRS = {
+        $ne(param, obj) {
+          const expected = obj.$ne;
+          return doc => ! foundItem(doc[param], expected);
+        },
+        $nin(param, obj) {
+          const expected = obj.$nin;
+          return doc => ! foundItem(doc[param], expected);
+        },
+      };
+
+      function exprToFunc(param, value) {
+        if (value && typeof value === 'object') {
+          for (var key in value) break;
+          const expr = EXPRS[key];
+          if (expr) return expr(param, value);
+        }
+        return value;
       }
 
       function sortFunc(params) {

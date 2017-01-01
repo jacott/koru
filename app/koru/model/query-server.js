@@ -5,8 +5,12 @@ define(function(require, exports, module) {
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
-  return function (Query) {
+  return function (Query, condition) {
     util.extend(Query.prototype, {
+      where(params, value) {
+        return condition(this, '_wheres', params, value);
+      },
+
       withIndex(idx, params) {
         return this.where(params);
       },

@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
+  const koru = require('../main');
+  const util = require('../util');
 
   koru.onunload(module, function () {
     exports._unload && exports._unload();
@@ -44,17 +44,8 @@ define(function(require, exports, module) {
         return this.removeItemAnd(field, values).update();
       }
 
-      where(params, value) {
-        if (typeof params === 'function') {
-          var funcs = this._whereFuncs || (this._whereFuncs = []);
-          funcs.push(params);
-          return this;
-        } else
-          return condition(this, '_wheres', params, value);
-      }
-
       whereSome(...args) {
-        var conditions = (this._whereSomes = this._whereSomes || []);
+        const conditions = (this._whereSomes = this._whereSomes || []);
         conditions.push(args);
         return this;
       }
@@ -64,17 +55,17 @@ define(function(require, exports, module) {
       }
 
       fields(/* fields... */) {
-        var _fields = this._fields = this._fields || {};
-        for(var i = 0; i < arguments.length; ++i) {
+        const _fields = this._fields = this._fields || {};
+        for(let i = 0; i < arguments.length; ++i) {
           _fields[arguments[i]] = true;
         }
         return this;
       }
 
       sort(/* fields... */) {
-        var _sort = this._sort = this._sort || {};
-        for(var i = 0; i < arguments.length; ++i) {
-          var val = arguments[i];
+        const _sort = this._sort = this._sort || {};
+        for(let i = 0; i < arguments.length; ++i) {
+          const val = arguments[i];
           if (typeof val === 'string')
             _sort[val] = 1;
           else
@@ -97,7 +88,7 @@ define(function(require, exports, module) {
     };
 
     function condition(query, map, params, value) {
-      var conditions = (query[map] = query[map] || {});
+      const conditions = (query[map] = query[map] || {});
       if (typeof params === 'string')
         conditions[params] = value;
       else
@@ -106,8 +97,8 @@ define(function(require, exports, module) {
     }
 
     function buildList(query, listName, field, values) {
-      var items = query[listName] || (query[listName] = {});
-      var list = items[field] || (items[field] = []);
+      const items = query[listName] || (query[listName] = {});
+      const list = items[field] || (items[field] = []);
 
       if (Array.isArray(values)) values.forEach(value => list.push(value));
       else list.push(values);
@@ -115,7 +106,7 @@ define(function(require, exports, module) {
       return query;
     }
 
-    QueryEnv(Query);
+    QueryEnv(Query, condition);
 
     return Query;
   }

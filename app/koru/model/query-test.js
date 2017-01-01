@@ -47,6 +47,11 @@ define(function (require, exports, module) {
       assert.same(v.TestModel.query.whereNot('aoo', {a: 1, b: 1}).count(), 2);
     },
 
+    "test $ne"() {
+      assert.equals(v.TestModel.where('age', {$ne: 5}).map(d => d.age), [10]);
+      assert.equals(v.TestModel.where('age', {$nin: [5, 6]}).map(d => d.age), [10]);
+    },
+
     "query withIndex": {
       setUp() {
         v.idx = v.TestModel.addUniqueIndex('gender', 'age', 'name');
