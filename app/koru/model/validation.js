@@ -9,10 +9,10 @@ define(function(require, exports, module) {
 
   const ID_SPEC = {_id: 'id'};
 
-  const Val = {
+  const Val = module.exports = {
     Error: {
       msgFor(doc, field, other_error) {
-        var errors = doc._errors ? doc._errors[field] : typeof doc === 'string' ? [[doc]] : doc;
+        const errors = doc._errors ? doc._errors[field] : typeof doc === 'string' ? [[doc]] : doc;
         if (errors) {
           return errors.map(Val.text).join(", ");
         } else if (other_error) {
@@ -21,7 +21,6 @@ define(function(require, exports, module) {
         } else
           return null;
       },
-
     },
 
     text(msg) {
@@ -31,12 +30,7 @@ define(function(require, exports, module) {
     },
 
     check(obj, spec, options) {
-      if (arguments.length === 3 && options) {
-        var error = options.onError;
-        var altSpec = options.altSpec;
-        var name = options.baseName;
-        var filter = options.filter;
-      }
+      const {onError: error, altSpec, baseName: name, filter} = options || {};
       try {
         check1(obj, spec, name);
         return true;
@@ -61,13 +55,14 @@ define(function(require, exports, module) {
             check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.$test(subSpec)) {
-          for(var key in obj) {
+          for(let key in obj) {
+            let type;
             try {
               if (subSpec.hasOwnProperty(key)) {
-                var type = subSpec[key];
+                type = subSpec[key];
                 check1(obj[key], subSpec[key], name ? name+'.'+key : key);
               } else if (subSpec === spec && altSpec && altSpec.hasOwnProperty(key)) {
-                var type = altSpec[key];
+                type = altSpec[key];
                 check1(obj[key], altSpec[key], name ? name+'.'+key : key);
               } else {
                 bad(name ? name+'.'+key : key, obj, subSpec, key);
@@ -93,10 +88,10 @@ define(function(require, exports, module) {
 
     nestedFieldValidator(func) {
       return function (field) {
-        var doc = this;
-        var value = doc.changes[field];
+        const doc = this;
+        const value = doc.changes[field];
         if (value !== undefined) {
-          var opts = {
+          func(doc, field, value, {
             onError(name, obj) {
               if (name)
                 Val.addError(doc, field, 'is_invalid',
@@ -105,22 +100,21 @@ define(function(require, exports, module) {
                 Val.addError(doc, field, 'is_invalid');
 
             },
-          };
-          func(doc, field, value, opts);
+          });
         }
       };
     },
 
     assertCheck(obj, spec, options) {
-      var error;
+      let error, reason;
       if (! options || ! options.hasOwnProperty('onError'))
         options = util.extend({onError(name, obj) {
           if (obj && obj._errors) {
-            var reason = obj._errors;
+            reason = obj._errors;
           } else if (name) {
-            var reason = {}; reason[name] = [['is_invalid']];
+            reason = {}; reason[name] = [['is_invalid']];
           } else {
-            var reason = 'is_invalid';
+            reason = 'is_invalid';
           }
           error = new koru.Error(400, reason);
         }}, options);
@@ -136,10 +130,10 @@ define(function(require, exports, module) {
     },
 
     matchFields(fieldSpec, name) {
-      var m = match(function (doc) {
+      const m = match(function (doc) {
         if (! doc) return false;
         doc._errors = undefined;
-        for (var field in doc) {
+        for (let field in doc) {
           if (field === '_errors') continue;
           if (! fieldSpec.hasOwnProperty(field)) {
             Val.addError(doc, field, 'unexpected_field');
@@ -147,7 +141,7 @@ define(function(require, exports, module) {
           }
         }
 
-        for (var field in fieldSpec)
+        for (let field in fieldSpec)
           Val.validateField(doc, field, fieldSpec[field]);
 
         return ! doc._errors;
@@ -157,14 +151,14 @@ define(function(require, exports, module) {
     },
 
     validateField(doc, field, spec) {
-      for(var name in spec) {
-        var validator = validators[name];
+      for(let name in spec) {
+        const validator = validators[name];
         validator && validator(doc, field, spec[name]);
       }
 
       if (doc._errors) return false;
 
-      var value = doc[field];
+      const value = doc[field];
       if (value != null && ! Val.check(value, spec.type)) {
         Val.addError(doc, field, 'wrong_type', spec.type);
         return;
@@ -179,11 +173,11 @@ define(function(require, exports, module) {
 
     /** Simple is not objects {} or functions */
     allowIfSimple(/* arguments */) {
-      for(var i=0;i < arguments.length;++i) {
+      for(let i=0;i < arguments.length;++i) {
         switch (typeof arguments[i]) {
         case 'object':
           if (arguments[i] == null) break;
-          var proto = Object.getPrototypeOf(arguments[i]);
+          const proto = Object.getPrototypeOf(arguments[i]);
           if (proto === Array.prototype) {
             Val.allowIfSimple.apply(Val, arguments[i]);
             break;
@@ -206,15 +200,13 @@ define(function(require, exports, module) {
     ensure(type, ...args) {ensure(type, args)},
 
     errorsToString(doc) {
-      var errs = doc._errors;
+      const errs = doc._errors;
 
       if (! errs) return;
 
-      var result = [];
-      for(var field in errs) {
-        var msgs = errs[field].map(function (m) {
-          return util.inspect(m);
-        });
+      const result = [];
+      for(let field in errs) {
+        const msgs = errs[field].map(m => util.inspect(m));
 
         result.push(field + ': ' + msgs.join('; '));
       }
@@ -222,36 +214,31 @@ define(function(require, exports, module) {
     },
 
     inspectErrors(doc) {
-      var errs = this.errorsToString(doc);
+      const errs = this.errorsToString(doc);
 
       return doc.constructor.modelName + (errs ? ": Errors: " + errs : ": No errors");
     },
 
     allowIfValid(truthy, doc) {
       if (! truthy) {
+        let reason;
         if (doc) {
           if (doc._errors)
-            var reason = doc._errors;
+            reason = doc._errors;
           else {
-            var reason = {}; reason[doc] = [['is_invalid']];
+            reason = {}; reason[doc] = [['is_invalid']];
           }
         } else {
-          var reason = 'is_invalid';
+          reason = 'is_invalid';
         }
-          throw new koru.Error(400, reason);
+        throw new koru.Error(400, reason);
       }
       return truthy;
     },
 
     allowIfFound(truthy, field) {
-      if (! truthy) {
-        if (field) {
-          var reason = {}; reason[field] = [['not_found']];
-        } else {
-          reason = 'Not found';
-        }
-        throw new koru.Error(404, reason);
-      }
+      if (! truthy)
+        throw new koru.Error(404, field ? {[field]: [['not_found']]} : 'Not found');
     },
 
     validateName(name, length) {
@@ -274,14 +261,14 @@ define(function(require, exports, module) {
     },
 
     register(module, map) {
-      var registered = [];
-      for (var regName in map) {
-        var item = map[regName];
+      const registered = [];
+      for (let regName in map) {
+        const item = map[regName];
         if (typeof item === 'function') {
           validators[regName] = item.bind(this);
           registered.push(regName);
         } else {
-          for(var regName in item) {
+          for(let regName in item) {
             validators[regName] = item[regName].bind(this);
             registered.push(regName);
           }
@@ -300,40 +287,41 @@ define(function(require, exports, module) {
     },
 
     addError(doc,field, ...args) {
-      var errors = doc._errors || (doc._errors = {}),
-          fieldErrors = errors[field] || (errors[field] = []);
+      const errors = doc._errors || (doc._errors = {}),
+            fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
     },
   };
 
   function accessDenied(details, nolog) {
-    var error = new koru.Error(403, "Access denied", details);
+    const error = new koru.Error(403, "Access denied", details);
 
     if (! nolog && ! util.thread.suppressAccessDenied)
-      koru.info('Access denied: user ' + koru.userId() + ": " + details, koru.util.extractError(error));
+      koru.info(`Access denied: user ${koru.userId()}: ${details}`,
+                koru.util.extractError(error));
     throw error;
   }
 
   function convertPermitSpec(input) {
-    var output = {};
+    const output = {};
 
-    for(var i=0,item;item=input[i];++i) {
+    for(let i=0,item;item=input[i];++i) {
       switch (typeof item) {
       case 'string':
         output[item] = true;
         break;
       case 'object':
         if (Array.isArray(item)) {
-          for(var j=0;j < item.length;++j) {
-            var obj = item[j];
-            for(var key in obj) {
+          for(let j=0;j < item.length;++j) {
+            const obj = item[j];
+            for(let key in obj) {
               output[key] = [convertPermitSpec(obj[key])];
             }
           }
         } else {
-          for(var key in item) {
-            var list = item[key];
+          for(const key in item) {
+            let list = item[key];
             if (Array.isArray(list))
               output[key] = convertPermitSpec(list);
             else
@@ -350,10 +338,8 @@ define(function(require, exports, module) {
   function ensure(type, args) {
     if (typeof type === 'string')
       type = match[type];
-    for(var i = 0; i < args.length; ++i) {
+    for(let i = 0; i < args.length; ++i) {
       type.$test(args[i])  || accessDenied(`expected ${type}`);
     }
   }
-
-  return Val;
 });

@@ -1,17 +1,17 @@
 define(function (require, exports, module) {
-  var test, v;
   const koru  = require('../main');
   const match = require('../match');
   const util  = require('../util');
   const Model = require('./main');
   const TH    = require('./test-helper');
-  const Val   = require('./validation');
 
-  var Module = module.constructor;
+  const Val   = require('./validation');
+  var v;
+
+  const Module = module.constructor;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       TH.noInfo();
       v.myModule = new Module(module.ctx, 'mymodule');
@@ -22,13 +22,13 @@ define(function (require, exports, module) {
     },
 
     'test msgFor'() {
-      var doc = {_errors: {foo: [['too_long', 34]]}};
+      const doc = {_errors: {foo: [['too_long', 34]]}};
 
       assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
     },
 
     'test msgFor'() {
-      var doc = {_errors: {foo: [['too_long', 34]]}};
+      const doc = {_errors: {foo: [['too_long', 34]]}};
 
       assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
     },
@@ -42,7 +42,7 @@ define(function (require, exports, module) {
     },
 
     "test check"() {
-      var spec = {foo: 'string'};
+      let spec = {foo: 'string'};
       refute(Val.check('dfsfd', spec));
       assert(Val.check({foo: ''}, spec));
       assert(Val.check({foo: undefined}, spec));
@@ -51,13 +51,13 @@ define(function (require, exports, module) {
       refute(Val.check('x', ['stirng']));
 
       // using match
-      var spec = match(function (value) {return value % 3 === 1});
+      spec = match(function (value) {return value % 3 === 1});
       assert(Val.check(1, spec));
       refute(Val.check(2, spec));
       assert(Val.check(4, spec));
 
       // types
-      var spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
+      spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
       assert(Val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
 
 
@@ -66,7 +66,7 @@ define(function (require, exports, module) {
       refute(Val.check({foo: 'x', bar: {baz: 1}, 'as if': 123}, spec));
 
       // nested type
-      var spec = {foo: 'string', bar: {baz: 'string', fnord: [{abc: 'string'}]}};
+      spec = {foo: 'string', bar: {baz: 'string', fnord: [{abc: 'string'}]}};
       refute(Val.check({foo: '', bar: {baz: 1}}, spec));
       refute(Val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 3}]}}, spec));
       assert(Val.check({foo: '', bar: {baz: '1', fnord: [{abc: 'aa'}, {abc: 'bb'}]}}, spec));
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
 
       // test onError, filter and baseName
 
-      var data = {foo: {a: 1, b: 2, c: '3'}};
+      const data = {foo: {a: 1, b: 2, c: '3'}};
       assert(Val.check(data, v.spec = {foo: {a: 'number', b: 'string'}}, {
         baseName: 'x',
         onError(name, obj, spec, key) {
@@ -117,7 +117,7 @@ define(function (require, exports, module) {
       Val.register(v.myModule, {valAbc(doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
-      test.onEnd(function () {Val.register(v.myModule)});
+      this.onEnd(function () {Val.register(v.myModule)});
 
       assert.exception(function () {
         Val.assertCheck({name: 'abc'}, Val.matchFields({name: {type: 'string', valAbc: true}}));
@@ -125,13 +125,13 @@ define(function (require, exports, module) {
     },
 
     "test assertDocChanges"() {
-      test.spy(Val, 'assertCheck');
-      var existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
+      this.spy(Val, 'assertCheck');
+      const existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
       Val.assertDocChanges(existing, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, existing.changes, {name: 'string'});
 
-      var newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
+      const newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
       Val.assertDocChanges(newDoc, {name: 'string'});
 
       assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
@@ -206,19 +206,19 @@ define(function (require, exports, module) {
     },
 
     'test validators'() {
-      var fooStub = function () {
+      const fooStub = function () {
         v.Val = this;
       };
-      var barStub = {
+      const barStub = {
         bar1() {v.bar1 = this},
         bar2() {},
       };
 
-      var myunload = test.stub(koru, 'onunload').withArgs('mymod');
+      const myunload = this.stub(koru, 'onunload').withArgs('mymod');
 
       Val.register('mymod', {fooVal: fooStub, bar: barStub});
 
-      var func = Val.validators('fooVal');
+      let func = Val.validators('fooVal');
 
       func();
 
@@ -246,10 +246,10 @@ define(function (require, exports, module) {
         doc[field] += x;
         doc._errors = errors;
       }});
-      test.onEnd(function () {Val.register(v.myModule)});
-      var doc = {age: 10};
+      this.onEnd(function () {Val.register(v.myModule)});
+      const doc = {age: 10};
 
-      var errors = 'set';
+      let errors = 'set';
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
       assert.same(doc._errors, 'set');
@@ -264,14 +264,14 @@ define(function (require, exports, module) {
     },
 
     "test nestedFieldValidator"() {
-      var sut = Val.nestedFieldValidator(v.func = test.stub());
+      const sut = Val.nestedFieldValidator(v.func = this.stub());
 
       sut.call({changes: {}}, 'foo');
 
       refute.msg("Should not call when field value undefined")
         .called(v.func);
 
-      var doc = {changes: {foo: 'bar'}};
+      const doc = {changes: {foo: 'bar'}};
 
       sut.call(doc, 'foo');
 
@@ -300,10 +300,10 @@ define(function (require, exports, module) {
         if (doc[field] % x !== 0)
           this.addError(doc, field, 'is_invalid');
       }});
-      test.onEnd(function () {Val.register(v.myModule)});
+      this.onEnd(function () {Val.register(v.myModule)});
 
-      var matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
-      var doc = {foo: 4};
+      const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
+      let doc = {foo: 4};
       assert.isTrue(matcher.$test(doc));
       assert.same(doc._errors, undefined);
       doc.foo = 1;
