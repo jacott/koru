@@ -21,16 +21,19 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    'test msgFor'() {
-      const doc = {_errors: {foo: [['too_long', 34]]}};
+    "Error": {
+      'test msgFor'() {
+        const doc = {_errors: {foo: [['too_long', 34]]}};
 
-      assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
-    },
+        assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
+      },
 
-    'test msgFor'() {
-      const doc = {_errors: {foo: [['too_long', 34]]}};
+      "test toString"() {
+        const doc = {_errors: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
 
-      assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
+        assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; '+
+                    'bar: is not valid');
+      },
     },
 
     'test text'() {

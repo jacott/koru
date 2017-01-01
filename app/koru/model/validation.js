@@ -21,6 +21,13 @@ define(function(require, exports, module) {
         } else
           return null;
       },
+
+      toString(doc) {
+        const errors = doc._errors || doc;
+        return Object.keys(errors)
+          .map(field => `${field}: ${this.msgFor(errors[field])}`)
+          .join("; ");
+      },
     },
 
     text(msg) {
