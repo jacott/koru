@@ -25,23 +25,29 @@ define(function(require, exports, module) {
     },
 
     htmlOptions() {
-      var elm = $.element;
-      var options = this.options;
+      const elm = $.element;
+      const options = this.options;
 
-      for(var attr in options) {
+      for(let attr in options) {
         if (! (attr in IGNORE))
           elm.setAttribute(attr, options[attr]);
       }
     },
   };
 
-  var modalize;
+  const EDITORS = {
+    richTextEditor: RichTextEditorToolbar,
+    plainTextEditor: PlainText.Editor,
+  };
+
+
+  let modalize;
 
   /**
    * @deprecated
    */
   function modalizeCallback(event) {
-    var elm = modalize.elm;
+    let elm = modalize.elm;
     if (typeof elm === 'string') modalize.elm = elm = document.querySelector(elm);
     if (Dom.getClosestClass(event.target, 'anyModal')) return;
     if (event.type === 'keydown') {
@@ -68,9 +74,9 @@ define(function(require, exports, module) {
      */
     modalize(elm, func) {
       if (modalize) {
-        modalize = {parent: modalize, elm: elm, func: func};
+        modalize = {parent: modalize, elm, func};
       } else {
-        modalize = {elm: elm, func: func};
+        modalize = {elm, func};
 
         document.addEventListener('mousedown', modalizeCallback, true);
         document.addEventListener('keydown', modalizeCallback);
@@ -97,10 +103,10 @@ define(function(require, exports, module) {
       return function (event) {
         Dom.stopEvent();
 
-        var elm = document.getElementById(elmId);
-        var ctx = Dom.getCtx(elm);
-        var doc = ctx.data;
-        var form = elm.getElementsByClassName('fields')[0];
+        const elm = document.getElementById(elmId);
+        const ctx = Dom.getCtx(elm);
+        const doc = ctx.data;
+        const form = elm.getElementsByClassName('fields')[0];
 
         if (! form) throw new Error('no "fields" class within ' + elmId);
         Tpl.fillDoc(doc, form);
@@ -113,7 +119,7 @@ define(function(require, exports, module) {
         else
           var result = doc.$save();
 
-        var successPage = options.success;
+        const successPage = options.success;
 
         if (result) {
           switch(typeof successPage) {
@@ -135,13 +141,13 @@ define(function(require, exports, module) {
     },
 
     disableFields(form) {
-      Dom.forEach(form, Dom.WIDGET_SELECTOR, function (elm) {
+      Dom.forEach(form, Dom.WIDGET_SELECTOR, elm => {
         elm.setAttribute('disabled', 'disabled');
       });
     },
 
     enableFields(form) {
-      Dom.forEach(form, Dom.WIDGET_SELECTOR, function (elm) {
+      Dom.forEach(form, Dom.WIDGET_SELECTOR, elm => {
         elm.removeAttribute('disabled');
       });
     },
@@ -171,7 +177,7 @@ define(function(require, exports, module) {
     },
 
     getRadioValue(elm, name) {
-      var checked = elm.querySelector('[name="'+name+'"]:checked');
+      const checked = elm.querySelector('[name="'+name+'"]:checked');
       if (checked) return checked.value;
     },
 
@@ -196,23 +202,23 @@ define(function(require, exports, module) {
     },
 
     clearErrors(form) {
-      var msgs = form.getElementsByClassName('error');
+      const msgs = form.getElementsByClassName('error');
       while(msgs.length) {
         Dom.removeClass(msgs[msgs.length - 1], 'error');
       }
     },
 
     renderErrors(doc, form) {
-      var errors = doc._errors;
-      var focus = null;
-      var otherMsgs = [];
+      const errors = doc._errors;
+      const otherMsgs = [];
+      let focus = null;
       Tpl.clearErrors(form);
 
 
       if (errors) {
-        for(var field in errors) {
+        for(let field in errors) {
 
-          var msg = Val.Error.msgFor(doc, field);
+          const msg = Val.Error.msgFor(doc, field);
           if (msg) {
             var fieldElm = Tpl.renderError(form, field, msg);
             if (fieldElm)
@@ -245,7 +251,7 @@ define(function(require, exports, module) {
 
       if (! fieldElm) return;
 
-      var msgElm = fieldElm.nextElementSibling;
+      let msgElm = fieldElm.nextElementSibling;
       if (! (msgElm && Dom.hasClass(msgElm, 'errorMsg'))) {
         msgElm = document.createElement('error');
         Dom.addClass(msgElm, 'errorMsg');
@@ -260,9 +266,9 @@ define(function(require, exports, module) {
       Dom.removeClass(msgElm, 'animate');
       msgElm.firstChild.textContent = msg || '';
       if (msg && Dom.hasClass(fieldElm, 'errorTop')) {
-        var fpos = fieldElm.getBoundingClientRect();
+        const fpos = fieldElm.getBoundingClientRect();
         ms.position = 'absolute';
-        var mpos = msgElm.getBoundingClientRect();
+        const mpos = msgElm.getBoundingClientRect();
         ms.marginTop = (fpos.top-mpos.top-mpos.height)+'px';
 
         if (Dom.hasClass(fieldElm, 'errorRight') )
@@ -276,10 +282,10 @@ define(function(require, exports, module) {
     },
 
     addChangeFields(options) {
-      var action = options.action || 'change';
-      var events = {};
-      for(var i=0;i < options.fields.length;++i) {
-        var field = options.fields[i];
+      const action = options.action || 'change';
+      const events = {};
+      for(let i= 0; i < options.fields.length; ++i) {
+        const field = options.fields[i];
         if (action === 'change' && /color/i.test(field) && ! /enable/i.test(field)) {
           events['click [name=' + field + ']'] = changeColorEvent(field, options);
         } else {
@@ -402,8 +408,8 @@ define(function(require, exports, module) {
   helpers('Select', {});
   Tpl.Select.$extend({
     $created(ctx, elm) {
-      buildSelectList(ctx, elm, function (value, content, selected) {
-        var option = document.createElement('option');
+      buildSelectList(ctx, elm, (value, content, selected) => {
+        const option = document.createElement('option');
         option.value = value;
         option.textContent = content;
         if (selected)
@@ -421,9 +427,9 @@ define(function(require, exports, module) {
 
   Tpl.Radio.$extend({
     $created(ctx, elm) {
-      var Button = Tpl.Radio.Button;
-      var name = ctx.data.name;
-      buildSelectList(ctx, elm, function (value, content, checked) {
+      const Button = Tpl.Radio.Button;
+      const name = ctx.data.name;
+      buildSelectList(ctx, elm, (value, content, checked) => {
         return Button.$render({name: name, value: value, label: content, checked: checked});
       });
     },
@@ -437,23 +443,23 @@ define(function(require, exports, module) {
 
 
   function buildSelectList(ctx, elm, optionFunc) {
-    var data = ctx.data;
-    var value = data.doc[data.name];
-    var options = data.options;
-    var sl = options.selectList;
+    const data = ctx.data;
+    const value = data.doc[data.name];
+    const options = data.options;
+    let sl = options.selectList;
     if (! sl) throw new Error('invalid selectList for ' + data.name);
     if ('fetch' in sl)
       sl = sl.fetch();
     if (sl.length === 0) return;
     if (typeof sl[0] === 'string') {
-      var getValue = function (row) {return row};
+      var getValue = row => row;
       var getContent = getValue;
     } else if ('_id' in sl[0]) {
-      var getValue = function (row) {return row._id};
-      var getContent = function (row) {return row.name};
+      var getValue = row => row._id;
+      var getContent = row => row.name;
     } else {
-      var getValue = function (row) {return row[0]};
-      var getContent = function (row) {return row[1]};
+      var getValue = row => row[0];
+      var getContent = row => row[1];
     }
     let includeBlank = options.includeBlank;
     if (('includeBlank' in options) && includeBlank !== 'false') {
@@ -461,13 +467,13 @@ define(function(require, exports, module) {
         includeBlank = '';
       elm.appendChild(optionFunc('', includeBlank));
     }
-    util.forEach(sl, function (row) {
-      var rowValue = getValue(row);
+    util.forEach(sl, row => {
+      const rowValue = getValue(row);
       elm.appendChild(optionFunc(rowValue, getContent(row), rowValue == value));
     });
   }
 
-  var errorMsg = document.createElement('span');
+  const errorMsg = document.createElement('span');
   errorMsg.className = 'errorMsg';
 
   Dom.registerHelpers({
@@ -476,7 +482,7 @@ define(function(require, exports, module) {
     },
 
     errorMsg() {
-      var elm = Dom.current.element;
+      const elm = Dom.current.element;
       return Dom.hasClass(elm, 'errorMsg') ? elm : errorMsg.cloneNode(true);
     },
 
@@ -492,7 +498,7 @@ define(function(require, exports, module) {
     },
 
     field(name, options) {
-      var data = (options && options.hasOwnProperty('data')) ? options.data : this;
+      const data = (options && options.hasOwnProperty('data')) ? options.data : this;
       return field(data, name, options);
     },
 
@@ -503,27 +509,29 @@ define(function(require, exports, module) {
       }
 
       options = options || {};
-      var data = options.hasOwnProperty('data') ? options.data : this;
+      const data = options.hasOwnProperty('data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
-        name: name,
-        options: options,
+        name,
+        options,
         value: field(data, name, options, extend),
         label: options.label ||  util.capitalize(util.humanize(name)),
       });
     },
 
-    displayField(name, options) {
-      options = options || {};
-      var data = options.hasOwnProperty('data') ? options.data : this;
+    displayField(name, options={}) {
+      const data = options.hasOwnProperty('data') ? options.data : this;
 
-      var value = document.createElement('span');
+      const value = document.createElement('span');
       value.className = 'value';
-      value.textContent = data[name];
+      const content = data[name];
+      if (content)
+        value.textContent = typeof content === 'object' ?
+        content.displayName || content.name || content : content;
 
       return Tpl.LabelField.$autoRender({
-        name: name,
-        value: value,
-        options: options,
+        name,
+        value,
+        options,
         label: options.label ||  util.capitalize(util.humanize(name)),
       });
     },
@@ -541,7 +549,7 @@ define(function(require, exports, module) {
 
   OnOff.$helpers({
     classes() {
-      var on = this.doc[this.name];
+      let on = this.doc[this.name];
       if (this.options && this.options.hasOwnProperty('on')) on = on === this.options.on;
       return on ? 'on onOff' : 'onOff';
     },
@@ -557,9 +565,9 @@ define(function(require, exports, module) {
 
   OnOff.$events({
     'click'(event) {
-      var data = $.ctx.data;
+      const data = $.ctx.data;
       Dom.toggleClass(this, 'on');
-      var on = Dom.hasClass(this, 'on');
+      let on = Dom.hasClass(this, 'on');
       if (data.options && data.options.hasOwnProperty('on')) {
         on = on ? data.options.on : data.options.off;
       }
@@ -570,11 +578,6 @@ define(function(require, exports, module) {
   function helpers(name, funcs) {
     Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
   }
-
-  var EDITORS = {
-    richTextEditor: RichTextEditorToolbar,
-    plainTextEditor: PlainText.Editor,
-  };
 
   function field(doc, name, options, extend) {
     options = options || {};
@@ -587,11 +590,11 @@ define(function(require, exports, module) {
     case 'onOff':
       return OnOff.$autoRender(data);
     default:
-      var editor = EDITORS[options.type];
+      const editor = EDITORS[options.type];
       if (editor) {
         if (extend) data.extend = extend;
         data.content = doc[name];
-        data.options = util.extend({"data-errorField": name}, options);
+        data.options = util.merge({"data-errorField": name}, options);
         return editor.$autoRender(data);
       }
 
@@ -604,12 +607,12 @@ define(function(require, exports, module) {
   function changeColorEvent(field, options) {
     return function (event) {
       Dom.stopEvent();
-      var doc = $.data();
+      const doc = $.data();
 
-      var fieldSpec = doc.classMethods.$fields[field];
-      var alpha = (fieldSpec && fieldSpec.color === 'alpha');
+      const fieldSpec = doc.classMethods.$fields[field];
+      const alpha = (fieldSpec && fieldSpec.color === 'alpha');
 
-      Dom.ColorPicker.choose(doc[field], alpha, function (result) {
+      Dom.ColorPicker.choose(doc[field], alpha, result => {
         if (result) {
           saveChange(doc, field, result, options);
         }
@@ -620,9 +623,9 @@ define(function(require, exports, module) {
   function changeFieldEvent(field, options) {
     return function (event) {
       Dom.stopEvent();
-      var doc = $.data();
+      const doc = $.data();
 
-      var value;
+      let value;
       switch (this.type) {
       case 'checkbox':
         value = this.checked;
@@ -636,10 +639,10 @@ define(function(require, exports, module) {
   }
 
   function saveChange(doc, field, value, options) {
-    var form = document.getElementById(options.template.name);
+    const form = document.getElementById(options.template.name);
     Tpl.clearErrors(form);
     if (options.update) {
-      var errors = doc[options.update](field, value, options.undo);
+      const errors = doc[options.update](field, value, options.undo);
       if (errors) {
         Tpl.renderErrors({_errors: errors}, form);
       }

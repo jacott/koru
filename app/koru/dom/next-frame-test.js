@@ -1,29 +1,29 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('koru/test');
-  var nextFrame = require('./next-frame');
+  const TH        = require('koru/test');
+
+  const nextFrame = require('./next-frame');
+  var v;
 
   TH.testCase(module, {
-    setUp: function () {
-      test = this;
+    setUp() {
       v = {};
-      v.rafStub = test.stub(window, 'requestAnimationFrame').returns(123);
-      v.cafStub = test.stub(window, 'cancelAnimationFrame');
+      v.rafStub = this.stub(window, 'requestAnimationFrame').returns(123);
+      v.cafStub = this.stub(window, 'cancelAnimationFrame');
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test nextFrame init": function () {
-      var nf = nextFrame(v.nf = {});
+    "test nextFrame init"() {
+      const nf = nextFrame(v.nf = {});
 
       assert.same(nf, v.nf);
 
       assert.isFalse(nf.isPendingNextFrame());
 
 
-      nf.nextFrame(v.stub = test.stub());
+      nf.nextFrame(v.stub = this.stub());
 
       assert.isTrue(nf.isPendingNextFrame());
 
@@ -36,11 +36,11 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.cafStub, 123);
     },
 
-    "test queing": function () {
-      var nf = nextFrame();
+    "test queing"() {
+      const nf = nextFrame();
 
-      nf.nextFrame(v.s1 = test.stub());
-      nf.nextFrame(v.s2 = test.stub());
+      nf.nextFrame(v.s1 = this.stub());
+      nf.nextFrame(v.s2 = this.stub());
 
       v.rafStub.yield();
 
@@ -52,11 +52,11 @@ isClient && define(function (require, exports, module) {
       refute.called(v.cafStub);
     },
 
-    "test flush": function () {
-      var nf = nextFrame();
+    "test flush"() {
+      const nf = nextFrame();
 
-      nf.nextFrame(v.s1 = test.stub());
-      nf.nextFrame(v.s2 = test.stub());
+      nf.nextFrame(v.s1 = this.stub());
+      nf.nextFrame(v.s2 = this.stub());
 
       nf.flushNextFrame();
 

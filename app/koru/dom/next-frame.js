@@ -1,14 +1,14 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
   function nextFrame (obj) {
     obj = obj || {};
 
-    var queue;
-    var afHandle;
+    let queue;
+    let afHandle;
 
-    util.extend(obj, {
-      nextFrame: function (func) {
+    util.merge(obj, {
+      nextFrame(func) {
         if (! queue) {
           queue = [func];
           afHandle = window.requestAnimationFrame(run);
@@ -17,32 +17,30 @@ define(function(require, exports, module) {
         }
       },
 
-      flushNextFrame: function () {
+      flushNextFrame() {
         if (! afHandle) return;
         window.cancelAnimationFrame(afHandle);
         run();
       },
 
-      cancelNextFrame: function () {
+      cancelNextFrame() {
         if (! afHandle) return;
         window.cancelAnimationFrame(afHandle);
         queue = afHandle = null;
       },
 
-      isPendingNextFrame: function () {
+      isPendingNextFrame() {
         return queue != null;
       },
     });
 
     function run() {
-      var q = queue;
+      const q = queue;
       queue = afHandle = null;
       util.forEach(q, execOne);
     }
 
-    function execOne(func) {
-      func();
-    }
+    function execOne(func) {func()}
 
     return obj;
   };

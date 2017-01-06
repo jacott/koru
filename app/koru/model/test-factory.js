@@ -235,7 +235,7 @@ define(function(require, exports, module) {
         if (!trait) throw new Error('unknown trait "'+ args[i] +'" for ' + key);
         util.extend(options, typeof trait === 'function' ? trait.call(keyTraits, options, args, i) : trait);
       } else if(args[i]) {
-        util.extend(options, args[i]);
+        util.merge(options, args[i]);
       }
     }
     return options;

@@ -69,7 +69,7 @@ define(function(require, exports, module) {
     }
   };
 
-  util.extend(util, {
+  util.merge(util, {
     DAY: 1000*60*60*24,
 
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
@@ -528,7 +528,7 @@ define(function(require, exports, module) {
     },
 
     protoCopy(source, attributes) {
-      return util.extend(Object.create(source), attributes);
+      return util.merge(Object.create(source), attributes);
     },
 
     /**

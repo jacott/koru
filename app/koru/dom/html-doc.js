@@ -18,7 +18,7 @@ define(function(require, exports, module) {
 
   const threadMap = new WeakMap;
 
-  Object.defineProperty(global, 'document', {configurable: true, get: function () {
+  Object.defineProperty(global, 'document', {configurable: true, get() {
     var key = util.Fiber.current || global;
     var doc = threadMap.get(key);
     if (! doc)
@@ -238,7 +238,7 @@ define(function(require, exports, module) {
       css = cssParser.parse(css).rule;
 
       var results = [];
-      util.forEach(this.childNodes, function (node) {
+      util.forEach(this.childNodes, node => {
         if (node.nodeType !== ELEMENT_NODE) return;
 
         if (node.tagName.toLowerCase() === css.tagName)
@@ -403,7 +403,7 @@ define(function(require, exports, module) {
   function buildNodeType(func, proto) {
     func.prototype = Object.create(Document.prototype);
     func.prototype.constructor = func;
-    util.extend(func.prototype, proto);
+    util.merge(func.prototype, proto);
   }
 
   function common(node, nodeType) {
@@ -413,16 +413,15 @@ define(function(require, exports, module) {
 
   function escapeHTML(html) {
     return String(html)
-      .replace(/[&<>\xa0]/g, function (m) {return CHAR_TO_NAME[m]});
+      .replace(/[&<>\xa0]/g, m => CHAR_TO_NAME[m]);
   }
 
   function unescapeHTML(html) {
-    return html
-      .replace(/\&(#\d+|[a-z]+);/gi, function (m, d) {
-        if (d[0] === '#')
-          return String.fromCharCode(+d.slice(1));
-        return NAME_TO_CHAR[d.toLowerCase()] || m;
-      });
+    return html.replace(
+        /\&(#\d+|[a-z]+);/gi,
+      (m, d) => d[0] === '#' ? String.fromCharCode(+d.slice(1))
+        : NAME_TO_CHAR[d.toLowerCase()] || m
+    );
   }
 
   function Style(node) {
@@ -465,7 +464,7 @@ define(function(require, exports, module) {
 
     get cssText() {
       var sm = this._styles;
-      return this._styleArray.map(function (dname) {
+      return this._styleArray.map(dname => {
         var value = sm[dname];
         if (! /color/.test(dname) && / /.test(value))
           value = "'"+value+"'";
@@ -497,25 +496,26 @@ define(function(require, exports, module) {
     },
   };
 
-  'text-align font-size font-family font-weight font-style text-decoration background-color color'.split(' ').forEach(function (dname) {
-    const name = util.camelize(dname);
-    function get() {return this._styles[name] || ''};
-    const set = /color/i.test(name) ? function (value) {
-      this._setStyle(name, dname, (value && uColor.toRgbStyle(value)) || '');
-    } : function (value) {this._setStyle(name, dname, value)};
+  'text-align font-size font-family font-weight font-style text-decoration background-color color'
+    .split(' ').forEach(dname => {
+      const name = util.camelize(dname);
+      function get() {return this._styles[name] || ''};
+      const set = /color/i.test(name) ? function (value) {
+        this._setStyle(name, dname, (value && uColor.toRgbStyle(value)) || '');
+      } : function (value) {this._setStyle(name, dname, value)};
 
-    Object.defineProperty(Style.prototype, name, {
-      configurable: true,
-      get: get,
-      set: set,
-    });
+      Object.defineProperty(Style.prototype, name, {
+        configurable: true,
+        get: get,
+        set: set,
+      });
 
-    Object.defineProperty(Style.prototype, dname, {
-      configurable: true,
-      get: get,
-      set: set,
+      Object.defineProperty(Style.prototype, dname, {
+        configurable: true,
+        get: get,
+        set: set,
+      });
     });
-  });
 
 
   return Document;

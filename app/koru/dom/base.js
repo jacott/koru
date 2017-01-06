@@ -6,7 +6,7 @@ define(function(require, exports, module) {
     return document.body.querySelector(cssQuery);
   }
 
-  util.extend(Dom, {
+  util.merge(Dom, {
     html,
     h,
 

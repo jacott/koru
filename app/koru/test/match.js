@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const match  = require('../match').__initBase__();
   const geddon = require('./core');
 
-  util.extend(match, {
+  util.merge(match, {
     near (expected, delta) {
       delta = delta  || 1;
       return match(function matchNear(actual) {
