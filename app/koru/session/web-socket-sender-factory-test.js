@@ -105,6 +105,21 @@ define(function (require, exports, module) {
       assert.same(v.state, v.sess.state);
     },
 
+    "test unload"() {
+      assert.calledWith(v.sess.provide, 'U', TH.match(arg => {
+        v.func = arg;
+        return typeof arg === 'function';
+      }));
+
+      this.stub(koru, 'unload');
+
+      v.func.call(v.sess, "v1.3.4-45-g1234,hhh123:koru/foo");
+
+      assert.same(v.sess.version, 'v1.3.4-45-g1234');
+      assert.same(v.sess.hash, 'hhh123');
+      assert.calledWith(koru.unload, 'koru/foo');
+    },
+
     "test batched messages"() {
       v.sess._commands.f = v.f = test.stub();
       v.sess._commands.g = v.g = test.stub();

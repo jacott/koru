@@ -168,7 +168,8 @@ define(function(require, exports, module) {
       base.provide('K', function ack() {});
       base.provide('L', function load(data) {require([data], function() {})});
       base.provide('U', function unload(data) {
-        const [[version, hash], modId] = data.split(':', 2);
+        const [vh, modId] = data.split(':', 2);
+        const [version, hash] = vh.split(',');
         this.version = version;
         this.hash = hash;
         koru.unload(modId);
