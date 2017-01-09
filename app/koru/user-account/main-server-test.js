@@ -294,6 +294,28 @@ define(function (require, exports, module) {
         v.request.email = 'foo@bar.co';
       },
 
+      "test intercept"() {
+        this.onEnd(() => userAccount.interceptChangePassword = null);
+        userAccount.interceptChangePassword = this.stub();
+
+         v.lu.$update('srp', SRP.generateVerifier('secret'));
+        let result = session._rpcs.SRPBegin.call(v.conn, v.request);
+
+        const response = v.srp.respondToChallenge(result);
+        response.newPassword = SRP.generateVerifier('new pw');
+        result = session._rpcs.SRPChangePassword.call(v.conn, response);
+
+        assert.calledWith(Val.assertCheck, response.newPassword, {identity: 'string', salt: 'string', verifier: 'string'});
+
+        assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
+
+        assert.calledWith(userAccount.interceptChangePassword, TH.match.field('_id', v.lu._id),
+                          response.newPassword);
+
+        v.lu.$reload();
+        refute.equals(response.newPassword, v.lu.srp);
+      },
+
       "test success"() {
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);

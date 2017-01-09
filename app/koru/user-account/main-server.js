@@ -93,7 +93,11 @@ define(function(require, exports, module) {
 
     Val.assertCheck(response.newPassword, VERIFIER_SPEC);
 
-    this.$srpUserAccount.$update({srp: response.newPassword});
+
+    if (UserAccount.interceptChangePassword)
+      UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
+    else
+      this.$srpUserAccount.$update({srp: response.newPassword});
 
     const result = {
       HAMK: this.$srp && this.$srp.HAMK,
@@ -210,10 +214,11 @@ define(function(require, exports, module) {
         srp: attrs.srp,
       });;
 
-      const update = {email: attrs.email};
+      const update = {};
 
+      if (attrs.email) update.email = attrs.email;
       if (attrs.srp) update.srp = attrs.srp;
-      lu.$update(update);
+      util.isObjEmpty(update) || lu.$update(update);
       return lu;
     },
 
