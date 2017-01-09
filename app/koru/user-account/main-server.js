@@ -8,27 +8,27 @@ define(function(require, exports, module) {
   const SRP     = require('koru/srp/srp');
   const util    = require('koru/util');
 
-  var emailConfig;
+  let emailConfig;
 
   const UserAccount = exports;
 
   class UserLogin extends Model.BaseModel {
     unexpiredTokens() {
-      var tokens = this.tokens;
-      var now = util.dateNow();
-      var keyVal = [];
-      for(var key in tokens) {
-        var time = tokens[key];
+      const tokens = this.tokens;
+      const now = util.dateNow();
+      const keyVal = [];
+      for (let key in tokens) {
+        const time = tokens[key];
         if (time > now) {
           keyVal.push(time+'|'+key);
         }
       }
       keyVal.sort();
-      var max = Math.min(10, keyVal.length);
+      const max = Math.min(10, keyVal.length);
 
-      var result = {};
-      for(var i = 1; i <= max; ++i) {
-        var pair = keyVal[keyVal.length - i].split('|');
+      const result = {};
+      for (let i = 1; i <= max; ++i) {
+        const pair = keyVal[keyVal.length - i].split('|');
         result[pair[1]] = +pair[0];
       }
 
@@ -36,8 +36,8 @@ define(function(require, exports, module) {
     }
 
     makeToken() {
-      var token = Random.id();
-      var tokens = this.unexpiredTokens();
+      const token = Random.id();
+      const tokens = this.unexpiredTokens();
       tokens[token] = Date.now()+180*24*1000*60*60;
       this.tokens = tokens;
       return token;
@@ -60,9 +60,9 @@ define(function(require, exports, module) {
   session.defineRpc('SRPBegin', SRPBegin);
 
   function SRPBegin(request) {
-    var doc = UserLogin.findBy('email', request.email);
+    const doc = UserLogin.findBy('email', request.email);
     if (! doc) throw new koru.Error(403, 'failure');
-    var srp = new SRP.Server(doc.srp);
+    const srp = new SRP.Server(doc.srp);
     this.$srp = srp;
     this.$srpUserAccount = doc;
     return srp.issueChallenge({A: request.A});
@@ -72,10 +72,10 @@ define(function(require, exports, module) {
 
   function SRPLogin(response) {
     UserAccount.assertResponse(this, response);
-    var doc = this.$srpUserAccount;
-    var token = doc.makeToken();
+    const doc = this.$srpUserAccount;
+    const token = doc.makeToken();
     doc.$$save();
-    var result = {
+    const result = {
       HAMK: this.$srp && this.$srp.HAMK,
       userId: this.userId = doc.userId,
       loginToken: doc._id + '|' + token,
@@ -85,7 +85,9 @@ define(function(require, exports, module) {
     return result;
   }
 
-  var VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {identity: 'string', salt: 'string', verifier: 'string'};
+  const VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {
+    identity: 'string', salt: 'string', verifier: 'string'};
+
   session.defineRpc('SRPChangePassword', function (response) {
     UserAccount.assertResponse(this, response);
 
@@ -93,7 +95,7 @@ define(function(require, exports, module) {
 
     this.$srpUserAccount.$update({srp: response.newPassword});
 
-    var result = {
+    const result = {
       HAMK: this.$srp && this.$srp.HAMK,
     };
     this.$srp = null;
@@ -102,8 +104,8 @@ define(function(require, exports, module) {
   });
 
   session.defineRpc('resetPassword', function (token, passwordHash) {
-    var result = UserAccount.resetPassword(token, passwordHash);
-    var lu = result[0];
+    const result = UserAccount.resetPassword(token, passwordHash);
+    const lu = result[0];
     this.send('VT', lu._id + '|' + result[1]);
     this.userId = lu.userId;
   });
@@ -127,13 +129,13 @@ define(function(require, exports, module) {
     resetPassword(token, passwordHash) {
       Val.ensureString(token);
       Val.assertCheck(passwordHash, VERIFIER_SPEC);
-      var parts = token.split('-');
-      var lu = UserLogin.findById(parts[0]);
+      const parts = token.split('-');
+      const lu = UserLogin.findById(parts[0]);
 
       if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
         lu.srp = passwordHash;
         lu.resetToken = lu.resetTokenExpire = undefined;
-        var loginToken = lu.makeToken();
+        const loginToken = lu.makeToken();
         lu.$$save();
         return [lu, loginToken];
       }
@@ -141,29 +143,26 @@ define(function(require, exports, module) {
     },
 
     verifyClearPassword(email, password) {
-      var doc = UserLogin.findBy('email', email);
+      const doc = UserLogin.findBy('email', email);
       if (! doc) return;
 
-      var C = new SRP.Client(password);
-      var S = new SRP.Server(doc.srp);
+      const C = new SRP.Client(password);
+      const S = new SRP.Server(doc.srp);
 
-      var request = C.startExchange();
-      var challenge = S.issueChallenge(request);
-      var response = C.respondToChallenge(challenge);
+      const request = C.startExchange();
+      const challenge = S.issueChallenge(request);
+      const response = C.respondToChallenge(challenge);
 
       if (S.M === response.M) {
-        var token = doc.makeToken();
+        const token = doc.makeToken();
         doc.$$save();
         return [doc, token];
       }
     },
 
     verifyToken(emailOrId, token) {
-      if (emailOrId.indexOf('@') === -1) {
-        var doc = UserLogin.findById(emailOrId);
-      } else {
-        var doc = UserLogin.findBy('email', emailOrId);
-      }
+      const doc = emailOrId.indexOf('@') === -1 ? UserLogin.findById(emailOrId)
+              : UserLogin.findBy('email', emailOrId);
       if (doc && doc.unexpiredTokens()[token])
         return doc;
     },
@@ -203,7 +202,7 @@ define(function(require, exports, module) {
     },
 
     updateOrCreateUserLogin(attrs) {
-      var lu = UserLogin.findBy('userId', attrs.userId);
+      const lu = UserLogin.findBy('userId', attrs.userId);
       if (! lu) return UserLogin.create({
         email: attrs.email,
         userId: attrs.userId,
@@ -211,7 +210,7 @@ define(function(require, exports, module) {
         srp: attrs.srp,
       });;
 
-      var update = {email: attrs.email};
+      const update = {email: attrs.email};
 
       if (attrs.srp) update.srp = attrs.srp;
       lu.$update(update);
@@ -237,17 +236,21 @@ define(function(require, exports, module) {
 
     if (! emailConfig.from) koru.throwConfigMissing('userAccount.emailConfig.from');
     if (! emailConfig.siteName) koru.throwConfigMissing('userAccount.emailConfig.siteName');
-    if (! emailConfig.sendResetPasswordEmailText) koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
-    if (typeof emailConfig.sendResetPasswordEmailText !== 'function') koru.throwConfigError('userAccount.sendResetPasswordEmailText', 'must be of type function(userId, resetToken)');
+    if (! emailConfig.sendResetPasswordEmailText)
+      koru.throwConfigMissing('userAccount.emailConfig.sendResetPasswordEmailText');
+    if (typeof emailConfig.sendResetPasswordEmailText !== 'function')
+      koru.throwConfigError('userAccount.sendResetPasswordEmailText',
+                            'must be of type function(userId, resetToken)');
   }
 
   function onMessage(data) {
-    var conn = this;
-    var cmd = data[0];
+    const conn = this;
+    const cmd = data[0];
+    let token;
     switch(cmd) {
     case 'L':
-      var pair = data.slice(1).toString().split('|');
-      var lu = UserLogin.findById(pair[0]);
+      const pair = data.slice(1).toString().split('|');
+      const lu = UserLogin.findById(pair[0]);
 
       if (lu && lu.unexpiredTokens()[pair[1]]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
@@ -256,9 +259,9 @@ define(function(require, exports, module) {
       }
       break;
     case 'X': // logout me
-      var token = getToken(data);
+      token = getToken(data);
       if (token) {
-        var mod = {};
+        const mod = {};
         mod['tokens.'+token] = undefined;
         UserLogin.where({userId: conn.userId}).update(mod);
       }
@@ -266,20 +269,20 @@ define(function(require, exports, module) {
       break;
     case 'O': // logoutOtherClients
       if (conn.userId == null) return;
-      var token = getToken(data);
+      token = getToken(data);
       if (token) {
-        var lu = UserLogin.findBy('userId', conn.userId);
+        const lu = UserLogin.findBy('userId', conn.userId);
         if (lu) {
-          var mod = {};
+          const mod = {};
           if (token in lu.tokens)
             mod[token] = lu.tokens[token];
           UserLogin.where({_id: lu._id}).update('tokens', mod);
         }
       }
-      var conns = session.conns;
-      for(var sessId in conns) {
+      const conns = session.conns;
+      for (let sessId in conns) {
         if (sessId === conn.sessId) continue;
-        var curr = conns[sessId];
+        const curr = conns[sessId];
 
         if (curr.userId === conn.userId)
           curr.userId = null;
@@ -289,7 +292,7 @@ define(function(require, exports, module) {
   }
 
   function getToken(data) {
-    var token = data.slice(1).toString().split('|')[1];
+    const token = data.slice(1).toString().split('|')[1];
     if (token && token.match(/^[\d\w]+$/)) return token;
   }
 });

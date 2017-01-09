@@ -1,5 +1,4 @@
 define(function (require, exports, module) {
-  var test, v;
   const Email       = require('koru/email');
   const koru        = require('koru/main');
   const Model       = require('koru/model/main');
@@ -8,12 +7,13 @@ define(function (require, exports, module) {
   const session     = require('koru/session');
   const TH          = require('koru/session/test-helper');
   const SRP         = require('koru/srp/srp');
-  const userAccount = require('./main');
   const crypto      = requirejs.nodeRequire('crypto');
+
+  const userAccount = require('./main');
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.ws = TH.mockWs();
       TH.noInfo();
@@ -22,8 +22,8 @@ define(function (require, exports, module) {
         userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
-      test.spy(Val, 'assertCheck');
-      test.spy(Val, 'ensureString');
+      this.spy(Val, 'assertCheck');
+      this.spy(Val, 'ensureString');
       this.stub(crypto, 'randomBytes', (num, cb) => {
         if (cb) {
           cb(null, {toString: this.stub().withArgs('base64').returns('crypto64Id')});
@@ -34,7 +34,7 @@ define(function (require, exports, module) {
 
     tearDown() {
       userAccount.model.docs.remove({});
-      test.intercept(koru, 'logger');
+      this.intercept(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
       v = null;
@@ -54,7 +54,7 @@ define(function (require, exports, module) {
 
     "sendResetPasswordEmail": {
       setUp() {
-        test.stub(Email, 'send');
+        this.stub(Email, 'send');
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
           emailConfig: {
@@ -75,7 +75,7 @@ define(function (require, exports, module) {
       "test send"() {
         userAccount.sendResetPasswordEmail({_id: 'uid111'});
 
-        var tokenExp =  v.lu.$reload().resetTokenExpire;
+        const tokenExp =  v.lu.$reload().resetTokenExpire;
 
         assert.between(tokenExp, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
 
@@ -93,8 +93,9 @@ define(function (require, exports, module) {
     },
 
     "test createUserLogin"() {
-      var spy = test.spy(SRP, 'generateVerifier');
-      var lu = userAccount.createUserLogin({email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
+      const spy = this.spy(SRP, 'generateVerifier');
+      const lu = userAccount.createUserLogin({
+        email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
 
       assert.calledWith(spy, 'test pw');
 
@@ -105,14 +106,16 @@ define(function (require, exports, module) {
     },
 
     "test updateOrCreateUserLogin"() {
-      var lu = userAccount.updateOrCreateUserLogin({email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
+      let lu = userAccount.updateOrCreateUserLogin({
+        email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
 
       assert.equals(lu.$reload().srp, 'test srp');
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
 
-      lu = userAccount.updateOrCreateUserLogin({email: 'bob@vimaly.com', userId: "uid1", srp: 'new srp'});
+      lu = userAccount.updateOrCreateUserLogin({
+        email: 'bob@vimaly.com', userId: "uid1", srp: 'new srp'});
 
       assert.equals(lu.$reload().srp, 'new srp');
       assert.same(lu.email, 'bob@vimaly.com');
@@ -126,41 +129,43 @@ define(function (require, exports, module) {
     },
 
     "test too many unexpiredTokens"() {
-      var tokens = v.lu.tokens = {};
-      for(var i = 0; i < 15; ++i) {
+      const tokens = v.lu.tokens = {};
+      for(let i = 0; i < 15; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
       }
-      assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '), 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9');
+      assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '),
+                  't0 t1 t2 t3 t4 t5 t6 t7 t8 t9');
     },
 
     "test expired tokens"() {
-      var tokens = v.lu.tokens = {};
-      for(var i = 0; i < 5; ++i) {
+      const tokens = v.lu.tokens = {};
+      for(let i = 0; i < 5; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
       }
 
-      for(var i = 0; i < 5; ++i) {
+      for(let i = 0; i < 5; ++i) {
         tokens['e'+i] = Date.now() + (0-i)*24*1000*60*60;
       }
 
-      assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '), 't0 t1 t2 t3 t4');
+      assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '),
+                  't0 t1 t2 t3 t4');
     },
 
     "test verifyClearPassword"() {
       v.lu.$update('srp', SRP.generateVerifier('secret'));
-      var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
+      let docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
       assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
-      var docToken = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
+      docToken = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
       assert.same(docToken, undefined);
     },
 
     "test verifyToken"() {
-      var doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
+      let doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
       assert.equals(doc && doc._id, v.lu._id);
-      var doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
+      doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
       assert.same(doc, undefined);
-      var doc = userAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
+      doc = userAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
       assert.equals(doc && doc._id, v.lu._id);
     },
 
@@ -173,11 +178,12 @@ define(function (require, exports, module) {
 
       "test direct calling"() {
         v.lu.$update('srp', SRP.generateVerifier('secret'));
-        var storage = {};
-        var result = userAccount.SRPBegin(storage, v.request);
+        const storage = {};
+        let result = userAccount.SRPBegin(storage, v.request);
 
-        assert.equals(storage, {$srp: TH.match.any, $srpUserAccount: TH.match.field('_id', v.lu._id)});
-        var response = v.srp.respondToChallenge(result);
+        assert.equals(storage, {
+          $srp: TH.match.any, $srpUserAccount: TH.match.field('_id', v.lu._id)});
+        const response = v.srp.respondToChallenge(result);
         result = userAccount.SRPLogin(storage, response);
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
         assert.same(result.userId, 'uid111');
@@ -185,9 +191,9 @@ define(function (require, exports, module) {
 
       "test success"() {
         v.lu.$update('srp', SRP.generateVerifier('secret'));
-        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+        let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-        var response = v.srp.respondToChallenge(result);
+        const response = v.srp.respondToChallenge(result);
 
         assert.same(v.conn.userId, undefined);
 
@@ -195,7 +201,7 @@ define(function (require, exports, module) {
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
         assert.same(result.userId, 'uid111');
-        var tparts = result.loginToken.split('|');
+        const tparts = result.loginToken.split('|');
         assert.same(v.lu._id, tparts[0]);
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', tparts[1], 'def'].sort());
         assert(v.ts = v.lu.tokens[tparts[1]]);
@@ -204,9 +210,9 @@ define(function (require, exports, module) {
       },
 
       "test wrong password"() {
-        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+        const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-        var response = v.srp.respondToChallenge(result);
+        const response = v.srp.respondToChallenge(result);
 
         assert.exception(function () {
           session._rpcs.SRPLogin.call(v.conn, response);
@@ -247,14 +253,15 @@ define(function (require, exports, module) {
       },
 
       "test success"() {
-        test.spy(userAccount, 'resetPassword');
+        this.spy(userAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
         v.lu.$$save();
         session._rpcs.resetPassword.call(v.conn, v.lu._id+'-secretToken', {identity: 'abc123'});
 
         assert.calledWith(Val.ensureString, v.lu._id+'-secretToken');
-        assert.calledWith(Val.assertCheck, {identity: 'abc123'}, { identity: 'string', salt: 'string', verifier: 'string' });
+        assert.calledWith(Val.assertCheck, {identity: 'abc123'}, {
+          identity: 'string', salt: 'string', verifier: 'string' });
 
         assert.same(v.conn.userId, v.lu.userId);
         v.lu.$reload();
@@ -262,14 +269,16 @@ define(function (require, exports, module) {
         assert.calledWith(v.ws.send, TH.match(function (data) {
           if (typeof data !== 'string') return false;
 
-          var m = data.match(/^VT(.*)\|(.*)$/);
+          const m = data.match(/^VT(.*)\|(.*)$/);
           v.docId = m && m[1];
           return v.token = m && m[2];
 
         }));
         assert.same(v.lu._id, v.docId);
-        assert.equals(userAccount.resetPassword.firstCall.returnValue, [TH.match.field('_id', v.lu._id), v.token]);
-        assert.between(v.lu.tokens[v.token], Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
+        assert.equals(userAccount.resetPassword.firstCall.returnValue, [
+          TH.match.field('_id', v.lu._id), v.token]);
+        assert.between(v.lu.tokens[v.token],
+                       Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
         assert.same(v.lu.resetToken, undefined);
         assert.same(v.lu.resetTokenExpire, undefined);
 
@@ -287,13 +296,14 @@ define(function (require, exports, module) {
 
       "test success"() {
         v.lu.$update('srp', SRP.generateVerifier('secret'));
-        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+        let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-        var response = v.srp.respondToChallenge(result);
+        const response = v.srp.respondToChallenge(result);
         response.newPassword = SRP.generateVerifier('new pw');
         result = session._rpcs.SRPChangePassword.call(v.conn, response);
 
-        assert.calledWith(Val.assertCheck, response.newPassword, {identity: 'string', salt: 'string', verifier: 'string'});
+        assert.calledWith(Val.assertCheck, response.newPassword, {
+          identity: 'string', salt: 'string', verifier: 'string'});
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
@@ -302,9 +312,9 @@ define(function (require, exports, module) {
       },
 
       "test wrong password"() {
-        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+        const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-        var response = v.srp.respondToChallenge(result);
+        const response = v.srp.respondToChallenge(result);
         response.newPassword = SRP.generateVerifier('new pw');
 
         assert.exception(function () {
@@ -316,9 +326,9 @@ define(function (require, exports, module) {
 
       "test bad newPassword"() {
         v.lu.$update('srp', SRP.generateVerifier('secret'));
-        var result = session._rpcs.SRPBegin.call(v.conn, v.request);
+        const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
-        var response = v.srp.respondToChallenge(result);
+        const response = v.srp.respondToChallenge(result);
         response.newPassword = SRP.generateVerifier('new pw');
         response.newPassword.bad = true;
 
@@ -337,7 +347,7 @@ define(function (require, exports, module) {
 
       tearDown() {
         userAccount.stop();
-        test.intercept(koru, 'logger');
+        this.intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
         v.connOther && v.connOther.close();
