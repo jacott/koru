@@ -1,75 +1,78 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
-  var colorClass = {};
-  var contrastColors = {};
-  var boarderColors = {};
+  const colorClass = {};
+  const contrastColors = {};
+  const boarderColors = {};
 
-  var tmpStyle = {};
-  var RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
-  var HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
+  const tmpStyle = {};
+  const RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
+  const HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
 
   exports = {
     hex2rgb: hex2rgb,
 
     RGBA_RE: RGBA_RE,
 
-    toRGB: function (input) {
+    toRGB(input) {
       if (typeof input === 'string') {
-        var match = input.match(RGBA_RE);
+        const match = input.match(RGBA_RE);
         if (match)
-          return {r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]), a: match[4] ? parseFloat(match[4]) : 1};
+          return {
+            r: parseInt(match[1]), g: parseInt(match[2]),
+            b: parseInt(match[3]), a: match[4] ? parseFloat(match[4]) : 1};
         else
           return hex2rgb(input, 'validate');
       }
       return null;
     },
 
-    toHex: function (input) {
-      var rgb = exports.toRGB(input);
+    toHex(input) {
+      const rgb = exports.toRGB(input);
       if (rgb)
         return '#' + rgb2hex(rgb);
       return '';
     },
 
-    rgb2hex: function (rgb, prefix) {
+    rgb2hex(rgb, prefix) {
       if (prefix == null) prefix = '#';
       return prefix + rgb2hex(rgb);
     },
 
-    backgroundColorStyle: function (color) {
+    backgroundColorStyle(color) {
       exports.setBackgroundColorStyle(tmpStyle, color);
       return 'background-color:'+tmpStyle.backgroundColor +
         ";color:"+tmpStyle.color;
     },
 
-    setBackgroundColorStyle: function (style, color) {
-      var uc = color || '#ffffff';
+    setBackgroundColorStyle(style, color) {
+      const uc = color || '#ffffff';
       style.backgroundColor = hex2Style(color);
-      style.color = hex2Style(contrastColors[uc] || (contrastColors[uc] = contrastColor(uc, '#4d4d4d')));
+      style.color = hex2Style(contrastColors[uc] || (
+        contrastColors[uc] = contrastColor(uc, '#4d4d4d')));
       return style;
     },
 
-    setBackgroundAndBoarderColorStyle: function (style, color) {
+    setBackgroundAndBoarderColorStyle(style, color) {
       color = color || '#ffffff';
 
       exports.setBackgroundColorStyle(style, color);
-      var cc = contrastColors[color];
+      const cc = contrastColors[color];
       style.borderColor = boarderColors[color] || (boarderColors[color] = fade(cc, 30));
     },
 
-    rgb2hsl: function (rgb) {
+    rgb2hsl(rgb) {
       if (typeof rgb === 'string')
         rgb = hex2rgb(rgb);
 
-      var r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
-      var max = Math.max(r, g, b), min = Math.min(r, g, b);
-      var h, s, l = (max + min) / 2;
+      const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
 
       if (max == min) {
         h = s = 0;
       } else {
-        var d = max - min;
+        const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
         switch(max) {
         case r: h = (g - b) / d + (g < b ? 6 : 0); break;
@@ -82,9 +85,9 @@ define(function(require, exports, module) {
       return {h: h, s: s, l: l};
     },
 
-    hsl2rgb: function (hsl) {
-      var r, g, b;
-      var h = hsl.h, s = hsl.s, l = hsl.l;
+    hsl2rgb(hsl) {
+      let r, g, b;
+      const h = hsl.h, s = hsl.s, l = hsl.l;
 
       if (s == 0) {
         r = g = b = l;
@@ -99,8 +102,8 @@ define(function(require, exports, module) {
           return p;
         }
 
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
         r = hue2rgb(p, q, h + 1/3);
         g = hue2rgb(p, q, h);
         b = hue2rgb(p, q, h - 1/3);
@@ -109,8 +112,8 @@ define(function(require, exports, module) {
       return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
     },
 
-    colorOnLight: function (color) {
-      var lab = hex2lab(color);
+    colorOnLight(color) {
+      const lab = hex2lab(color);
 
       if (lab.l < 60)
         return color;
@@ -119,12 +122,12 @@ define(function(require, exports, module) {
       return lab2hex(lab);
     },
 
-    colorClass: function (color) {
-      var cc = colorClass[color];
+    colorClass(color) {
+      let cc = colorClass[color];
       if (cc) return cc;
 
       cc = hex2lab(color);
-      var l = cc.l;
+      const l = cc.l;
 
       if (l < 60) {
         cc = 'dark';
@@ -150,10 +153,10 @@ define(function(require, exports, module) {
   };
 
   function fade(color, amount) {
-    var match = HEX_RE.exec(color),
-        result = 'rgba(';
+    const match = HEX_RE.exec(color);
+    let result = 'rgba(';
 
-    for(var i = 1; i<4; ++i) {
+    for(let i = 1; i<4; ++i) {
       result += parseInt(match[i], 16) + ',';
     }
 
@@ -164,10 +167,10 @@ define(function(require, exports, module) {
     if (! color) return '';
     if (color.length === 7) return color;
 
-    var match = HEX_RE.exec(color) || ['', '00', '00', '00', '00'];
-    var result = 'rgba(';
+    const match = HEX_RE.exec(color) || ['', '00', '00', '00', '00'];
+    let result = 'rgba(';
 
-    for(var i = 1; i<4; ++i) {
+    for(let i = 1; i<4; ++i) {
       result += parseInt(match[i], 16) + ',';
     }
 
@@ -179,7 +182,7 @@ define(function(require, exports, module) {
     dark = dark ? hex2lab(dark) : {l: 20, a: color.a, b: color.b};
     light = light ? hex2lab(light) : {l: 85, a: dark.a, b: dark.b};
 
-    var l = color.l;
+    const {l} = color;
 
     if (l < 50) {
       color = light;
@@ -192,17 +195,16 @@ define(function(require, exports, module) {
   }
 
   function hex2rgb(color, validate) {
-    var match = HEX_RE.exec(color);
-    if (! match) {
-        if (validate) return null;
-        match =['', '00', '00', '00'];
-    }
-    return {r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16),
-            a: match[4] ? alphaHexToFrac(match[4]) : 1};
+    const match = HEX_RE.exec(color) || (! validate && ['', '00', '00', '00']);
+
+    return match ?
+      {r: parseInt(match[1],16), g: parseInt(match[2],16), b: parseInt(match[3],16),
+       a: match[4] ? alphaHexToFrac(match[4]) : 1}
+    : null;
   }
 
   function rgb2hex(rgb) {
-    var a = rgb.a;
+    let {a} = rgb;
     if (a != null)
       a = alphaFracToHex(rgb.a);
 
@@ -212,9 +214,9 @@ define(function(require, exports, module) {
   }
 
   function toRgbStyle(input) {
-    var rgb = exports.toRGB(input);
+    const rgb = exports.toRGB(input);
 
-    var result = rgb.r + ', ' + rgb.g + ', ' + rgb.b;
+    let result = rgb.r + ', ' + rgb.g + ', ' + rgb.b;
 
     if (rgb.a !== 1)
       result =  'rgba(' + result + ', ' + alphaHexToFrac(rgb.a);
@@ -231,7 +233,7 @@ define(function(require, exports, module) {
   }
 
   function alphaFracToHex(frac) {
-    var a = (frac * 2560000) - 1280000;
+    let a = (frac * 2560000) - 1280000;
     if (a > 0) a = a*127/128;
     a = Math.round(a/10000) + 128;
     return byte2hex(a);
@@ -239,13 +241,13 @@ define(function(require, exports, module) {
 
   function hex2lab(color) {
     color = hex2rgb(color);
-    var r = rgb2xyz(color.r);
-    var g = rgb2xyz(color.g);
-    var b = rgb2xyz(color.b);
+    const r = rgb2xyz(color.r);
+    const g = rgb2xyz(color.g);
+    const b = rgb2xyz(color.b);
 
-    var x = xyz2lab((.4124564 * r + .3575761 * g + .1804375 * b) / .95047);
-    var y = xyz2lab((.2126729 * r + .7151522 * g + .0721750 * b));
-    var z = xyz2lab((.0193339 * r + .1191920 * g + .9503041 * b) / 1.08883);
+    const x = xyz2lab((.4124564 * r + .3575761 * g + .1804375 * b) / .95047);
+    const y = xyz2lab((.2126729 * r + .7151522 * g + .0721750 * b));
+    const z = xyz2lab((.0193339 * r + .1191920 * g + .9503041 * b) / 1.08883);
     return {l: 116 * y - 16, a: 500 * (x - y), b: 200 * (y - z)};
   }
 
@@ -258,7 +260,7 @@ define(function(require, exports, module) {
   }
 
   function lab2hex(color) {
-    var y = (color.l + 16) / 116, x = y + color.a / 500, z = y - color.b / 200;
+    let y = (color.l + 16) / 116, x = y + color.a / 500, z = y - color.b / 200;
     x = lab2xyz(x) * .95047;
     y = lab2xyz(y);
     z = lab2xyz(z) * 1.08883;
@@ -275,7 +277,8 @@ define(function(require, exports, module) {
   }
 
   function xyz2hex(r) {
-    var hex = Math.min(255, Math.max(0, Math.round(255 * (r <= .00304 ? 12.92 * r : 1.055 * Math.pow(r, 1 / 2.4) - .055)))).toString(16);
+    const hex = Math.min(255, Math.max(0, Math.round(
+      255 * (r <= .00304 ? 12.92 * r : 1.055 * Math.pow(r, 1 / 2.4) - .055)))).toString(16);
     return hex.length === 1 ? "0"+hex : hex;
   }
 

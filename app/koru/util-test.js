@@ -2,15 +2,15 @@ define(function (require, exports, module) {
   /**
    * The util module provides commonly performed utility functions.
    **/
-  var test, v;
   const api   = require('koru/test/api');
   const match = require('./match');
   const TH    = require('./test');
+
   const util  = require('./util');
+  var v;
 
   TH.testCase(module, {
     setUp () {
-      test = this;
       v = {};
     },
 
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
       assert.same(ans.e, 6);
     },
 
-    "test toDp" () {
+    "test toDp"() {
       /**
        * Return a floating point `number` as a string to
        * `dp` decimal places.
@@ -51,13 +51,13 @@ define(function (require, exports, module) {
       assert.same(util.toDp(1.0021, 3, true), "1.002");
     },
 
-    "test DAY" () {
+    "test DAY"() {
       var d1 = new Date(2015, 1, 1);
       var d2 = new Date(2015, 1, 2);
       assert.same(util.DAY, +d2 - d1);
     },
 
-    "test pc" () {
+    "test pc"() {
       /**
        * Convert a `fraction` into css % string
        **/
@@ -65,7 +65,7 @@ define(function (require, exports, module) {
       assert.same(util.pc(1.2345678), '123.45678%');
     },
 
-    "test px" () {
+    "test px"() {
       /**
        * Convert a `fraction` into css % string
        **/
@@ -73,20 +73,20 @@ define(function (require, exports, module) {
       assert.same(util.px(123.2345678), '123px');
     },
 
-    "test sansPx" () {
+    "test sansPx"() {
        assert.same(util.sansPx('123.23px'), 123.23);
        assert.same(util.sansPx(), 0);
        assert.same(util.sansPx(234), 234);
     },
 
-    "test indexOfRegex" () {
+    "test indexOfRegex"() {
       var list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);
       assert.same(util.indexOfRegex(list, /ab/, 'foo'), -1);
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
     },
 
-    "test isObjEmpty" () {
+    "test isObjEmpty"() {
       assert.isTrue(util.isObjEmpty());
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));
@@ -98,12 +98,12 @@ define(function (require, exports, module) {
       assert.same(util.firstParam(), undefined);
     },
 
-    "test keyMatches" () {
+    "test keyMatches"() {
       assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(c)/)[1], 'c');
       assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
     },
 
-    "test addItem" () {
+    "test addItem"() {
       var list = ['a', 'b'];
 
       assert.same(util.addItem(list, 'b'), 1);
@@ -120,7 +120,7 @@ define(function (require, exports, module) {
       assert.equals(list, ['a', 'b', {aa: 123}]);
     },
 
-    "test removeItem" () {
+    "test removeItem"() {
       /**
        * remove an `item` from a `list`. `list` is modified.
        *
@@ -154,11 +154,11 @@ define(function (require, exports, module) {
       assert.equals(bar, [{x: 1}]);
     },
 
-    "test values" () {
+    "test values"() {
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     },
 
-    'test intersectp' () {
+    'test intersectp'() {
       /**
        * Determine if `list1` and `list2` intersect
        **/
@@ -167,7 +167,7 @@ define(function (require, exports, module) {
       refute(util.intersectp([1,2],['a']));
     },
 
-    "test union" () {
+    "test union"() {
       assert.equals(util.union([1,2,3], [3, 4, 5], [3, 6]).sort(), [1, 2, 3, 4, 5, 6]);
       assert.equals(util.union([1,2]), [1, 2]);
       assert.equals(util.union([1,2], null), [1, 2]);
@@ -175,14 +175,14 @@ define(function (require, exports, module) {
       assert.equals(util.union(null, null), []);
     },
 
-    "test diff" () {
+    "test diff"() {
       assert.equals(util.diff(), []);
       assert.equals(util.diff([1, 2]), [1, 2]);
 
       assert.equals(util.diff([1,"2",3, null], ["2",4]), [1, 3, null]);
     },
 
-    "test symDiff" () {
+    "test symDiff"() {
       assert.equals(util.symDiff(), []);
       assert.equals(util.symDiff([1, 2]), [1, 2]);
 
@@ -190,7 +190,7 @@ define(function (require, exports, module) {
       assert.equals(util.symDiff([2,4], [1,2,3]).sort(), [1, 3, 4]);
     },
 
-    'test extend' () {
+    'test extend'() {
       var item = 5,
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}};
@@ -204,7 +204,7 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
-    'test mergeExclude' () {
+    'test mergeExclude'() {
       var item = 5,
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
@@ -218,7 +218,7 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
-    "test egal" () {
+    "test egal"() {
       assert.same(util.egal, util.is);
       assert.isTrue(util.egal(null, null));
       assert.isTrue(util.egal(NaN, NaN));
@@ -240,7 +240,7 @@ define(function (require, exports, module) {
       assert.isFalse(util.egal("a", "b"));
     },
 
-    "test shallowEqual arrays" () {
+    "test shallowEqual arrays"() {
       assert.isTrue(util.shallowEqual([1, 2, 3], [1, 2, 3]));
       assert.isFalse(util.shallowEqual([1, {}, 3], [1, {}, 3]));
       assert.isFalse(util.shallowEqual([1, 2], [1, 2, 3]));
@@ -249,7 +249,7 @@ define(function (require, exports, module) {
       assert.isFalse(util.shallowEqual('a', [1, 2]));
     },
 
-    "test deepEqual" () {
+    "test deepEqual"() {
       assert.isTrue(util.deepEqual(null, null));
       assert.isTrue(util.deepEqual(null, undefined));
       assert.isFalse(util.deepEqual(null, ""));
@@ -274,16 +274,16 @@ define(function (require, exports, module) {
       assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
     },
 
-    "test invert" () {
+    "test invert"() {
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
       assert.equals(util.invert({a: 1, b: 2}, function (x) {return x+x}), {'1': "aa", '2': "bb"});
     },
 
-    "test lookupDottedValue" () {
+    "test lookupDottedValue"() {
       assert.same(util.lookupDottedValue("foo.1.bar.baz", {a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
     },
 
-    "test applyChange with non numeric array index" () {
+    "test applyChange with non numeric array index"() {
       // say "foo.bar.baz" instead of "foo.0.baz"
       assert.exception(function () {
         util.applyChange({a: [{b: [1]}]}, "a.0.b.x", {value: 2});
@@ -294,7 +294,7 @@ define(function (require, exports, module) {
       }, 'Error', "Non numeric index for array: 'x'");
     },
 
-    "test applyChanges with objects" () {
+    "test applyChanges with objects"() {
       var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
       var changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
 
@@ -309,7 +309,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
     },
 
-    "test applyChange deleting array entry" () {
+    "test applyChange deleting array entry"() {
       var orig = {a: [1,2,3]};
       var changes = {'a.1': undefined};
 
@@ -318,7 +318,7 @@ define(function (require, exports, module) {
       assert.equals(orig.a, [1, 3]);
     },
 
-    "test already applied applyChanges" () {
+    "test already applied applyChanges"() {
       var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
       var changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
 
@@ -327,7 +327,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {c: 3});
     },
 
-    "test applyChanges with empty array" () {
+    "test applyChanges with empty array"() {
       var orig = {ar: []};
       var changes = {"ar.1.foo": 3};
 
@@ -337,7 +337,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {"ar.1.foo": undefined});
     },
 
-    "test change array" () {
+    "test change array"() {
       var orig = {ar: []};
       var changes = {"ar.0": 'new'};
 
@@ -347,7 +347,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {"ar.0": undefined});
     },
 
-    "test applyChanges with array" () {
+    "test applyChanges with array"() {
       var orig = {ar: [{foo: 1}, {foo: 2}]};
       var changes = {"ar.1.foo": 3};
 
@@ -357,7 +357,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {"ar.1.foo": 2});
     },
 
-    "test addItem applyChanges" () {
+    "test addItem applyChanges"() {
       var orig = {a: ["x"]};
       var changes = {"a.$+1": "a", "a.$+2": "b"};
 
@@ -367,7 +367,7 @@ define(function (require, exports, module) {
       assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
     },
 
-    "test addItem to undefined sublist" () {
+    "test addItem to undefined sublist"() {
       var orig = {};
       var changes = {"a.$+1": "x"};
 
@@ -375,7 +375,7 @@ define(function (require, exports, module) {
       assert.equals(orig, {a: ["x"]});
     },
 
-    "test removeItem applyChanges" () {
+    "test removeItem applyChanges"() {
       var orig = {a: ["x", "a", "b"]};
       var changes = {"a.$-1": "a", "a.$-2": "b"};
 
@@ -387,7 +387,7 @@ define(function (require, exports, module) {
 
 
 
-    "test includesAttributes" () {
+    "test includesAttributes"() {
       var changes = {b: '2'};
       var doc = {a: '1', b: '3'};
 
@@ -397,24 +397,24 @@ define(function (require, exports, module) {
       assert.isFalse(util.includesAttributes({a: 2, b: '2'}, changes, doc, null));
     },
 
-    "test regexEscape" () {
+    "test regexEscape"() {
       assert.same(util.regexEscape('ab[12]\\w.*?\\b()'), 'ab\\[12\\]\\\\w\\.\\*\\?\\\\b\\(\\)');
     },
 
-    "test newEscRegex" () {
+    "test newEscRegex"() {
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
     },
 
-    "test pick" () {
+    "test pick"() {
       assert.equals(util.pick(), {});
       assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a:1, c: 3});
     },
 
-    "test mapToSearchStr" () {
+    "test mapToSearchStr"() {
       assert.same(util.mapToSearchStr({'a +b': 'q[a]', foo: 'bar'}), "a%20%2Bb=q%5Ba%5D&foo=bar");
     },
 
-    "test encodeURIComponent" () {
+    "test encodeURIComponent"() {
       assert.same(util.encodeURIComponent(0), '0');
       assert.same(util.encodeURIComponent(), '');
       assert.same(util.encodeURIComponent(null), '');
@@ -422,19 +422,19 @@ define(function (require, exports, module) {
       assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"), '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
     },
 
-    "test decodeURIComponent" () {
+    "test decodeURIComponent"() {
       assert.same(util.decodeURIComponent(''), null);
       assert.same(util.decodeURIComponent('%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
     },
 
-    "test searchStrToMap" () {
+    "test searchStrToMap"() {
       assert.equals(util.searchStrToMap("a%20%2Bb=q%5Ba%5D&foo=bar"), {'a +b': 'q[a]', foo: 'bar'});
       assert.equals(util.searchStrToMap(null), {});
 
     },
 
-    "test forEach" () {
-      util.forEach(null, v.stub = test.stub());
+    "test forEach"() {
+      util.forEach(null, v.stub = this.stub());
       refute.called(v.stub);
       var results = [];
       util.forEach(v.list = [1,2,3], function (val, index) {
@@ -444,7 +444,7 @@ define(function (require, exports, module) {
       assert.equals(results, ['1.0', '2.1', '3.2']);
     },
 
-    "test reverseForEach" () {
+    "test reverseForEach"() {
       /**
        * Visit `list` in reverse order.
        *
@@ -459,13 +459,13 @@ define(function (require, exports, module) {
         assert.equals(results, ['3.2', '2.1', '1.0']);
 
         // ignores null list
-        util.reverseForEach(null, v.stub = test.stub());
+        util.reverseForEach(null, v.stub = this.stub());
         refute.called(v.stub);
       });
     },
 
 
-    "test append" () {
+    "test append"() {
       var list1 = [1, 2, 3];
 
       assert.same(util.append(list1, [4, 3]), list1);
@@ -482,7 +482,7 @@ define(function (require, exports, module) {
       }
     },
 
-    "test toMap" () {
+    "test toMap"() {
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
@@ -496,7 +496,7 @@ define(function (require, exports, module) {
                     {a: "a0", b: "b1"});
     },
 
-    "test mapField" () {
+    "test mapField"() {
       assert.same(util.mapField(null), null);
 
       assert.equals(util.mapField([]), []);
@@ -504,11 +504,11 @@ define(function (require, exports, module) {
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
     },
 
-    "test idNameListToMap" () {
+    "test idNameListToMap"() {
       assert.equals(util.idNameListToMap([['a', 'a a'], ['b', 'b b']]), {a: "a a", b: "b b"});
     },
 
-    "test find " () {
+    "test find "() {
       assert.same(util.find([1,8,7,3], function (value, idx) {
         return value > 5 && idx === 2;
       }), 7);
@@ -518,12 +518,12 @@ define(function (require, exports, module) {
       }), undefined);
     },
 
-    "test flatten" () {
+    "test flatten"() {
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8], true), [1, 2, 6, [4], 7, 8]);
     },
 
-    "test findBy" () {
+    "test findBy"() {
       var list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
       assert.same(util.findBy(list, 1), list[1]);
       assert.same(util.findBy(list, 2), list[0]);
@@ -531,7 +531,7 @@ define(function (require, exports, module) {
       assert.same(util.findBy(list, 'b', 'foo'), list[1]);
     },
 
-    "test indexOf " () {
+    "test indexOf "() {
       var data = [{_id: 1, age: 20}, {_id: 2, age: 30}];
 
       // default field (_id)
@@ -561,7 +561,7 @@ define(function (require, exports, module) {
       assert.same(dest.a, 'aa');
     },
 
-    "test shallowCopy" () {
+    "test shallowCopy"() {
       assert.same(util.shallowCopy(1), 1);
       assert.same(util.shallowCopy(true), true);
       assert.same(util.shallowCopy(null), null);
@@ -597,7 +597,7 @@ define(function (require, exports, module) {
       assert.equals(orig, [1, "2", {three: 'changed'}]);
     },
 
-    "test deepCopy" () {
+    "test deepCopy"() {
       assert.same(util.deepCopy(1), 1);
       assert.same(util.deepCopy(true), true);
       assert.same(util.deepCopy(null), null);
@@ -635,35 +635,35 @@ define(function (require, exports, module) {
       assert.msg("should handle sparse arrays").equals(util.deepCopy([1,2,,3]), [1,2,,3]);
     },
 
-    "test camelize" () {
+    "test camelize"() {
       assert.same(util.camelize(""), "");
       assert.same(util.camelize("abc"), "abc");
       assert.same(util.camelize("abc-def_xyz.qqq+foo%bar"), "abcDefXyzQqqFooBar");
       assert.same(util.camelize("CarlySimon"), "CarlySimon");
     },
 
-    "test niceFilename" () {
+    "test niceFilename"() {
       assert.same(util.niceFilename("a1!@#$%/sdffsdDDfdsf/fds.txt"), 'a1-sdffsdddfdsf-fds-txt');
     },
 
-    "test titleize" () {
+    "test titleize"() {
       assert.same(util.titleize(""), "");
       assert.same(util.titleize("abc"), "Abc");
       assert.same(util.titleize("abc-def_xyz.qqq+foo%bar"), "Abc Def Xyz Qqq Foo Bar");
       assert.same(util.titleize("CarlySimon"), "Carly Simon");
     },
 
-    "test humanize" () {
+    "test humanize"() {
       assert.same(util.humanize('camelCaseCamel_id'), "camel case camel");
       assert.same(util.humanize('Hyphens-and_underscores'), "hyphens and underscores");
     },
 
-    "test pluralize" () {
+    "test pluralize"() {
       assert.same(util.pluralize('day', 1), 'day');
       assert.same(util.pluralize('day', 2), 'days');
     },
 
-    "test initials" () {
+    "test initials"() {
       assert.same(util.initials(null, 2), "");
       assert.same(util.initials("Sam THE BIG Man", 2), "SM");
       assert.same(util.initials("Sam the BIG man"), "STM");
@@ -671,12 +671,12 @@ define(function (require, exports, module) {
       assert.same(util.initials("Princetui", 3, 'abrv'), "PRN");
     },
 
-    "test hashToCss" () {
+    "test hashToCss"() {
       assert.same(util.hashToCss({foo: 1, bar: "two"}), "foo:1;bar:two");
 
     },
 
-    "test compareByName" () {
+    "test compareByName"() {
       var a = {name: "Bob"};
       var b = {name: "Bob"};
 
@@ -694,7 +694,7 @@ define(function (require, exports, module) {
 
     },
 
-    "test compareByOrder" () {
+    "test compareByOrder"() {
       var a = {order: 300};
       var b = {order: 300};
 
@@ -712,7 +712,7 @@ define(function (require, exports, module) {
 
     },
 
-    "test compareByField" () {
+    "test compareByField"() {
       var a = {f1: "Bob", f2: 1};
       var b = {f1: "Bob", f2: 2};
 
@@ -737,7 +737,7 @@ define(function (require, exports, module) {
       assert.same(util.compareByField('f2')(b,a), -1);
     },
 
-    "test compareByFields" () {
+    "test compareByFields"() {
       var a = {f1: "Bob", f2: 1};
       var b = {f1: "Bob", f2: 2};
 
@@ -754,7 +754,7 @@ define(function (require, exports, module) {
       assert.same(util.compareByFields(-1, 'f1')(a,b), 1);
     },
 
-    "test compareBy list" () {
+    "test compareBy list"() {
       var a = {f1: "Bob", f2: 1};
       var b = {f1: "Bob", f2: 2};
 
@@ -768,7 +768,7 @@ define(function (require, exports, module) {
       assert.same(util.compareBy(['f2', 1, 'f1'])(a,b), -1);
     },
 
-    "test colorToArray" () {
+    "test colorToArray"() {
       assert.equals(util.colorToArray(''), '');
       assert.equals(util.colorToArray([1,2,3,0.5]), [1,2,3,0.5]);
       assert.equals(util.colorToArray("#ac3d4f"), [172, 61, 79, 1]);
@@ -781,7 +781,7 @@ define(function (require, exports, module) {
     },
 
     "nestedHash": {
-      "test setNestedHash" () {
+      "test setNestedHash"() {
         var hash = {};
 
         util.setNestedHash(123, hash, 'a', 'b');
@@ -790,7 +790,7 @@ define(function (require, exports, module) {
         assert.equals(hash, {a: {b: 123, c: 456}});
       },
 
-      "test getNestedHash" () {
+      "test getNestedHash"() {
         var hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.getNestedHash(hash, 'a', 'b'), 123);
@@ -799,7 +799,7 @@ define(function (require, exports, module) {
         assert.equals(util.getNestedHash(hash, 'a', 'd'), undefined);
       },
 
-      "test deleteNestedHash" () {
+      "test deleteNestedHash"() {
         var hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.deleteNestedHash(hash, 'a', 'b'), 123);
@@ -820,7 +820,7 @@ define(function (require, exports, module) {
       },
     },
 
-    'test reverseMerge' () {
+    'test reverseMerge'() {
       var item = 5,
           sub={a: 1, b: 2},
           sup = {d: 'd', b: 3, get c() {return item;}};
@@ -835,7 +835,7 @@ define(function (require, exports, module) {
       refute('d' in sub);
     },
 
-    "test withDateNow" () {
+    "test withDateNow"() {
       var date = new Date("2013-06-09T23:10:36.855Z");
       var result = util.withDateNow(date, function () {
         assert.equals(util.newDate(), date);
@@ -866,11 +866,11 @@ define(function (require, exports, module) {
       assert.isTrue(result);
     },
 
-    "test dateInputFormat" () {
+    "test dateInputFormat"() {
       assert.same(util.dateInputFormat(new Date(2015, 0, 15)), "2015-01-15");
     },
 
-    "test yyyymmddToDate" () {
+    "test yyyymmddToDate"() {
       assert.equals(util.yyyymmddToDate(' 2015-5-04  '), new Date(2015, 4, 4));
       assert.equals(util.yyyymmddToDate('1969 04 09'), new Date(1969, 3, 9));
       assert.equals(util.yyyymmddToDate('1999-12-31'), new Date(1999, 11, 31));
@@ -880,12 +880,12 @@ define(function (require, exports, module) {
       assert.equals(util.yyyymmddToDate('2011/13/3'), undefined);
     },
 
-    "test twoDigits" () {
+    "test twoDigits"() {
       assert.same(util.twoDigits(9), '09');
       assert.same(util.twoDigits(10), '10');
     },
 
-    "test emailAddress" () {
+    "test emailAddress"() {
       assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
     },
 
@@ -931,7 +931,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test parseEmailAddresses" () {
+    "test parseEmailAddresses"() {
       assert.isNull(util.parseEmailAddresses("foo@bar baz"));
       assert.isNull(util.parseEmailAddresses("foo@ba_r.com"));
 
@@ -943,7 +943,7 @@ define(function (require, exports, module) {
                     {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
     },
 
-    "test TwoIndex" () {
+    "test TwoIndex"() {
       var sut = new util.TwoIndex();
 
       assert.same(sut.add(1, 2, '12'), '12');

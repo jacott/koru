@@ -1,33 +1,35 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var Dom = require('../dom');
-  var Modal = require('./modal');
+  const Dom   = require('../dom');
+  const util  = require('../util');
   require('./each');
+  const Modal = require('./modal');
 
-  var Tpl = Dom.newTemplate(module, require('koru/html!./select-menu'));
-  var $ = Dom.current;
+  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./select-menu'));
+  const $ = Dom.current;
 
   function keydownHandler(event, details) {
+    let nextElm, firstElm, curr, nSel;
     switch(event.which) {
     case 13: // enter
-      var sel = details.container.getElementsByClassName('selected')[0];
+      const sel = details.container.getElementsByClassName('selected')[0];
       if (sel && ! Dom.hasClass(sel, 'hide')) select(details.ctx, sel, event);
       break;
     case 38: // up
-      var nextElm = function () {nSel = nSel.previousElementSibling};
-      var firstElm = function () {
+      nextElm = function () {nSel = nSel.previousElementSibling};
+      firstElm = function () {
         if (curr)
           return curr.previousElementSibling;
-        var lis = mElm.getElementsByTagName('li');
+        const lis = mElm.getElementsByTagName('li');
         return lis[lis.length - 1];
       };
       // fall through
     case 40: // down
-      var nextElm = nextElm || function () {nSel = nSel.nextElementSibling};
-      var firstElm = firstElm || function () {return curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]};
-      var mElm = details.container.firstChild;
-      var curr = mElm.getElementsByClassName('selected')[0];
-      for (var nSel = firstElm(); nSel; nextElm()) {
+      nextElm = nextElm || function () {nSel = nSel.nextElementSibling};
+      firstElm = firstElm ||
+        (() => curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]);
+      const mElm = details.container.firstChild;
+      curr = mElm.getElementsByClassName('selected')[0];
+      for (let nSel = firstElm(); nSel; nextElm()) {
         if (Dom.hasClass(nSel, 'hide') || Dom.hasClass(nSel, 'disabled')) continue;
         Dom.removeClass(curr, 'selected');
         Dom.addClass(nSel, 'selected');
@@ -44,11 +46,11 @@ define(function(require, exports, module) {
   }
 
   Tpl.$extend({
-    popup: function (elm, options, pos) {
-      var elmCtx = Dom.getCtx(elm);
-      var menu = Tpl.$autoRender(options);
+    popup(elm, options, pos) {
+      const elmCtx = Dom.getCtx(elm);
+      const menu = Tpl.$autoRender(options);
       options.rendered && options.rendered(menu.firstElementChild);
-      var ctx = Dom.getMyCtx(menu);
+      const ctx = Dom.getMyCtx(menu);
       elmCtx && Dom.destroyMeWith(menu, elmCtx);
       ctx.focusElm = document.activeElement;
       ctx.focusRange = Dom.getRange();
@@ -62,20 +64,20 @@ define(function(require, exports, module) {
       return menu.firstChild;
     },
 
-    close: function (ctx, elm) {
-      var menu = document.getElementsByClassName('glassPane');
+    close(ctx, elm) {
+      const menu = document.getElementsByClassName('glassPane');
       if (! menu.length) return;
       menu = menu[menu.length - 1];
       menu && Dom.remove(menu);
       return menu;
     },
 
-    nameSearch: function (regexp, line) {
+    nameSearch(regexp, line) {
       return regexp.test(line.name);
     },
 
-    $created: function (ctx) {
-      var selected = ctx.data.selected;
+    $created(ctx) {
+      const selected = ctx.data.selected;
       if (selected != null) {
         if (typeof selected === 'object')
           ctx.selected = Array.isArray(selected) ? util.toMap(selected) : selected;
@@ -86,10 +88,10 @@ define(function(require, exports, module) {
       }
     },
 
-    $destroyed: function (ctx) {
-      var elm = ctx.focusElm;
+    $destroyed(ctx) {
+      const elm = ctx.focusElm;
       elm && elm.focus();
-      var range = ctx.focusRange;
+      const range = ctx.focusRange;
       range && Dom.setRange(range);
       ctx.data.onClose && ctx.data.onClose();
     },
@@ -105,21 +107,21 @@ define(function(require, exports, module) {
 
 
   Tpl.$helpers({
-    content: function () {
-      var elm = $.element;
+    content() {
+      const elm = $.element;
       if (elm.nodeType === document.DOCUMENT_NODE)
         Dom.getMyCtx(elm).updateAllTags();
       else
         return Tpl.List.$autoRender(this);
     },
-    search: function () {
+    search() {
       if ($.element.nodeType !== document.DOCUMENT_NODE && this.search)
         return Tpl.Search.$autoRender(this);
     },
   });
 
   Tpl.List.$helpers({
-    items: function (callback) {
+    items(callback) {
       $.ctx.parentCtx.callback = callback;
       util.forEach(this.list, function (row, index) {
         if (typeof row === 'string')
@@ -131,18 +133,18 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.Item.$helpers({
-    name: function () {
-      var ctx = Tpl.$ctx();
-      var elm = $.element;
-      var selected = ctx.selected;
-      var decorator = ctx.data.decorator;
+    name() {
+      const ctx = Tpl.$ctx();
+      const elm = $.element;
+      const selected = ctx.selected;
+      const decorator = ctx.data.decorator;
 
-      var parent = this.parent;
+      const parent = this.parent;
       if (parent) {
-        for (var key in parent) {
-          var li = elm.parentNode;
+        for (let key in parent) {
+          const li = elm.parentNode;
           if (key === 'class') {
-            var classes = parent.class;
+            const classes = parent.class;
             if (typeof classes === 'string')
               Dom.addClass(li, classes);
             else
@@ -161,10 +163,10 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.$events({
-    'mousedown': function () {
+    'mousedown'() {
       Dom.stopEvent();
     },
-    'click li': function (event) {
+    'click li'(event) {
       Dom.stopEvent();
 
       Dom.hasClass(this, 'disabled') ||
@@ -173,12 +175,12 @@ define(function(require, exports, module) {
   });
 
   Tpl.Search.$events({
-    'input input': function (event) {
+    'input input'(event) {
       Dom.stopEvent();
-      var options = $.ctx.data;
-      var func = options.search;
-      var searchRe = searchRegExp(this.value);
-      util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), function (li) {
+      const options = $.ctx.data;
+      const func = options.search;
+      const searchRe = searchRegExp(this.value);
+      util.forEach(event.currentTarget.parentNode.getElementsByTagName('li'), li => {
         Dom.setClass('hide', ! func(searchRe, $.data(li)), li);
       });
       options.searchDone && options.searchDone(this, event.currentTarget.parentNode);
@@ -186,8 +188,8 @@ define(function(require, exports, module) {
   });
 
   function select(ctx, elm, event) {
-    var data = ctx.data;
-    var activeElement = document.activeElement;
+    const data = ctx.data;
+    const activeElement = document.activeElement;
     if (data.onSelect(elm, event)) {
       if (activeElement !== document.activeElement) {
         ctx.focusRange = ctx.focusElm = null;
@@ -196,6 +198,4 @@ define(function(require, exports, module) {
       Dom.remove(ctx.element());
     }
   }
-
-  return Tpl;
 });

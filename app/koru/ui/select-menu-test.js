@@ -1,14 +1,14 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./select-menu');
-  var Dom = require('../dom');
-  var Each = require('./each');
-  var $ = Dom.current;
+  const Dom  = require('../dom');
+  const Each = require('./each');
+  const TH   = require('./test-helper');
+
+  const sut  = require('./select-menu');
+  var v;
+  const $ = Dom.current;
 
   TH.testCase(module, {
-    setUp: function () {
-      test = this;
+    setUp() {
       v = {};
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./select-menu-test'));
 
@@ -18,12 +18,12 @@ isClient && define(function (require, exports, module) {
         assert.dom('#TestSelectMenu [name=select]', function () {
           this.focus();
           sut.popup(this, {
-            customize: function () {
+            customize() {
               $.element.style.position = 'absolute';
               customize && customize.call(this);
             },
             list: [[1, 'One'], [2, 'Two']],
-            onSelect: function (elm, event) {
+            onSelect(elm, event) {
               v.currentTarget = event.currentTarget;
               v.elm = elm;
               return v.result;
@@ -33,31 +33,31 @@ isClient && define(function (require, exports, module) {
       };
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
     "closing": {
-      setUp: function () {
+      setUp() {
         assert.dom('#TestSelectMenu [name=select]', function () {
           sut.popup(this, {
-            onClose: v.onClose = test.stub(),
-            onSelect: function () {return true},
+            onClose: v.onClose = TH.test.stub(),
+            onSelect() {return true},
           });
         });
 
 
       },
 
-      "test onClose": function () {
+      "test onClose"() {
         assert.dom('body>.glassPane', function () {
           Dom.remove(this);
         });
         assert.called(v.onClose);
       },
 
-      "test closes if parent ctx closes": function () {
+      "test closes if parent ctx closes"() {
         Dom.remove(v.testSelectMenu);
         refute.dom('body>.glassPane');
         assert.called(v.onClose);
@@ -65,17 +65,17 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    "test restores range": function () {
-      var html = Dom.h({div: "Hello world", '$contenteditable': true});
+    "test restores range"() {
+      const html = Dom.h({div: "Hello world", '$contenteditable': true});
       document.body.appendChild(html);
-      var input = Dom.h({input: ""});
+      const input = Dom.h({input: ""});
       document.body.appendChild(input);
       html.focus();
       TH.setRange(html.firstChild, 3, html.firstChild, 5);
       sut.popup(html, {
         list: [["foo", "foo"]],
         search: sut.nameSearch,
-        onSelect: function () {
+        onSelect() {
           return true;
         },
       });
@@ -83,7 +83,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('.glassPane');
       TH.click('.glassPane li');
       assert.same(document.activeElement, html);
-      var range = Dom.getRange();
+      const range = Dom.getRange();
       assert.same(range.startContainer, html.firstChild);
       assert.same(range.startOffset, 3);
       assert.same(range.endContainer, html.firstChild);
@@ -91,7 +91,7 @@ isClient && define(function (require, exports, module) {
       sut.popup(html, {
         list: [["foo", "foo"]],
         search: sut.nameSearch,
-        onSelect: function () {
+        onSelect() {
           input.focus();
           input.value = "foo";
           input.select();
@@ -105,14 +105,14 @@ isClient && define(function (require, exports, module) {
       assert.same(input.selectionEnd, 3);
     },
 
-    "test can select by object": function () {
-      var stub = function(arg) {
+    "test can select by object"() {
+      const stub = function(arg) {
         v.arg = arg;
       };
-      var items = sut.List._helpers.items;
+      const items = sut.List._helpers.items;
 
       $._ctx = {parentCtx: {}};
-      test.onEnd(function () {$._ctx = null});
+      this.onEnd(function () {$._ctx = null});
 
       items.call({list: [v.expect = {name: 123}]}, stub);
 
@@ -125,13 +125,13 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.arg, {id: 123, name: 'foo'});
     },
 
-    "test decorator": function () {
+    "test decorator"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
       sut.popup(v.button, {
         list: v.list = [[1, 'One'], [2, 'Two']],
-        decorator: v.decorator = test.stub(),
+        decorator: v.decorator = this.stub(),
       });
 
       assert.calledWith(v.decorator, TH.match(function (arg) {
@@ -147,7 +147,7 @@ isClient && define(function (require, exports, module) {
       }));
     },
 
-    "test class lines": function () {
+    "test class lines"() {
        assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -161,7 +161,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test selected array data": function () {
+    "test selected array data"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -169,7 +169,7 @@ isClient && define(function (require, exports, module) {
       sut.popup(v.button, {
         list: [[1, 'One'], [2, 'Two']],
         selected: 2,
-        onSelect: function (elm, event) {
+        onSelect(elm, event) {
         },
       });
 
@@ -178,7 +178,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test selected object data": function () {
+    "test selected object data"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -186,7 +186,7 @@ isClient && define(function (require, exports, module) {
       sut.popup(v.button, {
         list: [{_id: 1, name: 'One'}, {_id: 2, name: 'Two'}],
         selected: 2,
-        onSelect: function (elm, event) {
+        onSelect(elm, event) {
         },
       });
 
@@ -196,7 +196,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test multi select": function () {
+    "test multi select"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
       });
@@ -204,7 +204,7 @@ isClient && define(function (require, exports, module) {
       sut.popup(v.button, {
         list: [{_id: 1, name: 'One'}, {_id: 2, name: 'Two'}, {_id: 3, name: 'Three'}],
         selected: [3, 2],
-        onSelect: function (elm, event) {
+        onSelect(elm, event) {
         },
       });
 
@@ -215,20 +215,20 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test nameSearch": function () {
+    "test nameSearch"() {
       assert.same(sut.nameSearch(/foo/, {name: 'a foo'}), true);
       assert.same(sut.nameSearch(/foo/, {name: 'a fuz'}), false);
     },
 
-    "test noFocus": function () {
+    "test noFocus"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
-        v.searchStub = test.stub();
+        v.searchStub = TH.test.stub();
         this.focus();
         sut.popup(this, {
           noFocus: true,
-          search: function () {},
+          search() {},
           list: [[1, 'One'], [2, 'Two']],
-          onSelect: function (elm, event) {
+          onSelect(elm, event) {
             return true;
           },
         });
@@ -240,19 +240,20 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test search": function () {
+    "test search"() {
+      const test = this;
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.searchStub = test.stub();
         this.focus();
         sut.popup(this, {
-          search: function (reg, data) {
+          search(reg, data) {
             v.searchStub();
             return reg.test(data.name);
           },
           searchDone: v.searchDone = test.stub(),
           rendered: v.rendered = test.stub(),
           list: [[1, 'One'], [2, 'Two'], [3, 'Three']],
-          onSelect: function (elm, event) {
+          onSelect(elm, event) {
             v.elm = elm;
             v.which = event.which;
             return true;
@@ -260,7 +261,6 @@ isClient && define(function (require, exports, module) {
         });
         v.button = this;
       });
-      var ev;
       assert.dom('body>.glassPane>#SelectMenu', function () {
         v.selectMenuELm = this;
         assert.dom('input[name=search][autocomplete=off]', function () {
@@ -272,7 +272,7 @@ isClient && define(function (require, exports, module) {
             v.search.removeEventListener('keydown', v.inputel);
           });
           TH.input(v.search, 'one');
-          var ev = keydown(101 /* e */);
+          const ev = keydown(101 /* e */);
           assert.called(v.inputel);
           assert.called(ev.stopImmediatePropagation);
           refute.called(ev.preventDefault);
@@ -287,7 +287,7 @@ isClient && define(function (require, exports, module) {
         TH.input(v.search, 't');
         assert.dom('li.hide', {count: 1, text: 'One'});
         TH.trigger(v.search, 'keydown', {which: 13});
-        ev = keydown(40);
+        let ev = keydown(40);
         assert.called(ev.stopImmediatePropagation);
         assert.called(ev.preventDefault);
         assert.dom('li.selected', 'Two');
@@ -311,7 +311,7 @@ isClient && define(function (require, exports, module) {
       assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
 
       function keydown(keycode) {
-        var ev = TH.buildEvent('keydown', {which: keycode});
+        const ev = TH.buildEvent('keydown', {which: keycode});
         test.spy(ev, 'stopImmediatePropagation');
         test.spy(ev, 'preventDefault');
         TH.trigger(v.search, ev);
@@ -320,39 +320,39 @@ isClient && define(function (require, exports, module) {
     },
 
     "position": {
-      "test default": function () {
+      "test default"() {
         v.popup();
         assert.dom('body>.glassPane>#SelectMenu', function () {
-          var bbox = v.button.getBoundingClientRect();
+          const bbox = v.button.getBoundingClientRect();
           assert.cssNear(this, 'top', bbox.top + bbox.height, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       },
 
-      "test above": function () {
+      "test above"() {
         v.testSelectMenu.style.position = 'absolute';
         v.testSelectMenu.style.bottom = '250px';
         v.popup(null, 'above');
         assert.dom('body>.glassPane>#SelectMenu', function () {
-          var bbox = v.button.getBoundingClientRect();
+          const bbox = v.button.getBoundingClientRect();
           assert.same(this.style.top, '');
           assert.cssNear(this, 'bottom', window.innerHeight - bbox.top, 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       },
 
-      "test full height": function () {
+      "test full height"() {
         v.popup(function () {
           $.element.style.height = (window.innerHeight + 200)+'px';
         });
         assert.dom('#SelectMenu', function () {
-          var bbox = v.button.getBoundingClientRect();
+          const bbox = v.button.getBoundingClientRect();
           assert.cssNear(this, 'top', 0);
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       },
 
-      "test no room below": function () {
+      "test no room below"() {
         assert.dom('#TestSelectMenu [name=select]', function () {
           this.style.position = 'absolute';
           this.style.top = (window.innerHeight * .75)+'px';
@@ -361,19 +361,19 @@ isClient && define(function (require, exports, module) {
           $.element.style.height = (window.innerHeight * .5)+'px';
         });
         assert.dom('#SelectMenu', function () {
-          var bbox = v.button.getBoundingClientRect();
+          const bbox = v.button.getBoundingClientRect();
           assert.same(this.style.top, '');
           assert.cssNear(this, 'bottom', (window.innerHeight - bbox.top), 2, 'px');
           assert.cssNear(this, 'left', bbox.left, 2, 'px');
         });
       },
 
-      "test no room above": function () {
+      "test no room above"() {
         v.popup(function () {
           $.element.style.height = (window.innerHeight * .2)+'px';
         }, 'above');
         assert.dom('#SelectMenu', function () {
-          var bbox = v.button.getBoundingClientRect();
+          const bbox = v.button.getBoundingClientRect();
           assert.same(this.style.bottom, '');
           assert.cssNear(this, 'top', (bbox.top + bbox.height), 2, 'px');
         });
@@ -381,11 +381,11 @@ isClient && define(function (require, exports, module) {
     },
 
     "when open": {
-      setUp: function () {
+      setUp() {
         v.popup();
       },
 
-      "test content": function () {
+      "test content"() {
         assert.dom('#SelectMenu ul.ui-ul', function () {
           refute.dom('input');
           assert.dom('li', 'One');
@@ -395,7 +395,8 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test select by mouse click": function () {
+      "test select by mouse click"() {
+        const test = this;
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -418,7 +419,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test autoClose": function () {
+      "test autoClose"() {
         document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
@@ -433,7 +434,7 @@ isClient && define(function (require, exports, module) {
         assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
       },
 
-      "test tab closes list": function () {
+      "test tab closes list"() {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
@@ -444,7 +445,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test escape closes list": function () {
+      "test escape closes list"() {
         document.activeElement.blur();
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
@@ -457,13 +458,13 @@ isClient && define(function (require, exports, module) {
         assert.same(document.activeElement, document.querySelector('#TestSelectMenu [name=select]'));
       },
 
-      "test clicking off list closes list": function () {
+      "test clicking off list closes list"() {
         assert.dom('#TestSelectMenu>br');
         TH.trigger('body>.glassPane', 'mousedown');
         refute.dom('#SelectMenu');
       },
 
-      "test can't select disabled": function () {
+      "test can't select disabled"() {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {

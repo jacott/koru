@@ -1,18 +1,18 @@
 define(function(require, exports, module) {
   module.exports = {
     browserVersion(ua){
-      var tmp;
-      var M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
-      if(/trident/i.test(M[1])){
+      let tmp;
+      const m = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
+      if(/trident/i.test(m[1])){
         tmp=  /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
         return 'IE '+(tmp[1] || '');
       }
-      if((tmp= ua.match(/version\/([\.\d]+)/i))!= null) M[2]= tmp[1];
-      return M.slice(1).join(' ');
+      if((tmp= ua.match(/version\/([\.\d]+)/i))!= null) m[2]= tmp[1];
+      return m.slice(1).join(' ');
     },
 
     merge(dest, source) {
-      for(var prop in source) {
+      for(let prop in source) {
         const desc = Object.getOwnPropertyDescriptor(source, prop);
         desc && Object.defineProperty(dest, prop, desc);
       }
@@ -20,8 +20,8 @@ define(function(require, exports, module) {
     },
 
     mergeNoEnum(dest, source) {
-      for(var prop in source) {
-        var desc = Object.getOwnPropertyDescriptor(source, prop);
+      for(let prop in source) {
+        const desc = Object.getOwnPropertyDescriptor(source, prop);
         if (desc) {
           desc.enumerable = false;
           Object.defineProperty(dest, prop, desc);
@@ -76,29 +76,27 @@ define(function(require, exports, module) {
         if (o.constructor === Date) return "<"+o.toISOString()+">";
         if (Array.isArray(o)) {
           if (i)
-            return "[" + o.map(function (o2) {
-              return inspect1(o2, i-1);
-            }).join(", ") + "]";
+            return "[" + o.map(o2 => inspect1(o2, i-1)).join(", ") + "]";
           return "[...]";
         }
         if (typeof o.test === 'function' && typeof o.or === 'function')
           return ''+o;
 
         if (i) {
-          var r=[];
+          const r=[];
           if (o instanceof Error) {
             r.push(o.toString());
           }
-          for (var p in o) {
+          for (let p in o) {
             r.push(qstr(p) + ": " + inspect1(o[p], i-1));
           }
           return "{" + r.join(", ") +"}";
         }
-        for(var key in o) {
-          return ("{"+key+"="+o[key]+",...}");
+        for(let key in o) {
+          return (`{${key}=${o[key]},...}`);
         }
       case 'string':
-        return "'"+qstr(o)+"'";
+        return `'${qstr(o)}'`;
       default:
         return o.toString();
       }

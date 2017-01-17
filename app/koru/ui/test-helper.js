@@ -137,7 +137,7 @@ define(function(require, exports, module) {
         }
 
         // Chromium Hack
-        Object.defineProperty(pressEvent, 'which', {get : function() {return keycode}});
+        Object.defineProperty(pressEvent, 'which', {get() {return keycode}});
 
       } else {
         // firefox
