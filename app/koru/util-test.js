@@ -205,7 +205,7 @@ define(function (require, exports, module) {
     },
 
     'test mergeExclude'() {
-      var item = 5,
+      let item = 5,
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
 
@@ -216,6 +216,12 @@ define(function (require, exports, module) {
       assert.same(sub.a,1);
       assert.same(sub.b,3);
       assert.same(sub.c,6);
+    },
+
+    "test mergeInclude"() {
+      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true}),
+                    {a: 1, c: 3, d: 4});
+
     },
 
     "test egal"() {

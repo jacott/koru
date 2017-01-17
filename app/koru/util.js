@@ -81,6 +81,14 @@ define(function(require, exports, module) {
       return obj;
     },
 
+    mergeInclude(obj, properties, exclude) {
+      for(let prop in properties) {
+        if (exclude[prop])
+          Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+      }
+      return obj;
+    },
+
     reverseMerge(obj, properties, exclude) {
       if (properties == null) return obj;
       for(let prop in properties) {
