@@ -298,27 +298,58 @@ isClient && define(function (require, exports, module) {
         Dom.Form.cancelModalize('all');
       },
 
-      "test addChangeFields"() {
-        Dom.TestData = v.Form.TestData;
-        this.onEnd(function () {delete Dom.TestData});
-        Form.addChangeFields({template: Dom.TestData, fields: ['fooField'], undo: v.onChange = this.stub()});
-        document.body.appendChild(Dom.TestData.$autoRender(v.doc = {
-          myData: {
-            foo: 'x', fooField: 'ff1',
-          },
-          changes: {changes: 1},
-          $asChanges(changes) {
-            return {asChanges: changes};
-          },
+      "addChangeFields":{
+        setUp() {
+          Dom.TestData = v.Form.TestData;
+          v.doc = {
+            myData: {
+              foo: 'x', fooField: 'ff1',
+            },
+            changes: {changes: 1},
+            $asChanges(changes) {
+              return {asChanges: changes};
+            },
 
-          $save: v.save = this.stub(),
+            $save: v.save = this.stub(),
 
-        }));
-        v.save.onCall(0).returns(false).onCall(1).returns(true);
-        TH.change('[name=fooField]', 'bad');
-        refute.called(v.onChange);
-        TH.change('[name=fooField]', 'nv');
-        assert.calledWith(v.onChange, v.doc, {changes: 1}, {asChanges: {changes: 1}});
+          };
+        },
+
+        tearDown() {
+          delete Dom.TestData;
+        },
+
+        "test defaults"() {
+          v.save.onCall(0).returns(false).onCall(1).returns(true);
+          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+                                undo: v.onChange = this.stub()});
+          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          TH.change('[name=fooField]', 'bad');
+          refute.called(v.onChange);
+          TH.change('[name=fooField]', 'nv');
+          assert.calledWith(v.onChange, v.doc, {changes: 1}, {asChanges: {changes: 1}});
+        },
+
+        "test string update"() {
+          v.doc.myUpdate = this.stub().returns({fooField: [['is_invalid']]});
+          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+                                update: 'myUpdate',
+                                undo: v.onChange = this.stub()});
+          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          TH.change('[name=fooField]', 'bad');
+          assert.calledWith(v.doc.myUpdate, 'fooField', 'bad', v.onChange);
+          assert.dom('[name=fooField].error+.errorMsg', 'is not valid');
+        },
+
+        "test function update"() {
+          const myUpdate = this.stub().returns({fooField: [['is_invalid']]});
+          Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
+                                update: myUpdate,
+                                undo: v.onChange = this.stub()});
+          document.body.appendChild(Dom.TestData.$autoRender(v.doc));
+          TH.change('[name=fooField]', 'bad');
+          assert.calledWith(myUpdate, v.doc, 'fooField', 'bad', v.onChange);
+        },
       },
 
 

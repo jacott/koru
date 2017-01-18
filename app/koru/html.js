@@ -4,17 +4,16 @@
  */
 
 define(function(require, exports, module) {
-  var koru = require('./main');
-  var loaderPrefix = module.id + "!";
+  const koru = require('./main');
 
   koru.onunload(module, 'reload');
 
   return {
     load: function (name, req, onload, config) {
-      var mod = req.module;
+      const mod = req.module;
 
-      var provider = koru.buildPath(name)+'.html';
-      var pMod = mod.dependOn(provider);
+      const provider = koru.buildPath(name)+'.html';
+      const pMod = mod.dependOn(provider);
       mod.body = function () {
         return pMod.exports;
       };

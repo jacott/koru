@@ -1,37 +1,37 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
   const Model   = require('koru/model/main');
   const session = require('koru/session');
   const util    = require('koru/util');
-  const Dom     = require('./dom-ext');
   const TH      = require('./test-helper');
 
+  const Dom     = require('./dom-ext');
+  var v;
+
   TH.testCase(module, {
-    setUp: function () {
-      test = this;
+    setUp() {
       v = {};
-      test.stub(session, 'sendM');
+      this.stub(session, 'sendM');
       v.TestModel = Model.define('TestModel').defineFields({name: 'text', foo_ids: 'integer[]'});
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
-    "test autoUpdate": function () {
-      var foo = v.TestModel.create({foo_ids: [1]});
-      test.spy(foo, '$reload');
+    "test autoUpdate"() {
+      const foo = v.TestModel.create({foo_ids: [1]});
+      this.spy(foo, '$reload');
 
-      var obs = test.spy(v.TestModel, 'onChange');
+      const obs = this.spy(v.TestModel, 'onChange');
 
-      var ctx = {updateAllTags: test.stub(), onDestroy: test.stub(), data: foo};
+      const ctx = {updateAllTags: this.stub(), onDestroy: this.stub(), data: foo};
 
       Dom.autoUpdate(ctx, {field: 'foo_ids'});
 
       assert.calledWith(ctx.onDestroy, obs.firstCall.returnValue);
 
-      var foo2 = v.TestModel.create();
+      const foo2 = v.TestModel.create();
 
       obs.yield(util.reverseMerge({foo_ids: [1]}, foo2.attributes), foo2.attributes);
 

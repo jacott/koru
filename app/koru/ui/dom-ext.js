@@ -1,11 +1,11 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
+  const Dom = require('../dom');
 
   Dom.autoUpdate = function (ctx, options) {
     options = options || {};
-    var subject = options.subject || ctx.data;
+    const subject = options.subject || ctx.data;
     if (! subject || ! subject._id) return;
-    ctx.onDestroy(subject.constructor.onChange(function (doc, was) {
+    ctx.onDestroy(subject.constructor.onChange((doc, was) => {
       if (! doc) {
         was === subject && options.removed && options.removed();
       } else if (doc === subject) {

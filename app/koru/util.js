@@ -1025,7 +1025,10 @@ define(function(require, exports, module) {
     return value ? typeof value === 'string' ? +value.substring(0, value.length - this) : +value : 0;
   }
 
-  function twoDigits(num) {return num < 10 ? `0${num}` : ''+num}
+  function twoDigits(num) {
+    num = ''+num;
+    return num.length === 1 ? `0${num}` : num;
+  }
 
   function identity(value) {return value}
 

@@ -1,23 +1,23 @@
-var fs = require('fs');
-var Future = requirejs.nodeRequire('fibers/future');
-var Path = require('path');
+const fs = require('fs');
+const Future = requirejs.nodeRequire('fibers/future');
+const Path = require('path');
 
 define(function(require, exports, module) {
-  var koru = require('./main');
-  var Fiber = koru.Fiber;
-  var fst = require('./fs-tools');
-  var session = require('./session/base');
-  var top = koru.appDir;
+  const fst     = require('./fs-tools');
+  const koru    = require('./main');
+  const session = require('./session/base');
+
+  const {Fiber, appDir: top} = koru;
 
   koru.onunload(module, 'reload');
 
   exports.listeners = {
-    js: function (type, path, top) {
+    js(type, path, top) {
       if (path.slice(-8) !== '.html.js')
         session.unload(path.slice(0, - 3));
     },
 
-    html: function (type, path) {
+    html(type, path) {
       session.unload(koru.buildPath(path));
     },
   };
@@ -35,16 +35,16 @@ define(function(require, exports, module) {
   }).run();
 
   function watch(dir, top) {
-    var dirs = Object.create(null);
+    const dirs = Object.create(null);
 
-    var watcher = fs.watch(dir, function (event, filename) {
-      Fiber(function () {
+    const watcher = fs.watch(dir, function (event, filename) {
+      Fiber(() => {
         if (! filename.match(/^\w/)) return;
-        var path = manage(dirs, dir, filename, top);
+        let path = manage(dirs, dir, filename, top);
         if (! path) return;
 
-        var m = /\.(\w+)$/.exec(path);
-        var handler = m && exports.listeners[m[1]];
+        const m = /\.(\w+)$/.exec(path);
+        const handler = m && exports.listeners[m[1]];
 
         path = path.slice(top.length);
 
@@ -52,7 +52,7 @@ define(function(require, exports, module) {
           defaultUnloader(path);
       }).run();
     });
-    fst.readdir(dir).forEach(function (filename) {
+    fst.readdir(dir).forEach(filename => {
       if (! filename.match(/^\w/)) return;
       manage(dirs, dir, filename, top);
     });
@@ -61,15 +61,15 @@ define(function(require, exports, module) {
   }
 
   function manage(dirs, dir, filename, top) {
-    var path = dir+'/'+filename;
-    var st = fst.stat(path);
+    const path = dir+'/'+filename;
+    const st = fst.stat(path);
     if (st) {
       if (st.isDirectory()) {
         dirs[filename] = watch(path, top);
         return;
       }
     } else {
-      var watcher = dir[filename];
+      const watcher = dir[filename];
       if (watcher) {
         delete dir[filename];
         watcher.close();

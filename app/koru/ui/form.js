@@ -641,15 +641,21 @@ define(function(require, exports, module) {
   function saveChange(doc, field, value, options) {
     const form = document.getElementById(options.template.name);
     Tpl.clearErrors(form);
-    if (options.update) {
-      const errors = doc[options.update](field, value, options.undo);
-      if (errors) {
-        Tpl.renderErrors({_errors: errors}, form);
-      }
-    } else {
+    let errors;
+    switch (typeof options.update) {
+    case 'string':
+      errors = doc[options.update](field, value, options.undo);
+      break;
+    case 'function':
+      errors = options.update(doc, field, value, options.undo);
+
+      break;
+    default:
       doc[field] = value;
       Tpl.saveChanges(doc, form, options.undo);
+      return;
     }
+    errors && Tpl.renderErrors({_errors: errors}, form);
   }
 
   return Tpl;

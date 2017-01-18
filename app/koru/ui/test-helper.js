@@ -166,7 +166,7 @@ define(function(require, exports, module) {
           TH.trigger(this, event, args);
         });
       } else {
-        assert.elideFromStack(node,'node not found');
+        assert.elideFromStack.msg('node not found')(node);
         return Dom.triggerEvent(node, event, args);
       }
     },

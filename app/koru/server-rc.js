@@ -1,11 +1,11 @@
-var fs = require('fs');
-var vm = require('vm');
+const fs = require('fs');
+const vm = require('vm');
 
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var koru = require('./main');
-  var session = require('./session');
-  var buildCmd = require('./test/build-cmd');
+  const util     = require('koru/util');
+  const koru     = require('./main');
+  const session  = require('./session');
+  const buildCmd = require('./test/build-cmd');
 
   koru.onunload(module, 'reload');
 
@@ -15,11 +15,12 @@ define(function(require, exports, module) {
 
 
   function remoteControl(ws) {
-    var session = this;
-    var oldLogHandle = session.provide('L', logHandle);
-    var oldTestHandle = session.provide('T', testHandle);
-    var testMode = 'none', testExec = {};
-    var testClientCount = 0, pendingClientTests = [];
+    const session = this;
+    const oldLogHandle = session.provide('L', logHandle);
+    const oldTestHandle = session.provide('T', testHandle);
+    let testMode = 'none', testExec = {};
+    let testClientCount = 0, pendingClientTests = [];
+    let future, interceptObj;
 
     koru._INTERCEPT = intercept;
 
@@ -27,11 +28,11 @@ define(function(require, exports, module) {
     remoteControl.testHandle = testHandle;
     remoteControl.logHandle = logHandle;
 
-    var clientCount = 0;
-    var clients = {};
-    for (var key in session.conns) {
-      var conn = session.conns[key];
-      var cs = clients[conn.engine];
+    let clientCount = 0;
+    const clients = {};
+    for (let key in session.conns) {
+      const conn = session.conns[key];
+      const cs = clients[conn.engine];
       if (! cs) cs = clients[conn.engine] = {};
       cs[key] = newConn(conn);
     }
@@ -39,7 +40,7 @@ define(function(require, exports, module) {
     ws.send('AServer');
 
     function channelKey(conn) {
-      var engine = conn.engine;
+      const {engine} = conn;
       if (engine === 'Server')
         return engine;
       else
@@ -47,16 +48,16 @@ define(function(require, exports, module) {
     }
 
     function newConn(conn) {
-      var key = channelKey(conn);
+      const key = channelKey(conn);
       ws.send('A'+key);
       ++clientCount;
-      return {conn: conn, key: key};
+      return {conn, key};
     }
 
     session.countNotify.onChange(function (conn, isOpen) {
       if (! conn.engine) return;
-      var cs = clients[conn.engine];
-      var channel;
+      const cs = clients[conn.engine];
+      let channel;
       if (! isOpen && cs && (channel = cs[conn.sessId])) {
         --clientCount;
         ws.send('D'+channel.key);
@@ -71,10 +72,10 @@ define(function(require, exports, module) {
         if (testMode !== 'server' &&
             testExec.client && clientCount) {
           top:
-          for (var key in clients) {
-            var cs = clients[key];
-            for (var sessId in cs) {
-              var channel = cs[sessId];
+          for (let key in clients) {
+            const cs = clients[key];
+            for (let sessId in cs) {
+              const channel = cs[sessId];
               if (! readyForTests(channel))
                 break top;
             }
@@ -83,7 +84,7 @@ define(function(require, exports, module) {
         if (testMode !== 'client' &&
             testExec.server && testClientCount === 0) {
           ws.send('XServer');
-          var server = testExec.server;
+          const {server} = testExec;
           testExec.server = null;
           server();
         }
@@ -95,7 +96,7 @@ define(function(require, exports, module) {
       session.provide('T', oldTestHandle);
     });
     ws.on('message', function(data, flags) {
-      var args = data.split('\t');
+      const args = data.split('\t');
       switch(args[0]) {
       case 'T':
         testClientCount = +args[3];
@@ -106,20 +107,20 @@ define(function(require, exports, module) {
             testExec = exec;
             if (mode === 'client')
               testExec.server = null;
-            var ct = testExec.clientTests;
+            const ct = testExec.clientTests;
 
             if (ct) {
               if (testClientCount === 1)
                 pendingClientTests = [ct];
               else {
-                var ctLen = ct.length;
+                const ctLen = ct.length;
                 testClientCount = Math.max(1, Math.min(testClientCount, ctLen));
                 pendingClientTests = new Array(testClientCount);
-                for(var i = 0; i < testClientCount; ++i) {
+                for(let i = 0; i < testClientCount; ++i) {
                   pendingClientTests[i] = [];
                 }
 
-                for(var i = 0; i < ctLen; ++i) {
+                for(let i = 0; i < ctLen; ++i) {
                   pendingClientTests[i % testClientCount].push(ct[i]);
                 }
               }
@@ -169,8 +170,8 @@ define(function(require, exports, module) {
 
     function _testHandle(conn, msg) {
       if (msg[0] === 'A') {
-        if (! cs) cs = clients[conn.engine] = {};
-        var channel = cs[conn.sessId];
+        const cs = clients[conn.engine] = {};
+        let channel = cs[conn.sessId];
         if (! channel) {
           channel = cs[conn.sessId] = newConn(conn);
         }
@@ -182,8 +183,8 @@ define(function(require, exports, module) {
 
       ws.send(msg[0] + channelKey(conn) + '\x00' + msg.slice(1));
       if (msg[0] === 'F') {
-        var cs = clients[conn.engine];
-        var channel = cs && cs[conn.sessId];
+        const cs = clients[conn.engine];
+        const channel = cs && cs[conn.sessId];
         if (channel && channel.tests) {
           channel.tests = null;
           if (--testClientCount === 0) {
@@ -203,7 +204,7 @@ define(function(require, exports, module) {
     }
 
     function logHandle(msg) {
-      var key = channelKey(this);
+      const key = channelKey(this);
       key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
       try {
         ws.send('L' + channelKey(this) + '\x00' + msg);
@@ -211,8 +212,6 @@ define(function(require, exports, module) {
         // ignore since it will just come back to us
       }
     }
-
-    var future, interceptObj;
 
     function intercept(obj) {
       interceptObj = obj;

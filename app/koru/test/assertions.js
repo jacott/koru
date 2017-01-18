@@ -1,19 +1,17 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var geddon = require('./core');
-  var format = require('../format');
-  var match = require('./match');
+  const util   = require('koru/util');
+  const format = require('../format');
+  const geddon = require('./core');
+  const match  = require('./match');
 
-  var gu = geddon._u;
-  gu.format = format;
+  const gu = geddon._u;
+  const {egal} = util;
 
-  var toString = Object.prototype.toString;
+  let __elidePoint;
 
-  var __elidePoint;
-
-  var assert = geddon.assert = function (truth, msg) {
+  function assert(truth, msg) {
     ++geddon.assertCount;
-    var __msg = geddon.__msg;
+    const {__msg} = geddon;
     __elidePoint = geddon.__elidePoint;
     geddon.__msg = null;
     geddon.__elidePoint = null;
@@ -25,37 +23,43 @@ define(function(require, exports, module) {
       if (typeof __msg === 'function') __msg = __msg();
       msg = `${__msg}; ${msg}`;
     }
-    geddon.fail(msg);
+    fail(msg);
   };
 
-  var refute = geddon.refute = function (truth, msg) {
+  function refute (truth, msg) {
     geddon.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
-  assert.msg = function (msg) {
-    geddon.__msg = msg;
-    return this;
-  };
+  util.merge(geddon, {
+    assert, refute,
+    fail(message) {assert(false, message);},
+
+    assertions: {
+      add(name, options) {
+        compileOptions(options);
+        assert[name] = assertFunc(true, options);
+        refute[name] = assertFunc(false, options);
+      },
+    },
+  });
 
   Object.defineProperty(assert, 'elideFromStack', {get: getElideFromStack});
   Object.defineProperty(refute, 'elideFromStack', {get: getElideFromStack});
 
-  refute.msg = assert.msg;
-
-  geddon.assertions = {
-    add: function (name, options) {
-      compileOptions(options);
-      assert[name] = assertFunc(true, options);
-      refute[name] = assertFunc(false, options);
-    },
+  assert.msg = function(msg) {
+    geddon.__msg = msg;
+    return this;
   };
 
-  geddon.fail = function (message) {
+  refute.msg = assert.msg;
+
+  function fail(message) {
     message = message ? message.toString() : 'no message';
+    let ex;
     if (__elidePoint && __elidePoint.stack) {
       ex = __elidePoint;
       ex.message = message;
-      var lines = __elidePoint.stack.split(/\n\s+at\s/);
+      let lines = __elidePoint.stack.split(/\n\s+at\s/);
       if (lines.length > 2) {
         lines = lines.slice(2);
         lines[0] = message;
@@ -65,7 +69,7 @@ define(function(require, exports, module) {
         ex.stack = __elidePoint.stack.split("\n").slice(2).join("\n");
       }
     } else {
-      var ex = new Error(message);
+      ex = new Error(message);
     }
     ex.name = "AssertionError";
 
@@ -90,47 +94,25 @@ define(function(require, exports, module) {
   }
 
   function assertFunc(pass, options) {
-    var func = options.assert;
+    const func = options.assert;
     return function(...args) {
-      var sideAffects = {_asserting: pass};
+      const sideAffects = {_asserting: pass};
 
       if (pass === ! func.apply(sideAffects, args)) {
         args.push(sideAffects);
-        geddon.assert(false, format.apply(null, util.append([pass ? options.assertMessage : options.refuteMessage], args)));
+        geddon.assert(false, format.apply(null, util.append([
+          pass ? options.assertMessage : options.refuteMessage], args)));
       }
       geddon.assert(true);
       return pass ? assert : refute;
     };
   }
 
-  gu.isDate = isDate;
-  gu.egal = Object.is || egal;
-  gu.deepEqual = deepEqual;
-
-  function isDate(value) {
-    // Duck typed dates, allows objects to take on the role of dates
-    // without actually being dates
-    return typeof value.getTime == "function" &&
-      value.getTime() == value.valueOf();
-  }
-
-
-  // Fixes NaN === NaN (should be true) and
-  // -0 === +0 (should be false)
-  // http://wiki.ecmascript.org/doku.php?id=harmony:egal
-  function egal(x, y) {
-    if (x === y) {
-      // 0 === -0, but they are not identical
-      return x !== 0 || 1 / x === 1 / y;
-    }
-
-    // NaN !== NaN, but they are identical.
-    // NaNs are the only non-reflexive value, i.e., if x !== x,
-    // then x is a NaN.
-    // isNaN is broken: it converts its argument to number, so
-    // isNaN("foo") => true
-    return x !== x && y !== y;
-  }
+  util.merge(gu, {
+    format,
+    egal: Object.is || egal,
+    deepEqual,
+  });
 
   function deepEqual(actual, expected, hint, hintField) {
     if (egal(actual, expected)) {
@@ -170,10 +152,10 @@ define(function(require, exports, module) {
     if (Array.isArray(actual)) {
       if (! Array.isArray(expected))
         return setHint();
-      var len = actual.length;
+      const len = actual.length;
       if (expected.length !== len)
         return hint ? setHint(actual, expected, ' lengths differ: ' + actual.length + ' != ' + expected.length) : false;
-      for(var i = 0; i < len; ++i) {
+      for(let i = 0; i < len; ++i) {
         if (! deepEqual(actual[i], expected[i], hint, hintField)) return setHint();
       }
       return true;
@@ -212,9 +194,10 @@ define(function(require, exports, module) {
 
     function setHint(aobj=actual, eobj=expected, prefix) {
       if (! hint) return false;
-      var prev = hint[hintField];
+      const prev = hint[hintField];
 
-      hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) + (prev ? "\n" + prev : '');
+      hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) +
+        (prev ? "\n" + prev : '');
       return false;
     }
   }

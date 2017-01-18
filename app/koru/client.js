@@ -1,8 +1,8 @@
 define(function (require, exports, module) {
   'use strict';
-  var koru = require('./main');
-  var session = require('./session/main');
-  var util = require('koru/util');
+  const util    = require('koru/util');
+  const koru    = require('./main');
+  const session = require('./session/main');
 
   koru.onunload(module, 'reload');
 

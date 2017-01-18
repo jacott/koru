@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var loadAjax = require('./load-ajax');
+  const util     = require('koru/util');
+  const loadAjax = require('./load-ajax');
 
   exports.load = function (name, onload) {
     loadAjax(name, function (err, text) {

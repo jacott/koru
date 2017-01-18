@@ -3,7 +3,7 @@ define(function(require) {
   require('koru/session');
   require('koru/css/less-watcher');
   require('koru/server-rc');
-  var webServer = require('koru/web-server');
+  const webServer = require('koru/web-server');
   require('koru/test/server');
   require('koru/test/api');
 

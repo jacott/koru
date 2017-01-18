@@ -63,13 +63,10 @@ define(function(require, exports, module) {
           });
         } else if (match.baseObject.$test(subSpec)) {
           for(let key in obj) {
-            let type;
             try {
               if (subSpec.hasOwnProperty(key)) {
-                type = subSpec[key];
                 check1(obj[key], subSpec[key], name ? name+'.'+key : key);
               } else if (subSpec === spec && altSpec && altSpec.hasOwnProperty(key)) {
-                type = altSpec[key];
                 check1(obj[key], altSpec[key], name ? name+'.'+key : key);
               } else {
                 bad(name ? name+'.'+key : key, obj, subSpec, key);

@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
 
   function loadAjax(url, callback) {
-    var req = new XMLHttpRequest();
+    const req = new XMLHttpRequest();
 
     req.addEventListener("load", function () {
       if (req.status == 200) { // found the file ok
