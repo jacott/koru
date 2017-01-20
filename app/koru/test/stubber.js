@@ -73,12 +73,15 @@ define(function(require, exports, module) {
     reset() {this._calls = null},
 
     getCall(index) {
-      return this._calls && this._calls[index];
+      const {_calls} = this;
+      return _calls && _calls[index < 0 ? _calls.length + index : index];
     },
 
     args(callIndex, index) {
-      var call = this._calls && this._calls[callIndex];
-      return call && call.args[index];
+      const {_calls} = this;
+      if (! _calls) return;
+      const call = _calls[callIndex < 0 ? _calls.length + callIndex : callIndex];
+      return call && call.args[index < 0 ? call.args.length + index : index];
     },
 
     get firstCall() {

@@ -35,6 +35,7 @@ define(function (require, exports, module) {
       assert.calledTwice(argOne);
       assert.calledOnce(argTwo);
       assert.equals(argOne.getCall(1).thisValue, {foo: 'bar'});
+      assert.same(argOne.getCall(0), argOne.getCall(-2));
 
       base(2);
 
@@ -156,8 +157,9 @@ define(function (require, exports, module) {
       assert.equals(spy.lastCall, {globalCount: TH.match.number, args: ['a'], thisValue: {diff: 'this'}, returnValue: 123});
 
       assert.same(spy.callCount, 2);
-      assert.same(spy.args(0,1), 2);
-      assert.same(spy.args(1,0), 'a');
+      assert.same(spy.args(0, 1), 2);
+      assert.same(spy.args(1, 0), 'a');
+      assert.same(spy.args(-2, -1), 3);
     },
 
     "test replace func"() {
