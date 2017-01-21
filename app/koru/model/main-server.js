@@ -143,17 +143,21 @@ define(function(require, exports, module) {
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, function () {
-          const doc = model.findById(id) || (changes._id = id, new model());
+          if (model.overrideSave)
+            return model.overrideSave(id, changes, userId);
+          let doc = model.findById(id || changes._id);
+
+          if (id) Val.allowIfFound(doc);
+          else {
+            if (doc) return; // replay or duplicate id so don't update, don't throw error
+            doc = new model();
+          }
 
           doc.changes = changes;
-          if (doc.overrideSave)
-            doc.overrideSave(userId);
-          else {
-            Val.allowAccessIf(doc.authorize);
-            doc.authorize(userId);
-            doc.$assertValid();
-            doc.$save();
-          }
+          Val.allowAccessIf(doc.authorize);
+          doc.authorize(userId);
+          doc.$assertValid();
+          doc.$save();
         });
       });
 

@@ -191,18 +191,14 @@ define(function (require, exports, module) {
     },
 
     "test overrideSave"() {
-      var TestModel = Model.define('TestModel', {
-        overrideSave: v.overrideSave = test.stub()
-      }).defineFields({name: 'text'});
+      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      TestModel.overrideSave = test.stub();
 
       var saveSpy = test.spy(TestModel.prototype, '$save');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
 
-      assert.calledWith(v.overrideSave, 'u123');
-      var model = v.overrideSave.firstCall.thisValue;
-      assert.same(model.constructor, TestModel);
-      assert.same(model.changes.name, 'bar');
+      assert.calledWith(TestModel.overrideSave, "fooid", {name: 'bar'}, 'u123');
 
       refute.called(saveSpy);
     },
@@ -243,7 +239,7 @@ define(function (require, exports, module) {
       TestModel.onChange(v.onChangeSpy = test.stub());
 
       assert.accessDenied(function () {
-        session._rpcs.save.call({userId: null}, "TestModel", "fooid", {name: 'bar'});
+        session._rpcs.save.call({userId: null}, "TestModel", null, {_id: "fooid", name: 'bar'});
       });
 
       refute(TestModel.exists("fooid"));
@@ -253,7 +249,7 @@ define(function (require, exports, module) {
       test.spy(TransQueue, 'onSuccess');
       test.spy(TransQueue, 'onAbort');
 
-      session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar'});
 
       v.doc = TestModel.findById("fooid");
 
@@ -269,7 +265,7 @@ define(function (require, exports, module) {
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
 
-      assert.calledWith(Val.assertCheck, "fooid", "string", {baseName: "_id"});
+      assert.calledWith(Val.assertCheck, null, "string", {baseName: "_id"});
       assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
 
       assert.calledOnce(TestModel.db.transaction);
@@ -277,6 +273,11 @@ define(function (require, exports, module) {
       test.stub(TestModel, '_$docCacheDelete');
       TransQueue.onAbort.yield();
       assert.calledWith(TestModel._$docCacheDelete, TH.match.field('_id', 'fooid'));
+
+      v.auth.reset();
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar2'});
+
+      refute.called(v.auth);
     },
 
     "test saveRpc existing"() {

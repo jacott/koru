@@ -82,17 +82,16 @@ define(function(require, exports, module) {
       session.defineRpc("save", function (modelName, id, changes) {
         const model = ModelMap[modelName],
             docs = model.docs,
-            doc = docs[id],
+            doc = docs[id || changes._id],
             now = util.newDate();
 
         _support._updateTimestamps(changes, model.updateTimestamps, now);
 
-        if(doc) {
-          _support.performUpdate(doc, changes);
-        } else {
+        if (doc) {
+          if (id) _support.performUpdate(doc, changes);
+        } else if (! id) {
           _support._addUserIds(changes, model.userIds, this.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
-          changes._id = id;
           _support.performInsert(new model(changes));
         }
       });
@@ -197,18 +196,20 @@ define(function(require, exports, module) {
 
   function save(doc, callback=koru.globalCallback) {
     let _id = doc.attributes._id;
+    const model = doc.constructor;
 
     if(_id == null) {
-      _id = (doc.changes && doc.changes._id) || Random.id();
-      session.rpc("save", doc.constructor.modelName, _id,
+      if (! doc.changes._id) doc.changes._id = Random.id();
+      _id = doc.changes._id;
+      if (model.docs[_id]) throw new koru.Error(400, {_id: [['not_unique']]});
+      session.rpc("save", model.modelName, null,
                   doc.changes,
                   callback);
-      doc.attributes._id = _id;
     } else for(let noop in doc.changes) {
       // only call if at least one change
       const changes = doc.changes;
       doc.changes = {}; // reset changes here for callbacks
-      session.rpc("save", doc.constructor.modelName, doc._id,
+      session.rpc("save", model.modelName, doc._id,
                   changes,
                   callback);
       break;

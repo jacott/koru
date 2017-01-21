@@ -837,7 +837,7 @@ define(function (require, exports, module) {
           assert.same(doc.user_id, util.thread.userId);
 
           let id;
-          session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
+          session.rpc('save', 'TestModel', null, {_id: id = "123456", name: 'testing'} );
           assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
 
           assert.same(v.TestModel.create({user_id: 'override'}).$reload().user_id, 'override');
@@ -889,8 +889,16 @@ define(function (require, exports, module) {
                                              v.TestModel.findById(doc._id).attributes);
 
         if(isClient)
-          assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id, {
+          assert.calledOnceWith(session.rpc, 'save', 'TestModel', null, {
             _id: doc._id, name: "testing"});
+      },
+
+      "test duplicate id"() {
+        const doc = v.TestModel.create({_id: '123', name: 'testing'});
+
+        assert.exception(() => {
+          v.TestModel.create({_id: '123', name: 'testing2'});
+        });
       },
 
       "test $reload on removed doc"() {
