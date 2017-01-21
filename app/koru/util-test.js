@@ -219,7 +219,9 @@ define(function (require, exports, module) {
     },
 
     "test mergeInclude"() {
-      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true}),
+      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true}),
+                    {a: 1, c: 3, d: 4});
+      assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
                     {a: 1, c: 3, d: 4});
 
     },

@@ -81,10 +81,16 @@ define(function(require, exports, module) {
       return obj;
     },
 
-    mergeInclude(obj, properties, exclude) {
-      for(let prop in properties) {
-        if (exclude[prop])
-          Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
+    mergeInclude(obj, properties, include) {
+      if (Array.isArray(include)) {
+        for(let i = 0; i < include.length; ++i) {
+          const prop = include[i];
+          const desc = Object.getOwnPropertyDescriptor(properties,prop);
+          desc && Object.defineProperty(obj, prop, desc);
+        }
+      } else for(let prop in include) {
+        const desc = Object.getOwnPropertyDescriptor(properties,prop);
+        desc && Object.defineProperty(obj, prop, desc);
       }
       return obj;
     },
