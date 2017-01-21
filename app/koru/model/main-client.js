@@ -14,20 +14,20 @@ define(function(require, exports, module) {
   const dbs = Object.create(null);
 
   function getProp(dbId, modelName, prop) {
-    var obj = dbs[dbId];
+    let obj = dbs[dbId];
     if (! obj) return false;
     obj = obj[modelName];
     return (obj && obj[prop]) || false;
   }
 
   function getSetProp(dbId, modelName, prop, setter) {
-    var obj = dbs[dbId] || (dbs[dbId] = {});
+    let obj = dbs[dbId] || (dbs[dbId] = {});
     obj = obj[modelName] || (obj[modelName] = {});
 
     return obj[prop] || (obj[prop] = setter());
   }
 
-  var ModelEnv = {
+  const ModelEnv = {
     save: save,
     put: put,
 
@@ -49,17 +49,17 @@ define(function(require, exports, module) {
       Object.defineProperty(ModelMap, '_getProp', {enumerable: false, value: getProp});
       Object.defineProperty(ModelMap, '_getSetProp', {enumerable: false, value: getSetProp});
 
-      util.extend(BaseModel, {
+      util.merge(BaseModel, {
         findById,
         findAttrsById,
         get serverQuery() {
-          var query = new Query(this);
+          const query = new Query(this);
           query.isFromServer = true;
           return query;
         }
       });
 
-      util.extend(BaseModel.prototype, {
+      util.merge(BaseModel.prototype, {
         $remove() {
           session.rpc("remove", this.constructor.modelName, this._id,
                       koru.globalCallback);
@@ -70,7 +70,7 @@ define(function(require, exports, module) {
          * current database.
          **/
         $reload() {
-          var doc = this.constructor.findById(this._id);
+          const doc = this.constructor.findById(this._id);
           this.attributes = doc ? doc.attributes : {};
           this.changes = {};
           this._errors = null;
@@ -80,7 +80,7 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("save", function (modelName, id, changes) {
-        var model = ModelMap[modelName],
+        const model = ModelMap[modelName],
             docs = model.docs,
             doc = docs[id],
             now = util.newDate();
@@ -105,7 +105,7 @@ define(function(require, exports, module) {
         _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
-      util.extend(_support, {
+      util.merge(_support, {
         resetDocs() {},
         bumpVersion() {
           session.rpc('bumpVersion', this.constructor.modelName, this._id, this._version);
@@ -122,11 +122,11 @@ define(function(require, exports, module) {
     },
 
     setupModel(model) {
-      var modelName = model.modelName;
-      var dbId, docs;
+      const modelName = model.modelName;
+      let dbId, docs;
 
       function chkdb() {
-        var tdbId = dbBroker.dbId;
+        const tdbId = dbBroker.dbId;
         if (tdbId !== dbId) {
           docs = null;
           dbId = tdbId;
@@ -137,17 +137,17 @@ define(function(require, exports, module) {
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
       function setDocs() {
-        var obj = Object.create(null);
+        const obj = Object.create(null);
         obj.x = 1;
         delete obj.x; // try to make JSVM use dictionary mode
         return obj;
       }
-      var anyChange = makeSubject({});
+      const anyChange = makeSubject({});
 
-      util.extend(model, {
+      util.merge(model, {
         notify() {
           chkdb();
-          var subject = getProp(dbId, modelName, 'notify');
+          const subject = getProp(dbId, modelName, 'notify');
           if (subject)
             subject.notify.apply(subject, arguments);
 
@@ -156,7 +156,7 @@ define(function(require, exports, module) {
         onAnyChange: anyChange.onChange,
         onChange() {
           chkdb();
-          var subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
+          const subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
 
           return subject.onChange.apply(subject, arguments);
         },
@@ -191,12 +191,12 @@ define(function(require, exports, module) {
   }
 
   function findAttrsById(id) {
-    var doc = this.docs[id];
+    const doc = this.docs[id];
     return doc && doc.attributes;
   }
 
   function save(doc, callback=koru.globalCallback) {
-    var _id = doc.attributes._id;
+    let _id = doc.attributes._id;
 
     if(_id == null) {
       _id = (doc.changes && doc.changes._id) || Random.id();
@@ -204,9 +204,9 @@ define(function(require, exports, module) {
                   doc.changes,
                   callback);
       doc.attributes._id = _id;
-    } else for(var noop in doc.changes) {
+    } else for(let noop in doc.changes) {
       // only call if at least one change
-      var changes = doc.changes;
+      const changes = doc.changes;
       doc.changes = {}; // reset changes here for callbacks
       session.rpc("save", doc.constructor.modelName, doc._id,
                   changes,

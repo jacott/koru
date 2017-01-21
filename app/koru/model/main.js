@@ -267,24 +267,23 @@ define(function(require, exports, module) {
     }
 
     $save(force) {
-      var doc = this;
-      var callback = force && force.callback;
+      const callback = force && force.callback;
 
       switch(force) {
-      case 'assert': doc.$assertValid(); break;
+      case 'assert': this.$assertValid(); break;
       case 'force': break;
       default:
-        if (! doc.$isValid())
+        if (! this.$isValid())
           return false;
       }
-      ModelEnv.save(doc, callback);
+      ModelEnv.save(this, callback);
 
-      return doc;
+      return this;
     }
 
     $put(updates, value) {
       if (arguments.length === 2) {
-        var key = updates;
+        const key = updates;
         updates = {};
         updates[key] = value;
       }
@@ -298,11 +297,10 @@ define(function(require, exports, module) {
     }
 
     $isValid() {
-      var doc = this,
-          model = doc.constructor,
-          fVTors = model._fieldValidators;
+      const model = this.constructor,
+            fVTors = model._fieldValidators;
 
-      doc._errors = null;
+      this._errors = null;
 
       if(fVTors) {
         for(let field in fVTors) {
@@ -312,15 +310,15 @@ define(function(require, exports, module) {
             let options = args[1];
 
             if (typeof options === 'function')
-              options = options.call(doc, field, args[2]);
-            args[0](doc,field, options, args[2]);
+              options = options.call(this, field, args[2]);
+            args[0](this, field, options, args[2]);
           }
         }
       }
 
-      doc.validate && doc.validate();
+      this.validate && this.validate();
 
-      return ! doc._errors;
+      return ! this._errors;
     }
 
     $assertValid() {
@@ -329,7 +327,8 @@ define(function(require, exports, module) {
 
     $equals(other) {
       if (this === other) return true;
-      return other && other._id && this._id && this._id === other._id && this.constructor === other.constructor;
+      return other && other._id && this._id && this._id === other._id &&
+        this.constructor === other.constructor;
     }
 
     $isNewRecord() {
@@ -369,37 +368,38 @@ define(function(require, exports, module) {
       cache[0] = changes;
 
       let simple = true;
-      for(var attr in changes) {
+      for(let attr in changes) {
         if (attr.indexOf(".") !== -1) {
           simple = false;
           break;
         }
       }
 
-      var attrs = this.attributes;
+      const attrs = this.attributes;
 
       if (simple)
         return cache[1] = new this.constructor(attrs, changes);
 
-      var cc = {};
+      const cc = {};
 
-      for(var attr in changes) {
-        var index = attr.indexOf(".");
-        var desc = Object.getOwnPropertyDescriptor(changes, attr);
+      for(let attr in changes) {
+        const index = attr.indexOf(".");
+        const desc = Object.getOwnPropertyDescriptor(changes, attr);
 
         if (index === -1) {
           Object.defineProperty(cc, attr, desc);
         } else { // update part of attribute
-          var ov, parts = attr.split(".");
-          var curr = cc[parts[0]];
+          let ov, parts = attr.split(".");
+          let curr = cc[parts[0]];
           if (! curr)
             curr = cc[parts[0]] = util.deepCopy(attrs[parts[0]]) || {};
-          for(var i = 1; i < parts.length - 1; ++i) {
-            var part = parts[i];
+          let i;
+          for(i = 1; i < parts.length - 1; ++i) {
+            const part = parts[i];
             curr = curr[part] || (curr[part] = {});
           }
-          part = parts[i];
-          var m = part.match(/^\$([+\-])(\d+)/);
+          let part = parts[i];
+          const m = part.match(/^\$([+\-])(\d+)/);
           if (m) {
             part = +m[2];
             if (m[1] === '-')
@@ -428,7 +428,8 @@ define(function(require, exports, module) {
         } else if (key[idx+1] !== '$') {
           result[key] = util.lookupDottedValue(key, attrs);
         } else {
-          result[key.slice(0, idx+2) + (key[idx+2] === '-' ? '+' : '-') + key.slice(idx+3)] = beforeChange[key];
+          result[key.slice(0, idx+2) + (key[idx+2] === '-' ? '+' : '-') + key.slice(idx+3)] =
+            beforeChange[key];
         }
 
       }
@@ -440,7 +441,7 @@ define(function(require, exports, module) {
     }
 
     $update() {
-      var query = this.$onThis;
+      const query = this.$onThis;
       return query.update.apply(query, arguments);
     }
 
@@ -453,7 +454,7 @@ define(function(require, exports, module) {
     }
 
     $setFields(fields,options) {
-      for(var i = 0,field;field = fields[i];++i) {
+      for(let i = 0,field;field = fields[i];++i) {
         if (field[0] !== '_' && options.hasOwnProperty(field)) {
           this[field] = options[field];
         }
@@ -485,8 +486,8 @@ define(function(require, exports, module) {
     Val.allowIfFound(doc);
 
     const [changes, pSum] = _support.validatePut(doc, updates);
+    let ex;
     try {
-      var ex;
 
       callBeforeObserver('beforeUpdate', doc, pSum);
       callBeforeObserver('beforeSave', doc, pSum);
@@ -538,7 +539,7 @@ define(function(require, exports, module) {
 
   (() => {
     for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
-                    'afterLocalChange','whenFinally'])
+                      'afterLocalChange','whenFinally'])
       registerType(type);
 
     function registerType(type) {
@@ -575,18 +576,18 @@ define(function(require, exports, module) {
     setupExtras: [],
 
     validatePut(doc, updates) {
-      var userId = koru.userId();
+      const userId = koru.userId();
       Val.allowAccessIf(userId && doc.authorizePut);
-      var changes = {};
-      var partials = {};
+      const changes = {};
+      const partials = {};
       ModelMap.splitUpdateKeys(changes, partials, updates);
       doc.changes = changes;
       if (typeof doc.authorizePut === 'function')
         doc.authorizePut(userId, partials);
       else {
         doc.authorize && doc.authorize(userId, {put: partials});
-        for (var key in partials) {
-          var validator = doc.authorizePut[key];
+        for (let key in partials) {
+          const validator = doc.authorizePut[key];
           Val.allowAccessIf(validator, 'no validator for ' + key);
           validator(doc, partials[key], key);
         }
@@ -603,12 +604,12 @@ define(function(require, exports, module) {
 
     performInsert(doc) {
       const model = doc.constructor;
+      let ex;
 
       doc.changes = doc.attributes;
       const attrs = doc.attributes = {};
 
       try {
-        var ex;
         callBeforeObserver('beforeCreate', doc);
         callBeforeObserver('beforeSave', doc);
 
@@ -628,11 +629,11 @@ define(function(require, exports, module) {
 
     performUpdate(doc, changes) {
       const model = doc.constructor;
+      let ex;
 
       doc.changes = changes;
 
       try {
-        var ex;
         callBeforeObserver('beforeUpdate', doc);
         callBeforeObserver('beforeSave', doc);
         const st = new Query(model).onId(doc._id);
@@ -681,11 +682,11 @@ define(function(require, exports, module) {
      * @see BaseModel.define
      */
     define(module, name, proto) {
-      let model;
+      let model, fields;
       if (typeof module === 'object' && ! module.id) {
         name = module.name;
         proto = module.proto;
-        var fields = module.fields;
+        fields = module.fields;
         module = module.module;
       } else {
         if (typeof module === 'string' || module.create) {
@@ -775,9 +776,9 @@ define(function(require, exports, module) {
         };
       }
       const name = field.replace(/_id/,'');
-      let bt = options.model;
+      let bt = options.model, btName;
       if (! bt) {
-        var btName = options.modelName || util.capitalize(name);
+        btName = options.modelName || util.capitalize(name);
         bt = ModelMap[btName];
         options.model = bt;
       }
@@ -795,13 +796,13 @@ define(function(require, exports, module) {
     },
 
     has_many(model, field, options) {
-      let bt = options.model;
+      let bt = options.model, name;
       if (! bt) {
-        var name = options.modelName ||
-              (options.associated &&
-               (typeof options.associated === 'string' ?
-                options.associated : options.associated.modelName)) ||
-              util.capitalize(util.sansId(field));
+        name = options.modelName ||
+          (options.associated &&
+           (typeof options.associated === 'string' ?
+            options.associated : options.associated.modelName)) ||
+          util.capitalize(util.sansId(field));
 
         bt = ModelMap[name];
       }
@@ -838,7 +839,8 @@ define(function(require, exports, module) {
   function belongsTo(model, name, field) {
     return function () {
       const value = this[field];
-      return value && this.$cacheRef(name)[value] || (this.$cacheRef(name)[value] = model.findById(value));
+      return value && this.$cacheRef(name)[value] ||
+        (this.$cacheRef(name)[value] = model.findById(value));
     };
   }
 

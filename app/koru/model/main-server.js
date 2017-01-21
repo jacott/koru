@@ -14,6 +14,7 @@ define(function(require, exports, module) {
 
   const uniqueIndexes = {};
   const indexes = {};
+  const _resetDocs = {};
 
   session.registerGlobalDictionaryAdder(module, addToDictionary);
 
@@ -21,7 +22,7 @@ define(function(require, exports, module) {
     session.deregisterGlobalDictionaryAdder(module);
   });
 
-  var ModelEnv = {
+  const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;
       if (drop === 'drop')
@@ -59,18 +60,16 @@ define(function(require, exports, module) {
       }
 
       function prepareIndex(type, model, args) {
-        var name = model.modelName;
-        var queue = type[name] || (type[name] = []);
+        const name = model.modelName;
+        const queue = type[name] || (type[name] = []);
         queue.push(args);
       }
 
       function _ensureIndexes(type, options) {
-        for(var name in type) {
-          var queue = type[name];
-          var model = ModelMap[name];
-          util.forEach(queue, function (args) {
-            ensureIndex(model, args, options);
-          });
+        for(let name in type) {
+          const queue = type[name];
+          const model = ModelMap[name];
+          util.forEach(queue, args => {ensureIndex(model, args, options)});
         }
       }
 
@@ -89,8 +88,8 @@ define(function(require, exports, module) {
       };
 
       BaseModel.prototype.$reload = function (full) {
-        var model = this.constructor;
-        var doc = full ? model.docs.findOne({_id: this._id}) : model.findAttrsById(this._id);
+        const model = this.constructor;
+        const doc = full ? model.docs.findOne({_id: this._id}) : model.findAttrsById(this._id);
 
         if (doc) {
           full && model._$docCacheSet(doc);
@@ -108,11 +107,10 @@ define(function(require, exports, module) {
 
       ModelEnv.save = function (doc, callback) {
         if (util.isObjEmpty(doc.changes)) return doc;
-        var model = doc.constructor;
-        var _id = doc._id;
-        var changes = doc.changes;
-        var now = util.newDate();
-        doc.changes = {};
+        const model = doc.constructor;
+        const _id = doc._id;
+        let {changes} = doc; doc.changes = {};
+        const now = util.newDate();
 
         _support._updateTimestamps(changes, model.updateTimestamps, now);
         if(doc.attributes._id == null) {
@@ -121,10 +119,10 @@ define(function(require, exports, module) {
           _support._addUserIds(changes, model.userIds, util.thread.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
 
-          changes = util.extend(doc.attributes, changes);
+          changes = util.merge(doc.attributes, changes);
           _support.performInsert(doc);
         } else {
-          var copy = util.deepCopy(changes);
+          const copy = util.deepCopy(changes);
           _support.performUpdate(doc, changes);
 
           // This a bit of a hack; should we bother?
@@ -145,11 +143,7 @@ define(function(require, exports, module) {
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, function () {
-          var doc = model.findById(id);
-          if (! doc) {
-            doc = new model();
-            changes._id = id;
-          }
+          const doc = model.findById(id) || (changes._id = id, new model());
 
           doc.changes = changes;
           if (doc.overrideSave)
@@ -168,14 +162,14 @@ define(function(require, exports, module) {
       });
 
       session.defineRpc("remove", function (modelName, id) {
-        var userId = this.userId;
+        const userId = this.userId;
         Val.allowAccessIf(userId);
         Val.ensureString(id);
         Val.ensureString(modelName);
-        var model = ModelMap[modelName];
+        const model = ModelMap[modelName];
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, function () {
-          var doc = model.findById(id);
+          const doc = model.findById(id);
           Val.allowIfFound(doc);
           if (doc.overrideRemove)
             doc.overrideRemove(userId);
@@ -187,7 +181,7 @@ define(function(require, exports, module) {
         });
       });
 
-      util.extend(_support, {
+      util.merge(_support, {
         resetDocs(model) {
           if (_resetDocs.hasOwnProperty(model.modelName))
             _resetDocs[model.modelName]();
@@ -202,40 +196,36 @@ define(function(require, exports, module) {
 
         remote(model, name, func) {
           return function (/* arguments */) {
-            var conn = this;
-            var args = arguments;
-            return model.db.transaction(function () {
-              Val.allowAccessIf(conn.userId);
-              return func.apply(conn, args);
-            });
+            const args = arguments;
+            return model.db.transaction(
+              () => (Val.allowAccessIf(this.userId), func.apply(this, args)));
           };
         },
       });
     },
 
     setupModel(model) {
+      const notifyMap = new WeakMap;
+      const anyChange = makeSubject({});
+
+      const docCache = new WeakMap;
+      let dbMap = new WeakMap;
+
+      let docs, db;
 
       _resetDocs[model.modelName] = function () {
         db = docs = null;
         dbMap = new WeakMap;
       };
 
-      var notifyMap = new WeakMap;
-      var anyChange = makeSubject({});
-
-      var docCache = new WeakMap;
-      var dbMap = new WeakMap;
-
-      var docs, db;
-
       function getDc() {
         const dc = docCache.get(util.thread);
         return dc && model.db === dc.$db && dc;
       }
 
-      util.extend(model, {
+      util.merge(model, {
         notify() {
-          var subject = notifyMap.get(model.db);
+          const subject = notifyMap.get(model.db);
           if (subject)
             subject.notify.apply(subject, arguments);
 
@@ -243,7 +233,7 @@ define(function(require, exports, module) {
         },
         onAnyChange: anyChange.onChange,
         onChange() {
-          var subject = notifyMap.get(model.db);
+          let subject = notifyMap.get(model.db);
           subject || notifyMap.set(db, subject = makeSubject({}));
 
           return subject.onChange.apply(subject, arguments);
@@ -257,7 +247,7 @@ define(function(require, exports, module) {
           return docs;
         },
         get db() {
-          var tdb = dbBroker.db;
+          const tdb = dbBroker.db;
           if (tdb !== db) {
             docs = null;
             db = tdb;
@@ -272,8 +262,8 @@ define(function(require, exports, module) {
         },
 
         _$docCacheSet(doc) {
-          var thread = util.thread;
-          var dc = getDc();
+          const thread = util.thread;
+          let dc = getDc();
           if (! dc || dc.$db !== model.db) {
             dc = Object.create(null);
             dc.$db = null; delete dc.$db; // de-op object
@@ -298,8 +288,8 @@ define(function(require, exports, module) {
     },
 
     insert(doc) {
-      var model = doc.constructor;
-      var result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+      const model = doc.constructor;
+      const result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
       if (Array.isArray(result))
         doc.attributes._id = result[0]._id;
 
@@ -316,12 +306,10 @@ define(function(require, exports, module) {
     },
   };
 
-  var _resetDocs = {};
-
   function buidlKeys(args) {
-    var keys = {};
-    for(var i = 0; i < args.length; ++i) {
-      var name = args[i];
+    const keys = {};
+    for(let i = 0; i < args.length; ++i) {
+      const name = args[i];
       if (typeof args[i + 1] === 'number')
         keys[name] = args[++i];
       else
@@ -333,7 +321,7 @@ define(function(require, exports, module) {
   function findAttrsById(id) {
     if (! id) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
-    var doc = this._$docCacheGet(id);
+    let doc = this._$docCacheGet(id);
     if (! doc) {
       doc = this.docs.findOne({_id: id});
       doc && this._$docCacheSet(doc);
@@ -342,15 +330,15 @@ define(function(require, exports, module) {
   }
 
   function findById(id) {
-    var doc = this.findAttrsById(id);
+    const doc = this.findAttrsById(id);
     if (doc) return new this(doc);
   }
 
   function addToDictionary(adder) {
-    for (var mname in ModelMap) {
+    for (let mname in ModelMap) {
       adder(mname);
-      var model = ModelMap[mname];
-      for (var name in model.$fields) {
+      const model = ModelMap[mname];
+      for (let name in model.$fields) {
         adder(name);
       }
     }

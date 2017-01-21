@@ -142,23 +142,24 @@ define(function (require, exports, module) {
     },
 
     "test reload and caching"() {
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
 
       v.doc.attributes.name = 'baz';
       v.doc.name = 'bar';
 
-      var retFut = new Future;
-      var waitFut = new Future;
+      let retFut = new Future;
+      let waitFut = new Future;
 
       util.Fiber(function () {
         try {
           while(retFut) {
-            var what= retFut.wait();
+            const what= retFut.wait();
             waitFut.return(what && what());
           }
         } catch(ex) {
+          koru.error(util.extractError(ex));
           waitFut.throw(ex);
         }
       }).run();

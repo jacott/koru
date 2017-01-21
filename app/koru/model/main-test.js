@@ -2,17 +2,17 @@ define(function (require, exports, module) {
   /**
    * Object persistence manager. Defines application models.
    **/
-  var test, v;
   const koru     = require('koru');
   const dbBroker = require('koru/model/db-broker');
   const Query    = require('koru/model/query');
   const session  = require('koru/session');
   const api      = require('koru/test/api');
   const util     = require('koru/util');
-  const Model    = require('./main');
   const TH       = require('./test-helper');
   const val      = require('./validation');
 
+  const Model    = require('./main');
+  var test, v;
   const BaseModel = Model.BaseModel;
 
   const Module = module.constructor;
@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     },
 
     "test only models enumerable"() {
-      for(var key in Model) {
+      for (let key in Model) {
         assert.same(Object.getPrototypeOf(Model[key]), BaseModel);
       }
       assert(true);
@@ -187,16 +187,18 @@ define(function (require, exports, module) {
         v.TestModel.beforeUpdate(v.TestModel, obCalled);
         v.TestModel.beforeSave(v.TestModel, obCalled);
         v.TestModel.afterLocalChange(v.TestModel, function (doc, was) {
-          (v.obs.afterLocalChange = v.obs.afterLocalChange || []).push([doc && util.extend({}, doc.attributes), was && util.extend({}, doc ? was : was.attributes)]);
+          (v.obs.afterLocalChange = v.obs.afterLocalChange || [])
+            .push([doc && util.merge({}, doc.attributes), was &&
+                   util.merge({}, doc ? was : was.attributes)]);
         });
         v.TestModel.whenFinally(v.TestModel, function (doc, ex) {
           (v.obs.whenFinally = v.obs.whenFinally || []).push([doc, ex]);
         });
 
         function obCalled(doc, type, partials) {
-          var args = [util.extend({}, doc.attributes), util.extend({}, doc.changes)];
+          const args = [util.merge({}, doc.attributes), util.merge({}, doc.changes)];
           if (partials !== undefined)
-            args.push(util.extend({}, partials));
+            args.push(util.merge({}, partials));
           (v.obs[type] = v.obs[type] || []).push(args);
         }
       },
@@ -233,8 +235,8 @@ define(function (require, exports, module) {
       "test update calls"() {
         test.onEnd(v.TestModel.onChange(function (doc, was) {
           refute(v.docAttrs);
-          v.docAttrs = util.extend({}, doc.attributes);
-          v.docChanges = util.extend({}, was);
+          v.docAttrs = util.merge({}, doc.attributes);
+          v.docChanges = util.merge({}, was);
         }).stop);
 
         v.tc.name = 'bar';
@@ -266,8 +268,9 @@ define(function (require, exports, module) {
                                             {x: {'x.y': "abc"}}]]);
         assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'},
                                           {x: {'x.y': "abc"}}]]);
-        assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id, x: {y: 'abc'}}, {name: 'foo',
-                                                                               'x.y': undefined}]]);
+        assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id, x: {y: 'abc'}},
+                                                {name: 'foo',
+                                                 'x.y': undefined}]]);
         assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
       },
 
@@ -316,7 +319,7 @@ define(function (require, exports, module) {
       },
 
       "test no _version"() {
-        var tc = v.TestModel.create({name: 'foo'});
+        const tc = v.TestModel.create({name: 'foo'});
 
         assert.same(tc._version, undefined);
       },
@@ -324,7 +327,7 @@ define(function (require, exports, module) {
       "test updating"() {
         v.TestModel.addVersioning();
 
-        var tc = v.TestModel.create({name: 'foo'});
+        const tc = v.TestModel.create({name: 'foo'});
 
         assert.same(tc._version, 1);
 
@@ -337,7 +340,7 @@ define(function (require, exports, module) {
       "test bumping"() {
         v.TestModel.addVersioning();
 
-        var tc = v.TestModel.create({name: 'foo'});
+        const tc = v.TestModel.create({name: 'foo'});
 
         tc.$bumpVersion();
 
@@ -349,8 +352,8 @@ define(function (require, exports, module) {
     },
 
     "test ref cache"() {
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
-      var foo = TestModel.create();
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const foo = TestModel.create();
 
       foo.$cacheRef('bin')["123"] = 5;
 
@@ -367,8 +370,8 @@ define(function (require, exports, module) {
     },
 
     "test cache"() {
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
-      var foo = TestModel.create();
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const foo = TestModel.create();
 
       foo.$cache.boo = 5;
 
@@ -378,14 +381,14 @@ define(function (require, exports, module) {
     },
 
     'test change recording'() {
-      var TestModel = Model.define('TestModel').
-        defineFields({
-          name: 'text',
-          other: 'number'
-        });
+      const TestModel = Model.define('TestModel').
+              defineFields({
+                name: 'text',
+                other: 'number'
+              });
 
-      var testAttrs = {_id: 123, name: 'orig name'};
-      var tsc = new TestModel(testAttrs);
+      const testAttrs = {_id: 123, name: 'orig name'};
+      const tsc = new TestModel(testAttrs);
 
       tsc.name = 'orig name';
       assert.equals(tsc.changes,{});
@@ -411,9 +414,9 @@ define(function (require, exports, module) {
     },
 
     'test remove'() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
       TestModel.defineFields({name: 'text'});
-      var doc = TestModel.build({name: 'foo'}).$$save();
+      const doc = TestModel.build({name: 'foo'}).$$save();
 
       assert.isTrue(TestModel.exists({_id: doc._id}));
 
@@ -439,7 +442,7 @@ define(function (require, exports, module) {
           }}})
         });
 
-        var sut = v.TestModel.build();
+        const sut = v.TestModel.build();
         sut.starSign = 'Gemini';
         assert.same(sut.changes.starSign, 'Gemini');
         assert.same(sut.starSign, 'Virgo');
@@ -456,8 +459,9 @@ define(function (require, exports, module) {
       },
 
       "test changesTo"() {
-        var res = v.TestModel.changesTo("foo", v.doc = {foo: {123: {name: 'y'}}},
-                                        v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
+        let res = v.TestModel.changesTo(
+          "foo", v.doc = {foo: {123: {name: 'y'}}},
+          v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
 
         assert.equals(res, {123: 'foo.123.name', 456: 'foo.456.age'});
         assert.same(v.TestModel.changesTo("foo", v.doc, v.was), res);
@@ -473,14 +477,14 @@ define(function (require, exports, module) {
       },
 
       "test classMethods"() {
-        var doc = v.TestModel.build();
+        const doc = v.TestModel.build();
         assert.same(doc.constructor, doc.classMethods);
       },
 
       "test _id"() {
         assert.equals(v.TestModel.$fields._id, {type: 'id'});
 
-        var doc = new v.TestModel({_id: "attrId"});
+        const doc = new v.TestModel({_id: "attrId"});
 
         assert.same(doc._id, "attrId");
 
@@ -493,7 +497,7 @@ define(function (require, exports, module) {
       },
 
       "test $hasChanged"() {
-        var doc = new v.TestModel({_id: "attrId"});
+        const doc = new v.TestModel({_id: "attrId"});
 
         assert.isFalse(doc.$hasChanged('name'));
 
@@ -509,7 +513,7 @@ define(function (require, exports, module) {
       },
 
       "test exists"() {
-        var doc = v.TestModel.create({name: 'foo'});
+        const doc = v.TestModel.create({name: 'foo'});
 
         assert.isTrue(v.TestModel.exists(doc._id));
 
@@ -517,44 +521,45 @@ define(function (require, exports, module) {
       },
 
       "test query"() {
-        var query = v.TestModel.query;
+        const query = v.TestModel.query;
 
         assert.same(query.model, v.TestModel);
       },
 
       "test $onThis"() {
-        var sut = v.TestModel.create();
+        const sut = v.TestModel.create();
 
-        var query = sut.$onThis;
+        const query = sut.$onThis;
 
         assert.same(query.model, v.TestModel);
         assert.same(query.singleId, sut._id);
       },
 
       "test where"() {
-        var query = v.TestModel.where('t1', 123);
+        const query = v.TestModel.where('t1', 123);
 
         assert.same(query.model, v.TestModel);
         assert.equals(query._wheres, {t1: 123});
       },
 
       "test findById"() {
-        var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
+        const doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
         assert[isClient ? 'same' : 'equals'](v.TestModel.findById(doc._id).attributes, doc.attributes);
       },
 
       "test findAttrsById"() {
-        var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
+        const doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
-        var attrs = v.TestModel.findAttrsById(doc._id);
+        const attrs = v.TestModel.findAttrsById(doc._id);
         assert.same(attrs, v.TestModel.findById(doc._id).attributes);
       },
 
       "test findBy."() {
-        var doc = v.TestModel.create({name: 'Sam', foo: 'bar'});
+        const doc = v.TestModel.create({name: 'Sam', foo: 'bar'});
 
-        assert[isClient ? 'same' : 'equals'](v.TestModel.findBy('foo', 'bar').attributes, doc.attributes);
+        assert[isClient ? 'same' : 'equals'](v.TestModel.findBy('foo', 'bar')
+                                             .attributes, doc.attributes);
       },
 
       "test validator passing function"() {
@@ -565,7 +570,7 @@ define(function (require, exports, module) {
           return v.answer;
         }}});
 
-        var doc = v.TestModel.build({baz: ''});
+        const doc = v.TestModel.build({baz: ''});
 
         v.answer = false;
         assert(doc.$isValid());
@@ -577,10 +582,11 @@ define(function (require, exports, module) {
       "test withChanges on objects"() {
         v.TestModel.defineFields({queen: 'text'});
 
-        var doc = new v.TestModel({_id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
+        const doc = new v.TestModel({
+          _id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
-        var was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary', 'foo.fnord.a': 2};
-        var old = doc.$withChanges(was);
+        let was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary', 'foo.fnord.a': 2};
+        let old = doc.$withChanges(was);
 
         assert.same(old.foo.bar.baz, "orig");
         assert.same(old.foo.bar.buzz, 2);
@@ -592,26 +598,26 @@ define(function (require, exports, module) {
 
         assert.same(doc.$withChanges(was), old);
 
-        var was = {"foo.bar.baz": undefined, "foo.bar.buzz": 2, queen: undefined, 'foo.fnord.a': 2};
+        was = {"foo.bar.baz": undefined, "foo.bar.buzz": 2, queen: undefined, 'foo.fnord.a': 2};
 
-        var old = doc.$withChanges(was);
+        old = doc.$withChanges(was);
         assert.same(old.foo.bar.baz, undefined);
         assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, undefined);
       },
 
       "test withChanges on arrays addItem"() {
-        var doc = new v.TestModel({_id: 'f123', foo: ['f123']});
-        var was = {'foo.$-1': 'f123'};
-        var old = doc.$withChanges(was);
+        const doc = new v.TestModel({_id: 'f123', foo: ['f123']});
+        const was = {'foo.$-1': 'f123'};
+        const old = doc.$withChanges(was);
         assert.equals(old.foo, []);
       },
 
       "test withChanges on array removeItem"() {
-        var doc = new v.TestModel({_id: "123", foo: []});
-        var was = {"foo.1.bar": 3};
+        const doc = new v.TestModel({_id: "123", foo: []});
+        const was = {"foo.1.bar": 3};
 
-        var old = doc.$withChanges(was);
+        let old = doc.$withChanges(was);
 
         assert.equals(old.foo, [, {bar: 3}]);
 
@@ -622,10 +628,10 @@ define(function (require, exports, module) {
       },
 
       "test $asChanges"() {
-        var beforeChange = {a: 1, b: 2, c: 3, "e.1.f": 42};
-        var doc = new v.TestModel({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
+        const beforeChange = {a: 1, b: 2, c: 3, "e.1.f": 42};
+        const doc = new v.TestModel({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
 
-        var changes = doc.$asChanges(beforeChange);
+        const changes = doc.$asChanges(beforeChange);
 
         assert.equals(changes, {a: 2, b: undefined, c: undefined, "e.1.f": 69});
 
@@ -635,29 +641,29 @@ define(function (require, exports, module) {
       },
 
       "test addItem $asChanges"() {
-        var beforeChange = {"a.$-1": "a", "a.$-2": "b"};
-        var doc = new v.TestModel({id: "1", a: ["x", "a", "b"]});
+        const beforeChange = {"a.$-1": "a", "a.$-2": "b"};
+        const doc = new v.TestModel({id: "1", a: ["x", "a", "b"]});
 
-        var changes = doc.$asChanges(beforeChange);
+        const changes = doc.$asChanges(beforeChange);
 
         assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
       },
 
       "test removeItem $asChanges"() {
-        var beforeChange = {"a.$+1": "a", "a.$+2": "b"};
-        var doc = new v.TestModel({id: "1", a: ["x"]});
+        const beforeChange = {"a.$+1": "a", "a.$+2": "b"};
+        const doc = new v.TestModel({id: "1", a: ["x"]});
 
-        var changes = doc.$asChanges(beforeChange);
+        const changes = doc.$asChanges(beforeChange);
 
         assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
       },
 
       "test change"() {
-        var doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
+        const doc = v.TestModel.create({foo: {bar: {baz: 'orig'}}});
 
         doc.$change('foo').bar.baz = "new";
 
-        var bar = doc.foo.bar;
+        const bar = doc.foo.bar;
 
         assert.equals(doc.changes, {foo: {bar: {baz: 'new'}}});
         assert.equals(doc.attributes.foo, {bar: {baz: 'orig'}});
@@ -674,7 +680,7 @@ define(function (require, exports, module) {
 
       "test can override and save invalid doc"() {
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
-        var foo = v.TestModel.build({bar: null});
+        const foo = v.TestModel.build({bar: null});
 
         foo.$save('force');
 
@@ -684,7 +690,7 @@ define(function (require, exports, module) {
       "test must be valid save "() {
         TH.noInfo();
         v.TestModel.defineFields({bar: {type: 'text', required: true}});
-        var foo = v.TestModel.build();
+        const foo = v.TestModel.build();
 
         assert.invalidRequest(function () {
           foo.$$save();
@@ -702,15 +708,15 @@ define(function (require, exports, module) {
         assert.equals(v.TestModel.createTimestamps, { createdAt: true });
         assert.equals(v.TestModel.updateTimestamps, { updatedAt: true });
 
-        var start = util.dateNow();
+        let start = util.dateNow();
 
-        var doc = v.TestModel.create({name: 'testing'});
+        const doc = v.TestModel.create({name: 'testing'});
 
         assert(doc._id);
 
         assert.between(+doc.createdAt, start, Date.now());
 
-        var oldCreatedAt = new Date(start - 1000);
+        const oldCreatedAt = new Date(start - 1000);
 
         doc.createdAt = oldCreatedAt;
         doc.updatedAt = oldCreatedAt;
@@ -749,7 +755,7 @@ define(function (require, exports, module) {
             name: 'text',
           });
 
-          var sut = v.TestModel.create({name: 'sam'});
+          const sut = v.TestModel.create({name: 'sam'});
           assert.equals(sut.$reload().attributes, {name: 'sam', _id: TH.match.any});
           assert.same(sut.qux_id, dbBroker.dbId);
 
@@ -761,7 +767,7 @@ define(function (require, exports, module) {
         "test accessor"() {
           v.TestModel.defineFields({qux_id: {type: 'belongs_to'}});
 
-          var sut = v.TestModel.build();
+          const sut = v.TestModel.build();
           sut.qux_id = '';
           assert.same(sut.changes.qux_id, undefined);
         },
@@ -769,9 +775,9 @@ define(function (require, exports, module) {
         "test belongs_to auto"() {
           v.TestModel.defineFields({qux_id: {type: 'belongs_to'}});
 
-          var sut = v.TestModel.build({qux_id: v.qux._id});
+          const sut = v.TestModel.build({qux_id: v.qux._id});
 
-          var quxFind = test.spy(v.Qux, 'findById');
+          const quxFind = test.spy(v.Qux, 'findById');
 
           assert.same(sut.qux.name, "qux");
           assert.same(sut.qux.name, "qux");
@@ -783,7 +789,7 @@ define(function (require, exports, module) {
         "test belongs_to manual name"() {
           v.TestModel.defineFields({baz_id: {type: 'belongs_to', modelName: 'Qux'}});
 
-          var sut = v.TestModel.build({baz_id: v.qux._id});
+          const sut = v.TestModel.build({baz_id: v.qux._id});
 
           assert.same(sut.baz.name, "qux");
         },
@@ -791,7 +797,7 @@ define(function (require, exports, module) {
         "test belongs_to manual model"() {
           v.TestModel.defineFields({baz_id: {type: 'belongs_to', model: v.Qux}});
 
-          var sut = v.TestModel.build({baz_id: v.qux._id});
+          const sut = v.TestModel.build({baz_id: v.qux._id});
 
           assert.same(sut.baz.name, "qux");
         },
@@ -806,7 +812,7 @@ define(function (require, exports, module) {
         // exercise
         v.TestModel.hasMany('foos', {query: v.expectQuery = {where: test.stub()}}, fooFinder);
 
-        var sut = new v.TestModel({_id: 'sut123'});
+        const sut = new v.TestModel({_id: 'sut123'});
 
         assert.same(sut.foos, v.query);
         assert.same(v.query, v.expectQuery);
@@ -824,13 +830,13 @@ define(function (require, exports, module) {
         assert.equals(v.TestModel.userIds, { user_id: 'create' });
 
         TH.login("u1234", function () {
-          var doc = v.TestModel.create({name: 'testing'});
+          const doc = v.TestModel.create({name: 'testing'});
 
           assert(doc._id);
 
           assert.same(doc.user_id, util.thread.userId);
 
-          var id;
+          let id;
           session.rpc('save', 'TestModel', id = "123456", {name: 'testing'} );
           assert.same(v.TestModel.findById(id).user_id, util.thread.userId);
 
@@ -840,7 +846,7 @@ define(function (require, exports, module) {
 
       "test field accessor false"() {
         v.TestModel.defineFields({fuzz: {type: 'text', accessor: false}});
-        var doc = v.TestModel.build({fuzz: 'bar'});
+        const doc = v.TestModel.build({fuzz: 'bar'});
 
         assert.same(doc.fuzz, undefined);
         assert.same(doc.changes.fuzz, 'bar');
@@ -848,10 +854,10 @@ define(function (require, exports, module) {
       },
 
       'test equality'() {
-        var OtherClass = Model.define('OtherClass'),
-            a = new v.TestModel(),
-            b = new v.TestModel(),
-            c = new OtherClass();
+        const OtherClass = Model.define('OtherClass'),
+              a = new v.TestModel(),
+              b = new v.TestModel(),
+              c = new OtherClass();
 
         test.onEnd(function () {Model._destroyModel('OtherClass', 'drop')});
 
@@ -870,23 +876,25 @@ define(function (require, exports, module) {
       },
 
       'test create'() {
-        var attrs = {name: 'testing'};
+        const attrs = {name: 'testing'};
 
         isClient && this.spy(session, "rpc");
-        var doc = v.TestModel.create(attrs);
+        const doc = v.TestModel.create(attrs);
         refute.same(doc.changes,doc.attributes);
         assert.equals(doc.changes,{});
 
         attrs._id = doc._id;
 
-        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
+        assert[isClient ? 'same' : 'equals'](doc.attributes,
+                                             v.TestModel.findById(doc._id).attributes);
 
         if(isClient)
-          assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id,{_id: doc._id, name: "testing"});
+          assert.calledOnceWith(session.rpc, 'save', 'TestModel', doc._id, {
+            _id: doc._id, name: "testing"});
       },
 
       "test $reload on removed doc"() {
-        var doc = v.TestModel.create({name: 'old'});
+        const doc = v.TestModel.create({name: 'old'});
 
         doc.$remove();
 
@@ -896,9 +904,9 @@ define(function (require, exports, module) {
       },
 
       "test $clearChanges"() {
-        var doc = new v.TestModel({_id: 't1', name: 'foo'});
+        const doc = new v.TestModel({_id: 't1', name: 'foo'});
 
-        var changes = doc.changes;
+        const changes = doc.changes;
         doc.$clearChanges();
 
         assert.same(doc.changes, changes);
@@ -913,7 +921,7 @@ define(function (require, exports, module) {
       },
 
       'test update'() {
-        var doc = v.TestModel.create({name: 'old'});
+        const doc = v.TestModel.create({name: 'old'});
 
         isClient && this.spy(session, "rpc");
 
@@ -925,7 +933,8 @@ define(function (require, exports, module) {
         assert.same(doc.name, 'new');
         assert.equals(doc.changes,{});
 
-        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel.findById(doc._id).attributes);
+        assert[isClient ? 'same' : 'equals'](doc.attributes, v.TestModel
+                                             .findById(doc._id).attributes);
 
         if(isClient)
           assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "new"});
@@ -964,7 +973,9 @@ define(function (require, exports, module) {
 
           assert.equals(v.doc.changes, {});
 
-          assert.calledWith(v.auth, 'u123', {myAry: {"myAry.$+1": "one", "myAry.$+2": "two", "myAry.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
+          assert.calledWith(v.auth, 'u123', {
+            myAry: {"myAry.$+1": "one", "myAry.$+2": "two",
+                    "myAry.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
           assert.equals(v.auth.firstCall.thisValue, TH.matchModel(v.doc));
           if (isClient) {
             assert.calledTwice(v.auth);
@@ -978,7 +989,8 @@ define(function (require, exports, module) {
           assert.equals(v.doc.myAry, ['zero', 'one', 'two']);
           assert.equals(v.doc.deep, {a: 1, nested: {value: 123}});
 
-          assert[isClient ? 'same' : 'equals'](v.doc.attributes, v.TestModel.findById(v.doc._id).attributes);
+          assert[isClient ? 'same' : 'equals'](v.doc.attributes, v.TestModel
+                                               .findById(v.doc._id).attributes);
 
           if(isClient)
             assert.calledOnceWith(session.rpc,'put', 'TestModel', v.doc._id, {
@@ -1028,8 +1040,8 @@ define(function (require, exports, module) {
       },
 
       'test build'() {
-        var doc = v.TestModel.create();
-        var copy = v.TestModel.build(doc.attributes);
+        const doc = v.TestModel.create();
+        const copy = v.TestModel.build(doc.attributes);
 
         refute.same(doc.attributes, copy.changes);
         assert.same(doc.name, copy.name);
@@ -1040,10 +1052,10 @@ define(function (require, exports, module) {
 
       'test setFields'() {
         v.TestModel.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
-        var sut = new v.TestModel();
+        const sut = new v.TestModel();
 
 
-        var result = sut.$setFields(['a','d','notdefined','_id', '_version'],{
+        const result = sut.$setFields(['a','d','notdefined','_id', '_version'],{
           a: 'aa',d: 'dd', notdefined: 'set', notme: 'nm', _id: 'noset', _version: 5,
         });
 
@@ -1056,14 +1068,14 @@ define(function (require, exports, module) {
       },
 
       "test toId"() {
-        var doc = new v.TestModel({_id: 'theId'});
+        const doc = new v.TestModel({_id: 'theId'});
 
         assert.same(v.TestModel.toId(doc), 'theId');
         assert.same(v.TestModel.toId('astring'), 'astring');
       },
 
       "test toDoc"() {
-        var doc = new v.TestModel({_id: 'theId'});
+        const doc = new v.TestModel({_id: 'theId'});
 
 
         test.stub(v.TestModel, 'findById', function (id) {
@@ -1078,7 +1090,7 @@ define(function (require, exports, module) {
 
     "test define via module"() {
       test.stub(koru, 'onunload');
-      var TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
+      const TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
       assert.same(Model.TestModel, TestModel);
 
       assert.calledWith(koru.onunload, {id: '/foo/test-model'}, TH.match.func);
@@ -1089,10 +1101,10 @@ define(function (require, exports, module) {
     },
 
     'test define with name'() {
-      var TestModel = Model.define('TestModel', {t1: 123});
+      const TestModel = Model.define('TestModel', {t1: 123});
 
-      var testAttrs = {_id: 123, name: 'orig name'};
-      var tsc = new TestModel(testAttrs);
+      const testAttrs = {_id: 123, name: 'orig name'};
+      let tsc = new TestModel(testAttrs);
 
       assert.same(tsc.constructor, TestModel);
       assert.same(tsc.attributes, testAttrs);
@@ -1125,8 +1137,8 @@ define(function (require, exports, module) {
     },
 
     "test splitUpdateKeys"() {
-      var changes = {}, partials = {};
-      var updates = {
+      const changes = {}, partials = {};
+      const updates = {
         single: 1,
         'anotherSingle': 'a',
         'multi.part': 2,
@@ -1136,7 +1148,8 @@ define(function (require, exports, module) {
       Model.splitUpdateKeys(changes, partials, updates);
 
       assert.equals(changes, {single: 1, anotherSingle: "a"});
-      assert.equals(partials, {multi: {"multi.part": 2, "multi.also.here": 3}, added: {"added.$+1": 4}});
+      assert.equals(partials, {multi: {"multi.part": 2, "multi.also.here": 3},
+                               added: {"added.$+1": 4}});
     },
   });
 });
