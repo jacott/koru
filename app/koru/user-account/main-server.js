@@ -114,7 +114,7 @@ define(function(require, exports, module) {
     this.userId = lu.userId;
   });
 
-  util.extend(UserAccount, {
+  util.merge(UserAccount, {
     init() {
       session.provide('V', onMessage);
     },

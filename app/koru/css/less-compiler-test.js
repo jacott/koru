@@ -5,16 +5,16 @@ isServer && define(function (require, exports, module) {
   var fst = require('../fs-tools');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test compiling": function () {
+    "test compiling"() {
       compiler.compile("less", module.toUrl("./less-compiler-test.less"), module.toUrl("./.build/less-compiler-test.less.css"));
 
       var output = fst.readFile(module.toUrl("./.build/less-compiler-test.less.css"));

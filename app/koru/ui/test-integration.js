@@ -40,7 +40,7 @@ define(function(require, exports, module) {
     exits = [];
 
     var script = {
-      waitForClassChange: function (elm, classname, hasClass, duration) {
+      waitForClassChange(elm, classname, hasClass, duration) {
         if (typeof elm === 'string')
           elm = document.querySelector(elm);
         duration = duration || 2000;
@@ -59,10 +59,10 @@ define(function(require, exports, module) {
           }, duration);
         });
       },
-      tellServer: function (...args) {
+      tellServer(...args) {
         var msg = args[0];
         return new Promise(function (resolve, reject) {
-          var entry = {func: function (data) {
+          var entry = {func(data) {
             try {
               if (data[0] === msg)
                 resolve(data[1]);
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
         });
       },
 
-      onExit: function (func) {
+      onExit(func) {
         exits.push(func);
       },
     };

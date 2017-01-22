@@ -5,17 +5,17 @@ isClient && define(function (require, exports, module) {
   var Dialog = require('./dialog');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.removeChildren(document.body);
       v = null;
     },
 
-    "test open / close": function () {
+    "test open / close"() {
       Dialog.open(Dom.html('<form id="Foo"><input type="text"></form>'));
       assert.dom('.Dialog', function () {
         assert.dom('form#Foo', function () {
@@ -55,7 +55,7 @@ isClient && define(function (require, exports, module) {
       assert.isFalse(Dialog.isOpen());
     },
 
-    "test full wrapping": function () {
+    "test full wrapping"() {
       Dialog.open(Dom.html('<div id="foo">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
@@ -63,7 +63,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test partial wrapping": function () {
+    "test partial wrapping"() {
       Dialog.open(Dom.html('<div id="foo" class="ui-dialog">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
@@ -71,17 +71,17 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    'test confirmDialog': function () {
+    'test confirmDialog'() {
       var data = {
         classes: 'small',
         content: {
-          $autoRender: function (arg) {
+          $autoRender(arg) {
             v.data = arg;
             return Dom.html('<h1>This is the message</h1>');
           },
         },
         okay: 'Foo',
-        callback: function (result, form) {
+        callback(result, form) {
           assert.same(this, data);
           assert.same(form, v.form);
           v.result = result;
@@ -106,7 +106,7 @@ isClient && define(function (require, exports, module) {
       assert.isTrue(v.result);
     },
 
-    "test modalize": function () {
+    "test modalize"() {
       Dialog.open(Dom.html('<form id="Foo"></form>'));
 
       assert.dom('.Dialog', function () {
@@ -116,7 +116,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('.Dialog');
     },
 
-    'test cancel confirmDialog with defaults ': function () {
+    'test cancel confirmDialog with defaults '() {
       var data = {
         content: 'bla',
         callback: function(value) {

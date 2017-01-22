@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   const util = require('koru/util');
 
   const geddon = {
-    _init: function () {
+    _init() {
       this.testCount = this.skipCount = this.assertCount = 0;
     },
 
@@ -17,7 +17,7 @@ define(function(require, exports, module) {
 
     util: util,
 
-    abort: function (ex) {throw ex}
+    abort(ex) {throw ex}
   };
 
   geddon._init();

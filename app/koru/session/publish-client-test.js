@@ -7,19 +7,19 @@ isClient && define(function (require, exports, module) {
   var session = require('./main');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.handles = [];
       v.doc = {constructor: {modelName: 'Foo'}};
     },
 
-    tearDown: function () {
+    tearDown() {
       v.handles.forEach(function (h) {h.stop()});
       v = null;
     },
 
-    "test filter Models": function () {
+    "test filter Models"() {
       test.stub(session, 'sendM');
       v.F1 = Model.define('F1').defineFields({name: 'text'});
       v.F2 = Model.define('F2').defineFields({name: 'text'});
@@ -66,7 +66,7 @@ isClient && define(function (require, exports, module) {
       };
     },
 
-    "test false matches": function () {
+    "test false matches"() {
       v.handles.push(publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;
@@ -82,7 +82,7 @@ isClient && define(function (require, exports, module) {
     },
 
 
-    "test true matches": function () {
+    "test true matches"() {
       v.handles.push(publish.match.register('Foo', function (doc) {
         assert.same(doc, v.doc);
         return false;

@@ -144,8 +144,8 @@ define(function (require, exports, module) {
       sut.registerLinkType({
         id: 1,
         class: "foo",
-        fromHtml: function (node) {return node.getAttribute('href').replace(/_foo$/,'')},
-        toHtml: function (node, ref) {
+        fromHtml(node) {return node.getAttribute('href').replace(/_foo$/,'')},
+        toHtml(node, ref) {
           node.setAttribute('href', ref+"_foo");
         },
       });

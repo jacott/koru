@@ -6,7 +6,7 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'object'});
@@ -15,7 +15,7 @@ define(function (require, exports, module) {
       v.TestModel.registerObserveField('age');
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       for(var i = 0; i < v.obs.length; ++i) {
         var row = v.obs[i];
@@ -24,11 +24,11 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test multi dbs": function () {
+    "test multi dbs"() {
       v.TestModel.registerObserveField('toys');
       var origId = v.dbId = dbBroker.dbId;
       test.intercept(dbBroker, 'dbId');
-      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get: function () {return v.dbId}});
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
       var oc = test.spy(v.TestModel, 'onChange');
 
       v.obs.push(v.TestModel.observeToys(['robot'], v.origOb = test.stub()));
@@ -62,32 +62,32 @@ define(function (require, exports, module) {
     },
 
     "observe array field": {
-      setUp: function () {
+      setUp() {
         v.TestModel.registerObserveField('toys');
 
         v.obs.push(v.toys = v.TestModel.observeToys(['buzz', 'woody'], v.callback = test.stub()));
       },
 
-      "test adding observed field": function () {
+      "test adding observed field"() {
         var doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'slinky']});
 
         assert.calledOnceWith(v.callback, TH.matchModel(doc), null);
       },
 
-      "test adding two observed fields": function () {
+      "test adding two observed fields"() {
         var doc = v.TestModel.create({name: 'Andy', age: 7, toys: ['woody', 'buzz']});
 
         assert.calledOnceWith(v.callback, TH.matchModel(doc), null);
       },
 
-      "test updating observered field": function () {
+      "test updating observered field"() {
         v.doc.toys = v.attrs = ['woody', 'slinky'];
         v.doc.$$save();
 
         assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {toys: ['robot']});
       },
 
-      "test add/remove to observered field": function () {
+      "test add/remove to observered field"() {
         v.doc.$onThis.addItem('toys', 'woody');
 
         assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$-1': 'woody'});
@@ -97,7 +97,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$+1': 'woody'});
       },
 
-      "test updating other field": function () {
+      "test updating other field"() {
         v.doc.toys = v.attrs = ['woody', 'buzz'];
         v.doc.$$save();
         v.callback.reset();
@@ -110,14 +110,14 @@ define(function (require, exports, module) {
     },
 
     "manipulation": {
-      setUp: function () {
+      setUp() {
         v.doc2 =  v.TestModel.create({name: 'Bob', age: 35});
         v.doc3 = v.TestModel.create({name: 'Helen', age: 25});
 
         v.obs.push(v.ids = v.TestModel.observeAge([5, 35], v.callback = test.stub()));
       },
 
-      "test replaceValues": function () {
+      "test replaceValues"() {
         v.ids.replaceValues([5, 25]);
 
         v.TestModel.create({name: 'Henry', age: 35});
@@ -135,7 +135,7 @@ define(function (require, exports, module) {
         refute.called(v.callback);
       },
 
-      "test addValue": function () {
+      "test addValue"() {
         v.ids.addValue(25);
 
         var doc = v.TestModel.create({_id: '123', name: 'Mamma', age: 25});
@@ -143,7 +143,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.callback, TH.matchModel(doc));
       },
 
-      "test removeValue": function () {
+      "test removeValue"() {
         v.ids.removeValue(5);
 
         v.doc2.age = 5;

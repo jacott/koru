@@ -5,15 +5,15 @@ define(function (require, exports, module) {
   var sut = require('./required-validator').bind(validation);
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
       doc = {exists: 'a', empty: ''};
     },
 
-    tearDown: function () {
+    tearDown() {
       doc = null;
     },
 
-    "test 1": function () {
+    "test 1"() {
       doc = {};
       sut(doc,'foo', 1);
       assert(doc._errors);
@@ -33,25 +33,25 @@ define(function (require, exports, module) {
       refute(doc._errors);
     },
 
-    "test required false": function () {
+    "test required false"() {
       sut(doc, 'empty', false);
       refute(doc._errors);
     },
 
-    'test false with not_null': function () {
+    'test false with not_null'() {
       doc = {foo: false};
       sut(doc,'foo', 'not_null');
       refute(doc._errors);
     },
 
-    'test missing': function () {
+    'test missing'() {
       sut(doc,'name');
 
       assert(doc._errors);
       assert.equals(doc._errors['name'],[['is_required']]);
     },
 
-    'test not_null': function () {
+    'test not_null'() {
       sut(doc,'empty','not_null');
       refute(doc._errors);
 
@@ -59,13 +59,13 @@ define(function (require, exports, module) {
       assert(doc._errors);
     },
 
-    'test exists': function () {
+    'test exists'() {
       sut(doc,'exists');
 
       refute(doc._errors);
     },
 
-    'test empty': function () {
+    'test empty'() {
       sut(doc,'empty');
 
       assert(doc._errors);

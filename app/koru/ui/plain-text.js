@@ -9,27 +9,27 @@ define(function(require, exports, module) {
   var output;
 
   Dom.registerHelpers({
-    setTextAsHTML: function (content) {
+    setTextAsHTML(content) {
       exports.setTextAsHTML($.element, content);
     },
 
-    planTextEditor: function (content, options) {
+    planTextEditor(content, options) {
       return Tpl.$autoRender({content: content, options: options});
     },
   });
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       exports.setTextAsHTML(elm, ctx.data.content);
 
       EditorCommon.addAttributes(elm, ctx.data.options);
 
       Object.defineProperty(elm, 'value', {
-        get: function () {
+        get() {
           var value = exports.fromHtml(elm);
           return value;
         },
-        set: function (value) {
+        set(value) {
           exports.setTextAsHTML(elm, value);
         },
       });
@@ -39,7 +39,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'keydown': function (event) {
+    'keydown'(event) {
       if (event.ctrlKey) switch(event.which) {
       case 66: case 85: case 73:
         Dom.stopEvent();
@@ -47,7 +47,7 @@ define(function(require, exports, module) {
       }
     },
 
-    'paste': function (event) {
+    'paste'(event) {
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;
         if (types) for(var i = 0; i < types.length; ++i) {
@@ -66,12 +66,12 @@ define(function(require, exports, module) {
   return exports = {
     Editor: Tpl,
 
-    setTextAsHTML: function (elm, content) {
+    setTextAsHTML(elm, content) {
       Dom.removeChildren(elm);
       elm.appendChild(exports.toHtml(content));
     },
 
-    fromHtml: function (html) {
+    fromHtml(html) {
       output = [];
       html && outputChildNodes(html);
       var result = output.join('').trim();
@@ -79,7 +79,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    toHtml: function (text, wrapper) {
+    toHtml(text, wrapper) {
       text = text || '';
       var frag = wrapper ? (typeof wrapper === 'string' ? document.createElement(wrapper) : wrapper) : document.createDocumentFragment();
       var first = true;

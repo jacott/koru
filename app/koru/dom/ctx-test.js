@@ -45,7 +45,7 @@ isClient && define(function (require, exports, module) {
           }],
         });
         Dom.Foo.$helpers({
-          testMe: function () {
+          testMe() {
             assert.same(this, Ctx.current.data());
             assert.same(this, v.x);
             assert.same(Ctx.current.isElement(), v.isElement);
@@ -85,7 +85,7 @@ isClient && define(function (require, exports, module) {
       });
 
       Tpl.$helpers({
-        bar: function () {
+        bar() {
           return Dom.h({class: this.name});
         },
       });

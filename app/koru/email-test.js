@@ -10,20 +10,20 @@ isServer && define(function (require, exports, module) {
   var SmtpStub = requirejs.nodeRequire('nodemailer-stub-transport');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.origTransport = Email._transport;
     },
 
-    tearDown: function () {
+    tearDown() {
       Email._transport = v.origTransport;
       v = null;
     },
 
-    "test send": function () {
+    "test send"() {
       Email._transport = {
-        sendMail: function (options, callback) {
+        sendMail(options, callback) {
           v.sendOpts = options;
           callback();
         },
@@ -33,7 +33,7 @@ isServer && define(function (require, exports, module) {
       assert.same(v.sendOpts, v.options);
     },
 
-    "test initPool to stub": function () {
+    "test initPool to stub"() {
       var stub = SmtpStub();
       var logCount = 0;
       stub.on('log', function (info) {
@@ -54,7 +54,7 @@ isServer && define(function (require, exports, module) {
 
     },
 
-    "test initPool to url": function () {
+    "test initPool to url"() {
       assert.same(Email.SmtpPool, SmtpPool);
 
       test.onEnd(function () {Email.SmtpPool = SmtpPool});

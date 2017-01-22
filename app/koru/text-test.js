@@ -2,16 +2,16 @@ define(function (require, exports, module) {
   var test, v;
   var TH = require('./test-helper');
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test require": function () {
+    "test require"() {
       var text = require('./text!./test-data/example.sql');
       assert.same(text, 'select * from foo\n');
     },

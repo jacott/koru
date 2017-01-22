@@ -4,16 +4,16 @@ define(function (require, exports, module) {
   var md5sum = require('./md5sum');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test md5sum": function () {
+    "test md5sum"() {
       assert.same(md5sum("hello world"), '5eb63bbbe01eeed093cb22bb8f5acdc3');
     },
   });

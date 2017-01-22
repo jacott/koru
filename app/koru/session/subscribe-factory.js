@@ -58,7 +58,7 @@ define(function(require, exports, module) {
       return sub;
     };
 
-    util.extend(subcribe, {
+    util.merge(subcribe, {
       unload() {
         session.state.stopOnConnect('10-subscribe');
         loginOb && loginOb.stop();

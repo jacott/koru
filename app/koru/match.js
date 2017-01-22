@@ -44,7 +44,7 @@ define(function(require, exports, module) {
       }, 'match.'+t);
     });
 
-    util.extend(match, {
+    util.merge(match, {
       any: match(() => true, 'match.any'),
       null: match(value => value === null, 'match.null'),
       nil: match(value => value == null, 'match.nil'),

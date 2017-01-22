@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   var RichText = require('./rich-text');
 
   return {
-    richText: function (doc, field, options) {
+    richText(doc, field, options) {
       var changes = doc.changes;
       if (changes && ! changes.hasOwnProperty(field))
         return;
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       return this.addError(doc, field, 'invalid_html');
     },
 
-    richTextMarkup: function (doc, field, options) {
+    richTextMarkup(doc, field, options) {
       var markupField = field;
       field = markupField.slice(0, -6);
       var changes = doc.changes;

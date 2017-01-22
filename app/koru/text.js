@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   var Module = module.constructor;
 
   return {
-    load: function (name, req, onload, config) {
+    load(name, req, onload, config) {
       var mod = req.module;
 
       var pMod = new Module(module.ctx, name, Module.READY);

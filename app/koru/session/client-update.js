@@ -59,7 +59,7 @@ define(function(require, exports, module) {
     }
 
     return {
-      unload: function () {
+      unload() {
         session.unprovide('A');
         session.unprovide('C');
         session.unprovide('R');

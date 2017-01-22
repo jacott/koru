@@ -15,7 +15,7 @@ define(function(require) {
     },
     get dbId() {return dbBroker.db.name},
 
-    clearDbId: function () {dbBroker.db = null}
+    clearDbId() {dbBroker.db = null}
   };
 
   return dbBroker;

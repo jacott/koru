@@ -195,7 +195,7 @@ define(function (require, exports, module) {
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}};
 
-      util.extend(sub,sup);
+      util.merge(sub,sup);
 
       item = 6;
 
@@ -897,7 +897,7 @@ define(function (require, exports, module) {
       assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
     },
 
-    "test extractFromEmail": function () {
+    "test extractFromEmail"() {
       assert.equals(util.extractFromEmail("abc@Def.Co"), {
         email: "abc@def.co",
         name: "Abc",

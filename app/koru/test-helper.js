@@ -28,7 +28,7 @@ define(function(require, exports, module) {
   var ga = geddon.assertions;
 
   ga.add('difference', {
-    assert: function (count, diffFunc, ...query) {
+    assert(count, diffFunc, ...query) {
       if (diffFunc.modelName) {
         var func = query.pop();
         query = query[0];
@@ -48,7 +48,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('accessDenied', {
-    assert: function (func) {
+    assert(func) {
       var error;
       try {
         func.call();
@@ -69,7 +69,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('invalidRequest', {
-    assert: function (func) {
+    assert(func) {
       var error;
       try {
         func.call();
@@ -88,7 +88,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('modelErrors', {
-    assert: function (doc, expected) {
+    assert(doc, expected) {
       var result = {}, errors = doc._errors || {};
 
       for(var field in errors) {
@@ -111,7 +111,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('validators', {
-    assert: function (validators, expected) {
+    assert(validators, expected) {
       this.actual = validators;
       this.expected = expected;
       if (Object.keys(expected).length !== Object.keys(validators).length) {
@@ -134,7 +134,7 @@ define(function(require, exports, module) {
 
 
   ga.add('specificAttributes', {
-    assert: function (actual, expected) {
+    assert(actual, expected) {
       if (! (actual && expected)) {
         this.actual = actual;
         this.expected = expected;
@@ -161,7 +161,7 @@ define(function(require, exports, module) {
   }),
 
   ga.add('attributesEqual', {
-    assert: function (actual, expected, exclude) {
+    assert(actual, expected, exclude) {
       if (! (actual && expected)) {
         this.actual = actual;
         this.expected = expected;

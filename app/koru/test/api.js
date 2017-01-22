@@ -684,7 +684,7 @@ define(function(require, exports, module) {
     }
 
     const desc = koru.replaceProperty(obj, methodName, {
-      value: function (...args) {
+      value(...args) {
         const entry = [
           args.map(obj => api.valueTag(obj)),
           undefined,

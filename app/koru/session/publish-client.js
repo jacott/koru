@@ -6,9 +6,9 @@ define(function(require, exports, module) {
   const publish = require('./publish-base');
 
 
-  util.extend(publish, {
+  util.merge(publish, {
     match: match(),
-    _filterModels: function (models) {
+    _filterModels(models) {
       for(var name in models) {
         var mm = this.match._models;
         mm = mm && mm[name];

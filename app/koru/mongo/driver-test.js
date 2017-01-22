@@ -4,16 +4,16 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
   var sut = require('./driver');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test dropAllIndexes": function () {
+    "test dropAllIndexes"() {
       var col =  sut.defaultDb.table('Fooy');
       test.onEnd(function () {
         sut.defaultDb.dropTable('Fooy');
@@ -29,23 +29,23 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
     },
 
     "with table": {
-      setUp: function () {
+      setUp() {
         v.foo = sut.defaultDb.table('Foo');
 
         v.foo.insert({_id: "123", name: 'abc'});
         v.foo.insert({_id: "456", name: 'abc'});
       },
 
-      tearDown: function () {
+      tearDown() {
         sut.defaultDb.dropTable('Foo');
       },
 
 
-      "test update": function () {
+      "test update"() {
         assert.same(v.foo.update({name: 'abc'}, {$set: {name: 'def'}}, {multi: true}), 2);
       },
 
-      "test find": function () {
+      "test find"() {
         var cursor = v.foo.find({name: 'abc'});
 
         assert(cursor);
@@ -59,21 +59,21 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
         }
       },
 
-      "test findOne": function () {
+      "test findOne"() {
         assert.equals(v.foo.findOne({_id: "123"}), {_id: "123", name: 'abc'});
       },
 
-      "test count": function () {
+      "test count"() {
         assert.same(v.foo.count({_id: "123"}), 1);
         assert.same(v.foo.count({name: "abc"}), 2);
       },
 
-      "test exists": function () {
+      "test exists"() {
         assert.isTrue(v.foo.exists({name: 'abc'}));
         assert.isFalse(v.foo.exists({name: 'abcx'}));
       },
 
-      "test ensureIndex": function () {
+      "test ensureIndex"() {
         var ensureIndex = test.stub(v.foo._col, 'ensureIndex', function () {
           arguments[arguments.length -1](null, 'Tsuccess');
         });
@@ -83,7 +83,7 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
         assert.calledWith(ensureIndex, {name: -1}, {unique: true});
       },
 
-      "test transaction rollback": function () {
+      "test transaction rollback"() {
         try {
           v.foo.transaction(function (tran) {
             v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
@@ -111,7 +111,7 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
       },
     },
 
-    "test defaultDb": function () {
+    "test defaultDb"() {
       test.onEnd(function () {
         sut.defaultDb.dropTable('Foo');
       });
@@ -125,7 +125,7 @@ isServer && process.env['KORU_USE_MONGO'] && define(function (require, exports, 
       assert.equals(foo.findOne({_id: "foo123"}), {_id: "foo123", name: 'foo name'});
     },
 
-    "test table": function () {
+    "test table"() {
       var db = sut.connect("mongodb://localhost:3004/koru");
       test.onEnd(function () {
         db.dropTable('foo');

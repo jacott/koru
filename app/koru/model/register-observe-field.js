@@ -66,7 +66,7 @@ define(function(require, exports, module) {
             }
           },
 
-          addValue: function (value) {
+          addValue(value) {
             value = value.toString();
             if (value in obsSet) return;
 
@@ -74,7 +74,7 @@ define(function(require, exports, module) {
             obsSet[value] = ob;
           },
 
-          removeValue: function (value) {
+          removeValue(value) {
             value = value.toString();
             var ob = obsSet[value];
             if (! ob) return;
@@ -83,7 +83,7 @@ define(function(require, exports, module) {
             delete obsSet[value];
           },
 
-          replaceValues: function (newValues) {
+          replaceValues(newValues) {
             var delObs = obsSet;
             obsSet = {};
             var addValues = [];

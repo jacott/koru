@@ -4,13 +4,13 @@ define(function (require, exports, module) {
   var sut = require('./length-validator');
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
     },
 
-    tearDown: function () {
+    tearDown() {
     },
 
-    'test too long': function () {
+    'test too long'() {
       var doc = {name: '123'};
       sut.maxLength.call(validation, doc,'name', 2);
 
@@ -18,14 +18,14 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['name'],[["too_long", 2]]);
     },
 
-    'test missing': function () {
+    'test missing'() {
       var doc = {name: ''};
       sut.maxLength.call(validation, doc,'name', 2);
 
       refute(doc._errors);
     },
 
-    'test not too long': function () {
+    'test not too long'() {
       var doc = {name: '123'};
       sut.maxLength.call(validation, doc,'name', 3);
 

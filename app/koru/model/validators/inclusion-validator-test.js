@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   var sut = require('./inclusion-validator').bind(validation);
 
   geddon.testCase(module, {
-    "test allow null": function () {
+    "test allow null"() {
       var doc = {state: null};
       sut(doc,'state', {allowBlank: true, matches: /foo/});
       refute(doc._errors);
@@ -24,7 +24,7 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['state'],[['invalid_format']]);
     },
 
-    "test matches": function () {
+    "test matches"() {
       var doc = {state: 'open'};
       sut(doc,'state', {matches: /^ope/});
       refute(doc._errors);
@@ -34,7 +34,7 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['state'],[['invalid_format']]);
     },
 
-    "test in list": function () {
+    "test in list"() {
       var doc = {state: 'open'};
       sut(doc,'state', {in: ['open', 'closed']});
       refute(doc._errors);
@@ -44,7 +44,7 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['state'],[['not_in_list']]);
     },
 
-    "test in set": function () {
+    "test in set"() {
       var doc = {state: 'open'};
       sut(doc,'state', {in: {open: '', closed: 'anything'}});
       refute(doc._errors);

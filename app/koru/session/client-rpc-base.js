@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const koru = require('../main');
 
   module.exports = function init(session) {
-    util.extend(session, {
+    util.merge(session, {
       _waitMs: Object.create(null),
       _msgId: 0,
       rpc,

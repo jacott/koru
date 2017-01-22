@@ -42,13 +42,13 @@ define(function(require, exports, module) {
         // new record
         this.attributes = {};
         this.changes = attributes || {};
-        util.extend(this.changes, this.constructor._defaults);
+        util.merge(this.changes, this.constructor._defaults);
       }
     }
 
     static create(attributes) {
       const doc = new this({});
-      attributes && util.extend(doc.changes, util.deepCopy(attributes));
+      attributes && util.merge(doc.changes, util.deepCopy(attributes));
       doc.$save();
       return isServer ? doc : (doc.constructor.findById(doc._id) || doc);
     }
@@ -67,7 +67,7 @@ define(function(require, exports, module) {
 
       if (attributes._id && ! allow_id)
         attributes._id = null;
-      attributes && util.extend(doc.changes, util.deepCopy(attributes));
+      attributes && util.merge(doc.changes, util.deepCopy(attributes));
       return doc;
     }
 
@@ -493,7 +493,7 @@ define(function(require, exports, module) {
       callBeforeObserver('beforeSave', doc, pSum);
       const query = doc.$onThis;
       for (let key in pSum) {
-        util.extend(changes, pSum[key]);
+        util.merge(changes, pSum[key]);
       }
       doc.changes = {};
       query.update(changes);
@@ -717,7 +717,7 @@ define(function(require, exports, module) {
         model = {[name]: class extends BaseModel {}}[name];
       }
 
-      proto && util.extend(model.prototype, proto);
+      proto && util.merge(model.prototype, proto);
 
       return model.define({module, name, fields});
     },

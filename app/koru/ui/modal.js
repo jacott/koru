@@ -51,7 +51,7 @@ define(function(require, exports, module) {
         document.addEventListener('keydown', keydownCallback, true);
         document.addEventListener('keydown', retKeydownCallback);
       }
-      options = util.extend({}, options);
+      options = util.merge({}, options);
       options.prev = topModal; topModal = options;
 
       if (! options.focus) options.focus = document.activeElement;
@@ -85,15 +85,15 @@ define(function(require, exports, module) {
       return options;
     },
 
-    appendAbove: function (options) {
+    appendAbove(options) {
       return this.append('above', options);
     },
 
-    appendBelow: function (options) {
+    appendBelow(options) {
       return this.append('below', options);
     },
 
-    reposition: function (pos, options) {
+    reposition(pos, options) {
       pos = pos || 'below';
       var height = window.innerHeight;
       var ps = options.popup.style;
@@ -144,11 +144,11 @@ define(function(require, exports, module) {
       return options;
     },
 
-    append: function (pos, options) {
+    append(pos, options) {
       options.noAppend || document.body.appendChild(options.container || options.popup);
 
       if (options.popup) {
-        options = util.extend({container: options.popup}, options);
+        options = util.merge({container: options.popup}, options);
       } else {
         options = exports.init(options);
       }

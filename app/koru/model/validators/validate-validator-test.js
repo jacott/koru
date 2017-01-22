@@ -5,16 +5,16 @@ define(function (require, exports, module) {
   var sut = require('./validate-validator').bind(validation);
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       doc = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       doc = null;
     },
 
-    "test calls": function () {
+    "test calls"() {
       var func = test.stub();
 
       sut(doc,'foo', func);

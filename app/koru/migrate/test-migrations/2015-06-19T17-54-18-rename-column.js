@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
   return function (mig) {
     mig.reversible({
-      add: function (client) {
+      add(client) {
         client.query('ALTER TABLE "TestTable" RENAME COLUMN bar TO baz');
       },
-      revert: function (client) {
+      revert(client) {
         client.query('ALTER TABLE "TestTable" RENAME COLUMN baz TO bar');
       }
     });

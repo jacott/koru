@@ -9,7 +9,7 @@ define(function(require, exports, module) {
      * This function is used by requirejs to load a dependency of the
      * format: `koru/config!name` as `nameValue.js`
      */
-    load: function (name, req, onload, config) {
+    load(name, req, onload, config) {
       var provider = module.config()[name];
       if (! provider)
         throw new Error('No config setting: ' + name + " for " + module.id);

@@ -50,7 +50,7 @@ isServer && define(function (require, exports, module) {
           v.tStub.apply(this, arguments);
         });
         v.thread = {};
-        TH.stubProperty(util, 'thread', {get: function () {return v.thread}});
+        TH.stubProperty(util, 'thread', {get() {return v.thread}});
       },
 
       tearDown() {

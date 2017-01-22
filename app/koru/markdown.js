@@ -1,5 +1,5 @@
 define({
-  getMentionIds: function (md) {
+  getMentionIds(md) {
     var hyperlinks = this.findHyperLinks(md, '@');
 
     for(var i = 0; i < hyperlinks.length; ++i) {

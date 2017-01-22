@@ -89,7 +89,7 @@ define(function(require, exports, module) {
     },
 
     createMockEvent: function(currentTarget, options) {
-      return util.extend(util.extend({}, {
+      return util.merge(util.merge({}, {
         preventDefault: geddon.test.stub(),
         stopImmediatePropagation: geddon.test.stub(),
         currentTarget: currentTarget,

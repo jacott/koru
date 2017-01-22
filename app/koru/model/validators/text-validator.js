@@ -3,7 +3,7 @@ define(function () {
   var alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
-    normalize: function (doc,field, options) {
+    normalize(doc,field, options) {
       var val = doc[field];
       if (! val) return;
 
@@ -15,13 +15,13 @@ define(function () {
       }
     },
 
-    color: function (doc,field, alpha) {
+    color(doc,field, alpha) {
       var val = doc[field];
       if (val && ! (alpha === 'alpha' ? alphaColorRe : colorRe).test(val))
         this.addError(doc,field,'is_invalid');
     },
 
-    date: function (doc,field, options) {
+    date(doc,field, options) {
       var val = doc[field];
 
       if (val === '') {
@@ -41,7 +41,7 @@ define(function () {
       doc[field] = val;
     },
 
-    number: function (doc,field, options) {
+    number(doc,field, options) {
       var val = doc[field];
 
       if (val === '') {
@@ -78,7 +78,7 @@ define(function () {
       doc[field] = val;
     },
 
-    boolean: function (doc, field, boolType) {
+    boolean(doc, field, boolType) {
       var val = doc[field];
 
       if (val != null) {
@@ -104,7 +104,7 @@ define(function () {
       }
     },
 
-    trim: function (doc, field, type) {
+    trim(doc, field, type) {
       var val = doc[field];
 
       if (val != null) {

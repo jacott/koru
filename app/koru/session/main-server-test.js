@@ -8,12 +8,12 @@ isServer && define(function (require, exports, module) {
   var serverSession = require('./main-server');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.ws = TH.mockWs();
       v.mockSess = {
-        _wssOverride: function () {
+        _wssOverride: function() {
           return v.ws;
         },
         provide: test.stub(),
@@ -21,21 +21,21 @@ isServer && define(function (require, exports, module) {
       };
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
     "server setup": {
-      setUp: function () {
+      setUp() {
         v.sess = serverSession(v.mockSess);
       },
 
-      "test stop": function () {
+      "test stop"() {
         v.sess.stop();
         assert.called(v.sess.wss.close);
       },
 
-      "test unload client only": function () {
+      "test unload client only"() {
         test.stub(koru, 'unload');
         test.stub(v.sess, 'sendAll');
 
@@ -48,7 +48,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.sess.sendAll, 'U', '1234:foo');
       },
 
-      "test unload server": function () {
+      "test unload server"() {
         var ctx = requirejs.module.ctx;
         test.onEnd(function () {
           delete ctx.modules.foo;
@@ -67,7 +67,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.sess.sendAll, 'U', v.sess.versionHash+':foo');
       },
 
-      "test versionHash": function () {
+      "test versionHash"() {
         assert.calledWith(v.ws.on, 'connection', TH.match(function (func) {
           return v.func = func;
         }));
@@ -116,7 +116,7 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test initial KORU_APP_VERSION": function () {
+    "test initial KORU_APP_VERSION"() {
       test.onEnd(function () {
         delete process.env['KORU_APP_VERSION'];
       });
@@ -128,7 +128,7 @@ isServer && define(function (require, exports, module) {
       assert.same(v.sess.versionHash, "hash,v1");
     },
 
-    "test heartbeat response": function () {
+    "test heartbeat response"() {
       v.sess = serverSession(v.mockSess);
 
       assert.calledWith(v.sess.provide, 'H', TH.match(function (func) {
@@ -140,7 +140,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.send, 'K');
     },
 
-    "test client errors": function () {
+    "test client errors"() {
        v.sess = serverSession(v.mockSess);
 
       assert.calledWith(v.sess.provide, 'E', TH.match(function (func) {
@@ -154,7 +154,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "rpc": {
-      setUp: function () {
+      setUp() {
         v.run = function (rpcMethod) {
           session.defineRpc('foo.rpc', rpcMethod);
 
@@ -166,13 +166,13 @@ isServer && define(function (require, exports, module) {
       },
 
       "batch messages": {
-        setUp: function () {
+        setUp() {
           test.spy(session, 'batchMessages');
           test.spy(session, 'releaseMessages');
           test.spy(session, 'abortMessages');
         },
 
-        "test send after return": function () {
+        "test send after return"() {
           v.run(function (one, two, three) {
             assert.called(session.batchMessages);
             assert(util.thread.batchMessage);
@@ -188,7 +188,7 @@ isServer && define(function (require, exports, module) {
           assert.called(v.release);
         },
 
-        "test abort": function () {
+        "test abort"() {
           v.run(function (one, two, three) {
             assert.called(session.batchMessages);
             assert(util.thread.batchMessage);
@@ -209,7 +209,7 @@ isServer && define(function (require, exports, module) {
       },
 
 
-      "test result": function () {
+      "test result"() {
         v.run(function (...args) {
           v.thisValue = this;
           v.args = args.slice();
@@ -222,7 +222,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.conn.sendBinary, 'M', ['123', "r", "result"]);
       },
 
-      "test exception": function () {
+      "test exception"() {
         test.stub(koru, 'error');
         v.run(function (one, two, three) {
           throw v.error = new koru.Error(404, {foo: 'not found'});
@@ -232,7 +232,7 @@ isServer && define(function (require, exports, module) {
         assert.same(v.error.message, "{foo: 'not found'} [404]");
       },
 
-      "test general exception": function () {
+      "test general exception"() {
         test.stub(koru, 'error');
         v.run(function (one, two, three) {
           throw new Error('Foo');
@@ -242,7 +242,7 @@ isServer && define(function (require, exports, module) {
       },
     },
 
-    "test onclose": function () {
+    "test onclose"() {
       TH.noInfo();
       var conn = TH.sessionConnect(v.ws);
 

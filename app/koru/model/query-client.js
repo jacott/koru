@@ -9,7 +9,7 @@ define(function(require, exports, module) {
     return function(Query, condition) {
       let syncOb, stateOb;
 
-      util.extend(Query, {
+      util.merge(Query, {
         revertSimChanges() {
           const dbs = Model._databases[dbBroker.dbId];
           if (! dbs) return;
@@ -100,7 +100,7 @@ define(function(require, exports, module) {
 
       const origWhere = Query.prototype.where;
 
-      util.extend(Query.prototype, {
+      util.merge(Query.prototype, {
         get docs() {
           return this._docs || (this._docs = this.model.docs);
         },

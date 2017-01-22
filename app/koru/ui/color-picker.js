@@ -10,27 +10,27 @@ define(function(require, exports, module) {
   var ColorPart = Tpl.ColorPart;
 
   Tpl.$events({
-    'input [name=hex]': function (event) {
+    'input [name=hex]'(event) {
       Tpl.setColor($.ctx, this.value);
     },
-    'click [name=apply]': function (event) {
+    'click [name=apply]'(event) {
       event.preventDefault();
       Dom.stopEvent();
       close(event.currentTarget);
     },
 
-    'click [name=cancel]': function (event) {
+    'click [name=cancel]'(event) {
       Dom.stopEvent();
       close(event.currentTarget, 'cancel');
     },
 
-    'click [data-color]': function (event) {
+    'click [data-color]'(event) {
       Dom.stopEvent();
 
       Tpl.setColor($.ctx, this.getAttribute('data-color'), $.ctx.data.color.a);
     },
 
-    'click [name=custom]': function (event) {
+    'click [name=custom]'(event) {
       Dom.stopEvent();
       close(event.currentTarget, 'custom');
     },
@@ -52,50 +52,50 @@ define(function(require, exports, module) {
   }
 
   Tpl.$helpers({
-    customButton: function () {
+    customButton() {
       if (this.custom)
         return Dom.h({$name: 'custom', button: this.custom[0]});
     },
 
-    palette: function (color) {
+    palette(color) {
       if ($.element.nodeType === document.ELEMENT_NODE) return;
 
       var elm = Dom.h({button: '', "$data-color": color, $tabindex: "-1"});
       elm.style.backgroundColor = '#'+color;
       return elm;
     },
-    hexValue: function () {
+    hexValue() {
       var elm = $.element;
       if (document.activeElement !== elm)
         elm.value = hsl2hex(this.color, '');
     },
 
-    hexColorHash: function () {
+    hexColorHash() {
       return hsl2hex(this.color, '#');
     },
 
-    alphaLabel: function () {
+    alphaLabel() {
       return this.alpha ? '[AA]' : '';
     },
 
-    alphaClass: function () {
+    alphaClass() {
       Dom.setClass('alpha', this.alpha);
     },
 
-    maxlength: function () {
+    maxlength() {
       $.element.setAttribute('maxlength', this.alpha ? 9 : 7);
     },
 
-    disabled: function () {
+    disabled() {
       Dom.setBoolean('disabled', this.error);
     },
   });
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       ctx.startTab = elm.getElementsByClassName('startTab')[0];
     },
-    setColor: function (ctx, hex, alpha) {
+    setColor(ctx, hex, alpha) {
       var hsla = hex2hsl(hex);
       var data = ctx.data;
       data.error = ! hsla;
@@ -109,7 +109,7 @@ define(function(require, exports, module) {
       ctx.updateAllTags();
     },
 
-    choose: function (color, options, callback) {
+    choose(color, options, callback) {
       if (arguments.length === 2) {
         callback = options;
         options = false;
@@ -131,7 +131,7 @@ define(function(require, exports, module) {
       elm.querySelector('[name=hex]').focus();
     },
 
-    $destroyed: function (ctx, elm) {
+    $destroyed(ctx, elm) {
       ctx.data.callback && ctx.data.callback(null);
     },
   });
@@ -148,17 +148,17 @@ define(function(require, exports, module) {
   }
 
   var BG_STYLES = {
-    s: function (color) {
+    s(color) {
       return [hsl2hex(util.reverseMerge({s: 0, a: 1}, color), '#'),
               hsl2hex(util.reverseMerge({s: 1, a: 1}, color), '#')];
     },
 
-    l: function (color) {
+    l(color) {
       return ["#000000",
               hsl2hex(util.reverseMerge({l: 0.5, a: 1}, color), '#') + " 50%, #FFFFFF"];
     },
 
-    a: function (color) {
+    a(color) {
       return [uColor.hex2Style(hsl2hex(util.reverseMerge({a: 0}, color)), '#'),
               hsl2hex(util.reverseMerge({a: 1}, color), '#')];
     },
@@ -174,21 +174,21 @@ define(function(require, exports, module) {
   }
 
   ColorPart.$helpers({
-    name: function () {
+    name() {
       return this.part.toUpperCase();
     },
 
-    value: function () {
+    value() {
       var elm = $.element;
       if (elm !== document.activeElement)
         elm.value  = Math.round($.ctx.parentCtx.data.color[this.part]*this.max) || '0';
     },
 
-    partClass: function () {
+    partClass() {
       Dom.addClass($.element, this.part);
     },
 
-    slider: function () {
+    slider() {
       var ctx = $.ctx;
       var part = this.part;
       var cpCtx = ctx.parentCtx;
@@ -209,7 +209,7 @@ define(function(require, exports, module) {
         return;
       }
 
-      var elm = Slider.$autoRender({pos: hsla[part], callback: function (pos, ctx, slider) {
+      var elm = Slider.$autoRender({pos: hsla[part], callback(pos, ctx, slider) {
         cpCtx.startTab.focus();
         data.error = null;
         hsla = data.color;
@@ -223,7 +223,7 @@ define(function(require, exports, module) {
   });
 
   ColorPart.$events({
-    'input input': function (event) {
+    'input input'(event) {
       Dom.stopEvent();
       var ctx = $.ctx;
       var data = ctx.data;

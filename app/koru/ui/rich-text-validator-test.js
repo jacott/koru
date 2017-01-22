@@ -8,7 +8,7 @@ define(function (require, exports, module) {
   sut.register(module, {required: require('./rich-text-validator')});
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       test.intercept(RichText, 'isValid', function (text, markup) {
@@ -17,12 +17,12 @@ define(function (require, exports, module) {
       });
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
     "richText": {
-      "test valid markup": function () {
+      "test valid markup"() {
         v.rt = RichText.fromHtml(Dom.h([{b: "one"}, "\ntwo"]));
         var doc = {changes: {foo: v.rt}, foo: v.rt};
 
@@ -32,7 +32,7 @@ define(function (require, exports, module) {
         assert.equals(doc.foo, ['one\ntwo', [11, 0, 0, 3]]);
       },
 
-      "test valid text": function () {
+      "test valid text"() {
         var doc = {changes: {foo: "just\ntext"}, foo: "just\ntext"};
 
         sut.validators('richText')(doc, 'foo');
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
         assert.equals(doc.foo, 'just\ntext');
       },
 
-      "test no Markup": function () {
+      "test no Markup"() {
         var doc = {foo: v.rt = [['one', 'two'], null]};
 
         sut.validators('richText')(doc, 'foo');
@@ -49,7 +49,7 @@ define(function (require, exports, module) {
         assert.equals(doc.foo, 'one\ntwo');
       },
 
-      "test bad but no changes": function () {
+      "test bad but no changes"() {
         var doc = {foo: [123, [3]], changes: {other: true}};
 
         sut.validators('richText')(doc, 'foo');
@@ -57,7 +57,7 @@ define(function (require, exports, module) {
         assert.same(v.args, undefined);
       },
 
-      "test bad change": function () {
+      "test bad change"() {
         var doc = {foo: 123, changes: {foo:  [[3]]}};
 
         v.rt = [11, 2];
@@ -67,7 +67,7 @@ define(function (require, exports, module) {
       },
 
 
-      "test filtering with markup": function () {
+      "test filtering with markup"() {
         var foo = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}));
         var doc = {foo: foo, changes: {foo:  foo}};
 
@@ -77,7 +77,7 @@ define(function (require, exports, module) {
         assert.same(doc.foo, doc.changes.foo);
       },
 
-      "test filtering without markup": function () {
+      "test filtering without markup"() {
         var foo = ['bold', null];
         var doc = {foo: foo, changes: {foo:  foo}};
 
@@ -88,7 +88,7 @@ define(function (require, exports, module) {
     },
 
     "richTextMarkup": {
-      "test valid": function () {
+      "test valid"() {
         v.rt = [];
         var doc = {changes: {foo: v.rt[0] = "one\ntwo"}, foo: v.rt[0], fooMarkup:  v.rt[1] = [3, 0, 0, 3]};
 
@@ -97,7 +97,7 @@ define(function (require, exports, module) {
         assert.equals(v.args, [v.rt[0], v.rt[1]]);
       },
 
-      "test filtering": function () {
+      "test filtering"() {
         var markup = RichText.fromHtml(Dom.h({div: {ol: [{li: 'a'}, {li: 'b'}]}, $style: "text-align: right;"}))[1];
         var doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
 
@@ -108,7 +108,7 @@ define(function (require, exports, module) {
       },
 
 
-      "test bad but no changes": function () {
+      "test bad but no changes"() {
         var doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
@@ -116,7 +116,7 @@ define(function (require, exports, module) {
         assert.same(v.args, undefined);
       },
 
-      "test bad change": function () {
+      "test bad change"() {
         var doc = {foo: 123, changes: {fooMarkup:  [[3]]}, fooMarkup: 1122};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
@@ -124,7 +124,7 @@ define(function (require, exports, module) {
         assert.equals(v.args, [123, 1122]);
       },
 
-      'test invalid code': function () {
+      'test invalid code'() {
         var doc = {changes: {foo: "one\ntwo"}, foo: 1234, fooMarkup:  [-1, 0, 0, 3]};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');

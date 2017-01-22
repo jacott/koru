@@ -5,17 +5,17 @@ isClient && define(function (require, exports, module) {
   var Dom = require('../dom');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test cancel": function () {
+    "test cancel"() {
       sut.show('foo bar', v.confirm = test.stub());
 
       assert.dom('.Dialog', function () {
@@ -26,7 +26,7 @@ isClient && define(function (require, exports, module) {
       refute.called(v.confirm);
     },
 
-    "test description": function () {
+    "test description"() {
       sut.show('with desc', test.stub(), {description: Dom.h({div: 'how now brown cow'})});
 
       assert.dom('.Dialog', function () {
@@ -34,7 +34,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test okay": function () {
+    "test okay"() {
       sut.show('foo bar', v.confirm = test.stub());
 
       assert.dom('.Dialog', function () {

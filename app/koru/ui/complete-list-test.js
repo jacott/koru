@@ -7,18 +7,18 @@ isClient && define(function (require, exports, module) {
   var util = require('../util');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.CompleteList = Dom.newTemplate(util.deepCopy(completeListTpl));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test rendering": function () {
+    "test rendering"() {
       assert.dom(v.CompleteList.$autoRender({}), function () {
         assert.dom('[name=name]', function () {
           Dom.Form.completeList({input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
@@ -43,7 +43,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "callback": {
-      setUp: function () {
+      setUp() {
         document.body.appendChild(v.CompleteList.$autoRender({}));
         assert.dom('[name=name]', function () {
           Dom.Form.completeList({input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}], callback: v.callback = test.stub()});
@@ -52,7 +52,7 @@ isClient && define(function (require, exports, module) {
         v.inp = document.querySelector('[name=name]');
       },
 
-      "test clicking": function () {
+      "test clicking"() {
         assert.dom('li', 'abc', function () {
           TH.trigger(this, 'mousedown');
         });
@@ -70,7 +70,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=name]', {value: 'abc'});
       },
 
-      "test enter no select": function () {
+      "test enter no select"() {
         TH.trigger(v.inp, 'keydown', {which: 65});
         assert.dom('.complete');
 
@@ -89,7 +89,7 @@ isClient && define(function (require, exports, module) {
         refute.called(inpCallback);
       },
 
-      "test enter after select": function () {
+      "test enter after select"() {
         TH.trigger(v.inp, 'keydown', {which: 40}); // down
         TH.trigger(v.inp, 'keydown', {which: 13});
 
@@ -98,7 +98,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.callback, v.list[1]);
       },
 
-      "test up/down arrow": function () {
+      "test up/down arrow"() {
         assert.dom('.complete', function () {
           assert.dom('li.selected', 'abc');
           TH.trigger(v.inp, 'keydown', {which: 40}); // down
@@ -111,7 +111,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test blur": function () {
+    "test blur"() {
       document.body.appendChild(v.CompleteList.$autoRender({}));
       assert.dom('[name=name]', function () {
         Dom.Form.completeList({input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});

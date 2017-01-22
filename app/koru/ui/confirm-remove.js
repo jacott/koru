@@ -6,8 +6,8 @@ define(function(require, exports, module) {
   var Tpl = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
 
   Tpl.$extend({
-    show: function (name, func, opts) {
-      Dialog.confirm(util.extend({
+    show(name, func, opts) {
+      Dialog.confirm(util.merge({
         classes: 'warn',
         okay: 'Remove',
         content: Tpl,

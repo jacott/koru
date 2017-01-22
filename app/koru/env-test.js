@@ -4,23 +4,23 @@ define(function (require, exports, module) {
   var koru = require('./main');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test getLocation": function () {
+    "test getLocation"() {
       if (isClient)
         assert.same(koru.getLocation(), window.location);
       else
         assert(isServer);
     },
 
-    "test isServer, isClient": function () {
+    "test isServer, isClient"() {
       assert.same(isClient, typeof process === 'undefined');
       assert.same(isServer, typeof process !== 'undefined');
     },

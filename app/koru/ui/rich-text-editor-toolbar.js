@@ -16,7 +16,7 @@ define(function(require, exports, module) {
   var selectElm = Dom.selectElm;
 
   Tpl.$extend({
-    $autoRender: function (data, parentCtx) {
+    $autoRender(data, parentCtx) {
       var elm = RichTextEditor.$autoRender(data, parentCtx);
       var ctx = Dom.getMyCtx(elm);
       var toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
@@ -42,30 +42,30 @@ define(function(require, exports, module) {
   }
 
   Tpl.$helpers({
-    mode: function () {
+    mode() {
       return $.ctx.parentCtx.mode.type;
     },
 
-    state: function () {
+    state() {
       Dom.setClass('on', document.queryCommandState($.element.getAttribute('name')));
     },
 
-    link: function () {
+    link() {
       Dom.setClass('on', getTag('A'));
     },
 
-    code: function () {
+    code() {
       Dom.setClass('on', getFont() === 'monospace');
     },
 
-    font: function () {
+    font() {
       var code = getFont();
       if (code === 'initial') code = 'sans-serif';
       $.element.setAttribute('face', code);
       $.element.textContent = util.capitalize(util.humanize(code));
     },
 
-    title: function (title) {
+    title(title) {
       var elm = $.element;
       if (elm.getAttribute('title')) return;
 
@@ -74,7 +74,7 @@ define(function(require, exports, module) {
       elm.setAttribute('title', RichTextEditor.title(title, action, elm.parentNode.className));
     },
 
-    mentions: function () {
+    mentions() {
       if ($.element._koruEnd) return;
       var mentions = $.ctx.parentCtx.data.extend;
       mentions = mentions && mentions.mentions;
@@ -86,7 +86,7 @@ define(function(require, exports, module) {
       return frag;
     },
 
-    language: function () {
+    language() {
       var mode = $.ctx.parentCtx.mode;
       if (mode.type !== 'code') return;
       var language = mode.language || 'text';
@@ -108,8 +108,8 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'click button': function (event) {Dom.stopEvent()},
-    'mousedown button': function (mde) {
+    'click button'(event) {Dom.stopEvent()},
+    'mousedown button'(mde) {
       Dom.stopEvent();
 
       var toolbar = mde.currentTarget;
@@ -136,7 +136,7 @@ define(function(require, exports, module) {
           SelectMenu.popup(event.target, {
             classes: 'rtTextAlign',
             list: TEXT_ALIGN_LIST,
-            onSelect: function (elm) {
+            onSelect(elm) {
               actions[$.data(elm).id](event);
               return true;
             },

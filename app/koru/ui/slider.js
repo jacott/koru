@@ -6,13 +6,13 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   Tpl.$helpers({
-    position: function () {
+    position() {
       $.element.style.left = this.pos*100+'%';
     },
   });
 
   Tpl.$events({
-    'mousedown .slider': function (event) {
+    'mousedown .slider'(event) {
       Dom.stopEvent();
 
       document.addEventListener('mousemove', adjust, true);
@@ -79,11 +79,11 @@ define(function(require, exports, module) {
   });
 
   Tpl.$extend({
-    $destroyed: function (ctx) {
+    $destroyed(ctx) {
       ctx.cancel && ctx.cancel();
     },
 
-    move: function (sliderElm, pos) {
+    move(sliderElm, pos) {
       var ctx = Dom.getMyCtx(sliderElm);
       var data = ctx.data;
       data.pos = pos;

@@ -5,16 +5,16 @@ define(function (require, exports, module) {
   const util = require('koru/util');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test sequnce": function () {
+    "test sequnce"() {
       var random = Random.create(0);
       assert.same(random.id(), "cp9hWvhg8GSvuZ9os");
       assert.same(random.id(), "3f3k6Xo7rrHCifQhR");
@@ -22,7 +22,7 @@ define(function (require, exports, module) {
       assert.same(random.id(), "6QTjB8C5SEqhmz4ni");
     },
 
-    "test format": function () {
+    "test format"() {
       var randSpy = isServer ? test.spy(requirejs.nodeRequire('crypto'), 'randomBytes')
             : test.spy(window.crypto, 'getRandomValues');
       const idLen = 17;

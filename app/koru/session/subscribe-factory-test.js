@@ -21,7 +21,7 @@ isClient && define(function (require, exports, module) {
   var subscribe;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.gDict = message.newGlobalDict();
@@ -58,13 +58,13 @@ isClient && define(function (require, exports, module) {
       api.module();
     },
 
-    tearDown: function () {
+    tearDown() {
       publish._destroy('foo');
       publish._destroy('foo2');
       v = null;
     },
 
-    "test sendP": function () {
+    "test sendP"() {
       v.sessState.connected(v.sess);
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
@@ -75,7 +75,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.sendBinary, 'P', ['12']);
     },
 
-    "test wait for onConnect": function () {
+    "test wait for onConnect"() {
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
@@ -84,7 +84,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2]]);
     },
 
-    "test not Ready": function () {
+    "test not Ready"() {
       v.sessState.connected(v.sess);
       v.sessState.close(false);
 
@@ -108,7 +108,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test resubscribe onConnect": function () {
+    "test resubscribe onConnect"() {
       test.stub(v.sessState, 'onConnect');
       subscribe = subscribeFactory(v.sess);
       test.stub(v.sess, 'sendP');
@@ -136,7 +136,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.sess.sendP, sub3._id, 'foo2', [5, 6]);
     },
 
-    "test onChange rpc": function () {
+    "test onChange rpc"() {
       test.onEnd(v.sessState.pending.onChange(v.ob = test.stub()));
 
       assert.same(v.sessState.pendingCount(), 0);
@@ -169,7 +169,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "filtering":{
-      setUp: function () {
+      setUp() {
         test.stub(publish, '_filterModels');
         publish("foo2", function () {
           this.match('F1', test.stub());
@@ -182,7 +182,7 @@ isClient && define(function (require, exports, module) {
        * Ensure when we stop that all docs in models (matching matches)
        * are removed if not matched
        */
-      "test remove unwanted docs": function () {
+      "test remove unwanted docs"() {
         v.sub = subscribe('foo2');
 
         refute.called(publish._filterModels);
@@ -195,7 +195,7 @@ isClient && define(function (require, exports, module) {
       /**
        * All subscriptions should be resubscribed
        */
-      "test change userId": function () {
+      "test change userId"() {
         v.sub = subscribe('foo', 123, 456);
         var sub2 = subscribe('foo2', 2);
 
@@ -221,7 +221,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test resubscribe": function () {
+    "test resubscribe"() {
       v.sub = subscribe('foo', 'x');
       v.pubFunc = function (...args) {
         assert.same(this, v.sub);
@@ -234,7 +234,7 @@ isClient && define(function (require, exports, module) {
       refute(v.sub.isResubscribe);
     },
 
-    "test error on resubscribe": function () {
+    "test error on resubscribe"() {
       v.sub = subscribe('foo', 'x');
       test.stub(koru, 'error');
       v.pubFunc = function () {
@@ -252,7 +252,7 @@ isClient && define(function (require, exports, module) {
     /**
      * sub.userId should mirror koru.userId
      */
-    "test userId": function () {
+    "test userId"() {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
       var origId = koru.util.thread.userId;
       test.onEnd(function () {koru.util.thread.userId = origId});
@@ -261,7 +261,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.sub.userId, 'test123');
     },
 
-    "test stop before result": function () {
+    "test stop before result"() {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
       test.spy(v.sessState, "decPending");
       v.sub.stop();
@@ -270,7 +270,7 @@ isClient && define(function (require, exports, module) {
       assert.calledOnce(v.sessState.decPending);
     },
 
-    "test subscribe": function () {
+    "test subscribe"() {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
 
       assert.calledOnce(v.pubFunc);
@@ -313,7 +313,7 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.stub, [304, "error msg"]);
     },
 
-    "test remote stop while waiting": function () {
+    "test remote stop while waiting"() {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
 
       assert(v.sub.waiting);
@@ -328,11 +328,11 @@ isClient && define(function (require, exports, module) {
     },
 
     "test remove stop": {
-      setUp: function () {
+      setUp() {
         v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
       },
 
-      "while waiting": function () {
+      "while waiting"() {
         assert(v.sub.waiting);
 
         v.sess.sendP.reset();
@@ -342,7 +342,7 @@ isClient && define(function (require, exports, module) {
         refute.called(v.sess.sendP);
       },
 
-      "while not waiting": function () {
+      "while not waiting"() {
         v.recvP(v.sub._id);
         refute(v.sub.waiting);
 
@@ -355,14 +355,14 @@ isClient && define(function (require, exports, module) {
     },
 
     "match": {
-      setUp: function () {
+      setUp() {
         v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
         test.onEnd(function () {
           Model._destroyModel('Foo', 'drop');
         });
       },
 
-      "test onStop": function () {
+      "test onStop"() {
         v.sub = subscribe('foo');
 
         v.sub.onStop(v.onstop = test.stub());
@@ -376,7 +376,7 @@ isClient && define(function (require, exports, module) {
         assert.calledOnce(v.onstop);
       },
 
-      "test called on message": function () {
+      "test called on message"() {
         v.sub = subscribe('foo');
 
         v.sub.match(v.Foo, v.match = test.stub());
@@ -388,7 +388,7 @@ isClient && define(function (require, exports, module) {
         }));
       },
 
-      "test resubscribe": function () {
+      "test resubscribe"() {
         v.pubFunc = function () {
           this.match(v.Foo, test.stub());
           this.match("Bar", test.stub());

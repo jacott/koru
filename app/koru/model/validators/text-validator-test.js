@@ -7,7 +7,7 @@ define(function (require, exports, module) {
 
   geddon.testCase(module, {
     "normalize": {
-      "test downcase": function () {
+      "test downcase"() {
         var doc = {name: 'mixedCase'};
 
         sut.validators('normalize')(doc,'name', 'downcase');
@@ -23,7 +23,7 @@ define(function (require, exports, module) {
         assert.equals(doc, {name: 'mixedcase'});
       },
 
-      "test upcase": function () {
+      "test upcase"() {
         var doc = {name: 'mixedCase'};
 
         sut.validators('normalize')(doc,'name', 'upcase');
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
     },
 
     'boolean': {
-      "test trueOnly": function () {
+      "test trueOnly"() {
         var doc = {isSet: false};
 
         sut.validators('boolean')(doc,'isSet', 'trueOnly');
@@ -57,7 +57,7 @@ define(function (require, exports, module) {
         assert.same(doc.isSet, true);
       },
 
-      "test set true": function () {
+      "test set true"() {
         ['trUe  ', 'T', ' 1', 'on'].forEach(function (val) {
           var doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
@@ -67,7 +67,7 @@ define(function (require, exports, module) {
         });
       },
 
-      "test set false": function () {
+      "test set false"() {
         [' FALSE  ', 'f', ' 0', 'off'].forEach(function (val) {
           var doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
@@ -77,14 +77,14 @@ define(function (require, exports, module) {
         });
       },
 
-      "test if null": function () {
+      "test if null"() {
         var doc = {};
 
         sut.validators('boolean')(doc,'isSet');
         refute(doc._errors);
       },
 
-      "test set invalid": function () {
+      "test set invalid"() {
         var doc;
 
         [' FALS  ', 'tru', '  '].forEach(function (val) {
@@ -100,7 +100,7 @@ define(function (require, exports, module) {
     },
 
     "date": {
-      "test valid": function () {
+      "test valid"() {
         var doc = {startDate: new Date()};
 
         sut.validators('date')(doc, 'startDate');
@@ -114,7 +114,7 @@ define(function (require, exports, module) {
         assert.equals(doc.startDate, new Date(Date.parse('2015-12-31')));
       },
 
-      'test invalid': function () {
+      'test invalid'() {
         var doc = {startDate: 'abc'};
 
         sut.validators('date')(doc, 'startDate');
@@ -124,7 +124,7 @@ define(function (require, exports, module) {
     },
 
     'number': {
-      "test min value": function () {
+      "test min value"() {
         var doc = {order: 123};
 
         sut.validators('number')(doc,'order', {$gte: 123});
@@ -144,14 +144,14 @@ define(function (require, exports, module) {
         assert.equals(doc._errors['order'],[['must_be_greater_than', 123]]);
       },
 
-      "test negative": function () {
+      "test negative"() {
         var doc = {order: -4};
         sut.validators('number')(doc,'order', {integer: true, $gte: 0, $lt: 999});
         assert(doc._errors);
         assert.equals(doc._errors['order'],[['cant_be_less_than', 0]]);
       },
 
-      "test max value": function () {
+      "test max value"() {
         var doc = {order: 123};
 
         sut.validators('number')(doc,'order', {$lte: 123});
@@ -171,7 +171,7 @@ define(function (require, exports, module) {
         assert.equals(doc._errors['order'],[['must_be_less_than', 123]]);
       },
 
-      "test integer": function () {
+      "test integer"() {
         var doc = {order: 123};
 
         sut.validators('number')(doc,'order', {integer: true});
@@ -184,7 +184,7 @@ define(function (require, exports, module) {
         assert.equals(doc._errors['order'],[['not_an_integer']]);
       },
 
-      'test valid': function () {
+      'test valid'() {
         var doc = {order: 123};
 
         sut.validators('number')(doc,'order');
@@ -195,7 +195,7 @@ define(function (require, exports, module) {
         refute(doc._errors);
       },
 
-      'test string as number': function () {
+      'test string as number'() {
          var doc = {order: '0xabc'};
 
         sut.validators('number')(doc,'order');
@@ -204,7 +204,7 @@ define(function (require, exports, module) {
         assert.same(doc.order,0xabc);
       },
 
-      "test empty": function () {
+      "test empty"() {
          var doc = {order: ''};
 
         sut.validators('number')(doc,'order');
@@ -213,7 +213,7 @@ define(function (require, exports, module) {
         assert.same(doc.order, null);
       },
 
-      'test invalid': function () {
+      'test invalid'() {
         var doc = {order: 'abc'};
 
         sut.validators('number')(doc,'order');
@@ -223,7 +223,7 @@ define(function (require, exports, module) {
     },
 
     'trim': {
-      'test invalid': function () {
+      'test invalid'() {
         var doc = {name: 123};
 
         sut.validators('trim')(doc,'name');
@@ -231,7 +231,7 @@ define(function (require, exports, module) {
         assert.equals(doc._errors['name'],[['not_a_string']]);
       },
 
-      "test toNull": function () {
+      "test toNull"() {
 
         var doc = {name: '  '};
 
@@ -242,7 +242,7 @@ define(function (require, exports, module) {
 
       },
 
-      "test toUndefined": function () {
+      "test toUndefined"() {
 
         var doc = {name: '  '};
 
@@ -253,7 +253,7 @@ define(function (require, exports, module) {
 
       },
 
-      'test trims': function () {
+      'test trims'() {
         var doc = {name: '  in  the middle  '};
 
         sut.validators('trim')(doc,'name');
@@ -263,7 +263,7 @@ define(function (require, exports, module) {
     },
 
     'color': {
-      'test valid alpha': function () {
+      'test valid alpha'() {
         var colors = ['#000000', '#12ab3487', '#123456', '#ffffff'],
             doc = {color: ''};
 
@@ -274,7 +274,7 @@ define(function (require, exports, module) {
         }
       },
 
-      'test valid non-alpha': function () {
+      'test valid non-alpha'() {
         var colors = ['#000000', '#12ab34', '#123456', '#ffffff'],
             doc = {color: ''};
 
@@ -285,7 +285,7 @@ define(function (require, exports, module) {
         }
       },
 
-      'test invalid alpha': function () {
+      'test invalid alpha'() {
         var colors = ['#ac', '#0000', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
@@ -298,7 +298,7 @@ define(function (require, exports, module) {
         }
       },
 
-      'test invalid nonalpha': function () {
+      'test invalid nonalpha'() {
         var colors = ['#ac', '#0000', '#11223344', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 

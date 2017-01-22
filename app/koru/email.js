@@ -21,15 +21,15 @@ DebugStream.prototype._write = function(data, encoding, callback) {
 define(function(require, exports, module) {
   var util = require('koru/util');
 
-  util.extend(exports, {
-    send: function (options) {
+  util.merge(exports, {
+    send(options) {
       var future = new Future();
       exports._transport.sendMail(options, future.resolver());
 
       future.wait();
     },
 
-    initPool: function (urlOrTransport) {
+    initPool(urlOrTransport) {
       if (typeof urlOrTransport === 'string') {
         var mailUrl = urlModule.parse(urlOrTransport);
         if (mailUrl.protocol !== 'smtp:')
@@ -75,7 +75,7 @@ define(function(require, exports, module) {
 
     _transport: {
       // throw exceptiion by default
-      send: function (options, callback) {
+      send(options, callback) {
         throw new Error('Email has not been initialized');
       }
     },

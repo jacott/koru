@@ -8,7 +8,7 @@ define(function(require, exports, module) {
 
     let dbBroker;
 
-    util.extend(koru, {
+    util.merge(koru, {
       global,
       reload() {
         if (koru.loadError) throw koru.loadError;

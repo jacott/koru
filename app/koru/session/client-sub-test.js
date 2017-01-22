@@ -58,7 +58,7 @@ isClient && define(function (require, exports, module) {
       assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
     },
 
-    "test filterModels": function () {
+    "test filterModels"() {
       /**
        * Remove model documents that do not match this subscription
        **/

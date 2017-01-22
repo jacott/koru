@@ -5,12 +5,12 @@ define(function (require, exports, module) {
   var util = require('../util');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
@@ -87,19 +87,19 @@ define(function (require, exports, module) {
       // function needs to output numbers.
 
       var baseOptions = {
-        hash: function (x) { return x; },
+        hash(x) { return x; },
         N: 'b',
         g: '2',
         k: '1'
       };
-      var verifierOptions = util.extend({
+      var verifierOptions = util.merge({
         identity: 'a',
         salt: 'b'
       }, baseOptions);
-      var clientOptions = util.extend({
+      var clientOptions = util.merge({
         a: "2"
       }, baseOptions);
-      var serverOptions = util.extend({
+      var serverOptions = util.merge({
         b: "2"
       }, baseOptions);
 

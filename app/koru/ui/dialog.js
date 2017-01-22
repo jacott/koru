@@ -7,11 +7,11 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   Tpl.$extend({
-    isOpen: function () {
+    isOpen() {
       return document.getElementsByClassName('Dialog').length !== 0;
     },
 
-    open: function (content, nofocus) {
+    open(content, nofocus) {
       var elm = Tpl.$autoRender({content: content});
       document.body.appendChild(elm);
       modalize(Dom.getMyCtx(elm), elm);
@@ -23,7 +23,7 @@ define(function(require, exports, module) {
       focus.focus();
     },
 
-    close: function (elm) {
+    close(elm) {
       if (elm) {
         if (typeof elm === 'string')
           elm = document.getElementById(elm);
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
       if (dialogs.length > 0) Dom.remove(dialogs[dialogs.length - 1]);
     },
 
-    closeAll: function () {
+    closeAll() {
       var dialogs = document.getElementsByClassName('Dialog');
       while (dialogs.length !== 0) {
         var len = dialogs.length;
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
       }
     },
 
-    confirm: function (data) {
+    confirm(data) {
       var elm = Tpl.Confirm.$autoRender(data);
       document.body.appendChild(elm);
       modalize(Dom.getMyCtx(elm), elm);
@@ -56,7 +56,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$helpers({
-    content: function () {
+    content() {
       var content = this.content;
 
       if (Dom.hasClass(content, 'dialogContainer'))
@@ -81,11 +81,11 @@ define(function(require, exports, module) {
   });
 
   Tpl.Confirm.$helpers({
-    classes: function () {
+    classes() {
       $.element.setAttribute('class', 'ui-dialog '+ (this.classes || ''));
     },
 
-    content: function () {
+    content() {
       var content = this.content;
       if (content.$autoRender)
         return content.$autoRender(this.data || this);
@@ -94,7 +94,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.Confirm.$events({
-    'click button': function (event) {
+    'click button'(event) {
       var data = $.ctx.data;
       data.callback && data.callback.call(data, this.name === 'okay', event.currentTarget);
       Dom.remove(event.currentTarget);

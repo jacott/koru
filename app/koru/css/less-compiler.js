@@ -39,7 +39,7 @@ define(function(require, exports, module) {
         if (fn === 'input') fn = path;
         if (fn[0] === '/') fn = fn.slice(1);
         koru.error(koru.util.extractError({
-          toString: function () {return "Less compiler error: " + error.message},
+          toString() {return "Less compiler error: " + error.message},
           stack: "\tat "+ fn + ':' + error.line + ':' + (error.column + 1),
         })+"\n");
         future.return(null);

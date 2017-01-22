@@ -41,7 +41,7 @@ define(function(require, exports, module) {
   for (var id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
-  util.extend(ALIGN_TEXT_TO_CODE, {
+  util.merge(ALIGN_TEXT_TO_CODE, {
     start: LEFT,
     end: RIGHT,
     'justify-all': JUSTIFY
@@ -51,8 +51,8 @@ define(function(require, exports, module) {
     {
       id: 0,
       class: "",
-      fromHtml: function (node) {return node.getAttribute('href')},
-      toHtml: function (node, ref) {
+      fromHtml(node) {return node.getAttribute('href')},
+      toHtml(node, ref) {
           /[\/#]/.test(ref[0]) ||
           node.setAttribute('target', '_blank');
         node.setAttribute('href', ref.replace(/^javascript:/,''));
@@ -489,7 +489,7 @@ define(function(require, exports, module) {
     FONT: fromFont,
     PRE: fromPre,
 
-    A: function (node, index, pos) {
+    A(node, index, pos) {
       var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
       if (pos === undefined) {
         if (this.hasATag) return;

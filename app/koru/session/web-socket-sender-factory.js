@@ -17,7 +17,7 @@ define(function(require, exports, module) {
       session.hash = hash;
     }
 
-    util.extend(session, {
+    util.merge(session, {
       execWrapper,
 
       state: sessState,
@@ -199,7 +199,7 @@ define(function(require, exports, module) {
       });
 
 
-      util.extend(base, {
+      util.merge(base, {
         registerBroadcast(module, name, func) {
           if (arguments.length === 2) {
             func = name;

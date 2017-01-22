@@ -14,10 +14,10 @@ define(function(require, exports, module) {
   });
 
   TH = util.reverseMerge({
-    cleanup: function () {
+    cleanup() {
       clientMessage = null;
     },
-    startClient: function (v, module) {
+    startClient(v, module) {
       for (var key in session.conns) {
         v.conn = session.conns[key];
         break;

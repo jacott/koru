@@ -190,9 +190,9 @@ isServer && define(function (require, exports, module) {
           return doc.attributes.name === 'John';
         });
         v.docProto = {
-          $withChanges: function (changes) {
+          $withChanges(changes) {
             var old = util.deepCopy(this);
-            util.extend(old.attributes, changes);
+            util.merge(old.attributes, changes);
             return old;
           },
           $asChanges: $asChanges,
@@ -246,7 +246,7 @@ isServer && define(function (require, exports, module) {
 
         var doc = util.deepCopy(v.docProto);
         var was = {name: 'John'};
-        util.extend(doc.attributes, {name: 'Sam'});
+        util.merge(doc.attributes, {name: 'Sam'});
 
         v.sub.sendMatchUpdate(doc, was);
 
@@ -267,7 +267,7 @@ isServer && define(function (require, exports, module) {
         var stub = v.conn.removed = test.stub();
 
         var old = util.deepCopy(v.docProto);
-        util.extend(old.attributes, {name: 'Sam'});
+        util.merge(old.attributes, {name: 'Sam'});
 
         v.sub.sendMatchUpdate(null, old);
 

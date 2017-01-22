@@ -427,17 +427,17 @@ define(function (require, exports, module) {
 
     'with TestModel': {
       setUp() {
-        v.TestModel = Model.define('TestModel', {t1: 123, authorize: function () {}});
+        v.TestModel = Model.define('TestModel', {t1: 123, authorize() {}});
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
       "test accessor"() {
         v.TestModel.defineFields({
-          starSign: {type: 'text', accessor: {get: function () {
+          starSign: {type: 'text', accessor: {get() {
             const ans = v.TestModel.getField(this, 'starSign');
             return ans === 'Gemini' ? 'Virgo' : ans;
           }}},
-          luckyNumber: ({type: 'number', accessor: {set: function (value) {
+          luckyNumber: ({type: 'number', accessor: {set(value) {
             v.TestModel.setField(this, 'luckyNumber', value === 13 ? 7 : value);
           }}})
         });
@@ -563,7 +563,7 @@ define(function (require, exports, module) {
       },
 
       "test validator passing function"() {
-        v.TestModel.defineFields({baz: {type: 'text', required: function (field, options) {
+        v.TestModel.defineFields({baz: {type: 'text', required(field, options) {
           assert.same(this, doc);
           assert.same(field, 'baz');
           assert.same(options.type, 'text');
@@ -1012,7 +1012,7 @@ define(function (require, exports, module) {
         "test authorizePut object"() {
           v.TestModel.prototype.authorizePut = {
             myAry: v.myAry = test.stub(),
-            deep: function (doc, updates, key) {
+            deep(doc, updates, key) {
               updates[key+'.nested'].value = 444;
             },
           },

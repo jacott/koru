@@ -293,7 +293,7 @@ define(function (require, exports, module) {
          **/
         MainAPI.example(() => {
           v.defaults = {
-            logger: function () {},
+            logger() {},
             width: 800,
             height: 600,
             theme: {
@@ -622,7 +622,7 @@ define(function (require, exports, module) {
       };
       const FooTestMod = {
         id: 'koru/test/foo-bar-test',
-        exports: function () {},
+        exports() {},
         body: `function () {/**\n * foo bar comment **/}`
       };
       myCtx.modules[otherMod.id] = otherMod;

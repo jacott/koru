@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   var DAY = 24*60*60*1000;
 
   return {
-    atHour: function (date, hour) {
+    atHour(date, hour) {
       var orig = +date;
       date = new Date(orig);
 
@@ -16,7 +16,7 @@ define(function(require, exports, module) {
       return date;
     },
 
-    atDowHour: function (date, dow, hour) {
+    atDowHour(date, dow, hour) {
       var orig = +date;
       date = new Date(orig);
 

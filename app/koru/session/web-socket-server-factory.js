@@ -16,7 +16,7 @@ define(function (require, exports, module) {
     var globalDictAdders = {};
     globalDictAdders[module.id] = addToDictionary;
 
-    util.extend(session, {
+    util.merge(session, {
       execWrapper: execWrapper || koru.fiberConnWrapper,
       conns: {},
       sendAll: sendAll,
@@ -24,19 +24,19 @@ define(function (require, exports, module) {
       unload: unload,
       load: load,
       totalSessions: 0,
-      rpc: function (name, ...args) {
+      rpc(name, ...args) {
         return session._rpcs[name].apply(util.thread, args);
       },
       onConnection: onConnection,
-      stop: function () {
+      stop() {
         session.wss.close();
       },
 
-      registerGlobalDictionaryAdder: function (module, adder) {
+      registerGlobalDictionaryAdder(module, adder) {
         globalDictAdders[module.id] = adder;
       },
 
-      deregisterGlobalDictionaryAdder: function (module) {
+      deregisterGlobalDictionaryAdder(module) {
         delete globalDictAdders[module.id];
       },
 
@@ -47,14 +47,14 @@ define(function (require, exports, module) {
         return buildGlobalDict();
       },
 
-      batchMessages: function () {
+      batchMessages() {
         util.thread.batchMessage = new BatchMessage(this);
       },
-      releaseMessages: function () {
+      releaseMessages() {
         util.thread.batchMessage.release();
         util.thread.batchMessage = null;
       },
-      abortMessages: function () {
+      abortMessages() {
         util.thread.batchMessage.abort();
         util.thread.batchMessage = null;
       },

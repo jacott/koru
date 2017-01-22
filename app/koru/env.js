@@ -11,7 +11,7 @@
      * This function is used by requirejs to load a dependency of the
      * format: `koru/env!name` as `name-client.js`
      */
-    load: function (name, req, onload, config) {
+    load(name, req, onload, config) {
       var provider = name + suffix;
       var pMod = req.module.dependOn(provider);
       req.module.body = function () {

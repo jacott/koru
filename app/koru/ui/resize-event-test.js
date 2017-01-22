@@ -5,7 +5,7 @@ isClient && define(function (require, exports, module) {
   var Dom = require('koru/dom');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.raf = test.stub(window, 'requestAnimationFrame');
@@ -14,12 +14,12 @@ isClient && define(function (require, exports, module) {
       v.resizer = sut.onWidthResize(v.html, v.resized = test.stub());
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.remove(v.html);
       v = null;
     },
 
-    "test resize width": function () {
+    "test resize width"() {
       assert.calledWith(v.raf, TH.match.func);
       v.raf.yield();
       v.raf.reset();

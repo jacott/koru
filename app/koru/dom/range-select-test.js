@@ -5,7 +5,7 @@ isClient && define(function (require, exports, module) {
   var Dom = require('./dom-client');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       document.body.appendChild(v.list = Dom.h({
@@ -13,12 +13,12 @@ isClient && define(function (require, exports, module) {
       }));
     },
 
-    tearDown: function () {
+    tearDown() {
       Dom.removeChildren(document.body);
       v = null;
     },
 
-    "test toggle": function () {
+    "test toggle"() {
       assert.dom(v.list, self => {
         assert.dom('div', 'row 2', self => {
           var selected = Dom.selectRange(self, {});
@@ -40,7 +40,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test shift range": function () {
+    "test shift range"() {
       assert.dom(v.list, function () {
         assert.dom('div', 'row 2', function () {
           Dom.selectRange(this, {});
@@ -55,7 +55,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test control toggle": function () {
+    "test control toggle"() {
       assert.dom(v.list, function () {
         assert.dom('div', 'row 2', function () {
           Dom.selectRange(this, {ctrlKey: true});

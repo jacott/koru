@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.obs = [];
@@ -13,14 +13,14 @@ define(function (require, exports, module) {
       v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
     },
 
-    tearDown: function () {
+    tearDown() {
       v.obs.forEach(row => row.stop());
       Model._destroyModel('TestModel', 'drop');
       v = null;
       dbBroker.clearDbId();
     },
 
-    "test observeIds": function () {
+    "test observeIds"() {
       var doc2 =  v.TestModel.create({name: 'Bob', age: 35});
       v.obs.push(v.ids = v.TestModel.observeIds([v.doc._id, doc2._id], v.ob = test.stub()));
 
@@ -38,10 +38,10 @@ define(function (require, exports, module) {
       refute.calledWith(v.ob, TH.matchModel(doc2.$reload()));
     },
 
-    "test multi dbs": function () {
+    "test multi dbs"() {
       var origId = v.dbId = dbBroker.dbId;
       test.intercept(dbBroker, 'dbId');
-      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get: function () {return v.dbId}});
+      Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
       var oc = test.spy(v.TestModel, 'onChange');
 
       v.obs.push(v.TestModel.observeIds([v.doc._id], v.origOb = test.stub()));
@@ -75,7 +75,7 @@ define(function (require, exports, module) {
       assert.calledOnce(oc);
     },
 
-    "test observeId changed": function () {
+    "test observeId changed"() {
       v.obs.push(v.TestModel.observeId(v.doc._id, v.ob1 = test.stub()));
       v.obs.push(v.TestModel.observeId(v.doc._id, v.ob2 = test.stub()));
 
@@ -86,7 +86,7 @@ define(function (require, exports, module) {
       assert.calledWith(v.ob2, TH.matchModel(v.doc.$reload()), {age: 5});
     },
 
-    "test observeId removed": function () {
+    "test observeId removed"() {
       v.obs.push(v.TestModel.observeId(v.doc._id, v.ob = test.stub()));
 
       v.doc.$remove();

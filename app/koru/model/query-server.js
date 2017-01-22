@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const Future     = requirejs.nodeRequire('fibers/future');
 
   return function (Query, condition) {
-    util.extend(Query.prototype, {
+    util.merge(Query.prototype, {
       where(params, value) {
         return condition(this, '_wheres', params, value);
       },

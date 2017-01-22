@@ -13,7 +13,7 @@ isServer && define(function (require, exports, module) {
   var test, v;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.conn = {send: test.stub()};
@@ -60,13 +60,13 @@ isServer && define(function (require, exports, module) {
       sut.clearGraph(); // loader-test calls server which sets the graph
     },
 
-    tearDown: function () {
+    tearDown() {
       sut.clearGraph();
       v = null;
     },
 
     "loadRequest": {
-      setUp: function () {
+      setUp() {
         v.topDirLen = koru.appDir.length + 1;
 
         v.addTimestamps(v.expectedSources);
@@ -85,7 +85,7 @@ isServer && define(function (require, exports, module) {
 
       },
 
-      "test imports changed while system down": function () {
+      "test imports changed while system down"() {
         v.expectedSources['koru/css/less-compiler-test-imp2.lessimport'].mtime = Date.now()+40*1000;
 
         session._commands.S.call(v.conn, 'LAkoru/css');
@@ -99,7 +99,7 @@ isServer && define(function (require, exports, module) {
       },
 
 
-      "test build graph": function () {
+      "test build graph"() {
         session._commands.S.call(v.conn, 'LAkoru/css');
 
         assert.calledWith(v.conn.send, 'SL', "koru/css/less-compiler-test.less " +
@@ -124,7 +124,7 @@ isServer && define(function (require, exports, module) {
 
       },
 
-      "test bad names": function () {
+      "test bad names"() {
         'koru/.. koru/css/.build ../koru /koru koru/.dir'
           .split(' ').forEach(function (dir) {
             assert.exception(function () {
@@ -135,7 +135,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "watching": {
-      setUp: function () {
+      setUp() {
         v.session = {sendAll: test.stub()};
 
         v.watcher = fw.listeners.less;
@@ -143,13 +143,13 @@ isServer && define(function (require, exports, module) {
 
         v.loadDefaults = function () {
           sut.loadDirs['koru/css'] = true;
-          util.extend(sut.loads, util.deepCopy(v.expectedLoads));
-          util.extend(sut.imports, util.deepCopy(v.expectedImports));
-          util.extend(sut.sources, util.deepCopy(v.expectedSources));
+          util.merge(sut.loads, util.deepCopy(v.expectedLoads));
+          util.merge(sut.imports, util.deepCopy(v.expectedImports));
+          util.merge(sut.sources, util.deepCopy(v.expectedSources));
         };
       },
 
-      "test lessimport change": function () {
+      "test lessimport change"() {
         test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-imp.lessimport')
           .returns('@import "imp3.lessimport";\n\n@import "imp4.lessimport";');
 
@@ -171,9 +171,9 @@ isServer && define(function (require, exports, module) {
         refute.called(v.session.sendAll);
       },
 
-      "test sends dependents": function () {
+      "test sends dependents"() {
         test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/less-compiler-test-imp2.lessimport')
-          .returns({toString: function () {return ''}});
+          .returns({toString() {return ''}});
 
         v.expectedImports['koru/css/less-compiler-test-imp2.lessimport']['foo/bar.less'] = true;
 
@@ -187,7 +187,7 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(fst.rm_f, koru.appDir+'/foo/.build/bar.less.css');
       },
 
-      "test less change": function () {
+      "test less change"() {
         test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-test.less')
           .returns('@import "imp3.lessimport"');
 
@@ -210,7 +210,7 @@ isServer && define(function (require, exports, module) {
         refute('koru/css/imp3.lessimport' in sut.sources);
       },
 
-      "test remove": function () {
+      "test remove"() {
         test.stub(fst, 'readFile');
         v.loadDefaults();
 

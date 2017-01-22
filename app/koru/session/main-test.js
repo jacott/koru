@@ -9,25 +9,25 @@ define(function (require, exports, module) {
   const session = require('./main');
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       api.module(null, 'session');
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
       delete session._commands.t;
     },
 
-    "test setup": function () {
+    "test setup"() {
       api.property('_id', () => {
         return "The session _id: "+JSON.stringify(session._id);
       });
       assert.same(session._id, 'default');
     },
 
-    "test provide": function () {
+    "test provide"() {
       refute(session._commands.hasOwnProperty('t'));
 
       refute(session.provide('t', v.t = test.stub()));
@@ -36,7 +36,7 @@ define(function (require, exports, module) {
       assert.same(session._commands.t, v.t);
     },
 
-    "test defining": function () {
+    "test defining"() {
       /**
        * Define a remote proceedure call
        **/

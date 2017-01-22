@@ -5,19 +5,19 @@ isClient && define(function (require, exports, module) {
   var Dom = require('../dom');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
     // see SelectMenu for more comprehensive testing of positioning
 
-    "test appendBelow": function () {
+    "test appendBelow"() {
       test.stub(sut, 'append');
 
       sut.appendBelow('opts');
@@ -25,7 +25,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(sut.append, 'below', 'opts');
     },
 
-    "test appendAbove": function () {
+    "test appendAbove"() {
       test.stub(sut, 'append');
 
       sut.appendAbove('opts');
@@ -33,7 +33,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(sut.append, 'above', 'opts');
     },
 
-    "test supply position": function () {
+    "test supply position"() {
       var popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
       sut.append('below', {container: popup, popup: popup, boundingClientRect: {top: 10, left: 15, height: 20, width: 30}});
       assert.dom('.popup', function () {
@@ -42,7 +42,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test popup": function () {
+    "test popup"() {
       test.spy(sut, 'init');
       var page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);
@@ -60,7 +60,7 @@ isClient && define(function (require, exports, module) {
       refute.called(sut.init);
     },
 
-    "test closes with destroyMeWith": function () {
+    "test closes with destroyMeWith"() {
       v.elm = Dom.h({div: {div: "subject"}, id: 'subject'});
       v.elmCtx = Dom.setCtx(v.elm);
       document.body.appendChild(v.elm);
@@ -79,7 +79,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('#dep');
     },
 
-    "test repositioning": function () {
+    "test repositioning"() {
       var container = Dom.h({class: 'glassPane', div: {class: 'popup', $style: 'position:absolute', div: {input: ''}}});
       var ctx = Dom.setCtx(container);
       test.spy(ctx, 'onDestroy');
@@ -96,7 +96,7 @@ isClient && define(function (require, exports, module) {
       assert.calledOnce(ctx.onDestroy);
     },
 
-    "test handleTab": function () {
+    "test handleTab"() {
       var container =  Dom.h({
         class: 'glassPane', div: {
           form: [
@@ -137,7 +137,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test nesting": function () {
+    "test nesting"() {
       test.spy(sut, 'init');
       var page = Dom.h({div: ['text', {input: ''}]});
       document.body.appendChild(page);

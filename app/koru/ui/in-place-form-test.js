@@ -7,19 +7,19 @@ isClient && define(function (require, exports, module) {
   var ipfTpl = require('../html!./in-place-form-test');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       document.body.appendChild(v.parent = document.createElement('div'));
       v.Ipf = Dom.newTemplate(util.deepCopy(ipfTpl));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test defaults": function () {
+    "test defaults"() {
       var sut = Dom.InPlaceForm.$render({doc: {}});
 
       assert.dom(sut, function () {
@@ -32,7 +32,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test options": function () {
+    "test options"() {
       test.stub(Dom.Form, 'field');
       sut._helpers.field.call(v.opts = {'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
                                name: 'theName', type: 'foo',
@@ -41,7 +41,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Dom.Form.field, {theName: '123'}, 'theName', {type: 'foo', me: 'html me'}, v.opts);
     },
 
-    "test no doc": function () {
+    "test no doc"() {
       var sut = Dom.InPlaceForm.$render({value: "foo"});
 
       assert.dom(sut, function () {
@@ -54,7 +54,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test render": function () {
+    "test render"() {
       var sut = Dom.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
         name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
@@ -71,7 +71,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test custom Show/Edit templates": function () {
+    "test custom Show/Edit templates"() {
       sut.autoRegister(v.Ipf);
       var doc = {autoShowEdit: 'bar'};
       document.body.appendChild(v.Ipf.$autoRender(doc));
@@ -90,7 +90,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test apply event": function () {
+    "test apply event"() {
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(v.clickStub = function (arg) {
         assert.same(this, widget);
@@ -113,7 +113,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
     },
 
-    "test ctrl+enter event": function () {
+    "test ctrl+enter event"() {
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(v.clickStub = function (arg) {
         assert.same(this, widget);
@@ -138,7 +138,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
     },
 
-    "test enterSubmits": function () {
+    "test enterSubmits"() {
       var widget = Dom.InPlaceForm.newWidget({
         doc: {name: 'abc'},
         enterSubmits: true,
@@ -159,7 +159,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.arg, 'new text');
     },
 
-    "test delete event": function () {
+    "test delete event"() {
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
       widget.onDelete(v.clickStub = function () {
         assert.same(this, widget);
@@ -188,7 +188,7 @@ isClient && define(function (require, exports, module) {
       test.spy(Dom.InPlaceForm, '$detachEvents');
     },
 
-    "test swap cancel": function () {
+    "test swap cancel"() {
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm);
@@ -209,7 +209,7 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    "test swap escape": function () {
+    "test swap escape"() {
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = test.stub()}});
@@ -233,7 +233,7 @@ isClient && define(function (require, exports, module) {
       assert.called(v.reload);
     },
 
-    "test swap close": function () {
+    "test swap close"() {
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm);

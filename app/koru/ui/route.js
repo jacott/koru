@@ -419,7 +419,7 @@ define(function(require, exports, module) {
     return options;
   }
 
-  util.extend(Route, {
+  util.merge(Route, {
     root: new Route(),
     pathname,
   });

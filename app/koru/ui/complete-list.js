@@ -11,13 +11,13 @@ define(function(require, exports, module) {
   var v;
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       util.forEach(ctx.data, function (row) {
         elm.appendChild(Row.$render(row));
       });
       Dom.addClass(elm.firstChild, 'selected');
     },
-    $destroyed: function () {
+    $destroyed() {
       v.input.removeEventListener('blur', close);
       v.input.removeEventListener('keydown', keydown, true);
       v = null;
@@ -25,7 +25,7 @@ define(function(require, exports, module) {
   });
 
   Dom.Form.$extend({
-    completeList: function (options) {
+    completeList(options) {
       close();
       if (! options.completeList) return;
       v = {
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mousedown li': function (event) {select(this)},
+    'mousedown li'(event) {select(this)},
   });
 
   function keydown(event) {

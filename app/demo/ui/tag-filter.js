@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   var $ = Dom.current;
 
   Tpl.$helpers({
-    tags: function () {
+    tags() {
       if (! this.list) return;
       if (! this.tag) this.tag = 'All Items';
 
@@ -41,13 +41,13 @@ define(function(require, exports, module) {
   });
 
   Tag.$helpers({
-    selected: function () {
+    selected() {
       Dom.setClass('selected', $.ctx.parentCtx.data.tag === this.tag_text);
     },
   });
 
   Tpl.$events({
-    'click .tag': function (event) {
+    'click .tag'(event) {
       Dom.stopEvent();
       var itemListCtx = Dom.getCtxById('item-list');
       $.ctx.data.tag = $.data(this).tag_text;

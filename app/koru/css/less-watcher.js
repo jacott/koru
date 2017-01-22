@@ -221,7 +221,7 @@ define(function(require, exports, module) {
     get imports() {return imports},
     get sources() {return sources},
     get loadDirs() {return loadDirs},
-    clearGraph: function () {
+    clearGraph() {
       loads = {};
       imports = {};
       sources = {};

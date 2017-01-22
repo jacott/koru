@@ -5,17 +5,17 @@ isClient && define(function (require, exports, module) {
   var Dom = require('../dom');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test standard palette": function () {
+    "test standard palette"() {
       sut.choose('#fffa1387', 'alpha', v.cb = test.stub());
 
       assert.dom('[data-color="ffff00"]', function () {
@@ -30,7 +30,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=hex]', {value: '00ffff87'});
     },
 
-    "test callback on destroy": function () {
+    "test callback on destroy"() {
       sut.choose('#fffa1387', {}, v.cb = test.stub());
 
       Dom.removeId('ColorPicker');
@@ -38,7 +38,7 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, null);
     },
 
-    "test custom button": function () {
+    "test custom button"() {
       sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = test.stub());
 
       TH.click('[name=custom]', 'My prompt');
@@ -46,13 +46,13 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, 'ret_val');
     },
 
-    "test customFieldset": function () {
+    "test customFieldset"() {
       sut.choose('#fffa1387', {alpha: true, customFieldset: Dom.h({div: 'hello', class: 'myCustom'})}, v.cb = test.stub());
 
       assert.dom('.ui-dialog>.myCustom', 'hello');
     },
 
-    "test hue slider": function () {
+    "test hue slider"() {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
       assert.dom('.colorPart.h', function () {
@@ -80,7 +80,7 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, '#00ffff87');
     },
 
-    "test saturation input": function () {
+    "test saturation input"() {
       sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
 
       assert.dom('.colorPart.s', function () {
@@ -105,7 +105,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "hex input": {
-      "test no alpha": function () {
+      "test no alpha"() {
         sut.choose('#ff113387', v.cb = test.stub());
 
         assert.dom('#ColorPicker:not(.alpha).Dialog.Confirm>.dialogContainer>.ui-dialog', function () {
@@ -117,7 +117,7 @@ isClient && define(function (require, exports, module) {
         assert.calledOnceWith(v.cb, '#112233');
       },
 
-      "test alpha": function () {
+      "test alpha"() {
         sut.choose('#ff113387', 'alpha', v.cb = test.stub());
 
         assert.dom('#ColorPicker.alpha', function () {
@@ -129,7 +129,7 @@ isClient && define(function (require, exports, module) {
         assert.calledOnceWith(v.cb, '#11223344');
       },
 
-      "test invalid color": function () {
+      "test invalid color"() {
         sut.choose(null, v.cb = test.stub());
 
         assert.dom('#ColorPicker', function () {

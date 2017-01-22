@@ -1,5 +1,5 @@
 define({
-  load: function (name, req, onload, config) {
+  load(name, req, onload, config) {
     onload.fromText(text(name));
     onload();
     return;

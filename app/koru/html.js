@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   koru.onunload(module, 'reload');
 
   return {
-    load: function (name, req, onload, config) {
+    load(name, req, onload, config) {
       const mod = req.module;
 
       const provider = koru.buildPath(name)+'.html';

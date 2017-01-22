@@ -7,39 +7,39 @@ isClient && define(function(require, exports, module) {
   var $ = Dom.current;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
       Dom.removeChildren(document.body);
       delete Dom.Test;
     },
 
-    "test rendering html template": function () {
+    "test rendering html template"() {
       refute(Dom.Test);
 
       Dom.newTemplate(testTpl);
       assert(Dom.Test.Foo);
 
       Dom.Test.Foo.$helpers({
-        classes: function () {
+        classes() {
           return 'e1 e2';
         },
 
-        attrs: function () {
+        attrs() {
           $.element.setAttribute('data-x', 'x123');
         },
 
-        dotted: function (arg) {
+        dotted(arg) {
           $.element.setAttribute('data-dotted', arg);
         },
       });
 
       Dom.Test.Foo.Bar.$helpers({
-        korulet: function () {
+        korulet() {
           return 'barId';
         }
       });

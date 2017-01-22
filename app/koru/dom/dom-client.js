@@ -57,7 +57,7 @@ define(function(require, exports, module) {
     };
   }
 
-  util.extend(Dom, {
+  util.merge(Dom, {
     Ctx: Ctx,
     current: Ctx.current,
 
@@ -364,7 +364,7 @@ define(function(require, exports, module) {
     },
 
     registerHelpers(helpers) {
-      util.extend(this._helpers, helpers);
+      util.merge(this._helpers, helpers);
       return this;
     },
 
@@ -637,7 +637,7 @@ define(function(require, exports, module) {
     } else {
       var e = document.createEventObject();
     }
-    util.extend(e, args);
+    util.merge(e, args);
     return e;
   }
 

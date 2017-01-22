@@ -7,18 +7,18 @@ define(function (require, exports, module) {
   var Query = require('../query');
 
   geddon.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       Model.Foo = {};
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       delete Model.Foo;
       v = null;
     },
 
-    "test filter": function () {
+    "test filter"() {
       var foo_ids = ["xyz", "def", "abc"],
           doc = {foo_ids: foo_ids};
 
@@ -38,7 +38,7 @@ define(function (require, exports, module) {
       assert.equals(query._fields, {_id: true});
     },
 
-    "test empty filter": function () {
+    "test empty filter"() {
       var foo_ids = ["abc", "def", "xyz"],
           doc = {foo_ids: foo_ids};
 
@@ -50,14 +50,14 @@ define(function (require, exports, module) {
       assert.equals(doc.foo_ids, []);
     },
 
-    "test none": function () {
+    "test none"() {
       var doc = {};
       sut(doc,'foo_ids', true);
 
       refute(doc._errors);
     },
 
-    'test not found': function () {
+    'test not found'() {
       test.stub(Query.prototype, 'count', function () {
         assert.equals(this.wheres, undefined);
         assert.same(this.model, Model.Foo);
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['foo_ids'],[["not_found"]]);
     },
 
-    "test changes only": function () {
+    "test changes only"() {
       var doc = {foo_ids: ["xyz"], changes: {}};
 
       sut(doc,'foo_ids', {changesOnly: true});
@@ -78,7 +78,7 @@ define(function (require, exports, module) {
       refute(doc._errors);
     },
 
-    "test wrong type": function () {
+    "test wrong type"() {
       var doc = {foo_ids: "abc"};
       sut(doc,'foo_ids', true);
 
@@ -86,7 +86,7 @@ define(function (require, exports, module) {
       assert.equals(doc._errors['foo_ids'],[["is_invalid"]]);
     },
 
-    "test using scoped finder": function () {
+    "test using scoped finder"() {
       var doc = {foo_ids: v.foo_ids = ['x', 'y']};
 
       function fooFinder(values) {
@@ -101,10 +101,10 @@ define(function (require, exports, module) {
       refute(doc._errors);
     },
 
-    "test using scoped default": function () {
+    "test using scoped default"() {
       var doc = {
         foo_ids: v.foo_ids = ['x', 'y'],
-        fooFind: function (values) {
+        fooFind(values) {
           v.values = values;
           return {count: test.stub().returns(2)};
         }
@@ -116,7 +116,7 @@ define(function (require, exports, module) {
       refute(doc._errors);
     },
 
-    "test overriding model name": function () {
+    "test overriding model name"() {
       var bar_ids = ['x', 'y'];
 
       var count = test.stub(Query.prototype, 'count').returns(2);
@@ -150,7 +150,7 @@ define(function (require, exports, module) {
       assert.same(query.model, Model.Foo);
     },
 
-    'test using model default': function () {
+    'test using model default'() {
       var foo_ids = ['x', 'y'];
 
       var count = test.stub(Query.prototype, 'count').returns(2);

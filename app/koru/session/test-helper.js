@@ -6,14 +6,14 @@ define(function(require, exports, module) {
   var geddon = TH.geddon;
 
   return TH.util.protoCopy(TH, {
-    sessionConnect: function (ws) {
+    sessionConnect(ws) {
       session.onConnection(ws);
 
       var key = session._sessCounter.toString(36);
       return session.conns[key];
     },
 
-    mockWs: function () {
+    mockWs() {
       var test = geddon.test;
       return {
         upgradeReq: {socket: {}, headers: {}},
@@ -23,7 +23,7 @@ define(function(require, exports, module) {
       };
     },
 
-    mockConnectState: function (v, state) {
+    mockConnectState(v, state) {
       var test = geddon.test;
       state = state || session.state;
       test.stub(state, 'onConnect');

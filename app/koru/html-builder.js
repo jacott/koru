@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   var baseUrl = module.ctx.baseUrl;
 
   return {
-    load: function (name, req, onload) {
+    load(name, req, onload) {
       var html = fs.readFileSync(baseUrl + name + ".html").toString();
       var js = templateCompiler.toJavascript(html);
 

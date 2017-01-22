@@ -77,7 +77,7 @@ define(function(require) {
       // This is what gets displayed at the top of a stack trace. Current
       // format is "[404]" (if no reason is set) or "File not found [404]"
 
-      Object.defineProperty(self, 'message', {get: function () {
+      Object.defineProperty(self, 'message', {get() {
         var code = '[' + this.error + ']';
         if (this.reason == null) return code;
         code = ' ' + code;

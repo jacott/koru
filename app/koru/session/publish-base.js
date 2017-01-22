@@ -26,9 +26,9 @@ define(function(require, exports, module) {
     pubs[name] = func;
   }
 
-  util.extend(publish, {
+  util.merge(publish, {
     get _pubs() {return pubs},
-    _destroy: function (name) {
+    _destroy(name) {
       delete pubs[name];
     },
   });

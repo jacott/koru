@@ -4,17 +4,17 @@ isClient && define(function (require, exports, module) {
   var sut = require('./slider');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test mousedown on slider": function () {
+    "test mousedown on slider"() {
       var slider = sut.$autoRender({pos: .25, callback: v.callback = test.stub()});
 
       slider.style.width = '256px';

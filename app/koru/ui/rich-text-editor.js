@@ -61,14 +61,14 @@ define(function(require, exports, module) {
     justifyRight: true,
     justifyFull: true,
     removeFormat: true,
-    fontName: function (event) {
+    fontName(event) {
       chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
         execCommand('fontName', RichText.fontIdToFace[id]);
         if (Dom.getRange().collapsed)
           return {font: id};
       });
     },
-    fontColor: function (event) {
+    fontColor(event) {
       var range = Dom.getRange();
       var node = range.endContainer;
       if (node && node.nodeType === TEXT_NODE)
@@ -103,14 +103,14 @@ define(function(require, exports, module) {
         color && execCommand(cmd, color);
       });
     },
-    fontSize: function (event) {
+    fontSize(event) {
       chooseFromMenu(event, {list: FONT_SIZE_LIST}, function (ctx, id) {
         execCommand('fontSize', +id);
         if (Dom.getRange().collapsed)
           return {fontSize: id};
       });
     },
-    code: function (event) {
+    code(event) {
       var range = Dom.getRange();
       var sc = range.startContainer;
       var ec = range.endContainer;
@@ -139,7 +139,7 @@ define(function(require, exports, module) {
         notify(ctx, 'force');
       }
     },
-    link: function () {
+    link() {
       var aElm = getTag('A');
       var range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
@@ -160,7 +160,7 @@ define(function(require, exports, module) {
       });
       dialog.querySelector('[name=link]').focus();
     },
-    mention: function (event) {
+    mention(event) {
       var range = Dom.getRange();
       if (! range) return;
 
@@ -213,15 +213,15 @@ define(function(require, exports, module) {
     var ctx = Tpl.$ctx(event.target);
     var origin = event.target;
 
-    options = util.extend({
-      onSelect: function (item) {
+    options = util.merge({
+      onSelect(item) {
         var id = $.data(item).id;
 
         // close dialog before notify to restore range
         Dom.remove(Dom.getClosestClass(item, 'glassPane'));
         notify(ctx, 'force', onSelect(ctx, id));
       },
-      onClose: function () {
+      onClose() {
         ctx.openDialog = null;
       }
     }, options);
@@ -235,7 +235,7 @@ define(function(require, exports, module) {
   }
 
   var codeActions = commandify({
-    language: function (event) {
+    language(event) {
       chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
@@ -245,7 +245,7 @@ define(function(require, exports, module) {
         codeMode.language = id;
       });
     },
-    syntaxHighlight: function (event) {
+    syntaxHighlight(event) {
       var ctx = Tpl.$ctx(event.target);
       var pre = Dom.getClosest(ctx.lastElm, 'pre');
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
@@ -276,7 +276,7 @@ define(function(require, exports, module) {
     bold: false,
     italic: false,
     underline: false,
-    nextSection: function (event) {
+    nextSection(event) {
       var elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
       var nextElm = elm.nextSibling;
@@ -295,7 +295,7 @@ define(function(require, exports, module) {
         temp.parentNode.removeChild(temp);
       }
     },
-    previousSection: function () {
+    previousSection() {
       var elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
       var previousElm = elm.previousSibling;
@@ -314,7 +314,7 @@ define(function(require, exports, module) {
         temp.parentNode.removeChild(temp);
       }
     },
-    newline: function () {
+    newline() {
       execCommand('insertText', '\n');
     },
   });
@@ -365,7 +365,7 @@ define(function(require, exports, module) {
   };
 
   Tpl.$helpers({
-    attrs: function () {
+    attrs() {
       var elm = $.element;
       var options = this.options;
       for (var id in options) {
@@ -428,12 +428,12 @@ define(function(require, exports, module) {
 
     keyMap: keyMap,
 
-    paste: function (htmlText) {
+    paste(htmlText) {
       var html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
-    pasteText: function (text) {
+    pasteText(text) {
       var URL_RE = /(\bhttps?:\/\/\S+)/;
 
       if (Tpl.handleHyperLink && URL_RE.test(text)) {
@@ -462,7 +462,7 @@ define(function(require, exports, module) {
       Tpl.insert(text);
     },
 
-    keydown: function (event) {
+    keydown(event) {
       if (event.ctrlKey) {
         keyMap.exec(event, 'ignoreFocus');
         return;
@@ -486,7 +486,7 @@ define(function(require, exports, module) {
       codeKeyMap.exec(event, 'ignoreFocus');
     },
 
-    paste: function (htmlText) {
+    paste(htmlText) {
       var html = RichText.fromToHtml(Dom.html('<pre><div>'+htmlText+'</div></pre>'));
       Tpl.insert(html.firstChild.firstChild, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
     },
@@ -498,7 +498,7 @@ define(function(require, exports, module) {
   };
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
       ctx.caretMoved = makeSubject({});
@@ -509,17 +509,17 @@ define(function(require, exports, module) {
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
     },
 
-    $destroyed: function (ctx) {
+    $destroyed(ctx) {
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
       Dom.remove(ctx.selectItem);
     },
 
-    title: function (title, action, mode) {
+    title(title, action, mode) {
       return modes[mode].keyMap.getTitle(title, action);
     },
 
-    clear: function (elm) {
+    clear(elm) {
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
       var ctx = Dom.getCtx(elm);
@@ -530,7 +530,7 @@ define(function(require, exports, module) {
       Dom.remove(ctx.selectItem);
     },
 
-    moveLeft: function (editor, mark) {
+    moveLeft(editor, mark) {
       var range = select(editor, 'char', -1);
       if (! range) return;
       if (! mark) {
@@ -546,7 +546,7 @@ define(function(require, exports, module) {
     firstInnerMostNode: firstInnerMostNode,
     lastInnerMostNode: lastInnerMostNode,
 
-    insert: function (arg, inner) {
+    insert(arg, inner) {
       var range = Dom.getRange();
 
       if (typeof arg === 'string')
@@ -583,7 +583,7 @@ define(function(require, exports, module) {
   var FONT_SIZE_TO_EM = RichText.FONT_SIZE_TO_EM;
 
   Tpl.$events({
-    'input': function (event) {
+    'input'(event) {
       var input = event.target;
       var fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
@@ -606,7 +606,7 @@ define(function(require, exports, module) {
         }
       });
     },
-    'paste': function (event) {
+    'paste'(event) {
       var foundText;
       if ('clipboardData' in event) {
         var types = event.clipboardData.types;
@@ -630,17 +630,17 @@ define(function(require, exports, module) {
       }
     },
 
-    mouseup: function () {
+    mouseup() {
       var range = Dom.getRange();
       $.ctx.override = null;
       range && setMode($.ctx, range);
     },
 
-    'click a,button': function (event) {
+    'click a,button'(event) {
       event.preventDefault();
     },
 
-    keydown: function (event) {
+    keydown(event) {
       var mdEditor = this.parentNode;
 
       switch(event.which) {
@@ -658,7 +658,7 @@ define(function(require, exports, module) {
       $.ctx.mode.keydown.call(this, event);
     },
 
-    keypress: function (event) {
+    keypress(event) {
       if (event.which === 0) return; // for firefox
       var ctx = $.ctx;
 
@@ -696,7 +696,7 @@ define(function(require, exports, module) {
       }
     },
 
-    keyup: function () {
+    keyup() {
       var ctx = $.ctx;
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
@@ -1039,7 +1039,7 @@ define(function(require, exports, module) {
   }
 
   Dom.registerHelpers({
-    richTextEditor: function (content, options) {
+    richTextEditor(content, options) {
       return Tpl.$autoRender({content: content, options: options});
     }
   });
@@ -1047,23 +1047,23 @@ define(function(require, exports, module) {
   RichTextMention.init(Tpl);
 
   Link.$extend({
-    $created: function (ctx) {
+    $created(ctx) {
       ctx.data.inputCtx.openDialog = true;
     },
 
-    $destroyed: function (ctx) {
+    $destroyed(ctx) {
       Dom.setRange(ctx.data.range);
       ctx.data.inputElm.focus();
       ctx.data.inputCtx.openDialog = false;
     },
 
-    cancel: function (elm) {
+    cancel(elm) {
       Dom.remove(elm);
     },
   });
 
   Link.$events({
-    'submit': function (event) {
+    'submit'(event) {
       Dom.stopEvent();
       var inputs = this.getElementsByTagName('input');
 
@@ -1085,7 +1085,7 @@ define(function(require, exports, module) {
   }
 
   Tpl.FontColor.$events({
-    'click button': function (event) {
+    'click button'(event) {
       Dom.stopEvent();
       this.focus();
       var type = this.getAttribute('name');

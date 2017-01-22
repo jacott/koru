@@ -7,18 +7,18 @@ isClient && define(function (require, exports, module) {
   const TH                = require('./test-helper');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.menu = Dom.newTemplate(util.deepCopy(buttonMenuTestTpl));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test rendering": function () {
+    "test rendering"() {
       document.body.appendChild(v.menu.$autoRender({}));
 
       assert.dom('#TestButtonMenu', function () {
@@ -28,7 +28,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test dropMenu": function () {
+    "test dropMenu"() {
       document.body.appendChild(v.menu.$autoRender({}));
 
       assert.dom('#FooMenu.buttonMenu', function () {

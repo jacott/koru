@@ -5,74 +5,74 @@ define(function (require, exports, module) {
   var session = require('./main');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.gDict = message.newGlobalDict();
       message.finalizeGlobalDict(v.gDict);
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
-    "test encode undefined": function () {
+    "test encode undefined"() {
       assert.equals(_encode(undefined), v.ans = [1]);
 
       assert.same(_decode(v.ans), undefined);
     },
 
-    "test encode null": function () {
+    "test encode null"() {
       assert.equals(_encode(null), v.ans = [2]);
 
       assert.same(_decode(v.ans), null);
     },
 
-    "test encode true": function () {
+    "test encode true"() {
       assert.equals(_encode(true), v.ans = [3]);
 
       assert.same(_decode(v.ans), true);
     },
 
-    "test encode false": function () {
+    "test encode false"() {
       assert.equals(_encode(false), v.ans = [4]);
 
       assert.same(_decode(v.ans), false);
     },
 
-    "test empty string": function () {
+    "test empty string"() {
       assert.equals(_encode(''), v.ans = [5]);
 
       assert.same(_decode(v.ans), '');
     },
 
-    "test empty array": function () {
+    "test empty array"() {
       assert.equals(_encode([]), v.ans = [6,0]);
 
       assert.equals(_decode(v.ans), []);
     },
 
-    "test empty object": function () {
+    "test empty object"() {
       assert.equals(_encode({}), v.ans = [7,0]);
 
       assert.equals(_decode(v.ans), {});
     },
 
-    "test small string": function () {
+    "test small string"() {
       v.gDict.limit = 0;
       assert.equals(_encode('hé\xff\u20AC', v.gDict),  v.ans = [136, 104, 195, 169, 195, 191, 226, 130, 172]);
 
       assert.same(_decode(v.ans), 'hé\xff\u20AC');
     },
 
-    "test big string": function () {
+    "test big string"() {
       v.gDict.limit = 0;
       var string = new Array(500).join("x");
 
       assert.equals(_decode(_encode(string)).length, string.length);
     },
 
-    "test string in dict": function () {
+    "test string in dict"() {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, "Friday");
       message.addToDict(gDict, "x");
@@ -89,13 +89,13 @@ define(function (require, exports, module) {
       assert.same(_decode(v.ans, gDict), 'new');
     },
 
-    "test small integer": function () {
+    "test small integer"() {
       assert.equals(_encode(1), v.ans = [0x41]);
 
       assert.same(_decode(v.ans), 1);
     },
 
-    "test other numbers": function () {
+    "test other numbers"() {
       assert.same(_decode(_encode(64)), 64);
       assert.same(_decode(_encode(-1)), -1);
 
@@ -114,14 +114,14 @@ define(function (require, exports, module) {
       assert.same(_decode(v.ans5), 256);
     },
 
-    "test date": function () {
+    "test date"() {
       var date = new Date(1402293586434);
       assert.equals(_encode(date), v.ans = [15, 66, 116, 103, 243, 96, 160, 32, 0]);
 
       assert.equals(_decode(v.ans), date);
     },
 
-    "test binary": function () {
+    "test binary"() {
       var ab = new ArrayBuffer(20);
       var u8 = new Uint8Array(ab);
 
@@ -138,13 +138,13 @@ define(function (require, exports, module) {
       assert.equals(ary, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
     },
 
-    "test populated array": function () {
+    "test populated array"() {
       assert.equals(_encode([1 ,2, "hello"]), v.ans = [8, 104, 101, 108, 108, 111, 255, 0, 6, 65, 66, 17, 1, 0, 0]);
 
       assert.equals(_decode(v.ans), [1 ,2, "hello"]);
     },
 
-    "test sparse array": function () {
+    "test sparse array"() {
       var array = [];
       array[130] = "x";
       array[131] = 1;
@@ -154,12 +154,12 @@ define(function (require, exports, module) {
       assert.equals(_decode(v.ans), array);
     },
 
-    "test nested arrays": function () {
+    "test nested arrays"() {
       var orig = [1, 2, [true, null, [undefined, "hello"], 0], 5];
       assert.equals(_decode(_encode(orig)), orig);
     },
 
-    "test populated object": function () {
+    "test populated object"() {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'foo');
       message.finalizeGlobalDict(gDict);
@@ -180,7 +180,7 @@ define(function (require, exports, module) {
       assert.equals(_decode(v.ans, gDict), {foo: 'bar', baz: 'foo'});
     },
 
-    "test large object": function () {
+    "test large object"() {
       var obj = {};
       for(var i = 0; i < 129; ++i) {
         obj[i]=i;
@@ -188,7 +188,7 @@ define(function (require, exports, module) {
       assert.equals(_decode(_encode(obj)), obj);
     },
 
-    "test addToDict": function () {
+    "test addToDict"() {
       var dict = message._newLocalDict();
       assert.equals(message.addToDict(dict, "foo"), 0x100);
 
@@ -209,7 +209,7 @@ define(function (require, exports, module) {
       assert.equals(message.addToDict(dict, "x0"), 257);
     },
 
-    "test encodeDict decodeDict": function () {
+    "test encodeDict decodeDict"() {
       var dict = message._newLocalDict();
 
       message.addToDict(dict, "foo");
@@ -229,7 +229,7 @@ define(function (require, exports, module) {
       assert.same(message.getDictItem([{}, dict], 257), "bár\x00");
     },
 
-    "test global encodeDict decodeDict": function () {
+    "test global encodeDict decodeDict"() {
       var dict = message.newGlobalDict();
 
       message.addToDict(dict, "foo");
@@ -257,7 +257,7 @@ define(function (require, exports, module) {
       assert.same(message.getDictItem([dict, {}], 0xfffd), "foo");
     },
 
-    "test mixed": function () {
+    "test mixed"() {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'baz', 'bif');
       message.finalizeGlobalDict(gDict);
@@ -273,7 +273,7 @@ define(function (require, exports, module) {
       assert.same(result[1][2], 6);
     },
 
-    "test unchanged encoding system": function () {
+    "test unchanged encoding system"() {
       var gDict = message.newGlobalDict();
       message.addToDict(gDict, 'order');
       message.finalizeGlobalDict(gDict);
@@ -289,7 +289,7 @@ define(function (require, exports, module) {
       assert.equals(message.decodeMessage(u8, gDict), obj);
     },
 
-    "test encode/decodeMessage": function () {
+    "test encode/decodeMessage"() {
       var u8 = message.encodeMessage("M", [1, 2, {foo: 'bar'}], v.gDict);
       var data = [];
 
@@ -301,7 +301,7 @@ define(function (require, exports, module) {
       assert.equals(message.decodeMessage(u8.subarray(1), v.gDict), [1, 2, {foo: 'bar'}]);
     },
 
-    "test encode empty message": function () {
+    "test encode empty message"() {
       var u8 = message.encodeMessage("P", [], v.gDict);
       var data = [];
 

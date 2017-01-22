@@ -17,7 +17,7 @@ define(function(require, exports, module) {
   }
 
   Dom.registerHelpers({
-    each: function (func, options) {
+    each(func, options) {
       return each($.element, this, func, options);
     },
   });

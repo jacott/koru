@@ -26,7 +26,7 @@ define(function(require, exports, module) {
 
     closeDefaultDb: closeDefaultDb,
 
-    connect: function (url) {
+    connect(url) {
       return new Connection(connect(url, {db: {native_parser: true}, server: {poolSize: 5}}).wait());
     },
   };
@@ -39,11 +39,11 @@ function Connection(db) {
 Connection.prototype = {
   constructor: Connection,
 
-  table: function (name) {
+  table(name) {
     return new Collection(this._db.collection(name));
   },
 
-  dropTable: function (name) {
+  dropTable(name) {
     var future = new Future;
     try {
       this._db.dropCollection(name, future.resolver());
@@ -54,7 +54,7 @@ Connection.prototype = {
     }
   },
 
-  close: function () {
+  close() {
     return this._db.close();
   },
 };
@@ -67,19 +67,19 @@ function Collection(col) {
 Collection.prototype = {
   constructor: Collection,
 
-  insert: function (doc) {
+  insert(doc) {
     var future = new Future;
     this._col.insert(doc, {safe: true}, future.resolver());
 
     return future.wait();
   },
 
-  koruUpdate: function (doc, changes, dups) {
+  koruUpdate(doc, changes, dups) {
     this.update({_id: doc._id}, changes);
     util.isObjEmpty(dups) || this.update({_id: doc._id}, {$pull: dups});
   },
 
-  update: function (query, changes, options) {
+  update(query, changes, options) {
     query = buildQuery(query);
     var future = new Future;
     if (options)
@@ -90,7 +90,7 @@ Collection.prototype = {
     return future.wait();
   },
 
-  count: function (query, options) {
+  count(query, options) {
     query = buildQuery(query);
     var future = new Future;
     if (options)
@@ -101,11 +101,11 @@ Collection.prototype = {
     return future.wait();
   },
 
-  exists: function (query) {
+  exists(query) {
     return this.count(query, {limit: 1}) !== 0;
   },
 
-  findOne: function (query, options) {
+  findOne(query, options) {
     query = buildQuery(query);
     var future = new Future;
     if (options)
@@ -116,12 +116,12 @@ Collection.prototype = {
     return future.wait();
   },
 
-  find: function (query /*, args */) {
+  find(query /*, args */) {
     query = buildQuery(query);
     return new Cursor(this._col.find.apply(this._col, arguments));
   },
 
-  remove: function (query, options) {
+  remove(query, options) {
     query = buildQuery(query);
     var future = new Future;
     if (options)
@@ -145,11 +145,11 @@ Collection.prototype = {
   indexInformation: genericColFunc('indexInformation'),
   rename: genericColFunc('rename'),
 
-  transaction: function (func) {
+  transaction(func) {
     var tx = this._weakMap.get(util.thread);
     if (! tx) {
       tx = {
-        onAbort: function (func) {
+        onAbort(func) {
           tx._onAborts = {func: func, next: tx._onAborts};
         },
       };
@@ -220,22 +220,22 @@ function Cursor(mcursor) {
 Cursor.prototype = {
   constructor: Cursor,
 
-  sort: function (spec) {
+  sort(spec) {
     this._mcursor.sort(spec);
     return this;
   },
 
-  limit: function (value) {
+  limit(value) {
     this._mcursor.limit(value);
     return this;
   },
 
-  batchSize: function (value) {
+  batchSize(value) {
     this._mcursor.batchSize(value);
     return this;
   },
 
-  forEach: function (func) {
+  forEach(func) {
     try {
       for(var doc = this.next(); doc; doc = this.next()) {
         func(doc);

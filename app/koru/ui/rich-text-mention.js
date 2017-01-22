@@ -13,11 +13,11 @@ define(function(require, exports, module) {
   var execCommand, RichTextEditor;
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       ctx.data.inputCtx.openDialog = true;
     },
 
-    $destroyed: function (ctx, elm) {
+    $destroyed(ctx, elm) {
       try {
         var data = ctx.data;
         data.inputCtx.openDialog = false;
@@ -37,21 +37,21 @@ define(function(require, exports, module) {
 
     revertMention: revertMention,
 
-    init: function (rte) {
+    init(rte) {
       RichTextEditor = rte;
       execCommand = rte.execCommand;
     }
   });
 
   Tpl.$helpers({
-    inlineClass: function () {
+    inlineClass() {
       Dom.setClass('inline', this.span);
     },
-    content: function () {
+    content() {
       return this.value;
     },
 
-    list: function () {
+    list() {
       var frag = document.createDocumentFragment();
       var parentNode = $.element.parentNode;
       var needMore = this.mentions[this.type].list(frag, this.value, $.ctx, parentNode);
@@ -65,21 +65,21 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mouseover .rtMention>div>*': function (event) {
+    'mouseover .rtMention>div>*'(event) {
       Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
       Dom.addClass(this, 'selected');
     },
 
-    'mousedown .rtMention': function (event) {
+    'mousedown .rtMention'(event) {
       Dom.stopEvent();
     },
 
-    'mouseup .rtMention>div>*': function (event) {
+    'mouseup .rtMention>div>*'(event) {
       var ctx = $.ctx;
       acceptItem(event, this);
     },
 
-    'input .rtMention>input': function (event) {
+    'input .rtMention>input'(event) {
       var data = $.ctx.data;
       data.value = this.value;
 
@@ -93,7 +93,7 @@ define(function(require, exports, module) {
       }
     },
 
-    'keydown .rtMention>input': function (event) {
+    'keydown .rtMention>input'(event) {
       switch(event.which) {
       case 9: // tab
         if (event.shiftKey) {

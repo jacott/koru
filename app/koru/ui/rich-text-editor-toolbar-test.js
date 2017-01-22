@@ -10,7 +10,7 @@ isClient && define(function (require, exports, module) {
   var RichText = require('./rich-text');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.editor = sut.$autoRender({content: Dom.h([
@@ -19,7 +19,7 @@ isClient && define(function (require, exports, module) {
         mentions: {'@': {
           title: 'Mention someone',
           buttonClass: 'myButton',
-          list: function () {}
+          list() {}
         }}}});
 
       v.origText = v.editor.value;
@@ -27,13 +27,13 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
     "with code": {
-      setUp: function () {
+      setUp() {
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
@@ -46,13 +46,13 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test data-mode": function () {
+      "test data-mode"() {
         assert.dom('.rtToolbar[data-mode=standard]');
         v.selectCode();
         assert.dom('.rtToolbar[data-mode=code]');
       },
 
-      "test set language": function () {
+      "test set language"() {
         RichTextEditor.languageList = [['c', 'C'], ['lisp', 'Common Lisp, elisp']];
 
         v.selectCode();
@@ -75,7 +75,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=language]', 'Common Lisp');
       },
 
-      "test syntax highlight": function () {
+      "test syntax highlight"() {
         v.selectCode();
 
         var syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor')).mode.actions, 'syntaxHighlight');
@@ -87,7 +87,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test rendering": function () {
+    "test rendering"() {
       assert.dom('#Foo.richTextEditor', function () {
         assert.dom('>.rtToolbar:first-child>div', function () {
           assert.dom('button[name=bold]', 'B', function () {v.bold = this});
@@ -164,7 +164,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test changeing href": function () {
+    "test changeing href"() {
       assert.dom('a', 'the link', function () {
         TH.setRange(this.firstChild, 1);
         TH.trigger(this, 'keyup');
@@ -184,7 +184,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test un/making bold": function () {
+    "test un/making bold"() {
       assert.dom('.richTextEditor>.input', function () {
         this.focus();
         assert.dom('b', 'Hello', function () {
@@ -207,7 +207,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test un/making code": function () {
+    "test un/making code"() {
       assert.dom('.richTextEditor>.input', function () {
         this.focus();
         assert.dom('b', 'Hello', function () {
@@ -227,7 +227,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=code]:not(.on)');
     },
 
-    "test mention button": function () {
+    "test mention button"() {
       assert.dom('b', 'Hello', function () {
         TH.setRange(this.firstChild, 0);
         TH.trigger(this, 'keyup');
@@ -253,7 +253,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "font attributes": {
-      setUp: function () {
+      setUp() {
         assert.dom('b', 'Hello', function () {
           this.focus();
           TH.setRange(this.firstChild, 0, this.firstChild, 3);
@@ -263,7 +263,7 @@ isClient && define(function (require, exports, module) {
       },
 
 
-      "test set fontName": function () {
+      "test set fontName"() {
         RichText.mapFontNames({poster: 'foo font'});
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
@@ -305,7 +305,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('[name=fontName]', 'Sans serif');
       },
 
-      "test set fontSize": function () {
+      "test set fontSize"() {
         TH.mouseDownUp('.rtToolbar [name=fontSize]');
 
         assert.dom('.glassPane', function () {
@@ -321,7 +321,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test set textAlign": function () {
+      "test set textAlign"() {
         TH.mouseDownUp('.rtToolbar [name=textAlign]');
 
         assert.dom('.glassPane .rtTextAlign', function () {
@@ -340,7 +340,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test set fontColor": function () {
+      "test set fontColor"() {
         TH.mouseDownUp('.rtToolbar [name=fontColor]');
 
         assert.dom('#ColorPicker', function () {
@@ -356,7 +356,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test more": function () {
+    "test more"() {
       assert.dom('.rtToolbar:not(.more)', function () {
         TH.mouseDownUp("[name=more]");
         assert.className(this, 'more');

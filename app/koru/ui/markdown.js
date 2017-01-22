@@ -38,7 +38,7 @@ define(function(require, exports, module) {
   }
 
   return {
-    fromHtml: function (html) {
+    fromHtml(html) {
       output = []; needspace = false;
       html && outputChildNodes(html, '*');
       var result = output.join('').trim();
@@ -46,7 +46,7 @@ define(function(require, exports, module) {
       return result;
     },
 
-    toHtml: function (md, wrapper, editable) {
+    toHtml(md, wrapper, editable) {
       md = md || '';
       var hyperlinks = findHyperLinks(md);
       var mdlen = md.length;

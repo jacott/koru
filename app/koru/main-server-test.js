@@ -35,7 +35,7 @@ define(function (require, exports, module) {
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 
       koru.fiberConnWrapper(function (conn, data) {
-        v.thread = util.extend({This: conn, data: data}, util.thread);
+        v.thread = util.merge({This: conn, data: data}, util.thread);
       }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
       assert.called(v.run);
       util.Fiber.args(0, 0)();

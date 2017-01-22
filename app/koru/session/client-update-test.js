@@ -11,7 +11,7 @@ isClient && define(function (require, exports, module) {
   const publish      = require('./publish');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.gDict = message.newGlobalDict();
@@ -41,14 +41,14 @@ isClient && define(function (require, exports, module) {
       };
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('Foo', 'drop');
       dbBroker.clearDbId();
       delete Model._databases.foo01;
       v = null;
     },
 
-    "test isFromServer": function () {
+    "test isFromServer"() {
       test.stub(Query.prototype, 'remove', function () {
         assert.isTrue(v.sess.isUpdateFromServer);
         assert.isTrue(this.isFromServer);
@@ -64,7 +64,7 @@ isClient && define(function (require, exports, module) {
       assert.calledTwice(Query.prototype.remove);
     },
 
-    "test added": function () {
+    "test added"() {
       v.recvA('Foo', 'f123', v.attrs = {name: 'sam', age: 5});
 
       refute(v.Foo.findById('f123')); // only interested in bob
@@ -88,7 +88,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.Foo.query.withDB('foo01').fetchOne().age, 7);
     },
 
-    "test changed": function () {
+    "test changed"() {
       v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
 
@@ -105,7 +105,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.Foo.query.onId('f333').count(1), 0);
     },
 
-    "test changing non existant doc": function () {
+    "test changing non existant doc"() {
       var remove = test.spy(Query.prototype, 'remove');
 
       v.recvC('Foo', 'f222', v.attrs = {age: 7});
@@ -115,7 +115,7 @@ isClient && define(function (require, exports, module) {
 
     },
 
-    "test remove": function () {
+    "test remove"() {
       var foo = v.Foo.create({_id: 'f222', name: 'bob', age: 5});
       var sam = v.Foo.create({_id: 'f333', name: 'sam', age: 5});
 

@@ -4,17 +4,17 @@ define(function (require, exports, module) {
   var markdown = require('./markdown');
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
     },
 
-    tearDown: function () {
+    tearDown() {
       v = null;
     },
 
 
-    "test getMentionIds": function () {
+    "test getMentionIds"() {
       var md = "Hello @[Bob](123), how is @[Sally](567) but this is a [link](bad)";
       assert.equals(markdown.getMentionIds(md), ['123', '567']);
     },

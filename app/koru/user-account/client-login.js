@@ -5,29 +5,29 @@ define(function(require, exports, module) {
 
   var sessMap = {};
 
-  util.extend(exports, {
-    onChange: function (session, func) {
+  util.merge(exports, {
+    onChange(session, func) {
       var subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
       return subject.onChange(func);
     },
-    setUserId: function (session, id) {
+    setUserId(session, id) {
       util.thread.userId = id;
       setState(session, 'change');
     },
 
-    ready: function (session) {
+    ready(session) {
       setState(session, 'ready');
     },
 
-    failed: function (session) {
+    failed(session) {
       setState(session, 'failure');
     },
 
-    wait: function (session) {
+    wait(session) {
       setState(session, 'wait');
     },
 
-    getState: function (session) {
+    getState(session) {
       var subject = sessMap[session._id];
       return subject && subject.state;
     }

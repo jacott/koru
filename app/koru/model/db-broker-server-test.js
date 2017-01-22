@@ -12,18 +12,18 @@ define(function (require, exports, module) {
   const Future   = util.Future;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       TH.noInfo();
     },
 
-    tearDown: function () {
+    tearDown() {
       Model._destroyModel('TestModel', 'drop');
       v = null;
     },
 
-    "test dbBroker.db": function () {
+    "test dbBroker.db"() {
       var TestModel = Model.define('TestModel');
       TestModel.defineFields({name: 'text'});
       var defDb = Driver.defaultDb;

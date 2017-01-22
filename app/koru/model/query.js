@@ -92,7 +92,7 @@ define(function(require, exports, module) {
       if (typeof params === 'string')
         conditions[params] = value;
       else
-        util.extend(conditions, params);
+        util.merge(conditions, params);
       return query;
     }
 

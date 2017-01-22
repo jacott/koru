@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   var IGNORE = {data: true, list: true};
 
   Tpl.$helpers({
-    attrs: function () {
+    attrs() {
       var elm = $.element;
       var data = this;
 
@@ -29,14 +29,14 @@ define(function(require, exports, module) {
   });
 
   Tpl.$extend({
-    $destroyed: function (ctx) {
+    $destroyed(ctx) {
       Dom.remove(ctx.listElm);
       ctx.hideMenu && ctx.hideMenu();
     },
   });
 
   Dom.registerHelpers({
-    buttonMenu: function (options) {
+    buttonMenu(options) {
       var list = (Dom.lookupTemplate.call($.ctx.template, options.list) ||
                   Dom.lookupTemplate(options.list))
             .$render(options.data||{});

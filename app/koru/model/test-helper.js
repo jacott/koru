@@ -9,14 +9,14 @@ define(function(require, exports, module) {
   let sendM;
 
   return TH.util.protoCopy(TH, {
-    testCase: function () {
+    testCase() {
       var tc = testCase.apply(TH, arguments);
       tc.before(stubSendM);
       tc.after(unstubSendM);
       return tc;
     },
 
-    matchModel: function (expect) {
+    matchModel(expect) {
       return TH.match(function (actual) {
         if (expect === actual) return true;
         if (expect && actual && expect.constructor === actual.constructor &&

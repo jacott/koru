@@ -14,18 +14,18 @@ isClient && define(function (require, exports, module) {
   var ctrl = KeyMap.ctrl;
 
   TH.testCase(module, {
-    setUp: function () {
+    setUp() {
       test = this;
       v = {};
       v.tpl = Dom.newTemplate(util.deepCopy(RichTextEditorTpl));
     },
 
-    tearDown: function () {
+    tearDown() {
       TH.domTearDown();
       v = null;
     },
 
-    "test attrs helper": function () {
+    "test attrs helper"() {
       var elm = sut.$autoRender({
         content: '', options: {
           class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
@@ -43,7 +43,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test get/set value": function () {
+    "test get/set value"() {
       document.body.appendChild(v.tpl.$autoRender({content: null}));
 
       assert.dom('.input', function () {
@@ -55,9 +55,9 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test forward/back char": function () {
+    "test forward/back char"() {
       runSubTests({
-        "within text node ": function () {
+        "within text node "() {
           this.appendChild(RichText.toHtml("hello world"));
           TH.setRange(sut.firstInnerMostNode(this),5);
 
@@ -69,7 +69,7 @@ isClient && define(function (require, exports, module) {
           assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this), 6);
         },
 
-        "next line": function () {
+        "next line"() {
           this.innerHTML = '<div><div>hello</div><div>world</div></div>';
           TH.setRange(sut.firstInnerMostNode(this),5);
 
@@ -81,7 +81,7 @@ isClient && define(function (require, exports, module) {
           assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this.firstChild.lastChild), 0);
         },
 
-        "block nested": function () {
+        "block nested"() {
           this.innerHTML = "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
           var iElm = this.querySelector('i').firstChild;
           TH.setRange(iElm, 4);
@@ -94,7 +94,7 @@ isClient && define(function (require, exports, module) {
           assert.rangeEquals(iElm, 4, this.childNodes[1].firstChild, 0);
         },
 
-        "span nested": function () {
+        "span nested"() {
           this.innerHTML = "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
           TH.setRange(sut.firstInnerMostNode(this), 6);
 
@@ -120,7 +120,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test focus": function () {
+    "test focus"() {
       test.stub(document, 'execCommand');
       document.body.appendChild(sut.$autoRender({content: '', options: {focusout: v.focusout = test.stub()}}));
       assert.dom('.richTextEditor:not([focusout])>.input', function () {
@@ -139,7 +139,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test bold, italic, underline": function () {
+    "test bold, italic, underline"() {
       v.ec = test.stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
@@ -158,7 +158,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "pre": {
-      setUp: function () {
+      setUp() {
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
         v.selectCode = function () {
           var node = Dom('.input pre>div').firstChild;
@@ -168,7 +168,7 @@ isClient && define(function (require, exports, module) {
         };
       },
 
-      "test load languages": function () {
+      "test load languages"() {
         var langs = test.stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
         assert.dom('.input', function () {
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
@@ -186,7 +186,7 @@ isClient && define(function (require, exports, module) {
 
       },
 
-      "test set language": function () {
+      "test set language"() {
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
@@ -204,7 +204,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('pre[data-lang="ruby"]');
       },
 
-      "test syntax highlight": function () {
+      "test syntax highlight"() {
         var highlight = test.stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
         assert.dom('.input', function () {
           this.focus();
@@ -254,7 +254,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(koru.globalCallback, 'error');
       },
 
-      "test on selection": function () {
+      "test on selection"() {
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
@@ -280,7 +280,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test mouseup on/off": function () {
+      "test mouseup on/off"() {
          assert.dom('.input', function () {
            this.focus();
            assert.same(sut.$ctx(this).mode.type, 'standard');
@@ -294,7 +294,7 @@ isClient && define(function (require, exports, module) {
          });
       },
 
-      "test on empty": function () {
+      "test on empty"() {
         assert.dom('.input', function () {
           this.focus();
           TH.setRange(this);
@@ -308,7 +308,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test fontSize": function () {
+    "test fontSize"() {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{font: 'bold', $size: "1"},
                                                                    {span: 'big', $style: "font-size: xx-large"}])}));
 
@@ -339,7 +339,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test fontColor": function () {
+    "test fontColor"() {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: {span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
       assert.dom('.input font span', function () {
@@ -426,7 +426,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test inline code on selection": function () {
+    "test inline code on selection"() {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {
@@ -491,7 +491,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test title": function () {
+    "test title"() {
       var keyMap = test.stub(sut.modes.standard.keyMap, 'getTitle');
       sut.title('foo', 'insertOrderedList', 'standard');
       assert.calledWith(keyMap, 'foo', 'insertOrderedList');
@@ -501,7 +501,7 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(keyMap, 'foo', 'bar');
     },
 
-    "test lists": function () {
+    "test lists"() {
       v.ec = test.stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
@@ -515,7 +515,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test textAlign": function () {
+    "test textAlign"() {
       v.ec = test.stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
@@ -538,7 +538,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test removeFormat": function () {
+    "test removeFormat"() {
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({b: 'foo'})}));
 
       assert.dom('.input', function () {
@@ -552,7 +552,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test indent, outdent": function () {
+    "test indent, outdent"() {
       v.ec = test.stub(document, 'execCommand');
       var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
 
@@ -578,7 +578,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "paste": {
-      setUp: function () {
+      setUp() {
         v.ec = test.stub(document, 'execCommand');
         v.event = {
           clipboardData: {
@@ -609,14 +609,14 @@ isClient && define(function (require, exports, module) {
         v.insertText = v.ec.withArgs('insertText').returns(true);
       },
 
-      tearDown: function () {
+      tearDown() {
       },
 
-      "test wiried": function () {
+      "test wiried"() {
         assert.equals(v.slot, ['paste', '', v.origPaste]);
       },
 
-      "test plain text": function () {
+      "test plain text"() {
         v.event.clipboardData = {
           types: ['text/plain'],
           getData: test.stub().withArgs('text/plain').returns('containshttps://nolink https:/a/link'),
@@ -627,7 +627,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.insertText, 'insertText', false, 'containshttps://nolink https:/a/link');
       },
 
-      "test text hyperlinks": function () {
+      "test text hyperlinks"() {
         sut.handleHyperLink = function (text) {
           if (text === 'https://real/link')
             return Dom.h({a: 'my link', $href: 'http://foo'});
@@ -647,7 +647,7 @@ isClient && define(function (require, exports, module) {
 
       },
 
-      "test no clipboard": function () {
+      "test no clipboard"() {
         delete v.event.clipboardData;
 
         v.paste(v.event);
@@ -655,7 +655,7 @@ isClient && define(function (require, exports, module) {
         refute.called(Dom.stopEvent);
       },
 
-      "test no insertHTML": function () {
+      "test no insertHTML"() {
         v.insertHTML.returns(false);
 
         v.paste(v.event);
@@ -664,7 +664,7 @@ isClient && define(function (require, exports, module) {
         assert.called(Dom.stopEvent);
       },
 
-      "test insertHTML": function () {
+      "test insertHTML"() {
         v.insertHTML.returns(true);
 
         v.paste(v.event);
@@ -674,7 +674,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
       },
 
-      "test pre": function () {
+      "test pre"() {
         v.insertHTML.returns(true);
         v.input.parentNode.value = Dom.h({pre: {div: 'paste before'}});
         assert.dom('.input', function () {
@@ -691,7 +691,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test empty": function () {
+    "test empty"() {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
       Dom.flushNextFrame();
 
@@ -703,7 +703,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test blockquote": function () {
+    "test blockquote"() {
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
       Dom.flushNextFrame();
@@ -719,13 +719,13 @@ isClient && define(function (require, exports, module) {
     },
 
     "links": {
-      setUp: function () {
+      setUp() {
         document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
 
         Dom.flushNextFrame();
       },
 
-      "test changing a link": function () {
+      "test changing a link"() {
         assert.dom('a', 'world', function () {
           TH.setRange(this.firstChild, 3);
           v.pos = this.getBoundingClientRect();
@@ -760,7 +760,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test adding link with selection": function () {
+      "test adding link with selection"() {
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 0, this.firstChild, 4);
           v.pos = Dom.getRange().getBoundingClientRect();
@@ -791,7 +791,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test adding link no selection": function () {
+      "test adding link no selection"() {
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 2);
         });
@@ -815,7 +815,7 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test adding link no caret": function () {
+      "test adding link no caret"() {
         window.getSelection().removeAllRanges();
 
         TH.keydown('.input', "K", {ctrlKey: true});
@@ -823,7 +823,7 @@ isClient && define(function (require, exports, module) {
         refute.dom('.rtLink');
       },
 
-      "test canceling link": function () {
+      "test canceling link"() {
         assert.dom('.richTextEditor>.input', function () {
           v.orig = this.outerHTML;
           assert.dom('b', 'Hello', function () {

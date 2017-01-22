@@ -55,7 +55,7 @@ define(function(require, exports, module) {
           }
         },
 
-        replaceIds: function (newIds) {
+        replaceIds(newIds) {
           var set = Object.create(null);
           for(var i=0;i < obs.length;++i) {
             var ob = obs[i];

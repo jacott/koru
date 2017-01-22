@@ -32,7 +32,7 @@ define(function(require, exports, module) {
   };
 
   Tpl.$helpers({
-    htmlAttrs: function () {
+    htmlAttrs() {
       var options = this;
       var elm = $.element;
 
@@ -43,7 +43,7 @@ define(function(require, exports, module) {
       }
     },
 
-    field: function () {
+    field() {
       var options = this;
 
       if (options.editTpl) return options.editTpl.$autoRender(options);
@@ -68,7 +68,7 @@ define(function(require, exports, module) {
       return Dom.Form.field(doc, name, fieldOptions, options);
     },
 
-    deleteButton: function () {
+    deleteButton() {
       var elm = $.element;
 
       if (! this.deleteName)
@@ -84,23 +84,23 @@ define(function(require, exports, module) {
       return elm;
     },
 
-    applyName: function () {
+    applyName() {
       return this.applyName || 'Apply';
     },
   });
 
   Tpl.GenericShow.$helpers({
-    label: function () {
+    label() {
       return util.capitalize(util.humanize(this.options.name));
     },
-    name: function () {
+    name() {
       return this.options.name;
     },
 
-    classes: function () {
+    classes() {
       return this.options.name+"-field";
     },
-    value: function () {
+    value() {
       return this.doc[this.options.name];
     },
   });
@@ -121,7 +121,7 @@ define(function(require, exports, module) {
   Tpl.$events({
     'submit': submit,
 
-    'keydown': function (event) {
+    'keydown'(event) {
       switch (event.which) {
       case 13:
         if (! event.shiftKey && (event.ctrlKey || $.ctx.data.enterSubmits)) {
@@ -136,7 +136,7 @@ define(function(require, exports, module) {
       }
     },
 
-    'click [name=delete]': function (event) {
+    'click [name=delete]'(event) {
       Dom.stopEvent();
       var ctx = Dom.getCtx(this);
       var widget = ctx._widget;
@@ -145,7 +145,7 @@ define(function(require, exports, module) {
         classes: 'warn cl',
         okay: 'Delete',
         content: ctx.data.deleteConfirmMsg || 'Are you sure you want to delete this?',
-        callback: function (confirmed) {
+        callback(confirmed) {
           if (confirmed) {
             widget._onDelete && widget._onDelete();
           }
@@ -153,7 +153,7 @@ define(function(require, exports, module) {
       });
     },
 
-    'click [name=cancel]': function (event) {
+    'click [name=cancel]'(event) {
       Dom.stopEvent();
       cancel(this);
     },
@@ -161,17 +161,17 @@ define(function(require, exports, module) {
 
 
   Tpl.$extend({
-    $created: function (ctx, elm) {
+    $created(ctx, elm) {
       var editTpl = ctx.data && ctx.data.editTpl;
       if (editTpl && '$opened' in editTpl) {
         editTpl.$opened(elm);
       }
     },
-    newWidget: function (options) {
+    newWidget(options) {
       return new Widget(options);
     },
 
-    swapFor: function (elm, options) {
+    swapFor(elm, options) {
       var widget = new Widget(options);
       elm.parentNode.replaceChild(widget.element, elm);
       widget.swap = elm;
@@ -182,9 +182,9 @@ define(function(require, exports, module) {
       return widget;
     },
 
-    autoRegister: function (template, func) {
+    autoRegister(template, func) {
       template.$events({
-        'click .ui-editable': function (event) {
+        'click .ui-editable'(event) {
           Dom.stopEvent();
           var target = this;
           if (Dom.matches(target, '.readOnly *')) return;
@@ -218,7 +218,7 @@ define(function(require, exports, module) {
   });
 
   Dom.registerHelpers({
-    editInPlace: function (options) {
+    editInPlace(options) {
       var elm = $.element;
 
       if (elm.nodeType !== document.ELEMENT_NODE) {
