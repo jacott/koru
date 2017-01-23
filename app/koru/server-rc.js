@@ -32,7 +32,7 @@ define(function(require, exports, module) {
     const clients = {};
     for (let key in session.conns) {
       const conn = session.conns[key];
-      const cs = clients[conn.engine];
+      let cs = clients[conn.engine];
       if (! cs) cs = clients[conn.engine] = {};
       cs[key] = newConn(conn);
     }
