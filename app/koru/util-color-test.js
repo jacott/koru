@@ -2,17 +2,8 @@ define(function (require, exports, module) {
   const TH     = require('./test');
 
   const uColor = require('./util-color');
-  var v;
 
   TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
-
-    tearDown() {
-      v = null;
-    },
-
     "test hex2Style"() {
       assert.equals(uColor.hex2Style(''), "");
       assert.equals(uColor.hex2Style('#x'), "rgba(0,0,0,0)");
@@ -140,7 +131,7 @@ define(function (require, exports, module) {
       assert.same(uColor.contrastColor('#717a1d'), '#feffa0');
       assert.same(uColor.contrastColor('#111a1d'), '#cbd6db');
 
-      assert.same(uColor.contrastColor('#717a9d'), '#000223');
+      assert.same(uColor.contrastColor('#71aa9d'), '#001201');
       assert.same(uColor.contrastColor('#11fafd'), '#003f46');
     },
 

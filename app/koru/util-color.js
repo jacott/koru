@@ -6,13 +6,16 @@ define(function(require, exports, module) {
   const boarderColors = {};
 
   const tmpStyle = {};
-  const RGBA_RE = /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
+  const RGBA_RE =
+    /rgba?\s*\((?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*,\s*)(?:\s*(\d+)\s*)(?:,\s*([.\d]+))?\)/;
   const HEX_RE = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i;
 
-  exports = {
-    hex2rgb: hex2rgb,
+  const DARK = 60, VERY_DARK = 40, VERY_LIGHT = 85;
 
-    RGBA_RE: RGBA_RE,
+  exports = {
+    hex2rgb,
+
+    RGBA_RE,
 
     toRGB(input) {
       if (typeof input === 'string') {
@@ -29,20 +32,16 @@ define(function(require, exports, module) {
 
     toHex(input) {
       const rgb = exports.toRGB(input);
-      if (rgb)
-        return '#' + rgb2hex(rgb);
-      return '';
+      return rgb ? '#' + rgb2hex(rgb) : '';
     },
 
-    rgb2hex(rgb, prefix) {
-      if (prefix == null) prefix = '#';
+    rgb2hex(rgb, prefix='#') {
       return prefix + rgb2hex(rgb);
     },
 
     backgroundColorStyle(color) {
       exports.setBackgroundColorStyle(tmpStyle, color);
-      return 'background-color:'+tmpStyle.backgroundColor +
-        ";color:"+tmpStyle.color;
+      return `background-color:${tmpStyle.backgroundColor};color:${tmpStyle.color}`;
     },
 
     setBackgroundColorStyle(style, color) {
@@ -67,7 +66,8 @@ define(function(require, exports, module) {
 
       const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
       const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
+      let h, s;
+      const l = (max + min) / 2;
 
       if (max == min) {
         h = s = 0;
@@ -82,12 +82,12 @@ define(function(require, exports, module) {
         h /= 6;
       }
 
-      return {h: h, s: s, l: l};
+      return {h, s, l};
     },
 
     hsl2rgb(hsl) {
       let r, g, b;
-      const h = hsl.h, s = hsl.s, l = hsl.l;
+      const {h, s, l} = hsl;
 
       if (s == 0) {
         r = g = b = l;
@@ -115,10 +115,10 @@ define(function(require, exports, module) {
     colorOnLight(color) {
       const lab = hex2lab(color);
 
-      if (lab.l < 60)
+      if (lab.l < DARK)
         return color;
 
-      lab.l = 60;
+      lab.l = DARK;
       return lab2hex(lab);
     },
 
@@ -129,12 +129,12 @@ define(function(require, exports, module) {
       cc = hex2lab(color);
       const l = cc.l;
 
-      if (l < 60) {
+      if (l < DARK) {
         cc = 'dark';
       } else {
         cc = 'light';
       }
-      if (l <= 40 || l >= 85) cc = 'very' + cc;
+      if (l <= VERY_DARK || l >= VERY_LIGHT) cc = 'very' + cc;
 
       return colorClass[color] = cc;
     },
@@ -184,12 +184,12 @@ define(function(require, exports, module) {
 
     const {l} = color;
 
-    if (l < 50) {
+    if (l < DARK) {
       color = light;
-      if (l > 20) color.l = 99;
+      if (l > VERY_DARK) color.l = 99;
     } else {
       color = dark;
-      if (l < 75) color.l = 1;
+      if (l < VERY_LIGHT) color.l = 1;
     }
     return lab2hex(color);
   }
@@ -204,26 +204,18 @@ define(function(require, exports, module) {
   }
 
   function rgb2hex(rgb) {
-    let {a} = rgb;
-    if (a != null)
-      a = alphaFracToHex(rgb.a);
-
-    if (a === 'ff' || a == null)
-      a = '';
-    return byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b)+a;
+    const a = rgb.a == null ? '' : alphaFracToHex(rgb.a);
+    return byte2hex(rgb.r)+ byte2hex(rgb.g)+ byte2hex(rgb.b)+(a === 'ff' ? '' : a);
   }
 
   function toRgbStyle(input) {
     const rgb = exports.toRGB(input);
-
-    let result = rgb.r + ', ' + rgb.g + ', ' + rgb.b;
+    const result = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
 
     if (rgb.a !== 1)
-      result =  'rgba(' + result + ', ' + alphaHexToFrac(rgb.a);
+      return `rgba(${result}, ${alphaHexToFrac(rgb.a)})`;
     else
-      result = 'rgb(' + result;
-
-    return result + ')';
+      return `rgb(${result})`;
   }
 
   function alphaHexToFrac(a) {
@@ -235,15 +227,14 @@ define(function(require, exports, module) {
   function alphaFracToHex(frac) {
     let a = (frac * 2560000) - 1280000;
     if (a > 0) a = a*127/128;
-    a = Math.round(a/10000) + 128;
-    return byte2hex(a);
+    return byte2hex(Math.round(a/10000) + 128);
   }
 
   function hex2lab(color) {
-    color = hex2rgb(color);
-    const r = rgb2xyz(color.r);
-    const g = rgb2xyz(color.g);
-    const b = rgb2xyz(color.b);
+    const rgb = hex2rgb(color);
+    const r = rgb2xyz(rgb.r);
+    const g = rgb2xyz(rgb.g);
+    const b = rgb2xyz(rgb.b);
 
     const x = xyz2lab((.4124564 * r + .3575761 * g + .1804375 * b) / .95047);
     const y = xyz2lab((.2126729 * r + .7151522 * g + .0721750 * b));
@@ -260,10 +251,10 @@ define(function(require, exports, module) {
   }
 
   function lab2hex(color) {
-    let y = (color.l + 16) / 116, x = y + color.a / 500, z = y - color.b / 200;
-    x = lab2xyz(x) * .95047;
-    y = lab2xyz(y);
-    z = lab2xyz(z) * 1.08883;
+    const c1 = (color.l + 16) / 116,
+          x = lab2xyz(c1 + color.a / 500) * .95047,
+          y = lab2xyz(c1),
+          z = lab2xyz(c1 - color.b / 200) * 1.08883;
 
     return "#"+
       xyz2hex(3.2404542 * x - 1.5371385 * y - .4985314 * z)+
