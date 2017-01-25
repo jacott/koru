@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var makeSubject = require('../make-subject');
-  var koru = require('../main');
+  const koru        = require('../main');
+  const makeSubject = require('../make-subject');
+  const util        = require('../util');
 
-  var sessMap = {};
+  const sessMap = {};
 
   util.merge(exports, {
     onChange(session, func) {
-      var subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
+      const subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
       return subject.onChange(func);
     },
     setUserId(session, id) {
@@ -28,13 +28,13 @@ define(function(require, exports, module) {
     },
 
     getState(session) {
-      var subject = sessMap[session._id];
+      const subject = sessMap[session._id];
       return subject && subject.state;
     }
   });
 
   function setState(session, state) {
-    var subject = sessMap[session._id];
+    const subject = sessMap[session._id];
     if (! subject) return;
     subject.state = state;
     subject.notify(state);

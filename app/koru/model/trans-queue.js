@@ -8,17 +8,18 @@ define(function(require) {
   const TransQueue = {
     transaction(db, body) {
       let list = successMap.get(util.thread);
+      let prevTime;
       const firstLevel = list === undefined;
       if (firstLevel) {
         successMap.set(util.thread, list = []);
-        var prevTime = util.thread.date;
+        prevTime = util.thread.date;
         let now = util.dateNow();
         if (now === lastTime)
           now = lastTime+=1;
         util.thread.date = lastTime = now;
       }
       try {
-        var result = db.transaction(tx => body.call(db, tx));
+        const result = db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
           successMap.set(util.thread, false);
           list.forEach(f => f());

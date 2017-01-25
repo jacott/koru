@@ -263,7 +263,7 @@ define(function(require, exports, module) {
     get classMethods() {return this.constructor;}
 
     $inspect() {
-      return "{Model: " + this.constructor.modelName + "_" + this._id + "  " + this.name + "}";
+      return `{Model: ${this.constructor.modelName}_${this._id} ${this.name||''}}`;
     }
 
     $save(force) {

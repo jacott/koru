@@ -1075,6 +1075,11 @@ define(function (require, exports, module) {
 
       },
 
+      "test $inspect"() {
+        const doc = new v.TestModel({_id: 'id123', name: 'bar'});
+        assert.equals(doc.$inspect(), '{Model: TestModel_id123 bar}');
+      },
+
       "test toId"() {
         const doc = new v.TestModel({_id: 'theId'});
 
