@@ -10,8 +10,6 @@ define(function(require, exports, module) {
 
   let emailConfig;
 
-  const UserAccount = exports;
-
   class UserLogin extends Model.BaseModel {
     unexpiredTokens() {
       const tokens = this.tokens;
@@ -57,64 +55,7 @@ define(function(require, exports, module) {
     },
   });
 
-  session.defineRpc('SRPBegin', SRPBegin);
-
-  function SRPBegin(request) {
-    const doc = UserLogin.findBy('email', request.email);
-    if (! doc) throw new koru.Error(403, 'failure');
-    const srp = new SRP.Server(doc.srp);
-    this.$srp = srp;
-    this.$srpUserAccount = doc;
-    return srp.issueChallenge({A: request.A});
-  }
-
-  session.defineRpc('SRPLogin', SRPLogin);
-
-  function SRPLogin(response) {
-    UserAccount.assertResponse(this, response);
-    const doc = this.$srpUserAccount;
-    const token = doc.makeToken();
-    doc.$$save();
-    const result = {
-      HAMK: this.$srp && this.$srp.HAMK,
-      userId: this.userId = doc.userId,
-      loginToken: doc._id + '|' + token,
-    };
-    this.$srp = null;
-    this.$srpUserAccount = null;
-    return result;
-  }
-
-  const VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {
-    identity: 'string', salt: 'string', verifier: 'string'};
-
-  session.defineRpc('SRPChangePassword', function (response) {
-    UserAccount.assertResponse(this, response);
-
-    Val.assertCheck(response.newPassword, VERIFIER_SPEC);
-
-
-    if (UserAccount.interceptChangePassword)
-      UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
-    else
-      this.$srpUserAccount.$update({srp: response.newPassword});
-
-    const result = {
-      HAMK: this.$srp && this.$srp.HAMK,
-    };
-    this.$srp = null;
-    this.$srpUserAccount = null;
-    return result;
-  });
-
-  session.defineRpc('resetPassword', function (token, passwordHash) {
-    const result = UserAccount.resetPassword(token, passwordHash);
-    const lu = result[0];
-    this.send('VT', lu._id + '|' + result[1]);
-    this.userId = lu.userId;
-  });
-
-  util.merge(UserAccount, {
+  const UserAccount = module.exports = {
     init() {
       session.provide('V', onMessage);
     },
@@ -123,12 +64,11 @@ define(function(require, exports, module) {
       session.unprovide('V');
     },
 
+    UserLogin,
     /**
      * @deprecated
      **/
     model: UserLogin,
-
-    UserLogin,
 
     resetPassword(token, passwordHash) {
       Val.ensureString(token);
@@ -234,6 +174,77 @@ define(function(require, exports, module) {
     SRPLogin(state, response) {
       return SRPLogin.call(state, response);
     },
+
+    logout(_id, token) {
+      UserLogin.onId(_id).update({['tokens.'+token]: undefined});
+    },
+
+    logoutOtherClients(_id, token) {
+      const lu = UserLogin.findById(_id);
+      if (lu) {
+        const mod = {};
+        if (lu.tokens[token])
+          mod[token] = lu.tokens[token];
+        UserLogin.where({_id: lu._id}).update('tokens', mod);
+      }
+    },
+  };
+
+  session.defineRpc('SRPBegin', SRPBegin);
+
+  function SRPBegin(request) {
+    const doc = UserLogin.findBy('email', request.email);
+    if (! doc) throw new koru.Error(403, 'failure');
+    const srp = new SRP.Server(doc.srp);
+    this.$srp = srp;
+    this.$srpUserAccount = doc;
+    return srp.issueChallenge({A: request.A});
+  }
+
+  session.defineRpc('SRPLogin', SRPLogin);
+
+  function SRPLogin(response) {
+    UserAccount.assertResponse(this, response);
+    const doc = this.$srpUserAccount;
+    const token = doc.makeToken();
+    doc.$$save();
+    const result = {
+      HAMK: this.$srp && this.$srp.HAMK,
+      userId: this.userId = doc.userId,
+      loginToken: doc._id + '|' + token,
+    };
+    this.$srp = null;
+    this.$srpUserAccount = null;
+    return result;
+  }
+
+  const VERIFIER_SPEC = UserAccount.VERIFIER_SPEC = {
+    identity: 'string', salt: 'string', verifier: 'string'};
+
+  session.defineRpc('SRPChangePassword', function (response) {
+    UserAccount.assertResponse(this, response);
+
+    Val.assertCheck(response.newPassword, VERIFIER_SPEC);
+
+
+    if (UserAccount.interceptChangePassword)
+      UserAccount.interceptChangePassword(this.$srpUserAccount, response.newPassword);
+    else
+      this.$srpUserAccount.$update({srp: response.newPassword});
+
+    const result = {
+      HAMK: this.$srp && this.$srp.HAMK,
+    };
+    this.$srp = null;
+    this.$srpUserAccount = null;
+    return result;
+  });
+
+  session.defineRpc('resetPassword', function (token, passwordHash) {
+    const result = UserAccount.resetPassword(token, passwordHash);
+    const lu = result[0];
+    this.send('VT', lu._id + '|' + result[1]);
+    this.userId = lu.userId;
   });
 
   function configureEmail() {
@@ -253,37 +264,25 @@ define(function(require, exports, module) {
     const cmd = data[0];
     let token;
     switch(cmd) {
-    case 'L':
-      const pair = data.slice(1).toString().split('|');
-      const lu = UserLogin.findById(pair[0]);
+    case 'L': {
+      const [_id, token] = getToken(data);
+      const lu = _id && UserLogin.findById(_id);
 
-      if (lu && lu.unexpiredTokens()[pair[1]]) {
+      if (lu && lu.unexpiredTokens()[token]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
       } else {
         conn.send('VF');
       }
-      break;
-    case 'X': // logout me
-      token = getToken(data);
-      if (token) {
-        const mod = {};
-        mod['tokens.'+token] = undefined;
-        UserLogin.where({userId: conn.userId}).update(mod);
-      }
+    } break;
+    case 'X': { // logout me
+      const [_id, token] = getToken(data);
+      token && UserAccount.logout(_id, token);
       conn.userId = null; // will send a VS + VC. See server-connection
-      break;
-    case 'O': // logoutOtherClients
+    } break;
+    case 'O': {// logoutOtherClients
       if (conn.userId == null) return;
-      token = getToken(data);
-      if (token) {
-        const lu = UserLogin.findBy('userId', conn.userId);
-        if (lu) {
-          const mod = {};
-          if (token in lu.tokens)
-            mod[token] = lu.tokens[token];
-          UserLogin.where({_id: lu._id}).update('tokens', mod);
-        }
-      }
+      const [_id, token] = getToken(data);
+      token && UserAccount.logoutOtherClients(_id, token);
       const conns = session.conns;
       for (let sessId in conns) {
         if (sessId === conn.sessId) continue;
@@ -292,12 +291,13 @@ define(function(require, exports, module) {
         if (curr.userId === conn.userId)
           curr.userId = null;
       }
-      break;
-    }
+    }}
   }
 
   function getToken(data) {
-    const token = data.slice(1).toString().split('|')[1];
-    if (token && token.match(/^[\d\w]+$/)) return token;
+    data = data.slice(1).toString();
+    if (data.match(/^[\d\w]+\|[\d\w]+$/))
+      return data.split('|');
+    return [];
   }
 });

@@ -377,6 +377,7 @@ define(function (require, exports, module) {
       },
 
       "test logout with token"() {
+        this.spy(userAccount, 'logout');
         v.conn.userId = 'uid111';
         v.conn.sessAuth = 'sessauth';
 
@@ -387,6 +388,7 @@ define(function (require, exports, module) {
 
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
+        assert.calledWith(userAccount.logout, v.lu._id, 'abc');
       },
 
       "test logout without token"() {
@@ -400,6 +402,7 @@ define(function (require, exports, module) {
       },
 
       "test logoutOtherClients"() {
+        this.spy(userAccount, 'logoutOtherClients');
         v.ws2 = TH.mockWs();
         v.ws3 = TH.mockWs();
         v.ws4 = TH.mockWs();
@@ -425,6 +428,8 @@ define(function (require, exports, module) {
         refute.calledWith(v.ws4.send, 'VS');
 
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
+
+        assert.calledWith(userAccount.logoutOtherClients, v.lu._id, 'abc');
       },
 
       "test when not logged in logoutOtherClients does nothing"() {
