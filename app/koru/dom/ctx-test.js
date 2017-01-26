@@ -97,9 +97,8 @@ isClient && define(function (require, exports, module) {
 
       // Repeatable
       Dom.getMyCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
-      assert.calledWith(document.body.addEventListener, Dom.animationEndEventName, TH.match(function (arg) {
-        return v.animationEndFunc = arg;
-      }), true);
+      assert.calledWith(document.body.addEventListener, 'animationend', TH.match(
+        arg => v.animationEndFunc = arg), true);
 
       // Element removed
       document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
@@ -143,7 +142,8 @@ isClient && define(function (require, exports, module) {
 
       // should remove body listener since last element
       Dom.remove(v.elm2);
-      assert.calledWith(document.body.removeEventListener, Dom.animationEndEventName, v.animationEndFunc, true);
+      assert.calledWith(document.body.removeEventListener,
+                        'animationend', v.animationEndFunc, true);
     },
  });
 });

@@ -234,18 +234,6 @@ define(function (require, exports, module) {
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
     },
 
-    "test animationEndEventName"() {
-      const name = Dom.animationEndEventName;
-
-      assert.match(name, /^(ms|webkit)?animationend$/i);
-
-      switch (Dom.vendorPrefix) {
-      case 'webkit': assert.same(name, 'webkitAnimationEnd'); break;
-      case 'ms': assert.same(name, 'MSAnimationEnd'); break;
-      default: assert.same(name, 'animationend');
-      }
-    },
-
     "hideAndRemove": {
       setUp() {
         v.onAnimationEnd = this.stub(Dom.Ctx.prototype, 'onAnimationEnd');

@@ -87,7 +87,7 @@ define(function(require, exports, module) {
     onAnimationEnd(func, repeat) {
       if (! this.animationEnd) {
         if(++animationEndCount === 1)
-          document.body.addEventListener(Dom.animationEndEventName, animationEnd, true);
+          document.body.addEventListener('animationend', animationEnd, true);
         this.onDestroy(removeOnAnmiationEnd);
       } else {
         if (func !== 'cancel')
@@ -286,9 +286,9 @@ define(function(require, exports, module) {
   }
 
   function animationEnd(event) {
-    var target = event.target;
-    var ctx = target._koru;
-    var func = ctx && ctx.animationEnd;
+    const target = event.target;
+    const ctx = Dom.myCtx(target);
+    const func = ctx && ctx.animationEnd;
 
     if (! func) return;
     if (! ctx.animationEndRepeat)
@@ -301,7 +301,7 @@ define(function(require, exports, module) {
     if (! this.animationEnd) return;
     this.animationEnd = null;
     if (--animationEndCount === 0)
-      document.body.removeEventListener(Dom.animationEndEventName, animationEnd, true);
+      document.body.removeEventListener('animationend', animationEnd, true);
   }
 
   Ctx._private = {

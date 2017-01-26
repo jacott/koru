@@ -641,14 +641,8 @@ define(function(require, exports, module) {
     return e;
   }
 
-  Dom.animationEndEventName = 'animationend';
-
   switch(vendorFuncPrefix) {
-  case 'webkit':
-    Dom.animationEndEventName = 'webkitAnimationEnd';
-    break;
   case 'ms':
-    Dom.animationEndEventName = 'MSAnimationEnd';
     (function () {
       var m = /\bMSIE (\d+)/.exec(navigator.userAgent);
       if (m) {
