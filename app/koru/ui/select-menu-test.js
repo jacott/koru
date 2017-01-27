@@ -81,7 +81,7 @@ isClient && define(function (require, exports, module) {
       });
       document.activeElement.blur();
       assert.dom('.glassPane');
-      TH.click('.glassPane li');
+      TH.mouseDownUp('.glassPane li');
       assert.same(document.activeElement, html);
       const range = Dom.getRange();
       assert.same(range.startContainer, html.firstChild);
@@ -99,7 +99,7 @@ isClient && define(function (require, exports, module) {
         },
       });
 
-      TH.click('.glassPane li');
+      TH.mouseDownUp('.glassPane li');
 
       assert.same(document.activeElement, input);
       assert.same(input.selectionEnd, 3);
@@ -425,7 +425,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
               v.result = true;
-              TH.click(this);
+              TH.mouseDownUp(this);
               assert.same(v.elm, this);
             });
           });

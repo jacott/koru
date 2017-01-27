@@ -195,9 +195,13 @@ define(function(require, exports, module) {
 
     mouseDownUp(node, args) {
       if (typeof node === 'string') {
-        assert.elideFromStack.dom(node, function () {
-          node = this;
-        });
+        if (typeof args === 'string') {
+          assert.elideFromStack.dom(node, args, function () {node = this});
+          TH.trigger(node, 'mousedown');
+          TH.trigger(node, 'mouseup');
+          return;
+        }
+        assert.elideFromStack.dom(node, function () {node = this});
       }
       TH.trigger(node, 'mousedown', args);
       TH.trigger(node, 'mouseup', args);
@@ -238,7 +242,7 @@ define(function(require, exports, module) {
               TH.geddon.__elidePoint = pre;
               func.call(li);
             } else
-              TH.click(li);
+              TH.mouseDownUp(li);
           });
         });
       });

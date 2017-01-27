@@ -1,13 +1,14 @@
 isClient && define(function (require, exports, module) {
+  const koru           = require('koru');
+  const Dom            = require('koru/dom');
+  const util           = require('koru/util');
+  const Modal          = require('./modal');
+  const RichText       = require('./rich-text');
+  const RichTextEditor = require('./rich-text-editor');
+  const TH             = require('./test-helper');
+
+  const sut            = require('./rich-text-editor-toolbar');
   var test, v;
-  var koru = require('koru');
-  var TH = require('./test-helper');
-  var Dom = require('koru/dom');
-  var util = require('koru/util');
-  var sut = require('./rich-text-editor-toolbar');
-  var RichTextEditor = require('./rich-text-editor');
-  var Modal = require('./modal');
-  var RichText = require('./rich-text');
 
   TH.testCase(module, {
     setUp() {
@@ -37,9 +38,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
-          var input = this;
+          const input = this;
           v.selectCode = function () {
-            var node = input.querySelector('pre>div').firstChild;
+            const node = input.querySelector('pre>div').firstChild;
             TH.setRange(node, 2);
             TH.keyup(node, 39);
           };
@@ -64,7 +65,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.glassPane', function () {
           this.focus();
           assert.dom('li', 'C');
-          TH.click('li', 'Common Lisp, elisp');
+          TH.mouseDownUp('li', 'Common Lisp, elisp');
         });
 
         assert.dom('.input', function () {
@@ -78,7 +79,8 @@ isClient && define(function (require, exports, module) {
       "test syntax highlight"() {
         v.selectCode();
 
-        var syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor')).mode.actions, 'syntaxHighlight');
+        const syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
+                                          .mode.actions, 'syntaxHighlight');
         assert.dom('[name=syntaxHighlight]', '', function () {
           TH.mouseDownUp(this);
         });
@@ -269,7 +271,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.glassPane', function () {
           assert.dom('li>font[face="whiteboard"]', 'Whiteboard');
-          TH.click('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
+          TH.mouseDownUp('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
         });
 
         assert.dom('.input', function () {
@@ -283,7 +285,7 @@ isClient && define(function (require, exports, module) {
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.click('li>font[face="handwriting"]', 'Handwriting');
+          TH.mouseDownUp('li>font[face="handwriting"]', 'Handwriting');
         });
         assert.dom('[name=fontName]', 'Handwriting');
 
@@ -299,7 +301,7 @@ isClient && define(function (require, exports, module) {
         TH.mouseDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.click('li>font[face="sans-serif"]', 'Sans serif');
+          TH.mouseDownUp('li>font[face="sans-serif"]', 'Sans serif');
         });
 
         assert.dom('[name=fontName]', 'Sans serif');
@@ -309,7 +311,7 @@ isClient && define(function (require, exports, module) {
         TH.mouseDownUp('.rtToolbar [name=fontSize]');
 
         assert.dom('.glassPane', function () {
-          TH.click('li>font[size="4"]', 'Large');
+          TH.mouseDownUp('li>font[size="4"]', 'Large');
         });
 
         assert.dom('.input', function () {
@@ -330,7 +332,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.getAttribute('title'), 'Center [ctrl-shift-E]');
           });
           assert.dom('li>[name=justifyRight]');
-          TH.click('li>[name=justifyFull]');
+          TH.mouseDownUp('li>[name=justifyFull]');
         });
 
         assert.dom('.input', function () {

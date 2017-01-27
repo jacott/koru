@@ -378,7 +378,7 @@ define(function(require, exports, module) {
   }
 
   Tpl.SelectMenu.$events({
-    'click'(event) {
+    'mousedown'(event) {
       Dom.stopEvent();
 
       const data = $.ctx.data;

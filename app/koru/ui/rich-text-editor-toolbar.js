@@ -1,26 +1,26 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var Dom = require('koru/dom');
-  var RichTextEditor = require('./rich-text-editor');
-  var Modal = require('./modal');
-  var koru = require('koru');
-  var RichTextMention = require('./rich-text-mention');
-  var SelectMenu = require('./select-menu');
-  var RichText = require('./rich-text');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const util            = require('koru/util');
+  const Modal           = require('./modal');
+  const RichText        = require('./rich-text');
+  const RichTextEditor  = require('./rich-text-editor');
+  const RichTextMention = require('./rich-text-mention');
+  const SelectMenu      = require('./select-menu');
 
-  var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor-toolbar'));
-  var $ = Dom.current;
+  const Tpl = module.exports = Dom.newTemplate(module, require(
+    'koru/html!./rich-text-editor-toolbar'));
+  const $ = Dom.current;
 
-  var execCommand = RichTextEditor.execCommand;
-  var getTag = RichTextEditor.getTag;
-  var selectElm = Dom.selectElm;
+  const {execCommand, getTag} = RichTextEditor;
+  const {selectElm} = Dom;
 
   Tpl.$extend({
     $autoRender(data, parentCtx) {
-      var elm = RichTextEditor.$autoRender(data, parentCtx);
-      var ctx = Dom.getMyCtx(elm);
-      var toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
-      var toolbarCtx = Dom.getMyCtx(toolbar);
+      const elm = RichTextEditor.$autoRender(data, parentCtx);
+      const ctx = Dom.myCtx(elm);
+      const toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
+      const toolbarCtx = Dom.myCtx(toolbar);
       elm.insertBefore(toolbar, elm.firstChild);
       ctx.onDestroy(ctx.caretMoved.onChange(redraw));
 
@@ -33,11 +33,11 @@ define(function(require, exports, module) {
   });
 
   function getFont() {
-    var override = $.ctx.override;
+    const {override} = $.ctx;
     if (override && override.font !== undefined)
       return RichText.fontType(override.font);
 
-    var code = getTag('SPAN');
+    const code = getTag('SPAN');
     return RichText.fontType(code && code.style.fontFamily);
   }
 
@@ -59,44 +59,47 @@ define(function(require, exports, module) {
     },
 
     font() {
-      var code = getFont();
+      let code = getFont();
       if (code === 'initial') code = 'sans-serif';
       $.element.setAttribute('face', code);
       $.element.textContent = util.capitalize(util.humanize(code));
     },
 
     title(title) {
-      var elm = $.element;
+      const elm = $.element;
       if (elm.getAttribute('title')) return;
 
-      var action = elm.getAttribute('name');
+      const action = elm.getAttribute('name');
 
       elm.setAttribute('title', RichTextEditor.title(title, action, elm.parentNode.className));
     },
 
     mentions() {
       if ($.element._koruEnd) return;
-      var mentions = $.ctx.parentCtx.data.extend;
+      let mentions = $.ctx.parentCtx.data.extend;
       mentions = mentions && mentions.mentions;
       if (! mentions) return;
-      var frag = document.createDocumentFragment();
+      const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(function (id) {
-        frag.appendChild(Dom.h({button: id, class: mentions[id].buttonClass, $name: 'mention', '$data-type': id, $title: mentions[id].title}));
+        frag.appendChild(Dom.h({
+          button: id, class: mentions[id].buttonClass, $name: 'mention',
+          '$data-type': id, $title: mentions[id].title}));
       });
       return frag;
     },
 
     language() {
-      var mode = $.ctx.parentCtx.mode;
+      const mode = $.ctx.parentCtx.mode;
       if (mode.type !== 'code') return;
-      var language = mode.language || 'text';
+      const language = mode.language || 'text';
 
-      return ((RichTextEditor.languageMap && RichTextEditor.languageMap[language]) || util.capitalize(language))
+      return ((RichTextEditor.languageMap && RichTextEditor.languageMap[language]) ||
+              util.capitalize(language))
         .replace(/,.*$/, '');
     },
   });
 
-  var TEXT_ALIGN_LIST = [
+  const TEXT_ALIGN_LIST = [
     ['justifyLeft', 'Left align'],
     ['justifyCenter', 'Center'],
     ['justifyRight', 'Right align'],
@@ -104,7 +107,8 @@ define(function(require, exports, module) {
   ];
 
   TEXT_ALIGN_LIST.forEach(function (row) {
-    row[1] = Dom.h({button: '', $name: row[0], $title: RichTextEditor.title(row[1], row[0], 'standard')});
+    row[1] = Dom.h({button: '', $name: row[0],
+                    $title: RichTextEditor.title(row[1], row[0], 'standard')});
   });
 
   Tpl.$events({
@@ -112,12 +116,12 @@ define(function(require, exports, module) {
     'mousedown button'(mde) {
       Dom.stopEvent();
 
-      var toolbar = mde.currentTarget;
+      const toolbar = mde.currentTarget;
 
-      var button = this;
+      const button = this;
 
-      var pCtx = $.ctx.parentCtx;
-      var actions = pCtx.mode.actions;
+      const pCtx = $.ctx.parentCtx;
+      const {actions} = pCtx.mode;
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm)
         pCtx.inputElm.focus();
@@ -127,7 +131,7 @@ define(function(require, exports, module) {
 
         Dom.stopEvent(event);
 
-        var name = button.getAttribute('name');
+        const name = button.getAttribute('name');
         switch(name) {
         case 'more':
           Dom.toggleClass(toolbar, 'more');
@@ -149,6 +153,4 @@ define(function(require, exports, module) {
       });
     },
   });
-
-  return Tpl;
 });

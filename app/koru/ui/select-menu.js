@@ -166,11 +166,16 @@ define(function(require, exports, module) {
     'mousedown'() {
       Dom.stopEvent();
     },
-    'click li'(event) {
+    'mouseup li'(event) {
       Dom.stopEvent();
 
       Dom.hasClass(this, 'disabled') ||
         select($.ctx.parentCtx, this, event);
+    },
+    'mouseover .ui-ul>li:not(.selected):not(.disabled)'(event) {
+      const curr = event.currentTarget.getElementsByClassName('selected')[0];
+      Dom.removeClass(curr, 'selected');
+      Dom.addClass(this, 'selected');
     },
   });
 

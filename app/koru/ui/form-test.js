@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
         v.list = [['a', 'A'], ['b', 'B']];
         TH.selectMenu('.select', 'a', function () {
           assert(document.querySelector('#SelectMenu.fooClass'));
-          TH.click(this);
+          TH.mouseDownUp(this);
         });
 
         assert.dom('.select', 'A');
@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'b');
             });
-            TH.click(this);
+            TH.mouseDownUp(this);
           });
           assert.dom('.select', 'a');
           assert.dom('[type=hidden]', {value: 'a'});
@@ -119,7 +119,7 @@ isClient && define(function (require, exports, module) {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'B');
             });
-            TH.click(this);
+            TH.mouseDownUp(this);
           });
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: 'a'});
@@ -129,7 +129,7 @@ isClient && define(function (require, exports, module) {
               assert.dom('li:nth-child(2).selected', 'A');
               assert.dom('li:last-child:not(.selected)', 'B');
             });
-            TH.click(this);
+            TH.mouseDownUp(this);
           });
           assert.dom('.select', 'blanky blank');
           assert.dom('[type=hidden]', {value: ''});
