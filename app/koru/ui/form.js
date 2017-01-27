@@ -317,9 +317,9 @@ define(function(require, exports, module) {
 
       } else {
         const value = this.doc[this.name];
-        for (let [id, name]  of this.selectList()) {
-          if (id === value) {
-            result = name;
+        for (let row  of this.selectList()) {
+          if ((row[0] || row._id) === value) {
+            result = row[1] || row.name;
             found = true;
             break;
           }

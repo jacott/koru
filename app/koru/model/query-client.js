@@ -327,6 +327,48 @@ define(function(require, exports, module) {
         },
       });
 
+      Query.prototype[Symbol.iterator] = function *() {
+        if (this.singleId) {
+          const doc = this.findOne(this.singleId);
+          doc && (yield doc);
+        } else {
+          if (this._sort) {
+            const results = [];
+            const compare = sortFunc(this._sort);
+            findMatching.call(this, doc => results.push(doc));
+            yield *results.sort(compare);
+
+          } else
+            yield *g_findMatching(this);
+        }
+      };
+
+      function *g_findMatching(q) {
+        if (! q.model) return;
+
+        if (q._index) {
+          yield *g_findByIndex(q, q._index);
+
+        } else for (let id in q.docs) {
+          const doc = q.findOne(id);
+          if (doc && (yield doc) === true)
+            break;
+        }
+      }
+
+      function *g_findByIndex(query, idx) {
+        for (let key in idx) {
+          const value = idx[key];
+          if (typeof value === 'string') {
+            const doc = query.findOne(value);
+            if (doc && (yield doc) === true)
+              return true;
+
+          } else if (yield *g_findByIndex(query, value) === true)
+            return true;
+        }
+      }
+
       function foundItem(value, expected) {
         if (typeof expected === 'object') {
           if (Array.isArray(expected)) {

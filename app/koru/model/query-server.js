@@ -85,7 +85,7 @@ define(function(require, exports, module) {
           const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for(let doc = cursor.next(); doc; doc = cursor.next()) {
+            for (let doc = cursor.next(); doc; doc = cursor.next()) {
               if (func(new model(doc)) === true)
                 break;
             }
@@ -248,6 +248,27 @@ define(function(require, exports, module) {
         return new this.model(doc);
       },
     });
+
+    Query.prototype[Symbol.iterator] = function *() {
+      if (this.singleId) {
+        const doc = this.fetchOne();
+        doc && (yield doc);
+      } else {
+        const {model} = this;
+        const options = {};
+        if (this._fields) options.fields = this._fields;
+        const cursor = model.docs.find(this, options);
+        try {
+          applyCursorOptions(this, cursor);
+          for (let doc = cursor.next(); doc; doc = cursor.next()) {
+            if ((yield new model(doc)) === true)
+              break;
+          }
+        } finally {
+          cursor.close();
+        }
+      }
+    };
   };
 
   function applyCursorOptions(query, cursor) {

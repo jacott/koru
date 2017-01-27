@@ -122,6 +122,35 @@ define(function (require, exports, module) {
       assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
     },
 
+    "test iterate singleton"() {
+      const results = [];
+      for (let doc of v.TestModel.onId(v.bar._id)) {
+        results.push(doc);
+      }
+
+      assert.equals(results, [v.bar]);
+    },
+
+    "test iterate sorted"() {
+      const results = [];
+      const q = new Query(v.TestModel).sort('_id');
+
+      for (let doc of q) {
+        results.push(doc);
+      }
+      assert.equals(results, [v.bar, v.foo]);
+    },
+
+    "test iterate unsorted"() {
+      const results = [];
+      const q = new Query(v.TestModel);
+
+      for (let doc of q) {
+        results.push(doc);
+      }
+      assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
+    },
+
     'test fetchIds'() {
       v.TestModel.query.remove();
       const exp_ids = [1,2,3].map(num => v.TestModel.create({age: num})._id);
