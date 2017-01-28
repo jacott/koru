@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
-  var test, v;
-  const makeSubject = require('./make-subject');
   const geddon      = require('./test');
+
+  const makeSubject = require('./make-subject');
+  var test, v;
 
   geddon.testCase(module, {
     setUp() {

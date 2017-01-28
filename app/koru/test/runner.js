@@ -142,10 +142,10 @@ define(['./core'], function (geddon) {
   }
 
   function wrapPromise(func, _this) {
-    var promise = this;
-    return function () {
+    const promise = this;
+    return (...args) => {
       try {
-        return func.apply(_this, arguments);
+        return func.apply(_this, args);
       }
       catch(ex) {
         promise(ex);

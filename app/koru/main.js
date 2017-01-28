@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     onunload,
 
     unload(id) {
-      var mod = module.ctx.modules[id];
+      const mod = module.ctx.modules[id];
       mod && mod.unload();
     },
 
@@ -48,7 +48,7 @@ define(function (require, exports, module) {
     },
 
     replaceProperty(object, prop, newValue) {
-      var oldValue = Object.getOwnPropertyDescriptor(object, prop);
+      const oldValue = Object.getOwnPropertyDescriptor(object, prop);
       if (! oldValue) {
         newValue.writeable === undefined && (newValue.writeable = true);
         newValue.enumerable === undefined && (newValue.enumerable = true);
@@ -71,20 +71,20 @@ define(function (require, exports, module) {
 
     "\x64ebug": logDebug,
 
-    info() {
-      koru.logger('INFO', Array.prototype.join.call(arguments, ' '));
+    info(...args) {
+      koru.logger('INFO', args.join(' '));
     },
 
-    error() {
-      koru.logger('ERROR', Array.prototype.join.call(arguments, ' '));
+    error(...args) {
+      koru.logger('ERROR', args.join(' '));
     },
 
     unhandledException(ex) {
       koru.error(util.extractError(ex));
     },
 
-    logger() {
-      console.log.apply(console, arguments);
+    logger(...args) {
+      console.log(...args);
     },
 
     globalCallback(err, result) {
@@ -97,7 +97,7 @@ define(function (require, exports, module) {
     },
 
     getHashOrigin() {
-      var l = this.getLocation();
+      const l = this.getLocation();
       return l.protocol+'//'+l.host+l.pathname;
     },
 
@@ -121,7 +121,7 @@ define(function (require, exports, module) {
      * @returns build path for resource.
      */
     buildPath(path) {
-      var idx = path.lastIndexOf('/');
+      let idx = path.lastIndexOf('/');
       if (idx === -1)
         return '.build/' + path;
 
@@ -138,27 +138,26 @@ define(function (require, exports, module) {
     if (! result) result = {};
     if (! mod || result[mod.id]) return result;
     result[mod.id] = true;
-    var modules = mod.ctx.modules;
-    var deps = mod._requiredBy;
-    for (var id in deps) {
-      var map = {};
+    const modules = mod.ctx.modules;
+    const deps = mod._requiredBy;
+    for (let id in deps) {
+      const map = {};
       fetchDependants(modules[id], result);
     }
     return result;
   }
 
-  function logDebug() {
-    var args = new Array(arguments.length + 1);
-    args[0] = '\x44EBUG';
-    for(var i = 1; i < args.length; ++i) args[i] = arguments[i-1];
+  function logDebug(...args) {
+    const nargs = new Array(args.length + 1);
+    nargs[0] = '\x44EBUG';
+    for(let i = 0; i < args.length; ++i) nargs[i+1] = args[i];
 
-    koru.logger.apply(koru, args);
+    koru.logger.apply(koru, nargs);
   }
 
-  logDebug.inspect = function () {
-    var args = new Array(arguments.length);
-    for(var i = 0; i < arguments.length; ++i)
-      args[i] = util.inspect(arguments[i]);
+  logDebug.inspect = function (...args) {
+    for(let i = 0; i < args.length; ++i)
+      args[i] = util.inspect(args[i]);
 
     koru.logger('\x44EBUG ', args.join(', '));
   };

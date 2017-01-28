@@ -199,20 +199,20 @@ define(['./core', './stubber'], function (geddon, stubber) {
       (this.__testEnd|| (this.__testEnd = [])).push(func);
     }
 
-    spy() {
-      var spy = stubber.spy.apply(stubber, arguments);
+    spy(...args) {
+      const spy = stubber.spy.apply(stubber, args);
       this.onEnd(restorSpy(spy));
       return spy;
     }
 
-    stub() {
-      var spy = stubber.stub.apply(stubber, arguments);
+    stub(...args) {
+      const spy = stubber.stub.apply(stubber, args);
       this.onEnd(restorSpy(spy));
       return spy;
     }
 
-    intercept() {
-      var spy = stubber.intercept.apply(stubber, arguments);
+    intercept(...args) {
+      const spy = stubber.intercept.apply(stubber, args);
       this.onEnd(restorSpy(spy));
       return spy;
     }

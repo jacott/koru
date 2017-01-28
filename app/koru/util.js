@@ -305,11 +305,11 @@ define(function(require, exports, module) {
      * the equality check. In this changes can be tested by passing
      * the arguments: includesAttributes(attrs, changes, doc)
      */
-    includesAttributes(attrs/*, docs */) {
+    includesAttributes(attrs, ...docs) {
       for(let key in attrs) {
         let match = false;
-        for(let i = 1; i < arguments.length; ++i) {
-          const doc = arguments[i];
+        for(let i = 0; i < docs.length; ++i) {
+          const doc = docs[i];
           if (key in doc) {
             if (doc[key] != attrs[key])
               return false;
@@ -403,10 +403,10 @@ define(function(require, exports, module) {
       return -1;
     },
 
-    pick (map/*, fields */) {
+    pick(map, ...fields) {
       const result = {};
-      for(let i = 1; i < arguments.length; ++i) {
-        const field = arguments[i];
+      for(let i = 0; i < fields.length; ++i) {
+        const field = fields[i];
         result[field] = map[field];
       }
       return result;
@@ -446,7 +446,7 @@ define(function(require, exports, module) {
       return decodeURIComponent(value.replace(/\+/g, " "));
     },
 
-    toMap (keyName, valueName /*, lists */) {
+    toMap (keyName, valueName/*, lists */) {
       const result = {};
       if (arguments.length === 1) {
         keyName && util.forEach(keyName, function (item) {
@@ -823,46 +823,46 @@ define(function(require, exports, module) {
 
     colorToArray,
 
-    setNestedHash(value, hash /*, keys */) {
-      const last = arguments.length-1;
-      for(let i = 2; i < last; ++i) {
-        const key = arguments[i];
+    setNestedHash(value, hash, ...keys) {
+      const last = keys.length-1;
+      for(let i = 0; i < last; ++i) {
+        const key = keys[i];
         hash = hash[key] || (hash[key] = {});
       }
 
-      return hash[arguments[last]] = value;
+      return hash[keys[last]] = value;
     },
 
-    getNestedHash(hash /*, keys */) {
-      const last = arguments.length-1;
-      for(let i = 1; i < last; ++i) {
-        const key = arguments[i];
+    getNestedHash(hash, ...keys) {
+      const last = keys.length-1;
+      for(let i = 0; i < last; ++i) {
+        const key = keys[i];
         hash = hash[key];
         if (! hash) return undefined;
       }
 
-      return hash[arguments[last]];
+      return hash[keys[last]];
     },
 
-    deleteNestedHash(hash /*, keys */) {
-      let last = arguments.length-1;
+    deleteNestedHash(hash, ...keys) {
+      let last = keys.length-1;
       const prevs = [];
-      for(let i = 1; i < last; ++i) {
-        const key = arguments[i];
+      for(let i = 0; i < last; ++i) {
+        const key = keys[i];
         prevs.push(hash);
         hash = hash[key];
         if (! hash) return undefined;
       }
       prevs.push(hash);
 
-      const value = hash[arguments[last]];
-      delete hash[arguments[last]];
+      const value = hash[keys[last]];
+      delete hash[keys[last]];
 
       for(let i = prevs.length - 1; i >0; --i) {
         for (let noop in prevs[i]) {
           return value;
         }
-        delete prevs[i-1][arguments[--last]];
+        delete prevs[i-1][keys[--last]];
       }
       return value;
     },

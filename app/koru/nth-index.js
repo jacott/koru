@@ -8,7 +8,7 @@ define(function(require) {
     }
 
     has(...args) {
-      var res = this.ids;
+      let res = this.ids;
       if (res) for (let i = 0; i < args.length; ++i) {
         res = res[args[i]];
         if (! res) return false;
@@ -18,7 +18,7 @@ define(function(require) {
     }
 
     get(...args) {
-      var res = this.ids;
+      let res = this.ids;
       if (res) for (let i = 0; i < args.length; ++i) {
         res = res[args[i]];
         if (! res) return;
@@ -31,9 +31,10 @@ define(function(require) {
       if (args.length !== this.size + 1)
         throw new Error("Expected " + (this.size+1) + ' arguments');
 
-      var res = this.ids;
-      var len = this.size - 1;
-      for(var i = 0; i < len; ++i) {
+      let res = this.ids;
+      const len = this.size - 1;
+      let i = 0;
+      for(; i < len; ++i) {
         res = res[args[i]] || (res[args[i]] = Object.create(null));
       }
 

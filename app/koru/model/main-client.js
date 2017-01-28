@@ -144,20 +144,20 @@ define(function(require, exports, module) {
       const anyChange = makeSubject({});
 
       util.merge(model, {
-        notify() {
+        notify(...args) {
           chkdb();
           const subject = getProp(dbId, modelName, 'notify');
           if (subject)
-            subject.notify.apply(subject, arguments);
+            subject.notify(...args);
 
-          anyChange.notify.apply(subject, arguments);
+          anyChange.notify.apply(subject, args);
         },
         onAnyChange: anyChange.onChange,
-        onChange() {
+        onChange(...args) {
           chkdb();
           const subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
 
-          return subject.onChange.apply(subject, arguments);
+          return subject.onChange(...args);
         },
 
         get docs() {

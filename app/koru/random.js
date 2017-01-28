@@ -21,7 +21,7 @@ define(function() {
 
   // see http://baagoe.org/en/wiki/Better_random_numbers_for_javascript
   // for a full discussion and Alea implementation.
-  function Alea () {
+  function Alea (...args) {
     function Mash() {
       var n = 0xefc8249d;
 
@@ -44,138 +44,138 @@ define(function() {
       return mash;
     }
 
-    return (function (args) {
-      var s0 = 0;
-      var s1 = 0;
-      var s2 = 0;
-      var c = 1;
+    var s0 = 0;
+    var s1 = 0;
+    var s2 = 0;
+    var c = 1;
 
-      if (args.length == 0) {
-        args = [+new Date];
+    if (args.length == 0) {
+      args = [+new Date];
+    }
+    var mash = Mash();
+    s0 = mash(' ');
+    s1 = mash(' ');
+    s2 = mash(' ');
+
+    for (var i = 0; i < args.length; i++) {
+      s0 -= mash(args[i]);
+      if (s0 < 0) {
+        s0 += 1;
       }
-      var mash = Mash();
-      s0 = mash(' ');
-      s1 = mash(' ');
-      s2 = mash(' ');
-
-      for (var i = 0; i < args.length; i++) {
-        s0 -= mash(args[i]);
-        if (s0 < 0) {
-          s0 += 1;
-        }
-        s1 -= mash(args[i]);
-        if (s1 < 0) {
-          s1 += 1;
-        }
-        s2 -= mash(args[i]);
-        if (s2 < 0) {
-          s2 += 1;
-        }
+      s1 -= mash(args[i]);
+      if (s1 < 0) {
+        s1 += 1;
       }
-      mash = null;
+      s2 -= mash(args[i]);
+      if (s2 < 0) {
+        s2 += 1;
+      }
+    }
+    mash = null;
 
-      const random = function() {
-        var t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
-        s0 = s1;
-        s1 = s2;
-        return s2 = t - (c = t | 0);
-      };
-      random.uint32 = function() {
-        return random() * 0x100000000; // 2^32
-      };
-      random.fract53 = function() {
-        return random() +
-          (random() * 0x200000 | 0) * 1.1102230246251565e-16; // 2^-53
-      };
-      random.version = 'Alea 0.9';
-      random.args = args;
-      return random;
+    const random = function() {
+      var t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
+      s0 = s1;
+      s1 = s2;
+      return s2 = t - (c = t | 0);
+    };
+    random.uint32 = function() {
+      return random() * 0x100000000; // 2^32
+    };
+    random.fract53 = function() {
+      return random() +
+        (random() * 0x200000 | 0) * 1.1102230246251565e-16; // 2^-53
+    };
+    random.version = 'Alea 0.9';
+    random.args = args;
 
-    } (Array.prototype.slice.call(arguments)));
+    return random;
   };
 
   const UNMISTAKABLE_CHARS = "23456789ABCDEFGHJKLMNPQRSTWXYZabcdefghijkmnopqrstuvwxyz";
   const UNMISTAKABLE_CHARS_LEN = UNMISTAKABLE_CHARS.length;
 
+  const fracArray = isClient && new Uint32Array(1);
+
   // If seeds are provided, then the alea PRNG will be used, since cryptographic
   // PRNGs (Node crypto and window.crypto.getRandomValues) don't allow us to
   // specify seeds. The caller is responsible for making sure to provide a seed
   // for alea if a csprng is not available.
-  const RandomGenerator = function (seedArray) {
-    if (seedArray !== undefined)
-      this.alea = Alea.apply(null, seedArray);
-  };
-
-  const fracArray = isClient && new Uint32Array(1);
-
-  RandomGenerator.prototype.fraction = function () {
-    if (this.alea) {
-      return this.alea();
+  class RandomGenerator {
+    constructor(seedArray) {
+      if (seedArray !== undefined)
+        this.alea = Alea.apply(null, seedArray);
     }
 
-    if (isServer) {
-      var numerator = parseInt(this.hexString(8), 16);
-      return numerator * 2.3283064365386963e-10; // 2^-32
-    } else if (typeof window !== "undefined" && window.crypto &&
-               window.crypto.getRandomValues) {
-      window.crypto.getRandomValues(fracArray);
-      return fracArray[0] * 2.3283064365386963e-10; // 2^-32
-    }
-  };
-
-  RandomGenerator.prototype.hexString = function (digits) {
-    if (this.alea) {
-      var hexDigits = '';
-      for (var i = 0; i < digits; ++i) {
-        hexDigits += this.choice("0123456789abcdef");
+    fraction() {
+      if (this.alea) {
+        return this.alea();
       }
-      return hexDigits;
-    }
-    var numBytes = Math.ceil(digits / 2);
-    var bytes;
-    if (isServer) {
-      bytes = nodeCrypto.randomBytes(numBytes);
-    } else {
-      bytes = new Uint8Array(numBytes);
-      window.crypto.getRandomValues(bytes);
-    }
-    var result = '';
-    for(var i = 0; i < numBytes; ++i) {
-      var hex = bytes[i].toString(16);
-      if (hex.length === 1) hex = '0'+hex;
-      result += hex;
+
+      if (isServer) {
+        var numerator = parseInt(this.hexString(8), 16);
+        return numerator * 2.3283064365386963e-10; // 2^-32
+      } else if (typeof window !== "undefined" && window.crypto &&
+                 window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(fracArray);
+        return fracArray[0] * 2.3283064365386963e-10; // 2^-32
+      }
     }
 
-    return result.substring(0, digits);
-  };
+    hexString(digits) {
+      if (this.alea) {
+        var hexDigits = '';
+        for (var i = 0; i < digits; ++i) {
+          hexDigits += this.choice("0123456789abcdef");
+        }
+        return hexDigits;
+      }
+      var numBytes = Math.ceil(digits / 2);
+      var bytes;
+      if (isServer) {
+        bytes = nodeCrypto.randomBytes(numBytes);
+      } else {
+        bytes = new Uint8Array(numBytes);
+        window.crypto.getRandomValues(bytes);
+      }
+      var result = '';
+      for(var i = 0; i < numBytes; ++i) {
+        var hex = bytes[i].toString(16);
+        if (hex.length === 1) hex = '0'+hex;
+        result += hex;
+      }
 
-  RandomGenerator.prototype.id = function () {
-    var digits = '';
-    if (this.alea) {
+      return result.substring(0, digits);
+    }
+
+    id() {
+      let digits = '';
+      if (this.alea) {
+        for (var i = 0; i < 17; i++) {
+          digits += UNMISTAKABLE_CHARS[Math.floor(this.alea() * UNMISTAKABLE_CHARS_LEN)];
+        }
+        return digits;
+      }
+
+      if (isServer) {
+        var bytes = nodeCrypto.randomBytes(17);
+      } else {
+        var bytes = new Uint8Array(17);
+        window.crypto.getRandomValues(bytes);
+      }
       for (var i = 0; i < 17; i++) {
-        digits += UNMISTAKABLE_CHARS[Math.floor(this.alea() * UNMISTAKABLE_CHARS_LEN)];
+        digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
       }
       return digits;
     }
 
-    if (isServer) {
-      var bytes = nodeCrypto.randomBytes(17);
-    } else {
-      var bytes = new Uint8Array(17);
-      window.crypto.getRandomValues(bytes);
+    choice(arrayOrString) {
+      const index = Math.floor(this.fraction() * arrayOrString.length);
+      if (typeof arrayOrString === "string")
+        return arrayOrString.substr(index, 1);
+      else
+        return arrayOrString[index];
     }
-    for (var i = 0; i < 17; i++) {
-      digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
-    }
-    return digits;
-  };
-
-  RandomGenerator.prototype.choice = function (arrayOrString) {
-    var index = Math.floor(this.fraction() * arrayOrString.length);
-    if (typeof arrayOrString === "string")
-      return arrayOrString.substr(index, 1);
-    else
-      return arrayOrString[index];
   };
 
   // instantiate RNG.  Heuristically collect entropy from various sources when a
@@ -202,15 +202,14 @@ define(function() {
 
   const agent = (typeof navigator !== 'undefined' && navigator.userAgent) || "";
 
-  if (isServer ||
-      (typeof window !== "undefined" &&
-       window.crypto && window.crypto.getRandomValues))
-    var Random = new RandomGenerator();
-  else
-    var Random = new RandomGenerator([new Date(), height, width, agent, Math.random()]);
+  const Random = (isServer ||
+                  (typeof window !== "undefined" &&
+                   window.crypto && window.crypto.getRandomValues)) ?
+          new RandomGenerator() :
+          new RandomGenerator([new Date(), height, width, agent, Math.random()]);
 
-  Random.create = function () {
-    return new RandomGenerator(arguments);
+  Random.create = function (...args) {
+    return new RandomGenerator(args);
   };
 
   return Random;

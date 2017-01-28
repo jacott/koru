@@ -18,10 +18,10 @@ define(function(require, exports, module) {
           this._onClose.notify(this);
           this._onClose = null;
         }
-        var subs = this._subs;
+        const subs = this._subs;
         this._subs = null;
         this.ws = null;
-        if (subs) for(var key in subs) {
+        if (subs) for(let key in subs) {
           try {subs[key].stop();}
           catch(ex) {koru.error(util.extractError(ex));}
         }
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
     }
 
     onClose (func) {
-      var subj = this._onClose || (this._onClose = makeSubject({}));
+      const subj = this._onClose || (this._onClose = makeSubject({}));
       return subj.onChange(func);
     }
 
@@ -103,12 +103,13 @@ define(function(require, exports, module) {
     }
 
     sendBinary (type, args, func) {
-      var bm = util.thread.batchMessage;
+      const bm = util.thread.batchMessage;
       if (bm) {
         bm.batch(this, type, args, func);
         return;
       }
-      var msg = arguments.length === 1 ? type : message.encodeMessage(type, func ? func(args) : args, this._session.globalDict);
+      const msg = arguments.length === 1 ? type :
+              message.encodeMessage(type, func ? func(args) : args, this._session.globalDict);
       try {
         this.ws && this.ws.send(msg, {binary: true});
       } catch(ex) {
@@ -145,8 +146,8 @@ define(function(require, exports, module) {
         this.send('VS', '');
         this.sessAuth = null;
       }
-      var subs = this._subs;
-      for(var key in subs) {
+      const subs = this._subs;
+      for(let key in subs) {
         subs[key].resubscribe();
       }
       this.send('VC');
@@ -169,9 +170,9 @@ define(function(require, exports, module) {
   function filterAttrs(attrs, filter) {
     if (! filter) return attrs;
 
-    var result = {};
+    const result = {};
 
-    for(var key in attrs) {
+    for(let key in attrs) {
       if (! filter.hasOwnProperty(key))
         result[key] = attrs[key];
     }

@@ -21,8 +21,9 @@ define(function(require, exports, module) {
     if (! codeIn) return;
 
     let srcPos = 0;
+    let ast;
     try {
-      var ast = parse(codeIn);
+      ast = parse(codeIn);
     } catch(ex) {
       const msg = `Error parsing ${codeIn}`;
       if (ex.name === 'SyntaxError')
@@ -36,7 +37,7 @@ define(function(require, exports, module) {
       sourceMaps: false,
     }, []).code;
 
-    var ast = parse(codeIn);
+    ast = parse(codeIn);
 
     const div = document.createElement('div');
     div.className = 'highlight';
@@ -226,8 +227,9 @@ define(function(require, exports, module) {
   }
 
   function extractParams(sig, entryType='ObjectMethod') {
+    let ast;
     try {
-      var ast = parse(sig);
+      ast = parse(sig);
     } catch(ex) {
       const msg = `Error parsing ${sig}`;
       if (ex.name === 'SyntaxError')
@@ -235,7 +237,7 @@ define(function(require, exports, module) {
       koru.error(msg);
       throw ex;
     }
-    let args = [];
+    const args = [];
 
     const node = findFirstType(entryType, ast.program.body);
 

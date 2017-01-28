@@ -42,8 +42,8 @@ define(function(require, exports, module) {
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 
-      function addUniqueIndex() {
-        prepareIndex(uniqueIndexes, this, arguments);
+      function addUniqueIndex(...args) {
+        prepareIndex(uniqueIndexes, this, args);
       }
 
       function ensureIndex(model, args, opts) {
@@ -55,8 +55,8 @@ define(function(require, exports, module) {
         }
       }
 
-      function addIndex() {
-        prepareIndex(indexes, this, arguments);
+      function addIndex(...args) {
+        prepareIndex(indexes, this, args);
       }
 
       function prepareIndex(type, model, args) {
@@ -199,8 +199,7 @@ define(function(require, exports, module) {
         },
 
         remote(model, name, func) {
-          return function (/* arguments */) {
-            const args = arguments;
+          return function (...args) {
             return model.db.transaction(
               () => (Val.allowAccessIf(this.userId), func.apply(this, args)));
           };
@@ -228,19 +227,19 @@ define(function(require, exports, module) {
       }
 
       util.merge(model, {
-        notify() {
+        notify(...args) {
           const subject = notifyMap.get(model.db);
           if (subject)
-            subject.notify.apply(subject, arguments);
+            subject.notify.apply(subject, args);
 
-          anyChange.notify.apply(subject, arguments);
+          anyChange.notify.apply(subject, args);
         },
         onAnyChange: anyChange.onChange,
-        onChange() {
+        onChange(...args) {
           let subject = notifyMap.get(model.db);
           subject || notifyMap.set(db, subject = makeSubject({}));
 
-          return subject.onChange.apply(subject, arguments);
+          return subject.onChange.apply(subject, args);
         },
         get docs() {
           if (! this.db) return;

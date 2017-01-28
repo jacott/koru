@@ -4,14 +4,14 @@ define(function(require, exports, module) {
   format.compile = compile;
   format.escape = escape;
 
-  function format(fmt) {
+  function format(fmt, ...args) {
     if (typeof fmt === 'string')
       fmt = compile(fmt);
 
     let i = 1, result ='';
 
     const len = fmt.length;
-    let last = arguments[arguments.length -1],
+    let last = args[args.length -1],
         lit = fmt[0];
 
     if (last === fmt || ! last || typeof last !== 'object')
@@ -30,11 +30,8 @@ define(function(require, exports, module) {
       let argIndex = spec && +spec.substring(1);
 
 
-      if (argIndex != null && argIndex === argIndex) {
-        var arg = arguments[argIndex+1];
-      } else {
-        var arg = nested(spec.substring(2), last, this);
-      }
+      const arg = (argIndex != null && argIndex === argIndex) ? args[argIndex] :
+              nested(spec.substring(2), last, this);
       switch (spec.substring(0,1)) {
       case 'e':
         if (arg != null)

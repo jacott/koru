@@ -3,12 +3,13 @@ isClient && define(function (require, exports, module) {
    * Route is a paginging system within a one page app. It manages
    * creating and destroying pages and recording history.
    **/
-  var test, v;
   const api   = require('koru/test/api');
   const Dom   = require('../dom');
   const koru  = require('../main');
-  const Route = require('./route');
   const TH    = require('./test-helper');
+
+  const Route = require('./route');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -49,7 +50,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test focus"() {
-      var RootBar = {
+      const RootBar = {
         name: 'RootBar',
         $autoRender() {
           return Dom.html('<div id="RootBar">x</div>');
@@ -204,7 +205,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test already on page"() {
-          var promise = Route.waitForPage(v.RootBar);
+          const promise = Route.waitForPage(v.RootBar);
           assert.same(promise.constructor, v.MyPromise);
 
           Route.gotoPage(v.RootBar);
@@ -217,7 +218,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test timeout"() {
-          var promise = Route.waitForPage(v.FooBar, 150);
+          const promise = Route.waitForPage(v.FooBar, 150);
 
           promise.func(v.resolve, v.reject);
 
@@ -225,7 +226,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
+          const stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           koru.setTimeout.yield();
 
@@ -235,7 +236,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test wrong page"() {
-          var promise = Route.waitForPage(v.FooBar);
+          const promise = Route.waitForPage(v.FooBar);
 
           promise.func(v.resolve, v.reject);
 
@@ -243,7 +244,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
+          const stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           Route.gotoPage(v.RootBar);
 
@@ -254,7 +255,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test page changed"() {
-          var promise = Route.waitForPage(v.RootBar);
+          const promise = Route.waitForPage(v.RootBar);
 
           promise.func(v.resolve, v.reject);
 
@@ -262,7 +263,7 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Route.onChange, TH.match.func);
           refute.called(v.resolve);
           refute.called(v.reject);
-          var stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
+          const stopSpy = test.spy(Route.onChange.firstCall.returnValue, 'stop');
 
           Route.gotoPage(v.RootBar);
 
@@ -305,9 +306,9 @@ isClient && define(function (require, exports, module) {
       },
 
       "test gotoPage, pushCurrent, recordHistory, notify"() {
-        var orig = Dom.setTitle;
+        const orig = Dom.setTitle;
         Dom.setTitle = test.stub();
-        var onChange = Route.onChange(v.routeChanged = test.stub());
+        const onChange = Route.onChange(v.routeChanged = test.stub());
         test.onEnd(function () {
           Dom.setTitle = orig;
           onChange.stop();
@@ -385,7 +386,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test abort page change"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         onBaseEntry() {
           Route.abortPage(RootBar);
@@ -393,7 +394,7 @@ isClient && define(function (require, exports, module) {
         onBaseExit: test.stub(),
       };
 
-      var RootBar = {
+      const RootBar = {
         name: 'RootBar',
         $autoRender: test.stub(),
         onEntry: test.stub(),
@@ -512,7 +513,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test addBase without defaultPage"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         onBaseEntry: test.stub(),
         onBaseExit: test.stub(),
@@ -526,13 +527,13 @@ isClient && define(function (require, exports, module) {
     },
 
     "test setting parent in addBase"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         onBaseEntry: test.stub(),
         onBaseExit: test.stub(),
       };
 
-      var BazBar = {
+      const BazBar = {
         name: 'BazBar',
         $autoRender: test.stub(),
         onEntry: test.stub(),
@@ -560,7 +561,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test noParentRoute"() {
-      var BazBar = {
+      const BazBar = {
         name: 'BazBar',
         noParentRoute: true,
         $autoRender: test.stub(),
@@ -587,27 +588,27 @@ isClient && define(function (require, exports, module) {
     },
 
     "test addBase and addAlias"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         onBaseEntry: test.stub(),
         onBaseExit: test.stub(),
         $path: 'bazpath',
       };
 
-      var Fnord = {
+      const Fnord = {
         name: 'Fnord',
         onBaseEntry: test.stub(),
         onBaseExit: test.stub(),
       };
 
-      var BazBar = {
+      const BazBar = {
         name: 'Baz',
         $autoRender: test.stub(),
         onEntry: test.stub(),
         onExit: test.stub(),
       };
 
-      var RootBar = {
+      const RootBar = {
         name: 'RootBar',
         $autoRender: test.stub(),
         onEntry: test.stub(),
@@ -653,7 +654,7 @@ isClient && define(function (require, exports, module) {
 
       Route.gotoPage(v.FooBar);
 
-      var loc = {pathname: "/bazpath/fnord/foo-bar"};
+      const loc = {pathname: "/bazpath/fnord/foo-bar"};
 
       assert.calledWith(BazBar.onExit, v.FooBar, loc);
       assert.calledWith(v.FooBar.onEntry, v.FooBar, loc);
@@ -673,7 +674,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test private page"() {
-      var origSigninPage = Route.SignInPage;
+      const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
       test.onEnd(() => Route.SignInPage = origSigninPage);
       test.stub(Route, 'replacePage');
@@ -689,7 +690,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test public page"() {
-      var origSigninPage = Route.SignInPage;
+      const origSigninPage = Route.SignInPage;
       Route.SignInPage = "mySign in page";
       test.onEnd(() => Route.SignInPage = origSigninPage);
       test.stub(Route, 'replacePage');
@@ -705,7 +706,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test addTemplate with entry/exit"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
 
         onEntry: v.onEntry = test.stub(),
@@ -726,7 +727,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test insertPage function option"() {
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         parent: v.FooBar,
 
@@ -761,7 +762,7 @@ isClient && define(function (require, exports, module) {
     "test addTemplate"() {
       Route.pageParent.appendChild(Route.pageParent = Dom.h({id: 'the-pageParent'}));
       this.onEnd(() => {Route.pageParent = document.body});
-      var Baz = {
+      const Baz = {
         name: 'Baz',
         parent: v.FooBar,
 
@@ -801,7 +802,7 @@ isClient && define(function (require, exports, module) {
     "test addDialog gotoPath"() {
       Route.root.addTemplate(v.FooBar);
 
-      var FooDialog = {
+      const FooDialog = {
         onEntry: test.stub(),
       };
 
@@ -827,7 +828,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test addTemplate gotoPath"() {
-      var Bar = {
+      const Bar = {
         name: 'Bar',
         $autoRender: test.stub(),
         onEntry: test.stub(),

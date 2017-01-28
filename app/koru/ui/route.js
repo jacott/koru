@@ -7,16 +7,16 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
 
   const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
-  var inGotoPage = 0;
-  var currentPage = null;
-  var targetPage = null;
-  var currentPageRoute = {};
-  var currentTitle, currentHref;
-  var pageState = 'pushState';
-  var pageCount = 0;
-  var runInstance; // used with async callbacks
+  let inGotoPage = 0;
+  let currentPage = null;
+  let targetPage = null;
+  let currentPageRoute = {};
+  let currentTitle, currentHref;
+  let pageState = 'pushState';
+  let pageCount = 0;
+  let runInstance; // used with async callbacks
 
-  var debug_page = false;
+  let debug_page = false;
   Trace.debug_page = function (value) {
     debug_page = value;
   };
@@ -49,12 +49,13 @@ define(function(require, exports, module) {
           resolve(currentPage, currentHref);
           return;
         }
-        var timeout = koru.setTimeout(function () {
+        let handle;
+        const timeout = koru.setTimeout(function () {
           handle.stop();
           reject(new Error('Timed out waiting for: ' + (expectPage && expectPage.name) +
                            ' after ' + duration + 'ms'));
         }, duration);
-        var handle = Route.onChange(function (actualPage, pageRoute, href) {
+        handle = Route.onChange(function (actualPage, pageRoute, href) {
           handle.stop();
           koru.clearTimeout(timeout);
           if (actualPage === expectPage)
@@ -66,15 +67,12 @@ define(function(require, exports, module) {
       });
     }
 
-    static abortPage(location) {
+    static abortPage(location, ...args) {
       if (inGotoPage) {
-        var abort = {};
-        abort.location = location;
-        abort.abortPage = true;
-        throw abort;
+        throw {location, abortPage: true};
       }
 
-      return this.replacePath.apply(this, arguments);
+      return this.replacePath(location, ...args);
     }
 
     static _reset() {
@@ -82,10 +80,10 @@ define(function(require, exports, module) {
       pageCount = 0;
     }
 
-    static replacePage() {
+    static replacePage(...args) {
       pageState = 'replaceState';
       try {
-        return this.gotoPage.apply(this, arguments);
+        return this.gotoPage(...args);
       } finally {
         pageState = 'pushState';
       }
@@ -103,7 +101,8 @@ define(function(require, exports, module) {
 
       Route.loadingArgs = [page, pageRoute];
 
-      if (page && page.routeOptions && ! page.routeOptions.publicPage && ! koru.userId() && page !== Route.SignInPage) {
+      if (page && page.routeOptions && ! page.routeOptions.publicPage &&
+          ! koru.userId() && page !== Route.SignInPage) {
         Route.replacePage(Route.SignInPage, {returnTo: Route.loadingArgs});
         return;
       }
@@ -134,14 +133,15 @@ define(function(require, exports, module) {
         }
 
         function then() {
+          let href, title;
           if (! page) {
-            var href = null;
-            var title = Route.title;
+            href = null;
+            title = Route.title;
             pageRoute = {};
           } else {
             page = page.Index || page;
-            var href = Route.pageRouteToHref(page.onEntry && page.onEntry(page, pageRoute) || pageRoute);
-            var title = page.title || Route.title;
+            href = Route.pageRouteToHref(page.onEntry && page.onEntry(page, pageRoute) || pageRoute);
+            title = page.title || Route.title;
           }
 
           Route.recordHistory(page, href, pageRoute);
@@ -168,10 +168,9 @@ define(function(require, exports, module) {
     static recordHistory(page, href, pageRoute) {
       if (! Route.history) return;
       if (! pageState || (page && page.noPageHistory))
-          return;
-      if (currentHref === href)
-        var cmd = 'replaceState';
-      else {
+        return;
+      let cmd = 'replaceState';
+      if (currentHref !== href) {
         cmd = pageState;
         ++pageCount;
       }
@@ -188,7 +187,8 @@ define(function(require, exports, module) {
     }
 
     static pageRouteToHref(pageRoute) {
-      let href = typeof pageRoute ==='string' ? pageRoute : pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
+      let href = typeof pageRoute ==='string' ? pageRoute :
+            pageRoute.pathname+(pageRoute.search||'')+(pageRoute.hash||'');
       if (! /^\/#/.test(href)) href = '/#' + (href[0] === '/' ? href.slice(1) : href);
       return href;
     }
@@ -220,23 +220,23 @@ define(function(require, exports, module) {
       }
     }
 
-    static replacePath() {
+    static replacePath(...args) {
       pageState = 'replaceState';
       try {
-        return this.gotoPath.apply(this, arguments);
+        return this.gotoPath(...args);
       } finally {
         pageState = 'pushState';
       }
     }
 
-    static gotoPath(page) {
-      var pageRoute = {};
+    static gotoPath(page, ...args) {
+      const pageRoute = {};
       if (page == null)
         page = koru.getLocation();
 
       if (typeof page !== 'string') {
         if (! page.pathname)
-          return this.gotoPage.apply(this, arguments);
+          return this.gotoPage(page, ...args);
 
         if (page.pathname !== '/') {
           page = this.pageRouteToHref(page);
@@ -248,7 +248,8 @@ define(function(require, exports, module) {
       }
 
 
-      var m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) || /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
+      const m = /^\/?#([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page) ||
+        /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(page);
       if (m) {
         page = m[1] || '/';
         if (m[2]) pageRoute.search = m[2];
@@ -256,13 +257,13 @@ define(function(require, exports, module) {
       }
       pageRoute.pathname = page;
 
-      var parts = page.split('/');
-      var root = this.root;
+      const parts = page.split('/');
+      const root = this.root;
       page = root;
 
-      var newPage = root.defaultPage;
-      for(var i = 0; i < parts.length; ++i) {
-        var part = parts[i];
+      let newPage = root.defaultPage;
+      for(let i = 0; i < parts.length; ++i) {
+        const part = parts[i];
         if (! part) continue;
         newPage = (page.routes && page.routes[part]);
         if (! newPage) {
@@ -296,15 +297,15 @@ define(function(require, exports, module) {
     }
 
     static searchParams(pageRoute) {
-      var result = {};
+      const result = {};
 
-      var search = pageRoute && pageRoute.search;
+      const search = pageRoute && pageRoute.search;
       if (! search) return result;
 
 
-      util.forEach(search.slice(1).split('&'), function (pair) {
-        var items = pair.split('=');
-        result[items[0]] = items[1];
+      util.forEach(search.slice(1).split('&'), pair => {
+        const [name, value] = pair.split('=');
+        result[name] = value;
       });
 
       return result;
@@ -329,7 +330,7 @@ define(function(require, exports, module) {
     }
 
     removeTemplate(template, options) {
-      var path = options && options.path;
+      let path = options && options.path;
       if (path == null) path = templatePath(template);
       this.routes[path] = null;
       if (template.onEntry && template.onEntry.name === 'autoOnEntry')
@@ -366,10 +367,12 @@ define(function(require, exports, module) {
         }
       }
 
-      var path = template.$path || (template.$path = templatePath(template));
+      const path = template.$path || (template.$path = templatePath(template));
 
-      if (template.route) throw new Error(template.name + ' is already a route base');
-      if (this.routes.path) throw new Error('Path already exists! ', path + " for template " + this.path);
+      if (template.route)
+        throw new Error(template.name + ' is already a route base');
+      if (this.routes.path)
+        throw new Error(`Path already exists! ${path} for template ${this.path}`);
 
       return template.route = this.routes[path] = new Route(path, template, this, options);
     }
@@ -380,14 +383,14 @@ define(function(require, exports, module) {
     }
 
     onBaseExit(page, location) {
-      var template = this.template;
-      var onBaseExit = template && template.onBaseExit;
+      const template = this.template;
+      const onBaseExit = template && template.onBaseExit;
       onBaseExit && onBaseExit.call(template, page, location);
     }
 
     onBaseEntry(page, location, callback) {
-      var template = this.template;
-      var onBaseEntry = template && template.onBaseEntry;
+      const template = this.template;
+      const onBaseEntry = template && template.onBaseEntry;
       onBaseEntry && onBaseEntry.call(template, page, location, callback);
     }
   };
@@ -405,9 +408,10 @@ define(function(require, exports, module) {
       route.removeTemplate(template, options);
     });
     options = options || {};
-    var path = options.path;
+    let {path} = options;
     if (path == null) path = templatePath(template);
-    if (route.routes.path) throw new Error('Path already exists! ' + path + " for template " + this.path);
+    if (route.routes.path)
+      throw new Error(`Path already exists! ${path} for template ${this.path}`);
     route.routes[path] = template;
     template.route = route;
     template.subPath = path;
@@ -425,10 +429,10 @@ define(function(require, exports, module) {
   });
 
   function exitEntry(exit, oldSymbols, entry, pageRoute, page, then) {
-    var entryLen = entry.length;
-    var exitLen = exit.length;
-    var diff = exitLen - entryLen;
-    var index, sym, item;
+    const entryLen = entry.length;
+    let exitLen = exit.length;
+    const diff = exitLen - entryLen;
+    let index, sym, item;
 
     for(--exitLen; exitLen >= 0; --exitLen) {
       item = exit[exitLen];
@@ -438,19 +442,19 @@ define(function(require, exports, module) {
     }
 
     for(index = 0;index < diff; ++index) {
-      var tpl = exit[index];
+      const tpl = exit[index];
       tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
     }
 
     for(;index <= exitLen; ++index) {
-      var tpl = exit[index];
+      const tpl = exit[index];
       tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
     }
 
     currentPage = exit[index];
 
     index = index - diff - 1 ;
-    var runInstanceCopy = runInstance = {};
+    let runInstanceCopy = runInstance = {};
     function callback() {
       if (runInstanceCopy !== runInstance)
         return; // route call overridden
@@ -472,12 +476,12 @@ define(function(require, exports, module) {
   }
 
   function pathname(template, pageRoute) {
+    let path = '';
     if (template && template.route) {
-      var path = routePath(template.route, pageRoute);
+      path = routePath(template.route, pageRoute);
       if (template.subPath)
         path += '/'+template.subPath;
-    } else
-      var path = '';
+    }
 
     if (pageRoute.append)
       return path + '/' + pageRoute.append;
@@ -488,8 +492,8 @@ define(function(require, exports, module) {
   function routePath(route, pageRoute) {
     if (! route) return '';
 
-    var path = route.path;
-    var routeVar = route.routeVar && pageRoute[route.routeVar];
+    let {path} = route;
+    const routeVar = route.routeVar && pageRoute[route.routeVar];
     if (routeVar)
       path += '/' + routeVar;
 
@@ -498,12 +502,13 @@ define(function(require, exports, module) {
   }
 
   function toPath(page) {
+    let route;
     if (page) {
       if (page.noParentRoute)
         return [];
-      var route = page.$autoRender ? page.route : page;
+      route = page.$autoRender ? page.route : page;
     }
-    var path = [];
+    const path = [];
     while(route) {
       path.push(route);
       route = route.parent;
@@ -517,20 +522,20 @@ define(function(require, exports, module) {
 
   function onEntryFunc(options) {
     return function autoOnEntry(page, pageRoute) {
-      let parent;
+      let parent, data;
 
       if (options) {
         if (typeof options.data ==='function') {
-          var data = options.data.apply(page, arguments);
+          data = options.data.call(page, page, pageRoute);
         } else {
-          var data = options.data;
+          data = options.data;
         }
       }
       page._renderedPage = page.$autoRender(data||{});
       if (options.insertPage) {
         options.insertPage(page._renderedPage);
       } else {
-        var route = page.route;
+        const {route} = page;
 
         if (route && route.template) {
           parent = document.getElementById(route.template.name);

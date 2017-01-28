@@ -54,22 +54,22 @@ define(function(require, exports, module) {
         return condition(this, '_whereNots', params, value);
       }
 
-      fields(/* fields... */) {
+      fields(...fields) {
         const _fields = this._fields = this._fields || {};
-        for(let i = 0; i < arguments.length; ++i) {
-          _fields[arguments[i]] = true;
+        for(let i = 0; i < fields.length; ++i) {
+          _fields[fields[i]] = true;
         }
         return this;
       }
 
-      sort(/* fields... */) {
+      sort(...fields) {
         const _sort = this._sort = this._sort || {};
-        for(let i = 0; i < arguments.length; ++i) {
-          const val = arguments[i];
+        for(let i = 0; i < fields.length; ++i) {
+          const val = fields[i];
           if (typeof val === 'string')
             _sort[val] = 1;
           else
-            _sort[arguments[i-1]] = val;
+            _sort[fields[i-1]] = val;
         }
         return this;
       }

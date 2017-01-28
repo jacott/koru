@@ -43,14 +43,15 @@ define(function(require, exports, module) {
 
       afTimeout(func, duration) {
         let af = null;
+        let timeout;
         if (duration && duration > 0)
-          var timeout = setTimeout(inner, duration);
+          timeout = setTimeout(inner, duration);
         else
           inner();
 
         function inner() {
           timeout = null;
-          af = window.requestAnimationFrame(function () {
+          af = window.requestAnimationFrame(() => {
             af = null;
             try {
               func();

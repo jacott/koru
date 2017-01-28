@@ -27,12 +27,12 @@ define(['module', './main'], function(module, koru) {
       return obj;
     };
 
-    subject[notifyName] = function (first) {
+    subject[notifyName] = function (...args) {
       for(let handle of observers) {
-        handle.function.apply(handle, arguments);
+        handle.function(...args);
       }
 
-      return first;
+      return args[0];
     };
 
     return subject;

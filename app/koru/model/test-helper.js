@@ -9,8 +9,8 @@ define(function(require, exports, module) {
   let sendM;
 
   return TH.util.protoCopy(TH, {
-    testCase() {
-      var tc = testCase.apply(TH, arguments);
+    testCase(...args) {
+      const tc = testCase.apply(TH, args);
       tc.before(stubSendM);
       tc.after(unstubSendM);
       return tc;

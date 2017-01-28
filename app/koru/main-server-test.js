@@ -1,9 +1,10 @@
 define(function (require, exports, module) {
-  var test, v;
   const dbBroker = require('koru/model/db-broker');
   const util     = require('koru/util');
-  const koru     = require('./main');
   const TH       = require('./test-helper');
+
+  const koru     = require('./main');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

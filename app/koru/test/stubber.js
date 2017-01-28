@@ -37,8 +37,8 @@ define(function(require, exports, module) {
     },
 
     withArgs(...args) {
-      function spy() {
-        return spy.subject.apply(this, arguments);
+      function spy(...args) {
+        return spy.subject.apply(this, args);
       };
       Object.setPrototypeOf(spy, withProto);
       spy._stubId = newId();
@@ -50,8 +50,8 @@ define(function(require, exports, module) {
     },
 
     onCall(count) {
-      function spy() {
-        return spy.subject.apply(this, arguments);
+      function spy(...args) {
+        return spy.subject.apply(this, args);
       };
       Object.setPrototypeOf(spy, onCallProto);
 
@@ -180,8 +180,8 @@ define(function(require, exports, module) {
   });
 
   var withProto = merge(Object.create(stubProto), {
-    withArgs() {
-      return this.subject.withArgs.apply(this.subject, arguments);
+    withArgs(...args) {
+      return this.subject.withArgs.apply(this.subject, args);
     },
 
     invoke(call) {
@@ -220,8 +220,8 @@ define(function(require, exports, module) {
   };
 
   function yieldCall(args, callParams) {
-    for(var i = 0; i < args.length; ++i) {
-      var arg = args[i];
+    for(let i = 0; i < args.length; ++i) {
+      const arg = args[i];
       if (typeof arg === 'function') {
         return arg.apply(null, callParams);
       }
@@ -330,21 +330,22 @@ define(function(require, exports, module) {
   };
 
   Stubber.intercept = function (object, prop, replacement, restore) {
-    var orig = Object.getOwnPropertyDescriptor(object, prop);
+    const orig = Object.getOwnPropertyDescriptor(object, prop);
     if (orig && orig.value && typeof orig.value.restore === 'function')
       throw new Error(`Already stubbed ${prop}`);
 
+    let func;
     if (replacement) {
       if (typeof replacement === 'function') {
-        var func = function() {
-          return replacement.apply(this, arguments);
+         func = function(...args) {
+          return replacement.apply(this, args);
         };
       } else {
         func = replacement;
       }
       func._actual = orig && orig.value;
     } else {
-      var func = function () {};
+      func = function () {};
     }
 
     Object.defineProperty(object, prop, {configurable: true, value: func,});
@@ -371,8 +372,8 @@ define(function(require, exports, module) {
     orig && merge(stub, orig);
     stub._stubId = newId();
     return stub;
-    function stub() {
-      return stub.invoke(this, arguments);
+    function stub(...args) {
+      return stub.invoke(this, args);
     };
   }
 

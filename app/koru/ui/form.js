@@ -479,9 +479,7 @@ define(function(require, exports, module) {
   errorMsg.className = 'errorMsg';
 
   Dom.registerHelpers({
-    format() {
-      return format.apply(this, arguments);
-    },
+    format,
 
     errorMsg() {
       const elm = Dom.current.element;

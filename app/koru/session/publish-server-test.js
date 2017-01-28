@@ -13,9 +13,9 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.pubFunc = test.stub();
-      publish("foo", function () {
+      publish("foo", function (...args) {
         v.sub = this;
-        v.pubFunc.apply(this, arguments);
+        v.pubFunc.apply(this, args);
       });
 
       v.callSub = function () {

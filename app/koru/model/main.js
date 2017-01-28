@@ -89,9 +89,8 @@ define(function(require, exports, module) {
       return new Query(this);
     }
 
-    static where() {
-      const query = this.query;
-      return query.where.apply(query, arguments);
+    static where(...args) {
+      return this.query.where(...args);
     }
 
     static onId(id) {
@@ -440,9 +439,8 @@ define(function(require, exports, module) {
       return new Query(this.constructor).onId(this._id);
     }
 
-    $update() {
-      const query = this.$onThis;
-      return query.update.apply(query, arguments);
+    $update(...args) {
+      return this.$onThis.update(...args);
     }
 
     $clearChanges() {

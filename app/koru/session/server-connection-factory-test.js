@@ -1,5 +1,4 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const IdleCheck = require('../idle-check').singleton;
   const koru      = require('../main');
   const TH        = require('../test');
@@ -11,6 +10,7 @@ isServer && define(function (require, exports, module) {
   const baseSession = require('koru/session');
   const session = new (baseSession.constructor)('testServerConnection');
   const Connection  = require('./server-connection-factory')(session);
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -46,8 +46,8 @@ isServer && define(function (require, exports, module) {
     "onMessage": {
       setUp() {
         v.tStub = test.stub();
-        session.provide('t', v.tFunc = function () {
-          v.tStub.apply(this, arguments);
+        session.provide('t', v.tFunc = function (...args) {
+          v.tStub.apply(this, args);
         });
         v.thread = {};
         TH.stubProperty(util, 'thread', {get() {return v.thread}});

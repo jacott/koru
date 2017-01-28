@@ -1,7 +1,8 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const TH       = require('koru/test');
+
   const jsParser = require('./js-parser');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

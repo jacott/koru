@@ -1,18 +1,19 @@
-var Future = requirejs.nodeRequire('fibers/future');
-var fs = require('fs');
+const Future = requirejs.nodeRequire('fibers/future');
+const fs = require('fs');
 
 isServer && define(function (require, exports, module) {
   /**
    * Factory for creating web-servers.
    *
    **/
-  var test, v;
   const koru             = require('koru/main');
   const api              = require('koru/test/api');
   const fst              = require('./fs-tools');
   const IdleCheck        = require('./idle-check').singleton;
   const TH               = require('./test');
+
   const WebServerFactory = require('./web-server-factory');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -44,8 +45,8 @@ isServer && define(function (require, exports, module) {
 
         v.sendRet.on = test.stub().returns(v.sendRet);
 
-        test.intercept(v.webServer, '_replaceSend', v.send = function () {
-          func && func.apply(this, arguments);
+        test.intercept(v.webServer, '_replaceSend', v.send = function (...args) {
+          func && func.apply(this, args);
           return v.sendRet;
         });
       };

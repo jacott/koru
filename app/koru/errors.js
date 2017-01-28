@@ -23,7 +23,7 @@ define(function(require) {
   // `message`, which is what gets displayed at the top of a stack trace).
   //
   function makeErrorType(name, constructor) {
-    var errorClass = function (/*arguments*/) {
+    var errorClass = function (...args) {
       var self = this;
 
       // Ensure we get a proper stack trace in most Javascript environments
@@ -39,7 +39,7 @@ define(function(require) {
       }
       // Safari magically works.
 
-      constructor.apply(self, arguments);
+      constructor.apply(self, args);
 
       self.errorType = name;
 

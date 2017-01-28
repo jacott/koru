@@ -2,7 +2,11 @@ define(function(require, exports, module) {
   const Dom  = require('../dom');
   const util = require('../util');
 
-  exports = function (funcs) {
+  const MODIFIERS = {};
+  const MOD_NAMES = {};
+  const SYM_NAMES = {};
+
+  exports = module.exports = function (funcs) {
     const keyMap = new KeyMap();
     keyMap.exec = exec.bind(keyMap);
 
@@ -19,6 +23,7 @@ define(function(require, exports, module) {
 
     addKeys(funcs) {
       const top = this.map;
+      let mod, km;
 
       function procMod() {
         if (mod) {
@@ -28,15 +33,16 @@ define(function(require, exports, module) {
         }
       }
 
-      for(var name in funcs) {
-        var line = funcs[name];
-        var keySeq = line[0];
-        var km = top;
-        var mod = 0;
+      for(let name in funcs) {
+        const line = funcs[name];
+        const keySeq = line[0];
+        km = top;
+        mod = 0;
         this.descMap[name] = [keySeq, line[1]];
-        for(var i = 0; i < keySeq.length - 1; ++i) {
-          var code = keySeq[i];
-          var modk = MODIFIERS[code];
+        let i = 0;
+        for(; i < keySeq.length - 1; ++i) {
+          const code = keySeq[i];
+          const modk = MODIFIERS[code];
 
           if (modk) {
             mod = mod | modk;
@@ -44,7 +50,8 @@ define(function(require, exports, module) {
           }
           procMod();
           km = km[code] || (km[code] = {});
-          if (Array.isArray(km)) throw new Error("Not a key map for: '" + keySeq.slice(0,i + 1) + "' => " + km);
+          if (Array.isArray(km))
+            throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
         }
         procMod();
 
@@ -53,7 +60,7 @@ define(function(require, exports, module) {
     }
 
     getTitle(desc, name) {
-      var sc = this.descMap[name];
+      const sc = this.descMap[name];
       if (! sc) return (this.descMap[name]=['', null, desc])[2];
       return sc[2] || (sc[2] = makeTitle(desc, sc[0]));
     }
@@ -61,7 +68,7 @@ define(function(require, exports, module) {
 
   function makeTitle(name, keySeq) {
     keySeq = keySeq.replace(/[\u0010-\u002B]/g, function (m) {
-      var mc = MOD_NAMES[m];
+      const mc = MOD_NAMES[m];
       if (mc)
         return mc+'-';
       else
@@ -70,19 +77,15 @@ define(function(require, exports, module) {
     return keySeq ? name + ' ['+keySeq+']' : name;
   }
 
-  var MODIFIERS = {};
-  var MOD_NAMES = {};
-  var SYM_NAMES = {};
-
   addModifiers(
     '\u0010shift',
     '\u0011ctrl',
     '\u0012alt'
   );
 
-  function addModifiers() {
-    util.forEach(arguments, function (code, i) {
-      var name = code.slice(1);
+  function addModifiers(...args) {
+    util.forEach(args, (code, i) => {
+      const name = code.slice(1);
       exports[name] = code = code[0];
       MODIFIERS[code] = 1 << i;
       SYM_NAMES[code] = name;
@@ -103,9 +106,9 @@ define(function(require, exports, module) {
     '\u002Edel'
   );
 
-  function addCodes() {
-    util.forEach(arguments, function (code, i) {
-      var name = code.slice(1);
+  function addCodes(...args) {
+    util.forEach(args, (code, i) => {
+      const name = code.slice(1);
       exports[name] = code = code[0];
       SYM_NAMES[code] = name;
     });
@@ -119,11 +122,11 @@ define(function(require, exports, module) {
     if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR))
       return;
 
-    var keyMap = this;
-    var code = String.fromCharCode(event.which);
+    const keyMap = this;
+    const code = String.fromCharCode(event.which);
     if (MODIFIERS[code]) return;
 
-    var mod = eventMod(event);
+    let mod = eventMod(event);
 
     if (mod) {
       var map = keyMap.map[String.fromCharCode(mod)];
@@ -144,7 +147,7 @@ define(function(require, exports, module) {
     }
 
     function nextKey(event) {
-      var code = String.fromCharCode(event.which);
+      const code = String.fromCharCode(event.which);
       if (MODIFIERS[code]) return;
 
       mod = eventMod(event);
@@ -176,12 +179,10 @@ define(function(require, exports, module) {
   }
 
   function eventMod(event) {
-    var mod = 0;
+    let mod = 0;
     if (event.shiftKey) mod = 1;
     if (event.ctrlKey) mod += 2;
     if (event.altKey) mod += 4;
     return mod;
   }
-
-  return exports;
 });

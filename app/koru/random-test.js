@@ -1,8 +1,9 @@
 define(function (require, exports, module) {
+  const util   = require('koru/util');
+  const TH     = require('./test');
+
+  const Random = require('./random');
   var test, v;
-  var TH = require('./test');
-  var Random = require('./random');
-  const util = require('koru/util');
 
   TH.testCase(module, {
     setUp() {
@@ -23,10 +24,10 @@ define(function (require, exports, module) {
     },
 
     "test format"() {
-      var randSpy = isServer ? test.spy(requirejs.nodeRequire('crypto'), 'randomBytes')
-            : test.spy(window.crypto, 'getRandomValues');
+      const randSpy = isServer ? test.spy(requirejs.nodeRequire('crypto'), 'randomBytes')
+              : test.spy(window.crypto, 'getRandomValues');
       const idLen = 17;
-      var id = Random.id();
+      const id = Random.id();
       assert.same(id.length, idLen);
       assert.match(id, /^[2-9a-zA-Z]*$/);
 
@@ -39,8 +40,8 @@ define(function (require, exports, module) {
 
       randSpy.reset();
 
-      var numDigits = 9;
-      var hexStr = Random.hexString(numDigits);
+      const numDigits = 9;
+      const hexStr = Random.hexString(numDigits);
 
       if (isServer) {
         assert.calledWith(randSpy, 5);

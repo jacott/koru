@@ -14,7 +14,7 @@ define(function(require, exports, module) {
         if (koru.loadError) throw koru.loadError;
         console.log('=> Reloading');
 
-        var argv = process.argv.slice(0,1).concat(process.execArgv.concat(process.argv.slice(1)));
+        const argv = process.argv.slice(0,1).concat(process.execArgv.concat(process.argv.slice(1)));
         requirejs.nodeRequire('bindings')('koru_restart.node')
           .execv(process.execPath, argv);
       },
@@ -25,8 +25,8 @@ define(function(require, exports, module) {
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
 
       afTimeout(func, duration) {
-        var cancel = koru.setTimeout(func, duration);
-        return function () {
+        let cancel = koru.setTimeout(func, duration);
+        return () => {
           cancel && clearTimeout(cancel);
           cancel = null;
         };
@@ -38,9 +38,9 @@ define(function(require, exports, module) {
 
       fiberConnWrapper(func, conn, data) {
         dbBroker || require(['koru/model/db-broker'], value => dbBroker = value);
-        util.Fiber(function () {
+        util.Fiber(() => {
           try {
-            var thread = util.thread;
+            const thread = util.thread;
             thread.userId = conn.userId;
             thread.connection = conn;
             dbBroker.db = conn.db;

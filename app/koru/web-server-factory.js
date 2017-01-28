@@ -9,7 +9,7 @@ define(function (require, exports, module) {
   const parseurl  = requirejs.nodeRequire('parseurl');
   const Future    = requirejs.nodeRequire('fibers/future');
 
-  var   send      = requirejs.nodeRequire('send');
+  let send      = requirejs.nodeRequire('send');
 
   module.exports = function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
     const koruParent = Path.join(koru.libDir, 'app');
@@ -27,13 +27,13 @@ define(function (require, exports, module) {
         server.close();
       },
 
-      server: server,
+      server,
       compilers: {},
-      requestListener: requestListener,
+      requestListener,
 
-      send: send,
-      parseurl: parseurl,
-      notFound: notFound,
+      send,
+      parseurl,
+      notFound,
 
       parseUrlParams(req) {
         return util.searchStrToMap((typeof req === 'string' ? req : req.url).split('?', 2)[1]);
@@ -69,13 +69,13 @@ define(function (require, exports, module) {
     function requestListener(req, res) {koru.Fiber(function () {
       IdleCheck.inc();
       try {
-        var path = parseurl(req).pathname;
-        var reqRoot = root;
+        let path = parseurl(req).pathname;
+        let reqRoot = root;
 
         if (path === '/')
           path = DEFAULT_PAGE;
 
-        var m = /^\/([^/]+)(.*)$/.exec(path);
+        let m = /^\/([^/]+)(.*)$/.exec(path);
         if (m) {
           var special = SPECIALS[m[1]];
 
@@ -89,7 +89,7 @@ define(function (require, exports, module) {
           }
         }
 
-        var m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
+        m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
         if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
           send(req, path, {root: reqRoot, index: false})
@@ -108,7 +108,7 @@ define(function (require, exports, module) {
         if (! err || 404 === err.status) {
           notFound(res);
         } else if (typeof err === 'number') {
-          var attrs = {};
+          const attrs = {};
           msg = msg || '';
           if (typeof msg !== 'string') {
             msg = JSON.stringify(msg);
@@ -126,16 +126,16 @@ define(function (require, exports, module) {
     }).run();}
 
     function compileTemplate(req, res, type, path, suffix) {
-      var compiler = webServer.compilers[type];
+      const compiler = webServer.compilers[type];
       if (! compiler) return;
 
       return queue(path, function () {
-        var outPath = path+suffix;
-        var paths = path.split('.build/');
+        const outPath = path+suffix;
+        let paths = path.split('.build/');
         path = paths.join('');
 
-        var srcSt = fst.stat(path);
-        var jsSt = fst.stat(outPath);
+        const srcSt = fst.stat(path);
+        const jsSt = fst.stat(outPath);
 
 
         if (!jsSt) fst.mkdir(paths[0]+'.build');

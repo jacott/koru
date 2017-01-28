@@ -4,14 +4,15 @@ define(function(require, exports, module) {
   const Trace   = require('../trace');
   const publish = require('./publish');
 
-  var debug_subscribe = false;
+  let debug_subscribe = false;
   Trace.debug_subscribe = function (value) {
     debug_subscribe = value;
   };
 
   function stopSub() {
     if (! this._id) return;
-    debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >', this._id, this.name, 'STOP');
+    debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >',
+                                   this._id, this.name, 'STOP');
     const session = this.session;
     session.sendP(this._id);
     stopped(this);
@@ -83,14 +84,16 @@ define(function(require, exports, module) {
     }
 
     _wait() {
-      debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >', this._id, this.name, JSON.stringify(this.args));
+      debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >',
+                                     this._id, this.name, JSON.stringify(this.args));
       if (this.waiting) return;
       this.session.state.incPending();
       this.waiting = true;
     }
 
     _received(result) {
-      debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <', this._id, this.name, result ? result : 'okay');
+      debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <',
+                                     this._id, this.name, result ? result : 'okay');
       const callback = this.callback;
       if (result !== undefined) stopped(this);
       if (! this.waiting) return;
@@ -112,11 +115,9 @@ define(function(require, exports, module) {
       this._stop = func;
     }
 
-    filterModels() {
-      var models = {};
-      util.forEach(arguments, function (mn) {
-        models[mn] = true;
-      });
+    filterModels(...args) {
+      const models = {};
+      util.forEach(args, mn => {models[mn] = true});
       publish._filterModels(models);
     }
 

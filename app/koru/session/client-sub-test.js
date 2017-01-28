@@ -6,13 +6,14 @@ isClient && define(function (require, exports, module) {
    *
    * See {#koru/session/subscribe}
    **/
-  var test, v;
   const Model        = require('koru/model');
   const publish      = require('koru/session/publish');
   const api          = require('koru/test/api');
-  const ClientSub    = require('./client-sub');
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
+
+  const ClientSub    = require('./client-sub');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

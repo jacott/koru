@@ -52,8 +52,8 @@ isClient && define(function (require, exports, module) {
       test.spy(v.sess, 'sendP');
 
       v.pubFunc = test.stub();
-      publish("foo", function () {
-        v.pubFunc.apply(this, arguments);
+      publish("foo", function (...args) {
+        v.pubFunc.apply(this, args);
       });
       api.module();
     },

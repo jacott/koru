@@ -34,14 +34,14 @@ define(function(require, exports, module) {
     }
 
     attributes() {
-      var result = {};
+      const result = {};
       addAttributes(this.default_opts);
       addAttributes(this.options);
       return result;
 
       function addAttributes(attrs) {
-        for(var key in attrs) {
-          var value = attrs[key];
+        for(let key in attrs) {
+          const value = attrs[key];
           if (value !== undefined)
             result[key] = value;
         }
@@ -210,30 +210,31 @@ define(function(require, exports, module) {
   });
 
   function buildFunc(key, def) {
-    return function (/** traits and options */) {
-      return def.call(Factory, buildOptions(key, arguments)).build();
+    return function (...args /** traits and options */) {
+      return def.call(Factory, buildOptions(key, args)).build();
     };
   }
 
   function createFunc(key, def) {
-    return function (/** traits and options */) {
-      var result =
-            def.call(Factory, buildOptions(key, arguments)).create();
+    return function (...args /** traits and options */) {
+      const result =
+            def.call(Factory, buildOptions(key, args)).create();
 
       if (postCreate[key])
-        return postCreate[key](result, key, arguments);
+        return postCreate[key](result, key, args);
       else
         return last[key.substring(0,1).toLowerCase()+key.substring(1)] = result;
     };
   }
 
   function buildOptions(key, args) {
-    var options = {}, keyTraits = traits[key] || {};
-    for(var i=0;i < args.length;++i) {
+    const options = {}, keyTraits = traits[key] || {};
+    for(let i=0; i < args.length;++i) {
       if (typeof args[i] === 'string') {
-        var trait = keyTraits[args[i]];
+        const trait = keyTraits[args[i]];
         if (!trait) throw new Error('unknown trait "'+ args[i] +'" for ' + key);
-        util.merge(options, typeof trait === 'function' ? trait.call(keyTraits, options, args, i) : trait);
+        util.merge(options, typeof trait === 'function' ?
+                   trait.call(keyTraits, options, args, i) : trait);
       } else if(args[i]) {
         util.merge(options, args[i]);
       }
@@ -242,7 +243,7 @@ define(function(require, exports, module) {
   }
 
   function getUniqueNow() {
-    var now = Date.now();
+    let now = Date.now();
 
     if(lastNow && now <= lastNow) {
       now = ++lastNow;

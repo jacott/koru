@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
-  var test, v;
-  const koru = require('./main');
   const TH   = require('./test-helper');
+
+  const koru = require('./main');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -51,7 +52,7 @@ define(function (require, exports, module) {
       },
 
       "test running"() {
-        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
+        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         assert.calledWith(setTimeout, TH.match.func, 1234);
 
@@ -72,7 +73,7 @@ define(function (require, exports, module) {
       },
 
       "test canceling before timeout"() {
-        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
+        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         stop();
 
@@ -86,7 +87,7 @@ define(function (require, exports, module) {
       },
 
       "test canceling after timeout"() {
-        var stop = koru._afTimeout(v.stub = test.stub(), 1234);
+        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
 
         setTimeout.yield();
 

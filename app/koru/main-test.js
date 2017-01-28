@@ -7,11 +7,12 @@ define(function (require, exports, module) {
    * * Dependency tracking and load/unload manager
    * * AppDir location
    **/
-  var test, v;
   const api  = require('koru/test/api');
-  const koru = require('./main');
   const TH   = require('./test-helper');
   const util = require('./util');
+
+  const koru = require('./main');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

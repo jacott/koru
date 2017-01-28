@@ -513,8 +513,8 @@ isClient && define(function (require, exports, module) {
           Dom.newTemplate({name: 'Foo.Bar', nodes: [{name: 'span'}]});
           Dom.newTemplate({name: 'Foo.Baz', nodes: [{name: 'h1'}]});
 
-          var dStub = Dom.Foo.Bar.$destroyed = function () {
-            if (v) v.args = arguments;
+          var dStub = Dom.Foo.Bar.$destroyed = function (...args) {
+            if (v) v.args = args;
           };
 
           var bar = Dom.Foo.Bar.$render();

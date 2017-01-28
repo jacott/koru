@@ -83,8 +83,8 @@ define(function(require, exports, module) {
         }
       }
 
-      function bad() {
-        if (error && error.apply(this, arguments))
+      function bad(...args) {
+        if (error && error.apply(this, args))
           return;
         throw false;
       }
@@ -176,14 +176,14 @@ define(function(require, exports, module) {
     },
 
     /** Simple is not objects {} or functions */
-    allowIfSimple(/* arguments */) {
-      for(let i=0;i < arguments.length;++i) {
-        switch (typeof arguments[i]) {
+    allowIfSimple(...args) {
+      for(let i=0;i < args.length;++i) {
+        switch (typeof args[i]) {
         case 'object':
-          if (arguments[i] == null) break;
-          const proto = Object.getPrototypeOf(arguments[i]);
+          if (args[i] == null) break;
+          const proto = Object.getPrototypeOf(args[i]);
           if (proto === Array.prototype) {
-            Val.allowIfSimple.apply(Val, arguments[i]);
+            Val.allowIfSimple.apply(Val, args[i]);
             break;
           } else if (proto === Date.prototype) break;
           accessDenied("argument is an object ");
@@ -198,7 +198,7 @@ define(function(require, exports, module) {
       return truthy || accessDenied(message);
     },
 
-    ensureString(...args) {ensure(match.string, arguments)},
+    ensureString(...args) {ensure(match.string, args)},
     ensureNumber(...args) {ensure(match.number, args)},
     ensureDate(...args) {ensure(match.date, args)},
     ensure(type, ...args) {ensure(type, args)},

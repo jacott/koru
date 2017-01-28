@@ -63,8 +63,8 @@ isServer && define(function (require, exports, module) {
 
         v.sendRet.on = test.stub().returns(v.sendRet);
 
-        webServer._replaceSend(v.send = function () {
-          func && func.apply(this, arguments);
+        webServer._replaceSend(v.send = function (...args) {
+          func && func.apply(this, args);
           return v.sendRet;
         });
       };

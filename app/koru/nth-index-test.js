@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
-  var test, v;
-  const NthIndex = require('./nth-index');
   const TH       = require('./test-helper');
+
+  const NthIndex = require('./nth-index');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -14,7 +15,7 @@ define(function (require, exports, module) {
     },
 
     "test use"() {
-      var sut = new NthIndex(2);
+      const sut = new NthIndex(2);
 
       assert.same(sut.add(1, 2, '12'), sut);
       sut.add(2, 2, '22');
