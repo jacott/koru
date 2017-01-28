@@ -109,28 +109,26 @@ isClient && define(function (require, exports, module) {
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({
           fooList() {
-            return [['a', 'A'], ['b', Dom.h({i: 'B'})]];
+            return [[0, 'A'], ['b', Dom.h({i: 'B'})]];
           },
         });
         document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'B');
-          TH.selectMenu('.select', TH.match.field('id', 'a'), function () {
+          TH.selectMenu('.select', TH.match.field('id', 0), function () {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'B');
             });
-            TH.mouseDownUp(this);
+            return true;
           });
           assert.dom('.select', 'A');
-          assert.dom('[type=hidden]', {value: 'a'});
-          TH.selectMenu('.select', TH.match.field('id', ''), function () {
-            assert.dom(this.parentNode, function () {
-              assert.dom('li:first-child>i.blank', 'blanky blank');
-              assert.dom('li:nth-child(2).selected', 'A');
-              assert.dom('li:last-child:not(.selected)', 'B');
-            });
-            TH.mouseDownUp(this);
-          });
+          assert.dom('[type=hidden]', {value: '0'});
+          TH.selectMenu('.select', TH.match.field('id', ''), {menu() {
+            assert.dom('li:first-child>i.blank', 'blanky blank');
+            assert.dom('li:nth-child(2).selected', 'A');
+            assert.dom('li:last-child:not(.selected)', 'B');
+            return true;
+          }});
           assert.dom('.select', 'blanky blank');
           assert.dom('[type=hidden]', {value: ''});
         });
@@ -139,12 +137,13 @@ isClient && define(function (require, exports, module) {
           'change input[name=foo_id]': v.onchange = this.stub(),
         });
         Dom.removeChildren(document.body);
+
         document.body.appendChild(selectList.$autoRender({}));
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'blanky blank');
-          TH.selectMenu('.select', TH.match.field('id', 'a'));
+          TH.selectMenu('.select', TH.match.field('id', 0));
           assert.dom('.select', 'A');
-          assert.dom('[type=hidden]', {value: 'a'});
+          assert.dom('[type=hidden]', {value: '0'});
         });
         assert.called(v.onchange);
       },

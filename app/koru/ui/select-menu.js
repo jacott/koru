@@ -155,7 +155,8 @@ define(function(require, exports, module) {
         }
       }
 
-      if (selected && selected[this.id || this._id])
+      const id = this.id != null ? this.id : this._id;
+      if (selected && selected[id])
         Dom.addClass(elm.parentNode, 'selected');
       decorator && decorator(this, elm);
       return this.name;

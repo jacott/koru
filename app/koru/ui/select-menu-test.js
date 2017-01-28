@@ -167,14 +167,14 @@ isClient && define(function (require, exports, module) {
       });
 
       sut.popup(v.button, {
-        list: [[1, 'One'], [2, 'Two']],
-        selected: 2,
+        list: [[1, 'One'], [0, 'Zero']],
+        selected: 0,
         onSelect(elm, event) {
         },
       });
 
       assert.dom('body>.glassPane', function () {
-        assert.dom('.selected', {data:TH.match.field('id', 2)});
+        assert.dom('.selected', {data:TH.match.field('id', 0)});
       });
     },
 

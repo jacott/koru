@@ -10,7 +10,7 @@
     </label>
   </template>
   <template name="TextInput">
-    <input type="{{type}}" name="{{name}}" value="{{value}}" {{htmlOptions}}>
+    <input type="{{type}}" name="{{name}}" {{inputValue value}} {{htmlOptions}}>
   </template>
 
   <template name="Select">
@@ -21,7 +21,7 @@
   <template name="SelectMenu">
     <span class="errorField" data-errorField="{{name}}">
       <button name="{{name}}" type="button" {{htmlOptions}} {{buttonText}}></button>
-      <input type="hidden" name="{{name}}" value="{{value}}">
+      <input type="hidden" name="{{name}}" {{inputValue value}}>
     </span>
   </template>
 
@@ -30,7 +30,7 @@
     </span>
     <template name="Button">
       <label>
-        <input type="radio" name="{{name}}" value="{{value}}" {{checked}}>
+        <input type="radio" name="{{name}}" {{inputValue value}} {{checked}}>
         <span>{{label}}</span>
       </label>
     </template>
