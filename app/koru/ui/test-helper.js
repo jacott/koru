@@ -235,14 +235,25 @@ define(function(require, exports, module) {
         value = TH.match(arg => (arg._id || arg.id) === id);
         break;
       }
-      assert.elideFromStack.dom(document.body, function () {
-        assert.dom('body>.glassPane>#SelectMenu', function () {
+      assert.dom(document.body, function () {
+        assert.elideFromStack.dom('body>.glassPane>#SelectMenu', function () {
           assert.dom('li', {data: value}, li => {
-            if (func) {
-              TH.geddon.__elidePoint = pre;
-              func.call(li);
-            } else
+            TH.geddon.__elidePoint = pre;
+            switch (typeof func) {
+            case 'function':
+              if (func.call(li, li)) TH.mouseDownUp(li);
+              break;
+            case 'object':
+              if (func.menu) {
+                assert.dom(li.parentNode, menu => {
+                  if (func.menu.call(menu, menu, li))
+                    TH.mouseDownUp(li);;
+                });
+                break;
+              }
+            default:
               TH.mouseDownUp(li);
+            }
           });
         });
       });
