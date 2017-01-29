@@ -17,6 +17,15 @@ define(function(require, exports, module) {
       session.hash = hash;
     }
 
+    function closeWs(ws) {
+      stopReconnTimeout();
+      if (! ws) return;
+      try {
+        ws.close();
+      } catch(ex) {}
+      ws.onclose({wasClean: true});
+    }
+
     util.merge(session, {
       execWrapper,
 
@@ -35,14 +44,14 @@ define(function(require, exports, module) {
       connect,
 
       stop() {
-        stopReconnTimeout();
         sessState.close();
-        try {
-          this.ws && this.ws.close();
-        } catch(ex) {}
-        this.ws &&
-          this.ws.onclose({wasClean: true});
+        closeWs(this.ws);
         this._onStops && this._onStops.forEach(func => func());
+      },
+
+      pause() {
+        sessState.pause();
+        closeWs(this.ws);
       },
 
       heartbeatInterval: 20000,
@@ -110,7 +119,7 @@ define(function(require, exports, module) {
         if (event.code) retryCount || koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code', event.code, new Date());
         retryCount = Math.min(4, ++retryCount);
 
-        if (sessState.isClosed())
+        if (sessState.isClosed() || sessState.isPaused())
           return;
 
         reconnTimeout = koru._afTimeout(connect, retryCount*500);

@@ -5,10 +5,10 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
 
   function stateFactory() {
-    var state = 'startup';
-    var count = 0;
+    let state = 'startup';
+    let count = 0;
 
-    var debug_pending = false;
+    let debug_pending = false;
 
     Trace.debug_pending = function (value) {
       if (value) {
@@ -21,6 +21,13 @@ define(function(require, exports, module) {
         debug_pending = false;
       }
     };
+
+    function setState(self, value) {
+      const was = state;
+      state = value;
+      if (was === 'ready')
+        self.notify(false);
+    }
 
     const sessionState = {
       constructor: stateFactory,
@@ -39,22 +46,18 @@ define(function(require, exports, module) {
       connected(session) {
         this.session = session;
         state = 'ready';
-        var onConnect = this._onConnect;
+        const onConnect = this._onConnect;
         util.forEach(Object.keys(onConnect).sort(), function (priority) {
           onConnect[priority](session);
         });
         this.notify(true);
       },
 
-      close() {
-        let was = state;
-        state = 'closed';
-        if (was === 'ready')
-          this.notify(false);
-      },
+      close() {setState(this, 'closed')},
+      pause() {setState(this, 'paused')},
 
       retry(code, reason) {
-        var was = state;
+        const was = state;
         state = 'retry';
         if (was !== 'retry')
           this.notify(false, code, reason);
@@ -62,6 +65,7 @@ define(function(require, exports, module) {
 
       isReady() {return state === 'ready'},
       isClosed() {return state === 'closed'},
+      isPaused() {return state === 'paused'},
 
       get _state() {return state},
       set _state(value) {state = value},

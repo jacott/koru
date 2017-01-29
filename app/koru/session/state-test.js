@@ -76,6 +76,19 @@ define(function (require, exports, module) {
       assert.equals(sessState._onConnect['22'], undefined);
     },
 
+    "test pause"() {
+      test.onEnd(sessState.onChange(v.onChange = test.stub()));
+
+      sessState._state = 'ready';
+
+      sessState.pause();
+
+      assert.calledOnceWith(v.onChange, false);
+
+      assert.isTrue(sessState.isPaused());
+
+    },
+
     "test retry startup"() {
       test.onEnd(sessState.onChange(v.onChange = test.stub()));
 

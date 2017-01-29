@@ -101,6 +101,22 @@ define(function (require, exports, module) {
       assert.called(v.c2);
     },
 
+    "test pause"() {
+      v.sess.connect();
+      v.ws.close = this.stub();
+
+      v.sess.onStop(v.c1 = test.stub());
+
+      this.spy(v.sess.state, 'retry');
+
+      v.sess.pause();
+      assert.called(v.ws.close);
+
+      refute.called(v.c1);
+
+      refute.called(v.sess.state.retry);
+    },
+
     "test state"() {
       assert.same(v.state, v.sess.state);
     },
