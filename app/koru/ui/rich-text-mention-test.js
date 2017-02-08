@@ -54,7 +54,7 @@ isClient && define(function (require, exports, module) {
           }
         };
 
-        TH.mouseDownUp('[name=mention]');
+        TH.pointerDownUp('[name=mention]');
 
         v.fooHtmlFunc = function (elm) {
           return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
@@ -86,7 +86,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtMention:not(.inline) input', function () {
           TH.input(this, 'g');
         });
-        TH.mouseDownUp('.glassPane');
+        TH.pointerDownUp('.glassPane');
         assert.dom('.input', function () {
           assert.same(document.activeElement, this);
           var range = Dom.getRange();
@@ -254,9 +254,9 @@ isClient && define(function (require, exports, module) {
 
           assert.dom('>div>div', 'James J Gooding', function () {
             Dom.stopEvent.reset();
-            TH.trigger(this, 'mousedown');
+            TH.trigger(this, 'pointerdown');
             assert.called(Dom.stopEvent);
-            TH.trigger(this, 'mouseup');
+            TH.trigger(this, 'pointerup');
           });
         });
 
@@ -282,7 +282,7 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('>div>div:last-child', function () {
             assert.same(this, v.div3);
-            TH.mouseDownUp(this);
+            TH.pointerDownUp(this);
           });
         });
 
@@ -305,7 +305,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.rtMention');
 
-        TH.mouseDownUp('.glassPane');
+        TH.pointerDownUp('.glassPane');
 
         refute.dom('.rtMention');
 
@@ -339,12 +339,12 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test mouseover"() {
-        TH.trigger(v.div3, 'mouseover');
+      "test pointerover"() {
+        TH.trigger(v.div3, 'pointerover');
         assert.same(document.getElementsByClassName('selected').length, 1);
         assert.className(v.div3, 'selected');
 
-        TH.trigger(v.div1, 'mouseover');
+        TH.trigger(v.div1, 'pointerover');
         assert.same(document.getElementsByClassName('selected').length, 1);
         assert.className(v.div1, 'selected');
       },

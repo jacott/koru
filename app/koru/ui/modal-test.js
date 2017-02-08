@@ -84,7 +84,7 @@ isClient && define(function (require, exports, module) {
       var ctx = Dom.setCtx(container);
       test.spy(ctx, 'onDestroy');
 
-      test.onEnd(function () {TH.mouseDownUp(container)});
+      test.onEnd(function () {TH.pointerDownUp(container)});
 
       var options = sut.appendBelow({
         container: container,
@@ -110,7 +110,7 @@ isClient && define(function (require, exports, module) {
       var ctx = Dom.setCtx(container);
       test.spy(ctx, 'onDestroy');
 
-      test.onEnd(function () {TH.mouseDownUp(container)});
+      test.onEnd(function () {TH.pointerDownUp(container)});
 
       var options = sut.appendBelow({
         container: container,

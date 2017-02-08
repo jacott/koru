@@ -81,7 +81,7 @@ isClient && define(function (require, exports, module) {
       });
       document.activeElement.blur();
       assert.dom('.glassPane');
-      TH.mouseDownUp('.glassPane li');
+      TH.pointerDownUp('.glassPane li');
       assert.same(document.activeElement, html);
       const range = Dom.getRange();
       assert.same(range.startContainer, html.firstChild);
@@ -99,7 +99,7 @@ isClient && define(function (require, exports, module) {
         },
       });
 
-      TH.mouseDownUp('.glassPane li');
+      TH.pointerDownUp('.glassPane li');
 
       assert.same(document.activeElement, input);
       assert.same(input.selectionEnd, 3);
@@ -395,16 +395,16 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test select by mouse click"() {
+      "test select by pointer"() {
         const test = this;
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
               test.spy(Dom, 'stopEvent');
-              TH.trigger(this, 'mousedown');
+              TH.trigger(this, 'pointerdown');
               assert.called(Dom.stopEvent);
               Dom.stopEvent.restore();
-              TH.trigger(this, 'mouseup');
+              TH.trigger(this, 'pointerup');
               TH.click(this);
               assert.same(v.elm, this);
             });
@@ -412,9 +412,9 @@ isClient && define(function (require, exports, module) {
             assert.same(v.currentTarget, this);
           });
           assert.dom('#SelectMenu');
-          TH.trigger(this, 'mousedown');
+          TH.trigger(this, 'pointerdown');
           assert.dom('#SelectMenu');
-          TH.trigger('body>.glassPane', 'mousedown');
+          TH.trigger('body>.glassPane', 'pointerdown');
           refute.dom('#SelectMenu');
         });
       },
@@ -425,7 +425,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
               v.result = true;
-              TH.mouseDownUp(this);
+              TH.pointerDownUp(this);
               assert.same(v.elm, this);
             });
           });
@@ -460,7 +460,7 @@ isClient && define(function (require, exports, module) {
 
       "test clicking off list closes list"() {
         assert.dom('#TestSelectMenu>br');
-        TH.trigger('body>.glassPane', 'mousedown');
+        TH.trigger('body>.glassPane', 'pointerdown');
         refute.dom('#SelectMenu');
       },
 

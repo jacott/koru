@@ -113,7 +113,7 @@ define(function(require, exports, module) {
 
   Tpl.$events({
     'click button'(event) {Dom.stopEvent()},
-    'mousedown button'(mde) {
+    'pointerdown button'(mde) {
       Dom.stopEvent();
 
       const toolbar = mde.currentTarget;
@@ -125,7 +125,7 @@ define(function(require, exports, module) {
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm)
         pCtx.inputElm.focus();
-      Dom.onMouseUp(function (event) {
+      Dom.onPointerUp(function (event) {
         if (! Dom.contains(button, event.target)) return;
 
 

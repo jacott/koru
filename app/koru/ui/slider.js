@@ -12,11 +12,11 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mousedown .slider'(event) {
+    'pointerdown .slider'(event) {
       Dom.stopEvent();
 
-      document.addEventListener('mousemove', adjust, true);
-      document.addEventListener('mouseup', cancel, true);
+      document.addEventListener('pointermove', adjust, true);
+      document.addEventListener('pointerup', cancel, true);
 
       var ctx = $.ctx;
       var data = ctx.data;
@@ -59,8 +59,8 @@ define(function(require, exports, module) {
           window.cancelAnimationFrame(af);
           af = null;
         }
-        document.removeEventListener('mousemove', adjust, true);
-        document.removeEventListener('mouseup', cancel, true);
+        document.removeEventListener('pointermove', adjust, true);
+        document.removeEventListener('pointerup', cancel, true);
         Dom.removeClass(sliderElm, 'ui-dragging');
         handleStyle.willChange = '';
         var data = ctx.data;

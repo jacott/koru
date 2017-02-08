@@ -78,7 +78,7 @@ define(function(require, exports, module) {
       $.ctx.updateAllTags(nd);
     },
 
-    'mousedown'(event) {
+    'pointerdown'(event) {
       Dom.stopEvent();
     },
 

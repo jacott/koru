@@ -198,7 +198,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.glassPane', function () {
           assert.dom('li', 'C');
-          TH.mouseDownUp('li', 'Ruby');
+          TH.pointerDownUp('li', 'Ruby');
         });
 
         assert.dom('pre[data-lang="ruby"]');
@@ -280,16 +280,16 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test mouseup on/off"() {
+      "test pointerup on/off"() {
          assert.dom('.input', function () {
            this.focus();
            assert.same(sut.$ctx(this).mode.type, 'standard');
            Dom('.richTextEditor').value = Dom.h([{div: "first"}, {pre: "second"}]);
            TH.setRange(this.lastChild, 0);
-           TH.mouseDownUp(this);
+           TH.pointerDownUp(this);
            assert.same(sut.$ctx(this).mode.type, 'code');
            TH.setRange(this.firstChild, 0);
-           TH.mouseDownUp(this);
+           TH.pointerDownUp(this);
            assert.same(sut.$ctx(this).mode.type, 'standard');
          });
       },
@@ -321,7 +321,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.glassPane', function () {
         assert.dom('li>font[size="6"]', 'XX large');
-        TH.mouseDownUp('li>font[size="2"]', 'Small');
+        TH.pointerDownUp('li>font[size="2"]', 'Small');
       });
 
       assert.dom('.input', function () {
@@ -838,7 +838,7 @@ isClient && define(function (require, exports, module) {
           TH.input('[name=link]', 'bar');
         });
 
-        TH.mouseDownUp('.glassPane');
+        TH.pointerDownUp('.glassPane');
 
         refute.dom('.glassPane');
 

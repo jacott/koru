@@ -61,9 +61,9 @@ define(function(require, exports, module) {
         if (options.popup.tagName === 'SPAN')
           options.popup = options.popup.nextElementSibling;
       }
-      options.container.addEventListener('mousedown', callback, true);
+      options.container.addEventListener('pointerdown', callback, true);
       options.ctx.onDestroy(function () {
-        options.container.removeEventListener('mousedown', callback, true);
+        options.container.removeEventListener('pointerdown', callback, true);
         if (options === topModal) {
           topModal = topModal.prev;
           if (topModal == null) {

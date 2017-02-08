@@ -14,7 +14,7 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
-    "test mousedown on slider"() {
+    "test pointerdown on slider"() {
       var slider = sut.$autoRender({pos: .25, callback: v.callback = test.stub()});
 
       slider.style.width = '256px';
@@ -28,11 +28,11 @@ isClient && define(function (require, exports, module) {
         var bbox = this.getBoundingClientRect();
         assert.dom('.handle', function () {
           assert.cssNear(this, 'left', 25, .01, '%');
-          TH.trigger(this.parentNode, 'mousedown', {clientX: bbox.left + 128});
+          TH.trigger(this.parentNode, 'pointerdown', {clientX: bbox.left + 128});
 
           assert.cssNear(this, 'left', 50, .01, '%');
 
-          TH.trigger(this, 'mousemove', {clientX: bbox.left + 192});
+          TH.trigger(this, 'pointermove', {clientX: bbox.left + 192});
 
           assert.cssNear(this, 'left', 50, .01, '%');
 
@@ -40,10 +40,10 @@ isClient && define(function (require, exports, module) {
 
           assert.cssNear(this, 'left', 75, .01, '%');
 
-          TH.trigger(this, 'mouseup');
+          TH.trigger(this, 'pointerup');
 
           window.requestAnimationFrame.reset();
-          TH.trigger(this, 'mousemove', {clientX: bbox.left + 1});
+          TH.trigger(this, 'pointermove', {clientX: bbox.left + 1});
 
           refute.called(window.requestAnimationFrame);
         });

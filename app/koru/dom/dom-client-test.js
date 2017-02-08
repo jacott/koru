@@ -356,15 +356,15 @@ define(function (require, exports, module) {
     },
 
 
-    "test onMouseUp"() {
+    "test onPointerUp"() {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'span'},
         ]
       }]});
       Dom.Foo.$events({
-        'mousedown span'(event) {
-          Dom.onMouseUp(function (e2) {
+        'pointerdown span'(event) {
+          Dom.onPointerUp(function (e2) {
             v.ctx = Dom.current.ctx;
             v.target = e2.target;
           });
@@ -374,15 +374,15 @@ define(function (require, exports, module) {
       document.body.appendChild(Dom.Foo.$autoRender({}));
 
       assert.dom('div>span', function () {
-        Dom.triggerEvent(this, 'mousedown');
-        Dom.triggerEvent(this, 'mouseup');
+        Dom.triggerEvent(this, 'pointerdown');
+        Dom.triggerEvent(this, 'pointerup');
 
         assert.same(v.ctx, Dom.Foo.$ctx(this));
         assert.same(v.target, this);
 
         v.ctx = null;
 
-        Dom.triggerEvent(this, 'mouseup');
+        Dom.triggerEvent(this, 'pointerup');
 
         assert.same(v.ctx, null);
       });

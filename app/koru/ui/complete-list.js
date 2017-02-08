@@ -41,7 +41,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mousedown li'(event) {select(this)},
+    'pointerdown li'(event) {select(this)},
   });
 
   function keydown(event) {

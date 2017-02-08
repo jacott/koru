@@ -65,16 +65,16 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'mouseover .rtMention>div>*'(event) {
+    'pointerover .rtMention>div>*'(event) {
       Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
       Dom.addClass(this, 'selected');
     },
 
-    'mousedown .rtMention'(event) {
+    'pointerdown .rtMention'(event) {
       Dom.stopEvent();
     },
 
-    'mouseup .rtMention>div>*'(event) {
+    'pointerup .rtMention>div>*'(event) {
       var ctx = $.ctx;
       acceptItem(event, this);
     },

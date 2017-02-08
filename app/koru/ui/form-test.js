@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
         v.list = [['a', 'A'], ['b', 'B']];
         TH.selectMenu('.select', 'a', function () {
           assert(document.querySelector('#SelectMenu.fooClass'));
-          TH.mouseDownUp(this);
+          TH.pointerDownUp(this);
         });
 
         assert.dom('.select', 'A');
@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'b');
             });
-            TH.mouseDownUp(this);
+            TH.pointerDownUp(this);
           });
           assert.dom('.select', 'a');
           assert.dom('[type=hidden]', {value: 'a'});
@@ -352,16 +352,16 @@ isClient && define(function (require, exports, module) {
       },
 
 
-      "test mousedown and nesting"() {
+      "test pointerdown and nesting"() {
         const removeEventListener = this.spy(document, 'removeEventListener');
-        TH.trigger('#sp', 'mousedown');
+        TH.trigger('#sp', 'pointerdown');
 
         refute.called(v.func);
 
-        TH.trigger('.foo', 'mousedown');
+        TH.trigger('.foo', 'pointerdown');
 
         assert.calledWith(v.func, TH.match(function (event) {
-          assert.same(event.type, 'mousedown');
+          assert.same(event.type, 'pointerdown');
           assert.same(event.target, document.querySelector('.foo'));
           return true;
         }));
@@ -372,7 +372,7 @@ isClient && define(function (require, exports, module) {
 
         v.func.reset();
 
-        TH.trigger('#top', 'mousedown');
+        TH.trigger('#top', 'pointerdown');
 
         refute.called(v.func);
         assert.called(v.func2);
@@ -383,7 +383,7 @@ isClient && define(function (require, exports, module) {
 
         v.func2.reset();
 
-        TH.trigger('.foo', 'mousedown');
+        TH.trigger('.foo', 'pointerdown');
 
         assert.called(v.func);
         refute.called(v.func2);

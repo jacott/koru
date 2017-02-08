@@ -193,18 +193,18 @@ define(function(require, exports, module) {
       return this;
     },
 
-    mouseDownUp(node, args) {
+    pointerDownUp(node, args) {
       if (typeof node === 'string') {
         if (typeof args === 'string') {
           assert.elideFromStack.dom(node, args, function () {node = this});
-          TH.trigger(node, 'mousedown');
-          TH.trigger(node, 'mouseup');
+          TH.trigger(node, 'pointerdown');
+          TH.trigger(node, 'pointerup');
           return;
         }
         assert.elideFromStack.dom(node, function () {node = this});
       }
-      TH.trigger(node, 'mousedown', args);
-      TH.trigger(node, 'mouseup', args);
+      TH.trigger(node, 'pointerdown', args);
+      TH.trigger(node, 'pointerup', args);
     },
 
     setRange(startContainer, startOffset, endContainer, endOffset) {
@@ -225,7 +225,7 @@ define(function(require, exports, module) {
     },
 
     selectMenu(node, value, func) {
-      TH.trigger(node, 'mousedown');
+      TH.trigger(node, 'pointerdown');
       TH.click(node);
       const pre = TH.geddon.__elidePoint;
       switch(typeof value) {
@@ -241,18 +241,18 @@ define(function(require, exports, module) {
             TH.geddon.__elidePoint = pre;
             switch (typeof func) {
             case 'function':
-              if (func.call(li, li)) TH.mouseDownUp(li);
+              if (func.call(li, li)) TH.pointerDownUp(li);
               break;
             case 'object':
               if (func.menu) {
                 assert.dom(li.parentNode, menu => {
                   if (func.menu.call(menu, menu, li))
-                    TH.mouseDownUp(li);;
+                    TH.pointerDownUp(li);;
                 });
                 break;
               }
             default:
-              TH.mouseDownUp(li);
+              TH.pointerDownUp(li);
             }
           });
         });

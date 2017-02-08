@@ -164,16 +164,16 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.$events({
-    'mousedown'() {
+    'pointerdown'() {
       Dom.stopEvent();
     },
-    'mouseup li'(event) {
+    'pointerup li'(event) {
       Dom.stopEvent();
 
       Dom.hasClass(this, 'disabled') ||
         select($.ctx.parentCtx, this, event);
     },
-    'mouseover .ui-ul>li:not(.selected):not(.disabled)'(event) {
+    'pointerover .ui-ul>li:not(.selected):not(.disabled)'(event) {
       const curr = event.currentTarget.getElementsByClassName('selected')[0];
       Dom.removeClass(curr, 'selected');
       Dom.addClass(this, 'selected');

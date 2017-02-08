@@ -59,13 +59,13 @@ isClient && define(function (require, exports, module) {
         v.selectCode();
 
         assert.dom('[name=language]', 'Text', function () {
-          TH.mouseDownUp(this);
+          TH.pointerDownUp(this);
         });
 
         assert.dom('.glassPane', function () {
           this.focus();
           assert.dom('li', 'C');
-          TH.mouseDownUp('li', 'Common Lisp, elisp');
+          TH.pointerDownUp('li', 'Common Lisp, elisp');
         });
 
         assert.dom('.input', function () {
@@ -82,7 +82,7 @@ isClient && define(function (require, exports, module) {
         const syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
                                           .mode.actions, 'syntaxHighlight');
         assert.dom('[name=syntaxHighlight]', '', function () {
-          TH.mouseDownUp(this);
+          TH.pointerDownUp(this);
         });
 
         assert.called(syntaxHighlight);
@@ -114,7 +114,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('b', 'Hello', function () {
             TH.setRange(this, 0);
             Dom.getCtx(this).updateAllTags();
-            TH.mouseDownUp(this);
+            TH.pointerDownUp(this);
             assert.className(v.bold, 'on');
             refute.className(v.italic, 'on');
           });
@@ -140,7 +140,7 @@ isClient && define(function (require, exports, module) {
         });
 
         refute.dom('.rtLink');
-        TH.mouseDownUp(v.link);
+        TH.pointerDownUp(v.link);
 
         TH.stubAfTimeout();
       });
@@ -151,7 +151,7 @@ isClient && define(function (require, exports, module) {
         assert(Modal.topModal.handleTab);
         assert.dom('input', {value: '/link.html'}, function () {
         });
-        TH.mouseDownUp(this.parentNode);
+        TH.pointerDownUp(this.parentNode);
       });
 
       refute.dom('.rtLink');
@@ -159,8 +159,8 @@ isClient && define(function (require, exports, module) {
       assert.dom('i', 'world', function () {
         TH.setRange(this.firstChild, 3);
         this.parentNode.focus();
-        TH.trigger(this, 'mousedown');
-        TH.trigger(this, 'mouseup');
+        TH.trigger(this, 'pointerdown');
+        TH.trigger(this, 'pointerup');
         assert.className(v.italic, 'on');
         refute.className(v.link, 'on');
       });
@@ -172,7 +172,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('[name=link]');
+      TH.pointerDownUp('[name=link]');
 
       assert.dom('.rtLink', function () {
         assert.dom('[name=link]', function () {
@@ -195,14 +195,14 @@ isClient && define(function (require, exports, module) {
         });
       });
 
-      TH.trigger('[name=bold]', 'mouseup');
+      TH.trigger('[name=bold]', 'pointerup');
 
       assert.dom('.richTextEditor>.input', function () {
-        assert.msg('"Hello" should stil be bold if no mousedown').dom('b', "Hello");
+        assert.msg('"Hello" should stil be bold if no pointerdown').dom('b', "Hello");
       });
 
-      TH.trigger('[name=bold]', 'mousedown');
-      TH.trigger('[name=bold]', 'mouseup');
+      TH.trigger('[name=bold]', 'pointerdown');
+      TH.trigger('[name=bold]', 'pointerup');
 
       assert.dom('.richTextEditor>.input', function () {
         assert.same(this.innerHTML, 'Hello <i>world</i> <a href=\"/link.html\">the link</a>');
@@ -218,14 +218,14 @@ isClient && define(function (require, exports, module) {
         document.execCommand('styleWithCSS', false, true);
       });
 
-      TH.mouseDownUp('[name=code]');
+      TH.pointerDownUp('[name=code]');
 
       assert.dom('.richTextEditor>.input b', function () {
         assert.same(this.innerHTML, 'H<span style=\"font-family: monospace;\">el</span>lo');
       });
 
       assert.dom('[name=code].on');
-      TH.mouseDownUp('[name=code]');
+      TH.pointerDownUp('[name=code]');
       assert.dom('[name=code]:not(.on)');
     },
 
@@ -235,7 +235,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('button.myButton');
+      TH.pointerDownUp('button.myButton');
 
       assert.dom('.rtMention', function () {
         assert.dom('input', {value: ''});
@@ -247,7 +247,7 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keyup');
       });
 
-      TH.mouseDownUp('button.myButton[title="Mention someone"]');
+      TH.pointerDownUp('button.myButton[title="Mention someone"]');
 
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});
@@ -267,11 +267,11 @@ isClient && define(function (require, exports, module) {
 
       "test set fontName"() {
         RichText.mapFontNames({poster: 'foo font'});
-        TH.mouseDownUp('.rtToolbar [name=fontName]');
+        TH.pointerDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
           assert.dom('li>font[face="whiteboard"]', 'Whiteboard');
-          TH.mouseDownUp('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
+          TH.pointerDownUp('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
         });
 
         assert.dom('.input', function () {
@@ -282,10 +282,10 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[name=fontName]', 'Poster');
 
-        TH.mouseDownUp('.rtToolbar [name=fontName]');
+        TH.pointerDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.mouseDownUp('li>font[face="handwriting"]', 'Handwriting');
+          TH.pointerDownUp('li>font[face="handwriting"]', 'Handwriting');
         });
         assert.dom('[name=fontName]', 'Handwriting');
 
@@ -298,20 +298,20 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[name=fontName]', 'Handwriting');
 
-        TH.mouseDownUp('.rtToolbar [name=fontName]');
+        TH.pointerDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.mouseDownUp('li>font[face="sans-serif"]', 'Sans serif');
+          TH.pointerDownUp('li>font[face="sans-serif"]', 'Sans serif');
         });
 
         assert.dom('[name=fontName]', 'Sans serif');
       },
 
       "test set fontSize"() {
-        TH.mouseDownUp('.rtToolbar [name=fontSize]');
+        TH.pointerDownUp('.rtToolbar [name=fontSize]');
 
         assert.dom('.glassPane', function () {
-          TH.mouseDownUp('li>font[size="4"]', 'Large');
+          TH.pointerDownUp('li>font[size="4"]', 'Large');
         });
 
         assert.dom('.input', function () {
@@ -324,7 +324,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test set textAlign"() {
-        TH.mouseDownUp('.rtToolbar [name=textAlign]');
+        TH.pointerDownUp('.rtToolbar [name=textAlign]');
 
         assert.dom('.glassPane .rtTextAlign', function () {
           assert.dom('li>[name=justifyLeft]');
@@ -332,7 +332,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.getAttribute('title'), 'Center [ctrl-shift-E]');
           });
           assert.dom('li>[name=justifyRight]');
-          TH.mouseDownUp('li>[name=justifyFull]');
+          TH.pointerDownUp('li>[name=justifyFull]');
         });
 
         assert.dom('.input', function () {
@@ -343,7 +343,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test set fontColor"() {
-        TH.mouseDownUp('.rtToolbar [name=fontColor]');
+        TH.pointerDownUp('.rtToolbar [name=fontColor]');
 
         assert.dom('#ColorPicker', function () {
           TH.input('[name=hex]', '00ff00');
@@ -360,9 +360,9 @@ isClient && define(function (require, exports, module) {
 
     "test more"() {
       assert.dom('.rtToolbar:not(.more)', function () {
-        TH.mouseDownUp("[name=more]");
+        TH.pointerDownUp("[name=more]");
         assert.className(this, 'more');
-        TH.mouseDownUp("[name=more]");
+        TH.pointerDownUp("[name=more]");
         refute.className(this, 'more');
       });
     },

@@ -78,7 +78,7 @@ define(function(require, exports, module) {
       } else {
         modalize = {elm, func};
 
-        document.addEventListener('mousedown', modalizeCallback, true);
+        document.addEventListener('pointerdown', modalizeCallback, true);
         document.addEventListener('keydown', modalizeCallback);
       }
     },
@@ -90,7 +90,7 @@ define(function(require, exports, module) {
       if (! modalize) return null;
       modalize = all === 'all' ? null : modalize.parent;
       if (! modalize) {
-        document.removeEventListener('mousedown', modalizeCallback, true);
+        document.removeEventListener('pointerdown', modalizeCallback, true);
         document.removeEventListener('keydown', modalizeCallback);
         return null;
       }
@@ -380,7 +380,7 @@ define(function(require, exports, module) {
   }
 
   Tpl.SelectMenu.$events({
-    'mousedown'(event) {
+    'pointerdown'(event) {
       Dom.stopEvent();
 
       const data = $.ctx.data;

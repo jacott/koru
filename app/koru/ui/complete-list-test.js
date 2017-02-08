@@ -54,7 +54,7 @@ isClient && define(function (require, exports, module) {
 
       "test clicking"() {
         assert.dom('li', 'abc', function () {
-          TH.trigger(this, 'mousedown');
+          TH.trigger(this, 'pointerdown');
         });
 
         refute.dom('.complete');
@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
           Dom.Form.completeList({input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}]});
         });
         assert.dom('li', 'abc', function () {
-          TH.trigger(this, 'mousedown');
+          TH.trigger(this, 'pointerdown');
         });
         assert.dom('[name=name]', {value: 'abc'});
       },

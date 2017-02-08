@@ -90,7 +90,7 @@ isClient && define(function (require, exports, module) {
       Dom('[name=testField]').addEventListener('change', v.change = test.stub());
       assert.dom('body>.Calendar td', '25', function () {
         test.spy(Dom, 'stopEvent');
-        TH.trigger(document.body.lastChild, 'mousedown');
+        TH.trigger(document.body.lastChild, 'pointerdown');
         assert.called(Dom.stopEvent);
         TH.click(this);
       });

@@ -143,7 +143,7 @@ define(function(require, exports, module) {
       map[1](event, map[0]);
     } else {
       window.addEventListener('keydown', nextKey, true);
-      document.body.addEventListener('mouseleave', cancel, true);
+      document.body.addEventListener('pointerleave', cancel, true);
     }
 
     function nextKey(event) {
@@ -173,7 +173,7 @@ define(function(require, exports, module) {
 
     function cancel() {
       window.removeEventListener('keydown', nextKey, true);
-      document.body.removeEventListener('mouseleave', cancel, true);
+      document.body.removeEventListener('pointerleave', cancel, true);
     }
 
   }

@@ -630,7 +630,7 @@ define(function(require, exports, module) {
       }
     },
 
-    mouseup() {
+    pointerup() {
       var range = Dom.getRange();
       $.ctx.override = null;
       range && setMode($.ctx, range);

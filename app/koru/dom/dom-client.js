@@ -578,15 +578,15 @@ define(function(require, exports, module) {
       return event.ctrlKey || event.shiftKey || event.metaKey || event.altKey;
     },
 
-    onMouseUp(func, elm) {
-      document.addEventListener('mouseup', omu, true);
+    onPointerUp(func, elm) {
+      document.addEventListener('pointerup', opu, true);
 
       var $ = Dom.current;
 
       var ctx = $.ctx;
 
-      function omu(event) {
-        document.removeEventListener('mouseup', omu, true);
+      function opu(event) {
+        document.removeEventListener('pointerup', opu, true);
 
         var orig = $.ctx;
         $._ctx = ctx;
