@@ -21,6 +21,10 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test supports passive"() {
+      assert.isTrue(Dom.supportsPassiveEvents === true || Dom.supportsPassiveEvents === false);
+    },
+
     "test isInView"() {
       /**
        * Determine if a element is within the viewable area of a

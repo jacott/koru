@@ -57,9 +57,16 @@ define(function(require, exports, module) {
     };
   }
 
+  let supportsPassiveEvents = false;
+  window.addEventListener('test', null, Object.defineProperty({}, 'passive', {
+    get() { supportsPassiveEvents = true; },
+  }));
+
   util.merge(Dom, {
     Ctx: Ctx,
     current: Ctx.current,
+
+    supportsPassiveEvents,
 
     get element() {return Ctx._currentElement},
 
