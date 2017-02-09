@@ -198,10 +198,14 @@ define(function(require, exports, module) {
 
     if (! eventTypes) {
       eventTypes = events[eventType] = {};
-      if (eventType === 'focus' || eventType === 'blur')
+      switch(eventType) {
+      case 'focus':
+      case 'blur':
         parent.addEventListener(eventType, onEvent, true);
-      else
+        break;
+      default:
         parent.addEventListener(eventType, onEvent);
+      }
     }
 
     eventTypes[selector||':TOP'] = func;
@@ -274,10 +278,14 @@ define(function(require, exports, module) {
     if (events) {
       const eventTypes = events[eventType];
       events[eventType] = null;
-      if (eventType === 'focus' || eventType === 'blur')
+      switch (eventType) {
+      case 'focus':
+      case 'blur':
         parent.removeEventListener(eventType, onEvent, true);
-      else
+        break;
+      default:
         parent.removeEventListener(eventType, onEvent);
+      }
     }
   }
 

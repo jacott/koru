@@ -282,6 +282,39 @@ isClient && define(function (require, exports, module) {
       assert.calledWithExactly(v.one, event);
     },
 
+    "test focus,blur are capture events"() {
+      Dom.newTemplate({name: 'Foo', nodes: [{
+        name: 'div', children: [
+          {name: 'button'},
+        ]
+      }]});
+      Dom.Foo.$events({
+        'focus button': v.focus = this.stub(),
+        'blur button': v.blur = this.stub(),
+      });
+
+      const foo = Dom.Foo.$render({});
+
+      this.stub(foo, 'addEventListener');
+      Dom.Foo.$attachEvents(foo);
+
+      assert.calledWith(foo.addEventListener, 'focus', TH.match(f => v.f = f), true);
+      assert.calledWith(foo.addEventListener, 'blur', v.f, true);
+
+      v.f(v.ev = {type: 'focus', currentTarget: foo, target: foo.querySelector('button')});
+
+      assert.calledWith(v.focus, v.ev);
+      v.f(v.ev = {type: 'blur', currentTarget: foo, target: foo.querySelector('button')});
+
+      assert.calledWith(v.blur, v.ev);
+
+      this.stub(foo, 'removeEventListener');
+      Dom.Foo.$detachEvents(foo);
+
+      assert.calledWith(foo.removeEventListener, 'focus', v.f, true);
+      assert.calledWith(foo.removeEventListener, 'blur', v.f, true);
+    },
+
     "test event calling"() {
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
