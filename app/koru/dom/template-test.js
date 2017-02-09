@@ -3,11 +3,12 @@ isClient && define(function (require, exports, module) {
    * DomTemplate is used to create interactive
    * [Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  const Dom         = require('koru/dom');
-  const Ctx         = require('koru/dom/ctx');
-  const TH          = require('koru/test');
-  const api         = require('koru/test/api');
-  const util        = require('koru/util');
+  const koru = require('koru');
+  const Dom  = require('koru/dom');
+  const Ctx  = require('koru/dom/ctx');
+  const TH   = require('koru/test');
+  const api  = require('koru/test/api');
+  const util = require('koru/util');
 
   const DomTemplate = require('./template');
   var v;
@@ -313,6 +314,140 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(foo.removeEventListener, 'focus', v.f, true);
       assert.calledWith(foo.removeEventListener, 'blur', v.f, true);
+    },
+
+    "dragstart on touch": {
+      setUp() {
+        Dom.newTemplate({name: 'Foo', nodes: [{
+          name: 'div', children: [
+            {name: 'span', attrs: [['=', 'draggable', 'true']]},
+          ]
+        }]});
+        Dom.Foo.$events({
+          'dragstart span': v.dragStart = this.stub(),
+        });
+
+        v.foo = Dom.Foo.$render({});
+        document.body.append(v.foo);
+
+        this.stub(v.foo, 'addEventListener');
+        Dom.Foo.$attachEvents(v.foo);
+        assert.calledWithExactly(v.foo.addEventListener, 'dragstart', TH.match.func);
+        assert.calledWithExactly(v.foo.addEventListener, 'touchstart', TH.match(
+          f => v.touchstart = f));
+
+        this.stub(koru, 'setTimeout').returns(321);
+        this.stub(koru, 'clearTimeout');
+        v.target = v.foo.querySelector('span');
+        this.stub(document, 'addEventListener');
+        v.touchstartEvent = {
+          type: 'touchstart', currentTarget: v.foo,
+          target: v.target,
+          touches: [{clientX: 30, clientY: 60}],
+        };
+        v.start = function () {
+          v.touchstart(v.touchstartEvent);
+
+          assert.calledWith(document.addEventListener, 'touchend', TH.match(f => v.touchend = f),
+                            Dom.captureEventOption);
+
+          assert.calledWith(document.addEventListener, 'touchmove', TH.match(f => v.touchmove = f),
+                            Dom.captureEventOption);
+        };
+      },
+
+      "test touch and hold"() {
+        v.start();
+
+        assert.calledWith(koru.setTimeout, TH.match.func, 300);
+
+        koru.setTimeout.reset();
+        this.stub(document, 'removeEventListener');
+        v.touchstart(v.ev = {
+          type: 'touchstart', currentTarget: v.foo,
+          target: v.target,
+          touches: [{clientX: 30, clientY: 60}, {clientX: 30, clientY: 60}],
+        });
+
+        assert.calledWith(koru.clearTimeout, 321);
+        refute.called(koru.setTimeout);
+        assert.calledWith(document.removeEventListener, 'touchend', v.touchend,
+                          Dom.captureEventOption);
+        assert.calledWith(document.removeEventListener, 'touchmove', v.touchmove,
+                          Dom.captureEventOption);
+
+
+        v.touchstart(v.touchstartEvent);
+
+        assert.calledWith(koru.setTimeout, TH.match(to => v.to = to), 300);
+        refute.called(v.dragStart);
+        this.stub(Dom, 'triggerEvent');
+        v.to();
+        assert.calledWith(Dom.triggerEvent, v.target, 'dragstart', {clientX: 30, clientY: 60});
+
+        this.stub(v.foo, 'removeEventListener');
+        Dom.Foo.$detachEvents(v.foo);
+
+        assert.calledWithExactly(v.foo.removeEventListener, 'dragstart', TH.match.func);
+        assert.calledWithExactly(v.foo.removeEventListener, 'touchstart', v.touchstart);
+      },
+
+      "test move cancels"() {
+        v.start();
+
+        refute.called(koru.clearTimeout);
+
+        this.stub(document, 'removeEventListener');
+
+        v.touchmove({touches: [{clientX: 35, clientY: 60}]});
+
+        assert.calledWithExactly(koru.clearTimeout, 321);
+        assert.calledTwice(document.removeEventListener);
+      },
+
+      "test end cancels"() {
+         v.start();
+
+        refute.called(koru.clearTimeout);
+
+        this.stub(document, 'removeEventListener');
+
+        v.touchend({touches: [{clientX: 35, clientY: 60}]});
+
+        refute.called(koru.clearTimeout);
+        refute.called(document.removeEventListener);
+
+        v.touchend({touches: []});
+
+        assert.calledWithExactly(koru.clearTimeout, 321);
+        assert.calledTwice(document.removeEventListener);
+      },
+
+      "test dragging"() {
+        v.start();
+
+        koru.setTimeout.yield();
+
+        this.stub(Dom, 'triggerEvent');
+        v.touchmove(v.ev = {
+          target: v.target,
+          touches: [{clientX: 35, clientY: 60}],
+          preventDefault: this.stub(),
+          stopImmediatePropagation: this.stub(),
+        });
+
+        assert.calledWith(Dom.triggerEvent, v.target, 'pointermove', {clientX: 35, clientY: 60});
+        assert.called(v.ev.preventDefault);
+        assert.called(v.ev.stopImmediatePropagation);
+
+        this.stub(document, 'removeEventListener');
+        v.touchend({target: v.target,
+                    touches: []});
+
+        assert.calledWith(Dom.triggerEvent, v.target, 'pointerup', {clientX: 35, clientY: 60});
+
+        assert.calledTwice(document.removeEventListener);
+      },
     },
 
     "test event calling"() {

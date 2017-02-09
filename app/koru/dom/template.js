@@ -7,6 +7,7 @@ define(function(require, exports, module) {
 
   const {mergeNoEnum} = util;
   const {DOCUMENT_NODE, TEXT_NODE} = document;
+  const dragTouchStartSym = Symbol();
 
   let currentEvent;
 
@@ -203,12 +204,74 @@ define(function(require, exports, module) {
       case 'blur':
         parent.addEventListener(eventType, onEvent, true);
         break;
+      case 'dragstart':
+        parent.addEventListener(eventType, onEvent);
+        parent.addEventListener('touchstart', dragTouchStart);
+        break;
       default:
         parent.addEventListener(eventType, onEvent);
       }
     }
 
     eventTypes[selector||':TOP'] = func;
+  }
+
+  function dragTouchStart(event) {
+    let v = event.currentTarget[dragTouchStartSym];
+    if (v) {
+      v.cancel && v.cancel();
+    }
+    if (event.touches.length !== 1)
+      return;
+    let touch = event.touches[0];
+
+    document.addEventListener('touchend', te, Dom.captureEventOption);
+    document.addEventListener('touchmove', tm, Dom.captureEventOption);
+
+    function cancel() {
+      if (! v) return;
+      document.removeEventListener('touchend', te, Dom.captureEventOption);
+      document.removeEventListener('touchmove', tm, Dom.captureEventOption);
+      koru.clearTimeout(v.timer);
+      v.currentTarget[dragTouchStartSym] = null;
+      v = null;
+    }
+
+    function te(event) {
+      if (event.touches.length !== 0) return;
+      if (v.dragging) {
+        Dom.triggerEvent(event.target, 'pointerup', {
+          clientX: touch.clientX, clientY: touch.clientY});
+      }
+      cancel();
+    }
+
+    function tm(event) {
+      if (! v.dragging)
+        return cancel();
+
+      touch = event.touches[0];
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+
+      Dom.triggerEvent(event.target, 'pointermove', {
+        clientX: touch.clientX, clientY: touch.clientY});
+    }
+
+    v = event.currentTarget[dragTouchStartSym] = {
+      dragging: false,
+      currentTarget: event.currentTarget,
+      target: event.target,
+      data: {clientX: touch.clientX, clientY: touch.clientY},
+      timer:  koru.setTimeout(() => {
+        const {target, data} = v;
+        v.dragging = true;
+        Dom.triggerEvent(target, 'dragstart', data);
+      }, 300),
+      cancel,
+    };
   }
 
   function onEvent(event) {
@@ -282,6 +345,10 @@ define(function(require, exports, module) {
       case 'focus':
       case 'blur':
         parent.removeEventListener(eventType, onEvent, true);
+        break;
+      case 'dragstart':
+        parent.removeEventListener(eventType, onEvent);
+        parent.removeEventListener('touchstart', dragTouchStart);
         break;
       default:
         parent.removeEventListener(eventType, onEvent);
