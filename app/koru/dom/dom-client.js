@@ -62,11 +62,15 @@ define(function(require, exports, module) {
     get() { supportsPassiveEvents = true; },
   }));
 
+  const captureEventOption = supportsPassiveEvents ? {capture: true, passive: false} : true;
+
   util.merge(Dom, {
     Ctx: Ctx,
     current: Ctx.current,
 
     supportsPassiveEvents,
+
+    captureEventOption,
 
     get element() {return Ctx._currentElement},
 
