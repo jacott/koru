@@ -1,3 +1,30 @@
+const fs = require('fs');
+const path = require('path');
+
+function polyfill(mod) {
+  const srcPath = require.resolve(mod);
+  const destPath = path.resolve(__dirname, 'polyfill', path.basename(srcPath));
+
+  if (! stat(destPath)) {
+    try {fs.unlinkSync(destPath);} catch(ex) {}
+    fs.symlinkSync(srcPath, destPath);
+  }
+}
+
+function stat(file) {
+  try {
+    return fs.statSync(file);
+  }
+  catch(ex) {
+    if (ex.code !== 'ENOENT')
+      throw ex;
+  }
+}
+
+polyfill('pepjs/dist/pep');
+
+exports.polyfill = polyfill;
+
 exports.common = function (cfg) {
   cfg.set('requirejs.packages', [
     "koru", "koru/session",
