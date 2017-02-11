@@ -316,6 +316,74 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(foo.removeEventListener, 'blur', v.f, true);
     },
 
+    "menustart": {
+      setUp() {
+        Dom.newTemplate({name: 'Foo', nodes: [{
+          name: 'div', children: [
+            {name: 'button'},
+          ]
+        }]});
+        Dom.Foo.$events({
+          'menustart button': v.menustart = this.stub(),
+        });
+
+        v.foo = Dom.Foo.$render({});
+        document.body.append(v.foo);
+
+        this.spy(v.foo, 'addEventListener');
+        Dom.Foo.$attachEvents(v.foo);
+        v.target = v.foo.querySelector('button');
+        v.ev = {
+          target: v.target,
+          currentTarget: v.foo,
+        };
+      },
+
+      "test non touch"() {
+        Dom.triggerEvent(v.target, 'pointerdown');
+        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerdown'));
+      },
+
+      "test touch click"() {
+        Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
+
+        refute.called(v.menustart);
+        Dom.triggerEvent(v.target, 'pointerup');
+
+        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerup'));
+      },
+
+      "test touch up outside target"() {
+        Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
+        this.spy(document, 'removeEventListener');
+        Dom.triggerEvent(v.foo, 'pointerup');
+
+        refute.called(v.menustart);
+        assert.calledWith(document.removeEventListener, 'pointerup', TH.match.func, true);
+        assert.calledWith(document.removeEventListener, 'pointermove', TH.match.func, true);
+      },
+
+      "test touch move"() {
+        Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
+        this.spy(document, 'removeEventListener');
+        Dom.triggerEvent(v.target, 'pointermove');
+        Dom.triggerEvent(v.target, 'pointerup');
+
+        refute.called(v.menustart);
+        assert.calledWith(document.removeEventListener, 'pointerup', TH.match.func, true);
+        assert.calledWith(document.removeEventListener, 'pointermove', TH.match.func, true);
+      },
+
+      "test $detachEvents"() {
+        assert.calledWithExactly(v.foo.addEventListener, 'pointerdown', TH.match(
+          f => v.pointerdown = f));
+        this.spy(v.foo, 'removeEventListener');
+        Dom.Foo.$detachEvents(v.foo);
+
+        assert.calledWithExactly(v.foo.removeEventListener, 'pointerdown', v.pointerdown);
+      },
+    },
+
     "dragstart on touch": {
       setUp() {
         Dom.newTemplate({name: 'Foo', nodes: [{

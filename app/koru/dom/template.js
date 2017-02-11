@@ -208,12 +208,37 @@ define(function(require, exports, module) {
         parent.addEventListener(eventType, onEvent);
         parent.addEventListener('touchstart', dragTouchStart);
         break;
+      case 'menustart':
+        parent.addEventListener('pointerdown', menustart);
+        break;
       default:
         parent.addEventListener(eventType, onEvent);
       }
     }
 
     eventTypes[selector||':TOP'] = func;
+  }
+
+  function menustart(event) {
+    if (event.pointerType === 'touch') {
+      const {currentTarget, target} = event;
+      const pu = event => {
+        if (target === event.target && event.type === 'pointerup' &&
+            document === event.currentTarget)
+          return;
+        document.removeEventListener('pointerup', pu, true);
+        document.removeEventListener('pointermove', pu, true);
+        currentTarget.removeEventListener('pointerup', pu);
+
+        event.type === 'pointerup' && currentTarget === event.currentTarget &&
+          onEvent(event, 'menustart');
+      };
+      currentTarget.addEventListener('pointerup', pu);
+      document.addEventListener('pointermove', pu, true);
+      document.addEventListener('pointerup', pu, true);
+    } else {
+      onEvent(event, 'menustart');
+    }
   }
 
   function dragTouchStart(event) {
@@ -274,12 +299,13 @@ define(function(require, exports, module) {
     };
   }
 
-  function onEvent(event) {
+  function onEvent(event, type=event.type) {
     const prevEvent = currentEvent;
     const prevCtx = Ctx._currentCtx;
     currentEvent = event;
+
     Ctx._currentCtx = event.currentTarget._koru;
-    const eventTypes = Ctx._currentCtx.__events[event.type];
+    const eventTypes = Ctx._currentCtx.__events[type];
     const matches = Dom._matchesFunc;
 
     const later = Object.create(null);
@@ -349,6 +375,9 @@ define(function(require, exports, module) {
       case 'dragstart':
         parent.removeEventListener(eventType, onEvent);
         parent.removeEventListener('touchstart', dragTouchStart);
+        break;
+      case 'menustart':
+        parent.removeEventListener('pointerdown', menustart);
         break;
       default:
         parent.removeEventListener(eventType, onEvent);
