@@ -29,7 +29,7 @@ define(function(require, exports, module) {
         (() => curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]);
       const mElm = details.container.firstChild;
       curr = mElm.getElementsByClassName('selected')[0];
-      for (let nSel = firstElm(); nSel; nextElm()) {
+      for (nSel = firstElm(); nSel; nextElm()) {
         if (Dom.hasClass(nSel, 'hide') || Dom.hasClass(nSel, 'disabled')) continue;
         Dom.removeClass(curr, 'selected');
         Dom.addClass(nSel, 'selected');

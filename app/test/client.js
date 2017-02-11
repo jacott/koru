@@ -3,7 +3,7 @@ window.requirejs = window.yaajs;
 window.history.replaceState(null, '', '/');
 
 define(function(require, exports, module) {
-  const koru = require('koru');
+  const koru = require('koru/client');
   require('koru/test/client');
 
   document.title = 'Koru Test Mode';

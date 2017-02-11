@@ -17,7 +17,7 @@ define(function (require, exports, module) {
   window.addEventListener('error', errorListener);
 
   function errorListener(ev) {
-    koru.error('E',koru.util.extractError(ev.error));
+    koru.logger('ERROR', koru.util.extractError(ev.error));
   }
 
   koru.logger = function (type, ...args) {
