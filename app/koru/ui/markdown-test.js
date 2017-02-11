@@ -110,23 +110,23 @@ define(function (require, exports, module) {
       "test hyperlink"() {
         test.stub(koru, 'getHashOrigin').returns('http://getvimaly.comm/');
         assert.sameHtml(v.c('[l1](/l1) text [O][b\n]eya](http://vimaly.com)[link2](/a)[int](http://getvimaly.comm/#int/ernal)'),
-                        '<a href="/l1" target="_blank">l1</a> text [O]'+
-                        '<a href="http://vimaly.com" target="_blank">b<br>]eya</a>'+
-                        '<a href="/a" target="_blank">link2</a>'+
+                        '<a href="/l1" target="_blank" rel="noopener">l1</a> text [O]'+
+                        '<a href="http://vimaly.com" target="_blank" rel="noopener">b<br>]eya</a>'+
+                        '<a href="/a" target="_blank" rel="noopener">link2</a>'+
                         '<a '+
-                        (isClient ? 'href="/#int/ernal"' : 'href="http://getvimaly.comm/#int/ernal" target="_blank"')+
+                        (isClient ? 'href="/#int/ernal"' : 'href="http://getvimaly.comm/#int/ernal" target="_blank" rel="noopener"')+
                         '>int</a>');
       },
 
       "test underscores in link text"() {
         assert.sameHtml(v.c('[Vimaly_Limited_link](http://vimaly.com) click it'),
-                        '<a href="http://vimaly.com" target="_blank">Vimaly_Limited_link</a> click it');
+                        '<a href="http://vimaly.com" target="_blank" rel="noopener">Vimaly_Limited_link</a> click it');
 
         assert.sameHtml(v.c('[Vimaly **Limited**](http://vimaly.com) link'),
-                        '<a href="http://vimaly.com" target="_blank">Vimaly <b>Limited</b></a> link');
+                        '<a href="http://vimaly.com" target="_blank" rel="noopener">Vimaly <b>Limited</b></a> link');
 
         assert.sameHtml(v.c('[Vimaly \\**Limited**](http://vimaly.com) link'),
-                        '<a href="http://vimaly.com" target="_blank">Vimaly **Limited**</a> link');
+                        '<a href="http://vimaly.com" target="_blank" rel="noopener">Vimaly **Limited**</a> link');
       },
 
       "test complex"() {

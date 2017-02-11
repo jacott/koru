@@ -162,7 +162,7 @@ define(function (require, exports, module) {
     },
 
     "test no javascript in link" () {
-      assertConvert('<a href="javascript:alert(123)">abc</a>', '<div><a href="alert(123)" target="_blank">abc</a></div>');
+      assertConvert('<a href="javascript:alert(123)">abc</a>', '<div><a href="alert(123)" rel="noopener" target="_blank">abc</a></div>');
     },
 
     "test skips empty text" () {
@@ -290,8 +290,8 @@ define(function (require, exports, module) {
                         '<div><span style="font-family: \'foo font\'; font-weight: bold; text-decoration: underline; '+
                         'font-style: italic; font-size: 1.2em; color: rgb(255, 128, 0); '+
                         'background-color: rgb(0, 0, 255);">hello world</span></div>');
-      assertConvert('<ol><li>Hello</li><li><a href="http://x/#u/123" target="_blank">link</a> <br></li></ol>',
-                    '<ol><li>Hello</li><li><a href="http://x/#u/123" target="_blank">link</a></li></ol>');
+      assertConvert('<ol><li>Hello</li><li><a href="http://x/#u/123" rel="noopener" target="_blank">link</a> <br></li></ol>',
+                    '<ol><li>Hello</li><li><a href="http://x/#u/123" rel="noopener" target="_blank">link</a></li></ol>');
       assertConvert('<ol><li>hey</li></ol><span>now</span><br><div><span><br></span></div>',
                     '<ol><li>hey</li></ol><div>now</div><div><br></div>');
       assertConvert('BREAK<br>ME', '<div>BREAK</div><div>ME</div>');

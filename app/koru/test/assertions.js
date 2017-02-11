@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   function assert(truth, msg) {
     ++geddon.assertCount;
-    const {__msg} = geddon;
+    let {__msg} = geddon;
     __elidePoint = geddon.__elidePoint;
     geddon.__msg = null;
     geddon.__elidePoint = null;

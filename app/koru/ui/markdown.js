@@ -79,6 +79,7 @@ define(function(require, exports, module) {
             if (! prefix) {
               elm.setAttribute('href', href);
               elm.setAttribute('target', '_blank');
+              elm.setAttribute('rel', 'noopener');
             }
           }
           index += href.length + 3;
