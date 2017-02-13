@@ -238,7 +238,7 @@ define(function(require, exports, module) {
         value = TH.match(arg => (arg._id || arg.id) === id);
         break;
       }
-      assert.dom(menu, function () {
+      assert.elideFromStack.dom(menu, function () {
         assert.dom('li', {data: value}, li => {
           TH.geddon.__elidePoint = pre;
           switch (typeof func) {
