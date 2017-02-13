@@ -25,13 +25,13 @@ define(function(require, exports, module) {
   });
 
   // Fix fibers making future enumerable
-  var future = util.Future = requirejs.nodeRequire('fibers/future');
+  const future = util.Future = requirejs.nodeRequire('fibers/future');
   Object.defineProperty(Function.prototype, 'future', {enumerable: false, value: future});
 
-  var clientThread = {};
+  const clientThread = {};
 
   Object.defineProperty(util, 'thread', {configurable: true, get() {
-    var current = util.Fiber.current;
+    const current = util.Fiber.current;
     return current ? (current.appThread || (current.appThread = {})) : clientThread;
   }});
 

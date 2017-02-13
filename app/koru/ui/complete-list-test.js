@@ -1,10 +1,11 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  var completeListTpl = require('../html!./complete-list-test');
-  var Dom = require('../dom');
+  const Dom             = require('../dom');
+  const completeListTpl = require('../html!./complete-list-test');
+  const util            = require('../util');
+  const TH              = require('./test-helper');
+
   require('./complete-list');
-  var util = require('../util');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

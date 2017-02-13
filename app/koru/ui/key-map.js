@@ -126,10 +126,10 @@ define(function(require, exports, module) {
     const code = String.fromCharCode(event.which);
     if (MODIFIERS[code]) return;
 
-    let mod = eventMod(event);
+    let map, mod = eventMod(event);
 
     if (mod) {
-      var map = keyMap.map[String.fromCharCode(mod)];
+      map = keyMap.map[String.fromCharCode(mod)];
       if (! map) return;
     } else {
       map = keyMap.map;

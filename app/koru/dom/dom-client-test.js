@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   const api = require('koru/test/api');
 
   const Dom = require('koru/dom');
-  var v;
+  let v;
 
   TH.testCase(module, {
     setUp() {
@@ -295,7 +295,7 @@ define(function (require, exports, module) {
     "test forEach"() {
       const elm = Dom.html('<div></div>');
       document.body.appendChild(elm);
-      for(var i = 0; i < 5; ++i) {
+      for(let i = 0; i < 5; ++i) {
         elm.appendChild(Dom.html('<div class="foo">'+i+'</div>'));
       }
 

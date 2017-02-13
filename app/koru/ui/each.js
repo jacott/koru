@@ -40,18 +40,19 @@ define(function(require, exports, module) {
 
     const rows = Object.create(null);
     options = options || {};
-    const templateName = options.template || "Each_" + func;
+    let templateName = options.template || "Each_" + func;
+    let row;
 
     if (typeof templateName === 'object') {
       if ('$autoRender' in templateName)
-        var row = templateName;
+        row = templateName;
       else
         templateName = templateName.toString();
     }
 
     if (! row) {
-      var row = Dom.lookupTemplate.call(ctpl, templateName) ||
-            Dom.lookupTemplate(templateName);
+      row = Dom.lookupTemplate.call(ctpl, templateName) ||
+        Dom.lookupTemplate(templateName);
       if (! row) throw new Error("template '" + templateName +
                                  "' not found in template '" + ctpl.name + "'");
     }
@@ -146,7 +147,7 @@ define(function(require, exports, module) {
     callback.setDefaultDestroy();
 
     params = params || {};
-    var results = index ? index.fetch(params) : model.where(params).fetch();
+    let results = index ? index.fetch(params) : model.where(params).fetch();
     if (filter) results = results.filter(doc => filter(doc));
 
     util.forEach(results.sort(sort), doc => {
@@ -155,7 +156,7 @@ define(function(require, exports, module) {
     });
 
     callback._handle = model.onChange(function (doc, was) {
-      var old = doc ? doc.$withChanges(was) : was;
+      let old = doc ? doc.$withChanges(was) : was;
       if (doc && params && ! util.includesAttributes(params, doc)) doc = null;
       if (old && params && ! util.includesAttributes(params, old)) old = null;
 

@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var Form = require('./form');
-  var Modal = require('./modal');
+  const Dom   = require('../dom');
+  const Form  = require('./form');
+  const Modal = require('./modal');
 
-  var Tpl = Dom.newTemplate(require('../html!./dialog'));
-  var $ = Dom.current;
+  const Tpl = module.exports = Dom.newTemplate(require('../html!./dialog'));
+  const $ = Dom.current;
 
   Tpl.$extend({
     isOpen() {
@@ -12,15 +12,12 @@ define(function(require, exports, module) {
     },
 
     open(content, nofocus) {
-      var elm = Tpl.$autoRender({content: content});
+      const elm = Tpl.$autoRender({content: content});
       document.body.appendChild(elm);
       modalize(Dom.getMyCtx(elm), elm);
 
-      if (! nofocus) {
-        var focus = elm.children[1].querySelector(Dom.FOCUS_SELECTOR);
-      }
-      if (! focus) focus = elm.children[0];
-      focus.focus();
+      ((! nofocus && elm.children[1].querySelector(Dom.FOCUS_SELECTOR)) ||
+       elm.children[0]).focus();
     },
 
     close(elm) {
@@ -31,25 +28,25 @@ define(function(require, exports, module) {
         return;
       }
 
-      var dialogs = document.getElementsByClassName('Dialog');
+      const dialogs = document.getElementsByClassName('Dialog');
       if (dialogs.length > 0) Dom.remove(dialogs[dialogs.length - 1]);
     },
 
     closeAll() {
-      var dialogs = document.getElementsByClassName('Dialog');
+      const dialogs = document.getElementsByClassName('Dialog');
       while (dialogs.length !== 0) {
-        var len = dialogs.length;
+        const len = dialogs.length;
         Dom.remove(dialogs[len - 1]);
         if (dialogs.length === len) break; // I think this is needed for some versions of IE
       }
     },
 
     confirm(data) {
-      var elm = Tpl.Confirm.$autoRender(data);
+      const elm = Tpl.Confirm.$autoRender(data);
       document.body.appendChild(elm);
       modalize(Dom.getMyCtx(elm), elm);
       if (! data.nofocus) {
-        var focus = elm.querySelector(Dom.FOCUS_SELECTOR);
+        const focus = elm.querySelector(Dom.FOCUS_SELECTOR);
         focus && focus.focus();
       }
     },
@@ -57,12 +54,12 @@ define(function(require, exports, module) {
 
   Tpl.$helpers({
     content() {
-      var content = this.content;
+      const content = this.content;
 
       if (Dom.hasClass(content, 'dialogContainer'))
         return content;
 
-      var dc = document.createElement('div');
+      const dc = document.createElement('div');
       dc.className = 'dialogContainer';
 
       if (Dom.hasClass(content, 'ui-dialog')) {
@@ -70,7 +67,7 @@ define(function(require, exports, module) {
         return dc;
       }
 
-      var dialog = document.createElement('div');
+      const dialog = document.createElement('div');
       dialog.className = 'ui-dialog';
 
       dc.appendChild(dialog);
@@ -86,7 +83,7 @@ define(function(require, exports, module) {
     },
 
     content() {
-      var content = this.content;
+      const content = this.content;
       if (content.$autoRender)
         return content.$autoRender(this.data || this);
       return Dom.h(content);
@@ -95,7 +92,7 @@ define(function(require, exports, module) {
 
   Tpl.Confirm.$events({
     'click button'(event) {
-      var data = $.ctx.data;
+      const data = $.ctx.data;
       data.callback && data.callback.call(data, this.name === 'okay', event.currentTarget);
       Dom.remove(event.currentTarget);
     },
@@ -111,5 +108,4 @@ define(function(require, exports, module) {
                 handleTab: true,
     });
   }
-  return Tpl;
 });

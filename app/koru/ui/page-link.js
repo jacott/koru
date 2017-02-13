@@ -18,15 +18,15 @@ define(function(require, exports, module) {
     },
 
     attrs() {
-      var elm = $.element;
-      var data = $.ctx.data;
+      const elm = $.element;
+      const data = $.ctx.data;
 
-      var template = data.template;
+      const template = data.template;
       if (template) {
         data.link = Dom.lookupTemplate(data.template);
       }
 
-      for(var attr in data) {
+      for(let attr in data) {
         if ((attr in IGNORE) || /^var_/.test(attr)) continue;
         elm.setAttribute(attr, data[attr]);
       }
@@ -38,11 +38,11 @@ define(function(require, exports, module) {
   Tpl.$events({
     'click'(event) {
       Dom.stopEvent();
-      var data = $.data();
+      const data = $.data();
 
-      var location = {};
+      const location = {};
 
-      for (var attr in data) {
+      for (let attr in data) {
         if (/^var_/.test(attr)) location[attr.slice(4)] = data[attr];
       }
 

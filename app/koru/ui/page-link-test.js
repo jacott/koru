@@ -1,10 +1,11 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
   const Dom   = require('../dom');
   const util  = require('../util');
-  require('./page-link');
   const Route = require('./route');
   const TH    = require('./test-helper');
+
+  require('./page-link');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -35,7 +36,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test use template name"() {
-      var tpl = Dom.newTemplate({name: "Foo.Bar"});
+      const tpl = Dom.newTemplate({name: "Foo.Bar"});
       tpl.title = 'template title';
 
       document.body.appendChild(Dom._helpers.pageLink({id: "foo", var_fooId: 'foo123', template: "Foo.Bar", class: 'my class', append: "1234"}));

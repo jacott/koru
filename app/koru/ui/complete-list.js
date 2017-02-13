@@ -1,14 +1,14 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var Form = require('./form');
-  var util = require('../util');
-  var Modal = require('./modal');
+  const Dom   = require('../dom');
+  const util  = require('../util');
+  const Form  = require('./form');
+  const Modal = require('./modal');
 
-  var Tpl = Dom.newTemplate(require('../html!./complete-list'));
-  var $ = Dom.current;
+  const Tpl = module.exports = Dom.newTemplate(require('../html!./complete-list'));
+  const $ = Dom.current;
 
-  var Row = Tpl.Row;
-  var v;
+  const {Row} = Tpl;
+  let v;
 
   Tpl.$extend({
     $created(ctx, elm) {
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
         completeList: Tpl.$autoRender(options.completeList),
         callback: options.callback,
       };
-      var elm = v.input;
+      const elm = v.input;
       Modal.appendBelow({origin: elm, popup: v.completeList});
       options.noBlur || elm.addEventListener('blur', close);
       elm.addEventListener('keydown', keydown, true);
@@ -45,7 +45,7 @@ define(function(require, exports, module) {
   });
 
   function keydown(event) {
-    var cur = v.completeList.querySelector('.complete>.selected');
+    const cur = v.completeList.querySelector('.complete>.selected');
 
     switch (event.which) {
     case 13: // enter
@@ -66,7 +66,7 @@ define(function(require, exports, module) {
 
   function select(li) {
     if (li) {
-      var data = $.data(li);
+      const data = $.data(li);
       if (v.callback)
         v.callback(data);
       else
@@ -84,6 +84,4 @@ define(function(require, exports, module) {
   function close() {
     Dom.remove(v && v.completeList);
   }
-
-  return Tpl;
 });

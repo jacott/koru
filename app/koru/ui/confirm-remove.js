@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var Dom = require('../dom');
-  var Dialog = require('./dialog');
+  const Dom    = require('../dom');
+  const util   = require('../util');
+  const Dialog = require('./dialog');
 
-  var Tpl = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
+  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
 
   Tpl.$extend({
     show(name, func, opts) {
@@ -12,13 +12,11 @@ define(function(require, exports, module) {
         okay: 'Remove',
         content: Tpl,
         name: name,
-        callback: function(confirmed) {
+        callback(confirmed) {
           confirmed && func();
           Dialog.close();
         },
       }, opts || {}));
     },
   });
-
-  return Tpl;
 });

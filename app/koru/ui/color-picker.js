@@ -1,13 +1,13 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var util = require('../util');
-  var uColor = require('../util-color');
-  var Slider = require('./slider');
-  var Modal = require('./modal');
+  const Dom    = require('../dom');
+  const util   = require('../util');
+  const uColor = require('../util-color');
+  const Modal  = require('./modal');
+  const Slider = require('./slider');
 
-  var Tpl = Dom.newTemplate(module, require('../html!./color-picker'));
-  var $ = Dom.current;
-  var ColorPart = Tpl.ColorPart;
+  const Tpl = Dom.newTemplate(module, require('../html!./color-picker'));
+  const $ = Dom.current;
+  const {ColorPart} = Tpl;
 
   Tpl.$events({
     'input [name=hex]'(event) {
@@ -38,15 +38,15 @@ define(function(require, exports, module) {
 
   function hsl2hex(hsl, prefix) {
     if (! hsl) return null;
-    var rgb = uColor.hsl2rgb(hsl);
+    const rgb = uColor.hsl2rgb(hsl);
     rgb.a = hsl.a;
     return uColor.rgb2hex(rgb, prefix);
   }
 
   function hex2hsl(hex) {
-    var rgb = uColor.toRGB(hex);
+    const rgb = uColor.toRGB(hex);
     if (! rgb) return null;
-    var hsl = uColor.rgb2hsl(rgb);
+    const hsl = uColor.rgb2hsl(rgb);
     hsl.a = rgb.a;
     return hsl;
   }
@@ -60,12 +60,12 @@ define(function(require, exports, module) {
     palette(color) {
       if ($.element.nodeType === document.ELEMENT_NODE) return;
 
-      var elm = Dom.h({button: '', "$data-color": color, $tabindex: "-1"});
+      const elm = Dom.h({button: '', "$data-color": color, $tabindex: "-1"});
       elm.style.backgroundColor = '#'+color;
       return elm;
     },
     hexValue() {
-      var elm = $.element;
+      const elm = $.element;
       if (document.activeElement !== elm)
         elm.value = hsl2hex(this.color, '');
     },
@@ -96,8 +96,8 @@ define(function(require, exports, module) {
       ctx.startTab = elm.getElementsByClassName('startTab')[0];
     },
     setColor(ctx, hex, alpha) {
-      var hsla = hex2hsl(hex);
-      var data = ctx.data;
+      const hsla = hex2hsl(hex);
+      const data = ctx.data;
       data.error = ! hsla;
       if (hsla) {
         data.color = hsla;
@@ -117,12 +117,12 @@ define(function(require, exports, module) {
       if (! options || typeof options !== 'object')
         options = {alpha: options};
 
-      var alpha = options.alpha;
+      const alpha = options.alpha;
 
-      var hsla = hex2hsl(color) || {h: 0, s: 0, l: 1, a: 1};
+      const hsla = hex2hsl(color) || {h: 0, s: 0, l: 1, a: 1};
       if (! alpha) hsla.a = 1;
-      var data = util.reverseMerge({orig: color, color: hsla, callback: callback}, options);
-      var elm = Tpl.$autoRender(data);
+      const data = util.reverseMerge({orig: color, color: hsla, callback: callback}, options);
+      const elm = Tpl.$autoRender(data);
       document.body.appendChild(elm);
       Modal.init({
         container: elm,
@@ -137,9 +137,9 @@ define(function(require, exports, module) {
   });
 
   function close(elm, button) {
-    var ctx = Dom.getMyCtx(elm);
+    const ctx = Dom.getMyCtx(elm);
     if (ctx) {
-      var data = ctx.data;
+      const data = ctx.data;
 
       data.callback && data.callback(button === 'cancel' ? null : button === 'custom' ? ctx.data.custom[1] : hsl2hex(data.color));
       data.callback = null;
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
     }
   }
 
-  var BG_STYLES = {
+  const BG_STYLES = {
     s(color) {
       return [hsl2hex(util.reverseMerge({s: 0, a: 1}, color), '#'),
               hsl2hex(util.reverseMerge({s: 1, a: 1}, color), '#')];
@@ -165,10 +165,10 @@ define(function(require, exports, module) {
   };
 
   function setSliderBG(elm, part, color) {
-    var bgStyle = BG_STYLES[part];
+    const bgStyle = BG_STYLES[part];
     if(! bgStyle) return;
 
-    var colors = bgStyle(color);
+    const colors = bgStyle(color);
 
     elm.style.backgroundImage = "linear-gradient(90deg, " + colors[0] + " 0%," + colors[1] + " 100%)";
   }
@@ -179,7 +179,7 @@ define(function(require, exports, module) {
     },
 
     value() {
-      var elm = $.element;
+      const elm = $.element;
       if (elm !== document.activeElement)
         elm.value  = Math.round($.ctx.parentCtx.data.color[this.part]*this.max) || '0';
     },
@@ -189,16 +189,16 @@ define(function(require, exports, module) {
     },
 
     slider() {
-      var ctx = $.ctx;
-      var part = this.part;
-      var cpCtx = ctx.parentCtx;
-      var data = cpCtx.data;
+      const ctx = $.ctx;
+      const part = this.part;
+      const cpCtx = ctx.parentCtx;
+      const data = cpCtx.data;
 
-      var hsla = data.color;
-      var elm = $.element;
+      const hsla = data.color;
+      const elm = $.element;
 
       if (elm.nodeType === document.ELEMENT_NODE) {
-        var slCtx = Slider.$ctx(elm);
+        const slCtx = Slider.$ctx(elm);
         slCtx.data.pos = hsla[part];
 
         if (! Dom.hasClass($.element, 'ui-dragging')) {
@@ -209,27 +209,27 @@ define(function(require, exports, module) {
         return;
       }
 
-      var elm = Slider.$autoRender({pos: hsla[part], callback(pos, ctx, slider) {
+      const slider = Slider.$autoRender({pos: hsla[part], callback(pos, ctx, slider) {
         cpCtx.startTab.focus();
         data.error = null;
-        hsla = data.color;
+        const hsla = data.color;
         hsla[part] = pos;
         cpCtx.updateAllTags();
       }});
 
-      setSliderBG(elm, part, data.color);
-      return elm;
+      setSliderBG(slider, part, data.color);
+      return slider;
     },
   });
 
   ColorPart.$events({
     'input input'(event) {
       Dom.stopEvent();
-      var ctx = $.ctx;
-      var data = ctx.data;
-      var num = +this.value;
+      const ctx = $.ctx;
+      const data = ctx.data;
+      const num = +this.value;
       if (num !== num) return;
-      var cpCtx = ctx.parentCtx;
+      const cpCtx = ctx.parentCtx;
 
       cpCtx.data.color[data.part] = Math.max(0, Math.min(num / data.max, 1));
       cpCtx.updateAllTags();

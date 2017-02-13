@@ -26,7 +26,7 @@ define(function(require, exports, module) {
         endOffset = startOffset;
       }
 
-      var range = Dom.getRange();
+      const range = Dom.getRange();
 
       this.actual = {
         startContainer: range.startContainer,
@@ -34,7 +34,7 @@ define(function(require, exports, module) {
         endContainer: range.endContainer,
         endOffset: range.endOffset,
       };
-      var expected = {
+      const expected = {
         startContainer: startContainer,
         startOffset: startOffset,
         endContainer: endContainer,
@@ -51,9 +51,9 @@ define(function(require, exports, module) {
   function domEvent(eventName, func) {
     return trigger;
     function trigger(node, arg1, arg2) {
-      var value = arg1;
+      let value = arg1;
       if (typeof node === 'string') {
-        var func1 = function () {node = this};
+        const func1 = function () {node = this};
         if (arg2 === undefined) {
           assert.elideFromStack.dom(node, func1);
         } else {
@@ -217,7 +217,7 @@ define(function(require, exports, module) {
         }else
           endOffset = startOffset;
       }
-      var range = document.createRange();
+      const range = document.createRange();
       range.setStart(startContainer, startOffset);
       range.setEnd(endContainer, endOffset);
       Dom.setRange(range);
@@ -273,7 +273,7 @@ define(function(require, exports, module) {
     args = args || {};
     switch (typeof key) {
     case 'string':
-      for(var i = 0; i < key.length; ++i) {
+      for(let i = 0; i < key.length; ++i) {
         args.which = key.charCodeAt(i);
         TH.trigger(node, event, args);
       }
@@ -289,7 +289,7 @@ define(function(require, exports, module) {
 
   function dispatchEvent(elm, event) {
     const old_unhandledException = koru.unhandledException;
-    var evex;
+    let evex;
     koru.unhandledException = unhandledException;
     try {
       elm.dispatchEvent(event);

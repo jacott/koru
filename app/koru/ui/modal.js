@@ -1,8 +1,8 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var Dom = require('../dom');
+  const Dom  = require('../dom');
+  const util = require('../util');
 
-  var topModal = null;
+  let topModal = null;
 
   function keydownCallback(event) {
     switch(event.which) {
@@ -17,7 +17,7 @@ define(function(require, exports, module) {
         }
       } else {
         event.stopImmediatePropagation();
-        var focus = topModal.focus;
+        const focus = topModal.focus;
         Dom.remove(topModal.container);
         focus.focus();
         return;
@@ -70,8 +70,8 @@ define(function(require, exports, module) {
             document.removeEventListener('keydown', keydownCallback, true);
             document.removeEventListener('keydown', retKeydownCallback);
           }
-        } else for(var last = topModal, curr = topModal && topModal.prev;
-                 curr; last = curr, curr = curr.prev) {
+        } else for(let last = topModal, curr = topModal && topModal.prev;
+                   curr; last = curr, curr = curr.prev) {
           if (options === curr) {
             last.prev = curr.prev;
           }
@@ -95,9 +95,9 @@ define(function(require, exports, module) {
 
     reposition(pos, options) {
       pos = pos || 'below';
-      var height = window.innerHeight;
-      var ps = options.popup.style;
-      var bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
+      const height = window.innerHeight;
+      const ps = options.popup.style;
+      const bbox = options.boundingClientRect || options.origin.getBoundingClientRect();
       ps.left = bbox.left + 'px';
       switch (pos) {
       case 'above':
@@ -112,7 +112,7 @@ define(function(require, exports, module) {
         ps.bottom = '';
         ps.top = bbox.top + 'px';
       }
-      var ppos = options.popup.getBoundingClientRect();
+      const ppos = options.popup.getBoundingClientRect();
       switch (pos) {
       case 'above':
         if (ppos.top < 0) {
@@ -135,7 +135,7 @@ define(function(require, exports, module) {
         }
       }
       if (pos !== 'on') {
-        var width = window.innerWidth;
+        const width = window.innerWidth;
         if (ppos.right > width) {
           ps.right = '0';
           ps.left = '';
@@ -153,10 +153,10 @@ define(function(require, exports, module) {
         options = exports.init(options);
       }
 
-      var destroyMeWith = options.destroyMeWith;
+      const destroyMeWith = options.destroyMeWith;
       if (destroyMeWith) {
-        var me = options.container;
-        var meCtx = Dom.getMyCtx(me);
+        const me = options.container;
+        const meCtx = Dom.myCtx(me);
         meCtx && Dom.destroyMeWith(me, Dom.getCtx(destroyMeWith) || destroyMeWith);
       }
       return this.reposition(pos, options);

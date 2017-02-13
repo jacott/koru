@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  var Dom = require('koru/dom');
+  const Dom = require('koru/dom');
 
-  var WIDTH_RESIZE_ELM = Dom.h({
+  const WIDTH_RESIZE_ELM = Dom.h({
     div: [{
       div: {div: '', $style: 'width:200%;height:100%'},
       $style: 'position:absolute;left:0;width:100%;height:20px;overflow-x:scroll',
@@ -14,9 +14,9 @@ define(function(require, exports, module) {
   });
 
   exports.onWidthResize = function (elm, callback) {
-    var resizer = WIDTH_RESIZE_ELM.cloneNode(true);
+    const resizer = WIDTH_RESIZE_ELM.cloneNode(true);
     elm.appendChild(resizer);
-    var offsetWidth, waiting = true;
+    let offsetWidth, waiting = true;
     window.requestAnimationFrame(fire);
 
     resizer.firstChild.addEventListener('scroll', scrolled);

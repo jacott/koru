@@ -1,8 +1,9 @@
 isClient && define(function (require, exports, module) {
+  const Dom = require('../dom');
+  const TH  = require('./test-helper');
+
+  const sut = require('./confirm-remove');
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./confirm-remove');
-  var Dom = require('../dom');
 
   TH.testCase(module, {
     setUp() {

@@ -1,8 +1,9 @@
 isClient && define(function (require, exports, module) {
+  const Dom    = require('../dom');
+  const TH     = require('./test-helper');
+
+  const Dialog = require('./dialog');
   var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
-  var Dialog = require('./dialog');
 
   TH.testCase(module, {
     setUp() {
@@ -72,7 +73,7 @@ isClient && define(function (require, exports, module) {
     },
 
     'test confirmDialog'() {
-      var data = {
+      const data = {
         classes: 'small',
         content: {
           $autoRender(arg) {
@@ -117,7 +118,7 @@ isClient && define(function (require, exports, module) {
     },
 
     'test cancel confirmDialog with defaults '() {
-      var data = {
+      const data = {
         content: 'bla',
         callback: function(value) {
           v.result = value;

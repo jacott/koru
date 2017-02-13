@@ -1,8 +1,9 @@
 isClient && define(function (require, exports, module) {
+  const Dom = require('koru/dom');
+  const TH  = require('./test-helper');
+
+  const sut = require('./resize-event');
   var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./resize-event');
-  var Dom = require('koru/dom');
 
   TH.testCase(module, {
     setUp() {

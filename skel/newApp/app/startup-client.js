@@ -16,7 +16,7 @@ define(function(require, exports, module) {
     Route.replacePage(null);
     stop();
     if (error) return;
-    var modId = mod.id;
+    const modId = mod.id;
     window.requestAnimationFrame(function () {
       require(modId, function (sc) {
         sc.start && sc.start();

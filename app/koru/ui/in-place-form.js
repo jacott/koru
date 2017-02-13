@@ -1,16 +1,16 @@
 define(function(require, exports, module) {
-  var Dom = require('../dom');
-  var Form = require('./form');
-  var util = require('../util');
-  var Dialog = require('./dialog');
+  const Dom    = require('../dom');
+  const util   = require('../util');
+  const Dialog = require('./dialog');
+  const Form   = require('./form');
 
-  var Tpl = Dom.newTemplate(require('../html!./in-place-form'));
-  var $ = Dom.current;
+  const Tpl = module.exports = Dom.newTemplate(require('../html!./in-place-form'));
+  const $ = Dom.current;
 
   class Widget {
     constructor (options) {
-      var element = this.element = Tpl.$autoRender(options);
-      var ctx = this.ctx = Dom.getCtx(element);
+      const element = this.element = Tpl.$autoRender(options);
+      const ctx = this.ctx = Dom.getCtx(element);
       ctx._widget = this;
     }
 
@@ -244,6 +244,4 @@ define(function(require, exports, module) {
     data && data.doc && data.doc.$reload();
     ctx._widget.close();
   }
-
-  return Tpl;
 });
