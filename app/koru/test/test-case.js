@@ -12,7 +12,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     fullName(name) {
-      var ret = this.tc ? this.tc.fullName(this.name) : this.name;
+      const ret = this.tc ? this.tc.fullName(this.name) : this.name;
       return name ? ret + ' ' + name : ret;
     }
 
@@ -27,8 +27,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     startTestCase() {
-      var before = this._before;
-      if (before) for(var i = 0; i < before.length; ++i) {
+      const before = this._before;
+      if (before) for(let i = 0; i < before.length; ++i) {
         before[i].call(this);
       }
     }
@@ -42,8 +42,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
         onSetUpOnceEnd = null;
         this.tc && this.tc.runTearDown();
       }
-      var after = this._after;
-      if (after) for(var i = 0; i < after.length; ++i) {
+      const after = this._after;
+      if (after) for(let i = 0; i < after.length; ++i) {
         after[i].call(this);
       }
     }
@@ -74,7 +74,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
         return;
       }
 
-      for(var tc = this; tc; tc = tc.tc) {
+      for(let tc = this; tc; tc = tc.tc) {
         if (tc.tc)
           tc.tc.runTest(test, function () {
             tc.runSetUpArround(test, func);
@@ -86,8 +86,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     runSetUpArround(test, func) {
-      var tex;
-      var tc = this;
+      let tex;
+      const tc = this;
       if (tc.setUpAround) {
         test._currentTestCase = tc;
         tc.setUpAround.call(test, doit);
@@ -97,7 +97,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
       if (tex) throw tex;
 
       function doit() {
-        var onEnds = test.__testEnd;
+        const onEnds = test.__testEnd;
         test.__testEnd = null;
         try {
           if (tc.setUp) {
@@ -119,8 +119,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     runOnEnds(test, cbs = test.__testEnd) {
-      if (cbs) for(var i=0;i < cbs.length;++i) {
-        var func = cbs[i];
+      if (cbs) for(let i=0;i < cbs.length;++i) {
+        const func = cbs[i];
         if (typeof func === 'function')
           func.call(test);
         else if (! func || typeof func.stop !== 'function')
@@ -168,7 +168,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
         new TestCase(name, this).add(func, null, skipped);
       } else if (typeof name === 'function') {
         this.add(name.name, name, skipped);
-      } else for(var opId in name) {
+      } else for(let opId in name) {
         if (opId === 'testCase') {
           skipped || name.testCase(this);
           break;

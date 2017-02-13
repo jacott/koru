@@ -6,7 +6,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   ga.add('same', {
     assert (actual, expected) {
-      var result = actual === expected;
+      const result = actual === expected;
       this.eql = result ? '==' : '!=';
       return result;
     },
@@ -16,7 +16,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   ga.add('equals', {
     assert (actual, expected) {
-      var equal = gu.deepEqual(actual, expected);
+      const equal = gu.deepEqual(actual, expected);
       if (! equal === this._asserting) {
         gu.deepEqual(actual, expected, this, 'diff');
       }
@@ -122,7 +122,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
     case "string":
       matcher = matcher.toLowerCase();
-      var notNull = typeof object === "string" || !!object;
+      const notNull = typeof object === "string" || !!object;
       return notNull && ("" + object).toLowerCase().indexOf(matcher) >= 0;
 
     case "number":
@@ -132,7 +132,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       return matcher === object;
 
     case "object":
-      for (var prop in matcher) {
+      for (let prop in matcher) {
         if (!match(object[prop], matcher[prop])) {
           return false;
         }
@@ -163,9 +163,9 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       }
       catch(ex) {
         if (typeof name === 'object') {
-          var result = true;
+          const result = true;
           this.message = {};
-          for(var key in name) {
+          for(let key in name) {
             if (! (key in ex)) throw ex;
             if (! gu.deepEqual(ex[key], name[key])) {
               this.message[key] = ex[key];
@@ -197,8 +197,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         return geddon.fail(format("{1} Expected object to have className property", className));
       }
 
-      var expected = typeof className == "string" ? className.split(" ") : className;
-      var actual = element.className.split(" ");
+      const expected = typeof className == "string" ? className.split(" ") : className;
+      const actual = element.className.split(" ");
 
       this.names = element.className;
 
@@ -220,8 +220,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   } else {
     ga.add('sameHtml', {
       assert (actual, expected) {
-        var aElm = document.createElement('div');
-        var bElm = document.createElement('div');
+        const aElm = document.createElement('div');
+        const bElm = document.createElement('div');
         aElm.innerHTML = actual;
         bElm.innerHTML = expected;
         return compare(aElm, bElm);
@@ -236,16 +236,16 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
           if (aElm.tagName !== bElm.tagName) return false;
 
-          var anodes = aElm.childNodes;
-          var alen = anodes.length;
-          var bnodes = bElm.childNodes;
-          var blen = bnodes.length;
+          const anodes = aElm.childNodes;
+          const alen = anodes.length;
+          const bnodes = bElm.childNodes;
+          const blen = bnodes.length;
           if (alen !== blen) return false;
 
           if (! gu.deepEqual(attrsToList(aElm), attrsToList(bElm)))
             return false;
 
-          for(var i = 0; i < alen; ++i) {
+          for(let i = 0; i < alen; ++i) {
             if (! compare(anodes[i], bnodes[i]))
               return false;
           }
@@ -253,7 +253,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         }
 
         function attrsToList(node) {
-          var result = [];
+          const result = [];
           util.forEach(node.attributes, function (a) {
             result.push([a.name, a.value]);
           });
@@ -276,8 +276,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       if (! this.actual) {
         return ! this.expected;
       }
-      var alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
-            withinDelta(this.actual[3], this.expected[3], delta);
+      const alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
+              withinDelta(this.actual[3], this.expected[3], delta);
       return gu.deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
         alphaGood;
     },
@@ -288,13 +288,14 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   // assert.cssNear
   ga.add('cssNear', {
     assert (elm, styleAttr, expected, delta, unit) {
+      let actual;
       if (typeof elm === 'string') {
-        var actual = elm;
+        actual = elm;
         unit = delta;
         delta = expected;
         expected = styleAttr;
       } else {
-        var actual = elm.style[styleAttr];
+        actual = elm.style[styleAttr];
         this.field = 'css('+styleAttr+')';
       }
       this.actual = actual;
@@ -304,7 +305,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
 
       if(!actual || actual.length < unit.length+1) return false;
-      var actualUnit = actual.slice(-unit.length);
+      const actualUnit = actual.slice(-unit.length);
       actual = actual.slice(0,-unit.length);
 
       return actualUnit === unit && actual > expected-delta && actual < expected+delta;
@@ -315,13 +316,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
 
   // assert.dom
   (function () {
-    var selectNode = null;
+    let selectNode = null;
 
     ga.add('domParent', {
       assert (elm, options, body /* arguments */) {
         if (! selectNode)
           throw new Error('must be inside a dom assertion');
-        var old = selectNode;
+        const old = selectNode;
         try {
           selectNode = [selectNode[0].parentNode];
           return select.apply(this, arguments);
@@ -346,21 +347,22 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     }
 
     function findAll(elms, query) {
-      var directChild = query[0] === '>';
+      const directChild = query[0] === '>';
 
-      var result = [];
+      const result = [];
       for(var i = 0; i < elms.length; ++i) {
-        var elm = elms[i];
+        const elm = elms[i];
+        let se;
         if (directChild) {
           if (elm.id)
-            var se = elm.querySelectorAll(elm.tagName+'#'+elm.id+query);
+            se = elm.querySelectorAll(elm.tagName+'#'+elm.id+query);
           else {
             elm.id = '_querySelector_tempId_';
-            var se = elm.querySelectorAll(elm.tagName+'#_querySelector_tempId_'+query);
+            se = elm.querySelectorAll(elm.tagName+'#_querySelector_tempId_'+query);
             elm.removeAttribute('id');
           }
         } else {
-          var se = elms[i].querySelectorAll(query);
+          se = elms[i].querySelectorAll(query);
         }
 
         result.push.apply(result, se);
@@ -373,7 +375,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     }
 
     function select(elm, options, body) {
-      var old = selectNode;
+      const old = selectNode;
       function setClue(self, msg) {
         self.htmlClue = msg + ' for ' + self.htmlClue;
       }
@@ -384,7 +386,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       }
 
       function inner() {
-        var msg, orig = elm;
+        let msg;
         if (typeof elm === "string") {
           msg = elm;
           if (selectNode != null) {
@@ -398,7 +400,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         }
         this.htmlClue = {toString() {
           if (old != null) {
-            var html;
+            let html;
             try {
               html = formatHTML(old[0].innerHTML);
             } catch(e) {
@@ -426,7 +428,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
-              var ef = filter(elm, function (i) {return gu.deepEqual(i.value, options.value)});
+              const ef = filter(elm, function (i) {return gu.deepEqual(i.value, options.value)});
               if (ef.length === 0) {
                 setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;
@@ -435,7 +437,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               }
             }
             if(typeof options.text === 'string') {
-              var ef = filter(elm, i => options.text === i.textContent.trim());
+              const ef = filter(elm, i => options.text === i.textContent.trim());
               if (ef.length === 0) {
                 setClue(this, 'text "' + text(elm) + '" to be "' + options.text + '"');
                 return false;
@@ -444,7 +446,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               }
             }
             if(typeof options.text === 'object') {
-              var ef = filter(elm, i => options.text.test(i.textContent.trim()));
+              const ef = filter(elm, i => options.text.test(i.textContent.trim()));
               if (ef.length === 0) {
                 setClue(this, 'text "' + text(elm) + '" to match ' + options.text);
                 return false;
@@ -453,8 +455,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
               }
             }
             if(options.hasOwnProperty('data')) {
-              var hint = {};
-              var ef = filter(elm, i => i._koru && gu.deepEqual(i._koru.data, options.data));
+              const hint = {};
+              const ef = filter(elm, i => i._koru && gu.deepEqual(i._koru.data, options.data));
               if (ef.length === 0) {
                 if (this._asserting !== false) {
                   Array.prototype.find.call(elm, i => {
@@ -473,13 +475,13 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             if (options.parent) {
               if (typeof options.parent === 'number') {
                 elm = elm[0];
-                for(var num = options.parent; elm && num > 0;--num) {
+                for(let num = options.parent; elm && num > 0;--num) {
                   elm = elm.parentNode;
                 }
                 if (! elm) return false;
                 selectNode = elm = [elm];
               } else {
-                var pold = selectNode;
+                const pold = selectNode;
                 try {
                   selectNode = [elm[0].parentNode];
                   options.parent.call(selectNode[0], selectNode[0]);
@@ -491,7 +493,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
             break;
           case "string":
             if (elm.length === 0) return false;
-            var ef = filter(elm, i => options === i.textContent.trim());
+            const ef = filter(elm, i => options === i.textContent.trim());
             if (ef.length === 0) {
               setClue(this, '"' + options + '"; found "' + text(elm) + '"');
               return false;
@@ -523,7 +525,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
     assert (spy, ...args) {
       checkSpy(spy);
       this.args = args;
-      var result = spy.calledOnce && spy.calledWith.apply(spy, args);
+      const result = spy.calledOnce && spy.calledWith.apply(spy, args);
       if (this._asserting === ! result) {
         this.spy = spy.printf("%n");
         this.calls = spy.printf("%C");
@@ -548,7 +550,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       assert (spy, ...args) {
         checkSpy(spy);
         this.args = args;
-        var result = spy[meth].apply(spy, args);
+        const result = spy[meth].apply(spy, args);
         if (this._asserting === ! result) {
           this.spy = spy.printf("%n");
           if (this._asserting && spy.callCount < 2) {
@@ -567,11 +569,11 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   function called(nth) {
-    var meth = 'called' + nth;
+    const meth = 'called' + nth;
     ga.add(meth, {
       assert (spy) {
         checkSpy(spy);
-        var result = spy[meth];
+        const result = spy[meth];
         if (this._asserting === ! result) {
           this.calls = spy.printf("%C");
         }
@@ -583,10 +585,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   function formatHTML(html) {
-    var re = /([^<]*)(<([^\s>]+)[^>]*>)/g, m;
-
-    var result = '';
-    var indent = '';
+    const re = /([^<]*)(<([^\s>]+)[^>]*>)/g;
+    let m, result = '', indent = '';
 
     function add(str) {
       result += "\n" + indent + str;

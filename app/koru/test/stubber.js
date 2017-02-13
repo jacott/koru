@@ -5,8 +5,8 @@ define(function(require, exports, module) {
 
   const Stubber = exports;
 
-  var globalCount = 0;
-  var globalId = 0;
+  let globalCount = 0;
+  let globalId = 0;
   const allListeners = Object.create(null);
 
   const stubProto = merge(Object.create(Function.prototype), {
@@ -63,7 +63,7 @@ define(function(require, exports, module) {
     },
 
     invoke(thisValue, args) {
-      var call = addCall(this, thisValue, args);
+      const call = addCall(this, thisValue, args);
       call.returnValue = this._replacement ? this._replacement.apply(thisValue, args) : this._returns;
       notifyListeners(this, call, thisValue, args);
 
@@ -109,13 +109,10 @@ define(function(require, exports, module) {
     },
 
     yield(...params) {
-      var args = this._calls && this._calls[0] && this._calls[0].args;
+      const args = this._calls && this._calls[0] && this._calls[0].args;
       if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
 
-
-      if (args) {
-        yieldCall(args, params);
-      }
+      yieldCall(args, params);
     },
 
     calledWith(...args) {
@@ -140,9 +137,8 @@ define(function(require, exports, module) {
       case '%n':
         return this.toString();
       case '%C':
-        var calls = this._calls;
-        if (calls) {
-          return calls.map(function (call) {
+        if (this._calls) {
+          return this._calls.map(function (call) {
             return "\n    " + inspect(call.args, 2);
           }).join("");
         }
@@ -157,9 +153,9 @@ define(function(require, exports, module) {
     if (call.throws)
       throw call.throws;
     if (call.yields) {
-      var args = call.args;
-      for(var i = 0; i < args.length; ++i) {
-        var arg = args[i];
+      const {args} = call;
+      for(let i = 0; i < args.length; ++i) {
+        const arg = args[i];
         if (typeof arg === 'function') {
           arg.apply(null, call.yields);
           break;
@@ -169,9 +165,9 @@ define(function(require, exports, module) {
     return call.returnValue;
   }
 
-  var spyProto = merge(Object.create(stubProto), {
+  const spyProto = merge(Object.create(stubProto), {
     invoke(thisValue, args) {
-      var call = addCall(this, thisValue, args);
+      const call = addCall(this, thisValue, args);
       call.returnValue = this.original.apply(thisValue, args);
       notifyListeners(this, call, thisValue, args);
 
@@ -179,7 +175,7 @@ define(function(require, exports, module) {
     },
   });
 
-  var withProto = merge(Object.create(stubProto), {
+  const withProto = merge(Object.create(stubProto), {
     withArgs(...args) {
       return this.subject.withArgs.apply(this.subject, args);
     },
@@ -205,13 +201,13 @@ define(function(require, exports, module) {
     }
   });
 
-  var onCallProto = merge(Object.create(withProto), {
+  const onCallProto = merge(Object.create(withProto), {
     onCall(count) {
       return this.subject.onCall.call(this.subject, count);
     },
   });
 
-  var callProto = {
+  const callProto = {
     calledWith(...args) {
       return deepEqual(this.args, args);
     },
@@ -230,16 +226,17 @@ define(function(require, exports, module) {
   }
 
   function notifyListeners(proxy, call, thisValue, args) {
-    var listeners = allListeners[proxy._stubId];
-    if (listeners) for(var i = 0; i < listeners.length; ++i) {
-      var listener = listeners[i];
-      var spyCount = listener.spyCount;
+    const listeners = allListeners[proxy._stubId];
+    if (listeners) for(let i = 0; i < listeners.length; ++i) {
+      const listener = listeners[i];
+      const spyCount = listener.spyCount;
       if (spyCount !== undefined) {
         spyCount + 1 === proxy._calls.length && listener.invoke(call);
       } else {
+        let j;
         if (arguments.length !== 2) {
-          var spyArgs = listener.spyArgs;
-          for(var j = 0; j < spyArgs.length; ++j) {
+          const spyArgs = listener.spyArgs;
+          for(j = 0; j < spyArgs.length; ++j) {
             if (! deepEqual(args[j], spyArgs[j])) {
               j = -1;
               break;
@@ -252,9 +249,9 @@ define(function(require, exports, module) {
   }
 
   function addCall(proxy, thisValue, args) {
-    var list = new Array(args.length);
-    for(var i = args.length - 1; i >= 0 ; --i) list[i] = args[i];
-    var result = Object.create(callProto);
+    const list = new Array(args.length);
+    for(let i = args.length - 1; i >= 0 ; --i) list[i] = args[i];
+    const result = Object.create(callProto);
     result.globalCount = ++globalCount;
     result.args = list;
     result.thisValue = thisValue;
@@ -271,6 +268,7 @@ define(function(require, exports, module) {
   }
 
   Stubber.stub = function (object, property, repFunc) {
+    let func, desc, orig;
     if (repFunc && typeof repFunc !== 'function')
       throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
     if (object) {
@@ -279,12 +277,12 @@ define(function(require, exports, module) {
       if (! (property in object))
         throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
 
-      var desc = Object.getOwnPropertyDescriptor(object, property);
-      var orig = desc ? desc.value : object[property];
+      desc = Object.getOwnPropertyDescriptor(object, property);
+      orig = desc ? desc.value : object[property];
       if (orig && typeof orig.restore === 'function')
         throw AssertionError(new Error(`Already stubbed ${property}`));
       if (typeof orig === 'function') {
-        var func = stubFunction(orig, stubProto);
+        func = stubFunction(orig, stubProto);
         func._replacement = repFunc;
         repFunc && (func._replacement = repFunc);
       } else {
@@ -292,13 +290,13 @@ define(function(require, exports, module) {
           throw AssertionError(new Error("Attempt to stub non function with a function"));
         }
 
-        var func = Object.create(stubProto);
+        func = Object.create(stubProto);
       }
 
       func.original = orig;
       Object.defineProperty(object, property, {value: func, configurable: true});
     } else {
-      var func = stubFunction(null, stubProto);
+      func = stubFunction(null, stubProto);
       repFunc && (func._replacement = repFunc);
     }
     func.restore = function () {
@@ -312,8 +310,8 @@ define(function(require, exports, module) {
     if (func && typeof func !== 'function')
       throw AssertionError(new Error("third argument to spy must be a function or null"));
     if (object && typeof property === 'string') {
-      var desc = Object.getOwnPropertyDescriptor(object, property);
-      var orig = desc === undefined ? object[property] : desc.value;
+      const desc = Object.getOwnPropertyDescriptor(object, property);
+      const orig = desc === undefined ? object[property] : desc.value;
       if (typeof orig === 'function') {
         func || (func = stubFunction(orig, spyProto));
         func.original = orig;

@@ -1,11 +1,11 @@
 define(['./core'], function (geddon) {
   geddon.start = function (testCases, runNextWrapper) {
-    var tests = geddon._tests = [],
+    let tests = geddon._tests = [],
         promise, _runNext,
         next = 0;
 
-    for(var i = 0; i < testCases.length; ++i) {
-      var tc = testCases[i];
+    for(let i = 0; i < testCases.length; ++i) {
+      const tc = testCases[i];
       if (! tc) continue;
       if (typeof tc.option === 'function')
         tc.option(tc);
@@ -13,7 +13,7 @@ define(['./core'], function (geddon) {
         tc.add(tc.option);
     }
 
-    var tcs = [];
+    const tcs = [];
 
     geddon.abnormalEnd = false;
 
@@ -38,10 +38,11 @@ define(['./core'], function (geddon) {
     }
 
     function runNext(abort) {
+      let around;
       while(! abort) {
-        var test = tests[next++];
+        const test = tests[next++];
         if (! test) {
-          for(var i = tcs.length-1; i !== -1; --i) {
+          for(let i = tcs.length-1; i !== -1; --i) {
             tcs[i].endTestCase();
           }
           geddon.test = null;
@@ -61,12 +62,13 @@ define(['./core'], function (geddon) {
           geddon.runCallBacks('testEnd', test);
           continue;
         } else {
-          var around = ! test.tc.runSetUp(test);
+          let ex;
+          around = ! test.tc.runSetUp(test);
           if (test.func.length === 1) {
             if (around)
               throw new Error("setUpAround not supported on async tests");
-            var promise = promiseFunc(test, _runNext);
-            var ex = runPromise(test, promise);
+            const promise = promiseFunc(test, _runNext);
+            const ex = runPromise(test, promise);
             if (! ex) {
               if (promise.done) continue;
               promise.timeout = setTimeout(function () {
@@ -75,8 +77,8 @@ define(['./core'], function (geddon) {
               return;
             }
           } else {
-            var assertCount = geddon.assertCount;
-            var ex = runSync(test, around);
+            const {assertCount} = geddon;
+            ex = runSync(test, around);
             ex || checkAssertionCount(test, assertCount);
           }
           if (ex) {
@@ -89,9 +91,9 @@ define(['./core'], function (geddon) {
     }
 
     function newTestCase(tc) {
-      var i = tc.tc ? newTestCase(tc.tc) : 0;
+      const i = tc.tc ? newTestCase(tc.tc) : 0;
       if (tcs[i] !== tc) {
-        for(var j = tcs.length -1; j >= i; --j) {
+        for(let j = tcs.length -1; j >= i; --j) {
           tcs[j].endTestCase();
         }
         tcs.length = i+1;
@@ -119,15 +121,15 @@ define(['./core'], function (geddon) {
   }
 
   function promiseFunc(test, runNext) {
-    var assertCount = geddon.assertCount;
-    var promise = function (ex) {
+    const assertCount = geddon.assertCount;
+    function promise(ex) {
       promise.done = true;
 
       if (ex)
         failed(test, ex);
       else
         checkAssertionCount(test, assertCount);
-      var abort = runTearDowns(test);
+      const abort = runTearDowns(test);
 
       if (promise.timeout) {
         clearTimeout(promise.timeout);
