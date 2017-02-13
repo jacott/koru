@@ -226,7 +226,10 @@ define(function(require, exports, module) {
 
     selectMenu(node, value, func) {
       TH.trigger(node, 'pointerdown');
-      TH.click(node);
+      const menu = Dom('body>.glassPane>#SelectMenu') ||
+            (TH.click(node), Dom('body>.glassPane>#SelectMenu'));
+      if (! menu)
+        assert.elideFromStack(false, "Can't find #SelectMenu");
       const pre = TH.geddon.__elidePoint;
       switch(typeof value) {
       case 'string':
@@ -235,26 +238,24 @@ define(function(require, exports, module) {
         value = TH.match(arg => (arg._id || arg.id) === id);
         break;
       }
-      assert.dom(document.body, function () {
-        assert.elideFromStack.dom('body>.glassPane>#SelectMenu', function () {
-          assert.dom('li', {data: value}, li => {
-            TH.geddon.__elidePoint = pre;
-            switch (typeof func) {
-            case 'function':
-              if (func.call(li, li)) TH.pointerDownUp(li);
+      assert.dom(menu, function () {
+        assert.dom('li', {data: value}, li => {
+          TH.geddon.__elidePoint = pre;
+          switch (typeof func) {
+          case 'function':
+            if (func.call(li, li)) TH.pointerDownUp(li);
+            break;
+          case 'object':
+            if (func.menu) {
+              assert.dom(li.parentNode, menu => {
+                if (func.menu.call(menu, menu, li))
+                  TH.pointerDownUp(li);;
+              });
               break;
-            case 'object':
-              if (func.menu) {
-                assert.dom(li.parentNode, menu => {
-                  if (func.menu.call(menu, menu, li))
-                    TH.pointerDownUp(li);;
-                });
-                break;
-              }
-            default:
-              TH.pointerDownUp(li);
             }
-          });
+          default:
+            TH.pointerDownUp(li);
+          }
         });
       });
       return this;

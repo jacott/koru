@@ -210,6 +210,7 @@ define(function(require, exports, module) {
         break;
       case 'menustart':
         parent.addEventListener('pointerdown', menustart);
+        parent.addEventListener('click', menustart);
         break;
       default:
         parent.addEventListener(eventType, onEvent);
@@ -220,7 +221,7 @@ define(function(require, exports, module) {
   }
 
   function menustart(event) {
-    if (event.pointerType === 'touch') {
+    if (event.type === "pointerdown" && event.pointerType === 'touch') {
       const {currentTarget, target} = event;
       const pu = event => {
         if (target === event.target && event.type === 'pointerup' &&
@@ -378,6 +379,7 @@ define(function(require, exports, module) {
         break;
       case 'menustart':
         parent.removeEventListener('pointerdown', menustart);
+        parent.removeEventListener('click', menustart);
         break;
       default:
         parent.removeEventListener(eventType, onEvent);

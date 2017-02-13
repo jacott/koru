@@ -344,6 +344,11 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerdown'));
       },
 
+      "test click event"() {
+        Dom.triggerEvent(v.target, 'click');
+        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'click'));
+      },
+
       "test touch click"() {
         Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
 
