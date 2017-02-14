@@ -85,7 +85,7 @@ define(function(require, exports, module) {
     $render(data, parentCtx) {
       ensureHelper(this);
       const prevCtx = Ctx._currentCtx;
-      Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
+      const ctx = Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       let frag, firstChild;
       try {
         frag = document.createDocumentFragment();
@@ -95,10 +95,11 @@ define(function(require, exports, module) {
           if (frag.lastChild === firstChild)
             frag = firstChild;
 
-          frag._koru = Ctx._currentCtx;
+          frag._koru = ctx;
         }
-        this.$created && this.$created(Ctx._currentCtx, frag);
-        Ctx._currentCtx.data === undefined || Ctx._currentCtx.updateAllTags(Ctx._currentCtx.data);
+        ctx.firstElement = firstChild;
+        this.$created && this.$created(ctx, frag);
+        ctx.data === undefined || ctx.updateAllTags(ctx.data);
         return frag;
       } catch(ex) {
         ex.message = 'while rendering: '+this.$fullname+'\n' + ex.message;

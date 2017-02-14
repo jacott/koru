@@ -59,6 +59,9 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(Tpl.$autoRender({}));
       assert.dom('div', function () {
+        const ctx = Dom.ctx(this);
+        assert.same(ctx.element(), this);
+
         let ev = Dom.buildEvent('click');
         TH.test.stub(ev, 'stopImmediatePropagation');
         TH.test.stub(ev, 'preventDefault');

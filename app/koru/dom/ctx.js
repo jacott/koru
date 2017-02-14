@@ -2,10 +2,8 @@ define(function(require, exports, module) {
   const Dom  = require('koru/dom/base');
   const util = require('koru/util');
 
-  const DOCUMENT_NODE = document.DOCUMENT_NODE;
-  const COMMENT_NODE = document.COMMENT_NODE;
-  const DOCUMENT_FRAGMENT_NODE = document.DOCUMENT_FRAGMENT_NODE;
-  const TEXT_NODE = document.TEXT_NODE;
+  const {DOCUMENT_NODE, COMMENT_NODE,
+         DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
   let currentCtx, currentElement;
 
@@ -28,13 +26,7 @@ define(function(require, exports, module) {
     }
 
     element() {
-      var evals = this.evals;
-      evals = evals && this.evals[0];
-      var elm = evals && evals[0];
-      while(elm && elm.nodeType !== DOCUMENT_NODE && elm._koru !== this)
-        elm = elm.parentNode;
-
-      return elm;
+      return this.firstElement || findFirstElement(this);
     }
 
     updateAllTags(data) {
@@ -108,6 +100,16 @@ define(function(require, exports, module) {
 
     static get _currentElement() {return currentElement}
   };
+
+  function findFirstElement(ctx) {
+    let evals = ctx.evals;
+    evals = evals && ctx.evals[0];
+    let elm = evals && evals[0];
+    while(elm && elm.nodeType !== DOCUMENT_NODE && elm._koru !== ctx)
+      elm = elm.parentNode;
+
+    return elm;
+  }
 
   Ctx.current = {
     data(elm) {
