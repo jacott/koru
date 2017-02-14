@@ -23,13 +23,13 @@ define(function() {
   // for a full discussion and Alea implementation.
   function Alea (...args) {
     function Mash() {
-      var n = 0xefc8249d;
+      let n = 0xefc8249d;
 
-      var mash = function(data) {
+      function mash(data) {
         data = data.toString();
-        for (var i = 0; i < data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
           n += data.charCodeAt(i);
-          var h = 0.02519603282416938 * n;
+          let h = 0.02519603282416938 * n;
           n = h >>> 0;
           h -= n;
           h *= n;
@@ -44,20 +44,17 @@ define(function() {
       return mash;
     }
 
-    var s0 = 0;
-    var s1 = 0;
-    var s2 = 0;
-    var c = 1;
+    let s0 = 0, s1 = 0, s2 = 0, c = 1;
 
     if (args.length == 0) {
       args = [+new Date];
     }
-    var mash = Mash();
+    const mash = Mash();
     s0 = mash(' ');
     s1 = mash(' ');
     s2 = mash(' ');
 
-    for (var i = 0; i < args.length; i++) {
+    for (let i = 0; i < args.length; i++) {
       s0 -= mash(args[i]);
       if (s0 < 0) {
         s0 += 1;
@@ -71,10 +68,9 @@ define(function() {
         s2 += 1;
       }
     }
-    mash = null;
 
-    const random = function() {
-      var t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
+    function random() {
+      const t = 2091639 * s0 + c * 2.3283064365386963e-10; // 2^-32
       s0 = s1;
       s1 = s2;
       return s2 = t - (c = t | 0);
@@ -113,7 +109,7 @@ define(function() {
       }
 
       if (isServer) {
-        var numerator = parseInt(this.hexString(8), 16);
+        const numerator = parseInt(this.hexString(8), 16);
         return numerator * 2.3283064365386963e-10; // 2^-32
       } else if (typeof window !== "undefined" && window.crypto &&
                  window.crypto.getRandomValues) {
@@ -124,25 +120,27 @@ define(function() {
 
     hexString(digits) {
       if (this.alea) {
-        var hexDigits = '';
-        for (var i = 0; i < digits; ++i) {
+        let hexDigits = '';
+        for (let i = 0; i < digits; ++i) {
           hexDigits += this.choice("0123456789abcdef");
         }
         return hexDigits;
       }
-      var numBytes = Math.ceil(digits / 2);
-      var bytes;
+      const numBytes = Math.ceil(digits / 2);
+      let bytes;
       if (isServer) {
         bytes = nodeCrypto.randomBytes(numBytes);
       } else {
         bytes = new Uint8Array(numBytes);
         window.crypto.getRandomValues(bytes);
       }
-      var result = '';
-      for(var i = 0; i < numBytes; ++i) {
-        var hex = bytes[i].toString(16);
-        if (hex.length === 1) hex = '0'+hex;
-        result += hex;
+      let result = '';
+      for(let i = 0; i < numBytes; ++i) {
+        const hex = bytes[i].toString(16);
+        if (hex.length === 1)
+          result += '0'+hex;
+        else
+          result += hex;
       }
 
       return result.substring(0, digits);
@@ -151,19 +149,20 @@ define(function() {
     id() {
       let digits = '';
       if (this.alea) {
-        for (var i = 0; i < 17; i++) {
+        for (let i = 0; i < 17; i++) {
           digits += UNMISTAKABLE_CHARS[Math.floor(this.alea() * UNMISTAKABLE_CHARS_LEN)];
         }
         return digits;
       }
 
+      let bytes;
       if (isServer) {
-        var bytes = nodeCrypto.randomBytes(17);
+        bytes = nodeCrypto.randomBytes(17);
       } else {
-        var bytes = new Uint8Array(17);
+        bytes = new Uint8Array(17);
         window.crypto.getRandomValues(bytes);
       }
-      for (var i = 0; i < 17; i++) {
+      for (let i = 0; i < 17; i++) {
         digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
       }
       return digits;
@@ -183,22 +182,22 @@ define(function() {
 
   // client sources
   const height = (typeof window !== 'undefined' && window.innerHeight) ||
-        (typeof document !== 'undefined'
-         && document.documentElement
-         && document.documentElement.clientHeight) ||
-        (typeof document !== 'undefined'
-         && document.body
-         && document.body.clientHeight) ||
-        1;
+          (typeof document !== 'undefined'
+           && document.documentElement
+           && document.documentElement.clientHeight) ||
+          (typeof document !== 'undefined'
+           && document.body
+           && document.body.clientHeight) ||
+          1;
 
   const width = (typeof window !== 'undefined' && window.innerWidth) ||
-        (typeof document !== 'undefined'
-         && document.documentElement
-         && document.documentElement.clientWidth) ||
-        (typeof document !== 'undefined'
-         && document.body
-         && document.body.clientWidth) ||
-        1;
+          (typeof document !== 'undefined'
+           && document.documentElement
+           && document.documentElement.clientWidth) ||
+          (typeof document !== 'undefined'
+           && document.body
+           && document.body.clientWidth) ||
+          1;
 
   const agent = (typeof navigator !== 'undefined' && navigator.userAgent) || "";
 

@@ -1,17 +1,18 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  var sut = require('./rich-text-editor');
-  var Dom = require('koru/dom');
-  var RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
-  var util = require('koru/util');
-  var RichText = require('./rich-text');
-  var KeyMap = require('./key-map');
-  var Modal = require('./modal');
-  var session = require('../session/client-rpc');
-  var koru = require('koru');
+  const koru              = require('koru');
+  const Dom               = require('koru/dom');
+  const RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
+  const util              = require('koru/util');
+  const session           = require('../session/client-rpc');
+  const KeyMap            = require('./key-map');
+  const Modal             = require('./modal');
+  const RichText          = require('./rich-text');
+  const TH                = require('./test-helper');
 
-  var ctrl = KeyMap.ctrl;
+  const sut               = require('./rich-text-editor');
+  var test, v;
+
+  const {ctrl} = KeyMap;
 
   TH.testCase(module, {
     setUp() {
@@ -26,7 +27,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test attrs helper"() {
-      var elm = sut.$autoRender({
+      const elm = sut.$autoRender({
         content: '', options: {
           class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
           placeholder: 'place holder text',
@@ -74,16 +75,19 @@ isClient && define(function (require, exports, module) {
           TH.setRange(sut.firstInnerMostNode(this),5);
 
           Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this.firstChild.lastChild), 0);
+          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
+                             sut.firstInnerMostNode(this.firstChild.lastChild), 0);
 
           collapse();
           Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this.firstChild.lastChild), 0);
+          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
+                             sut.firstInnerMostNode(this.firstChild.lastChild), 0);
         },
 
         "block nested"() {
-          this.innerHTML = "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
-          var iElm = this.querySelector('i').firstChild;
+          this.innerHTML =
+            "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
+          const iElm = this.querySelector('i').firstChild;
           TH.setRange(iElm, 4);
 
           Dom.setRange(sut.select(this, 'char', 1));
@@ -95,34 +99,41 @@ isClient && define(function (require, exports, module) {
         },
 
         "span nested"() {
-          this.innerHTML = "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
+          this.innerHTML =
+            "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
           TH.setRange(sut.firstInnerMostNode(this), 6);
 
           Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 6, sut.firstInnerMostNode(this.querySelector('b')), 1);
+          assert.rangeEquals(sut.firstInnerMostNode(this), 6,
+                             sut.firstInnerMostNode(this.querySelector('b')), 1);
 
           collapse();
           Dom.setRange(sut.select(this, 'char', 7));
-          assert.rangeEquals(sut.firstInnerMostNode(this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
+          assert.rangeEquals(sut.firstInnerMostNode(
+            this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
 
           collapse();
           Dom.setRange(sut.select(this, 'char', -7));
-          assert.rangeEquals(sut.firstInnerMostNode(this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
+          assert.rangeEquals(sut.firstInnerMostNode(
+            this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
 
           collapse(true);
           Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this.querySelector('b')), 0, sut.firstInnerMostNode(this.querySelector('b')), 1);
+          assert.rangeEquals(sut.firstInnerMostNode(
+            this.querySelector('b')), 0, sut.firstInnerMostNode(this.querySelector('b')), 1);
 
           collapse(true);
           Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this.querySelector('b')), 0);
+          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
+                             sut.firstInnerMostNode(this.querySelector('b')), 0);
         },
       });
     },
 
     "test focus"() {
       test.stub(document, 'execCommand');
-      document.body.appendChild(sut.$autoRender({content: '', options: {focusout: v.focusout = test.stub()}}));
+      document.body.appendChild(sut.$autoRender({
+        content: '', options: {focusout: v.focusout = test.stub()}}));
       assert.dom('.richTextEditor:not([focusout])>.input', function () {
         this.focus();
         TH.trigger(this, 'focusin');
@@ -161,19 +172,19 @@ isClient && define(function (require, exports, module) {
       setUp() {
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
         v.selectCode = function () {
-          var node = Dom('.input pre>div').firstChild;
-          var range = TH.setRange(node, 2);
+          const node = Dom('.input pre>div').firstChild;
+          const range = TH.setRange(node, 2);
           TH.keyup(node, 39);
           return range;
         };
       },
 
       "test load languages"() {
-        var langs = test.stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
+        const langs = test.stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
         assert.dom('.input', function () {
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
           sut.languageList = null;
-          var elm = v.selectCode().startContainer;
+          const elm = v.selectCode().startContainer;
           test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
         });
 
@@ -191,7 +202,7 @@ isClient && define(function (require, exports, module) {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
           sut.languageList = [['c', 'C'], ['ruby', 'Ruby']];
-          var elm = v.selectCode().startContainer;
+          const elm = v.selectCode().startContainer;
           TH.keydown(elm, 'L', {ctrlKey: true});
           test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
         });
@@ -205,11 +216,11 @@ isClient && define(function (require, exports, module) {
       },
 
       "test syntax highlight"() {
-        var highlight = test.stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
+        const highlight = test.stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "if a:\n  (b)\n"}, '$data-lang': 'python'}));
-          var elm = v.selectCode().startContainer;
+          const elm = v.selectCode().startContainer;
           this.appendChild(Dom.h({div: "after"}));
           assert.dom('pre+div', 'after');
           TH.keydown(elm, 'H', {ctrlKey: true, shiftKey: true});
@@ -222,7 +233,7 @@ isClient && define(function (require, exports, module) {
         highlight.yield(null, [4, 0, 3, 3, 1, 0, 2]);
 
         assert.dom('pre', function () {
-          var rt = RichText.fromHtml(this, {includeTop: true});
+          const rt = RichText.fromHtml(this, {includeTop: true});
           assert.equals(rt[0], 'code:python\nif a:\n  (b)\n');
           assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
@@ -236,7 +247,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
         highlight.yield(null, [4, 0, 3, 3, 1, 0, 2]);
         assert.dom('pre', function () {
-          var rt = RichText.fromHtml(this, {includeTop: true});
+          const rt = RichText.fromHtml(this, {includeTop: true});
           assert.equals(rt[0], 'code:python\nif a:\n  (b)\n');
           assert.equals(rt[1], [4, 0, 3, 3, 1, 0, 2]);
         });
@@ -281,17 +292,17 @@ isClient && define(function (require, exports, module) {
       },
 
       "test pointerup on/off"() {
-         assert.dom('.input', function () {
-           this.focus();
-           assert.same(sut.$ctx(this).mode.type, 'standard');
-           Dom('.richTextEditor').value = Dom.h([{div: "first"}, {pre: "second"}]);
-           TH.setRange(this.lastChild, 0);
-           TH.pointerDownUp(this);
-           assert.same(sut.$ctx(this).mode.type, 'code');
-           TH.setRange(this.firstChild, 0);
-           TH.pointerDownUp(this);
-           assert.same(sut.$ctx(this).mode.type, 'standard');
-         });
+        assert.dom('.input', function () {
+          this.focus();
+          assert.same(sut.$ctx(this).mode.type, 'standard');
+          Dom('.richTextEditor').value = Dom.h([{div: "first"}, {pre: "second"}]);
+          TH.setRange(this.lastChild, 0);
+          TH.pointerDownUp(this);
+          assert.same(sut.$ctx(this).mode.type, 'code');
+          TH.setRange(this.firstChild, 0);
+          TH.pointerDownUp(this);
+          assert.same(sut.$ctx(this).mode.type, 'standard');
+        });
       },
 
       "test on empty"() {
@@ -309,8 +320,9 @@ isClient && define(function (require, exports, module) {
     },
 
     "test fontSize"() {
-      document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{font: 'bold', $size: "1"},
-                                                                   {span: 'big', $style: "font-size: xx-large"}])}));
+      document.body.appendChild(v.tpl.$autoRender({
+        content: Dom.h([{font: 'bold', $size: "1"},
+                        {span: 'big', $style: "font-size: xx-large"}])}));
 
       assert.dom('.input font', function () {
         this.focus();
@@ -340,12 +352,14 @@ isClient && define(function (require, exports, module) {
     },
 
     "test fontColor"() {
-      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({font: {span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
+      document.body.appendChild(v.tpl.$autoRender({
+        content: Dom.h({font: {
+          span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
       assert.dom('.input font span', function () {
         this.focus();
         TH.trigger(this, 'focusin');
-        var range = Dom.getRange();
+        const range = Dom.getRange();
         assert.same(range.startContainer.parentNode, this);
 
         TH.setRange(this.firstChild, 0, this.firstChild, 1);
@@ -471,7 +485,7 @@ isClient && define(function (require, exports, module) {
         } else {
           assert.dom('span', 'baz', function () {
             assert.same(this.style.fontFamily, 'initial');
-            var oo = this.nextSibling;
+            const oo = this.nextSibling;
             assert.same(oo.textContent, 'oo');
             assert.same(oo.style.fontFamily, 'monospace');
             TH.setRange(v.start, 0, oo.firstChild, 1);
@@ -481,7 +495,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.style.fontFamily, 'monospace');
           });
         }
-        var rt = RichText.fromHtml(this);
+        const rt = RichText.fromHtml(this);
         rt.push(Dom.h({p: ''}));
         assert.dom(RichText.toHtml.apply(RichText, rt), function () {
           assert.dom('span', 'bar', function () {
@@ -492,7 +506,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test title"() {
-      var keyMap = test.stub(sut.modes.standard.keyMap, 'getTitle');
+      let keyMap = test.stub(sut.modes.standard.keyMap, 'getTitle');
       sut.title('foo', 'insertOrderedList', 'standard');
       assert.calledWith(keyMap, 'foo', 'insertOrderedList');
 
@@ -554,7 +568,7 @@ isClient && define(function (require, exports, module) {
 
     "test indent, outdent"() {
       v.ec = test.stub(document, 'execCommand');
-      var keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
+      const keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -589,17 +603,17 @@ isClient && define(function (require, exports, module) {
 
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
         v.input = Dom('.input');
-        var topCtx = Dom.getMyCtx(v.input.parentNode);
+        const topCtx = Dom.getMyCtx(v.input.parentNode);
 
         v.slot = TH.findDomEvent(sut, 'paste')[0];
         v.origPaste = v.slot[2];
         v.paste = function (event) {
-          var origCtx = Dom.current.ctx;
+          const origCtx = Dom.current.ctx;
           Dom.current._ctx = topCtx;
           try {
             return v.origPaste.call(v.input.parentNode, event);
           } finally {
-          Dom.current._ctx = origCtx;
+            Dom.current._ctx = origCtx;
           }
         };
         test.stub(Dom, 'stopEvent');
@@ -619,12 +633,14 @@ isClient && define(function (require, exports, module) {
       "test plain text"() {
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: test.stub().withArgs('text/plain').returns('containshttps://nolink https:/a/link'),
+          getData: test.stub().withArgs('text/plain').returns(
+            'containshttps://nolink https:/a/link'),
         };
 
         v.paste(v.event);
 
-        assert.calledWith(v.insertText, 'insertText', false, 'containshttps://nolink https:/a/link');
+        assert.calledWith(v.insertText, 'insertText', false,
+                          'containshttps://nolink https:/a/link');
       },
 
       "test text hyperlinks"() {
@@ -635,7 +651,8 @@ isClient && define(function (require, exports, module) {
         test.onEnd(function () {sut.handleHyperLink = null});
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: test.stub().withArgs('text/plain').returns('contains\n ahttps://false/link and a https://real/link as\nwell'),
+          getData: test.stub().withArgs('text/plain').returns(
+            'contains\n ahttps://false/link and a https://real/link as\nwell'),
         };
 
         v.paste(v.event);
@@ -671,7 +688,8 @@ isClient && define(function (require, exports, module) {
         assert.called(Dom.stopEvent);
 
         refute.called(v.insertText);
-        assert.calledWith(v.insertHTML, 'insertHTML', false, '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
+        assert.calledWith(v.insertHTML, 'insertHTML', false,
+                          '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
       },
 
       "test pre"() {
@@ -720,7 +738,8 @@ isClient && define(function (require, exports, module) {
 
     "links": {
       setUp() {
-        document.body.appendChild(v.tpl.$autoRender({content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
+        document.body.appendChild(v.tpl.$autoRender({
+          content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
 
         Dom.flushNextFrame();
       },
@@ -852,7 +871,7 @@ isClient && define(function (require, exports, module) {
   });
 
   function collapse(start) {
-    var range = Dom.getRange();
+    const range = Dom.getRange();
     range.collapse(start);
     Dom.setRange(range);
     return range;
@@ -862,7 +881,7 @@ isClient && define(function (require, exports, module) {
     document.body.appendChild(v.tpl.$autoRender({}));
 
     assert.dom('.richTextEditor .input[contenteditable=true]', function () {
-      for(var name in subTests) {
+      for(let name in subTests) {
         Dom.removeChildren(this);
         subTests[name].call(this);
       }

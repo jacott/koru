@@ -1,38 +1,38 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var Dom = require('koru/dom');
-  var RichText = require('./rich-text');
-  var KeyMap = require('./key-map');
-  var RichTextMention = require('./rich-text-mention');
-  var Modal = require('./modal');
-  var makeSubject = require('koru/make-subject');
-  var SelectMenu = require('./select-menu');
-  var session = require('../session/client-rpc');
-  var koru = require('koru');
-  var uColor = require('koru/util-color');
-  var ColorPicker = require('./color-picker');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const makeSubject     = require('koru/make-subject');
+  const util            = require('koru/util');
+  const uColor          = require('koru/util-color');
+  const session         = require('../session/client-rpc');
+  const ColorPicker     = require('./color-picker');
+  const KeyMap          = require('./key-map');
+  const Modal           = require('./modal');
+  const RichText        = require('./rich-text');
+  const RichTextMention = require('./rich-text-mention');
+  const SelectMenu      = require('./select-menu');
 
-  var Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
-  var $ = Dom.current;
-  var Link = Tpl.Link;
+  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
+  const $ = Dom.current;
+  const {Link} = Tpl;
 
-  var languageList;
+  let languageList;
 
-  var TEXT_NODE = document.TEXT_NODE;
+  const {TEXT_NODE} = document;
 
-  var BR = document.createElement('br');
+  const BR = document.createElement('br');
 
-  var INLINE_TAGS = RichText.INLINE_TAGS;
+  const {INLINE_TAGS, FONT_SIZE_TO_EM} = RichText;
 
-  var shift = KeyMap.shift, ctrl = KeyMap.ctrl;
+  const {shift, ctrl} = KeyMap;
 
-  var EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
+  const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
 
-  var FONT_LIST = RichText.standardFonts.map(function (name, id) {
-    return [id, Dom.h({font: util.capitalize(util.humanize(name)), $face: RichText.fontIdToFace[id]})];
-  });
+  const FONT_LIST = RichText.standardFonts.map(
+    (name, id) => [
+      id, Dom.h({font: util.capitalize(util.humanize(name)), $face: RichText.fontIdToFace[id]})]);
 
-  var FONT_SIZE_LIST = [
+  const FONT_SIZE_LIST = [
     [1, 'X small'],
     [2, 'Small'],
     [3, 'Medium'],
@@ -42,13 +42,13 @@ define(function(require, exports, module) {
     [7, 'XXX large'],
   ];
 
-  FONT_SIZE_LIST.forEach(function (row) {
+  FONT_SIZE_LIST.forEach(row => {
     row[1] = Dom.h({font: row[1], $size: row[0]});
   });
 
   execCommand('styleWithCSS', true);
 
-  var actions = commandify({
+  const actions = commandify({
     bold: true,
     italic: true,
     underline: true,
@@ -69,26 +69,26 @@ define(function(require, exports, module) {
       });
     },
     fontColor(event) {
-      var range = Dom.getRange();
-      var node = range.endContainer;
+      const range = Dom.getRange();
+      let node = range.endContainer;
       if (node && node.nodeType === TEXT_NODE)
         node = node.parentNode;
       if (! node) return;
 
-      var ctx = Tpl.$ctx(event.target);
-      var focus = ctx.inputElm;
+      const ctx = Tpl.$ctx(event.target);
+      const focus = ctx.inputElm;
 
-      var style = window.getComputedStyle(node);
+      const style = window.getComputedStyle(node);
 
-      var fgColor = uColor.toRGB(style.color);
-      var bgColor = style.backgroundColor;
-      var bgColor = uColor.toRGB(bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor);
+      let fgColor = uColor.toRGB(style.color);
+      let bgColor = style.backgroundColor;
+      bgColor = uColor.toRGB(bgColor === 'transparent' ? 'rgba(0,0,0,0)' : bgColor);
 
       fgColor = fgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(fgColor);
       bgColor = bgColor.a < .1 ? "#ffffff" : uColor.rgb2hex(bgColor);
 
-      var options = {foreColor: fgColor, hiliteColor: bgColor};
-      var typeElm = Tpl.FontColor.$autoRender(options);
+      const options = {foreColor: fgColor, hiliteColor: bgColor};
+      const typeElm = Tpl.FontColor.$autoRender(options);
 
       ctx.openDialog = true;
       ColorPicker.choose(fgColor, {customFieldset: typeElm}, function (color) {
@@ -99,7 +99,7 @@ define(function(require, exports, module) {
           execCommand('hiliteColor', 'initial');
           return;
         }
-        var cmd = typeElm.getAttribute('data-mode');
+        const cmd = typeElm.getAttribute('data-mode');
         color && execCommand(cmd, color);
       });
     },
@@ -111,41 +111,38 @@ define(function(require, exports, module) {
       });
     },
     code(event) {
-      var range = Dom.getRange();
-      var sc = range.startContainer;
-      var ec = range.endContainer;
-      var collapsed = range.collapsed;
+      const range = Dom.getRange();
+      const sc = range.startContainer;
+      const ec = range.endContainer;
+      const collapsed = range.collapsed;
 
-      var editor = Dom.getClosestClass(sc, 'input');
+      const editor = Dom.getClosestClass(sc, 'input');
       if (! editor) return;
 
-      var _code;
+      let _code;
 
-      var ctx = Dom.getMyCtx(editor.parentNode);
+      const ctx = Dom.getMyCtx(editor.parentNode);
 
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
-        var font = _code ? 'initial': 'monospace';
+        const font = _code ? 'initial': 'monospace';
         execCommand('fontName', font);
         notify(ctx, 'force', collapsed && {font: font});
       } else {
-        if (collapsed) {
-          var html = EMPTY_PRE.cloneNode(true);
-        } else {
-          var html = RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild;
-        }
-        Tpl.insert(html);
+        Tpl.insert(
+          collapsed ? EMPTY_PRE.cloneNode(true) :
+            RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild);
         ctx.mode = codeMode;
         ensureLangues(ctx);
         notify(ctx, 'force');
       }
     },
     link() {
-      var aElm = getTag('A');
-      var range = Dom.selectElm(aElm) || Dom.getRange();
+      const aElm = getTag('A');
+      const range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
 
-      var inputCtx = Tpl.$ctx(aElm);
-      var dialog = Link.$autoRender({
+      const inputCtx = Tpl.$ctx(aElm);
+      const dialog = Link.$autoRender({
         range: range,
         elm: aElm,
         link: aElm ? aElm.getAttribute('href') : '',
@@ -161,11 +158,11 @@ define(function(require, exports, module) {
       dialog.querySelector('[name=link]').focus();
     },
     mention(event) {
-      var range = Dom.getRange();
+      const range = Dom.getRange();
       if (! range) return;
 
-      var button = event.target;
-      var dialog = RichTextMention.$autoRender({
+      const button = event.target;
+      const dialog = RichTextMention.$autoRender({
         range: range,
         type: button.getAttribute('data-type'),
         mentions: $.ctx.parentCtx.data.extend.mentions,
@@ -183,7 +180,7 @@ define(function(require, exports, module) {
     },
   });
 
-  var keyMap = KeyMap(mapActions({
+  const keyMap = KeyMap(mapActions({
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
@@ -210,12 +207,12 @@ define(function(require, exports, module) {
   }, actions));
 
   function chooseFromMenu(event, options, onSelect) {
-    var ctx = Tpl.$ctx(event.target);
-    var origin = event.target;
+    const ctx = Tpl.$ctx(event.target);
+    const origin = event.target;
 
     options = util.merge({
       onSelect(item) {
-        var id = $.data(item).id;
+        const id = $.data(item).id;
 
         // close dialog before notify to restore range
         Dom.remove(Dom.getClosestClass(item, 'glassPane'));
@@ -234,30 +231,30 @@ define(function(require, exports, module) {
     SelectMenu.popup(event.target, options);
   }
 
-  var codeActions = commandify({
+  const codeActions = commandify({
     language(event) {
       chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
       }, function (ctx, id) {
-        var pre = Dom.getClosest(ctx.lastElm, 'pre');
+        const pre = Dom.getClosest(ctx.lastElm, 'pre');
         pre && pre.setAttribute('data-lang', id);
         codeMode.language = id;
       });
     },
     syntaxHighlight(event) {
-      var ctx = Tpl.$ctx(event.target);
-      var pre = Dom.getClosest(ctx.lastElm, 'pre');
+      const ctx = Tpl.$ctx(event.target);
+      const pre = Dom.getClosest(ctx.lastElm, 'pre');
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
-      var rt = RichText.fromHtml(pre, {includeTop: true});
+      const rt = RichText.fromHtml(pre, {includeTop: true});
       session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), function (err, result) {
         Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
         if (util.deepEqual(result, rt[1]))
           return;
-        var html = RichText.toHtml(rt[0], result);
-        var range = document.createRange();
+        const html = RichText.toHtml(rt[0], result);
+        const range = document.createRange();
         if (Dom.vendorPrefix === 'moz') {
           range.selectNode(pre);
           Dom.setRange(range);
@@ -266,7 +263,7 @@ define(function(require, exports, module) {
           range.selectNodeContents(pre);
           Dom.setRange(range);
           execCommand('insertHTML', html.firstChild.innerHTML);
-          var innerDiv = pre.firstChild.firstChild;
+          const innerDiv = pre.firstChild.firstChild;
           if (innerDiv && innerDiv.tagName === 'DIV' && innerDiv.nextSibling)
             execCommand('forwardDelete');
         }
@@ -277,16 +274,16 @@ define(function(require, exports, module) {
     italic: false,
     underline: false,
     nextSection(event) {
-      var elm = getModeNode($.ctx, Dom.getRange().endContainer);
+      const elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
-      var nextElm = elm.nextSibling;
-      var range = document.createRange();
+      const nextElm = elm.nextSibling;
+      const range = document.createRange();
       if (nextElm) {
         normPos($.ctx.inputElm, range, elm.nextSibling, 0, 'setEnd');
         range.collapse();
         Dom.setRange(range);
       } else {
-        var temp = document.createTextNode("\xa0");
+        const temp = document.createTextNode("\xa0");
         elm.parentNode.appendChild(temp);
         range.setEnd(temp, 0);
         range.collapse();
@@ -296,16 +293,16 @@ define(function(require, exports, module) {
       }
     },
     previousSection() {
-      var elm = getModeNode($.ctx, Dom.getRange().endContainer);
+      const elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
-      var previousElm = elm.previousSibling;
-      var range = document.createRange();
+      const previousElm = elm.previousSibling;
+      const range = document.createRange();
       if (previousElm) {
         normPos($.ctx.inputElm, range, elm.previousSibling, 0, 'setStart');
         range.collapse(true);
         Dom.setRange(range);
       } else {
-        var temp = document.createTextNode("\xa0");
+        const temp = document.createTextNode("\xa0");
         elm.parentNode.insertBefore(temp, elm);
         range.setEnd(temp, 0);
         range.collapse();
@@ -319,7 +316,7 @@ define(function(require, exports, module) {
     },
   });
 
-  var codeKeyMap = KeyMap(mapActions({
+  const codeKeyMap = KeyMap(mapActions({
     language: ctrl+'L',
     bold: ctrl+'B',
     italic: ctrl+'I',
@@ -341,7 +338,7 @@ define(function(require, exports, module) {
     case 'boolean':
       return func ? function (event) {
         execCommand(cmd);
-        var ctx = Tpl.$ctx(event.target);
+        const ctx = Tpl.$ctx(event.target);
         notify(ctx, 'force', {});
       } : noop;
     }
@@ -353,22 +350,22 @@ define(function(require, exports, module) {
 
 
   function mapActions(keys, actions) {
-    for (var name in keys) {
+    for (let name in keys) {
       keys[name] = [keys[name], actions[name]];
     }
     return keys;
   }
 
-  var optionKeys = {
+  const optionKeys = {
     type: true,
     focusout: true,
   };
 
   Tpl.$helpers({
     attrs() {
-      var elm = $.element;
-      var options = this.options;
-      for (var id in options) {
+      const elm = $.element;
+      const {options} = this;
+      for (let id in options) {
         if (optionKeys[id] || id[0] === '$') continue;
         (id === 'placeholder' ?
          $.ctx.inputElm : elm)
@@ -383,26 +380,27 @@ define(function(require, exports, module) {
   }
 
   function setHtml(value) {
-    var inputElm = Dom.getMyCtx(this).inputElm;
+    const {inputElm} = Dom.getMyCtx(this);
     Tpl.clear(inputElm);
     value && inputElm.appendChild(value);
   }
 
   function focusInput(event) {
-    var focusout = event.type === 'focusout';
+    const focusout = event.type === 'focusout';
 
-    var elm = event.currentTarget;
+    const elm = event.currentTarget;
 
     if (focusout) {
       if (currentDialog(elm))
         return;
-      var pCtx = Dom.getMyCtx(elm.parentNode);
+      const pCtx = Dom.myCtx(elm.parentNode);
       if (! pCtx) return;
-      var data = pCtx.data;
+      const data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
     } else {
-      var ctx = Tpl.$ctx(elm);
-      var range = Dom.getRange();
+      const ctx = Tpl.$ctx(elm);
+      if (! ctx) return;
+      let range = Dom.getRange();
       if (! range || ! elm.contains(range.endContainer)) {
         range = document.createRange();
         range.selectNodeContents(elm);
@@ -410,7 +408,7 @@ define(function(require, exports, module) {
         normRange(elm, range);
         Dom.setRange(range);
       }
-      ctx.lastElm === undefined &&
+      ctx && ctx.lastElm === undefined &&
         setMode(ctx, Dom.getRange());
       execCommand('styleWithCSS', true);
     }
@@ -418,33 +416,33 @@ define(function(require, exports, module) {
   }
 
   function currentDialog(me) {
-    var ctx = Dom.getMyCtx(me.parentNode);
+    const ctx = Dom.getMyCtx(me.parentNode);
     return ctx && ctx.openDialog;
   }
 
-  var standardMode = {
+  const standardMode = {
     actions: actions,
     type: 'standard',
 
     keyMap: keyMap,
 
     paste(htmlText) {
-      var html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
+      const html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
     pasteText(text) {
-      var URL_RE = /(\bhttps?:\/\/\S+)/;
+      const URL_RE = /(\bhttps?:\/\/\S+)/;
 
       if (Tpl.handleHyperLink && URL_RE.test(text)) {
-        var html = document.createElement('DIV');
+        const html = document.createElement('DIV');
         text.split(/(\r?\n)/).forEach(function (line, oi) {
           if (oi % 2) {
             html.appendChild(document.createElement('BR'));
           } else {
             line.split(URL_RE).forEach(function (part, index) {
               if (index % 2) {
-                var elm = Tpl.handleHyperLink(part);
+                const elm = Tpl.handleHyperLink(part);
                 if (elm) {
                   html.appendChild(elm);
                   return;
@@ -454,8 +452,7 @@ define(function(require, exports, module) {
             });
           }
         });
-        var html = RichText.fromToHtml(html);
-        Tpl.insert(html, 'inner') || Tpl.insert(text);
+        Tpl.insert(RichText.fromToHtml(html), 'inner') || Tpl.insert(text);
         return;
       }
 
@@ -476,23 +473,24 @@ define(function(require, exports, module) {
     },
   };
 
-  var codeMode = {
+  const codeMode = {
     actions: codeActions,
     type: 'code',
 
     keyMap: codeKeyMap,
 
-    keydown:  function (event) {
+    keydown(event) {
       codeKeyMap.exec(event, 'ignoreFocus');
     },
 
     paste(htmlText) {
-      var html = RichText.fromToHtml(Dom.html('<pre><div>'+htmlText+'</div></pre>'));
-      Tpl.insert(html.firstChild.firstChild, 'inner') || Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
+      const html = RichText.fromToHtml(Dom.html('<pre><div>'+htmlText+'</div></pre>'));
+      Tpl.insert(html.firstChild.firstChild, 'inner') ||
+        Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
     },
   };
 
-  var modes = {
+  const modes = {
     standard: standardMode,
     code: codeMode,
   };
@@ -522,8 +520,8 @@ define(function(require, exports, module) {
     clear(elm) {
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
-      var ctx = Dom.getCtx(elm);
-      var input = ctx.inputElm;
+      const ctx = Dom.getCtx(elm);
+      const input = ctx.inputElm;
       input.setAttribute('contenteditable', 'false');
       input.textContent = '';
       input.setAttribute('contenteditable', 'true');
@@ -531,7 +529,7 @@ define(function(require, exports, module) {
     },
 
     moveLeft(editor, mark) {
-      var range = select(editor, 'char', -1);
+      const range = select(editor, 'char', -1);
       if (! range) return;
       if (! mark) {
         range.collapse(true);
@@ -547,19 +545,20 @@ define(function(require, exports, module) {
     lastInnerMostNode: lastInnerMostNode,
 
     insert(arg, inner) {
-      var range = Dom.getRange();
+      const range = Dom.getRange();
 
       if (typeof arg === 'string')
         return execCommand('insertText', arg);
 
+      let t;
       if (arg.nodeType === document.DOCUMENT_FRAGMENT_NODE) {
-        var t = document.createElement('div');
+        t = document.createElement('div');
         t.appendChild(arg);
         t = t.innerHTML;
       } else if (inner) {
-        var t = arg.innerHTML;
+        t = arg.innerHTML;
       } else {
-        var t = arg.outerHTML;
+        t = arg.outerHTML;
       }
       return execCommand("insertHTML", t);
     },
@@ -580,12 +579,10 @@ define(function(require, exports, module) {
     modes: modes,
   });
 
-  var FONT_SIZE_TO_EM = RichText.FONT_SIZE_TO_EM;
-
   Tpl.$events({
     'input'(event) {
-      var input = event.target;
-      var fc = input.firstChild;
+      const input = event.target;
+      const fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
         input.removeChild(fc);
 
@@ -596,8 +593,8 @@ define(function(require, exports, module) {
           break;
         case 'SPAN':
 
-          var st = node.style;
-          var fs = st.fontSize;
+          const st = node.style;
+          const fs = st.fontSize;
           if (fs && fs.slice(-2) !== 'em') {
             st.fontSize = FONT_SIZE_TO_EM[fs.replace(/^-[a-z]+-/,'')] || '3em';
             st.lineHeight = "1em";
@@ -607,11 +604,11 @@ define(function(require, exports, module) {
       });
     },
     'paste'(event) {
-      var foundText;
+      let foundText, type;
       if ('clipboardData' in event) {
-        var types = event.clipboardData.types;
-        if (types) for(var i = 0; i < types.length; ++i) {
-          var type = types[i];
+        const types = event.clipboardData.types;
+        if (types) for(let i = 0; i < types.length; ++i) {
+          type = types[i];
           if (/html/.test(type)) {
             Dom.stopEvent();
             $.ctx.mode.paste(event.clipboardData.getData(type));
@@ -631,7 +628,7 @@ define(function(require, exports, module) {
     },
 
     pointerup() {
-      var range = Dom.getRange();
+      const range = Dom.getRange();
       $.ctx.override = null;
       range && setMode($.ctx, range);
     },
@@ -641,7 +638,7 @@ define(function(require, exports, module) {
     },
 
     keydown(event) {
-      var mdEditor = this.parentNode;
+      const mdEditor = this.parentNode;
 
       switch(event.which) {
       case 229: case 16:
@@ -660,13 +657,13 @@ define(function(require, exports, module) {
 
     keypress(event) {
       if (event.which === 0) return; // for firefox
-      var ctx = $.ctx;
+      const ctx = $.ctx;
 
       if (ctx.mentionState != null && ctx.mentionState < 3) {
         Dom.stopEvent();
-        var ch = String.fromCharCode(event.which);
-        var range = Dom.getRange();
-        var span = Dom.h({class: 'ln', span: ch});
+        const ch = String.fromCharCode(event.which);
+        const range = Dom.getRange();
+        const span = Dom.h({class: 'ln', span: ch});
         range.insertNode(span);
         ctx.mentionState = 3;
         ctx.selectItem = RichTextMention.selectItem({
@@ -678,16 +675,17 @@ define(function(require, exports, module) {
         });
         return;
       }
-      var mentionType = mentionKey(ctx, event.which);
+      const mentionType = mentionKey(ctx, event.which);
       if (mentionType && event.shiftKey) {
         ctx.mentionType = mentionType;
-        var range = Dom.getRange();
+        const range = Dom.getRange();
         if (range.startOffset !== 0) {
+          let text;
           if (range.startContainer.nodeType === document.TEXT_NODE) {
-            var text = range.startContainer.textContent;
+            text = range.startContainer.textContent;
             text = text[range.startOffset - 1];
           } else {
-            var text = range.startContainer.childNodes[range.startOffset - 1].textContent;
+            text = range.startContainer.childNodes[range.startOffset - 1].textContent;
           }
           if (text.match(/\S/)) return;
         }
@@ -697,7 +695,7 @@ define(function(require, exports, module) {
     },
 
     keyup() {
-      var ctx = $.ctx;
+      const {ctx} = $;
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
       }
@@ -706,7 +704,7 @@ define(function(require, exports, module) {
   });
 
   function getModeNode(ctx, elm) {
-    for(var editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
+    for(const editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
       switch (elm.tagName) {
       case 'PRE':
         return elm;
@@ -715,7 +713,7 @@ define(function(require, exports, module) {
   }
 
   function setMode(ctx, range) {
-    var elm = range.endContainer;
+    let elm = range.endContainer;
     if (elm === ctx.lastElm) {
       if (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))
       return;
@@ -742,14 +740,14 @@ define(function(require, exports, module) {
   }
 
   function notify(ctx, force, override) {
-    var range = Dom.getRange();
-    if (range.endContainer.nodeType !== TEXT_NODE)
-      var elm = range.endContainer.childNodes[range.endContainer.offset] || range.endContainer;
-    else
-      var elm = range.endContainer;
+    const range = Dom.getRange();
+    const elm = range.endContainer.nodeType !== TEXT_NODE ?
+            range.endContainer.childNodes[range.endContainer.offset] || range.endContainer
+            : range.endContainer;
 
-
-    if (! force && ctx.lastElm === elm && (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))) return;
+    if (! force && ctx.lastElm === elm &&
+        (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset)))
+      return;
 
     ctx.override = override;
     ctx.lastElm = elm;
@@ -759,21 +757,19 @@ define(function(require, exports, module) {
   }
 
   function mentionKey(ctx, code) {
-    var mentions = ctx.data.extend;
+    let mentions = ctx.data.extend;
     mentions = mentions && mentions.mentions;
     if (! mentions) return;
-    var id = String.fromCharCode(code);
+    const id = String.fromCharCode(code);
     if (mentions[id])
       return id;
   }
 
   function getTag(tag) {
-    var range = Dom.getRange();
+    const range = Dom.getRange();
     if (range === null) return null;
-    var start = range.endContainer;
-    return Dom.searchUpFor(start, function (elm) {
-      return elm.tagName === tag;
-    }, 'richTextEditor');
+    const start = range.endContainer;
+    return Dom.searchUpFor(start, elm => elm.tagName === tag, 'richTextEditor');
   }
 
   function execCommand (cmd, value) {
@@ -781,15 +777,15 @@ define(function(require, exports, module) {
   }
 
   function move(editor, type, amount) {
-    var range = select(editor, type, amount);
+    const range = select(editor, type, amount);
     range.collapse(amount < 0);
     Dom.setRange();
     return range;
   }
 
   function select(editor, type, amount) {
-    var range = Dom.getRange();
-    var obj = {node: range.startContainer, offset: range.startOffset};
+    const range = Dom.getRange();
+    const obj = {node: range.startContainer, offset: range.startOffset};
 
     if (! Dom.contains(editor, obj.node)) return;
 
@@ -807,9 +803,7 @@ define(function(require, exports, module) {
   }
 
   function backOneChar(editor, obj) {
-    var other;
-    var node = obj.node;
-    var offset = obj.offset;
+    let other, {node, offset} = obj;
 
     if (node.nodeType === TEXT_NODE) {
       --offset;
@@ -848,7 +842,7 @@ define(function(require, exports, module) {
   }
 
   function lastInnerMostNode(node) {
-    var other;
+    let other;
     if (node.nodeType === TEXT_NODE) {
       if (node.textContent.length) {
         return node;
@@ -862,7 +856,7 @@ define(function(require, exports, module) {
   }
 
   function firstInnerMostNode(node) {
-    var other;
+    let other;
     if (node.nodeType === TEXT_NODE) {
       if (node.textContent.length) {
         return node;
@@ -876,9 +870,7 @@ define(function(require, exports, module) {
   }
 
   function forwardOneChar(editor, obj) {
-    var other;
-    var node = obj.node;
-    var offset = obj.offset;
+    let other, {node, offset} = obj;
 
     if (node.nodeType === TEXT_NODE) {
       ++offset;
@@ -912,10 +904,10 @@ define(function(require, exports, module) {
   }
 
   function isPrevChar(char) {
-    var range = Dom.getRange();
+    const range = Dom.getRange();
     if (range.startContainer.nodeType !== TEXT_NODE)
       return;
-    var offset = range.startOffset;
+    const offset = range.startOffset;
     if (offset && range.startContainer.textContent[offset - 1] === char)
       return range;
   }
@@ -932,16 +924,16 @@ define(function(require, exports, module) {
         if (offset !== 0) range[setter](node, 0);
         return;
       }
-      var children = node.childNodes;
+      const children = node.childNodes;
       if (! children.length) return;
-      var curr = node.childNodes[offset];
+      let curr = node.childNodes[offset];
       if (curr && curr.tagName === 'BR') {
         range[setter](curr, 0);
         return;
       }
       curr = (curr && firstInnerMostNode(curr)) || lastInnerMostNode(node.childNodes[offset - 1]);
       if (curr.nodeType !== TEXT_NODE && curr.tagName !== 'BR') {
-        var obj = {node: node, offset: offset};
+        const obj = {node: node, offset: offset};
         forwardOneChar(editor, obj);
         range[setter](obj.node, obj.offset);
       } else if (curr !== node) {
@@ -955,14 +947,14 @@ define(function(require, exports, module) {
   }
 
   function traceContainingBlock(editor, node, wrt) {
-    var trace = [];
+    const trace = [];
     while (node !== editor) {
       trace.push(node);
       node = node.parentNode;
     }
     if (! wrt) return trace;
-    var wrtIdx = wrt.length - 1;
-    var traceIdx = trace.length - 1;
+    let wrtIdx = wrt.length - 1;
+    let traceIdx = trace.length - 1;
     while(wrt[wrtIdx] === trace[traceIdx]) {
       --wrtIdx; -- traceIdx;
     }
@@ -981,7 +973,7 @@ define(function(require, exports, module) {
   }
 
   function findBeforeBlock(editor, node) {
-    var last = node;
+    let last = node;
     node = node.parentNode;
     while (node && node !== editor && INLINE_TAGS[node.tagName]) {
       last = node;
@@ -998,10 +990,10 @@ define(function(require, exports, module) {
   }
 
   function deleteEmpty(range) {
-    var node = range.startContainer;
+    const node = range.startContainer;
     if (node.nodeType !== TEXT_NODE) return;
-    var offset = range.startOffset;
-    var other, parent = node.parentNode;
+    let offset = range.startOffset;
+    let other, parent = node.parentNode;
     while ((other = node.previousSibling) && other.nodeType === TEXT_NODE) {
       node.textContent = other.textContent + node.textContent;
       offset += other.textContent.length;
@@ -1017,7 +1009,7 @@ define(function(require, exports, module) {
     range.collapse(true);
 
     function killNode() {
-      var other = node.nextSibling;
+      const other = node.nextSibling;
       offset = 0;
       if (! other) {
         other = node.previousSibling;
@@ -1065,19 +1057,19 @@ define(function(require, exports, module) {
   Link.$events({
     'submit'(event) {
       Dom.stopEvent();
-      var inputs = this.getElementsByTagName('input');
+      const inputs = this.getElementsByTagName('input');
 
-      var data = $.ctx.data;
+      const {data} = $.ctx;
       Dom.setRange(data.range);
       data.inputElm.focus();
-      var href  = inputs[1].value;
+      const href = inputs[1].value;
       Tpl.insert(Dom.h({a: inputs[0].value || href, $href: href}));
       Dom.remove(event.currentTarget);
     },
   });
 
   function codeNode(editor, range) {
-    for(var node = range.startContainer; node && node !== editor; node = node.parentNode) {
+    for(let node = range.startContainer; node && node !== editor; node = node.parentNode) {
       if (node.nodeType === 1 && RichText.fontType(node.style.fontFamily) === 'monospace') {
         return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
       }
@@ -1088,7 +1080,7 @@ define(function(require, exports, module) {
     'click button'(event) {
       Dom.stopEvent();
       this.focus();
-      var type = this.getAttribute('name');
+      const type = this.getAttribute('name');
       if (type === 'removeHilite') {
         $.ctx.parentCtx.data.callback(type);
         Dom.remove($.ctx.parentCtx.element());
@@ -1098,6 +1090,4 @@ define(function(require, exports, module) {
       ColorPicker.setColor($.ctx.parentCtx, $.ctx.data[type]);
     },
   });
-
-  return Tpl;
 });

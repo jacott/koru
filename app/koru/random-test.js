@@ -16,7 +16,7 @@ define(function (require, exports, module) {
     },
 
     "test sequnce"() {
-      var random = Random.create(0);
+      const random = Random.create(0);
       assert.same(random.id(), "cp9hWvhg8GSvuZ9os");
       assert.same(random.id(), "3f3k6Xo7rrHCifQhR");
       assert.same(random.id(), "shxDnjWWmnKPEoLhM");
@@ -35,7 +35,8 @@ define(function (require, exports, module) {
       if (isServer) {
         assert.calledWith(randSpy, 17);
       } else {
-        assert.calledWith(randSpy, TH.match(u8 => u8.constructor === Uint8Array && u8.length === 17));
+        assert.calledWith(randSpy, TH.match(
+          u8 => u8.constructor === Uint8Array && u8.length === 17));
       }
 
       randSpy.reset();
@@ -53,7 +54,7 @@ define(function (require, exports, module) {
 
       assert.same(hexStr.length, numDigits);
       parseInt(hexStr, 16); // should not throw
-      var frac = Random.fraction();
+      const frac = Random.fraction();
       assert.isTrue(frac < 1.0);
       assert.isTrue(frac >= 0.0);
     },

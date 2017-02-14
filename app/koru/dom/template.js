@@ -86,12 +86,14 @@ define(function(require, exports, module) {
       ensureHelper(this);
       const prevCtx = Ctx._currentCtx;
       Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
+      let frag, firstChild;
       try {
-        var frag = document.createDocumentFragment();
+        frag = document.createDocumentFragment();
         this.nodes && addNodes.call(this, frag, this.nodes);
-        if (frag.firstChild) {
-          if (frag.lastChild === frag.firstChild)
-            frag = frag.firstChild;
+        firstChild = frag.firstChild;
+        if (firstChild) {
+          if (frag.lastChild === firstChild)
+            frag = firstChild;
 
           frag._koru = Ctx._currentCtx;
         }
@@ -121,7 +123,7 @@ define(function(require, exports, module) {
     }
 
     $events(events) {
-      for(var key in events)
+      for(let key in events)
         this.$event(key, events[key]);
       return this;
     }
@@ -135,7 +137,7 @@ define(function(require, exports, module) {
 
     $findEvent(type, css) {
       const events = this._events;
-      for(var i = 0; i < events.length; ++i) {
+      for(let i = 0; i < events.length; ++i) {
         const row = events[i];
         if (row[0] === type && row[1] === css)
           return row;
@@ -144,7 +146,7 @@ define(function(require, exports, module) {
 
     $actions(actions) {
       const events = {};
-      for(var key in actions) {
+      for(let key in actions) {
         events['click [name='+key+']'] = actions[key];
       }
       return this.$events(events);
@@ -314,7 +316,7 @@ define(function(require, exports, module) {
     let elm = event.target;
 
     try {
-      for(var key in eventTypes) {
+      for(let key in eventTypes) {
         if (key === ':TOP') {
           if (elm === event.currentTarget) {
             if (fire(event, elm, eventTypes[key])) return;
@@ -330,9 +332,9 @@ define(function(require, exports, module) {
         }
       }
 
-      for(var key in later) {
+      for(let key in later) {
         for (elm = elm && elm.parentNode;elm && elm !== event.currentTarget; elm = elm.parentNode) {
-          for(var key in later) {
+          for(let key in later) {
             if (key !== ':TOP' && matches.call(elm, key)) {
               if (fire(event, elm, eventTypes[key])) return;
               delete later[key];
@@ -342,7 +344,7 @@ define(function(require, exports, module) {
         break;
       }
 
-      for(var key in later) {
+      for(let key in later) {
         if (fire(event, elm, eventTypes[key])) return;
       }
     } catch(ex) {
@@ -392,11 +394,11 @@ define(function(require, exports, module) {
 
     if (selector) {
       selector = selector+' ';
-      for(var i = 0; i < events.length; ++i) {
+      for(let i = 0; i < events.length; ++i) {
         const row = events[i];
         func(parent, row[0],  selector+row[1], row[row.length -1]);
       }
-    } else for(var i = 0; i < events.length; ++i) {
+    } else for(let i = 0; i < events.length; ++i) {
       const row = events[i];
       func(parent, row[0], row[1], row[row.length -1]);
     }
@@ -467,7 +469,7 @@ define(function(require, exports, module) {
         result = (template || Dom)[name];
       }
     }
-    if (rest) for(var i = 0; i < rest.length; ++i) {
+    if (rest) for(let i = 0; i < rest.length; ++i) {
       result = result && result[rest[i]];
     }
 
@@ -493,7 +495,7 @@ define(function(require, exports, module) {
   }
 
   function setAttrs(elm, attrs) {
-    if (attrs) for(var j=0; j < attrs.length; ++j) {
+    if (attrs) for(let j=0; j < attrs.length; ++j) {
       const attr = attrs[j];
 
       if (typeof attr === 'string') {
@@ -519,7 +521,7 @@ define(function(require, exports, module) {
     if (name.match(/\./)) {
       const names = name.split('.');
       name = names.pop();
-      util.forEach(names, function (nm) {
+      util.forEach(names, nm  => {
         parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }

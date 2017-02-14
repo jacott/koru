@@ -26,11 +26,11 @@ isClient && define(function (require, exports, module) {
     },
 
     "test stopEvent"() {
-      var ev = {stopImmediatePropagation: this.stub(), preventDefault: this.stub()};
+      const ev = {stopImmediatePropagation: this.stub(), preventDefault: this.stub()};
       Dom.stopEvent(ev);
       assert.called(ev.stopImmediatePropagation);
       assert.called(ev.preventDefault);
-      var Tpl = Dom.newTemplate({
+      const Tpl = Dom.newTemplate({
         name: "Foo",
         nodes:[{
           name:"div",
@@ -59,7 +59,7 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(Tpl.$autoRender({}));
       assert.dom('div', function () {
-        var ev = Dom.buildEvent('click');
+        let ev = Dom.buildEvent('click');
         TH.test.stub(ev, 'stopImmediatePropagation');
         TH.test.stub(ev, 'preventDefault');
         this.dispatchEvent(ev);
@@ -69,7 +69,7 @@ isClient && define(function (require, exports, module) {
 
         v.success = false;
 
-        var ev = Dom.buildEvent('keydown');
+        ev = Dom.buildEvent('keydown');
         TH.test.stub(ev, 'stopImmediatePropagation');
         TH.test.stub(ev, 'preventDefault');
         this.dispatchEvent(ev);
@@ -139,7 +139,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test setCtx"() {
-        var elm = Dom.Foo.$render({});
+        const elm = Dom.Foo.$render({});
         assert.dom(elm, function () {
           v.pCtx = Dom.getMyCtx(this);
           this.appendChild(Dom.h({class: 'ins'}));
@@ -162,13 +162,13 @@ isClient && define(function (require, exports, module) {
             return 'one';
           },
         });
-        var elm = Dom.Foo.$render({});
+        const elm = Dom.Foo.$render({});
 
         assert.same(v.helperFoundCtx, elm._koru);
 
         assert.dom(elm, function () {
           assert.dom('input', {value: 'one'}, function () {
-            var ctx = Dom.Foo.$ctx(this);
+            const ctx = Dom.Foo.$ctx(this);
             assert.same(ctx, elm._koru);
             assert.same(ctx.element(), elm);
           });
@@ -185,7 +185,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test updateAllTags"() {
-        var elm = Dom.Foo.$render({myFunc: 'one'});
+        const elm = Dom.Foo.$render({myFunc: 'one'});
 
         document.body.appendChild(elm);
 
@@ -214,7 +214,7 @@ isClient && define(function (require, exports, module) {
             return 'foo';
           },
         });
-        var elm = Dom.Foo.$render({});
+        const elm = Dom.Foo.$render({});
 
         document.body.appendChild(elm);
 
@@ -241,7 +241,7 @@ isClient && define(function (require, exports, module) {
       "test default arg is data"() {
         Dom.Bar.$created = this.stub();
 
-        var data = {arg: 'me'};
+        const data = {arg: 'me'};
         Dom.Foo.$render(data);
 
         assert.calledWith(Dom.Bar.$created, TH.match(function (ctx) {
@@ -251,13 +251,13 @@ isClient && define(function (require, exports, module) {
       },
 
       "test scoping"() {
-        var initials = 'BJ';
+        const initials = 'BJ';
         Dom.Bar.$helpers({
           myFunc() {
             return initials;
           },
         });
-        var result = Dom.Foo.$render({});
+        const result = Dom.Foo.$render({});
 
         assert.dom(result, function () {
           assert.dom('>div>input', {value: 'BJ'});
@@ -276,7 +276,7 @@ isClient && define(function (require, exports, module) {
       assert.same(Dom.Foo._events[0][0], 'click');
       assert.same(Dom.Foo._events[0][1], '[name=one]');
 
-      var event = {};
+      const event = {};
 
       Dom.Foo._events[0][2](event);
 
@@ -544,7 +544,7 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(Dom.Foo.$render({}));
 
       assert.dom('body>div', function () {
-        var top = this;
+        const top = this;
         TH.test.onEnd(function () {Dom.remove(top)});
         TH.test.spy(top, 'addEventListener');
         Dom.Foo.$attachEvents(top);
@@ -637,19 +637,19 @@ isClient && define(function (require, exports, module) {
       },
 
       "test not found"() {
-        var tp = Dom.newTemplate({name: "Foo.Bar.Baz"});
+        const tp = Dom.newTemplate({name: "Foo.Bar.Baz"});
         assert.same(Dom.lookupTemplate('Foo.Fizz.Bar'), undefined);
       },
 
       "test nest by name"() {
-        var fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
-        var fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});
+        const fbb = Dom.newTemplate({name: "Foo.Bar.Baz"});
+        const fff = Dom.newTemplate({name: "Foo.Fnord.Fuzz"});
 
         assert.same(fbb, Dom.lookupTemplate("Foo.Bar.Baz"));
         assert.same(fbb, Dom.lookupTemplate.call(Dom.lookupTemplate("Foo"), "Bar.Baz"));
         assert.same(fff, Dom.lookupTemplate.call(fbb, "../../Fnord.Fuzz"));
 
-        var tpl = Dom.Foo.Bar;
+        const tpl = Dom.Foo.Bar;
         assert.same(tpl.name, 'Bar');
         assert.same(tpl._helpers, undefined);
         assert.same(Dom.lookupTemplate("Foo.Bar"), tpl);
@@ -679,7 +679,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test $created"() {
-        var pCtx = {foo: 'bar'};
+        const pCtx = {foo: 'bar'};
         Dom.Foo.$extend({
           $created(ctx, elm) {
             v.ctx = ctx;
@@ -754,12 +754,12 @@ isClient && define(function (require, exports, module) {
           Dom.newTemplate({name: 'Foo.Bar', nodes: [{name: 'span'}]});
           Dom.newTemplate({name: 'Foo.Baz', nodes: [{name: 'h1'}]});
 
-          var dStub = Dom.Foo.Bar.$destroyed = function (...args) {
+          const dStub = Dom.Foo.Bar.$destroyed = function (...args) {
             if (v) v.args = args;
           };
 
-          var bar = Dom.Foo.Bar.$render();
-          var baz = Dom.Foo.Baz.$render();
+          let bar = Dom.Foo.Bar.$render();
+          const baz = Dom.Foo.Baz.$render();
 
           v.foo.appendChild(bar);
 
@@ -768,7 +768,7 @@ isClient && define(function (require, exports, module) {
               v.barCtx = this._koru;
             });
             Dom.replaceElement(baz, bar);
-            var ctx = this._koru;
+            const ctx = this._koru;
             assert.dom('>h1', function () {
               assert.same(ctx, this._koru.parentCtx);
             });
@@ -804,7 +804,7 @@ isClient && define(function (require, exports, module) {
         }],
       });
 
-      var frag = Dom.Foo.$render({});
+      const frag = Dom.Foo.$render({});
 
       assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
       assert(frag._koru);
@@ -820,27 +820,29 @@ isClient && define(function (require, exports, module) {
         }],
       });
 
+      let content;
+
       Dom.Foo.$helpers({
         bar() {
           return content.apply(this, arguments);
         },
       });
 
-      var content = function () {
-        var frag = document.createDocumentFragment();
+      content = function () {
+        const frag = document.createDocumentFragment();
         frag.appendChild(Dom.html('<div id="e1">e1</div>'));
         frag.appendChild(Dom.html('<div id="e2">e2</div>'));
         frag.appendChild(Dom.html('<div id="e3">e3</div>'));
         return frag;
       };
 
-      var elm = Dom.Foo.$render({});
+      const elm = Dom.Foo.$render({});
       assert.dom(elm, function () {
         assert.dom('div', {count: 3});
       });
 
       content = function () {
-        var frag = document.createDocumentFragment();
+        const frag = document.createDocumentFragment();
         frag.appendChild(Dom.html('<p id="n1">n1</p>'));
         frag.appendChild(Dom.html('<p id="n2">n2</p>'));
         return frag;
@@ -853,7 +855,7 @@ isClient && define(function (require, exports, module) {
       });
 
       content = function () {
-        var elm = document.createElement('span');
+        const elm = document.createElement('span');
         elm.textContent = 'foo';
         return elm;
       };
@@ -874,10 +876,10 @@ isClient && define(function (require, exports, module) {
           nodes:[{name: "div"}],
         });
 
-        var elm = Dom.Foo.$render({});
-        var ctx = Dom.getCtx(elm);
-        var stub1 = this.stub();
-        var stub2 = this.stub();
+        const elm = Dom.Foo.$render({});
+        const ctx = Dom.getCtx(elm);
+        const stub1 = this.stub();
+        const stub2 = this.stub();
         ctx.onDestroy({stop: stub1})
           .onDestroy(stub2);
 
@@ -948,7 +950,7 @@ isClient && define(function (require, exports, module) {
 
         "test detaches if removed"() {
           Dom.remove(v.dep);
-          var obs = {};
+          const obs = {};
           assert(v.dep2Ctx.__id);
           obs[v.dep2Ctx.__id] = v.dep2;
           assert.equals(v.elm._koru.__destoryObservers, obs);
@@ -964,7 +966,7 @@ isClient && define(function (require, exports, module) {
           nodes:[{name: "div"}],
         });
 
-        var elm = Dom.Foo.$render({});
+        const elm = Dom.Foo.$render({});
         assert.same(elm.nodeType, document.ELEMENT_NODE);
         assert.same(elm.tagName, 'DIV');
       },
@@ -974,10 +976,10 @@ isClient && define(function (require, exports, module) {
           name: "Foo",
           nodes:[{name: "div",}, {name: 'span'}, {name: 'section'}],
         });
-        var frag = Dom.Foo.$render({});
+        const frag = Dom.Foo.$render({});
         assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
 
-        var ctx = frag.firstChild._koru;
+        const ctx = frag.firstChild._koru;
         assert.same(frag.firstChild.tagName, 'DIV');
 
         assert.same(ctx, frag.firstChild.nextSibling._koru);
@@ -1062,7 +1064,7 @@ isClient && define(function (require, exports, module) {
           },
         });
 
-        var elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc() {
+        const elm = Dom.Foo.$render(v.data = {user: {initial: 'fb', name: 'Foo', nameFunc() {
           return this.name;
         }}});
         document.body.appendChild(elm);
@@ -1089,7 +1091,7 @@ isClient && define(function (require, exports, module) {
           }],
         });
 
-        var data = {name: 'foo'};
+        const data = {name: 'foo'};
 
         assert.dom(Dom.Foo.$render(data), function () {
           assert.dom('p', 'foo', function () {
