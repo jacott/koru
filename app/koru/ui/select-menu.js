@@ -47,10 +47,10 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     popup(elm, options, pos) {
-      const elmCtx = Dom.getCtx(elm);
+      const elmCtx = Dom.ctx(elm);
       const menu = Tpl.$autoRender(options);
       options.rendered && options.rendered(menu.firstElementChild);
-      const ctx = Dom.getMyCtx(menu);
+      const ctx = Dom.myCtx(menu);
       elmCtx && Dom.destroyMeWith(menu, elmCtx);
       ctx.focusElm = document.activeElement;
       ctx.focusRange = Dom.getRange();
@@ -110,7 +110,7 @@ define(function(require, exports, module) {
     content() {
       const elm = $.element;
       if (elm.nodeType === document.DOCUMENT_NODE)
-        Dom.getMyCtx(elm).updateAllTags();
+        Dom.myCtx(elm).updateAllTags();
       else
         return Tpl.List.$autoRender(this);
     },

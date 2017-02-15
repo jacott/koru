@@ -104,7 +104,7 @@ define(function(require, exports, module) {
         Dom.stopEvent();
 
         const elm = document.getElementById(elmId);
-        const ctx = Dom.getCtx(elm);
+        const ctx = Dom.ctx(elm);
         const doc = ctx.data;
         const form = elm.getElementsByClassName('fields')[0];
 

@@ -82,7 +82,7 @@ isClient && define(function (require, exports, module) {
         doc.autoShowEdit = 'foo';
 
         // this was stopping custom edit template from showing
-        Dom.getMyCtx(this).updateAllTags();
+        Dom.myCtx(this).updateAllTags();
 
         TH.click('[name=autoShowEdit].ui-editable.showTpl', 'foo');
 

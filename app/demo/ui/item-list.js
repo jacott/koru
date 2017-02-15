@@ -25,7 +25,7 @@ define(function(require, exports, module) {
 
       ListTpl.select(list);
 
-      Dom.getCtxById('tag-filter').updateAllTags({list: list});
+      Dom.ctxById('tag-filter').updateAllTags({list: list});
 
       return list && list._id;
     },
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
             (! self.filter || todo.tags.indexOf(self.filter) !== -1);
         },
         changed() {
-          Dom.getCtxById('tag-filter').updateAllTags();
+          Dom.ctxById('tag-filter').updateAllTags();
         },
       });
     },
@@ -75,7 +75,7 @@ define(function(require, exports, module) {
 
   Tpl.NewTodo.$events(okcancel('', {
     ok(value, event) {
-      var ctx = Dom.getCtxById('item-list');
+      var ctx = Dom.ctxById('item-list');
       if (! ctx) return;
       var data = ctx.data;
       if (! data.list) return;

@@ -144,15 +144,15 @@ isClient && define(function (require, exports, module) {
       "test setCtx"() {
         const elm = Dom.Foo.$render({});
         assert.dom(elm, function () {
-          v.pCtx = Dom.getMyCtx(this);
+          v.pCtx = Dom.myCtx(this);
           this.appendChild(Dom.h({class: 'ins'}));
           assert.dom('.ins', function () {
             v.iCtx = Dom.setCtx(this);
             assert.same(v.iCtx.parentCtx, v.pCtx);
-            assert.same(Dom.getMyCtx(this), v.iCtx);
+            assert.same(Dom.myCtx(this), v.iCtx);
             v.nCtx = Dom.setCtx(this, new Dom.Ctx());
             assert.same(v.nCtx.parentCtx, undefined);
-            assert.same(Dom.getMyCtx(this), v.nCtx);
+            assert.same(Dom.myCtx(this), v.nCtx);
           });
         });
       },
@@ -184,7 +184,7 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.Foo.$data('FooId'), elm._koru.data);
         assert.same(Dom.Foo.$data(elm.querySelector('#BazArticle')), elm._koru.data);
 
-        assert.same(Dom.getCtxById('FooId'), elm._koru);
+        assert.same(Dom.ctxById('FooId'), elm._koru);
       },
 
       "test updateAllTags"() {
@@ -552,7 +552,7 @@ isClient && define(function (require, exports, module) {
         TH.test.spy(top, 'addEventListener');
         Dom.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
-        Dom.getCtx(top).onDestroy(function () {
+        Dom.ctx(top).onDestroy(function () {
           Dom.Foo.$detachEvents(top);
         });
         assert.dom('span', function () {
@@ -696,7 +696,7 @@ isClient && define(function (require, exports, module) {
         assert.dom(Dom.Foo.$render({}, pCtx), function () {
           assert.called(v.myHelper);
           assert.same(v.elm, this);
-          assert.same(v.ctx, Dom.getCtx(this));
+          assert.same(v.ctx, Dom.ctx(this));
         });
       },
 
@@ -721,7 +721,7 @@ isClient && define(function (require, exports, module) {
         assert.dom(Dom.Foo.$render({on: true}), function () {
           assert.same(this.getAttribute('disabled'), 'disabled');
 
-          Dom.getCtx(this).updateAllTags({on: false});
+          Dom.ctx(this).updateAllTags({on: false});
 
           assert.same(this.getAttribute('disabled'), null);
         });
@@ -851,7 +851,7 @@ isClient && define(function (require, exports, module) {
         return frag;
       };
 
-      Dom.getCtx(elm).updateAllTags();
+      Dom.ctx(elm).updateAllTags();
       assert.dom(elm, function () {
         refute.dom('div');
         assert.dom('p', {count: 2});
@@ -863,7 +863,7 @@ isClient && define(function (require, exports, module) {
         return elm;
       };
 
-      Dom.getCtx(elm).updateAllTags();
+      Dom.ctx(elm).updateAllTags();
       assert.dom(elm, function () {
         refute.dom('p');
         assert.dom('span', 'foo', function () {
@@ -880,7 +880,7 @@ isClient && define(function (require, exports, module) {
         });
 
         const elm = Dom.Foo.$render({});
-        const ctx = Dom.getCtx(elm);
+        const ctx = Dom.ctx(elm);
         const stub1 = this.stub();
         const stub2 = this.stub();
         ctx.onDestroy({stop: stub1})
@@ -1077,7 +1077,7 @@ isClient && define(function (require, exports, module) {
             .same(this.getAttribute('data-foo'), 'Foo');
 
           v.data.user.name = 'Bar';
-          Dom.getCtx(elm).updateElement(this);
+          Dom.ctx(elm).updateElement(this);
           assert.dom(this, 'Bar');
         });
       },

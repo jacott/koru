@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   class Widget {
     constructor (options) {
       const element = this.element = Tpl.$autoRender(options);
-      const ctx = this.ctx = Dom.getCtx(element);
+      const ctx = this.ctx = Dom.ctx(element);
       ctx._widget = this;
     }
 
@@ -108,7 +108,7 @@ define(function(require, exports, module) {
   function submit(event) {
     Dom.stopEvent();
 
-    var ctx = Dom.getCtx(this);
+    var ctx = Dom.ctx(this);
     var widget = ctx._widget;
 
     var input = this.firstChild;
@@ -138,7 +138,7 @@ define(function(require, exports, module) {
 
     'click [name=delete]'(event) {
       Dom.stopEvent();
-      var ctx = Dom.getCtx(this);
+      var ctx = Dom.ctx(this);
       var widget = ctx._widget;
 
       Dialog.confirm({
@@ -188,7 +188,7 @@ define(function(require, exports, module) {
           Dom.stopEvent();
           var target = this;
           if (Dom.matches(target, '.readOnly *')) return;
-          var ctx = Dom.getCtx(target);
+          var ctx = Dom.ctx(target);
           ctx.options.value = (ctx.options.doc = ctx.data.doc)[ctx.options.name];
           var widget = Tpl.swapFor(target, ctx.options);
           widget.onSubmit(function (value, form) {
@@ -225,11 +225,11 @@ define(function(require, exports, module) {
         var pTpl = $.ctx.template;
         var tpl = pTpl[options.showTemplate||'Show_'+options.name] || Tpl.GenericShow;
         elm = tpl.$render();
-        var ctx = Dom.getCtx(elm);
+        var ctx = Dom.ctx(elm);
         options.editTpl = pTpl[options.editTemplate||'Edit_'+options.name];
         ctx.options = options;
       } else {
-        var ctx = Dom.getCtx(elm);
+        var ctx = Dom.ctx(elm);
       }
 
       ctx.updateAllTags({doc: this, options: options});
@@ -239,7 +239,7 @@ define(function(require, exports, module) {
   });
 
   function cancel(elm) {
-    var ctx = Dom.getCtx(elm);
+    var ctx = Dom.ctx(elm);
     var data = ctx.data;
     data && data.doc && data.doc.$reload();
     ctx._widget.close();

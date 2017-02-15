@@ -239,7 +239,7 @@ define(function (require, exports, module) {
 
       const foobar = document.querySelector('.foo>.bar');
 
-      this.stub(Dom, 'getCtx').withArgs(foobar).returns('the ctx');
+      this.stub(Dom, 'ctx').withArgs(foobar).returns('the ctx');
 
       assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');

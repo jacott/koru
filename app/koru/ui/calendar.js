@@ -113,11 +113,11 @@ define(function(require, exports, module) {
       template.$event('click'+css, open);
       template.$event('focusin'+css, open);
       template.$event('focusout'+css, function (event) {
-        Dom.remove(Dom.getCtx(this)._koruCalendar);
+        Dom.remove(Dom.ctx(this)._koruCalendar);
       });
       template.$event('keyup'+css, function (event) {
         if (event.which !== 27) return;
-        var ctx = Dom.getMyCtx(this);
+        var ctx = Dom.myCtx(this);
         if (! (ctx && ctx._koruCalendar)) return;
         Dom.remove(ctx._koruCalendar);
         Dom.stopEvent();
@@ -137,10 +137,10 @@ define(function(require, exports, module) {
         default:
           return;
         }
-        var ctx = Dom.getMyCtx(this);
+        var ctx = Dom.myCtx(this);
         if (! (ctx && ctx._koruCalendar)) return;
         Dom.stopEvent();
-        ctx = Dom.getCtx(ctx._koruCalendar);
+        ctx = Dom.ctx(ctx._koruCalendar);
         var date = +ctx.data;
         date += value;
         date = new Date(date);
@@ -150,7 +150,7 @@ define(function(require, exports, module) {
       });
 
       function open(event) {
-        var ctx = Dom.getMyCtx(this);
+        var ctx = Dom.myCtx(this);
         if (! ctx) ctx = Dom.setCtx(this);
         Dom.remove(ctx._koruCalendar);
 
@@ -163,7 +163,7 @@ define(function(require, exports, module) {
         ctx.onDestroy(function () {
           Dom.remove(ctx._koruCalendar);
         });
-        var cCtx = Dom.getMyCtx(popup);
+        var cCtx = Dom.myCtx(popup);
         cCtx._input = this;
 
         cCtx.onDestroy(function () {

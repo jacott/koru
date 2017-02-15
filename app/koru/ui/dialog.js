@@ -14,7 +14,7 @@ define(function(require, exports, module) {
     open(content, nofocus) {
       const elm = Tpl.$autoRender({content: content});
       document.body.appendChild(elm);
-      modalize(Dom.getMyCtx(elm), elm);
+      modalize(Dom.myCtx(elm), elm);
 
       ((! nofocus && elm.children[1].querySelector(Dom.FOCUS_SELECTOR)) ||
        elm.children[0]).focus();
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
     confirm(data) {
       const elm = Tpl.Confirm.$autoRender(data);
       document.body.appendChild(elm);
-      modalize(Dom.getMyCtx(elm), elm);
+      modalize(Dom.myCtx(elm), elm);
       if (! data.nofocus) {
         const focus = elm.querySelector(Dom.FOCUS_SELECTOR);
         focus && focus.focus();

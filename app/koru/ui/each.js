@@ -104,7 +104,7 @@ define(function(require, exports, module) {
       const elm = id && rows[id];
       if (elm) {
         if (doc) {
-          Dom.getCtx(elm).updateAllTags(doc);
+          Dom.ctx(elm).updateAllTags(doc);
           if (! old || (sort && sort(doc, old) != 0)) {
             insert(elm, sort);
             return elm;

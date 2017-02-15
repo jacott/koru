@@ -84,7 +84,7 @@ define(function(require, exports, module) {
     },
 
     move(sliderElm, pos) {
-      var ctx = Dom.getMyCtx(sliderElm);
+      var ctx = Dom.myCtx(sliderElm);
       var data = ctx.data;
       data.pos = pos;
 

@@ -49,7 +49,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this, Ctx.current.data());
             assert.same(this, v.x);
             assert.same(Ctx.current.isElement(), v.isElement);
-            v.isElement || assert.same(Ctx.current.ctx, Dom.getCtx(Dom.current.element));
+            v.isElement || assert.same(Ctx.current.ctx, Dom.ctx(Dom.current.element));
 
 
             v.data = Ctx.current.data(v.elm);
@@ -71,7 +71,7 @@ isClient && define(function (require, exports, module) {
 
         v.isElement = true;
 
-        Dom.getMyCtx(foo).updateAllTags(v.x = {x: 2});
+        Dom.myCtx(foo).updateAllTags(v.x = {x: 2});
       },
     },
 
@@ -96,18 +96,18 @@ isClient && define(function (require, exports, module) {
       test.stub(document.body, 'removeEventListener');
 
       // Repeatable
-      Dom.getMyCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
+      Dom.myCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
       assert.calledWith(document.body.addEventListener, 'animationend', TH.match(
         arg => v.animationEndFunc = arg), true);
 
       // Element removed
       document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
-      Dom.getMyCtx(v.elm2).onAnimationEnd(v.stub2 = test.stub());
+      Dom.myCtx(v.elm2).onAnimationEnd(v.stub2 = test.stub());
 
       // Set twice
       document.body.appendChild(v.elm3 = Dom.Foo.$render({name: 'bar'}));
 
-      var ctx = Dom.getMyCtx(v.elm3);
+      var ctx = Dom.myCtx(v.elm3);
       ctx.onAnimationEnd(v.stub3old = test.stub());
       ctx.onAnimationEnd(v.stub3 = test.stub());
 
@@ -116,8 +116,8 @@ isClient && define(function (require, exports, module) {
 
       // Cancelled before called
       document.body.appendChild(v.elm4 = Dom.Foo.$render({}));
-      Dom.getMyCtx(v.elm4).onAnimationEnd(v.stub4 = test.stub());
-      Dom.getMyCtx(v.elm4).onAnimationEnd('cancel');
+      Dom.myCtx(v.elm4).onAnimationEnd(v.stub4 = test.stub());
+      Dom.myCtx(v.elm4).onAnimationEnd('cancel');
 
       // Body listener only set once
       assert.calledOnce(document.body.addEventListener);
@@ -126,7 +126,7 @@ isClient && define(function (require, exports, module) {
 
       // should repeat fire
       document.body.addEventListener.yield({target: v.elm});
-      assert.calledWith(v.stub, Dom.getMyCtx(v.elm), v.elm);
+      assert.calledWith(v.stub, Dom.myCtx(v.elm), v.elm);
       document.body.addEventListener.yield({target: v.elm});
       assert.calledTwice(v.stub);
       refute.called(v.stub2);

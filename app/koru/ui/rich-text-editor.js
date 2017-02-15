@@ -121,7 +121,7 @@ define(function(require, exports, module) {
 
       let _code;
 
-      const ctx = Dom.getMyCtx(editor.parentNode);
+      const ctx = Dom.myCtx(editor.parentNode);
 
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
         const font = _code ? 'initial': 'monospace';
@@ -376,11 +376,11 @@ define(function(require, exports, module) {
   });
 
   function getHtml() {
-    return Dom.getMyCtx(this).inputElm.cloneNode(true);
+    return Dom.myCtx(this).inputElm.cloneNode(true);
   }
 
   function setHtml(value) {
-    const {inputElm} = Dom.getMyCtx(this);
+    const {inputElm} = Dom.myCtx(this);
     Tpl.clear(inputElm);
     value && inputElm.appendChild(value);
   }
@@ -416,7 +416,7 @@ define(function(require, exports, module) {
   }
 
   function currentDialog(me) {
-    const ctx = Dom.getMyCtx(me.parentNode);
+    const ctx = Dom.myCtx(me.parentNode);
     return ctx && ctx.openDialog;
   }
 
@@ -520,7 +520,7 @@ define(function(require, exports, module) {
     clear(elm) {
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
-      const ctx = Dom.getCtx(elm);
+      const ctx = Dom.ctx(elm);
       const input = ctx.inputElm;
       input.setAttribute('contenteditable', 'false');
       input.textContent = '';

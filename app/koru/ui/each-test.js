@@ -139,11 +139,11 @@ isClient && define(function (require, exports, module) {
           assert.dom('li', {count: 3});
 
           assert.dom('li', 'alice', elm => {
-            Dom.getCtx(elm).onDestroy(v.oldCtx = this.stub());
+            Dom.ctx(elm).onDestroy(v.oldCtx = this.stub());
           });
 
 
-          Dom.getCtx(elm).updateAllTags({major: '2'});
+          Dom.ctx(elm).updateAllTags({major: '2'});
 
           assert.calledTwice(v.spy);
 
@@ -229,10 +229,10 @@ isClient && define(function (require, exports, module) {
 
     "test sets parentCtx"() {
       assert.dom(v.Each.$render({}), elm => {
-        var eachCtx = Dom.getCtx(elm);
+        var eachCtx = Dom.ctx(elm);
         v.fooList.yield({id: 1, name: 'r1'});
         assert.dom('li', elm => {
-          assert.same(Dom.getCtx(elm).parentCtx, eachCtx);
+          assert.same(Dom.ctx(elm).parentCtx, eachCtx);
         });
       });
     },
@@ -249,7 +249,7 @@ isClient && define(function (require, exports, module) {
         v.fooList.yield({_id: 2, name: 'r2'});
         assert.dom('li+li', 'r2');
 
-        Dom.getCtx(elm).updateAllTags();
+        Dom.ctx(elm).updateAllTags();
         assert.dom('li+li', 'r2');
 
         v.fooList.yield({id: 2, name: 'r3'});
@@ -257,7 +257,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('li+li', 'r3');
 
         assert.dom('li', 'r1', elm => {
-          Dom.getCtx(elm).onDestroy(v.destroy = this.stub());
+          Dom.ctx(elm).onDestroy(v.destroy = this.stub());
         });
 
         v.fooList.yield(null, {id: 1});
@@ -325,7 +325,7 @@ isClient && define(function (require, exports, module) {
         v.fooList.yield({id: 1, name: 'r1'});
         assert.dom('li', 'r1');
 
-        Dom.getCtx(elm).updateAllTags();
+        Dom.ctx(elm).updateAllTags();
         assert.calledTwice(v.fooList);
         assert.same(v.fooList.args(0, 0), v.fooList.args(1, 0));
         assert.same(v.fooList.args(0, 0).count, 2);

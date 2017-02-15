@@ -49,7 +49,7 @@ define(function(require, exports, module) {
   Tpl.$events({
     'click .tag'(event) {
       Dom.stopEvent();
-      var itemListCtx = Dom.getCtxById('item-list');
+      var itemListCtx = Dom.ctxById('item-list');
       $.ctx.data.tag = $.data(this).tag_text;
       itemListCtx.data.filter = $.ctx.data.tag === 'All Items' ? null: $.ctx.data.tag;
       $.ctx.updateAllTags();

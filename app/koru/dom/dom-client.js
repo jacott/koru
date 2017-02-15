@@ -270,7 +270,7 @@ define(function(require, exports, module) {
     },
 
     getClosestCtx(elm, selector) {
-      return this.getCtx(this.getClosest(elm, selector));
+      return this.ctx(this.getClosest(elm, selector));
     },
 
     searchUpFor(elm, func, stopClass) {
@@ -334,7 +334,7 @@ define(function(require, exports, module) {
     hideAndRemove(elm) {
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
-      var ctx = Dom.getMyCtx(elm);
+      var ctx = Dom.myCtx(elm);
       if (! ctx) return;
       Dom.addClass(elm, 'remElm');
       ctx.onAnimationEnd(remElm);
@@ -344,7 +344,7 @@ define(function(require, exports, module) {
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
 
-      var ctx = Dom.getMyCtx(elm);
+      var ctx = Dom.myCtx(elm);
       if (! ctx) return;
       Dom.addClass(elm, 'addElm');
       ctx.onAnimationEnd(addElm);
@@ -388,7 +388,7 @@ define(function(require, exports, module) {
 
     setCtx(elm, ctx) {
       if (! ctx) {
-        ctx = new Ctx(null, Dom.getCtx(elm));
+        ctx = new Ctx(null, Dom.ctx(elm));
       }
       elm._koru = ctx;
       return ctx;
@@ -520,7 +520,7 @@ define(function(require, exports, module) {
     },
 
     updateElement(elm) {
-      var ctx = Dom.getCtx(elm);
+      var ctx = Dom.ctx(elm);
       ctx && ctx.updateElement(elm);
     },
 
@@ -531,7 +531,7 @@ define(function(require, exports, module) {
         Dom.remove(ast);
       }
 
-      var parentCtx = (oldElm._koru && oldElm._koru.parentCtx) || Dom.getCtx(oldElm.parentNode);
+      var parentCtx = (oldElm._koru && oldElm._koru.parentCtx) || Dom.ctx(oldElm.parentNode);
       if (parentCtx) {
         var ctx = newElm._koru;
         if (ctx) ctx.parentCtx = parentCtx;
@@ -699,7 +699,7 @@ define(function(require, exports, module) {
   }
 
   function convertToData(elm) {
-    var ctx = elm && Dom.getCtx(elm);
+    var ctx = elm && Dom.ctx(elm);
     return ctx && ctx.data;
   }
 

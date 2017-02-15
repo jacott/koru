@@ -55,7 +55,7 @@ define(function(require, exports, module) {
       options.prev = topModal; topModal = options;
 
       if (! options.focus) options.focus = document.activeElement;
-      if (! options.ctx) options.ctx = Dom.getMyCtx(options.container);
+      if (! options.ctx) options.ctx = Dom.myCtx(options.container);
       if (! options.popup) {
         options.popup = options.container.firstElementChild;
         if (options.popup.tagName === 'SPAN')
@@ -157,7 +157,7 @@ define(function(require, exports, module) {
       if (destroyMeWith) {
         const me = options.container;
         const meCtx = Dom.myCtx(me);
-        meCtx && Dom.destroyMeWith(me, Dom.getCtx(destroyMeWith) || destroyMeWith);
+        meCtx && Dom.destroyMeWith(me, Dom.ctx(destroyMeWith) || destroyMeWith);
       }
       return this.reposition(pos, options);
     },

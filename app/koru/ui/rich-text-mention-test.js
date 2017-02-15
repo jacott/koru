@@ -125,7 +125,7 @@ isClient && define(function (require, exports, module) {
         assert.same(this.innerHTML, 'hello @');
         TH.trigger(this, 'keydown', {which: 39});
         TH.trigger(this, 'keydown', {which: 39});
-        var ctx = Dom.getCtx(this);
+        var ctx = Dom.ctx(this);
         assert.same(ctx.mentionState, null);
 
         refute.dom('.ln');
@@ -216,7 +216,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtMention.inline>div.empty');
 
         assert.dom('input', function () {
-          var updspy = test.spy(Dom.getCtx(this), 'updateAllTags');
+          var updspy = test.spy(Dom.ctx(this), 'updateAllTags');
           var mdlspy = test.spy(Modal, 'reposition');
 
           var input = this;
@@ -261,7 +261,7 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.rtMention div', 'James J Gooding', function () {
-          assert.same(v.fooHtmlFuncCtx, Dom.getCtx(this));
+          assert.same(v.fooHtmlFuncCtx, Dom.ctx(this));
         });
       },
 
@@ -580,17 +580,17 @@ isClient && define(function (require, exports, module) {
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
-        assert.isTrue(Dom.getCtx(v.input).openDialog);
+        assert.isTrue(Dom.ctx(v.input).openDialog);
       });
 
       assert.dom('.glassPane', function () {
         Dom.remove(this);
       });
 
-      assert.isFalse(Dom.getCtx(v.input).openDialog);
+      assert.isFalse(Dom.ctx(v.input).openDialog);
       refute.dom('.ln');
 
-      var ctx = Dom.getCtx(v.input);
+      var ctx = Dom.ctx(v.input);
       assert.same(ctx.selectItem, null);
       assert.same(ctx.mentionState, null);
     },

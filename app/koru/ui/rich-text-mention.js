@@ -209,7 +209,7 @@ define(function(require, exports, module) {
       editorELm.focus();
     }
 
-    var rtCtx = Dom.getCtx(editorELm);
+    var rtCtx = Dom.ctx(editorELm);
     if (rtCtx) {
       rtCtx.selectItem = null;
       rtCtx.mentionState = null;

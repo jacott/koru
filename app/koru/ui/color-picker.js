@@ -137,7 +137,7 @@ define(function(require, exports, module) {
   });
 
   function close(elm, button) {
-    const ctx = Dom.getMyCtx(elm);
+    const ctx = Dom.myCtx(elm);
     if (ctx) {
       const data = ctx.data;
 

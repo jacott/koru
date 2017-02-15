@@ -603,7 +603,7 @@ isClient && define(function (require, exports, module) {
 
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
         v.input = Dom('.input');
-        const topCtx = Dom.getMyCtx(v.input.parentNode);
+        const topCtx = Dom.myCtx(v.input.parentNode);
 
         v.slot = TH.findDomEvent(sut, 'paste')[0];
         v.origPaste = v.slot[2];
@@ -817,7 +817,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.richTextEditor>.input', function () {
           TH.keydown(this, "K", {ctrlKey: true});
-          assert.isTrue(Dom.getCtx(this).openDialog);
+          assert.isTrue(Dom.ctx(this).openDialog);
 
           assert.dom(Dom('.rtLink'), function () {
             TH.input('[name=text]', {value: ''}, 'foo');
@@ -830,7 +830,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.nextSibling.textContent, 'llo');
           });
 
-          assert.isFalse(Dom.getCtx(this).openDialog);
+          assert.isFalse(Dom.ctx(this).openDialog);
         });
       },
 

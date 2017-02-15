@@ -113,14 +113,14 @@ isClient && define(function (require, exports, module) {
         assert.dom('>.rtToolbar+.input', function () {
           assert.dom('b', 'Hello', function () {
             TH.setRange(this, 0);
-            Dom.getCtx(this).updateAllTags();
+            Dom.ctx(this).updateAllTags();
             TH.pointerDownUp(this);
             assert.className(v.bold, 'on');
             refute.className(v.italic, 'on');
           });
           assert.dom('i', 'world', function () {
             TH.setRange(this, 1);
-            Dom.getCtx(this).updateAllTags();
+            Dom.ctx(this).updateAllTags();
             refute.className(v.italic, 'on');
             TH.trigger(this, 'keyup');
             refute.className(v.bold, 'on');
@@ -128,7 +128,7 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('a', 'the link', function () {
             TH.setRange(this, 1);
-            Dom.getCtx(this).updateAllTags();
+            Dom.ctx(this).updateAllTags();
             refute.className(v.link, 'on');
             v.lnbb = v.link.getBoundingClientRect();
 

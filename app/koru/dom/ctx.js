@@ -114,7 +114,7 @@ define(function(require, exports, module) {
   Ctx.current = {
     data(elm) {
       if (elm) {
-        var ctx = Dom.getCtx(elm);
+        var ctx = Dom.ctx(elm);
         return ctx && ctx.data;
       }
 

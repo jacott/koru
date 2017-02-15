@@ -58,7 +58,7 @@ define(function(require, exports, module) {
       if (! origin)
         origin = Ctx._currentCtx;
       else if ('nodeType' in origin)
-        origin = Dom.getCtx(origin);
+        origin = Dom.ctx(origin);
 
       for(; origin; origin = origin.parentCtx) {
         if (origin.template === this) return origin;
@@ -77,7 +77,7 @@ define(function(require, exports, module) {
         if (elm.nodeType === document.DOCUMENT_FRAGMENT_NODE)
           throw new Error("attempt to attach events to document fragment: " + this.$fullname);
         this.$attachEvents(elm);
-        Dom.getCtx(elm).onDestroy(() => this.$detachEvents(elm));
+        Dom.ctx(elm).onDestroy(() => this.$detachEvents(elm));
       }
       return elm;
     }

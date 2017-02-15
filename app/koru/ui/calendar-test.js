@@ -49,9 +49,9 @@ isClient && define(function (require, exports, module) {
       assert.dom('#TestCalendar [name=testField]', function () {
         TH.input(this, '2014-10-05');
         TH.click(this);
-        v.ctx = Dom.getMyCtx(this);
+        v.ctx = Dom.myCtx(this);
         TH.click(this);
-        assert.same(Dom.getMyCtx(this), v.ctx);
+        assert.same(Dom.myCtx(this), v.ctx);
 
       });
       assert.dom('.Calendar', {count: 1}, function () {
@@ -136,7 +136,7 @@ isClient && define(function (require, exports, module) {
           });
         });
 
-        Dom.getCtx(this).updateAllTags(new Date(2015,4,10));
+        Dom.ctx(this).updateAllTags(new Date(2015,4,10));
         assert.dom('header', function () {
           assert.dom('span', 'May 2015');
         });
@@ -148,7 +148,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('td.select.current', '10');
         });
 
-        Dom.getCtx(this).updateAllTags(new Date(2015,5,7));
+        Dom.ctx(this).updateAllTags(new Date(2015,5,7));
         assert.dom('header', function () {
           assert.dom('span', 'June 2015');
         });

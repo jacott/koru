@@ -61,7 +61,7 @@ isClient && define(function (require, exports, module) {
           assert.cssNear(this, 'left', 16.7, 0.1,'%');
         });
         assert.dom('.slider', function () {
-          var ctx = Dom.getMyCtx(this);
+          var ctx = Dom.myCtx(this);
           ctx.data.callback(0.5, ctx, this);
         });
         assert.dom('input', {value: '180'});
