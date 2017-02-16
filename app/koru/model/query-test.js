@@ -50,6 +50,13 @@ define(function (require, exports, module) {
     "test $ne"() {
       assert.equals(v.TestModel.where('age', {$ne: 5}).map(d => d.age), [10]);
       assert.equals(v.TestModel.where('age', {$nin: [5, 6]}).map(d => d.age), [10]);
+      assert.equals(v.TestModel.where({age: {$ne: 5}}).map(d => d.age), [10]);
+    },
+
+    "test $in"() {
+      assert.equals(v.TestModel.where('age', {$in: [10, 5]}).map(d => d.age).sort(), [10, 5]);
+      assert.equals(v.TestModel.where('age', {$in: [5, 6]}).map(d => d.age).sort(), [5]);
+      assert.equals(v.TestModel.where('age', [5, 6]).map(d => d.age).sort(), [5]);
     },
 
     "query withIndex": {
@@ -89,6 +96,7 @@ define(function (require, exports, module) {
       v.multi = v.TestModel.create({ages: [6,7,8]});
 
       assert.equals(v.TestModel.where('ages', [8, 9]).fetchIds(), [v.multi._id]);
+      assert.equals(v.TestModel.where('ages', {$in: [8, 9]}).fetchIds(), [v.multi._id]);
       assert.equals(v.TestModel.where('ages', 7).fetchIds(), [v.multi._id]);
 
       assert.equals(v.TestModel.where('ages', [5, 9]).fetchIds(), [v.foo._id]);

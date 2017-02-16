@@ -8,6 +8,7 @@ define(function(require, exports, module) {
   function Constructor(session) {
     return function(Query, condition) {
       let syncOb, stateOb;
+      const origWhere = Query.prototype.where;
 
       util.merge(Query, {
         revertSimChanges() {
@@ -98,24 +99,30 @@ define(function(require, exports, module) {
 
       reset();
 
-      const origWhere = Query.prototype.where;
-
       util.merge(Query.prototype, {
         get docs() {
           return this._docs || (this._docs = this.model.docs);
         },
 
         where(params, value) {
-          if (typeof params === 'function') {
+          const type = typeof params;
+          if (type === 'function') {
             const funcs = this._whereFuncs || (this._whereFuncs = []);
             funcs.push(params);
             return this;
           } else {
             const wheres = this._wheres || (this._wheres = {});
-            if (typeof params === 'string') {
+            switch (type) {
+            case 'string':
               value = exprToFunc(params, value);
               if (typeof value === 'function')
                 return this.where(value);
+              break;
+            case 'object':
+              for (let key in params) {
+                this.where(key, params[key]);
+              }
+              return this;
             }
             return condition(this, '_wheres', params, value);
           }
@@ -538,13 +545,19 @@ define(function(require, exports, module) {
           return doc => ! foundItem(doc[param], expected);
         },
         $nin(param, obj) {
-          const expected = obj.$nin;
-          return doc => ! foundItem(doc[param], expected);
+          const expected = new Set(obj.$nin);
+          return doc => ! expected.has(doc[param]);
+        },
+        $in(param, obj) {
+          return insertectFunc(param, obj.$in);
         },
       };
 
       function exprToFunc(param, value) {
         if (value && typeof value === 'object') {
+          if (Array.isArray(value)) {
+            return insertectFunc(param, value);
+          }
           for (var key in value) break;
           const expr = EXPRS[key];
           if (expr) return expr(param, value);
@@ -559,6 +572,15 @@ define(function(require, exports, module) {
             if (aVal !== bVal) return  (aVal < bVal) ? -params[key]  : params[key];
           }
           return 0;
+        };
+      }
+
+      function insertectFunc(param, list) {
+        const expected = new Set(list);
+        return doc => {
+          const value = doc[param];
+          return Array.isArray(value) ? value.some(value => expected.has(value)) :
+            expected.has(value);
         };
       }
     };
