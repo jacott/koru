@@ -163,7 +163,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
       }
       catch(ex) {
         if (typeof name === 'object') {
-          const result = true;
+          let result = true;
           this.message = {};
           for(let key in name) {
             if (! (key in ex)) throw ex;

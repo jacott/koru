@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  const {merge, inspect}  = require('koru/util');
+  const {merge, inspect} = require('koru/util');
   require('./assertions');
-  const deepEqual          = require('./core')._u.deepEqual;
+  const deepEqual        = require('./core')._u.deepEqual;
 
   const Stubber = exports;
 

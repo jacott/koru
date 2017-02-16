@@ -7,7 +7,7 @@ define(function(require, exports, module) {
     },
 
     _u: {
-      isElement: function(elm) {
+      isElement(elm) {
         return elm != null && typeof elm === 'object' && typeof elm.isSameNode === 'function';
       },
     },
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
 
     extractError: util.extractError,
 
-    util: util,
+    util,
 
     abort(ex) {throw ex}
   };

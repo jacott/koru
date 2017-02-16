@@ -1,16 +1,16 @@
 define(function(require, exports, module) {
-  var koru = require('./main');
-  var TH = require('./test/main');
+  const koru = require('./main');
+  const main   = require('./test/main');
 
-  var util = koru.util;
-  var geddon = TH.geddon;
-  var gu = geddon._u;
+  const {util} = koru;
+  const {geddon} = main;
+  const gu = geddon._u;
 
-  TH = koru.util.reverseMerge({
+  const TH = koru.util.reverseMerge({
     util: koru.util,
 
     login (id, func) {
-      var oldId = util.thread.userId;
+      const oldId = util.thread.userId;
       try {
         util.thread.userId = id;
         func();
@@ -23,25 +23,19 @@ define(function(require, exports, module) {
       if (! koru.info.restore)
         geddon.test.intercept(koru, 'info');
     },
-  }, TH);
+  }, main);
 
-  var ga = geddon.assertions;
+  const ga = geddon.assertions;
 
   ga.add('difference', {
-    assert(count, diffFunc, ...query) {
-      if (diffFunc.modelName) {
-        var func = query.pop();
-        query = query[0];
-        var model = diffFunc;
-        diffFunc = function () {
-          query = query || model.query;
-          return query.count();
-        };
-      }
-      this.before = +diffFunc();
-      func();
-      this.after = +diffFunc();
-      return this.after - this.before === count;
+    assert(options, body) {
+      const {by} = options;
+      const counter = options.counter ||
+              (options.model ? () => options.model.query.count() : () => options.query.count());
+      this.before = +counter();
+      body();
+      this.after = +counter();
+      return this.after - this.before === by;
     },
 
     message: "a difference of {0}. Before {$before}, after {$after}",
@@ -49,7 +43,7 @@ define(function(require, exports, module) {
 
   ga.add('accessDenied', {
     assert(func) {
-      var error;
+      let error;
       try {
         func.call();
       } catch(e) {error = e;}
@@ -70,7 +64,7 @@ define(function(require, exports, module) {
 
   ga.add('invalidRequest', {
     assert(func) {
-      var error;
+      let error;
       try {
         func.call();
       } catch(e) {error = e;}
@@ -89,10 +83,10 @@ define(function(require, exports, module) {
 
   ga.add('modelErrors', {
     assert(doc, expected) {
-      var result = {}, errors = doc._errors || {};
+      const result = {}, errors = doc._errors || {};
 
-      for(var field in errors) {
-        var msgs = errors[field].map(function (m) {
+      for(let field in errors) {
+        const msgs = errors[field].map(function (m) {
           if (m.length === 1)
             return m[0];
           return m.map(function (n) {
@@ -118,8 +112,8 @@ define(function(require, exports, module) {
         this.key = Object.keys(validators);
         return false;
       }
-      for(var key in expected) {
-        var val = validators[key];
+      for(let key in expected) {
+        const val = validators[key];
         this.key = key;
         this.actual = val && val.slice(1,2);
         this.expected = expected[key];
@@ -146,7 +140,7 @@ define(function(require, exports, module) {
       this.actual = actual;
       this.expected = expected;
 
-      for(var key in expected) {
+      for(let key in expected) {
         if (! gu.deepEqual(actual[key], expected[key], this, 'diff')) {
           this.key = key;
           return false;
@@ -191,14 +185,14 @@ define(function(require, exports, module) {
   });
 
   function mapFields(list, exclude) {
-    var result = {};
+    const result = {};
     if (list.length === 0) return result;
     var useId = (! exclude || exclude.indexOf('_id') === -1) && !! list[0]._id;
-    for(var i=0;i < list.length;++i) {
-      var row = list[i];
+    for (let i = 0; i < list.length; ++i) {
+      const row = list[i];
       if (exclude) {
         var attrs = {};
-        for(var key in row) {
+        for (let key in row) {
           if (exclude.indexOf(key) === -1) {
             attrs[key] = row[key];
           }
