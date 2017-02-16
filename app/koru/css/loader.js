@@ -12,16 +12,16 @@ define(function(require, exports, module) {
     }
 
     reloadCss(data) {
-      var type = data[0];
-      var head = document.head;
+      const type = data[0];
+      const head = document.head;
       data.slice(1).split(" ").forEach(name => {
 
         if (name.slice(-4) !== '.css') {
-          var idx = name.lastIndexOf("/");
+          const idx = name.lastIndexOf("/");
           if (idx === -1) return;
           name = name.slice(0, idx) + "/.build" + name.slice(idx) + '.css';
         }
-        var node = head.querySelector('head>link[href="/'+name+'"]');
+        let node = head.querySelector('head>link[href="/'+name+'"]');
         node && head.removeChild(node);
 
         if (type === 'L') {
@@ -38,9 +38,9 @@ define(function(require, exports, module) {
     }
 
     static  removeAllCss() {
-      var head = document.head;
-      var sheets = document.querySelectorAll('head>link[rel=stylesheet]');
-      for(var i = 0; i < sheets.length; ++i) {
+      const {head} = document;
+      const sheets = document.querySelectorAll('head>link[rel=stylesheet]');
+      for(let i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
     }

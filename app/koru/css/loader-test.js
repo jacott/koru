@@ -3,12 +3,13 @@ isClient && define(function (require, exports, module) {
    * css/loader allows dynamic replacement of css and less files when
    * their contents change.
    **/
-  var test, v;
   const koru        = require('koru/main');
   const SessionBase = require('koru/session/base').constructor;
   const TH          = require('koru/test');
   const api         = require('koru/test/api');
+
   const CssLoader   = require('./loader');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -20,9 +21,9 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       v = null;
-      var head = document.head;
-      var sheets = document.querySelectorAll('head>link[rel=stylesheet]');
-      for(var i = 0; i < sheets.length; ++i) {
+      const {head} = document;
+      const sheets = document.querySelectorAll('head>link[rel=stylesheet]');
+      for(let i = 0; i < sheets.length; ++i) {
         head.removeChild(sheets[i]);
       }
       CssLoader.removeAllCss();

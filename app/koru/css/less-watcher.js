@@ -1,8 +1,8 @@
-var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
-var fs = require('fs');
-var Path = require('path');
-var readdir = Future.wrap(fs.readdir);
-var stat = Future.wrap(fs.stat);
+const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+const fs = require('fs');
+const Path = require('path');
+const readdir = Future.wrap(fs.readdir);
+const stat = Future.wrap(fs.stat);
 
 define(function(require, exports, module) {
   const koru    = require('koru');
@@ -12,13 +12,13 @@ define(function(require, exports, module) {
   const session = require('koru/session');
   const util    = require('koru/util');
 
-  var topDir = koru.appDir;
-  var topDirLen = koru.appDir.length + 1;
+  const topDir = koru.appDir;
+  const topDirLen = koru.appDir.length + 1;
 
-  var loads = Object.create(null);
-  var imports = Object.create(null);
-  var sources = Object.create(null);
-  var loadDirs = Object.create(null);
+  let loads = Object.create(null);
+  let imports = Object.create(null);
+  let sources = Object.create(null);
+  let loadDirs = Object.create(null);
 
   koru.onunload(module, 'reload');
 
@@ -40,18 +40,18 @@ define(function(require, exports, module) {
     loadDirs[dir] || queue(dir, function (isNew, result) {
       if (loadDirs[dir]) return;
 
-      var prefixLen = dir.length + 1;
+      const prefixLen = dir.length + 1;
       findAll1(dir);
 
       loadDirs[dir] = true;
 
       function findAll1(dir) {
         var m;
-        var dirPath = Path.join(topDir, dir);
-        var filenames = readdir(dirPath).wait().filter(function (fn) {
+        const dirPath = Path.join(topDir, dir);
+        const filenames = readdir(dirPath).wait().filter(function (fn) {
           return /^[\w-]*(?:\.(css|less)$|$)/.test(fn);
         });
-        var stats = filenames.map(function (filename) {
+        const stats = filenames.map(function (filename) {
           return stat(Path.join(dirPath, filename));
         });
 
@@ -73,9 +73,9 @@ define(function(require, exports, module) {
       }
     });
 
-    var re = new RegExp("^"+util.regexEscape(dir));
+    const re = new RegExp("^"+util.regexEscape(dir));
 
-    var results = [];
+    const results = [];
 
     for(var key in loads) {
       re.test(key) && results.push(key);
