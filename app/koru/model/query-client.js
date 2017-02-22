@@ -12,7 +12,7 @@ define(function(require, exports, module) {
 
       util.merge(Query, {
         revertSimChanges() {
-          const dbs = Model._databases[dbBroker.dbId];
+          const dbs = Model._databases && Model._databases[dbBroker.dbId];
           if (! dbs) return;
 
           for (let modelName in dbs) {

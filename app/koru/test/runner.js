@@ -1,8 +1,13 @@
-define(['./core'], function (geddon) {
+define(function(require, exports, module) {
+  const koru = require('koru');
+  const geddon = require('./core');
+  const asyncNext = func => {koru.fiberRun(func)};
+
   geddon.start = function (testCases, runNextWrapper) {
     let tests = geddon._tests = [],
         promise, _runNext,
         next = 0;
+
 
     for(let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
@@ -121,7 +126,7 @@ define(['./core'], function (geddon) {
   }
 
   function promiseFunc(test, runNext) {
-    const assertCount = geddon.assertCount;
+    const {assertCount} = geddon;
     function promise(ex) {
       promise.done = true;
 
@@ -135,7 +140,7 @@ define(['./core'], function (geddon) {
         clearTimeout(promise.timeout);
 
         if (abort) runNext(abort);
-        else setTimeout(runNext, 0);
+        else asyncNext(runNext);
       }
     };
 

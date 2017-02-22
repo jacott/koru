@@ -947,8 +947,26 @@ define(function (require, exports, module) {
       assert.equals(util.parseEmailAddresses("foo@bar.baz.com fnord"),
                     {addresses: ["foo@bar.baz.com"], remainder: "fnord"});
 
-      assert.equals(util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@vimaly-test.com, "),
-                    {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
+      assert.equals(
+        util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@vimaly-test.com, "),
+        {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
+    },
+
+    "test asyncToGenerator"(done) {
+      const foo = util.asyncToGenerator(function*(val) {
+        return new Promise(r => setTimeout(() => {r(val+30)}, 0));
+      });
+      const bar = util.asyncToGenerator(function*(val) {
+        const ans = (yield foo(10)) + (yield foo(13));
+        try {
+          assert.same(ans, 83);
+          done();
+        } catch(ex) {
+          done(ex);
+        }
+      });
+
+      bar(12);
     },
 
     "test TwoIndex"() {
