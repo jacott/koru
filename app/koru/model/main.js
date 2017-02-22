@@ -54,7 +54,7 @@ define(function(require, exports, module) {
     }
 
     static _insertAttrs(attrs) {
-      ModelEnv._insertAttrs(this, attrs);
+      Query._insertAttrs(this, attrs);
       return attrs._id;
     }
 
@@ -616,7 +616,7 @@ define(function(require, exports, module) {
         doc.changes = attrs;
         model.hasVersioning && (doc.attributes._version = 1);
 
-        ModelEnv.insert(doc);
+        Query.insert(doc);
       } catch(ex1) {
         ex = ex1;
       } finally {

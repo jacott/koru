@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   const Model    = require('koru/model/map');
+  const Random   = require('koru/random');
   const session  = require('koru/session/client-rpc');
   const koru     = require('../main');
   const util     = require('../util');
@@ -53,6 +54,11 @@ define(function(require, exports, module) {
           model.docs[doc._id] = doc;
           notify(model, doc, null);
           return doc._id;
+        },
+
+        _insertAttrs(model, attrs) {
+          if (! attrs._id) attrs._id = Random.id();
+          model.docs[attrs._id] = new model(attrs);
         },
 
         insertFromServer(model, id, attrs) {

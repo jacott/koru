@@ -176,13 +176,6 @@ define(function(require, exports, module) {
       });
       clientIndex(model);
     },
-
-    insert: Query.insert,
-
-    _insertAttrs(model, attrs) {
-      if (! attrs._id) attrs._id = Random.id();
-      model.docs[attrs._id] = new model(attrs);
-    },
   };
 
   function findById (id) {

@@ -1,11 +1,32 @@
 define(function(require, exports, module) {
   const Model      = require('koru/model/map');
+  const Random     = require('koru/random');
   const koru       = require('../main');
   const util       = require('../util');
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
   return function (Query, condition) {
+    util.merge(Query, {
+      insert(doc) {
+        const model = doc.constructor;
+        const result = model.docs.insert(doc.attributes, doc.attributes._id ? null : 'RETURNING _id');
+        if (Array.isArray(result))
+          doc.attributes._id = result[0]._id;
+
+        model._$docCacheSet(doc.attributes);
+        TransQueue.onAbort(() => model._$docCacheDelete(doc));
+        Model._support.callAfterObserver(doc, null);
+        TransQueue.onSuccess(() => model.notify(doc, null));
+      },
+
+      _insertAttrs(model, attrs) {
+        if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
+        model.docs.insert(attrs);
+        model._$docCacheSet(attrs);
+      },
+    });
+
     util.merge(Query.prototype, {
       where(params, value) {
         return condition(this, '_wheres', params, value);
