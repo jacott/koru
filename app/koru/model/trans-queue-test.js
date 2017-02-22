@@ -61,6 +61,10 @@ define(function (require, exports, module) {
       refute.called(stub2);
     },
 
+    "test no db"() {
+      assert.same(sut.transaction(() => "result"), "result");
+    },
+
     "test simple success"() {
       assert.same(sut.transaction(v.TestModel, () => "result"), "result");
     },

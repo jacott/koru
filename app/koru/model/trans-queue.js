@@ -19,7 +19,8 @@ define(function(require) {
         util.thread.date = lastTime = now;
       }
       try {
-        const result = db.transaction(tx => body.call(db, tx));
+        const result = body === undefined ?
+                db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
           successMap.set(util.thread, false);
           list.forEach(f => f());
