@@ -25,9 +25,10 @@ define(function (require, exports, module) {
 
       const now = util.thread.date = Date.now();
 
+      sut._clearLastTime();
+
       const result = sut.transaction(v.TestModel, () => {
         assert.same(now, util.dateNow());
-
         sut.onAbort(err1);
         sut.onSuccess(stub1);
         sut.transaction(v.TestModel, () => sut.onSuccess(function () {

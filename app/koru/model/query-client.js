@@ -1,10 +1,11 @@
 define(function(require, exports, module) {
-  const Model    = require('koru/model/map');
-  const Random   = require('koru/random');
-  const session  = require('koru/session/client-rpc');
-  const koru     = require('../main');
-  const util     = require('../util');
-  const dbBroker = require('./db-broker');
+  const Model      = require('koru/model/map');
+  const TransQueue = require('koru/model/trans-queue');
+  const Random     = require('koru/random');
+  const session    = require('koru/session/client-rpc');
+  const koru       = require('../main');
+  const util       = require('../util');
+  const dbBroker   = require('./db-broker');
 
   function Constructor(session) {
     return function(Query, condition) {
@@ -13,47 +14,51 @@ define(function(require, exports, module) {
 
       util.merge(Query, {
         revertSimChanges() {
-          const dbs = Model._databases && Model._databases[dbBroker.dbId];
-          if (! dbs) return;
+          return TransQueue.transaction(() => {
+            const dbs = Model._databases && Model._databases[dbBroker.dbId];
+            if (! dbs) return;
 
-          for (let modelName in dbs) {
-            const model = Model[modelName];
-            const modelDocs = model && model.docs;
-            if (! modelDocs) continue;
-            const docs = dbs[modelName].simDocs;
-            if (! docs) continue;
-            dbs[modelName].simDocs = Object.create(null);
-            for(let id in docs) {
-              let doc = modelDocs[id];
-              const fields = docs[id];
-              if (fields === 'new') {
-                if (id in modelDocs) {
-                  delete modelDocs[id];
+            for (let modelName in dbs) {
+              const model = Model[modelName];
+              const modelDocs = model && model.docs;
+              if (! modelDocs) continue;
+              const docs = dbs[modelName].simDocs;
+              if (! docs) continue;
+              dbs[modelName].simDocs = Object.create(null);
+              for(let id in docs) {
+                let doc = modelDocs[id];
+                const fields = docs[id];
+                if (fields === 'new') {
+                  if (id in modelDocs) {
+                    delete modelDocs[id];
 
-                  notify(model, null, doc, true);
-                }
-              } else {
-                const newDoc = ! doc;
-                if (newDoc)
-                  doc = modelDocs[id] = new model({_id: id});
-                util.applyChanges(doc.attributes, fields);
-                for (let noop in fields) {
-                  notify(model, doc, newDoc ? null : fields, true);
-                  break;
+                    notify(model, null, doc, true);
+                  }
+                } else {
+                  const newDoc = ! doc;
+                  if (newDoc)
+                    doc = modelDocs[id] = new model({_id: id});
+                  util.applyChanges(doc.attributes, fields);
+                  for (let noop in fields) {
+                    notify(model, doc, newDoc ? null : fields, true);
+                    break;
+                  }
                 }
               }
             }
-          }
+          });
         },
 
         insert(doc) {
-          const model = doc.constructor;
-          if (session.state.pendingCount()) {
-            simDocsFor(model)[doc._id] = 'new';
-          }
-          model.docs[doc._id] = doc;
-          notify(model, doc, null);
-          return doc._id;
+          return TransQueue.transaction(() => {
+            const model = doc.constructor;
+            if (session.state.pendingCount()) {
+              simDocsFor(model)[doc._id] = 'new';
+            }
+            model.docs[doc._id] = doc;
+            notify(model, doc, null);
+            return doc._id;
+          });
         },
 
         _insertAttrs(model, attrs) {
@@ -62,39 +67,41 @@ define(function(require, exports, module) {
         },
 
         insertFromServer(model, id, attrs) {
-          if (session.state.pendingCount()) {
-            const changes = fromServer(model, id, attrs);
-            const doc = model.docs[id];
-            if (doc && changes !== attrs) { // found existing
-              util.applyChanges(doc.attributes, changes);
-              for (let noop in changes) {
-                notify(model, doc, changes, true);
-                break;
+          return TransQueue.transaction(() => {
+            if (session.state.pendingCount()) {
+              const changes = fromServer(model, id, attrs);
+              const doc = model.docs[id];
+              if (doc && changes !== attrs) { // found existing
+                util.applyChanges(doc.attributes, changes);
+                for (let noop in changes) {
+                  notify(model, doc, changes, true);
+                  break;
+                }
+                return doc._id;
               }
-              return doc._id;
             }
-          }
 
-          // otherwise new doc
-          if (model.docs[id]) {
-            // already exists; convert to update
-            const old = model.docs[id].attributes;
-            for (let key in old) {
-              if (attrs.hasOwnProperty(key)) {
-                if (util.deepEqual(old[key], attrs[key]))
-                  delete attrs[key];
-              } else {
-                attrs[key] = undefined;
+            // otherwise new doc
+            if (model.docs[id]) {
+              // already exists; convert to update
+              const old = model.docs[id].attributes;
+              for (let key in old) {
+                if (attrs.hasOwnProperty(key)) {
+                  if (util.deepEqual(old[key], attrs[key]))
+                    delete attrs[key];
+                } else {
+                  attrs[key] = undefined;
+                }
               }
+              model.serverQuery.onId(id).update(attrs);
+            } else {
+              // insert doc
+              attrs._id = id;
+              const doc = new model(attrs);
+              model.docs[doc._id] = doc;
+              notify(model, doc, null, true);
             }
-            model.serverQuery.onId(id).update(attrs);
-          } else {
-            // insert doc
-            attrs._id = id;
-            const doc = new model(attrs);
-            model.docs[doc._id] = doc;
-            notify(model, doc, null, true);
-          }
+          });
         },
 
         // for testing
@@ -241,102 +248,102 @@ define(function(require, exports, module) {
         },
 
         remove() {
-          let count = 0;
-          const self = this;
-          const model = self.model;
-          dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-            const docs = this.docs;
-            if (session.state.pendingCount() && self.isFromServer) {
-              if (fromServer(model, self.singleId, null) === null) {
-                const doc = docs[self.singleId];
-                delete docs[self.singleId];
-                doc && notify(model, null, doc, self.isFromServer);
+          return TransQueue.transaction(() => {
+            let count = 0;
+            dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+              const {model, docs} = this;
+              if (session.state.pendingCount() && this.isFromServer) {
+                if (fromServer(model, this.singleId, null) === null) {
+                  const doc = docs[this.singleId];
+                  delete docs[this.singleId];
+                  doc && notify(model, null, doc, this.isFromServer);
+                }
+                return 1;
               }
-              return 1;
-            }
-            self.forEach(doc => {
-              ++count;
-              Model._support.callBeforeObserver('beforeRemove', doc);
-              if (session.state.pendingCount()) {
-                recordChange(model, doc.attributes);
-              }
-              delete docs[doc._id];
-              notify(model, null, doc, self.isFromServer);
+              this.forEach(doc => {
+                ++count;
+                Model._support.callBeforeObserver('beforeRemove', doc);
+                if (session.state.pendingCount()) {
+                  recordChange(model, doc.attributes);
+                }
+                delete docs[doc._id];
+                notify(model, null, doc, this.isFromServer);
+              });
             });
+            return count;
           });
-          return count;
         },
 
         update(origChanges, value) {
-          if (typeof origChanges === 'string') {
-            const changes = {};
-            changes[origChanges] = value;
-            origChanges = changes;
-          } else
-            origChanges = origChanges || {};
+          return TransQueue.transaction(() => {
+            if (typeof origChanges === 'string') {
+              const changes = {};
+              changes[origChanges] = value;
+              origChanges = changes;
+            } else
+              origChanges = origChanges || {};
 
-          const self = this;
-          let count = 0;
-          const model = self.model;
-          const docs = this.docs;
-          let items;
-          if (session.state.pendingCount() && self.isFromServer) {
-            const changes = fromServer(model, self.singleId, origChanges);
-            const doc = docs[self.singleId];
-            if (doc) {
-              util.applyChanges(doc.attributes, changes);
-              dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-                for (let noop in changes) {
-                  notify(model, doc, changes, self.isFromServer);
+            let count = 0;
+            const {model, docs} = this;
+            let items;
+            if (session.state.pendingCount() && this.isFromServer) {
+              const changes = fromServer(model, this.singleId, origChanges);
+              const doc = docs[this.singleId];
+              if (doc) {
+                util.applyChanges(doc.attributes, changes);
+                dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+                  for (let noop in changes) {
+                    notify(model, doc, changes, this.isFromServer);
+                    break;
+                  }
+                });
+              }
+              return 1;
+            }
+            dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+              this.forEach(doc => {
+                const changes = util.deepCopy(origChanges);
+                ++count;
+                const attrs = doc.attributes;
+
+                if (this._incs) for (let field in this._incs) {
+                  changes[field] = attrs[field] + this._incs[field];
+                }
+
+                session.state.pendingCount() && recordChange(model, attrs, changes);
+                util.applyChanges(attrs, changes);
+
+                let itemCount = 0;
+
+                if (items = this._addItems) for (let field in items) {
+                  const list = attrs[field] || (attrs[field] = []);
+                  util.forEach(items[field], item => {
+                    if (util.addItem(list, item) == null) {
+                      session.state.pendingCount() && recordItemChange(model, attrs, field);
+                      changes[field + ".$-" + ++itemCount] = item;
+                    }
+                  });
+                }
+
+                if (items = this._removeItems) for (let field in items) {
+                  const list = attrs[field];
+                  let match;
+                  util.forEach(items[field], item => {
+                    if (list && (match = util.removeItem(list, item)) !== undefined) {
+                      session.state.pendingCount() && recordItemChange(model, attrs, field);
+                      changes[field + ".$+" + ++itemCount] = match;
+                    }
+                  });
+                }
+
+                for (let key in changes) {
+                  notify(model, doc, changes, this.isFromServer);
                   break;
                 }
               });
-            }
-            return 1;
-          }
-          dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-            self.forEach(doc => {
-              const changes = util.deepCopy(origChanges);
-              ++count;
-              const attrs = doc.attributes;
-
-              if (self._incs) for (let field in self._incs) {
-                changes[field] = attrs[field] + self._incs[field];
-              }
-
-              session.state.pendingCount() && recordChange(model, attrs, changes);
-              util.applyChanges(attrs, changes);
-
-              let itemCount = 0;
-
-              if (items = self._addItems) for (let field in items) {
-                const list = attrs[field] || (attrs[field] = []);
-                util.forEach(items[field], item => {
-                  if (util.addItem(list, item) == null) {
-                    session.state.pendingCount() && recordItemChange(model, attrs, field);
-                    changes[field + ".$-" + ++itemCount] = item;
-                  }
-                });
-              }
-
-              if (items = self._removeItems) for (let field in items) {
-                const list = attrs[field];
-                let match;
-                util.forEach(items[field], item => {
-                  if (list && (match = util.removeItem(list, item)) !== undefined) {
-                    session.state.pendingCount() && recordItemChange(model, attrs, field);
-                    changes[field + ".$+" + ++itemCount] = match;
-                  }
-                });
-              }
-
-              for (let key in changes) {
-                notify(model, doc, changes, self.isFromServer);
-                break;
-              }
             });
+            return count;
           });
-          return count;
         },
       });
 

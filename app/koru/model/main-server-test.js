@@ -267,7 +267,6 @@ define(function (require, exports, module) {
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
 
       assert.calledWith(Val.assertCheck, null, "string", {baseName: "_id"});
-      assert.calledWith(Val.assertCheck, "TestModel", "string", {baseName: "modelName"});
 
       assert.calledOnce(TestModel.db.transaction);
 

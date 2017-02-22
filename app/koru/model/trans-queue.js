@@ -1,17 +1,17 @@
 define(function(require) {
   const util  = require('koru/util');
 
-  const successMap = new WeakMap;
-  const abortMap = new WeakMap;
+  const successSym = Symbol();
+  const abortSym = Symbol();
   let lastTime;
 
   const TransQueue = {
     transaction(db, body) {
-      let list = successMap.get(util.thread);
       let prevTime;
-      const firstLevel = list === undefined;
+      let list = util.thread[successSym];
+      const firstLevel = ! list;
       if (firstLevel) {
-        successMap.set(util.thread, list = []);
+        list = util.thread[successSym] = [];
         prevTime = util.thread.date;
         let now = util.dateNow();
         if (now === lastTime)
@@ -22,27 +22,30 @@ define(function(require) {
         const result = body === undefined ?
                 db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
-          successMap.set(util.thread, false);
-          list.forEach(f => f());
+          util.thread[successSym] = null;
+          for(let i = 0; i < list.length; ++i) {
+            list[i]();
+          }
         }
         return result;
       } catch (ex) {
         if (firstLevel) {
-          let list = abortMap.get(util.thread);
-          list && list.forEach(f => f());
+          const list = util.thread[abortSym];
+          if (list) for(let i = 0; i < list.length; ++i) {
+            list[i]();
+          }
         }
         throw ex;
       } finally {
         if (firstLevel) {
           util.thread.date = prevTime;
-          successMap.delete(util.thread);
-          abortMap.delete(util.thread);
+          util.thread[successSym] = util.thread[abortSym] = null;
         }
       }
     },
 
     onSuccess(func) {
-      const list = successMap.get(util.thread);
+      const list = util.thread[successSym];
       if (list)
         list.push(func);
       else
@@ -50,10 +53,15 @@ define(function(require) {
     },
 
     onAbort(func) {
-      let list = abortMap.get(util.thread);
-      if (! list) abortMap.set(util.thread, list = []);
-      list.push(func);
+      if (! util.thread[successSym]) return;
+      const list = util.thread[abortSym];
+      if (list)
+        list.push(func);
+      else
+        util.thread[abortSym] = [func];
     },
+
+    _clearLastTime() {lastTime = null},
   };
 
 

@@ -135,14 +135,15 @@ define(function(require, exports, module) {
         session.rpc('put', doc.constructor.modelName, doc._id, updates);
       };
 
+      const ID_ERROR = {baseName: '_id'};
+
       session.defineRpc("save", function (modelName, id, changes) {
-        const userId = this.userId;
+        const {userId} = this;
         Val.allowAccessIf(userId);
-        Val.assertCheck(id, 'string', {baseName: '_id'});
-        Val.assertCheck(modelName, 'string', {baseName: 'modelName'});
+        Val.assertCheck(id, 'string', ID_ERROR);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        TransQueue.transaction(model.db, function () {
+        TransQueue.transaction(model.db, () => {
           if (model.overrideSave)
             return model.overrideSave(id, changes, userId);
           let doc = model.findById(id || changes._id);
@@ -172,7 +173,7 @@ define(function(require, exports, module) {
         Val.ensureString(modelName);
         const model = ModelMap[modelName];
         Val.allowIfFound(model);
-        TransQueue.transaction(model.db, function () {
+        TransQueue.transaction(model.db, () => {
           const doc = model.findById(id);
           Val.allowIfFound(doc);
           if (doc.overrideRemove)
