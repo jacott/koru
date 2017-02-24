@@ -955,11 +955,8 @@ define(function(require, exports, module) {
               resolve(value);
             } else {
               return Promise.resolve(value).then(
-                value => {
-                  step("next", value);
-                }, err => {
-                  step("throw", err);
-                }
+                value => {step("next", value)},
+                err => {step("throw", err)}
               );
             }
           }

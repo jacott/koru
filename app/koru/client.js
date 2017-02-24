@@ -17,6 +17,15 @@ define(function (require, exports, module) {
   window.addEventListener('error', errorListener);
 
   function errorListener(ev) {
+    if (ev.filename) {
+      koru.logger('ERROR', koru.util.extractError({
+        toString() {
+          return ev.error;
+        },
+        stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
+      }));
+      return;
+    }
     koru.logger('ERROR', koru.util.extractError(ev.error));
   }
 

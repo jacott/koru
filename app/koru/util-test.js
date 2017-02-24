@@ -953,16 +953,36 @@ define(function (require, exports, module) {
     },
 
     "test asyncToGenerator"(done) {
-      const foo = util.asyncToGenerator(function*(val) {
+      const foo = function (val) {
         return new Promise(r => setTimeout(() => {r(val+30)}, 0));
-      });
+      };
       const bar = util.asyncToGenerator(function*(val) {
-        const ans = (yield foo(10)) + (yield foo(13));
+        const ans = (yield foo(val+5)) + (yield foo(13));
         try {
           assert.same(ans, 83);
           done();
         } catch(ex) {
           done(ex);
+        }
+      });
+
+      bar(5);
+    },
+
+    "test error asyncToGenerator"(done) {
+      const foo = function (val) {
+        return new Promise((r, e) => setTimeout(() => {val === 13 ? e(new Error("13")) : r(val+30)}, 0));
+      };
+      const bar = util.asyncToGenerator(function*(val) {
+        try {
+          const ans = (yield foo(10)) + (yield foo(13));
+          assert(false, "should throw error 13");
+        } catch(ex) {
+          if (ex.message === '13') {
+            assert(true);
+            done();
+          } else
+            done(ex);
         }
       });
 
