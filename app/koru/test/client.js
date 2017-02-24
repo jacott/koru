@@ -1,8 +1,9 @@
 define(function(require, exports, module) {
   const SessionBase  = new (require('koru/session/base').constructor)('test');
-  const koru         = require('koru');
+  const koru         = require('koru/client'); // load client so we can override koru.logger
   const localStorage = require('koru/local-storage');
   const sessState    = require('koru/session/state').constructor();
+  const util         = require('koru/util');
   const test         = require('./main');
 
   const Module = module.constructor;
@@ -21,7 +22,15 @@ define(function(require, exports, module) {
       session.send('L', type + ': ' + msg);
   };
 
-  var ls;
+  koru.logger = function (type, ...args) {
+    console.log.apply(console, args);
+    if (type === 'ERROR')
+      session.send('E', args.join(' '));
+    else
+      session.send("L", type+ ": " + (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
+  };
+
+  let ls;
 
   session.provide('T', function (data) {
     var pattern = data[0];
