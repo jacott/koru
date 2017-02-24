@@ -73,7 +73,7 @@ define(function(require, exports, module) {
             if (around)
               throw new Error("setUpAround not supported on async tests");
             const promise = promiseFunc(test, _runNext);
-            const ex = runPromise(test, promise);
+            ex = runPromise(test, promise);
             if (! ex) {
               if (promise.done) continue;
               promise.timeout = setTimeout(function () {
