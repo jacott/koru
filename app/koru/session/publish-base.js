@@ -1,24 +1,21 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
+  const koru = require('../main');
+  const util = require('../util');
 
-  koru.onunload(module, function () {
-    pubs = Object.create(null);
-  });
+  let pubs = Object.create(null);
 
-  var pubs = Object.create(null);
+  koru.onunload(module, () => {pubs = Object.create(null);});
 
   function publish(module, name, func) {
     if (typeof module === 'string') {
       func = name;
       name = module;
     } else {
-      koru.onunload(module, function () {
-        publish._destroy(name);
-      });
+      koru.onunload(module, () => {publish._destroy(name)});
       if (typeof name !== 'string') {
         func = name;
-        name = util.capitalize(util.camelize(module.id.replace(/^.*\//, '').replace(/-(server|client)$/, '')));
+        name = util.capitalize(
+          util.camelize(module.id.replace(/^.*\//, '').replace(/-(server|client)$/, '')));
       }
     }
 
@@ -28,9 +25,7 @@ define(function(require, exports, module) {
 
   util.merge(publish, {
     get _pubs() {return pubs},
-    _destroy(name) {
-      delete pubs[name];
-    },
+    _destroy(name) {delete pubs[name]},
   });
 
   return publish;

@@ -1,12 +1,13 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const koru      = require('koru/main');
   const session   = require('koru/session');
   const TH        = require('koru/test');
   const util      = require('koru/util');
   const message   = require('./message');
-  const publish   = require('./publish');
   const scFactory = require('./server-connection-factory');
+
+  const publish   = require('./publish');
+  var test, v;
 
   TH.testCase(module, {
     setUp () {

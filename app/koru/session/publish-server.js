@@ -22,7 +22,7 @@ define(function(require, exports, module) {
     const subs = this._subs;
     if (! subs) return; // we are closed
 
-    var sub = subs[subId];
+    let sub = subs[subId];
 
     try {
       session.batchMessages();
@@ -31,9 +31,9 @@ define(function(require, exports, module) {
           stopped(sub);
         }
       } else {
-        var func = pubs[name];
+        const func = pubs[name];
         if (! func) {
-          var msg = 'unknown publication: ' + name;
+          const msg = 'unknown publication: ' + name;
           this.sendBinary('P', [subId, 500, msg]);
           koru.info(msg);
         } else {
@@ -75,8 +75,7 @@ define(function(require, exports, module) {
     }
 
     error (error) {
-      var id = this.id;
-      var conn = this.conn;
+      const {id, conn} = this;
       if (conn.ws) {
         if (error.errorType === 'KoruError') {
           conn.sendBinary('P', [id, error.error, error.reason]);
@@ -126,7 +125,7 @@ define(function(require, exports, module) {
   }
 
   function addToDictionary(adder) {
-    for (var name in publish._pubs) {
+    for (let name in publish._pubs) {
       adder(name);
     }
   }

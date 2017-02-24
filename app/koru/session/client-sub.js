@@ -49,12 +49,12 @@ define(function(require, exports, module) {
       this._subscribe = publish._pubs[name];
       this.stop = stopSub.bind(this);
       const cb = args[args.length - 1];
+      this.args = args;
       if (typeof cb === 'function') {
         this.callback = cb;
-        this.args = args.slice(0, -1);
+        args.pop();
       } else {
         this.callback = null;
-        this.args = args;
       }
     }
 

@@ -1,10 +1,11 @@
 isClient && define(function (require, exports, module) {
+  const Model   = require('../model/main');
+  const util    = require('../util');
+  const session = require('./main');
+  const TH      = require('./test-helper');
+
+  const publish = require('./publish');
   var test, v;
-  var util = require('../util');
-  var TH = require('./test-helper');
-  var publish = require('./publish');
-  var Model = require('../model/main');
-  var session = require('./main');
 
   TH.testCase(module, {
     setUp() {

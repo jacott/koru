@@ -1,25 +1,25 @@
 define(function(require, exports, module) {
-  const Model   = require('koru/model/main');
-  const koru    = require('../main');
-  const util    = require('../util');
-  const match   = require('./match');
-  const publish = require('./publish-base');
+  const ModelMap = require('koru/model/map');
+  const koru     = require('../main');
+  const util     = require('../util');
+  const match    = require('./match');
+  const publish  = require('./publish-base');
 
 
   util.merge(publish, {
     match: match(),
     _filterModels(models) {
-      for(var name in models) {
-        var mm = this.match._models;
+      for(let name in models) {
+        let mm = this.match._models;
         mm = mm && mm[name];
         if (! mm) continue;
-        var model = Model[name];
+        const model = ModelMap[name];
         if (! model) continue;
-        var docs = model.docs;
-        for (var id in docs) {
-          var doc = docs[id];
-          var remove = true;
-          for(var key in mm) {
+        const docs = model.docs;
+        for (let id in docs) {
+          const doc = docs[id];
+          let remove = true;
+          for(let key in mm) {
             if (mm[key](doc)) {
               remove = false;
               break;
