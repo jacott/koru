@@ -33,6 +33,8 @@ define(function(require, exports, module) {
       this.exports = exports;
     }
 
+    onUnload() {}
+
     $inspect() {return `{Module: ${this.id}}`;}
   }
 

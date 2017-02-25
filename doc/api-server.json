@@ -46,6 +46,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/env!koru/dom/dom"
     ]
@@ -79,6 +80,7 @@
         ]
       }
     },
+    "customMethods": {},
     "newInstance": {
       "test": "koru/idle-check test constructor",
       "sig": "constructor()",
@@ -213,6 +215,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/env!koru/main",
       "koru/errors",
@@ -228,6 +231,7 @@
     },
     "methods": {},
     "protoMethods": {},
+    "customMethods": {},
     "properties": {
       "BaseModel": {
         "value": [
@@ -239,6 +243,7 @@
     "requires": [
       "koru/env!koru/model/main",
       "koru/main",
+      "koru/model/db-broker",
       "koru/model/map",
       "koru/model/query",
       "koru/model/register-observe-field",
@@ -281,7 +286,8 @@
         ]
       }
     },
-    "protoMethods": {}
+    "protoMethods": {},
+    "customMethods": {}
   },
   "koru/pg/driver": {
     "id": "koru/pg/driver",
@@ -320,6 +326,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "properties": {
       "defaultDb": {
         "calls": [
@@ -400,6 +407,7 @@
         ]
       }
     },
+    "customMethods": {},
     "initExample": "          const Client = pg.defaultDb.constructor;\n        ",
     "initInstExample": "          const client = pg.defaultDb;\n        "
   },
@@ -432,6 +440,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "properties": {
       "_id": {
         "value": "default",
@@ -441,6 +450,46 @@
     "requires": [
       "koru/env!koru/session/main",
       "koru/session/base"
+    ]
+  },
+  "koru/session/publish": {
+    "id": "koru/session/publish",
+    "subject": {
+      "name": "publish",
+      "abstract": "Publish a set of records from the server to the client"
+    },
+    "methods": {},
+    "protoMethods": {},
+    "customMethods": {
+      "publish": {
+        "test": "koru/session/publish test publish",
+        "sig": "publish(module, name, func)",
+        "intro": "Register a publish function. The publish function has\ndifferent roles on the client and server\n\nOn client - register {#koru/session/client-sub#match}\nfunctions.\n\nOn server - send related records and observe models for\nupdates.\n\n@param [module] register this module (and auto de-register if\nunloaded)\n@param {string} [name] The name to register; uses `module.id`\nby default\n@param {function} func The function to invoke when subscrib\nis called",
+        "calls": [
+          {
+            "body": "        publish(module, function publish(arg1, arg2) {\n          v.sub = this;\n        }, \"TestPublish\");\n      ",
+            "calls": [
+              [
+                [
+                  [
+                    "Oi",
+                    "{Module:test-publish}",
+                    "Module"
+                  ],
+                  [
+                    "F",
+                    "publish"
+                  ],
+                  "TestPublish"
+                ]
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "requires": [
+      "koru/env!koru/session/publish"
     ]
   },
   "koru/session/publish-test-helper-server": {
@@ -527,6 +576,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/main",
       "koru/session/main",
@@ -545,9 +595,10 @@
     },
     "methods": {},
     "protoMethods": {},
+    "customMethods": {},
     "newInstance": {
       "test": "koru/session/web-socket-sender-factory test initialization",
-      "sig": "webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper, base=session)",
+      "sig": "webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper,\n                                  base=session)",
       "intro": "",
       "calls": [
         {
@@ -729,7 +780,7 @@
         "intro": "Document a property of the current subject. The property\ncan be either plain value or a get/set function.\n\n@param [options] details about the property.\n\nWhen `object` can contain the following:\n\n* `info` (or `intro`): description of property\n* `properties`: document child properties\n\nWhen `function` should return an info `string`. The info\n`string` can contain `${value}` which will be substituted\nwith a description of the properties value.",
         "calls": [
           {
-            "body": "          v.defaults = {\n            logger: function () {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module({id: 'myMod', exports: v.defaults}, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
+            "body": "          v.defaults = {\n            logger() {},\n            width: 800,\n            height: 600,\n            theme: {\n              name: 'light',\n              primaryColor: '#aaf'\n            }\n          };\n\n          API.module({id: 'myMod', exports: v.defaults}, 'defaults');\n          API.property('theme', {\n            info: 'The default theme',\n            properties: {\n              name: value => {\n                v.name = value;\n                return 'The theme name is ${value}';\n              },\n              primaryColor: 'The primary color is ${value}'\n            },\n          });\n          assert.same(v.name, 'light');\n\n          API.property('logger', value => {\n            v.logger = value;\n            return 'The default logger is ${value}';\n          });\n\n          assert.same(v.logger, v.defaults.logger);\n        ",
             "calls": [
               [
                 [
@@ -783,11 +834,11 @@
         "intro": "Document a property of the current subject's prototype. The\nproperty can be either plain value or a get/set function.\n\nSee {#.property}",
         "calls": [
           {
-            "body": "        class Book {\n          constructor(pages) {\n            this.pages = pages;\n          }\n        }\n\n        API.module({id: 'myMod', exports: Book});\n        API.protoProperty('page', {info: 'The number of pages'});\n        const book = new Book(504);\n        assert.same(book.pages, 504);\n      ",
+            "body": "        class Book {\n          constructor(pages) {\n            this.pages = pages;\n          }\n        }\n\n        API.module({id: 'myMod', exports: Book});\n        API.protoProperty('pages', {info: 'The number of pages'});\n        const book = new Book(504);\n        assert.same(book.pages, 504);\n      ",
             "calls": [
               [
                 [
-                  "page",
+                  "pages",
                   [
                     "O",
                     "{info: 'The number of pages'}"
@@ -808,6 +859,39 @@
             [
               "F",
               "newProxy"
+            ]
+          ]
+        ]
+      },
+      "custom": {
+        "test": "koru/test/api test custom",
+        "sig": "custom(func, name=func.name, sig=funcToSig(func))",
+        "intro": "Document a custom function in the current module\n\n@param func the function to document\n@param [name] override the name of func\n@param [sig] override the func signature\n@returns a ProxyClass which is to be used instead of `func`",
+        "calls": [
+          [
+            [
+              [
+                "F",
+                "myCustomFunction"
+              ]
+            ],
+            [
+              "F",
+              "proxy"
+            ]
+          ],
+          [
+            [
+              [
+                "F",
+                "myCustomFunction"
+              ],
+              "example2",
+              "foo.bar = function example2(arg)"
+            ],
+            [
+              "F",
+              "proxy"
             ]
           ]
         ]
@@ -843,6 +927,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/env!koru/test/api",
       "koru/main",
@@ -1188,7 +1273,7 @@
         "intro": "Visit `list` in reverse order.\n\n@param visitor - called with the list `item` and `index`",
         "calls": [
           {
-            "body": "        var results = [];\n        util.reverseForEach(v.list = [1,2,3], (val, index) => {\n          results.push(val+\".\"+index);\n        });\n        assert.equals(results, ['3.2', '2.1', '1.0']);\n\n        // ignores null list\n        util.reverseForEach(null, v.stub = test.stub());\n        refute.called(v.stub);\n      ",
+            "body": "        var results = [];\n        util.reverseForEach(v.list = [1,2,3], (val, index) => {\n          results.push(val+\".\"+index);\n        });\n        assert.equals(results, ['3.2', '2.1', '1.0']);\n\n        // ignores null list\n        util.reverseForEach(null, v.stub = this.stub());\n        refute.called(v.stub);\n      ",
             "calls": [
               [
                 [
@@ -1218,6 +1303,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/match",
       "koru/stacktrace",
@@ -1248,6 +1334,7 @@
       }
     },
     "protoMethods": {},
+    "customMethods": {},
     "requires": [
       "koru/main",
       "koru/web-server-factory"
@@ -1292,13 +1379,14 @@
         ]
       }
     },
+    "customMethods": {},
     "newInstance": {
       "test": "koru/web-server-factory test construction",
       "sig": "constructor(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={})",
       "intro": "Create a new web server. The npm package\n[send](https://www.npmjs.com/package/send) is used to serve\nfiles.\n\n@param root Serve files relative to path.",
       "calls": [
         {
-          "body": "        const http = requirejs.nodeRequire('http');\n        test.stub(http, 'createServer');\n        v.webServer = WebServerFactory('0.0.0.0', '80', '/rootDir/',\n                                           '/index2.html',\n                                           {gem(match) {return [match[0], '/path-to-gems']}});\n        assert.calledWith(http.createServer, v.webServer.requestListener);\n      ",
+          "body": "        const http = requirejs.nodeRequire('http');\n        test.stub(http, 'createServer');\n        v.webServer = WebServerFactory(\n          '0.0.0.0', '80', '/rootDir/',\n          '/index2.html',\n          {gem(match) {return [match[0], '/path-to-gems']}});\n        assert.calledWith(http.createServer, v.webServer.requestListener);\n      ",
           "calls": [
             [
               [

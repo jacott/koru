@@ -40,7 +40,6 @@ define(function (require, exports, module) {
         ]]
       };
 
-
       assert.same(v.api.OUT_DIR, path.resolve(module.toUrl('.'), '../../../../doc'));
 
       v.api.OUT_DIR = 'out_dir';
@@ -72,6 +71,7 @@ define(function (require, exports, module) {
               }
             },
             protoMethods: {},
+            customMethods: {},
           },
         });
         return true;

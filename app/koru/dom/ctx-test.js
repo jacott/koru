@@ -1,7 +1,7 @@
 isClient && define(function (require, exports, module) {
   'use strict';
   /**
-   * Ctx is used to track
+   * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
   var test, v;
@@ -30,7 +30,31 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test data"() {
+      /**
+       * The data associated with an element via this context
+       **/
+      api.protoProperty('data');
+      const ctx = new Ctx(null, null, v.data = {});
+
+      assert.same(ctx.data, v.data);
+    },
+
+    "test parentCtx"() {
+      /**
+       * The associated parent Ctx
+       **/
+      api.protoProperty('parentCtx');
+      const pCtx = new Ctx();
+      const ctx = new Ctx(null, pCtx);
+
+      assert.same(ctx.parentCtx, pCtx);
+    },
+
     "Ctx.current": {
+      /**
+       * Hello world
+       **/
       "test no currentCtx data"() {
         Ctx._currentCtx = undefined;
         assert.equals(Ctx.current.data(null), undefined);

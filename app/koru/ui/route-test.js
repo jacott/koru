@@ -449,7 +449,7 @@ isClient && define(function (require, exports, module) {
        * rather than adding to it.
        **/
       api.method('replacePage');
-      test.stub(Route, 'gotoPage', () => v.pageState = Route.pageState);
+      test.stub(Route, 'gotoPage', () => {v.pageState = Route.pageState});
 
       Route.replacePage('myPage', {append: 'myId'});
 

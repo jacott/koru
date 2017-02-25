@@ -399,7 +399,7 @@ define(function (require, exports, module) {
         }
 
         API.module({id: 'myMod', exports: Book});
-        API.protoProperty('page', {info: 'The number of pages'});
+        API.protoProperty('pages', {info: 'The number of pages'});
         const book = new Book(504);
         assert.same(book.pages, 504);
       });
@@ -425,9 +425,9 @@ define(function (require, exports, module) {
       }
 
       API.module({id: 'myMod', exports: Hobbit});
-      var newHobbit = API.new();
+      const newHobbit = API.new();
 
-      var bilbo = newHobbit('Bilbo');
+      const bilbo = newHobbit('Bilbo');
 
       assert.same(bilbo.name, 'Bilbo');
 
@@ -441,7 +441,58 @@ define(function (require, exports, module) {
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
         ]],
       });
+    },
 
+    "test custom"() {
+      /**
+       * Document a custom function in the current module
+       *
+       * @param func the function to document
+       * @param [name] override the name of func
+       * @param [sig] override the func signature
+       * @returns a ProxyClass which is to be used instead of `func`
+       **/
+
+      MainAPI.method('custom');
+
+      function myCustomFunction(arg) {
+        this.ans = arg;
+        return 'success';
+      }
+      API.module({id: 'myMod', exports: {}});
+      const thisValue = {};
+
+      let proxy = API.custom(myCustomFunction);
+
+      proxy.call(thisValue, 2);
+
+      assert.same(thisValue.ans, 2);
+
+      assert.equals(API.instance.customMethods.myCustomFunction, {
+        test,
+        sig: 'myCustomFunction(arg)',
+        intro: TH.match(/Document a custom function/),
+        calls: [[
+          [2], 'success'
+        ]],
+      });
+
+      proxy = API.custom(myCustomFunction, 'example2', 'foo.bar = function example2(arg)');
+
+      proxy.call(thisValue, 4);
+
+      assert.same(thisValue.ans, 4);
+
+      assert.equals(API.instance.customMethods.example2, {
+        test,
+        sig: 'foo.bar = function example2(arg)',
+        intro: TH.match(/Document a custom function/),
+        calls: [[
+          [4], 'success'
+        ]],
+      });
+
+      API.done();
     },
 
     "test method"() {
@@ -530,7 +581,7 @@ define(function (require, exports, module) {
       ctx.exportsModule.withArgs(TH.match.is(v.subject.exports))
         .returns([v.subject]);
 
-      var api = API.instance;
+      const api = API.instance;
 
       assert(api);
       assert.same(api.subject, v.subject.exports);
@@ -706,6 +757,15 @@ define(function (require, exports, module) {
         ]]
       };
 
+      api.customMethods.sentai = {
+        test,
+        sig: 'sentai(a)',
+        intro: 'introducing sentai',
+        calls: [[
+          [1], 2
+        ]]
+      };
+
       api.initExample = () => {
         const example = 'init';
       };
@@ -781,6 +841,16 @@ define(function (require, exports, module) {
             intro: 'introducing zord',
             calls: [[
               [false]
+            ]],
+          }
+        },
+        customMethods: {
+          sentai: {
+            test: 'koru/test/api test serialize',
+            sig: 'sentai(a)',
+            intro: 'introducing sentai',
+            calls: [[
+              [1], 2
             ]],
           }
         },

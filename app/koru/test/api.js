@@ -24,13 +24,14 @@ define(function(require, exports, module) {
 
       this.newInstance =
         this.properties = this.protoProperties =
-        this.currentComment = this.lastMethod =
+        this.currentComment = this.target =
         this.propertyName = this.initInstExample =
         this.initExample = undefined;
 
       this.methods = Object.create(null);
       this.protoMethods = Object.create(null);
       this.innerSubjects = Object.create(null);
+      this.customMethods = Object.create(null);
     }
 
     static reset() {
@@ -80,6 +81,9 @@ define(function(require, exports, module) {
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
     static new(sig) {return this.instance.new(sig)}
+    static custom(func, name=func.name, sig=funcToSig(func)) {
+      return this.instance.custom(func, name, sig);
+    }
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options) {this.instance.protoProperty(name, options)}
     static comment(comment) {this.instance.comment(comment)}
@@ -208,6 +212,10 @@ define(function(require, exports, module) {
 
     new(sig) {
       const api = this;
+
+      if (typeof api.subject !== 'function')
+        throw new Error("api.new called on non function");
+
       const {test} = TH;
       const calls = [];
 
@@ -221,7 +229,7 @@ define(function(require, exports, module) {
       }
 
       if (! api.newInstance) {
-        api.lastMethod = api.newInstance = {
+        api.newInstance = {
           test,
           sig,
           intro: docComment(test.func),
@@ -229,18 +237,51 @@ define(function(require, exports, module) {
         };
       }
 
-      if (typeof api.subject !== 'function')
-        throw new Error("api.new called on non function");
+      api.target = api.newInstance;
 
       return newProxy;
 
       function newProxy(...args) {
         const entry = [
-           args.map(obj => api.valueTag(obj)),
-           undefined,
-         ];
+          args.map(obj => api.valueTag(obj)),
+          undefined,
+        ];
         calls.push(entry);
         const ans = new api.subject(...args);
+        entry[1] = api.valueTag(ans);
+        return ans;
+      };
+    }
+
+    custom(func, name=func.name, sig=funcToSig(func)) {
+      const api = this;
+      if (typeof func !== 'function')
+        throw new Error("api.custom called with non function");
+
+      if (! name)
+        throw new Error("Can't derive name of function");
+
+      const {test} = TH;
+      const calls = [];
+
+      let details = api.customMethods[name];
+      if (! details) details = api.customMethods[name] = {
+        test,
+        sig,
+        intro: docComment(test.func),
+        calls
+      };
+      api.target = details;
+
+      return proxy;
+
+      function proxy(...args) {
+        const entry = [
+          args.map(obj => api.valueTag(obj)),
+          undefined,
+        ];
+        calls.push(entry);
+        const ans = func.apply(this, args);
         entry[1] = api.valueTag(ans);
         return ans;
       };
@@ -259,15 +300,15 @@ define(function(require, exports, module) {
     }
 
     example(body) {
-      if (! this.lastMethod)
-        throw new Error("API.(proto)method has not been called!");
-      const callLength = this.lastMethod.calls.length;
+      if (! this.target)
+        throw new Error("API target not set!");
+      const callLength = this.target.calls.length;
       try {
         body();
       } finally {
-        const calls = this.lastMethod.calls.slice(callLength);
-        this.lastMethod.calls.length = callLength;
-        this.lastMethod.calls.push({
+        const calls = this.target.calls.slice(callLength);
+        this.target.calls.length = callLength;
+        this.target.calls.push({
           body: extractFnBody(body),
           calls,
         });
@@ -291,7 +332,7 @@ define(function(require, exports, module) {
     }
 
     serialize() {
-      const {methods, protoMethods, abstract} = this;
+      const {methods, protoMethods, customMethods, abstract} = this;
 
       const procMethods = list => {
         for (let methodName in list) {
@@ -307,6 +348,8 @@ define(function(require, exports, module) {
 
       procMethods(methods);
       procMethods(protoMethods);
+      procMethods(customMethods);
+
 
       const id = this.testModule.id.replace(/-test$/, '');
 
@@ -318,6 +361,7 @@ define(function(require, exports, module) {
         },
         methods,
         protoMethods,
+        customMethods,
       };
 
       if (this.initExample) ans.initExample = extractFnBody(this.initExample);
@@ -496,7 +540,9 @@ define(function(require, exports, module) {
     example(body) {body();}
     method() {}
     protoMethod() {}
+    protoProperty() {}
     done() {}
+    custom(func) {return func}
   }
 
   if (! API.isRecord) {
@@ -609,15 +655,15 @@ define(function(require, exports, module) {
 
     function inner(name, options, desc, value, properties) {
       const property = properties[name] || (properties[name] = {});
-      if (desc && (desc.get || desc.set)) {
+      if (! desc || desc.get || desc.set) {
+        let savedValue = subject[name];
         const calls = property.calls || (property.calls = []);
-        const {subject} = api;
-        Object.defineProperty(subject, name, {
+        koru.replaceProperty(subject, name, {
           get() {
             const entry = [[], null];
             addComment(api, entry);
             calls.push(entry);
-            const ans = desc.get.call(this);
+            const ans = desc ? desc.get.call(this) : savedValue;
             entry[1] = api.valueTag(ans);
             return ans;
           },
@@ -625,11 +671,17 @@ define(function(require, exports, module) {
             const entry = [[api.valueTag(value)], undefined];
             addComment(api, entry);
             calls.push(entry);
-            desc.set.call(this, value);
+            savedValue = value;
+            desc && desc.set.call(this, value);
           }
         });
 
-        onTestEnd(api, () => Object.defineProperty(subject, name, desc));
+        onTestEnd(api, () => {
+          if (desc)
+            Object.defineProperty(subject, name, desc);
+          else
+            delete subject[name];
+        });
 
       } else {
         property.value = api.valueTag(value);
@@ -637,9 +689,6 @@ define(function(require, exports, module) {
       switch (typeof options) {
       case 'string':
         property.info = options;
-        break;
-      case 'undefined':
-        property.info = docComment(TH.test.func);
         break;
       case 'function':
         property.info = options(value);
@@ -659,6 +708,9 @@ define(function(require, exports, module) {
           }
           break;
         }
+      case 'undefined':
+        property.info = docComment(TH.test.func);
+        break;
       default:
         throw new Error("invalid options supplied for property "+name);
       }
@@ -674,7 +726,7 @@ define(function(require, exports, module) {
     let details = methods[methodName];
     const calls = details ? details.calls : [];
     if (! details) {
-      details = api.lastMethod = methods[methodName] = {
+      details = methods[methodName] = {
         test,
         sig: funcToSig(func).replace(/^function\s*(?=\()/, methodName),
         intro: docComment(test.func),
@@ -682,6 +734,7 @@ define(function(require, exports, module) {
         calls
       };
     }
+    api.target = details;
 
     const desc = koru.replaceProperty(obj, methodName, {
       value(...args) {

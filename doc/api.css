@@ -7,6 +7,10 @@ pre {
   margin: 0;
 }
 
+.page-header {
+  font-size: 2em;
+}
+
 .jsdoc-info, abstract>div {
   max-width: 780px;
 }

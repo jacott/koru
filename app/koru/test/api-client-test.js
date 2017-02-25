@@ -48,6 +48,15 @@ define(function (require, exports, module) {
         ]]
       };
 
+      api.customMethods.sentai = {
+        test,
+        sig: 'sentai(a)',
+        intro: 'introducing sentai',
+        calls: [[
+          [1], 2
+        ]]
+      };
+
       test.stub(TH.session, 'sendBinary');
 
       v.api._record();
@@ -77,6 +86,16 @@ define(function (require, exports, module) {
                 intro: 'introducing zord',
                 calls: [[
                   [false]
+                ]],
+              }
+            },
+            customMethods: {
+              sentai: {
+                test: 'koru/test/api-client test _record',
+                sig: 'sentai(a)',
+                intro: 'introducing sentai',
+                calls: [[
+                  [1], 2
                 ]],
               }
             },

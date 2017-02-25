@@ -70,9 +70,10 @@ isServer && define(function (require, exports, module) {
       api.example(() => {
         const http = requirejs.nodeRequire('http');
         test.stub(http, 'createServer');
-        v.webServer = WebServerFactory('0.0.0.0', '80', '/rootDir/',
-                                           '/index2.html',
-                                           {gem(match) {return [match[0], '/path-to-gems']}});
+        v.webServer = WebServerFactory(
+          '0.0.0.0', '80', '/rootDir/',
+          '/index2.html',
+          {gem(match) {return [match[0], '/path-to-gems']}});
         assert.calledWith(http.createServer, v.webServer.requestListener);
       });
       v.webServer = WebServerFactory('localhost', '9876', '/');

@@ -1,12 +1,10 @@
 (function () {
-  var index = document.getElementById('jsdoc-index');
   window.addEventListener('hashchange', highlightPage);
 
-  document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(highlightPage, 1);
-  });
+  window.addEventListener("load", highlightPage);
 
   function highlightPage() {
+    var index = document.getElementById('jsdoc-index');
     var id = window.location.hash.slice(1);
     var target = document.getElementById(id);
     var active = document.getElementsByClassName('jsdoc-active-page')[0];

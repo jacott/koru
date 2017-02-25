@@ -146,7 +146,7 @@ define(function(require, exports, module) {
       return a === b ? 0 : a < b ? -1 : 1;
     }).forEach(id => {
       const api = json[id]; api.id = id; api.parent = json;
-      const {subject, newInstance, methods, protoMethods, innerSubjects} = api;
+      const {subject, newInstance, methods, customMethods, protoMethods, innerSubjects} = api;
 
       const aside = [];
 //      addModuleList('Modules required', api.requires);
@@ -206,6 +206,9 @@ define(function(require, exports, module) {
       util.isObjEmpty(protoMethods) ||
         (functions = functions.concat(
           buildMethods(api, subject, protoMethods, requireLine, 'proto')));
+      util.isObjEmpty(customMethods) ||
+        (functions = functions.concat(
+          buildMethods(api, subject, customMethods, requireLine, 'custom')));
 
       const linkNav = {nav: [constructor, ...functions].map(
         func => func && Dom.h({a: func.$name, $href: '#'+func.id})
@@ -341,9 +344,9 @@ define(function(require, exports, module) {
     return `new ${name}(${args.map(arg => valueToText(arg)).join(", ")});`;
   }
 
-  function buildMethods(api, subject, methods, requireLine, proto) {
+  function buildMethods(api, subject, methods, requireLine, type) {
     return Object.keys(methods).map(name => {
-      if (proto) {
+      if (type === 'proto') {
         var needInit = true;
         var initInst = function () {
           if (! needInit) return [];
@@ -369,7 +372,7 @@ define(function(require, exports, module) {
         } else
           var initInst = () => [];
         var inst = subject.name;
-        var sigJoin = '.';
+        var sigJoin = type !== 'custom' && '.';
       }
       const method = methods[name];
       const {sig, intro, calls} = method;
@@ -400,8 +403,8 @@ define(function(require, exports, module) {
 
       return section(api, {
         '$data-env': env(method),
-        $name: (proto ? '#'+name : name), div: [
-          {h5: `${subject.name}${sigJoin}${sig}`},
+        $name: (type === 'proto' ? '#'+name : name), div: [
+          {h5: sigJoin ? `${subject.name}${sigJoin}${sig}` : sig},
           {abstract},
           params,
           examples,
@@ -421,7 +424,7 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    sig = '1|{_x_'+sig.replace(/^function\s*/, '')+' {}}';
+    sig = '1|{_x_'+sig.replace(/^(function|[^(]*)[-.#=\s]*/, '')+' {}}';
     const args = jsParser.extractParams(sig);
     const argMap = {};
     args.forEach((arg, i) => argMap[arg] = argProfile(calls, call => call[0][i]));
