@@ -90,14 +90,12 @@ isClient && define(function (require, exports, module) {
 
       v.handles.push(v.F1.onChange(v.f1del = test.stub()));
 
-      v.handles.push(sut.match.register('F1', function (doc) {
-        return doc.name === 'A';
-      }));
+      v.handles.push(sut.match.register('F1', doc => doc.name === 'A'));
 
 
-      v.handles.push(sut.match.register('F2', function (doc) {
-        return doc.name === 'A2';
-      }));
+      v.handles.push(sut.match.register('F2', doc => doc.name === 'A2'));
+
+      v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = this.stub()));
 
       try {
         sut._filterModels({F1: true});
@@ -105,9 +103,9 @@ isClient && define(function (require, exports, module) {
         assert.same(v.F1.query.count(), 2);
         assert.same(v.F2.query.count(), 3);
 
-        assert.calledWith(v.f1del, null, TH.match(function (doc) {
-          return doc._id = fdel._id;
-        }));
+        assert.calledWith(v.f1del, null, TH.match.field('_id', fdel._id), true);
+        assert.calledWith(v.f1idxOC, null, TH.match.field('_id', fdel._id));
+        assert(v.f1idxOC.calledBefore(v.f1del));
 
         fdoc.attributes.name = 'X';
 
@@ -123,12 +121,12 @@ isClient && define(function (require, exports, module) {
     },
 
     "test false matches"() {
-      v.handles.push(sut.match.register('Foo', function (doc) {
+      v.handles.push(sut.match.register('Foo', doc => {
         assert.same(doc, v.doc);
         return false;
       }));
 
-      v.handles.push(sut.match.register('Foo', function (doc) {
+      v.handles.push(sut.match.register('Foo', doc => {
         assert.same(doc, v.doc);
         return false;
       }));
@@ -139,12 +137,12 @@ isClient && define(function (require, exports, module) {
 
 
     "test true matches"() {
-      v.handles.push(sut.match.register('Foo', function (doc) {
+      v.handles.push(sut.match.register('Foo', doc => {
         assert.same(doc, v.doc);
         return false;
       }));
 
-      v.handles.push(v.t = sut.match.register('Foo', function (doc) {
+      v.handles.push(v.t = sut.match.register('Foo', doc => {
         assert.same(doc, v.doc);
         return true;
       }));
