@@ -47,7 +47,7 @@ isServer && define(function (require, exports, module) {
           ]},
           {tr: [
             {td: 'singleton'},
-            {td: {a: 'my/mod', $href: '#my/mod'}},
+            {td: {a: 'mod', $href: '#my/mod'}},
             {class: 'jsdoc-info', '$data-env': 'server', td: {div: [
               {p: [
                 'prints ',
@@ -193,10 +193,10 @@ isServer && define(function (require, exports, module) {
             {p: 'Abstract'}, '\n',
             {p: [
               'See ',
-              {a: 'my/Module', class: 'jsdoc-link', $href: '#my/module'},
+              {a: 'Module', class: 'jsdoc-link', $href: '#my/module'},
               ' ',
-              {a: 'my/Module.method', class: 'jsdoc-link', $href: '#my/module.method'},
-              '\n', {a: 'my/mod#protoMethod', class: 'jsdoc-link',
+              {a: 'Module.method', class: 'jsdoc-link', $href: '#my/module.method'},
+              '\n', {a: 'mod#protoMethod', class: 'jsdoc-link',
                      $href: '#my/mod#protoMethod'}
               , ' ',
               {a: '.thisModMethod', class: 'jsdoc-link',
@@ -236,7 +236,7 @@ isServer && define(function (require, exports, module) {
             assert.equals(Dom.htmlToJson(html), {div: [
               {p: [
                 'markup ',
-                {a: 'this/module', class: 'jsdoc-link', $href: '#this/module'}
+                {a: 'module', class: 'jsdoc-link', $href: '#this/module'}
               ]}, '\n',
             ]});
             return true;

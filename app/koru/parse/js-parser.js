@@ -20,10 +20,11 @@ define(function(require, exports, module) {
   });
 
   function extractCallSignature(func) {
-    let m, code = func.toString();
+    let code = func.toString();
 
+    let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function\s*(?=\w))/.exec(code);
 
-    if (m = /^(?:class[^{]*\{[\s\S]*(?=constructor\b)|function\s*(?=\w))/.exec(code))
+    if (m)
       code = code.slice(m[0].length);
     else if (m = /^(\w+)\s*=>/.exec(code))
       return m[1] += ' => {/*...*/}';

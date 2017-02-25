@@ -298,8 +298,9 @@
             [
               "koru/main-test",
               [
-                "F",
-                "stub"
+                "Oi",
+                "stub",
+                "Function"
               ]
             ]
           ]
@@ -419,7 +420,7 @@
       "define": {
         "test": "koru/model/main BaseModel test using a class",
         "sig": "define({module, name, fields})",
-        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to derived from module name.\n@param {object} [fields] call defineFields with fields\n@returns {BaseModel} the model",
+        "intro": "Define and register a model.\n\n@param {Module} [module] needed to auto unload module when file changed\n@param {string} [name] name of model. Defaults to derived from module name.\n@param {object} [fields] call defineFields with fields\n@returns the model",
         "calls": [
           {
             "body": "          class TestModel extends BaseModel {\n            foo() {return this.name;}\n          }\n\n          TestModel.define({\n            module,\n            fields: {name: 'text'},\n          });\n\n          assert.same(Model.TestModel, TestModel);\n          assert.same(TestModel.modelName, 'TestModel');\n\n          let tm = TestModel.create({name: 'my name'});\n\n          assert.same(tm.foo(), 'my name');\n        ",
@@ -432,8 +433,9 @@
                   ]
                 ],
                 [
-                  "F",
-                  "TestModel"
+                  "Os",
+                  "TestModel",
+                  "koru/model/main.BaseModel"
                 ]
               ]
             ]
@@ -443,6 +445,104 @@
     },
     "protoMethods": {},
     "customMethods": {}
+  },
+  "koru/model/query-idb": {
+    "id": "koru/model/query-idb",
+    "subject": {
+      "name": "QueryIDB",
+      "abstract": "Support client side persistence using indexedDB"
+    },
+    "methods": {},
+    "protoMethods": {
+      "queueChange": {
+        "test": "koru/model/query-idb test queueChange",
+        "sig": "queueChange(now, was)",
+        "intro": "Queue a model change to happen when the current\n{#trans-queue} successfully completes\n\n@param now the record in its current form\n@param was the original values of the changes to the record.",
+        "calls": [
+          {
+            "body": "        then([() => {\n          assert.same(v.idb._version, 2);\n          this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);\n          v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});\n        }, () => {\n          const iDoc = v.idb._store.TestModel.findById('foo123');\n          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});\n\n          v.f1.$update('age', 10);\n        }, () => {\n          const iDoc = v.idb._store.TestModel.findById('foo123');\n          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});\n\n          v.f1.$remove();\n        }, () => {\n          const iDoc = v.idb._store.TestModel.findById('foo123');\n          refute(iDoc);\n\n          done();\n        }]);\n        // this results in the calls to queueChange below\n      ",
+            "calls": []
+          },
+          [
+            [
+              [
+                "Os",
+                "{Model: TestModel_foo123 foo}",
+                "koru/model/main.BaseModel"
+              ],
+              null,
+              [
+                "U",
+                "undefined"
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                "Os",
+                "{Model: TestModel_foo123 foo}",
+                "koru/model/main.BaseModel"
+              ],
+              [
+                "O",
+                "{age: 5}"
+              ],
+              [
+                "U",
+                "undefined"
+              ]
+            ]
+          ],
+          [
+            [
+              null,
+              [
+                "Os",
+                "{Model: TestModel_foo123 foo}",
+                "koru/model/main.BaseModel"
+              ],
+              [
+                "U",
+                "undefined"
+              ]
+            ]
+          ]
+        ]
+      }
+    },
+    "customMethods": {},
+    "newInstance": {
+      "test": "koru/model/query-idb test new",
+      "sig": "constructor({name, version, upgrade})",
+      "intro": "Open a indexedDB database\n\n@param {string} name the name of the database\n@param {number} [version] expected version of database\n@param {function} [upgrade] `function({db, oldVersion})`\nwhere `db` is the `QueryIDB` instance and `oldVersion` is the\ncurrent version of the database",
+      "calls": [
+        {
+          "body": "        v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {\n          assert.same(oldVersion, 1);\n\n          db.createObjectStore(\"TestModel\");\n        }});\n\n        v.db.then(() => {\n          assert.same(v.idb._version, 2);\n\n          done();\n        });\n      ",
+          "calls": [
+            [
+              [
+                [
+                  "O",
+                  "{name: 'foo', upgrade: => upgrade, version: 2}"
+                ]
+              ],
+              [
+                "Oi",
+                "{}",
+                "koru/model/query-idb"
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    "requires": [
+      "koru/main",
+      "koru/model/map",
+      "koru/model/trans-queue",
+      "koru/util"
+    ]
   },
   "koru/session/client-sub": {
     "id": "koru/session/client-sub",
@@ -460,8 +560,9 @@
           [
             [
               [
-                "F",
-                "Book"
+                "Os",
+                "Book",
+                "koru/model/main.BaseModel"
               ],
               [
                 "F",
@@ -612,6 +713,7 @@
     "requires": [
       "koru/main",
       "koru/model/map",
+      "koru/model/trans-queue",
       "koru/session/match",
       "koru/session/publish-base",
       "koru/util"
@@ -1519,8 +1621,9 @@
                 [
                   null,
                   [
-                    "F",
-                    "stub"
+                    "Oi",
+                    "stub",
+                    "Function"
                   ]
                 ]
               ]

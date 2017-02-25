@@ -1,7 +1,8 @@
 define(function (require, exports, module) {
-  var test, v;
   const TH       = require('koru/test');
+
   const jsParser = require('./js-parser');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -32,17 +33,21 @@ define(function (require, exports, module) {
           // comment
           constructor(a, b=") {}") {
           }
+
+          foo() {
+            this.constructor.foo();
+          }
         }
 
-         assert.equals(jsParser.extractCallSignature(Sig),
-                       'constructor(a, b=") {}")');
+        assert.equals(jsParser.extractCallSignature(Sig),
+                      'constructor(a, b=") {}")');
       },
 
       "test no constructor"() {
         class Sig {}
 
         assert.equals(jsParser.extractCallSignature(Sig),
-                       'constructor()');
+                      'constructor()');
       },
 
       "test defaults"() {

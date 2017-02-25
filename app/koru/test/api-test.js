@@ -774,7 +774,6 @@ define(function (require, exports, module) {
         const exampleInst = 'initInst';
       };
 
-
       assert.equals(api.serialize({
         methods: {foo: {sig: 'foo()'}, fnord: {sig: 'oldSig'}}
       }), {

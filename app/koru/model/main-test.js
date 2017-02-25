@@ -88,7 +88,7 @@ define(function (require, exports, module) {
 
          * @param {object} [fields] call defineFields with fields
 
-         * @returns {BaseModel} the model
+         * @returns the model
          **/
         v.bmApi.method("define");
 

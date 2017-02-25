@@ -108,7 +108,7 @@ define(function(require, exports, module) {
       href = api.id+href;
     }
 
-    return Dom.h({class: 'jsdoc-link', a: text, $href: '#'+href});
+    return Dom.h({class: 'jsdoc-link', a: idToText(text), $href: '#'+href});
   }
 
   function noContent(tag) {
@@ -172,9 +172,7 @@ define(function(require, exports, module) {
                 }
                 return id;
               }
-              return {
-                class: 'jsdoc-link', a: id, $href: '#'+id
-              };
+              return {class: 'jsdoc-link', a: id, $href: '#'+id};
             })},
           ]});
         }
@@ -466,17 +464,21 @@ define(function(require, exports, module) {
     ]};
   }
 
-  function extractTypes(am) {
-    const types = [];
+  function extractTypes({types, href}) {
+    const ans = [];
     const typeMap = {};
-    for (let type in am.types) {
-      if (typeMap[am.types[type]]) continue;
-      typeMap[am.types[type]] = true;
-      if (types.length)
-        types.push('\u00a0or', {br: ''});
-      types.push({a: am.types[type], $href: am.href(type)});
+    for (let type in types) {
+      if (typeMap[types[type]]) continue;
+      typeMap[types[type]] = true;
+      if (ans.length)
+        ans.push('\u00a0or', {br: ''});
+      ans.push({a: idToText(types[type]), $href: href(type)});
     }
-    return types;
+    return ans;
+  }
+
+  function idToText(id) {
+    return id.replace(/\/main(?=$|\.)/, '').replace(/^.*\//, '');
   }
 
   function argProfile(calls, extract) {

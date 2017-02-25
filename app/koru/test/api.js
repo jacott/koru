@@ -121,6 +121,7 @@ define(function(require, exports, module) {
         const proto = Object.getPrototypeOf(value);
         if (! proto)
           return ['O', displayName];
+
         let api = this.valueToApi(proto);
         if (api) {
           return cache(this, value, orig, ['Os', displayName, api.moduleName]);
@@ -436,11 +437,15 @@ define(function(require, exports, module) {
 
     serializeValue(value) {
       if (Array.isArray(value)) {
+        let api;
         switch(value[0]) {
         case 'M':
           return ['M', this.bestId(value[1])];
+        case 'F':
+          if (Object.getPrototypeOf(value[1]) === Function.prototype)
+            return ['F', value[2]];
         case 'O':
-          let api =  this.constructor.valueToApi(value[1]);
+          api =  this.constructor.valueToApi(value[1]);
           if (api)
             return ['M', api.moduleName];
 
