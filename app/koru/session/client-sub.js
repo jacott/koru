@@ -56,6 +56,8 @@ define(function(require, exports, module) {
       } else {
         this.callback = null;
       }
+      if (this._subscribe && this._subscribe.preload)
+        this._subscribe.preload(this);
     }
 
     get userId() {
@@ -125,7 +127,6 @@ define(function(require, exports, module) {
       this._matches.push(publish.match.register(modelName, func));
     }
   }
-
 
   module.exports = ClientSub;
 });

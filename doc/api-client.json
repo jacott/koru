@@ -590,7 +590,7 @@
       "preload": {
         "test": "koru/session/publish-client test preload",
         "sig": "publish.preload = function preload(sub)",
-        "intro": "If a publish function has a static method called preload it\nwill be called before the request is sent to the server and\nallowed to modifiy the argument list",
+        "intro": "If a publish function has a static method called preload it\nwill be called before the request is sent to the server.\n\nUseful actions to take in the preload are (but not limited to):\n1. modifiy the subcription argument list\n1. load data from client-side storage and\n1. call the subscription callback and clear it so not called\nby server fulfillment",
         "calls": [
           {
             "body": "        function publishBooks() {\n          v.args = this.args;\n        }\n        publishBooks.preload = preload; // preload(sub) {sub.args = [6, 7];}\n        publish(\"Books\", publishBooks);\n        subscribe('Books', 5);\n        assert.equals(v.args, [6, 7]);\n      ",

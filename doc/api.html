@@ -177,8 +177,14 @@ called when <a class="jsdoc-link" href="#koru/session/subscribe">koru/session/su
 responsible for setting up matches which filter valid documents
 sent from the server.</p>
 </div></abstract><aside class="jsdoc-module-sidebar"><div><h5>Modified by modules</h5><div class="jsdoc-list"><a class="jsdoc-link" href="#koru/session/publish">koru/session/publish</a></div></div></aside><div><div class="jsdoc-methods"><h4>Methods</h4><div><div class=" jsdoc-module-section" id="koru/session/publish-client.preload" data-env="client" name="preload"><h5>publish.preload = function preload(sub)</h5><abstract><div><p>If a publish function has a static method called preload it
-will be called before the request is sent to the server and
-allowed to modifiy the argument list</p>
+will be called before the request is sent to the server.</p>
+<p>Useful actions to take in the preload are (but not limited to):</p>
+<ol>
+<li>modifiy the subcription argument list</li>
+<li>load data from client-side storage and</li>
+<li>call the subscription callback and clear it so not called
+by server fulfillment</li>
+</ol>
 </div></abstract><div class="jsdoc-args"><h6>Parameters</h6><table><tbody><tr class="jsdoc-arg"><td>sub</td><td><a href="#koru/session/client-sub">koru/session/client-sub</a></td><td class="jsdoc-info"><div></div></td></tr></tbody></table></div><div><h6>Example</h6><pre class="jsdoc-example"><div class="jsdoc-require highlight"><span class="kd">const</span> <span class="nx">publish</span> <span class="o">=</span> <span class="k">require</span>(<span class="s">"koru/session/publish-client"</span>);</div><div class="jsdoc-example-call jsdoc-code-block"><div class="highlight"><span class="kd">function</span> <span class="nx">publishBooks</span>() {
   <span class="nx">v</span>.<span class="na">args</span> <span class="o">=</span> <span class="k">this</span>.<span class="na">args</span>;
 }
