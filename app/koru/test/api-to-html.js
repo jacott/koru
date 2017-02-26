@@ -388,8 +388,9 @@ define(function(require, exports, module) {
             {class: 'jsdoc-example-call highlight', div: [
               {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
                      '(', ...hlArgList(call[0]), ');']},
-              call[1] === undefined || {class: 'jsdoc-returns c1',
-                                        span: [' // returns ', valueToHtml(call[1])]}
+              (call[2] || call[1]) === undefined || {
+                class: 'jsdoc-returns c1',
+                span: call[2] ? ` // ${call[2]}` : [' // returns ', valueToHtml(call[1])]}
             ]}
           ] : {class: 'jsdoc-example-call jsdoc-code-block', div: codeToHtml(call.body)}),
         ]}
@@ -435,8 +436,7 @@ define(function(require, exports, module) {
     if (args.length === 0 && ! ret)
       return;
 
-
-    const retTypes = ret && extractTypes(ret);
+    const retTypes = ret && (ret.types['<>'] !== undefined ? undefined : extractTypes(ret));
     return {class: "jsdoc-args", div: [
       {h6: "Parameters"},
       {table: {
@@ -452,7 +452,7 @@ define(function(require, exports, module) {
               ]
             };
           }),
-          ret && {
+          ret && retTypes && {
             class: "jsdoc-method-returns", tr: [
               {td: {h6: 'Returns'}},
               {td: retTypes},

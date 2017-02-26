@@ -109,7 +109,6 @@ define(function (require, exports, module) {
        **/
       MainAPI.method('innerSubject');
       API.module();
-      MainAPI.comment("hello");
       function abstract() {
         /**
          * An example abstract
@@ -279,7 +278,7 @@ define(function (require, exports, module) {
         /**
          * Document a property of the current subject. The property
          * can be either plain value or a get/set function.
-         *
+
          * @param [options] details about the property.
          *
          * When `object` can contain the following:
@@ -389,19 +388,25 @@ define(function (require, exports, module) {
        * property can be either plain value or a get/set function.
        *
        * See {#.property}
+
+       * @param [subject] defaults to subject.prototype
        **/
       MainAPI.method('protoProperty');
       MainAPI.example(() => {
         class Book {
-          constructor(pages) {
-            this.pages = pages;
+          constructor(title) {
+            this._title = title;
           }
+
+          get title() {return this._title}
         }
 
         API.module({id: 'myMod', exports: Book});
-        API.protoProperty('pages', {info: 'The number of pages'});
-        const book = new Book(504);
-        assert.same(book.pages, 504);
+        const book = new Book("Jungle Book", 504);
+        API.protoProperty('title', {info: 'The title'});
+        book.bookMark = 100;
+        API.protoProperty('bookMark', {info: 'record page'}, book);
+        assert.same(book.title, "Jungle Book");
       });
 
       API.done();

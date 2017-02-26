@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const {stubName$}      = require('koru/symbols');
   const {merge, inspect} = require('koru/util');
   require('./assertions');
   const deepEqual        = require('./core')._u.deepEqual;
@@ -271,7 +272,8 @@ define(function(require, exports, module) {
     let func, desc, orig;
     if (repFunc && typeof repFunc !== 'function')
       throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
-    if (object) {
+    if (object && typeof object !== 'string') {
+
       if (typeof property !== 'string')
         throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} is not a string`));
       if (! (property in object))
@@ -298,6 +300,8 @@ define(function(require, exports, module) {
     } else {
       func = stubFunction(null, stubProto);
       repFunc && (func._replacement = repFunc);
+      if (object)
+        func[stubName$] = object;
     }
     func.restore = function () {
       restore(object, property, desc, orig, func);

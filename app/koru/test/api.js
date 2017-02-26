@@ -1,8 +1,9 @@
 define(function(require, exports, module) {
-  const koru     = require('koru');
-  const jsParser = require('koru/parse/js-parser');
-  const util     = require('koru/util');
-  const TH       = require('./main');
+  const koru        = require('koru');
+  const jsParser    = require('koru/parse/js-parser');
+  const {stubName$} = require('koru/symbols');
+  const util        = require('koru/util');
+  const TH          = require('./main');
 
   const ctx = module.ctx;
 
@@ -85,7 +86,7 @@ define(function(require, exports, module) {
       return this.instance.custom(func, name, sig);
     }
     static property(name, options) {this.instance.property(name, options)}
-    static protoProperty(name, options) {this.instance.protoProperty(name, options)}
+    static protoProperty(name, options, subject) {this.instance.protoProperty(name, options, subject)}
     static comment(comment) {this.instance.comment(comment)}
     static example(body) {this.instance.example(body)}
     static method(methodName) {this.instance.method(methodName)}
@@ -289,11 +290,11 @@ define(function(require, exports, module) {
     }
 
     protoProperty(name, options, subject=this.subject.prototype) {
-      return property(this, 'protoProperties', subject, name, options);
+      property(this, 'protoProperties', subject, name, options);
     }
 
     property(name, options) {
-      return property(this, 'properties', this.subject, name, options);
+      property(this, 'properties', this.subject, name, options);
     }
 
     comment(comment) {
@@ -422,7 +423,7 @@ define(function(require, exports, module) {
         return ['M', obj];
       switch (typeof obj) {
       case 'function':
-        return ['F', obj, obj.name || funcToSig(obj)];
+        return ['F', obj, obj[stubName$] || obj.name || funcToSig(obj)];
       case 'object':
         if (obj === null)
           return obj;
@@ -500,6 +501,10 @@ define(function(require, exports, module) {
     URIError,
     WeakMap,
     WeakSet,
+  ]);
+
+  API._coreDisplay = new Map([
+    [Promise, '{a promise}'],
   ]);
 
   function resolveModule(type, value) {
@@ -631,13 +636,13 @@ define(function(require, exports, module) {
 
   function serializeCall(api, [args, ans, comment]) {
     args = args.map(arg => api.serializeValue(arg));
-    if (comment === undefined) {
-      if (ans === undefined)
-        return [args];
-      else
-        return [args, api.serializeValue(ans)];
-    }
-    return [args, api.serializeValue(ans), comment];
+    if (comment)
+      return [args, ans === undefined ? [''] : api.serializeValue(ans), comment];
+
+    if (ans === undefined)
+      return [args];
+    else
+      return [args, api.serializeValue(ans)];
   }
 
   function serializeProperties(api, properties) {
@@ -796,6 +801,9 @@ define(function(require, exports, module) {
         obj.$inspect || ('outerHTML' in obj) || obj.nodeType === 3)
       return util.inspect(obj, 4, 150);
 
+    const coreDisplay = obj && API._coreDisplay.get(obj.constructor);
+    if (coreDisplay) return coreDisplay;
+
     let keys = Object.keys(obj).sort();
     if (keys.length > 20)
       keys = keys.slice(0, 20);
@@ -804,11 +812,9 @@ define(function(require, exports, module) {
       const item = obj[key];
       if (/[^$\w]/.test(key))
         key = JSON.stringify(key);
-      let resolveFunc = item && API._resolveFuncs.get(item.constructor);
-      return `${key}: ${resolveFunc ?
-resolveFunc('Oi', item)[1] :
-util.inspect(item, 3, 150)}`;
-    });
+      const resolveFunc = item && API._resolveFuncs.get(item.constructor);
+      return `${key}: ${resolveFunc ? resolveFunc('Oi', item)[1]
+: util.inspect(item, 3, 150)}`;});
     return `{${display.join(", ").slice(0, 150)}}`;
   }
 
