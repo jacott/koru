@@ -1,9 +1,9 @@
 define(function(require) {
   const dbBroker = require('koru/model/db-broker');
 
-  return function () {
+  return function match() {
     const dbs = {};
-    var key = 0;
+    let key = 0;
 
     class StopFunc {
       constructor (id, dbId, modelName) {
@@ -33,12 +33,12 @@ define(function(require) {
         return false;
       },
 
-      register (modelName, func) {
+      register (modelName, comparator) {
         var dbId = dbBroker.dbId;
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
         var id = (++key).toString(36);
         var models = dbs[dbId] || (dbs[dbId] = {});
-        (models[modelName] || (models[modelName] = Object.create(null)))[id] = func;
+        (models[modelName] || (models[modelName] = Object.create(null)))[id] = comparator;
         return new StopFunc(id, dbId, modelName);
       },
     };

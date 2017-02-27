@@ -1,10 +1,39 @@
 define(function (require, exports, module) {
-  var test, v;
+  /**
+   * A function that makes a registry that compares a
+   * {#koru/model/main} record to a set of match functions.
+   *
+   * Used in {#koru/session/publish}
+   **/
   const dbBroker = require('koru/model/db-broker');
   const Model    = require('koru/model/main');
+  const api      = require('koru/test/api');
   const util     = require('koru/util');
-  const match    = require('./match');
   const TH       = require('./test-helper');
+
+  const sut = require('./match');
+  var test, v;
+
+  let myMatch;
+
+  function buildRegistry() {
+    let match;
+    return api.innerSubject(
+      myMatch = sut(),
+      "match()",
+      {
+        abstract() {
+          /**
+           * Create an instance of match.
+           *
+           * Do not call this directly; instead use it inside a
+           * {#koru/session/publish} body
+           **/
+        },
+        initExample: 'const myMatch = match()'
+      }
+    );
+  }
 
   TH.testCase(module, {
     setUp () {
@@ -12,7 +41,7 @@ define(function (require, exports, module) {
       v = {};
       v.handles = [];
       v.doc = {constructor: {modelName: 'Foo'}};
-      v.match = match();
+      api.module();
     },
 
     tearDown () {
@@ -22,55 +51,76 @@ define(function (require, exports, module) {
     },
 
     "test false matches" () {
-      v.handles.push(v.match.register('Foo', function (doc) {
+      /**
+       * Register a matcher agains a model
+       *
+       * @param modelName or model
+
+       * @param comparator returns true if supplied document matches
+       **/
+      const iapi = buildRegistry();
+      iapi.method('register');
+      v.handles.push(iapi.example(() => myMatch.register('Foo', doc => {
         assert.same(doc, v.doc);
-        return false;
-      }));
+        return doc !== v.doc;
+      })));
 
-      v.handles.push(v.match.register('Foo', function (doc) {
+      iapi.exampleCont(";\n");
+      v.handles.push(iapi.exampleCont(() => myMatch.register('Foo', doc => {
         assert.same(doc, v.doc);
-        return false;
-      }));
+        return doc !== v.doc;
+      })));
 
-
-      assert.isFalse(v.match.has(v.doc));
+      iapi.exampleCont(";\n");
+      iapi.exampleCont(() => {
+        assert.isFalse(myMatch.has(v.doc));
+      });
     },
 
 
     "test true matches" () {
-      v.handles.push(v.f = v.match.register('Foo', function (doc) {
+      const iapi = buildRegistry();
+      iapi.method('register');
+      v.handles.push(iapi.example(() => v.f = myMatch.register('Foo', doc => {
         assert.same(doc, v.doc);
         return false;
-      }));
+      })));
 
-      v.handles.push(v.t = v.match.register('Foo', function (doc) {
+      iapi.exampleCont(";\n");
+      v.handles.push(iapi.exampleCont(() => v.t = myMatch.register('Foo', doc => {
         assert.same(doc, v.doc);
-        return true;
-      }));
+        return doc === v.doc;
+      })));
 
+      iapi.example(() => {
+        assert.isTrue(myMatch.has(v.doc));
+      });
+
+      iapi.done();
+      api.done();
 
       assert(v.t.id);
       refute.same(v.t.id, v.f.id);
 
       if (isClient) {
         dbBroker.pushDbId('foo');
-        refute.isTrue(v.match.has(v.doc));
+        refute.isTrue(myMatch.has(v.doc));
         dbBroker.popDbId();
       } else {
         var orig = dbBroker.dbId;
         try {
           util.thread.db.name = 'foo';
-          refute.isTrue(v.match.has(v.doc));
+          refute.isTrue(myMatch.has(v.doc));
         } finally {
           util.thread.db.name = orig;
         }
       }
-      assert.isTrue(v.match.has(v.doc));
+      assert.isTrue(myMatch.has(v.doc));
       v.t.stop();
 
       assert.isNull(v.t.id);
 
-      assert.isFalse(v.match.has(v.doc));
+      assert.isFalse(myMatch.has(v.doc));
     },
   });
 });

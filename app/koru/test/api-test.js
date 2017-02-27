@@ -186,13 +186,17 @@ define(function (require, exports, module) {
     "test example"() {
       /**
        * Run a section of as an example of a method call.
+       *
+       * Use `API.exampleCont(body)` to continue an example.
+       *
+       * @returns {object|primitive} the result of running body
        **/
       MainAPI.method('example');
 
       MainAPI.example(() => {
         class Color {
           static define(name, value) {
-            this.colors[name] = value;
+            return this.colors[name] = value;
           }
           // ...
         }
@@ -201,12 +205,15 @@ define(function (require, exports, module) {
         API.module({id: 'myMod', exports: Color});
         API.method('define');
 
+        API.example('const foo = "can put any valid code here";');
         API.example(() => {
           // this body of code is executed
           Color.define('red', '#f00');
           Color.define('blue', '#00f');
-          assert.same(Color.colors.red, '#f00');
         });
+        API.exampleCont("// comment\n");
+        API.exampleCont(() => {  assert.same(Color.colors.red, '#f00');});
+        assert.same(API.example(() => {return Color.define('green', '#0f0')}), '#0f0');
       });
 
       MainAPI.done();
@@ -217,19 +224,38 @@ define(function (require, exports, module) {
         intro: TH.match.any,
         subject: TH.match.any,
         calls: [{
+          body: 'const foo = "can put any valid code here";',
+          calls: [],
+        }, {
           body:
 `          // this body of code is executed
           Color.define('red', '#f00');
           Color.define('blue', '#00f');
-          assert.same(Color.colors.red, '#f00');
-        `,
+        // comment
+  assert.same(Color.colors.red, '#f00');`,
           calls: [[
-            ['red', '#f00'], undefined
+            ['red', '#f00'], '#f00'
           ],[
-            ['blue', '#00f'], undefined
+            ['blue', '#00f'], '#00f'
           ]]
+        }, {
+          body: `return Color.define('green', '#0f0')`, calls: [[['green', '#0f0'], '#0f0']]
         }]
       });
+    },
+
+    "test strange example"() {
+      const foo = {bar() {}};
+
+      API.module({id: 'myMod', exports: foo});
+      API.method('bar');
+      API.example(() => foo.bar(1, doc => {
+        return false;
+      }));
+
+      assert.equals(API.instance.methods.bar.calls[0].body, `foo.bar(1, doc => {
+        return false;
+      })`);
     },
 
     "test comment"() {

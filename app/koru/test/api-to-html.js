@@ -344,9 +344,10 @@ define(function(require, exports, module) {
 
   function buildMethods(api, subject, methods, requireLine, type) {
     return Object.keys(methods).map(name => {
+      let initInst, needInit = false;
       if (type === 'proto') {
-        var needInit = true;
-        var initInst = function () {
+        needInit = true;
+        initInst = function () {
           if (! needInit) return [];
           needInit = false;
           const mu = codeToHtml(
@@ -358,9 +359,10 @@ define(function(require, exports, module) {
         var inst = subject.instanceName || subject.name[0].toLowerCase() + subject.name.slice(1);
         var sigJoin = '#';
       } else {
+
         if (api.initExample) {
-          var needInit = true;
-          var initInst = function () {
+          needInit = true;
+          initInst = () => {
             if (! needInit) return [];
             needInit = false;
             const mu = codeToHtml(api.initExample);
@@ -368,7 +370,7 @@ define(function(require, exports, module) {
             return [mu];
           };
         } else
-          var initInst = () => [];
+          initInst = () => [];
         var inst = subject.name;
         var sigJoin = type !== 'custom' && '.';
       }
@@ -383,8 +385,8 @@ define(function(require, exports, module) {
         {h6: "Example"},
         {class: 'jsdoc-example', pre: [
           requireLine.cloneNode(true),
+          ...initInst(),
           ...calls.map(call => Array.isArray(call) ? [
-            ...initInst(),
             {class: 'jsdoc-example-call highlight', div: [
               {div: [hl(inst, 'nx'), '.', hl(name, 'na'),
                      '(', ...hlArgList(call[0]), ');']},

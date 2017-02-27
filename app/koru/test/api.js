@@ -88,7 +88,8 @@ define(function(require, exports, module) {
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options, subject) {this.instance.protoProperty(name, options, subject)}
     static comment(comment) {this.instance.comment(comment)}
-    static example(body) {this.instance.example(body)}
+    static example(body) {return this.instance.example(body)}
+    static exampleCont(body) {return this.instance.exampleCont(body)}
     static method(methodName) {this.instance.method(methodName)}
     static protoMethod(methodName, subject) {this.instance.protoMethod(methodName, subject)}
     static done() {this.instance.done()}
@@ -187,11 +188,8 @@ define(function(require, exports, module) {
       if (! ans) {
         this.innerSubjects[subjectName] = ans =
           new ThisAPI(this, subject, subjectName);
-        ThisAPI._moduleMap.set({
-          id: this.id +
-            (propertyName ? '.' : '::') +
-            subjectName
-        }, ans);
+        ThisAPI._moduleMap.set(
+          {id: `${this.id}${propertyName ? '.' : '::'}${subjectName}`}, ans);
         ThisAPI._mapSubject(subject, ans);
       }
 
@@ -302,19 +300,11 @@ define(function(require, exports, module) {
     }
 
     example(body) {
-      if (! this.target)
-        throw new Error("API target not set!");
-      const callLength = this.target.calls.length;
-      try {
-        body();
-      } finally {
-        const calls = this.target.calls.slice(callLength);
-        this.target.calls.length = callLength;
-        this.target.calls.push({
-          body: extractFnBody(body),
-          calls,
-        });
-      }
+      return example(this, body);
+    }
+
+    exampleCont(body) {
+      return example(this, body, 'cont');
     }
 
     method(methodName) {
@@ -588,7 +578,14 @@ define(function(require, exports, module) {
   function extractFnBody(body) {
     if (typeof body === 'string')
       return body;
-    return body.toString().replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, '');
+
+    body = body.toString();
+
+    const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
+
+    if (m) return  body.slice(m[0].length);
+
+    return body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, '');
   }
 
   function funcToSig(func) {
@@ -767,6 +764,26 @@ define(function(require, exports, module) {
         delete obj[methodName];
       }
     });
+  }
+
+  function example(api, body, cont) {
+    if (! api.target)
+      throw new Error("API target not set!");
+    const callLength = api.target.calls.length;
+    try {
+      return typeof body === 'function' && body();
+    } finally {
+      const calls = api.target.calls.slice(callLength);
+      api.target.calls.length = callLength;
+      if (cont) {
+        const last = api.target.calls[callLength-1];
+        last.body += extractFnBody(body);
+        util.append(last.calls, calls);
+      } else api.target.calls.push({
+        body: extractFnBody(body),
+        calls,
+      });
+    }
   }
 
   function addComment(api, entry) {
