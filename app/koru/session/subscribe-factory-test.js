@@ -52,9 +52,9 @@ isClient && define(function (require, exports, module) {
       test.spy(v.sess, 'sendP');
 
       v.pubFunc = test.stub();
-      publish("foo", function (...args) {
+      publish({name: "foo", init(...args) {
         v.pubFunc.apply(this, args);
-      });
+      }});
       api.module();
     },
 
@@ -114,7 +114,7 @@ isClient && define(function (require, exports, module) {
       test.stub(v.sess, 'sendP');
       assert.calledWith(v.sessState.onConnect, "10-subscribe", subscribe._onConnect);
 
-      publish("foo2", function () {});
+      publish({name: "foo2", init() {}});
 
       var sub1 = subscribe("foo", 1 ,2);
       var sub2 = subscribe("foo2", 3, 4);
@@ -171,11 +171,11 @@ isClient && define(function (require, exports, module) {
     "filtering":{
       setUp() {
         test.stub(publish, '_filterModels');
-        publish("foo2", function () {
+        publish({name: "foo2", init() {
           this.match('F1', test.stub());
           this.match('F2', test.stub());
           v.sub2isResub = this.isResubscribe;
-        });
+        }});
       },
 
       /**

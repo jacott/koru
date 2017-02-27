@@ -56,8 +56,7 @@ define(function(require, exports, module) {
       } else {
         this.callback = null;
       }
-      if (this._subscribe && this._subscribe.preload)
-        this._subscribe.preload(this);
+      publish.preload(this);
     }
 
     get userId() {

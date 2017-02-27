@@ -1,3 +1,5 @@
 define(function(require) {
-  return require('../env!./publish');
+  require('koru/env!./publish');
+
+  return require('./publish-base');
 });

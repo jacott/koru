@@ -13,7 +13,7 @@ isClient && define(function (require, exports, module) {
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
 
-  const sut = require('./publish');
+  const publish = require('./publish');
   var test, v;
 
   TH.testCase(module, {
@@ -22,7 +22,7 @@ isClient && define(function (require, exports, module) {
       v = {};
       v.handles = [];
       v.doc = {constructor: {modelName: 'Foo'}};
-      api.module();
+      api.module(module.get('./publish'));
       v.sess = {
         provide: test.stub(),
         state: v.sessState = stateFactory(),
@@ -39,8 +39,8 @@ isClient && define(function (require, exports, module) {
 
     "test preload"() {
       /**
-       * If a publish function has a static method called preload it
-       * will be called before the request is sent to the server.
+       * If a publish has a preload function it will be called before
+       * the request is sent to the server.
        *
        * Useful actions to take in the preload are (but not limited to):
 
@@ -52,24 +52,21 @@ isClient && define(function (require, exports, module) {
        * by server fulfillment
        **/
 
-      const preload = api.custom(
-        function preload(sub) {
-          sub.args = [6, 7];
-        }, 'preload', 'publish.preload = function preload(sub)');
+      const preload = api.method("preload");
+
       const subscribe = (name, ...args) => {
         v.sub = new ClientSub(v.sess, "1", name, args);
         v.sub.resubscribe();
       };
 
-      this.onEnd(() => {sut._destroy("Books")});
+      this.onEnd(() => {publish._destroy("Books")});
 
-      const publish = sut;
       api.example(() => {
-        function publishBooks() {
-          v.args = this.args;
-        }
-        publishBooks.preload = preload; // preload(sub) {sub.args = [6, 7];}
-        publish("Books", publishBooks);
+        publish({
+          name: "Books",
+          init() {v.args = this.args},
+          preload(sub) {sub.args = [6, 7]},
+        });
         subscribe('Books', 5);
         assert.equals(v.args, [6, 7]);
       });
@@ -90,15 +87,15 @@ isClient && define(function (require, exports, module) {
 
       v.handles.push(v.F1.onChange(v.f1del = test.stub()));
 
-      v.handles.push(sut.match.register('F1', doc => doc.name === 'A'));
+      v.handles.push(publish.match.register('F1', doc => doc.name === 'A'));
 
 
-      v.handles.push(sut.match.register('F2', doc => doc.name === 'A2'));
+      v.handles.push(publish.match.register('F2', doc => doc.name === 'A2'));
 
       v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = this.stub()));
 
       try {
-        sut._filterModels({F1: true});
+        publish._filterModels({F1: true});
 
         assert.same(v.F1.query.count(), 2);
         assert.same(v.F2.query.count(), 3);
@@ -109,7 +106,7 @@ isClient && define(function (require, exports, module) {
 
         fdoc.attributes.name = 'X';
 
-        sut._filterModels({F1: true, F2: true});
+        publish._filterModels({F1: true, F2: true});
 
         assert.same(v.F1.query.count(), 1);
         assert.same(v.F2.query.count(), 1);
@@ -120,38 +117,47 @@ isClient && define(function (require, exports, module) {
       };
     },
 
-    "test false matches"() {
-      v.handles.push(sut.match.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return false;
-      }));
+    "match register": {
+      "test false"() {
+        /**
+         * Register functions to test if record is expected to be published
+         *
+         * See {#koru/session/match::match()}
+         **/
+        api.property("match");
 
-      v.handles.push(sut.match.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return false;
-      }));
+        v.handles.push(publish.match.register('Foo', doc => {
+          assert.same(doc, v.doc);
+          return false;
+        }));
 
-
-      assert.isFalse(sut.match.has(v.doc));
-    },
-
-
-    "test true matches"() {
-      v.handles.push(sut.match.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return false;
-      }));
-
-      v.handles.push(v.t = sut.match.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return true;
-      }));
+        v.handles.push(publish.match.register('Foo', doc => {
+          assert.same(doc, v.doc);
+          return false;
+        }));
 
 
-      assert.isTrue(sut.match.has(v.doc));
-      v.t.stop();
+        assert.isFalse(publish.match.has(v.doc));
+      },
 
-      assert.isFalse(sut.match.has(v.doc));
+
+      "test true"() {
+        v.handles.push(publish.match.register('Foo', doc => {
+          assert.same(doc, v.doc);
+          return false;
+        }));
+
+        v.handles.push(v.t = publish.match.register('Foo', doc => {
+          assert.same(doc, v.doc);
+          return true;
+        }));
+
+
+        assert.isTrue(publish.match.has(v.doc));
+        v.t.stop();
+
+        assert.isFalse(publish.match.has(v.doc));
+      },
     },
   });
 });

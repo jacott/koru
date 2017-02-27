@@ -32,28 +32,64 @@ define(function (require, exports, module) {
        * @param [module] register this module (and auto de-register if
        * unloaded)
 
-       * @param {string} [name] The name to register; uses `module.id`
-       * by default
+       * @param {string} [name] The name to register; derives from
+       * `module.id` by default
 
-       * @param {function} func The function to invoke when subscrib
-       * is called
+       * @param {function} init The function to invoke when subscribe
+       * is called. It is called with `this` set to the subscription
+       * instance: {#koru/session/publish-server::sub} for server and
+       * {#koru/session/client-sub} for client
+
+       * @param {function} [preload] A preload function to call on
+       * client; see {#koru/session/publish-client.preload}
        **/
       const publish = api.custom(sut);
 
-      const module = new TH.MockModule("test-publish");
 
-      this.onEnd(() => {sut._destroy("TestPublish")});
-
-      api.example(() => {
-        publish(module, function publish(arg1, arg2) {
-          v.sub = this;
-        }, "TestPublish");
+      this.onEnd(() => {
+        sut._destroy("TestPublish");
+        sut._destroy("LibraryBooks");
       });
 
-      sut._pubs.TestPublish.call(v.exp = {});
-      assert.same(v.sub, v.exp);
+      function subscribe(name, ...args) {
+        sut._pubs[name].apply(v.exp = {
+          match: {register: TH.test.stub()}
+        }, args);
+      }
+
+      api.example(() => {
+        const module = new TH.MockModule("id/for/publish-library-books-client");
+
+        publish({
+          module,
+          init(titleRE, arg2) {
+            this.match.register("Book", doc => titleRE.test(doc.title));
+          },
+        });
+        subscribe("LibraryBooks", /time/i, 20);
+
+        // Note that the path, "publish-", and "-client" is removed
+        // from id to derive "LibraryBooks"
+
+        // Another example of id is:
+        // id: id/for/product-catalog-server => ProductCatalog
+      });
+      assert.calledWith(v.exp.match.register, "Book");
+
+      v.sub = null;
+      api.example(() => {
+        const module = new TH.MockModule("id/with/funny-name");
+
+        publish({
+          module,
+          init(arg1, arg2) {
+            this.match.register("Foo", doc => true);
+          },
+          name: "TestPublish",
+        });
+        subscribe("TestPublish"); // overrides module.id
+      });
+      assert.calledWith(v.exp.match.register, "Foo");
     },
-
-
   });
 });

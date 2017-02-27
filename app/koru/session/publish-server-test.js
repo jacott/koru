@@ -14,10 +14,10 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.pubFunc = test.stub();
-      publish("foo", function (...args) {
+      publish({name: "foo", init(...args) {
         v.sub = this;
         v.pubFunc.apply(this, args);
-      });
+      }});
 
       v.callSub = function () {
         v.conn = new (scFactory({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
