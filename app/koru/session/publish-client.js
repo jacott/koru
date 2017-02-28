@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   const ModelMap   = require('koru/model/map');
+  const Query      = require('koru/model/query');
   const TransQueue = require('koru/model/trans-queue');
   const koru       = require('../main');
   const util       = require('../util');
@@ -29,8 +30,7 @@ define(function(require, exports, module) {
             }
             if (remove) {
               delete docs[id];
-              model._indexUpdate.notify(null, doc); // first: update indexes
-              model.notify(null, doc, true);
+              Query.notify(null, doc, "noMatch");
             }
           }
         }

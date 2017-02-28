@@ -6,7 +6,12 @@ define(function(require, exports, module) {
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
-  return function (Query, condition) {
+  return function (Query, condition, notifyACSym) {
+    function notify(model, now, was) {
+      Query[notifyACSym](now, was);
+      model.notify(now, was);
+    }
+
     util.merge(Query, {
       insert(doc) {
         const model = doc.constructor;
@@ -17,7 +22,7 @@ define(function(require, exports, module) {
         model._$docCacheSet(doc.attributes);
         TransQueue.onAbort(() => model._$docCacheDelete(doc));
         Model._support.callAfterObserver(doc, null);
-        TransQueue.onSuccess(() => model.notify(doc, null));
+        TransQueue.onSuccess(() => notify(model, doc, null));
       },
 
       _insertAttrs(model, attrs) {
@@ -140,7 +145,7 @@ define(function(require, exports, module) {
           });
         });
         TransQueue.onSuccess(() => {
-          onSuccess.forEach(doc => model.notify(null, doc));
+          onSuccess.forEach(doc => notify(model, null, doc));
         });
         return count;
       },
@@ -244,7 +249,7 @@ define(function(require, exports, module) {
           });
         });
         TransQueue.onSuccess(() => {
-          onSuccess.forEach(([doc, changes]) => model.notify(doc, changes));
+          onSuccess.forEach(([doc, changes]) => notify(model, doc, changes));
         });
         return count;
       },

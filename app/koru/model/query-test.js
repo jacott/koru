@@ -1,4 +1,8 @@
 define(function (require, exports, module) {
+  /**
+   * Database CRUD API.
+   **/
+  const api   = require('koru/test/api');
   const util  = require('../util');
   const Model = require('./main');
   const TH    = require('./test-helper');
@@ -16,6 +20,7 @@ define(function (require, exports, module) {
 
       v.TestModel.create({_id: 'bar456', name: 'bar', age: 10, gender: 'm'});
       v.bar = v.TestModel.findById('bar456');
+      api.module();
     },
 
     tearDown() {
@@ -48,12 +53,14 @@ define(function (require, exports, module) {
     },
 
     "test $ne"() {
+      api.protoMethod('where');
       assert.equals(v.TestModel.where('age', {$ne: 5}).map(d => d.age), [10]);
       assert.equals(v.TestModel.where('age', {$nin: [5, 6]}).map(d => d.age), [10]);
       assert.equals(v.TestModel.where({age: {$ne: 5}}).map(d => d.age), [10]);
     },
 
     "test $in"() {
+      api.protoMethod('where');
       assert.equals(v.TestModel.where('age', {$in: [10, 5]}).map(d => d.age).sort(), [10, 5]);
       assert.equals(v.TestModel.where('age', {$in: [5, 6]}).map(d => d.age).sort(), [5]);
       assert.equals(v.TestModel.where('age', [5, 6]).map(d => d.age).sort(), [5]);
@@ -348,11 +355,21 @@ define(function (require, exports, module) {
     },
 
     "test whereNot"() {
+      /**
+       * Add one or more where-nots to the query.  If any where-not
+       * test matches then the query does not match record
+
+       * @param {string|object} params field or directive to match
+       * on. If is object then whereNot is called for each key.
+
+       * @param {object|primative} [value] corresponding to `params`
+       **/
+      api.protoMethod('whereNot');
       let st = new Query(v.TestModel).where('gender', 'm');
 
       assert.same(st.count(), 2);
 
-      st.whereNot('age', 5);
+      st.whereNot({age: 5});
 
       assert.equals(st.fetchField('age'), [10]);
 
@@ -437,5 +454,31 @@ define(function (require, exports, module) {
       v.foo.$reload();
       assert.same(v.foo.name, 'new name');
     },
+
+    "test onAnyChange"() {
+      /**
+       * Observe any change to any model.
+       *
+       * @param callback is called the arguments `(now, was, [flag])`
+       * see {#koru/model/main.BaseModel#onChange} for details
+       *
+       * @return contains a stop method to stop observering
+       **/
+      api.method('onAnyChange');
+      this.onEnd(Query.onAnyChange(v.onAnyChange = this.stub()));
+
+      const ondra = v.TestModel.create({_id: 'm123', name: 'Ondra', age: 21, gender: 'm'});
+      const matchOndra = TH.match.field('_id', ondra._id);
+      assert.calledWith(v.onAnyChange, ondra, null);
+
+
+      ondra.$update('age', 22);
+      assert.calledWith(v.onAnyChange, matchOndra, {age: 21});
+
+      ondra.$remove();
+      assert.calledWith(v.onAnyChange, null, matchOndra);
+    },
+
+
   });
 });

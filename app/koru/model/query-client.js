@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   const dbBroker   = require('./db-broker');
 
   function Constructor(session) {
-    return function(Query, condition) {
+    return function(Query, condition, notifyACSym) {
       let syncOb, stateOb;
       const origWhere = Query.prototype.where;
 
@@ -102,6 +102,11 @@ define(function(require, exports, module) {
               notify(model, doc, null, true);
             }
           });
+        },
+
+        notify(now, was, flag) {
+          const doc = (now || was);
+          notify(doc.constructor, now, was, flag);
         },
 
         // for testing
@@ -414,9 +419,10 @@ define(function(require, exports, module) {
       }
 
       function notify(model, doc, changes, isFromServer) {
-        model._indexUpdate.notify(doc, changes); // first: update indexes
+        model._indexUpdate.notify(doc, changes, isFromServer); // first: update indexes
         isFromServer ||
           Model._support.callAfterObserver(doc, changes); // next:  changes originated here
+        Query[notifyACSym](doc, changes, isFromServer);
         model.notify(doc, changes, isFromServer); // last:  Notify everything else
       }
 

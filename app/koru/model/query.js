@@ -1,17 +1,21 @@
 define(function(require, exports, module) {
-  const koru = require('../main');
-  const util = require('../util');
+  const makeSubject = require('koru/make-subject');
+  const koru        = require('../main');
+  const util        = require('../util');
 
   koru.onunload(module, function () {
     exports._unload && exports._unload();
   });
 
-  function Constructor(QueryEnv) {
+  const notifyACSym = Symbol();
 
+  function Constructor(QueryEnv) {
     class Query {
       constructor(model) {
         this.model = model;
       }
+
+      $inspect() {return `{Query ${this.model.modelName}}`}
 
       onModel(model) {
         this.model = model;
@@ -87,6 +91,8 @@ define(function(require, exports, module) {
       }
     };
 
+    makeSubject(Query, 'onAnyChange', notifyACSym);
+
     function condition(query, map, params, value) {
       const conditions = (query[map] = query[map] || {});
       if (typeof params === 'string')
@@ -106,7 +112,7 @@ define(function(require, exports, module) {
       return query;
     }
 
-    QueryEnv(Query, condition);
+    QueryEnv(Query, condition, notifyACSym);
 
     return Query;
   }

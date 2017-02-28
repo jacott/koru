@@ -100,7 +100,7 @@ isClient && define(function (require, exports, module) {
         assert.same(v.F1.query.count(), 2);
         assert.same(v.F2.query.count(), 3);
 
-        assert.calledWith(v.f1del, null, TH.match.field('_id', fdel._id), true);
+        assert.calledWith(v.f1del, null, TH.match.field('_id', fdel._id), 'noMatch');
         assert.calledWith(v.f1idxOC, null, TH.match.field('_id', fdel._id));
         assert(v.f1idxOC.calledBefore(v.f1del));
 

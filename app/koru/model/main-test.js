@@ -13,7 +13,7 @@ define(function (require, exports, module) {
 
   const Model    = require('./main');
   var test, v;
-  const BaseModel = Model.BaseModel;
+  const {BaseModel} = Model;
 
   const Module = module.constructor;
 
@@ -121,6 +121,48 @@ define(function (require, exports, module) {
         koru.onunload.yield();
 
         refute(Model.TestModel);
+      },
+
+      "test onChange"() {
+      /**
+       * Observe change to model.
+       *
+       * @param callback is called the arguments `(now, was, [flag])`
+       *
+       * * if record was added: `now` will be a model instance and was
+       * will be `null`.
+
+       * * if record was changed: `now` will be a model instance with
+       * the changes and `was` will be a map of changes with the
+       * previous values.
+
+       * * if record was removed: `now` will be null and `was` will be
+       * a model instance before the remove.
+
+       * * `flag` is only present on client and a truthy value
+       * indicates change was not a simulation.
+
+       * @return contains a stop method to stop observering
+       **/
+        class TestModel extends BaseModel {
+
+        }
+        TestModel.define({name: 'TestModel', fields: {name: 'text', age: 'number'}});
+
+        v.bmApi.protoMethod('onChange', TestModel);
+
+        this.onEnd(TestModel.onChange(v.oc = this.stub()));
+
+        const ondra = TestModel.create({_id: 'm123', name: 'Ondra', age: 21});
+        const matchOndra = TH.match.field('_id', ondra._id);
+        assert.calledWith(v.oc, ondra, null);
+
+
+        ondra.$update('age', 22);
+        assert.calledWith(v.oc, matchOndra, {age: 21});
+
+        ondra.$remove();
+        assert.calledWith(v.oc, null, matchOndra);
       },
     },
 

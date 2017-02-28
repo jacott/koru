@@ -236,11 +236,11 @@ define(function(require, exports, module) {
           anyChange.notify.apply(subject, args);
         },
         onAnyChange: anyChange.onChange,
-        onChange(...args) {
+        onChange(callback) {
           let subject = notifyMap.get(model.db);
           subject || notifyMap.set(db, subject = makeSubject({}));
 
-          return subject.onChange.apply(subject, args);
+          return subject.onChange(callback);
         },
         get docs() {
           if (! this.db) return;

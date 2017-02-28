@@ -133,9 +133,7 @@ define(function(require, exports, module) {
      * Model extension methods
      */
 
-    static define({module, name, fields}) {
-      if (! name)
-        name = moduleName(module);
+    static define({module, name=moduleName(module), fields}) {
       if (! name)
         throw new Error("Model requires a name");
       if (ModelMap[name])

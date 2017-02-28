@@ -1,4 +1,5 @@
 define(function (require, exports, module) {
+  const api                  = require('koru/test/api');
   const session              = require('../session');
   const clientRpcBase        = require('../session/client-rpc-base');
   const sessionClientFactory = require('../session/main-client');
@@ -19,6 +20,7 @@ define(function (require, exports, module) {
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
+      api.module(module.get('./query'));
     },
 
     tearDown() {
@@ -67,6 +69,7 @@ define(function (require, exports, module) {
     },
 
     "test where func"() {
+      api.protoMethod('where');
       assert.same(v.TestModel.query.where(doc => doc.name !== 'foo').count(), 0);
 
       assert.same(v.TestModel.query.where(doc => doc.name === 'foo').count(), 1);
@@ -206,7 +209,8 @@ define(function (require, exports, module) {
               .returns(v.syncOb = {stop: this.stub()});
 
       function MockQuery() {}
-      sut(MockQuery);
+      MockQuery.notifyAC = this.stub();
+      sut(MockQuery, null, 'notifyAC');
 
       this.spy(MockQuery, 'revertSimChanges');
 
@@ -442,6 +446,39 @@ define(function (require, exports, module) {
 
         // Should notify at revert for other changes
         assert.calledWith(v.changed, TH.matchModel(v.foo), {age: 7}, true);
+      },
+
+      "test notify"() {
+        /**
+         * Notify observers of an update to a database record. This is
+         * called automatically but it is exposed here incase it needs
+         * to be called manually.
+         **/
+
+        api.method('notify');
+        this.stub(Model._support, 'callAfterObserver');
+        this.onEnd([
+          Query.onAnyChange(v.onAnyChange = this.stub()),
+          v.TestModel._indexUpdate.onChange(v.indexUpdate = this.stub()),
+          v.TestModel.onChange(v.oc = this.stub()),
+        ]);
+        Query.notify(v.foo, {age: 1}, "noMatch");
+        assert.calledWith(v.indexUpdate, v.foo, {age: 1}, "noMatch");
+        assert.calledWith(v.onAnyChange, v.foo, {age: 1}, "noMatch");
+        assert.calledWith(v.oc, v.foo, {age: 1}, "noMatch");
+
+        refute.called(Model._support.callAfterObserver);
+        assert(v.indexUpdate.calledBefore(v.onAnyChange));
+        assert(v.indexUpdate.calledBefore(v.oc));
+        assert(v.onAnyChange.calledBefore(v.oc));
+
+
+        Query.notify(null, v.foo);
+
+        assert.calledWithExactly(v.indexUpdate, null, v.foo, undefined);
+        assert.calledWithExactly(v.onAnyChange, null, v.foo, undefined);
+        assert.calledWithExactly(v.oc, null, v.foo, undefined);
+        assert.calledWithExactly(Model._support.callAfterObserver, null, v.foo);
       },
     },
   });

@@ -153,11 +153,11 @@ define(function(require, exports, module) {
           anyChange.notify.apply(subject, args);
         },
         onAnyChange: anyChange.onChange,
-        onChange(...args) {
+        onChange(callback) {
           chkdb();
           const subject = getSetProp(dbId, modelName, 'notify', () => makeSubject({}));
 
-          return subject.onChange(...args);
+          return subject.onChange(callback);
         },
 
         get docs() {
