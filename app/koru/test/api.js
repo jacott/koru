@@ -733,9 +733,20 @@ define(function(require, exports, module) {
     let details = methods[methodName];
     const calls = details ? details.calls : [];
     if (! details) {
+      let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
+      if (! sig.startsWith(methodName)) {
+        if (sig.startsWith('('))
+          sig = methodName+sig.slice(0, jsParser.findMatch(sig, 0, '('));
+        else {
+          if (sig.endsWith(' => {/*...*/}'))
+            sig = sig.slice(0, -13);
+          sig = `${methodName}(${sig})`;
+        }
+      }
+
       details = methods[methodName] = {
         test,
-        sig: funcToSig(func).replace(/^function\s*(?=\()/, methodName),
+        sig,
         intro: docComment(test.func),
         subject: api.valueTag(api.subject),
         calls

@@ -105,7 +105,12 @@ define(['./core', './stubber'], function (geddon, stubber) {
             tc.setUp.call(test);
           }
           try {
-            func.call(test);
+            if (typeof func === 'function')
+              func.call(test);
+            else if (Array.isArray(func))
+              func.forEach(f => f.call(test));
+            else
+              func.stop.call(test);
           } finally {
             tc.runOnEnds(test);
             tc.tearDown && tc.tearDown.call(test);

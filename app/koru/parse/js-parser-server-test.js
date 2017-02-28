@@ -15,13 +15,29 @@ isServer && define(function (require, exports, module) {
     },
 
     "test extractParams"() {
-      assert.equals(jsParser.extractParams('1|{x() {}}'),
+      assert.equals(jsParser.extractParams('x() {}'),
                     []);
 
-      assert.equals(jsParser.extractParams('1|{x(a, b) {}}'),
+      assert.equals(jsParser.extractParams('(...args)'),
+                    ['args']);
+
+      assert.equals(jsParser.extractParams('(a, b) => {/*...*/}'),
                     ['a', 'b']);
 
-      assert.equals(jsParser.extractParams('1|{x({a: {aa: d=123}}, [b, c=d*2], ...rest) {}}'),
+      assert.equals(jsParser.extractParams('(a, b) =>'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('x(a, b) {return {a: (a + b)}}'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('function x(a, b)'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('function (a, b)'),
+                    ['a', 'b']);
+
+
+      assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'),
                     ['d', 'b', 'c', 'rest']);
     },
 

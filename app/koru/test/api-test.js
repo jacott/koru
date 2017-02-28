@@ -560,6 +560,12 @@ define(function (require, exports, module) {
     "test protoMethod"() {
       /**
        * Document prototype `methodName` for the current subject
+
+       * @param methodName the name of the prototype method to
+       * document
+
+       * @param [subject] override the instance to document. This
+       * defaults to `module.exports.prototype`
        **/
       MainAPI.method('protoMethod');
 
@@ -581,6 +587,13 @@ define(function (require, exports, module) {
         const plum = new Tree('Plum');
         assert.same(plum.prune(3), 7);
         assert.same(plum.prune(2), 5);
+
+
+        /** Overriding subject.prototype **/
+        const subject = {anything() {return "I could be anything"}};
+        API.protoMethod('anything', subject);
+
+        assert.same(subject.anything(), "I could be anything");
       });
 
       API.done();
@@ -588,7 +601,7 @@ define(function (require, exports, module) {
       assert.equals(API.instance.protoMethods.prune, {
         test,
         sig: TH.match(/(function )?prune\(branchCount\)/),
-        intro: 'Document prototype `methodName` for the current subject',
+        intro: TH.match(/Document prototype `methodName` for the current subject/),
         subject: ['F', TH.match.func, 'Tree'],
         calls: [[
           [3], 7

@@ -29,7 +29,7 @@ isClient && define(function (require, exports, module) {
        *
        * @param name the name of the publication
 
-       * @param {[anything...]} [args] a list of arguments to send to
+       * @param {...any-type} [args] a list of arguments to send to
        * the publication.
        *
        * The last argument can be a `callback` which will be called

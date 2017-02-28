@@ -1,34 +1,89 @@
 define(function (require, exports, module) {
-  const geddon      = require('./test');
+  /**
+   * Make a subject that can be observered.
+   **/
+  const api    = require('koru/test/api');
+  const geddon = require('./test');
 
-  const makeSubject = require('./make-subject');
-  var test, v;
+  const sut = require('./make-subject');
+  var v;
 
   geddon.testCase(module, {
     setUp() {
-      test = this;
       v = {};
-      v.foo = makeSubject({}, 'onFoo', 'notify');
+      api.module();
     },
 
     tearDown() {
       v = null;
     },
 
-    "test observing"() {
-      v.foo.onFoo(v.stub1 = test.stub());
-      const handle = v.foo.onFoo(v.stub2 = test.stub());
-      const h2 = v.foo.onFoo(v.stub3 = test.stub());
+    "test makeSubject"() {
+      /**
+       * Make an object observable by adding observe and notify
+       * methods to it.
+       *
+       * @param subject the object observe
 
-      handle.stop();
+       * @param [observeName] method name to call to start observing
+       * `subject` (defaults to OnChange)
 
-      v.foo.notify(123, 'bar');
+       * @param [notifyName] method name to tell observers of a change
+       * (defaults to notify)
+       **/
+      const makeSubject = api.custom(sut);
+      const subject = makeSubject({eg: 1});
+      assert.isFunction(subject.onChange);
+      assert.isFunction(subject.notify);
 
-      assert.calledWith(v.stub1, 123, 'bar');
-      refute.called(v.stub2);
-      assert.calledWith(v.stub3, 123);
+      const subject2 = makeSubject({eg: 2}, 'onUpdate', 'updated');
+      assert.isFunction(subject2.onUpdate);
+      assert.isFunction(subject2.updated);
+    },
 
-      assert.same(v.stub3.firstCall.thisValue, h2);
+    "test onChange"() {
+      /**
+       * OnChange starts observing a subject
+       *
+       * @param callback is function what will receive the arguments sent by `notify`
+       **/
+      const subject = sut({eg: 1});
+
+      const iapi = api.innerSubject(subject, 'makeSubject()');
+      iapi.method("onChange");
+      subject.onChange(v.stub1 = this.stub("{observer 1}"));
+      subject.notify(123, 'foo');
+
+      assert.calledWith(v.stub1, 123, 'foo');
+
+      iapi.example("// see notify for more examples");
+    },
+
+    "test notify"() {
+      /**
+       * notify all observers
+       *
+       * @param {...any-type} args arguments to send to observers
+       **/
+      const subject = sut({eg: 1});
+
+      const iapi = api.innerSubject(subject, 'makeSubject()');
+      iapi.method("notify");
+      iapi.example("const subject = makeSubject({});\n");
+      iapi.exampleCont(() => {
+        subject.onChange(v.stub1 = this.stub("{observer 1}"));
+        const handle = subject.onChange(v.stub2 = this.stub("{observer 2}"));
+        const h2 = subject.onChange(v.stub3 = this.stub("{observer 3}"));
+        handle.stop();
+
+        subject.notify(123, 'foo');
+
+        assert.calledWith(v.stub1, 123, 'foo');
+        refute.called(v.stub2);
+        assert.calledWith(v.stub3, 123);
+
+        assert.same(v.stub3.firstCall.thisValue, h2);
+      });
     },
   });
 });

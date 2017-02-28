@@ -84,7 +84,7 @@ define(function (require, exports, module) {
 
        * @param name the name of the publication
        *
-       * @param {object|primitive} [args] any arguments to send to the publication
+       * @param {...any-type} [args] any arguments to send to the publication
        **/
       api.method("mockSubscribe");
 

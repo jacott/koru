@@ -209,27 +209,62 @@ define(function(require, exports, module) {
     return util.diff(Object.keys(node), ['type', 'start', 'end', 'loc', 'sourceType']);
   }
 
-  function findFirstType(type, node) {
+  function findFirstType(types, node) {
     if (! node) return;
     if (Array.isArray(node)) {
       for(let n of node) {
-        if (n = findFirstType(type, n))
+        if (n = findFirstType(types, n))
           return n;
       }
     }
-    if (node.type === type) {
+    if (types[node.type]) {
       return node;
-    } else for(let key of VISITOR_KEYS[node.type]) {
-      let n = findFirstType(type, node[key]);
-      if (n)
-        return n;
+
+    } else {
+      const iter = VISITOR_KEYS[node.type];
+      if (! iter)
+        return;
+      for(let key of iter) {
+        let n = findFirstType(types, node[key]);
+        if (n)
+          return n;
+      }
     }
   }
 
-  function extractParams(sig, entryType='ObjectMethod') {
+  function tryParse(iter) {
+    let ex1;
+    for (let code of iter) {
+      try {
+        return parse(code);
+      } catch(ex) {
+        if (ex.name !== 'SyntaxError')
+          throw ex;
+        ex1 = ex1 || ex;
+      }
+    }
+    throw ex1;
+  }
+
+  function extractParams(code, entryTypes) {
+    entryTypes = entryTypes || {
+      ObjectMethod: true,
+      ArrowFunctionExpression: true,
+    };
+    code = code.trim();
+    if (! code.endsWith("}"))
+      code += "{}";
+    let sig = code.replace(/^function\b\s*/, 'x');
+
+    sig = `1|{${sig}}`;
+
     let ast;
     try {
-      ast = parse(sig);
+      ast = tryParse(function*() {
+        yield sig;
+        yield sig = code;
+        yield sig = `1|{x${code}}`;
+      }());
     } catch(ex) {
       const msg = `Error parsing ${sig}`;
       if (ex.name === 'SyntaxError')
@@ -239,7 +274,7 @@ define(function(require, exports, module) {
     }
     const args = [];
 
-    const node = findFirstType(entryType, ast.program.body);
+    const node = findFirstType(entryTypes, ast.program.body);
 
     expr(node.params, true);
 

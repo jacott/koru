@@ -98,5 +98,8 @@ define(function(require, exports, module) {
     return -1;
   }
 
-  module.exports = util.merge({extractCallSignature}, require('koru/env!./js-parser'));;
+  module.exports = util.merge({
+    extractCallSignature,
+    findMatch,
+  }, require('koru/env!./js-parser'));;
 });

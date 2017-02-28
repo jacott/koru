@@ -425,7 +425,6 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    sig = '1|{_x_'+sig.replace(/^(function|[^(]*)[-.#=\s]*/, '')+' {}}';
     const args = jsParser.extractParams(sig);
     const argMap = {};
     args.forEach((arg, i) => argMap[arg] = argProfile(calls, call => call[0][i]));
@@ -534,7 +533,7 @@ define(function(require, exports, module) {
     if (type.startsWith('...'))
       type = type.slice(3);
 
-    const m = /^\[(\w+)(?:,\.\.\.)\]$/.exec(type);
+    const m = /^\[([-\w]+)(?:,\.\.\.)\]$/.exec(type);
     if (m)
       type = m[1];
 
@@ -542,11 +541,11 @@ define(function(require, exports, module) {
     if (ans) return ans;
     const cType = util.capitalize(type);
 
-    const ct = CORE_TYPES[cType];
+    const ct = CORE_TYPES[cType] || type === 'any-type';
     if (ct)
       return 'https://developer.mozilla.org/en-US/docs/'+
       (ct === true ? 'Web/JavaScript/Reference/Global_Objects/' : ct+'/') +
-      cType;
+      (type === 'any-type' ? '' : cType);
     return '#'+type;
   }
 
