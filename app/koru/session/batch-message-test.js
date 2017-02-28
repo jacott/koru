@@ -1,12 +1,13 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const koru    = require('../main');
   const sut     = require('./batch-message');
   const message = require('./message');
+
   const TH      = require('./test-helper');
+  var test, v;
 
   TH.testCase(module, {
-    setUp () {
+    setUp() {
       test = this;
       v = {};
       v.sess = {globalDict: message.newGlobalDict()};
@@ -15,12 +16,12 @@ isServer && define(function (require, exports, module) {
       v.conn3 = {sessId: 3, ws: {send: test.stub()}};
     },
 
-    tearDown () {
+    tearDown() {
       v = null;
     },
 
     "test batch release" () {
-      var bm = new sut(v.sess);
+      const bm = new sut(v.sess);
 
       bm.batch(v.conn1, 'A', [1, v.obj = {a: 1}, 3], v.filter = test.stub().returns("filtered"));
       bm.batch(v.conn2, 'A', [1, v.obj, 3], v.filter);
@@ -35,8 +36,8 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn3.ws.send, 'enc2', {binary: true});
     },
 
-    "test type changes" () {
-      var bm = new sut(v.sess);
+    "test type changes"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [1], v.filter = test.stub().returns("filtered"));
       bm.batch(v.conn2, 'B', [1]);
 
@@ -47,8 +48,8 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn2.ws.send, 'enc2', {binary: true});
     },
 
-    "test filterchanges" () {
-      var bm = new sut(v.sess);
+    "test filterchanges"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn2, 'C', [1]);
 
@@ -59,8 +60,8 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn2.ws.send, 'enc2', {binary: true});
     },
 
-    "test conn same then one conn" () {
-      var bm = new sut(v.sess);
+    "test conn same then one conn"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
       bm.batch(v.conn2, 'A', [4]);
@@ -74,8 +75,8 @@ isServer && define(function (require, exports, module) {
       assert.calledOnceWith(v.conn2.ws.send, 'enc2', {binary: true});
     },
 
-    "test conn same eob" () {
-      var bm = new sut(v.sess);
+    "test conn same eob"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
 
@@ -86,8 +87,8 @@ isServer && define(function (require, exports, module) {
       assert.calledOnceWith(v.conn1.ws.send, 'enc', {binary: true});
     },
 
-    "test conn same then many conns" () {
-      var bm = new sut(v.sess);
+    "test conn same then many conns"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
       bm.batch(v.conn1, 'A', [4]);
@@ -104,8 +105,8 @@ isServer && define(function (require, exports, module) {
       assert.calledOnceWith(v.conn2.ws.send, 'enc2', {binary: true});
     },
 
-    "test closed conn" () {
-      var bm = new sut(v.sess);
+    "test closed conn"() {
+      const bm = new sut(v.sess);
       bm.batch(v.conn1, 'A', [4]);
       bm.batch(v.conn2, 'A', [4]);
       bm.batch(v.conn1, 'C', [4]);
@@ -126,8 +127,8 @@ isServer && define(function (require, exports, module) {
       assert.calledOnceWith(v.conn2.ws.send, 'enc', {binary: true});
     },
 
-    "test batch abort" () {
-      var bm = new sut(v.sess);
+    "test batch abort"() {
+      const bm = new sut(v.sess);
 
       bm.batch(v.conn1, 'A', [1, 2, 3], undefined);
 
