@@ -24,8 +24,8 @@ define(function(require, exports, module) {
 
     let sub = subs[subId];
 
+    this.batchMessages();
     try {
-      session.batchMessages();
       if (! name) {
         if (sub) {
           stopped(sub);
@@ -42,9 +42,9 @@ define(function(require, exports, module) {
           subs[subId] && this.sendBinary('P', [subId]); // ready
         }
       }
-      session.releaseMessages();
+      this.releaseMessages();
     } catch(ex) {
-      session.abortMessages();
+      this.abortMessages();
       throw ex;
     }
   }

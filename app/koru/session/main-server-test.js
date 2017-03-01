@@ -1,11 +1,13 @@
 isServer && define(function (require, exports, module) {
+  const Conn          = require('koru/session/server-connection-factory').Base;
+  const koru          = require('../main');
+  const util          = require('../util');
+  const session       = require('./main');
+  const serverSession = require('./main-server');
+  const message       = require('./message');
+
+  const TH            = require('./test-helper');
   var test, v;
-  var TH = require('./test-helper');
-  var session = require('./main');
-  var util = require('../util');
-  var koru = require('../main');
-  var message = require('./message');
-  var serverSession = require('./main-server');
 
   TH.testCase(module, {
     setUp() {
@@ -155,45 +157,41 @@ isServer && define(function (require, exports, module) {
 
     "rpc": {
       setUp() {
-        v.run = function (rpcMethod) {
+        v.run = rpcMethod => {
           session.defineRpc('foo.rpc', rpcMethod);
 
           var data = ['123', 'foo.rpc', 1, 2, 3];
           var buffer = message.encodeMessage('M', data, session.globalDict);
 
-          session._onMessage(v.conn = {ws: v.ws, sendBinary: test.stub()}, buffer);
+          v.conn = util.merge(new Conn(v.ws, 's123', () => {}), {
+            batchMessages: this.stub(),
+            releaseMessages: this.stub(),
+            abortMessages: this.stub(),
+            sendBinary: this.stub(),
+          });
+          session._onMessage(v.conn, buffer);
         };
       },
 
       "batch messages": {
-        setUp() {
-          test.spy(session, 'batchMessages');
-          test.spy(session, 'releaseMessages');
-          test.spy(session, 'abortMessages');
-        },
-
         "test send after return"() {
           v.run(function (one, two, three) {
-            assert.called(session.batchMessages);
-            assert(util.thread.batchMessage);
-            refute.called(session.releaseMessages);
-            v.release = test.stub(util.thread.batchMessage, 'release');
+            assert.called(v.conn.batchMessages);
+            refute.called(v.conn.releaseMessages);
             return 'result';
           });
 
           refute(util.thread.batchMessage);
           assert.calledWith(v.conn.sendBinary, 'M', ['123', 'r', 'result']);
-          assert(session.releaseMessages.calledAfter(v.conn.sendBinary));
-          refute.called(session.abortMessages);
-          assert.called(v.release);
+          assert(v.conn.releaseMessages.calledAfter(v.conn.sendBinary));
+          refute.called(v.conn.abortMessages);
         },
 
         "test abort"() {
           v.run(function (one, two, three) {
-            assert.called(session.batchMessages);
-            assert(util.thread.batchMessage);
-            v.abort = test.stub(util.thread.batchMessage, 'abort');
-            refute.called(session.releaseMessages);
+            assert.called(v.conn.batchMessages);
+            refute.called(v.conn.releaseMessages);
+            refute.called(v.conn.abortMessages);
             test.stub(koru, 'error');
             throw 'test aborted';
           });
@@ -202,12 +200,10 @@ isServer && define(function (require, exports, module) {
 
           refute(util.thread.batchMessage);
           assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 'test aborted']);
-          assert(session.abortMessages.calledBefore(v.conn.sendBinary));
-          refute.called(session.releaseMessages);
-          assert.called(v.abort);
+          assert(v.conn.abortMessages.calledBefore(v.conn.sendBinary));
+          refute.called(v.conn.releaseMessages);
         },
       },
-
 
       "test result"() {
         v.run(function (...args) {

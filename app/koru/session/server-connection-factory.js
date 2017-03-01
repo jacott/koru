@@ -1,13 +1,16 @@
 define(function(require, exports, module) {
-  const makeSubject = require('koru/make-subject');
-  const IdleCheck   = require('../idle-check').singleton;
-  const koru        = require('../main');
-  const util        = require('../util');
-  const match       = require('./match');
-  const message     = require('./message');
-  const crypto      = requirejs.nodeRequire('crypto');
+  const koru         = require('koru');
+  const IdleCheck    = require('koru/idle-check').singleton;
+  const makeSubject  = require('koru/make-subject');
+  const BatchMessage = require('koru/session/batch-message');
+  const util         = require('koru/util');
+  const match        = require('./match');
+  const message      = require('./message');
+  const crypto       = requirejs.nodeRequire('crypto');
 
-  class ServerConnectionBase {
+  const _sideQueue = Symbol();
+
+  class Base {
     constructor (ws, sessId, close) {
       this.ws = ws;
       this.sessId = sessId;
@@ -102,8 +105,34 @@ define(function(require, exports, module) {
       process();
     }
 
+
+    batchMessages() {
+      this[_sideQueue] = [];
+      return util.thread.batchMessage = new BatchMessage(this);
+    }
+    releaseMessages() {
+      const bm = util.thread.batchMessage;
+      if (! bm) return;
+      const sq = this[_sideQueue];
+      this[_sideQueue] = null;
+      sq.forEach(args => {bm.batch(this, ...args)});
+      util.thread.batchMessage = null;
+      bm.release();
+    }
+    abortMessages() {
+      const bm = util.thread.batchMessage;
+      if (! bm) return;
+      bm.abort();
+      this.releaseMessages();
+      util.thread.batchMessage = null;
+    }
+
     sendBinary (type, args, func) {
       const bm = util.thread.batchMessage;
+      if (this[_sideQueue] && (! bm  || bm.conn !== this)) {
+        this[_sideQueue].push([type, args, func]);
+        return;
+      }
       if (bm) {
         bm.batch(this, type, args, func);
         return;
@@ -157,7 +186,7 @@ define(function(require, exports, module) {
   }
 
   function serverConnectionFactory (session) {
-    class ServerConnection extends ServerConnectionBase {
+    class ServerConnection extends Base {
       constructor (ws, sessId, close) {
         super(ws, sessId, close);
         this._session = session;
@@ -180,7 +209,7 @@ define(function(require, exports, module) {
     return result;
   }
 
-  serverConnectionFactory.ServerConnectionBase = ServerConnectionBase;
+  serverConnectionFactory.Base = Base;
   serverConnectionFactory.filterAttrs = filterAttrs;
 
   module.exports = serverConnectionFactory;

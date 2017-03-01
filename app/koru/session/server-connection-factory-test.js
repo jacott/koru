@@ -1,13 +1,13 @@
 isServer && define(function (require, exports, module) {
-  const IdleCheck = require('../idle-check').singleton;
-  const koru      = require('../main');
-  const TH        = require('../test');
-  const util      = require('../util');
-  const match     = require('./match');
-  const message   = require('./message');
-  const crypto    = requirejs.nodeRequire('crypto');
-
+  const koru        = require('koru');
+  const IdleCheck   = require('koru/idle-check').singleton;
   const baseSession = require('koru/session');
+  const TH          = require('koru/test');
+  const util        = require('koru/util');
+  const match       = require('./match');
+  const message     = require('./message');
+  const crypto      = requirejs.nodeRequire('crypto');
+
   const session = new (baseSession.constructor)('testServerConnection');
   const Connection  = require('./server-connection-factory')(session);
   var test, v;
@@ -138,6 +138,67 @@ isServer && define(function (require, exports, module) {
 
       refute.called(v.conn.ws.send);
     },
+
+    "test message ordering"() {
+      v.conn.sendBinary.restore();
+      v.thread = v.c2t = {name: 'c2'};
+      TH.stubProperty(util, 'thread', {get() {return v.thread}});
+      v.conn2 = new Connection(v.ws = {
+        send: test.stub(), close: test.stub(), on: test.stub(),
+      }, 456, v.sessClose = test.stub());
+
+      const bm2 = v.conn2.batchMessages();
+      this.spy(bm2, 'batch');
+      v.conn2.sendBinary('A', 1);
+      assert.calledWith(bm2.batch, v.conn2, 'A', 1);
+      v.thread = v.ct = {name: 'c'};
+      v.conn2.sendBinary('C', 2);
+      const bm = v.conn.batchMessages();
+
+      v.conn.sendBinary('A', 11);
+      v.conn2.sendBinary('C', 3);
+      v.thread = v.c2t;
+      v.conn2.sendBinary('A', 4);
+      v.thread = v.ct;
+      v.conn2.sendBinary('C', 5);
+
+      test.stub(message, 'encodeMessage');
+      const aEncode = message.encodeMessage.withArgs('A');
+      const wEncode = message.encodeMessage.withArgs('W');
+
+      v.conn.releaseMessages();
+      assert.calledWith(aEncode, 'A', 11);
+
+      v.thread = v.c2t;
+      v.conn2.releaseMessages();
+
+      assert.calledWith(wEncode, 'W', [
+        ['A', 1],
+        ['A', 4],
+        ['C', 2], ['C', 3],
+        ['C', 5],
+      ], session.globalDict);
+      assert(wEncode.calledAfter(aEncode));
+    },
+
+    "test message abort"() {
+      v.conn.sendBinary.restore();
+      v.thread = v.ct = {name: 'c'};
+      TH.stubProperty(util, 'thread', {get() {return v.thread}});
+
+      const bm = v.conn.batchMessages();
+      v.conn.sendBinary('C', 6);
+      v.thread = v.c2t = {name: 'c2'};
+      v.conn.sendBinary('C', 5);
+      v.conn.sendBinary('C', 4);
+      v.thread = v.ct;
+      v.conn.sendBinary('C', 7);
+
+       test.stub(message, 'encodeMessage');
+      v.conn.abortMessages();
+      assert.calledOnceWith(message.encodeMessage, 'W', [['C', 5], ['C', 4]]);
+    },
+
 
     "test send"() {
       v.conn.send('X', 'FOO');

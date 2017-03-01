@@ -4,6 +4,7 @@ isServer && define(function (require, exports, module) {
   const TH        = require('koru/test');
   const util      = require('koru/util');
   const message   = require('./message');
+  const publishTH = require('./publish-test-helper-server');
   const scFactory = require('./server-connection-factory');
 
   const publish   = require('./publish');
@@ -19,16 +20,13 @@ isServer && define(function (require, exports, module) {
         v.pubFunc.apply(this, args);
       }});
 
-      v.callSub = function () {
-        v.conn = new (scFactory({}))({send: v.send = test.stub(), on: test.stub()}, 's123');
+      v.callSub = () => {
+        v.conn =  publishTH.mockConnection();
         v.conn.sendBinary = test.stub();
         session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       };
 
       v.callSub();
-      test.spy(session, 'batchMessages');
-      test.spy(session, 'releaseMessages');
-      test.spy(session, 'abortMessages');
     },
 
     tearDown () {
@@ -38,24 +36,23 @@ isServer && define(function (require, exports, module) {
 
     "test unknown publication" () {
       test.intercept(koru, 'info');
-      session._onMessage(v.conn = {
-        sendBinary: test.stub(),
-        _subs: {},
-      }, message.encodeMessage('P', ['a123', 'bar', [1,2,3]], session.globalDict));
+      session._onMessage(
+        v.conn = publishTH.mockConnection(),
+        message.encodeMessage('P', ['a123', 'bar', [1,2,3]], session.globalDict));
 
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'unknown publication: bar']);
-      assert(session.releaseMessages.calledAfter(session.batchMessages));
+      assert(v.conn.releaseMessages.calledAfter(v.conn.batchMessages));
     },
 
     "test session closing before subscribe" () {
+      v.conn = publishTH.mockConnection();
+      v.conn._subs = null; // no subscribes
       refute.exception(function () {
-        session._onMessage(v.conn = {
-          sendBinary: test.stub(),
-          // no ws
-          // no _subs
-        }, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
+        session._onMessage(
+          v.conn,
+          message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       });
-      refute.called(session.batchMessages);
+      refute.called(v.conn.batchMessages);
     },
 
     "test publish" () {
@@ -169,7 +166,7 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.conn.sendBinary, 'P', ['a123', 500, 'Error: Foo error']);
 
       refute('a123' in v.conn._subs);
-      assert(session.releaseMessages.calledAfter(session.batchMessages));
+      assert(v.conn.releaseMessages.calledAfter(v.conn.batchMessages));
     },
 
     "test error when conn closed" () {

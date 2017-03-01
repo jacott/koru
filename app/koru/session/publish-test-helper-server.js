@@ -22,6 +22,9 @@ define(function(require, exports, module) {
       const conn = new (SCFactory(session))(
         {send: test.stub(), on: test.stub()}, sessId || 's123', function () {}
       );
+      test.spy(conn, 'batchMessages');
+      test.spy(conn, 'releaseMessages');
+      test.spy(conn, 'abortMessages');
       conn.userId = koru.userId();
       conn.sendBinary = test.stub();
       conn.added = test.stub();

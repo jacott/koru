@@ -57,7 +57,7 @@ define(function (require, exports, module) {
       assert.same(mockConnection.sessId, "s456");
 
 
-      assert(mockConnection instanceof scFactory.ServerConnectionBase);
+      assert(mockConnection instanceof scFactory.Base);
       assert(mockConnection.sendBinary._stubId);
       assert(mockConnection.added._stubId);
       assert(mockConnection.changed._stubId);

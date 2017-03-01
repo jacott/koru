@@ -5,7 +5,6 @@ define(function (require, exports, module) {
   var util = require('../util');
   var message = require('./message');
   var makeSubject = require('../make-subject');
-  var BatchMessage = require('./batch-message');
 
   function webSocketServerFactory(session, execWrapper) {
     var Connection = require('./server-connection-factory')(session);
@@ -45,18 +44,6 @@ define(function (require, exports, module) {
       get globalDict() {
         if (_globalDict) return _globalDict;
         return buildGlobalDict();
-      },
-
-      batchMessages() {
-        util.thread.batchMessage = new BatchMessage(this);
-      },
-      releaseMessages() {
-        util.thread.batchMessage.release();
-        util.thread.batchMessage = null;
-      },
-      abortMessages() {
-        util.thread.batchMessage.abort();
-        util.thread.batchMessage = null;
       },
 
       // for testing
@@ -100,16 +87,16 @@ define(function (require, exports, module) {
     session.provide('M', function (data) {
       var msgId = data[0];
       var func = session._rpcs[data[1]];
+      this.batchMessages();
       try {
-        session.batchMessages();
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
         var result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
-        session.releaseMessages();
+        this.releaseMessages();
       } catch(ex) {
-        session.abortMessages();
+        this.abortMessages();
         if (ex.error) {
           this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         } else {

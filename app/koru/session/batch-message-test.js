@@ -11,6 +11,7 @@ isServer && define(function (require, exports, module) {
       test = this;
       v = {};
       v.sess = {globalDict: message.newGlobalDict()};
+      v.conn = {_session: v.sess};
       v.conn1 = {sessId: 1, ws: {send: test.stub()}};
       v.conn2 = {sessId: 2, ws: {send: test.stub()}};
       v.conn3 = {sessId: 3, ws: {send: test.stub()}};
@@ -21,7 +22,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test batch release" () {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
 
       bm.batch(v.conn1, 'A', [1, v.obj = {a: 1}, 3], v.filter = test.stub().returns("filtered"));
       bm.batch(v.conn2, 'A', [1, v.obj, 3], v.filter);
@@ -37,7 +38,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test type changes"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [1], v.filter = test.stub().returns("filtered"));
       bm.batch(v.conn2, 'B', [1]);
 
@@ -49,7 +50,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test filterchanges"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn2, 'C', [1]);
 
@@ -61,7 +62,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test conn same then one conn"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
       bm.batch(v.conn2, 'A', [4]);
@@ -76,7 +77,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test conn same eob"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
 
@@ -88,7 +89,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test conn same then many conns"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [1]);
       bm.batch(v.conn1, 'C', [1]);
       bm.batch(v.conn1, 'A', [4]);
@@ -106,7 +107,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test closed conn"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
       bm.batch(v.conn1, 'A', [4]);
       bm.batch(v.conn2, 'A', [4]);
       bm.batch(v.conn1, 'C', [4]);
@@ -128,7 +129,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test batch abort"() {
-      const bm = new sut(v.sess);
+      const bm = new sut(v.conn);
 
       bm.batch(v.conn1, 'A', [1, 2, 3], undefined);
 

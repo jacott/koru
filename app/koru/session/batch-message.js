@@ -6,9 +6,8 @@ define(function(require) {
   const BINARY = {binary: true};
 
   class BatchMessage {
-    constructor (session) {
-      this.thread = util.thread;
-      this.session = session;
+    constructor (conn) {
+      this.conn = conn;
       this.first = this.last = null;
     }
 
@@ -29,7 +28,7 @@ define(function(require) {
     }
 
     release() {
-      const gDict = this.session.globalDict;
+      const gDict = this.conn._session.globalDict;
       for (let curr = this.first; curr; curr = curr && curr.next) {
         let args = curr.func ? curr.func(curr.args) : curr.args;
         let cconn = curr.conns;
