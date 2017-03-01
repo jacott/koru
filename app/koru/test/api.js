@@ -537,7 +537,8 @@ define(function(require, exports, module) {
     }
     property() {}
     comment() {}
-    example(body) {body();}
+    example(body) {return typeof body === 'function' && body();}
+    exampleCont(body) {return typeof body === 'function' && body();}
     method() {}
     protoMethod() {}
     protoProperty() {}
