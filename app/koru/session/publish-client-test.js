@@ -40,7 +40,9 @@ isClient && define(function (require, exports, module) {
     "test preload"() {
       /**
        * If a publish has a preload function it will be called before
-       * the request is sent to the server.
+       * any subscription requests are sent to the server. If that
+       * preload method returns a `Promise` then the subscription will
+       * pause until the promise is fulfilled.
        *
        * Useful actions to take in the preload are (but not limited to):
 
@@ -56,8 +58,15 @@ isClient && define(function (require, exports, module) {
 
       const subscribe = (name, ...args) => {
         v.sub = new ClientSub(v.sess, "1", name, args);
-        v.sub.resubscribe();
+        publish.preload(v.sub, (arg) => {
+          assert.same(arg, "from_loadBooks");
+          v.sub.resubscribe();
+        });
       };
+
+      function loadBooksFromIndexedDB() {
+        return {then(f) {f("from_loadBooks"); return this}};
+      }
 
       this.onEnd(() => {publish._destroy("Books")});
 
@@ -65,7 +74,11 @@ isClient && define(function (require, exports, module) {
         publish({
           name: "Books",
           init() {v.args = this.args},
-          preload(sub) {sub.args = [6, 7]},
+          preload(sub) {
+            return loadBooksFromIndexedDB(this.args).then(() => {
+              sub.args = [6, 7];
+            });
+          },
         });
         subscribe('Books', 5);
         assert.equals(v.args, [6, 7]);

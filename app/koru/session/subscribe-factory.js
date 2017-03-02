@@ -52,9 +52,11 @@ define(function(require, exports, module) {
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
         return sub;
       subs[sub._id] = sub;
-      sub._wait();
-      session.sendP(sub._id, name, sub.args);
-      sub.resubscribe();
+      publish.preload(sub, () => {
+        sub._wait();
+        session.sendP(sub._id, name, sub.args);
+        sub.resubscribe();
+      });
       return sub;
     };
 

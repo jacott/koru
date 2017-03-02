@@ -39,6 +39,8 @@ define(function(require, exports, module) {
       this._store[name] = new ObjectStore(name, this);
     }
 
+    close() {}
+
     transaction() {
       return this;
     }

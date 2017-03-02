@@ -56,7 +56,6 @@ define(function(require, exports, module) {
       } else {
         this.callback = null;
       }
-      publish.preload(this);
     }
 
     get userId() {

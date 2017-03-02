@@ -19,9 +19,15 @@ define(function(require, exports, module) {
 
   util.merge(publish, {
     get _pubs() {return pubs},
-    preload(sub) {
+    preload(sub, callback) {
       const preload = sub._subscribe && sub._subscribe[preloadSym];
-      preload && preload(sub);
+      const promise = preload && preload(sub);
+      if (callback) {
+        if (promise && promise.then)
+          promise.then(callback);
+        else
+          callback();
+      }
     },
     _destroy(name) {delete pubs[name]},
   });
