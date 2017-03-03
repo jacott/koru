@@ -35,8 +35,12 @@ define(function(require, exports, module) {
     }
 
     createObjectStore(name, options) {
-      if (options.keyPath !== '_id') throw new Error('MockIndexedDB only supports _id for keyPath');
-      this._store[name] = new ObjectStore(name, this);
+
+      if (options.keyPath !== '_id')
+        throw new Error('MockIndexedDB only supports _id for keyPath');
+      if (this._store[name])
+        throw new Error("MockIndexedDB already has objectStore: "+ name);
+      return this._store[name] = new ObjectStore(name, this);
     }
 
     close() {}
@@ -60,6 +64,7 @@ define(function(require, exports, module) {
   class ObjectStore {
     constructor(name, db) {
       this.db = db;
+      this.name = name;
       this.docs = {};
     }
 
@@ -74,11 +79,26 @@ define(function(require, exports, module) {
       };
     }
 
+    getAll() {
+      const {docs, db: {_pending}} = this;
+      return {
+        set onsuccess(f) {
+          _pending.push(() => {
+            f({target: {result: Object.keys(docs).sort().map(k => docs[k])}});
+          });
+        },
+      };
+    }
+
     put(doc) {
       this.docs[doc._id] = doc;
       const {_pending} = this.db;
       return {
-        set onsuccess(f) {_pending.push(f)},
+        set onsuccess(f) {
+          _pending.push(() => {
+            f({target: {result: doc._id}});
+          });
+        },
       };
     }
 

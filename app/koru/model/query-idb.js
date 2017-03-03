@@ -2,17 +2,20 @@ define(function(require, exports, module) {
   const koru       = require('koru');
   const BusyQueue  = require('koru/busy-queue');
   const ModelMap   = require('koru/model/map');
+  const Query      = require('koru/model/query');
   const TransQueue = require('koru/model/trans-queue');
   const util       = require('koru/util');
 
   const iDB = Symbol(), pendingUpdates = Symbol();
   const busyQueue = Symbol(), idleQueue = Symbol();
   const catchAll = Symbol();
+  let notMe;
 
   function whenIdle(db) {
     const iq = db[idleQueue];
+    if (! iq) return;
     db[idleQueue] = null;
-    iq.r(db);
+    iq.r && iq.r(db);
   }
 
   function whenBusy(db) {db[idleQueue] = makePQ()}
@@ -34,6 +37,7 @@ define(function(require, exports, module) {
           error(this, event);
         };
         req.onsuccess = event => {
+
           const idb = this[iDB] = event.target.result;
           bq.nextAction();
         };
@@ -48,24 +52,28 @@ define(function(require, exports, module) {
       return this[iDB].objectStoreNames;
     }
 
+    loadDoc(modelName, rec) {
+      const orig = notMe;
+      try {
+        Query.insert(notMe = new ModelMap[modelName](rec));
+      } finally {
+        notMe = orig;
+      }
+    }
+
     get(modelName, _id) {
-      return new Promise((resolve, reject) => {
-        this[busyQueue].queueAction(() => {
-          try {
-            const os = this[iDB].transaction(modelName).objectStore(modelName);
-            const req = os.get(_id);
-            req.onerror = event => {
-              error(this, event);
-              reject(event);
-            };
-            req.onsuccess = event => {
-              resolve(event.target.result);
-            };
-          } catch(ex) {
-            error(this, ex);
-            reject(ex);
-          }
-        });
+      return wrapOSRequest(this, modelName, os => os.get(_id));
+    }
+
+    getAll(modelName) {
+      return wrapOSRequest(this, modelName, os => os.getAll());
+    }
+
+    put(modelName, rec) {
+      TransQueue.transaction(() => {
+        const pu = getPendingUpdates(this);
+        const pm = pu[modelName] || (pu[modelName] = {});
+        pm[rec._id] = rec;
       });
     }
 
@@ -92,12 +100,15 @@ define(function(require, exports, module) {
     }
 
     queueChange(now, was) {
-      const doc = (now || was);
-      const name = doc.constructor.modelName;
-      const pu = getPendingUpdates(this);
-      const pm = pu[name] || (pu[name] = {});
-      const attrs = doc.attributes;
-      pm[attrs._id] = now && attrs;
+      TransQueue.transaction(() => {
+        const doc = (now || was);
+        if (doc === notMe) return;
+        const name = doc.constructor.modelName;
+        const pu = getPendingUpdates(this);
+        const pm = pu[name] || (pu[name] = {});
+        const attrs = doc.attributes;
+        pm[attrs._id] = now && attrs;
+      });
     }
   } module.exports = QueryIDB;
 
@@ -108,7 +119,9 @@ define(function(require, exports, module) {
     db[busyQueue].clear();
     const ca = db[catchAll];
     db[catchAll] = makePQ();
-    ca.r(ex);
+
+    if (ca.e) ca.e(ex);
+    else throw(ex);
   }
 
   function getPendingUpdates(db) {
@@ -165,6 +178,29 @@ define(function(require, exports, module) {
       req.onsuccess = (event) => {
         resolve(event);
       };
+    });
+  }
+
+  function wrapOSRequest(db, modelName, body) {
+    return new Promise((resolve, reject) => {
+      const bq = db[busyQueue];
+      bq.queueAction(() => {
+        bq.nextAction();
+        try {
+          const os = db[iDB].transaction(modelName).objectStore(modelName);
+          const req = body(os);
+          req.onerror = event => {
+            error(db, event);
+            reject(event);
+          };
+          req.onsuccess = event => {
+            resolve(event.target.result);
+          };
+        } catch(ex) {
+          error(db, ex);
+          reject(ex);
+        }
+      });
     });
   }
 });
