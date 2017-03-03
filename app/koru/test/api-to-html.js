@@ -195,20 +195,18 @@ define(function(require, exports, module) {
       reqParts.push(';');
       const requireLine = Dom.h({class: 'jsdoc-require highlight', div: reqParts});
 
-      const constructor = newInstance && buildConstructor(
+      const functions = newInstance ? [buildConstructor(
         api, subject, newInstance, requireLine
-      );
+      )] : [];
 
-      let functions = util.isObjEmpty(methods) ? [] :
-            buildMethods(api, subject, methods, requireLine);
-      util.isObjEmpty(protoMethods) ||
-        (functions = functions.concat(
-          buildMethods(api, subject, protoMethods, requireLine, 'proto')));
       util.isObjEmpty(customMethods) ||
-        (functions = functions.concat(
-          buildMethods(api, subject, customMethods, requireLine, 'custom')));
+        util.append(functions, buildMethods(api, subject, customMethods, requireLine, 'custom'));
+      util.isObjEmpty(methods) ||
+        util.append(functions, buildMethods(api, subject, methods, requireLine));
+      util.isObjEmpty(protoMethods) ||
+        util.append(functions, buildMethods(api, subject, protoMethods, requireLine, 'proto'));
 
-      const linkNav = {nav: [constructor, ...functions].map(
+      const linkNav = {nav: functions.map(
         func => func && Dom.h({a: func.$name, $href: '#'+func.id})
       )};
 
@@ -343,7 +341,7 @@ define(function(require, exports, module) {
   }
 
   function buildMethods(api, subject, methods, requireLine, type) {
-    return Object.keys(methods).map(name => {
+    return Object.keys(methods).sort().map(name => {
       let initInst, needInit = false;
       if (type === 'proto') {
         needInit = true;

@@ -145,8 +145,8 @@ isServer && define(function (require, exports, module) {
         assert.equals(Dom.htmlToJson(req).div.length, 10);
 
         let ex = meth.childNodes[1];
-        assert.className(ex, 'highlight jsdoc-init');
         assert.equals(ex.textContent, 'const myM1 = MyMod.Foo();');
+        assert.className(ex, 'highlight jsdoc-init');
 
         let pmeth = Dom.html(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');

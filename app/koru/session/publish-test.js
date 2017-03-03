@@ -41,7 +41,7 @@ define(function (require, exports, module) {
        * {#koru/session/client-sub} for client
 
        * @param {function} [preload] A preload function to call on
-       * client; see {#koru/session/publish-client.preload}
+       * client; see {#.preload}
        **/
       const publish = api.custom(sut);
 
