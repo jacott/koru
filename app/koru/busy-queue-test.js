@@ -90,5 +90,28 @@ define(function (require, exports, module) {
       refute(bq.isBusy);
       assert.calledWith(whenIdle, subject);
     },
+
+    "test clear"() {
+      /**
+       * Remove all entries
+       **/
+      api.protoMethod('clear');
+
+      api.example(() => {
+        const bq = new BusyQueue({});
+        bq.whenBusy = this.stub();
+        bq.whenIdle = this.stub();
+        bq.queueAction(v.action = this.stub());
+        bq.queueAction(v.action2 = this.stub());
+        assert.isTrue(bq.isBusy);
+
+        refute.called(bq.whenIdle);
+        bq.clear();
+
+        assert.called(bq.whenIdle);
+        assert.isFalse(bq.isBusy);
+        refute.called(v.action2);
+      });
+    },
   });
 });

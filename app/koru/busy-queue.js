@@ -16,6 +16,11 @@ define(function(require, exports, module) {
       }
     }
 
+    clear() {
+      this.first = this.last = null;
+      this.whenIdle && this.whenIdle(this.subject);
+    }
+
     get isBusy() {return !! this.first}
 
     nextAction() {
