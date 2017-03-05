@@ -20,6 +20,21 @@ define(function(require, exports, module) {
 
   function whenBusy(db) {db[idleQueue] = makePQ()}
 
+  class Index {
+    constructor(queryIDB, modelName, name) {
+      this._queryIDB = queryIDB;
+      this._index = queryIDB[iDB].transaction(modelName).objectStore(modelName).index(name);
+    }
+
+    getAll(query, count) {
+      return wrapRequest(this._queryIDB, () => this._index.getAll(query, count));
+    }
+
+    get(key) {
+      return wrapRequest(this._queryIDB, () => this._index.get(key));
+    }
+  }
+
   class QueryIDB {
     constructor({name, version, upgrade}) {
       this[pendingUpdates] = this[idleQueue] = null;
@@ -31,7 +46,10 @@ define(function(require, exports, module) {
         const req = window.indexedDB.open(name, version);
         if (upgrade) req.onupgradeneeded = (event) => {
           this[iDB] = event.target.result;
-          upgrade({db: this, oldVersion: event.oldVersion});
+          upgrade({
+            db: this, oldVersion: event.oldVersion,
+            event, transaction: event.target.transaction,
+          });
         };
         req.onerror = event => {
           error(this, event);
@@ -53,9 +71,11 @@ define(function(require, exports, module) {
     }
 
     loadDoc(modelName, rec) {
+      const model = ModelMap[modelName];
+      if (model.docs[rec._id]) return;
       const orig = notMe;
       try {
-        Query.insert(notMe = new ModelMap[modelName](rec));
+        Query.insert(notMe = new model(rec));
       } finally {
         notMe = orig;
       }
@@ -96,7 +116,11 @@ define(function(require, exports, module) {
     }
 
     createObjectStore(name) {
-      const os = this[iDB].createObjectStore(name, {keyPath: '_id'});
+      return this[iDB].createObjectStore(name, {keyPath: '_id'});
+    }
+
+    index(modelName, name) {
+      return new Index(this, modelName, name);
     }
 
     queueChange(now, was) {
@@ -121,7 +145,7 @@ define(function(require, exports, module) {
     db[catchAll] = makePQ();
 
     if (ca.e) ca.e(ex);
-    else throw(ex);
+    else throw new Error(ex);
   }
 
   function getPendingUpdates(db) {
@@ -182,13 +206,19 @@ define(function(require, exports, module) {
   }
 
   function wrapOSRequest(db, modelName, body) {
+    return wrapRequest(db, () => {
+      const os = db[iDB].transaction(modelName).objectStore(modelName);
+      return body(os);
+    });
+  }
+
+  function wrapRequest(db, body) {
     return new Promise((resolve, reject) => {
       const bq = db[busyQueue];
       bq.queueAction(() => {
         bq.nextAction();
         try {
-          const os = db[iDB].transaction(modelName).objectStore(modelName);
-          const req = body(os);
+          const req = body();
           req.onerror = event => {
             error(db, event);
             reject(event);

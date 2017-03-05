@@ -10,7 +10,7 @@ define(function(require, exports, module) {
 
   util.merge(publish, {
     match: match(),
-    _filterModels(models) {
+    _filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
         for(let name in models) {
           let mm = this.match._models;
@@ -30,7 +30,7 @@ define(function(require, exports, module) {
             }
             if (remove) {
               delete docs[id];
-              Query.notify(null, doc, "noMatch");
+              Query.notify(null, doc, reason);
             }
           }
         }

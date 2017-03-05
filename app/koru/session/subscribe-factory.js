@@ -32,7 +32,7 @@ define(function(require, exports, module) {
         for(var key in subs) {
           subs[key].resubscribe(models);
         }
-        publish._filterModels(models);
+        publish._filterModels(models, "userIdChanged");
       }
     });
 
@@ -52,7 +52,12 @@ define(function(require, exports, module) {
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
         return sub;
       subs[sub._id] = sub;
-      publish.preload(sub, () => {
+      publish.preload(sub, err => {
+        if (err) {
+          const last = args[args.length - 1];
+          (typeof last === 'function' ? last : koru.globalCallback)(err);
+          return;
+        }
         sub._wait();
         session.sendP(sub._id, name, sub.args);
         sub.resubscribe();

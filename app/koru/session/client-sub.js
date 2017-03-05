@@ -30,7 +30,7 @@ define(function(require, exports, module) {
     sub._stop && sub._stop();
     killMatches(sub._matches, models);
     sub._stop = sub._matches = sub._id = sub.callback = null;
-    publish._filterModels(models);
+    publish._filterModels(models, 'stopped');
   }
 
   function killMatches(matches, models) {
@@ -115,9 +115,9 @@ define(function(require, exports, module) {
       this._stop = func;
     }
 
-    filterModels(...args) {
+    filterModels(...modelNames) {
       const models = {};
-      util.forEach(args, mn => {models[mn] = true});
+      util.forEach(modelNames, mn => {models[mn] = true});
       publish._filterModels(models);
     }
 

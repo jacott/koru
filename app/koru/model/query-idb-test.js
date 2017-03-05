@@ -13,6 +13,7 @@ isClient && define(function (require, exports, module) {
   const TH            = require('./test-helper');
 
   const QueryIDB = require('./query-idb');
+  const {IDBKeyRange} = window;
   var v;
 
   TH.testCase(module, {
@@ -46,13 +47,10 @@ isClient && define(function (require, exports, module) {
       api.example(() => {
         v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
           assert.same(oldVersion, 1);
-
           db.createObjectStore("TestModel");
         }});
 
         v.db.whenReady(() => {
-          assert.same(v.idb._version, 2);
-
           done();
         });
       });
@@ -78,21 +76,22 @@ isClient && define(function (require, exports, module) {
 
       api.example(() => {
         then([() => {
-          assert.same(v.idb._version, 2);
+          v.foo = v.idb._dbs.foo;
+          assert.same(v.foo._version, 2);
           this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
         }, () => {
-          const iDoc = v.idb._store.TestModel.docs.foo123;
+          const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
           v.f1.$update('age', 10);
         }, () => {
-          const iDoc = v.idb._store.TestModel.docs.foo123;
+          const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
 
           v.f1.$remove();
         }, () => {
-          const iDoc = v.idb._store.TestModel.docs.foo123;
+          const iDoc = v.foo._store.TestModel.docs.foo123;
           refute(iDoc);
 
           done();
@@ -104,7 +103,7 @@ isClient && define(function (require, exports, module) {
     "test loadDoc"() {
       /**
        * Insert a record into a model but ignore #queueChange for same
-       * record
+       * record and do nothing if record already in model;
        **/
       TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('loadDoc');
@@ -112,12 +111,19 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel");
       }});
       poll();
-      v.TestModel.onChange((now, was) => {v.db.queueChange(now, was)});
+      v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
       v.db.loadDoc('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       poll();
+      v.foo = v.idb._dbs.foo;
 
       assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
-      assert.equals(v.idb.objectStore('TestModel').docs, {});
+      assert.equals(v.foo.objectStore('TestModel').docs, {});
+      assert(v.called);
+      v.called = false;
+      v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
+      poll();
+      assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
+      refute(v.called);
     },
 
     "test put"() {
@@ -134,7 +140,8 @@ isClient && define(function (require, exports, module) {
         v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       });
       poll();
-      assert.equals(v.idb.objectStore('TestModel').docs.foo123, v.rec);
+      v.foo = v.idb._dbs.foo;
+      assert.equals(v.foo.objectStore('TestModel').docs.foo123, v.rec);
     },
 
     "test get"(done) {
@@ -200,7 +207,46 @@ isClient && define(function (require, exports, module) {
         }).catch(v.error);
         v.idb.yield(0);
       }).catch(v.error);
+    },
 
+    "test Index"() {
+      /**
+       * retreive a named index for an objectStore
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      api.protoMethod('index');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel")
+          .createIndex('name', 'name', {unique: false});
+      }});
+      poll();
+      v.foo = v.idb._dbs.foo;
+
+      v.t1 = v.foo.objectStore('TestModel');
+      v.t1.docs = {
+        r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
+        r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
+        r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
+        r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
+      };
+
+      v.db.index("TestModel", "name")
+        .getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ans = docs);
+
+      poll();
+      assert.equals(v.ans, [v.r4]);
+
+      v.db.index("TestModel", "name")
+        .getAll().then(docs => v.ans = docs);
+
+      poll();
+      assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
+
+      v.db.index("TestModel", "name")
+        .get('Ronald').then(docs => v.ans = docs);
+
+      poll();
+      assert.equals(v.ans, v.r1);
     },
   });
 

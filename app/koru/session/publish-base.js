@@ -24,7 +24,7 @@ define(function(require, exports, module) {
       const promise = preload && preload(sub);
       if (callback) {
         if (promise && promise.then)
-          promise.then(callback);
+          promise.then(() => {callback()}, err => {callback(err)});
         else
           callback();
       }

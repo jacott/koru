@@ -189,7 +189,7 @@ isClient && define(function (require, exports, module) {
 
         v.sub.stop.call({}); // ensure binding
 
-        assert.calledWith(publish._filterModels, {F1: true, F2: true});
+        assert.calledWith(publish._filterModels, {F1: true, F2: true}, "stopped");
       },
 
       /**
@@ -217,7 +217,7 @@ isClient && define(function (require, exports, module) {
 
         assert.isTrue(v.sub2isResub);
 
-        assert.calledWith(publish._filterModels, {F1: true, F2: true});
+        assert.calledWith(publish._filterModels, {F1: true, F2: true}, 'userIdChanged');
       },
     },
 

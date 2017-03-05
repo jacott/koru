@@ -58,14 +58,14 @@ isClient && define(function (require, exports, module) {
 
       const subscribe = (name, ...args) => {
         v.sub = new ClientSub(v.sess, "1", name, args);
-        publish.preload(v.sub, (arg) => {
-          assert.same(arg, "from_loadBooks");
+        publish.preload(v.sub, err => {
+          assert.same(err, undefined);
           v.sub.resubscribe();
         });
       };
 
       function loadBooksFromIndexedDB() {
-        return {then(f) {f("from_loadBooks"); return this}};
+        return {then(f) {f("ignore_this"); return this}};
       }
 
       this.onEnd(() => {publish._destroy("Books")});

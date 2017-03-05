@@ -70,7 +70,7 @@ isClient && define(function (require, exports, module) {
 
       sub1.filterModels('Book', 'Catalog');
 
-      assert.calledWith(publish._filterModels, {Book: true, Catalog: true});
+      assert.calledWithExactly(publish._filterModels, {Book: true, Catalog: true});
     },
   });
 });
