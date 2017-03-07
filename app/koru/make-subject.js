@@ -1,18 +1,18 @@
 define(['module', './main'], function(module, koru) {
-  return function makeSubject(subject, observeName, notifyName) {
-    observeName = observeName || 'onChange';
-    notifyName = notifyName || 'notify';
-    const allStopped = subject['allStopped_'+observeName];
-    const init = subject['init_'+observeName];
-
+  return function makeSubject(
+    subject={}, observeName='onChange', notifyName='notify',
+    {allStopped, init, stopAllName}={}
+  ) {
     let firstOb = true;
     const observers = new Set;
 
-    subject['stopAll_'+observeName] = () => {
-      firstOb = true;
-      observers.clear();
-      allStopped && allStopped.call(subject);
-    };
+    if (stopAllName) {
+      subject[stopAllName] = () => {
+        firstOb = true;
+        observers.clear();
+        allStopped && allStopped(subject);
+      };
+    }
 
     subject[observeName] = callback => {
       if (firstOb) {
@@ -42,10 +42,10 @@ define(['module', './main'], function(module, koru) {
         stop() {
           if (! key) return;
           observers.delete(key);
-          if (observers.length) return;
+          for (let o of observers) return;
           firstOb = true;
           key = null;
-          allStopped && allStopped.call(subject);
+          allStopped && allStopped(subject);
         }
       };
       return key;

@@ -85,5 +85,17 @@ define(function (require, exports, module) {
         assert.same(v.stub3.firstCall.thisValue, h2);
       });
     },
+
+    "test allStopped"() {
+      const subject = sut({eg: 1}, 'onChange', 'notify', {allStopped: v.allStopped = this.stub()});
+
+      const oc1 = subject.onChange(this.stub());
+      const oc2 = subject.onChange(this.stub());
+      oc1.stop();
+
+      refute.called(v.allStopped);
+      oc2.stop();
+      assert.calledWith(v.allStopped, subject);
+    },
   });
 });
