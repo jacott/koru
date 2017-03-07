@@ -51,6 +51,13 @@ define(function(require, exports, module) {
       }
     }
 
+    static _resolveOrReject() {
+      let resolve, reject;
+      const p = new Promise((res, rej) => {resolve = res; reject = rej});
+      p._resolve = resolve; p._reject = reject;
+      return p;
+    }
+
     static _poll() {
       let finished = false;
       while (! finished) {
