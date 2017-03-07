@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const List    = require('models/list');
   const Todo    = require('models/todo');
 
-  publish(module, 'all', function () {
+  publish({module, init() {
     var sub = this;
 
     if (isClient) {
@@ -29,5 +29,5 @@ define(function(require, exports, module) {
       handles.push(model.onChange(sub.sendUpdate.bind(sub)));
       new Query(model).forEach(doc => sub.sendUpdate(doc));
     }
-  });
+  }});
 });
