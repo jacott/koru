@@ -61,6 +61,29 @@ isClient && define(function (require, exports, module) {
       refute.called(sut.init);
     },
 
+    "test cancel"() {
+      const popup = Dom.h({class: 'popup', $style: 'position:absolute', div: 'popup'});
+      const page = Dom.h({div: popup, class: 'page'});
+      Dom.setCtx(page);
+
+      test.onEnd(function () {TH.pointerDownUp(popup)});
+
+      sut.append('below', {container: page, origin: document.body});
+      assert.dom('.popup');
+      TH.trigger(popup, 'touchstart');
+      TH.trigger(popup, 'pointerdown');
+      assert.dom('.page');
+
+      TH.trigger(page, 'pointerdown');
+      refute.dom('.page');
+
+      Dom.setCtx(page);
+      sut.append('below', {container: page, origin: document.body});
+      assert.dom('.popup');
+      TH.trigger(page, 'touchstart');
+      refute.dom('.page');
+    },
+
     "test closes with destroyMeWith"() {
       v.elm = Dom.h({div: {div: "subject"}, id: 'subject'});
       v.elmCtx = Dom.setCtx(v.elm);

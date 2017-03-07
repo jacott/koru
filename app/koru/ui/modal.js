@@ -62,8 +62,10 @@ define(function(require, exports, module) {
           options.popup = options.popup.nextElementSibling;
       }
       options.container.addEventListener('pointerdown', callback, true);
+      options.container.addEventListener('touchstart', callback, true);
       options.ctx.onDestroy(function () {
         options.container.removeEventListener('pointerdown', callback, true);
+        options.container.removeEventListener('touchstart', callback, true);
         if (options === topModal) {
           topModal = topModal.prev;
           if (topModal == null) {
