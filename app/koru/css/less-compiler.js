@@ -35,7 +35,7 @@ define(function(require, exports, module) {
       },
     }, function (error, output) {
       if (error) {
-        const fn = error.filename || path;
+        let fn = error.filename || path;
         if (fn === 'input') fn = path;
         if (fn[0] === '/') fn = fn.slice(1);
         koru.error(koru.util.extractError({
