@@ -223,25 +223,18 @@ define(function(require, exports, module) {
     eventTypes[selector||':TOP'] = func;
   }
 
-  function menustart(event) {
-    if (event.type === "pointerdown" && event.pointerType === 'touch') {
-      const {currentTarget, target} = event;
-      const pu = event => {
-        if (target === event.target && event.type === 'pointerup' &&
-            document === event.currentTarget)
-          return;
-        document.removeEventListener('pointerup', pu, true);
-        document.removeEventListener('pointermove', pu, true);
-        currentTarget.removeEventListener('pointerup', pu);
+  let lastTouch;
 
-        event.type === 'pointerup' && currentTarget === event.currentTarget &&
-          onEvent(event, 'menustart');
-      };
-      currentTarget.addEventListener('pointerup', pu);
-      document.addEventListener('pointermove', pu, true);
-      document.addEventListener('pointerup', pu, true);
-    } else {
+  function menustart(event) {
+    if (lastTouch && event.type === "click") {
+      if (lastTouch !== 1)
+        return;
+      lastTouch = true;
+    }
+    if (event.type === "click" || event.pointerType !== 'touch') {
       onEvent(event, 'menustart');
+    } else {
+      lastTouch = 1;
     }
   }
 

@@ -342,44 +342,18 @@ isClient && define(function (require, exports, module) {
         };
       },
 
-      "test non touch"() {
+      "test non touch pointerdown"() {
         Dom.triggerEvent(v.target, 'pointerdown');
         assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerdown'));
-      },
-
-      "test click event"() {
-        Dom.triggerEvent(v.target, 'click');
-        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'click'));
       },
 
       "test touch click"() {
         Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
 
         refute.called(v.menustart);
-        Dom.triggerEvent(v.target, 'pointerup');
+        Dom.triggerEvent(v.target, 'click');
 
-        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerup'));
-      },
-
-      "test touch up outside target"() {
-        Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
-        this.spy(document, 'removeEventListener');
-        Dom.triggerEvent(v.foo, 'pointerup');
-
-        refute.called(v.menustart);
-        assert.calledWith(document.removeEventListener, 'pointerup', TH.match.func, true);
-        assert.calledWith(document.removeEventListener, 'pointermove', TH.match.func, true);
-      },
-
-      "test touch move"() {
-        Dom.triggerEvent(v.target, 'pointerdown', {pointerType: 'touch'});
-        this.spy(document, 'removeEventListener');
-        Dom.triggerEvent(v.target, 'pointermove');
-        Dom.triggerEvent(v.target, 'pointerup');
-
-        refute.called(v.menustart);
-        assert.calledWith(document.removeEventListener, 'pointerup', TH.match.func, true);
-        assert.calledWith(document.removeEventListener, 'pointermove', TH.match.func, true);
+        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'click'));
       },
 
       "test $detachEvents"() {
