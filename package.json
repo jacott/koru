@@ -21,14 +21,14 @@
   "gypfile": true,
   "dependencies": {
     "autoprefixer": "^6.3.6",
-    "babel-generator": "^6.10.2",
-    "babel-types": "^6.10.2",
-    "babylon": "^6.8.1",
+    "babel-generator": "^6.23.0",
+    "babel-types": "^6.23.0",
+    "babylon": "^6.16.1",
     "bindings": "^1.2.1",
     "clean-css": "^3.4.17",
     "commander": "^2.9.0",
     "css-selector-parser": "^1.1.0",
-    "fibers": "^1.0.13",
+    "fibers": "^1.0.15",
     "htmlparser2": "^3.9.1",
     "less": "^2.7.1",
     "marked": "^0.3.6",
@@ -49,5 +49,5 @@
   "engines": {
     "node": ">=6.9.1"
   },
-  "version": "0.12.8"
+  "version": "0.12.9"
 }
