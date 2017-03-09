@@ -725,9 +725,10 @@ define(function(require, exports, module) {
     }
   }
 
-  function method(api, methodName, obj, methods) {
+  function method(api, methodKey, obj, methods) {
     const {test} = TH;
-    const func = obj[methodName];
+    const func = obj[methodKey];
+    const methodName = methodKey.toString();
     if (! func)
       throw new Error(`method "${methodName}" not found`);
 
@@ -755,7 +756,7 @@ define(function(require, exports, module) {
     }
     api.target = details;
 
-    const desc = koru.replaceProperty(obj, methodName, {
+    const desc = koru.replaceProperty(obj, methodKey, {
       value(...args) {
         const entry = [
           args.map(obj => api.valueTag(obj)),
@@ -771,9 +772,9 @@ define(function(require, exports, module) {
 
     onTestEnd(api, () => {
       if (desc) {
-        Object.defineProperty(obj, methodName, desc);
+        Object.defineProperty(obj, methodKey, desc);
       } else {
-        delete obj[methodName];
+        delete obj[methodKey];
       }
     });
   }

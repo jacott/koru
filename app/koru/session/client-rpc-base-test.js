@@ -1,11 +1,12 @@
 define(function (require, exports, module) {
-  var test, v;
   const koru         = require('../main');
   const util         = require('../util');
-  const rpc          = require('./client-rpc-base');
   const message      = require('./message');
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
+
+  const rpc          = require('./client-rpc-base');
+  var test, v;
 
   TH.testCase(module, {
     setUp () {

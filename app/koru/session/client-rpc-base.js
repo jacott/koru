@@ -1,15 +1,19 @@
 define(function(require, exports, module) {
-  const util = require('koru/util');
-  const koru = require('../main');
+  const RPCQueue = require('koru/session/rpc-queue');
+  const util     = require('koru/util');
+  const koru     = require('../main');
 
-  module.exports = function init(session) {
+  const penderSym = Symbol();
+
+  function init(session, {pender=new RPCQueue()}={}) {
     util.merge(session, {
-      _waitMs: Object.create(null),
       _msgId: 0,
       rpc,
       sendM,
-      isRpcPending,
+      isRpcPending() {return pender.isRpcPending()},
     });
+
+    session[penderSym] = pender;
 
     session.state._onConnect['20-rpc'] || session.state.onConnect("20-rpc", onConnect);
 
@@ -17,8 +21,6 @@ define(function(require, exports, module) {
 
     return session;
   };
-
-  function isRpcPending() {return ! util.isObjEmpty(this._waitMs);}
 
   function rpc(name, ...args) {
     var func = args[args.length - 1];
@@ -42,7 +44,7 @@ define(function(require, exports, module) {
     var msgId = (++this._msgId).toString(36);
     var data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
-    this._waitMs[msgId] = [data, func];
+    this[penderSym].push(msgId, [data, func]);
     this.state.incPending();
     this.state.isReady() && this.sendBinary('M', data);
     return msgId;
@@ -51,9 +53,9 @@ define(function(require, exports, module) {
   function recvM(data) {
     var session = this;
     var msgId = data[0];
-    var args = session._waitMs[msgId];
+    var args = session[penderSym].get(msgId);
     if (! args) return;
-    delete session._waitMs[msgId];
+    session[penderSym].delete(msgId);
     session.state.decPending();
     var type = data[1];
     if (type === 'e') {
@@ -68,14 +70,10 @@ define(function(require, exports, module) {
   }
 
   function onConnect (session) {
-    var list = Object.keys(session._waitMs).sort(function (a, b) {
-      if (a.length < b.length) return -1;
-      if (a.length > b.length) return 1;
-      return (a < b) ? -1 : a === b ? 0 : 1;
-    });
-
-    util.forEach(list, function (msgId) {
-      session.sendBinary('M', session._waitMs[msgId][0]);
-    });
+    for (let msg of session[penderSym]) {
+      session.sendBinary('M', msg[0]);
+    }
   }
+
+  return init;
 });
