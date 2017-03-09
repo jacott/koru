@@ -63,7 +63,10 @@ define(function(require, exports, module) {
     }
 
     static canIUse() {
-      return !! window.indexedDB;
+      if (! window.IDBKeyRange)
+        return false;
+
+      return !! window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes;
     }
 
     get objectStoreNames() {

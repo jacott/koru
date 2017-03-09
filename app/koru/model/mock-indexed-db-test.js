@@ -1,9 +1,27 @@
 isClient && define(function (require, exports, module) {
+  const koru = require('koru');
   const TH   = require('./test-helper');
 
   const sut  = require('./mock-indexed-db');
   const {IDBKeyRange} = window;
   var v;
+
+  function canIUse() {
+    if (! window.IDBKeyRange)
+      return false;
+
+    return !! window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes;
+  }
+
+  if (! canIUse()) {
+    TH.testCase(module, {
+      "test not supported"() {
+        koru.info("Browser not supported");
+        refute(canIUse());
+      },
+    });
+    return;
+  }
 
   TH.testCase(module, {
     setUp() {

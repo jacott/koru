@@ -2,8 +2,6 @@ define(function(require, exports, module) {
   const TH   = require('koru/test/main');
   const util = require('koru/util');
 
-
-
   class Database {
     constructor(version) {
       this._pending = [];

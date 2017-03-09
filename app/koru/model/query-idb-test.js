@@ -5,6 +5,7 @@ isClient && define(function (require, exports, module) {
    * For testing one can use {#koru/model/mockIndexedDB} in replacement of
    * `indexedDB`
    **/
+  const koru          = require('koru');
   const Model         = require('koru/model');
   const mockIndexedDB = require('koru/model/mock-indexed-db');
   const TransQueue    = require('koru/model/trans-queue');
@@ -15,6 +16,16 @@ isClient && define(function (require, exports, module) {
   const QueryIDB = require('./query-idb');
   const {IDBKeyRange} = window;
   var v;
+
+  if (!QueryIDB.canIUse()) {
+    TH.testCase(module, {
+      "test not supported"() {
+        koru.info("Browser not supported");
+        refute(QueryIDB.canIUse());
+      },
+    });
+    return;
+  }
 
   TH.testCase(module, {
     setUp() {
