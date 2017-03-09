@@ -134,7 +134,7 @@ isClient && define(function (require, exports, module) {
         sut.choose(null, v.cb = test.stub());
 
         assert.dom('#ColorPicker', function () {
-          assert.dom('[name=apply]:not([disabled]');
+          assert.dom('[name=apply]:not([disabled])');
           assert.dom('[name=hex]', {value: 'ffffff'});
           TH.input('[name=hex]', 'junk');
           assert.dom('[name=apply][disabled]');

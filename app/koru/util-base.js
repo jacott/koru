@@ -1,14 +1,16 @@
 define(function(require, exports, module) {
   module.exports = {
-    browserVersion(ua){
-      let tmp;
-      const m = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
+    browserVersion(ua) {
+      const isMobile = /\bMobi(le)?\b/.test(ua);
+      const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
       if(/trident/i.test(m[1])){
-        tmp=  /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
+        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
         return 'IE '+(tmp[1] || '');
       }
-      if((tmp= ua.match(/version\/([\.\d]+)/i))!= null) m[2]= tmp[1];
-      return m.slice(1).join(' ');
+      m[1] = m[1] ? m[1].replace(/\s.*/, '') : 'Unknown';
+      const tmp = ua.match(/version\/([\.\d]+)/i);
+      if(tmp != null) m[2]= tmp[1];
+      return (isMobile ? 'Mobile ' : '') + m.slice(1).join(' ');
     },
 
     merge(dest, source) {

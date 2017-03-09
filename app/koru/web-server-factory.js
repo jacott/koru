@@ -138,12 +138,12 @@ define(function (require, exports, module) {
         const jsSt = fst.stat(outPath);
 
 
-        if (!jsSt) fst.mkdir(paths[0]+'.build');
-
         if (! srcSt) {
           notFound(res); // not found
           return true;
         }
+
+        if (!jsSt) fst.mkdir(paths[0]+'.build');
 
         if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
           compiler(type, path, outPath);
