@@ -155,6 +155,29 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.foo.objectStore('TestModel').docs.foo123, v.rec);
     },
 
+    "test delete"() {
+      /**
+       * Insert or update a record in indexedDB
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      api.protoMethod('put');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      v.foo = v.idb._dbs.foo;
+      poll();
+      v.foo.objectStore('TestModel').docs = {
+        foo123: {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
+        foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'},
+      };
+
+      v.db.whenReady(() => {
+        v.db.delete('TestModel', 'foo123');
+      });
+      poll();
+      assert.equals(v.foo.objectStore('TestModel').docs, {foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
+    },
+
     "test get"(done) {
       /**
        * Find a record in a {#koru/model/main} by its `_id`

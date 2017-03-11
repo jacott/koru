@@ -1,11 +1,16 @@
 define(function (require, exports, module) {
+  /**
+   * Attach rpc to a session
+   **/
+  const RPCQueue     = require('koru/session/rpc-queue');
+  const api          = require('koru/test/api');
   const koru         = require('../main');
   const util         = require('../util');
   const message      = require('./message');
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
 
-  const rpc          = require('./client-rpc-base');
+  const sut = require('./client-rpc-base');
   var test, v;
 
   TH.testCase(module, {
@@ -14,13 +19,14 @@ define(function (require, exports, module) {
       v = {};
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
-      v.sess = rpc({
+      v.sess = sut({
         provide: test.stub(),
         _rpcs: {},
         _commands: {},
         sendBinary: v.sendBinary = test.stub(),
         state: v.state,
         globalDict: message.newGlobalDict(),
+        $inspect() {return '{Session}'},
       });
       assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
         v.recvM = function (...args) {
@@ -28,17 +34,37 @@ define(function (require, exports, module) {
         };
         return true;
       }));
+      api.module();
     },
 
     tearDown () {
       v = null;
     },
 
-    /**
-     * Ensure docs are tested against matches after subscriptions have returned.
-     * Any unwanted docs should be removed.
-     */
+    "test setup"() {
+      /**
+       * Wire up rpc to a session
+       *
+       * @param session attach rpc methods to this session
+
+       * @param rpcQueue queue to store messages yet to have a
+       * response. This can be a persistent queue like
+       * {#koru/session/rcp-idb-queue}
+
+       **/
+      api.custom(sut);
+
+      const rpcQueue = new RPCQueue();
+      sut(v.sess, {rpcQueue});
+      v.sess.sendM('foo.rpc', [1, 2]);
+      assert.equals(rpcQueue.get('1'), [['1', 'foo.rpc', 1, 2], undefined]);
+    },
+
     "reconnect": {
+      /**
+       * Ensure docs are tested against matches after subscriptions have returned.
+       * Any unwanted docs should be removed.
+       **/
       "test replay messages" () {
         assert.calledWith(v.state.onConnect, "20-rpc", TH.match(func => v.onConnect = func));
         v.sess.rpc("foo.bar", 1, 2);
@@ -55,9 +81,7 @@ define(function (require, exports, module) {
     },
 
     "test server only rpc" () {
-      refute.exception(function () {
-        v.sess.rpc('foo.rpc', 1, 2, 3);
-      });
+      refute.exception(() => {v.sess.rpc('foo.rpc', 1, 2, 3)});
 
       assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },

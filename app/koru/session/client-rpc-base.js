@@ -3,17 +3,17 @@ define(function(require, exports, module) {
   const util     = require('koru/util');
   const koru     = require('../main');
 
-  const penderSym = Symbol();
+  const rpcQueueSym = Symbol();
 
-  function init(session, {pender=new RPCQueue()}={}) {
+  function init(session, {rpcQueue=new RPCQueue()}={}) {
     util.merge(session, {
       _msgId: 0,
       rpc,
       sendM,
-      isRpcPending() {return pender.isRpcPending()},
+      isRpcPending() {return rpcQueue.isRpcPending()},
     });
 
-    session[penderSym] = pender;
+    session[rpcQueueSym] = rpcQueue;
 
     session.state._onConnect['20-rpc'] || session.state.onConnect("20-rpc", onConnect);
 
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
     var msgId = (++this._msgId).toString(36);
     var data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
-    this[penderSym].push(msgId, [data, func]);
+    this[rpcQueueSym].push(msgId, [data, func]);
     this.state.incPending();
     this.state.isReady() && this.sendBinary('M', data);
     return msgId;
@@ -53,9 +53,9 @@ define(function(require, exports, module) {
   function recvM(data) {
     var session = this;
     var msgId = data[0];
-    var args = session[penderSym].get(msgId);
+    var args = session[rpcQueueSym].get(msgId);
     if (! args) return;
-    session[penderSym].delete(msgId);
+    session[rpcQueueSym].delete(msgId);
     session.state.decPending();
     var type = data[1];
     if (type === 'e') {
@@ -70,9 +70,7 @@ define(function(require, exports, module) {
   }
 
   function onConnect (session) {
-    for (let msg of session[penderSym]) {
-      session.sendBinary('M', msg[0]);
-    }
+    session[rpcQueueSym].resend(session);
   }
 
   return init;

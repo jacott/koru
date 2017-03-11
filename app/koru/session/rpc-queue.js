@@ -7,22 +7,21 @@ define(function(require, exports, module) {
       this.queue.tmp = 1;
       delete this.queue.tmp; // hint to optimizer
     }
-    push(msgId, data) {this.queue[msgId] = data}
-    delete(msgId) {delete this.queue[msgId]}
-    get(msgId) {return this.queue[msgId]}
+    push(id, data) {this.queue[id] = data}
+    delete(id) {delete this.queue[id]}
+    get(id) {return this.queue[id]}
     isRpcPending() {return ! util.isObjEmpty(this.queue)}
+    resend(session) {
+      const {queue} = this;
+      Object.keys(queue).sort(function (a, b) {
+        if (a.length < b.length) return -1;
+        if (a.length > b.length) return 1;
+        return (a < b) ? -1 : a === b ? 0 : 1;
+      }).forEach(id => {
+        session.sendBinary('M', queue[id][0]);
+      });
+    }
   }
-
-  RPCQueue.prototype[Symbol.iterator] = function* () {
-    const {queue} = this;
-    const list = Object.keys(queue).sort(function (a, b) {
-      if (a.length < b.length) return -1;
-      if (a.length > b.length) return 1;
-      return (a < b) ? -1 : a === b ? 0 : 1;
-    });
-
-    for (let id of list) yield queue[id];
-  };
 
   return RPCQueue;
 });

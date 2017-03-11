@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+isClient && define(function (require, exports, module) {
   /**
    * Default queue for RPC messages to be sent. This queue is for an
    * in memory queue but can be replaced by a persistent queue for
@@ -32,19 +32,24 @@ define(function (require, exports, module) {
       assert.same(queue.get(12), 'hello');
     },
 
-    "test iterator"() {
+    "test resend"() {
       /**
        * Iterating over the queue returns messages in msgId order.
        **/
-      api.protoMethod(Symbol.iterator);
+      api.protoMethod('resend');
 
       const queue = new sut();
-      queue.push(50, 'msg for 50');
-      queue.push(6, 'msg for 6');
-      queue.push(8, 'msg for 8');
+      queue.push(50, ['msg for 50']);
+      queue.push(6, ['msg for 6']);
+      queue.push(8, ['msg for 8']);
 
-      assert.equals(Array.from(queue), ['msg for 6', 'msg for 8', 'msg for 50']);
+      const ans = [];
+      queue.resend({sendBinary(type, data) {
+        assert.same(type, 'M');
+        ans.push(data);
+      }});
 
+      assert.equals(ans, ['msg for 6', 'msg for 8', 'msg for 50']);
     },
   });
 });

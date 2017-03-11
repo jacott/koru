@@ -55,7 +55,6 @@ define(function(require, exports, module) {
           error(this, event);
         };
         req.onsuccess = event => {
-
           const idb = this[iDB] = event.target.result;
           bq.nextAction();
         };
@@ -100,6 +99,14 @@ define(function(require, exports, module) {
       });
     }
 
+    delete(modelName, id) {
+      TransQueue.transaction(() => {
+        const pu = getPendingUpdates(this);
+        const pm = pu[modelName] || (pu[modelName] = {});
+        pm[id] = null;
+      });
+    }
+
     close() {
       this[iDB] && this[iDB].close();
     }
@@ -114,8 +121,19 @@ define(function(require, exports, module) {
     }
 
     whenReady(onFulfilled, onRejected) {
-      const iq = this[idleQueue];
-      return iq ? iq.p.then(onFulfilled, onRejected) : Promise.resolve(onFulfilled(this));
+      return new Promise((resolve, reject) => {
+        const bq = this[busyQueue];
+        bq.queueAction(() => {
+          try {
+            Promise.resolve(onFulfilled(this))
+              .then(resolve, reject);
+          } catch(ex) {
+            reject(ex);
+          } finally {
+            bq.nextAction();
+          }
+        });
+      });
     }
 
     createObjectStore(name) {
@@ -219,7 +237,6 @@ define(function(require, exports, module) {
     return new Promise((resolve, reject) => {
       const bq = db[busyQueue];
       bq.queueAction(() => {
-        bq.nextAction();
         try {
           const req = body();
           req.onerror = event => {
@@ -232,6 +249,8 @@ define(function(require, exports, module) {
         } catch(ex) {
           error(db, ex);
           reject(ex);
+        } finally {
+          bq.nextAction();
         }
       });
     });
