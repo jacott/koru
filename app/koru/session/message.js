@@ -1,70 +1,112 @@
 if (! Uint8Array.prototype.hasOwnProperty('slice')) Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
 
-define(function(require, exports, module) {
-  var util = require('../util');
+define(function() {
+  const forEach = (list, body) => {
+    const len = list.length;
+    for(let i = 0; i < len; ++i) body(list[i]);
+  };
 
-  var tTerm = 0;
-  var tUndef = 1;
-  var tNull = 2;
-  var tTrue = 3;
-  var tFalse = 4;
-  var tEmptyString = 5;
-  var tArray = 6;
-  var tObject = 7;
-  var tDict = 8;
-  var tString = 9;
-  var tInt8 = 10;
-  var tInt16 = 11;
-  var tInt32 = 12;
-  var tFloat64 = 13;
-  var tDec4 = 14;
-  var tDate = 15;
-  var tBinary = 16;
-  var tDictString = 17;
-  var tSparseSmall = 18;
-  var tSparseLarge = 19;
+  const tTerm = 0;
+  const tUndef = 1;
+  const tNull = 2;
+  const tTrue = 3;
+  const tFalse = 4;
+  const tEmptyString = 5;
+  const tArray = 6;
+  const tObject = 7;
+  const tDict = 8;
+  const tString = 9;
+  const tInt8 = 10;
+  const tInt16 = 11;
+  const tInt32 = 12;
+  const tFloat64 = 13;
+  const tDec4 = 14;
+  const tDate = 15;
+  const tBinary = 16;
+  const tDictString = 17;
+  const tSparseSmall = 18;
+  const tSparseLarge = 19;
 
-  var tSmString = 0x80;
-  var tSmNumber = 0x40;
+  const tSmString = 0x80;
+  const tSmNumber = 0x40;
 
-  var toStringFunc = Object.prototype.toString;
+  const toStringFunc = Object.prototype.toString;
 
-  exports.encodeMessage = function (type, args, globalDict) {
-    var buffer = [];
-    var dict = newLocalDict();
+  const exports = {
+    encodeMessage(type, args, globalDict) {
+      const buffer = [];
+      let dict = newLocalDict();
 
-    util.forEach(args, function (o) {
-      encode(buffer, o, [globalDict, dict]);
-    });
+      forEach(args, function (o) {
+        encode(buffer, o, [globalDict, dict]);
+      });
 
-    dict = encodeDict(dict, [type.charCodeAt(0)]);
+      dict = encodeDict(dict, [type.charCodeAt(0)]);
 
-    var result = new Uint8Array(dict.length + buffer.length);
-    result.set(dict, 0);
-    result.set(buffer, dict.length);
+      const result = new Uint8Array(dict.length + buffer.length);
+      result.set(dict, 0);
+      result.set(buffer, dict.length);
 
-    return result;
-  },
+      return result;
+    },
 
-  exports.decodeMessage = function (u8, globalDict) {
-    var dict = newLocalDict();
-    var index = decodeDict(u8, 0, dict);
+    decodeMessage(u8, globalDict) {
+      const dict = newLocalDict();
+      let index = decodeDict(u8, 0, dict);
 
-    var len = u8.length;
-    var out = [];
-    for(;index < len; index = result[1]) {
-      var result = decode(u8, index, [globalDict, dict]);
-      out.push(result[0]);
-    }
+      const len = u8.length;
+      const out = [];
+      for(;index < len; index = result[1]) {
+        var result = decode(u8, index, [globalDict, dict]);
+        out.push(result[0]);
+      }
 
-    return out;
-  },
+      return out;
+    },
 
-  exports._encode =  encode;
+    _encode:  encode,
+    _decode: decode,
+    _newLocalDict: newLocalDict,
+
+    newGlobalDict() {
+      const dict = newLocalDict();
+      dict.limit = 0xfff0;
+      return dict;
+    },
+
+    finalizeGlobalDict(dict) {
+      if (dict.index === null) return;
+      const c2k = dict.c2k;
+      const k2c = dict.k2c;
+      const delta = dict.limit = 0xffff - c2k.length;
+
+      for (let i = 0; i < c2k.length; ++i) {
+        k2c[c2k[i]] = i + delta;
+      }
+      dict.index = null;
+      return dict;
+    },
+
+    toHex(data) {
+      var result = [];
+      for(var i = 0; i < data.length; ++i) {
+        var ltr = data[i].toString(16);
+        if (ltr.length === 1) ltr = '0'+ltr;
+        result.push(ltr);
+      }
+      return result;
+    },
+
+    addToDict,
+    encodeDict,
+    decodeDict,
+    getDictItem,
+  };
+
   function encode(buffer, object, dict) {
-    var tmpAb = new ArrayBuffer(8);
-    var tmpDv = new DataView(tmpAb);
-    var tmpU8 = new Uint8Array(tmpAb);
+    const tmpAb = new ArrayBuffer(8);
+    const tmpDv = new DataView(tmpAb);
+    const tmpU8 = new Uint8Array(tmpAb);
 
     switch(typeof object) {
 
@@ -74,16 +116,17 @@ define(function(require, exports, module) {
 
 
       if (object.length !== 1) {
-        var dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{' ? addToDict(dict, object) : getString(dict, object);
+        const dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{' ?
+                addToDict(dict, object) : getString(dict, object);
         if (dkey !== null) {
           buffer.push(tDictString, dkey >> 8, dkey & 0xff);
           return;
         }
       }
-      var index = buffer.length;
+      const index = buffer.length;
       buffer.push(tSmString);
       utf16to8(buffer, object);
-      var len = buffer.length - index - 1;
+      const len = buffer.length - index - 1;
       if (len < 128)
         return buffer[index] = buffer[index] | (buffer.length - index - 1);
 
@@ -107,7 +150,7 @@ define(function(require, exports, module) {
       tmpDv.setInt32(0, object);
       if (tmpDv.getInt32(0) === object) {
         buffer.push(tInt32);
-        return util.forEach(tmpU8.subarray(0, 4), function (v) {
+        return forEach(tmpU8.subarray(0, 4), function (v) {
           buffer.push(v);
         });
       }
@@ -116,7 +159,7 @@ define(function(require, exports, module) {
       tmpDv.setInt32(0, object*10000);
       if (tmpDv.getInt32(0) === object*10000) {
         buffer.push(tDec4);
-        return util.forEach(tmpU8.subarray(0, 4), function (v) {
+        return forEach(tmpU8.subarray(0, 4), function (v) {
           buffer.push(v);
         });
       }
@@ -124,7 +167,7 @@ define(function(require, exports, module) {
       tmpDv.setFloat64(0, object);
 
       buffer.push(tFloat64);
-      return util.forEach(tmpU8, function (v) {
+      return forEach(tmpU8, function (v) {
         buffer.push(v);
       });
 
@@ -142,14 +185,14 @@ define(function(require, exports, module) {
     case "[object Date]":
       buffer.push(tDate);
       tmpDv.setFloat64(0, object.getTime());
-      return util.forEach(tmpU8, function (v) {
+      return forEach(tmpU8, function (v) {
         buffer.push(v);
       });
     case "[object Array]":
       buffer.push(tArray);
-      var last = -1;
+      let last = -1;
       object.forEach(function (o, index) {
-        var diff = index - last - 1;
+        const diff = index - last - 1;
         if (diff !== 0) {
           if (diff < 256) {
             buffer.push(tSparseSmall);
@@ -159,7 +202,7 @@ define(function(require, exports, module) {
             if (diff > 4294967294) throw new Error("sparse array too sparse");
             buffer.push(tSparseLarge);
             tmpDv.setUint32(0, diff);
-            util.forEach(tmpU8.subarray(0, 4), function (v) {
+            forEach(tmpU8.subarray(0, 4), function (v) {
               buffer.push(v);
             });
           }
@@ -175,17 +218,17 @@ define(function(require, exports, module) {
 
       buffer.push(tBinary);
       tmpDv.setUint32(0, object.byteLength);
-      util.forEach(tmpU8.subarray(0, 4), function (v) {
+      forEach(tmpU8.subarray(0, 4), function (v) {
         buffer.push(v);
       });
-      return util.forEach(object, function (v) {
+      return forEach(object, function (v) {
         buffer.push(v);
       });
     }
 
     buffer.push(tObject);
-    for(var key in object) {
-      var dkey = addToDict(dict, key);
+    for (let key in object) {
+      const dkey = addToDict(dict, key);
       if (dkey === null) throw new Error("Dictionary overflow");
       buffer.push(dkey >> 8, dkey & 0xff);
       encode(buffer, object[key], dict);
@@ -193,27 +236,7 @@ define(function(require, exports, module) {
     buffer.push(tTerm);
   }
 
-  exports.newGlobalDict = function () {
-    var dict = newLocalDict();
-    dict.limit = 0xfff0;
-    return dict;
-  };
-
-  exports._newLocalDict = newLocalDict;
   function newLocalDict() {return {index: 0, k2c: {}, c2k: []}}
-
-  exports.finalizeGlobalDict = function (dict) {
-    if (dict.index === null) return;
-    var c2k = dict.c2k;
-    var k2c = dict.k2c;
-    var delta = dict.limit = 0xffff - c2k.length;
-
-    for(var i = 0; i < c2k.length; ++i) {
-      k2c[c2k[i]] = i + delta;
-    }
-    dict.index = null;
-    return dict;
-  };
 
   function getString(dict, word) {
     if (Array.isArray(dict)) {
@@ -226,7 +249,6 @@ define(function(require, exports, module) {
     return null;
   }
 
-  exports.addToDict = addToDict;
   function addToDict(dict, name) {
     if (Array.isArray(dict)) {
       var limit = dict[0].limit;
@@ -252,7 +274,6 @@ define(function(require, exports, module) {
     return index;
   }
 
-  exports.encodeDict = encodeDict;
   function encodeDict(dict, buffer) {
     var c2k = dict.c2k;
     var len = c2k.length;
@@ -264,7 +285,6 @@ define(function(require, exports, module) {
     return buffer;
   }
 
-  exports.decodeDict = decodeDict;
   function decodeDict(buffer, index, dict) {
     while(index < buffer.length && buffer[index] !== tTerm) {
       var pair = utf8to16(buffer, index);
@@ -274,17 +294,6 @@ define(function(require, exports, module) {
     return index + 1;
   }
 
-  exports.toHex = function (data) {
-    var result = [];
-    for(var i = 0; i < data.length; ++i) {
-      var ltr = data[i].toString(16);
-      if (ltr.length === 1) ltr = '0'+ltr;
-      result.push(ltr);
-    }
-    return result;
-  };
-
-  exports.getDictItem = getDictItem;
   function getDictItem(dict, code) {
     var d = dict[0];
     if (code >= d.limit)
@@ -292,7 +301,6 @@ define(function(require, exports, module) {
     return dict[1].c2k[code - 0x100];
   }
 
-  exports._decode = decode;
   function decode(buffer, index, dict) {
     var tmpAb = new ArrayBuffer(8);
     var tmpDv = new DataView(tmpAb);
@@ -390,50 +398,50 @@ define(function(require, exports, module) {
     throw new Error('Unsupported format: ' + byte);
   }
 
-  exports.utf16to8 = utf16to8;
   function utf16to8(out, str) {
     var len = str.length;
     for(var i = 0; i < len; ++i) {
-	    var c = str.charCodeAt(i);
-	    if ((c >= 0x0001) && (c <= 0x007F))
-	      out.push(str.charCodeAt(i));
-	    else if (c > 0x07FF)
-	      out.push(0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >>  6) & 0x3F), 0x80 | ((c >>  0) & 0x3F));
-	    else
-	      out.push(0xC0 | ((c >>  6) & 0x1F), 0x80 | ((c >>  0) & 0x3F));
+      var c = str.charCodeAt(i);
+      if ((c >= 0x0001) && (c <= 0x007F))
+	out.push(str.charCodeAt(i));
+      else if (c > 0x07FF)
+	out.push(0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >>  6) & 0x3F), 0x80 | ((c >>  0) & 0x3F));
+      else
+	out.push(0xC0 | ((c >>  6) & 0x1F), 0x80 | ((c >>  0) & 0x3F));
     }
   }
 
-  exports.utf8to16 = utf8to16;
   function utf8to16(buffer, start, end) {
     var out = "";
     var i = (start || 0) - 1;
     end = end || buffer.length;
     while(++i < end) {
-	    var c = buffer[i];
-	    switch(c >> 4) {
-	    case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-	      // 0xxxxxxx
-	      out += String.fromCharCode(c);
-	      break;
-	    case 12: case 13:
-	      // 110x xxxx   10xx xxxx
-	      var char2 = buffer[++i];
-	      out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
-	      break;
-	    case 14:
-	      // 1110 xxxx  10xx xxxx  10xx xxxx
-	      var char2 = buffer[++i];
-	      var char3 = buffer[++i];
-	      out += String.fromCharCode(((c & 0x0F) << 12) |
-					                         ((char2 & 0x3F) << 6) |
-					                         ((char3 & 0x3F) << 0));
-	      break;
+      var c = buffer[i];
+      switch(c >> 4) {
+      case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+	// 0xxxxxxx
+	out += String.fromCharCode(c);
+	break;
+      case 12: case 13:
+	// 110x xxxx   10xx xxxx
+	var char2 = buffer[++i];
+	out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+	break;
+      case 14:
+	// 1110 xxxx  10xx xxxx  10xx xxxx
+	var char2 = buffer[++i];
+	var char3 = buffer[++i];
+	out += String.fromCharCode(((c & 0x0F) << 12) |
+				   ((char2 & 0x3F) << 6) |
+				   ((char3 & 0x3F) << 0));
+	break;
       case 15:
         return [out, i + 1];
-	    }
+      }
     }
 
     return [out, i ];
   }
+
+  return exports;
 });
