@@ -8,7 +8,6 @@ define(function(require, exports, module) {
 
   const iDB = Symbol(), pendingUpdates = Symbol();
   const busyQueue = Symbol(), idleQueue = Symbol();
-  const catchAll = Symbol();
   let notMe;
 
   function whenIdle(db) {
@@ -38,7 +37,6 @@ define(function(require, exports, module) {
   class QueryIDB {
     constructor({name, version, upgrade}) {
       this[pendingUpdates] = this[idleQueue] = null;
-      this[catchAll] = Symbol();
       const bq = this[busyQueue] = new BusyQueue(this);
       bq.whenIdle = whenIdle;
       bq.whenBusy = whenBusy;
@@ -111,10 +109,6 @@ define(function(require, exports, module) {
       this[iDB] && this[iDB].close();
     }
 
-    catchAll(onRejected) {
-      return this[catchAll].p.catch(onRejected);
-    }
-
     catch(onRejected) {
       const iq = this[idleQueue];
       return iq ? iq.p.catch(onRejected) : Promise.resolve();
@@ -161,11 +155,8 @@ define(function(require, exports, module) {
     const iq = db[idleQueue];
     iq && iq.e(ex);
     db[idleQueue] = null;
-    db[busyQueue].clear();
-    const ca = db[catchAll];
-    db[catchAll] = makePQ();
-
-    if (ca.e) ca.e(ex);
+    if (db.catchAll)
+      db.catchAll(ex);
     else throw new Error(ex);
   }
 
@@ -229,6 +220,7 @@ define(function(require, exports, module) {
   function wrapOSRequest(db, modelName, body) {
     return wrapRequest(db, () => {
       const os = db[iDB].transaction(modelName).objectStore(modelName);
+      if (! os) throw new Error("No such ObjectStore: "+modelName);
       return body(os);
     });
   }
