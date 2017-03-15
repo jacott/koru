@@ -51,14 +51,13 @@ define(function(require, exports, module) {
       const sub = new ClientSub(session, (++nextId).toString(36), name, args);
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
         return sub;
-      subs[sub._id] = sub;
+      sub._wait();
       publish.preload(sub, err => {
         if (err) {
-          const last = args[args.length - 1];
-          (typeof last === 'function' ? last : koru.globalCallback)(err);
+          sub._received(err);
           return;
         }
-        sub._wait();
+        subs[sub._id] = sub;
         session.sendP(sub._id, name, sub.args);
         sub.resubscribe();
       });

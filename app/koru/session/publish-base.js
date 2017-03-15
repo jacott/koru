@@ -22,12 +22,10 @@ define(function(require, exports, module) {
     preload(sub, callback) {
       const preload = sub._subscribe && sub._subscribe[preloadSym];
       const promise = preload && preload(sub);
-      if (callback) {
-        if (promise && promise.then)
-          promise.then(() => {callback()}, err => {callback(err)});
-        else
-          callback();
-      }
+      if (promise && promise.then)
+        promise.then(() => {callback()}, err => {callback(err)});
+      else
+        callback();
     },
     _destroy(name) {delete pubs[name]},
   });

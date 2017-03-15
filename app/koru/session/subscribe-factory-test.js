@@ -18,7 +18,7 @@ isClient && define(function (require, exports, module) {
   const subscribeFactory = require('./subscribe-factory');
   const TH               = require('./test-helper');
 
-  var subscribe;
+  let subscribe;
 
   TH.testCase(module, {
     setUp() {
@@ -61,7 +61,7 @@ isClient && define(function (require, exports, module) {
     tearDown() {
       publish._destroy('foo');
       publish._destroy('foo2');
-      v = null;
+      v = subscribe = null;
     },
 
     "test sendP"() {
@@ -73,6 +73,30 @@ isClient && define(function (require, exports, module) {
       v.sess.sendP('12');
 
       assert.calledWith(v.sendBinary, 'P', ['12']);
+    },
+
+    "test _wait called before preload"() {
+      const preload = this.stub(publish, 'preload');
+      const _wait = this.spy(ClientSub.prototype, '_wait');
+
+      const sub1 = subscribe("foo", 1 ,2);
+
+      assert(_wait.calledBefore(preload));
+    },
+
+    "test preload error"() {
+      const preload = this.stub(publish, 'preload');
+
+      const sub1 = subscribe("foo", 1 ,2);
+
+      assert.calledWith(publish.preload, sub1, TH.match(cb => v.cb = cb));
+
+      this.spy(sub1, '_received');
+      this.spy(sub1, 'resubscribe');
+
+      v.cb(v.err = {error: 'error'});
+      assert.calledWith(sub1._received, v.err);
+      refute.called(sub1.resubscribe);
     },
 
     "test wait for onConnect"() {
