@@ -43,7 +43,7 @@ isClient && define(function (require, exports, module) {
         v.t1 = v.db.createObjectStore('t1', {keyPath: '_id'});
         v.t1.docs = {
           r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
-          r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
+          r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 10},
           r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
           r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
         };
@@ -68,6 +68,45 @@ isClient && define(function (require, exports, module) {
 
         v.idb.yield();
         assert.equals(v.ans, [v.r2, v.r3]);
+      },
+
+      "test openCursor"() {
+        v.ans = [];
+        v.t1.openCursor()
+          .onsuccess = ({target: {result}}) => {
+            if (result) {
+              v.ans.push(result.value);
+              if (v.ans.length < 3) result.continue();
+            }
+          };
+
+        v.idb.yield();
+        assert.equals(v.ans, [v.r1, v.r2, v.r3]);
+
+        v.ans = [];
+        v.t1.openCursor(IDBKeyRange.bound('r2', 'r4', false, true), 'prev')
+          .onsuccess = ({target: {result}}) => {
+            if (result) {
+              v.ans.push(result.value);
+              result.continue();
+            }
+          };
+
+        v.idb.yield();
+        assert.equals(v.ans, [v.r3, v.r2]);
+      },
+
+      "test count"() {
+        v.t1.count()
+          .onsuccess = ({target: {result}}) => {v.ans = result};
+        v.idb.yield();
+        assert.equals(v.ans, 4);
+
+        v.t1.count(IDBKeyRange.bound('r2', 'r4', false, true))
+          .onsuccess = ({target: {result}}) => {v.ans = result};
+
+        v.idb.yield();
+        assert.equals(v.ans, 2);
       },
 
       "test createIndex"() {
@@ -104,6 +143,69 @@ isClient && define(function (require, exports, module) {
 
           v.idb.yield();
           assert.equals(v.ans, [v.r4, v.r1, v.r2]);
+        },
+      },
+
+      "multi path index": {
+        setUp() {
+          v.t1Name = v.t1.createIndex('name', ['name', 'age']);
+        },
+
+        "test get."() {
+          v.t1Name.get(['Ronald', 4])
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+          v.idb.yield();
+          assert.equals(v.ans, v.r2);
+
+          v.t1Name.get('Allan')
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+          v.idb.yield();
+          assert.equals(v.ans, v.r3);
+        },
+
+        "test getAll"() {
+          v.t1Name.getAll(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+
+          v.idb.yield();
+          assert.equals(v.ans, [v.r4]);
+
+          v.t1Name.getAll(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+
+          v.idb.yield();
+          assert.equals(v.ans, [v.r4, v.r2, v.r1]);
+        },
+
+        "test count"() {
+          v.t1Name.count(IDBKeyRange.bound(['Lucy'], ['Ronald'], false, true))
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+
+          v.idb.yield();
+          assert.equals(v.ans, 1);
+
+          v.t1Name.count(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
+            .onsuccess = ({target: {result}}) => {v.ans = result};
+
+          v.idb.yield();
+          assert.equals(v.ans, 3);
+        },
+
+        "test openCursor"() {
+          v.ans = [];
+          v.t1Name.openCursor(IDBKeyRange.bound(['Allan', 'age'], ['Ronald', 'age'], true, false))
+            .onsuccess = ({target: {result}}) => {
+              if (result) {
+                v.ans.push(result.value);
+                result.delete();
+                result.continue();
+              }
+            };
+
+          v.idb.yield();
+          assert.equals(v.ans, [v.r4, v.r2, v.r1]);
+          assert.equals(v.t1.docs, {r3: {_id: 'r3', name: 'Allan', age: 3}});
+
         },
       },
     },

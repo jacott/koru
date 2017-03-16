@@ -15,6 +15,8 @@ define(['module', './main'], function(module, koru) {
     }
 
     subject[observeName] = callback => {
+      if (typeof callback !== 'function')
+        throw new TypeError('callback is not a function');
       if (firstOb) {
         firstOb = false;
         init && init.call(subject);

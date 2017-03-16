@@ -2,6 +2,26 @@ define(function(require, exports, module) {
   const TH   = require('koru/test/main');
   const util = require('koru/util');
 
+  class Transaction {
+    constructor(db) {
+      this.db = db;
+      this.onabort = this.oncomplete = null;
+      db._pending.push(() => {
+        this.onabort = null;
+        this.oncomplete && this.oncomplete();
+      });
+    }
+
+    objectStore(name) {
+      return this.db._store[name];
+    }
+
+    abort() {
+      this.oncomplete = false;
+      this.onabort && this.onabort();
+    }
+  }
+
   class Database {
     constructor(version) {
       this._pending = [];
@@ -20,33 +40,77 @@ define(function(require, exports, module) {
       return this._store[name] = new ObjectStore(name, this);
     }
 
+    deleteObjectStore(name) {
+      delete this._store[name];
+    }
+
     close() {}
 
     transaction() {
-      return this;
+      const self = this;
+      return new Transaction(this);
+    }
+  }
+
+  class Cursor {
+    constructor(store, query, direction, onsuccess) {
+      this.store = store;
+      store.getAll(query).onsuccess = ({target: {result}}) => {
+        this._data = result;
+        if (direction === 'prev')
+          this._data.reverse();
+        this._position = -1;
+        this._onsuccess = onsuccess;
+        this.continue();
+      };
     }
 
-    objectStore(name) {
-      return this._store[name];
+    continue() {
+      this._onsuccess({target: {result: this._data.length > ++this._position ? this : null}});
+    }
+
+    get value() {return this._data[this._position]}
+
+    get primaryKey() {return this._data[this._position]._id}
+
+    delete() {
+      delete this.store.docs[this.primaryKey];
     }
   }
 
   class Index {
-    constructor(os, name, keypath, options) {
+    constructor(os, name, keyPath, options) {
       this.os = os;
       this.name = name;
-      this.keypath = keypath;
+      this.keyPath = keyPath;
       this.options = options;
+      this.docs = os.docs;
+      this.compare = Array.isArray(keyPath) ? (
+        ar, br) => {
+          const av = values(ar, keyPath), bv = values(br, keyPath);
+          for(let i = 0; i < keyPath.length; ++i) {
+            const a = av[i], b = bv[i];
+            if (a != b) {
+              return a < b ? -1 : 1;
+            }
+          }
+          return compareById(ar, br);
+        } : (ar, br) => {
+          const {[keyPath]: a} = ar, {[keyPath]: b} = br;
+          return a < b ? -1 : a === b ? compareById(ar, br) : 1;
+        };
     }
 
-    get(id) {
+    get(key) {
       const self = this;
       const {docs, db: {_pending}} = this.os;
+      if (Array.isArray(self.keyPath) && ! Array.isArray(key))
+        key = [key];
       return {
         set onsuccess(f) {
           const result = util.deepCopy(
-            findDoc(docs, doc => self.compare(doc, {[self.keypath]: id}) === 0)
-              .sort((a, b) => self.compare(a, b) || compareById(a, b))[0]);
+            findDoc(docs, self.keyPath, key)
+              .sort(self.compare)[0]);
           _pending.push(() => {f({target: {result}});});
         },
       };
@@ -58,24 +122,58 @@ define(function(require, exports, module) {
       return {
         set onsuccess(f) {
           const result = Object.keys(docs)
+                  .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
                   .map(k => util.deepCopy(docs[k]))
-                  .filter(d => ! query || query.includes(d[self.keypath]))
-                  .sort((a, b) => self.compare(a, b) || compareById(a, b));
+                  .sort(self.compare);
           _pending.push(() => {f({target: {result}});});
         },
       };
     }
 
-    compare({[this.keypath]: a}, {[this.keypath]: b}) {
-      return a < b ? -1 : a === b ? 0 : 1;
+    openCursor(query, direction) {
+      const self = this;
+      return {
+        set onsuccess(f) {
+          new Cursor(self, query, direction, f);
+        },
+      };
+    }
+
+    openKeyCursor(query, direction) {
+      const self = this;
+      return {
+        set onsuccess(f) {
+          new Cursor(self, query, direction, f);
+        },
+      };
+    }
+
+    count(query) {
+      const self = this;
+      const {docs, db: {_pending}} = this.os;
+      return {
+        set onsuccess(f) {
+          const result = Object.keys(docs).reduce(
+            (s, k) => s + (! query || query.includes(values(docs[k], self.keyPath)) ? 1 : 0), 0);
+          _pending.push(() => {f({target: {result}});});
+        },
+      };
     }
   }
 
-  function findDoc(docs, match) {
+  function values(rec, keyPath) {
+    return Array.isArray(keyPath) ? keyPath.map(f => rec[f]) : rec[keyPath];
+  }
+
+  function findDoc(docs, keyPath, key) {
+    const matcher = Array.isArray(keyPath) ? (
+      doc => key.every(
+        (v, i) => doc[keyPath[i]] === v
+      )) : doc => doc[keyPath] === key;
     const ans = [];
     for (let _id in docs) {
       const doc = docs[_id];
-      match(doc) && ans.push(doc);
+      matcher(doc) && ans.push(doc);
     }
     return ans;
   }
@@ -109,6 +207,26 @@ define(function(require, exports, module) {
           const result = Object.keys(docs).sort()
                   .filter(k => ! query || query.includes(k))
                   .map(k => util.deepCopy(docs[k]));
+          _pending.push(() => {f({target: {result}});});
+        },
+      };
+    }
+
+    openCursor(query, direction) {
+      const self = this;
+      return {
+        set onsuccess(f) {
+          new Cursor(self, query, direction, f);
+        },
+      };
+    }
+
+    count(query) {
+      const {docs, db: {_pending}} = this;
+      return {
+        set onsuccess(f) {
+          const result = Object.keys(docs).reduce(
+            (s, k) => s + (! query || query.includes(k) ? 1 : 0), 0);
           _pending.push(() => {f({target: {result}});});
         },
       };

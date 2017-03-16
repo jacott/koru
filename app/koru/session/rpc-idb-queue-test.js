@@ -45,7 +45,7 @@ isClient && define(function (require, exports, module) {
         poll();
         v.db.createObjectStore('rpcQueue', {keyPath: '_id'});
         v.fooDb = v.mdb._dbs.foo;
-        v.os_rpcQueue = v.fooDb.objectStore('rpcQueue');
+        v.os_rpcQueue = v.fooDb._store.rpcQueue;
         poll();
       },
 

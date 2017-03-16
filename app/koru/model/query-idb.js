@@ -8,6 +8,7 @@ define(function(require, exports, module) {
 
   const iDB = Symbol(), pendingUpdates = Symbol();
   const busyQueue = Symbol(), idleQueue = Symbol();
+
   let notMe;
 
   function whenIdle(db) {
@@ -22,15 +23,34 @@ define(function(require, exports, module) {
   class Index {
     constructor(queryIDB, modelName, name) {
       this._queryIDB = queryIDB;
-      this._index = queryIDB[iDB].transaction(modelName).objectStore(modelName).index(name);
+      this._withIndex = () => queryIDB[iDB]
+        .transaction(modelName).objectStore(modelName).index(name);
     }
 
     getAll(query, count) {
-      return wrapRequest(this._queryIDB, () => this._index.getAll(query, count));
+      return wrapRequest(this._queryIDB, () => this._withIndex().getAll(query, count));
+    }
+
+    count(query, count) {
+      return wrapRequest(this._queryIDB, () => this._withIndex().count(query));
     }
 
     get(key) {
-      return wrapRequest(this._queryIDB, () => this._index.get(key));
+      return wrapRequest(this._queryIDB, () => this._withIndex().get(key));
+    }
+
+    cursor(query, direction, action) {
+      this._withIndex().openCursor(query, direction)
+        .onsuccess = ({target: {result}}) => {
+          action(result);
+        };
+    }
+
+    keyCursor(query, direction, action) {
+      this._withIndex().openKeyCursor(query, direction)
+        .onsuccess = ({target: {result}}) => {
+          action(result);
+        };
     }
   }
 
@@ -40,6 +60,9 @@ define(function(require, exports, module) {
       const bq = this[busyQueue] = new BusyQueue(this);
       bq.whenIdle = whenIdle;
       bq.whenBusy = whenBusy;
+      const onerror = event => {
+        error(this, event);
+      };
       bq.queueAction(() => {
         const req = window.indexedDB.open(name, version);
         if (upgrade) req.onupgradeneeded = (event) => {
@@ -49,11 +72,10 @@ define(function(require, exports, module) {
             event, transaction: event.target.transaction,
           });
         };
-        req.onerror = event => {
-          error(this, event);
-        };
+        req.onerror = onerror;
         req.onsuccess = event => {
           const idb = this[iDB] = event.target.result;
+          idb.onerror = onerror;
           bq.nextAction();
         };
       });
@@ -68,6 +90,13 @@ define(function(require, exports, module) {
 
     get objectStoreNames() {
       return this[iDB].objectStoreNames;
+    }
+
+    transaction(tables, mode, {oncomplete, onabort}={}) {
+      const tx = this[iDB].transaction(tables, mode);
+      if (oncomplete) tx.oncomplete = oncomplete;
+      if (onabort) tx.onabort = onabort;
+      return tx;
     }
 
     loadDoc(modelName, rec) {
@@ -85,8 +114,20 @@ define(function(require, exports, module) {
       return wrapOSRequest(this, modelName, os => os.get(_id));
     }
 
-    getAll(modelName) {
-      return wrapOSRequest(this, modelName, os => os.getAll());
+    getAll(modelName, query) {
+      return wrapOSRequest(this, modelName, os => os.getAll(query));
+    }
+
+    count(modelName, query) {
+      return wrapOSRequest(this, modelName, os => os.count(query));
+    }
+
+    cursor(modelName, query, direction, action) {
+      this[iDB].transaction(modelName).objectStore(modelName)
+        .openCursor(query, direction)
+        .onsuccess = ({target: {result}}) => {
+          action(result);
+        };
     }
 
     put(modelName, rec) {
@@ -134,14 +175,18 @@ define(function(require, exports, module) {
       return this[iDB].createObjectStore(name, {keyPath: '_id'});
     }
 
+    deleteObjectStore(name) {
+      this[iDB].deleteObjectStore(name, {keyPath: '_id'});
+    }
+
     index(modelName, name) {
       return new Index(this, modelName, name);
     }
 
     queueChange(now, was) {
+      const doc = (now || was);
+      if (doc === notMe) return;
       TransQueue.transaction(() => {
-        const doc = (now || was);
-        if (doc === notMe) return;
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);
         const pm = pu[name] || (pu[name] = {});
@@ -157,7 +202,7 @@ define(function(require, exports, module) {
     db[idleQueue] = null;
     if (db.catchAll)
       db.catchAll(ex);
-    else throw new Error(ex);
+    else throw new Error((ex.target && ex.target.error) || ex);
   }
 
   function getPendingUpdates(db) {
@@ -188,18 +233,18 @@ define(function(require, exports, module) {
     db[pendingUpdates] = null;
     const models = Object.keys(pu);
     const tran = db[iDB].transaction(models, 'readwrite');
-    const reqs = [];
+    tran.onabort = ex => {error(db, ex)};
+    tran.oncomplete = () => {
+      db[busyQueue].nextAction();
+    };
     for(let model of models) {
       const docs = pu[model];
       const os = tran.objectStore(model);
       for (var _id in docs) {
         const doc = docs[_id];
-        reqs.push(promisifyReq(doc ? os.put(doc) : os.delete(_id)));
+        doc ? os.put(doc) : os.delete(_id);
       }
     }
-    Promise.all(reqs).then(() => {
-      db[busyQueue].nextAction();
-    }, ex => error(db, ex));
   }
 
   function makePQ() {
@@ -208,19 +253,9 @@ define(function(require, exports, module) {
     return {p, r, e};
   }
 
-  function promisifyReq(req) {
-    return new Promise((resolve, reject) => {
-      req.onerror = reject;
-      req.onsuccess = (event) => {
-        resolve(event);
-      };
-    });
-  }
-
   function wrapOSRequest(db, modelName, body) {
     return wrapRequest(db, () => {
       const os = db[iDB].transaction(modelName).objectStore(modelName);
-      if (! os) throw new Error("No such ObjectStore: "+modelName);
       return body(os);
     });
   }

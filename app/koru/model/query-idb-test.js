@@ -128,7 +128,7 @@ isClient && define(function (require, exports, module) {
       v.foo = v.idb._dbs.foo;
 
       assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
-      assert.equals(v.foo.objectStore('TestModel').docs, {});
+      assert.equals(v.foo._store.TestModel.docs, {});
       assert(v.called);
       v.called = false;
       v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
@@ -152,7 +152,7 @@ isClient && define(function (require, exports, module) {
       });
       poll();
       v.foo = v.idb._dbs.foo;
-      assert.equals(v.foo.objectStore('TestModel').docs.foo123, v.rec);
+      assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
     },
 
     "test delete"() {
@@ -166,7 +166,7 @@ isClient && define(function (require, exports, module) {
       }});
       v.foo = v.idb._dbs.foo;
       poll();
-      v.foo.objectStore('TestModel').docs = {
+      v.foo._store.TestModel.docs = {
         foo123: {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'},
       };
@@ -175,7 +175,7 @@ isClient && define(function (require, exports, module) {
         v.db.delete('TestModel', 'foo123');
       });
       poll();
-      assert.equals(v.foo.objectStore('TestModel').docs, {foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
+      assert.equals(v.foo._store.TestModel.docs, {foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     },
 
     "test get"(done) {
@@ -243,12 +243,148 @@ isClient && define(function (require, exports, module) {
       }).catch(v.error);
     },
 
-    "test Index"() {
+    "with data": {
+      setUp() {
+        TH.stubProperty(window, 'Promise', {value: MockPromise});
+
+        v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+          db.createObjectStore("TestModel")
+            .createIndex('name', 'name', {unique: false});
+        }});
+        poll();
+        v.foo = v.idb._dbs.foo;
+
+        v.t1 = v.foo._store.TestModel;
+        v.t1.docs = {
+          r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
+          r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
+          r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
+          r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
+        };
+      },
+
+      "test transaction"() {
+        /**
+         * Access to indexeddb transaction
+         **/
+        api.protoMethod('transaction');
+        const t = v.db.transaction('TestModel', 'readwrite', v.opts = {
+          oncomplete: this.stub(),
+          onabort: this.stub(),
+        });
+
+        assert.same(t.oncomplete, v.opts.oncomplete);
+        assert.same(t.onabort, v.opts.onabort);
+
+        t.objectStore('TestModel').delete('r1');
+
+        refute.called(v.opts.oncomplete);
+        poll();
+        assert.called(v.opts.oncomplete);
+      },
+
+      "test count"() {
+        /**
+         * count records in a {#koru/model/main}
+         *
+         **/
+        api.protoMethod('count');
+
+        v.db.count('TestModel', IDBKeyRange.bound('r1', 'r4', false, true))
+          .then(ans => v.ans = ans);
+
+        poll();
+
+        assert.same(v.ans, 3);
+      },
+
+      "test cursor"() {
+        /**
+         * Open cursor on an ObjectStore
+         **/
+        api.protoMethod('cursor');
+
+        v.ans = [];
+        v.db.cursor('TestModel', IDBKeyRange.bound('r1', 'r4', false, true), null, cursor => {
+          if (cursor) {
+            v.ans.push(cursor.value);
+            cursor.continue();
+          }
+        });
+        poll();
+        assert.equals(v.ans, [v.r1, v.r2, v.r3]);
+      },
+
+      "test Index"() {
+        /**
+         * Retreive a named index for an objectStore
+         **/
+        api.protoMethod('index');
+
+        v.db.index("TestModel", "name")
+          .getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ans = docs);
+
+        poll();
+        assert.equals(v.ans, [v.r4]);
+
+        v.db.index("TestModel", "name")
+          .getAll().then(docs => v.ans = docs);
+
+        poll();
+        assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
+
+        v.db.index("TestModel", "name")
+          .count(IDBKeyRange.bound('Lucy', 'Ronald', false, false)).then(ans => v.ans = ans);
+
+        poll();
+        assert.equals(v.ans, 3);
+
+        v.db.index("TestModel", "name")
+          .get('Ronald').then(docs => v.ans = docs);
+
+        poll();
+        assert.equals(v.ans, v.r1);
+      },
+
+      "test index cursor"() {
+        /**
+         * Open a cursor on an index
+         **/
+        v.ans = [];
+        v.db.index("TestModel", "name")
+          .cursor(null, 'prev', cursor => {
+            if (! cursor) return;
+            v.ans.push(cursor.value);
+            cursor.continue();
+          });
+
+        poll();
+        assert.equals(v.ans, [v.r2, v.r1, v.r4, v.r3]);
+      },
+
+      "test index keyCursor"() {
+        /**
+         * Open a keyCursor on an index
+         **/
+        v.ans = [];
+        v.db.index("TestModel", "name")
+          .keyCursor(null, 'prev', cursor => {
+            if (! cursor) return;
+            v.ans.push(cursor.primaryKey);
+            cursor.continue();
+          });
+
+        poll();
+        assert.equals(v.ans, ['r2', 'r1', 'r4', 'r3']);
+      },
+    },
+
+    "test deleteObjectStore"() {
       /**
-       * retreive a named index for an objectStore
+       * Drop an objectStore and its indexes
        **/
       TH.stubProperty(window, 'Promise', {value: MockPromise});
-      api.protoMethod('index');
+      api.protoMethod('deleteObjectStore');
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel")
           .createIndex('name', 'name', {unique: false});
@@ -256,31 +392,8 @@ isClient && define(function (require, exports, module) {
       poll();
       v.foo = v.idb._dbs.foo;
 
-      v.t1 = v.foo.objectStore('TestModel');
-      v.t1.docs = {
-        r2: v.r2 = {_id: 'r2', name: 'Ronald', age: 4},
-        r1: v.r1 = {_id: 'r1', name: 'Ronald', age: 5},
-        r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
-        r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
-      };
-
-      v.db.index("TestModel", "name")
-        .getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ans = docs);
-
-      poll();
-      assert.equals(v.ans, [v.r4]);
-
-      v.db.index("TestModel", "name")
-        .getAll().then(docs => v.ans = docs);
-
-      poll();
-      assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
-
-      v.db.index("TestModel", "name")
-        .get('Ronald').then(docs => v.ans = docs);
-
-      poll();
-      assert.equals(v.ans, v.r1);
+      v.db.deleteObjectStore('TestModel');
+      refute(v.foo._store.TestModel);
     },
   });
 
