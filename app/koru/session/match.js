@@ -14,8 +14,8 @@ define(function(require) {
 
       stop () {
         if (! this.id) return;
-        var models = dbs[this.dbId];
-        var matchFuncs = models[this.modelName];
+        const models = dbs[this.dbId];
+        const matchFuncs = models[this.modelName];
         delete matchFuncs[this.id];
         this.id = null;
       }
@@ -25,19 +25,19 @@ define(function(require) {
       get _models() { return dbs[dbBroker.dbId]},
 
       has (doc) {
-        var models = dbs[dbBroker.dbId];
-        var mm = models && models[doc.constructor.modelName];
-        for(var key in mm) {
+        const models = dbs[dbBroker.dbId];
+        const mm = models && models[doc.constructor.modelName];
+        for (let key in mm) {
           if (mm[key](doc)) return true;
         }
         return false;
       },
 
       register (modelName, comparator) {
-        var dbId = dbBroker.dbId;
+        const {dbId} = dbBroker;
         modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
-        var id = (++key).toString(36);
-        var models = dbs[dbId] || (dbs[dbId] = {});
+        const id = (++key).toString(36);
+        const models = dbs[dbId] || (dbs[dbId] = {});
         (models[modelName] || (models[modelName] = Object.create(null)))[id] = comparator;
         return new StopFunc(id, dbId, modelName);
       },

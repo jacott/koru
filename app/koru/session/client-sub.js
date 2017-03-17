@@ -23,18 +23,19 @@ define(function(require, exports, module) {
   }
 
   function stopped(sub) {
-    if (! sub._id) return;
+    if (sub._id == null) return;
 
     delete sub.session.subs[sub._id];
     const models = {};
     sub._stop && sub._stop();
+    sub._id = null;
     killMatches(sub._matches, models);
-    sub._stop = sub._matches = sub._id = sub.callback = null;
+    sub._stop = sub._matches = sub.callback = null;
     publish._filterModels(models, 'stopped');
   }
 
   function killMatches(matches, models) {
-    matches.forEach(function (m) {
+    matches.forEach(m => {
       if (models) models[m.modelName] = true;
       m.stop();
     });
