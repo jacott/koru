@@ -39,9 +39,9 @@ define(function(require, exports, module) {
     test.run(pattern, tests);
   });
 
-  var setItem = localStorage.setItem;
-  var getItem = localStorage.getItem;
-  var removeItem = localStorage.removeItem;
+  const setItem = localStorage.setItem;
+  const getItem = localStorage.getItem;
+  const removeItem = localStorage.removeItem;
 
   koru.onunload(module, function () {
     requirejs.onError = null;
@@ -57,7 +57,11 @@ define(function(require, exports, module) {
   localStorage._resetValue = function () {return Object.create(null)};
   test.geddon.onStart(function () {
     localStorage.setItem = function (key, value) {
+      const oldValue = ls[key];
       ls[key] = value;
+      localStorage._hasObservers &&
+        localStorage._storageChanged({
+          key, newValue: value, oldValue, storageArea: window.localStorage});
     };
 
     localStorage.getItem = function (key) {
