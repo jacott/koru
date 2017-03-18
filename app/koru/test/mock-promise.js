@@ -68,6 +68,7 @@ define(function(require, exports, module) {
           finished = false;
 
           const {_arg, _state} = p;
+          let caught = _state === 'resolved';
           for (let curr = p._pendingFirst; curr; curr = curr.next) {
             p._pendingFirst = curr.next;
 
@@ -77,11 +78,19 @@ define(function(require, exports, module) {
                 __resolve(curr, onFulfilled ? onFulfilled(_arg) : _arg);
               } else {
                 const {onRejected} = curr;
+                caught = caught || !! curr.reject;
                 __resolve(curr, onRejected ? onRejected(_arg) : _arg, 'reject');
               }
             } catch(ex) {
+              if (! curr) throw ex;
               curr.reject(ex);
             }
+          }
+          if (! caught && _arg !== undefined) {
+            if (_arg && _arg.message)
+              _arg.message = `Uncaught MockPromise: ${_arg.message}`;
+
+            throw (_arg instanceof Error) ? _arg : new Error('Uncaught rejected MockPromise');
           }
         }
       }
@@ -125,7 +134,7 @@ define(function(require, exports, module) {
         __resolve(_entry, arg);
       };
       const rejP = arg => {
-        if (! entry) return;
+        if (! entry) throw arg;
         const _entry = entry;
         entry = null;
         _entry.reject(arg);

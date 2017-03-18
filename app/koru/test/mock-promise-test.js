@@ -41,6 +41,21 @@ define(function (require, exports, module) {
       });
     },
 
+    "test uncaught reject"() {
+      const p = new MockPromise((r, e) => {
+        e(new Error("no catch"));
+      }).then(foo => foo);
+      assert.exception(() => {MockPromise._poll()}, {
+        message: "Uncaught MockPromise: no catch",
+      });
+
+      const pc = new MockPromise((r, e) => {
+        e(v.err = new Error("no catch"));
+      }).then(foo => foo).catch(v.catch = this.stub());
+      refute.exception(() => {MockPromise._poll()});
+      assert.calledWith(v.catch, v.err);
+    },
+
     "test then chaining"() {
       const {p, resolve} = makePromise();
 
