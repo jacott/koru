@@ -53,6 +53,7 @@ define(function(require, exports, module) {
         return sub;
       sub._wait();
       publish.preload(sub, err => {
+        if (! sub._id) return; // too late
         if (err) {
           sub._received(err);
           return;

@@ -99,6 +99,16 @@ isClient && define(function (require, exports, module) {
       refute.called(sub1.resubscribe);
     },
 
+    "test preload calls after sub closed"() {
+      const preload = this.stub(publish, 'preload');
+      const sub1 = subscribe("foo", 1 ,2);
+      sub1.stop();
+      preload.yield();
+      refute(sub1._id);
+      assert.equals(v.sess.subs, {});
+
+    },
+
     "test wait for onConnect"() {
       var sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
