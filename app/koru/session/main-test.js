@@ -42,16 +42,15 @@ define(function (require, exports, module) {
        **/
       api.method('defineRpc');
       function func() {}
-      refute(session.isRpc());
-      refute(session.isRpcGet());
-      refute(session.isRpc(func));
+      refute(session.isRpcGet("Book.update"));
+      refute(session.isRpc("Book.update"));
       session.defineRpc('Book.update', func);
 
       test.onEnd(() => delete session._rpcs['Book.update']);
 
       assert.same(session._rpcs['Book.update'], func);
-      refute(session.isRpcGet(func));
-      assert(session.isRpc(func));
+      refute(session.isRpcGet("Book.update"));
+      assert(session.isRpc("Book.update"));
     },
 
     "test defineRpcGet"() {
@@ -66,8 +65,8 @@ define(function (require, exports, module) {
       test.onEnd(() => delete session._rpcs['Book.list']);
 
       assert.same(session._rpcs['Book.list'], func);
-      assert(session.isRpcGet(func));
-      assert(session.isRpc(func));
+      assert(session.isRpcGet('Book.list'));
+      assert(session.isRpc('Book.list'));
     },
   });
 });

@@ -23,12 +23,14 @@ define(function(require, exports, module) {
       return this;
     }
 
-    isRpc(func) {
-      return func && !! func[rpcType];
+    isRpc(name) {
+      const rpc = this._rpcs[name];
+      return rpc && !! rpc[rpcType];
     }
 
-    isRpcGet(func) {
-      return func && func[rpcType] === 'get';
+    isRpcGet(name) {
+      const rpc = this._rpcs[name];
+      return rpc && rpc[rpcType] === 'get';
     }
 
     provide(cmd, func) {

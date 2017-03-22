@@ -28,8 +28,8 @@ isClient && define(function (require, exports, module) {
 
       const queue = new_RPCQueue();
 
-      queue.push(12, 'hello');
-      assert.same(queue.get(12), 'hello');
+      queue.push({}, v.data = [12, 'save'], v.func = this.stub());
+      assert.equals(queue.get(12), [v.data, v.func]);
     },
 
     "test resend"() {
@@ -38,18 +38,26 @@ isClient && define(function (require, exports, module) {
        **/
       api.protoMethod('resend');
 
+      const session = {
+        _msgId: 0,
+        sendBinary(type, data) {
+          assert.same(type, 'M');
+          ans.push(data);
+        }
+      };
+
       const queue = new sut();
-      queue.push(50, ['msg for 50']);
-      queue.push(6, ['msg for 6']);
-      queue.push(8, ['msg for 8']);
+      queue.push(session, ['50', 'list']);
+      queue.push(session, ['6', 'get', 423]);
+      queue.push(session, ['8', 'get', 5]);
 
       const ans = [];
-      queue.resend({sendBinary(type, data) {
-        assert.same(type, 'M');
-        ans.push(data);
-      }});
+      queue.resend(session);
 
-      assert.equals(ans, ['msg for 6', 'msg for 8', 'msg for 50']);
+      assert.same(session._msgId.toString(36), '50');
+
+
+      assert.equals(ans, [['6', 'get', 423], ['8', 'get', 5], ['50', 'list']]);
     },
   });
 });

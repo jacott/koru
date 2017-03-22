@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const Query   = require('./query');
 
   const testCase = TH.testCase;
-  let sendM;
+  let _sendM;
 
   return TH.util.protoCopy(TH, {
     testCase(...args) {
@@ -28,18 +28,18 @@ define(function(require, exports, module) {
   });
 
   function stubSendM() {
-    if (session.hasOwnProperty('sendM')) {
-      sendM = session.sendM;
-      session.sendM = koru.nullFunc;
+    _sendM = session._sendM;
+    if (_sendM) {
+      session._sendM = koru.nullFunc;
     }
   }
 
   function unstubSendM() {
-    if (sendM) {
+    if (_sendM) {
       session.state._resetPendingCount();
       Query.revertSimChanges();
-      session.sendM = sendM;
-      sendM = null;
+      session._sendM = _sendM;
+      _sendM = null;
     }
   }
 });

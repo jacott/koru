@@ -86,7 +86,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test filter Models"() {
-      test.stub(session, 'sendM');
+      test.stub(session, '_sendM');
       v.F1 = Model.define('F1').defineFields({name: 'text'});
       v.F2 = Model.define('F2').defineFields({name: 'text'});
 

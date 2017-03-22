@@ -5,6 +5,8 @@ isClient && define(function (require, exports, module) {
    *
    * Call {##reload} to re-populate the message queue when the app is
    * loaded and before other messages are preloaded.
+   *
+   * RpcGet methods are not persisted.
    **/
   const MockIndexedDB = require('koru/model/mock-indexed-db');
   const QueryIDB      = require('koru/model/query-idb');
@@ -52,11 +54,29 @@ isClient && define(function (require, exports, module) {
       "test persistence"() {
         const queue = new sut(v.db);
 
-        queue.push('a12', [{msg: 'the msg'}, function func() {}]);
+        const session = {isRpcGet() {return false}};
+        function func() {}
+
+        queue.push(session, v.data = ['a12', 'foo', 1], func);
         poll();
         assert.equals(v.os_rpcQueue.docs, {
-          a12: {_id: 'a12', data: {msg: 'the msg'}}
+          a12: {_id: 'a12', data: ['a12', 'foo', 1]}
         });
+        assert.equals(queue.get('a12'), [v.data, func]);
+      },
+
+      "test get not persisted"() {
+        const queue = new sut(v.db);
+
+        const session = {isRpcGet(arg) {return arg === 'foo'}};
+
+        function func() {}
+
+        queue.push(session, v.data = ['a12', 'foo', 1], func);
+        poll();
+        assert.equals(v.os_rpcQueue.docs, {});
+        assert.equals(queue.get('a12'), [v.data, func]);
+
       },
 
       "test reload"() {
@@ -65,24 +85,28 @@ isClient && define(function (require, exports, module) {
          **/
         api.protoMethod('reload');
         v.os_rpcQueue.docs = {
-          a12: {_id: 'a12', data: {msg: 'msg a12'}},
-          a102: {_id: 'a102', data: {msg: 'msg a102'}},
-          a2: {_id: 'a2', data: {msg: 'msg a2'}},
+          a12: {_id: 'a12', data: ['a12', 'foo1']},
+          a102: {_id: 'a102', data: ['a102', 'foo2']},
+          a2: {_id: 'a2', data: ['a2', 'foo3']},
         };
 
         const ans = [];
         const queue = new sut(v.db);
         const state = {incPending: this.stub()};
-        queue.reload({state}).then(() => {
-          queue.resend({sendBinary(type, data) {
+        const sess = {
+          _msgId: 0, state,
+          sendBinary(type, data) {
             assert.same(type, 'M');
             ans.push(data);
-          }});
-        });
+          }
+        };
+        queue.reload(sess).then(() => {queue.resend(sess)});
         poll();
+        assert.same(sess._msgId.toString(36), 'a102');
 
         assert.same(state.incPending.callCount, 3);
-        assert.equals(ans, [{msg: 'msg a2'}, {msg: 'msg a12'}, {msg: 'msg a102'}]);
+        assert.calledWith(state.incPending, true);
+        assert.equals(ans, [['a2', 'foo3'], ['a12', 'foo1'], ['a102', 'foo2']]);
       },
     },
   });

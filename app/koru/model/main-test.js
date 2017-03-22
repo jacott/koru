@@ -473,27 +473,38 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
-      "test remote"() {
+      "test remote."() {
         /**
-         * Define multiple Remote Procedure calls prefixed by model's
-         * name. Use `get method() {...}` syntax to define a read-only
-         * call {#koru/session.defineRpcGet}
+         * Define multiple Remote updating Procedure calls prefixed by model's
+         * name.
          **/
         api.protoMethod('remote');
         v.TestModel.remote({
           move() {},
-          get list() {},
+          expire() {},
         });
 
-        const moveRpc = session._rpcs['TestModel.move'];
-        assert(moveRpc);
-        assert(session.isRpc(moveRpc));
-        refute(session.isRpcGet(moveRpc));
+        assert(session.isRpc('TestModel.move'));
+        refute(session.isRpcGet('TestModel.move'));
 
-        const listRpc = session._rpcs['TestModel.list'];
-        assert(listRpc);
-        assert(session.isRpc(listRpc));
-        assert(session.isRpcGet(listRpc));
+        assert(session.isRpc('TestModel.expire'));
+      },
+
+      "test remoteGet"() {
+        /**
+         * Define multiple Remote inquiry Procedure calls prefixed by
+         * model's name.
+         **/
+        api.protoMethod('remoteGet');
+        v.TestModel.remoteGet({
+          list() {},
+          show() {},
+        });
+
+        assert(session.isRpc('TestModel.list'));
+        assert(session.isRpcGet('TestModel.list'));
+
+        assert(session.isRpcGet('TestModel.show'));
       },
 
       "test accessor"() {

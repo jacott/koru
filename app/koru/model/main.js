@@ -242,13 +242,17 @@ define(function(require, exports, module) {
       const prefix = this.modelName + '.';
 
       for(let key in funcs) {
-        const desc = Object.getOwnPropertyDescriptor(funcs, key);
-        if (desc.get)
-          session.defineRpcGet(prefix + key, _support.remote(this, key, desc.get));
-        else if (desc.value)
-          session.defineRpc(prefix + key, _support.remote(this, key, desc.value));
-        else
-          throw new TypeError(`remote: unsupported entry for ${key}`);
+        session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
+      }
+
+      return this;
+    }
+
+    static remoteGet(funcs) {
+      const prefix = this.modelName + '.';
+
+      for(let key in funcs) {
+        session.defineRpcGet(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
       return this;

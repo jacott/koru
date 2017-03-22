@@ -7,6 +7,7 @@ define(function(require, exports, module) {
   function stateFactory() {
     let state = 'startup';
     let count = 0;
+    let updateCount = 0;
 
     let debug_pending = false;
 
@@ -71,17 +72,22 @@ define(function(require, exports, module) {
       set _state(value) {state = value},
 
       pendingCount() {return count},
+      pendingUpdateCount() {return updateCount},
 
       pending: makeSubject({}),
 
-      incPending() {
-        debug_pending && koru._incPendingStack.push(util.extractError(new Error(count)));
+      incPending(isUpdate) {
+        debug_pending && koru._incPendingStack.push(
+          util.extractError(new Error(`${count} ${isUpdate}`)));
+        if (isUpdate) ++updateCount;
         if (++count === 1)
           this.pending.notify(true);
       },
 
-      decPending() {
-        debug_pending && koru._decPendingStack.push(util.extractError(new Error(count)));
+      decPending(isUpdate) {
+        debug_pending && koru._decPendingStack.push(
+          util.extractError(new Error(`${count} ${isUpdate}`)));
+        if (isUpdate) --updateCount;
         if (--count === 0) {
           if (debug_pending) {
             koru.debug_pending(true);

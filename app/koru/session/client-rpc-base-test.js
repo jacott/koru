@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   /**
    * Attach rpc to a session
    **/
+  const SessionBase  = require('koru/session/base').constructor;
   const RPCQueue     = require('koru/session/rpc-queue');
   const api          = require('koru/test/api');
   const koru         = require('../main');
@@ -19,21 +20,19 @@ define(function (require, exports, module) {
       v = {};
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
-      v.sess = sut({
-        provide: test.stub(),
-        _rpcs: {},
-        _commands: {},
-        sendBinary: v.sendBinary = test.stub(),
-        state: v.state,
-        globalDict: message.newGlobalDict(),
-        $inspect() {return '{Session}'},
-      });
-      assert.calledWith(v.sess.provide, 'M', TH.match(function (func) {
-        v.recvM = function (...args) {
-          func.call(v.sess, args);
-        };
-        return true;
-      }));
+
+      class MySession extends SessionBase {
+        constructor() {
+          super();
+          this.state = v.state;
+          this.sendBinary = v.sendBinary = test.stub();
+        }
+      }
+      v.sess = sut(new MySession());
+
+      v.recvM = function (...args) {
+        v.sess._commands.M.call(v.sess, args);
+      };
       api.module();
     },
 
@@ -56,8 +55,8 @@ define(function (require, exports, module) {
 
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      v.sess.sendM('foo.rpc', [1, 2]);
-      assert.equals(rpcQueue.get('1'), [['1', 'foo.rpc', 1, 2], undefined]);
+      v.sess.rpc('foo.rpc', 1, 2);
+      assert.equals(rpcQueue.get('1'), [['1', 'foo.rpc', 1, 2], null]);
     },
 
     "reconnect": {
@@ -69,7 +68,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.state.onConnect, "20-rpc", TH.match(func => v.onConnect = func));
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
-        v.sess.state._state = 'retry';
+        v.state._state = 'retry';
         v.sendBinary.reset();
         v.recvM("1", 'r');
 
@@ -89,7 +88,7 @@ define(function (require, exports, module) {
     "test callback rpc" () {
       test.stub(koru, 'globalCallback');
 
-      v.sess._rpcs['foo.rpc'] = rpcSimMethod;
+      v.sess.defineRpc('foo.rpc', rpcSimMethod);
 
       v.sess.rpc('foo.rpc', 'a');
       assert.equals(v.args, ['a']);
@@ -136,11 +135,11 @@ define(function (require, exports, module) {
 
       assert.same(v.state.pendingCount(), 0);
 
-      v.sess.sendM('foo.rpc', [1, 2]);
+      v.sess.rpc('foo.rpc', [1, 2]);
 
       assert.calledOnceWith(v.ob, true);
 
-      v.sess.sendM('foo.rpc');
+      v.sess.rpc('foo.rpc');
       assert.calledOnce(v.ob);
 
       assert.same(v.state.pendingCount(), 1);
@@ -163,12 +162,15 @@ define(function (require, exports, module) {
     "test rpc" () {
       v.ready = true;
       var fooId;
-      v.sess._rpcs['foo.rpc'] = rpcSimMethod;
-      v.sess._rpcs['foo.s2'] = rpcSimMethod2;
+      v.sess.defineRpc('foo.rpc', rpcSimMethod);
+      v.sess.defineRpcGet('foo.s2', rpcSimMethod2);
 
       refute(v.sess.isSimulation);
       v.sess.rpc('foo.rpc', 1, 2, 3);
       assert.isFalse(v.sess.isSimulation);
+      assert.same(v.state.pendingCount(), 1);
+      assert.same(v.state.pendingUpdateCount(), 1);
+
 
       assert.equals(v.args, [1, 2, 3]);
       assert.same(v.thisValue, util.thread);
@@ -177,7 +179,22 @@ define(function (require, exports, module) {
 
       v.sess.rpc('foo.s2');
 
+      assert.same(v.state.pendingCount(), 2);
+      assert.same(v.state.pendingUpdateCount(), 1);
+
       assert.same(v.sess._msgId, fooId+1);
+
+      v.recvM('2', 'r');
+
+      assert.same(v.state.pendingCount(), 1);
+      assert.same(v.state.pendingUpdateCount(), 1);
+
+      v.recvM('1', 'r');
+
+      assert.same(v.state.pendingCount(), 0);
+      assert.same(v.state.pendingUpdateCount(), 0);
+
+
 
       function rpcSimMethod(...args) {
         v.thisValue = this;
@@ -207,11 +224,15 @@ define(function (require, exports, module) {
         v.sess.rpc('foo.rpc', 1, 2, 3);
       });
 
+      assert.same(v.state.pendingCount(), 1);
+      assert.same(v.state.pendingUpdateCount(), 1);
+
+
       assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },
 
     "test callback rpc" () {
-      v.sess._rpcs['foo.rpc'] = rpcSimMethod;
+      v.sess.defineRpc('foo.rpc', rpcSimMethod);
 
       v.sess.rpc('foo.rpc', 'a');
       assert.equals(v.args, ['a']);
@@ -251,15 +272,16 @@ define(function (require, exports, module) {
       assert.same(v.state.pendingCount(), 0);
 
       assert.isFalse(v.sess.isRpcPending());
-      v.sess.sendM('foo.rpc', [1, 2]);
+      v.sess.rpc('foo.rpc', [1, 2]);
       assert.isTrue(v.sess.isRpcPending());
 
       assert.calledOnceWith(v.ob, true);
 
-      v.sess.sendM('foo.rpc');
+      v.sess.rpc('foo.rpc');
       assert.calledOnce(v.ob);
 
       assert.same(v.state.pendingCount(), 2);
+      assert.same(v.state.pendingUpdateCount(), 2);
 
       v.ob.reset();
 
@@ -274,6 +296,7 @@ define(function (require, exports, module) {
       assert.isFalse(v.sess.isRpcPending());
 
       assert.same(v.state.pendingCount(), 0);
+      assert.same(v.state.pendingUpdateCount(), 0);
     }
   });
 });

@@ -9,7 +9,7 @@ define(function(require, exports, module) {
     util.merge(session, {
       _msgId: 0,
       rpc,
-      sendM,
+      _sendM,
       isRpcPending() {return rpcQueue.isRpcPending()},
     });
 
@@ -33,19 +33,19 @@ define(function(require, exports, module) {
 
     } else try {
       this.isSimulation = true;
-      this.sendM(name, args, func);
+      this._sendM(name, args, func);
       this._rpcs[name] && this._rpcs[name].apply(util.thread, args);
     } finally {
       this.isSimulation = false;
     }
   }
 
-  function sendM(name, args, func) {
+  function _sendM(name, args, func) {
     var msgId = (++this._msgId).toString(36);
     var data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
-    this[rpcQueueSym].push(msgId, [data, func]);
-    this.state.incPending();
+    this[rpcQueueSym].push(this, data, func);
+    this.state.incPending(! this.isRpcGet(name));
     this.state.isReady() && this.sendBinary('M', data);
     return msgId;
   }
@@ -56,7 +56,7 @@ define(function(require, exports, module) {
     var args = session[rpcQueueSym].get(msgId);
     if (! args) return;
     session[rpcQueueSym].delete(msgId);
-    session.state.decPending();
+    session.state.decPending(! session.isRpcGet(args[0][1]));
     var type = data[1];
     if (type === 'e') {
       var callback = args[1] || koru.globalCallback;

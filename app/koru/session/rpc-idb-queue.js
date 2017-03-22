@@ -8,10 +8,12 @@ define(function(require, exports, module) {
       this.qdb = qdb;
     }
 
-    push(id, payload) {
-      const rec = {_id: id, data: payload[0]};
-      this.qdb.put('rpcQueue', rec);
-      super.push(id, payload);
+    push(session, data, func) {
+      if (! session.isRpcGet(data[1])) {
+        const rec = {_id: data[0], data};
+        this.qdb.put('rpcQueue', rec);
+      }
+      super.push(session, data, func);
     }
 
     delete(id) {
@@ -19,12 +21,12 @@ define(function(require, exports, module) {
       super.delete(id);
     }
 
-    reload({state}) {
+    reload(session) {
+      const {state} = session;
       return this.qdb.getAll('rpcQueue').then(recs => {
         recs.forEach(rec => {
-          state.incPending();
-
-          super.push(rec._id, [rec.data]);
+          state.incPending(true);
+          super.push(session, rec.data);
         });
       });
     }

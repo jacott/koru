@@ -24,17 +24,22 @@ define(function (require, exports, module) {
       assert.calledOnce(v.change);
       assert.calledWith(v.change, true);
       assert.same(sessState.pendingCount(), 1);
+      assert.same(sessState.pendingUpdateCount(), 0);
 
-      sessState.incPending();
+      sessState.incPending(true);
       assert.calledOnce(v.change);
+      assert.same(sessState.pendingCount(), 2);
+      assert.same(sessState.pendingUpdateCount(), 1);
 
       sessState.decPending();
       assert.calledOnce(v.change);
       assert.same(sessState.pendingCount(), 1);
+      assert.same(sessState.pendingUpdateCount(), 1);
 
-      sessState.decPending();
+      sessState.decPending(true);
       assert.calledWith(v.change, false);
       assert.same(sessState.pendingCount(), 0);
+      assert.same(sessState.pendingUpdateCount(), 0);
 
       assert.exception(function () {
         sessState.decPending();
@@ -43,8 +48,9 @@ define(function (require, exports, module) {
       assert.same(sessState.pendingCount(), 0);
 
       v.change.reset();
-      sessState.incPending();
+      sessState.incPending(true);
       assert.same(sessState.pendingCount(), 1);
+      assert.same(sessState.pendingUpdateCount(), 1);
       assert.calledWith(v.change, true);
     },
 
