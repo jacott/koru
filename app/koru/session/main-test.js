@@ -36,17 +36,38 @@ define(function (require, exports, module) {
       assert.same(session._commands.t, v.t);
     },
 
-    "test defining"() {
+    "test defineRpc"() {
       /**
        * Define a remote proceedure call
        **/
       api.method('defineRpc');
       function func() {}
-      session.defineRpc('Book.list', func);
+      refute(session.isRpc());
+      refute(session.isRpcGet());
+      refute(session.isRpc(func));
+      session.defineRpc('Book.update', func);
+
+      test.onEnd(() => delete session._rpcs['Book.update']);
+
+      assert.same(session._rpcs['Book.update'], func);
+      refute(session.isRpcGet(func));
+      assert(session.isRpc(func));
+    },
+
+    "test defineRpcGet"() {
+      /**
+       * Define a read-only (GET) remote proceedure call
+       **/
+      api.method('defineRpcGet');
+      function func() {}
+      refute(session.isRpc(func));
+      session.defineRpcGet('Book.list', func);
 
       test.onEnd(() => delete session._rpcs['Book.list']);
 
       assert.same(session._rpcs['Book.list'], func);
+      assert(session.isRpcGet(func));
+      assert(session.isRpc(func));
     },
   });
 });

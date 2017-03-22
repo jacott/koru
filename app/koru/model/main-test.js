@@ -473,6 +473,29 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({name: 'text', foo: 'jsonb'});
       },
 
+      "test remote"() {
+        /**
+         * Define multiple Remote Procedure calls prefixed by model's
+         * name. Use `get method() {...}` syntax to define a read-only
+         * call {#koru/session.defineRpcGet}
+         **/
+        api.protoMethod('remote');
+        v.TestModel.remote({
+          move() {},
+          get list() {},
+        });
+
+        const moveRpc = session._rpcs['TestModel.move'];
+        assert(moveRpc);
+        assert(session.isRpc(moveRpc));
+        refute(session.isRpcGet(moveRpc));
+
+        const listRpc = session._rpcs['TestModel.list'];
+        assert(listRpc);
+        assert(session.isRpc(listRpc));
+        assert(session.isRpcGet(listRpc));
+      },
+
       "test accessor"() {
         v.TestModel.defineFields({
           starSign: {type: 'text', accessor: {get() {
