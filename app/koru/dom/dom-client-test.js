@@ -135,6 +135,8 @@ define(function (require, exports, module) {
       'one two three'.split(' ').forEach(function (data) {
         const child = Dom.h({});
         Dom.setCtx(child, {data: data});
+        assert.same(Dom.myCtx(child).firstElement, child);
+
         elm.appendChild(child);
       });
 

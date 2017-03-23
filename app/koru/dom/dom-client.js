@@ -391,6 +391,7 @@ define(function(require, exports, module) {
         ctx = new Ctx(null, Dom.ctx(elm));
       }
       elm._koru = ctx;
+      ctx.firstElement = elm;
       return ctx;
     },
 
