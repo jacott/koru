@@ -115,6 +115,11 @@ define(function (require, exports, module) {
       refute.called(v.c1);
 
       refute.called(v.sess.state.retry);
+      assert.same(v.sess.state._state, 'paused');
+
+      v.sess.connect();
+
+      assert.same(v.sess.state._state, 'startup');
     },
 
     "test state"() {

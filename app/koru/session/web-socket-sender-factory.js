@@ -75,6 +75,7 @@ define(function(require, exports, module) {
       let heartbeatTO, heatbeatTime;
 
       if (session.ws) return;
+      sessState._state = 'startup';
       stopReconnTimeout();
       let ws = session.ws = session.newWs();
       ws.binaryType = 'arraybuffer';
