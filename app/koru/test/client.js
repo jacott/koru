@@ -59,9 +59,6 @@ define(function(require, exports, module) {
     localStorage.setItem = function (key, value) {
       const oldValue = ls[key];
       ls[key] = value;
-      localStorage._hasObservers &&
-        localStorage._storageChanged({
-          key, newValue: value, oldValue, storageArea: window.localStorage});
     };
 
     localStorage.getItem = function (key) {
