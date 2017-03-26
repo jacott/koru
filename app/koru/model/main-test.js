@@ -798,9 +798,7 @@ define(function (require, exports, module) {
         doc.updatedAt = oldCreatedAt;
         doc.$$save();
 
-        doc.$reload()
-
-        ;
+        doc.$reload();
 
         start = util.dateNow();
 

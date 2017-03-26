@@ -101,10 +101,16 @@ define(function(require, exports, module) {
 
     loadDoc(modelName, rec) {
       const model = ModelMap[modelName];
-      if (model.docs[rec._id]) return;
+      const curr = model.docs[rec._id];
+      if (curr && ! curr.$stopGap) return;
       const orig = notMe;
       try {
-        Query.insert(notMe = new model(rec));
+        if (curr) {
+          curr.$stopGap = undefined;
+          curr.$update(rec);
+        } else {
+          Query.insert(notMe = new model(rec));
+        }
       } finally {
         notMe = orig;
       }
@@ -189,7 +195,7 @@ define(function(require, exports, module) {
 
     queueChange(now, was) {
       const doc = (now || was);
-      if (doc === notMe) return;
+      if (doc === notMe || doc.$stopGap) return;
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);

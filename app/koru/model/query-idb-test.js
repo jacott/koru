@@ -70,8 +70,9 @@ isClient && define(function (require, exports, module) {
 
     "test queueChange"(done) {
       /**
-       * Queue a model change to happen when the current
-       * {#trans-queue} successfully completes
+       * Queue a model change to update indexedDB when the current
+       * {#trans-queue} successfully completes. Changes to model
+       * instances with $stopGap truthy are ignored.
        *
        * @param now the record in its current form
 
@@ -91,7 +92,9 @@ isClient && define(function (require, exports, module) {
           assert.same(v.foo._version, 2);
           this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+          v.fIgnore = v.TestModel.createStopGap({_id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
         }, () => {
+          refute(v.foo._store.TestModel.docs.fooIgnore);
           const iDoc = v.foo._store.TestModel.docs.foo123;
           assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
@@ -114,7 +117,7 @@ isClient && define(function (require, exports, module) {
     "test loadDoc"() {
       /**
        * Insert a record into a model but ignore #queueChange for same
-       * record and do nothing if record already in model;
+       * record and do nothing if record already in model unless model#$stopGap is truthy;
        **/
       TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('loadDoc');
@@ -127,7 +130,9 @@ isClient && define(function (require, exports, module) {
       poll();
       v.foo = v.idb._dbs.foo;
 
-      assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
+      const {foo123} = v.TestModel.docs;
+
+      assert.equals(foo123.attributes, v.rec);
       assert.equals(v.foo._store.TestModel.docs, {});
       assert(v.called);
       v.called = false;
@@ -135,6 +140,15 @@ isClient && define(function (require, exports, module) {
       poll();
       assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
       refute(v.called);
+      v.TestModel.docs.foo123.$stopGap = true;
+      v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
+      poll();
+      assert.equals(v.TestModel.docs.foo123.name, 'foo2');
+      assert.same(v.TestModel.docs.foo123, foo123);
+      assert.equals(foo123.$stopGap, undefined);
+
+
+      assert(v.called);
     },
 
     "test loadDocs"() {

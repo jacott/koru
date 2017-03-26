@@ -56,7 +56,15 @@ define(function(require, exports, module) {
           const query = new Query(this);
           query.isFromServer = true;
           return query;
-        }
+        },
+        createStopGap(attrs) {
+          const doc = this.build(attrs, true);
+          doc.$stopGap = true;
+          doc.$isValid();
+          doc._errors = null;
+          doc.$save('force');
+          return doc;
+        },
       });
 
       util.merge(BaseModel.prototype, {
@@ -85,14 +93,13 @@ define(function(require, exports, module) {
             doc = docs[id || changes._id],
             now = util.newDate();
 
-        _support._updateTimestamps(changes, model.updateTimestamps, now);
 
         if (doc) {
-          if (id) _support.performUpdate(doc, changes);
+          if (id) {
+            localUpdate(doc, changes, this.userId);
+          }
         } else if (! id) {
-          _support._addUserIds(changes, model.userIds, this.userId);
-          _support._updateTimestamps(changes, model.createTimestamps, now);
-          _support.performInsert(new model(changes));
+          localInsert(new model(changes), this.userId);
         }
       });
 
@@ -187,6 +194,24 @@ define(function(require, exports, module) {
     return doc && doc.attributes;
   }
 
+  function localInsert(doc, userId) {
+    const model = doc.constructor;
+    const changes = doc.attributes;
+    const now = util.newDate();
+    _support._updateTimestamps(changes, model.updateTimestamps, now);
+
+    _support._addUserIds(doc.attributes, model.userIds, userId);
+    _support._updateTimestamps(changes, model.createTimestamps, now);
+    _support.performInsert(doc);
+  }
+
+  function localUpdate(doc, changes, userId) {
+    const model = doc.constructor;
+    const now = util.newDate();
+    _support._updateTimestamps(changes, model.updateTimestamps, now);
+    _support.performUpdate(doc, changes);
+  }
+
   function save(doc, callback=koru.globalCallback) {
     let _id = doc.attributes._id;
     const model = doc.constructor;
@@ -195,16 +220,20 @@ define(function(require, exports, module) {
       if (! doc.changes._id) doc.changes._id = Random.id();
       _id = doc.changes._id;
       if (model.docs[_id]) throw new koru.Error(400, {_id: [['not_unique']]});
-      session.rpc("save", model.modelName, null,
-                  doc.changes,
-                  callback);
+      if (doc.$stopGap) {
+        doc.attributes = doc.changes;
+        doc.changes = {};
+        localInsert(doc, koru.userId());
+      } else
+        session.rpc("save", model.modelName, null, doc.changes, callback);
     } else for(let noop in doc.changes) {
       // only call if at least one change
       const changes = doc.changes;
       doc.changes = {}; // reset changes here for callbacks
-      session.rpc("save", model.modelName, doc._id,
-                  changes,
-                  callback);
+      if (doc.$stopGap)
+        localUpdate(doc, changes, koru.userId());
+      else
+        session.rpc("save", model.modelName, _id, changes, callback);
       break;
     }
     doc.$reload();
