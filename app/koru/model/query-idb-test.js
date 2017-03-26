@@ -137,6 +137,30 @@ isClient && define(function (require, exports, module) {
       refute(v.called);
     },
 
+    "test loadDocs"() {
+      /**
+       * Insert a list of records into a model. See {##loadDoc}
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      api.protoMethod('loadDocs');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      poll();
+      v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
+      v.db.loadDocs('TestModel', v.recs = [
+        {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
+        {_id: 'foo456', name: 'bar', age: 10, gender: 'f'},
+      ]);
+      poll();
+      v.foo = v.idb._dbs.foo;
+
+      assert.equals(v.TestModel.docs.foo123.attributes, v.recs[0]);
+      assert.equals(v.TestModel.docs.foo456.attributes, v.recs[1]);
+      assert.equals(v.foo._store.TestModel.docs, {});
+      assert(v.called);
+    },
+
     "test put"() {
       /**
        * Insert or update a record in indexedDB

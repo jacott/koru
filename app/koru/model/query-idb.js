@@ -110,6 +110,10 @@ define(function(require, exports, module) {
       }
     }
 
+    loadDocs(n, recs) {
+      recs.forEach(rec => {this.loadDoc(n, rec)});
+    }
+
     get(modelName, _id) {
       return wrapOSRequest(this, modelName, os => os.get(_id));
     }
