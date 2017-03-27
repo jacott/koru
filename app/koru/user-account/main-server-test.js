@@ -3,7 +3,7 @@ define(function (require, exports, module) {
   const koru        = require('koru/main');
   const Model       = require('koru/model/main');
   const Val         = require('koru/model/validation');
-  const Random      = require('koru/random');
+  const Random      = require('koru/random').global;
   const session     = require('koru/session');
   const TH          = require('koru/session/test-helper');
   const SRP         = require('koru/srp/srp');
@@ -41,15 +41,15 @@ define(function (require, exports, module) {
     },
 
     "test makeResetPasswordKey"() {
-      this.stub(Random, 'id').returns('randid=');
-      this.stub(Random, 'create').returns({id() {return 'CreateId'}});
-
+      this.stub(Random, 'id')
+        .onCall(0).returns('randid=')
+        .onCall(1).returns('r2');
 
       const ans = userAccount.makeResetPasswordKey({_id: 'uid111'});
       assert.equals(ans.attributes, v.lu.$reload().attributes);
 
       assert.between(ans.resetTokenExpire, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
-      assert.equals(ans.resetToken, 'randid=CreateId');
+      assert.equals(ans.resetToken, 'randid=r2');
     },
 
     "sendResetPasswordEmail": {

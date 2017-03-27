@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   const BigInteger = require('./big-integer');
-  const Random = require('../random');
+  const Random = require('../random').global;
   const SHA256 = require('./sha256');
   const util = require('../util');
 
@@ -28,14 +28,14 @@ define(function(require, exports, module) {
    * - SRP parameters (see _defaults and paramsFromOptions below)
    */
   SRP.generateVerifier = function (password, options) {
-    var params = paramsFromOptions(options);
+    const params = paramsFromOptions(options);
 
-    var identity = (options && options.identity) || Random.id();
-    var salt = (options && options.salt) || Random.id();
+    const identity = (options && options.identity) || Random.id();
+    const salt = (options && options.salt) || Random.id();
 
-    var x = params.hash(salt + params.hash(identity + ":" + password));
-    var xi = new BigInteger(x, 16);
-    var v = params.g.modPow(xi, params.N);
+    const x = params.hash(salt + params.hash(identity + ":" + password));
+    const xi = new BigInteger(x, 16);
+    const v = params.g.modPow(xi, params.N);
 
 
     return {
@@ -63,16 +63,15 @@ define(function(require, exports, module) {
    * - SRP parameters (see _defaults and paramsFromOptions below)
    */
   SRP.Client = function (password, options) {
-    var self = this;
-    self.params = paramsFromOptions(options);
-    self.password = password;
+    this.params = paramsFromOptions(options);
+    this.password = password;
 
     // shorthand
-    var N = self.params.N;
-    var g = self.params.g;
+    const N = this.params.N;
+    const g = this.params.g;
 
     // construct public and private keys.
-    var a, A;
+    let a, A;
     if (options && options.a) {
       if (typeof options.a === "string")
         a = new BigInteger(options.a, 16);
@@ -93,9 +92,9 @@ define(function(require, exports, module) {
       }
     }
 
-    self.a = a;
-    self.A = A;
-    self.Astr = A.toString(16);
+    this.a = a;
+    this.A = A;
+    this.Astr = A.toString(16);
   };
 
 
@@ -105,10 +104,8 @@ define(function(require, exports, module) {
    * returns { A: 'client public ephemeral key. hex encoded integer.' }
    */
   SRP.Client.prototype.startExchange = function () {
-    var self = this;
-
     return {
-      A: self.Astr
+      A: this.Astr
     };
   };
 
@@ -124,35 +121,33 @@ define(function(require, exports, module) {
    * throws an error if it got an invalid challenge.
    */
   SRP.Client.prototype.respondToChallenge = function (challenge) {
-    var self = this;
-
     // shorthand
-    var N = self.params.N;
-    var g = self.params.g;
-    var k = self.params.k;
-    var H = self.params.hash;
+    const N = this.params.N;
+    const g = this.params.g;
+    const k = this.params.k;
+    const H = this.params.hash;
 
     // XXX check for missing / bad parameters.
-    self.identity = challenge.identity;
-    self.salt = challenge.salt;
-    self.Bstr = challenge.B;
-    self.B = new BigInteger(self.Bstr, 16);
+    this.identity = challenge.identity;
+    this.salt = challenge.salt;
+    this.Bstr = challenge.B;
+    this.B = new BigInteger(this.Bstr, 16);
 
-    if (self.B.mod(N) === 0)
+    if (this.B.mod(N) === 0)
       throw new Error("Server sent invalid key: B mod N == 0.");
 
-    var u = new BigInteger(H(self.Astr + self.Bstr), 16);
-    var x = new BigInteger(
-      H(self.salt + H(self.identity + ":" + self.password)), 16);
+    const u = new BigInteger(H(this.Astr + this.Bstr), 16);
+    const x = new BigInteger(
+      H(this.salt + H(this.identity + ":" + this.password)), 16);
 
-    var kgx = k.multiply(g.modPow(x, N));
-    var aux = self.a.add(u.multiply(x));
-    var S = self.B.subtract(kgx).modPow(aux, N);
-    var M = H(self.Astr + self.Bstr + S.toString(16));
-    var HAMK = H(self.Astr + M + S.toString(16));
+    const kgx = k.multiply(g.modPow(x, N));
+    const aux = this.a.add(u.multiply(x));
+    const S = this.B.subtract(kgx).modPow(aux, N);
+    const M = H(this.Astr + this.Bstr + S.toString(16));
+    const HAMK = H(this.Astr + M + S.toString(16));
 
-    self.S = S;
-    self.HAMK = HAMK;
+    this.S = S;
+    this.HAMK = HAMK;
 
     return {
       M: M
@@ -169,9 +164,7 @@ define(function(require, exports, module) {
    * returns true or false.
    */
   SRP.Client.prototype.verifyConfirmation = function (confirmation) {
-    var self = this;
-
-    return (self.HAMK && (confirmation.HAMK === self.HAMK));
+    return (this.HAMK && (confirmation.HAMK === this.HAMK));
   };
 
 
@@ -189,18 +182,17 @@ define(function(require, exports, module) {
    * - SRP parameters (see _defaults and paramsFromOptions below)
    */
   SRP.Server = function (verifier, options) {
-    var self = this;
-    self.params = paramsFromOptions(options);
-    self.verifier = verifier;
+    this.params = paramsFromOptions(options);
+    this.verifier = verifier;
 
     // shorthand
-    var N = self.params.N;
-    var g = self.params.g;
-    var k = self.params.k;
-    var v = new BigInteger(self.verifier.verifier, 16);
+    const N = this.params.N;
+    const g = this.params.g;
+    const k = this.params.k;
+    const v = new BigInteger(this.verifier.verifier, 16);
 
     // construct public and private keys.
-    var b, B;
+    let b, B;
     if (options && options.b) {
       if (typeof options.b === "string")
         b = new BigInteger(options.b, 16);
@@ -221,9 +213,9 @@ define(function(require, exports, module) {
       }
     }
 
-    self.b = b;
-    self.B = B;
-    self.Bstr = B.toString(16);
+    this.b = b;
+    this.B = B;
+    this.Bstr = B.toString(16);
 
   };
 
@@ -242,31 +234,29 @@ define(function(require, exports, module) {
    * Throws an error if issued a bad request.
    */
   SRP.Server.prototype.issueChallenge = function (request) {
-    var self = this;
-
     // XXX check for missing / bad parameters.
-    self.Astr = request.A;
-    self.A = new BigInteger(self.Astr, 16);
+    this.Astr = request.A;
+    this.A = new BigInteger(this.Astr, 16);
 
-    if (self.A.mod(self.params.N) === 0)
+    if (this.A.mod(this.params.N) === 0)
       throw new Error("Client sent invalid key: A mod N == 0.");
 
     // shorthand
-    var N = self.params.N;
-    var H = self.params.hash;
+    const N = this.params.N;
+    const H = this.params.hash;
 
     // Compute M and HAMK in advance. Don't send to client yet.
-    var u = new BigInteger(H(self.Astr + self.Bstr), 16);
-    var v = new BigInteger(self.verifier.verifier, 16);
-    var avu = self.A.multiply(v.modPow(u, N));
-    self.S = avu.modPow(self.b, N);
-    self.M = H(self.Astr + self.Bstr + self.S.toString(16));
-    self.HAMK = H(self.Astr + self.M + self.S.toString(16));
+    const u = new BigInteger(H(this.Astr + this.Bstr), 16);
+    const v = new BigInteger(this.verifier.verifier, 16);
+    const avu = this.A.multiply(v.modPow(u, N));
+    this.S = avu.modPow(this.b, N);
+    this.M = H(this.Astr + this.Bstr + this.S.toString(16));
+    this.HAMK = H(this.Astr + this.M + this.S.toString(16));
 
     return {
-      identity: self.verifier.identity,
-      salt: self.verifier.salt,
-      B: self.Bstr
+      identity: this.verifier.identity,
+      salt: this.verifier.salt,
+      B: this.Bstr
     };
   };
 
@@ -282,13 +272,11 @@ define(function(require, exports, module) {
    * OR null if the client's proof doesn't match.
    */
   SRP.Server.prototype.verifyResponse = function (response) {
-    var self = this;
-
-    if (response.M !== self.M)
+    if (response.M !== this.M)
       return null;
 
     return {
-      HAMK: self.HAMK
+      HAMK: this.HAMK
     };
   };
 
@@ -297,15 +285,15 @@ define(function(require, exports, module) {
    */
   SRP.checkPassword = function (password, verifier) {
     // Client -> Server
-    var csrp = new SRP.Client(password);
-    var request = csrp.startExchange();
+    const csrp = new SRP.Client(password);
+    const request = csrp.startExchange();
 
     // Server <- Client
-    var ssrp = new SRP.Server(verifier);
-    var challenge = ssrp.issueChallenge({A: request.A});
+    const ssrp = new SRP.Server(verifier);
+    const challenge = ssrp.issueChallenge({A: request.A});
 
     // Client -> Server
-    var response = csrp.respondToChallenge(challenge);
+    const response = csrp.respondToChallenge(challenge);
     return response.M === ssrp.M;
   };
 
@@ -335,11 +323,11 @@ define(function(require, exports, module) {
    * - g: String or BigInteger. Defaults to 2.
    * - k: String or BigInteger. Defaults to hash(N, g)
    */
-  var paramsFromOptions = function (options) {
+  function paramsFromOptions (options) {
     if (!options) // fast path
       return _defaults;
 
-    var ret = util.merge({}, _defaults);
+    const ret = util.merge({}, _defaults);
 
     util.forEach(['N', 'g', 'k'], function (p) {
       if (options[p]) {

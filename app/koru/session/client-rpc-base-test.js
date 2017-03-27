@@ -2,6 +2,7 @@ define(function (require, exports, module) {
   /**
    * Attach rpc to a session
    **/
+  const Random       = require('koru/random');
   const SessionBase  = require('koru/session/base').constructor;
   const RPCQueue     = require('koru/session/rpc-queue');
   const api          = require('koru/test/api');
@@ -28,6 +29,7 @@ define(function (require, exports, module) {
           this.sendBinary = v.sendBinary = test.stub();
         }
       }
+      this.stub(Random.global, 'id').returns('rid1');
       v.sess = sut(new MySession());
 
       v.recvM = function (...args) {
@@ -56,7 +58,7 @@ define(function (require, exports, module) {
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
       v.sess.rpc('foo.rpc', 1, 2);
-      assert.equals(rpcQueue.get('1'), [['1', 'foo.rpc', 1, 2], null]);
+      assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
     },
 
     "reconnect": {
@@ -70,11 +72,11 @@ define(function (require, exports, module) {
         v.sess.rpc("foo.baz", 1, 2);
         v.state._state = 'retry';
         v.sendBinary.reset();
-        v.recvM("1", 'r');
+        v.recvM("1rid1", 'r');
 
         v.onConnect(v.sess);
 
-        assert.calledWith(v.sendBinary, 'M', ["2", "foo.baz", 1, 2]);
+        assert.calledWith(v.sendBinary, 'M', ["2rid1", "foo.baz", 1, 2]);
         assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
       },
     },
@@ -184,12 +186,12 @@ define(function (require, exports, module) {
 
       assert.same(v.sess._msgId, fooId+1);
 
-      v.recvM('2', 'r');
+      v.recvM('2rid1', 'r');
 
       assert.same(v.state.pendingCount(), 1);
       assert.same(v.state.pendingUpdateCount(), 1);
 
-      v.recvM('1', 'r');
+      v.recvM('1rid1', 'r');
 
       assert.same(v.state.pendingCount(), 0);
       assert.same(v.state.pendingUpdateCount(), 0);
@@ -200,7 +202,7 @@ define(function (require, exports, module) {
         v.thisValue = this;
         v.args = args.slice();
         fooId = v.sess._msgId;
-        assert.calledWith(v.sendBinary, 'M', [fooId.toString(36), "foo.rpc"].concat(v.args));
+        assert.calledWith(v.sendBinary, 'M', [fooId.toString(36)+'rid1', "foo.rpc"].concat(v.args));
         assert.isTrue(v.sess.isSimulation);
         v.sess.rpc('foo.s2', 'aaa');
         assert.same(v.sess._msgId, fooId);
@@ -228,7 +230,7 @@ define(function (require, exports, module) {
       assert.same(v.state.pendingUpdateCount(), 1);
 
 
-      assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
+      assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36)+'rid1', "foo.rpc", 1, 2, 3]);
     },
 
     "test callback rpc" () {
@@ -243,7 +245,7 @@ define(function (require, exports, module) {
       v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
       var msgId = v.sess._msgId;
 
-      v.recvM(msgId.toString(36), 'e', '404', 'error Msg');
+      v.recvM(msgId.toString(36)+'rid1', 'e', '404', 'error Msg');
 
       assert.calledWithExactly(v.cstub, TH.match(function (err) {
         assert.same(err.error, 404);
@@ -251,8 +253,8 @@ define(function (require, exports, module) {
         return true;
       }));
 
-      v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
-      v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
+      v.recvM((msgId - 1).toString(36)+'rid1', 'r', [1,2,3]);
+      v.recvM((msgId - 1).toString(36)+'rid1', 'r', [1,2,3]);
 
       assert.calledOnce(v.bstub);
 
@@ -286,11 +288,11 @@ define(function (require, exports, module) {
       v.ob.reset();
 
       var msgId = v.sess._msgId;
-      v.recvM((msgId - 1).toString(36), 'r');
+      v.recvM((msgId - 1).toString(36)+'rid1', 'r');
 
       refute.called(v.ob);
 
-      v.recvM(msgId.toString(36), 'r');
+      v.recvM(msgId.toString(36)+'rid1', 'r');
 
       assert.calledWith(v.ob, false);
       assert.isFalse(v.sess.isRpcPending());

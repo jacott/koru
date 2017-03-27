@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const koru    = require('koru/main');
   const Model   = require('koru/model/main');
   const Val     = require('koru/model/validation');
-  const Random  = require('koru/random');
+  const Random  = require('koru/random').global;
   const session = require('koru/session');
   const SRP     = require('koru/srp/srp');
   const util    = require('koru/util');
@@ -123,9 +123,7 @@ define(function(require, exports, module) {
     makeResetPasswordKey(user) {
       const lu = UserLogin.findBy('userId', user._id);
 
-      const rand = Random.create();
-
-      lu.resetToken = Random.id()+rand.id();
+      lu.resetToken = Random.id()+Random.id();
       lu.resetTokenExpire = Date.now() + 24*60*60*1000;
       lu.$$save();
 

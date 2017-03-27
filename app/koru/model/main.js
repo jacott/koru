@@ -3,7 +3,6 @@ define(function(require, exports, module) {
   const dbBroker             = require('koru/model/db-broker');
   const Query                = require('koru/model/query');
   const koru                 = require('../main');
-  const Random               = require('../random');
   const session              = require('../session/base');
   const util                 = require('../util');
   const ModelMap             = require('./map');

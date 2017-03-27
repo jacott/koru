@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   module.exports = {
+    idLen: 17,
     browserVersion(ua) {
       const isMobile = /\bMobi(le)?\b/.test(ua);
       const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];

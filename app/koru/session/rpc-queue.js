@@ -15,7 +15,8 @@ define(function(require, exports, module) {
       const {queue} = this;
       const ids = Object.keys(queue).sort(compare);
       if (ids.length) {
-        const last = parseInt(queue[ids[ids.length - 1]][0][0], 36);
+        const last = parseInt(queue[ids[ids.length - 1]][0][0].slice(0,-util.idLen), 36) ||
+                ids.length+1000; // lets try and move past any bad ones
         if (last > session._msgId)
           session._msgId = last;
         ids.forEach(id => {
@@ -23,11 +24,11 @@ define(function(require, exports, module) {
         });
       }
     }
-      }
+  }
 
-      function compare(a, b) {
-        return a.length - b.length || ((a < b) ? -1 : a === b ? 0 : 1);
-      }
+  function compare(a, b) {
+    return a.length - b.length || ((a < b) ? -1 : a === b ? 0 : 1);
+  }
 
   return RPCQueue;
 });

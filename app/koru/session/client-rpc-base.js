@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
+  const Random   = require('koru/random');
   const RPCQueue = require('koru/session/rpc-queue');
   const util     = require('koru/util');
   const koru     = require('../main');
 
-  const rpcQueueSym = Symbol();
+  const rpcQueueSym = Symbol(), baseId = Symbol();
 
   function init(session, {rpcQueue=new RPCQueue()}={}) {
     util.merge(session, {
@@ -12,7 +13,7 @@ define(function(require, exports, module) {
       _sendM,
       isRpcPending() {return rpcQueue.isRpcPending()},
     });
-
+    session[baseId] = Random.global.id();
     session[rpcQueueSym] = rpcQueue;
 
     session.state._onConnect['20-rpc'] || session.state.onConnect("20-rpc", onConnect);
@@ -41,7 +42,7 @@ define(function(require, exports, module) {
   }
 
   function _sendM(name, args, func) {
-    var msgId = (++this._msgId).toString(36);
+    var msgId = (++this._msgId).toString(36)+this[baseId];
     var data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
     this[rpcQueueSym].push(this, data, func);

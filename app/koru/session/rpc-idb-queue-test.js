@@ -85,9 +85,9 @@ isClient && define(function (require, exports, module) {
          **/
         api.protoMethod('reload');
         v.os_rpcQueue.docs = {
-          a12: {_id: 'a12', data: ['a12', 'foo1']},
-          a102: {_id: 'a102', data: ['a102', 'foo2']},
-          a2: {_id: 'a2', data: ['a2', 'foo3']},
+          a12: {_id: 'a1212345670123456789', data: ['a1212345670123456789', 'foo1']},
+          a102: {_id: 'a10212345670123456789', data: ['a10212345670123456789', 'foo2']},
+          a2: {_id: 'a212345670123456789', data: ['a212345670123456789', 'foo3']},
         };
 
         const ans = [];
@@ -106,7 +106,10 @@ isClient && define(function (require, exports, module) {
 
         assert.same(state.incPending.callCount, 3);
         assert.calledWith(state.incPending, true);
-        assert.equals(ans, [['a2', 'foo3'], ['a12', 'foo1'], ['a102', 'foo2']]);
+        assert.equals(ans, [
+          ['a212345670123456789', 'foo3'],
+          ['a1212345670123456789', 'foo1'],
+          ['a10212345670123456789', 'foo2']]);
       },
     },
   });

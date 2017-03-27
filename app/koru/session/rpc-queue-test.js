@@ -4,8 +4,9 @@ isClient && define(function (require, exports, module) {
    * in memory queue but can be replaced by a persistent queue for
    * offline-mode.
    **/
-  const api = require('koru/test/api');
-  const TH  = require('koru/test');
+  const Random = require('koru/random');
+  const TH     = require('koru/test');
+  const api    = require('koru/test/api');
 
   const sut  = require('./rpc-queue');
   var v;
@@ -47,9 +48,9 @@ isClient && define(function (require, exports, module) {
       };
 
       const queue = new sut();
-      queue.push(session, ['50', 'list']);
-      queue.push(session, ['6', 'get', 423]);
-      queue.push(session, ['8', 'get', 5]);
+      queue.push(session, ['50'+Random.id(), 'list']);
+      queue.push(session, ['6'+Random.id(), 'get', 423]);
+      queue.push(session, ['8'+Random.id(), 'get', 5]);
 
       const ans = [];
       queue.resend(session);
@@ -57,7 +58,8 @@ isClient && define(function (require, exports, module) {
       assert.same(session._msgId.toString(36), '50');
 
 
-      assert.equals(ans, [['6', 'get', 423], ['8', 'get', 5], ['50', 'list']]);
+      assert.equals(ans, [[TH.match(/^6/), 'get', 423], [TH.match(/^8/), 'get', 5],
+                          [TH.match(/^50/), 'list']]);
     },
   });
 });

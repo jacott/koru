@@ -1,4 +1,5 @@
-define(function() {
+define(function(require, exports, module) {
+  const util  = require('koru/util');
   /**
    * random.js
    *
@@ -18,6 +19,7 @@ define(function() {
   // that to construct hex string.
 
   const nodeCrypto = isServer && requirejs.nodeRequire('crypto');
+  const {idLen} = util;
 
   // see http://baagoe.org/en/wiki/Better_random_numbers_for_javascript
   // for a full discussion and Alea implementation.
@@ -149,7 +151,7 @@ define(function() {
     id() {
       let digits = '';
       if (this.alea) {
-        for (let i = 0; i < 17; i++) {
+        for (let i = 0; i < idLen; i++) {
           digits += UNMISTAKABLE_CHARS[Math.floor(this.alea() * UNMISTAKABLE_CHARS_LEN)];
         }
         return digits;
@@ -157,12 +159,12 @@ define(function() {
 
       let bytes;
       if (isServer) {
-        bytes = nodeCrypto.randomBytes(17);
+        bytes = nodeCrypto.randomBytes(idLen);
       } else {
-        bytes = new Uint8Array(17);
+        bytes = new Uint8Array(idLen);
         window.crypto.getRandomValues(bytes);
       }
-      for (let i = 0; i < 17; i++) {
+      for (let i = 0; i < idLen; i++) {
         digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
       }
       return digits;
@@ -180,36 +182,28 @@ define(function() {
   // instantiate RNG.  Heuristically collect entropy from various sources when a
   // cryptographic PRNG isn't available.
 
-  // client sources
-  const height = (typeof window !== 'undefined' && window.innerHeight) ||
-          (typeof document !== 'undefined'
-           && document.documentElement
-           && document.documentElement.clientHeight) ||
-          (typeof document !== 'undefined'
-           && document.body
-           && document.body.clientHeight) ||
-          1;
 
-  const width = (typeof window !== 'undefined' && window.innerWidth) ||
-          (typeof document !== 'undefined'
-           && document.documentElement
-           && document.documentElement.clientWidth) ||
-          (typeof document !== 'undefined'
-           && document.body
-           && document.body.clientWidth) ||
-          1;
+  let seed = undefined;
+  if (isClient && ! (window.crypto && window.crypto.getRandomValues)) {
+    // client sources
+    seed = [Date.now(), window.innerHeight, window.innerWidth, navigator.userAgent, Math.random()];
+  }
 
-  const agent = (typeof navigator !== 'undefined' && navigator.userAgent) || "";
+  const random = new RandomGenerator(seed);
+  random.create = create;
 
-  const Random = (isServer ||
-                  (typeof window !== "undefined" &&
-                   window.crypto && window.crypto.getRandomValues)) ?
-          new RandomGenerator() :
-          new RandomGenerator([new Date(), height, width, agent, Math.random()]);
+  function create(...args) {
+    return new RandomGenerator(args.length ? args : undefined);
+  }
 
-  Random.create = function (...args) {
-    return new RandomGenerator(args);
+  return {
+    create,
+    id() {
+      return (util.thread.random || random).id();
+    },
+    hexString(value) {
+      return (util.thread.random || random).hexString(value);
+    },
+    global: random,
   };
-
-  return Random;
 });

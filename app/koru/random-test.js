@@ -26,9 +26,8 @@ define(function (require, exports, module) {
     "test format"() {
       const randSpy = isServer ? test.spy(requirejs.nodeRequire('crypto'), 'randomBytes')
               : test.spy(window.crypto, 'getRandomValues');
-      const idLen = 17;
       const id = Random.id();
-      assert.same(id.length, idLen);
+      assert.same(id.length, util.idLen);
       assert.match(id, /^[2-9a-zA-Z]*$/);
 
 
@@ -41,8 +40,10 @@ define(function (require, exports, module) {
 
       randSpy.reset();
 
+      const rand = Random.create();
+
       const numDigits = 9;
-      const hexStr = Random.hexString(numDigits);
+      const hexStr = rand.hexString(numDigits);
 
       if (isServer) {
         assert.calledWith(randSpy, 5);
@@ -54,9 +55,23 @@ define(function (require, exports, module) {
 
       assert.same(hexStr.length, numDigits);
       parseInt(hexStr, 16); // should not throw
-      const frac = Random.fraction();
+      const frac = rand.fraction();
       assert.isTrue(frac < 1.0);
       assert.isTrue(frac >= 0.0);
+    },
+
+    "test replace random"() {
+      this.onEnd(() => {util.thread.random = null});
+      util.thread.random = {id() {return "123"}, hexString(value) {return "hs"+value}};
+      assert.same(Random.id(), "123");
+      const id = Random.global.id();
+      assert.same(id.length, 17);
+      assert.match(id, /^[2-9a-zA-Z]*$/);
+      assert.same(Random.hexString("a123"), "hsa123");
+    },
+
+    "test same create"() {
+      assert.same(Random.create, Random.global.create);
     },
   });
 });
