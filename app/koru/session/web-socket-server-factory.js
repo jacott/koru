@@ -1,18 +1,21 @@
-var WebSocketServer = requirejs.nodeRequire('ws').Server;
+const WebSocketServer = requirejs.nodeRequire('ws').Server;
 
 define(function (require, exports, module) {
-  var koru = require('../main');
-  var util = require('../util');
-  var message = require('./message');
-  var makeSubject = require('../make-subject');
+  const koru        = require('../main');
+  const makeSubject = require('../make-subject');
+  const util        = require('../util');
+  const message     = require('./message');
 
   function webSocketServerFactory(session, execWrapper) {
-    var Connection = require('./server-connection-factory')(session);
+    const Connection = require('./server-connection-factory')(session);
 
     koru.onunload(module, 'reload');
 
-    var sessCounter = 0;
-    var globalDictAdders = {};
+    let sessCounter = 0;
+    const globalDictAdders = {};
+    let _globalDict, _globalDictEncoded;
+    let _preloadDict = message.newGlobalDict();
+
     globalDictAdders[module.id] = addToDictionary;
 
     util.merge(session, {
@@ -52,12 +55,8 @@ define(function (require, exports, module) {
       get _globalDictAdders() {return globalDictAdders},
     });
 
-    var _globalDict, _globalDictEncoded;
-    var _preloadDict = message.newGlobalDict();
-
-
     function buildGlobalDict() {
-      for(var name in globalDictAdders) {
+      for(let name in globalDictAdders) {
         globalDictAdders[name](addToDict);
       }
       _globalDict = _preloadDict;
@@ -85,14 +84,14 @@ define(function (require, exports, module) {
       this.send('K');
     });
     session.provide('M', function (data) {
-      var msgId = data[0];
-      var func = session._rpcs[data[1]];
+      const msgId = data[0];
+      const func = session._rpcs[data[1]];
       this.batchMessages();
       try {
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
-        var result = func.apply(this, data.slice(2));
+        const result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
         this.releaseMessages();
       } catch(ex) {
@@ -107,11 +106,11 @@ define(function (require, exports, module) {
     });
 
     function onConnection(ws) {
-      var ugr = ws.upgradeReq;
+      const ugr = ws.upgradeReq;
 
-      var remoteAddress = ugr.socket.remoteAddress;
-      if (/127\.0\.0\.1/.test(remoteAddress))
-        remoteAddress = ugr.headers['x-real-ip'] || remoteAddress;
+      let _remoteAddress = ugr.socket.remoteAddress;
+      const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress) ?
+              ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
 
       if (session.connectionIntercept)
         session.connectionIntercept(newSession, ws, remoteAddress);
@@ -120,10 +119,10 @@ define(function (require, exports, module) {
 
       function newSession(wrapOnMessage) {
         ++session.totalSessions;
-        var sessId = (++sessCounter).toString(36);
-        var conn = session.conns[sessId] = new Connection(ws, sessId, function() {
+        const sessId = (++sessCounter).toString(36);
+        const conn = session.conns[sessId] = new Connection(ws, sessId, () => {
           ws.close();
-          conn = session.conns[sessId];
+          const conn = session.conns[sessId];
           if (conn) {
             --session.totalSessions;
             delete session.conns[sessId];
@@ -135,19 +134,20 @@ define(function (require, exports, module) {
         conn.remoteAddress = remoteAddress;
         conn.remotePort = ugr.socket.remotePort;
 
-        var onMessage = conn.onMessage.bind(conn);
+        const onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage ? wrapOnMessage(onMessage) : onMessage);
 
         conn.sendBinary('X', [2, session.versionHash, globalDictEncoded()]);
-        koru.info('New client ws:', sessId, session.totalSessions, conn.engine, remoteAddress+':'+conn.remotePort);
+        koru.info('New client ws:', sessId, session.totalSessions,
+                  conn.engine, remoteAddress+':'+conn.remotePort);
         session.countNotify.notify(conn, true);
         return conn;
       }
     }
 
     function sendAll(cmd, msg) {
-      var conns = this.conns;
-      for(var key in conns) {
+      const conns = this.conns;
+      for(let key in conns) {
         conns[key].send(cmd, msg);
       }
     }
@@ -157,10 +157,10 @@ define(function (require, exports, module) {
     }
 
     function unload(id) {
-      var ctx = requirejs.module.ctx;
+      const {ctx} = requirejs.module;
       id = ctx.normalizeId(id);
 
-      var mod = ctx.modules[id];
+      const mod = ctx.modules[id];
       if (mod) {
         mod.unload();
         this.versionHash = 'v'+Date.now();
@@ -169,7 +169,7 @@ define(function (require, exports, module) {
     }
 
     function addToDictionary(adder) {
-      for (var name in session._rpcs) {
+      for (let name in session._rpcs) {
         adder(name);
       }
     }
