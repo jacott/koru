@@ -74,6 +74,7 @@ define(function(require, exports, module) {
     get primaryKey() {return this._data[this._position]._id}
 
     delete() {
+      if (this._isKeyCursor) throw new Error(`can't delete with keycursor`);
       delete this.store.docs[this.primaryKey];
     }
   }
@@ -143,7 +144,7 @@ define(function(require, exports, module) {
       const self = this;
       return {
         set onsuccess(f) {
-          new Cursor(self, query, direction, f);
+          new Cursor(self, query, direction, f)._isKeyCursor = true;
         },
       };
     }
