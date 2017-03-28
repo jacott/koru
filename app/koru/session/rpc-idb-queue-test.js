@@ -8,6 +8,7 @@ isClient && define(function (require, exports, module) {
    *
    * RpcGet methods are not persisted.
    **/
+  const koru          = require('koru');
   const MockIndexedDB = require('koru/model/mock-indexed-db');
   const QueryIDB      = require('koru/model/query-idb');
   const TH            = require('koru/test');
@@ -100,6 +101,7 @@ isClient && define(function (require, exports, module) {
             ans.push(data);
           }
         };
+
         queue.reload(sess).then(() => {queue.resend(sess)});
         poll();
         assert.same(sess._msgId.toString(36), 'a102');
@@ -110,6 +112,16 @@ isClient && define(function (require, exports, module) {
           ['a212345670123456789', 'foo3'],
           ['a1212345670123456789', 'foo1'],
           ['a10212345670123456789', 'foo2']]);
+
+        const callback = queue.get('a212345670123456789')[1];
+
+        TH.stubProperty(koru, 'globalErrorCatch', {value: this.stub()});
+
+        callback({error: 409, message: 'dupe'});
+
+        refute.called(koru.globalErrorCatch);
+        callback({message: 'invalid'});
+        assert.calledWith(koru.globalErrorCatch, {message: 'invalid'});
       },
     },
   });

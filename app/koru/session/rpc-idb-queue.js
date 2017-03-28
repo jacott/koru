@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const koru     = require('koru');
   const RPCQueue = require('koru/session/rpc-queue');
   const util     = require('koru/util');
 
@@ -26,9 +27,16 @@ define(function(require, exports, module) {
       return this.qdb.getAll('rpcQueue').then(recs => {
         recs.forEach(rec => {
           state.incPending(true);
-          super.push(session, rec.data);
+          super.push(session, rec.data, callback);
         });
       });
+    }
+  }
+
+  function callback(err) {
+    if (err) {
+      if (err.error !== 409)
+        koru.globalErrorCatch(err);
     }
   }
 

@@ -718,9 +718,9 @@ performance-now@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/performance-now/-/performance-now-0.2.0.tgz#33ef30c5c77d4ea21c5a53869d91b56d8f2555e5"
 
-pg-libpq@>=1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/pg-libpq/-/pg-libpq-1.1.0.tgz#e48b86fceb96d586c55b120884e6230cb6cf84b4"
+pg-libpq@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/pg-libpq/-/pg-libpq-1.1.1.tgz#c47d0580828a243191670edd04be823cc715d3e3"
   dependencies:
     bindings "^1.2.1"
     nan "^2.3.5"
