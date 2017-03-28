@@ -1,6 +1,7 @@
 const WebSocketServer = requirejs.nodeRequire('ws').Server;
 
 define(function (require, exports, module) {
+  const Random      = require('koru/random');
   const koru        = require('../main');
   const makeSubject = require('../make-subject');
   const util        = require('../util');
@@ -91,6 +92,8 @@ define(function (require, exports, module) {
         if (! func)
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
+        util.thread.msgId = msgId;
+        util.thread.random = Random.create(msgId);
         const result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
         this.releaseMessages();

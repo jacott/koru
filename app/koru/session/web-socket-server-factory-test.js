@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   const koru        = require('koru');
+  const Random      = require('koru/random');
   const SessionBase = require('koru/session/base').constructor;
   const message     = require('koru/session/message');
   const Conn        = require('koru/session/server-connection-factory').Base;
@@ -31,13 +32,14 @@ define(function (require, exports, module) {
     "rpc": {
       setUp() {
         v.sess = sut(v.mockSess);
+        v.msgId = 'm123';
         v.run = rpcMethod => {
           v.sess.defineRpc('foo.rpc', rpcMethod);
 
-          const data = ['123', 'foo.rpc', 1, 2, 3];
+          const data = [v.msgId, 'foo.rpc', 1, 2, 3];
           const buffer = message.encodeMessage('M', data, v.sess.globalDict);
 
-          v.conn = util.merge(new Conn(v.ws, 's123', () => {}), {
+          v.conn = util.merge(new Conn(v.ws, '123', () => {}), {
             batchMessages: this.stub(),
             releaseMessages: this.stub(),
             abortMessages: this.stub(),
@@ -45,6 +47,26 @@ define(function (require, exports, module) {
           });
           v.sess._onMessage(v.conn, buffer);
         };
+      },
+
+      "test Random.id"() {
+        v.msgId = "a1212345671234567890";
+        v.run(arg => {
+          assert.same(Random.id(), "53WvgALyAjBQW7BJF");
+          v.ans = Random.id();
+        });
+
+        assert.same(v.ans, 'qnem23EJbTPoFbt3w');
+
+        v.msgId = "a12123456712345678Aa";
+        v.run(arg => {
+          assert.same(util.thread.msgId, 'a12123456712345678Aa');
+
+          assert.same(Random.id(), "Z8bHgA4SxwAwbNtzW");
+          v.ans = Random.id();
+        });
+
+        assert.same(v.ans, 'm2SM9qzob6D9Y6GZb');
       },
 
       "batch messages": {
@@ -56,7 +78,7 @@ define(function (require, exports, module) {
           });
 
           refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['123', 'r', 'result']);
+          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'r', 'result']);
           assert(v.conn.releaseMessages.calledAfter(v.conn.sendBinary));
           refute.called(v.conn.abortMessages);
         },
@@ -73,10 +95,11 @@ define(function (require, exports, module) {
           koru.error.restore();
 
           refute(util.thread.batchMessage);
-          assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 'test aborted']);
+          assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'e', 'test aborted']);
           assert(v.conn.abortMessages.calledBefore(v.conn.sendBinary));
           refute.called(v.conn.releaseMessages);
         },
+
       },
 
       "test result"() {
@@ -89,7 +112,7 @@ define(function (require, exports, module) {
         assert.equals(v.args, [1, 2, 3]);
         assert.same(v.thisValue, v.conn);
 
-        assert.calledWith(v.conn.sendBinary, 'M', ['123', "r", "result"]);
+        assert.calledWith(v.conn.sendBinary, 'M', ['m123', "r", "result"]);
       },
 
       "test exception"() {
@@ -98,7 +121,7 @@ define(function (require, exports, module) {
           throw v.error = new koru.Error(404, {foo: 'not found'});
         });
 
-        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 404, {foo: 'not found'}]);
+        assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'e', 404, {foo: 'not found'}]);
         assert.same(v.error.message, "{foo: 'not found'} [404]");
       },
 
@@ -108,7 +131,7 @@ define(function (require, exports, module) {
           throw new Error('Foo');
         });
 
-        assert.calledWith(v.conn.sendBinary, 'M', ['123', 'e', 'Error: Foo']);
+        assert.calledWith(v.conn.sendBinary, 'M', ['m123', 'e', 'Error: Foo']);
       },
     },
 
