@@ -138,7 +138,7 @@ isServer && define(function (require, exports, module) {
       v.foo.insert({_id: 123});
       assert.isTrue(v.foo.exists({_id: 123}));
       assert.exception(() => v.foo.insert({_id: 123}), {
-        sqlState: '23505', message: TH.match(/violates unique constraint "Foo_pkey"/),
+        error: 409, reason: TH.match(/violates unique constraint "Foo_pkey"/),
       });
     },
 
@@ -409,7 +409,7 @@ isServer && define(function (require, exports, module) {
         v.foo.insert({_id: '1', name: "Foo"});
         assert.exception(function () {
           v.foo.insert({_id: '2', name: "Foo"});
-        }, {sqlState: '23505'});
+        }, {error: 409});
 
         v.foo.ensureIndex({name: -1}, {unique: true});
         v.foo.ensureIndex({name: 1, _id: -1});

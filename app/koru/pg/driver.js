@@ -354,7 +354,13 @@ class Table {
 
     if (suffix) sql += ` ${suffix}`;
 
-    return performTransaction(this, sql, params);
+    try {
+      return performTransaction(this, sql, params);
+    } catch(ex) {
+      if (ex.sqlState === '23505')
+        throw new koru.Error(409, ex.message);
+      throw ex;
+    }
   }
 
   values(rowSet, cols) {
@@ -1031,7 +1037,10 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
 
 function wait(future) {
   return function (err, result) {
-    if (err) future.throw(err);
+    if (err) {
+      err.message = err.message.replace(/^ERROR:\s*/, '');
+      future.throw(err);
+    }
     else future.return(result);
   };
 }
