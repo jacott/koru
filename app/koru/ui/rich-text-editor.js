@@ -116,7 +116,7 @@ define(function(require, exports, module) {
       const ec = range.endContainer;
       const collapsed = range.collapsed;
 
-      const editor = Dom.getClosestClass(sc, 'input');
+      const editor = Dom.getClosest(sc, '.input');
       if (! editor) return;
 
       let _code;
@@ -215,7 +215,7 @@ define(function(require, exports, module) {
         const id = $.data(item).id;
 
         // close dialog before notify to restore range
-        Dom.remove(Dom.getClosestClass(item, 'glassPane'));
+        Dom.remove(Dom.getClosest(item, '.glassPane'));
         notify(ctx, 'force', onSelect(ctx, id));
       },
       onClose() {

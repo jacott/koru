@@ -49,7 +49,7 @@ define(function(require, exports, module) {
   function modalizeCallback(event) {
     let elm = modalize.elm;
     if (typeof elm === 'string') modalize.elm = elm = document.querySelector(elm);
-    if (Dom.getClosestClass(event.target, 'anyModal')) return;
+    if (Dom.getClosest(event.target, '.anyModal')) return;
     if (event.type === 'keydown') {
       if (event.which === 27) {
         if (! Dom.contains(elm, event.target))

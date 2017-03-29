@@ -24,7 +24,7 @@ define(function(require, exports, module) {
       if (elm) {
         if (typeof elm === 'string')
           elm = document.getElementById(elm);
-        Dom.remove(Dom.getClosestClass(elm, 'Dialog'));
+        Dom.remove(elm && elm.closest('.Dialog'));
         return;
       }
 

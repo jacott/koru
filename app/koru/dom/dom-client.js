@@ -283,15 +283,8 @@ define(function(require, exports, module) {
       return null;
     },
 
-    getClosestClass(elm, className) {
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
-        if (Dom.hasClass(elm, className)) return elm;
-        elm = elm.parentNode;
-      }
-    },
-
     getUpDownByClass(elm, upClass, downClass) {
-      elm = Dom.getClosestClass(elm, upClass);
+      elm = elm && elm.closest(`.${upClass}`);
       return elm && elm.getElementsByClassName(downClass)[0];
     },
 
