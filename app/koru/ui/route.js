@@ -81,11 +81,12 @@ define(function(require, exports, module) {
     }
 
     static replacePage(...args) {
-      pageState = 'replaceState';
+      const orig = pageState;
+      pageState = pageState && 'replaceState';
       try {
         return this.gotoPage(...args);
       } finally {
-        pageState = 'pushState';
+        pageState = orig;
       }
     }
 
@@ -165,15 +166,15 @@ define(function(require, exports, module) {
       }
     }
 
-    static recordHistory(page, href, pageRoute) {
-      if (! Route.history) return;
-      if (! pageState || (page && page.noPageHistory))
+    static recordHistory(page, href) {
+      if (! Route.history || ! pageState || (page && page.noPageHistory))
         return;
       let cmd = 'replaceState';
-      if (currentHref !== href) {
+      if (pageState !== cmd && currentHref !== href) {
         cmd = pageState;
         ++pageCount;
       }
+      currentHref = href;
       Route.history[cmd](pageCount, null, href);
     }
 
@@ -212,20 +213,39 @@ define(function(require, exports, module) {
 
     static pageChanged(state) {
       pageCount = state || 0;
+      const location = koru.getLocation();
+      const newRef = location.href.slice(location.origin.length);
+
+      if (newRef === currentHref)
+        return;
+
+      currentHref = newRef;
+      const orig = pageState;
       pageState = null;
       try {
-        return this.gotoPath();
+        return this.gotoPath(location);
       } finally {
-        pageState = 'pushState';
+        pageState = orig;
+      }
+    }
+
+    static overrideHistory(state, body) {
+      const orig = pageState;
+      pageState = state;
+      try {
+        return body();
+      } finally {
+        pageState = orig;
       }
     }
 
     static replacePath(...args) {
-      pageState = 'replaceState';
+      const orig = pageState;
+      pageState = pageState && 'replaceState';
       try {
         return this.gotoPath(...args);
       } finally {
-        pageState = 'pushState';
+        pageState = orig;
       }
     }
 

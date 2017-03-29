@@ -305,6 +305,24 @@ isClient && define(function (require, exports, module) {
         assert.same(document.title, 'returned title');
       },
 
+      "overrideHistory": {
+        "test suppress"() {
+          Route.overrideHistory(null, () => {
+            Route.recordHistory(v.FooBar, '/#not-me#bar');
+          });
+          Route.recordHistory(v.FooBar, '/#foo#bar');
+          assert.calledOnceWith(Route.history.pushState, 1, null, '/#foo#bar');
+        },
+        "test replaceState"() {
+          Route.overrideHistory('replaceState', () => {
+            Route.recordHistory(v.FooBar, '/#replace-foo#bar');
+          }, 'replaceState');
+          Route.recordHistory(v.FooBar, '/#foo#bar');
+          assert.calledOnceWith(Route.history.replaceState, 0, null, '/#replace-foo#bar');
+          assert.calledOnceWith(Route.history.pushState, 1, null, '/#foo#bar');
+        },
+      },
+
       "test gotoPage, pushCurrent, recordHistory, notify"() {
         const orig = Dom.setTitle;
         Dom.setTitle = test.stub();
@@ -340,7 +358,7 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Route.history.pushState, 4, null, '/#href/123');
 
         assert.same(Route.currentPage, v.RootBar);
-        assert.same(Route.currentHref, '/#baz/diff-id/root-bar');
+        assert.same(Route.currentHref, '/#href/123');
       },
 
       "test loadingArgs"() {
@@ -439,7 +457,7 @@ isClient && define(function (require, exports, module) {
       Route.root.addTemplate(v.FooBar);
       Route.replacePath(v.FooBar);
 
-      assert.calledWith(Route.history.replaceState, 1, null, '/#foo-bar');
+      assert.calledWith(Route.history.replaceState, 0, null, '/#foo-bar');
       assert.same(Route.pageState, 'pushState');
     },
 
@@ -473,7 +491,7 @@ isClient && define(function (require, exports, module) {
       Route.root.addTemplate(v.FooBar);
       Route.pageChanged();
 
-      assert.calledWithExactly(Route.gotoPath);
+      assert.calledWithExactly(Route.gotoPath, TH.match.is(koru.getLocation()));
       refute.called(Route.history.pushState);
       refute.called(Route.history.replaceState);
       assert.same(Route.pageState, 'pushState');
@@ -489,12 +507,23 @@ isClient && define(function (require, exports, module) {
       Route.gotoPath.restore();
       Route.gotoPath('/foo-bar');
 
-
       assert.same(Route.targetPage, v.FooBar);
       assert.same(Route.currentPage, v.FooBar);
       assert.same(Route.currentPageRoute, v.pageRoute);
       assert.same(Route.currentHref, '/#thehref');
       assert.same(Route.currentTitle, 'foo bar');
+    },
+
+    "test same page pageChanged"() {
+      Route.recordHistory(v.FooBar, '/#the/path?is=this#tag');
+      this.stub(koru, 'getLocation').returns({
+        origin: 'https://test.com:3012', href: 'https://test.com:3012/#the/path?is=this#tag'});
+
+      test.stub(Route, 'gotoPath');
+
+      Route.pageChanged();
+
+      refute.called(Route.gotoPath);
     },
 
     "test replacePage always changes history"() {
