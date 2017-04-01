@@ -71,53 +71,53 @@ define(function(require, exports, module) {
       return invokeReturn(this, call);
     },
 
-    reset() {this._calls = null},
+    reset() {this.calls = null},
 
     getCall(index) {
-      const {_calls} = this;
-      return _calls && _calls[index < 0 ? _calls.length + index : index];
+      const {calls} = this;
+      return calls && calls[index < 0 ? calls.length + index : index];
     },
 
     args(callIndex, index) {
-      const {_calls} = this;
-      if (! _calls) return;
-      const call = _calls[callIndex < 0 ? _calls.length + callIndex : callIndex];
+      const {calls} = this;
+      if (! calls) return;
+      const call = calls[callIndex < 0 ? calls.length + callIndex : callIndex];
       return call && call.args[index < 0 ? call.args.length + index : index];
     },
 
     get firstCall() {
-      return this._calls && this._calls[0];
+      return this.calls && this.calls[0];
     },
 
     get lastCall() {
-      return this._calls && this._calls[this._calls.length - 1];
+      return this.calls && this.calls[this.calls.length - 1];
     },
 
-    get callCount() {return this._calls ? this._calls.length : 0},
-    get called() {return !! this._calls && this._calls.length !== 0},
-    get calledOnce() {return this._calls && this._calls.length === 1},
-    get calledTwice() {return this._calls && this._calls.length === 2},
-    get calledThrice() {return this._calls && this._calls.length === 3},
+    get callCount() {return this.calls ? this.calls.length : 0},
+    get called() {return !! this.calls && this.calls.length !== 0},
+    get calledOnce() {return this.calls && this.calls.length === 1},
+    get calledTwice() {return this.calls && this.calls.length === 2},
+    get calledThrice() {return this.calls && this.calls.length === 3},
 
     calledBefore(after) {
       return this.called && after.called &&
-        this._calls[0].globalCount < after._calls[0].globalCount;
+        this.calls[0].globalCount < after.calls[0].globalCount;
     },
 
     calledAfter(before) {
       return this.called && before.called &&
-        this._calls[0].globalCount > before._calls[0].globalCount;
+        this.calls[0].globalCount > before.calls[0].globalCount;
     },
 
     yield(...params) {
-      const args = this._calls && this._calls[0] && this._calls[0].args;
+      const args = this.calls && this.calls[0] && this.calls[0].args;
       if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
 
       yieldCall(args, params);
     },
 
     calledWith(...args) {
-      return this._calls && this._calls.some(function (list) {
+      return this.calls && this.calls.some(function (list) {
         list = list.args;
         if (list.length > args.length)
           list = list.slice(0, args.length);
@@ -127,7 +127,7 @@ define(function(require, exports, module) {
     },
 
     calledWithExactly(...args) {
-      return this._calls && this._calls.some(function (list) {
+      return this.calls && this.calls.some(function (list) {
         list = list.args;
         return deepEqual(list, args);
       });
@@ -138,14 +138,14 @@ define(function(require, exports, module) {
       case '%n':
         return this.toString();
       case '%C':
-        if (this._calls) {
-          return this._calls.map(function (call) {
+        if (this.calls) {
+          return this.calls.map(function (call) {
             return "\n    " + inspect(call.args, 2);
           }).join("");
         }
         return "";
       default:
-        return inspect(this._calls, 2);
+        return inspect(this.calls, 2);
       }
     },
   });
@@ -182,7 +182,7 @@ define(function(require, exports, module) {
     },
 
     invoke(call) {
-      (this._calls || (this._calls = []))
+      (this.calls || (this.calls = []))
         .push(call);
 
       if (this._throws)
@@ -232,7 +232,7 @@ define(function(require, exports, module) {
       const listener = listeners[i];
       const spyCount = listener.spyCount;
       if (spyCount !== undefined) {
-        spyCount + 1 === proxy._calls.length && listener.invoke(call);
+        spyCount + 1 === proxy.calls.length && listener.invoke(call);
       } else {
         let j;
         if (arguments.length !== 2) {
@@ -258,7 +258,7 @@ define(function(require, exports, module) {
     result.thisValue = thisValue;
     if (proxy._throws) result.throws = proxy._throws;
     if (proxy._yields) result.yields = proxy._yields;
-    (proxy._calls || (proxy._calls = []))
+    (proxy.calls || (proxy.calls = []))
       .push(result);
     return result;
   }
