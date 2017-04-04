@@ -95,6 +95,9 @@ define(function(require, exports, module) {
 
   const fracArray = isClient && new Uint32Array(1);
 
+  const crypto = ! nodeCrypto && typeof window !== "undefined" &&
+          window.crypto.getRandomValues && window.crypto;
+
   // If seeds are provided, then the alea PRNG will be used, since cryptographic
   // PRNGs (Node crypto and window.crypto.getRandomValues) don't allow us to
   // specify seeds. The caller is responsible for making sure to provide a seed
@@ -110,12 +113,11 @@ define(function(require, exports, module) {
         return this.alea();
       }
 
-      if (isServer) {
+      if (nodeCrypto) {
         const numerator = parseInt(this.hexString(8), 16);
         return numerator * 2.3283064365386963e-10; // 2^-32
-      } else if (typeof window !== "undefined" && window.crypto &&
-                 window.crypto.getRandomValues) {
-        window.crypto.getRandomValues(fracArray);
+      } else if (crypto) {
+        crypto.getRandomValues(fracArray);
         return fracArray[0] * 2.3283064365386963e-10; // 2^-32
       }
     }
@@ -130,11 +132,11 @@ define(function(require, exports, module) {
       }
       const numBytes = Math.ceil(digits / 2);
       let bytes;
-      if (isServer) {
+      if (nodeCrypto) {
         bytes = nodeCrypto.randomBytes(numBytes);
       } else {
         bytes = new Uint8Array(numBytes);
-        window.crypto.getRandomValues(bytes);
+        crypto.getRandomValues(bytes);
       }
       let result = '';
       for(let i = 0; i < numBytes; ++i) {
@@ -158,11 +160,11 @@ define(function(require, exports, module) {
       }
 
       let bytes;
-      if (isServer) {
+      if (nodeCrypto) {
         bytes = nodeCrypto.randomBytes(idLen);
       } else {
         bytes = new Uint8Array(idLen);
-        window.crypto.getRandomValues(bytes);
+        crypto.getRandomValues(bytes);
       }
       for (let i = 0; i < idLen; i++) {
         digits += UNMISTAKABLE_CHARS[(bytes[i] * UNMISTAKABLE_CHARS_LEN) >> 8];
@@ -181,13 +183,9 @@ define(function(require, exports, module) {
 
   // instantiate RNG.  Heuristically collect entropy from various sources when a
   // cryptographic PRNG isn't available.
+  let seed = nodeCrypto || crypto ? undefined
+        : [Date.now(), window.innerHeight, window.innerWidth, navigator.userAgent, Math.random()];
 
-
-  let seed = undefined;
-  if (isClient && ! (window.crypto && window.crypto.getRandomValues)) {
-    // client sources
-    seed = [Date.now(), window.innerHeight, window.innerWidth, navigator.userAgent, Math.random()];
-  }
 
   const random = new RandomGenerator(seed);
   random.create = create;
