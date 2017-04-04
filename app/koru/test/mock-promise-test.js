@@ -86,7 +86,7 @@ define(function (require, exports, module) {
       const p1 = makePromise();
       const p2 = makePromise();
 
-      MockPromise.all([p1.p, p2.p]).then(v.done = this.stub());
+      MockPromise.all([p1.p, p2.p, null]).then(v.done = this.stub());
 
       p1.resolve(3);
       MockPromise._poll();
@@ -96,7 +96,7 @@ define(function (require, exports, module) {
       p2.resolve(2);
       MockPromise._poll();
 
-      assert.calledWith(v.done, [3, 2]);
+      assert.calledWith(v.done, [3, 2, null]);
     },
 
     "test then returns promise"() {

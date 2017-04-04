@@ -37,7 +37,11 @@ define(function(require, exports, module) {
       promises = Array.from(promises);
       let count = promises.length;
       for(let i = 0; i < count; ++i) {
-        promises[i].then(oneResolved(i), reject);
+        const p = promises[i];
+        if (p && typeof p.then === 'function')
+          p.then(oneResolved(i), reject);
+        else
+          --count;
       }
       if (count === 0) resolve(promises);
       --count;
