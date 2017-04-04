@@ -69,6 +69,16 @@ define(function (require, exports, module) {
         assert.same(v.ans, 'm2SM9qzob6D9Y6GZb');
       },
 
+      "test old msgId"() {
+        v.msgId = "a1212";
+        v.run(arg => {
+          refute.same(Random.id(), "XDYyyXJ6M7iSTHjwZ");
+          v.ans = Random.id();
+        });
+
+        refute.same(v.ans, '9kPL9inAgQw7bp9ZL');
+      },
+
       "batch messages": {
         "test send after return"() {
           v.run((one, two, three) => {

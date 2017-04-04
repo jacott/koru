@@ -93,7 +93,8 @@ define(function (require, exports, module) {
           throw new koru.Error(404, 'unknown method: ' + data[1]);
 
         util.thread.msgId = msgId;
-        util.thread.random = Random.create(msgId);
+        if (msgId.length > 17)
+          util.thread.random = Random.create(msgId);
         const result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
         this.releaseMessages();
