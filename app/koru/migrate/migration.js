@@ -52,7 +52,15 @@ spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
       util.forEach(options.resetTables, name => resetTable(name));
     }
 
-    addColumns(tableName, fields) {
+    addColumns(tableName, ...args) {
+      const fields = {};
+      args.forEach(arg => {
+        if (typeof arg === 'string') {
+          const [k,n='text'] = arg.split(':', 2);
+          fields[k] = n;
+        } else
+          util.merge(fields, arg);
+      });
       const {client} = this;
       if (this.add) {
         client.query(`ALTER TABLE "${tableName}" ${

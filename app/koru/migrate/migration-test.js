@@ -87,24 +87,50 @@ isServer && define(function (require, exports, module) {
       assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
-    "test addColumns"() {
+    "test addColumns by object"() {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
       this.onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
       v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
-                         .addColumns('TestTable', {myAge: 'number'}));
+                         .addColumns('TestTable', {myAge: 'number', dob: 'date'}));
 
       assert.called(v.resetTable);
 
-      v.client.query('INSERT INTO "TestTable" (_id, "myAge") values ($1,$2)', ['foo', 12]);
+      v.client.query('INSERT INTO "TestTable" (_id, "myAge", dob) values ($1,$2,$3)',
+                     ['foo', 12, new Date(1970, 1, 1)]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, 12);
+      assert.equals(doc.dob, new Date(1970, 1, 1));
 
       v.sut.revertMigration('20151004T20-30-20-add-column', v.migBody);
 
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, undefined);
+      assert.same(doc.dob, undefined);
+    },
+
+    "test addColumns by arguments"() {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
+
+      this.onEnd(() => delete ModelMap.TestTable);
+      ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
+      v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
+                         .addColumns('TestTable', 'myAge:number', 'dob:date'));
+
+      assert.called(v.resetTable);
+
+      v.client.query('INSERT INTO "TestTable" (_id, "myAge", dob) values ($1,$2,$3)',
+                     ['foo', 12, new Date(1970, 1, 1)]);
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.myAge, 12);
+      assert.equals(doc.dob, new Date(1970, 1, 1));
+
+      v.sut.revertMigration('20151004T20-30-20-add-column', v.migBody);
+
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.myAge, undefined);
+      assert.same(doc.dob, undefined);
     },
 
     "test reversible"() {
