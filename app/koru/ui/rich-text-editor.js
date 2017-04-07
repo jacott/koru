@@ -580,7 +580,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'input'(event) {
+    input(event) {
       const input = event.target;
       const fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
@@ -603,26 +603,28 @@ define(function(require, exports, module) {
         }
       });
     },
-    'paste'(event) {
+
+    paste(event) {
+
       let foundText, type;
-      if ('clipboardData' in event) {
-        const types = event.clipboardData.types;
-        if (types) for(let i = 0; i < types.length; ++i) {
-          type = types[i];
-          if (/html/.test(type)) {
-            Dom.stopEvent();
-            $.ctx.mode.paste(event.clipboardData.getData(type));
-            return;
-          }
-          if (/text/.test(type)) {
-            foundText = type;
-          }
-        }
+      const cb = event.clipboardData;
+      if (! cb) return;
+
+      let text = event.clipboardData.getData('text/html');
+      if (text) {
+        Dom.stopEvent();
+        $.ctx.mode.paste(text);
+        return;
       }
-      if (foundText) {
-        if ($.ctx.mode.pasteText) {
+      // safari does not appear to show html but does show rtf
+      if (text = event.clipboardData.getData('public.rtf')) {
+        return; // don't know what to do with rtf
+      }
+      if ($.ctx.mode.pasteText) {
+        text = event.clipboardData.getData('text/plain');
+        if (text) {
           Dom.stopEvent();
-          $.ctx.mode.pasteText(event.clipboardData.getData(type));
+          $.ctx.mode.pasteText(text);
         }
       }
     },

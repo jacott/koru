@@ -594,10 +594,13 @@ isClient && define(function (require, exports, module) {
     "paste": {
       setUp() {
         v.ec = test.stub(document, 'execCommand');
+        const getData = this.stub();
+        getData.withArgs('text/html').returns('<b>bold</b> world');
+        getData.withArgs('text/plain').returns('bold world');
         v.event = {
           clipboardData: {
             types: ['text/plain', 'text/html'],
-            getData: test.stub().withArgs('text/html').returns('<b>bold</b> world'),
+            getData,
           },
         };
 
@@ -628,6 +631,22 @@ isClient && define(function (require, exports, module) {
 
       "test wiried"() {
         assert.equals(v.slot, ['paste', '', v.origPaste]);
+      },
+
+      "test safari public.rtf"() {
+        const getData = test.stub();
+        getData.withArgs('text/plain').returns(
+          'should not need this');
+        getData.withArgs('public.rtf').returns('whatever');
+        v.event.clipboardData = {
+          types: ['text/plain', 'public.rtf'],
+          getData,
+        };
+
+        v.paste(v.event);
+
+        refute.called(v.insertText);
+        refute.called(Dom.stopEvent);
       },
 
       "test plain text"() {

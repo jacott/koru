@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var koru = require('../main');
-  var Dom = require('../dom');
-  var $ = Dom.current;
-  var Tpl = Dom.newTemplate(module, require('koru/html!./plain-text'));
-  var EditorCommon = require('./editor-common');
+  const Dom          = require('../dom');
+  const koru         = require('../main');
+  const util         = require('../util');
+  const EditorCommon = require('./editor-common');
 
-  var output;
+  const $ = Dom.current;
+  const Tpl = Dom.newTemplate(module, require('koru/html!./plain-text'));
+  let output;
 
   Dom.registerHelpers({
     setTextAsHTML(content) {
@@ -25,13 +25,8 @@ define(function(require, exports, module) {
       EditorCommon.addAttributes(elm, ctx.data.options);
 
       Object.defineProperty(elm, 'value', {
-        get() {
-          var value = exports.fromHtml(elm);
-          return value;
-        },
-        set(value) {
-          exports.setTextAsHTML(elm, value);
-        },
+        get() {return exports.fromHtml(elm)},
+        set(value) {exports.setTextAsHTML(elm, value)},
       });
     },
 
@@ -48,16 +43,14 @@ define(function(require, exports, module) {
     },
 
     'paste'(event) {
-      if ('clipboardData' in event) {
-        var types = event.clipboardData.types;
-        if (types) for(var i = 0; i < types.length; ++i) {
-          var type = types[i];
-          if (/html/.test(type)) {
-            var md = exports.fromHtml(Dom.html('<div>'+event.clipboardData.getData(type)+'</div>'));
-            if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
-              Dom.stopEvent();
-            return;
-          }
+      const cb = event.clipboardData;
+      if (cb) {
+        const text = event.clipboardData.getData('text/html');
+        if (text) {
+          const md = exports.fromHtml(Dom.html('<div>'+text+'</div>'));
+          if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
+            Dom.stopEvent();
+          return;
         }
       }
     },
@@ -74,16 +67,18 @@ define(function(require, exports, module) {
     fromHtml(html) {
       output = [];
       html && outputChildNodes(html);
-      var result = output.join('').trim();
+      const result = output.join('').trim();
       output = null;
       return result;
     },
 
     toHtml(text, wrapper) {
       text = text || '';
-      var frag = wrapper ? (typeof wrapper === 'string' ? document.createElement(wrapper) : wrapper) : document.createDocumentFragment();
-      var first = true;
-      util.forEach(text.split('\n'), function (line) {
+      const frag = wrapper ? (typeof wrapper === 'string' ?
+                            document.createElement(wrapper) : wrapper)
+          : document.createDocumentFragment();
+      let first = true;
+      util.forEach(text.split('\n'), line => {
         if (first)
           first = false;
         else frag.appendChild(document.createElement('br'));
@@ -125,11 +120,10 @@ define(function(require, exports, module) {
   }
 
   function outputChildNodes(html) {
-    var children = html.childNodes;
+    const children = html.childNodes;
 
-    for(var i = 0; i < children.length; ++i) {
-      var row = children[i];
-      fromHtml(row);
+    for(let i = 0; i < children.length; ++i) {
+      fromHtml(children[i]);
     }
   }
 });
