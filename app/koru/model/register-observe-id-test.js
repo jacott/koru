@@ -1,15 +1,17 @@
 define(function (require, exports, module) {
-  var test, v;
   const dbBroker = require('./db-broker');
   const Model    = require('./main');
   const TH       = require('./test-helper');
+
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
       v.obs = [];
-      v.TestModel = Model.define('TestModel').defineFields({name: 'string', age: 'number', toys: 'object'});
+      v.TestModel = Model.define('TestModel').defineFields({
+        name: 'string', age: 'number', toys: 'object'});
       v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
     },
 

@@ -1,9 +1,10 @@
 define(function (require, exports, module) {
+  const Dom      = require('koru/dom');
+  const TH       = require('koru/test');
+  const RichText = require('./rich-text');
+
+  const sut = require('../model/validation');
   var test, v;
-  var TH = require('koru/test');
-  var sut = require('../model/validation');
-  var RichText = require('./rich-text');
-  var Dom = require('koru/dom');
 
   sut.register(module, {required: require('./rich-text-validator')});
 

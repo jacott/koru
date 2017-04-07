@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
-  var DAY = 24*60*60*1000;
+  const DAY = 24*60*60*1000;
 
   return {
     atHour(date, hour) {

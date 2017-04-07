@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var test = require('./main');
-  var session = require('../session/base');
+  const session = require('../session/base');
+  const test    = require('./main');
 
   test.testHandle = function (cmd, msg) {
     session.remoteControl.testHandle(cmd+msg);

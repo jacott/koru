@@ -11,7 +11,7 @@ const Compiler = {
     var result = '';
     try {
       var parser = new htmlparser.Parser({
-        onopentag: function(name, attrs){
+        onopentag(name, attrs){
           if (name === 'template') {
             name = attrs.name;
             if (! name)
@@ -27,10 +27,10 @@ const Compiler = {
             template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex));
           }
         },
-        ontext: function(text){
+        ontext(text){
           template.addText(text.replace(/^\s+/, ' ').replace(/\s+$/, ' '));
         },
-        onclosetag: function(name){
+        onclosetag(name){
           if (name === 'template') {
             if (template.parent)
               template = template.parent;

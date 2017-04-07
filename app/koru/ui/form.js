@@ -99,7 +99,7 @@ define(function(require, exports, module) {
 
     updateInput: Dom.updateInput,
 
-    submitFunc: function(elmId, options) {
+    submitFunc(elmId, options) {
       return function (event) {
         Dom.stopEvent();
 

@@ -8,11 +8,11 @@
  */
 
 define(function(require) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
   // http://davidshariff.com/blog/javascript-inheritance-patterns/
-  var inherits = function (child, parent) {
-    var tmp = function () {};
+  const inherits = function (child, parent) {
+    const tmp = function () {};
     tmp.prototype = parent.prototype;
     child.prototype = new tmp;
     child.prototype.constructor = child;
@@ -23,8 +23,8 @@ define(function(require) {
   // `message`, which is what gets displayed at the top of a stack trace).
   //
   function makeErrorType(name, constructor) {
-    var errorClass = function (...args) {
-      var self = this;
+    const errorClass = function (...args) {
+      const self = this;
 
       // Ensure we get a proper stack trace in most Javascript environments
       if (Error.captureStackTrace) {

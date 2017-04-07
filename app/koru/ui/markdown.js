@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var koru = require('koru/main');
   require('koru/dom/html-doc');
+  const koru = require('koru/main');
+  const util = require('koru/util');
 
-  var output, needspace;
+  let output, needspace;
 
   function findHyperLinks(md, prefix) {
     var m, re = /\[([\s\S]*?)\]\(([^)]*)\)/g;

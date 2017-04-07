@@ -46,7 +46,7 @@ define(function(require, exports, module) {
   }
 
   return exports = {
-    init: function(options) {
+    init(options) {
       if (topModal == null) {
         document.addEventListener('keydown', keydownCallback, true);
         document.addEventListener('keydown', retKeydownCallback);

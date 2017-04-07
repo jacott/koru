@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var koru = require('koru');
-  var startup = require('./startup-server');
-  var webServer = require('koru/web-server');
-  var session = require('koru/session');
-  var IdleCheck = require('koru/idle-check').singleton;
+  const koru      = require('koru');
+  const IdleCheck = require('koru/idle-check').singleton;
+  const session   = require('koru/session');
+  const webServer = require('koru/web-server');
+  const startup   = require('./startup-server');
 
   koru.onunload(module, 'reload');
 

@@ -1,5 +1,5 @@
-var path = require('path');
-var appDir = path.resolve(__dirname, '../app');
+const path = require('path');
+const appDir = path.resolve(__dirname, '../app');
 
 exports.server = function (cfg) {
   cfg.merge('requirejs', {

@@ -9,7 +9,7 @@ define({
     return hyperlinks;
   },
 
-  findHyperLinks: function(md, prefix) {
+  findHyperLinks(md, prefix) {
     var m, re = /\[([\s\S]*?)\]\(([^)]*)\)/g;
     var m2, re2 = /[\[\]]/g;
     var result = [];

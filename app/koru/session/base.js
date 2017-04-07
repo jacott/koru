@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  var koru = require('../main');
-  var message = require('./message');
+  const koru    = require('../main');
+  const message = require('./message');
 
   const rpcType = Symbol();
 
@@ -34,7 +34,7 @@ define(function(require, exports, module) {
     }
 
     provide(cmd, func) {
-      var old = this._commands[cmd];
+      const old = this._commands[cmd];
       this._commands[cmd] = func;
       return old;
     }
@@ -48,16 +48,17 @@ define(function(require, exports, module) {
     }
 
     _onMessage(conn, data) {
+      let type;
       if (typeof data === 'string') {
-        var type = data[0];
+        type = data[0];
         data = data.slice(1);
       } else {
         data = new Uint8Array(data);
-        var type = String.fromCharCode(data[0]);
+        type = String.fromCharCode(data[0]);
         data = message.decodeMessage(data.subarray(1), this.globalDict);
       }
 
-      var func = this._commands[type];
+      const func = this._commands[type];
 
       if (func)
         func.call(conn, data);

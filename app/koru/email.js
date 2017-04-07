@@ -1,11 +1,12 @@
-var Future = requirejs.nodeRequire('fibers/future');
-var urlModule = require('url');
-var NodeMailer = requirejs.nodeRequire('nodemailer');
-var SmtpPool = requirejs.nodeRequire('nodemailer-smtp-pool');
-var SmtpStub = requirejs.nodeRequire('nodemailer-stub-transport');
-var nodeUtil = require("util");
-var events = require("events");
-var stream = require('stream');
+const Future = requirejs.nodeRequire('fibers/future');
+const urlModule = require('url');
+const NodeMailer = requirejs.nodeRequire('nodemailer');
+const SmtpStub = requirejs.nodeRequire('nodemailer-stub-transport');
+const nodeUtil = require("util");
+const events = require("events");
+const stream = require('stream');
+
+let SmtpPool = requirejs.nodeRequire('nodemailer-smtp-pool');
 
 function DebugStream() {
   stream.Writable.call(this, {defaultEncoding: 'utf8'});
@@ -19,11 +20,11 @@ DebugStream.prototype._write = function(data, encoding, callback) {
 
 
 define(function(require, exports, module) {
-  var util = require('koru/util');
+  const util = require('koru/util');
 
   util.merge(exports, {
     send(options) {
-      var future = new Future();
+      const future = new Future();
       exports._transport.sendMail(options, future.resolver());
 
       future.wait();
@@ -31,14 +32,14 @@ define(function(require, exports, module) {
 
     initPool(urlOrTransport) {
       if (typeof urlOrTransport === 'string') {
-        var mailUrl = urlModule.parse(urlOrTransport);
+        const mailUrl = urlModule.parse(urlOrTransport);
         if (mailUrl.protocol !== 'smtp:')
           throw new Error("Email protocol must be 'smtp'");
 
-        var port = +(mailUrl.port);
-        var auth = false;
+        const port = +(mailUrl.port);
+        let auth = false;
         if (mailUrl.auth) {
-          var parts = mailUrl.auth.split(':', 2);
+          const parts = mailUrl.auth.split(':', 2);
           auth = {user: parts[0] && decodeURIComponent(parts[0]),
                   pass: parts[1] && decodeURIComponent(parts[1])};
         }

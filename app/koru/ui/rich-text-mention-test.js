@@ -1,13 +1,14 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
-  var RichTextEditor = require('./rich-text-editor');
-  var RichText = require('./rich-text');
-  var Modal = require('./modal');
-  var RichTextEditorToolbar = require('./rich-text-editor-toolbar');
+  const Dom                   = require('../dom');
+  const Modal                 = require('./modal');
+  const RichText              = require('./rich-text');
+  const RichTextEditor        = require('./rich-text-editor');
+  const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
+  const TH                    = require('./test-helper');
 
-  var insert = RichTextEditor.insert;
+  var test, v;
+
+  const {insert} = RichTextEditor;
 
   TH.testCase(module, {
     setUp() {
@@ -17,7 +18,8 @@ isClient && define(function (require, exports, module) {
       test.spy(Dom, 'stopEvent');
 
       v.fooFunc = test.stub();
-      document.body.appendChild(RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello\xa0'), options: {
+      document.body.appendChild(RichTextEditorToolbar.$autoRender({
+        content: document.createTextNode('hello\xa0'), options: {
         id: 'TestRichTextEditor'}, extend: {
           mentions: {
             '@': {
@@ -77,7 +79,8 @@ isClient && define(function (require, exports, module) {
             assert.match(this.nextSibling.textContent, /_x_/);
           });
           assert.dom('a[href="/#g1"][class="foo"]', 'Geoff Jacobsen');
-          assert.same(this.innerHTML.replace(/<a[^>]*>/,'<a>').replace(/&nbsp;/g, ' '), 'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
+          assert.same(this.innerHTML.replace(/<a[^>]*>/,'<a>').replace(/&nbsp;/g, ' '),
+                      'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
 
         });
       },

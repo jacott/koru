@@ -1,14 +1,14 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var loader = require('koru/env!./text');
+  const loader = require('koru/env!./text');
+  const util   = require('koru/util');
 
-  var Module = module.constructor;
+  const Module = module.constructor;
 
   return {
     load(name, req, onload, config) {
-      var mod = req.module;
+      const mod = req.module;
 
-      var pMod = new Module(module.ctx, name, Module.READY);
+      new Module(module.ctx, name, Module.READY);
       req.module.dependOn(name);
       loader.load(name, onload);
     },

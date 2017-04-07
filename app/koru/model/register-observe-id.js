@@ -6,17 +6,17 @@ define(function(require, exports, module) {
     const dbObservers = Object.create(null);
     const modelObMap = Object.create(null);
     const modelName = model.modelName;
-    var key = 0;
+    let key = 0;
 
     model.observeId = observeId;
 
     model.observeIds = observeIds;
 
     function observeId(id, callback) {
-      var dbId = dbBroker.dbId;
-      var observers = dbObservers[dbId] || (dbObservers[dbId] = {});
+      const {dbId} = dbBroker;
+      const observers = dbObservers[dbId] || (dbObservers[dbId] = {});
 
-      var obs = observers[id] || (observers[id] = Object.create(null));
+      const obs = observers[id] || (observers[id] = Object.create(null));
       obs[++key] = callback;
 
       observeModel(observers);
@@ -25,12 +25,12 @@ define(function(require, exports, module) {
 
     function stopObserver(id, obs, key, dbId, observers) {
       return {
-        stop: function() {
+        stop() {
           delete obs[key];
           for(key in obs) return;
           delete observers[id];
           for(id in observers) return;
-          var modelObserver = modelObMap[dbId];
+          const modelObserver = modelObMap[dbId];
           if (modelObserver) {
             modelObserver.stop();
             delete modelObMap[dbId];
@@ -42,29 +42,23 @@ define(function(require, exports, module) {
     }
 
     function observeIds(ids, callback) {
-      return stopObservers(ids.map(function (id) {
-        return observeId(id, callback);
-      }), callback);
+      return stopObservers(ids.map(id => observeId(id, callback)), callback);
     }
 
     function stopObservers(obs, callback) {
       return {
-        stop: function() {
-          for(var i = 0; i < obs.length; ++i) {
-            obs[i].stop();
-          }
-        },
+        stop() {for(let i = 0; i < obs.length; ++i) obs[i].stop()},
 
         replaceIds(newIds) {
-          var set = Object.create(null);
-          for(var i=0;i < obs.length;++i) {
-            var ob = obs[i];
+          const set = Object.create(null);
+          for(let i = 0; i < obs.length; ++i) {
+            const ob = obs[i];
             set[ob.id]=ob;
           }
 
           obs = [];
-          for(var i=0;i < newIds.length;++i) {
-            var newId = newIds[i];
+          for(let i = 0; i < newIds.length; ++i) {
+            const newId = newIds[i];
             if (newId in set) {
               obs.push(set[newId]);
               delete set[newId];
@@ -72,9 +66,7 @@ define(function(require, exports, module) {
               obs.push(observeId(newId, callback));
             }
           }
-          for(var key in set) {
-            set[key].stop();
-          }
+          for(const key in set) set[key].stop();
         },
       };
     }
@@ -82,10 +74,10 @@ define(function(require, exports, module) {
     function observeModel(observers) {
       if (modelObMap[dbBroker.dbId]) return;
 
-      modelObMap[dbBroker.dbId] = model.onChange(function (doc, was) {
-        var cbs = observers[(doc || was)._id];
-        if (cbs) for(var i in cbs) {
-          var cb = cbs[i];
+      modelObMap[dbBroker.dbId] = model.onChange((doc, was) => {
+        const cbs = observers[(doc || was)._id];
+        if (cbs) for(let i in cbs) {
+          const cb = cbs[i];
           cb(doc, was);
         }
       });

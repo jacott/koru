@@ -1,8 +1,9 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  var TH = require('koru/test-helper');
+  const TH  = require('koru/test-helper');
+  const Dom = require('./dom-client');
+
   require('./range-select');
-  var Dom = require('./dom-client');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {

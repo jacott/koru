@@ -1,12 +1,11 @@
-var fs = require('fs');
+const fs = require('fs');
 
 define(function(require, exports, module) {
-
-  var util = require('koru/util');
+  const util = require('koru/util');
 
   exports.load = function (name, onload) {
-    fs.readFile(name, function (err, text) {
-      util.Fiber(function () {
+    fs.readFile(name, (err, text) => {
+      util.Fiber(() => {
         if (err) onload.error(err);
         else onload(text.toString());
       }).run();

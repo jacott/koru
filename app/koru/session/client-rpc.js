@@ -1,5 +1,5 @@
 define(function(require, exports, module) {
-  var session = require('./main');
+  const session = require('./main');
 
   require('./client-rpc-base')(session);
 

@@ -1,10 +1,10 @@
 isClient && define(function(require, exports, module) {
-  var test, v;
-  var TH = require('koru/test');
-  var Dom = require('./dom-client');
-  var testTpl = require('koru/html!./template-compiler-test');
+  const testTpl = require('koru/html!./template-compiler-test');
+  const TH      = require('koru/test');
+  const Dom     = require('./dom-client');
 
-  var $ = Dom.current;
+  var test, v;
+  const $ = Dom.current;
 
   TH.testCase(module, {
     setUp() {
@@ -44,7 +44,7 @@ isClient && define(function(require, exports, module) {
         }
       });
 
-      var elm = Dom.Test.Foo.$autoRender({name: 'Adam', arg: {has: {parts: 'success'}}});
+      const elm = Dom.Test.Foo.$autoRender({name: 'Adam', arg: {has: {parts: 'success'}}});
 
       document.body.appendChild(elm);
 

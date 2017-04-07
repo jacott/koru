@@ -1,12 +1,12 @@
-var fs = require('fs');
-var Path = require('path');
-var Fiber = requirejs.nodeRequire('fibers');
-var Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
+const fs = require('fs');
+const Path = require('path');
+const Fiber = requirejs.nodeRequire('fibers');
+const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
 
-var readdir_w = Future.wrap(fs.readdir);
-var stat_w = Future.wrap(fs.stat);
-var unlink_w = Future.wrap(fs.unlink);
-var utimes_w = Future.wrap(fs.utimes);
+const readdir_w = Future.wrap(fs.readdir);
+const stat_w = Future.wrap(fs.stat);
+const unlink_w = Future.wrap(fs.unlink);
+const utimes_w = Future.wrap(fs.utimes);
 
 function waitMethod(method, ...args) {
   try {
@@ -30,16 +30,16 @@ function lstat(path) {
 const rm_rf_w = Future.wrap(function (dir, callback) {
   Fiber(function () {
     try {
-      var filenames = readdir_w(dir).wait();
+      const filenames = readdir_w(dir).wait();
 
-      var stats = filenames.map(function (filename) {
+      const stats = filenames.map(function (filename) {
         return stat_w(Path.join(dir, filename));
       });
 
       wait(stats);
 
-      for(var i = 0; i < filenames.length; ++i) {
-        var fn = Path.join(dir, filenames[i]);
+      for(let i = 0; i < filenames.length; ++i) {
+        const fn = Path.join(dir, filenames[i]);
 
         filenames[i] =
           stats[i].get().isDirectory() ?

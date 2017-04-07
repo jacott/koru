@@ -88,7 +88,7 @@ define(function(require, exports, module) {
       koru.afTimeout.reset();
     },
 
-    createMockEvent: function(currentTarget, options) {
+    createMockEvent(currentTarget, options) {
       return util.merge(util.merge({}, {
         preventDefault: geddon.test.stub(),
         stopImmediatePropagation: geddon.test.stub(),
@@ -181,7 +181,7 @@ define(function(require, exports, module) {
       keyseq('keyup', node, key, args);
     },
 
-    click: function(node, arg1) {
+    click(node, arg1) {
       if (typeof node === 'string') {
         assert.elideFromStack.dom(node, arg1, function () {TH.click(this)});
       } else {

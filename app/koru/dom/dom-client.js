@@ -543,7 +543,7 @@ define(function(require, exports, module) {
 
     contains: Element.prototype.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
       return parent && parent.contains(elm) ? parent : null;
-    } : function (parent, elm) {
+    } : (parent, elm) => {
       while(elm && elm.nodeType !== DOCUMENT_NODE) {
         if (parent === elm) return parent;
         elm = elm.parentNode;

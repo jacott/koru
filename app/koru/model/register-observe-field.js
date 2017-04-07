@@ -3,29 +3,27 @@ define(function(require, exports, module) {
   const util        = require('../util');
   const dbBroker    = require('./db-broker');
 
-  return function (model) {
-    var modelName = model.modelName;
+  return model => {
+    const {modelName} = model;
 
     model.registerObserveField = registerObserveField;
 
     function registerObserveField(field) {
-      var dbObservers = Object.create(null);
-      var modelObMap = Object.create(null);
-      var key = 0;
-      var findFieldOpts = (function () {
-        var fields = Object.create(null);
+      const dbObservers = Object.create(null);
+      const modelObMap = Object.create(null);
+      let key = 0;
+      const fields = Object.create(null);
         fields[field] = 1;
-        return {transform: null, fields: fields};
-      })();
+      const findFieldOpts = {transform: null, fields};
 
 
-      model['observe'+ util.capitalize(field)] = function (values, callback) {
+      model['observe'+ util.capitalize(field)] = (values, callback) => {
         if (typeof values !== 'object') values = [values];
 
-        var obsSet = Object.create(null);
-        var options = [++key, callback];
-        for(var i=0;i < values.length;++i) {
-          var ob = observeValue(values[i], options);
+        const obsSet = Object.create(null);
+        const options = [++key, callback];
+        for(let i = 0;i < values.length;++i) {
+          const ob = observeValue(values[i], options);
           obsSet[ob.value]=ob;
         }
 
@@ -33,21 +31,21 @@ define(function(require, exports, module) {
       };
 
       function observeValue(value, options) {
-        var observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
-        var obs = observers[value] || (observers[value] = Object.create(null));
+        const observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
+        const obs = observers[value] || (observers[value] = Object.create(null));
         obs[options[0]] = options;
-        var modelObserver = getModelOb(observers);
+        const modelObserver = getModelOb(observers);
         return stopObserver(value, obs, options, observers);
       };
 
       function stopObserver(value, obs, options, observers) {
         return {
-          stop: function() {
+          stop() {
             delete obs[options[0]];
-            for(var key in obs) return;
+            for(let key in obs) return;
             delete observers[value];
-            for(var key in observers) return;
-          var modelObserver = modelObMap[dbBroker.dbId];
+            for(let key in observers) return;
+            const modelObserver = modelObMap[dbBroker.dbId];
             if (modelObserver) {
               modelObserver.stop();
               delete modelObMap[dbBroker.dbId];
@@ -60,23 +58,19 @@ define(function(require, exports, module) {
 
       function stopObservers(obsSet, options) {
         return {
-          stop: function() {
-            for(var key in obsSet) {
-              obsSet[key].stop();
-            }
+          stop() {
+            for(let key in obsSet) obsSet[key].stop();
           },
 
           addValue(value) {
             value = value.toString();
             if (value in obsSet) return;
-
-            var ob = observeValue(value, options);
-            obsSet[value] = ob;
+            obsSet[value] = observeValue(value, options);
           },
 
           removeValue(value) {
             value = value.toString();
-            var ob = obsSet[value];
+            const ob = obsSet[value];
             if (! ob) return;
 
             ob.stop();
@@ -84,42 +78,38 @@ define(function(require, exports, module) {
           },
 
           replaceValues(newValues) {
-            var delObs = obsSet;
+            const delObs = obsSet;
             obsSet = {};
-            var addValues = [];
-            for(var i=0;i < newValues.length;++i) {
+            const addValues = [];
+            for(let i = 0; i < newValues.length; ++i) {
               var newValue = newValues[i].toString(); // only use strings for keys
               if (newValue in delObs) {
                 obsSet[newValue] = delObs[newValue];
                 delete delObs[newValue];
               } else {
-                var rawValue = newValues[i];
+                const rawValue = newValues[i];
                 addValues.push(rawValue);
                 obsSet[newValue] = observeValue(rawValue, options);
               }
             }
-            for(var value in delObs) {
-              delObs[value].stop();
-            }
+            for(let value in delObs) delObs[value].stop();
           },
         };
       }
 
       function getModelOb(observers) {
-        var ob = modelObMap[dbBroker.dbId];
-        if (ob) return ob;
+        const t = modelObMap[dbBroker.dbId];
+        if (t) return t;
 
-        ob = model.onChange(function (doc, was) {
-          var nowValue = doc && doc[field];
-          var asBefore = doc ? was && doc.$withChanges(was) : was;
-          var oldValue = asBefore && asBefore[field];
+        const ob = model.onChange((doc, was) => {
+          const nowValue = doc && doc[field];
+          const asBefore = doc ? was && doc.$withChanges(was) : was;
+          const oldValue = asBefore && asBefore[field];
 
-          var called = {}; // ensure only called once;
-
-
+          const called = {}; // ensure only called once;
 
           if (oldValue != undefined) {
-            if (Array.isArray(oldValue)) for(var i = 0; i < oldValue.length; ++i) {
+            if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
               callObservers(called, doc, was, oldValue[i]);
             } else {
               callObservers(called, doc, was, oldValue);
@@ -127,7 +117,7 @@ define(function(require, exports, module) {
           }
 
           if (nowValue != undefined && nowValue !== oldValue) {
-            if (Array.isArray(nowValue)) for(var i = 0; i < nowValue.length; ++i) {
+            if (Array.isArray(nowValue)) for(let i = 0; i < nowValue.length; ++i) {
               callObservers(called, doc, was, nowValue[i]);
             } else {
               callObservers(called, doc, was, nowValue);
@@ -138,9 +128,9 @@ define(function(require, exports, module) {
         return modelObMap[dbBroker.dbId] = ob;
 
         function callObservers(called, doc, was, value) {
-          var cbs = observers[value];
-          if (cbs) for(var key in cbs) {
-            var options = cbs[key];
+          const cbs = observers[value];
+          if (cbs) for(let key in cbs) {
+            const options = cbs[key];
             if (! (options[0] in called)) {
               called[options[0]] = true;
               options[1](doc, was);
