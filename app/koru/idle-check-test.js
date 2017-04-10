@@ -39,6 +39,50 @@ isServer && define(function (require, exports, module) {
       assert(newIdleCheck() instanceof IdleCheck);
     },
 
+    "test fiber timeout": {
+      setUp() {
+        v.idleCheck = new IdleCheck();
+        v.idleCheck.maxTime = 1*60*1000;
+        this.stub(koru, 'setTimeout').returns(112233);
+        this.stub(koru, 'clearTimeout');
+        v.f2 = Fiber(() => {
+          v.idleCheck.inc();
+          try {
+            Fiber.yield();
+          } catch(ex) {
+            v.ex = ex;
+          }
+          v.idleCheck.dec();
+        });
+
+        v.f2.appThread = {dbId: 'foo1', userId: 'u123'};
+
+        v.f2.run();
+      },
+
+      "test running too long"() {
+        this.stub(koru, 'error');
+        assert.calledWith(koru.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+
+        v.func();
+
+        assert.equals(v.ex.message, 'This Fiber is a zombie');
+        assert.calledWith(koru.error, 'aborted; timed out. dbId: foo1, userId: u123');
+      },
+
+      "test finish in time"() {
+        assert.calledWith(koru.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+
+        refute.called(koru.clearTimeout);
+
+        v.f2.run();
+
+        refute(v.ex);
+
+        assert.calledWith(koru.clearTimeout, 112233);
+      },
+    },
+
     "waitIdle": {
       "test already Idle"() {
         /**
@@ -106,16 +150,23 @@ isServer && define(function (require, exports, module) {
         this.stub(koru, 'setTimeout');
         v.idleCheck = new IdleCheck();
         v.f2 = Fiber(() => {
+          if (! (v && v.idleCheck)) return;
           v.idleCheck.inc();
           try {
             Fiber.yield();
           } catch(ex) {
             v.ex = ex;
           }
-          v.idleCheck.dec();
+          v.idleCheck && v.idleCheck.dec();
         });
         this.stub(console, 'log');
       },
+
+      tearDown() {
+        v.idleCheck = null;
+        v.f2.run();
+      },
+
 
       "test idle"() {
         v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000, abortTxAfter: 10*1000});
@@ -146,7 +197,7 @@ isServer && define(function (require, exports, module) {
 
         v.abort();
 
-        assert.equals(v.ex.message, 'abort; process exit');
+        assert.equals(v.ex.message, 'This Fiber is a zombie');
 
         assert.called(process.exit);
       },

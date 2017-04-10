@@ -81,9 +81,8 @@ define(function(require, exports, module) {
         this._last = this._last[1] = [data, null];
         return;
       }
-      let current = this._last = [data, null];
 
-      const process = () => {
+      const process = current => {
         this._session.execWrapper(() => {
           IdleCheck.inc();
           try {
@@ -93,9 +92,9 @@ define(function(require, exports, module) {
           } finally {
             IdleCheck.dec();
 
-            current = current[1];
-            if (current)
-              process();
+            const nextMsg = current[1];
+            if (nextMsg)
+              process(nextMsg);
             else {
               this._last = null;
             }
@@ -103,7 +102,7 @@ define(function(require, exports, module) {
         }, this);
       };
 
-      process();
+      process(this._last = [data, null]);
     }
 
 
@@ -116,7 +115,7 @@ define(function(require, exports, module) {
       if (! bm) return;
       const sq = this[_sideQueue];
       this[_sideQueue] = null;
-      sq.forEach(args => {bm.batch(this, ...args)});
+      sq && sq.forEach(args => {bm.batch(this, ...args)});
       util.thread.batchMessage = null;
       bm.release();
     }
