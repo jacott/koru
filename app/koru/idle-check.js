@@ -1,10 +1,13 @@
 define(function(require, exports, module) {
   const util = require('koru/util');
+  const {Fiber} = util;
 
   class IdleCheck {
     constructor() {
       this._count = 0;
       this._waitIdle = null;
+      this.fibers = new Map();
+      this.onDec = null;
     }
 
     get count() {return this._count;}
@@ -20,10 +23,22 @@ define(function(require, exports, module) {
     }
 
     inc() {
+      const current = Fiber.current;
+      if (! current)
+        throw new Error('IdleCheck used outside of fiber');
+      if (this.fibers.get(current))
+        throw new Error('IdleCheck used twice on fiber');
+      this.fibers.set(current, Date.now());
       return ++this._count;
     }
 
     dec() {
+      const current = Fiber.current;
+      const start = this.fibers.get(current);
+      if (! start)
+        throw new Error('IdleCheck.dec called with no corresponding inc');
+      this.fibers.delete(current);
+      this.onDec && this.onDec(current, start);
       if (--this._count === 0 & this._waitIdle !== null) {
         var funcs = this._waitIdle;
         this._waitIdle = null;

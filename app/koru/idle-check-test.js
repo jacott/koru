@@ -4,9 +4,12 @@ isServer && define(function (require, exports, module) {
    *
    **/
   var test, v;
-  const api = require('koru/test/api');
+  const api       = require('koru/test/api');
+  const util      = require('koru/util');
   const IdleCheck = require('./idle-check');
-  const TH  = require('./test-helper');
+  const TH        = require('./test-helper');
+
+  const {Fiber} = util;
 
   TH.testCase(module, {
     setUp() {
@@ -52,20 +55,36 @@ isServer && define(function (require, exports, module) {
       },
 
       "test multiple listeners"() {
+        const start = Date.now();
         v.idleCheck = new IdleCheck();
-        v.idleCheck = new IdleCheck();
+        v.idleCheck.onDec = this.stub();
         v.idleCheck.inc();
-        v.idleCheck.inc();
+        const f2 = Fiber(() => {
+          v.idleCheck.inc();
+          Fiber.yield();
+          v.idleCheck.dec();
+        });
+
+        f2.run();
+
+        const cStart = v.idleCheck.fibers.get(Fiber.current);
+        const f2Start = v.idleCheck.fibers.get(f2);
+
+        assert.between(cStart, start, Date.now());
+        assert.between(f2Start, start, Date.now());
 
         v.idleCheck.waitIdle(v.stub1 = test.stub());
         v.idleCheck.waitIdle(v.stub2 = test.stub());
 
         v.idleCheck.dec();
 
+        refute(v.idleCheck.fibers.get(Fiber.current));
+
         refute.called(v.stub1);
         refute.called(v.stub2);
+        f2.run();
 
-        v.idleCheck.dec();
+        assert.equals(Array.from(v.idleCheck.fibers.values()), []);
 
         assert.called(v.stub1);
         assert.called(v.stub2);
@@ -77,6 +96,9 @@ isServer && define(function (require, exports, module) {
 
         assert.calledOnce(v.stub1);
         assert.calledOnce(v.stub3);
+
+        assert.calledWith(v.idleCheck.onDec, Fiber.current, cStart);
+        assert.calledWith(v.idleCheck.onDec, f2, f2Start);
       },
     },
   });

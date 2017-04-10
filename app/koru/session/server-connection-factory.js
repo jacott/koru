@@ -90,14 +90,15 @@ define(function(require, exports, module) {
             this._session._onMessage(this, current[0]);
           } catch(ex) {
             koru.error(util.extractError(ex));
-          }
-          IdleCheck.dec();
+          } finally {
+            IdleCheck.dec();
 
-          current = current[1];
-          if (current)
-            process();
-          else {
-            this._last = null;
+            current = current[1];
+            if (current)
+              process();
+            else {
+              this._last = null;
+            }
           }
         }, this);
       };
