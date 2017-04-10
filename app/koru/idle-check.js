@@ -1,5 +1,7 @@
 define(function(require, exports, module) {
+  const koru = require('koru');
   const util = require('koru/util');
+
   const {Fiber} = util;
 
   class IdleCheck {
@@ -43,6 +45,26 @@ define(function(require, exports, module) {
         var funcs = this._waitIdle;
         this._waitIdle = null;
         util.forEach(funcs, function (func) {func()});
+      }
+    }
+
+    exitProcessWhenIdle({forceAfter=20*1000, abortTxAfter=10*1000}={}) {
+      koru.setTimeout(shutdown, forceAfter);
+      koru.setTimeout(() => {
+        for (const [fiber] of this.fibers) {
+          try {
+            fiber.throwInto(new Error('abort; process exit'));
+          } catch(ex) {
+            console.log(util.extractError(ex));
+          }
+        }
+      }, abortTxAfter);
+
+      this.waitIdle(shutdown);
+
+      function shutdown() {
+        console.log('=> Shutdown');
+        process.exit(0);
       }
     }
   }

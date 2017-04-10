@@ -4,6 +4,7 @@ isServer && define(function (require, exports, module) {
    *
    **/
   var test, v;
+  const koru      = require('koru');
   const api       = require('koru/test/api');
   const util      = require('koru/util');
   const IdleCheck = require('./idle-check');
@@ -39,9 +40,6 @@ isServer && define(function (require, exports, module) {
     },
 
     "waitIdle": {
-      setUp() {
-      },
-
       "test already Idle"() {
         /**
          * waitIdle waits until `this.count` drops to zero.
@@ -99,6 +97,58 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.idleCheck.onDec, Fiber.current, cStart);
         assert.calledWith(v.idleCheck.onDec, f2, f2Start);
+      },
+    },
+
+    "exitProcessWhenIdle": {
+      setUp() {
+        this.stub(process, 'exit');
+        this.stub(koru, 'setTimeout');
+        v.idleCheck = new IdleCheck();
+        v.f2 = Fiber(() => {
+          v.idleCheck.inc();
+          try {
+            Fiber.yield();
+          } catch(ex) {
+            v.ex = ex;
+          }
+          v.idleCheck.dec();
+        });
+        this.stub(console, 'log');
+      },
+
+      "test idle"() {
+        v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000, abortTxAfter: 10*1000});
+        assert.called(process.exit);
+        assert.calledWith(console.log, '=> Shutdown');
+      },
+
+      "test forceAfter"() {
+        v.f2.run();
+        v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000});
+
+        assert.calledWith(koru.setTimeout, TH.match(f => v.force = f), 20*1000);
+        assert.calledWith(koru.setTimeout, TH.match.func, 10*1000);
+
+        refute.called(process.exit);
+        v.force();
+        assert.called(process.exit);
+      },
+
+      "test abortTxAfter"() {
+        v.f2.run();
+        v.idleCheck.exitProcessWhenIdle({abortTxAfter: 10*1000});
+
+        assert.calledWith(koru.setTimeout, TH.match.func, 20*1000);
+        assert.calledWith(koru.setTimeout, TH.match(f => v.abort = f), 10*1000);
+
+        refute.called(process.exit);
+
+        v.abort();
+
+        assert.equals(v.ex.message, 'abort; process exit');
+
+        assert.called(process.exit);
       },
     },
   });
