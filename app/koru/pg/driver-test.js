@@ -7,13 +7,13 @@ isServer && define(function (require, exports, module) {
    * PQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)
    *
    **/
-  var test, v;
   const api  = require('koru/test/api');
   const TH   = require('../test');
   const util = require('../util');
-  const pg  = require('./driver');
 
-  var mf = TH.match.field;
+  const pg = require('./driver');
+  var test, v;
+  const mf = TH.match.field;
 
   TH.testCase(module, {
     setUp() {
