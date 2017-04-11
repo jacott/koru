@@ -358,6 +358,10 @@ define(function(require, exports, module) {
         Dom.setOriginalValue(Dom.current.element, value);
         Dom.updateInput(Dom.current.element, value == null ? '' : ''+value);
       },
+
+      decimal(value, {format=2}={}) {
+        return value == null ? '' : util.toDp(value, format, true);
+      }
     },
 
     originalValue(elm) {return elm[origValueSym]},

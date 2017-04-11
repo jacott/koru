@@ -405,6 +405,21 @@ define(function (require, exports, module) {
       assert(Dom.modifierKey({altKey: true}));
     },
 
+    "test decimal helper"() {
+      Dom.newTemplate({name: 'Foo', nodes: [{
+        name: 'div', children: [
+          ["","decimal","foo",["=","format","\"3"]]
+        ]
+      }]});
+
+      assert.dom(Dom.Foo.$render({foo: 123.45}), elm => {
+        assert.same(elm.textContent, "123.450");
+        Dom.ctx(elm).updateAllTags({foo: 423.45750001});
+        assert.same(elm.textContent, "423.458");
+        Dom.ctx(elm).updateAllTags({foo: null});
+        assert.same(elm.textContent, "");
+      });
+    },
 
     "inputValue helper": {
       "test restore"() {
