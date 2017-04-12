@@ -1,8 +1,11 @@
 define(function(require, exports, module) {
 
   module.exports = function (mig) {
-    mig.createTable('$$modelName$$', {
-      $$modelFields$$
+    mig.createTable({
+      name: '$$modelName$$',
+      fields: {
+        $$modelFields$$
+      }
     });
   };
 });

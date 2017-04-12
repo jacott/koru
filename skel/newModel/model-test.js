@@ -19,7 +19,9 @@ define(function (require, exports, module) {
 
     "test persistence"() {
       const doc = Factory.create$$modelName$$();
-      const loaded = $$modelName$$.findById(doc._id);
+
+      // avoid cache
+      const loaded = $$modelName$$.where('_id', doc._id).fetchOne();
       assert.same($$modelName$$.query.count(), 1);
       $$persistenceTest$$
     },

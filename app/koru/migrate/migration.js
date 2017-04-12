@@ -15,7 +15,16 @@ define(function(require, exports, module) {
       this.add = add;
     }
 
-    createTable(name, fields, indexes) {
+    createTable(options, fields, indexes) {
+      let name;
+      if (typeof options === 'object') {
+        name = options.name;
+        fields = options.fields;
+        indexes = options.indexes;
+      } else {
+        name = options;
+        options = {};
+      }
       const qname = '"'+name+'"';
       if (this.add) {
         const list = ['_id varchar(24) PRIMARY KEY'];
@@ -26,7 +35,7 @@ define(function(require, exports, module) {
           else
             list.push(colspec);
         }
-        this.client.query('CREATE TABLE '+qname+' ('+list.join(',')+')');
+        this.client.query(`CREATE${options.unlogged ? ' UNLOGGED' : ''} TABLE ${qname} (${list.join(',')})`);
         if (indexes) {
           indexes.forEach(spec => {
             let i = 0;

@@ -87,6 +87,21 @@ isServer && define(function (require, exports, module) {
       assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
+    "test unlogged create"() {
+      this.spy(v.client, 'query');
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+        mig.createTable({name: 'TestTable', unlogged: true, fields: {
+          name: 'text',
+          foo: {type: 'integer primary KEY'},
+        }});
+      });
+      assert.calledWith(v.client.query, `CREATE UNLOGGED TABLE "TestTable" ("foo" integer primary KEY,"name" text)`);
+      v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.foo, 2);
+      assert.isFalse(doc.hasOwnProperty('_id'));
+    },
+
     "test addColumns by object"() {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
