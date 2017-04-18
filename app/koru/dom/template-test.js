@@ -888,13 +888,14 @@ isClient && define(function (require, exports, module) {
 
         this.spy(Dom, 'destroyData');
 
-        assert.exception(function () {
+        try {
           Dom.Foo.$render({});
-        }, 'Error', 'while rendering: Foo\nbang');
+        } catch (ex) {
+          v.ex = ex;
+        }
+        assert.equals(v.ex.toString(), 'while rendering: Foo\nbang');
 
-        assert.calledWith(Dom.destroyData, TH.match(function (elm) {
-          return elm.tagName === 'DIV';
-        }));
+        assert.calledWith(Dom.destroyData, TH.match(elm => elm.tagName === 'DIV'));
       },
 
       "destroyMeWith": {

@@ -1,15 +1,37 @@
 <template name="Test.Foo">
-  <div id="Foo" class="{{classes}}" {{attrs}} {{dotted arg.has.parts}}>
+  <div id="Foo"
+       class="{{
+classes
+}}"
+       {{attrs}} {{
+       dotted
+       arg.has.parts
+       }}>
     {{>Bar}}
+    <svg>
+      <path d="M0,0 10,10Z" />
+    </svg>
   </div>
   <template name="Bar">
-    <span id="{{korulet}}">
-      {{name}}
+    <span
+       id="{{korulet}}
+           "
+       >
+      {{
+
+      helperName foo="a
+b
+c
+"
+
+      }}
+      	{{h2.has.parts}}
     </span>
   </template>
   <template name="Fnord">
   </template>
-  <template name="Baz" extends="Fnord">
+  <template name
+            ="Baz" extends="Fnord">
     <div>
     </div>
   </template>

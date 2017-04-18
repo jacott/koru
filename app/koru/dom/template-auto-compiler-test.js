@@ -44,13 +44,15 @@ isClient && define(function(require, exports, module) {
         }
       });
 
-      const elm = Dom.Test.Foo.$autoRender({name: 'Adam', arg: {has: {parts: 'success'}}});
+      const elm = Dom.Test.Foo.$autoRender({
+        helperName(opts) {return opts.foo+'Adam'},
+        arg: {has: {parts: 'success'}}});
 
       document.body.appendChild(elm);
 
       assert.dom('div#Foo', function () {
         assert.same(this.className, 'e1 e2');
-        assert.dom('span#barId', 'Adam');
+        assert.dom('span#barId', 'a\nb\nc\nAdam');
         assert.same(this.getAttribute('data-x'), 'x123');
         assert.same(this.getAttribute('data-dotted'), 'success');
       });

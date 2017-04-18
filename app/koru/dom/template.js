@@ -102,7 +102,8 @@ define(function(require, exports, module) {
         ctx.data === undefined || ctx.updateAllTags(ctx.data);
         return frag;
       } catch(ex) {
-        ex.message = 'while rendering: '+this.$fullname+'\n' + ex.message;
+        Object.defineProperty(ex, 'toString', {value: () => `while rendering: ${this.$fullname}
+${ex.message}`});
         // clean up what we can
         try {
           Dom.destroyData(frag);
