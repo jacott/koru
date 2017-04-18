@@ -10,6 +10,7 @@ define(function(require, exports, module) {
   const dragTouchStartSym = Symbol();
 
   let currentEvent;
+  const svgns = "http://www.w3.org/2000/svg";
 
   class DomTemplate {
     constructor(name, parent, blueprint) {
@@ -30,7 +31,7 @@ define(function(require, exports, module) {
       tpl.$module = module;
       koru.onunload(module, function () {
         (tpl.parent || Dom)[tpl.name] = null;
-        for (let name in tpl) {
+        for (const name in tpl) {
           const sub = tpl[name];
           if (sub && sub.$module && sub instanceof DomTemplate) {
             koru.unload(sub.$module.id);
@@ -57,7 +58,7 @@ define(function(require, exports, module) {
       if (typeof origin === 'string') origin = document.getElementById(origin);
       if (! origin)
         origin = Ctx._currentCtx;
-      else if ('nodeType' in origin)
+      else if (origin.nodeType)
         origin = Dom.ctx(origin);
 
       for(; origin; origin = origin.parentCtx) {
@@ -89,7 +90,7 @@ define(function(require, exports, module) {
       let frag, firstChild;
       try {
         frag = document.createDocumentFragment();
-        this.nodes && addNodes.call(this, frag, this.nodes);
+        this.nodes && addNodes(this, frag, this.nodes);
         firstChild = frag.firstChild;
         if (firstChild) {
           if (frag.lastChild === firstChild)
@@ -125,7 +126,7 @@ ${ex.message}`});
     }
 
     $events(events) {
-      for(let key in events)
+      for(const key in events)
         this.$event(key, events[key]);
       return this;
     }
@@ -148,7 +149,7 @@ ${ex.message}`});
 
     $actions(actions) {
       const events = {};
-      for(let key in actions) {
+      for(const key in actions) {
         events['click [name='+key+']'] = actions[key];
       }
       return this.$events(events);
@@ -311,7 +312,7 @@ ${ex.message}`});
     let elm = event.target;
 
     try {
-      for(let key in eventTypes) {
+      for(const key in eventTypes) {
         if (key === ':TOP') {
           if (elm === event.currentTarget) {
             if (fire(event, elm, eventTypes[key])) return;
@@ -327,9 +328,9 @@ ${ex.message}`});
         }
       }
 
-      for(let key in later) {
+      for(const key in later) {
         for (elm = elm && elm.parentNode;elm && elm !== event.currentTarget; elm = elm.parentNode) {
-          for(let key in later) {
+          for(const key in later) {
             if (key !== ':TOP' && matches.call(elm, key)) {
               if (fire(event, elm, eventTypes[key])) return;
               delete later[key];
@@ -339,7 +340,7 @@ ${ex.message}`});
         break;
       }
 
-      for(let key in later) {
+      for(const key in later) {
         if (fire(event, elm, eventTypes[key])) return;
       }
     } catch(ex) {
@@ -399,21 +400,26 @@ ${ex.message}`});
     }
   }
 
-  function addNodes(parent, nodes) {
-    for ( var i = 0; i < nodes.length; ++i ) {
+  function addNodes(template, parent, nodes, svg) {
+    const len = nodes.length;
+    for (let i = 0; i < len; ++i) {
       const node = nodes[i];
 
       if (typeof node === 'string') {
-        var elm = document.createTextNode(node);
+        parent.appendChild(document.createTextNode(node));
 
       } else if (Array.isArray(node)) {
-        var elm = addNodeEval(this, node, parent);
+        const elm = addNodeEval(template, node, parent);
+        elm && parent.appendChild(elm);
       } else {
-        var elm = document.createElement(node.name);
-        setAttrs.call(this, elm, node.attrs);
-        node.children && addNodes.call(this, elm, node.children);
+        const {name, attrs, children} = node;
+        const elm = svg || name === 'svg' ?
+                (svg = document.createElementNS(svgns, name))
+                : document.createElement(name);
+        setAttrs(template, elm, attrs);
+        children && addNodes(template, elm, children, svg);
+        parent.appendChild(elm);
       }
-      elm && parent.appendChild(elm);
     }
   }
 
@@ -489,7 +495,7 @@ ${ex.message}`});
     Ctx._currentCtx.attrEvals.push(parseNode(template, node, [elm, id]));
   }
 
-  function setAttrs(elm, attrs) {
+  function setAttrs(template, elm, attrs) {
     if (attrs) for(let j=0; j < attrs.length; ++j) {
       const attr = attrs[j];
 
@@ -503,10 +509,10 @@ ${ex.message}`});
           elm.setAttribute(attr[1], attr[2]);
 
         } else {
-          addAttrEval(this, attr[1], attr[2], elm);
+          addAttrEval(template, attr[1], attr[2], elm);
         }
       } else { // custom element mutator
-        addAttrEval(this, null, attr, elm);
+        addAttrEval(template, null, attr, elm);
       }
     }
   }

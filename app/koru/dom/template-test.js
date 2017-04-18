@@ -768,6 +768,26 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test rendering svg"() {
+      DomTemplate.newTemplate({
+        name: "Foo",
+        nodes: [{
+          name: 'svg',
+          attrs: [],
+          children: [{name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]}]
+        }],
+      });
+
+      const svg = Dom.Foo.$render();
+      assert(svg instanceof window.SVGSVGElement);
+      assert.dom(svg, svg => {
+        assert.dom('path', path => {
+          assert(path instanceof window.SVGPathElement);
+          assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
+        });
+      });
+    },
+
     "test rendering fragment"() {
       DomTemplate.newTemplate({
         name: "Foo",
