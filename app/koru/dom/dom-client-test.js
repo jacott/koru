@@ -421,6 +421,20 @@ define(function (require, exports, module) {
       });
     },
 
+    "test comment helper"() {
+      Dom.newTemplate({name: 'Foo', nodes: [{
+        name: 'div', children: [
+          ["","comment","\"foo"]
+        ]
+      }]});
+
+      assert.dom(Dom.Foo.$render({}), elm => {
+        const comment = elm.firstChild;
+        assert.equals(comment.nodeType, document.COMMENT_NODE);
+        assert.equals(comment.data, 'foo');
+      });
+    },
+
     "inputValue helper": {
       "test restore"() {
         const elm = Ctx._private.currentElement = {};

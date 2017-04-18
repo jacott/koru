@@ -361,7 +361,11 @@ define(function(require, exports, module) {
 
       decimal(value, {format=2}={}) {
         return value == null ? '' : util.toDp(value, format, true);
-      }
+      },
+
+      comment(value) {
+        return document.createComment(value);
+      },
     },
 
     originalValue(elm) {return elm[origValueSym]},
