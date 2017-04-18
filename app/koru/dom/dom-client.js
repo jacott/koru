@@ -131,6 +131,13 @@ define(function(require, exports, module) {
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
 
+    isAboveBottom(elm, region) {
+      if ('getBoundingClientRect' in region)
+        region = region.getBoundingClientRect();
+
+      return elm.getBoundingClientRect().top < region.bottom;
+    },
+
     setClassBySuffix(name, suffix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;

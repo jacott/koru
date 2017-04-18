@@ -32,9 +32,39 @@ define(function (require, exports, module) {
         assert.same(Dom.captureEventOption, true);
     },
 
+    "test isAboveBottom"() {
+      /**
+       * Determine if an element is above the bottom of a region.
+
+       * @param {koru/dom/html-doc::Element|object} region either a
+       * Dom `Element` or a `boundingClientRect`
+       **/
+
+      api.method('isAboveBottom');
+      const x = Dom.h({$style: "position:absolute;left:-12px;width:20px;height:30px",
+                     div: "x"});
+      document.body.appendChild(x);
+
+      assert(Dom.isAboveBottom(x, document.body));
+      x.style.bottom = "-9px";
+      assert(Dom.isAboveBottom(x, document.body));
+      x.style.bottom = '';
+      x.style.top = '110%';
+      refute(Dom.isAboveBottom(x, document.body));
+
+      x.style.top = '';
+      x.style.bottom = '-17px';
+      const rect = {top: 0, bottom: 50, left: 0, right: 40};
+      refute(Dom.isAboveBottom(x, rect));
+      rect.bottom = 2000;
+      assert(Dom.isAboveBottom(x, rect));
+
+      api.done();
+    },
+
     "test isInView"() {
       /**
-       * Determine if a element is within the viewable area of a
+       * Determine if an element is within the viewable area of a
        * `region`.
        *
        * @param {koru/dom/html-doc::Element|object} region either a
