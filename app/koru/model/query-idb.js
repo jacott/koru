@@ -243,7 +243,10 @@ define(function(require, exports, module) {
     db[pendingUpdates] = null;
     const models = Object.keys(pu);
     const tran = db[iDB].transaction(models, 'readwrite');
-    tran.onabort = ex => {error(db, ex)};
+    tran.onabort = ex => {
+      error(db, ex);
+      db[busyQueue].nextAction();
+    };
     tran.oncomplete = () => {
       db[busyQueue].nextAction();
     };
