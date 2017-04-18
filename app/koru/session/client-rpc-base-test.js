@@ -61,6 +61,47 @@ define(function (require, exports, module) {
       assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
     },
 
+    "test lastRpc"() {
+      /**
+       * Return lastRpc msgId to use with {##cancelRpc}
+       **/
+      api.protoProperty('lastMsgId');
+      v.sess.rpc('foo.rpc', 1, 2, 3);
+      assert.same(v.sess.lastMsgId, '1rid1');
+    },
+
+    "test cancelRpc"() {
+      /**
+       * Return lastRpc msgId to use with {##cancelRpc}
+       **/
+      const rpcQueue = new RPCQueue();
+      sut(v.sess, {rpcQueue});
+      api.method('cancelRpc', v.sess);
+
+      v.sess.rpc('foo.rpc', 1, 2, 3);
+      const msgId = v.sess.lastMsgId;
+      assert.same(v.sess.state.pendingCount(), 1);
+      assert.same(v.sess.state.pendingUpdateCount(), 1);
+
+      assert.isTrue(v.sess.cancelRpc(msgId));
+      assert.same(v.sess.state.pendingCount(), 0);
+
+      assert.equals(rpcQueue.get('1rid1'), undefined);
+      refute(v.sess.cancelRpc(msgId));
+      assert.same(v.sess.state.pendingCount(), 0);
+      assert.same(v.sess.state.pendingUpdateCount(), 0);
+
+      v.sess.defineRpcGet('foo.get', arg => {});
+      v.sess.rpc('foo.get', 1);
+      assert.same(v.sess.state.pendingCount(), 1);
+      assert.same(v.sess.state.pendingUpdateCount(), 0);
+
+      const msgId2 = v.sess.lastMsgId;
+      v.sess.cancelRpc(msgId2);
+      assert.same(v.sess.state.pendingCount(), 0);
+      assert.same(v.sess.state.pendingUpdateCount(), 0);
+    },
+
     "reconnect": {
       /**
        * Ensure docs are tested against matches after subscriptions have returned.
@@ -82,7 +123,7 @@ define(function (require, exports, module) {
     },
 
     "test server only rpc" () {
-      refute.exception(() => {v.sess.rpc('foo.rpc', 1, 2, 3)});
+      v.sess.rpc('foo.rpc', 1, 2, 3);
 
       assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
     },

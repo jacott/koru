@@ -11,6 +11,15 @@ define(function(require, exports, module) {
       _msgId: 0,
       rpc,
       _sendM,
+      cancelRpc(msgId) {
+        const entry = rpcQueue.get(msgId);
+        if (entry) {
+          rpcQueue.delete(msgId);
+          session.state.decPending(! session.isRpcGet(entry[0][1]));
+          return true;
+        }
+      },
+      get lastMsgId() {return  session._msgId.toString(36)+this[baseId]},
       isRpcPending() {return rpcQueue.isRpcPending()},
     });
     session[baseId] = Random.global.id();
@@ -56,8 +65,7 @@ define(function(require, exports, module) {
     var msgId = data[0];
     var args = session[rpcQueueSym].get(msgId);
     if (! args) return;
-    session[rpcQueueSym].delete(msgId);
-    session.state.decPending(! session.isRpcGet(args[0][1]));
+    session.cancelRpc(msgId);
     var type = data[1];
     if (type === 'e') {
       var callback = args[1] || koru.globalCallback;
