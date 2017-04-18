@@ -2,8 +2,8 @@ define(function(require, exports, module) {
   const koru = require('koru');
   const util = require('koru/util');
 
-  function Dom(cssQuery) {
-    return document.body.querySelector(cssQuery);
+  function Dom(cssQuery, parent=document.body) {
+    return parent.querySelector(cssQuery);
   }
 
   util.merge(Dom, {

@@ -22,12 +22,17 @@ define(function (require, exports, module) {
     },
 
     "test Dom cssQuery"() {
-      document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123",
+      document.body.appendChild(v.result = Dom.h({"class": 'foo',
+                                                  section: {span: "Hello"}}));
+
+      document.body.appendChild(v.result = Dom.h({"class": 'bar',
                                                   section: {span: "Goodbye"}}));
 
-      if (isClient)
+      if (isClient) {
         assert.same(Dom('body>.bar>span').textContent, "Goodbye");
-      else
+        assert.same(Dom('span').textContent, "Hello");
+        assert.same(Dom('span', Dom('.bar')).textContent, "Goodbye");
+      } else
         assert("no server css query yet");
     },
 
