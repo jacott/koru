@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   const {DOCUMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
+  const {forEach} = util;
+
   let currentCtx, currentElement;
 
   let animationEndCount = 0;
@@ -20,7 +22,7 @@ define(function(require, exports, module) {
 
     onDestroy(obj) {
       if (! obj) return;
-      var list = this.__onDestroy || (this.__onDestroy = []);
+      const list = this.__onDestroy || (this.__onDestroy = []);
       list.push(obj);
       return this;
     }
@@ -30,26 +32,25 @@ define(function(require, exports, module) {
     }
 
     updateAllTags(data) {
-      var activeElement = document.activeElement;
-      var prevCtx = currentCtx;
-      var prevElm = currentElement;
+      const activeElement = document.activeElement;
+      const prevCtx = currentCtx;
+      const prevElm = currentElement;
       currentCtx = this;
       if (data === undefined)
         data = this.data;
       else
         this.data = data;
       try {
-        var evals = this.attrEvals;
-        for(var i=0; i < evals.length; ++i) {
-          var node = evals[i];
+        const {evals, attrEvals} = this;
+        for(let i = 0; i < attrEvals.length; ++i) {
+          const node = attrEvals[i];
           currentElement = node[0];
-          var value = (getValue(data, node[2], node[3])||'').toString();
+          const value = (getValue(data, node[2], node[3])||'').toString();
           if (node[1] && node[0].getAttribute(node[1]) !== value)
             node[0].setAttribute(node[1], value);
         }
-        evals = this.evals;
 
-        for(var i=0; i < evals.length; ++i) {
+        for(let i = 0; i < evals.length; ++i) {
           updateNode(evals[i], data);
         }
       } finally {
@@ -61,15 +62,18 @@ define(function(require, exports, module) {
     }
 
     updateElement(elm) {
-      var prevCtx = currentCtx;
-      var prevElm = currentElement;
+      const prevCtx = currentCtx;
+      const prevElm = currentElement;
       currentCtx = this;
       try {
-        util.forEach(this.evals, function (ev) {
+        const {evals} = this;
+        const len = evals.length;
+        for(let i = 0; i < len; ++i) {
+          const ev = evals[i];
           if (Dom.contains(elm, ev[0])) {
             updateNode(ev, currentCtx.data);
           }
-        });
+        }
       } finally {
         currentElement = prevElm;
         currentCtx = prevCtx;
@@ -114,7 +118,7 @@ define(function(require, exports, module) {
   Ctx.current = {
     data(elm) {
       if (elm) {
-        var ctx = Dom.ctx(elm);
+        const ctx = Dom.ctx(elm);
         return ctx && ctx.data;
       }
 
@@ -137,14 +141,14 @@ define(function(require, exports, module) {
       return;
     }
     if (args.dotted) {
-      var value = getValue(data, func, []);
+      let value = getValue(data, func, []);
       if (value == null) return value;
-      var dotted = args.dotted;
-      var last = dotted.length -1;
-      for(var i = 0; i <= last ; ++i) {
-        var row = dotted[i];
-        var lv = value;
-        var value = lv[dotted[i]];
+      const dotted = args.dotted;
+      const last = dotted.length -1;
+      for(let i = 0; i <= last ; ++i) {
+        const row = dotted[i];
+        const lv = value;
+        value = lv[dotted[i]];
         if (value == null) {
           return value;
         }
@@ -160,7 +164,7 @@ define(function(require, exports, module) {
     switch(typeof func) {
     case 'function':
       return func.apply(data, evalArgs(data, args));
-    case 'string':
+    case 'string': {
       switch(func[0]) {
       case '"': return func.slice(1);
       case '.':
@@ -175,7 +179,7 @@ define(function(require, exports, module) {
         value = currentCtx.template._helpers[func];
       }
       if (parts) {
-        for(var i = 2; value !== undefined && i < parts.length; ++i) {
+        for(let i = 2; value !== undefined && i < parts.length; ++i) {
           data = value;
           value = value[parts[i]];
         }
@@ -186,6 +190,7 @@ define(function(require, exports, module) {
         return value;
       }
       return;
+    }
     case 'number':
       return func;
     case 'object':
@@ -200,7 +205,7 @@ define(function(require, exports, module) {
   function updateNode(node, data) {
     currentElement = node[0];
 
-    var value = getValue(data, node[1], node[2]);
+    let value = getValue(data, node[1], node[2]);
 
     if (value === undefined || value === currentElement)
       return;
@@ -216,7 +221,7 @@ define(function(require, exports, module) {
         Dom.removeInserts(currentElement);
       } else {
         if (currentElement.nodeType !== COMMENT_NODE) {
-          var start = document.createComment('start');
+          const start = document.createComment('start');
           Dom.replaceElement(start, currentElement);
           currentElement = start;
         } else
@@ -248,11 +253,11 @@ define(function(require, exports, module) {
   function evalArgs(data, args) {
     if (args.length === 0) return args;
 
-    var output = [];
-    var hash;
+    let output = [];
+    let hash;
 
-    for(var i = 0; i < args.length; ++i) {
-      var arg = args[i];
+    for(let i = 0; i < args.length; ++i) {
+      const arg = args[i];
       if (arg != null && typeof arg === 'object' && arg[0] === '=') {
         hash = hash || {};
         hash[arg[1]] = getValue(data, arg[2], []);
@@ -260,7 +265,7 @@ define(function(require, exports, module) {
         output.push(getValue(data, arg, []));
       }
     }
-    if (hash) for(var key in hash) {
+    if (hash) for(const key in hash) {
       output.push(hash);
       break;
     }
@@ -278,8 +283,6 @@ define(function(require, exports, module) {
     if (currentElement._koru) {
       return currentElement._koru.updateAllTags(args);
     }
-
-
 
     if ('$autoRender' in func)
       return func.$autoRender(args);

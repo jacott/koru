@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
-  const {mergeNoEnum} = util;
+  const {mergeNoEnum, forEach} = util;
   const {DOCUMENT_NODE, TEXT_NODE} = document;
   const dragTouchStartSym = Symbol();
 
@@ -87,26 +87,23 @@ define(function(require, exports, module) {
       ensureHelper(this);
       const prevCtx = Ctx._currentCtx;
       const ctx = Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
-      let frag, firstChild;
+      let frag = document.createDocumentFragment();
+      this.nodes && addNodes(this, frag, this.nodes);
+      const firstChild = frag.firstChild;
+      if (firstChild) {
+        if (frag.lastChild === firstChild) frag = firstChild;
+        frag._koru = ctx;
+      }
+      ctx.firstElement = firstChild;
       try {
-        frag = document.createDocumentFragment();
-        this.nodes && addNodes(this, frag, this.nodes);
-        firstChild = frag.firstChild;
-        if (firstChild) {
-          if (frag.lastChild === firstChild)
-            frag = firstChild;
-
-          frag._koru = ctx;
-        }
-        ctx.firstElement = firstChild;
         this.$created && this.$created(ctx, frag);
         ctx.data === undefined || ctx.updateAllTags(ctx.data);
         return frag;
       } catch(ex) {
-        Object.defineProperty(ex, 'toString', {value: () => `while rendering: ${this.$fullname}
+        try {
+          Object.defineProperty(ex, 'toString', {value: () => `while rendering: ${this.$fullname}
 ${ex.message}`});
         // clean up what we can
-        try {
           Dom.destroyData(frag);
         } catch(ex2) {}
         throw ex;
@@ -522,7 +519,7 @@ ${ex.message}`});
     if (name.match(/\./)) {
       const names = name.split('.');
       name = names.pop();
-      util.forEach(names, nm  => {
+      forEach(names, nm  => {
         parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }
