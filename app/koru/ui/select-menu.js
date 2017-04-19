@@ -164,19 +164,37 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.$events({
-    'pointerdown'() {
-      Dom.stopEvent();
-    },
-    'pointerup li'(event) {
-      Dom.stopEvent();
-
-      Dom.hasClass(this, 'disabled') ||
-        select($.ctx.parentCtx, this, event);
-    },
     'pointerover .ui-ul>li:not(.selected):not(.disabled)'(event) {
       const curr = event.currentTarget.getElementsByClassName('selected')[0];
       Dom.removeClass(curr, 'selected');
       Dom.addClass(this, 'selected');
+    },
+  });
+
+  Tpl.List.$extend({
+    $created(ctx, elm) {
+      ctx.onDestroy(() => {
+        elm.removeEventListener('pointerdown', pd, true);
+        elm.removeEventListener('touchstart', pd, true);
+      });
+      elm.addEventListener('pointerdown', pd, true);
+      elm.addEventListener('touchstart', pd, true);
+
+      function pd(event) {
+        Dom.stopEvent(event);
+
+        const li = event.target.closest('.ui-ul>li');
+        if (li) {
+          const pu = event => {
+            Dom.stopEvent(event);
+            li.removeEventListener('pointerup', pu, true);
+
+            Dom.hasClass(li, 'disabled') ||
+              select(ctx.parentCtx, li, event);
+          };
+          li.addEventListener('pointerup', pu, true);
+        }
+      }
     },
   });
 

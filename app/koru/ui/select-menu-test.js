@@ -407,9 +407,9 @@ isClient && define(function (require, exports, module) {
               TH.trigger(this, 'pointerup');
               TH.click(this);
               assert.same(v.elm, this);
+              assert.same(v.currentTarget, this);
             });
 
-            assert.same(v.currentTarget, this);
           });
           assert.dom('#SelectMenu');
           TH.trigger(this, 'pointerdown');
