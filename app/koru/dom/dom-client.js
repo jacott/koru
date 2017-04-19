@@ -176,7 +176,7 @@ define(function(require, exports, module) {
     },
 
     focus(elm, selector) {
-      if (!elm) return;
+      if (! elm) return;
       if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
       var focus = elm.querySelector(selector);
       focus && focus.focus();

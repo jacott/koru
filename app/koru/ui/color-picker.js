@@ -128,7 +128,7 @@ define(function(require, exports, module) {
         container: elm,
         handleTab: true,
       });
-      elm.querySelector('[name=hex]').focus();
+      Dom.dontFocus || elm.querySelector('[name=hex]').focus();
     },
 
     $destroyed(ctx, elm) {

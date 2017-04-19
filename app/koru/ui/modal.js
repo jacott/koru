@@ -19,7 +19,7 @@ define(function(require, exports, module) {
         event.stopImmediatePropagation();
         const focus = topModal.focus;
         Dom.remove(topModal.container);
-        focus.focus();
+        Dom.dontFocus || focus.focus();
         return;
       }
       break;

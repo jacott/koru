@@ -566,7 +566,7 @@ define(function(require, exports, module) {
           .appendChild(page._renderedPage);
       }
       if (options.focus) {
-        Dom.focus(page._renderedPage, options.focus);
+        Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
       }
       options.afterRendered && options.afterRendered.call(page, page._renderedPage, pageRoute);
     };

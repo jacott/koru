@@ -16,7 +16,7 @@ define(function(require, exports, module) {
       document.body.appendChild(elm);
       modalize(Dom.myCtx(elm), elm);
 
-      ((! nofocus && elm.children[1].querySelector(Dom.FOCUS_SELECTOR)) ||
+      Dom.dontFocus || ((! nofocus && elm.children[1].querySelector(Dom.FOCUS_SELECTOR)) ||
        elm.children[0]).focus();
     },
 
@@ -47,7 +47,7 @@ define(function(require, exports, module) {
       modalize(Dom.myCtx(elm), elm);
       if (! data.nofocus) {
         const focus = elm.querySelector(Dom.FOCUS_SELECTOR);
-        focus && focus.focus();
+        Dom.dontFocus || focus && focus.focus();
       }
     },
   });

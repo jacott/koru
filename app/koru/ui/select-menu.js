@@ -60,7 +60,7 @@ define(function(require, exports, module) {
         boundingClientRect: options.boundingClientRect || elm.getBoundingClientRect(),
         keydownHandler: keydownHandler,
       });
-      options.noFocus || Dom.focus(menu);
+      Dom.dontFocus || options.noFocus || Dom.focus(menu);
       return menu.firstChild;
     },
 
@@ -90,7 +90,7 @@ define(function(require, exports, module) {
 
     $destroyed(ctx) {
       const elm = ctx.focusElm;
-      elm && elm.focus();
+      Dom.dontFocus || (elm && elm.focus());
       const range = ctx.focusRange;
       range && Dom.setRange(range);
       ctx.data.onClose && ctx.data.onClose();
