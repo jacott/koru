@@ -11,13 +11,7 @@ define(function(require, exports, module) {
       this.compare = compare;
     }
 
-    _display() {
-      return display(this.root);
-    }
-
-    print() {
-      _koru_.info('DEBUG', this._display());
-    }
+    _display() {return display(this.root)}
 
     each() {
       return each(this.root);
@@ -63,49 +57,43 @@ define(function(require, exports, module) {
   }
 
   function ic1(n) {
-    if (n.up) ic2(n);
-    else n.red = false;
-  }
+    while (n.up) {
+      // ic2
+      if (! n.up.red) return;
+      // ic3
 
-  function ic2(n) {
-    if (n.up.red) ic3(n);
-  }
+      const p = n.up;
+      const g = p && p.up;
+      const u = g ? n.up === g.left ? g.right : g.left : null;
+      if (u && u.red) {
+        n.up.red = false;
+        u.red = false;
+        g.red = true;
+        n = g;
+      } else { // ic4
+        if (n === p.right && p === g.left) {
+          rotateLeft(p);
+          n = n.left;
 
-  function ic3(n) {
-    const g = grandparent(n);
-    const u = uncle(n, g);
-    if (u && u.red) {
-      n.up.red = false;
-      u.red = false;
-      g.red = true;
-      ic1(g);
-    } else
-      ic4(n);
-  }
+        } else if (n === p.left && p === g.right) {
+          rotateRight(p);
+          n = n.right;
+        }
 
-  function ic4(n) {
-    const p = n.up, g = p.up;
+        { // ic5
+          const p = n.up, g = p.up;
+          p.red = false;
+          g.red = true;
+          if (n === p.left)
+            rotateRight(g);
+          else
+            rotateLeft(g);
+        }
 
-    if (n === p.right && p === g.left) {
-      rotateLeft(p);
-      n = n.left;
-
-    } else if (n === p.left && p === g.right) {
-      rotateRight(p);
-      n = n.right;
+        return;
+      }
     }
-    ic5(n);
-  }
-
-  function ic5(n) {
-    const p = n.up, g = p.up;
-
-    p.red = false;
-    g.red = true;
-    if (n === p.left)
-      rotateRight(g);
-    else
-      rotateLeft(g);
+    n.red = false;
   }
 
   function rotateLeft(n) {
@@ -136,19 +124,6 @@ define(function(require, exports, module) {
     }
     l.up = g;
     l.right = n; n.up = l;
-
-
-    // const n = p.left;
-    // const g = p.up;
-    // const t_right_n = n.right;
-    // if (g) {
-    //   const tp = g.right;
-    //   g.right=n; n.up = g;
-    //   n.right=tp; tp.up = n;
-    //   tp.left=t_right_n; if (t_right_n) t_right_n = tp;
-    // } else {
-
-    // }
   }
 
   function grandparent(node) {
@@ -201,8 +176,6 @@ ${pad(level, prefix)}${node.key}${node.red ? ' *' : ''}${display(
 node.left, level+1, 'l')}${display(
 node.right, level+1, 'r')}`;
   }
-
-
 
   return BTree;
 });
