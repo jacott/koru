@@ -35,39 +35,6 @@ define(function(require, exports, module) {
     return x !== x && y !== y;
   };
 
-  class TwoIndex {
-    constructor() {
-      this.ids = Object.create(null);
-    }
-
-    has(groupId, id) {
-      if (id === undefined) return groupId in this.ids;
-      const result = this.ids[groupId];
-      return !! (result && id in result);
-    }
-
-    get(groupId, id) {
-      const result = this.ids[groupId];
-      if (id === undefined) return result;
-      return result && result[id];
-    }
-
-    add(groupId, id, value) {
-      const result = this.ids[groupId] || (this.ids[groupId] = {});
-      return result[id] = value;
-    }
-
-    remove(groupId, id) {
-      if (id === undefined) delete this.ids[groupId];
-      const result = this.ids[groupId];
-      if (result) {
-        delete result[id];
-        for (let k in result) return;
-        delete this.ids[groupId];
-      }
-    }
-  };
-
   util.merge(util, {
     DAY: 1000*60*60*24,
 
@@ -964,8 +931,6 @@ define(function(require, exports, module) {
         });
       };
     },
-
-    TwoIndex,
   });
 
   /**
