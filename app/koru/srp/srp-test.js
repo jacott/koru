@@ -14,7 +14,7 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test srp - good exchange": function() {
+    "test srp - good exchange"() {
       var password = 'hi there!';
       var verifier = SRP.generateVerifier(password);
 
@@ -30,7 +30,7 @@ define(function (require, exports, module) {
       assert(C.verifyConfirmation(confirmation));
     },
 
-    "test srp - bad exchange": function() {
+    "test srp - bad exchange"() {
       var verifier = SRP.generateVerifier('one password');
 
       var C = new SRP.Client('another password');
@@ -45,7 +45,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test srp - fixed values": function() {
+    "test srp - fixed values"() {
       // Test exact values during the exchange. We have to be very careful
       // about changing the SRP code, because changes could render
       // people's existing user database unusable. This test is
@@ -80,7 +80,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test srp - options": function() {
+    "test srp - options"() {
       // test that all options are respected.
       //
       // Note, all test strings here should be hex, because the 'hash'

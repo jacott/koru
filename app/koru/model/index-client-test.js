@@ -1,10 +1,11 @@
 define(function (require, exports, module) {
   'use strict';
-  var test, v;
   const util     = require('../util');
   const dbBroker = require('./db-broker');
   const Model    = require('./main');
   const TH       = require('./test-helper');
+
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
