@@ -19,7 +19,6 @@ define(function (require, exports, module) {
       for (let p = node; p !== root; p = p.up) {
         ++count;
         if (p.red) {
-          // FIXME I get this
           assert.msg(() => `dup red at ${p.value} leaf: ${node.value}\n${tree._display()}`)
           (! p.up.red, ' ');
         } else if (bc >=0) ++bc;
@@ -475,7 +474,7 @@ r  110
     //   const list = [];
     //   const cl = [];
     //   try {
-    //   for(let i = 0; i < 1000000; ++i) {
+    //   for(let i = 0; i < 100000; ++i) {
     //     if (list.length && Math.random() < .4) {
     //       const value = list[Math.floor(Math.random() * list.length)];
     //       cl.push('-'+value);

@@ -1,9 +1,7 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  function simpleCompare(a, b) {
-    return a == b ? 0 : a < b ? -1 : 1;
-  }
+  function simpleCompare(a, b) {return a == b ? 0 : a < b ? -1 : 1}
 
   class BTree {
     constructor(compare=simpleCompare) {
@@ -58,10 +56,7 @@ define(function(require, exports, module) {
             while (root.up) root = root.up;
             this.root = root;
           }
-          if (p.left === n)
-            p.left = null;
-          else
-            p.right = null;
+          if (p.left === n) p.left = null; else p.right = null;
         } else {
           this.root = null;
         }
@@ -88,159 +83,63 @@ define(function(require, exports, module) {
     }
   };
 
-  function sibling(n) {
-    const p = n.up;
-    return p && (n === p.left ? p.right : p.left);
-  }
-
-  function leftRed(n) {
-    return n && n.left && n.left.red;
-  }
-
-  function rightRed(n) {
-    return n && n.right && n.right.red;
-  }
-
   function dc1(n) {
-    if (n.up)
-      dc2(n);
-  }
+    let p;
+    while (p = n.up) {
+      if (! p) return;
 
-  function dc2(n) {
-    const p = n.up;
-    const s = n === p.left ? p.right : p.left;
+      // dc2(n);
+      let s = n === p.left ? p.right : p.left;
 
-    if (s && s.red) {
-      p.red = true;
-      s.red = false;
-      if (n === p.left)
-        rotateLeft(p);
-      else
-        rotateRight(p);
-    }
-    dc3(n);
-  }
-
-  function dc3(n) {
-    const p = n.up;
-    const s = sibling(n);
-    const sRed = s && s.red;
-    if (! p.red && ! sRed && ! leftRed(s) && ! rightRed(s)) {
-      if (s) s.red = true;
-      dc1(p);
-    } else {
-      dc4(n);
-    }
-  }
-
-  function dc4(n) {
-    const p = n.up;
-    const s = sibling(n);
-    const sRed = s && s.red;
-
-
-    if (p.red && ! sRed && ! leftRed(s) && ! rightRed(s)) {
-      if (s) s.red = true;
-      p.red = false;
-    } else {
-      dc5(n);
-    }
-  }
-
-  function dc5(n) {
-    const p = n.up;
-    const s = sibling(n);
-    const sRed = s && s.red;
-
-    if  (! sRed) {
-      if (n === p.left && leftRed(s) && ! rightRed(s)) {
-        s.red = true;
-        s.left.red = false;
-        rotateRight(s);
-      } else if (n === p.right && ! leftRed(s) && rightRed(s)) {
-        s.red = true;
-        s.right.red = false;
-        rotateLeft(s);
+      if (s && s.red) {
+        p.red = true;
+        s.red = false;
+        if (n === p.left)
+          rotateLeft(p);
+        else
+          rotateRight(p);
+        s = n === p.left ? p.right : p.left;
       }
-    }
-    dc6(n);
-  }
-
-  function dc6(n) {
-    const p = n.up;
-    const s = sibling(n);
-    const sRed = s && s.red;
-    s.red = p.red;
-    p.red = false;
-
-    if (n === p.left) {
-      s.right.red = false;
-      rotateLeft(p);
-    } else {
-      s.left.red = false;
-      rotateRight(p);
-    }
-
-  }
-
-  function dc1x(n) {
-    let p = n.up;
-    if (! p) return;
-
-    // dc2
-    let s = n === p.left ? p.right : p.left;
-    const sRed = s && s.red;
-    const slRed = s && s.left && s.left.red;
-    const srRed = s && s.right && s.right.red;
-
-    if (sRed) {
-      _koru_.info(n.value, BTree.tree._display());
-      n.parent.red = true; // FIXME
-      s.red = false;
-      if (n === p.left)
-        rotateLeft(p);
-      else
-        rotateRight(p);
-      s = n === p.left ? p.right : p.left;
-    }
-    // dc3(n);
-    if (! p.red && ! sRed && ! slRed && ! srRed) {
-      if (s) s.red = true;
-      dc1(p);
-    } else if (p.red && ! sRed && ! slRed && ! srRed) {
-      // dc4(n);
-      if (! s) _koru_.info(n.value, BTree.tree._display());
-      s.red = true;
-      p.red = false;
-    } else {
-      // dc5(n)
-      if  (! sRed) {
-        if (n === p.left && ! srRed && slRed) {
-          s.red = true;
-          s.left.red = false;
-          rotateRight(s);
-          p = n.up;
-          s = n === p.left ? p.right : p.left;
-        } else if (n === p.right && ! slRed && srRed) {
-          s.red = true;
-          s.right.red = false;
-          rotateLeft(s);
-          p = n.up;
-          s = n === p.left ? p.right : p.left;
-        }
-      }
-      // dc6(n);
-      s.red = p.red;
-      p.red = false;
-
-      if (n === p.left) {
-        if (! s.right) _koru_.info(n.value, s.value, BTree.tree._display());
-        s.right.red = false; // FIXME s null
-        rotateLeft(p);
+      // dc3(n);
+      let sRed = s && s.red;
+      const slRed = s && s.left && s.left.red;
+      const srRed = s && s.right && s.right.red;
+      if (! p.red && ! sRed && ! slRed && ! srRed) {
+        if (s) s.red = true;
+        n = p;
       } else {
-        if (! s.left) _koru_.info(n.value, BTree.tree._display());
-        s.left.red = false; // FIXME s null
-        rotateRight(p);
+        // dc4(n);
+        if (p.red && ! sRed && ! slRed && ! srRed) {
+          if (s) s.red = true;
+          p.red = false;
+        } else {
+          // dc5(n);
+          if  (! sRed) {
+            if (n === p.left && slRed && ! srRed) {
+              s.red = true;
+              s.left.red = false;
+              rotateRight(s);
+            } else if (n === p.right && ! slRed && srRed) {
+              s.red = true;
+              s.right.red = false;
+              rotateLeft(s);
+            }
+            s = n === p.left ? p.right : p.left;
+            sRed = s && s.red;
+          }
+          // dc6(n);
+          s.red = p.red;
+          p.red = false;
+
+          if (n === p.left) {
+            s.right.red = false;
+            rotateLeft(p);
+          } else {
+            s.left.red = false;
+            rotateRight(p);
+          }
+        }
+        return;
       }
     }
   }
@@ -282,11 +181,11 @@ define(function(require, exports, module) {
         g.red = true;
         n = g;
       } else { // ic4
-        if (n === p.right && p === g.left) { // FIXME no g
+        if (n === p.right && p === g.left) {
           rotateLeft(p);
           n = n.left;
 
-        } else if (n === p.left && p === g.right) { // FIXME no g
+        } else if (n === p.left && p === g.right) {
           rotateRight(p);
           n = n.right;
         }
