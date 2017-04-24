@@ -2,16 +2,22 @@ define(function (require, exports, module) {
   const koru = require('koru');
   const TH   = require('koru/test-helper');
 
-  const BTree = require('./btree');
+  const BTree = require('koru/btree');
   var v;
+
+  function Foo() {}
+//  Foo.prototype = Object.preventExtensions(Object.create(null));
+
 
   function assertCheck(tree) {
     const {root, compare} = tree;
     let prev = null;
-    const iter = tree.each();
+    const cursor= tree.cursor();
     let node, max = 0;
     let blackExp = -1;
-    while (node = iter.next()) {
+    let nodeCount = 0;
+    while (node = cursor.next()) {
+      ++nodeCount;
       assert.msg(() => `out of order at ${node.value}\n${tree._display()}`)
       (! prev || compare(prev, node) > 0 , ' ');
       let count = 1;
@@ -33,6 +39,7 @@ define(function (require, exports, module) {
 
       prev = node;
     }
+    assert.msg('incorrect size').equals(tree.size, nodeCount);
     return max;
   }
 
@@ -86,11 +93,13 @@ ${exp}
       assertTree(tree, `
 123
 `);
+      assert.same(tree.root.up, null);
       tree.add(456);
       assertTree(tree, `
 123
 r  456 *
 `);
+      assert.same(tree.root.up, null);
       tree.add(13);
       assertTree(tree, `
 123
@@ -222,8 +231,21 @@ r  170 *
        * iterator tree in order
        **/
       const tree = new BTree();
-      insertNodes(tree, [123, 456, 53]);
+      insertNodes(tree, [123, 456]);
+      assert.equals(Array.from(tree), [123, 456]);
+      tree.add(53);
       assert.equals(Array.from(tree), [53, 123, 456]);
+    },
+
+    "test cursor from to"() {
+      const tree = new BTree();
+      insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
+
+      assert.equals(Array.from(tree.cursor({from: 7})), [7, 8, 42, 45, 63]);
+
+      assert.equals(Array.from(tree.cursor({from: 4, to: 43})), [6, 7, 8, 42]);
+      assert.equals(Array.from(tree.cursor({from: 0, to: 45})), [1, 3, 6, 7, 8, 42, 45]);
+      assert.equals(Array.from(tree.cursor({from: 4, to: 5})), []);
     },
 
     "trivial delete": {
@@ -237,19 +259,30 @@ r  200
 l    150 *
 r    250 *
 `);
-        tree.delete(200);
+        assert.isTrue(tree.delete(200));
         assertTree(tree, `
 100
 l  50
 r  250
 l    150 *
 `);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, `
 150
 l  50
 r  250
 `);
+      },
+
+      "test delete root with no children"() {
+        const tree = new BTree();
+        assert.same(tree.size, 0);
+        insertNodes(tree, [100]);
+        assert.same(tree.size, 1);
+        assert.isTrue(tree.delete(100));
+        assertTree(tree, '');
+        assert.same(tree.size, 0);
+
       },
 
       "test delete red with no children"() {
@@ -261,7 +294,7 @@ l  100
 r  200
 r    250 *
 `);
-        tree.delete(250);
+        assert.isTrue(tree.delete(250));
         assertTree(tree, `
 150
 l  100
@@ -278,7 +311,7 @@ l  100
 r  200
 r    250 *
 `);
-        tree.delete(200);
+        assert.isTrue(tree.delete(200));
         assertTree(tree, `
 150
 l  100
@@ -293,7 +326,7 @@ r  250
 100
 r  200 *
 `);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, `
 200
 `);
@@ -304,7 +337,7 @@ r  200 *
       "test dc1: root with no children"() {
         const tree = new BTree();
         tree.add(100);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, ``);
       },
 
@@ -319,7 +352,7 @@ r  200 *
 l  100
 r  200
 `);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, `
 150
 r  200 *
@@ -337,7 +370,7 @@ l    200
 r    220
 r      230 *
 `);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, `
 210
 l  150
@@ -358,7 +391,7 @@ l      30 *
 r    80
 r  100
 `);
-        tree.delete(100);
+        assert.isTrue(tree.delete(100));
         assertTree(tree, `
 70
 l  60
@@ -380,7 +413,7 @@ l  100
 r  200 *
 r    210
 `);
-        tree.delete(210);
+        assert.isTrue(tree.delete(210));
         assertTree(tree, `
 150
 l  100
@@ -402,7 +435,7 @@ r  210
 l    200
 r    220
 `);
-        tree.delete(200);
+        assert.isTrue(tree.delete(200));
         assertTree(tree, `
 150
 l  100 *
@@ -422,7 +455,7 @@ l    200
 r    220
 l      215 *
 `);
-        tree.delete(200);
+        assert.isTrue(tree.delete(200));
         assertTree(tree, `
 150
 l  100
@@ -443,7 +476,7 @@ r      30 *
 r    80
 r  100
 `);
-        tree.delete(80);
+        assert.isTrue(tree.delete(80));
         assertTree(tree, `
 90
 l  30 *
@@ -451,6 +484,8 @@ l    10
 r    70
 r  100
 `);
+        assert.isFalse(tree.delete(80));
+        assert.same(tree.size, 5);
       },
 
       "test no S"() {
@@ -462,7 +497,7 @@ r  100
 100
 r  110
 `);
-        tree.delete(110);
+        assert.isTrue(tree.delete(110));
         assertTree(tree, `
 100
 `);
@@ -474,17 +509,19 @@ r  110
     //   const list = [];
     //   const cl = [];
     //   try {
-    //   for(let i = 0; i < 100000; ++i) {
-    //     if (list.length && Math.random() < .4) {
-    //       const value = list[Math.floor(Math.random() * list.length)];
-    //       cl.push('-'+value);
-    //       tree.delete(value);
-    //     }
-    //     const value = Math.floor(Math.random()*10000000);
+    //     for(let i = 0; i < 100; ++i) {
+    //       if (list.length && Math.random() < .4) {
+    //         const value = list[Math.floor(Math.random() * list.length)];
+    //         cl.push('-'+value);
+    //         tree.delete(value);
+    //       }
+    //       const value = Math.floor(Math.random()*10000000);
     //       cl.push('+'+value);
     //       list.push(value);
     //       tree.add(value);
-    //   }
+    //     }
+    //     assert.equals(Array.from(tree), Array.from(tree).sort((a, b) => a - b));
+
     //   } catch(ex) {
     //     koru.info(`cl`, koru.util.inspect(cl));
     //     throw ex;

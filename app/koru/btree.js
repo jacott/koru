@@ -3,22 +3,28 @@ define(function(require, exports, module) {
 
   function simpleCompare(a, b) {return a == b ? 0 : a < b ? -1 : 1}
 
+  const sizeSym = Symbol();
+
   class BTree {
     constructor(compare=simpleCompare) {
       this.root = null;
       this.compare = compare;
       BTree.tree = this;
+      this[sizeSym] = 0;
     }
 
-    _display() {return display(this.root)}
+    get size() {return this[sizeSym]};
 
-    each() {
-      return each(this.root);
+    _display(formatter=n => n) {return display(formatter, this.root)}
+
+    cursor(opts={}) {
+      return cursor(this.root, opts, this.compare);
     }
 
     add(value) {
       const node = {value, left: null, right: null, up: null, red: true};
-      if (! this.root) {
+      ++this[sizeSym];
+      if (this.root === null) {
         this.root = node;
         node.red = false;
         return;
@@ -26,7 +32,7 @@ define(function(require, exports, module) {
       insert(this.root, this.compare, value, node);
       ic1(node);
       const g = this.root.up;
-      if (g) {
+      if (g !== null) {
         this.root = g;
       }
     }
@@ -34,35 +40,36 @@ define(function(require, exports, module) {
     delete(value) {
       let {root} = this;
       const n = find(root, this.compare, value);
-      if (! n) return null;
+      if (n === null) return false;
 
+      --this[sizeSym];
       const p = n.up;
       let {left, right: child} = n;
       if (left !== null && child !== null) {
-        while (child.left) child = child.left;
+        while (child.left !== null) child = child.left;
         n.value = child.value;
         if (child.up === n)
           n.right = null;
         else
           child.up.left = null;
-        return;
+        return true;
       }
 
-      child = child || left;
-      if (! child) {
-        if (p) {
+      if (child === null) child = left;
+      if (child === null) {
+        if (p !== null) {
           n.red || dc1(n);
-          if (root.up) {
-            while (root.up) root = root.up;
+          if (root.up !== null) {
+            while (root.up !== null) root = root.up;
             this.root = root;
           }
           if (p.left === n) p.left = null; else p.right = null;
         } else {
           this.root = null;
         }
-        return;
+        return true;
       }
-      if (p) {
+      if (p !== null) {
         if (p.left === n) p.left = child; else p.right = child;
       } else {
         this.root = child;
@@ -70,28 +77,24 @@ define(function(require, exports, module) {
       child.up = p;
       if (! n.red)
         child.red = false;
+
+      return true;
     }
 
     [Symbol.iterator]() {
-      const iter = each(this.root);
-      return {
-        next() {
-          const node = iter.next();
-          return {done: ! node, value: node && node.value};
-        }
-      };
+      return cursor(this.root, {})[Symbol.iterator]();
     }
   };
 
   function dc1(n) {
-    let p;
-    while (p = n.up) {
-      if (! p) return;
+    let p = null;
+    while ((p = n.up) !== null) {
+      if (p === null) return;
 
       // dc2(n);
       let s = n === p.left ? p.right : p.left;
 
-      if (s && s.red) {
+      if (s !== null && s.red) {
         p.red = true;
         s.red = false;
         if (n === p.left)
@@ -101,16 +104,16 @@ define(function(require, exports, module) {
         s = n === p.left ? p.right : p.left;
       }
       // dc3(n);
-      let sRed = s && s.red;
-      const slRed = s && s.left && s.left.red;
-      const srRed = s && s.right && s.right.red;
+      let sRed = s !== null && s.red;
+      const slRed = s !== null && s.left !== null && s.left.red;
+      const srRed = s !== null && s.right !== null && s.right.red;
       if (! p.red && ! sRed && ! slRed && ! srRed) {
-        if (s) s.red = true;
+        if (s !== null) s.red = true;
         n = p;
       } else {
         // dc4(n);
         if (p.red && ! sRed && ! slRed && ! srRed) {
-          if (s) s.red = true;
+          if (s !== null) s.red = true;
           p.red = false;
         } else {
           // dc5(n);
@@ -125,7 +128,7 @@ define(function(require, exports, module) {
               rotateLeft(s);
             }
             s = n === p.left ? p.right : p.left;
-            sRed = s && s.red;
+            sRed = s !== null && s.red;
           }
           // dc6(n);
           s.red = p.red;
@@ -145,10 +148,10 @@ define(function(require, exports, module) {
   }
 
   function insert(parent, compare, value, node) {
-    while (parent) {
+    while (parent !== null) {
       const field = compare(value, parent.value) < 0 ? 'left' : 'right';
       const fv = parent[field];
-      if (! fv) {
+      if (fv === null) {
         parent[field] = node;
         node.up = parent;
         break;
@@ -158,7 +161,7 @@ define(function(require, exports, module) {
   }
 
   function find(n, compare, value) {
-    while (n) {
+    while (n !== null) {
       const cmp = compare(value, n.value);
       if (cmp === 0) return n;
       n = cmp < 0 ? n.left : n.right;
@@ -167,15 +170,15 @@ define(function(require, exports, module) {
   }
 
   function ic1(n) {
-    while (n.up) {
+    while (n.up !== null) {
       // ic2
       if (! n.up.red) return;
       // ic3
 
       const p = n.up;
-      const g = p && p.up;
-      const u = g ? n.up === g.left ? g.right : g.left : null;
-      if (u && u.red) {
+      const g = p === null ? null : p.up;
+      const u = g !== null ? n.up === g.left ? g.right : g.left : null;
+      if (u !== null && u.red) {
         n.up.red = false;
         u.red = false;
         g.red = true;
@@ -207,64 +210,87 @@ define(function(require, exports, module) {
   }
 
   function rotateLeft(n) {
-    const g = n.up;
+    const p = n.up;
     const r = n.right;
     const rl = r.left;
-    n.right = rl; if (rl) rl.up = n;
-    if (g) {
-      if (g.left === n)
-        g.left = r;
+    n.right = rl; if (rl !== null) rl.up = n;
+    if (p !== null) {
+      if (p.left === n)
+        p.left = r;
       else
-        g.right = r;
+        p.right = r;
     }
-    r.up = g;
+    r.up = p;
     r.left = n; n.up = r;
   }
 
   function rotateRight(n) {
-    const g = n.up;
+    const p = n.up;
     const l = n.left;
     const lr = l.right;
-    n.left = lr; if (lr) lr.up = n;
-    if (g) {
-      if (g.left === n)
-        g.left = l;
+    n.left = lr; if (lr !== null) lr.up = n;
+    if (p !== null) {
+      if (p.left === n)
+        p.left = l;
       else
-        g.right = l;
+        p.right = l;
     }
-    l.up = g;
+    l.up = p;
     l.right = n; n.up = l;
   }
 
-  function each(node) {
-    let dir = 1;
+  function cursor(node, {from, to}, compare) {
+    let dir = from ? 0 : 1;
+    const chkTo = to && (() =>  compare(to, node.value) < 0 ? (node = null) : node);
 
-    return {
+    const iter = {
+      [Symbol.iterator]() {
+        return {
+          next() {
+            const node = iter.next();
+            return {done: node === null, value: node !== null ? node.value : null};
+          }
+        };
+      },
       next() {
-        if (! node) return null;
+        if (node === null) return null;
         switch (dir) {
+        case 0:
+          while (node !== null) {
+            const cmp = compare(from, node.value);
+            if (cmp === 0) break;
+            const t = cmp < 0 ? node.left : node.right;
+            if (t !== null)
+              node = t;
+            else
+              break;
+          }
+          dir = 3;
+          return to ? chkTo() : node;;
         case 3:
-          if (node.right)
-            node = node.right;
+          if (node.right === null) {
+            let up = null;
+            while ((up = node.up) !== null) {
+              if (up.left === node) {
+                node = up;
+                return to ? chkTo() : node;
+              }
+              node = up;
+            }
+            return node = null;
+          }
+          node = node.right;
           dir = 1;
           // fall through
         case 1:
-          while (node.left)
+          while (node.left !== null)
             node = node.left;
-          dir = 2;
-          return node;
-        case 2:
-          while (node.up && node.up.right === node)
-            node = node.up;
-          const {up} = node;
-          if (! up)
-            return null;
-          if (up.right)
-            dir = 3;
-          return node = up;
+          dir = 3;
+          return to ? chkTo() : node;
         }
       },
     };
+    return iter;
   }
 
   function pad(level, pad) {
@@ -272,12 +298,12 @@ define(function(require, exports, module) {
     return pad;
   }
 
-  function display(node, level=0, prefix='') {
-    if (! node || level > 10) return '';
+  function display(formatter, node, level=0, prefix='') {
+    if (node === null || level > 10) return '';
     return `
-${pad(level, prefix)}${node.value}${node.red ? ' *' : ''}${display(
-node.left, level+1, 'l')}${display(
-node.right, level+1, 'r')}`;
+${pad(level, prefix)}${formatter(node.value)}${node.red ? ' *' : ''}${display(
+formatter, node.left, level+1, 'l')}${display(
+formatter, node.right, level+1, 'r')}`;
   }
 
   return BTree;

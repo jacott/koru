@@ -131,7 +131,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
         else if (Array.isArray(func))
           func.forEach(f => (f.stop || f).call(test));
         else if (! func || typeof func.stop !== 'function')
-          throw new Error("test.onEnd called with non function or object.stop function"+_koru_.util.inspect(func));
+          throw new Error("test.onEnd called with non function or object.stop function"
+                          +geddon.util.inspect(func));
         else
           func.stop();
       }

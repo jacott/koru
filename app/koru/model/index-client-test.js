@@ -1,6 +1,7 @@
 define(function (require, exports, module) {
   'use strict';
-  const util     = require('../util');
+  const BTree    = require('koru/btree');
+  const util     = require('koru/util');
   const dbBroker = require('./db-broker');
   const Model    = require('./main');
   const TH       = require('./test-helper');
@@ -20,9 +21,9 @@ define(function (require, exports, module) {
       v.obSpy = test.spy(v.TestModel._indexUpdate, 'onChange');
       v.idx = v.TestModel.addUniqueIndex('id2', 'id1');
 
-      v.doc1 = v.TestModel.create({id1: '3', id2: '4'});
-      v.doc2 = v.TestModel.create({id1: '2', id2: '2'});
-      v.doc3 = v.TestModel.create({id1: '1', id2: '4'});
+      v.doc1 = v.TestModel.create({_id: 'doc1', id1: '3', id2: '4'});
+      v.doc2 = v.TestModel.create({_id: 'doc2', id1: '2', id2: '2'});
+      v.doc3 = v.TestModel.create({_id: 'doc3', id1: '1', id2: '4'});
     },
 
     tearDown() {
@@ -31,6 +32,86 @@ define(function (require, exports, module) {
       delete Model._databases.foo;
       delete Model._databases.bar;
       v = null;
+    },
+
+    "btree": {
+      setUp() {
+        v.TestModel.defineFields({
+          points: 'number',
+          updatedAt: 'timestamp',
+        });
+
+        v.doc1.attributes.points = 5;
+        v.doc2.attributes.points = 15;
+        v.doc3.attributes.points = 5;
+
+        v.doc1.attributes.updatedAt = new Date(2017, 1, 5);
+        v.doc2.attributes.updatedAt = new Date(2017, 1, 15);
+        v.doc3.attributes.updatedAt = new Date(2017, 1, 5);
+
+        v.sortedIndex = v.TestModel.addIndex('id2', -1, 'points', 'updatedAt');
+      },
+
+      "test add"() {
+        const tree = v.sortedIndex({id2: '4'});
+        assert(tree instanceof BTree);
+
+        const a4 = v.TestModel.create({_id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
+
+
+        assert.equals(
+          Array.from(tree.each({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
+          [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+           {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+           {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
+      },
+
+      "test remove"() {
+        v.doc2.$remove();
+        assert.same(v.sortedIndex({id2: '2'}), undefined);
+
+        v.doc1.$remove();
+
+        const tree = v.sortedIndex({id2: '4'});
+        assert.equals(tree.size, 1);
+
+        v.doc3.$remove();
+
+        assert.equals(tree.size, 0);
+        assert.equals(v.sortedIndex({}), {});
+      },
+
+      "test change same tree"() {
+        const tree = v.sortedIndex({id2: '4'});
+        assert.equals(tree.size, 2);
+        v.doc3.$update('points', 3);
+        assert.equals(tree.size, 2);
+
+        assert.equals(Array.from(tree), [
+          {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+          {points: 3, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+        ]);
+
+        v.doc1.$update('id1', '8');
+
+        assert.equals(Array.from(tree), [
+          {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+          {points: 3, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+        ]);
+      },
+
+      "test change different tree"() {
+        v.doc3.$update('id2', '2');
+
+        const tree2 = v.sortedIndex({id2: '2'});
+        assert.equals(tree2.size, 2);
+
+
+        const tree4 = v.sortedIndex({id2: '4'});
+        assert.equals(tree4.size, 1);
+
+        assert.equals(Array.from(tree2).map(d => d._id), ['doc2', 'doc3']);
+      },
     },
 
     "test changing dbId"() {
