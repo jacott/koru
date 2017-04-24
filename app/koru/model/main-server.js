@@ -43,7 +43,7 @@ define(function(require, exports, module) {
       BaseModel.addIndex = addIndex;
 
       function addUniqueIndex(...args) {
-        prepareIndex(uniqueIndexes, this, args);
+        return prepareIndex(uniqueIndexes, this, args);
       }
 
       function ensureIndex(model, args, opts) {
@@ -56,13 +56,28 @@ define(function(require, exports, module) {
       }
 
       function addIndex(...args) {
-        prepareIndex(indexes, this, args);
+        return prepareIndex(indexes, this, args);
       }
 
       function prepareIndex(type, model, args) {
         const name = model.modelName;
         const queue = type[name] || (type[name] = []);
         queue.push(args);
+        const sort = [];
+        let dir = 1, from = -1;
+        for(let i = 0; i < args.length; ++i) {
+          const arg = args[i];
+          switch(arg) {
+          case 1: dir = 1; break;
+          case -1: dir = -1; break;
+          default:
+            sort.push(arg);
+            dir == -1 && sort.push(-1);
+            continue;
+          }
+          if (from == -1) from = i;
+        }
+        return {model, sort, from: args.slice(from)};
       }
 
       function _ensureIndexes(type, options) {
@@ -188,7 +203,7 @@ define(function(require, exports, module) {
 
       util.merge(_support, {
         resetDocs(model) {
-          if (_resetDocs.hasOwnProperty(model.modelName))
+          if (_resetDocs[model.modelName] !== undefined)
             _resetDocs[model.modelName]();
         },
         bumpVersion() {

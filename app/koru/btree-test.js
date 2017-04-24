@@ -240,12 +240,35 @@ r  170 *
     "test cursor from to"() {
       const tree = new BTree();
       insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
+      assertTree(tree, `
+7
+l  3 *
+l    1
+r    6
+r  45 *
+l    8
+r      42 *
+r    63
+`);
+
+      assert.same(tree.cursor().container, tree);
+      assert.equals(Array.from(tree.cursor({from: 2, to: 43})), [3, 6, 7, 8, 42]);
 
       assert.equals(Array.from(tree.cursor({from: 7})), [7, 8, 42, 45, 63]);
 
       assert.equals(Array.from(tree.cursor({from: 4, to: 43})), [6, 7, 8, 42]);
       assert.equals(Array.from(tree.cursor({from: 0, to: 45})), [1, 3, 6, 7, 8, 42, 45]);
       assert.equals(Array.from(tree.cursor({from: 4, to: 5})), []);
+    },
+
+    "test direction -1 cursor from to"() {
+      const tree = new BTree();
+      insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
+
+      assert.same(tree.cursor().container, tree);
+      assert.equals(Array.from(tree.cursor({from: 46, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
+      assert.equals(Array.from(tree.cursor({from: 45, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
+      assert.equals(Array.from(tree.cursor({to: 6, direction: -1})), [63, 45, 42, 8, 7, 6]);
     },
 
     "trivial delete": {

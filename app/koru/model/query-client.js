@@ -7,6 +7,11 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
+  function SimDocs() {
+    this.temp = {};
+    delete this.temp;
+  }
+
   function Constructor(session) {
     return function(Query, condition, notifyACSym) {
       let syncOb, stateOb;
@@ -16,30 +21,30 @@ define(function(require, exports, module) {
         revertSimChanges() {
           return TransQueue.transaction(() => {
             const dbs = Model._databases && Model._databases[dbBroker.dbId];
-            if (! dbs) return;
+            if (dbs === undefined) return;
 
-            for (let modelName in dbs) {
+            for (const modelName in dbs) {
               const model = Model[modelName];
               const modelDocs = model && model.docs;
-              if (! modelDocs) continue;
+              if (modelDocs === undefined) continue;
               const docs = dbs[modelName].simDocs;
-              if (! docs) continue;
-              dbs[modelName].simDocs = Object.create(null);
-              for(let id in docs) {
+              if (docs === undefined) continue;
+              dbs[modelName].simDocs = new SimDocs();
+              for(const id in docs) {
                 let doc = modelDocs[id];
                 const fields = docs[id];
                 if (fields === 'new') {
-                  if (id in modelDocs) {
+                  if (modelDocs[id] !== undefined) {
                     delete modelDocs[id];
 
                     notify(model, null, doc, true);
                   }
                 } else {
-                  const newDoc = ! doc;
+                  const newDoc = doc === undefined;
                   if (newDoc)
                     doc = modelDocs[id] = new model({_id: id});
                   util.applyChanges(doc.attributes, fields);
-                  for (let noop in fields) {
+                  for(const noop in fields) {
                     notify(model, doc, newDoc ? null : fields, true);
                     break;
                   }
@@ -62,7 +67,7 @@ define(function(require, exports, module) {
         },
 
         _insertAttrs(model, attrs) {
-          if (! attrs._id) attrs._id = Random.id();
+          if (attrs._id === undefined) attrs._id = Random.id();
           model.docs[attrs._id] = new model(attrs);
         },
 
@@ -71,9 +76,9 @@ define(function(require, exports, module) {
             if (session.state.pendingCount()) {
               const changes = fromServer(model, id, attrs);
               const doc = model.docs[id];
-              if (doc && changes !== attrs) { // found existing
+              if (doc !== undefined && changes !== attrs) { // found existing
                 util.applyChanges(doc.attributes, changes);
-                for (let noop in changes) {
+                for(const noop in changes) {
                   notify(model, doc, changes, true);
                   break;
                 }
@@ -82,10 +87,10 @@ define(function(require, exports, module) {
             }
 
             // otherwise new doc
-            if (model.docs[id]) {
+            if (model.docs[id] !== undefined) {
               // already exists; convert to update
               const old = model.docs[id].attributes;
-              for (let key in old) {
+              for(const key in old) {
                 if (attrs.hasOwnProperty(key)) {
                   if (util.deepEqual(old[key], attrs[key]))
                     delete attrs[key];
@@ -105,7 +110,7 @@ define(function(require, exports, module) {
         },
 
         notify(now, was, flag) {
-          const doc = (now || was);
+          const doc = (now != null ? now : was);
           notify(doc.constructor, now, was, flag);
         },
 
@@ -137,7 +142,7 @@ define(function(require, exports, module) {
                 return this.where(value);
               break;
             case 'object':
-              for (let key in params) {
+              for(const key in params) {
                 this.where(key, params[key]);
               }
               return this;
@@ -146,10 +151,12 @@ define(function(require, exports, module) {
           }
         },
 
-        withIndex(idx, params) {
+        withIndex(idx, params, options={}) {
+          if (this._sort) throw new Error('withIndex may not be used with sort');
           const orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
-          this._index = idx(params) || {};
+          this._index = {idx: idx(params, options) || {}, options};
+
           dbBroker.dbId = orig;
           return this;
         },
@@ -192,11 +199,11 @@ define(function(require, exports, module) {
         },
 
         forEach(func) {
-          if (this.singleId) {
+          if (this.singleId !== undefined) {
             const doc = this.findOne(this.singleId);
             doc && func(doc);
           } else {
-            if (this._sort) {
+            if (this._sort !== undefined) {
               const results = [];
               const compare = sortFunc(this._sort);
               findMatching.call(this, doc => results.push(doc));
@@ -214,7 +221,7 @@ define(function(require, exports, module) {
 
         count(max) {
           let count = 0;
-          if (! this.model) return 0;
+          if (this.model === undefined) return 0;
           const docs = this.docs;
           this.forEach(doc => ++count === max);
           return count;
@@ -226,25 +233,24 @@ define(function(require, exports, module) {
 
         findOne(id) {
           const doc = this.docs[id];
-          if (! doc) return;
+          if (doc === undefined) return;
           const attrs = doc.attributes;
 
-          if (this._whereNots && foundIn(this._whereNots, false)) return;
+          if (this._whereNots !== undefined && foundIn(this._whereNots, false)) return;
 
-          if (this._wheres && ! foundIn(this._wheres)) return;
+          if (this._wheres !== undefined && ! foundIn(this._wheres)) return;
 
-          if (this._whereFuncs && this._whereFuncs.some(func => ! func(doc)))
+          if (this._whereFuncs !== undefined && this._whereFuncs.some(func => ! func(doc)))
             return;
 
-          if (this._whereSomes &&
+          if (this._whereSomes !== undefined &&
               ! this._whereSomes.some(
                 ors => ors.some(o => foundIn(o)))) return;
 
           return doc;
 
-          function foundIn(fields, affirm) {
-            if (affirm === undefined) affirm = true;
-            for (let key in fields) {
+          function foundIn(fields, affirm=true) {
+            for(const key in fields) {
               if (foundItem(attrs[key], fields[key]) !== affirm)
                 return ! affirm;
             }
@@ -258,7 +264,7 @@ define(function(require, exports, module) {
             dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
               const {model, docs} = this;
               if (session.state.pendingCount() && this.isFromServer) {
-                if (fromServer(model, this.singleId, null) === null) {
+                if (fromServer(model, this.singleId) === null) {
                   const doc = docs[this.singleId];
                   delete docs[this.singleId];
                   doc && notify(model, null, doc, this.isFromServer);
@@ -294,10 +300,10 @@ define(function(require, exports, module) {
             if (session.state.pendingCount() && this.isFromServer) {
               const changes = fromServer(model, this.singleId, origChanges);
               const doc = docs[this.singleId];
-              if (doc) {
+              if (doc !== undefined) {
                 util.applyChanges(doc.attributes, changes);
                 dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-                  for (let noop in changes) {
+                  for(const noop in changes) {
                     notify(model, doc, changes, this.isFromServer);
                     break;
                   }
@@ -311,7 +317,7 @@ define(function(require, exports, module) {
                 ++count;
                 const attrs = doc.attributes;
 
-                if (this._incs) for (let field in this._incs) {
+                if (this._incs !== undefined) for(const field in this._incs) {
                   changes[field] = attrs[field] + this._incs[field];
                 }
 
@@ -320,28 +326,28 @@ define(function(require, exports, module) {
 
                 let itemCount = 0;
 
-                if (items = this._addItems) for (let field in items) {
+                if ((items = this._addItems) !== undefined) for(const field in items) {
                   const list = attrs[field] || (attrs[field] = []);
                   util.forEach(items[field], item => {
-                    if (util.addItem(list, item) == null) {
+                    if (util.addItem(list, item) === undefined) {
                       session.state.pendingCount() && recordItemChange(model, attrs, field);
                       changes[field + ".$-" + ++itemCount] = item;
                     }
                   });
                 }
 
-                if (items = this._removeItems) for (let field in items) {
+                if ((items = this._removeItems) !== undefined) for(const field in items) {
                   const list = attrs[field];
                   let match;
                   util.forEach(items[field], item => {
-                    if (list && (match = util.removeItem(list, item)) !== undefined) {
+                    if (list !== undefined && (match = util.removeItem(list, item)) !== undefined) {
                       session.state.pendingCount() && recordItemChange(model, attrs, field);
                       changes[field + ".$+" + ++itemCount] = match;
                     }
                   });
                 }
 
-                for (let key in changes) {
+                for(const key in changes) {
                   notify(model, doc, changes, this.isFromServer);
                   break;
                 }
@@ -353,11 +359,11 @@ define(function(require, exports, module) {
       });
 
       Query.prototype[Symbol.iterator] = function *() {
-        if (this.singleId) {
+        if (this.singleId !== undefined) {
           const doc = this.findOne(this.singleId);
           doc && (yield doc);
         } else {
-          if (this._sort) {
+          if (this._sort !== undefined) {
             const results = [];
             const compare = sortFunc(this._sort);
             findMatching.call(this, doc => results.push(doc));
@@ -369,36 +375,45 @@ define(function(require, exports, module) {
       };
 
       function *g_findMatching(q) {
-        if (! q.model) return;
+        if (q.model === undefined) return;
 
-        if (q._index) {
-          yield *g_findByIndex(q, q._index);
+        if (q._index !== undefined) {
+          yield *g_findByIndex(q, q._index.idx, q._index.options);
 
-        } else for (let id in q.docs) {
+        } else for(const id in q.docs) {
           const doc = q.findOne(id);
-          if (doc && (yield doc) === true)
+          if (doc !== undefined && (yield doc) === true)
             break;
         }
       }
 
-      function *g_findByIndex(query, idx) {
-        for (let key in idx) {
+      function *g_findByIndex(query, idx, options) {
+        if (idx[Symbol.iterator]) {
+          if (idx.cursor) idx = idx.cursor(options);
+          for (const {_id} of idx) {
+            const doc = query.findOne(_id);
+            if (doc !== undefined && (yield doc) === true)
+              return true;
+          }
+
+        } else for(const key in idx) {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc && (yield doc) === true)
+            if (doc !== undefined && (yield doc) === true)
               return true;
 
-          } else if (yield *g_findByIndex(query, value) === true)
+          } else if ((yield *g_findByIndex(query, value, options)) === true)
             return true;
         }
+        return false;
       }
 
       function foundItem(value, expected) {
         if (typeof expected === 'object') {
           if (Array.isArray(expected)) {
             const av = Array.isArray(value);
-            for (let i = 0; i < expected.length; ++i) {
+            for(let i = 0; i < expected.length; ++i) {
               const exv = expected[i];
               if (av) {
                 if (value.some(item => util.deepEqual(item, exv)))
@@ -427,47 +442,56 @@ define(function(require, exports, module) {
       }
 
       function findMatching(func) {
-        if (! this.model) return;
+        if (this.model === undefined) return;
 
-        if (this._index) {
-          findByIndex(this, this._index, func);
+        if (this._index !== undefined) {
+          findByIndex(this, this._index.idx, this._index.options, func);
 
-        } else for (let id in this.docs) {
+        } else for(const id in this.docs) {
           const doc = this.findOne(id);
-          if (doc && func(doc) === true)
+          if (doc !== undefined && func(doc) === true)
             break;
         }
       }
 
-      function findByIndex(query, idx, func) {
-        for (let key in idx) {
+      function findByIndex(query, idx, options, func) {
+        if (idx[Symbol.iterator]) {
+          if (idx.cursor) idx = idx.cursor(options);
+          for (const {_id} of idx) {
+            const doc = query.findOne(_id);
+            if (doc !== undefined && func(doc) === true)
+              return true;
+          }
+
+        } else for(const key in idx) {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc && func(doc) === true)
+            if (doc !== undefined && func(doc) === true)
               return true;
 
-          } else if (findByIndex(query, value, func) === true)
+          } else if (findByIndex(query, value, options, func) === true)
             return true;
         }
+        return false;
       }
 
       function fromServer(model, id, changes) {
         const modelName = model.modelName;
         const docs = Model._getProp(model.dbId, modelName, 'simDocs');
-        if (! docs) return changes;
+        if (docs === undefined) return changes;
 
-        if (! changes) {
+        if (changes === undefined) {
           return docs[id] = 'new';
         }
         const keys = docs[id];
-        if (! keys) return changes;
+        if (keys === undefined) return changes;
         if (keys === 'new') {
           changes = util.deepCopy(changes);
           delete changes._id;
           const nc = {};
           const doc = model.docs[id];
-          if (doc) for (let key in doc.attributes) {
+          if (doc !== undefined) for(const key in doc.attributes) {
             if (key === '_id') continue;
             if (! changes.hasOwnProperty(key))
               nc[key] = undefined;
@@ -482,7 +506,7 @@ define(function(require, exports, module) {
 
         const nc = {};
 
-        for (let key in changes) {
+        for(const key in changes) {
           if (key === '_id') continue;
           const _m = key.match(/^([^.]+)\./);
           const m = _m ? _m[1] : key;
@@ -499,16 +523,16 @@ define(function(require, exports, module) {
       function recordChange(model, attrs, changes) {
         const docs = simDocsFor(model);
         const keys = docs[attrs._id] || (docs[attrs._id] = {});
-        if (changes) {
-          for (let key in changes) {
+        if (changes !== undefined) {
+          for(let key in changes) {
             const m = key.match(/^([^.]+)\./);
-            if (m) key=m[1];
+            if (m != null) key=m[1];
             if (! keys.hasOwnProperty(key))
               keys[key] = util.deepCopy(attrs[key]);
           }
         } else {
           // remove
-          for (let key in attrs) {
+          for(const key in attrs) {
             if (! (key === '_id' || keys.hasOwnProperty(key)))
               keys[key] = util.deepCopy(attrs[key]);
           }
@@ -519,7 +543,7 @@ define(function(require, exports, module) {
         const docs = simDocsFor(model);
         const keys = docs[attrs._id] || (docs[attrs._id] = {});
         const m = key.match(/^([^.]+)\./);
-        if (m) key=m[1];
+        if (m != null) key=m[1];
         if (! keys.hasOwnProperty(key))
           keys[key] = util.deepCopy(attrs[key]);
       }
@@ -540,13 +564,13 @@ define(function(require, exports, module) {
           if (ready) return;
 
           const dbs = Model._databases[dbBroker.dbId];
-          if (! dbs) return;
-          for (let name in dbs) {
+          if (dbs === undefined) return;
+          for(const name in dbs) {
             const model = Model[name];
-            if (! model) continue;
+            if (model === undefined) continue;
             const docs = model.docs;
             const sd = dbs[name].simDocs = {};
-            for (let id in docs) {
+            for(const id in docs) {
               sd[id] = 'new';
             }
           }
@@ -573,20 +597,20 @@ define(function(require, exports, module) {
       };
 
       function exprToFunc(param, value) {
-        if (value && typeof value === 'object') {
+        if (typeof value === 'object' && value !== null) {
           if (Array.isArray(value)) {
             return insertectFunc(param, value);
           }
           for (var key in value) break;
           const expr = EXPRS[key];
-          if (expr) return expr(param, value);
+          if (typeof expr === 'function') return expr(param, value);
         }
         return value;
       }
 
       function sortFunc(params) {
         return (a, b) => {
-          for (let key in params) {
+          for(const key in params) {
             const aVal = a[key]; const bVal = b[key];
             if (aVal !== bVal) return  (aVal < bVal) ? -params[key]  : params[key];
           }

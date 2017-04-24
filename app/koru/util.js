@@ -301,17 +301,17 @@ define(function(require, exports, module) {
     },
 
     isObjEmpty(obj) {
-      if (obj) for(let noop in obj) {return false;}
+      if (obj) for(const noop in obj) {return false;}
       return true;
     },
 
     firstParam(obj) {
-      if (obj) for(let key in obj) {return obj[key];}
+      if (obj) for(const key in obj) {return obj[key];}
     },
 
     keyMatches(obj, regex) {
       let m;
-      if (obj) for (let key in obj) {
+      if (obj != null) for (let key in obj) {
         if (m = regex.exec(key))
           return m;
       }

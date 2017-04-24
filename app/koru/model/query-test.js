@@ -13,7 +13,8 @@ define(function (require, exports, module) {
   TH.testCase(module, {
     setUp() {
       v = {};
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', gender: 'text'});
+      v.TestModel = Model.define('TestModel').defineFields({
+        name: 'text', age: 'number', gender: 'text', hobby: 'text'});
 
       v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       v.foo = v.TestModel.findById('foo123');
@@ -66,7 +67,7 @@ define(function (require, exports, module) {
       assert.equals(v.TestModel.where('age', [5, 6]).map(d => d.age).sort(), [5]);
     },
 
-    "query withIndex": {
+    "query unsorted withIndex": {
       setUp() {
         v.idx = v.TestModel.addUniqueIndex('gender', 'age', 'name');
 
@@ -94,6 +95,67 @@ define(function (require, exports, module) {
               .withIndex(v.idx, {gender: 'm'}).fetchIds();
 
         assert.equals(result.sort(), ['2', '3']);
+      },
+    },
+
+    "query sorted withIndex": {
+      setUp() {
+        v.idx = v.TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1);
+
+        v.TestModel.query.remove();
+
+        v.TestModel.create({_id: '1', name: 'n1', age: 1, gender: 'm', hobby: 'h0'});
+        v.TestModel.create({_id: '2', name: 'n2', age: 1, gender: 'm', hobby: 'h1'});
+        v.TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm', hobby: 'h2'});
+        v.TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f', hobby: 'h3'});
+        v.TestModel.create({_id: '5', name: 'n5', age: 2, gender: 'm', hobby: 'h4'});
+      },
+
+      "test no matches"() {
+        assert.same(v.TestModel.query.withIndex(v.idx, {gender: 'x'}).count(), 0);
+      },
+
+      "test last"() {
+        const result = v.TestModel.query.whereNot('_id', '1')
+              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+
+        assert.equals(result, ['2']);
+      },
+
+      "test only major"() {
+        const query = v.TestModel.query.whereNot('_id', '1')
+                .withIndex(v.idx, {gender: 'm'});
+
+        const query2 = v.TestModel.query.whereNot('_id', '1')
+                .withIndex(v.idx, {gender: 'm'}, {direction: -1});
+
+        assert.equals(query.fetchIds(), ['2', '5', '3']);
+        assert.equals(Array.from(query).map(d => d._id), ['2', '5', '3']);
+
+        const minorSorted = TH.match.or(
+          TH.match.equal(['3', '5', '2']),
+          TH.match.equal(['2', '3', '5']), '3,5,2 or 2,3,5');
+        assert.equals(query2.fetchIds(), minorSorted);
+        assert.equals(Array.from(query2).map(d => d._id), minorSorted);
+      },
+
+      "test partial"() {
+        v.TestModel.create({_id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
+        v.TestModel.create({_id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
+        v.TestModel.create({_id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        v.TestModel.create({_id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        v.TestModel.create({_id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
+
+        // const tree = v.idx({gender: 'm', age: '1'});
+        // _koru_.info(`DEBUG`, tree.container._display(d => `${d._id}: ${d.hobby}`));
+
+
+        const result = v.TestModel.query
+                .withIndex(v.idx, {gender: 'm', age: 1}, {
+                  from: {name: 'n7'}, to: {name: 'n3'}}).fetchIds();
+
+        assert.equals(result, ['71', '72', '70', '6']);
+
       },
     },
 

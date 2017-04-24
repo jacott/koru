@@ -12,6 +12,11 @@ define(function(require, exports, module) {
 
   module.exports = ModelMap;
 
+  function Lock() {
+    this.temp = '';
+    delete this.temp;
+  }
+
   /**
    * Track before/after/finally observers observing a model.
    **/
@@ -33,7 +38,7 @@ define(function(require, exports, module) {
       if (dbIdField) {
         this[dbIdField] = dbBroker.dbId;
       }
-      if(attributes && attributes.hasOwnProperty('_id')) {
+      if(attributes != null && attributes._id !== undefined) {
         // existing record
         this.attributes = attributes;
         this.changes = changes || {};
@@ -111,7 +116,7 @@ define(function(require, exports, module) {
     }
 
     static isLocked(id) {
-      return (this._locks || (this._locks = Object.create(null)))[id] || false;
+      return (this._locks || (this._locks = new Lock))[id] || false;
     }
 
     static lock(id, func) {
@@ -460,7 +465,7 @@ define(function(require, exports, module) {
 
     $setFields(fields,options) {
       for(let i = 0,field;field = fields[i];++i) {
-        if (field[0] !== '_' && options.hasOwnProperty(field)) {
+        if (field[0] !== '_' && options[field] !== undefined) {
           this[field] = options[field];
         }
       }

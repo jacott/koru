@@ -28,7 +28,8 @@ define(function(require, exports, module) {
       }
 
       inc(field, amount) {
-        (this._incs = this._incs || {})[field] = amount || 1;
+        if (this._incs === undefined) this._incs = {};
+        this._incs[field] = amount || 1;
         return this;
       }
 
@@ -67,7 +68,8 @@ define(function(require, exports, module) {
       }
 
       sort(...fields) {
-        const _sort = this._sort = this._sort || {};
+        if (this._index !== undefined) throw new Error('withIndex may not be used with sort');
+        const _sort = this._sort || (this._sort = {});
         for(let i = 0; i < fields.length; ++i) {
           const val = fields[i];
           if (typeof val === 'string')
@@ -76,6 +78,12 @@ define(function(require, exports, module) {
             _sort[fields[i-1]] = val;
         }
         return this;
+      }
+
+      reverseSort() {
+        if (this._sort === undefined) return this;
+        for (const field in this._sort)
+          this._sort[field] = -this._sort[field];
       }
 
       fetchField(field) {

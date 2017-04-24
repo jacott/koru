@@ -422,8 +422,10 @@ define(function(require, exports, module) {
           whereValues.push(query.singleId);
         }
 
-        query._wheres && foundIn(query._wheres, whereSql);
-
+        query._wheres !== undefined && foundIn(query._wheres, whereSql);
+        query._whereSqls !== undefined && query._whereSqls.forEach(n => {
+          foundInSql(n, whereSql);
+        });
         if (fields = query._whereNots) {
           const subSql = [];
           foundIn(fields, subSql);
@@ -463,6 +465,29 @@ define(function(require, exports, module) {
         result.push(isIn ? where : 'NOT ('+where+')');
       }
 
+      function foundInSql(value, result) {
+        if (typeof value === 'string')
+          result.push(value);
+        else {
+          const items = value[1];
+          const paramNos = {};
+          if (Array.isArray(items)) {
+            result.push(value[0]);
+            items.forEach(item => {
+              ++count;
+              whereValues.push(item);
+            });
+          } else {
+            result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
+              const tag = paramNos[key];
+              if (tag !== undefined) return tag;
+              whereValues.push(items[key]);
+              return paramNos[key] = '$'+ ++count;
+            }));
+          }
+        }
+      }
+
       function foundIn(fields, result) {
         let qkey;
         for(let key in fields) {
@@ -482,23 +507,7 @@ define(function(require, exports, module) {
           } else {
             if (key[0] === '$') switch(key) {
             case '$sql':
-              if (typeof value === 'string')
-                result.push(value);
-              else {
-                const items = value[1];
-                if (Array.isArray(items)) {
-                  result.push(value[0]);
-                  items.forEach(item => {
-                    ++count;
-                    whereValues.push(item);
-                  });
-                } else {
-                  result.push(value[0].replace(/\{\$([\w]+)\}/g, (m, key) => {
-                    whereValues.push(items[key]);
-                    return '$'+ ++count;
-                  }));
-                }
-              }
+              foundInSql(value, result);
               continue;
             case '$or':
             case '$and':

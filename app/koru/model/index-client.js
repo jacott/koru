@@ -70,14 +70,15 @@ define(function(require, exports, module) {
       const len = i;
       const btCompare = comp;
       const compKeysLen = compKeys.length;
-      const extractKeys = doc => {
-        const ans = {};
-        for(let i = 0; i < compKeysLen; ++i) {
-          const key = compKeys[i];
-          ans[key] = doc[key];
+      class BTValue {
+        constructor(doc) {
+          const ans = {};
+          for(let i = 0; i < compKeysLen; ++i) {
+            const key = compKeys[i];
+            this[key] = doc[key];
+          }
         }
-        return ans;
-      };
+      }
 
       const leadLen = len - 1;
       let dbId = "", idx = null;
@@ -91,18 +92,24 @@ define(function(require, exports, module) {
         return _tmpModel;
       }
 
-      const uIndex = function (keys) {
+      const uIndex = (keys, options) => {
         let ret = getIdx();
 
         for(let i = 0; ret && i < len; ++i) {
           const field = fields[i];
-          if (! keys.hasOwnProperty(field)) return ret;
+          if (keys[field] === undefined) return ret;
           ret = ret[keys[field]];
         }
+
+        if (ret !== undefined && btCompare !== null) {
+          const {from=new BTValue(keys), to, direction=1}= options === undefined ? {} : options;
+          return ret.cursor({from, to, direction});
+        }
+
         return ret;
       };
 
-      uIndex.fetch = function (keys) {
+      uIndex.fetch = keys => {
         const resultIndex = uIndex(keys) || {};
 
         const docs = model.docs;
@@ -122,7 +129,7 @@ define(function(require, exports, module) {
         return idx;
       }
 
-      uIndex.reload = function () {
+      uIndex.reload = () => {
         getIdx();
         idx = indexes[dbId] = {};
         const docs = model.docs;
@@ -150,8 +157,8 @@ define(function(require, exports, module) {
             }
             if (i === len && tm !== undefined) {
               tm = tmpModel(doc, old);
-              if (btCompare && btCompare(doc, tm) !== 0) {
-                deleteEntry(idx, extractKeys(tm), 0);
+              if (btCompare !== null && btCompare(doc, tm) !== 0) {
+                deleteEntry(idx, new BTValue(tm), 0);
               } else
                 return;
             }
@@ -163,9 +170,9 @@ define(function(require, exports, module) {
             tidx = tidx[value] || (tidx[value] = {});
           }
           const value = doc[fields[leadLen]];
-          if (btCompare) {
+          if (btCompare !== null) {
             const tree = tidx[value] || (tidx[value] = new BTree(btCompare));
-            tree.add(extractKeys(doc));
+            tree.add(new BTValue(doc));
           } else {
             tidx[value] = doc._id;
           }
@@ -179,7 +186,7 @@ define(function(require, exports, module) {
         if (! tidx) return true;
         const entry = tidx[value];
         if (count === leadLen) {
-          if (btCompare && entry) {
+          if (btCompare !== null && entry !== undefined) {
              entry.delete(doc);
             if (entry.size !== 0)
               return false;

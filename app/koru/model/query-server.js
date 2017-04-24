@@ -37,8 +37,52 @@ define(function(require, exports, module) {
         return condition(this, '_wheres', params, value);
       },
 
-      withIndex(idx, params) {
-        return this.where(params);
+      whereSql(...args) {
+        (this._whereSqls || (this._whereSqls = [])).push(args);
+        return this;
+      },
+
+      from({direction=1, values, order}) {
+        let qs = [];
+        let fdir = 1, cmp = direction*fdir == 1 ? '>' : '<';
+        order.forEach(field => {
+          switch(field) {
+          case 1: case -1:
+            fdir = field;
+            cmp = direction*fdir == 1 ? '>' : '<';
+            break;
+          default:
+            const value = values[field];
+            if (value === undefined) {
+              qs.push(`("${field}" is not null or ("${field}" is null and`);
+            } else {
+              qs.push(`("${field}" ${cmp} {$${field}} or ("${field}" = {$${field}} and`);
+            }
+          }
+        });
+        if (values._id === undefined )
+          qs.push('true');
+        else
+          qs.push(`_id ${cmp}= {$_id}`);
+
+        this.whereSql(qs.join(' ')+qs.map(() => '').join('))'), values);
+      },
+
+      withIndex(idx, params, options) {
+        if (this._sort) throw new Error('withIndex may not be used with sort');
+        this.where(params).sort(...idx.sort);
+        if (options !== undefined) {
+          const {direction=1, from, to} = options;
+          if (direction === -1) this.reverseSort();
+          if (from) {
+            this.from({direction, values: from, order: idx.from});
+          }
+          if (to) {
+            this.from({direction: direction*-1, values: to, order: idx.from});
+          }
+        }
+
+        return this;
       },
 
       limit(limit) {
@@ -187,7 +231,7 @@ define(function(require, exports, module) {
             ++count;
             const attrs = doc.attributes;
 
-            if (this._incs) for (let field in this._incs) {
+            if (this._incs !== undefined) for (let field in this._incs) {
               changes[field] = attrs[field] + this._incs[field];
             }
 
@@ -306,7 +350,7 @@ define(function(require, exports, module) {
   function buildUpdate(query, changes) {
     const cmd = {};
 
-    if (query._incs) cmd.$inc = query._incs;
+    if (query._incs !== undefined) cmd.$inc = query._incs;
 
     let set, unset;
     for(let field in changes) {

@@ -194,7 +194,7 @@ define(function(require, exports, module) {
     }
 
     queueChange(now, was) {
-      const doc = (now || was);
+      const doc = (now != null ? now : was);
       if (doc === notMe || doc.$stopGap) return;
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;

@@ -5,6 +5,107 @@ define(function(require, exports, module) {
 
   const sizeSym = Symbol();
 
+  function ident(node) {return node}
+
+  class BTreeCursor {
+    constructor(tree, {from, to, direction=1}) {
+      this.container = tree;
+      this._from = from;
+      this._to = to;
+      this._dir = direction;
+      this._state = 0;
+      this._pos = undefined;
+      const {compare} = tree;
+      this._to = to ? (
+        direction === 1 ?
+          (node =>  compare(to, node.value) < 0 ? (node = null) : node)
+        : (node =>  compare(to, node.value) > 0 ? (node = null) : node))
+      : ident;
+    }
+
+    [Symbol.iterator]() {
+      const cursor = this;
+      return {
+        next() {
+          const node = cursor.next();
+          return {done: node == null, value: node != null ? node.value : null};
+        }
+      };
+    }
+
+    next() {
+      const {container, _from, _to, _dir, _state, _chkTo} = this;
+      const {compare} = container;
+
+      let node = this._pos;
+      if (node === null) return null;
+
+      switch (_state) {
+      case 0:
+        node = container.root;
+        if (node === null) return null;
+        if (_from !== undefined) {
+          while (node !== null) {
+            const cmp = compare(_from, node.value);
+            if (cmp === 0) break;
+            const t = cmp < 0 ? node.left : node.right;
+            if (t !== null)
+              node = t;
+            else
+              break;
+          }
+          const cmp = compare(_from, node.value);
+          if (cmp*_dir > 0) {
+            node = node.up;
+          }
+          this._state = 3;
+          return this._pos = _to(node);
+        }
+      case 3:
+        if (_state == 3) {
+          if (_dir == 1) {
+            if (node.right === null) {
+              let up = null;
+              while ((up = node.up) !== null) {
+                if (up.left === node) {
+                  node = up;
+                  return this._pos = _to(node);
+                }
+                node = up;
+              }
+              return node = null;
+            }
+            node = node.right;
+          } else {
+            if (node.left === null) {
+              let up = null;
+              while ((up = node.up) !== null) {
+                if (up.right === node) {
+                  node = up;
+                  return this._pos = _to(node);
+                }
+                node = up;
+              }
+              return node = null;
+            }
+            node = node.left;
+          }
+        }
+        // fall through
+      case 1:
+        if (_dir == 1) {
+          while (node.left !== null)
+            node = node.left;
+        } else {
+          while (node.right !== null)
+            node = node.right;
+        }
+        this._state = 3;
+        return this._pos = _to(node);
+      }
+    }
+  }
+
   class BTree {
     constructor(compare=simpleCompare) {
       this.root = null;
@@ -18,7 +119,7 @@ define(function(require, exports, module) {
     _display(formatter=n => n) {return display(formatter, this.root)}
 
     cursor(opts={}) {
-      return cursor(this.root, opts, this.compare);
+      return new BTreeCursor(this, opts);
     }
 
     add(value) {
@@ -82,7 +183,7 @@ define(function(require, exports, module) {
     }
 
     [Symbol.iterator]() {
-      return cursor(this.root, {})[Symbol.iterator]();
+      return new BTreeCursor(this, {})[Symbol.iterator]();
     }
   };
 
@@ -237,60 +338,6 @@ define(function(require, exports, module) {
     }
     l.up = p;
     l.right = n; n.up = l;
-  }
-
-  function cursor(node, {from, to}, compare) {
-    let dir = from ? 0 : 1;
-    const chkTo = to && (() =>  compare(to, node.value) < 0 ? (node = null) : node);
-
-    const iter = {
-      [Symbol.iterator]() {
-        return {
-          next() {
-            const node = iter.next();
-            return {done: node === null, value: node !== null ? node.value : null};
-          }
-        };
-      },
-      next() {
-        if (node === null) return null;
-        switch (dir) {
-        case 0:
-          while (node !== null) {
-            const cmp = compare(from, node.value);
-            if (cmp === 0) break;
-            const t = cmp < 0 ? node.left : node.right;
-            if (t !== null)
-              node = t;
-            else
-              break;
-          }
-          dir = 3;
-          return to ? chkTo() : node;;
-        case 3:
-          if (node.right === null) {
-            let up = null;
-            while ((up = node.up) !== null) {
-              if (up.left === node) {
-                node = up;
-                return to ? chkTo() : node;
-              }
-              node = up;
-            }
-            return node = null;
-          }
-          node = node.right;
-          dir = 1;
-          // fall through
-        case 1:
-          while (node.left !== null)
-            node = node.left;
-          dir = 3;
-          return to ? chkTo() : node;
-        }
-      },
-    };
-    return iter;
   }
 
   function pad(level, pad) {

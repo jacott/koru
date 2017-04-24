@@ -323,14 +323,20 @@ isServer && define(function (require, exports, module) {
 
       "test named params on _client"() {
         var client = v.foo._client;
-        assert.equals(client.query('select count(*) from "Foo" where name like {$likeE} OR name = {$four}', {likeE: '%e', four: 'four'}),
-                      [{count: '4'}]);
+        assert.equals(
+          client.query(
+            'select count(*) from "Foo" where name like {$likeE} OR name = {$four}',
+            {likeE: '%e', four: 'four'}),
+          [{count: '4'}]);
       },
 
       "test $sql"() {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
-        assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}", {likeE: '%e', four: 'four'}]}), 4);
+        assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}",
+                                          {likeE: '%e', four: 'four'}]}), 4);
         assert.equals(v.foo.count({$sql: ["name like $1 OR name = $2", ['%e', 'four']]}), 4);
+        assert.equals(v.foo.show({$sql: ["{$one} + {$two} + {$one}", {one: 11, two: 22, three: 33}]}),
+                      ' WHERE $1 + $2 + $1 ([11, 22])');
       },
 
       "test fields"() {
