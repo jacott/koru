@@ -259,6 +259,9 @@ r    63
       assert.equals(Array.from(tree.cursor({from: 4, to: 43})), [6, 7, 8, 42]);
       assert.equals(Array.from(tree.cursor({from: 0, to: 45})), [1, 3, 6, 7, 8, 42, 45]);
       assert.equals(Array.from(tree.cursor({from: 4, to: 5})), []);
+      assert.equals(Array.from(tree.cursor({
+        from: 7, to: 45, excludeFrom: true, excludeTo: true,
+      })), [8, 42]);
     },
 
     "test direction -1 cursor from to"() {
@@ -269,6 +272,9 @@ r    63
       assert.equals(Array.from(tree.cursor({from: 46, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
       assert.equals(Array.from(tree.cursor({from: 45, direction: -1})), [45, 42, 8, 7, 6, 3, 1]);
       assert.equals(Array.from(tree.cursor({to: 6, direction: -1})), [63, 45, 42, 8, 7, 6]);
+      assert.equals(Array.from(tree.cursor({
+        from: 45, to: 7, direction: -1, excludeFrom: true, excludeTo: true,
+      })), [42, 8]);
     },
 
     "trivial delete": {

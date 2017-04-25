@@ -42,7 +42,7 @@ define(function(require, exports, module) {
         return this;
       },
 
-      from({direction=1, values, order}) {
+      from({direction=1, values, order, excludeFirst=false}) {
         let qs = [];
         let fdir = 1, cmp = direction*fdir == 1 ? '>' : '<';
         order.forEach(field => {
@@ -60,7 +60,9 @@ define(function(require, exports, module) {
             }
           }
         });
-        if (values._id === undefined )
+        if (excludeFirst)
+          qs.push('false');
+        else if (values._id === undefined )
           qs.push('true');
         else
           qs.push(`_id ${cmp}= {$_id}`);
@@ -72,13 +74,15 @@ define(function(require, exports, module) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params).sort(...idx.sort);
         if (options !== undefined) {
-          const {direction=1, from, to} = options;
+          const {direction=1, from, to, excludeFrom=false, excludeTo=false} = options;
           if (direction === -1) this.reverseSort();
           if (from) {
-            this.from({direction, values: from, order: idx.from});
+            this.from({direction, values: from, order: idx.from,
+                       excludeFirst: excludeFrom});
           }
           if (to) {
-            this.from({direction: direction*-1, values: to, order: idx.from});
+            this.from({direction: direction*-1, values: to, order: idx.from,
+                       excludeFirst: excludeTo});
           }
         }
 

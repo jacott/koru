@@ -140,22 +140,35 @@ define(function (require, exports, module) {
       },
 
       "test partial"() {
-        v.TestModel.create({_id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
+        const i6 = v.TestModel.create({_id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
         v.TestModel.create({_id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
         v.TestModel.create({_id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
-        v.TestModel.create({_id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        const i72 = v.TestModel.create({_id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
         v.TestModel.create({_id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
 
-        // const tree = v.idx({gender: 'm', age: '1'});
-        // _koru_.info(`DEBUG`, tree.container._display(d => `${d._id}: ${d.hobby}`));
+        const fetch = options => v.TestModel.query.withIndex(
+          v.idx, {gender: 'm', age: 1}, options
+        ).fetchIds();
 
+        assert.equals(
+          fetch({from: {name: 'n7'}, to: {name: 'n3'}}),
+          ['71', '72', '70', '6']);
 
-        const result = v.TestModel.query
-                .withIndex(v.idx, {gender: 'm', age: 1}, {
-                  from: {name: 'n7'}, to: {name: 'n3'}}).fetchIds();
+        assert.equals(
+          fetch({from: i72, to: i6}),
+          ['72', '70', '6']);
 
-        assert.equals(result, ['71', '72', '70', '6']);
+        assert.equals(
+          fetch({direction: -1, from: i6, to: i72}),
+          ['6', '70', '72']);
 
+        assert.equals(
+          fetch({direction: -1, from: i6, to: i72, excludeFrom: true}),
+          ['70', '72']);
+
+        assert.equals(
+          fetch({direction: -1, from: i6, to: i72, excludeFrom: true, excludeTo: true}),
+          ['70']);
       },
     },
 

@@ -102,8 +102,10 @@ define(function(require, exports, module) {
         }
 
         if (ret !== undefined && btCompare !== null) {
-          const {from=new BTValue(keys), to, direction=1}= options === undefined ? {} : options;
-          return ret.cursor({from, to, direction});
+          const {
+            from=new BTValue(keys), to, direction=1,
+            excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
+          return ret.cursor({from, to, direction, excludeFrom, excludeTo});
         }
 
         return ret;

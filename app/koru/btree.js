@@ -5,22 +5,41 @@ define(function(require, exports, module) {
 
   const sizeSym = Symbol();
 
-  function ident(node) {return node}
+  const ident = node => node;
+  const lowest = () => -1;
+  const highest = () => 1;
+
+  const memoP = Symbol();
 
   class BTreeCursor {
-    constructor(tree, {from, to, direction=1}) {
+    constructor(tree, {from, to, direction=1, excludeFrom=false, excludeTo=false}) {
       this.container = tree;
-      this._from = from;
-      this._to = to;
-      this._dir = direction;
-      this._state = 0;
-      this._pos = undefined;
       const {compare} = tree;
-      this._to = to ? (
-        direction === 1 ?
-          (node =>  compare(to, node.value) < 0 ? (node = null) : node)
-        : (node =>  compare(to, node.value) > 0 ? (node = null) : node))
-      : ident;
+      const dir = direction;
+      this[memoP] = {
+        from: from ? (
+          excludeFrom ?
+            node => {
+              const cmp = compare(from, node.value);
+              return cmp === 0 ? dir : cmp;
+            }
+            : node => compare(from, node.value)
+        ) : (dir == 1 ? lowest : highest),
+        to: to ? (
+          excludeTo ? (
+            dir === 1 ?
+              (node =>  compare(to, node.value) <= 0 ? null : node)
+            : (node =>  compare(to, node.value) >= 0 ? null : node)
+          ) : (
+            dir === 1 ?
+              (node =>  compare(to, node.value) < 0 ? null : node)
+            : (node =>  compare(to, node.value) > 0 ? null : node)
+          )
+        ) : ident,
+        dir,
+        pos: undefined,
+        state: 0,
+      };
     }
 
     [Symbol.iterator]() {
@@ -34,42 +53,40 @@ define(function(require, exports, module) {
     }
 
     next() {
-      const {container, _from, _to, _dir, _state, _chkTo} = this;
-      const {compare} = container;
+      const memo = this[memoP];
+      const {from, to, dir, state, chkTo} = memo;
 
-      let node = this._pos;
+      let node = memo.pos;
       if (node === null) return null;
 
-      switch (_state) {
+      switch (state) {
       case 0:
-        node = container.root;
+        node = this.container.root;
         if (node === null) return null;
-        if (_from !== undefined) {
-          while (node !== null) {
-            const cmp = compare(_from, node.value);
-            if (cmp === 0) break;
-            const t = cmp < 0 ? node.left : node.right;
-            if (t !== null)
-              node = t;
-            else
-              break;
-          }
-          const cmp = compare(_from, node.value);
-          if (cmp*_dir > 0) {
-            node = node.up;
-          }
-          this._state = 3;
-          return this._pos = _to(node);
+        while (node !== null) {
+          const cmp = from(node);
+          if (cmp === 0) break;
+          const t = cmp < 0 ? node.left : node.right;
+          if (t !== null)
+            node = t;
+          else
+            break;
         }
+        const cmp = from(node);
+        if (cmp*dir > 0) {
+          node = node.up;
+        }
+        memo.state = 3;
+        return memo.pos = to(node);
       case 3:
-        if (_state == 3) {
-          if (_dir == 1) {
+        if (state == 3) {
+          if (dir == 1) {
             if (node.right === null) {
               let up = null;
               while ((up = node.up) !== null) {
                 if (up.left === node) {
                   node = up;
-                  return this._pos = _to(node);
+                  return memo.pos = to(node);
                 }
                 node = up;
               }
@@ -82,7 +99,7 @@ define(function(require, exports, module) {
               while ((up = node.up) !== null) {
                 if (up.right === node) {
                   node = up;
-                  return this._pos = _to(node);
+                  return memo.pos = to(node);
                 }
                 node = up;
               }
@@ -93,15 +110,15 @@ define(function(require, exports, module) {
         }
         // fall through
       case 1:
-        if (_dir == 1) {
+        if (dir == 1) {
           while (node.left !== null)
             node = node.left;
         } else {
           while (node.right !== null)
             node = node.right;
         }
-        this._state = 3;
-        return this._pos = _to(node);
+        memo.state = 3;
+        return memo.pos = to(node);
       }
     }
   }
