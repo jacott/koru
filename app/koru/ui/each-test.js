@@ -63,8 +63,6 @@ isClient && define(function (require, exports, module) {
           name: 'text',
           score: 'number',
         });
-        v.index = v.TestModel.addUniqueIndex('id1', 'id2', 'name');
-
         v.doc1 = v.TestModel.create({id1: '1', id2: '2', name: 'bob'});
         v.doc2 = v.TestModel.create({id1: '1', id2: '2', name: 'alice'});
         v.other = v.TestModel.create({id1: '2', id2: '3', name: 'Caprice'});
@@ -79,7 +77,6 @@ isClient && define(function (require, exports, module) {
           fooList(callback) {
             return callback.render({
               model: v.TestModel,
-              index: v.index,
               params: {id1: Dom.current.data().major, id2: '2'},
               sort: 'name',
               changed: v.changedStub = TH.test.stub(),
@@ -94,13 +91,12 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test params and index"() {
+      "test params"() {
         v.Each.$helpers({
           fooList(callback) {
             if (! v.spy) v.spy = TH.test.spy(callback, 'setDefaultDestroy');
             return callback.render({
               model: v.TestModel,
-              index: v.index,
               params: {id1: Dom.current.data().major, id2: '2'},
               sort: util.compareByName,
               changed: v.changedStub = TH.test.stub(),

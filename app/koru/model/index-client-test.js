@@ -56,7 +56,8 @@ define(function (require, exports, module) {
         const tree = v.sortedIndex({id2: '4'}).container;
         assert(tree instanceof BTree);
 
-        const a4 = v.TestModel.create({_id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
+        const a4 = v.TestModel.create({
+          _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
 
 
         assert.equals(
@@ -196,16 +197,6 @@ define(function (require, exports, module) {
       assert.equals(v.idx({id2: '4', id1: '3'}), v.doc1._id);
     },
 
-    "test fetch"() {
-      assert.equals(util.mapField(v.idx.fetch({id2: '4'})
-                                     .sort(util.compareByField('id1')), 'attributes'),
-                    [v.doc3.attributes, v.doc1.attributes]);
-
-      assert.equals(util.mapField(v.idx.fetch({})
-                                     .sort(util.compareByField('id1')), 'attributes'),
-                    [v.doc3.attributes, v.doc2.attributes, v.doc1.attributes]);
-    },
-
     "test reload"() {
       var docs = v.idx({});
       docs['x'] = 'junk';
@@ -214,18 +205,16 @@ define(function (require, exports, module) {
 
       assert.equals(Object.keys(v.idx({})), ["2", "4"]);
 
-      assert.equals(util.mapField(v.idx.fetch({id2: '4'})).sort(), [v.doc1._id, v.doc3._id].sort());
+      assert.equals(v.idx({id2: '4'}), {1: 'doc3', 3: 'doc1'});
     },
 
     "test addIndex"() {
       var id1Idx = v.TestModel.addIndex('id1');
 
-      v.TestModel.create({id1: '2', id2: '5'});
+      v.TestModel.create({_id: 'tm1', id1: '2', id2: '5'});
 
-
-      var docs = id1Idx.fetch({id1: '2'});
-
-      assert.equals(util.mapField(docs, 'id2').sort(), ["2", "5"]);
+      assert.equals(id1Idx({}), {
+        1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
     },
 
     "test reloadAll"() {

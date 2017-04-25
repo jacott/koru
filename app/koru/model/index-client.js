@@ -111,15 +111,6 @@ define(function(require, exports, module) {
         return ret;
       };
 
-      uIndex.fetch = keys => {
-        const resultIndex = uIndex(keys) || {};
-
-        const docs = model.docs;
-        const results = [];
-        pushResults(docs, results, resultIndex);
-        return results;
-      };
-
       function getIdx() {
         if (model.dbId === dbId)
           return idx;
@@ -205,15 +196,5 @@ define(function(require, exports, module) {
 
       return uIndex;
     };
-
-    function pushResults(docs, results, index) {
-      for(const key in index) {
-        const value = index[key];
-        if (typeof value === 'string')
-          results.push(docs[value]);
-        else
-          pushResults(docs, results, value);
-      }
-    }
   };
 });
