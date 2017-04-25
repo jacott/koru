@@ -7,9 +7,11 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
-  function SimDocs() {
-    this.temp = {};
-    delete this.temp;
+  function newSimDocs() {
+    const o = Object.create(null);
+    o.temp = null;
+    delete o.temp; // hint to optimizer
+    return o;
   }
 
   function Constructor(session) {
@@ -29,7 +31,7 @@ define(function(require, exports, module) {
               if (modelDocs === undefined) continue;
               const docs = dbs[modelName].simDocs;
               if (docs === undefined) continue;
-              dbs[modelName].simDocs = new SimDocs();
+              dbs[modelName].simDocs = newSimDocs();
               for(const id in docs) {
                 let doc = modelDocs[id];
                 const fields = docs[id];
@@ -201,7 +203,7 @@ define(function(require, exports, module) {
         forEach(func) {
           if (this.singleId !== undefined) {
             const doc = this.findOne(this.singleId);
-            doc && func(doc);
+            doc !== undefined && func(doc);
           } else {
             if (this._sort !== undefined) {
               const results = [];
@@ -267,7 +269,7 @@ define(function(require, exports, module) {
                 if (fromServer(model, this.singleId) === null) {
                   const doc = docs[this.singleId];
                   delete docs[this.singleId];
-                  doc && notify(model, null, doc, this.isFromServer);
+                  doc !== undefined && notify(model, null, doc, this.isFromServer);
                 }
                 return 1;
               }
@@ -361,7 +363,7 @@ define(function(require, exports, module) {
       Query.prototype[Symbol.iterator] = function *() {
         if (this.singleId !== undefined) {
           const doc = this.findOne(this.singleId);
-          doc && (yield doc);
+          doc !== undefined && (yield doc);
         } else {
           if (this._sort !== undefined) {
             const results = [];
@@ -578,8 +580,8 @@ define(function(require, exports, module) {
       }
 
       function unload() {
-        syncOb && syncOb.stop();
-        stateOb && stateOb.stop();
+        syncOb != null && syncOb.stop();
+        stateOb != null && stateOb.stop();
       }
 
       const EXPRS = {

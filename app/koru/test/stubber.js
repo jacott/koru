@@ -311,19 +311,17 @@ define(function(require, exports, module) {
   };
 
   Stubber.spy = function (object, property, func) {
-    if (func && typeof func !== 'function')
+    if (func !== undefined && typeof func !== 'function')
       throw AssertionError(new Error("third argument to spy must be a function or null"));
     if (object && typeof property === 'string') {
       const desc = Object.getOwnPropertyDescriptor(object, property);
       const orig = desc === undefined ? object[property] : desc.value;
       if (typeof orig === 'function') {
-        func || (func = stubFunction(orig, spyProto));
+        if (func === undefined) func = stubFunction(orig, spyProto);
         func.original = orig;
 
         Object.defineProperty(object, property, {value: func, configurable: true});
-        func.restore = function () {
-          restore(object, property, desc, orig, func);
-        };
+        func.restore = () => {restore(object, property, desc, orig, func)};
         return func;
       }
     }

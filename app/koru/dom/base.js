@@ -11,35 +11,40 @@ define(function(require, exports, module) {
     h,
 
     escapeHTML(text) {
-      var pre = document.createElement('pre');
+      const pre = document.createElement('pre');
       pre.appendChild(document.createTextNode(text));
       return pre.innerHTML;
     },
 
     hasClass(elm, name) {
-      var classList = elm && elm.classList;
-      return classList && classList.contains(name);
+      if (elm == null) return false;
+      const classList = elm.classList;
+      return classList === undefined ? false : classList.contains(name);
     },
 
     addClass(elm, name) {
-      var classList = elm && elm.classList;
-      classList && classList.add(name);
+      if (elm == null) return;
+      const classList = elm.classList;
+      classList === undefined || elm.classList.add(name);
     },
 
     addClasses(elm, name) {
-      var classList = elm && elm.classList;
-      if (classList)
-        for(var i = name.length - 1; i >= 0; --i)
+      if (elm != null) {
+        const classList = elm.classList;
+        if (classList === undefined) return;
+        for(let i = name.length - 1; i >= 0; --i)
           classList.add(name[i]);
+      }
     },
 
     removeClass(elm, name) {
-      var classList = elm && elm.classList;
-      classList && classList.remove(name);
+      if (elm == null) return;
+      const classList = elm.classList;
+      classList === undefined || elm.classList.remove(name);
     },
 
     toggleClass(elm, name) {
-      if (! elm) return;
+      if (elm == null) return;
       if (Dom.hasClass(elm, name)) {
         Dom.removeClass(elm, name);
         return false;
@@ -50,8 +55,8 @@ define(function(require, exports, module) {
     },
 
     nodeIndex(node) {
-      var nodes = node.parentNode.childNodes;
-      for (var count = nodes.length; count >= 0; --count) {
+      const nodes = node.parentNode.childNodes;
+      for (let count = nodes.length; count >= 0; --count) {
         if (node === nodes[count])
           return count;
       }
@@ -59,11 +64,11 @@ define(function(require, exports, module) {
     },
 
     walkNode(node, visitor) {
-      var childNodes = node.childNodes;
-      var len = childNodes.length;
+      const childNodes = node.childNodes;
+      const len = childNodes.length;
 
-      for(var i = 0; i < len; ++i) {
-        var elm = childNodes[i];
+      for(let i = 0; i < len; ++i) {
+        const elm = childNodes[i];
         switch(visitor(elm, i)) {
         case true: return true;
         case false: continue;
@@ -121,6 +126,8 @@ define(function(require, exports, module) {
   }
 
   function h(body) {
+    let id = '', className = '', content = null, tagName = 'div', attrs = {};
+
     if (typeof body === "string") {
       if (body.indexOf("\n") !== -1) {
         content = document.createDocumentFragment();
@@ -136,19 +143,17 @@ define(function(require, exports, module) {
     if (body.nodeType) return body;
 
     if (Array.isArray(body)) {
-      var elm = document.createDocumentFragment();
-      body.forEach(function (item) {
-        item && elm.appendChild(h(item));
+      const elm = document.createDocumentFragment();
+      body.forEach(item => {
+        item != null && elm.appendChild(h(item));
       });
       return elm;
     }
 
-    var id, className, content, tagName = 'div', attrs = {};
-    for(var key in body) {
-      var value = body[key];
+    for(const key in body) {
+      const value = body[key];
       switch(key) {
       case "id": id = value; break;
-
       case "class": className = value; break;
 
       default:
@@ -162,10 +167,10 @@ define(function(require, exports, module) {
       }
     }
 
-    var elm = document.createElement(tagName);
-    className && (elm.className = className);
-    id && (elm.id = id);
-    for(var key in attrs) {
+    const elm = document.createElement(tagName);
+    if (className !== '') elm.className = className;
+    if (id !== '') elm.id = id;
+    for(const key in attrs) {
       elm.setAttribute(key, attrs[key]);
     }
 

@@ -185,9 +185,7 @@ define(function(require, exports, module) {
     },
   };
 
-  function findById (id) {
-    return this.docs[id];
-  }
+  function findById(id) {return this.docs[id]}
 
   function findAttrsById(id) {
     const doc = this.docs[id];

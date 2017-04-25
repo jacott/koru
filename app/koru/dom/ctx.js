@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   const Dom  = require('koru/dom/base');
   const util = require('koru/util');
 
-  const {DOCUMENT_NODE, COMMENT_NODE,
+  const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
   const {forEach} = util;
@@ -21,9 +21,9 @@ define(function(require, exports, module) {
     }
 
     onDestroy(obj) {
-      if (! obj) return;
-      const list = this.__onDestroy || (this.__onDestroy = []);
-      list.push(obj);
+      if (obj == null) return;
+      const list = this.__onDestroy;
+      (list === undefined ? (this.__onDestroy = []) : list).push(obj);
       return this;
     }
 
@@ -46,7 +46,7 @@ define(function(require, exports, module) {
           const node = attrEvals[i];
           currentElement = node[0];
           const value = (getValue(data, node[2], node[3])||'').toString();
-          if (node[1] && node[0].getAttribute(node[1]) !== value)
+          if (node[1] != null && node[0].getAttribute(node[1]) !== value)
             node[0].setAttribute(node[1], value);
         }
 
@@ -89,14 +89,15 @@ define(function(require, exports, module) {
         if (func !== 'cancel')
           var old = this.animationEnd;
 
-        if (! func || func === 'cancel') {
+        if (func == null || func === 'cancel') {
           removeOnAnmiationEnd.call(this);
           func = null;
         }
       }
       this.animationEnd = func;
-      this.animationEndRepeat = func && repeat === 'repeat';
-      old && old(this, this.element());
+      if (func != null && repeat === 'repeat')
+        this.animationEndRepeat = true;
+      old != null && old(this, this.element());
     }
 
     static get _currentCtx() {return currentCtx}
@@ -117,7 +118,7 @@ define(function(require, exports, module) {
 
   Ctx.current = {
     data(elm) {
-      if (elm) {
+      if (elm != null) {
         const ctx = Dom.ctx(elm);
         return ctx && ctx.data;
       }
@@ -130,20 +131,18 @@ define(function(require, exports, module) {
     set _ctx(value) {currentCtx = value},
     get element() {return currentElement},
     isElement() {
-      return currentElement.nodeType === 1;
+      return currentElement.nodeType === ELEMENT_NODE;
     },
   };
 
   module.exports = Ctx;
 
   function getValue(data, func, args) {
-    if (! args) {
-      return;
-    }
-    if (args.dotted) {
+    if (args == null) return;
+    if (args.dotted != null) {
       let value = getValue(data, func, []);
       if (value == null) return value;
-      const dotted = args.dotted;
+      const {dotted} = args;
       const last = dotted.length -1;
       for(let i = 0; i <= last ; ++i) {
         const row = dotted[i];
@@ -161,6 +160,7 @@ define(function(require, exports, module) {
       return value;
     }
 
+    let parts = null;
     switch(typeof func) {
     case 'function':
       return func.apply(data, evalArgs(data, args));
@@ -168,7 +168,7 @@ define(function(require, exports, module) {
       switch(func[0]) {
       case '"': return func.slice(1);
       case '.':
-        var parts = func.split('.');
+        parts = func.split('.');
         func = parts[1];
       }
 
@@ -178,7 +178,7 @@ define(function(require, exports, module) {
       if (value === undefined) {
         value = currentCtx.template._helpers[func];
       }
-      if (parts) {
+      if (parts !== null) {
         for(let i = 2; value !== undefined && i < parts.length; ++i) {
           data = value;
           value = value[parts[i]];
@@ -217,7 +217,7 @@ define(function(require, exports, module) {
         value = document.createComment('empty');
 
     } else if (typeof value === 'object' && value.nodeType === DOCUMENT_FRAGMENT_NODE) {
-      if ('_koruEnd' in currentElement) {
+      if (currentElement._koruEnd != null) {
         Dom.removeInserts(currentElement);
       } else {
         if (currentElement.nodeType !== COMMENT_NODE) {
@@ -251,21 +251,22 @@ define(function(require, exports, module) {
   }
 
   function evalArgs(data, args) {
-    if (args.length === 0) return args;
+    const len = args.length;
+    if (len === 0) return args;
 
     let output = [];
-    let hash;
+    let hash = undefined;
 
-    for(let i = 0; i < args.length; ++i) {
+    for(let i = 0; i < len; ++i) {
       const arg = args[i];
       if (arg != null && typeof arg === 'object' && arg[0] === '=') {
-        hash = hash || {};
+        if (hash === undefined) hash = {};
         hash[arg[1]] = getValue(data, arg[2], []);
       } else {
         output.push(getValue(data, arg, []));
       }
     }
-    if (hash) for(const key in hash) {
+    if (hash !== undefined) for(const key in hash) {
       output.push(hash);
       break;
     }
@@ -280,11 +281,11 @@ define(function(require, exports, module) {
       if (args.length === 1) args = args[0];
     }
 
-    if (currentElement._koru) {
+    if (currentElement._koru != null) {
       return currentElement._koru.updateAllTags(args);
     }
 
-    if ('$autoRender' in func)
+    if (func.$autoRender !== undefined)
       return func.$autoRender(args);
     else
       return func.call(this, args);
@@ -295,15 +296,15 @@ define(function(require, exports, module) {
     const ctx = Dom.myCtx(target);
     const func = ctx && ctx.animationEnd;
 
-    if (! func) return;
-    if (! ctx.animationEndRepeat)
+    if (func == null) return;
+    if (ctx.animationEndRepeat !== true)
       removeOnAnmiationEnd.call(ctx);
 
     func(ctx, target);
   }
 
   function removeOnAnmiationEnd() {
-    if (! this.animationEnd) return;
+    if (this.animationEnd == null) return;
     this.animationEnd = null;
     if (--animationEndCount === 0)
       document.body.removeEventListener('animationend', animationEnd, true);

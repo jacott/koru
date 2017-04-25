@@ -25,10 +25,10 @@ define(function(require, exports, module) {
   const {DOCUMENT_NODE} = document;
   const origValueSym = Symbol();
 
-  if (! document.documentElement.closest) {
+  if (document.documentElement.closest === undefined) {
     Element.prototype.closest = function (selector) {
       let elm = this;
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
+      while(elm != null && elm.nodeType !== DOCUMENT_NODE) {
         if (matches.call(elm, selector))
           return elm;
         elm = elm.parentNode;
@@ -41,18 +41,18 @@ define(function(require, exports, module) {
   Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
   Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
 
-  if (! document.head.classList) {
+  if (document.head.classList === undefined) {
     Dom.hasClass = function (elm, name) {
-      return elm && new RegExp("\\b" + name + "\\b").test(elm.className);
+      return elm != null && new RegExp("\\b" + name + "\\b").test(elm.className);
     };
     Dom.addClass = function (elm, name) {
-      if (! elm || elm.nodeType !== 1) return;
-      var className = " " + elm.className + " ";
+      if (elm == null || elm.nodeType !== 1) return;
+      const className = " " + elm.className + " ";
       elm.className = (className.replace(" " + name + " ", " ") + name).trim();
     };
     Dom.removeClass = function (elm, name) {
-      if (! elm || elm.nodeType !== 1) return;
-      var className = " " + elm.className + " ";
+      if (elm == null || elm.nodeType !== 1) return;
+      const className = " " + elm.className + " ";
       elm.className = (className.replace(" " + name + " ", " ")).trim();
     };
   }
@@ -405,13 +405,11 @@ define(function(require, exports, module) {
 
     destroyMeWith(elm, ctx) {
       if (ctx._koru) ctx = ctx._koru;
-      var elmCtx = elm._koru;
-      var id = getId(elmCtx);
-      var observers = ctx.__destoryObservers;
-      if (! observers) {
-        observers = ctx.__destoryObservers = Object.create(null);
-      }
-      observers[id] = elm;
+      const elmCtx = elm._koru;
+      const id = getId(elmCtx);
+      const observers = ctx.__destoryObservers;
+      ((observers === undefined) ? (ctx.__destoryObservers = Object.create(null)) : observers
+      )[id] = elm;
       elmCtx.__destoryWith = ctx;
     },
 
@@ -419,33 +417,33 @@ define(function(require, exports, module) {
       var ctx = elm && elm._koru;
       if (ctx) {
         var dw = ctx.__destoryWith;
-        if (dw) {
-          ctx.__destoryWith = null;
-          var observers = dw.__destoryObservers;
-          if (observers) {
+        if (dw !== undefined) {
+          ctx.__destoryWith = undefined;
+          const observers = dw.__destoryObservers;
+          if (observers !== undefined) {
             delete observers[ctx.__id];
             if (util.isObjEmpty(observers))
-              dw.__destoryObservers = null;
+              dw.__destoryObservers = undefined;
           }
         }
-        var observers = ctx && ctx.__destoryObservers;
-        if (observers) {
-          ctx.__destoryObservers = null;
-          for (var id in observers) {
-            var withElm = observers[id];
-            var withCtx = withElm._koru;
-            if (withCtx)  {
-              withCtx.__destoryWith = null;
+        const observers = ctx && ctx.__destoryObservers;
+        if (observers !== undefined) {
+          ctx.__destoryObservers = undefined;
+          for (const id in observers) {
+            const withElm = observers[id];
+            const withCtx = withElm._koru;
+            if (withCtx != null)  {
+              withCtx.__destoryWith = undefined;
             }
             Dom.remove(withElm);
           }
         }
 
-        if (ctx.__onDestroy) {
-          var list = ctx.__onDestroy;
-          ctx.__onDestroy = null;
-          for(var i = list.length - 1; i >=0; --i) {
-            var row = list[i];
+        if (ctx.__onDestroy !== undefined) {
+          const list = ctx.__onDestroy;
+          ctx.__onDestroy = undefined;
+          for(let i = list.length - 1; i >=0; --i) {
+            const row = list[i];
             if (typeof row === 'function')
               row.call(ctx);
             else
@@ -492,33 +490,33 @@ define(function(require, exports, module) {
       if (! elm) return;
 
       var row;
-      while(row = elm.firstChild) {
+      while((row = elm.firstChild) !== null) {
         Dom.destroyData(row);
         elm.removeChild(row);
       }
     },
 
     destroyChildren(elm) {
-      if (! elm) return;
+      if (elm == null) return;
 
-      var iter = elm.firstChild;
-      while (iter) {
-        var row = iter;
+      let iter = elm.firstChild;
+      while (iter !== null) {
+        const row = iter;
         iter = iter.nextSibling; // incase side affect
         Dom.destroyData(row);
       }
     },
 
     myCtx(elm) {
-      return elm && elm._koru;
+      return elm == null ? null : elm._koru;
     },
 
     ctx(elm) {
-      if (! elm) return;
       if (typeof elm === 'string')
         elm = document.querySelector(elm);
-      var ctx = elm._koru;
-      while(! ctx && elm.parentNode)
+      if (elm == null) return;
+      let ctx = elm._koru;
+      while(ctx === undefined && elm.parentNode !== null)
         ctx = (elm = elm.parentNode)._koru;
       return ctx;
     },

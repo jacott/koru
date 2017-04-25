@@ -954,7 +954,7 @@ isClient && define(function (require, exports, module) {
           assert.equals(v.elm._koru.__destoryObservers, obs);
 
           Dom.remove(v.dep2);
-          assert.same(v.elm._koru.__destoryObservers, null);
+          assert.same(v.elm._koru.__destoryObservers, undefined);
         },
       },
 

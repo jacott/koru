@@ -159,7 +159,8 @@ define(function(require, exports, module) {
       if (destroyMeWith) {
         const me = options.container;
         const meCtx = Dom.myCtx(me);
-        meCtx && Dom.destroyMeWith(me, Dom.ctx(destroyMeWith) || destroyMeWith);
+        meCtx && Dom.destroyMeWith(
+          me, destroyMeWith.nodeType !== undefined ? Dom.ctx(destroyMeWith) : destroyMeWith);
       }
       return this.reposition(pos, options);
     },

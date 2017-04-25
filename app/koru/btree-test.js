@@ -5,59 +5,6 @@ define(function (require, exports, module) {
   const BTree = require('koru/btree');
   var v;
 
-  function Foo() {}
-//  Foo.prototype = Object.preventExtensions(Object.create(null));
-
-
-  function assertCheck(tree) {
-    const {root, compare} = tree;
-    let prev = null;
-    const cursor= tree.cursor();
-    let node, max = 0;
-    let blackExp = -1;
-    let nodeCount = 0;
-    while (node = cursor.next()) {
-      ++nodeCount;
-      assert.msg(() => `out of order at ${node.value}\n${tree._display()}`)
-      (! prev || compare(prev, node) > 0 , ' ');
-      let count = 1;
-      let bc = node.left || node.right ? -1 : 0;
-      for (let p = node; p !== root; p = p.up) {
-        ++count;
-        if (p.red) {
-          assert.msg(() => `dup red at ${p.value} leaf: ${node.value}\n${tree._display()}`)
-          (! p.up.red, ' ');
-        } else if (bc >=0) ++bc;
-        }
-      if (bc < 0 || blackExp === -1)
-        blackExp = bc;
-      else
-        assert.msg(() => `back exp: ${blackExp}, act: ${bc}, at ${node.value}\n${tree._display()}`)
-      (blackExp === bc, ' ');
-
-      max = Math.max(max, count);
-
-      prev = node;
-    }
-    assert.msg('incorrect size').equals(tree.size, nodeCount);
-    return max;
-  }
-
-  function assertTree(tree, exp='') {
-    assertCheck(tree);
-    const act = tree._display().trim();
-    assert.elideFromStack(act === exp.trim(), `got
-${act}
-
-but expected
-${exp}
-`);
-  }
-
-  function insertNodes(tree, list) {
-    list.forEach(k => tree.add(k));
-  }
-
   TH.testCase(module, {
     setUp() {
       v = {};
@@ -558,6 +505,55 @@ r  110
     //   assertCheck(tree);
     // },
   });
+
+  function assertCheck(tree) {
+    const {root, compare} = tree;
+    let prev = null;
+    const cursor= tree.cursor();
+    let node, max = 0;
+    let blackExp = -1;
+    let nodeCount = 0;
+    while (node = cursor.next()) {
+      ++nodeCount;
+      assert.msg(() => `out of order at ${node.value}\n${tree._display()}`)
+      (! prev || compare(prev, node) > 0 , ' ');
+      let count = 1;
+      let bc = node.left || node.right ? -1 : 0;
+      for (let p = node; p !== root; p = p.up) {
+        ++count;
+        if (p.red) {
+          assert.msg(() => `dup red at ${p.value} leaf: ${node.value}\n${tree._display()}`)
+          (! p.up.red, ' ');
+        } else if (bc >=0) ++bc;
+        }
+      if (bc < 0 || blackExp === -1)
+        blackExp = bc;
+      else
+        assert.msg(() => `back exp: ${blackExp}, act: ${bc}, at ${node.value}\n${tree._display()}`)
+      (blackExp === bc, ' ');
+
+      max = Math.max(max, count);
+
+      prev = node;
+    }
+    assert.msg('incorrect size').equals(tree.size, nodeCount);
+    return max;
+  }
+
+  function assertTree(tree, exp='') {
+    assertCheck(tree);
+    const act = tree._display().trim();
+    assert.elideFromStack(act === exp.trim(), `got
+${act}
+
+but expected
+${exp}
+`);
+  }
+
+  function insertNodes(tree, list) {
+    list.forEach(k => tree.add(k));
+  }
 
   function run(list) {
     const tree = new BTree();

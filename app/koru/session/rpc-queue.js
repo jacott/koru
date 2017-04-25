@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   class RPCQueue {
     constructor() {
       this.queue = Object.create(null);
-      this.queue.tmp = 1;
+      this.queue.tmp = null;
       delete this.queue.tmp; // hint to optimizer
     }
     push(session, data, func) {this.queue[data[0]] = [data, func]}

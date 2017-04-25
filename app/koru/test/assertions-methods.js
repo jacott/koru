@@ -394,9 +394,12 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
           } else {
             elm = document.querySelectorAll(elm);
           }
+        } else if (elm == null) {
+          this.htmlClue = `an Element; got: ${elm}`;
+          return false;
         } else {
           msg = {elm, toString() {return this.elm.innerHTML}};
-          if (elm.nodeType) elm = [elm];
+          if (elm.nodeType != null) elm = [elm];
         }
         this.htmlClue = {toString() {
           if (old != null) {

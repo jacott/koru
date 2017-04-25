@@ -199,6 +199,10 @@ define(function(require, exports, module) {
       return true;
     }
 
+    $inspect() {
+      return `<BTree: ${this.size}>`;
+    }
+
     [Symbol.iterator]() {
       return new BTreeCursor(this, {})[Symbol.iterator]();
     }

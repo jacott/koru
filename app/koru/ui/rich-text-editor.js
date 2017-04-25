@@ -141,11 +141,11 @@ define(function(require, exports, module) {
       const range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
 
-      const inputCtx = Tpl.$ctx(aElm);
+      const inputCtx = Tpl.$ctx();
       const dialog = Link.$autoRender({
         range: range,
         elm: aElm,
-        link: aElm ? aElm.getAttribute('href') : '',
+        link: aElm == null ? '' : aElm.getAttribute('href'),
         text: range.toString() || '',
         inputCtx: inputCtx,
         inputElm: inputCtx.inputElm,

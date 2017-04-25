@@ -155,19 +155,19 @@ define(function(require, exports, module) {
         callback(doc);
     });
 
-    callback._handle = model.onChange(function (doc, was) {
-      let old = doc ? doc.$withChanges(was) : was;
-      if (doc && params && ! util.includesAttributes(params, doc)) doc = null;
-      if (old && params && ! util.includesAttributes(params, old)) old = null;
+    callback._handle = model.onChange((doc, was) => {
+      let old = doc != null ? doc.$withChanges(was) : was;
+      if (doc != null && params && ! util.includesAttributes(params, doc)) doc = null;
+      if (old != null && params && ! util.includesAttributes(params, old)) old = null;
 
       if (filter) {
-        if (old && ! filter(old)) old = null;
-        if (doc && ! filter(doc)) doc = null;
+        if (old != null && ! filter(old)) old = null;
+        if (doc != null && ! filter(doc)) doc = null;
       }
 
-      if ((doc || old) && ! (intercept && intercept(doc, old))) {
+      if ((doc == null ? old : doc) && ! (intercept && intercept(doc, old))) {
         callback(doc, old, sort);
-        changed && changed(doc, was);
+        changed != null && changed(doc, was);
       }
     });
   }
