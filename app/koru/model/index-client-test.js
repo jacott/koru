@@ -53,7 +53,7 @@ define(function (require, exports, module) {
       },
 
       "test add"() {
-        const tree = v.sortedIndex({id2: '4'}).container;
+        const tree = v.sortedIndex.lookup({id2: '4'}).container;
         assert(tree instanceof BTree);
 
         const a4 = v.TestModel.create({
@@ -66,13 +66,13 @@ define(function (require, exports, module) {
            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
 
-        const cursor = v.sortedIndex({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
+        const cursor = v.sortedIndex.lookup({id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)});
         assert(cursor.next);
         assert.equals(Array.from(cursor), [
           {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}
         ]);
 
-        const reverseCursor = v.sortedIndex(
+        const reverseCursor = v.sortedIndex.lookup(
           {id2: '4', points: 5, updatedAt: new Date(2017, 1, 4)},
           {direction: -1}
         );
@@ -82,25 +82,28 @@ define(function (require, exports, module) {
           {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
           {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
         ]);
+
+        assert.equals(v.sortedIndex.entries, {
+          4: tree, 2: v.sortedIndex.lookup({id2: '2'}).container});
       },
 
       "test remove"() {
         v.doc2.$remove();
-        assert.same(v.sortedIndex({id2: '2'}), undefined);
+        assert.same(v.sortedIndex.lookup({id2: '2'}), undefined);
 
         v.doc1.$remove();
 
-        const tree = v.sortedIndex({id2: '4'}).container;
+        const tree = v.sortedIndex.lookup({id2: '4'}).container;
         assert.equals(tree.size, 1);
 
         v.doc3.$remove();
 
         assert.equals(tree.size, 0);
-        assert.equals(v.sortedIndex({}), {});
+        assert.equals(v.sortedIndex.lookup({}), {});
       },
 
       "test change same tree"() {
-        const tree = v.sortedIndex({id2: '4'}).container;
+        const tree = v.sortedIndex.lookup({id2: '4'}).container;
         assert.equals(tree.size, 2);
         v.doc3.$update('points', 3);
         assert.equals(tree.size, 2);
@@ -121,11 +124,11 @@ define(function (require, exports, module) {
       "test change different tree"() {
         v.doc3.$update('id2', '2');
 
-        const tree2 = v.sortedIndex({id2: '2'}).container;
+        const tree2 = v.sortedIndex.lookup({id2: '2'}).container;
         assert.equals(tree2.size, 2);
 
 
-        const tree4 = v.sortedIndex({id2: '4'}).container;
+        const tree4 = v.sortedIndex.lookup({id2: '4'}).container;
         assert.equals(tree4.size, 1);
 
         assert.equals(Array.from(tree2).map(d => d._id), ['doc2', 'doc3']);
@@ -137,56 +140,56 @@ define(function (require, exports, module) {
 
       var bar1 = v.TestModel.create({id1: '3', id2: '4'});
 
-      assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
+      assert.same(v.idx.lookup({id1: '3', id2: '4'}), bar1._id);
 
       dbBroker.dbId = 'foo';
 
-      assert.same(v.idx({id1: '3', id2: '4'}), v.doc1._id);
+      assert.same(v.idx.lookup({id1: '3', id2: '4'}), v.doc1._id);
 
       v.doc1.id1 = '4';
       v.doc1.$$save();
 
       dbBroker.dbId = 'bar';
 
-      assert.same(v.idx({id1: '3', id2: '4'}), bar1._id);
+      assert.same(v.idx.lookup({id1: '3', id2: '4'}), bar1._id);
 
       bar1.$update('id1', '4');
 
-      assert.same(v.idx({id1: '4', id2: '4'}), bar1._id);
+      assert.same(v.idx.lookup({id1: '4', id2: '4'}), bar1._id);
 
       dbBroker.dbId = 'foo';
 
-      assert.same(v.idx({id1: '4', id2: '4'}), v.doc1._id);
+      assert.same(v.idx.lookup({id1: '4', id2: '4'}), v.doc1._id);
     },
 
     "test adding"() {
-      assert.same(v.idx({id1: '3', id2: '4'}), v.doc1._id);
+      assert.same(v.idx.lookup({id1: '3', id2: '4'}), v.doc1._id);
 
-      assert.equals(v.idx({id2: '4'}), {'1': v.doc3._id, '3': v.doc1._id});
+      assert.equals(v.idx.lookup({id2: '4'}), {'1': v.doc3._id, '3': v.doc1._id});
     },
 
     "test changing"() {
       v.doc1.id1 = '4';
       v.doc1.$$save();
 
-      assert.same(v.idx({id1: '4', id2: '4'}), v.doc1._id);
-      assert.same(v.idx({id1: '3', id2: '4'}), undefined);
+      assert.same(v.idx.lookup({id1: '4', id2: '4'}), v.doc1._id);
+      assert.same(v.idx.lookup({id1: '3', id2: '4'}), undefined);
 
       v.doc2.$update({id2: '4'});
 
-      assert.equals(v.idx({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
+      assert.equals(v.idx.lookup({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
     },
 
     "test null in data"() {
       var doc = v.TestModel.create({id1: '1', id2: null});
 
-      assert.same(v.idx({id1: '1', id2: null}), doc._id);
+      assert.same(v.idx.lookup({id1: '1', id2: null}), doc._id);
     },
 
     "test deleting"() {
       v.doc1.$remove();
 
-      assert.equals(v.idx({}), {'4': {'1': v.doc3._id}, '2': {'2': v.doc2._id}});
+      assert.equals(v.idx.lookup({}), {'4': {'1': v.doc3._id}, '2': {'2': v.doc2._id}});
     },
 
     "test removing wrong object"() {
@@ -194,18 +197,18 @@ define(function (require, exports, module) {
 
       v.obSpy.yield(null, {_id: 'diff', id2: '4', id1: '3'});
 
-      assert.equals(v.idx({id2: '4', id1: '3'}), v.doc1._id);
+      assert.equals(v.idx.lookup({id2: '4', id1: '3'}), v.doc1._id);
     },
 
     "test reload"() {
-      var docs = v.idx({});
+      var docs = v.idx.lookup({});
       docs['x'] = 'junk';
 
       v.idx.reload();
 
-      assert.equals(Object.keys(v.idx({})), ["2", "4"]);
+      assert.equals(Object.keys(v.idx.lookup({})), ["2", "4"]);
 
-      assert.equals(v.idx({id2: '4'}), {1: 'doc3', 3: 'doc1'});
+      assert.equals(v.idx.lookup({id2: '4'}), {1: 'doc3', 3: 'doc1'});
     },
 
     "test addIndex"() {
@@ -213,7 +216,7 @@ define(function (require, exports, module) {
 
       v.TestModel.create({_id: 'tm1', id1: '2', id2: '5'});
 
-      assert.equals(id1Idx({}), {
+      assert.equals(id1Idx.lookup({}), {
         1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
     },
 
@@ -222,14 +225,14 @@ define(function (require, exports, module) {
 
       assert.same(v.TestModel._indexUpdate.indexes.size, 2);
 
-      id1Idx({})['x'] = 'junk';
-      v.idx({})['x'] = 'junk';
+      id1Idx.lookup({})['x'] = 'junk';
+      v.idx.lookup({})['x'] = 'junk';
 
       v.TestModel._indexUpdate.reloadAll();
 
-      assert.equals(Object.keys(v.idx({})), ["2", "4"]);
+      assert.equals(Object.keys(v.idx.lookup({})), ["2", "4"]);
 
-      assert.equals(Object.keys(id1Idx({})), ["1", "2", "3"]);
+      assert.equals(Object.keys(id1Idx.lookup({})), ["1", "2", "3"]);
     },
   });
 });

@@ -92,24 +92,42 @@ define(function(require, exports, module) {
         return _tmpModel;
       }
 
-      const uIndex = (keys, options) => {
-        let ret = getIdx();
+      const handle = model._indexUpdate.onChange(onChange);
 
-        for(let i = 0; ret && i < len; ++i) {
-          const field = fields[i];
-          if (keys[field] === undefined) return ret;
-          ret = ret[keys[field]];
-        }
+      const uIndex = {
+        lookup(keys, options) {
+          let ret = getIdx();
 
-        if (ret !== undefined && btCompare !== null) {
-          const {
-            from=new BTValue(keys), to, direction=1,
-            excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
-          return ret.cursor({from, to, direction, excludeFrom, excludeTo});
-        }
+          for(let i = 0; ret && i < len; ++i) {
+            const field = fields[i];
+            if (keys[field] === undefined) return ret;
+            ret = ret[keys[field]];
+          }
 
-        return ret;
+          if (ret !== undefined && btCompare !== null) {
+            const {
+              from=new BTValue(keys), to, direction=1,
+              excludeFrom=false, excludeTo=false} = options === undefined ? {} : options;
+            return ret.cursor({from, to, direction, excludeFrom, excludeTo});
+          }
+
+          return ret;
+        },
+        reload() {
+          getIdx();
+          idx = indexes[dbId] = {};
+          const docs = model.docs;
+          for(const id in docs) {
+            onChange(docs[id]);
+          }
+        },
+
+        stop: handle.stop,
       };
+
+      Object.defineProperty(uIndex, 'entries', {get: getIdx, enumerable: false});
+
+      model._indexUpdate.indexes.set(handle, uIndex);
 
       function getIdx() {
         if (model.dbId === dbId)
@@ -121,19 +139,6 @@ define(function(require, exports, module) {
 
         return idx;
       }
-
-      uIndex.reload = () => {
-        getIdx();
-        idx = indexes[dbId] = {};
-        const docs = model.docs;
-        for(const id in docs) {
-          onChange(docs[id]);
-        }
-      };
-
-      const handle = model._indexUpdate.onChange(onChange);
-      uIndex.stop = handle.stop;
-      model._indexUpdate.indexes.set(handle, uIndex);
 
       function onChange(doc, old) {
         const idx = getIdx();

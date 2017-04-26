@@ -157,7 +157,7 @@ define(function(require, exports, module) {
           if (this._sort) throw new Error('withIndex may not be used with sort');
           const orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
-          this._index = {idx: idx(params, options) || {}, options};
+          this._index = {idx: idx.lookup(params, options) || {}, options};
 
           dbBroker.dbId = orig;
           return this;
