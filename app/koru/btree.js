@@ -1,15 +1,51 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  function simpleCompare(a, b) {return a == b ? 0 : a < b ? -1 : 1}
+  const sizeSym = Symbol(), memoP = Symbol();
 
-  const sizeSym = Symbol();
-
-  const ident = node => node;
+  const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
+  const ident = n => n;
   const lowest = () => -1;
   const highest = () => 1;
 
-  const memoP = Symbol();
+  const nextNode = node => {
+    if (node == null) return null;
+    if (node.right !== null) {
+      node = node.right;
+      while (node.left !== null) node = node.left;
+      return node;
+    }
+    for (let n = node.up; n !== null; n = n.up) {
+      if (n.left === node) return n;
+    }
+    return null;
+  };
+
+  const previousNode = node => {
+    if (node == null) return null;
+    if (node.left !== null) return node.left;
+    for (let n = node.up; n !== null; n = n.up) {
+      if (n.right === node) return n;
+      node = n;
+    }
+    return null;
+  };
+
+  const addNode = (tree, node) => {
+    ++tree[sizeSym];
+    if (tree.root === null) {
+      tree.root = node;
+      node.red = false;
+      return node;
+    }
+    insert(tree.root, tree.compare, node.value, node);
+    ic1(node);
+    const g = tree.root.up;
+    if (g !== null) {
+      tree.root = g;
+    }
+    return node;
+  };
 
   class BTreeCursor {
     constructor(tree, {from, to, direction=1, excludeFrom=false, excludeTo=false}) {
@@ -141,36 +177,48 @@ define(function(require, exports, module) {
 
     add(value) {
       const node = {value, left: null, right: null, up: null, red: true};
-      ++this[sizeSym];
-      if (this.root === null) {
-        this.root = node;
-        node.red = false;
-        return;
-      }
-      insert(this.root, this.compare, value, node);
-      ic1(node);
-      const g = this.root.up;
-      if (g !== null) {
-        this.root = g;
-      }
+      return addNode(this, node);
+    }
+
+    addNode(node) {
+      node.up = node.right = node.left = null;
+      node.red = true;
+      return addNode(this, node);
     }
 
     delete(value) {
+      return this.deleteNode(find(this.root, this.compare, value));
+    }
+
+    deleteNode(n) {
       let {root} = this;
-      const n = find(root, this.compare, value);
-      if (n === null) return false;
+      if (n === null) return null;
 
       --this[sizeSym];
       const p = n.up;
       let {left, right: child} = n;
       if (left !== null && child !== null) {
         while (child.left !== null) child = child.left;
-        n.value = child.value;
+        // fully swap nodes (rather than just value) because node
+        // exposed outside of module
+        if (p === null)
+          this.root = child;
+        else if (p.right === n)
+          p.right = child;
+        else
+          p.left = child;
+
         if (child.up === n)
           n.right = null;
         else
           child.up.left = null;
-        return true;
+
+        if (n.right !== null) n.right.up = child;
+        if (n.left !== null) n.left.up = child;
+
+        child.up = p; child.left = n.left; child.right = n.right;
+        child.red = n.red;
+        return n;
       }
 
       if (child === null) child = left;
@@ -185,7 +233,7 @@ define(function(require, exports, module) {
         } else {
           this.root = null;
         }
-        return true;
+        return n;
       }
       if (p !== null) {
         if (p.left === n) p.left = child; else p.right = child;
@@ -196,7 +244,59 @@ define(function(require, exports, module) {
       if (! n.red)
         child.red = false;
 
-      return true;
+      return n;
+    }
+
+    get firstNode() {
+      let n = this.root;
+      while(n.left !== null) n = n.left;
+      return n;
+    }
+
+    get lastNode() {
+      let n = this.root;
+      while(n.right !== null) n = n.right;
+      return n;
+    }
+
+    nodeFrom(value) {
+      const {compare} = this;
+      let n = this.root;
+      while (n !== null) {
+        const cmp = compare(value, n.value);
+        if (cmp === 0) return n;
+        if (cmp < 0) {
+          if (n.left === null) return n;
+          n = n.left;
+        } else {
+          if (n.right === null) {
+            n = n.up;
+            return compare(value, n.value) < 0 ? n : null;
+          }
+          n = n.right;
+        }
+      }
+      return n;
+    }
+
+    nodeTo(value) {
+      const {compare} = this;
+      let n = this.root;
+      while (n !== null) {
+        const cmp = compare(value, n.value);
+        if (cmp === 0) return n;
+        if (cmp < 0) {
+          if (n.left === null) {
+            n = n.up;
+            return compare(value, n.value) > 0 ? n : null;
+          }
+          n = n.left;
+        } else {
+          if (n.right === null) return n;
+          n = n.right;
+        }
+      }
+      return n;
     }
 
     $inspect() {
@@ -206,7 +306,10 @@ define(function(require, exports, module) {
     [Symbol.iterator]() {
       return new BTreeCursor(this, {})[Symbol.iterator]();
     }
-  };
+  }
+
+  BTree.prototype.nextNode = nextNode;
+  BTree.prototype.previousNode = previousNode;
 
   function dc1(n) {
     let p = null;

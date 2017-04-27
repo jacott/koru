@@ -14,6 +14,64 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "traverse by nodes": {
+      setUp() {
+        v.tree = new BTree();
+        insertNodes(v.tree, [100, 50, 20, 110, 120, 130, 95]);
+        assertTree(v.tree, `
+50
+l  20
+r  110 *
+l    100
+l      95 *
+r    120
+r      130 *
+`);
+      },
+
+      "test nodeFrom"() {
+        const {tree} = v;
+        const n50 = tree.nodeFrom(35);
+        assert.same(n50.value, 50);
+
+        assert.same(tree.nodeFrom(95).value, 95);
+        assert.same(tree.nodeFrom(5).value, 20);
+
+        assert.same(tree.nodeFrom(200), null);
+      },
+
+      "test nodeTo"() {
+        const {tree} = v;
+        const n130 = tree.lastNode;
+        assert.same(n130.value, 130);
+
+        assert.same(tree.nodeTo(200), n130);
+        assert.same(tree.nodeTo(10), null);
+        assert.same(tree.nodeTo(95).value, 95);
+        assert.same(tree.nodeTo(105).value, 100);
+      },
+
+      "test firstNode, nextNode"() {
+        const {tree} = v;
+        const ans = [];
+
+        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
+          ans.push(n.value);
+
+        assert.equals(ans, [20, 50, 95, 100, 110, 120, 130]);
+      },
+
+      "test lastNode, previousNode"() {
+        const {tree} = v;
+        const ans = [];
+
+        for (let n = tree.lastNode; n !== null; n = tree.previousNode(n))
+          ans.push(n.value);
+
+        assert.equals(ans, [130, 120, 110, 100, 95, 50, 20]);
+      },
+    },
+
     "test compare"() {
       function myCompare(a, b) {
         a = a.key; b = b.key;
@@ -21,6 +79,7 @@ define(function (require, exports, module) {
       }
       const tree = new BTree(myCompare);
       tree.add({key: 100, value: "v100"});
+
       tree.add({key: 50, value: "v50"});
       tree.add({key: 150, value: "v150"});
 
@@ -36,12 +95,15 @@ define(function (require, exports, module) {
        **/
       const tree = new BTree();
       assert.equals(tree.root, null);
-      tree.add(123);
+      const n123 = tree.add(123);
+      assert.same(n123, tree.root);
+
       assertTree(tree, `
 123
 `);
       assert.same(tree.root.up, null);
-      tree.add(456);
+      const n456 = tree.add(456);
+      assert.same(n456.up, n123);
       assertTree(tree, `
 123
 r  456 *
@@ -235,14 +297,17 @@ r  200
 l    150 *
 r    250 *
 `);
-        assert.isTrue(tree.delete(200));
+        const n200 = tree.nodeFrom(200);
+        assert.same(tree.delete(200), n200);
         assertTree(tree, `
 100
 l  50
 r  250
 l    150 *
 `);
-        assert.isTrue(tree.delete(100));
+        const n150 = tree.nodeFrom(150);
+        assert.same(tree.delete(100).value, 100);
+        assert.same(tree.root, n150);
         assertTree(tree, `
 150
 l  50
@@ -250,12 +315,38 @@ r  250
 `);
       },
 
+      "test deleteNode, addNode"() {
+        const tree = new BTree();
+        insertNodes(tree, [100, 200, 50, 150, 250]);
+        const n = tree.deleteNode(tree.root);
+        assert.same(n.value, 100);
+        assertTree(tree, `
+150
+l  50
+r  200
+r    250 *
+`);
+        tree.addNode(n);
+        n.value = 99;
+        assert.same(tree.deleteNode(n), n);
+        assert.same(tree.addNode(n), n);
+        assertTree(tree, `
+150
+l  50
+r    99 *
+r  200
+r    250 *
+`);
+        assert.same(n.up.value, 50);
+
+      },
+
       "test delete root with no children"() {
         const tree = new BTree();
         assert.same(tree.size, 0);
         insertNodes(tree, [100]);
         assert.same(tree.size, 1);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, '');
         assert.same(tree.size, 0);
 
@@ -270,7 +361,7 @@ l  100
 r  200
 r    250 *
 `);
-        assert.isTrue(tree.delete(250));
+        assert.same(tree.delete(250).value, 250);
         assertTree(tree, `
 150
 l  100
@@ -287,7 +378,7 @@ l  100
 r  200
 r    250 *
 `);
-        assert.isTrue(tree.delete(200));
+        assert.same(tree.delete(200).value, 200);
         assertTree(tree, `
 150
 l  100
@@ -302,7 +393,7 @@ r  250
 100
 r  200 *
 `);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, `
 200
 `);
@@ -313,7 +404,7 @@ r  200 *
       "test dc1: root with no children"() {
         const tree = new BTree();
         tree.add(100);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, ``);
       },
 
@@ -328,7 +419,7 @@ r  200 *
 l  100
 r  200
 `);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, `
 150
 r  200 *
@@ -346,7 +437,7 @@ l    200
 r    220
 r      230 *
 `);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, `
 210
 l  150
@@ -367,7 +458,7 @@ l      30 *
 r    80
 r  100
 `);
-        assert.isTrue(tree.delete(100));
+        assert.same(tree.delete(100).value, 100);
         assertTree(tree, `
 70
 l  60
@@ -389,7 +480,7 @@ l  100
 r  200 *
 r    210
 `);
-        assert.isTrue(tree.delete(210));
+        assert.same(tree.delete(210).value, 210);
         assertTree(tree, `
 150
 l  100
@@ -411,7 +502,7 @@ r  210
 l    200
 r    220
 `);
-        assert.isTrue(tree.delete(200));
+        assert.same(tree.delete(200).value, 200);
         assertTree(tree, `
 150
 l  100 *
@@ -431,7 +522,7 @@ l    200
 r    220
 l      215 *
 `);
-        assert.isTrue(tree.delete(200));
+        assert.same(tree.delete(200).value, 200);
         assertTree(tree, `
 150
 l  100
@@ -452,7 +543,7 @@ r      30 *
 r    80
 r  100
 `);
-        assert.isTrue(tree.delete(80));
+        assert.same(tree.delete(80).value, 80);
         assertTree(tree, `
 90
 l  30 *
@@ -460,7 +551,7 @@ l    10
 r    70
 r  100
 `);
-        assert.isFalse(tree.delete(80));
+        assert.same(tree.delete(80), null);
         assert.same(tree.size, 5);
       },
 
@@ -473,7 +564,7 @@ r  100
 100
 r  110
 `);
-        assert.isTrue(tree.delete(110));
+        assert.same(tree.delete(110).value, 110);
         assertTree(tree, `
 100
 `);
@@ -506,6 +597,12 @@ r  110
     // },
   });
 
+  function dsp(node, l=2) {
+    if (! node) return 'null';
+    return --l == 0 ? `${node.value}` :
+      `{value: ${node.value}, up: ${dsp(node.up, l)}, l: ${dsp(node.left, l)}, r: ${dsp(node.right, l)}}`;
+  }
+
   function assertCheck(tree) {
     const {root, compare} = tree;
     let prev = null;
@@ -514,22 +611,27 @@ r  110
     let blackExp = -1;
     let nodeCount = 0;
     while (node = cursor.next()) {
+      let text = '';
+      const msg = () => `${text} at ${dsp(node, 3)}\n${tree._display()}`;
       ++nodeCount;
-      assert.msg(() => `out of order at ${node.value}\n${tree._display()}`)
-      (! prev || compare(prev, node) > 0 , ' ');
+      text = 'links invalid';
+      assert.msg(msg)(node.up || node === tree.root, ' ');
+      assert.msg(msg)(node.up == null || node.up.right === node || node.up.left === node, ' ');
+      text = 'out of order';
+      assert.msg(msg)(! prev || compare(prev, node) > 0 , ' ');
       let count = 1;
       let bc = node.left || node.right ? -1 : 0;
       for (let p = node; p !== root; p = p.up) {
         ++count;
         if (p.red) {
-          assert.msg(() => `dup red at ${p.value} leaf: ${node.value}\n${tree._display()}`)
+          assert.msg(() => `dup red at ${p.value} leaf: ${dsp(node)}\n${tree._display()}`)
           (! p.up.red, ' ');
         } else if (bc >=0) ++bc;
-        }
+      }
       if (bc < 0 || blackExp === -1)
         blackExp = bc;
       else
-        assert.msg(() => `back exp: ${blackExp}, act: ${bc}, at ${node.value}\n${tree._display()}`)
+        assert.msg(() => `back exp: ${blackExp}, act: ${bc}, at ${dsp(node)}\n${tree._display()}`)
       (blackExp === bc, ' ');
 
       max = Math.max(max, count);
