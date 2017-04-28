@@ -661,6 +661,9 @@ define(function (require, exports, module) {
         const doc = new v.TestModel({
           _id: "123", foo: {bar: {baz: 'new val', buzz: 5}, fnord: {a: 1}}});
 
+        assert.same(doc.$withChanges(), null);
+
+
         let was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary', 'foo.fnord.a': 2};
         let old = doc.$withChanges(was);
 

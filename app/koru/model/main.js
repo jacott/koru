@@ -17,6 +17,8 @@ define(function(require, exports, module) {
     delete this.temp;
   }
 
+  const changesP = Symbol();
+
   /**
    * Track before/after/finally observers observing a model.
    **/
@@ -373,10 +375,9 @@ define(function(require, exports, module) {
      * then a cached version of the before doc is returned.
      */
     $withChanges(changes) {
-      const cache = this.$cache.$withChanges || (this.$cache.$withChanges = []);
-      if (changes === cache[0]) return cache[1];
-
-      cache[0] = changes;
+      if (changes == null) return null;
+      const cached = changes[changesP];
+      if (cached !== undefined) return cached;
 
       let simple = true;
       for(let attr in changes) {
@@ -389,7 +390,7 @@ define(function(require, exports, module) {
       const attrs = this.attributes;
 
       if (simple)
-        return cache[1] = new this.constructor(attrs, changes);
+        return changes[changesP] = new this.constructor(attrs, changes);
 
       const cc = {};
 
@@ -421,7 +422,7 @@ define(function(require, exports, module) {
             Object.defineProperty(curr, part,  desc);
         }
       }
-      return cache[1] = new this.constructor(attrs, cc);
+      return changes[changesP] = new this.constructor(attrs, cc);
     }
 
     /**
