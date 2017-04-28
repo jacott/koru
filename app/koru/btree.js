@@ -17,6 +17,7 @@ define(function(require, exports, module) {
     }
     for (let n = node.up; n !== null; n = n.up) {
       if (n.left === node) return n;
+      node = n;
     }
     return null;
   };
@@ -169,8 +170,6 @@ define(function(require, exports, module) {
 
     get size() {return this[sizeSym]};
 
-    _display(formatter=n => n) {return display(formatter, this.root)}
-
     cursor(opts={}) {
       return new BTreeCursor(this, opts);
     }
@@ -195,30 +194,37 @@ define(function(require, exports, module) {
       if (n === null) return null;
 
       --this[sizeSym];
-      const p = n.up;
+      let p = n.up;
       let {left, right: child} = n;
       if (left !== null && child !== null) {
         while (child.left !== null) child = child.left;
         // fully swap nodes (rather than just value) because node
         // exposed outside of module
+
         if (p === null)
-          this.root = child;
+          root = this.root = child;
         else if (p.right === n)
           p.right = child;
         else
           p.left = child;
 
-        if (child.up === n)
-          n.right = null;
-        else
-          child.up.left = null;
+        left = n.left;
+        const {right, red} = n;
+        n.red = child.red; child.red = red;
+        const childUp = child.up;
 
-        if (n.right !== null) n.right.up = child;
-        if (n.left !== null) n.left.up = child;
+        n.left = null; n.right = child.right;
+        n.up = childUp === n ? child : childUp;
 
-        child.up = p; child.left = n.left; child.right = n.right;
-        child.red = n.red;
-        return n;
+        child.up = p;
+        child.right = right === child ? n : right;
+        child.left = left === child ? n : left;
+        if (child.left !== null) child.left.up = child;
+        if (child.right !== null) child.right.up = child;
+        if (n.right !== null) n.right.up = n;
+        if (childUp !== n) n.up.left = n;
+
+        p = n.up; left = null; child = n.right;
       }
 
       if (child === null) child = left;
@@ -299,8 +305,59 @@ define(function(require, exports, module) {
       return n;
     }
 
+    _recalcSize() {
+      let size = 0;
+      for (let n = this.firstNode; n !== null; n = this.nextNode(n))
+        ++size;
+      return this[sizeSym] = size;
+    }
+
+    _display(formatter=n => n) {return display(formatter, this.root)}
+
     $inspect() {
       return `<BTree: ${this.size}>`;
+    }
+
+    _assertValid() {
+      const {root, compare} = this;
+      let prev = null;
+      const cursor= this.cursor();
+      let node, max = 0;
+      let blackExp = -1;
+      let nodeCount = 0;
+      while (node = cursor.next()) {
+        let text = '';
+        const displayError = dv => `${text} at ${dsp(node, dv, 3)}\n`+
+                `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
+        ++nodeCount;
+        text = 'links invalid';
+        assertTrue(node.up || node === this.root, displayError);
+        assertTrue(node.up == null || node.up.right === node || node.up.left === node, displayError);
+        text = 'out of order';
+        assertTrue(! prev || compare(prev.value, node.value) < 0 , displayError);
+        let count = 1;
+        let bc = node.left || node.right ? -1 : 0;
+        for (let p = node; p !== root; p = p.up) {
+          ++count;
+          if (p.red) {
+            assertTrue(! p.up.red,
+                       dv => `dup red at ${p.value} leaf: ${dsp(node, dv)}\n${this._display(dv)}`);
+          } else if (bc >=0) ++bc;
+        }
+        if (bc < 0 || blackExp === -1)
+          blackExp = bc;
+        else
+          assertTrue(
+            blackExp === bc,
+            dv => `back exp: ${blackExp}, act: ${bc}, at ${dsp(node, dv)}\n${this._display(dv)}`);
+
+        max = Math.max(max, count);
+
+        prev = node;
+      }
+      assertTrue(this.size === nodeCount,
+                 dv => `tree size ${this.size} !== node count ${nodeCount}\n${this._display(dv)}`);
+      return max;
     }
 
     [Symbol.iterator]() {
@@ -475,6 +532,21 @@ define(function(require, exports, module) {
 ${pad(level, prefix)}${formatter(node.value)}${node.red ? ' *' : ''}${display(
 formatter, node.left, level+1, 'l')}${display(
 formatter, node.right, level+1, 'r')}`;
+  }
+
+  function dsp(node, dv, l=2) {
+    if (! node) return 'null';
+    return --l == 0 ? `${dv(node.value)}` :
+      `{value: ${dv(node.value)}, up: ${dsp(node.up, dv, l)}, `+
+      `l: ${dsp(node.left, dv, l)}, r: ${dsp(node.right, dv, l)}}`;
+  }
+
+  function assertTrue(truthy, displayError) {
+    if (truthy) return;
+    const err = new Error('tree invalid');
+    err.displayError = displayError;
+    err.name = 'TreeError';
+    throw err;
   }
 
   return BTree;

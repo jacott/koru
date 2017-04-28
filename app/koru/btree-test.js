@@ -54,11 +54,28 @@ r      130 *
       "test firstNode, nextNode"() {
         const {tree} = v;
         const ans = [];
-
         for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
           ans.push(n.value);
 
         assert.equals(ans, [20, 50, 95, 100, 110, 120, 130]);
+      },
+
+      "test t-l-r"() {
+        const tree = new BTree();
+        insertNodes(tree, [0, 100, 200, -100]);
+        tree.delete(100);
+        tree.delete(-100);
+        tree.add(50);
+        assertTree(tree, `
+50
+l  0 *
+r  200 *
+`);
+        const ans = [];
+        for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
+          ans.push(n.value);
+
+        assert.equals(ans, [0, 50, 200]);
       },
 
       "test lastNode, previousNode"() {
@@ -137,7 +154,6 @@ r    120
 r      130 *
 `);
       tree.add(97);
-      assertCheck(tree);
       assertTree(tree, `
 50
 l  20
@@ -338,7 +354,28 @@ r  200
 r    250 *
 `);
         assert.same(n.up.value, 50);
+      },
 
+      "test deleteNode with two-children and right has left child"() {
+        const tree = new BTree();
+        buildTree(tree, `
+1703
+l  498
+l    469 *
+l      404
+r    546 *
+l      506
+r        545 *
+`);
+        tree.delete(498);
+        assertTree(tree, `
+1703
+l  506
+l    469 *
+l      404
+r    546 *
+l      545
+`);
       },
 
       "test delete root with no children"() {
@@ -597,53 +634,16 @@ r  110
     // },
   });
 
-  function dsp(node, l=2) {
-    if (! node) return 'null';
-    return --l == 0 ? `${node.value}` :
-      `{value: ${node.value}, up: ${dsp(node.up, l)}, l: ${dsp(node.left, l)}, r: ${dsp(node.right, l)}}`;
-  }
-
-  function assertCheck(tree) {
-    const {root, compare} = tree;
-    let prev = null;
-    const cursor= tree.cursor();
-    let node, max = 0;
-    let blackExp = -1;
-    let nodeCount = 0;
-    while (node = cursor.next()) {
-      let text = '';
-      const msg = () => `${text} at ${dsp(node, 3)}\n${tree._display()}`;
-      ++nodeCount;
-      text = 'links invalid';
-      assert.msg(msg)(node.up || node === tree.root, ' ');
-      assert.msg(msg)(node.up == null || node.up.right === node || node.up.left === node, ' ');
-      text = 'out of order';
-      assert.msg(msg)(! prev || compare(prev, node) > 0 , ' ');
-      let count = 1;
-      let bc = node.left || node.right ? -1 : 0;
-      for (let p = node; p !== root; p = p.up) {
-        ++count;
-        if (p.red) {
-          assert.msg(() => `dup red at ${p.value} leaf: ${dsp(node)}\n${tree._display()}`)
-          (! p.up.red, ' ');
-        } else if (bc >=0) ++bc;
-      }
-      if (bc < 0 || blackExp === -1)
-        blackExp = bc;
-      else
-        assert.msg(() => `back exp: ${blackExp}, act: ${bc}, at ${dsp(node)}\n${tree._display()}`)
-      (blackExp === bc, ' ');
-
-      max = Math.max(max, count);
-
-      prev = node;
-    }
-    assert.msg('incorrect size').equals(tree.size, nodeCount);
-    return max;
-  }
-
   function assertTree(tree, exp='') {
-    assertCheck(tree);
+    try {
+      tree._assertValid();
+    } catch(ex) {
+      if (ex.displayError) {
+        assert.elideFromStack(false, ex.displayError(n => n));
+      } else {
+        throw ex;
+      }
+    }
     const act = tree._display().trim();
     assert.elideFromStack(act === exp.trim(), `got
 ${act}
@@ -655,6 +655,26 @@ ${exp}
 
   function insertNodes(tree, list) {
     list.forEach(k => tree.add(k));
+  }
+
+  function buildTree(tree, graph) {
+    let curr, cl = 0;
+    graph.trim().split('\n').forEach(line => {
+      if (! curr) curr = tree.add(+line);
+      else {
+        const [left, levelStr, value, _1, star] = line.split(/(\s+)/);
+        const level = levelStr.length/2;
+        while (level <= cl) {
+          --cl;
+          curr = curr.up;
+        }
+        const node = {value: +value, left: null, right: null, up: curr, red: star === '*'};
+        curr[left === 'l' ? 'left' : 'right'] = node;
+        cl = level;
+        curr = node;
+      }
+    });
+    tree._recalcSize();
   }
 
   function run(list) {
