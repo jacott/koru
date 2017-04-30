@@ -40,6 +40,16 @@ r      130 *
         assert.same(tree.nodeFrom(200), null);
       },
 
+      "test no right nodeFrom"() {
+        const tree = new BTree();
+        insertNodes(tree, [10, 0]);
+        assertTree(tree, `
+10
+l  0 *
+`);
+        assert.same(tree.nodeFrom(20), null);
+      },
+
       "test nodeTo"() {
         const {tree} = v;
         const n130 = tree.lastNode;
@@ -50,6 +60,17 @@ r      130 *
         assert.same(tree.nodeTo(95).value, 95);
         assert.same(tree.nodeTo(105).value, 100);
       },
+
+      "test no left nodeFrom"() {
+        const tree = new BTree();
+        insertNodes(tree, [10, 20]);
+        assertTree(tree, `
+10
+r  20 *
+`);
+        assert.same(tree.nodeTo(0), null);
+      },
+
 
       "test firstNode, nextNode"() {
         const {tree} = v;

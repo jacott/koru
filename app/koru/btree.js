@@ -277,7 +277,7 @@ define(function(require, exports, module) {
         } else {
           if (n.right === null) {
             n = n.up;
-            return compare(value, n.value) < 0 ? n : null;
+            return n !== null && compare(value, n.value) < 0 ? n : null;
           }
           n = n.right;
         }
@@ -294,7 +294,7 @@ define(function(require, exports, module) {
         if (cmp < 0) {
           if (n.left === null) {
             n = n.up;
-            return compare(value, n.value) > 0 ? n : null;
+            return n !== null && compare(value, n.value) > 0 ? n : null;
           }
           n = n.left;
         } else {
