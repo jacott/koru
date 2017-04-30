@@ -295,7 +295,8 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
         delta = expected;
         expected = styleAttr;
       } else {
-        actual = elm.style[styleAttr];
+        actual = styleAttr[0] === '-' ? elm.style.getPropertyValue(styleAttr)
+          : elm.style[styleAttr];
         this.field = 'css('+styleAttr+')';
       }
       this.actual = actual;
