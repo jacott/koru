@@ -504,6 +504,11 @@ define(function (require, exports, module) {
                     {a: "a0", b: "b1"});
     },
 
+    "test mapLinkedList"() {
+      const a = {foo: 1, next: {foo: 2, next: null}};
+      assert.equals(util.mapLinkedList(a, n => n.foo), [1, 2]);
+    },
+
     "test mapField"() {
       assert.same(util.mapField(null), null);
 

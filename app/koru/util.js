@@ -108,6 +108,14 @@ define(function(require, exports, module) {
       return result;
     },
 
+    mapLinkedList(ll, f) {
+      const ans = [];
+      for(let i = ll; i != null; i = i.next) {
+        ans.push(f(i));
+      }
+      return ans;
+    },
+
     append(list, append) {
       const len = append.length;
       const dl = list.length;
