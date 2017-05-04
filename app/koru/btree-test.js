@@ -71,6 +71,12 @@ r  20 *
         assert.same(tree.nodeTo(0), null);
       },
 
+      "test first, last on empty tree"() {
+        const tree = new BTree();
+        assert.same(tree.firstNode, null);
+        assert.same(tree.lastNode, null);
+      },
+
 
       "test firstNode, nextNode"() {
         const {tree} = v;

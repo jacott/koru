@@ -251,12 +251,14 @@ define(function(require, exports, module) {
 
     get firstNode() {
       let n = this.root;
+      if (n === null) return null;
       while(n.left !== null) n = n.left;
       return n;
     }
 
     get lastNode() {
       let n = this.root;
+      if (n === null) return null;
       while(n.right !== null) n = n.right;
       return n;
     }
