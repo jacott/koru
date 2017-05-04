@@ -100,13 +100,45 @@ r  200 *
       },
 
       "test lastNode, previousNode"() {
-        const {tree} = v;
+        const tree = new BTree();
+        buildTree(tree, `
+1
+l  -2
+l    -3
+l      -4
+r      -2.5
+r    -1.5
+l      -1.7
+r      -1.2
+r  9
+l    5 *
+l      4
+l        3
+r        4.5
+r      7
+l        6
+l          5.5 *
+r        8
+r    13 *
+l      11
+l        10
+r        12
+r      17
+l        15 *
+l          14
+r          16
+r        19 *
+l          18
+r          100
+l            20 *
+r            1000
+        `);
         const ans = [];
 
         for (let n = tree.lastNode; n !== null; n = tree.previousNode(n))
           ans.push(n.value);
 
-        assert.equals(ans, [130, 120, 110, 100, 95, 50, 20]);
+        assert.equals(ans, Array.from(tree).reverse());
       },
     },
 

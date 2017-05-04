@@ -8,29 +8,25 @@ define(function(require, exports, module) {
   const lowest = () => -1;
   const highest = () => 1;
 
-  const nextNode = node => {
-    if (node == null) return null;
-    if (node.right !== null) {
-      node = node.right;
-      while (node.left !== null) node = node.left;
-      return node;
-    }
-    for (let n = node.up; n !== null; n = n.up) {
-      if (n.left === node) return n;
-      node = n;
-    }
-    return null;
+  const iterNode = (a, b) => {
+    const f1 = a, f2 = b;
+    return node => {
+      if (node == null) return null;
+      if (node[f2] !== null) {
+        node = node[f2];
+        while (node[f1] !== null) node = node[f1];
+        return node;
+      }
+      for (let n = node.up; n !== null; n = n.up) {
+        if (n[f1] === node) return n;
+        node = n;
+      }
+      return null;
+    };
   };
 
-  const previousNode = node => {
-    if (node == null) return null;
-    if (node.left !== null) return node.left;
-    for (let n = node.up; n !== null; n = n.up) {
-      if (n.right === node) return n;
-      node = n;
-    }
-    return null;
-  };
+  const nextNode = iterNode('left', 'right');
+  const previousNode = iterNode('right', 'left');
 
   const addNode = (tree, node) => {
     ++tree[sizeSym];
