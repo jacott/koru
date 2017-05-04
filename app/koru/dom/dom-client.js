@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const Dom         = require('./base');
 
   let vendorTransform;
-  const vendorStylePrefix = (function () {
+  const vendorStylePrefix = (() => {
     const style = document.documentElement.style;
     const styles = ['Moz', 'ms',  'webkit', 'o', ''];
     for(var i = 0; i < styles.length; ++i) {
@@ -82,48 +82,9 @@ define(function(require, exports, module) {
       return Math.max(-1, Math.min(1, event.wheelDelta || -(event.deltaY || event.deltaX)));
     },
 
-    clonePosition(from, to, offsetParent, where) {
-      where = where || 'tl';
-
-      const bbox = this.offsetPosition(from, offsetParent || to.offsetParent);
-      const style = to.style;
-
-      if (where[0] === 't')
-        style.top  = bbox.top+'px';
-      else
-        style.top  = bbox.bottom+'px';
-
-      if (where[1] === 'l')
-        style.left = bbox.left+'px';
-      else
-        style.right = bbox.right+'px';
-
-      return bbox;
-    },
-
-    offsetPosition(from, offsetParent) {
-      if (from.nodeType) {
-        offsetParent = offsetParent || from.offsetParent;
-        var bbox = from.getBoundingClientRect();
-      } else {
-        var bbox = from;
-      }
-
-      const offset = offsetParent.getBoundingClientRect();
-
-      return {
-        top: bbox.top - offset.top - offsetParent.scrollTop,
-        bottom: bbox.bottom - offset.top - offsetParent.scrollTop,
-        left: bbox.left - offset.left - offsetParent.scrollLeft,
-        right: bbox.right - offset.left - offsetParent.scrollLeft,
-        width: bbox.width,
-        height: bbox.height,
-      };
-    },
-
-    isInView(elm, region) {
-      if ('getBoundingClientRect' in region)
-        region = region.getBoundingClientRect();
+    isInView(elm, regionOrNode) {
+      const region = regionOrNode.getBoundingClientRect === undefined ?
+              regionOrNode : regionOrNode.getBoundingClientRect();
       const bb = elm.getBoundingClientRect();
       const cx = (bb.left+bb.width/2);
       const cy = (bb.top+bb.height/2);
@@ -141,7 +102,7 @@ define(function(require, exports, module) {
     setClassBySuffix(name, suffix, elm) {
       elm = elm || Dom.element;
       if (!elm) return;
-      var classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')
+      const classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')
             .replace(/(^ | $)/g,'');
 
       if (name)
@@ -154,7 +115,7 @@ define(function(require, exports, module) {
       elm = elm || Dom.element;
       if (!elm) return;
 
-      var classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '')
+      const classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '')
             .replace(/(^ | $)/g,'');
 
       if (name)
@@ -178,12 +139,12 @@ define(function(require, exports, module) {
     focus(elm, selector) {
       if (! elm) return;
       if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
-      var focus = elm.querySelector(selector);
-      focus && focus.focus();
+      const focus = elm.querySelector(selector);
+      focus !== null && focus.focus();
     },
 
     setRange(range) {
-      var sel = window.getSelection();
+      const sel = window.getSelection();
       try {
         sel.removeAllRanges();
       } catch (ex) {
@@ -194,7 +155,7 @@ define(function(require, exports, module) {
     },
 
     getRange() {
-      var sel = window.getSelection();
+      const sel = window.getSelection();
       if (sel.rangeCount === 0) return null;
       return sel.getRangeAt(0);
     },
@@ -254,17 +215,15 @@ define(function(require, exports, module) {
 
     forEach(elm, querySelector, func) {
       if (! elm) return;
-      var elms = elm.querySelectorAll(querySelector);
-      var len = elms.length;
-      for(var i = 0; i < len; ++i) {
-        func(elms[i]);
-      }
+      const elms = elm.querySelectorAll(querySelector);
+      const len = elms.length;
+      for(let i = 0; i < len; ++i) func(elms[i]);
     },
 
     mapToData(list) {
-      var len = list.length;
-      var result = [];
-      for(var i = 0; i < len; ++i) {
+      const len = list.length;
+      const result = [];
+      for(let i = 0; i < len; ++i) {
         result.push(convertToData(list[i]));
       }
       return result;
@@ -300,14 +259,15 @@ define(function(require, exports, module) {
     },
 
     nextSibling(elm, selector) {
-      if (elm) for(var next = elm.nextElementSibling; next; next = next.nextElementSibling) {
+      if (elm) for(let next = elm.nextElementSibling; next !== null;
+                   next = next.nextElementSibling) {
         if (matches.call(next, selector)) return next;
       }
       return null;
     },
 
     childElementIndex(child) {
-      var i = 0;
+      let i = 0;
       while( (child = child.previousElementSibling) != null ) i++;
       return i;
     },
