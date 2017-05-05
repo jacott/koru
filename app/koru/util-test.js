@@ -52,8 +52,8 @@ define(function (require, exports, module) {
     },
 
     "test DAY"() {
-      var d1 = new Date(2015, 1, 1);
-      var d2 = new Date(2015, 1, 2);
+      const d1 = new Date(2015, 1, 1);
+      const d2 = new Date(2015, 1, 2);
       assert.same(util.DAY, +d2 - d1);
     },
 
@@ -74,13 +74,13 @@ define(function (require, exports, module) {
     },
 
     "test sansPx"() {
-       assert.same(util.sansPx('123.23px'), 123.23);
-       assert.same(util.sansPx(), 0);
-       assert.same(util.sansPx(234), 234);
+      assert.same(util.sansPx('123.23px'), 123.23);
+      assert.same(util.sansPx(), 0);
+      assert.same(util.sansPx(234), 234);
     },
 
     "test indexOfRegex"() {
-      var list = [{foo: 'a'}, {foo: 'b'}];
+      const list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);
       assert.same(util.indexOfRegex(list, /ab/, 'foo'), -1);
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
@@ -104,7 +104,7 @@ define(function (require, exports, module) {
     },
 
     "test addItem"() {
-      var list = ['a', 'b'];
+      const list = ['a', 'b'];
 
       assert.same(util.addItem(list, 'b'), 1);
       assert.same(util.addItem(list, 'a'), 0);
@@ -191,9 +191,9 @@ define(function (require, exports, module) {
     },
 
     'test extend'() {
-      var item = 5,
-          sub={a: 1, b: 2},
-          sup = {b: 3, get c() {return item;}};
+      let item = 5;
+      const sub={a: 1, b: 2};
+      const sup = {b: 3, get c() {return item;}};
 
       util.merge(sub,sup);
 
@@ -267,28 +267,33 @@ define(function (require, exports, module) {
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
       assert.isFalse(util.deepEqual({a: null}, {b: null}));
 
-      var matcher = match(function (v) {return v % 2 === 0});
+      const matcher = match(function (v) {return v % 2 === 0});
       assert.isTrue(util.deepEqual([1, 2, null], [1, matcher, match.any]));
       assert.isFalse(util.deepEqual([1, 1], [1, matcher]));
       assert.isFalse(util.deepEqual([2, 2], [1, matcher]));
 
-      assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
+      assert.isTrue(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                                   {a: 1, b: {c: 1, d: [1, {e: [false]}]}}));
 
-      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
-      assert.isFalse(util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}}, {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
+      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                                    {a: 1, b: {c: 1, d: [1, {e: [true]}]}}));
+      assert.isFalse(util.deepEqual({a: 1, b: {c: -0, d: [1, {e: [false]}]}},
+                                    {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
 
-      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
+      assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
+                                    {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
       assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
     },
 
     "test invert"() {
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
-      assert.equals(util.invert({a: 1, b: 2}, function (x) {return x+x}), {'1': "aa", '2': "bb"});
+      assert.equals(util.invert({a: 1, b: 2}, x => x+x), {'1': "aa", '2': "bb"});
     },
 
     "test lookupDottedValue"() {
-      assert.same(util.lookupDottedValue("foo.1.bar.baz", {a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
+      assert.same(util.lookupDottedValue("foo.1.bar.baz", {
+        a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
     },
 
     "test applyChange with non numeric array index"() {
@@ -303,23 +308,24 @@ define(function (require, exports, module) {
     },
 
     "test applyChanges with objects"() {
-      var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      var changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
+      const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+      let changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
 
       assert.same(util.applyChanges(orig, changes), orig);
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
       assert.equals(changes, {a: 1, b: 2, d: undefined, "nest.bar": undefined});
 
-      var changes = {"nest.bar": 'new', "new.deep.list": 'deeplist'};
+      changes = {"nest.bar": 'new', "new.deep.list": 'deeplist'};
       util.applyChanges(orig, changes);
 
-      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'}, d: 4, new: {deep: {list: 'deeplist'}}});
+      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
+                           d: 4, new: {deep: {list: 'deeplist'}}});
       assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
     },
 
     "test applyChange deleting array entry"() {
-      var orig = {a: [1,2,3]};
-      var changes = {'a.1': undefined};
+      const orig = {a: [1,2,3]};
+      const changes = {'a.1': undefined};
 
       util.applyChanges(orig, changes);
 
@@ -327,8 +333,8 @@ define(function (require, exports, module) {
     },
 
     "test already applied applyChanges"() {
-      var orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      var changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
+      const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
+      const changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
 
       util.applyChanges(orig, changes);
 
@@ -336,8 +342,8 @@ define(function (require, exports, module) {
     },
 
     "test applyChanges with empty array"() {
-      var orig = {ar: []};
-      var changes = {"ar.1.foo": 3};
+      const orig = {ar: []};
+      const changes = {"ar.1.foo": 3};
 
       util.applyChanges(orig, changes);
 
@@ -346,8 +352,8 @@ define(function (require, exports, module) {
     },
 
     "test change array"() {
-      var orig = {ar: []};
-      var changes = {"ar.0": 'new'};
+      const orig = {ar: []};
+      const changes = {"ar.0": 'new'};
 
       util.applyChanges(orig, changes);
 
@@ -356,8 +362,8 @@ define(function (require, exports, module) {
     },
 
     "test applyChanges with array"() {
-      var orig = {ar: [{foo: 1}, {foo: 2}]};
-      var changes = {"ar.1.foo": 3};
+      const orig = {ar: [{foo: 1}, {foo: 2}]};
+      const changes = {"ar.1.foo": 3};
 
       util.applyChanges(orig, changes);
 
@@ -366,8 +372,8 @@ define(function (require, exports, module) {
     },
 
     "test addItem applyChanges"() {
-      var orig = {a: ["x"]};
-      var changes = {"a.$+1": "a", "a.$+2": "b"};
+      const orig = {a: ["x"]};
+      const changes = {"a.$+1": "a", "a.$+2": "b"};
 
       util.applyChanges(orig, changes);
 
@@ -376,16 +382,16 @@ define(function (require, exports, module) {
     },
 
     "test addItem to undefined sublist"() {
-      var orig = {};
-      var changes = {"a.$+1": "x"};
+      const orig = {};
+      const changes = {"a.$+1": "x"};
 
       util.applyChanges(orig, changes);
       assert.equals(orig, {a: ["x"]});
     },
 
     "test removeItem applyChanges"() {
-      var orig = {a: ["x", "a", "b"]};
-      var changes = {"a.$-1": "a", "a.$-2": "b"};
+      const orig = {a: ["x", "a", "b"]};
+      const changes = {"a.$-1": "a", "a.$-2": "b"};
 
       util.applyChanges(orig, changes);
 
@@ -396,8 +402,8 @@ define(function (require, exports, module) {
 
 
     "test includesAttributes"() {
-      var changes = {b: '2'};
-      var doc = {a: '1', b: '3'};
+      const changes = {b: '2'};
+      const doc = {a: '1', b: '3'};
 
       assert.isTrue(util.includesAttributes({a: 1}, changes, doc, null));
       assert.isTrue(util.includesAttributes({a: 1, b: '2'}, changes, doc, null));
@@ -427,12 +433,14 @@ define(function (require, exports, module) {
       assert.same(util.encodeURIComponent(), '');
       assert.same(util.encodeURIComponent(null), '');
 
-      assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"), '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
+      assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"),
+                  '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
     },
 
     "test decodeURIComponent"() {
       assert.same(util.decodeURIComponent(''), null);
-      assert.same(util.decodeURIComponent('%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
+      assert.same(util.decodeURIComponent(
+        '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
     },
 
     "test searchStrToMap"() {
@@ -444,7 +452,7 @@ define(function (require, exports, module) {
     "test forEach"() {
       util.forEach(null, v.stub = this.stub());
       refute.called(v.stub);
-      var results = [];
+      const results = [];
       util.forEach(v.list = [1,2,3], function (val, index) {
         results.push(val+"."+index);
       });
@@ -460,7 +468,7 @@ define(function (require, exports, module) {
        **/
       api.method('reverseForEach');
       api.example(() => {
-        var results = [];
+        const results = [];
         util.reverseForEach(v.list = [1,2,3], (val, index) => {
           results.push(val+"."+index);
         });
@@ -474,12 +482,12 @@ define(function (require, exports, module) {
 
 
     "test append"() {
-      var list1 = [1, 2, 3];
+      const list1 = [1, 2, 3];
 
       assert.same(util.append(list1, [4, 3]), list1);
       assert.equals(list1, [1, 2, 3, 4, 3]);
 
-      var args = testArgs(1, 2);
+      const args = testArgs(1, 2);
 
       util.append(args, [4, 5]);
 
@@ -494,13 +502,19 @@ define(function (require, exports, module) {
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
-      assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]), {a: true, b: true});
-      assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
-      assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]), {a: {foo: 'a'}, b: {foo: 'b'}});
-      assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1}, {foo: 'b', baz: 2}]), {a: 1, b: 2});
-      assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]), {foo: "bar", a: 1});
-      assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]), {1: "a", bar: "foo"});
-      assert.equals(util.toMap('foo', function (c, i) {return c.foo+i}, [{foo: 'a'}, {foo: 'b'}]),
+      assert.equals(util.toMap('foo', true, [{foo: 'a'}, {foo: 'b'}]),
+                    {a: true, b: true});
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}, {foo: 'b'}]),
+                    {a: {foo: 'a'}, b: {foo: 'b'}});
+      assert.equals(util.toMap('foo', null, [{foo: 'a'}], [{foo: 'b'}]),
+                    {a: {foo: 'a'}, b: {foo: 'b'}});
+      assert.equals(util.toMap('foo', 'baz', [{foo: 'a', baz: 1},
+                                              {foo: 'b', baz: 2}]), {a: 1, b: 2});
+      assert.equals(util.toMap(0, 1, [['foo', 'bar'], ['a', 1]]),
+                    {foo: "bar", a: 1});
+      assert.equals(util.toMap(1, 0, [['foo', 'bar'], ['a', 1]]),
+                    {1: "a", bar: "foo"});
+      assert.equals(util.toMap('foo', (c, i) => c.foo+i, [{foo: 'a'}, {foo: 'b'}]),
                     {a: "a0", b: "b1"});
     },
 
@@ -537,7 +551,7 @@ define(function (require, exports, module) {
     },
 
     "test findBy"() {
-      var list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
+      const list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
       assert.same(util.findBy(list, 1), list[1]);
       assert.same(util.findBy(list, 2), list[0]);
       assert.same(util.findBy(list, 'a', 'foo'), list[0]);
@@ -545,7 +559,7 @@ define(function (require, exports, module) {
     },
 
     "test indexOf "() {
-      var data = [{_id: 1, age: 20}, {_id: 2, age: 30}];
+      const data = [{_id: 1, age: 20}, {_id: 2, age: 30}];
 
       // default field (_id)
       assert.same(util.indexOf(data, 1), 0);
@@ -594,14 +608,14 @@ define(function (require, exports, module) {
       assert.same(Object.getPrototypeOf(Xcopy).xx(), 4);
 
       /** Date */
-      var orig = new Date(123);
+      let orig = new Date(123);
       assert.equals(util.shallowCopy(orig), orig);
       refute.same(util.shallowCopy(orig), orig);
 
 
-      var orig = [1, "2", {three: [4, {five: 6}]}];
+      orig = [1, "2", {three: [4, {five: 6}]}];
 
-      var result = util.shallowCopy(orig);
+      const result = util.shallowCopy(orig);
 
       assert.equals(orig, result);
 
@@ -617,8 +631,8 @@ define(function (require, exports, module) {
       assert.same(util.deepCopy(undefined), undefined);
       assert.same(util.deepCopy("a"), "a");
 
-      var u8 = new Uint8Array([1, 2, 3]);
-      var u8c = util.deepCopy(u8);
+      const u8 = new Uint8Array([1, 2, 3]);
+      const u8c = util.deepCopy(u8);
       refute.same(u8, u8c);
       assert.same(u8c.byteLength, 3);
 
@@ -630,14 +644,14 @@ define(function (require, exports, module) {
       function func() {}
       assert.same(util.deepCopy(func), func);
 
-      var orig = new Date(123);
+      let orig = new Date(123);
       assert.equals(util.deepCopy(orig), orig);
       refute.same(util.deepCopy(orig), orig);
 
 
-      var orig = [1, "2", {three: [4, {five: 6}]}];
+      orig = [1, "2", {three: [4, {five: 6}]}];
 
-      var result = util.deepCopy(orig);
+      const result = util.deepCopy(orig);
 
       assert.equals(orig, result);
 
@@ -690,8 +704,8 @@ define(function (require, exports, module) {
     },
 
     "test compareByName"() {
-      var a = {name: "Bob"};
-      var b = {name: "Bob"};
+      const a = {name: "Bob"};
+      const b = {name: "Bob"};
 
       assert.same(util.compareByName(a,b), 0);
 
@@ -708,8 +722,8 @@ define(function (require, exports, module) {
     },
 
     "test compareByOrder"() {
-      var a = {order: 300};
-      var b = {order: 300};
+      const a = {order: 300};
+      const b = {order: 300};
 
       assert.same(util.compareByOrder(a,b), 0);
 
@@ -726,8 +740,8 @@ define(function (require, exports, module) {
     },
 
     "test compareByField"() {
-      var a = {f1: "Bob", f2: 1};
-      var b = {f1: "Bob", f2: 2};
+      const a = {f1: "Bob", f2: 1};
+      const b = {f1: "Bob", f2: 2};
 
       assert.same(util.compareByField('f1')(a,b), 0);
 
@@ -751,8 +765,8 @@ define(function (require, exports, module) {
     },
 
     "test compareByFields"() {
-      var a = {f1: "Bob", f2: 1};
-      var b = {f1: "Bob", f2: 2};
+      const a = {f1: "Bob", f2: 1};
+      const b = {f1: "Bob", f2: 2};
 
       assert.same(util.compareByFields('f2', 'f1')(a,b), -1);
       assert.same(util.compareByFields('f1')(a,b), 0);
@@ -768,8 +782,8 @@ define(function (require, exports, module) {
     },
 
     "test compareBy list"() {
-      var a = {f1: "Bob", f2: 1};
-      var b = {f1: "Bob", f2: 2};
+      const a = {f1: "Bob", f2: 1};
+      let b = {f1: "Bob", f2: 2};
 
       assert.same(util.compareBy(['f1'])(a,b), 0);
       assert.same(util.compareBy(['f1', 'f2'])(a,b), -1);
@@ -795,7 +809,7 @@ define(function (require, exports, module) {
 
     "nestedHash": {
       "test setNestedHash"() {
-        var hash = {};
+        const hash = {};
 
         util.setNestedHash(123, hash, 'a', 'b');
         assert.same(util.setNestedHash(456, hash, 'a', 'c'), 456);
@@ -804,7 +818,7 @@ define(function (require, exports, module) {
       },
 
       "test getNestedHash"() {
-        var hash = {a: {b: 123, c: 456}};
+        const hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.getNestedHash(hash, 'a', 'b'), 123);
         assert.equals(util.getNestedHash(hash, 'a'), {b: 123, c: 456});
@@ -813,19 +827,19 @@ define(function (require, exports, module) {
       },
 
       "test deleteNestedHash"() {
-        var hash = {a: {b: 123, c: 456}};
+        let hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.deleteNestedHash(hash, 'a', 'b'), 123);
         assert.equals(util.deleteNestedHash(hash, 'a'), {c: 456});
         assert.equals(hash, {});
 
-        var hash = {a: {c: {d: 456}}};
+        hash = {a: {c: {d: 456}}};
 
         assert.equals(util.deleteNestedHash(hash, 'a', 'c', 'd'), 456);
 
         assert.equals(hash, {});
 
-        var hash = {a: {b: 123, c: {d: 456}}};
+        hash = {a: {b: 123, c: {d: 456}}};
 
         assert.equals(util.deleteNestedHash(hash, 'a', 'c', 'd'), 456);
 
@@ -834,9 +848,9 @@ define(function (require, exports, module) {
     },
 
     'test reverseMerge'() {
-      var item = 5,
-          sub={a: 1, b: 2},
-          sup = {d: 'd', b: 3, get c() {return item;}};
+      let item = 5;
+      const sub={a: 1, b: 2};
+      const sup = {d: 'd', b: 3, get c() {return item;}};
 
       util.reverseMerge(sub,sup, {d: 1});
 
@@ -849,8 +863,8 @@ define(function (require, exports, module) {
     },
 
     "test withDateNow"() {
-      var date = new Date("2013-06-09T23:10:36.855Z");
-      var result = util.withDateNow(date, function () {
+      const date = new Date("2013-06-09T23:10:36.855Z");
+      const result = util.withDateNow(date, function () {
         assert.equals(util.newDate(), date);
         assert.equals(util.dateNow(), +date);
         assert.same(util.withDateNow(+date + 123, function () {
@@ -858,7 +872,7 @@ define(function (require, exports, module) {
           assert.equals(util.dateNow(), +date + 123);
 
           if (isServer) {
-            var Fiber = requirejs.nodeRequire('fibers');
+            const Fiber = requirejs.nodeRequire('fibers');
             assert.same(util.thread, Fiber.current.appThread);
           }
           assert.equals(util.thread.dates, [undefined, 1370819436855]);
@@ -870,9 +884,9 @@ define(function (require, exports, module) {
         return true;
       });
 
-      var before = util.dateNow();
-      var now = Date.now();
-      var after = util.dateNow();
+      const before = util.dateNow();
+      const now = Date.now();
+      const after = util.dateNow();
 
       assert.between(now, before, after);
 
@@ -976,7 +990,9 @@ define(function (require, exports, module) {
 
     "test error asyncToGenerator"(done) {
       const foo = function (val) {
-        return new Promise((r, e) => setTimeout(() => {val === 13 ? e(new Error("13")) : r(val+30)}, 0));
+        return new Promise((r, e) => setTimeout(() => {
+          val === 13 ? e(new Error("13")) : r(val+30);
+        }, 0));
       };
       const bar = util.asyncToGenerator(function*(val) {
         try {

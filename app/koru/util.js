@@ -15,13 +15,11 @@ define(function(require, exports, module) {
     function: 6,
   };
 
-  function typeorder(obj) {
-    return obj === null ? -1 : TYPEORDER[typeof obj];
-  }
+  const typeorder = obj => obj === null ? -1 : TYPEORDER[typeof obj];
 
   const slice = Array.prototype.slice;
 
-  const egal = Object.is || function(x, y) {
+  const egal = Object.is === undefined ? (x, y) => {
     if (x === y) {
       // 0 === -0, but they are not identical
       return x !== 0 || 1 / x === 1 / y;
@@ -33,7 +31,99 @@ define(function(require, exports, module) {
     // isNaN is broken: it converts its argument to number, so
     // isNaN("foo") => true
     return x !== x && y !== y;
+  } : Object.is;
+
+  function sansSuffix(value) {
+      return value ? typeof value === 'string' ?
+      +value.substring(0, value.length - this) : +value : 0;
+  }
+
+  const colorToArray = (color) => {
+    if (! color) return color;
+    if (typeof color !== 'string') return color;
+    const result = [];
+    const m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
+    if (m) {
+      let i;
+      for(i = 1; i < 4; ++i) {
+        result.push(parseInt(m[i], 16));
+      }
+      result.push(m[4] ? Math.round(parseInt(m[i], 16)*100/256)/100 : 1);
+      return result;
+    } else {
+      const m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
+      if (m) {
+        let i;
+        for(i = 1; i < 4; ++i) {
+          result.push(parseInt(m[i]));
+        }
+        result.push(m[4] ? parseFloat(m[i]) : 1);
+        return result;
+      } else {
+        const m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
+        if (m) {
+          for(let i = 1; i < 4; ++i) {
+            result.push(parseInt(m[i]+m[i], 16));
+          }
+          result.push(1);
+          return result;
+        }
+      }
+    }
   };
+
+
+  const deepEqual = (actual, expected) => {
+    if (egal(actual, expected)) {
+      return true;
+    }
+
+    if (match.match.$test(expected) && expected.$test(actual))
+      return true;
+
+    if (typeof actual !== 'object' || typeof expected !== 'object')
+      return actual === undefined || expected === undefined ? actual == expected : false;
+
+    if (actual == null || expected == null) return false;
+
+    if (actual.getTime && expected.getTime) return actual.getTime() === expected.getTime();
+
+    if (Array.isArray(actual)) {
+      if (! Array.isArray(expected)) return false;
+      const len = actual.length;
+      if (expected.length !== len) return false;
+      for(let i = 0; i < len; ++i) {
+        if (! deepEqual(actual[i], expected[i])) return false;
+      }
+      return true;
+    }
+
+    if (Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected))
+      return false;
+
+    const ekeys = Object.keys(actual);
+
+    if (Object.keys(expected).length !== ekeys.length) return false;
+    for (let i = 0; i < ekeys.length; ++i) {
+      const key = ekeys[i];
+      if (! deepEqual(actual[key], expected[key]))
+        return false;
+    }
+    const akeys = Object.keys(actual);
+    for (let i = 0; i < akeys.length; ++i) {
+      const key = akeys[i];
+      if (! expected.hasOwnProperty(key))
+        return false;
+    }
+    return true;
+  }
+
+  const twoDigits = num => {
+    const str = ''+num;
+    return str.length === 1 ? `0${str}` : str;
+  };
+
+  const identity = value => value;
 
   util.merge(util, {
     DAY: 1000*60*60*24,
@@ -41,7 +131,7 @@ define(function(require, exports, module) {
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     mergeExclude(obj, properties, exclude) {
-      for(let prop in properties) {
+      for(const prop in properties) {
         if (exclude[prop]) continue;
         Object.defineProperty(obj,prop,Object.getOwnPropertyDescriptor(properties,prop));
       }
@@ -55,7 +145,7 @@ define(function(require, exports, module) {
           const desc = Object.getOwnPropertyDescriptor(properties,prop);
           desc && Object.defineProperty(obj, prop, desc);
         }
-      } else for(let prop in include) {
+      } else for(const prop in include) {
         const desc = Object.getOwnPropertyDescriptor(properties,prop);
         desc && Object.defineProperty(obj, prop, desc);
       }
@@ -64,7 +154,7 @@ define(function(require, exports, module) {
 
     reverseMerge(obj, properties, exclude) {
       if (properties == null) return obj;
-      for(let prop in properties) {
+      for(const prop in properties) {
         if (exclude && exclude[prop]) continue;
         if (! (prop in obj)) {
           const desc = Object.getOwnPropertyDescriptor(properties, prop);
@@ -200,7 +290,7 @@ define(function(require, exports, module) {
     },
 
     applyChanges(attrs, changes) {
-      for(let key in changes) {
+      for(const key in changes) {
         util.applyChange(attrs, key, changes);
       }
 
@@ -281,7 +371,7 @@ define(function(require, exports, module) {
      * the arguments: includesAttributes(attrs, changes, doc)
      */
     includesAttributes(attrs, ...docs) {
-      for(let key in attrs) {
+      for(const key in attrs) {
         let match = false;
         for(let i = 0; i < docs.length; ++i) {
           const doc = docs[i];
@@ -319,7 +409,7 @@ define(function(require, exports, module) {
 
     keyMatches(obj, regex) {
       let m;
-      if (obj != null) for (let key in obj) {
+      if (obj != null) for (const key in obj) {
         if (m = regex.exec(key))
           return m;
       }
@@ -337,7 +427,7 @@ define(function(require, exports, module) {
         for(let index = 0; index < list.length; ++index) {
           const row = list[index];
           let found = true;
-          for(let key in item) {
+          for(const key in item) {
             if (item[key] !== row[key]) {
               found = false;
               break;
@@ -363,7 +453,7 @@ define(function(require, exports, module) {
 
     values(map) {
       const result = [];
-      for(let key in map) result.push(map[key]);
+      for(const key in map) result.push(map[key]);
       return result;
     },
 
@@ -541,7 +631,7 @@ define(function(require, exports, module) {
       }
 
       const result = Object.create(Object.getPrototypeOf(orig));
-      for(let key in orig) {
+      for(const key in orig) {
         const desc = Object.getOwnPropertyDescriptor(orig, key);
         desc && Object.defineProperty(result, key, desc);
       }
@@ -570,7 +660,7 @@ define(function(require, exports, module) {
       }
 
       const result = Object.create(Object.getPrototypeOf(orig));
-      for(let key in orig) {
+      for(const key in orig) {
         result[key] = util.deepCopy(orig[key]);
       }
 
@@ -607,7 +697,7 @@ define(function(require, exports, module) {
           ans.push(val);
       }
 
-      for (let val of bMap.values()) {
+      for (const val of bMap.values()) {
         ans.push(val);
       }
       return ans;
@@ -834,9 +924,7 @@ define(function(require, exports, module) {
       delete hash[keys[last]];
 
       for(let i = prevs.length - 1; i >0; --i) {
-        for (let noop in prevs[i]) {
-          return value;
-        }
+        for (const noop in prevs[i]) return value;
         delete prevs[i-1][keys[--last]];
       }
       return value;
@@ -919,7 +1007,7 @@ define(function(require, exports, module) {
       return function () {
         const gen = fn.apply(this, arguments);
         return new Promise((resolve, reject) => {
-          function step(key, arg) {
+          const step = (key, arg) => {
             try {
               var info = gen[key](arg);
               var value = info.value;
@@ -934,7 +1022,7 @@ define(function(require, exports, module) {
                 err => {step("throw", err)}
               );
             }
-          }
+          };
           return step("next");
         });
       };
@@ -945,96 +1033,6 @@ define(function(require, exports, module) {
    * @deprecated reverseExtend
    */
   util.reverseExtend = util.reverseMerge;
-
-  function deepEqual(actual, expected) {
-    if (egal(actual, expected)) {
-      return true;
-    }
-
-    if (match.match.$test(expected) && expected.$test(actual))
-      return true;
-
-    if (typeof actual !== 'object' || typeof expected !== 'object')
-      return actual === undefined || expected === undefined ? actual == expected : false;
-
-    if (actual == null || expected == null) return false;
-
-    if (actual.getTime && expected.getTime) return actual.getTime() === expected.getTime();
-
-    if (Array.isArray(actual)) {
-      if (! Array.isArray(expected)) return false;
-      const len = actual.length;
-      if (expected.length !== len) return false;
-      for(let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i])) return false;
-      }
-      return true;
-    }
-
-    if (Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected))
-      return false;
-
-    const ekeys = Object.keys(actual);
-
-    if (Object.keys(expected).length !== ekeys.length) return false;
-    for (let i = 0; i < ekeys.length; ++i) {
-      const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key]))
-        return false;
-    }
-    const akeys = Object.keys(actual);
-    for (let i = 0; i < akeys.length; ++i) {
-      const key = akeys[i];
-      if (! expected.hasOwnProperty(key))
-        return false;
-    }
-    return true;
-  }
-
-  function colorToArray(color) {
-    if (! color) return color;
-    if (typeof color !== 'string') return color;
-    const result = [];
-    const m = /^\s*#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?\s*$/.exec(color);
-    if (m) {
-      let i;
-      for(i = 1; i < 4; ++i) {
-        result.push(parseInt(m[i], 16));
-      }
-      result.push(m[4] ? Math.round(parseInt(m[i], 16)*100/256)/100 : 1);
-      return result;
-    } else {
-      const m = /^\s*rgba?\s*\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([.\d]+))?\s*\)\s*$/.exec(color);
-      if (m) {
-        let i;
-        for(i = 1; i < 4; ++i) {
-          result.push(parseInt(m[i]));
-        }
-        result.push(m[4] ? parseFloat(m[i]) : 1);
-        return result;
-      } else {
-        const m = /^\s*#([\da-f])([\da-f])([\da-f])\s*$/.exec(color);
-        if (m) {
-          for(let i = 1; i < 4; ++i) {
-            result.push(parseInt(m[i]+m[i], 16));
-          }
-          result.push(1);
-          return result;
-        }
-      }
-    }
-  }
-
-  function sansSuffix(value) {
-    return value ? typeof value === 'string' ? +value.substring(0, value.length - this) : +value : 0;
-  }
-
-  function twoDigits(num) {
-    num = ''+num;
-    return num.length === 1 ? `0${num}` : num;
-  }
-
-  function identity(value) {return value}
 
   return util;
 });

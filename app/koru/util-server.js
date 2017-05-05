@@ -6,7 +6,7 @@ define(function(require, exports, module) {
 
   util.merge(util, {
     waitCallback(future) {
-      return function (err, response) {
+      return (err, response) => {
         if (err) {
           if (err instanceof Error)
             future.throw(err);

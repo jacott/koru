@@ -1,4 +1,6 @@
 define(function(require, exports, module) {
+  const qstr = s => JSON.stringify(s).slice(1, -1);
+
   module.exports = {
     idLen: 17,
     browserVersion(ua) {
@@ -15,17 +17,17 @@ define(function(require, exports, module) {
     },
 
     merge(dest, source) {
-      for(let prop in source) {
+      for(const prop in source) {
         const desc = Object.getOwnPropertyDescriptor(source, prop);
-        desc && Object.defineProperty(dest, prop, desc);
+        desc === undefined || Object.defineProperty(dest, prop, desc);
       }
       return dest;
     },
 
     mergeNoEnum(dest, source) {
-      for(let prop in source) {
+      for(const prop in source) {
         const desc = Object.getOwnPropertyDescriptor(source, prop);
-        if (desc) {
+        if (desc !== undefined) {
           desc.enumerable = false;
           Object.defineProperty(dest, prop, desc);
         }
@@ -56,11 +58,7 @@ define(function(require, exports, module) {
    **/
   module.exports.extend = module.exports.merge;
 
-  function qstr(s) {
-    return JSON.stringify(s).slice(1, -1);
-  }
-
-  function inspect1(o, i) {
+  const inspect1 = (o, i) => {
     try {
       switch(typeof o) {
       case 'undefined':
@@ -90,7 +88,7 @@ define(function(require, exports, module) {
           if (o instanceof Error) {
             r.push(o.toString());
           }
-          for (let p in o) {
+          for (const p in o) {
             r.push(qstr(p) + ": " + inspect1(o[p], i-1));
           }
           return "{" + r.join(", ") +"}";
@@ -106,5 +104,5 @@ define(function(require, exports, module) {
     } catch(ex) {
       return '??';
     }
-  }
+  };
 });
