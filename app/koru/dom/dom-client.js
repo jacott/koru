@@ -25,7 +25,7 @@ define(function(require, exports, module) {
         document.documentElement.matchesSelector;
 
   const {DOCUMENT_NODE} = document;
-  const origValueSym = Symbol();
+  const origValue$ = Symbol();
 
   if (document.documentElement.closest === undefined) {
     Element.prototype.closest = function (selector) {
@@ -337,11 +337,11 @@ define(function(require, exports, module) {
       },
     },
 
-    originalValue(elm) {return elm[origValueSym]},
-    setOriginalValue(elm, value) {elm[origValueSym] = value},
+    originalValue(elm) {return elm[origValue$]},
+    setOriginalValue(elm, value) {elm[origValue$] = value},
     restoreOriginalValue(elm) {
-      if (elm.hasOwnProperty(origValueSym))
-        elm.value = elm[origValueSym];
+      if (elm.hasOwnProperty(origValue$))
+        elm.value = elm[origValue$];
     },
 
     registerHelpers(helpers) {

@@ -6,9 +6,9 @@ define(function(require, exports, module) {
 
   const Stubber = exports;
 
-  const yieldsP = Symbol(), throwsP = Symbol(),
-        returnsP = Symbol(), idP = Symbol(),
-        replacementP = Symbol();
+  const yields$ = Symbol(), throws$ = Symbol(),
+        returns$ = Symbol(), id$ = Symbol(),
+        replacement$ = Symbol();
 
   let globalCount = 0;
   let globalId = 0;
@@ -16,22 +16,22 @@ define(function(require, exports, module) {
 
   const stubProto = merge(Object.create(Function.prototype), {
     returns(arg) {
-      this[returnsP] = arg;
+      this[returns$] = arg;
       return this;
     },
 
     throws(arg) {
-      this[throwsP] = arg;
+      this[throws$] = arg;
       return this;
     },
 
     yields(...args) {
-      this[yieldsP] = args;
+      this[yields$] = args;
       return this;
     },
 
     cancelYields() {
-      this[yieldsP] = undefined;
+      this[yields$] = undefined;
       return this;
     },
 
@@ -45,12 +45,12 @@ define(function(require, exports, module) {
     withArgs(...args) {
       function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, withProto);
-      spy[idP] = newId();
+      spy[id$] = newId();
       spy.spyArgs = args;
       spy.onCall = this.onCall;
       spy.subject = this;
-      const al = allListeners[this[idP]];
-      (al === undefined ? (allListeners[this[idP]] = []) : al).push(spy);
+      const al = allListeners[this[id$]];
+      (al === undefined ? (allListeners[this[id$]] = []) : al).push(spy);
       return spy;
     },
 
@@ -58,18 +58,18 @@ define(function(require, exports, module) {
       function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, onCallProto);
 
-      spy[idP] = newId();
+      spy[id$] = newId();
       spy.spyCount = count;
       spy.subject = this;
-      const al = allListeners[this[idP]];
-      (al === undefined ? (allListeners[this[idP]] = []) : al).push(spy);
+      const al = allListeners[this[id$]];
+      (al === undefined ? (allListeners[this[id$]] = []) : al).push(spy);
       return spy;
     },
 
     invoke(thisValue, args) {
       const call = addCall(this, thisValue, args);
-      call.returnValue = this[replacementP] ?
-        this[replacementP].apply(thisValue, args) : this[returnsP];
+      call.returnValue = this[replacement$] ?
+        this[replacement$].apply(thisValue, args) : this[returns$];
       notifyListeners(this, call, thisValue, args);
 
       return invokeReturn(this, call);
@@ -184,16 +184,16 @@ define(function(require, exports, module) {
       (this.calls === undefined ? (this.calls = []) : this.calls)
         .push(call);
 
-      if (this[throwsP] !== undefined)
-        call.throws = this[throwsP];
+      if (this[throws$] !== undefined)
+        call.throws = this[throws$];
 
-      if (this[yieldsP] !== undefined)
-        call.yields = this[yieldsP];
+      if (this[yields$] !== undefined)
+        call.yields = this[yields$];
 
       notifyListeners(this, call);
 
-      if (this.hasOwnProperty(returnsP))
-        call.returnValue = this[returnsP];
+      if (this.hasOwnProperty(returns$))
+        call.returnValue = this[returns$];
     },
 
     toString() {
@@ -226,7 +226,7 @@ define(function(require, exports, module) {
   };
 
   const notifyListeners = (proxy, call, thisValue, args) => {
-    const listeners = allListeners[proxy[idP]];
+    const listeners = allListeners[proxy[id$]];
     if (listeners !== undefined) for(let i = 0; i < listeners.length; ++i) {
       const listener = listeners[i];
       const spyCount = listener.spyCount;
@@ -255,8 +255,8 @@ define(function(require, exports, module) {
     result.globalCount = ++globalCount;
     result.args = list;
     result.thisValue = thisValue;
-    if (proxy[throwsP] !== undefined) result.throws = proxy[throwsP];
-    if (proxy[yieldsP] !== undefined) result.yields = proxy[yieldsP];
+    if (proxy[throws$] !== undefined) result.throws = proxy[throws$];
+    if (proxy[yields$] !== undefined) result.yields = proxy[yields$];
     const {calls} = proxy;
     (calls === undefined ? (proxy.calls = []) : calls).push(result);
     return result;
@@ -286,8 +286,8 @@ define(function(require, exports, module) {
         throw AssertionError(new Error(`Already stubbed ${property}`));
       if (typeof orig === 'function') {
         func = stubFunction(orig, stubProto);
-        func[replacementP] = repFunc;
-        if (repFunc !== undefined) func[replacementP] = repFunc;
+        func[replacement$] = repFunc;
+        if (repFunc !== undefined) func[replacement$] = repFunc;
       } else {
         if (repFunc !== undefined) {
           throw AssertionError(new Error("Attempt to stub non function with a function"));
@@ -300,7 +300,7 @@ define(function(require, exports, module) {
       Object.defineProperty(object, property, {value: func, configurable: true});
     } else {
       func = stubFunction(null, stubProto);
-      if (repFunc !== undefined) func[replacementP] = repFunc;
+      if (repFunc !== undefined) func[replacement$] = repFunc;
       if (object != null)
         func[stubName$] = object;
     }
@@ -358,7 +358,7 @@ define(function(require, exports, module) {
     return func;
   };
 
-  Stubber.isStubbed = func => func != null && func[idP] !== undefined;
+  Stubber.isStubbed = func => func != null && func[id$] !== undefined;
 
   const restore = (object, property, desc, orig, func) => {
     if (object != null) {
@@ -367,13 +367,13 @@ define(function(require, exports, module) {
       else
         delete object[property];
     }
-    delete allListeners[func[idP]];
+    delete allListeners[func[id$]];
   };
 
   const stubFunction = (orig, proto) => {
     Object.setPrototypeOf(stub, proto);
     orig && merge(stub, orig);
-    stub[idP] = newId();
+    stub[id$] = newId();
     return stub;
     function stub(...args) {
       return stub.invoke(this, args);

@@ -6,24 +6,24 @@ define(function(require, exports, module) {
   const TransQueue = require('koru/model/trans-queue');
   const util       = require('koru/util');
 
-  const iDB = Symbol(), pendingUpdates = Symbol();
-  const busyQueue = Symbol(), idleQueue = Symbol();
+  const iDB$ = Symbol(), pendingUpdates$ = Symbol();
+  const busyQueue$ = Symbol(), idleQueue$ = Symbol();
 
   let notMe;
 
   function whenIdle(db) {
-    const iq = db[idleQueue];
+    const iq = db[idleQueue$];
     if (! iq) return;
-    db[idleQueue] = null;
+    db[idleQueue$] = null;
     iq.r && iq.r(db);
   }
 
-  function whenBusy(db) {db[idleQueue] = makePQ()}
+  function whenBusy(db) {db[idleQueue$] = makePQ()}
 
   class Index {
     constructor(queryIDB, modelName, name) {
       this._queryIDB = queryIDB;
-      this._withIndex = () => queryIDB[iDB]
+      this._withIndex = () => queryIDB[iDB$]
         .transaction(modelName).objectStore(modelName).index(name);
     }
 
@@ -56,8 +56,8 @@ define(function(require, exports, module) {
 
   class QueryIDB {
     constructor({name, version, upgrade}) {
-      this[pendingUpdates] = this[idleQueue] = null;
-      const bq = this[busyQueue] = new BusyQueue(this);
+      this[pendingUpdates$] = this[idleQueue$] = null;
+      const bq = this[busyQueue$] = new BusyQueue(this);
       bq.whenIdle = whenIdle;
       bq.whenBusy = whenBusy;
       const onerror = event => {
@@ -66,7 +66,7 @@ define(function(require, exports, module) {
       bq.queueAction(() => {
         const req = window.indexedDB.open(name, version);
         if (upgrade) req.onupgradeneeded = (event) => {
-          this[iDB] = event.target.result;
+          this[iDB$] = event.target.result;
           upgrade({
             db: this, oldVersion: event.oldVersion,
             event, transaction: event.target.transaction,
@@ -74,7 +74,7 @@ define(function(require, exports, module) {
         };
         req.onerror = onerror;
         req.onsuccess = event => {
-          const idb = this[iDB] = event.target.result;
+          const idb = this[iDB$] = event.target.result;
           idb.onerror = onerror;
           bq.nextAction();
         };
@@ -89,11 +89,11 @@ define(function(require, exports, module) {
     }
 
     get objectStoreNames() {
-      return this[iDB].objectStoreNames;
+      return this[iDB$].objectStoreNames;
     }
 
     transaction(tables, mode, {oncomplete, onabort}={}) {
-      const tx = this[iDB].transaction(tables, mode);
+      const tx = this[iDB$].transaction(tables, mode);
       if (oncomplete) tx.oncomplete = oncomplete;
       if (onabort) tx.onabort = onabort;
       return tx;
@@ -133,7 +133,7 @@ define(function(require, exports, module) {
     }
 
     cursor(modelName, query, direction, action) {
-      this[iDB].transaction(modelName).objectStore(modelName)
+      this[iDB$].transaction(modelName).objectStore(modelName)
         .openCursor(query, direction)
         .onsuccess = ({target: {result}}) => {
           action(result);
@@ -157,17 +157,17 @@ define(function(require, exports, module) {
     }
 
     close() {
-      this[iDB] && this[iDB].close();
+      this[iDB$] && this[iDB$].close();
     }
 
     catch(onRejected) {
-      const iq = this[idleQueue];
+      const iq = this[idleQueue$];
       return iq ? iq.p.catch(onRejected) : Promise.resolve();
     }
 
     whenReady(onFulfilled, onRejected) {
       return new Promise((resolve, reject) => {
-        const bq = this[busyQueue];
+        const bq = this[busyQueue$];
         bq.queueAction(() => {
           try {
             Promise.resolve(onFulfilled(this))
@@ -182,11 +182,11 @@ define(function(require, exports, module) {
     }
 
     createObjectStore(name) {
-      return this[iDB].createObjectStore(name, {keyPath: '_id'});
+      return this[iDB$].createObjectStore(name, {keyPath: '_id'});
     }
 
     deleteObjectStore(name) {
-      this[iDB].deleteObjectStore(name, {keyPath: '_id'});
+      this[iDB$].deleteObjectStore(name, {keyPath: '_id'});
     }
 
     index(modelName, name) {
@@ -207,19 +207,19 @@ define(function(require, exports, module) {
   } module.exports = QueryIDB;
 
   function error(db, ex) {
-    const iq = db[idleQueue];
+    const iq = db[idleQueue$];
     iq && iq.e(ex);
-    db[idleQueue] = null;
+    db[idleQueue$] = null;
     if (db.catchAll)
       db.catchAll(ex);
     else throw new Error((ex.target && ex.target.error) || ex);
   }
 
   function getPendingUpdates(db) {
-    const pu = db[pendingUpdates];
+    const pu = db[pendingUpdates$];
     if (pu) return pu;
     let count = 2;
-    const bq = db[busyQueue];
+    const bq = db[busyQueue$];
     bq.queueAction(whenReady); // ensure we have the console
     TransQueue.onSuccess(() => {
       if (count === 1)
@@ -227,28 +227,28 @@ define(function(require, exports, module) {
       else
         count = 1;
     });
-    TransQueue.onAbort(() => {db[pendingUpdates] = null});
+    TransQueue.onAbort(() => {db[pendingUpdates$] = null});
     function whenReady() {
       if (--count)
         bq.nextAction();
       else
         flushPendng(db);
     }
-    return db[pendingUpdates] = {};
+    return db[pendingUpdates$] = {};
   }
 
   function flushPendng(db) {
-    const pu = db[pendingUpdates];
+    const pu = db[pendingUpdates$];
     if (! pu) return;
-    db[pendingUpdates] = null;
+    db[pendingUpdates$] = null;
     const models = Object.keys(pu);
-    const tran = db[iDB].transaction(models, 'readwrite');
+    const tran = db[iDB$].transaction(models, 'readwrite');
     tran.onabort = ex => {
       error(db, ex);
-      db[busyQueue].nextAction();
+      db[busyQueue$].nextAction();
     };
     tran.oncomplete = () => {
-      db[busyQueue].nextAction();
+      db[busyQueue$].nextAction();
     };
     for(let model of models) {
       const docs = pu[model];
@@ -268,14 +268,14 @@ define(function(require, exports, module) {
 
   function wrapOSRequest(db, modelName, body) {
     return wrapRequest(db, () => {
-      const os = db[iDB].transaction(modelName).objectStore(modelName);
+      const os = db[iDB$].transaction(modelName).objectStore(modelName);
       return body(os);
     });
   }
 
   function wrapRequest(db, body) {
     return new Promise((resolve, reject) => {
-      const bq = db[busyQueue];
+      const bq = db[busyQueue$];
       bq.queueAction(() => {
         try {
           const req = body();

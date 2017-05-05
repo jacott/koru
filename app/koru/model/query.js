@@ -7,7 +7,7 @@ define(function(require, exports, module) {
     exports._unload && exports._unload();
   });
 
-  const notifyACSym = Symbol();
+  const notifyAC$ = Symbol();
 
   function Constructor(QueryEnv) {
     class Query {
@@ -99,7 +99,7 @@ define(function(require, exports, module) {
       }
     };
 
-    makeSubject(Query, 'onAnyChange', notifyACSym);
+    makeSubject(Query, 'onAnyChange', notifyAC$);
 
     function condition(query, map, params, value) {
       const conditions = (query[map] = query[map] || {});
@@ -120,7 +120,7 @@ define(function(require, exports, module) {
       return query;
     }
 
-    QueryEnv(Query, condition, notifyACSym);
+    QueryEnv(Query, condition, notifyAC$);
 
     return Query;
   }

@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const util = require('koru/util');
 
   const {Fiber} = util;
-  const TOSym = Symbol();
+  const timeout$ = Symbol();
 
   class IdleCheck {
     constructor() {
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       if (this.fibers.get(fiber))
         throw new Error('IdleCheck.inc called twice on fiber');
       this.fibers.set(fiber, Date.now());
-      this.maxTime && (fiber[TOSym] = koru.setTimeout(() => {
+      this.maxTime && (fiber[timeout$] = koru.setTimeout(() => {
         const {appThread={}} = fiber;
         koru.error(`aborted; timed out. dbId: ${appThread.dbId}, userId: ${appThread.userId}`);
         fiber.reset();
@@ -43,7 +43,7 @@ define(function(require, exports, module) {
 
     dec() {
       const fiber = Fiber.current;
-      const cto = fiber[TOSym];
+      const cto = fiber[timeout$];
       cto && koru.clearTimeout(cto);
       const start = this.fibers.get(fiber);
       if (! start)

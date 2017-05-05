@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   const koru    = require('../main');
   const message = require('./message');
 
-  const rpcType = Symbol();
+  const rpcType$ = Symbol();
 
   class SessionBase {
     constructor(id) {
@@ -13,24 +13,24 @@ define(function(require, exports, module) {
 
     defineRpc(name, func) {
       this._rpcs[name] = func;
-      func[rpcType] = 'update';
+      func[rpcType$] = 'update';
       return this;
     }
 
     defineRpcGet(name, func) {
       this._rpcs[name] = func;
-      func[rpcType] = 'get';
+      func[rpcType$] = 'get';
       return this;
     }
 
     isRpc(name) {
       const rpc = this._rpcs[name];
-      return rpc && !! rpc[rpcType];
+      return rpc && !! rpc[rpcType$];
     }
 
     isRpcGet(name) {
       const rpc = this._rpcs[name];
-      return rpc && rpc[rpcType] === 'get';
+      return rpc && rpc[rpcType$] === 'get';
     }
 
     provide(cmd, func) {

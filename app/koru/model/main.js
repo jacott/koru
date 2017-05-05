@@ -17,7 +17,7 @@ define(function(require, exports, module) {
     delete this.temp;
   }
 
-  const changesP = Symbol();
+  const changes$ = Symbol();
 
   /**
    * Track before/after/finally observers observing a model.
@@ -376,7 +376,7 @@ define(function(require, exports, module) {
      */
     $withChanges(changes) {
       if (changes == null) return null;
-      const cached = changes[changesP];
+      const cached = changes[changes$];
       if (cached !== undefined) return cached;
 
       let simple = true;
@@ -390,7 +390,7 @@ define(function(require, exports, module) {
       const attrs = this.attributes;
 
       if (simple)
-        return changes[changesP] = new this.constructor(attrs, changes);
+        return changes[changes$] = new this.constructor(attrs, changes);
 
       const cc = {};
 
@@ -422,7 +422,7 @@ define(function(require, exports, module) {
             Object.defineProperty(curr, part,  desc);
         }
       }
-      return changes[changesP] = new this.constructor(attrs, cc);
+      return changes[changes$] = new this.constructor(attrs, cc);
     }
 
     /**

@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   const message      = require('./message');
   const crypto       = requirejs.nodeRequire('crypto');
 
-  const _sideQueue = Symbol();
+  const sideQueue$ = Symbol();
 
   class Base {
     constructor (ws, sessId, close) {
@@ -107,14 +107,14 @@ define(function(require, exports, module) {
 
 
     batchMessages() {
-      this[_sideQueue] = [];
+      this[sideQueue$] = [];
       return util.thread.batchMessage = new BatchMessage(this);
     }
     releaseMessages() {
       const bm = util.thread.batchMessage;
       if (! bm) return;
-      const sq = this[_sideQueue];
-      this[_sideQueue] = null;
+      const sq = this[sideQueue$];
+      this[sideQueue$] = null;
       sq && sq.forEach(args => {bm.batch(this, ...args)});
       util.thread.batchMessage = null;
       bm.release();
@@ -129,8 +129,8 @@ define(function(require, exports, module) {
 
     sendBinary (type, args, func) {
       const bm = util.thread.batchMessage;
-      if (this[_sideQueue] && (! bm  || bm.conn !== this)) {
-        this[_sideQueue].push([type, args, func]);
+      if (this[sideQueue$] && (! bm  || bm.conn !== this)) {
+        this[sideQueue$].push([type, args, func]);
         return;
       }
       if (bm) {

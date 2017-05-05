@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const util = require('../util');
 
   let pubs = Object.create(null);
-  const preloadSym = Symbol();
+  const preload$ = Symbol();
 
   koru.onunload(module, () => {pubs = Object.create(null);});
 
@@ -14,13 +14,13 @@ define(function(require, exports, module) {
 
     if (name in pubs) throw new Error("Already published: " + name);
     pubs[name] = init;
-    if (preload) init[preloadSym] = preload;
+    if (preload) init[preload$] = preload;
   }
 
   util.merge(publish, {
     get _pubs() {return pubs},
     preload(sub, callback) {
-      const preload = sub._subscribe && sub._subscribe[preloadSym];
+      const preload = sub._subscribe && sub._subscribe[preload$];
       const promise = preload && preload(sub);
       if (promise && promise.then)
         promise.then(() => {callback()}, err => {callback(err)});

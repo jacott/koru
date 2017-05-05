@@ -1,17 +1,16 @@
 define(function(require) {
   const util  = require('koru/util');
 
-  const successSym = Symbol();
-  const abortSym = Symbol();
+  const success$ = Symbol(), abort$ = Symbol();
   let lastTime;
 
   const TransQueue = {
     transaction(db, body) {
       let prevTime;
-      let list = util.thread[successSym];
+      let list = util.thread[success$];
       const firstLevel = ! list;
       if (firstLevel) {
-        list = util.thread[successSym] = [];
+        list = util.thread[success$] = [];
         prevTime = util.thread.date;
         let now = util.dateNow();
         if (now === lastTime)
@@ -22,7 +21,7 @@ define(function(require) {
         const result = body === undefined ?
                 db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
-          util.thread[successSym] = null;
+          util.thread[success$] = null;
           for(let i = 0; i < list.length; ++i) {
             list[i]();
           }
@@ -30,7 +29,7 @@ define(function(require) {
         return result;
       } catch (ex) {
         if (firstLevel) {
-          const list = util.thread[abortSym];
+          const list = util.thread[abort$];
           if (list) for(let i = 0; i < list.length; ++i) {
             list[i]();
           }
@@ -39,13 +38,13 @@ define(function(require) {
       } finally {
         if (firstLevel) {
           util.thread.date = prevTime;
-          util.thread[successSym] = util.thread[abortSym] = null;
+          util.thread[success$] = util.thread[abort$] = null;
         }
       }
     },
 
     onSuccess(func) {
-      const list = util.thread[successSym];
+      const list = util.thread[success$];
       if (list)
         list.push(func);
       else
@@ -53,12 +52,12 @@ define(function(require) {
     },
 
     onAbort(func) {
-      if (! util.thread[successSym]) return;
-      const list = util.thread[abortSym];
+      if (! util.thread[success$]) return;
+      const list = util.thread[abort$];
       if (list)
         list.push(func);
       else
-        util.thread[abortSym] = [func];
+        util.thread[abort$] = [func];
     },
 
     _clearLastTime() {lastTime = null},

@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  const sizeSym = Symbol(), memoP = Symbol();
+  const size$ = Symbol(), memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
   const ident = n => n;
@@ -29,7 +29,7 @@ define(function(require, exports, module) {
   const previousNode = iterNode('right', 'left');
 
   const addNode = (tree, node) => {
-    ++tree[sizeSym];
+    ++tree[size$];
     if (tree.root === null) {
       tree.root = node;
       node.red = false;
@@ -49,7 +49,7 @@ define(function(require, exports, module) {
       this.container = tree;
       const {compare} = tree;
       const dir = direction;
-      this[memoP] = {
+      this[memo$] = {
         from: from ? (
           excludeFrom ?
             node => {
@@ -86,7 +86,7 @@ define(function(require, exports, module) {
     }
 
     next() {
-      const memo = this[memoP];
+      const memo = this[memo$];
       const {from, to, dir, state, chkTo} = memo;
 
       let node = memo.pos;
@@ -161,10 +161,10 @@ define(function(require, exports, module) {
       this.root = null;
       this.compare = compare;
       BTree.tree = this;
-      this[sizeSym] = 0;
+      this[size$] = 0;
     }
 
-    get size() {return this[sizeSym]};
+    get size() {return this[size$]};
 
     cursor(opts={}) {
       return new BTreeCursor(this, opts);
@@ -189,7 +189,7 @@ define(function(require, exports, module) {
       let {root} = this;
       if (n === null) return null;
 
-      --this[sizeSym];
+      --this[size$];
       let p = n.up;
       let {left, right: child} = n;
       if (left !== null && child !== null) {
@@ -307,7 +307,7 @@ define(function(require, exports, module) {
       let size = 0;
       for (let n = this.firstNode; n !== null; n = this.nextNode(n))
         ++size;
-      return this[sizeSym] = size;
+      return this[size$] = size;
     }
 
     _display(formatter=n => n) {return display(formatter, this.root)}

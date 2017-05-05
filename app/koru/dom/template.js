@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   const {mergeNoEnum, forEach} = util;
   const {DOCUMENT_NODE, TEXT_NODE} = document;
-  const dragTouchStartSym = Symbol();
+  const dragTouchStart$ = Symbol();
 
   let currentEvent;
   const svgns = "http://www.w3.org/2000/svg";
@@ -240,7 +240,7 @@ ${ex.message}`});
   }
 
   function dragTouchStart(event) {
-    let v = event.currentTarget[dragTouchStartSym];
+    let v = event.currentTarget[dragTouchStart$];
     if (v) {
       v.cancel && v.cancel();
     }
@@ -256,7 +256,7 @@ ${ex.message}`});
       document.removeEventListener('touchend', te, Dom.captureEventOption);
       document.removeEventListener('touchmove', tm, Dom.captureEventOption);
       koru.clearTimeout(v.timer);
-      v.currentTarget[dragTouchStartSym] = null;
+      v.currentTarget[dragTouchStart$] = null;
       v = null;
     }
 
@@ -283,7 +283,7 @@ ${ex.message}`});
         clientX: touch.clientX, clientY: touch.clientY});
     }
 
-    v = event.currentTarget[dragTouchStartSym] = {
+    v = event.currentTarget[dragTouchStart$] = {
       dragging: false,
       currentTarget: event.currentTarget,
       target: event.target,
