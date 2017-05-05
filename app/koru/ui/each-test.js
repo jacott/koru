@@ -239,7 +239,7 @@ isClient && define(function (require, exports, module) {
       assert.dom(v.Each.$render({}), elm => {
         refute.dom('li');
         assert.calledOnceWith(v.fooList, TH.match.func, {template: "Row"},
-                              TH.match(elm => elm._each));
+                              elm);
 
         v.fooList.yield({id: 1, name: 'r1'});
         assert.dom('li', 'r1');

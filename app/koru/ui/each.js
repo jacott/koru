@@ -6,11 +6,13 @@ define(function(require, exports, module) {
   const {ctx$, endMarker$} = require('koru/symbols');
   const $ = Dom.current;
 
+  const each$ = Symbol();
+
   function each(startEach, data, func, options) {
-    let each = startEach._each;
-    if (! each) {
+    let each = startEach[each$];
+    if (each === undefined) {
       startEach = createEach(startEach, func, options);
-      each = startEach._each;
+      each = startEach[each$];
     }
     each.call(data, options);
 
@@ -103,7 +105,7 @@ define(function(require, exports, module) {
     callback.startEach = startEach;
     callback.endMarker = endEach;
 
-    startEach._each = each;
+    startEach[each$] = each;
 
     return startEach;
 
