@@ -608,7 +608,6 @@ isClient && define(function (require, exports, module) {
         const tpl = Dom.Foo;
         assert.same(tpl.name, "Foo");
         assert.equals(tpl.nodes, [{name: "div"}]);
-        assert.equals(tpl._helpers, null);
         assert.equals(tpl._events, []);
 
         myMod.onUnload.yield();
@@ -630,7 +629,6 @@ isClient && define(function (require, exports, module) {
 
         const tpl = Dom.Foo.Bar;
         assert.same(tpl.name, 'Bar');
-        assert.same(tpl._helpers, undefined);
         assert.same(Dom.lookupTemplate("Foo.Bar"), tpl);
 
 
@@ -644,7 +642,6 @@ isClient && define(function (require, exports, module) {
         Dom.newTemplate({name: "Foo.Bar"});
 
         assert.same(Dom.Foo.Bar.name, 'Bar');
-        assert.equals(tpl._helpers, null);
         assert.same(Dom.Foo.Bar.Baz.name, 'Baz');
       },
     },

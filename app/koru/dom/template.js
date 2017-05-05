@@ -20,8 +20,9 @@ define(function(require, exports, module) {
       this.parent = parent !== Dom ? parent : null;
       this._events = [];
       this.nodes = undefined;
-      this._helpers = undefined;
       blueprint && initBlueprint(this, blueprint);
+      if (this._helpers === undefined)
+        this._helpers = Object.create(Dom._helpers);
     }
 
     static newTemplate(module, blueprint) {
@@ -86,7 +87,6 @@ define(function(require, exports, module) {
     }
 
     $render(data, parentCtx) {
-      ensureHelper(this);
       const prevCtx = Ctx._currentCtx;
       const ctx = Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       let frag = document.createDocumentFragment();
@@ -119,7 +119,6 @@ ${ex.message}`});
     }
 
     $helpers(properties) {
-      ensureHelper(this);
       mergeNoEnum(this._helpers, properties);
       return this;
     }
@@ -186,11 +185,6 @@ ${ex.message}`});
   }; module.exports = DomTemplate;
 
   DomTemplate.lookupTemplate = lookupTemplate;
-
-  function ensureHelper(tpl) {
-    if (! tpl._helpers)
-      tpl._helpers = Object.create(Dom._helpers);
-  }
 
   function nativeOn(parent, eventType, selector, func) {
     let events = parent[ctx$].__events;
