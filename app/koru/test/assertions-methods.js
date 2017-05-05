@@ -1,4 +1,9 @@
-define(['./core', '../format', './assertions'], function (geddon, format) {
+define(function(require, exports, module) {
+  const format     = require('koru/format');
+  const assertions = require('koru/test/assertions');
+  const Stubber    = require('koru/test/stubber');
+  const geddon     = require('./core');
+
   const gu = geddon._u;
   const ga = geddon.assertions;
 
@@ -619,7 +624,7 @@ define(['./core', '../format', './assertions'], function (geddon, format) {
   }
 
   function checkSpy(spy) {
-    (spy && spy._stubId) ||
+    Stubber.isStubbed(spy) ||
       geddon.fail("Argument is not a spy/stub");
   }
 });

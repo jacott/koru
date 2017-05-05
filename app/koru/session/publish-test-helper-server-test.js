@@ -10,6 +10,7 @@ define(function (require, exports, module) {
   const scFactory = require('koru/session/server-connection-factory');
   const api       = require('koru/test/api');
   const TH        = require('koru/test/main');
+  const Stubber   = require('koru/test/stubber');
   const publishTH = require('./publish-test-helper-server');
 
   const SessionBase = session.constructor;
@@ -58,10 +59,10 @@ define(function (require, exports, module) {
 
 
       assert(mockConnection instanceof scFactory.Base);
-      assert(mockConnection.sendBinary._stubId);
-      assert(mockConnection.added._stubId);
-      assert(mockConnection.changed._stubId);
-      assert(mockConnection.removed._stubId);
+      assert(Stubber.isStubbed(mockConnection.sendBinary));
+      assert(Stubber.isStubbed(mockConnection.added));
+      assert(Stubber.isStubbed(mockConnection.changed));
+      assert(Stubber.isStubbed(mockConnection.removed));
       assert.equals(mockConnection.userId, "u123");
 
       test.stub(publishTH, 'mockSession').returns(v.sess = {});

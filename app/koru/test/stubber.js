@@ -6,72 +6,76 @@ define(function(require, exports, module) {
 
   const Stubber = exports;
 
+  const yieldsP = Symbol(), throwsP = Symbol(),
+        returnsP = Symbol(), idP = Symbol(),
+        replacementP = Symbol();
+
   let globalCount = 0;
   let globalId = 0;
   const allListeners = Object.create(null);
 
   const stubProto = merge(Object.create(Function.prototype), {
     returns(arg) {
-      this._returns = arg;
+      this[returnsP] = arg;
       return this;
     },
 
     throws(arg) {
-      this._throws = arg;
+      this[throwsP] = arg;
       return this;
     },
 
     yields(...args) {
-      this._yields = args;
+      this[yieldsP] = args;
       return this;
     },
 
     cancelYields() {
-      this._yields = null;
+      this[yieldsP] = undefined;
       return this;
     },
 
     toString() {
-      return typeof this.original === 'function' ? this.original.name : this.original === undefined ?
+      return typeof this.original === 'function' ?
+        this.original.name : this.original === undefined ?
         this.name :
         inspect(this.original, 1);
     },
 
     withArgs(...args) {
-      function spy(...args) {
-        return spy.subject.apply(this, args);
-      };
+      function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, withProto);
-      spy._stubId = newId();
+      spy[idP] = newId();
       spy.spyArgs = args;
       spy.onCall = this.onCall;
       spy.subject = this;
-      (allListeners[this._stubId] || (allListeners[this._stubId] = [])).push(spy);
+      const al = allListeners[this[idP]];
+      (al === undefined ? (allListeners[this[idP]] = []) : al).push(spy);
       return spy;
     },
 
     onCall(count) {
-      function spy(...args) {
-        return spy.subject.apply(this, args);
-      };
+      function spy(...args) {return spy.subject.apply(this, args)};
       Object.setPrototypeOf(spy, onCallProto);
 
-      spy._stubId = newId();
+      spy[idP] = newId();
       spy.spyCount = count;
       spy.subject = this;
-      (allListeners[this._stubId] || (allListeners[this._stubId] = [])).push(spy);
+      const al = allListeners[this[idP]];
+      (al === undefined ? (allListeners[this[idP]] = []) : al).push(spy);
       return spy;
     },
 
     invoke(thisValue, args) {
       const call = addCall(this, thisValue, args);
-      call.returnValue = this._replacement ? this._replacement.apply(thisValue, args) : this._returns;
+      call.returnValue = this[replacementP] ?
+        this[replacementP].apply(thisValue, args) : this[returnsP];
       notifyListeners(this, call, thisValue, args);
 
       return invokeReturn(this, call);
     },
 
-    reset() {this.calls = null},
+    reset() {this.calls = undefined},
 
     getCall(index) {
       const {calls} = this;
@@ -80,24 +84,24 @@ define(function(require, exports, module) {
 
     args(callIndex, index) {
       const {calls} = this;
-      if (! calls) return;
+      if (calls === undefined) return;
       const call = calls[callIndex < 0 ? calls.length + callIndex : callIndex];
       return call && call.args[index < 0 ? call.args.length + index : index];
     },
 
     get firstCall() {
-      return this.calls && this.calls[0];
+      return this.calls === undefined ? undefined : this.calls[0];
     },
 
     get lastCall() {
-      return this.calls && this.calls[this.calls.length - 1];
+      return this.calls === undefined ? undefined : this.calls[this.calls.length - 1];
     },
 
-    get callCount() {return this.calls ? this.calls.length : 0},
-    get called() {return !! this.calls && this.calls.length !== 0},
-    get calledOnce() {return this.calls && this.calls.length === 1},
-    get calledTwice() {return this.calls && this.calls.length === 2},
-    get calledThrice() {return this.calls && this.calls.length === 3},
+    get callCount() {return this.calls === undefined ? 0 : this.calls.length},
+    get called() {return this.callCount !== 0},
+    get calledOnce() {return this.callCount === 1},
+    get calledTwice() {return this.callCount === 2},
+    get calledThrice() {return this.callCount === 3},
 
     calledBefore(after) {
       return this.called && after.called &&
@@ -110,14 +114,16 @@ define(function(require, exports, module) {
     },
 
     yield(...params) {
-      const args = this.calls && this.calls[0] && this.calls[0].args;
-      if (! args) throw AssertionError(new Error("Can't yield; stub has not been called"));
+      const {firstCall} = this;
+      const args = this.firstCall === undefined ? undefined : firstCall.args;
+      if (args === undefined)
+        throw AssertionError(new Error("Can't yield; stub has not been called"));
 
       yieldCall(args, params);
     },
 
     calledWith(...args) {
-      return this.calls && this.calls.some(function (list) {
+      return this.calls !== undefined && this.calls.some(list => {
         list = list.args;
         if (list.length > args.length)
           list = list.slice(0, args.length);
@@ -127,10 +133,7 @@ define(function(require, exports, module) {
     },
 
     calledWithExactly(...args) {
-      return this.calls && this.calls.some(function (list) {
-        list = list.args;
-        return deepEqual(list, args);
-      });
+      return this.calls !== undefined && this.calls.some(list => deepEqual(list.args, args));
     },
 
     printf(format) {
@@ -138,22 +141,18 @@ define(function(require, exports, module) {
       case '%n':
         return this.toString();
       case '%C':
-        if (this.calls) {
-          return this.calls.map(function (call) {
-            return "\n    " + inspect(call.args, 2);
-          }).join("");
-        }
-        return "";
+        return this.calls !== undefined ?
+          this.calls.map(call => "\n    " + inspect(call.args, 2)).join("")
+          : "";
       default:
         return inspect(this.calls, 2);
       }
     },
   });
 
-  function invokeReturn(stub, call) {
-    if (call.throws)
-      throw call.throws;
-    if (call.yields) {
+  const invokeReturn = (stub, call) => {
+    if (call.throws !== undefined) throw call.throws;
+    if (call.yields !== undefined) {
       const {args} = call;
       for(let i = 0; i < args.length; ++i) {
         const arg = args[i];
@@ -164,7 +163,7 @@ define(function(require, exports, module) {
       }
     }
     return call.returnValue;
-  }
+  };
 
   const spyProto = merge(Object.create(stubProto), {
     invoke(thisValue, args) {
@@ -182,19 +181,19 @@ define(function(require, exports, module) {
     },
 
     invoke(call) {
-      (this.calls || (this.calls = []))
+      (this.calls === undefined ? (this.calls = []) : this.calls)
         .push(call);
 
-      if (this._throws)
-        call.throws = this._throws;
+      if (this[throwsP] !== undefined)
+        call.throws = this[throwsP];
 
-      if (this._yields)
-        call.yields = this._yields;
+      if (this[yieldsP] !== undefined)
+        call.yields = this[yieldsP];
 
       notifyListeners(this, call);
 
-      if (this.hasOwnProperty('_returns'))
-        call.returnValue = this._returns;
+      if (this.hasOwnProperty(returnsP))
+        call.returnValue = this[returnsP];
     },
 
     toString() {
@@ -216,7 +215,7 @@ define(function(require, exports, module) {
     yield(...params) {yieldCall(this.args, params);},
   };
 
-  function yieldCall(args, callParams) {
+  const yieldCall = (args, callParams) => {
     for(let i = 0; i < args.length; ++i) {
       const arg = args[i];
       if (typeof arg === 'function') {
@@ -224,11 +223,11 @@ define(function(require, exports, module) {
       }
     }
     throw AssertionError(new Error("Can't yield; no function in arguments"));
-  }
+  };
 
-  function notifyListeners(proxy, call, thisValue, args) {
-    const listeners = allListeners[proxy._stubId];
-    if (listeners) for(let i = 0; i < listeners.length; ++i) {
+  const notifyListeners = (proxy, call, thisValue, args) => {
+    const listeners = allListeners[proxy[idP]];
+    if (listeners !== undefined) for(let i = 0; i < listeners.length; ++i) {
       const listener = listeners[i];
       const spyCount = listener.spyCount;
       if (spyCount !== undefined) {
@@ -247,48 +246,50 @@ define(function(require, exports, module) {
         j === -1 || listener.invoke(call);
       }
     }
-  }
+  };
 
-  function addCall(proxy, thisValue, args) {
+  const addCall = (proxy, thisValue, args) => {
     const list = new Array(args.length);
     for(let i = args.length - 1; i >= 0 ; --i) list[i] = args[i];
     const result = Object.create(callProto);
     result.globalCount = ++globalCount;
     result.args = list;
     result.thisValue = thisValue;
-    if (proxy._throws) result.throws = proxy._throws;
-    if (proxy._yields) result.yields = proxy._yields;
-    (proxy.calls || (proxy.calls = []))
-      .push(result);
+    if (proxy[throwsP] !== undefined) result.throws = proxy[throwsP];
+    if (proxy[yieldsP] !== undefined) result.yields = proxy[yieldsP];
+    const {calls} = proxy;
+    (calls === undefined ? (proxy.calls = []) : calls).push(result);
     return result;
-  }
+  };
 
-  function AssertionError(ex) {
+  const AssertionError = (ex) => {
     ex.name = 'AssertionError';
     return ex;
-  }
+  };
 
-  Stubber.stub = function (object, property, repFunc) {
+  Stubber.stub = (object, property, repFunc) => {
     let func, desc, orig;
-    if (repFunc && typeof repFunc !== 'function')
+    if (repFunc !== undefined && typeof repFunc !== 'function')
       throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
-    if (object && typeof object !== 'string') {
+    if (object != null && typeof object !== 'string') {
 
       if (typeof property !== 'string')
-        throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} is not a string`));
+        throw AssertionError(new Error(
+          `Invalid stub call: ${inspect(property)} is not a string`));
       if (! (property in object))
-        throw AssertionError(new Error(`Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
+        throw AssertionError(new Error(
+          `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
 
       desc = Object.getOwnPropertyDescriptor(object, property);
-      orig = desc ? desc.value : object[property];
-      if (orig && typeof orig.restore === 'function')
+      orig = desc !== undefined ? desc.value : object[property];
+      if (orig !== undefined && typeof orig.restore === 'function')
         throw AssertionError(new Error(`Already stubbed ${property}`));
       if (typeof orig === 'function') {
         func = stubFunction(orig, stubProto);
-        func._replacement = repFunc;
-        repFunc && (func._replacement = repFunc);
+        func[replacementP] = repFunc;
+        if (repFunc !== undefined) func[replacementP] = repFunc;
       } else {
-        if (repFunc) {
+        if (repFunc !== undefined) {
           throw AssertionError(new Error("Attempt to stub non function with a function"));
         }
 
@@ -299,8 +300,8 @@ define(function(require, exports, module) {
       Object.defineProperty(object, property, {value: func, configurable: true});
     } else {
       func = stubFunction(null, stubProto);
-      repFunc && (func._replacement = repFunc);
-      if (object)
+      if (repFunc !== undefined) func[replacementP] = repFunc;
+      if (object != null)
         func[stubName$] = object;
     }
     func.restore = function () {
@@ -310,10 +311,10 @@ define(function(require, exports, module) {
     return func;
   };
 
-  Stubber.spy = function (object, property, func) {
+  Stubber.spy = (object, property, func) => {
     if (func !== undefined && typeof func !== 'function')
       throw AssertionError(new Error("third argument to spy must be a function or null"));
-    if (object && typeof property === 'string') {
+    if (object != null && typeof property === 'string') {
       const desc = Object.getOwnPropertyDescriptor(object, property);
       const orig = desc === undefined ? object[property] : desc.value;
       if (typeof orig === 'function') {
@@ -329,13 +330,13 @@ define(function(require, exports, module) {
     throw AssertionError(new Error("Attempt to spy on non function"));
   };
 
-  Stubber.intercept = function (object, prop, replacement, restore) {
+  Stubber.intercept = (object, prop, replacement, restore) => {
     const orig = Object.getOwnPropertyDescriptor(object, prop);
-    if (orig && orig.value && typeof orig.value.restore === 'function')
+    if (orig !== undefined && orig.value !== undefined && typeof orig.value.restore === 'function')
       throw new Error(`Already stubbed ${prop}`);
 
     let func;
-    if (replacement) {
+    if (replacement !== undefined) {
       if (typeof replacement === 'function') {
          func = function(...args) {
           return replacement.apply(this, args);
@@ -345,37 +346,39 @@ define(function(require, exports, module) {
       }
       func._actual = orig && orig.value;
     } else {
-      func = function () {};
+      func = () => {};
     }
 
     Object.defineProperty(object, prop, {configurable: true, value: func,});
-    func.restore = function () {
-      if (orig) Object.defineProperty(object, prop, orig);
+    func.restore = () => {
+      if (orig !== undefined) Object.defineProperty(object, prop, orig);
       else delete object[prop];
       restore && restore();
     };
     return func;
   };
 
-  function restore(object, property, desc, orig, func) {
-    if (object) {
-      if (desc)
+  Stubber.isStubbed = func => func != null && func[idP] !== undefined;
+
+  const restore = (object, property, desc, orig, func) => {
+    if (object != null) {
+      if (desc !== undefined)
         Object.defineProperty(object, property, desc);
       else
         delete object[property];
     }
-    delete allListeners[func._stubId];
-  }
+    delete allListeners[func[idP]];
+  };
 
-  function stubFunction(orig, proto) {
+  const stubFunction = (orig, proto) => {
     Object.setPrototypeOf(stub, proto);
     orig && merge(stub, orig);
-    stub._stubId = newId();
+    stub[idP] = newId();
     return stub;
     function stub(...args) {
       return stub.invoke(this, args);
     };
-  }
+  };
 
-  function newId() {return (++globalId).toString(36)}
+  const newId = () => (++globalId).toString(36);
 });

@@ -188,14 +188,14 @@ define(function (require, exports, module) {
     },
 
     "test stub with function"() {
-      var obj = {foo: function() {}};
+      var obj = {foo() {}};
       test.stub(obj, 'foo', function (a, b) {return [a,b]});
       assert.equals(obj.foo(1,2), [1,2]);
       assert.calledWith(obj.foo, 1, 2);
     },
 
     "test basics"() {
-      var x = test.stub();
+      const x = test.stub();
       refute.called(x);
       assert.isFalse(x.called);
       x.call(v.this = {val: "this"}, 123, {x: "123"});
