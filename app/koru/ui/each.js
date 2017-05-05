@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   const Query = require('../model/query');
   const util  = require('../util');
 
+  const {ctx$, endMarker$} = require('koru/symbols');
   const $ = Dom.current;
 
   function each(startEach, data, func, options) {
@@ -34,7 +35,7 @@ define(function(require, exports, module) {
       throw new Error("first argument must be name of helper method to call");
 
     const startEach = document.createComment('start');
-    const endEach = startEach._koruEnd = document.createComment('end');
+    const endEach = startEach[endMarker$] = document.createComment('end');
     insertPoint.parentNode.insertBefore(endEach, insertPoint.nextSibling);
     insertPoint.parentNode.insertBefore(startEach, endEach);
 
@@ -57,47 +58,7 @@ define(function(require, exports, module) {
                                  "' not found in template '" + ctpl.name + "'");
     }
 
-    callback.setDefaultDestroy = setDefaultDestroy;
-    callback.render = callbackRender;
-    callback.clear = function (func) {
-      const parent = startEach.parentNode;
-      if (! parent) return;
-      for(let key in rows) {
-        const row = rows[key];
-        if (! func || func(row)) {
-          delete rows[key];
-          Dom.remove(row);
-        }
-      }
-    };
-    callback.count = 0;
-    callback.rows = rows;
-    callback.startEach = startEach;
-
-    startEach._each = each;
-
-    return startEach;
-
-    function each(options) {
-      callback.count++;
-      helper.call(this, callback, options, startEach);
-    }
-
-    function insert(elm, sort) {
-      const a = $.data(elm);
-      let before = endEach;
-      if (typeof sort === 'function') {
-        for(let prev; (prev = before.previousSibling) !== startEach; before = prev)  {
-          const b = $.data(prev);
-          if (a !== b && sort(a, b) >= 0) break;
-        }
-      } else if (sort)
-        before = sort;
-
-      endEach.parentNode.insertBefore(elm, before);
-    }
-
-    function callback(doc, old, sort) {
+    const callback = (doc, old, sort) => {
       const data = (doc || old);
       if (! data) return;
       const id = data._id || data.id;
@@ -122,6 +83,47 @@ define(function(require, exports, module) {
       if (id) rows[id] = rendered;
       insert(rendered, sort);
       return rendered;
+    };
+
+    callback.setDefaultDestroy = setDefaultDestroy;
+    callback.render = callbackRender;
+    callback.clear = function (func) {
+      const parent = startEach.parentNode;
+      if (! parent) return;
+      for(let key in rows) {
+        const row = rows[key];
+        if (! func || func(row)) {
+          delete rows[key];
+          Dom.remove(row);
+        }
+      }
+    };
+    callback.count = 0;
+    callback.rows = rows;
+    callback.startEach = startEach;
+    callback.endMarker = endEach;
+
+    startEach._each = each;
+
+    return startEach;
+
+    function each(options) {
+      callback.count++;
+      helper.call(this, callback, options, startEach);
+    }
+
+    function insert(elm, sort) {
+      const a = $.data(elm);
+      let before = endEach;
+      if (typeof sort === 'function') {
+        for(let prev; (prev = before.previousSibling) !== startEach; before = prev)  {
+          const b = $.data(prev);
+          if (a !== b && sort(a, b) >= 0) break;
+        }
+      } else if (sort)
+        before = sort;
+
+      endEach.parentNode.insertBefore(elm, before);
     }
   }
 

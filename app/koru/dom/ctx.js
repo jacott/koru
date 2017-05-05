@@ -2,6 +2,8 @@ define(function(require, exports, module) {
   const Dom  = require('koru/dom/base');
   const util = require('koru/util');
 
+  const {ctx$, endMarker$} = require('koru/symbols');
+
   const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
@@ -110,7 +112,7 @@ define(function(require, exports, module) {
     let evals = ctx.evals;
     evals = evals && ctx.evals[0];
     let elm = evals && evals[0];
-    while(elm && elm.nodeType !== DOCUMENT_NODE && elm._koru !== ctx)
+    while(elm && elm.nodeType !== DOCUMENT_NODE && elm[ctx$] !== ctx)
       elm = elm.parentNode;
 
     return elm;
@@ -217,7 +219,7 @@ define(function(require, exports, module) {
         value = document.createComment('empty');
 
     } else if (typeof value === 'object' && value.nodeType === DOCUMENT_FRAGMENT_NODE) {
-      if (currentElement._koruEnd != null) {
+      if (currentElement[endMarker$] !== undefined) {
         Dom.removeInserts(currentElement);
       } else {
         if (currentElement.nodeType !== COMMENT_NODE) {
@@ -226,11 +228,12 @@ define(function(require, exports, module) {
           currentElement = start;
         } else
           currentElement.textContent = 'start';
-        currentElement._koruEnd = document.createComment('end');
-        currentElement.parentNode.insertBefore(currentElement._koruEnd, currentElement.nextSibling);
+        currentElement[endMarker$] = document.createComment('end');
+        currentElement.parentNode.insertBefore(
+          currentElement[endMarker$], currentElement.nextSibling);
       }
 
-      currentElement.parentNode.insertBefore(value, currentElement._koruEnd);
+      currentElement.parentNode.insertBefore(value, currentElement[endMarker$]);
       value = currentElement;
 
     } else if (typeof value !== 'object' || ! ('nodeType' in value)) {
@@ -281,8 +284,8 @@ define(function(require, exports, module) {
       if (args.length === 1) args = args[0];
     }
 
-    if (currentElement._koru != null) {
-      return currentElement._koru.updateAllTags(args);
+    if (currentElement[ctx$] != null) {
+      return currentElement[ctx$].updateAllTags(args);
     }
 
     if (func.$autoRender !== undefined)

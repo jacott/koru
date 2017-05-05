@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
+  const {ctx$, endMarker$} = require('koru/symbols');
+
   let vendorTransform;
   const vendorStylePrefix = (() => {
     const style = document.documentElement.style;
@@ -358,14 +360,14 @@ define(function(require, exports, module) {
       if (! ctx) {
         ctx = new Ctx(null, Dom.ctx(elm));
       }
-      elm._koru = ctx;
+      elm[ctx$] = ctx;
       ctx.firstElement = elm;
       return ctx;
     },
 
     destroyMeWith(elm, ctx) {
-      if (ctx._koru) ctx = ctx._koru;
-      const elmCtx = elm._koru;
+      if (ctx[ctx$]) ctx = ctx[ctx$];
+      const elmCtx = elm[ctx$];
       const id = getId(elmCtx);
       const observers = ctx.__destoryObservers;
       ((observers === undefined) ? (ctx.__destoryObservers = Object.create(null)) : observers
@@ -374,7 +376,7 @@ define(function(require, exports, module) {
     },
 
     destroyData(elm) {
-      var ctx = elm && elm._koru;
+      var ctx = elm && elm[ctx$];
       if (ctx) {
         var dw = ctx.__destoryWith;
         if (dw !== undefined) {
@@ -391,7 +393,7 @@ define(function(require, exports, module) {
           ctx.__destoryObservers = undefined;
           for (const id in observers) {
             const withElm = observers[id];
-            const withCtx = withElm._koru;
+            const withCtx = withElm[ctx$];
             if (withCtx != null)  {
               withCtx.__destoryWith = undefined;
             }
@@ -413,7 +415,7 @@ define(function(require, exports, module) {
         ctx.destroyed && ctx.destroyed(ctx, elm);
         var tpl = ctx.template;
         tpl && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
-        elm._koru = null;
+        elm[ctx$] = null;
       }
       Dom.destroyChildren(elm);
     },
@@ -439,7 +441,7 @@ define(function(require, exports, module) {
     removeInserts(start) {
       var parent = start.parentNode;
       if (! parent) return;
-      var end = start._koruEnd;
+      var end = start[endMarker$];
       for(var elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
         parent.removeChild(elm);
         Dom.destroyData(elm);
@@ -468,22 +470,22 @@ define(function(require, exports, module) {
     },
 
     myCtx(elm) {
-      return elm == null ? null : elm._koru;
+      return elm == null ? null : elm[ctx$];
     },
 
     ctx(elm) {
       if (typeof elm === 'string')
         elm = document.querySelector(elm);
       if (elm == null) return;
-      let ctx = elm._koru;
+      let ctx = elm[ctx$];
       while(ctx === undefined && elm.parentNode !== null)
-        ctx = (elm = elm.parentNode)._koru;
+        ctx = (elm = elm.parentNode)[ctx$];
       return ctx;
     },
 
     ctxById(id) {
       var elm = document.getElementById(id);
-      return elm && elm._koru;
+      return elm && elm[ctx$];
     },
 
     updateElement(elm) {
@@ -492,15 +494,15 @@ define(function(require, exports, module) {
     },
 
     replaceElement(newElm, oldElm, noRemove) {
-      var ast = oldElm._koruEnd;
+      var ast = oldElm[endMarker$];
       if (ast) {
         Dom.removeInserts(oldElm);
         Dom.remove(ast);
       }
 
-      var parentCtx = (oldElm._koru && oldElm._koru.parentCtx) || Dom.ctx(oldElm.parentNode);
+      var parentCtx = (oldElm[ctx$] && oldElm[ctx$].parentCtx) || Dom.ctx(oldElm.parentNode);
       if (parentCtx) {
-        var ctx = newElm._koru;
+        var ctx = newElm[ctx$];
         if (ctx) ctx.parentCtx = parentCtx;
       }
 
@@ -511,7 +513,7 @@ define(function(require, exports, module) {
     },
 
     fragEnd(fragStart) {
-      return fragStart._koruEnd;
+      return fragStart[endMarker$];
     },
 
     contains: Element.prototype.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
@@ -532,7 +534,7 @@ define(function(require, exports, module) {
       while(iter) {
         var row = iter;
         iter = iter.nextSibling; // incase side affect
-        var b = row._koru;
+        var b = row[ctx$];
         if (b && finder(b.data)) return row;
       }
       return null; // need null for IE

@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const Stubber    = require('koru/test/stubber');
   const geddon     = require('./core');
 
+  const {ctx$} = require('koru/symbols');
+
   const gu = geddon._u;
   const ga = geddon.assertions;
 
@@ -465,12 +467,12 @@ define(function(require, exports, module) {
             }
             if(options.hasOwnProperty('data')) {
               const hint = {};
-              const ef = filter(elm, i => i._koru && gu.deepEqual(i._koru.data, options.data));
+              const ef = filter(elm, i => i[ctx$] !== undefined && gu.deepEqual(i[ctx$].data, options.data));
               if (ef.length === 0) {
                 if (this._asserting !== false) {
                   Array.prototype.find.call(elm, i => {
-                    if (i._koru) {
-                      gu.deepEqual(i._koru.data, options.data, hint, 'i');
+                    if (i[ctx$]) {
+                      gu.deepEqual(i[ctx$].data, options.data, hint, 'i');
                     }
                     return true;
                   });

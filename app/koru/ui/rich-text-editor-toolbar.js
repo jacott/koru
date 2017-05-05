@@ -75,7 +75,7 @@ define(function(require, exports, module) {
     },
 
     mentions() {
-      if ($.element._koruEnd) return;
+      if ($.element.nodeType === document.COMMENT_NODE) return;
       let mentions = $.ctx.parentCtx.data.extend;
       mentions = mentions && mentions.mentions;
       if (! mentions) return;

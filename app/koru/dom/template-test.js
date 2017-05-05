@@ -10,6 +10,8 @@ isClient && define(function (require, exports, module) {
   const api  = require('koru/test/api');
   const util = require('koru/util');
 
+  const {ctx$} = require('koru/symbols');
+
   const DomTemplate = require('./template');
   var v;
 
@@ -167,12 +169,12 @@ isClient && define(function (require, exports, module) {
         });
         const elm = Dom.Foo.$render({});
 
-        assert.same(v.helperFoundCtx, elm._koru);
+        assert.same(v.helperFoundCtx, elm[ctx$]);
 
         assert.dom(elm, function () {
           assert.dom('input', {value: 'one'}, function () {
             const ctx = Dom.Foo.$ctx(this);
-            assert.same(ctx, elm._koru);
+            assert.same(ctx, elm[ctx$]);
             assert.same(ctx.element(), elm);
           });
         });
@@ -180,11 +182,11 @@ isClient && define(function (require, exports, module) {
         document.body.appendChild(elm);
 
         assert.dom('#FooId');
-        assert.same(Dom.Foo.$ctx('FooId'), elm._koru);
-        assert.same(Dom.Foo.$data('FooId'), elm._koru.data);
-        assert.same(Dom.Foo.$data(elm.querySelector('#BazArticle')), elm._koru.data);
+        assert.same(Dom.Foo.$ctx('FooId'), elm[ctx$]);
+        assert.same(Dom.Foo.$data('FooId'), elm[ctx$].data);
+        assert.same(Dom.Foo.$data(elm.querySelector('#BazArticle')), elm[ctx$].data);
 
-        assert.same(Dom.ctxById('FooId'), elm._koru);
+        assert.same(Dom.ctxById('FooId'), elm[ctx$]);
       },
 
       "test updateAllTags"() {
@@ -195,15 +197,15 @@ isClient && define(function (require, exports, module) {
         assert.dom(elm, function () {
           assert.dom('input', {value: 'one'});
 
-          elm._koru.updateAllTags({myFunc: 'two'});
+          elm[ctx$].updateAllTags({myFunc: 'two'});
 
           assert.dom('input', {count: 1});
           assert.dom('input', {value: 'two'}, function () {
-            this._koru.updateAllTags(null);
+            this[ctx$].updateAllTags(null);
 
             assert.same(this.textContent, '');
 
-            assert.same(this._koru.data, null);
+            assert.same(this[ctx$].data, null);
           });
         });
       },
@@ -227,16 +229,16 @@ isClient && define(function (require, exports, module) {
             assert.same(document.activeElement, this);
           });
 
-          elm._koru.updateAllTags();
+          elm[ctx$].updateAllTags();
 
           assert.dom('input', function () {
             assert.same(document.activeElement, this);
 
-            this._koru.updateAllTags(null);
+            this[ctx$].updateAllTags(null);
 
             assert.same(this.textContent, '');
 
-            assert.same(this._koru.data, null);
+            assert.same(this[ctx$].data, null);
           });
         });
       },
@@ -742,27 +744,27 @@ isClient && define(function (require, exports, module) {
 
           assert.dom('#foo', function () {
             assert.dom('>span', function () {
-              v.barCtx = this._koru;
+              v.barCtx = this[ctx$];
             });
             Dom.replaceElement(baz, bar);
-            const ctx = this._koru;
+            const ctx = this[ctx$];
             assert.dom('>h1', function () {
-              assert.same(ctx, this._koru.parentCtx);
+              assert.same(ctx, this[ctx$].parentCtx);
             });
             refute.dom('>span');
             assert.same(v.args[0], v.barCtx);
-            assert.isNull(bar._koru);
+            assert.isNull(bar[ctx$]);
 
             bar = Dom.Foo.Bar.$render();
 
             Dom.replaceElement(bar, baz, 'noRemove');
 
             assert.dom('>span', function () {
-              assert.same(ctx, this._koru.parentCtx);
+              assert.same(ctx, this[ctx$].parentCtx);
             });
             refute.dom('>h1');
             assert.same(v.args[0], v.barCtx);
-            refute.isNull(baz._koru);
+            refute.isNull(baz[ctx$]);
           });
         },
       },
@@ -804,7 +806,7 @@ isClient && define(function (require, exports, module) {
       const frag = Dom.Foo.$render({});
 
       assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
-      assert(frag._koru);
+      assert(frag[ctx$]);
     },
 
     "test inserting Document Fragment"() {
@@ -939,10 +941,10 @@ isClient && define(function (require, exports, module) {
 
         "test removes with"() {
           Dom.remove(v.elm);
-          assert.same(v.elm._koru, null);
-          assert.same(v.dep._koru, null);
+          assert.same(v.elm[ctx$], null);
+          assert.same(v.dep[ctx$], null);
           assert.same(v.dep.parentNode, null);
-          assert.same(v.dep2._koru, null);
+          assert.same(v.dep2[ctx$], null);
           assert.same(v.dep2.parentNode, null);
         },
 
@@ -951,10 +953,10 @@ isClient && define(function (require, exports, module) {
           const obs = {};
           assert(v.dep2Ctx.__id);
           obs[v.dep2Ctx.__id] = v.dep2;
-          assert.equals(v.elm._koru.__destoryObservers, obs);
+          assert.equals(v.elm[ctx$].__destoryObservers, obs);
 
           Dom.remove(v.dep2);
-          assert.same(v.elm._koru.__destoryObservers, undefined);
+          assert.same(v.elm[ctx$].__destoryObservers, undefined);
         },
       },
 
@@ -977,11 +979,11 @@ isClient && define(function (require, exports, module) {
         const frag = Dom.Foo.$render({});
         assert.same(frag.nodeType, document.DOCUMENT_FRAGMENT_NODE);
 
-        const ctx = frag.firstChild._koru;
+        const ctx = frag.firstChild[ctx$];
         assert.same(frag.firstChild.tagName, 'DIV');
 
-        assert.same(ctx, frag.firstChild.nextSibling._koru);
-        assert.same(ctx, frag.lastChild._koru);
+        assert.same(ctx, frag.firstChild.nextSibling[ctx$]);
+        assert.same(ctx, frag.lastChild[ctx$]);
       },
 
 

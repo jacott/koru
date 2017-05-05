@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
+  const {ctx$} = require('koru/symbols');
+
   const {mergeNoEnum, forEach} = util;
   const {DOCUMENT_NODE, TEXT_NODE} = document;
   const dragTouchStartSym = Symbol();
@@ -92,7 +94,7 @@ define(function(require, exports, module) {
       const firstChild = frag.firstChild;
       if (firstChild) {
         if (frag.lastChild === firstChild) frag = firstChild;
-        frag._koru = ctx;
+        frag[ctx$] = ctx;
       }
       ctx.firstElement = firstChild;
       try {
@@ -191,10 +193,10 @@ ${ex.message}`});
   }
 
   function nativeOn(parent, eventType, selector, func) {
-    let events = parent._koru.__events;
+    let events = parent[ctx$].__events;
 
     if (! events) {
-      events = parent._koru.__events = {};
+      events = parent[ctx$].__events = {};
     }
 
     let eventTypes = events[eventType];
@@ -300,7 +302,7 @@ ${ex.message}`});
     const prevCtx = Ctx._currentCtx;
     currentEvent = event;
 
-    Ctx._currentCtx = event.currentTarget._koru;
+    Ctx._currentCtx = event.currentTarget[ctx$];
     const eventTypes = Ctx._currentCtx.__events[type];
     const matches = Dom._matchesFunc;
 
@@ -358,7 +360,7 @@ ${ex.message}`});
   }
 
   function nativeOff(parent, eventType, selector, func) {
-    const events = parent._koru && parent._koru.__events;
+    const events = parent[ctx$] && parent[ctx$].__events;
 
     if (events) {
       const eventTypes = events[eventType];

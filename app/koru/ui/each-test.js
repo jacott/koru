@@ -5,6 +5,8 @@ isClient && define(function (require, exports, module) {
   const TH      = require('../model/test-helper');
   const util    = require('../util');
 
+  const {endMarker$} = require('koru/symbols');
+
   const each    = require('./each');
   var v;
 
@@ -350,9 +352,11 @@ isClient && define(function (require, exports, module) {
         assert.dom('li', {text: 'r1', parent() {
           const start = this.firstChild.nextSibling;
           Dom.removeInserts(start);
-          assert.same(start.nextSibling, start._koruEnd);
+          assert.same(start.nextSibling, start[endMarker$]);
+          assert.same(start.nextSibling, callback.endMarker);
+
           assert.same(callback.startEach, start);
-          assert.same(start._koruEnd.nodeType, document.COMMENT_NODE);
+          assert.same(start[endMarker$].nodeType, document.COMMENT_NODE);
         }});
         refute.dom('li');
       });
@@ -418,7 +422,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('li', elm => {
           assert.same(elm.previousSibling.nodeValue, 'start');
           assert.same(elm.nextSibling.nodeValue, 'end');
-          assert.same(elm.previousSibling._koruEnd, elm.nextSibling);
+          assert.same(elm.previousSibling[endMarker$], elm.nextSibling);
         });
       });
     },

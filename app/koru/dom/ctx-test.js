@@ -4,12 +4,15 @@ isClient && define(function (require, exports, module) {
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  var test, v;
   const TH   = require('koru/test');
   const api  = require('koru/test/api');
   const util = require('koru/util');
   const Dom  = require('../dom');
+
+  const {ctx$} = require('koru/symbols');
+
   const Ctx  = require('./ctx');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
@@ -85,7 +88,7 @@ isClient && define(function (require, exports, module) {
         var data = {me: true};
 
         v.elm = Dom.h({});
-        v.elm._koru = {data: data};
+        v.elm[ctx$] = {data: data};
 
         v.isElement = false;
 

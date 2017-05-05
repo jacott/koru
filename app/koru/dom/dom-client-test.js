@@ -4,6 +4,8 @@ define(function (require, exports, module) {
   const TH  = require('koru/test-helper');
   const api = require('koru/test/api');
 
+  const {endMarker$} = require('koru/symbols');
+
   const Dom = require('koru/dom');
   let v;
 
@@ -370,15 +372,15 @@ define(function (require, exports, module) {
     "test removeInserts"() {
       const parent = document.createElement('div');
       const elm = document.createComment('start');
-      elm._koruEnd = document.createComment('end');
+      elm[endMarker$] = document.createComment('end');
 
-      assert.same(Dom.fragEnd(elm), elm._koruEnd);
+      assert.same(Dom.fragEnd(elm), elm[endMarker$]);
 
       parent.appendChild(elm);
       [1,2,3].forEach(function (i) {
         parent.appendChild(document.createElement('p'));
       });
-      parent.appendChild(elm._koruEnd);
+      parent.appendChild(elm[endMarker$]);
       parent.appendChild(document.createElement('i'));
 
       this.spy(Dom, 'destroyChildren');
@@ -391,7 +393,7 @@ define(function (require, exports, module) {
       assert.same(parent.querySelectorAll('i').length, 1);
 
       assert.same(elm.parentNode, parent);
-      assert.same(elm._koruEnd.parentNode, parent);
+      assert.same(elm[endMarker$].parentNode, parent);
     },
 
 
