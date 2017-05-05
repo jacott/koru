@@ -47,9 +47,8 @@ define(function(require, exports, module) {
     function subcribe(name, ...args) {
       if (! publish._pubs[name]) throw new Error("No client publish of " + name);
 
-      const callback = args[args.length - 1];
       const sub = new ClientSub(session, (++nextId).toString(36), name, args);
-      if (session.interceptSubscribe && session.interceptSubscribe(name, sub, callback))
+      if (session.interceptSubscribe && session.interceptSubscribe(name, sub))
         return sub;
       sub._wait();
       publish.preload(sub, err => {

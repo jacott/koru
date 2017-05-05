@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   };
 
   function stopSub() {
-    if (! this._id) return;
+    if (this._id === null) return;
     debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >',
                                    this._id, this.name, 'STOP');
     const session = this.session;
@@ -23,7 +23,7 @@ define(function(require, exports, module) {
   }
 
   function stopped(sub) {
-    if (sub._id == null) return;
+    if (sub._id === null) return;
 
     delete sub.session.subs[sub._id];
     const models = {};
@@ -49,6 +49,8 @@ define(function(require, exports, module) {
       this.name = name;
       this._subscribe = publish._pubs[name];
       this.stop = stopSub.bind(this);
+      this.waiting = false;
+      this.repeatResponse = false;
       const cb = args[args.length - 1];
       this.args = args;
       if (typeof cb === 'function') {
@@ -57,6 +59,15 @@ define(function(require, exports, module) {
       } else {
         this.callback = null;
       }
+    }
+
+    onResponse(callback) {
+      this.callback = callback;
+      this.repeatResponse = true;
+    }
+
+    onFirstResponse(callback) {
+      this.callback = callback;
     }
 
     get userId() {
@@ -101,9 +112,10 @@ define(function(require, exports, module) {
 
       this.session.state.decPending();
       this.waiting = false;
-      if (callback) {
-        callback(result || null);
-        this.callback = null;
+      if (callback !== null) {
+        callback(result == null ? null : result);
+        if (! this.repeatResponse)
+          this.callback = null;
       }
     }
 
@@ -127,5 +139,5 @@ define(function(require, exports, module) {
     }
   }
 
-  module.exports = ClientSub;
+  return ClientSub;
 });

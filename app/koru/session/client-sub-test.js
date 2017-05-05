@@ -25,6 +25,7 @@ isClient && define(function (require, exports, module) {
         _rpcs: {},
         _commands: {},
         sendBinary: v.sendBinary = test.stub(),
+        subs: {},
       };
       const subscribe = function () {};
       api.module(null, null, {
@@ -36,6 +37,63 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       v = null;
+    },
+
+    "test onResponse"() {
+      /**
+       * Use this instead of passing a callback to subscribe to be notified each time the server
+       * responds to a connection request.
+       *
+       * See also {##onFirstResponse}
+       *
+       * @param callback first arg is an error is subscribe failed
+       **/
+      api.protoMethod('onResponse');
+      const sub = new ClientSub(v.sess, "1", "Library", []);
+      sub.onResponse(v.cb = this.stub());
+      sub._wait();
+      assert.isTrue(sub.waiting);
+
+      sub._received();
+      assert.isFalse(sub.waiting);
+      assert.calledOnceWith(v.cb, null);
+
+      sub._wait();
+      sub._received();
+      assert.calledTwice(v.cb);
+
+      sub._wait();
+      sub._received('error');
+      assert.calledThrice(v.cb);
+      assert.calledWith(v.cb, 'error');
+
+      sub._wait();
+      sub._received('error');
+      assert.calledThrice(v.cb);
+    },
+
+    "test onFirstResponse"() {
+      /**
+       * Same as passing a callback to subscribe to be notified the first time the server responds
+       * to a connection request.
+       *
+       * See also {##onResponse}
+       *
+       * @param callback first arg is an error is subscribe failed
+       **/
+      api.protoMethod('onFirstResponse');
+      const sub = new ClientSub(v.sess, "1", "Library", []);
+      sub.onFirstResponse(v.cb = this.stub());
+      sub._wait();
+      assert.isTrue(sub.waiting);
+
+      sub._received();
+      assert.isFalse(sub.waiting);
+      assert.calledOnceWith(v.cb, null);
+
+      sub._wait();
+      sub._received();
+      assert.calledOnce(v.cb);
     },
 
     "test #match"() {
