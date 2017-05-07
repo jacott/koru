@@ -116,7 +116,7 @@ define(function(require, exports, module) {
         return false;
     }
     return true;
-  }
+  };
 
   const twoDigits = num => {
     const str = ''+num;

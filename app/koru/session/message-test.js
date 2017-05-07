@@ -1,4 +1,5 @@
 define(function (require, exports, module) {
+  const Random  = require('koru/random');
   const TH      = require('koru/test');
   const session = require('./main');
 

@@ -19,7 +19,7 @@ define(function() {
     x[len >> 5] |= 0x80 << (len % 32);
     x[(((len + 64) >>> 9) << 4) + 14] = len;
 
-    let olda, oldb, oldc, oldd;
+    let olda = 0, oldb = 0, oldc = 0, oldd = 0;
     let a = 1732584193;
     let b = -271733879;
     let c = -1732584194;
