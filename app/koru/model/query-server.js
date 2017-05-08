@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const Changes    = require('koru/changes');
   const Model      = require('koru/model/map');
   const Random     = require('koru/random');
   const koru       = require('../main');
@@ -239,7 +240,7 @@ define(function(require, exports, module) {
               changes[field] = attrs[field] + this._incs[field];
             }
 
-            util.applyChanges(attrs, changes);
+            Changes.applyAll(attrs, changes);
 
             let itemCount = 0;
 

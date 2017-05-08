@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const Changes    = require('koru/changes');
   const Model      = require('koru/model/map');
   const TransQueue = require('koru/model/trans-queue');
   const Random     = require('koru/random');
@@ -45,7 +46,7 @@ define(function(require, exports, module) {
                   const newDoc = doc === undefined;
                   if (newDoc)
                     doc = modelDocs[id] = new model({_id: id});
-                  util.applyChanges(doc.attributes, fields);
+                  Changes.applyAll(doc.attributes, fields);
                   for(const noop in fields) {
                     notify(model, doc, newDoc ? null : fields, true);
                     break;
@@ -79,7 +80,7 @@ define(function(require, exports, module) {
               const changes = fromServer(model, id, attrs);
               const doc = model.docs[id];
               if (doc !== undefined && changes !== attrs) { // found existing
-                util.applyChanges(doc.attributes, changes);
+                Changes.applyAll(doc.attributes, changes);
                 for(const noop in changes) {
                   notify(model, doc, changes, true);
                   break;
@@ -304,7 +305,7 @@ define(function(require, exports, module) {
               const changes = fromServer(model, this.singleId, origChanges);
               const doc = docs[this.singleId];
               if (doc !== undefined) {
-                util.applyChanges(doc.attributes, changes);
+                Changes.applyAll(doc.attributes, changes);
                 dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
                   for(const noop in changes) {
                     notify(model, doc, changes, this.isFromServer);
@@ -325,7 +326,7 @@ define(function(require, exports, module) {
                 }
 
                 session.state.pendingCount() && recordChange(model, attrs, changes);
-                util.applyChanges(attrs, changes);
+                Changes.applyAll(attrs, changes);
 
                 let itemCount = 0;
 
@@ -517,7 +518,7 @@ define(function(require, exports, module) {
           if (! keys.hasOwnProperty(m)) {
             nc[key] = changes[key];
           }
-          util.applyChange(keys, key, changes);
+          Changes.applyOne(keys, key, changes);
         }
 
         return nc;

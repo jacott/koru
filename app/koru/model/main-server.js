@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const Changes     = require('koru/changes');
   const Query       = require('koru/model/query');
   const driver      = require('../config!DBDriver');
   const koru        = require('../main');
@@ -141,7 +142,7 @@ define(function(require, exports, module) {
           _support.performUpdate(doc, changes);
 
           // This a bit of a hack; should we bother?
-          util.applyChanges(doc.attributes, copy);
+          Changes.applyAll(doc.attributes, copy);
         }
         if (callback) callback(doc);
       };
