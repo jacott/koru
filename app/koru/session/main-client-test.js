@@ -256,7 +256,7 @@ define(function (require, exports, module) {
       v.ready = true;
       v.ws.onopen();
 
-      assert.calledWith(v.ws.send, 'X2');
+      assert.calledWith(v.ws.send, 'X3');
       assert.calledWith(v.ws.send, ["x", "P", [null]]);
       assert.calledWith(v.ws.send, ["x", "M", [1]]);
       assert.calledWith(v.ws.send, 'SLabc');

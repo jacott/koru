@@ -1,11 +1,10 @@
-const WebSocketServer = requirejs.nodeRequire('ws').Server;
-
 define(function (require, exports, module) {
-  const Random      = require('koru/random');
-  const koru        = require('../main');
-  const makeSubject = require('../make-subject');
-  const util        = require('../util');
-  const message     = require('./message');
+  const Random          = require('koru/random');
+  const koru            = require('../main');
+  const makeSubject     = require('../make-subject');
+  const util            = require('../util');
+  const message         = require('./message');
+  const WebSocketServer = requirejs.nodeRequire('ws').Server;
 
   function webSocketServerFactory(session, execWrapper) {
     const Connection = require('./server-connection-factory')(session);
@@ -17,99 +16,15 @@ define(function (require, exports, module) {
     let _globalDict, _globalDictEncoded;
     let _preloadDict = message.newGlobalDict();
 
-    globalDictAdders[module.id] = addToDictionary;
-
-    util.merge(session, {
-      execWrapper: execWrapper || koru.fiberConnWrapper,
-      conns: {},
-      sendAll: sendAll,
-      versionHash: process.env.KORU_APP_VERSION || 'v'+Date.now(),
-      unload: unload,
-      load: load,
-      totalSessions: 0,
-      rpc(name, ...args) {
-        return session._rpcs[name].apply(util.thread, args);
-      },
-      onConnection: onConnection,
-      stop() {
-        session.wss.close();
-      },
-
-      registerGlobalDictionaryAdder(module, adder) {
-        globalDictAdders[module.id] = adder;
-      },
-
-      deregisterGlobalDictionaryAdder(module) {
-        delete globalDictAdders[module.id];
-      },
-
-      addToDict: addToDict,
-
-      get globalDict() {
-        if (_globalDict) return _globalDict;
-        return buildGlobalDict();
-      },
-
-      // for testing
-      get _sessCounter() {return sessCounter},
-      get _Connection() {return Connection},
-      get _globalDictAdders() {return globalDictAdders},
-    });
-
-    function buildGlobalDict() {
-      for(let name in globalDictAdders) {
-        globalDictAdders[name](addToDict);
+    globalDictAdders[module.id] = adder => {
+      for (const name in session._rpcs) {
+        adder(name);
       }
-      _globalDict = _preloadDict;
-      _preloadDict = null;
+    };
 
-      message.finalizeGlobalDict(_globalDict);
-      _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
-      return _globalDict;
-    }
+    const addToDict = word => {_preloadDict && message.addToDict(_preloadDict, word)};
 
-    function addToDict(word) {
-      _preloadDict && message.addToDict(_preloadDict, word);
-    }
-
-    function globalDictEncoded() {
-      return session.globalDict && _globalDictEncoded;
-    }
-
-    makeSubject(session.countNotify = {});
-
-    session.provide('X', function (data) {
-      // TODO ensure protocol version is compatible
-    });
-    session.provide('H', function (data) {
-      this.send('K');
-    });
-    session.provide('M', function (data) {
-      const msgId = data[0];
-      const func = session._rpcs[data[1]];
-      this.batchMessages();
-      try {
-        if (! func)
-          throw new koru.Error(404, 'unknown method: ' + data[1]);
-
-        util.thread.msgId = msgId;
-        if (msgId.length > 17)
-          util.thread.random = Random.create(msgId);
-        const result = func.apply(this, data.slice(2));
-        this.sendBinary('M', [msgId, 'r', result]);
-        this.releaseMessages();
-      } catch(ex) {
-        this.abortMessages();
-        if (ex.error) {
-          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
-        } else {
-          koru.error(util.extractError(ex));
-          this.sendBinary('M', [msgId, 'e', ex.toString()]);
-        }
-      }
-    });
-
-    function onConnection(ws) {
+    const onConnection = ws => {
       const ugr = ws.upgradeReq;
 
       let _remoteAddress = ugr.socket.remoteAddress;
@@ -147,13 +62,96 @@ define(function (require, exports, module) {
         session.countNotify.notify(conn, true);
         return conn;
       }
-    }
+    };
+
+    util.merge(session, {
+      execWrapper: execWrapper || koru.fiberConnWrapper,
+      conns: {},
+      sendAll: sendAll,
+      versionHash: process.env.KORU_APP_VERSION || 'v'+Date.now(),
+      unload: unload,
+      load: load,
+      totalSessions: 0,
+      rpc(name, ...args) {
+        return session._rpcs[name].apply(util.thread, args);
+      },
+      onConnection: onConnection,
+      stop() {
+        session.wss.close();
+      },
+
+      registerGlobalDictionaryAdder(module, adder) {
+        globalDictAdders[module.id] = adder;
+      },
+
+      deregisterGlobalDictionaryAdder(module) {
+        delete globalDictAdders[module.id];
+      },
+
+      addToDict,
+
+      get globalDict() {
+        if (_globalDict) return _globalDict;
+        return buildGlobalDict();
+      },
+
+      // for testing
+      get _sessCounter() {return sessCounter},
+      get _Connection() {return Connection},
+      get _globalDictAdders() {return globalDictAdders},
+    });
+
+    const buildGlobalDict = () => {
+      for(const name in globalDictAdders) {
+        globalDictAdders[name](addToDict);
+      }
+      _globalDict = _preloadDict;
+      _preloadDict = null;
+
+      message.finalizeGlobalDict(_globalDict);
+      _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));
+      return _globalDict;
+    };
+
+    const globalDictEncoded =
+            () => session.globalDict === undefined ? undefined : _globalDictEncoded;
+
+    makeSubject(session.countNotify = {});
+
+    session.provide('X', function (data) {
+      // TODO ensure protocol version is compatible
+    });
+    session.provide('H', function (data) {
+      this.send('K');
+    });
+    session.provide('M', function (data) {
+      const msgId = data[0];
+      const func = session._rpcs[data[1]];
+      this.batchMessages();
+      try {
+        if (! func)
+          throw new koru.Error(404, 'unknown method: ' + data[1]);
+
+        util.thread.msgId = msgId;
+        if (msgId.length > 17)
+          util.thread.random = Random.create(msgId);
+        const result = func.apply(this, data.slice(2));
+        this.sendBinary('M', [msgId, 'r', result]);
+        this.releaseMessages();
+      } catch(ex) {
+        this.abortMessages();
+        if (ex.error) {
+          this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
+        } else {
+          koru.error(util.extractError(ex));
+          this.sendBinary('M', [msgId, 'e', ex.toString()]);
+        }
+      }
+    });
 
     function sendAll(cmd, msg) {
-      const conns = this.conns;
-      for(let key in conns) {
-        conns[key].send(cmd, msg);
-      }
+      const {conns} = this;
+      for(const key in conns) conns[key].send(cmd, msg);
     }
 
     function load(id) {
@@ -170,12 +168,6 @@ define(function (require, exports, module) {
         this.versionHash = 'v'+Date.now();
       }
       this.sendAll('U', this.versionHash + ':' + id);
-    }
-
-    function addToDictionary(adder) {
-      for (let name in session._rpcs) {
-        adder(name);
-      }
     }
 
     return session;
