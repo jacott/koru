@@ -224,12 +224,12 @@ define(function (require, exports, module) {
       assert.equals(message.encodeDict(dict, [8]), v.ans = [
         8,
         102, 111, 111, 0xff,
-        98, 195, 161, 114, 192, 128, 0xff,
+        98, 195, 161, 114, 0, 0xff,
         0]);
 
       dict = message._newLocalDict();
 
-      assert.same(message.decodeDict(v.ans, 0, dict), 13);
+      assert.same(message.decodeDict(new Uint8Array(v.ans), 0, dict), 12);
 
       assert.equals(dict.k2c["bár\x00"], 257);
 
@@ -251,12 +251,12 @@ define(function (require, exports, module) {
       assert.equals(message.encodeDict(dict, [8]), v.ans = [
         8,
         102, 111, 111, 0xff,
-        98, 195, 161, 114, 192, 128, 0xff,
+        98, 195, 161, 114, 0, 0xff,
         0]);
 
       dict = message.newGlobalDict();
 
-      assert.same(message.decodeDict(v.ans.slice(1), 0, dict), 12);
+      assert.same(message.decodeDict(new Uint8Array(v.ans).subarray(1), 0, dict), 11);
       message.finalizeGlobalDict(dict);
 
       assert.equals(dict.k2c["bár\x00"], 0xfffe);
@@ -340,6 +340,7 @@ define(function (require, exports, module) {
   }
 
   function _decode(object, globalDict) {
-    return message._decode(object, 0, [globalDict || v.gDict, message._newLocalDict()])[0];
+    return message._decode(new Uint8Array(object), 0, [
+      globalDict || v.gDict, message._newLocalDict()])[0];
   }
 });

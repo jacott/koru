@@ -1,9 +1,11 @@
-if (! Uint8Array.prototype.hasOwnProperty('slice')) Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
+define(function(require) {
+  const {utf8to16, utf16to8} = require('koru/text-encoder');
 
-define(function() {
-  const forEach = (list, body) => {
-    const len = list.length;
-    for(let i = 0; i < len; ++i) body(list[i]);
+  const pushEach = (buffer, args) => {
+    const start = buffer.length;
+    const len = args.length;
+    buffer.length = start + len;
+    for(let i = 0; i < len; ++i) buffer[i+start] = args[i];
   };
 
   const tTerm = 0;
@@ -51,23 +53,23 @@ define(function() {
       return [tmpDv.getInt8(0), index + 1];
 
     case tInt16:
-      tmpU8.set(buffer.slice(index, index + 2), 0);
+      tmpU8.set(buffer.subarray(index, index + 2), 0);
       return [tmpDv.getInt16(0), index + 2];
 
     case tInt32:
-      tmpU8.set(buffer.slice(index, index + 4), 0);
+      tmpU8.set(buffer.subarray(index, index + 4), 0);
       return [tmpDv.getInt32(0), index + 4];
 
     case tDec4:
-      tmpU8.set(buffer.slice(index, index + 4), 0);
+      tmpU8.set(buffer.subarray(index, index + 4), 0);
       return [tmpDv.getInt32(0)/10000, index + 4];
 
     case tFloat64:
-      tmpU8.set(buffer.slice(index, index + 8), 0);
+      tmpU8.set(buffer.subarray(index, index + 8), 0);
       return [tmpDv.getFloat64(0), index + 8];
 
     case tDate:
-      tmpU8.set(buffer.slice(index, index + 8), 0);
+      tmpU8.set(buffer.subarray(index, index + 8), 0);
       return [new Date(tmpDv.getFloat64(0)), index + 8];
 
     case tString:
@@ -91,7 +93,7 @@ define(function() {
           break;
         case tSparseLarge:
           result = sparseResult;
-          tmpU8.set(buffer.slice(index + 1, result[1] = index + 5), 0);
+          tmpU8.set(buffer.subarray(index + 1, result[1] = index + 5), 0);
           count += tmpDv.getUint32(0);
           break;
         default:
@@ -116,10 +118,10 @@ define(function() {
       return decode(buffer, decodeDict(buffer, index, dict), dict);
 
     case tBinary: {
-      tmpU8.set(buffer.slice(index, index + 4), 0);
+      tmpU8.set(buffer.subarray(index, index + 4), 0);
       const len = tmpDv.getUint32(0);
       index += 4;
-      return [new Uint8Array(buffer.slice(index, index + len)), index + len];
+      return [new Uint8Array(buffer.subarray(index, index + len)), index + len];
     }}
 
     if (byte & 0x80)
@@ -173,26 +175,23 @@ define(function() {
       tmpDv.setInt32(0, object);
       if (tmpDv.getInt32(0) === object) {
         buffer.push(tInt32);
-        return forEach(tmpU8.subarray(0, 4), function (v) {
-          buffer.push(v);
-        });
+        pushEach(buffer, tmpU8.subarray(0, 4));
+        return;
       }
 
       // up to 4 decimals
       tmpDv.setInt32(0, object*10000);
       if (tmpDv.getInt32(0) === object*10000) {
         buffer.push(tDec4);
-        return forEach(tmpU8.subarray(0, 4), function (v) {
-          buffer.push(v);
-        });
+        pushEach(buffer, tmpU8.subarray(0, 4));
+        return;
       }
 
       tmpDv.setFloat64(0, object);
 
       buffer.push(tFloat64);
-      return forEach(tmpU8, function (v) {
-        buffer.push(v);
-      });
+      pushEach(buffer, tmpU8);
+      return;
 
     case 'boolean':
       return buffer.push(object === true ? tTrue : tFalse);
@@ -208,13 +207,12 @@ define(function() {
     case "[object Date]":
       buffer.push(tDate);
       tmpDv.setFloat64(0, object.getTime());
-      return forEach(tmpU8, function (v) {
-        buffer.push(v);
-      });
+      pushEach(buffer, tmpU8);
+      return;
     case "[object Array]":
       buffer.push(tArray);
       let last = -1;
-      object.forEach(function (o, index) {
+      object.forEach((o, index) => {
         const diff = index - last - 1;
         if (diff !== 0) {
           if (diff < 256) {
@@ -225,9 +223,7 @@ define(function() {
             if (diff > 4294967294) throw new Error("sparse array too sparse");
             buffer.push(tSparseLarge);
             tmpDv.setUint32(0, diff);
-            forEach(tmpU8.subarray(0, 4), function (v) {
-              buffer.push(v);
-            });
+            pushEach(buffer, tmpU8.subarray(0, 4));
           }
         }
         last = index;
@@ -241,12 +237,9 @@ define(function() {
 
       buffer.push(tBinary);
       tmpDv.setUint32(0, object.byteLength);
-      forEach(tmpU8.subarray(0, 4), function (v) {
-        buffer.push(v);
-      });
-      return forEach(object, function (v) {
-        buffer.push(v);
-      });
+      pushEach(buffer, tmpU8.subarray(0, 4));
+      pushEach(buffer, object);
+      return;
     }
 
     buffer.push(tObject);
@@ -257,50 +250,6 @@ define(function() {
       encode(buffer, object[key], dict);
     }
     buffer.push(tTerm);
-  };
-
-  const utf8to16 = (buffer, i=0, end=buffer.length) => {
-    let out = "";
-    --i;
-    while(++i < end) {
-      const c = buffer[i];
-      switch(c >> 4) {
-      case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
-	// 0xxxxxxx
-	out += String.fromCharCode(c);
-	break;
-      case 12: case 13:
-	// 110x xxxx   10xx xxxx
-	out += String.fromCharCode(((c & 0x1F) << 6) | (buffer[++i] & 0x3F));
-	break;
-      case 14:
-	// 1110 xxxx  10xx xxxx  10xx xxxx
-	const char2 = buffer[++i];
-	const char3 = buffer[++i];
-	out += String.fromCharCode(((c & 0x0F) << 12) |
-				   ((char2 & 0x3F) << 6) |
-				   ((char3 & 0x3F) << 0));
-	break;
-      case 15:
-        return [out, i + 1];
-      }
-    }
-
-    return [out, i ];
-  };
-
-
-  const utf16to8 = (out, str) => {
-    const len = str.length;
-    for(let i = 0; i < len; ++i) {
-      const c = str.charCodeAt(i);
-      if ((c >= 0x0001) && (c <= 0x007F))
-	out.push(str.charCodeAt(i));
-      else if (c > 0x07FF)
-	out.push(0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >>  6) & 0x3F), 0x80 | ((c >>  0) & 0x3F));
-      else
-	out.push(0xC0 | ((c >>  6) & 0x1F), 0x80 | ((c >>  0) & 0x3F));
-    }
   };
 
   const newLocalDict = () => ({index: 0, k2c: {}, c2k: []});
@@ -366,12 +315,14 @@ define(function() {
     return dict[1].c2k[code - 0x100];
   };
 
-  const exports = {
+  return {
     encodeMessage(type, args, globalDict) {
       const buffer = [];
       let dict = newLocalDict();
 
-      forEach(args, o => {encode(buffer, o, [globalDict, dict])});
+      const len = args.length;
+      for(let i = 0; i < len; ++i)
+        encode(buffer, args[i], [globalDict, dict]);
 
       dict = encodeDict(dict, [type.charCodeAt(0)]);
 
@@ -437,6 +388,4 @@ define(function() {
     decodeDict,
     getDictItem,
   };
-
-  return exports;
 });
