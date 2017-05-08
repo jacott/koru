@@ -92,15 +92,16 @@ define(function(require, exports, module) {
             if (model.docs[id] !== undefined) {
               // already exists; convert to update
               const old = model.docs[id].attributes;
-              for(const key in old) {
-                if (attrs.hasOwnProperty(key)) {
-                  if (util.deepEqual(old[key], attrs[key]))
-                    delete attrs[key];
-                } else {
-                  attrs[key] = undefined;
-                }
+              for(const key in attrs) {
+                const ov = old[key];
+                const nv = attrs[key];
+                if (ov === nv || util.deepEqual(ov, nv))
+                  delete attrs[key];
               }
-              model.serverQuery.onId(id).update(attrs);
+              for (const _ in attrs) {
+                model.serverQuery.onId(id).update(attrs);
+                break;
+              }
             } else {
               // insert doc
               attrs._id = id;

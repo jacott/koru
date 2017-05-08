@@ -281,7 +281,9 @@ define(function (require, exports, module) {
                                     {a: 1, b: {c: 0, d: [1, {e: [false]}]}}));
 
       assert.isFalse(util.deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}},
-                                    {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
+                                    {a: 1, b: {c: 1, d: [1, {e: [false], f: null}]}}));
+
+      assert.isTrue(util.deepEqual({a: 1, b: undefined}, {a: 1}));
 
       assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
     },

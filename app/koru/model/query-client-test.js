@@ -147,28 +147,34 @@ define(function (require, exports, module) {
     },
 
     "test insertFromServer doc already exists"() {
+      const {_id, age} = v.foo;
       this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
-      Query.insertFromServer(v.TestModel, v.foo._id, {name: 'foo new', nested: [{ary: ['f']}]});
+      Query.insertFromServer(v.TestModel, v.foo._id, {
+        _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledOnce(v.onChange);
 
-      assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
+      assert.equals(v.onChange.args(0, 0).attributes, {
+        _id, age, name: 'foo new', nested: [{ary: ['f']}]});
       assert.equals(v.onChange.args(0, 1), {
-        name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+        name: "foo", nested: [{ary: ["m"]}]});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     },
 
     "test insertFromServer doc already exists and pending"() {
+      const {_id, age} = v.foo;
       sessState.incPending();
       this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
-      Query.insertFromServer(v.TestModel, v.foo._id, {name: 'foo new', nested: [{ary: ['f']}]});
+      Query.insertFromServer(v.TestModel, v.foo._id, {
+        _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
       assert.calledOnce(v.onChange);
 
-      assert.equals(v.onChange.args(0, 0).attributes, {name: 'foo new', nested: [{ary: ['f']}]});
+      assert.equals(v.onChange.args(0, 0).attributes, {
+        _id, age, name: 'foo new', nested: [{ary: ['f']}]});
       assert.equals(v.onChange.args(0, 1), {
-        name: "foo", nested: [{ary: ["m"]}], _id: "foo123", age: 5});
+        name: "foo", nested: [{ary: ["m"]}]});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
       refute.msg("Should update fromServer; not client")(Model._databases.foo.TestModel.simDocs);

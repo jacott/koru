@@ -101,18 +101,18 @@ define(function(require, exports, module) {
     if (Object.getPrototypeOf(actual) !== Object.getPrototypeOf(expected))
       return false;
 
-    const ekeys = Object.keys(actual);
+    const akeys = Object.keys(actual);
 
-    if (Object.keys(expected).length !== ekeys.length) return false;
-    for (let i = 0; i < ekeys.length; ++i) {
-      const key = ekeys[i];
-      if (! deepEqual(actual[key], expected[key]))
+    for (const key in expected) {
+      const vale = expected[key];
+      const vala = actual[key];
+      if (egal(vala, vale)) continue;
+      if (vala === undefined || vale === undefined) return false;
+      if (! deepEqual(vala, vale))
         return false;
     }
-    const akeys = Object.keys(actual);
-    for (let i = 0; i < akeys.length; ++i) {
-      const key = akeys[i];
-      if (! expected.hasOwnProperty(key))
+    for (const key in actual) {
+      if (expected[key] === undefined && actual[key] !== undefined)
         return false;
     }
     return true;
@@ -274,7 +274,7 @@ define(function(require, exports, module) {
 
     invert(map, func) {
       const result = {};
-      for(let prop in map) {
+      for(const prop in map) {
         result[map[prop]] = func ? func(prop) : prop;
       }
       return result;
@@ -487,7 +487,7 @@ define(function(require, exports, module) {
     searchStrToMap(query) {
       const result = {};
       if (! query) return result;
-      util.forEach(query.split('&'), function (item) {
+      util.forEach(query.split('&'), item => {
         const parts = item.split('=', 2);
         result[util.decodeURIComponent(parts[0])] = util.decodeURIComponent(parts[1]);
       });
@@ -514,9 +514,7 @@ define(function(require, exports, module) {
     toMap (keyName, valueName/*, lists */) {
       const result = {};
       if (arguments.length === 1) {
-        keyName && util.forEach(keyName, function (item) {
-          result[item] = true;
-        });
+        keyName && util.forEach(keyName, item => {result[item] = true});
         return result;
       }
       let func;
@@ -570,14 +568,14 @@ define(function(require, exports, module) {
     flatten(ary, level) {
       const result = [];
 
-      function internal(a, l) {
-        util.forEach(a, function (value) {
+      const internal = (a, l) => {
+        util.forEach(a, value => {
           if (l && Array.isArray(value))
             internal(value, l - 1);
           else
             result.push(value);
         });
-      }
+      };
 
       internal(ary, level === true ? 1 : level || -1);
       return result;
@@ -833,7 +831,7 @@ define(function(require, exports, module) {
 
     compareByField(field, direction) {
       direction = direction === -1 ? -1 : 1;
-      return function (a, b) {
+      return (a, b) => {
         const afield = a && a[field], bfield = b && b[field];
         const atype = typeorder(afield), btype = typeorder(bfield);
         if (atype !== btype)
@@ -843,7 +841,7 @@ define(function(require, exports, module) {
     },
 
     compareByFields(...fields) {
-      return function (a, b) {
+      return (a, b) => {
         let direction = 1;
         for (let i = 0; i < fields.length; ++i) {
           const field = fields[i];
@@ -864,7 +862,7 @@ define(function(require, exports, module) {
 
     compareBy(list) {
       const len = list.length;
-      return function (a, b) {
+      return (a, b) => {
         for(let i = 0; i < len; ++i) {
           const field = list[i];
           let dir = list[i+1];

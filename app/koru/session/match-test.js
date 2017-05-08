@@ -50,7 +50,7 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test false matches" () {
+    "test false matches"() {
       /**
        * Register a matcher agains a model
        *
@@ -78,7 +78,7 @@ define(function (require, exports, module) {
     },
 
 
-    "test true matches" () {
+    "test true matches"() {
       const iapi = buildRegistry();
       iapi.method('register');
       v.handles.push(iapi.example(() => v.f = myMatch.register('Foo', doc => {
