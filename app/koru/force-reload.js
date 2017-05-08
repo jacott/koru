@@ -1,0 +1,1 @@
+requirejs('koru').reload();
