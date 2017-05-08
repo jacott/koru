@@ -1,25 +1,23 @@
 define(function(require, exports, module) {
   const {deepEqual, addItem, removeItem} = require('./util');
 
-  const valueUndefined = {value: undefined};
-
 
   const applyOne = (attrs, key, changes) => {
     const index = key.indexOf(".");
 
-    const nv = Object.getOwnPropertyDescriptor(changes, key);
+    const nv = changes[key];
     if (index === -1) {
-      const ov = Object.getOwnPropertyDescriptor(attrs, key);
+      const ov = attrs[key];
 
-      if (ov && deepEqual(nv.value, ov.value))
+      if (nv === ov || deepEqual(nv, ov))
         delete changes[key];
       else
-        Object.defineProperty(changes, key, ov || valueUndefined);
+        changes[key] = ov;
 
-      if (nv.value === undefined)
+      if (nv === undefined)
         delete attrs[key];
       else
-        Object.defineProperty(attrs, key, nv);
+        attrs[key] = nv;
 
     } else { // update part of attribute
       const parts = key.split(".");
@@ -38,32 +36,32 @@ define(function(require, exports, module) {
       const m = part.match(/^\$([+\-])(\d+)/);
       if (m) {
         if (m[1] === '-')
-          removeItem(curr, nv.value);
+          removeItem(curr, nv);
         else
-          addItem(curr, nv.value);
+          addItem(curr, nv);
 
         delete changes[key];
-        Object.defineProperty(changes, key.replace(
+        changes[key.replace(
             /\.\$([+\-])(\d+)/, (m, sign, idx) => ".$" + (sign === '-' ? '+' : '-') + idx
-        ), nv);
+        )] = nv;
       } else {
-        let ov = Object.getOwnPropertyDescriptor(curr, part);
-        if (ov && deepEqual(nv.value, ov.value))
+        let ov = curr[part];
+        if (nv === ov || deepEqual(nv, ov))
           delete changes[key];
         else
-          Object.defineProperty(changes, key, ov || valueUndefined);
+          changes[key] = ov;
         if (Array.isArray(curr)) {
           part = +part;
           if (part !== part) throw new Error("Non numeric index for array: '" + parts[i] + "'");
-          if (nv.value === undefined)
+          if (nv === undefined)
             curr.splice(part, 1);
           else
-            curr[part] = nv.value;
+            curr[part] = nv;
         } else {
-          if (nv.value === undefined)
+          if (nv === undefined)
             delete curr[parts[i]];
           else {
-            Object.defineProperty(curr, parts[i], nv);
+            curr[parts[i]] = nv;
           }
         }
       }
