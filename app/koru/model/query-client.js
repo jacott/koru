@@ -551,7 +551,7 @@ define(function(require, exports, module) {
           keys[key] = util.deepCopy(attrs[key]);
       }
 
-      function newEmptyObj() {return {}}
+      const newEmptyObj = () => Object.create(null);
 
       function simDocsFor(model) {
         return Model._getSetProp(model.dbId, model.modelName, 'simDocs', newEmptyObj);

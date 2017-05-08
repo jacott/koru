@@ -101,7 +101,7 @@ define(function (require, exports, module) {
       /** test _destroyModel, _getProp, _getSetProp */
       Model._destroyModel('TestModel', 'drop');
 
-      assert.isFalse(Model._getProp('foo2', 'Foo2Model', 'docs'));
+      assert.same(Model._getProp('foo2', 'Foo2Model', 'docs'), undefined);
 
 
       assert.equals(Model._getSetProp('foo2', 'FooModel', 'docs', () => {return {foo: 123}}), {foo: 123});

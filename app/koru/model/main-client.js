@@ -14,18 +14,19 @@ define(function(require, exports, module) {
   const dbs = Object.create(null);
 
   function getProp(dbId, modelName, prop) {
-    let obj = dbs[dbId];
-    if (! obj) return false;
-    obj = obj[modelName];
-    return (obj && obj[prop]) || false;
+    const obj = dbs[dbId];
+    if (obj === undefined) return undefined;
+    const map = obj[modelName];
+    return map === undefined ? undefined : map[prop];
   }
 
   function getSetProp(dbId, modelName, prop, setter) {
-    let obj = dbs[dbId] || (dbs[dbId] = {});
-    obj = obj[modelName] || (obj[modelName] = {});
-
-    return obj[prop] || (obj[prop] = setter());
+    const obj = dbs[dbId] === undefined ? (dbs[dbId] = {}) : dbs[dbId];
+    const map = obj[modelName] ? obj[modelName] : (obj[modelName] = {});
+    const ans = map[prop];
+    return ans !== undefined ? ans : (map[prop] = setter());
   }
+
 
   const ModelEnv = {
     save: save,
