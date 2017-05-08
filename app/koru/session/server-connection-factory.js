@@ -24,7 +24,7 @@ define(function(require, exports, module) {
         const subs = this._subs;
         this._subs = null;
         this.ws = null;
-        if (subs) for(let key in subs) {
+        if (subs) for(const key in subs) {
           try {subs[key].stop();}
           catch(ex) {koru.error(util.extractError(ex));}
         }
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
 
     send (type, data) {
       try {
-        this.ws && this.ws.send(type + (data === undefined ? '' : data));
+        this.ws === null || this.ws.send(type + (data === undefined ? '' : data));
       } catch(ex) {
         koru.info('send exception', ex);
         this.close();

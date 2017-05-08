@@ -14,7 +14,7 @@ define(function(require, exports, module) {
     mockWs() {
       const {test} = geddon;
       return {
-        upgradeReq: {socket: {}, headers: {}},
+        upgradeReq: {socket: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`},
         on: test.stub(),
         send: test.stub(),
         close: test.stub(),

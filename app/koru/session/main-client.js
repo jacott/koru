@@ -6,19 +6,20 @@ define(function (require, exports, module) {
 
   koru.onunload(module, 'reload');
 
-  function sessionClientFactory(session, state=require('./state')) {
-    session._url = url;
-    session.newWs = function () {
-      return new WebSocket(session._url());
+  const sessionClientFactory = (session, state=require('./state')) => {
+    session._url = function () {
+      const location = koru.getLocation();
+
+      return location.protocol.replace(/^http/,'ws')+
+        `//${location.host}/${this._pathPrefix()}`;
     };
+    session._pathPrefix = function () {
+      return `ws/${koru.PROTOCOL_VERSION}/${this.version || 'dev'}/${this.hash || ''}`;
+    };
+
+    session.newWs = function () {return new WebSocket(this._url())};
     return webSocketSenderFactory(session, state);
   };
-  sessionClientFactory._url = url;
-
-  function url() {
-    var location = koru.getLocation();
-    return location.protocol.replace(/^http/,'ws')+'//' + location.host+'/ws';
-  }
 
   module.exports = sessionClientFactory;
 });

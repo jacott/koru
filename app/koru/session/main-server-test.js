@@ -39,19 +39,18 @@ isServer && define(function (require, exports, module) {
         adder('g1'); adder('g2');
       });
 
-      assert.same(v.sess.versionHash[0], 'v');
+      assert.same(v.sess.versionHash[0], 'h');
 
       assert.between(v.sess.versionHash.slice(1), Date.now() - 2000, Date.now() + 2000);
 
-      v.sess.versionHash = 'hash,v1';
+      v.sess.versionHash = 'h1';
 
       TH.noInfo();
       v.func(v.ws);
 
-      assert.calledWith(v.ws.send, TH.match(function (arg) {
+      assert.calledWith(v.ws.send, TH.match(arg => {
         v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);
-        assert.equals(v.msg,
-                      [2, 'hash,v1', TH.match.any]);
+        assert.equals(v.msg, ['', 'h1', TH.match.any]);
 
         return arg[0] === 88;
       }), {binary: true});

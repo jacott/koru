@@ -1,13 +1,14 @@
 define(function (require, exports, module) {
-  const koru        = require('koru');
-  const Random      = require('koru/random');
-  const SessionBase = require('koru/session/base').constructor;
-  const message     = require('koru/session/message');
-  const Conn        = require('koru/session/server-connection-factory').Base;
-  const util        = require('koru/util');
-  const TH          = require('./test-helper');
+  const koru           = require('koru');
+  const Random         = require('koru/random');
+  const SessionBase    = require('koru/session/base').constructor;
+  const message        = require('koru/session/message');
+  const Conn           = require('koru/session/server-connection-factory').Base;
+  const util           = require('koru/util');
+  const ConnectionBase = require('./server-connection-factory').Base;
+  const TH             = require('./test-helper');
 
-  const sut  = require('./web-socket-server-factory');
+  const sut = require('./web-socket-server-factory');
   var v;
 
   TH.testCase(module, {
@@ -164,11 +165,12 @@ define(function (require, exports, module) {
         delete process.env['KORU_APP_VERSION'];
       });
 
-      process.env['KORU_APP_VERSION'] = "hash,v1";
+      process.env['KORU_APP_VERSION'] = "dev,h1";
 
       const sess = sut(v.mockSess);
 
-      assert.same(sess.versionHash, "hash,v1");
+      assert.same(sess.versionHash, "h1");
+      assert.same(sess.version, "dev");
     },
 
     "test heartbeat response"() {
@@ -180,6 +182,90 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.send, 'K');
     },
+
+    "onConnection": {
+      setUp() {
+        v.sess = sut(v.mockSess);
+      },
+
+      "test wrong protocol received"() {
+        v.ws.upgradeReq.url = '/4/dev/';
+
+        v.sess.onConnection(v.ws);
+
+        assert.calledOnceWith(v.ws.send, 'Lkoru/force-reload');
+      },
+
+      "compareVersion": {
+        setUp() {
+          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.sess.versionHash = 'h456';
+          v.sess.version = 'v1.2.3';
+          this.stub(koru, 'info');
+          v.assertSent = (args) => {
+            assert.elideFromStack.calledOnceWith(v.ws.send, TH.match(arg => {
+              v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
+              assert.equals(v.msg, args);
+
+              return arg[0] === 88;
+            }, args));
+            v.ws.send.reset();
+          };
+        },
+
+        "test override halts response"() {
+          this.stub(util, 'compareVersion');
+          const compareVersion = v.sess.compareVersion = this.stub().returns(1);
+
+          v.sess.onConnection(v.ws);
+
+          refute.called(util.compareVersion);
+          assert.calledWith(compareVersion, 'v1.2.2', 'h123');
+          assert.same(compareVersion.lastCall.thisValue, v.sess);
+
+          refute.called(v.ws.send);
+        },
+
+        "test override reloads"() {
+          this.stub(util, 'compareVersion');
+          const compareVersion = v.sess.compareVersion = this.stub().returns(-1);
+
+          v.sess.onConnection(v.ws);
+
+          refute.called(util.compareVersion);
+          assert.called(compareVersion);
+
+          v.assertSent(['v1.2.3', 'h456', TH.match.any]);
+        },
+
+        "test compareVersion"() {
+          /** client < server **/
+          v.sess.onConnection(v.ws);
+          v.assertSent(['v1.2.3', 'h456', TH.match.any]);
+
+          /** client > server **/
+          v.sess.version = 'v1.2.1';
+          v.sess.onConnection(v.ws);
+          refute.called(v.ws.send);
+
+          /** client == server **/
+          v.sess.version = 'v1.2.2';
+          v.sess.onConnection(v.ws);
+          v.assertSent(['', 'h456', TH.match.any]);
+        },
+
+        "test no version,hash"() {
+          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
+          v.sess.onConnection(v.ws);
+          v.assertSent(['', 'h456', TH.match.any]);
+        },
+
+        "test old version but good hash"() {
+          v.sess.versionHash = 'h123';
+          v.sess.onConnection(v.ws);
+          v.assertSent(['', 'h123', TH.match.any]);
+        },
+      },    },
 
     "test unload server"() {
       const sess = sut(v.mockSess);

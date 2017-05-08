@@ -46,6 +46,7 @@ define(function (require, exports, module) {
     },
 
     "test version reconciliation"() {
+      this.stub(koru, 'info');
       assert.same(v.sess.version, undefined);
       assert.same(v.sess.hash, undefined);
 
@@ -61,21 +62,16 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func.call(v.sess, [1, 'v3', endict]);
+      v.func.call(v.sess, ['', 'h123', endict]);
 
       assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
       assert.same(v.sess.globalDict.k2c['foo'], undefined);
 
       refute.called(koru.reload);
-      assert.same(v.sess.version, 'v3');
+      assert.same(v.sess.hash, 'h123');
 
-      v.func.call(v.sess, [1, 'v2', dict]);
-
-      refute.called(koru.reload);
-      assert.same(v.sess.version, 'v3');
-
-      v.func.call(v.sess, [1, 'v10', dict]);
+      v.func.call(v.sess, ['v10', 'h123', dict]);
 
       assert.called(koru.reload);
     },
@@ -165,6 +161,7 @@ define(function (require, exports, module) {
       },
 
       "test no response close fails"() {
+        this.stub(koru, 'info');
         v.time = v.readyHeatbeat();
 
         v.ws.close = () => {throw new Error("close fail")};
@@ -200,7 +197,9 @@ define(function (require, exports, module) {
       v.sess.connect();         // connect
 
       assert.called(v.sess.newWs);
-      assert.same(sessionClientFactory._url(), 'wss://test.host:123/ws');
+      assert.same(v.sess._url(), 'wss://test.host:123/ws/3/dev/');
+      v.sess.hash = 'h123';
+      assert.same(v.sess._pathPrefix(), 'ws/3/dev/h123');
 
       refute.called(sessState.connected);
 
@@ -256,7 +255,6 @@ define(function (require, exports, module) {
       v.ready = true;
       v.ws.onopen();
 
-      assert.calledWith(v.ws.send, 'X3');
       assert.calledWith(v.ws.send, ["x", "P", [null]]);
       assert.calledWith(v.ws.send, ["x", "M", [1]]);
       assert.calledWith(v.ws.send, 'SLabc');

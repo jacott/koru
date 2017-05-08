@@ -105,9 +105,7 @@ define(function(require, exports, module) {
       session._queueHeatBeat = queueHeatBeat;
 
       ws.onopen = () => {
-        ws.send('X3');
         sessState.connected(session);
-
 
         // We will need to clear the old global dictionary before we
         // can send queued messages.
@@ -154,35 +152,25 @@ define(function(require, exports, module) {
     }
 
     if (! base._broadcastFuncs) {
-      base.provide('X', function (data) {
+      base.provide('X', function ([newVersion, hash, dict]) {
+        if (newVersion !== '') {
+          koru.info(`New version: ${newVersion},${hash}`);
+          if (typeof this.newVersion === 'function')
+            this.newVersion({newVersion, hash});
+          else
+            return void koru.reload();
+        }
+        this.hash = hash;
         this.globalDict = message.newGlobalDict();
-        message.decodeDict(data[2], 0, this.globalDict);
+        message.decodeDict(dict, 0, this.globalDict);
         message.finalizeGlobalDict(this.globalDict);
         retryCount = 0;
-        const [version, hash] = data[1].split(",", 2);
-        if (this.version) {
-          if (session.compareVersion) {
-            session.compareVersion(this, version, hash);
-          } else {
-            if ((! hash || this.hash !== hash) &&
-                util.compareVersion(this.version, version) < 0) {
-              koru.reload();
-              return;
-            }
-          }
-        } else {
-          this.version = version;
-          this.hash = hash;
-        }
-
       });
 
       base.provide('K', function ack() {});
       base.provide('L', data => {require([data], () => {})});
       base.provide('U', function unload(data) {
-        const [vh, modId] = data.split(':', 2);
-        const [version, hash] = vh.split(',');
-        this.version = version;
+        const [hash, modId] = data.split(':', 2);
         this.hash = hash;
         koru.unload(modId);
       });

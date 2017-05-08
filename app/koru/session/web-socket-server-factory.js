@@ -16,6 +16,14 @@ define(function (require, exports, module) {
     let _globalDict, _globalDictEncoded;
     let _preloadDict = message.newGlobalDict();
 
+    let version = 'dev', versionHash = 'h'+Date.now();
+
+    if (process.env.KORU_APP_VERSION !== undefined) {
+      const parts = process.env.KORU_APP_VERSION.split(',');
+      version = parts[0]; versionHash = parts[1];
+    }
+
+
     globalDictAdders[module.id] = adder => {
       for (const name in session._rpcs) {
         adder(name);
@@ -26,17 +34,33 @@ define(function (require, exports, module) {
 
     const onConnection = ws => {
       const ugr = ws.upgradeReq;
-
-      let _remoteAddress = ugr.socket.remoteAddress;
+      const _remoteAddress = ugr.socket.remoteAddress;
       const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress) ?
               ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
 
-      if (session.connectionIntercept)
-        session.connectionIntercept(newSession, ws, remoteAddress);
-      else
-        newSession();
+      const newSession = (wrapOnMessage, url=ugr.url) => {
+        let newVersion = '';
+        if (url !== null) {
+          const [protocol, version, hash] = url.split('/').slice(2);
+          if (+protocol !== koru.PROTOCOL_VERSION) {
+            ws.send('Lkoru/force-reload');
+            ws.close();
+            return;
+          }
 
-      function newSession(wrapOnMessage) {
+          if (hash !== session.versionHash && hash) {
+            if (session.version === 'dev')
+              newVersion = session.version;
+            else {
+              const cmp = session.compareVersion ? session.compareVersion(version, hash)
+                      : util.compareVersion(version, session.version);
+              if (cmp < 0) newVersion = session.version;
+              else if (cmp > 0) return; // client on greater version; we will update (hopefully) so
+                                        // just wait around
+            }
+          }
+        }
+
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
         const conn = session.conns[sessId] = new Connection(ws, sessId, () => {
@@ -46,36 +70,44 @@ define(function (require, exports, module) {
             --session.totalSessions;
             delete session.conns[sessId];
             session.countNotify.notify(conn, false);
+            koru.info(`Close conn id:${sessId}, tot:${session.totalSessions}, userId:${conn.userId}`);
           }
-          koru.info('Close client', sessId, session.totalSessions);
         });
         conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
         conn.remoteAddress = remoteAddress;
         conn.remotePort = ugr.socket.remotePort;
 
         const onMessage = conn.onMessage.bind(conn);
-        ws.on('message', wrapOnMessage ? wrapOnMessage(onMessage) : onMessage);
+        ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
 
-        conn.sendBinary('X', [2, session.versionHash, globalDictEncoded()]);
-        koru.info('New client ws:', sessId, session.totalSessions,
-                  conn.engine, remoteAddress+':'+conn.remotePort);
+        conn.sendBinary('X', [newVersion, session.versionHash, globalDictEncoded()]);
+        koru.info(
+          `New conn id:${sessId}, tot:${session.totalSessions}, ver:${version}, `+
+            `${conn.engine}, ${remoteAddress}:${conn.remotePort}`);
         session.countNotify.notify(conn, true);
         return conn;
+      };
+
+      if (session.connectionIntercept)
+        session.connectionIntercept(newSession, ws, remoteAddress);
+      else {
+        newSession();
       }
     };
 
     util.merge(session, {
       execWrapper: execWrapper || koru.fiberConnWrapper,
       conns: {},
-      sendAll: sendAll,
-      versionHash: process.env.KORU_APP_VERSION || 'v'+Date.now(),
-      unload: unload,
-      load: load,
+      sendAll,
+      version,
+      versionHash,
+      unload,
+      load,
       totalSessions: 0,
       rpc(name, ...args) {
         return session._rpcs[name].apply(util.thread, args);
       },
-      onConnection: onConnection,
+      onConnection,
       stop() {
         session.wss.close();
       },
@@ -118,9 +150,6 @@ define(function (require, exports, module) {
 
     makeSubject(session.countNotify = {});
 
-    session.provide('X', function (data) {
-      // TODO ensure protocol version is compatible
-    });
     session.provide('H', function (data) {
       this.send('K');
     });
@@ -165,9 +194,9 @@ define(function (require, exports, module) {
       const mod = ctx.modules[id];
       if (mod) {
         mod.unload();
-        this.versionHash = 'v'+Date.now();
+        session.versionHash = 'h'+Date.now();
       }
-      this.sendAll('U', this.versionHash + ':' + id);
+      this.sendAll('U', session.versionHash + ':' + id);
     }
 
     return session;

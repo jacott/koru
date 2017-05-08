@@ -26,50 +26,6 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "compareVersion": {
-      setUp() {
-        assert.calledWith(v.sess.provide, 'X', TH.match(f => v.func = f));
-        v.conn = {version: 'v1.2.2', hash: 'h123'};
-        this.stub(koru, 'reload');
-      },
-
-      "test override"() {
-        this.stub(util, 'compareVersion');
-        const compareVersion = v.sess.compareVersion = this.stub();
-
-        v.func.call(v.conn, [2, 'v1.2.3', []]);
-
-        refute.called(util.compareVersion);
-        assert.calledWith(compareVersion, v.conn, 'v1.2.3');
-      },
-
-      "test compareVersion"() {
-        v.func.call(v.conn, [2, 'v1.2.2', []]);
-        v.func.call(v.conn, [2, 'v1.2.1', []]);
-
-        refute.called(koru.reload);
-
-        v.func.call(v.conn, [2, 'v1.2.10', []]);
-
-        assert.called(koru.reload);
-      },
-
-      "test no version,hash"() {
-        v.conn.version = null;
-        v.func.call(v.conn, [2, 'v123', []]);
-
-        refute.called(koru.reload);
-
-        assert.same(v.conn.version, 'v123');
-      },
-
-      "test old version but good hash"() {
-        v.func.call(v.conn, [2, 'v1.2.3,h123', []]);
-
-        refute.called(koru.reload);
-      },
-    },
-
     "test initialization"() {
       /**
        *
@@ -134,9 +90,8 @@ define(function (require, exports, module) {
 
       this.stub(koru, 'unload');
 
-      v.func.call(v.sess, "v1.3.4-45-g1234,hhh123:koru/foo");
+      v.func.call(v.sess, "hhh123:koru/foo");
 
-      assert.same(v.sess.version, 'v1.3.4-45-g1234');
       assert.same(v.sess.hash, 'hhh123');
       assert.calledWith(koru.unload, 'koru/foo');
     },
@@ -173,6 +128,25 @@ define(function (require, exports, module) {
       assert.equals(sess2._commands, {});
       assert.equals(Object.keys(base._commands).sort().join(''), 'BKLUWX');
       assert.same(base._commands.B, bfunc);
+    },
+
+    "test newVersion"() {
+      this.stub(koru, 'info');
+      this.stub(koru, 'reload');
+      assert.calledWith(v.sess.provide, 'X', TH.match(arg => v.func = arg));
+
+      v.func.call(v.sess, ['v1.2.3', 'h123', {0: 0}]);
+
+      assert.called(koru.reload);
+
+      koru.reload.reset();
+
+      v.sess.newVersion = this.stub();
+
+      v.func.call(v.sess, ['v1.2.3', 'h123', {0: 0}]);
+      refute.called(koru.reload);
+      assert.calledWith(v.sess.newVersion, {newVersion: 'v1.2.3', hash: 'h123'});
+      assert.same(v.sess.newVersion.lastCall.thisValue, v.sess);
     },
 
     "test server-to-client broadcast messages"() {
