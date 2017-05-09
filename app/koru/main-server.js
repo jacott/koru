@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   const util     = require('./util-server');
 
   return function (koru) {
-    global._koru_ = koru;
+    global['_koru'+'_'] = koru; // avoid search for de-bug statements
 
     koru.onunload(module, 'reload');
 

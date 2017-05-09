@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const util = require('./util-client');
 
   return function (koru) {
-    window._koru_ = koru;
+    window['_koru'+'_'] = koru; // avoid search for de-bug statements
 
     koru.onunload(module, 'reload');
 
