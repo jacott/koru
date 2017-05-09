@@ -1,21 +1,21 @@
 define(function() {
-  function safeAdd (x, y) {
+  const safeAdd = (x, y) => {
     var lsw = (x & 0xFFFF) + (y & 0xFFFF);
     var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
     return (msw << 16) | (lsw & 0xFFFF);
-  }
+  };
 
-  function rotateLeft (q, a, b, x, s, t) {
+  const rotateLeft = (q, a, b, x, s, t) => {
     const num = safeAdd(safeAdd(a, q), safeAdd(x, t));
     return safeAdd((num << s) | (num >>> (32 - s)), b);
-  }
+  };
 
-  function ff (a, b, c, d, x, s, t) {return rotateLeft((b & c) | ((~b) & d), a, b, x, s, t)}
-  function gg (a, b, c, d, x, s, t) {return rotateLeft((b & d) | (c & (~d)), a, b, x, s, t)}
-  function hh (a, b, c, d, x, s, t) {return rotateLeft(b ^ c ^ d, a, b, x, s, t)}
-  function ii (a, b, c, d, x, s, t) {return rotateLeft(c ^ (b | (~d)), a, b, x, s, t)}
+  const ff = (a, b, c, d, x, s, t) => rotateLeft((b & c) | ((~b) & d), a, b, x, s, t);
+  const gg = (a, b, c, d, x, s, t) => rotateLeft((b & d) | (c & (~d)), a, b, x, s, t);
+  const hh = (a, b, c, d, x, s, t) => rotateLeft(b ^ c ^ d, a, b, x, s, t);
+  const ii = (a, b, c, d, x, s, t) => rotateLeft(c ^ (b | (~d)), a, b, x, s, t);
 
-  function binlMD5 (x, len) {
+  const binlMD5 = (x, len) => {
     x[len >> 5] |= 0x80 << (len % 32);
     x[(((len + 64) >>> 9) << 4) + 14] = len;
 
@@ -106,7 +106,7 @@ define(function() {
     }
 
     return [a, b, c, d];
-  }
+  };
 
   const zero = '000000000';
   const ab = new ArrayBuffer(4);
@@ -114,15 +114,7 @@ define(function() {
   const iu8 = new Uint8Array(ab);
   const u32 = new Uint32Array(ab);
 
-  function md5sum(value) {
-    const string = unescape(encodeURIComponent(value));
-    const strLen = string.length;
-    const output = new Array((strLen+3) >> 2);
-    for (let i = 0; i < strLen; ++i) {
-      output[i >> 2] |= (string.charCodeAt(i) & 0xFF) << ((i%4) << 3);
-    }
-    const code = binlMD5(output, strLen * 8);
-
+  const hex = code => {
     let hex = '';
     for(let i = 0; i < 4; ++i) {
       u32[0] = code[i];
@@ -130,6 +122,30 @@ define(function() {
       hex += `${zero.slice(0, 8-s.length)}${s}`;
     }
     return hex;
+  };
+
+  if (window.TextDecoder !== undefined) {
+    const encoder = new window.TextEncoder();
+    const md5sum = (value) => {
+      const ab = encoder.encode(value);
+      const strLen = ab.length;
+      const output = new Array((strLen+3) >> 2);
+      for (let i = 0; i < strLen; ++i) {
+        output[i >> 2] |= (ab[i] & 0xFF) << ((i%4) << 3);
+      }
+      return hex(binlMD5(output, strLen * 8));
+    };
+    return md5sum;
+  } else {
+    const md5sum = (value) => {
+      const string = unescape(encodeURIComponent(value));
+      const strLen = string.length;
+      const output = new Array((strLen+3) >> 2);
+      for (let i = 0; i < strLen; ++i) {
+        output[i >> 2] |= (string.charCodeAt(i) & 0xFF) << ((i%4) << 3);
+      }
+      return hex(binlMD5(output, strLen * 8));
+    };
+    return md5sum;
   }
-  return md5sum;
 });
