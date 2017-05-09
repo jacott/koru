@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   const Factory  = require('./test-factory');
   const BaseTH   = require('./test-helper');
 
-  let txSave, txClient, inTran=false;
+  let txSave = null, txClient = null, inTran=false;
 
   const TH = util.protoCopy(BaseTH, {
     startTransaction() {
@@ -20,10 +20,9 @@ define(function(require, exports, module) {
         throw new Error("NO Transaction is in progress!");
 
       Factory.clear();
-      let dbv = Model._databases.default;
-      for(var name in dbv) {
-        var model = Model[name];
-        model.docs = null;
+      const dbv = Model._databases.default;
+      for(const name in dbv) {
+        Model[name].docs = undefined;
       }
       inTran=false;
     },

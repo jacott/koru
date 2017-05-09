@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   const Factory  = require('./test-factory');
   const BaseTH   = require('./test-helper');
 
-  let txSave, txClient, inTran = 0;
+  let txSave = null, txClient = null, inTran = 0;
 
   const TH = util.protoCopy(BaseTH, {
     startTransaction() {
@@ -22,8 +22,8 @@ define(function(require, exports, module) {
       if (--inTran < 0)
         throw new Error("NO Transaction is in progress!");
 
-      for(var name in Model) {
-        var model = Model[name];
+      for(const name in Model) {
+        const model = Model[name];
         if ('docs' in model) {
           model._$docCacheClear();
         }
@@ -38,17 +38,19 @@ define(function(require, exports, module) {
     },
   });
 
-  TH.geddon.onStart(function () {
+  TH.geddon.onStart(() => {
     txClient = dbBroker.db;
     txClient._getConn();
     txSave = txClient._weakMap.get(util.thread);
     txSave.transaction = 'ROLLBACK';
   });
-  TH.geddon.onEnd(function () {
-    if (txSave) {
+
+  TH.geddon.onEnd(() => {
+    if (txSave !== null) {
       txSave.transaction = null;
       txSave = null;
       txClient._releaseConn();
+      txClient = null;
     }
   });
 
