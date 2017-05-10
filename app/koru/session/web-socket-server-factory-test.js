@@ -193,7 +193,7 @@ define(function (require, exports, module) {
 
         v.sess.onConnection(v.ws);
 
-        assert.calledOnceWith(v.ws.send, 'Lkoru/force-reload');
+        assert.calledOnceWith(v.ws.send, 'Lforce-reload');
       },
 
       "compareVersion": {

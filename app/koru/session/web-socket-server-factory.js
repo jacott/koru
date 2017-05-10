@@ -43,7 +43,7 @@ define(function (require, exports, module) {
         if (url !== null) {
           const [protocol, version, hash] = url.split('/').slice(2);
           if (+protocol !== koru.PROTOCOL_VERSION) {
-            ws.send('Lkoru/force-reload');
+            ws.send('Lforce-reload');
             ws.close();
             return;
           }
