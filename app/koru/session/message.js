@@ -203,13 +203,19 @@ define(function(require) {
 
     if (object === null) return buffer.push(tNull);
 
-    switch(toStringFunc.call(object)) {
-    case "[object Date]":
-      buffer.push(tDate);
-      tmpDv.setFloat64(0, object.getTime());
-      pushEach(buffer, tmpU8);
-      return;
-    case "[object Array]":
+    const constructor = object.constructor;
+
+    if(constructor === Object || constructor === undefined) {
+      buffer.push(tObject);
+      for (let key in object) {
+        const dkey = addToDict(dict, key);
+        if (dkey === null) throw new Error("Dictionary overflow");
+        buffer.push(dkey >> 8, dkey & 0xff);
+        encode(buffer, object[key], dict);
+      }
+      buffer.push(tTerm);
+
+    } else if (constructor === Array) {
       buffer.push(tArray);
       let last = -1;
       object.forEach((o, index) => {
@@ -229,8 +235,14 @@ define(function(require) {
         last = index;
         encode(buffer, o, dict);
       });
-      return buffer.push(tTerm);
-    case "[object Uint8Array]":
+      buffer.push(tTerm);
+
+    } else if (constructor === Date) {
+      buffer.push(tDate);
+      tmpDv.setFloat64(0, object.getTime());
+      pushEach(buffer, tmpU8);
+
+    } else if (constructor === Uint8Array) {
       // TODO rather than copy the data into tmp buffer place a marker
       // in buffer and store ref to object to later fast copy to
       // result ArrayBuffer.
@@ -239,17 +251,8 @@ define(function(require) {
       tmpDv.setUint32(0, object.byteLength);
       pushEach(buffer, tmpU8.subarray(0, 4));
       pushEach(buffer, object);
-      return;
-    }
-
-    buffer.push(tObject);
-    for (let key in object) {
-      const dkey = addToDict(dict, key);
-      if (dkey === null) throw new Error("Dictionary overflow");
-      buffer.push(dkey >> 8, dkey & 0xff);
-      encode(buffer, object[key], dict);
-    }
-    buffer.push(tTerm);
+    } else
+      throw new Error('type is unserializable: '+constructor);
   };
 
   const newLocalDict = () => ({index: 0, k2c: {}, c2k: []});
