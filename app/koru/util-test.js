@@ -286,6 +286,12 @@ define(function (require, exports, module) {
       assert.isTrue(util.deepEqual({a: 1, b: undefined}, {a: 1}));
 
       assert.isFalse(util.deepEqual({a: 1}, {a: "1"}));
+
+      assert.exception(_=> {
+        const a = {}, b = {};
+        a.a = a; b.a = b;
+        assert.isFalse(util.deepEqual(a, b));
+      }, {message: 'deepEqual maxLevel exceeded'});
     },
 
     "test invert"() {
@@ -557,6 +563,13 @@ define(function (require, exports, module) {
       assert.equals(orig, [1, "2", {three: [4, {five: 6}]}]);
 
       assert.msg("should handle sparse arrays").equals(util.deepCopy([1,2,,3]), [1,2,,3]);
+
+      assert.exception(_=> {
+        const a = {};
+        a.a = a;
+        util.deepCopy(a);
+      }, {message: 'deepCopy maxLevel exceeded'});
+
     },
 
     "test camelize"() {

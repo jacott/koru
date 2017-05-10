@@ -71,7 +71,7 @@ define(function(require, exports, module) {
   };
 
 
-  const deepEqual = (actual, expected) => {
+  const deepEqual = (actual, expected, maxLevel=util.MAXLEVEL) => {
     if (egal(actual, expected)) {
       return true;
     }
@@ -86,12 +86,15 @@ define(function(require, exports, module) {
 
     if (actual.getTime && expected.getTime) return actual.getTime() === expected.getTime();
 
+    if (maxLevel == 0)
+      throw new Error('deepEqual maxLevel exceeded');
+
     if (Array.isArray(actual)) {
       if (! Array.isArray(expected)) return false;
       const len = actual.length;
       if (expected.length !== len) return false;
       for(let i = 0; i < len; ++i) {
-        if (! deepEqual(actual[i], expected[i])) return false;
+        if (! deepEqual(actual[i], expected[i], maxLevel-1)) return false;
       }
       return true;
     }
@@ -106,7 +109,7 @@ define(function(require, exports, module) {
       const vala = actual[key];
       if (egal(vala, vale)) continue;
       if (vala === undefined || vale === undefined) return false;
-      if (! deepEqual(vala, vale))
+      if (! deepEqual(vala, vale, maxLevel-1))
         return false;
     }
     for (const key in actual) {
@@ -125,7 +128,7 @@ define(function(require, exports, module) {
 
   util.merge(util, {
     DAY: 1000*60*60*24,
-
+    MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     mergeExclude(obj, properties, exclude) {
@@ -561,7 +564,7 @@ define(function(require, exports, module) {
     },
 
     /** Does not deep copy functions */
-    deepCopy(orig) {
+    deepCopy(orig, maxLevel=util.MAXLEVEL) {
       switch(typeof orig) {
       case 'string':
       case 'number':
@@ -573,16 +576,19 @@ define(function(require, exports, module) {
 
       if (orig === null) return orig;
 
+    if (maxLevel == 0)
+      throw new Error('deepCopy maxLevel exceeded');
+
       switch(orig.constructor) {
       case Date: case Uint8Array:
         return new orig.constructor(orig);
       case Array:
-        return orig.map(item => util.deepCopy(item));
+        return orig.map(item => util.deepCopy(item, maxLevel-1));
       }
 
       const result = Object.create(Object.getPrototypeOf(orig));
       for(const key in orig) {
-        result[key] = util.deepCopy(orig[key]);
+        result[key] = util.deepCopy(orig[key], maxLevel-1);
       }
 
       return result;
