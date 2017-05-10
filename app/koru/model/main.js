@@ -30,31 +30,29 @@ define(function(require, exports, module) {
    **/
   const allObserverHandles = new WeakMap;
 
-  koru.onunload(module, function () {
-    koru.unload(koru.absId(require, './map'));
-  });
+  koru.onunload(module, () => {koru.unload(koru.absId(require, './map'))});
 
   class BaseModel {
-    constructor(attributes, changes) {
+    constructor(attributes, changes={}) {
       const dbIdField = this.constructor.$dbIdField;
-      if (dbIdField) {
+      if (dbIdField !== undefined) {
         this[dbIdField] = dbBroker.dbId;
       }
       if(attributes != null && attributes._id !== undefined) {
         // existing record
         this.attributes = attributes;
-        this.changes = changes || {};
+        this.changes = changes;
       } else {
         // new record
         this.attributes = {};
-        this.changes = attributes || {};
+        this.changes = attributes == null ? {} : attributes;
         util.merge(this.changes, this.constructor._defaults);
       }
     }
 
     static create(attributes) {
       const doc = new this({});
-      attributes && util.merge(doc.changes, util.deepCopy(attributes));
+      attributes != null && util.merge(doc.changes, util.deepCopy(attributes));
       doc.$save();
       return isServer ? doc : (doc.constructor.findById(doc._id) || doc);
     }
@@ -82,13 +80,13 @@ define(function(require, exports, module) {
     }
 
     static toId(docOrId) {
-      if (! docOrId || typeof docOrId === 'string') return docOrId;
-      return docOrId._id;
+      return typeof docOrId === 'string' ? docOrId :
+        docOrId == null ? null : docOrId._id;
     }
 
     static toDoc(docOrId) {
-      if (! docOrId || typeof docOrId === 'string') return this.findById(docOrId);
-      return docOrId;
+      return typeof docOrId === 'string' ? this.findById(docOrId)
+        : docOrId == null ? null : docOrId;
     }
 
     static get query() {
@@ -315,16 +313,16 @@ define(function(require, exports, module) {
 
       this._errors = null;
 
-      if(fVTors) {
-        for(let field in fVTors) {
-          let validators = fVTors[field];
-          for(let vTor in validators) {
-            let args = validators[vTor];
-            let options = args[1];
-
-            if (typeof options === 'function')
-              options = options.call(this, field, args[2]);
-            args[0](this, field, options, args[2]);
+      if(fVTors !== undefined) {
+        for(const field in fVTors) {
+          const validators = fVTors[field];
+          for(const vTor in validators) {
+            const args = validators[vTor];
+            const options = args[1];
+            args[0](
+              this, field,
+              typeof options === 'function' ? options.call(this, field, args[2]) : options,
+              args[2]);
           }
         }
       }
@@ -486,6 +484,27 @@ define(function(require, exports, module) {
     }
   }
 
+  const getField = (doc, field) => doc.changes.hasOwnProperty(field) ?
+          doc.changes[field] : doc.attributes[field];
+
+  const setField = (doc, field, value) => {
+    const {changes} = doc;
+    if (value === doc.attributes[field]) {
+      if (changes.hasOwnProperty(field)) {
+        if (value === undefined && doc.constructor._defaults[field] !== undefined)
+          changes[field] = util.deepCopy(doc.constructor._defaults[field]);
+        else
+          delete doc.changes[field];
+
+        typeof doc._setChanges === 'function' && doc._setChanges(field, value);
+      }
+    } else {
+      changes[field] = value;
+      typeof doc._setChanges === 'function' && doc._setChanges(field, value);
+    }
+    return value;
+  };
+
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
@@ -517,49 +536,44 @@ define(function(require, exports, module) {
   });
 
 
-  function callBeforeObserver(type, doc, partials) {
+  const callBeforeObserver = (type, doc, partials) => {
     const model = doc.constructor;
     const modelObservers = allObservers.get(model);
-    const observers = modelObservers && modelObservers[type];
-    if (observers) for (let i = 0; i < observers.length; ++i) {
+    const observers = modelObservers === undefined ? undefined : modelObservers[type];
+    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       observers[i][0].call(model, doc, type, partials);
     }
-  }
+  };
 
-  function callAfterObserver(doc, was) {
+  const callAfterObserver = (doc, was) => {
     const model = (doc || was).constructor;
     const modelObservers = allObservers.get(model);
-    const observers = modelObservers && modelObservers['afterLocalChange'];
-    if (observers) for (let i = 0; i < observers.length; ++i) {
+    const observers = modelObservers === undefined ? undefined : modelObservers.afterLocalChange;
+    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       observers[i][0].call(model, doc, was);
     }
-  }
+  };
 
-  function callWhenFinally(doc, ex) {
+  const callWhenFinally = (doc, ex) => {
     const model = doc.constructor;
     const modelObservers = allObservers.get(model);
-    const observers = modelObservers && modelObservers['whenFinally'];
-    if (observers) for (let i = 0; i < observers.length; ++i) {
+    const observers = modelObservers === undefined ? undefined : modelObservers.whenFinally;
+    if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       try {
         observers[i][0].call(model, doc, ex);
       } catch(ex1) {
-        ex = ex || ex1;
+        if (ex === undefined) ex = ex1;
       }
     }
-  }
+  };
 
-  (() => {
-    for (let type of ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
-                      'afterLocalChange','whenFinally'])
-      registerType(type);
-
-    function registerType(type) {
-      BaseModel[type] = function (subject, callback) {
-        registerObserver(this, subject, type, callback);
-        return this;
-      };
-    }
-  })();
+  ['beforeCreate','beforeUpdate','beforeSave','beforeRemove',
+   'afterLocalChange','whenFinally'].forEach(type => {
+     BaseModel[type] = function (subject, callback) {
+       registerObserver(this, subject, type, callback);
+       return this;
+     };
+   });
 
   function registerObserver(model, subject, name, callback) {
     let modelObservers = allObservers.get(subject);
@@ -574,13 +588,8 @@ define(function(require, exports, module) {
 
   const versionProperty = {
     configurable: true,
-    get() {
-      return this.attributes._version;
-    },
-
-    set(value) {
-      this.attributes._version = value;
-    }
+    get() {return this.attributes._version},
+    set(value) {this.attributes._version = value}
   };
 
   const _support = {
@@ -855,44 +864,17 @@ define(function(require, exports, module) {
     };
   }
 
-  function getField(doc, field) {
-    return doc.changes.hasOwnProperty(field) ? doc.changes[field] : doc.attributes[field];
-  }
-
-  function setField(doc, field, value) {
-    if (value === doc.attributes[field]) {
-      if (doc.changes.hasOwnProperty(field)) {
-        if (value === undefined && doc.constructor._defaults[field] !== undefined)
-          doc.changes[field] = util.deepCopy(doc.constructor._defaults[field]);
-        else
-          delete doc.changes[field];
-
-        doc._setChanges && doc._setChanges(field, value);
-      }
-    } else {
-      doc.changes[field] = value;
-      doc._setChanges && doc._setChanges(field, value);
-    }
-    return value;
-  }
-
-  function getValue(field) {
-    return function () {return getField(this, field)};
-  }
-
-  function setValue(field) {
-    return function (value) {return setField(this, field, value)};
-  }
+  const getValue = field => function () {return getField(this, field)};
+  const setValue = field => function (value) {return setField(this, field, value)};
 
   function setUpValidators(model, field, options) {
     const validators = getValidators(model, field);
-    let valFunc;
 
     if (typeof options === 'object') {
 
-      for(let validator in options) {
-
-        if(valFunc = Val.validators(validator)) {
+      for(const validator in options) {
+        const valFunc = Val.validators(validator);
+        if (valFunc !== undefined) {
           validators[validator]=[valFunc, options[validator], options];
         }
       }

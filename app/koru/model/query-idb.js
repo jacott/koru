@@ -13,7 +13,7 @@ define(function(require, exports, module) {
 
   function whenIdle(db) {
     const iq = db[idleQueue$];
-    if (! iq) return;
+    if (iq === null) return;
     db[idleQueue$] = null;
     iq.r && iq.r(db);
   }
@@ -65,7 +65,7 @@ define(function(require, exports, module) {
       };
       bq.queueAction(() => {
         const req = window.indexedDB.open(name, version);
-        if (upgrade) req.onupgradeneeded = (event) => {
+        if (upgrade !== undefined) req.onupgradeneeded = (event) => {
           this[iDB$] = event.target.result;
           upgrade({
             db: this, oldVersion: event.oldVersion,
@@ -82,10 +82,10 @@ define(function(require, exports, module) {
     }
 
     static canIUse() {
-      if (! window.IDBKeyRange)
+      if (window.IDBKeyRange === undefined)
         return false;
 
-      return !! window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes;
+      return window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes !== undefined;
     }
 
     get objectStoreNames() {
@@ -94,18 +94,18 @@ define(function(require, exports, module) {
 
     transaction(tables, mode, {oncomplete, onabort}={}) {
       const tx = this[iDB$].transaction(tables, mode);
-      if (oncomplete) tx.oncomplete = oncomplete;
-      if (onabort) tx.onabort = onabort;
+      if (oncomplete !== undefined) tx.oncomplete = oncomplete;
+      if (onabort !== undefined) tx.onabort = onabort;
       return tx;
     }
 
     loadDoc(modelName, rec) {
       const model = ModelMap[modelName];
       const curr = model.docs[rec._id];
-      if (curr && ! curr.$stopGap) return;
+      if (curr != null && curr.$stopGap === undefined) return;
       const orig = notMe;
       try {
-        if (curr) {
+        if (curr != null) {
           curr.$stopGap = undefined;
           curr.$update(rec);
         } else {
@@ -195,7 +195,7 @@ define(function(require, exports, module) {
 
     queueChange(now, was) {
       const doc = (now != null ? now : was);
-      if (doc === notMe || doc.$stopGap) return;
+      if (doc === notMe || doc.$stopGap !== undefined) return;
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);
@@ -239,7 +239,7 @@ define(function(require, exports, module) {
 
   function flushPendng(db) {
     const pu = db[pendingUpdates$];
-    if (! pu) return;
+    if (pu === null) return;
     db[pendingUpdates$] = null;
     const models = Object.keys(pu);
     const tran = db[iDB$].transaction(models, 'readwrite');
@@ -250,12 +250,12 @@ define(function(require, exports, module) {
     tran.oncomplete = () => {
       db[busyQueue$].nextAction();
     };
-    for(let model of models) {
+    for(const model of models) {
       const docs = pu[model];
       const os = tran.objectStore(model);
-      for (var _id in docs) {
+      for (const _id in docs) {
         const doc = docs[_id];
-        doc ? os.put(doc) : os.delete(_id);
+        doc !== null ? os.put(doc) : os.delete(_id);
       }
     }
   }
