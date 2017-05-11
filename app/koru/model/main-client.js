@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   const Query       = require('koru/model/query');
   const Random      = require('koru/random');
   const session     = require('koru/session/client-rpc');
+  const {stopGap$}  = require('koru/symbols');
   const util        = require('koru/util');
   const dbBroker    = require('./db-broker');
   const clientIndex = require('./index-client');
@@ -60,7 +61,7 @@ define(function(require, exports, module) {
         },
         createStopGap(attrs) {
           const doc = this.build(attrs, true);
-          doc.$stopGap = true;
+          doc[stopGap$] = true;
           doc.$isValid();
           doc._errors = null;
           doc.$save('force');
@@ -219,7 +220,7 @@ define(function(require, exports, module) {
       if (! doc.changes._id) doc.changes._id = Random.id();
       _id = doc.changes._id;
       if (model.docs[_id]) throw new koru.Error(400, {_id: [['not_unique']]});
-      if (doc.$stopGap) {
+      if (doc[stopGap$]) {
         doc.attributes = doc.changes;
         doc.changes = {};
         localInsert(doc, koru.userId());
@@ -229,7 +230,7 @@ define(function(require, exports, module) {
       // only call if at least one change
       const changes = doc.changes;
       doc.changes = {}; // reset changes here for callbacks
-      if (doc.$stopGap)
+      if (doc[stopGap$])
         localUpdate(doc, changes, koru.userId());
       else
         session.rpc("save", model.modelName, _id, changes, callback);

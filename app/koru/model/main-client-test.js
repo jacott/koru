@@ -1,11 +1,12 @@
 define(function (require, exports, module) {
   'use strict';
-  const Val      = require('koru/model/validation');
-  const session  = require('koru/session');
-  const api      = require('koru/test/api');
-  const util     = require('koru/util');
-  const dbBroker = require('./db-broker');
-  const TH       = require('./test-helper');
+  const Val        = require('koru/model/validation');
+  const session    = require('koru/session');
+  const {stopGap$} = require('koru/symbols');
+  const api        = require('koru/test/api');
+  const util       = require('koru/util');
+  const dbBroker   = require('./db-broker');
+  const TH         = require('./test-helper');
 
   const Model    = require('./main');
   var test, v;
@@ -41,7 +42,7 @@ define(function (require, exports, module) {
 
       v.foo = TestModel.createStopGap({_id: 'foo123', name: 'testing'});
       refute.called(session.rpc);
-      assert.same(v.foo.$stopGap, true);
+      assert.same(v.foo[stopGap$], true);
       assert.same(TestModel.findById('foo123'), v.foo);
       assert.same(v.foo.name, 'testing');
       refute(v.foo.$isValid());

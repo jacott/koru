@@ -2,13 +2,13 @@ isClient && define(function (require, exports, module) {
   /**
    * Support client side persistence using indexedDB
    *
-   * For testing one can use {#koru/model/mockIndexedDB} in replacement of
-   * `indexedDB`
+   * For testing one can use {#koru/model/mockIndexedDB} in replacement of `indexedDB`
    **/
   const koru          = require('koru');
   const Model         = require('koru/model');
   const mockIndexedDB = require('koru/model/mock-indexed-db');
   const TransQueue    = require('koru/model/trans-queue');
+  const {stopGap$}    = require('koru/symbols');
   const api           = require('koru/test/api');
   const MockPromise   = require('koru/test/mock-promise');
   const TH            = require('./test-helper');
@@ -31,7 +31,8 @@ isClient && define(function (require, exports, module) {
     setUp() {
       v = {};
       v.idb = new mockIndexedDB(1);
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', gender: 'text'});
+      v.TestModel = Model.define('TestModel').defineFields({
+        name: 'text', age: 'number', gender: 'text'});
       api.module();
     },
 
@@ -72,7 +73,7 @@ isClient && define(function (require, exports, module) {
       /**
        * Queue a model change to update indexedDB when the current
        * {#trans-queue} successfully completes. Changes to model
-       * instances with $stopGap truthy are ignored.
+       * instances with stopGap$ symbol truthy are ignored.
        *
        * @param now the record in its current form
 
@@ -92,7 +93,8 @@ isClient && define(function (require, exports, module) {
           assert.same(v.foo._version, 2);
           this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-          v.fIgnore = v.TestModel.createStopGap({_id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
+          v.fIgnore = v.TestModel.createStopGap({
+            _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
         }, () => {
           refute(v.foo._store.TestModel.docs.fooIgnore);
           const iDoc = v.foo._store.TestModel.docs.foo123;
@@ -116,8 +118,8 @@ isClient && define(function (require, exports, module) {
 
     "test loadDoc"() {
       /**
-       * Insert a record into a model but ignore #queueChange for same
-       * record and do nothing if record already in model unless model#$stopGap is truthy;
+       * Insert a record into a model but ignore #queueChange for same record and do nothing if
+       * record already in model unless model[stopGap$] symbol is truthy;
        **/
       TH.stubProperty(window, 'Promise', {value: MockPromise});
       api.protoMethod('loadDoc');
@@ -140,12 +142,12 @@ isClient && define(function (require, exports, module) {
       poll();
       assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
       refute(v.called);
-      v.TestModel.docs.foo123.$stopGap = true;
+      v.TestModel.docs.foo123[stopGap$] = true;
       v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
       poll();
       assert.equals(v.TestModel.docs.foo123.name, 'foo2');
       assert.same(v.TestModel.docs.foo123, foo123);
-      assert.equals(foo123.$stopGap, undefined);
+      assert.equals(foo123[stopGap$], undefined);
 
 
       assert(v.called);
@@ -213,7 +215,8 @@ isClient && define(function (require, exports, module) {
         v.db.delete('TestModel', 'foo123');
       });
       poll();
-      assert.equals(v.foo._store.TestModel.docs, {foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
+      assert.equals(v.foo._store.TestModel.docs, {
+        foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     },
 
     "test get"(done) {

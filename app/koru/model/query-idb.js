@@ -4,6 +4,7 @@ define(function(require, exports, module) {
   const ModelMap   = require('koru/model/map');
   const Query      = require('koru/model/query');
   const TransQueue = require('koru/model/trans-queue');
+  const {stopGap$} = require('koru/symbols');
   const util       = require('koru/util');
 
   const iDB$ = Symbol(), pendingUpdates$ = Symbol();
@@ -102,11 +103,11 @@ define(function(require, exports, module) {
     loadDoc(modelName, rec) {
       const model = ModelMap[modelName];
       const curr = model.docs[rec._id];
-      if (curr != null && curr.$stopGap === undefined) return;
+      if (curr != null && curr[stopGap$] === undefined) return;
       const orig = notMe;
       try {
         if (curr != null) {
-          curr.$stopGap = undefined;
+          curr[stopGap$] = undefined;
           curr.$update(rec);
         } else {
           Query.insert(notMe = new model(rec));
@@ -195,7 +196,7 @@ define(function(require, exports, module) {
 
     queueChange(now, was) {
       const doc = (now != null ? now : was);
-      if (doc === notMe || doc.$stopGap !== undefined) return;
+      if (doc === notMe || doc[stopGap$] !== undefined) return;
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);
