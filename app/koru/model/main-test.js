@@ -1035,7 +1035,7 @@ define(function (require, exports, module) {
         },
 
         "test no authorizePut"() {
-          test.stub(koru, 'info');
+          TH.noInfo();
           assert.accessDenied(function () {
             v.doc.$put({name: 'new'});
           });

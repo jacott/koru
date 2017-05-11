@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   const Random          = require('koru/random');
+  const accSha256       = require('koru/srp/acc-sha256');
   const koru            = require('../main');
   const makeSubject     = require('../make-subject');
   const util            = require('../util');
@@ -15,6 +16,8 @@ define(function (require, exports, module) {
     const globalDictAdders = {};
     let _globalDict, _globalDictEncoded;
     let _preloadDict = message.newGlobalDict();
+    let dictHash = [1,2,3,5, 7,11,13,17]; // dont' change this without bumping koru.PROTOCOL_VERSION
+    let dictHashStr = null;
 
     let version = 'dev', versionHash = 'h'+Date.now();
 
@@ -30,7 +33,12 @@ define(function (require, exports, module) {
       }
     };
 
-    const addToDict = word => {_preloadDict && message.addToDict(_preloadDict, word)};
+    const addToDict = word => {
+      if (_preloadDict === null) return;
+      message.getStringCode(_preloadDict, word) === null &&
+        accSha256.add(word, dictHash);
+      message.addToDict(_preloadDict, word);
+    };
 
     const onConnection = ws => {
       const ugr = ws.upgradeReq;
@@ -40,8 +48,10 @@ define(function (require, exports, module) {
 
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
+        let gdict = globalDictEncoded(), dictHash = dictHashStr;
         if (url !== null) {
-          const [protocol, version, hash] = url.split('/').slice(2);
+          const parts = url.split('?', 2);
+          const [protocol, version, hash] = parts[0].split('/').slice(2);
           if (+protocol !== koru.PROTOCOL_VERSION) {
             ws.send('Lforce-reload');
             ws.close();
@@ -56,7 +66,13 @@ define(function (require, exports, module) {
                       : util.compareVersion(version, session.version);
               if (cmp < 0) newVersion = session.version;
               else if (cmp > 0) return; // client on greater version; we will update (hopefully) so
-                                        // just wait around
+              // just wait around
+            }
+          } else {
+            const search = util.searchStrToMap(parts[1]);
+            if (search.dict === dictHashStr) {
+              gdict = null;
+              dictHash = undefined;
             }
           }
         }
@@ -80,7 +96,9 @@ define(function (require, exports, module) {
         const onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
 
-        conn.sendBinary('X', [newVersion, session.versionHash, globalDictEncoded()]);
+        conn.sendBinary('X', [
+          newVersion, session.versionHash,
+          gdict, dictHash]);
         koru.info(
           `New conn id:${sessId}, tot:${session.totalSessions}, ver:${version}, `+
             `${conn.engine}, ${remoteAddress}:${conn.remotePort}`);
@@ -138,7 +156,8 @@ define(function (require, exports, module) {
         globalDictAdders[name](addToDict);
       }
       _globalDict = _preloadDict;
-      _preloadDict = null;
+      dictHashStr = accSha256.toHex(dictHash);
+      _preloadDict = dictHash = null;
 
       message.finalizeGlobalDict(_globalDict);
       _globalDictEncoded = new Uint8Array(message.encodeDict(_globalDict, []));

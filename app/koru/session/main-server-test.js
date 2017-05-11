@@ -50,7 +50,7 @@ isServer && define(function (require, exports, module) {
 
       assert.calledWith(v.ws.send, TH.match(arg => {
         v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);
-        assert.equals(v.msg, ['', 'h1', TH.match.any]);
+        assert.equals(v.msg, ['', 'h1', TH.match.any, TH.match.string]);
 
         return arg[0] === 88;
       }), {binary: true});

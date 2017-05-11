@@ -4,6 +4,7 @@ define(function (require, exports, module) {
    **/
   var test, v;
   const koru         = require('koru');
+  const message      = require('koru/session/message');
   const api          = require('koru/test/api');
   const util         = require('koru/util');
   const SessionBase  = require('./base').constructor;
@@ -131,7 +132,7 @@ define(function (require, exports, module) {
     },
 
     "test newVersion"() {
-      this.stub(koru, 'info');
+      TH.noInfo();
       this.stub(koru, 'reload');
       assert.calledWith(v.sess.provide, 'X', TH.match(arg => v.func = arg));
 
@@ -183,6 +184,34 @@ define(function (require, exports, module) {
       assert.calledWith(koru.onunload, module);
       koru.onunload.yield();
       assert.equals(v.sess._broadcastFuncs, {foo: null, bar: null});
+    },
+
+    "open connection": {
+      setUp() {
+        v.sess.connect();
+        v.sess.ws.close = this.stub();
+        v.sendBinary = this.stub(v.sess, 'sendBinary');
+      },
+
+      "test stop"() {
+        v.sess.stop();
+
+        assert.calledOnce(v.ws.close);
+      },
+
+      "test sendBinary"() {
+        v.sendBinary.restore();
+        v.sess.state.isReady = this.stub().returns(true);
+        const send = v.sess.ws.send = this.stub();
+        v.sess.sendBinary('M', [1,2,3,4]);
+
+        assert.calledWith(send, TH.match(data  => {
+          if (data[0] === 'M'.charCodeAt(0)) {
+            assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [1,2,3,4]);
+            return true;
+          }
+        }));
+      },
     },
   });
 });

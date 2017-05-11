@@ -186,6 +186,15 @@ define(function (require, exports, module) {
     "onConnection": {
       setUp() {
         v.sess = sut(v.mockSess);
+        v.assertSent = (args) => {
+          assert.elideFromStack.calledOnceWith(v.ws.send, TH.match(arg => {
+            v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
+            assert.equals(v.msg, args);
+
+            return arg[0] === 88;
+          }, args));
+          v.ws.send.reset();
+        };
       },
 
       "test wrong protocol received"() {
@@ -196,21 +205,43 @@ define(function (require, exports, module) {
         assert.calledOnceWith(v.ws.send, 'Lforce-reload');
       },
 
+      "dictHash": {
+        setUp() {
+          v.sess.addToDict('Helium');
+          v.sess.addToDict('Tungsten');
+          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.sess.versionHash = 'h123';
+          v.sess.version = 'v1.2.2';
+          TH.noInfo();
+        },
+
+        "test wrong dictHash received"() {
+          v.ws.upgradeReq.url += '?dict=abcdf23';
+          v.sess.onConnection(v.ws);
+          v.assertSent([
+            '', 'h123',
+            TH.match(dict=>v.dict=dict),
+            '0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0']);
+
+          assert.equals(Array.from(v.dict), [
+            72, 101, 108, 105, 117, 109, 255, 84, 117, 110, 103, 115, 116, 101, 110, 255, 0
+          ]);
+        },
+
+        "test correct dictHash received"() {
+          v.ws.upgradeReq.url +=
+            '?dict=0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0';
+          v.sess.onConnection(v.ws);
+          v.assertSent(['', 'h123', null, undefined]);
+        },
+      },
+
       "compareVersion": {
         setUp() {
           v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h456';
           v.sess.version = 'v1.2.3';
-          this.stub(koru, 'info');
-          v.assertSent = (args) => {
-            assert.elideFromStack.calledOnceWith(v.ws.send, TH.match(arg => {
-              v.msg = message.decodeMessage(arg.subarray(1), v.sess.globalDict);
-              assert.equals(v.msg, args);
-
-              return arg[0] === 88;
-            }, args));
-            v.ws.send.reset();
-          };
+          TH.noInfo();
         },
 
         "test override halts response"() {
@@ -235,13 +266,13 @@ define(function (require, exports, module) {
           refute.called(util.compareVersion);
           assert.called(compareVersion);
 
-          v.assertSent(['v1.2.3', 'h456', TH.match.any]);
+          v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test compareVersion"() {
           /** client < server **/
           v.sess.onConnection(v.ws);
-          v.assertSent(['v1.2.3', 'h456', TH.match.any]);
+          v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
 
           /** client > server **/
           v.sess.version = 'v1.2.1';
@@ -251,19 +282,19 @@ define(function (require, exports, module) {
           /** client == server **/
           v.sess.version = 'v1.2.2';
           v.sess.onConnection(v.ws);
-          v.assertSent(['', 'h456', TH.match.any]);
+          v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test no version,hash"() {
           v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
           v.sess.onConnection(v.ws);
-          v.assertSent(['', 'h456', TH.match.any]);
+          v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test old version but good hash"() {
           v.sess.versionHash = 'h123';
           v.sess.onConnection(v.ws);
-          v.assertSent(['', 'h123', TH.match.any]);
+          v.assertSent(['', 'h123', TH.match.any, TH.match.string]);
         },
       },    },
 

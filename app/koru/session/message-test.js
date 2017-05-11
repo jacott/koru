@@ -84,6 +84,8 @@ define(function (require, exports, module) {
 
       assert.equals(_encode('x', gDict),  v.ans = [129, 120]);
       assert.same(_decode(v.ans, gDict), 'x');
+      assert.same(message.getStringCode(gDict, 'x'), 65534);
+
 
       assert.equals(_encode('Friday', gDict),  v.ans = [17, 255, 253]);
       assert.same(_decode(v.ans, gDict), 'Friday');

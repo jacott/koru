@@ -46,12 +46,12 @@ define(function (require, exports, module) {
     },
 
     "test version reconciliation"() {
-      this.stub(koru, 'info');
+      TH.noInfo();
       assert.same(v.sess.version, undefined);
       assert.same(v.sess.hash, undefined);
 
       this.stub(koru, 'reload');
-      assert.calledWith(v.sess.provide, 'X', TH.match(func => v.func = func));
+      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
 
       v.sess.addToDict('foo'); // does nothing
 
@@ -62,18 +62,31 @@ define(function (require, exports, module) {
 
       var endict = new Uint8Array(message.encodeDict(dict, []));
 
-      v.func.call(v.sess, ['', 'h123', endict]);
+      v.X.call(v.sess, ['', 'h123', endict, 'dhash']);
 
       assert.same(v.sess.globalDict.k2c['t1'], 0xfffd);
       assert.same(v.sess.globalDict.k2c['t2'], 0xfffe);
       assert.same(v.sess.globalDict.k2c['foo'], undefined);
+      assert.same(v.sess.dictHash, 'dhash');
+
 
       refute.called(koru.reload);
       assert.same(v.sess.hash, 'h123');
 
-      v.func.call(v.sess, ['v10', 'h123', dict]);
+      v.X.call(v.sess, ['v10', 'h123', dict, 'dhash2']);
 
       assert.called(koru.reload);
+    },
+
+    "test existing dict"() {
+      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      message.addToDict(v.sess.globalDict, 'hello');
+      v.sess.dictHash = 'orig';
+
+      v.X.call(v.sess, ['', 'h123', null]);
+
+      assert.same(v.sess.dictHash, 'orig');
+      assert.same(v.sess.globalDict.k2c.hello, 256);
     },
 
     "onmessage": {
@@ -161,7 +174,7 @@ define(function (require, exports, module) {
       },
 
       "test no response close fails"() {
-        this.stub(koru, 'info');
+        TH.noInfo();
         v.time = v.readyHeatbeat();
 
         v.ws.close = () => {throw new Error("close fail")};
@@ -197,14 +210,21 @@ define(function (require, exports, module) {
       v.sess.connect();         // connect
 
       assert.called(v.sess.newWs);
-      assert.same(v.sess._url(), 'wss://test.host:123/ws/3/dev/');
+      assert.same(v.sess._url(), 'wss://test.host:123/ws/4/dev/');
       v.sess.hash = 'h123';
-      assert.same(v.sess._pathPrefix(), 'ws/3/dev/h123');
+      assert.same(v.sess._pathPrefix(), 'ws/4/dev/h123');
+      assert.same(v.sess._pathPrefix({foo: 123}), 'ws/4/dev/h123?foo=123');
+      v.sess.dictHash = 'dh1234';
+      assert.same(v.sess._pathPrefix(), 'ws/4/dev/h123?dict=dh1234');
+      assert.same(v.sess._pathPrefix({bar: 'extra bit'}), 'ws/4/dev/h123?dict=dh1234&bar=extra%20bit');
+
 
       refute.called(sessState.connected);
 
+      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      v.X.call(v.sess, ['', koru.PROTOCOL_VERSION, null]);
+
       v.ready = true;
-      v.ws.onopen();            // connect success
 
       assert.calledWith(sessState.connected, TH.match(conn => conn.ws === v.ws));
 
@@ -230,7 +250,7 @@ define(function (require, exports, module) {
 
       v.sess.connect();         // reconnect
       v.sess.connect();         // reconnect
-      v.ws.onopen();            // success
+      v.X.call(v.sess, ['', koru.PROTOCOL_VERSION, null]);
 
       assert.called(sessState.connected);
 
@@ -252,40 +272,12 @@ define(function (require, exports, module) {
       assert.equals(v.sess._waitSends, [['P', [null]], ['M', [1]], 'SLabc']);
 
       v.sess.connect();
-      v.ready = true;
-      v.ws.onopen();
+      assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
+      v.X.call(v.sess, ['', koru.PROTOCOL_VERSION, null]);
 
       assert.calledWith(v.ws.send, ["x", "P", [null]]);
       assert.calledWith(v.ws.send, ["x", "M", [1]]);
       assert.calledWith(v.ws.send, 'SLabc');
-    },
-
-
-    "open connection": {
-      setUp() {
-        v.sess.connect();
-        v.ws.onopen();
-        v.sendBinary = this.stub(v.sess, 'sendBinary');
-      },
-
-      "test stop"() {
-        v.sess.stop();
-
-        assert.calledOnce(v.ws.close);
-      },
-
-      "test sendBinary"() {
-        v.ready = true;
-        v.sendBinary.restore();
-        v.sess.sendBinary('M', [1,2,3,4]);
-
-        assert.calledWith(v.ws.send, TH.match(data  => {
-          if (data[0] === 'M'.charCodeAt(0)) {
-            assert.equals(message.decodeMessage(data.subarray(1), v.sess.globalDict), [1,2,3,4]);
-            return true;
-          }
-        }));
-      },
     },
   });
 });

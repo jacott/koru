@@ -142,7 +142,7 @@ define(function(require) {
 
       if (object.length !== 1) {
         const dkey = dict[1].c2k.length < 0xa000 && object.length < 100 && object[0] !== '{' ?
-                addToDict(dict, object) : getString(dict, object);
+                addToDict(dict, object) : getStringCode(dict, object);
         if (dkey !== null) {
           buffer.push(tDictString, dkey >> 8, dkey & 0xff);
           return;
@@ -257,8 +257,8 @@ define(function(require) {
 
   const newLocalDict = () => ({index: 0, k2c: {}, c2k: []});
 
-  const getString = (dict, word) => {
-    if (Array.isArray(dict)) {
+  const getStringCode = (dict, word) => {
+    if (dict.constructor === Array) {
       const code = dict[0].k2c[word];
       if (code) return code;
       dict = dict[1];
@@ -270,7 +270,7 @@ define(function(require) {
 
   const addToDict = (dict, name) => {
     let limit = 0xfff0;
-    if (Array.isArray(dict)) {
+    if (dict.constructor === Array) {
       limit = dict[0].limit;
       const code = dict[0].k2c[name];
       if (code !== undefined) return code;
@@ -390,5 +390,6 @@ define(function(require) {
     encodeDict,
     decodeDict,
     getDictItem,
+    getStringCode,
   };
 });
