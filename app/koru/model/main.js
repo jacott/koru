@@ -10,8 +10,6 @@ define(function(require, exports, module) {
   const registerObserveId    = require('./register-observe-id');
   const Val                  = require('./validation');
 
-  module.exports = ModelMap;
-
   function Lock() {
     this.temp = '';
     delete this.temp;
@@ -891,4 +889,5 @@ define(function(require, exports, module) {
     ));
   }
 
+  return ModelMap;
 });

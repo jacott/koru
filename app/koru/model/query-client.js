@@ -16,7 +16,7 @@ define(function(require, exports, module) {
   }
 
   function Constructor(session) {
-    return function(Query, condition, notifyACSym) {
+    return function(Query, condition, notifyAC$) {
       let syncOb, stateOb;
       const origWhere = Query.prototype.where;
 
@@ -441,7 +441,7 @@ define(function(require, exports, module) {
         model._indexUpdate.notify(doc, changes, isFromServer); // first: update indexes
         isFromServer ||
           Model._support.callAfterObserver(doc, changes); // next:  changes originated here
-        Query[notifyACSym](doc, changes, isFromServer);
+        Query[notifyAC$](doc, changes, isFromServer); // notify anyChange
         model.notify(doc, changes, isFromServer); // last:  Notify everything else
       }
 

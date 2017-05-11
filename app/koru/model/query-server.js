@@ -7,9 +7,9 @@ define(function(require, exports, module) {
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
-  return function (Query, condition, notifyACSym) {
+  return function (Query, condition, notifyAC$) {
     function notify(model, now, was) {
-      Query[notifyACSym](now, was);
+      Query[notifyAC$](now, was);
       model.notify(now, was);
     }
 
