@@ -415,14 +415,14 @@ define(function (require, exports, module) {
         this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         v.TestModel.serverQuery.onId(v.foo._id).remove();
 
-        refute.called(v.changed);
-
-        assert.same(v.foo.$reload().name, 'Mary');
+        refute(v.TestModel.exists(v.foo._id));
+        assert.calledWith(v.changed, null, TH.matchModel(v.foo));
+        v.changed.reset();
 
         sessState.decPending();
         assert.same(v.TestModel.query.count(), 0);
 
-        assert.calledWith(v.changed, null, TH.matchModel(v.foo));
+        refute.called(v.changed);
       },
 
       "test remote removed non existant"() {

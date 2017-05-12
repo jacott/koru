@@ -47,7 +47,7 @@ define(function(require, exports, module) {
                   if (newDoc)
                     doc = modelDocs[id] = new model({_id: id});
                   Changes.applyAll(doc.attributes, fields);
-                  for(const noop in fields) {
+                  for(const _ in fields) {
                     notify(model, doc, newDoc ? null : fields, true);
                     break;
                   }
@@ -60,7 +60,7 @@ define(function(require, exports, module) {
         insert(doc) {
           return TransQueue.transaction(() => {
             const model = doc.constructor;
-            if (session.state.pendingCount()) {
+            if (session.state.pendingCount() !== 0) {
               simDocsFor(model)[doc._id] = 'new';
             }
             model.docs[doc._id] = doc;
@@ -486,7 +486,8 @@ define(function(require, exports, module) {
         if (docs === undefined) return changes;
 
         if (changes === undefined) {
-          return docs[id] = 'new';
+          delete docs[id];
+          return null;
         }
         const keys = docs[id];
         if (keys === undefined) return changes;
@@ -537,7 +538,7 @@ define(function(require, exports, module) {
         } else {
           // remove
           for(const key in attrs) {
-            if (! (key === '_id' || keys.hasOwnProperty(key)))
+            if (keys[key] === undefined)
               keys[key] = util.deepCopy(attrs[key]);
           }
         }
@@ -554,9 +555,8 @@ define(function(require, exports, module) {
 
       const newEmptyObj = () => Object.create(null);
 
-      function simDocsFor(model) {
-        return Model._getSetProp(model.dbId, model.modelName, 'simDocs', newEmptyObj);
-      }
+      const simDocsFor = model => Model._getSetProp(
+        model.dbId, model.modelName, 'simDocs', newEmptyObj);
 
       function reset() {
         unload();
