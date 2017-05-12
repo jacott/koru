@@ -7,7 +7,9 @@ isClient && define(function (require, exports, module) {
   const koru          = require('koru');
   const Model         = require('koru/model');
   const mockIndexedDB = require('koru/model/mock-indexed-db');
+  const Query         = require('koru/model/query');
   const TransQueue    = require('koru/model/trans-queue');
+  const session       = require('koru/session');
   const {stopGap$}    = require('koru/symbols');
   const api           = require('koru/test/api');
   const MockPromise   = require('koru/test/mock-promise');
@@ -69,88 +71,287 @@ isClient && define(function (require, exports, module) {
       v.idb.yield(0);
     },
 
-    "test queueChange"(done) {
-      /**
-       * Queue a model change to update indexedDB when the current
-       * {#trans-queue} successfully completes. Changes to model
-       * instances with stopGap$ symbol truthy are ignored.
-       *
-       * @param now the record in its current form
+    "queueChange": {
+      setUp() {
+        /**
+         * Queue a model change to update indexedDB when the current
+         * {#trans-queue} successfully completes. Changes to model
+         * instances with stopGap$ symbol truthy are ignored.
+         *
+         * @param now the record in its current form
 
-       * @param was the original values of the changes to the record.
-       **/
-      v.error = ex => done(ex);
+         * @param was the original values of the changes to the record.
+         **/
+        api.protoMethod('queueChange');
+        TH.stubProperty(window, 'Promise', {value: MockPromise});
+        v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+          db.createObjectStore("TestModel");
+        }});
+      },
 
-      api.protoMethod('queueChange');
-      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
-        db.createObjectStore("TestModel");
-      }});
-      v.idb.yield(0);
+      "test simulated add, update"() {
+        session.state.incPending();
+        this.onEnd(_=> {session.state.decPending()});
 
-      api.example(() => {
-        then([() => {
-          v.foo = v.idb._dbs.foo;
-          assert.same(v.foo._version, 2);
-          this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
-          v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-          v.fIgnore = v.TestModel.createStopGap({
-            _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
-        }, () => {
-          refute(v.foo._store.TestModel.docs.fooIgnore);
-          const iDoc = v.foo._store.TestModel.docs.foo123;
-          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+        api.example(() => {
+          poll(); {
+            v.foo = v.idb._dbs.foo;
+            assert.same(v.foo._version, 2);
+            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+            v.fIgnore = v.TestModel.createStopGap({
+              _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
+          }
+          poll(); {
+            refute(v.foo._store.TestModel.docs.fooIgnore);
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
 
-          v.f1.$update('age', 10);
-        }, () => {
-          const iDoc = v.foo._store.TestModel.docs.foo123;
-          assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
+            v.f1.$update('age', 10);
+            poll();
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm', $sim: 'new'});
 
-          v.f1.$remove();
-        }, () => {
-          const iDoc = v.foo._store.TestModel.docs.foo123;
-          refute(iDoc);
+            v.f1.$remove();
+            poll();
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, undefined);
+          }
+          // this results in the calls to queueChange below
+        });
 
-          done();
-        }]);
-        // this results in the calls to queueChange below
-      });
+        poll();
+      },
+
+      "test simulated remove"() {
+        session.state.incPending();
+        this.onEnd(_=> {session.state.decPending()});
+
+        api.example(() => {
+          poll(); {
+            v.foo = v.idb._dbs.foo;
+            assert.same(v.foo._version, 2);
+            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
+            v.f1 = v.TestModel.findById('foo123');
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+            v.f1.$remove();
+            poll();
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', $sim: {
+              _id: 'foo123', name: 'foo', age: 5, gender: 'm'}});
+          }
+          // this results in the calls to queueChange below
+        });
+
+        poll();
+      },
+
+      "test non simulated"() {
+        api.example(() => {
+          poll(); {
+            v.foo = v.idb._dbs.foo;
+            assert.same(v.foo._version, 2);
+            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+            v.fIgnore = v.TestModel.createStopGap({
+              _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
+          }
+          poll(); {
+            refute(v.foo._store.TestModel.docs.fooIgnore);
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+
+            v.f1.$update('age', 10);
+            poll();
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
+
+            v.f1.$remove();
+            poll();
+          }
+          poll(); {
+            const iDoc = v.foo._store.TestModel.docs.foo123;
+            assert.equals(iDoc, undefined);
+          }
+          // this results in the calls to queueChange below
+        });
+
+        poll();
+      },
     },
 
-    "test loadDoc"() {
-      /**
-       * Insert a record into a model but ignore #queueChange for same record and do nothing if
-       * record already in model unless model[stopGap$] symbol is truthy;
-       **/
-      TH.stubProperty(window, 'Promise', {value: MockPromise});
-      api.protoMethod('loadDoc');
-      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
-        db.createObjectStore("TestModel");
-      }});
-      poll();
-      v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
-      v.db.loadDoc('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-      poll();
-      v.foo = v.idb._dbs.foo;
+    "loadDoc": {
+      setUp() {
+        /**
+         * Insert a record into a model but ignore #queueChange for same record and do nothing if
+         * record already in model unless model[stopGap$] symbol is truthy;
+         *
+         * If record is simulated make from change from client point-of-view else server POV.
+         **/
+        TH.stubProperty(window, 'Promise', {value: MockPromise});
+        api.protoMethod('loadDoc');
+        v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+          db.createObjectStore("TestModel");
+        }});
+        poll();
+        v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
+        v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
+        session.state.incPending();
+        this.onEnd(_=> {session.state.decPending()});
+      },
 
-      const {foo123} = v.TestModel.docs;
+      "test simulated insert"() {
+        v.db.loadDoc('TestModel', v.rec = {
+          _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
 
-      assert.equals(foo123.attributes, v.rec);
-      assert.equals(v.foo._store.TestModel.docs, {});
-      assert(v.called);
-      v.called = false;
-      v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-      poll();
-      assert.equals(v.TestModel.docs.foo123.attributes, v.rec);
-      refute(v.called);
-      v.TestModel.docs.foo123[stopGap$] = true;
-      v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-      poll();
-      assert.equals(v.TestModel.docs.foo123.name, 'foo2');
-      assert.same(v.TestModel.docs.foo123, foo123);
-      assert.equals(foo123[stopGap$], undefined);
+        poll();
+        v.foo = v.idb._dbs.foo;
+
+        const {foo123} = v.TestModel.docs;
+
+        assert.same(foo123.attributes, v.rec);
+        assert.same(v.rec.$sim, undefined);
+        assert(v.called);
+
+        assert.equals(v.simDocs(), {foo123: 'new'});
+      },
+
+      "test non simulated insert"() {
+        v.TestModel.onChange(v.oc = this.stub());
+        assert.equals(v.simDocs(), undefined);
+        v.db.loadDoc('TestModel', v.rec = {
+          _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+
+        poll();
+        v.foo = v.idb._dbs.foo;
+
+        const {foo123} = v.TestModel.docs;
+
+        assert.same(foo123.attributes, v.rec);
+        assert(v.called);
+
+        assert.equals(v.simDocs(), undefined);
+
+        assert.calledWith(v.oc, foo123, null, true);
+      },
+
+      "test simulated update"() {
+        v.db.loadDoc('TestModel', {
+          _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
+        poll();
+
+        const {foo123} = v.TestModel.docs;
+        assert.equals(foo123.name, 'foo2');
+
+        assert.equals(v.simDocs(), {
+          foo123: {name: 'foo'}});
+      },
+
+      "test simulated remove"() {
+        v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
+          _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+        poll();
+
+        assert.same(v.TestModel.docs.foo123, undefined);
+
+        assert.equals(v.simDocs(), {
+          foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+      },
+
+      "with stopGap$": {
+        setUp() {
+          Query.insertFromServer(v.TestModel, 'foo123', {
+            _id: 'foo123', name: 'stopGap', age: 5, gender: 'm'});
+          v.foo123 = v.TestModel.docs.foo123;
+          v.foo123[stopGap$] = true;
+        },
+
+        "test simulated update"() {
+          v.db.loadDoc('TestModel', {
+            _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
+          poll();
+
+          assert.equals(v.foo123.name, 'foo2');
+
+          assert.equals(v.simDocs(), {
+            foo123: {name: 'foo'}});
+          assert.equals(v.foo123[stopGap$], undefined);
+        },
+
+        "test non simulated update"() {
+          v.TestModel.onChange(v.oc = this.stub());
+
+          v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
+          poll();
 
 
-      assert(v.called);
+          assert.equals(v.foo123.name, 'foo2');
+
+          assert.equals(v.simDocs(), undefined);
+
+          assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, true);
+          assert.equals(v.foo123[stopGap$], undefined);
+        },
+
+        "test simulated remove"() {
+          v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
+            _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+          poll();
+
+          assert.same(v.TestModel.docs.foo123, undefined);
+
+          assert.equals(v.simDocs(), {
+            foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
+          assert.equals(v.foo123[stopGap$], undefined);
+        },
+      },
+
+
+      "test stopGap$"() {
+        session.state.incPending();
+        this.onEnd(_=> {session.state.decPending()});
+
+        v.db.loadDoc('TestModel', v.rec = {
+          _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+
+        poll();
+        v.foo = v.idb._dbs.foo;
+
+        const {foo123} = v.TestModel.docs;
+
+        assert.equals(v.foo._store.TestModel.docs, {});
+        assert(v.called);
+
+        v.called = false;
+        v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
+        poll();
+        assert.same(foo123.attributes, v.rec);
+        assert.equals(foo123.name, 'foo');
+
+        refute(v.called);
+        v.TestModel.docs.foo123[stopGap$] = true;
+        v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
+        poll();
+        assert.equals(foo123.name, 'foo2');
+
+        assert.same(v.TestModel.docs.foo123, foo123);
+        assert.same(foo123.attributes, v.rec);
+        assert.equals(foo123[stopGap$], undefined);
+
+        assert(v.called);
+      },
     },
 
     "test loadDocs"() {
@@ -249,7 +450,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test getAll"(done) {
-       /**
+      /**
        * Find all records in a {#koru/model/main}
        *
        **/

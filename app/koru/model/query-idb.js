@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   const koru       = require('koru');
   const BusyQueue  = require('koru/busy-queue');
+  const Changes    = require('koru/changes');
+  const dbBroker   = require('koru/model/db-broker');
   const ModelMap   = require('koru/model/map');
   const Query      = require('koru/model/query');
   const TransQueue = require('koru/model/trans-queue');
@@ -12,14 +14,14 @@ define(function(require, exports, module) {
 
   let notMe;
 
-  function whenIdle(db) {
+  const whenIdle = db => {
     const iq = db[idleQueue$];
     if (iq === null) return;
     db[idleQueue$] = null;
     iq.r && iq.r(db);
-  }
+  };
 
-  function whenBusy(db) {db[idleQueue$] = makePQ()}
+  const whenBusy = db => {db[idleQueue$] = makePQ()};
 
   class Index {
     constructor(queryIDB, modelName, name) {
@@ -57,6 +59,7 @@ define(function(require, exports, module) {
 
   class QueryIDB {
     constructor({name, version, upgrade}) {
+      this.dbId = dbBroker.dbId;
       this[pendingUpdates$] = this[idleQueue$] = null;
       const bq = this[busyQueue$] = new BusyQueue(this);
       bq.whenIdle = whenIdle;
@@ -103,15 +106,33 @@ define(function(require, exports, module) {
     loadDoc(modelName, rec) {
       const model = ModelMap[modelName];
       const curr = model.docs[rec._id];
-      if (curr != null && curr[stopGap$] === undefined) return;
+      if (curr !== undefined && curr[stopGap$] === undefined) return;
       const orig = notMe;
       try {
-        if (curr != null) {
-          curr[stopGap$] = undefined;
-          curr.$update(rec);
-        } else {
-          Query.insert(notMe = new model(rec));
+        if (curr !== undefined) curr[stopGap$] = undefined;
+
+        const sim = rec.$sim;
+        if (sim !== undefined) rec.$sim = undefined;
+
+        if (typeof sim === 'object' && typeof sim._id === 'string') {
+          if (curr) delete model.docs[rec._id];
+          simDocsFor(model)[rec._id] = sim;
+          if (curr !== undefined) Query.notify(null, notMe = curr, false);
+          return;
         }
+
+        if (sim === 'new') {
+          simDocsFor(model)[rec._id] = 'new';
+        } else if (sim !== undefined) {
+          simDocsFor(model)[rec._id] = sim;
+        }
+        let changes = null;
+        notMe = model.docs[rec._id] = curr !== undefined ? (
+          Changes.applyAll(curr.attributes, rec),
+          changes = rec,
+          curr
+        ) : new model(rec);
+        Query.notify(notMe, changes, sim === undefined);
       } finally {
         notMe = orig;
       }
@@ -200,27 +221,33 @@ define(function(require, exports, module) {
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);
-        const pm = pu[name] || (pu[name] = {});
+        const pm = pu[name] === undefined ? (pu[name] = {}) : pu[name];
         const attrs = doc.attributes;
-        pm[attrs._id] = now && attrs;
+        pm[attrs._id] = now == null ? null : attrs;
       });
     }
-  } module.exports = QueryIDB;
+  }
 
-  function error(db, ex) {
+  const error = (db, ex) => {
     const iq = db[idleQueue$];
     iq && iq.e(ex);
     db[idleQueue$] = null;
     if (db.catchAll)
       db.catchAll(ex);
     else throw new Error((ex.target && ex.target.error) || ex);
-  }
+  };
 
-  function getPendingUpdates(db) {
+  const getPendingUpdates = db => {
     const pu = db[pendingUpdates$];
     if (pu) return pu;
     let count = 2;
     const bq = db[busyQueue$];
+    const whenReady = () => {
+      if (--count)
+        bq.nextAction();
+      else
+        flushPendng(db);
+    };
     bq.queueAction(whenReady); // ensure we have the console
     TransQueue.onSuccess(() => {
       if (count === 1)
@@ -229,16 +256,10 @@ define(function(require, exports, module) {
         count = 1;
     });
     TransQueue.onAbort(() => {db[pendingUpdates$] = null});
-    function whenReady() {
-      if (--count)
-        bq.nextAction();
-      else
-        flushPendng(db);
-    }
     return db[pendingUpdates$] = {};
-  }
+  };
 
-  function flushPendng(db) {
+  const flushPendng = db => {
     const pu = db[pendingUpdates$];
     if (pu === null) return;
     db[pendingUpdates$] = null;
@@ -251,21 +272,36 @@ define(function(require, exports, module) {
     tran.oncomplete = () => {
       db[busyQueue$].nextAction();
     };
-    for(const model of models) {
-      const docs = pu[model];
-      const os = tran.objectStore(model);
-      for (const _id in docs) {
-        const doc = docs[_id];
-        doc !== null ? os.put(doc) : os.delete(_id);
+    dbBroker.withDB(db.dbId, () => {
+      for(const modelName of models) {
+        const docs = pu[modelName];
+        const simDocs = ModelMap._getProp(db.dbId, modelName, 'simDocs');
+        const os = tran.objectStore(modelName);
+        for (const _id in docs) {
+          const doc = docs[_id];
+          const sdoc = simDocs === undefined ? undefined : simDocs[_id];
+          if (sdoc === undefined)
+            doc !== null ? os.put(doc) : os.delete(_id);
+          else {
+            if (doc === null) {
+              if (sdoc === 'new')
+                os.delete(_id);
+              else
+                os.put({_id: _id, $sim: sdoc});
+            } else {
+              os.put(util.merge({$sim: sdoc}, doc));
+            }
+          }
+        }
       }
-    }
-  }
+    });
+  };
 
-  function makePQ() {
+  const makePQ = () => {
     let r, e;
     const p = new Promise((_r, _e) => {r = _r; e = _e});
     return {p, r, e};
-  }
+  };
 
   function wrapOSRequest(db, modelName, body) {
     return wrapRequest(db, () => {
@@ -296,4 +332,11 @@ define(function(require, exports, module) {
       });
     });
   }
+
+  const newEmptyObj = () => Object.create(null);
+
+  const simDocsFor = model => ModelMap._getSetProp(
+    model.dbId, model.modelName, 'simDocs', newEmptyObj);
+
+  return QueryIDB;
 });
