@@ -204,6 +204,35 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
+    "test fastMerge"() {
+      /**
+       * Merge `source` into `dest` crudely (straight assignment; not descriptor copying) but
+       * quickly.
+       *
+       **/
+      api.method('merge');
+      var orig = {a: 1, b: 2};
+      var result = {};
+      assert.same(util.fastMerge(result, orig), result);
+
+      refute.same(result, orig);
+
+      assert.equals(result, orig);
+
+      assert.equals(util.fastMerge({a: 1}), {a: 1});
+      assert.equals(util.fastMerge({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4});
+
+      const a = {a: 1, b: 2};
+      const b = util.fastMerge(Object.create(a), {b: 3, c: 4});
+
+      const c = {d: 5};
+
+      const ans = util.fastMerge(c, b);
+
+      assert.same(ans, c);
+      assert.equals(ans, {d: 5, b: 3, c: 4, a: 1}); // copies all enumerable
+    },
+
     'test mergeExclude'() {
       let item = 5,
           sub={a: 1, b: 2},
@@ -498,6 +527,10 @@ define(function (require, exports, module) {
       assert.same(util.shallowCopy(undefined), undefined);
       assert.same(util.shallowCopy("a"), "a");
 
+      /** sparse array **/
+      const ans = util.shallowCopy([1,2,,,3]);
+      assert.equals(ans.map((d, i) => `${d}:${i}`), ['1:0', '2:1', , , '3:4']);
+
       function func() {}
       assert.same(util.shallowCopy(func), func);
 
@@ -543,6 +576,11 @@ define(function (require, exports, module) {
       assert.same(u8c[1], 2);
       assert.same(u8c[2], 3);
 
+      /** sparse array **/
+      const ans = util.deepCopy([1,2,,, v.ab = ['a','b']]);
+      refute.same(ans[5], v.ab);
+      assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`),
+                    ['1:0', '2:1', , , `['a', 'b']:4`]);
 
       function func() {}
       assert.same(util.deepCopy(func), func);

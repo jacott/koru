@@ -13,6 +13,8 @@ define(function(require, exports, module) {
     function: 6,
   };
 
+  const PRIMITIVE  = {string: 1, number: 1, boolean: 1, undefined: 1, function: 2};
+
   const typeorder = obj => obj === null ? -1 : TYPEORDER[typeof obj];
 
   const slice = Array.prototype.slice;
@@ -130,6 +132,11 @@ define(function(require, exports, module) {
     DAY: 1000*60*60*24,
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+
+    fastMerge(dest, source) {
+      for (const prop in source) dest[prop] = source[prop];
+      return dest;
+    },
 
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
@@ -536,62 +543,40 @@ define(function(require, exports, module) {
      * Do a shallow copy of a type
      */
     shallowCopy(orig) {
-      switch(typeof orig) {
-      case 'string':
-      case 'number':
-      case 'boolean':
-      case 'undefined':
-      case 'function':
-        return orig;
-      }
+      if (PRIMITIVE[typeof orig] !== undefined || orig === null) return orig;
 
-      if (orig === null) return orig;
-
-      switch(orig.constructor) {
-      case Date: case Uint8Array:
-        return new orig.constructor(orig);
-      case Array:
+      const {constructor} = orig;
+      if (constructor === Array)
         return orig.slice();
-      }
 
-      const result = Object.create(Object.getPrototypeOf(orig));
-      for(const key in orig) {
-        const desc = Object.getOwnPropertyDescriptor(orig, key);
-        desc && Object.defineProperty(result, key, desc);
-      }
+      if (constructor === Date || constructor === Uint8Array)
+        return new constructor(orig);
 
-      return result;
+      const copy = Object.create(Object.getPrototypeOf(orig));
+      for(const key in orig) copy[key] = orig[key];
+      return copy;
     },
 
     /** Does not deep copy functions */
     deepCopy(orig, maxLevel=util.MAXLEVEL) {
-      switch(typeof orig) {
-      case 'string':
-      case 'number':
-      case 'boolean':
-      case 'undefined':
-      case 'function':
-        return orig;
+      if (PRIMITIVE[typeof orig] !== undefined || orig === null) return orig;
+
+      if (maxLevel == 0)
+        throw new Error('deepCopy maxLevel exceeded');
+
+      const {constructor} = orig;
+
+      if (constructor === Array) {
+        --maxLevel;
+        return orig.map(v => util.deepCopy(v, maxLevel));
       }
 
-      if (orig === null) return orig;
+      if (constructor === Date || constructor === Uint8Array)
+        return new constructor(orig);
 
-    if (maxLevel == 0)
-      throw new Error('deepCopy maxLevel exceeded');
-
-      switch(orig.constructor) {
-      case Date: case Uint8Array:
-        return new orig.constructor(orig);
-      case Array:
-        return orig.map(item => util.deepCopy(item, maxLevel-1));
-      }
-
-      const result = Object.create(Object.getPrototypeOf(orig));
-      for(const key in orig) {
-        result[key] = util.deepCopy(orig[key], maxLevel-1);
-      }
-
-      return result;
+      const copy = Object.create(Object.getPrototypeOf(orig));
+      for(const key in orig) copy[key] = util.deepCopy(orig[key], maxLevel-1);
+      return copy;
     },
 
     intersectp (list1, list2) {
