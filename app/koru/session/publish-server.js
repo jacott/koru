@@ -37,9 +37,10 @@ define(function(require, exports, module) {
           this.sendBinary('P', [subId, 500, msg]);
           koru.info(msg);
         } else {
-          sub = subs[subId] = new Sub(this, subId, func, data[2]);
+          sub = subs[subId] = new Sub(this, subId, func, data[2], data[3]);
           sub.resubscribe();
-          subs[subId] && this.sendBinary('P', [subId]); // ready
+          subs[subId] && this.sendBinary('P', [
+            subId, 200, sub.lastSubscribed = util.dateNow()]); // ready
         }
       }
       this.releaseMessages();
@@ -50,8 +51,9 @@ define(function(require, exports, module) {
   }
 
   class Sub {
-    constructor (conn, subId, subscribe, args) {
+    constructor (conn, subId, subscribe, args, lastSubscribed) {
       this.conn = conn;
+      this.lastSubscribed = typeof lastSubscribed === 'number' ? lastSubscribed : 0;
       this.id = subId;
       this._subscribe = subscribe;
       this.args = args;
@@ -125,9 +127,7 @@ define(function(require, exports, module) {
   }
 
   function addToDictionary(adder) {
-    for (let name in publish._pubs) {
-      adder(name);
-    }
+    for (const name in publish._pubs) adder(name);
   }
 
 

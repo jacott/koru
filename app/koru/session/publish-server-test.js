@@ -14,16 +14,22 @@ isServer && define(function (require, exports, module) {
     setUp () {
       test = this;
       v = {};
-      v.pubFunc = test.stub();
+      v.pubFunc = test.stub(function () {
+        v.lastSubscribedReceived = this.lastSubscribed;
+      });
       publish({name: "foo", init(...args) {
         v.sub = this;
         v.pubFunc.apply(this, args);
       }});
 
+      this.stub(util, 'dateNow').returns(Date.now());
+
       v.callSub = () => {
         v.conn =  publishTH.mockConnection();
         v.conn.sendBinary = test.stub();
-        session._onMessage(v.conn, message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
+        session._onMessage(v.conn, message.encodeMessage('P', [
+          'a123', 'foo', [1,2,3], v.lastSubscribed
+        ], session.globalDict));
       };
 
       v.callSub();
@@ -58,10 +64,13 @@ isServer && define(function (require, exports, module) {
     "test publish" () {
       assert('a123' in v.conn._subs);
 
+      assert.same(v.lastSubscribedReceived, 0);
+
       assert.calledWith(v.pubFunc, 1, 2, 3);
 
+      assert.same(v.sub.lastSubscribed, util.dateNow());
       assert.same(v.sub.conn, v.conn);
-      assert.calledWith(v.conn.sendBinary, 'P', ['a123']);
+      assert.calledWith(v.conn.sendBinary, 'P', ['a123', 200, util.dateNow()]);
     },
 
     "test onStop" () {
@@ -154,6 +163,13 @@ isServer && define(function (require, exports, module) {
       refute('a123' in v.conn._subs);
     },
 
+    "test passing lastSubscribed"() {
+      v.lastSubscribed = 12345678;
+      v.callSub();
+
+      assert.same(v.lastSubscribedReceived, 12345678);
+    },
+
     "test error on subscribe" () {
       v.pubFunc.reset();
       v.pubFunc = function () {
@@ -194,7 +210,8 @@ isServer && define(function (require, exports, module) {
             return old;
           },
           $asChanges: $asChanges,
-          constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 5}};
+          constructor: {modelName: 'Foo'}, _id: 'id123',
+          attributes: v.attrs = {name: 'John', age: 5}};
       },
 
       "test stop" () {
@@ -297,7 +314,8 @@ isServer && define(function (require, exports, module) {
 
     "test sendUpdate added" () {
       var stub = v.conn.added = test.stub();
-      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John'}}, null, 'filter');
+      v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123',
+                        attributes: v.attrs = {name: 'John'}}, null, 'filter');
 
       assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
     },
@@ -313,7 +331,8 @@ isServer && define(function (require, exports, module) {
 
     "test sendUpdate removed" () {
       var stub = v.conn.removed = test.stub();
-      v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123', attributes: v.attrs = {name: 'John', age: 7}});
+      v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123',
+                              attributes: v.attrs = {name: 'John', age: 7}});
 
       assert.calledWith(stub, 'Foo', 'id123');
     },
