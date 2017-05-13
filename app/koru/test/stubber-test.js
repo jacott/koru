@@ -180,6 +180,14 @@ define(function (require, exports, module) {
       assert.equals(v.args, 'orig');
     },
 
+    "test stub function"() {
+      const stub = this.stub(function (a,b,c) {v.args = [a,b,c]});
+
+      stub(1,2,3);
+
+      assert.calledWith(stub, 1, 2, 3);
+    },
+
     "test yield"() {
       var x = test.stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});

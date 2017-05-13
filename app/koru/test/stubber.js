@@ -271,42 +271,43 @@ define(function(require, exports, module) {
     let func, desc, orig;
     if (repFunc !== undefined && typeof repFunc !== 'function')
       throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
-    if (object != null && typeof object !== 'string') {
+    if (object != null && typeof object !== 'string' && ! (
+      typeof object === 'function' && property === undefined &&
+        repFunc === undefined)) {
+        if (typeof property !== 'string')
+          throw AssertionError(new Error(
+            `Invalid stub call: ${inspect(property)} is not a string`));
+        if (! (property in object))
+          throw AssertionError(new Error(
+            `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
 
-      if (typeof property !== 'string')
-        throw AssertionError(new Error(
-          `Invalid stub call: ${inspect(property)} is not a string`));
-      if (! (property in object))
-        throw AssertionError(new Error(
-          `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
+        desc = Object.getOwnPropertyDescriptor(object, property);
+        orig = desc !== undefined ? desc.value : object[property];
+        if (orig !== undefined && typeof orig.restore === 'function')
+          throw AssertionError(new Error(`Already stubbed ${property}`));
+        if (typeof orig === 'function') {
+          func = stubFunction(orig, stubProto);
+          func[replacement$] = repFunc;
+          if (repFunc !== undefined) func[replacement$] = repFunc;
+        } else {
+          if (repFunc !== undefined) {
+            throw AssertionError(new Error("Attempt to stub non function with a function"));
+          }
 
-      desc = Object.getOwnPropertyDescriptor(object, property);
-      orig = desc !== undefined ? desc.value : object[property];
-      if (orig !== undefined && typeof orig.restore === 'function')
-        throw AssertionError(new Error(`Already stubbed ${property}`));
-      if (typeof orig === 'function') {
-        func = stubFunction(orig, stubProto);
-        func[replacement$] = repFunc;
-        if (repFunc !== undefined) func[replacement$] = repFunc;
-      } else {
-        if (repFunc !== undefined) {
-          throw AssertionError(new Error("Attempt to stub non function with a function"));
+          func = Object.create(stubProto);
         }
 
-        func = Object.create(stubProto);
-      }
-
-      func.original = orig;
-      Object.defineProperty(object, property, {value: func, configurable: true});
+        func.original = orig;
+        Object.defineProperty(object, property, {value: func, configurable: true});
     } else {
+      if (typeof object === 'function')
+        repFunc = object;
       func = stubFunction(null, stubProto);
       if (repFunc !== undefined) func[replacement$] = repFunc;
       if (object != null)
         func[stubName$] = object;
     }
-    func.restore = function () {
-      restore(object, property, desc, orig, func);
-    };
+    func.restore = () => {restore(object, property, desc, orig, func)};
 
     return func;
   };
