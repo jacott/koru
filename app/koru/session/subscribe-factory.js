@@ -12,40 +12,46 @@ define(function(require, exports, module) {
     let nextId = 0;
     const subs = session.subs = Object.create(null);
 
-    session.sendP = function (...args) {
+    session.sendP = (...args) => {
       session.state.isReady() && session.sendBinary('P', args);
     };
 
-    session._commands.P || session.provide('P', function (data) {
+    session._commands.P === undefined && session.provide('P', function (data) {
       const sub = this.subs[data[0]];
       if (sub === undefined) return;
       sub._received(data[1], data[2]);
     });
 
-    var userId;
+    let userId = null, loginOb = null;
 
-    let loginOb = login.onChange(session, function (state, sess) {
-      if (state === 'change') {
-        if (koru.userId() === userId) return;
-        userId = koru.userId();
-        var models = {};
-        for(var key in subs) {
-          subs[key].resubscribe(models);
-        }
-        publish._filterModels(models, "userIdChanged");
-      }
-    });
-
-    session.state.onConnect('10-subscribe', subcribe._onConnect = function (session) {
-      for(var id in subs) {
-        var sub = subs[id];
+    session.state.onConnect('10-subscribe', subcribe._onConnect = session => {
+      for(const id in subs) {
+        const sub = subs[id];
         sub._wait();
-        session.sendP(id, sub.name, sub.args);
+        session.sendP(id, sub.name, sub.args, sub.lastSubscribed);
       }
     });
+
+    const observeLogin = () => {
+      userId = koru.userId();
+      loginOb = login.onChange(session, (state, sess) => {
+        if (state === 'change') {
+          if (koru.userId() === userId) return;
+          userId = koru.userId();
+          const models = {};
+          for(const key in subs) {
+            subs[key].resubscribe(models);
+          }
+          publish._filterModels(models, "userIdChanged");
+        }
+      });
+    };
+
 
     function subcribe(name, ...args) {
       if (! publish._pubs[name]) throw new Error("No client publish of " + name);
+
+      loginOb === null && observeLogin();
 
       const sub = new ClientSub(session, (++nextId).toString(36), name, args);
       if (session.interceptSubscribe && session.interceptSubscribe(name, sub))
@@ -67,13 +73,11 @@ define(function(require, exports, module) {
     util.merge(subcribe, {
       unload() {
         session.state.stopOnConnect('10-subscribe');
-        loginOb && loginOb.stop();
-        loginOb = null;
+        loginOb !== null && loginOb.stop();
         session.unprovide('P');
         session.sendP = null;
-        clientUpdate && clientUpdate.unload();
-        clientUpdate = null;
-        userId = null;
+        clientUpdate.unload();
+        userId = loginOb = null;
       },
       set _userId(value) {userId = value},
       // test methods
@@ -82,7 +86,7 @@ define(function(require, exports, module) {
       get _nextId() {return nextId},
     });
 
-    var clientUpdate = require('./client-update')(session);
+    const clientUpdate = require('./client-update')(session);
 
     return subcribe;
   };

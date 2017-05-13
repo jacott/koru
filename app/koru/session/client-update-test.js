@@ -23,10 +23,8 @@ isClient && define(function (require, exports, module) {
         onConnect: test.stub(),
       });
       ['A', 'C', 'R'].forEach(function (type) {
-        assert.calledWith(v.sess.provide, type, TH.match(function (func) {
-          v['recv'+type] = function (...args) {
-            func.call(v.sess, args.slice());
-          };
+        assert.calledWith(v.sess.provide, type, TH.match(func => {
+          v['recv'+type] = (...args) => {func.call(v.sess, args.slice())};
           return true;
         }));
       });

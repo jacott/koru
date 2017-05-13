@@ -9,54 +9,52 @@ define(function(require, exports, module) {
   const message  = require('./message');
   const publish  = require('./publish');
 
-  var debug_clientUpdate = false;
-  Trace.debug_clientUpdate = function (value) {
-    debug_clientUpdate = value;
+  let debug_clientUpdate = false;
+  Trace.debug_clientUpdate = value => {debug_clientUpdate = value};
+
+  const modelUpdate = (type, func) => {
+    return function (data) {
+      const session = this;
+      if (debug_clientUpdate) {
+        if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
+          koru.logger("D", type, '< ' + util.inspect(data));
+      }
+      session.isUpdateFromServer = true;
+      try {
+        dbBroker.pushDbId(session._id);
+        func(Model[data[0]], data[1], data[2]);
+      } finally {
+        session.isUpdateFromServer = false;
+        dbBroker.popDbId();
+      }
+    };
   };
 
-  return function (session) {
-    session.provide('A', modelUpdate(added, 'Add'));
-    session.provide('C', modelUpdate(changed, 'Upd'));
-    session.provide('R', modelUpdate(removed, 'Rem'));
+  const added = modelUpdate('Add', (model, id, attrs) => {
+    attrs._id = id;
+    const doc = new model(attrs);
+    publish.match.has(doc) && Query.insertFromServer(model, id, attrs);
+  });
 
-    function added(model, id, attrs) {
-      attrs._id = id;
-      var doc = new model(attrs);
-      publish.match.has(doc) && Query.insertFromServer(model, id, attrs);
-    }
+  const changed = modelUpdate('Upd', (model, id, attrs) => {
+    attrs._id = id;
+    var query = model.serverQuery.onId(id);
+    var doc = model.findById(id);
+    if (doc && publish.match.has(doc)) {
+      doc._cache = null;
+      query.update(attrs);
+    } else
+      query.remove();
+  });
 
-    function changed(model, id, attrs) {
-      attrs._id = id;
-      var query = model.serverQuery.onId(id);
-      var doc = model.findById(id);
-      if (doc && publish.match.has(doc)) {
-        doc._cache = null;
-        query.update(attrs);
-      } else
-        query.remove();
-    }
+  const removed = modelUpdate('Rem', (model, id) => {
+    model.serverQuery.onId(id).remove();
+  });
 
-    function removed(model, id) {
-      model.serverQuery.onId(id).remove();
-    }
-
-    function modelUpdate(func, type) {
-      return function (data) {
-        var session = this;
-        if (debug_clientUpdate) {
-          if (debug_clientUpdate === true || debug_clientUpdate[data[0]])
-            koru.logger("D", type, '< ' + util.inspect(data));
-        }
-        session.isUpdateFromServer = true;
-        try {
-          dbBroker.pushDbId(session._id);
-          func(Model[data[0]], data[1], data[2]);
-        } finally {
-          session.isUpdateFromServer = false;
-          dbBroker.popDbId();
-        }
-      };
-    }
+  return session => {
+    session.provide('A', added);
+    session.provide('C', changed);
+    session.provide('R', removed);
 
     return {
       unload() {
