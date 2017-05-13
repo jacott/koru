@@ -54,18 +54,18 @@ isClient && define(function (require, exports, module) {
       sub._wait();
       assert.isTrue(sub.waiting);
 
-      sub._received();
+      sub._received(200);
       assert.isFalse(sub.waiting);
       assert.calledOnceWith(v.cb, null);
 
       sub._wait();
-      sub._received();
+      sub._received(200);
       assert.calledTwice(v.cb);
 
       sub._wait();
-      sub._received('error');
+      sub._received('error', "explaination");
       assert.calledThrice(v.cb);
-      assert.calledWith(v.cb, 'error');
+      assert.calledWith(v.cb, ['error', "explaination"]);
 
       sub._wait();
       sub._received('error');
@@ -87,12 +87,14 @@ isClient && define(function (require, exports, module) {
       sub._wait();
       assert.isTrue(sub.waiting);
 
-      sub._received();
+      sub._received(200, 87654321);
       assert.isFalse(sub.waiting);
+      assert.same(sub.lastSubscribed, 87654321);
+
       assert.calledOnceWith(v.cb, null);
 
       sub._wait();
-      sub._received();
+      sub._received(200);
       assert.calledOnce(v.cb);
     },
 

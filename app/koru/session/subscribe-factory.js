@@ -17,9 +17,9 @@ define(function(require, exports, module) {
     };
 
     session._commands.P || session.provide('P', function (data) {
-      var handle = this.subs[data[0]];
-      if (! handle) return;
-      handle._received(data[1] && data.slice(1));
+      const sub = this.subs[data[0]];
+      if (sub === undefined) return;
+      sub._received(data[1], data[2]);
     });
 
     var userId;
@@ -58,8 +58,8 @@ define(function(require, exports, module) {
           return;
         }
         subs[sub._id] = sub;
-        session.sendP(sub._id, name, sub.args);
         sub.resubscribe();
+        session.sendP(sub._id, name, sub.args, sub.lastSubscribed);
       });
       return sub;
     };

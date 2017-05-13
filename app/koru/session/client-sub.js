@@ -99,17 +99,20 @@ define(function(require, exports, module) {
       this.waiting = true;
     }
 
-    _received(result) {
+    _received(code, data) {
       debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub <',
-                                     this._id, this.name, result ? result : 'okay');
+                                     this._id, this.name, code);
       const callback = this.callback;
-      if (result !== undefined) stopped(this);
+      if (code !== 200)
+        stopped(this);
+      else
+        this.lastSubscribed = data;
       if (! this.waiting) return;
 
       this.session.state.decPending();
       this.waiting = false;
       if (callback !== null) {
-        callback(result == null ? null : result);
+        code === 200 ? callback(null) : callback([code, data]);
         if (! this.repeatResponse)
           this.callback = null;
       }

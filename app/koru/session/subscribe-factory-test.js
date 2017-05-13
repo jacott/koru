@@ -310,7 +310,7 @@ isClient && define(function (require, exports, module) {
       assert.same(v.sub.callback, v.stub);
       assert.equals(v.sub.args, [123, 456]);
 
-      v.recvP(v.sub._id);
+      v.recvP(v.sub._id, 200, 87654321);
 
       assert.calledWithExactly(v.stub, null);
 
@@ -414,12 +414,17 @@ isClient && define(function (require, exports, module) {
       },
 
       "test resubscribe"() {
+        this.stub(v.sessState, 'isReady').returns(true);
         v.pubFunc = function () {
+          this.lastSubscribed = 12345678;
           this.match(v.Foo, test.stub());
           this.match("Bar", test.stub());
         };
 
         v.sub = subscribe('foo');
+
+        /** pubFunc is called before sent to server **/
+        assert.calledWith(v.sendBinary, 'P', ['1', 'foo', [], 12345678]);
 
         v.sub.onStop(v.onstop = test.stub());
 
