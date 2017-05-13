@@ -33,12 +33,10 @@ define(function(require, exports, module) {
     }
   }
 
-  function callback(err) {
-    if (err) {
-      if (err.error !== 409)
-        koru.globalErrorCatch(err);
-    }
-  }
+  const callback = err => {
+    if (err != null && err.error !== 409)
+      koru.globalErrorCatch(err);
+  };
 
   return RPCIDBQueue;
 });

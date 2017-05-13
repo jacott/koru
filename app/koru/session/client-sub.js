@@ -53,12 +53,8 @@ define(function(require, exports, module) {
       this.repeatResponse = false;
       const cb = args[args.length - 1];
       this.args = args;
-      if (typeof cb === 'function') {
-        this.callback = cb;
-        args.pop();
-      } else {
-        this.callback = null;
-      }
+      this.callback = typeof cb === 'function' ? (args.pop(), cb) : null;
+      this.lastSubscribed = 0;
     }
 
     onResponse(callback) {

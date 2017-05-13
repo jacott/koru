@@ -4,7 +4,6 @@ isClient && define(function (require, exports, module) {
    *
    * See {#koru/session/subscribe}
    **/
-  var test, v;
   const ClientSub        = require('koru/session/client-sub');
   const api              = require('koru/test/api');
   const koru             = require('../main');
@@ -14,9 +13,11 @@ isClient && define(function (require, exports, module) {
   require('./client-update');
   const message          = require('./message');
   const publish          = require('./publish');
-  const stateFactory     = require('./state').constructor;
   const subscribeFactory = require('./subscribe-factory');
   const TH               = require('./test-helper');
+
+  const stateFactory = require('./state').constructor;
+  var test, v;
 
   let subscribe;
 
@@ -34,17 +35,13 @@ isClient && define(function (require, exports, module) {
         _commands: {},
         sendBinary: v.sendBinary = test.stub(),
       });
-      assert.calledWith(v.sess.provide, 'P', TH.match(function (func) {
-        v.recvP = function (...args) {
-          func.call(v.sess, args);
-        };
+      assert.calledWith(v.sess.provide, 'P', TH.match(func => {
+        v.recvP = (...args) => {func.call(v.sess, args)};
         return true;
       }));
-      ['A', 'C', 'R'].forEach(function (type) {
-        assert.calledWith(v.sess.provide, type, TH.match(function (func) {
-          v['recv'+type] = function (...args) {
-            func(args);
-          };
+      ['A', 'C', 'R'].forEach(type => {
+        assert.calledWith(v.sess.provide, type, TH.match(func => {
+          v['recv'+type] = (...args) => {func(args)};
           return true;
         }));
       });
@@ -110,7 +107,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test wait for onConnect"() {
-      var sub1 = subscribe("foo", 1 ,2);
+      const sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
       v.sessState.connected(v.sess);
@@ -122,7 +119,7 @@ isClient && define(function (require, exports, module) {
       v.sessState.connected(v.sess);
       v.sessState.close(false);
 
-      var sub1 = subscribe("foo", 1 ,2);
+      const sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
       v.sessState.connected(v.sess);
@@ -150,14 +147,14 @@ isClient && define(function (require, exports, module) {
 
       publish({name: "foo2", init() {}});
 
-      var sub1 = subscribe("foo", 1 ,2);
-      var sub2 = subscribe("foo2", 3, 4);
-      var sub3 = subscribe("foo2", 5, 6);
+      const sub1 = subscribe("foo", 1 ,2);
+      const sub2 = subscribe("foo2", 3, 4);
+      const sub3 = subscribe("foo2", 5, 6);
 
       v.sess.sendP.reset();
       sub1.waiting = false;
 
-      var pendingCount = v.sessState.pendingCount();
+      const pendingCount = v.sessState.pendingCount();
 
       subscribe._onConnect(v.sess);
 
@@ -175,12 +172,12 @@ isClient && define(function (require, exports, module) {
 
       assert.same(v.sessState.pendingCount(), 0);
 
-      var sub1 = subscribe("foo", 1 ,2, v.sub1CB = test.stub());
+      const sub1 = subscribe("foo", 1 ,2, v.sub1CB = test.stub());
       assert.isTrue(sub1.waiting);
 
       assert.calledOnceWith(v.ob, true);
 
-      var sub2 = subscribe("foo", 3, 4);
+      const sub2 = subscribe("foo", 3, 4);
       assert.calledOnce(v.ob);
 
       assert.same(v.sessState.pendingCount(), 2);
@@ -231,7 +228,7 @@ isClient && define(function (require, exports, module) {
        */
       "test change userId"() {
         v.sub = subscribe('foo', 123, 456);
-        var sub2 = subscribe('foo2', 2);
+        const sub2 = subscribe('foo2', 2);
 
         v.pubFunc.reset();
 
@@ -271,9 +268,7 @@ isClient && define(function (require, exports, module) {
     "test error on resubscribe"() {
       v.sub = subscribe('foo', 'x');
       test.stub(koru, 'error');
-      v.pubFunc = function () {
-        throw new Error('foo error');
-      };
+      v.pubFunc = () => {throw new Error('foo error')};
 
       v.sub.resubscribe();
 
@@ -288,8 +283,8 @@ isClient && define(function (require, exports, module) {
      */
     "test userId"() {
       v.sub = subscribe('foo', 123, 456, v.stub = test.stub());
-      var origId = koru.util.thread.userId;
-      test.onEnd(function () {koru.util.thread.userId = origId});
+      const origId = koru.util.thread.userId;
+      test.onEnd(() => {koru.util.thread.userId = origId});
       koru.util.thread.userId = 'test123';
 
       assert.same(v.sub.userId, 'test123');
@@ -324,7 +319,7 @@ isClient && define(function (require, exports, module) {
 
       assert.same(subscribe._subs[v.sub._id], v.sub);
 
-      var subId = v.sub._id;
+      const subId = v.sub._id;
       v.sub.stop();
       assert.calledWith(v.sess.sendP, subId);
       assert.isTrue(v.sub.isStopped());
@@ -391,9 +386,7 @@ isClient && define(function (require, exports, module) {
     "match": {
       setUp() {
         v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
-        test.onEnd(function () {
-          Model._destroyModel('Foo', 'drop');
-        });
+        test.onEnd(() => {Model._destroyModel('Foo', 'drop')});
       },
 
       "test onStop"() {
@@ -417,9 +410,7 @@ isClient && define(function (require, exports, module) {
 
         v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
-        assert.calledWith(v.match, TH.match(function (doc) {
-          return doc._id === 'f123';
-        }));
+        assert.calledWith(v.match, TH.match(doc => doc._id === 'f123'));
       },
 
       "test resubscribe"() {
@@ -437,18 +428,21 @@ isClient && define(function (require, exports, module) {
           this.match("Bar", test.stub());
         };
 
-        var models = {};
-        v.sub.resubscribe(models);
+        {
+          const models = {};
+          v.sub.resubscribe(models);
 
-        assert.called(v.onstop);
+          assert.called(v.onstop);
 
-        assert.equals(Object.keys(models).sort(), ["Bar", "Foo"]);
+          assert.equals(Object.keys(models).sort(), ["Bar", "Foo"]);
+        } {
+          const models = {};
+          v.sub.resubscribe(models);
 
-        v.sub.resubscribe(models = {});
+          assert.calledOnce(v.onstop);
 
-        assert.calledOnce(v.onstop);
-
-        assert.equals(Object.keys(models).sort(), ["Bar", "Baz"]);
+          assert.equals(Object.keys(models).sort(), ["Bar", "Baz"]);
+        }
       },
     },
   });

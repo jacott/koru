@@ -142,8 +142,8 @@ define(function(require, exports, module) {
 
       function onChange(doc, old) {
         const idx = getIdx();
-        if (doc) {
-          if (old) {
+        if (doc != null) {
+          if (old != null) {
             let i = 0, tm;
             for(; i < len; ++i) {
               const field = fields[i];
@@ -164,24 +164,25 @@ define(function(require, exports, module) {
           let tidx = idx;
           for(let i = 0; i < leadLen; ++i) {
             const value = doc[fields[i]];
-            if (value === undefined) return; // FIXME don't index undefined
-            tidx = tidx[value] || (tidx[value] = {});
+            if (value === undefined) return;
+            tidx = tidx[value] === undefined ? (tidx[value] = {}) : tidx[value];
           }
           const value = doc[fields[leadLen]];
           if (btCompare !== null) {
-            const tree = tidx[value] || (tidx[value] = new BTree(btCompare));
+            const tree = tidx[value] === undefined ?
+                    (tidx[value] = new BTree(btCompare)) : tidx[value];
             tree.add(new BTValue(doc));
           } else {
             tidx[value] = doc._id;
           }
-        } else if (old) {
+        } else if (old != null) {
           deleteEntry(idx, old, 0);
         }
       }
 
       function deleteEntry(tidx, doc, count) {
         const value = doc[fields[count]];
-        if (! tidx) return true;
+        if (tidx === undefined) return true;
         const entry = tidx[value];
         if (count === leadLen) {
           if (btCompare !== null && entry !== undefined) {

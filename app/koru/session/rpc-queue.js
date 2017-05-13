@@ -26,9 +26,7 @@ define(function(require, exports, module) {
     }
   }
 
-  function compare(a, b) {
-    return a.length - b.length || ((a < b) ? -1 : a === b ? 0 : 1);
-  }
+  const compare = (a, b) => a.length - b.length || ((a < b) ? -1 : a === b ? 0 : 1);
 
   return RPCQueue;
 });

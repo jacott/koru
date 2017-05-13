@@ -166,7 +166,7 @@ define(function(require, exports, module) {
       const proto = this.prototype;
       let $fields = this.$fields;
       if (! $fields) $fields = this.$fields = {_id: {type: 'id'}};
-      for(let field in fields) {
+      for(const field in fields) {
         let options = fields[field];
         if (! options.type) options = {type: options};
         const func = typeMap[options.type];
@@ -209,7 +209,7 @@ define(function(require, exports, module) {
           } else {
             const regex = new RegExp("^"+field+"\\.([^.]+)");
             let m;
-            for (let key in was) {
+            for (const key in was) {
               if (m = regex.exec(key)) {
                 if (! cache.keyMap) {
                   cache.keyMap = {};
@@ -243,7 +243,7 @@ define(function(require, exports, module) {
     static remote(funcs) {
       const prefix = this.modelName + '.';
 
-      for(let key in funcs) {
+      for(const key in funcs) {
         session.defineRpc(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
@@ -253,7 +253,7 @@ define(function(require, exports, module) {
     static remoteGet(funcs) {
       const prefix = this.modelName + '.';
 
-      for(let key in funcs) {
+      for(const key in funcs) {
         session.defineRpcGet(prefix + key, _support.remote(this, key, funcs[key]));
       }
 
@@ -350,14 +350,12 @@ define(function(require, exports, module) {
       return this.changes[field] = util.deepCopy(this[field]);
     }
 
-    $hasChanged(field, changes) {
-      changes = changes || this.changes;
-
+    $hasChanged(field, changes=this.changes) {
       if (field in changes) return true;
 
       const len = field.length;
 
-      for(let key in changes) {
+      for(const key in changes) {
         if (key.length > len && key[len] === "." && key.slice(0, len)  === field) return true;
       }
       return false;
@@ -376,7 +374,7 @@ define(function(require, exports, module) {
       if (cached !== undefined) return cached;
 
       let simple = true;
-      for(let attr in changes) {
+      for(const attr in changes) {
         if (attr.indexOf(".") !== -1) {
           simple = false;
           break;
@@ -390,7 +388,7 @@ define(function(require, exports, module) {
 
       const cc = {};
 
-      for(let attr in changes) {
+      for(const attr in changes) {
         const index = attr.indexOf(".");
         const desc = Object.getOwnPropertyDescriptor(changes, attr);
 
@@ -429,7 +427,7 @@ define(function(require, exports, module) {
     $asChanges(beforeChange) {
       const attrs = this.attributes;
       const result = {};
-      for(let key in beforeChange) {
+      for(const key in beforeChange) {
         const idx = key.lastIndexOf(".");
         if (idx === -1) {
           result[key] = attrs[key];
@@ -520,7 +518,7 @@ define(function(require, exports, module) {
       callBeforeObserver('beforeUpdate', doc, pSum);
       callBeforeObserver('beforeSave', doc, pSum);
       const query = doc.$onThis;
-      for (let key in pSum) {
+      for (const key in pSum) {
         util.merge(changes, pSum[key]);
       }
       doc.changes = {};
@@ -604,7 +602,7 @@ define(function(require, exports, module) {
         doc.authorizePut(userId, partials);
       else {
         doc.authorize && doc.authorize(userId, {put: partials});
-        for (let key in partials) {
+        for (const key in partials) {
           const validator = doc.authorizePut[key];
           Val.allowAccessIf(validator, 'no validator for ' + key);
           validator(doc, partials[key], key);
@@ -670,7 +668,7 @@ define(function(require, exports, module) {
 
     _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
-        for(let key in timestamps)  {
+        for(const key in timestamps)  {
           changes[key] = changes[key] || now;
         }
       }
@@ -678,7 +676,7 @@ define(function(require, exports, module) {
 
     _addUserIds(changes, userIds, user_id) {
       if (userIds) {
-        for(let key in userIds)  {
+        for(const key in userIds)  {
           changes[key] = changes[key] || user_id;
         }
       }
@@ -751,8 +749,8 @@ define(function(require, exports, module) {
       delete ModelMap[name];
 
       let oh = allObserverHandles.get(model);
-      if (oh) for (let modelObservers of oh) {
-        for (let name in modelObservers) {
+      if (oh) for (const modelObservers of oh) {
+        for (const name in modelObservers) {
           modelObservers[name] = modelObservers[name].filter(entry => {
             return entry[1] !== model;
           });
@@ -761,7 +759,7 @@ define(function(require, exports, module) {
     },
 
     splitUpdateKeys(changes, partials, updates) {
-      for (let key in updates) {
+      for (const key in updates) {
         const pos = key.indexOf(".");
         if (pos === -1)
           changes[key] = updates[key];

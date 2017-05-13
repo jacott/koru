@@ -180,6 +180,13 @@ define(function (require, exports, module) {
       assert.equals(v.idx.lookup({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
     },
 
+    "test don't index undefined keys"() {
+      v.doc1.id2 = undefined;
+      v.doc1.$$save();
+
+      assert.equals(v.idx.lookup({id1: '3'}), {2: {2: 'doc2'}, 4: {1: 'doc3'}});
+    },
+
     "test null in data"() {
       var doc = v.TestModel.create({id1: '1', id2: null});
 

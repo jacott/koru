@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     },
 
     "test only models enumerable"() {
-      for (let key in Model) {
+      for (const key in Model) {
         assert.same(Object.getPrototypeOf(Model[key]), BaseModel);
       }
       assert(true);
@@ -42,7 +42,7 @@ define(function (require, exports, module) {
     "test auto define"() {
       test.stub(koru, 'onunload');
 
-      let TestModel = Model.define({
+      const TestModel = Model.define({
         module: v.mod = {id: 'test-model'},
         fields: {name: 'text'},
         proto: {
