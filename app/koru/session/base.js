@@ -1,8 +1,12 @@
 define(function(require, exports, module) {
+  const Trace   = require('koru/trace');
   const koru    = require('../main');
   const message = require('./message');
 
   const rpcType$ = Symbol();
+
+  let debug_msg = false;
+  Trace.debug_msg = value => debug_msg = !! value;
 
   class SessionBase {
     constructor(id) {
@@ -48,20 +52,22 @@ define(function(require, exports, module) {
     }
 
     _onMessage(conn, data) {
-      let type;
+      let type = '', obj = null;
       if (typeof data === 'string') {
         type = data[0];
-        data = data.slice(1);
+        obj = data.slice(1);
       } else {
         data = new Uint8Array(data);
         type = String.fromCharCode(data[0]);
-        data = message.decodeMessage(data.subarray(1), this.globalDict);
+        obj = message.decodeMessage(data.subarray(1), this.globalDict);
+        debug_msg && koru.logger(
+          `DebugMsg < ${type}: ${data.length} ${koru.util.inspect(obj).slice(0, 200)}`);
       }
 
       const func = this._commands[type];
 
       if (func)
-        func.call(conn, data);
+        func.call(conn, obj);
       else
         koru.info('Unexpected session message: '+ type, conn.sessId);
     }

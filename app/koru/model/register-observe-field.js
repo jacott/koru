@@ -18,8 +18,6 @@ define(function(require, exports, module) {
 
 
       model['observe'+ util.capitalize(field)] = (values, callback) => {
-        if (typeof values !== 'object') values = [values];
-
         const obsSet = Object.create(null);
         const options = [++key, callback];
         for(let i = 0;i < values.length;++i) {

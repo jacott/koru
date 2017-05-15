@@ -13,6 +13,7 @@ define(function(require, exports, module) {
     session.deregisterGlobalDictionaryAdder(module);
   });
 
+  const subscribe$ = Symbol();
 
   const pubs = publish._pubs;
 
@@ -51,32 +52,32 @@ define(function(require, exports, module) {
   }
 
   class Sub {
-    constructor (conn, subId, subscribe, args, lastSubscribed) {
+    constructor(conn, subId, subscribe, args, lastSubscribed) {
       this.conn = conn;
       this.lastSubscribed = typeof lastSubscribed === 'number' ? lastSubscribed : 0;
       this.id = subId;
-      this._subscribe = subscribe;
+      this[subscribe$] = subscribe;
       this.args = args;
       this._matches = [];
     }
 
-    onStop (func) {
+    onStop(func) {
       this._stop = func;
     }
 
-    sendUpdate (doc, changes, filter) {
+    sendUpdate(doc, changes, filter) {
       this.conn.sendUpdate(doc, changes, filter);
     }
 
-    sendMatchUpdate (doc, changes, filter) {
+    sendMatchUpdate(doc, changes, filter) {
       this.conn.sendMatchUpdate(doc, changes, filter);
     }
 
-    match (modelName, func) {
+    match(modelName, func) {
       this._matches.push(this.conn.match.register(modelName, func));
     }
 
-    error (error) {
+    error(error) {
       const {id, conn} = this;
       if (conn.ws) {
         if (error.errorType === 'KoruError') {
@@ -89,20 +90,20 @@ define(function(require, exports, module) {
       stopped(this);
     }
 
-    stop () {
+    stop() {
       this.conn.sendBinary('P', [this.id, false]);
       stopped(this);
     }
 
-    setUserId (userId) {
+    setUserId(userId) {
       this.conn.userId = userId;
     }
 
-    resubscribe () {
+    resubscribe() {
       try {
         this.isResubscribe = this._called;
         this._stop && this._stop();
-        this._subscribe.apply(this, this.args);
+        this[subscribe$].apply(this, this.args);
       } catch(ex) {
         if (ex.error) {
           this.error(ex);

@@ -106,7 +106,7 @@ define(function(require, exports, module) {
     loadDoc(modelName, rec) {
       const model = ModelMap[modelName];
       const curr = model.docs[rec._id];
-      if (curr !== undefined && curr[stopGap$] === undefined) return;
+      if (curr !== undefined && curr[stopGap$] !== true) return;
       const orig = notMe;
       try {
         if (curr !== undefined) curr[stopGap$] = undefined;
@@ -217,7 +217,7 @@ define(function(require, exports, module) {
 
     queueChange(now, was) {
       const doc = (now != null ? now : was);
-      if (doc === notMe || doc[stopGap$] !== undefined) return;
+      if (doc === notMe || doc[stopGap$] === true) return;
       TransQueue.transaction(() => {
         const name = doc.constructor.modelName;
         const pu = getPendingUpdates(this);

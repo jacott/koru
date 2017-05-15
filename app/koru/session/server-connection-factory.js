@@ -176,7 +176,7 @@ define(function(require, exports, module) {
         this.sessAuth = null;
       }
       const subs = this._subs;
-      for(let key in subs) {
+      for(const key in subs) {
         subs[key].resubscribe();
       }
       this.send('VC');

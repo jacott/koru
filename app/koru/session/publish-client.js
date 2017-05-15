@@ -12,17 +12,18 @@ define(function(require, exports, module) {
     match: match(),
     _filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
-        for(let name in models) {
-          let mm = this.match._models;
-          mm = mm && mm[name];
-          if (! mm) continue;
+        for(const name in models) {
+          const _mm = this.match._models;
+          if (_mm === undefined) continue;
+          const mm = _mm[name];
+          if (mm === undefined) continue;
           const model = ModelMap[name];
-          if (! model) continue;
+          if (model === undefined) continue;
           const docs = model.docs;
-          for (let id in docs) {
+          for (const id in docs) {
             const doc = docs[id];
             let remove = true;
-            for(let key in mm) {
+            for(const key in mm) {
               if (mm[key](doc)) {
                 remove = false;
                 break;

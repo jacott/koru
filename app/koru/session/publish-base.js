@@ -7,15 +7,15 @@ define(function(require, exports, module) {
 
   koru.onunload(module, () => {pubs = Object.create(null);});
 
-  function publish({module, name=nameFromModule(module), init, preload}) {
+  const publish = ({module, name=nameFromModule(module), init, preload}) => {
     if (module) {
       koru.onunload(module, () => {publish._destroy(name)});
     }
 
-    if (name in pubs) throw new Error("Already published: " + name);
+    if (pubs[name] !== undefined) throw new Error("Already published: " + name);
     pubs[name] = init;
     if (preload) init[preload$] = preload;
-  }
+  };
 
   util.merge(publish, {
     get _pubs() {return pubs},
@@ -30,10 +30,8 @@ define(function(require, exports, module) {
     _destroy(name) {delete pubs[name]},
   });
 
-  function nameFromModule(module) {
-    return util.capitalize(util.camelize(
-      module.id.replace(/^.*\/(publish-)?/, '').replace(/-(server|client)$/, '')));
-  }
+  const nameFromModule = module => util.capitalize(util.camelize(
+    module.id.replace(/^.*\/(publish-)?/, '').replace(/-(server|client)$/, '')));
 
   return publish;
 });

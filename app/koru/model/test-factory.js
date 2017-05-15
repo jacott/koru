@@ -243,7 +243,7 @@ define(function(require, exports, module) {
   }
 
   function getUniqueNow() {
-    let now = Date.now();
+    let now = util.dateNow();
 
     if(lastNow && now <= lastNow) {
       now = ++lastNow;

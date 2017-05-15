@@ -88,7 +88,7 @@ define(function(require, exports, module) {
 
     verifyClearPassword(email, password) {
       const doc = UserLogin.findBy('email', email);
-      if (! doc) return;
+      if (doc === undefined) return;
 
       const C = new SRP.Client(password);
       const S = new SRP.Server(doc.srp);
@@ -107,7 +107,7 @@ define(function(require, exports, module) {
     verifyToken(emailOrId, token) {
       const doc = emailOrId.indexOf('@') === -1 ? UserLogin.findById(emailOrId)
               : UserLogin.findBy('email', emailOrId);
-      if (doc && doc.unexpiredTokens()[token])
+      if (doc !== undefined && doc.unexpiredTokens()[token] !== undefined)
         return doc;
     },
 

@@ -76,7 +76,7 @@ isClient && define(function (require, exports, module) {
         /**
          * Queue a model change to update indexedDB when the current
          * {#trans-queue} successfully completes. Changes to model
-         * instances with stopGap$ symbol truthy are ignored.
+         * instances with stopGap$ symbol true are ignored.
          *
          * @param now the record in its current form
 
@@ -196,7 +196,7 @@ isClient && define(function (require, exports, module) {
       setUp() {
         /**
          * Insert a record into a model but ignore #queueChange for same record and do nothing if
-         * record already in model unless model[stopGap$] symbol is truthy;
+         * record already in model unless model[stopGap$] symbol is true;
          *
          * If record is simulated make from change from client point-of-view else server POV.
          **/
