@@ -20,15 +20,31 @@ define(function(require, exports, module) {
       },
     });
 
-    model.addIndex = function (...fields) {
+    model.addIndex = (...fields) => {
+      const condition = extractCondition(fields);
       fields.push('_id');
-      return this.addUniqueIndex.apply(this, fields);
+      return buildIndex(fields, condition);
     };
 
     model.addUniqueIndex = (...fields) => {
+      const condition = extractCondition(fields);
+      return buildIndex(fields, condition);
+    };
+
+    const extractCondition = fields=>{
+      const condition = typeof fields[fields.length-1] === 'function' ?
+              fields[fields.length-1] : null;
+      if (condition !== null) --fields.length;
+      return condition;
+    };
+
+    const buildIndex = (_fields, _condition) => {
+      const fields = _fields, condition = _condition;
       let i = 0, comp = null;
       const compKeys = [];
-      for(; i < fields.length; ++i) {
+
+      const fieldslen = fields.length;
+      for(; i < fieldslen; ++i) {
         let dir = fields[i];
         if (dir === 1 || dir === -1) {
           const compArgs = fields.slice(i);
@@ -142,6 +158,10 @@ define(function(require, exports, module) {
 
       function onChange(doc, old) {
         const idx = getIdx();
+        if (condition !== null && doc != null && ! condition(doc)) {
+          old = doc; doc = null;
+        }
+
         if (doc != null) {
           if (old != null) {
             let i = 0, tm;

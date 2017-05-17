@@ -61,6 +61,8 @@ define(function(require, exports, module) {
       }
 
       function prepareIndex(type, model, args) {
+        if (typeof args[args.length-1] === 'function')
+          --args.length;
         const name = model.modelName;
         const queue = type[name] || (type[name] = []);
         queue.push(args);

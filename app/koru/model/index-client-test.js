@@ -227,6 +227,21 @@ define(function (require, exports, module) {
         1: {doc3: 'doc3'}, 2: {doc2: 'doc2', tm1: 'tm1'}, 3: {doc1: 'doc1'}});
     },
 
+    "test addIndex with condition"() {
+      v.test = doc => {
+        return doc.id2 === '4';
+      };
+      const id1Idx = v.TestModel.addIndex('id1', doc => v.test(doc));
+
+      v.TestModel.create({_id: 'tm1', id1: '2', id2: '6'});
+      const tm2 = v.TestModel.create({_id: 'tm2', id1: '1', id2: '4'});
+
+      assert.equals(id1Idx.lookup({}), {1: {doc3: 'doc3', tm2: 'tm2'}, 3: {doc1: 'doc1'}});
+
+      tm2.$update('id2', '3');
+      assert.equals(id1Idx.lookup({id1: '1'}), {doc3: 'doc3'});
+    },
+
     "test reloadAll"() {
       var id1Idx = v.TestModel.addIndex('id1');
 

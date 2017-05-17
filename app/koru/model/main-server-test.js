@@ -344,7 +344,7 @@ define(function (require, exports, module) {
 
       var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
 
-      TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd');
+      TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd', ignoreme=>{});
 
       refute.called(ensureIndex);
 
