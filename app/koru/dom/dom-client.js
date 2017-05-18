@@ -11,7 +11,8 @@ define(function(require, exports, module) {
   const vendorStylePrefix = (() => {
     const style = document.documentElement.style;
     const styles = ['Moz', 'ms',  'webkit', 'o', ''];
-    for(var i = 0; i < styles.length; ++i) {
+    let i = 0;
+    for(; i < styles.length; ++i) {
       if (styles[i]+'Transform' in style) break;
     }
     vendorTransform = ('transform' in style) || ! vendorStylePrefix ? 'transform'
@@ -296,8 +297,8 @@ define(function(require, exports, module) {
     hideAndRemove(elm) {
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
-      var ctx = Dom.myCtx(elm);
-      if (! ctx) return;
+      const ctx = Dom.myCtx(elm);
+      if (ctx === null) return;
       Dom.addClass(elm, 'remElm');
       ctx.onAnimationEnd(remElm);
     },
@@ -306,8 +307,8 @@ define(function(require, exports, module) {
       if (typeof elm === 'string')
         elm = document.getElementById(elm);
 
-      var ctx = Dom.myCtx(elm);
-      if (! ctx) return;
+      const ctx = Dom.myCtx(elm);
+      if (ctx === null) return;
       Dom.addClass(elm, 'addElm');
       ctx.onAnimationEnd(addElm);
     },
@@ -376,9 +377,9 @@ define(function(require, exports, module) {
     },
 
     destroyData(elm) {
-      var ctx = elm && elm[ctx$];
-      if (ctx) {
-        var dw = ctx.__destoryWith;
+      const ctx = elm && elm[ctx$];
+      if (ctx != null) {
+        const dw = ctx.__destoryWith;
         if (dw !== undefined) {
           ctx.__destoryWith = undefined;
           const observers = dw.__destoryObservers;
@@ -413,8 +414,8 @@ define(function(require, exports, module) {
           }
         }
         ctx.destroyed && ctx.destroyed(ctx, elm);
-        var tpl = ctx.template;
-        tpl && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
+        const tpl = ctx.template;
+        tpl != null && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
         elm[ctx$] = null;
       }
       Dom.destroyChildren(elm);
@@ -425,7 +426,7 @@ define(function(require, exports, module) {
     },
 
     removeAll(elms) {
-      for(var i = elms.length - 1; i >= 0; --i) {
+      for(let i = elms.length - 1; i >= 0; --i) {
         this.remove(elms[i]);
       }
     },
@@ -439,10 +440,10 @@ define(function(require, exports, module) {
     },
 
     removeInserts(start) {
-      var parent = start.parentNode;
+      const parent = start.parentNode;
       if (! parent) return;
-      var end = start[endMarker$];
-      for(var elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
+      const end = start[endMarker$];
+      for(let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
         parent.removeChild(elm);
         Dom.destroyData(elm);
       }
@@ -451,7 +452,7 @@ define(function(require, exports, module) {
     removeChildren(elm) {
       if (! elm) return;
 
-      var row;
+      let row;
       while((row = elm.firstChild) !== null) {
         Dom.destroyData(row);
         elm.removeChild(row);
@@ -480,17 +481,17 @@ define(function(require, exports, module) {
       let ctx = elm[ctx$];
       while(ctx === undefined && elm.parentNode !== null)
         ctx = (elm = elm.parentNode)[ctx$];
-      return ctx;
+      return ctx === undefined ? null : ctx;
     },
 
     ctxById(id) {
-      var elm = document.getElementById(id);
-      return elm && elm[ctx$];
+      const elm = document.getElementById(id);
+      return elm === null ? null : elm[ctx$];
     },
 
     updateElement(elm) {
-      var ctx = Dom.ctx(elm);
-      ctx && ctx.updateElement(elm);
+      const ctx = Dom.ctx(elm);
+      ctx !== null && ctx.updateElement(elm);
     },
 
     replaceElement(newElm, oldElm, noRemove) {
@@ -500,8 +501,9 @@ define(function(require, exports, module) {
         Dom.remove(ast);
       }
 
-      var parentCtx = (oldElm[ctx$] && oldElm[ctx$].parentCtx) || Dom.ctx(oldElm.parentNode);
-      if (parentCtx) {
+      const parentCtx = (oldElm[ctx$] != null && oldElm[ctx$].parentCtx) ||
+              Dom.ctx(oldElm.parentNode);
+      if (parentCtx !== null) {
         var ctx = newElm[ctx$];
         if (ctx) ctx.parentCtx = parentCtx;
       }
@@ -554,14 +556,13 @@ define(function(require, exports, module) {
     onPointerUp(func, elm) {
       document.addEventListener('pointerup', opu, true);
 
-      var $ = Dom.current;
-
-      var ctx = $.ctx;
+      const $ = Dom.current;
+      const ctx = $.ctx;
 
       function opu(event) {
         document.removeEventListener('pointerup', opu, true);
 
-        var orig = $.ctx;
+        const orig = $.ctx;
         $._ctx = ctx;
         try {
           func(event);
@@ -589,11 +590,6 @@ define(function(require, exports, module) {
       };
     },
   });
-
-  /** @deprecated @alias */
-  Dom.getMyCtx = Dom.myCtx;
-  Dom.getCtx = Dom.ctx;
-  Dom.getCtxById = Dom.ctxById;
 
   function addElm(ctx, elm) {
     Dom.removeClass(elm, 'addElm');
@@ -667,15 +663,16 @@ define(function(require, exports, module) {
     break;
   }
 
-  function convertToData(elm) {
-    var ctx = elm && Dom.ctx(elm);
-    return ctx && ctx.data;
-  }
+  const convertToData = elm => {
+    const ctx = elm == null ? null : Dom.ctx(elm);
+    return ctx === null ? null : ctx.data;
+  };
 
   let globalIds = 0;
-  function getId(ctx) {
-    return ctx.__id || (ctx.__id = (++globalIds).toString(36));
-  }
+  const getId = ctx => {
+    const id = ctx.__id;
+    return id === undefined ? (ctx.__id = (++globalIds).toString(36)) : id;
+  };
 
   return Dom;
 });
