@@ -146,24 +146,26 @@ define(function (require, exports, module) {
       assert.equals(v.TestModel.docs.foo2.nested, {a: 1, b: 3});
     },
 
-    "test insertFromServer doc already exists"() {
+    "test insertFromServer doc already exists."() {
       const {_id, age} = v.foo;
+      v.foo.attributes.iShouldGo = 123;
       this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
       Query.insertFromServer(v.TestModel, v.foo._id, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
 
-      assert.calledOnce(v.onChange);
+      assert.calledOnceWith(v.onChange);
 
       assert.equals(v.onChange.args(0, 0).attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
       assert.equals(v.onChange.args(0, 1), {
-        name: "foo", nested: [{ary: ["m"]}]});
+        name: "foo", nested: [{ary: ["m"]}], iShouldGo: 123});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
     },
 
     "test insertFromServer doc already exists and pending"() {
       const {_id, age} = v.foo;
+      v.foo.attributes.iShouldGo = 123;
       sessState.incPending();
       this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
       Query.insertFromServer(v.TestModel, v.foo._id, {
@@ -174,7 +176,7 @@ define(function (require, exports, module) {
       assert.equals(v.onChange.args(0, 0).attributes, {
         _id, age, name: 'foo new', nested: [{ary: ['f']}]});
       assert.equals(v.onChange.args(0, 1), {
-        name: "foo", nested: [{ary: ["m"]}]});
+        name: "foo", nested: [{ary: ["m"]}], iShouldGo: 123});
 
       assert.same(v.foo.attributes, v.onChange.args(0, 0).attributes);
       refute.msg("Should update fromServer; not client")(Model._databases.foo.TestModel.simDocs);
@@ -347,9 +349,8 @@ define(function (require, exports, module) {
       },
 
       "test matching add "() {
-        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
-
         const bar = v.TestModel.create({name: 'baz', age: 7});
+        this.onEnd(v.TestModel.onChange(v.change = this.stub()));
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, age: 7, name: 'baz'});
 
         sessState.decPending();
@@ -357,15 +358,17 @@ define(function (require, exports, module) {
         assert.same(bar.name, 'baz');
         assert.same(bar.age, 7);
 
-        assert.calledOnce(v.change);
+
+        refute.called(v.change);
       },
 
       "test add where server fields differ"() {
         const bar = v.TestModel.create({name: 'bar', age: 5});
-
         this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
 
         Query.insertFromServer(v.TestModel, bar._id, {_id: bar._id, name: 'sam'});
+
+        assert.equals(bar.attributes, {_id: bar._id, name: 'sam', age: 5});
 
         assert.calledWith(v.changed, TH.matchModel(bar), {name: 'bar'});
 
@@ -374,6 +377,7 @@ define(function (require, exports, module) {
 
         assert.same(bar.age, undefined);
         assert.same(bar.name, 'sam');
+        assert.same(bar.attributes.iShouldGo, undefined);
 
         assert.calledWith(v.changed, TH.matchModel(bar), {age: 5}, true);
       },

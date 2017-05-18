@@ -93,6 +93,10 @@ define(function(require, exports, module) {
             if (model.docs[id] !== undefined) {
               // already exists; convert to update
               const old = model.docs[id].attributes;
+              for(const key in old) {
+                if (attrs[key] === undefined)
+                  attrs[key] = undefined;
+              }
               for(const key in attrs) {
                 const ov = old[key];
                 const nv = attrs[key];
