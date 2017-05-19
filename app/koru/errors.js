@@ -24,7 +24,7 @@ define(function(require) {
   //
   function makeErrorType(name, constructor) {
     const errorClass = function (...args) {
-      const self = this;
+      let self = this;
 
       // Ensure we get a proper stack trace in most Javascript environments
       if (Error.captureStackTrace) {

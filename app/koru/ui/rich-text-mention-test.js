@@ -66,7 +66,7 @@ isClient && define(function (require, exports, module) {
       "test accept"() {
         assert(Modal.topModal.handleTab);
 
-        assert.dom('.rtMention:not(.inline) input', function () {
+        assert.dom('.rtMention:not(.inline)[touch-action=none] input', function () {
           TH.input(this, 'g');
 
           TH.trigger(this, 'keydown', {which: 13});

@@ -25,6 +25,7 @@ isClient && define(function (require, exports, module) {
       test.stub(window, 'requestAnimationFrame').returns(123);
 
       assert.dom(slider, function () {
+        assert.equals(this.getAttribute('touch-action'), 'none');
         var bbox = this.getBoundingClientRect();
         assert.dom('.handle', function () {
           assert.cssNear(this, 'left', 25, .01, '%');
