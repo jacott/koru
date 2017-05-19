@@ -2,9 +2,9 @@
   <div class="glassPane"><div id="SelectMenu" class="{{classes}}" {{customize}}>{{search}}{{content}}</div></div>
 
   <template name="List">
-    <ul class="ui-ul" touch-action="none">{{each "items" template="Item"}}</ul>
+    <ul class="ui-ul">{{each "items" template="Item"}}</ul>
     <template name="Item">
-      <li>{{name}}</li>
+      <li touch-action="auto">{{name}}</li>
     </template>
   </template>
 

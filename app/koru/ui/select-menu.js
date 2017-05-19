@@ -7,6 +7,8 @@ define(function(require, exports, module) {
   const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./select-menu'));
   const $ = Dom.current;
 
+  const passive = Dom.supportsPassiveEvents ? {capture: true, passive: true} : true;
+
   function keydownHandler(event, details) {
     let nextElm, firstElm, curr, nSel;
     switch(event.which) {
@@ -181,18 +183,22 @@ define(function(require, exports, module) {
       elm.addEventListener('touchstart', pd, true);
 
       function pd(event) {
-        Dom.stopEvent(event);
-
         const li = event.target.closest('.ui-ul>li');
         if (li) {
           const pu = event => {
+            cancel();
             Dom.stopEvent(event);
-            li.removeEventListener('pointerup', pu, true);
 
             Dom.hasClass(li, 'disabled') ||
               select(ctx.parentCtx, li, event);
           };
+          const cancel = ()=>{
+            li.removeEventListener('pointerup', pu, true);
+            li.removeEventListener('pointercancel', cancel, passive);
+          };
+
           li.addEventListener('pointerup', pu, true);
+          li.addEventListener('pointercancel', cancel, passive);
         }
       }
     },

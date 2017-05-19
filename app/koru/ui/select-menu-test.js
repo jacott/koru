@@ -386,9 +386,9 @@ isClient && define(function (require, exports, module) {
       },
 
       "test content"() {
-        assert.dom('#SelectMenu ul.ui-ul[touch-action=none]', function () {
+        assert.dom('#SelectMenu ul.ui-ul', function () {
           refute.dom('input');
-          assert.dom('li', 'One');
+          assert.dom('li[touch-action=auto]', 'One');
           assert.dom('li', 'Two');
           sut.$ctx(this).callback({id: 'newx', name: 'New'});
           assert.dom('li', 'New');
@@ -400,14 +400,16 @@ isClient && define(function (require, exports, module) {
         assert.dom(document.body, function () {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
-              test.spy(Dom, 'stopEvent');
               TH.trigger(this, 'pointerdown');
-              assert.called(Dom.stopEvent);
-              Dom.stopEvent.restore();
+              test.spy(Dom, 'stopEvent');
               TH.trigger(this, 'pointerup');
-              TH.click(this);
+              assert.called(Dom.stopEvent);
               assert.same(v.elm, this);
               assert.same(v.currentTarget, this);
+              v.elm = undefined;
+              TH.trigger(this, 'pointerup');
+              assert.same(v.elm, undefined);
+
             });
 
           });
@@ -416,6 +418,24 @@ isClient && define(function (require, exports, module) {
           assert.dom('#SelectMenu');
           TH.trigger('body>.glassPane', 'pointerdown');
           refute.dom('#SelectMenu');
+        });
+      },
+
+      "test pointercancel"() {
+        const test = this;
+        assert.dom(document.body, function () {
+          assert.dom('#SelectMenu>ul', function () {
+            assert.dom('li:first-child', function () {
+              test.spy(Dom, 'stopEvent');
+              TH.trigger(this, 'pointerdown');
+              TH.trigger(this, 'pointercancel');
+              TH.trigger(this, 'pointerup');
+              refute.called(Dom.stopEvent);
+              assert.same(v.elm, undefined);
+            });
+
+          });
+          assert.dom('#SelectMenu');
         });
       },
 
