@@ -269,20 +269,23 @@ define(function(require, exports, module) {
         remove() {
           return TransQueue.transaction(() => {
             let count = 0;
+
             dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
               const {model, docs} = this;
               if (session.state.pendingCount() && this.isFromServer) {
                 if (fromServer(model, this.singleId) === null) {
                   const doc = docs[this.singleId];
-                  delete docs[this.singleId];
-                  doc !== undefined && notify(model, null, doc, this.isFromServer);
+                  if (doc !== undefined) {
+                    delete docs[this.singleId];
+                    notify(model, null, doc, this.isFromServer);
+                  }
+                  return 1;
                 }
-                return 1;
               }
               this.forEach(doc => {
                 ++count;
                 Model._support.callBeforeObserver('beforeRemove', doc);
-                if (session.state.pendingCount()) {
+                if (session.state.pendingCount() && ! this.isFromServer) {
                   recordChange(model, doc.attributes);
                 }
                 delete docs[doc._id];

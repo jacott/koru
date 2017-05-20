@@ -413,7 +413,7 @@ define(function (require, exports, module) {
         assert.calledWith(v.changed, TH.matchModel(v.foo), null);
       },
 
-      "test remote removed changed doc"() {
+      "test server removed changed doc"() {
         v.TestModel.query.onId(v.foo._id).update({name: 'Mary'});
 
         this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
@@ -429,11 +429,18 @@ define(function (require, exports, module) {
         refute.called(v.changed);
       },
 
-      "test remote removed non existant"() {
+      "test server removed non existant"() {
         this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
         v.TestModel.onId('noDoc').fromServer().remove();
 
-        refute.calledWith(v.changed, null, v.foo, true);
+        refute.called(v.changed);
+      },
+
+      "test server removed pending but not changed"() {
+        this.onEnd(v.TestModel.onChange(v.changed = this.stub()));
+        v.TestModel.onId(v.foo._id).fromServer().remove();
+
+        assert.calledWith(v.changed, null, v.foo, true);
       },
 
       "test notification of different fields"() {
