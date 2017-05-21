@@ -24,7 +24,7 @@ define(function(require, exports, module) {
             const doc = docs[id];
             let remove = true;
             for(const key in mm) {
-              if (mm[key](doc)) {
+              if (mm[key](doc, reason)) {
                 remove = false;
                 break;
               }

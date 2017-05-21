@@ -100,7 +100,10 @@ isClient && define(function (require, exports, module) {
 
       v.handles.push(v.F1.onChange(v.f1del = test.stub()));
 
-      v.handles.push(publish.match.register('F1', doc => doc.name === 'A'));
+      v.handles.push(publish.match.register('F1', (doc, reason) => {
+        v.reason = reason;
+        return doc.name === 'A';
+      }));
 
 
       v.handles.push(publish.match.register('F2', doc => doc.name === 'A2'));
@@ -115,6 +118,9 @@ isClient && define(function (require, exports, module) {
 
         assert.calledWith(v.f1del, null, TH.match.field('_id', fdel._id), 'noMatch');
         assert.calledWith(v.f1idxOC, null, TH.match.field('_id', fdel._id));
+
+        assert.same(v.reason, 'noMatch');
+
         assert(v.f1idxOC.calledBefore(v.f1del));
 
         fdoc.attributes.name = 'X';
