@@ -1,51 +1,45 @@
 define(function(require, exports, module) {
   const Dom = require('koru/dom');
 
-  const WIDTH_RESIZE_ELM = Dom.h({
-    div: [{
-      div: {div: '', $style: 'width:200%;height:100%'},
-      $style: 'position:absolute;left:0;width:100%;height:20px;overflow-x:scroll',
-    }, {
-      div: {div: '', $style: 'width:200vw;height:100%'},
-      $style: 'position:absolute;left:0;width:100%;height:20px;overflow-x:scroll',
-    }],
-    class: 'resize-detector',
-    $style: 'position:relative;width:100%;height:0;pointer-events:none;visibility:hidden;',
-  });
+    const CSS = 'position:absolute;left:0;top:-100%;width:100%;height:100%;margin:1px 0 0;border:none;opacity:0;pointer-events:none;pointer-events:none;';
 
-  exports.onWidthResize = function (elm, callback) {
-    const resizer = WIDTH_RESIZE_ELM.cloneNode(true);
-    elm.appendChild(resizer);
-    let offsetWidth, waiting = true;
-    window.requestAnimationFrame(fire);
 
-    resizer.firstChild.addEventListener('scroll', scrolled);
-    resizer.lastChild.addEventListener('scroll', scrolled);
+  exports.onWidthResize = (elm, callback) => {
+    let frame = document.createElement('iframe');
+    frame.style.cssText = CSS;
+    elm.appendChild(frame);
 
-    detach.reset = fire;
+    let offsetWidth = 0, waiting = false;
+    let cancelRaf = 0;
 
-    return detach;
-
-    function detach() {
-      resizer.firstChild.removeEventListener('scroll', scrolled);
-      resizer.lastChild.removeEventListener('scroll', scrolled);
-      Dom.remove(resizer);
+    const detach = ()=>{
+      if (cancelRaf != 0) {
+        window.cancelAnimationFrame(cancelRaf);
+        cancelRaf = 0;
+      }
+      frame.contentWindow.onresize = null;
+      Dom.remove(frame);
       waiting = false;
-    }
+    };
 
-    function fire() {
-      var nw = elm.offsetWidth;
-      if (waiting === callback && nw !== offsetWidth)
+    const reset = ()=>{
+      if (frame.contentWindow !== null && frame.contentWindow.onresize === null)
+        frame.contentWindow.onresize = resize;
+      const nw = elm.offsetWidth;
+      if (waiting && nw !== offsetWidth)
         callback(elm, nw);
       offsetWidth = nw;
-      resizer.firstChild.scrollLeft = resizer.lastChild.scrollLeft = 10000;
       waiting = false;
-    }
+    };
 
-    function scrolled(event) {
+    const resize = ()=>{
       if (waiting) return;
-      waiting = callback;
-      window.requestAnimationFrame(fire);
-    }
+      waiting = true;
+      if (cancelRaf != 0)
+        cancelRaf = window.requestAnimationFrame(reset);
+    };
+
+    cancelRaf = window.requestAnimationFrame(reset);
+    return {detach, reset, resize};
   };
 });
