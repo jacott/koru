@@ -119,7 +119,18 @@ define(function(require, exports, module) {
       if (args === undefined)
         throw AssertionError(new Error("Can't yield; stub has not been called"));
 
-      yieldCall(args, params);
+      return yieldCall(args, params);
+    },
+
+    yieldAll(...params) {
+      const {calls} = this;
+      if (calls === undefined)
+        throw AssertionError(new Error("Can't yield; stub has not been called"));
+      const {length} = calls;
+      for(let i = 0; i < length; ++i) {
+        calls[i].yield(...params);
+      }
+      return this;
     },
 
     calledWith(...args) {

@@ -188,11 +188,21 @@ define(function (require, exports, module) {
       assert.calledWith(stub, 1, 2, 3);
     },
 
-    "test yield"() {
+    "test yield."() {
       var x = test.stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});
       x.yield(1,2);
       assert.same(v.foo, 2);
+    },
+
+    "test yieldAll"() {
+      var x = test.stub();
+      x(function foo(arg1, arg2) {v.foo = arg2;});
+      x(function bar(arg1, arg2) {v.bar = arg2;});
+      assert.same(x.yieldAll(1,2), x);
+
+      assert.same(v.foo, 2);
+      assert.same(v.bar, 2);
     },
 
     "test stub with function"() {
