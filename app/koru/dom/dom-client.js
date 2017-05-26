@@ -613,7 +613,7 @@ define(function(require, exports, module) {
     } else {
       var e = document.createEventObject();
     }
-    util.merge(e, args);
+    Object.assign(e, args);
     return e;
   }
 

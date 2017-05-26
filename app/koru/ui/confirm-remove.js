@@ -7,7 +7,7 @@ define(function(require, exports, module) {
 
   Tpl.$extend({
     show(name, func, opts) {
-      Dialog.confirm(util.merge({
+      Dialog.confirm(Object.assign({
         classes: 'warn',
         okay: 'Remove',
         content: Tpl,

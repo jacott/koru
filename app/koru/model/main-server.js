@@ -137,7 +137,7 @@ define(function(require, exports, module) {
           _support._addUserIds(changes, model.userIds, util.thread.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
 
-          changes = util.merge(doc.attributes, changes);
+          changes = Object.assign(doc.attributes, changes);
           _support.performInsert(doc);
         } else {
           const copy = util.deepCopy(changes);

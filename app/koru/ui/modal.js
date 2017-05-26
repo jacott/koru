@@ -51,7 +51,7 @@ define(function(require, exports, module) {
         document.addEventListener('keydown', keydownCallback, true);
         document.addEventListener('keydown', retKeydownCallback);
       }
-      options = util.merge({}, options);
+      options = Object.assign({}, options);
       options.prev = topModal; topModal = options;
 
       if (! options.focus) options.focus = document.activeElement;
@@ -150,7 +150,7 @@ define(function(require, exports, module) {
       options.noAppend || document.body.appendChild(options.container || options.popup);
 
       if (options.popup) {
-        options = util.merge({container: options.popup}, options);
+        options = Object.assign({container: options.popup}, options);
       } else {
         options = exports.init(options);
       }

@@ -205,8 +205,8 @@ isServer && define(function (require, exports, module) {
         });
         v.docProto = {
           $withChanges(changes) {
-            var old = util.deepCopy(this);
-            util.merge(old.attributes, changes);
+            const old = util.deepCopy(this);
+            Object.assign(old.attributes, changes);
             return old;
           },
           $asChanges: $asChanges,

@@ -44,13 +44,13 @@ define(function(require, exports, module) {
         // new record
         this.attributes = {};
         this.changes = attributes == null ? {} : attributes;
-        util.merge(this.changes, this.constructor._defaults);
+        Object.assign(this.changes, this.constructor._defaults);
       }
     }
 
     static create(attributes) {
       const doc = new this({});
-      attributes != null && util.merge(doc.changes, util.deepCopy(attributes));
+      attributes != null && Object.assign(doc.changes, util.deepCopy(attributes));
       doc.$save();
       return isServer ? doc : (doc.constructor.findById(doc._id) || doc);
     }
@@ -65,11 +65,11 @@ define(function(require, exports, module) {
      */
     static build(attributes, allow_id) {
       const doc = new this({});
-      attributes = attributes ? util.deepCopy(attributes) : {};
+      attributes = attributes == null ? {} : util.deepCopy(attributes);
 
       if (attributes._id && ! allow_id)
         attributes._id = null;
-      attributes && util.merge(doc.changes, util.deepCopy(attributes));
+      attributes == null || Object.assign(doc.changes, util.deepCopy(attributes));
       return doc;
     }
 
@@ -519,7 +519,7 @@ define(function(require, exports, module) {
       callBeforeObserver('beforeSave', doc, pSum);
       const query = doc.$onThis;
       for (const key in pSum) {
-        util.merge(changes, pSum[key]);
+        Object.assign(changes, pSum[key]);
       }
       doc.changes = {};
       query.update(changes);
@@ -733,7 +733,7 @@ define(function(require, exports, module) {
         model = {[name]: class extends BaseModel {}}[name];
       }
 
-      proto && util.merge(model.prototype, proto);
+      proto === undefined || util.merge(model.prototype, proto);
 
       return model.define({module, name, fields});
     },

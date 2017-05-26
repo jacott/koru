@@ -4,7 +4,7 @@ define(function(require, exports, module) {
 
   class Pool {
     constructor(config) {
-      const v = this._private = util.merge({
+      const v = this._private = Object.assign({
         max: 10,
         min: 0,
         idleTimeoutMillis: 30*1000,

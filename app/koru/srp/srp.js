@@ -323,11 +323,11 @@ define(function(require, exports, module) {
    * - g: String or BigInteger. Defaults to 2.
    * - k: String or BigInteger. Defaults to hash(N, g)
    */
-  function paramsFromOptions (options) {
-    if (!options) // fast path
+  function paramsFromOptions(options) {
+    if (options === undefined) // fast path
       return _defaults;
 
-    const ret = util.merge({}, _defaults);
+    const ret = Object.assign({}, _defaults);
 
     util.forEach(['N', 'g', 'k'], function (p) {
       if (options[p]) {

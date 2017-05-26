@@ -41,7 +41,7 @@ define(function(require, exports, module) {
   for (var id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
-  util.merge(ALIGN_TEXT_TO_CODE, {
+  Object.assign(ALIGN_TEXT_TO_CODE, {
     start: LEFT,
     end: RIGHT,
     'justify-all': JUSTIFY

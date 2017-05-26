@@ -594,7 +594,7 @@ define(function(require, exports, module) {
       if (editor) {
         if (extend) data.extend = extend;
         data.content = doc[name];
-        data.options = util.merge({"data-errorField": name}, options);
+        data.options = Object.assign({"data-errorField": name}, options);
         return editor.$autoRender(data);
       }
 

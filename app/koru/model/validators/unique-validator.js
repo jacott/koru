@@ -1,14 +1,12 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  return function (doc,field, options) {
-    options = options || {};
-
+  return function (doc,field, options={}) {
     const val = doc[field];
     const query = doc.constructor.query;
     query.where(field, val);
 
-    var scope = options.scope;
+    const {scope} = options;
     if (scope) {
       switch (typeof scope) {
       case 'string': query.where(scope, doc[scope]); break;
@@ -19,7 +17,7 @@ define(function(require, exports, module) {
         else {
           const copy = util.deepCopy(scope);
           insertData(doc, copy);
-          util.merge(query._wheres, copy);
+          Object.assign(query._wheres, copy);
         }
         break;
       }

@@ -210,7 +210,7 @@ define(function(require, exports, module) {
     const ctx = Tpl.$ctx(event.target);
     const origin = event.target;
 
-    options = util.merge({
+    options = Object.assign({
       onSelect(item) {
         const id = $.data(item).id;
 

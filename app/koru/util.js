@@ -547,9 +547,7 @@ define(function(require, exports, module) {
       if (constructor === Date || constructor === Uint8Array)
         return new constructor(orig);
 
-      const copy = Object.create(Object.getPrototypeOf(orig));
-      for(const key in orig) copy[key] = orig[key];
-      return copy;
+      return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig);
     },
 
     /** Does not deep copy functions */

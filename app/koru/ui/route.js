@@ -443,7 +443,7 @@ define(function(require, exports, module) {
     return options;
   }
 
-  util.merge(Route, {
+  Object.assign(Route, {
     root: new Route(),
     pathname,
   });

@@ -88,18 +88,18 @@ define(function(require, exports, module) {
       koru.afTimeout.reset();
     },
 
-    createMockEvent(currentTarget, options) {
-      return util.merge(util.merge({}, {
+    createMockEvent(currentTarget, options={}) {
+      return Object.assign({}, {
         preventDefault: geddon.test.stub(),
         stopImmediatePropagation: geddon.test.stub(),
         currentTarget: currentTarget,
-      }), options || {});
+      }, options);
     },
 
     setColor(node, value) {
       TH.click(node);
-      assert.elideFromStack.dom(document.body, function () {
-        assert.dom('#ColorPicker', function () {
+      assert.elideFromStack.dom(document.body, () => {
+        assert.dom('#ColorPicker', () => {
           TH.input('input[name=hex]', value);
           TH.click('[name=apply]');
         });
@@ -111,21 +111,17 @@ define(function(require, exports, module) {
       return template._events.filter(event => event[0] === type);
     },
 
-    input: domEvent('input', function (node, value) {
+    input: domEvent('input', (node, value) => {
       if ('value' in node)
         node.value = value;
       else
         node.textContent = value;
     }),
 
-    keypress(elm, keycode, modifiers) {
+    keypress(elm, keycode, modifiers='') {
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
-      modifiers = modifiers || '';
-
 
       const pressEvent = document.createEvent ("KeyboardEvent");  //https://developer.mozilla.org/en/DOM/event.initKeyEvent
-
-
 
       if ('initKeyboardEvent' in pressEvent) {
         if (Dom.vendorPrefix === 'ms')

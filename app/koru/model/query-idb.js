@@ -289,7 +289,7 @@ define(function(require, exports, module) {
               else
                 os.put({_id: _id, $sim: sdoc});
             } else {
-              os.put(util.merge({$sim: sdoc}, doc));
+              os.put(Object.assign({$sim: sdoc}, doc));
             }
           }
         }

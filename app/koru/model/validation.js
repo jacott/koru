@@ -112,7 +112,7 @@ define(function(require, exports, module) {
     assertCheck(obj, spec, options) {
       let error, reason;
       if (! options || ! options.hasOwnProperty('onError'))
-        options = util.merge({onError(name, obj) {
+        options = Object.assign({onError(name, obj) {
           if (obj && obj._errors) {
             reason = obj._errors;
           } else if (name) {

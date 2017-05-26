@@ -92,14 +92,14 @@ define(function (require, exports, module) {
         g: '2',
         k: '1'
       };
-      var verifierOptions = util.merge({
+      var verifierOptions = Object.assign({
         identity: 'a',
         salt: 'b'
       }, baseOptions);
-      var clientOptions = util.merge({
+      var clientOptions = Object.assign({
         a: "2"
       }, baseOptions);
-      var serverOptions = util.merge({
+      var serverOptions = Object.assign({
         b: "2"
       }, baseOptions);
 

@@ -141,7 +141,7 @@ isServer && define(function (require, exports, module) {
         v.watcher = fw.listeners.less;
         assert(v.watcher, "Should be registered with file-watch");
 
-        v.loadDefaults = function () {
+        v.loadDefaults = () => {
           sut.loadDirs['koru/css'] = true;
           util.merge(sut.loads, util.deepCopy(v.expectedLoads));
           util.merge(sut.imports, util.deepCopy(v.expectedImports));

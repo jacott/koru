@@ -59,7 +59,7 @@ define(function(require, exports, module) {
       super(options, {});
       this.model = Model[modelName];
       if (! this.model) throw new Error('Model: "'+modelName+'" not found');
-      util.merge(util.merge(this.default_opts, this.model._defaults), default_opts);
+      Object.assign(this.default_opts, this.model._defaults, default_opts);
     }
 
     addRef(ref, doc) {
@@ -101,7 +101,7 @@ define(function(require, exports, module) {
 
     build() {
       var doc = new this.model();
-      util.merge(doc.changes, this.attributes());
+      Object.assign(doc.changes, this.attributes());
       return doc;
     }
 
@@ -133,8 +133,8 @@ define(function(require, exports, module) {
   const Factory = module.exports = {
     startTransaction() {
       tx.push([last, nameGen]);
-      last = util.merge({}, last);
-      nameGen = util.merge({}, nameGen);
+      last = Object.assign({}, last);
+      nameGen = Object.assign({}, nameGen);
     },
 
     endTransaction() {
@@ -233,10 +233,10 @@ define(function(require, exports, module) {
       if (typeof args[i] === 'string') {
         const trait = keyTraits[args[i]];
         if (!trait) throw new Error('unknown trait "'+ args[i] +'" for ' + key);
-        util.merge(options, typeof trait === 'function' ?
-                   trait.call(keyTraits, options, args, i) : trait);
+        Object.assign(options, typeof trait === 'function' ?
+                      trait.call(keyTraits, options, args, i) : trait);
       } else if(args[i]) {
-        util.merge(options, args[i]);
+        Object.assign(options, args[i]);
       }
     }
     return options;
