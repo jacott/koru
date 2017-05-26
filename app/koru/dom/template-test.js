@@ -771,18 +771,26 @@ isClient && define(function (require, exports, module) {
       DomTemplate.newTemplate({
         name: "Foo",
         nodes: [{
-          name: 'svg',
+          name: 'section',
           attrs: [],
-          children: [{name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]}]
+          children: [{
+            name: 'svg',
+            attrs: [],
+            children: [{name: 'path', attrs: [['=', 'd', 'M0,0 10,10Z']]}]
+          }, {name: 'div', attrs: [], children: []}],
         }],
       });
 
-      const svg = Dom.Foo.$render();
-      assert(svg instanceof window.SVGSVGElement);
-      assert.dom(svg, svg => {
-        assert.dom('path', path => {
-          assert(path instanceof window.SVGPathElement);
-          assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
+      assert.dom(Dom.Foo.$render(), section =>{
+        assert.dom('svg', svg => {
+          assert(svg instanceof window.SVGSVGElement);
+          assert.dom('path', path => {
+            assert(path instanceof window.SVGPathElement);
+            assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
+          });
+        });
+        assert.dom('div', div =>{
+          assert(div instanceof window.HTMLElement);
         });
       });
     },

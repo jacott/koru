@@ -406,11 +406,11 @@ ${ex.message}`});
         elm && parent.appendChild(elm);
       } else {
         const {name, attrs, children} = node;
-        const elm = svg || name === 'svg' ?
-                (svg = document.createElementNS(svgns, name))
+        const elm = svg === true || name === 'svg' ?
+                document.createElementNS(svgns, name)
                 : document.createElement(name);
         setAttrs(template, elm, attrs);
-        children && addNodes(template, elm, children, svg);
+        children && addNodes(template, elm, children, elm.namespaceURI === svgns);
         parent.appendChild(elm);
       }
     }
