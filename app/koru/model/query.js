@@ -106,7 +106,7 @@ define(function(require, exports, module) {
       if (typeof params === 'string')
         conditions[params] = value;
       else
-        util.fastMerge(conditions, params);
+        Object.assign(conditions, params);
       return query;
     }
 

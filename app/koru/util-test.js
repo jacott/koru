@@ -204,35 +204,6 @@ define(function (require, exports, module) {
       assert.same(sub.c,6);
     },
 
-    "test fastMerge"() {
-      /**
-       * Merge `source` into `dest` crudely (straight assignment; not descriptor copying) but
-       * quickly.
-       *
-       **/
-      api.method('merge');
-      var orig = {a: 1, b: 2};
-      var result = {};
-      assert.same(util.fastMerge(result, orig), result);
-
-      refute.same(result, orig);
-
-      assert.equals(result, orig);
-
-      assert.equals(util.fastMerge({a: 1}), {a: 1});
-      assert.equals(util.fastMerge({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4});
-
-      const a = {a: 1, b: 2};
-      const b = util.fastMerge(Object.create(a), {b: 3, c: 4});
-
-      const c = {d: 5};
-
-      const ans = util.fastMerge(c, b);
-
-      assert.same(ans, c);
-      assert.equals(ans, {d: 5, b: 3, c: 4, a: 1}); // copies all enumerable
-    },
-
     'test mergeExclude'() {
       let item = 5,
           sub={a: 1, b: 2},

@@ -133,11 +133,6 @@ define(function(require, exports, module) {
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
-    fastMerge(dest, source) {
-      for (const prop in source) dest[prop] = source[prop];
-      return dest;
-    },
-
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
         if (exclude[prop]) continue;
