@@ -6,10 +6,47 @@ define(function(require, exports, module) {
 
   const {ctx$} = require('koru/symbols');
 
+  const performance = isClient ? window.performance : {now() {
+    const tm = process.hrtime();
+    return tm[0]*1000 + 1e-6 *tm[1];
+  }};
+
   const gu = geddon._u;
   const ga = geddon.assertions;
 
   const util = geddon.util;
+
+  const empty = ()=>{};
+
+  geddon.assert.benchMark = ({subject, duration=1000, control=empty})=>{
+    let ans = {meanTpms: 0, controlMeanTpms: 0};
+    for(let i = 0; i < 2; ++i) {
+      let endAt = Date.now()+duration;
+
+      let count = 0;
+
+      subject(); subject();
+
+      let st = performance.now();
+      while(endAt > Date.now()) {
+        subject();
+        ++count;
+      }
+      ans.meanTpms = count/(performance.now()-st);
+
+      let i = count;
+
+      control(); control();
+
+      st = performance.now();
+      while(endAt <= Date.now() && i > 0) {
+        control();
+        --i;
+      }
+      ans.controlMeanTpms = count/(performance.now()-st);
+    }
+    return ans;
+  };
 
   ga.add('same', {
     assert (actual, expected) {

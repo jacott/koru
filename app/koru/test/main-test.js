@@ -12,6 +12,21 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test benchmark"() {
+      const ans = assert.benchMark({
+        duration: 10,
+        subject() {
+          return 'abc' + 'def';
+        },
+        control() {
+          return 'abcdef';
+        },
+      });
+
+      assert.equals(ans, {
+        meanTpms: TH.match.number, controlMeanTpms: TH.match.number});
+    },
+
     "test _u.deepEqual"() {
       const {deepEqual} = TH.geddon._u;
       const hint = {};
