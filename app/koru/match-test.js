@@ -58,7 +58,7 @@ define(function (require, exports, module) {
     },
 
     "test match.equal"() {
-      var me = sut.equal([1,sut.any]);
+      const me = sut.equal([1,sut.any]);
       assert.isTrue(me.$test([1,'x']));
       assert.isTrue(me.$test([1, null]));
       assert.isFalse(me.$test([1]));
@@ -66,6 +66,11 @@ define(function (require, exports, module) {
       assert.isFalse(me.$test([2, 1]));
       v.assertThrows(me, [3], 'match.equal');
       assert.isTrue(me.$throwTest([1, null]));
+    },
+
+    "test match.symbol"() {
+      assert.isTrue(sut.symbol.$test(Symbol()));
+      assert.isFalse(sut.symbol.$test({}));
     },
 
     "test match.is"() {
