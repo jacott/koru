@@ -37,6 +37,7 @@ define(function(require, exports, module) {
 
   const uDate = {
     MIN, HOUR, DAY,
+    AVG_MONTH, AVG_YEAR,
 
     atHour(date, hour) {
       var orig = +date;

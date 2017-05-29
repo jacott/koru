@@ -107,8 +107,8 @@ define(function(require, exports, module) {
       this.delta = delta;
       switch(typeof expected) {
       case 'string':
-        const expParts = expected.split(/([\d.]+)/);
-        const actParts = actual.split(/([\d.]+)/);
+        const expParts = expected.split(/([\d.]+(?:e[+-]\d+)?)/);
+        const actParts = actual.split(/([\d.]+(?:e[+-]\d+)?)/);
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {

@@ -276,8 +276,9 @@ define(function(require, exports, module) {
     },
 
     transformTranslate(elm , x, y) {
-      elm.style[vendorTransform] = elm.style[vendorTransform]
-        .replace(/\btranslate\([^)]*\)\s*/, '')+'translate('+x+','+y+')';
+      elm.style.setProperty(
+        vendorTransform, elm.style.getProperty(vendorTransform)
+          .replace(/\btranslate\([^)]*\)\s*/, '')+`translate(${x},${y})`);
     },
 
     buildEvent: buildEvent,

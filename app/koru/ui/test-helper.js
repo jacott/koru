@@ -158,9 +158,7 @@ define(function(require, exports, module) {
 
     trigger(node, event, args) {
       if (typeof node === 'string') {
-        assert.elideFromStack.dom(node, function () {
-          TH.trigger(this, event, args);
-        });
+        assert.elideFromStack.dom(node, node =>{Dom.triggerEvent(node, event, args)});
       } else {
         assert.elideFromStack.msg('node not found')(node);
         return Dom.triggerEvent(node, event, args);
