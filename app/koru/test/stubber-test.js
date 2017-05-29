@@ -87,12 +87,23 @@ define(function (require, exports, module) {
     },
 
     "test yields"() {
-      var obj = {
+      const obj = {
         foo: test.stub().yields(1,2,3)
       };
 
       assert.same(obj.foo(1, function (a,b,c) {return v.result = [c,b,a]}, function () {return "fail"}), undefined);
       assert.equals(v.result, [3,2,1]);
+    },
+
+    "test invokes"() {
+      function callback(call) {
+        return this === call && call.args[0] === 1;
+      }
+      const obj = {
+        foo: test.stub().invokes(callback)
+      };
+
+      assert.isTrue(obj.foo(1));
     },
 
     "test cancelYields"() {

@@ -6,7 +6,7 @@ define(function(require, exports, module) {
 
   const Stubber = exports;
 
-  const yields$ = Symbol(), throws$ = Symbol(),
+  const yields$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
         returns$ = Symbol(), id$ = Symbol(),
         replacement$ = Symbol();
 
@@ -27,6 +27,13 @@ define(function(require, exports, module) {
 
     yields(...args) {
       this[yields$] = args;
+      return this;
+    },
+
+    invokes(callback) {
+      if (callback !== undefined && typeof callback !== 'function')
+        throw new Error('invokes argument not a function');
+      this[invokes$] = callback;
       return this;
     },
 
@@ -163,6 +170,7 @@ define(function(require, exports, module) {
 
   const invokeReturn = (stub, call) => {
     if (call.throws !== undefined) throw call.throws;
+    if (call.invokes !== undefined) return call.invokes(call);
     if (call.yields !== undefined) {
       const {args} = call;
       for(let i = 0; i < args.length; ++i) {
@@ -200,6 +208,9 @@ define(function(require, exports, module) {
 
       if (this[yields$] !== undefined)
         call.yields = this[yields$];
+
+      if (this[invokes$] !== undefined)
+        call.invokes = this[invokes$];
 
       notifyListeners(this, call);
 
@@ -268,6 +279,7 @@ define(function(require, exports, module) {
     result.thisValue = thisValue;
     if (proxy[throws$] !== undefined) result.throws = proxy[throws$];
     if (proxy[yields$] !== undefined) result.yields = proxy[yields$];
+    if (proxy[invokes$] !== undefined) result.invokes = proxy[invokes$];
     const {calls} = proxy;
     (calls === undefined ? (proxy.calls = []) : calls).push(result);
     return result;
