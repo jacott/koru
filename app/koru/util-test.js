@@ -448,6 +448,23 @@ define(function (require, exports, module) {
       }), undefined);
     },
 
+    "test binarySearch"() {
+
+      assert.same(util.binarySearch([], row => assert(false)), -1);
+
+      const list = [1,3,6,8,10,13,15];
+      assert.same(util.binarySearch([1,2,3], row => -1, 0), -1);
+      assert.same(util.binarySearch(list, row => 0 - row), -1);
+      assert.same(util.binarySearch(list, row => 16 - row), -1);
+      assert.same(util.binarySearch(list, row => 5 - row), 1);
+      assert.same(util.binarySearch(list, row => 6 - row, 0), 2);
+      assert.same(util.binarySearch(list, row => 10 - row), 4);
+      assert.same(util.binarySearch(list, row => 14 - row), 5);
+
+      assert.same(util.binarySearch(list, row => 8 - row, -1), 3);
+      assert.same(util.binarySearch(list, row => 8 - row, 7), 3);
+    },
+
     "test flatten"() {
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8], true), [1, 2, 6, [4], 7, 8]);
