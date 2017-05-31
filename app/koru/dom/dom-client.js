@@ -79,8 +79,6 @@ define(function(require, exports, module) {
 
     _matchesFunc: matches,
 
-    MOUSEWHEEL_EVENT: vendorFuncPrefix === 'moz' ? 'wheel' : 'mousewheel',
-
     wheelDelta(event) {
       return Math.max(-1, Math.min(1, event.wheelDelta || -(event.deltaY || event.deltaX)));
     },
@@ -603,9 +601,6 @@ define(function(require, exports, module) {
   const DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
 
   function buildEvent(event, args) {
-    if (event === 'mousewheel')
-      event = Dom.MOUSEWHEEL_EVENT;
-
     if (Event) {
       var e = new Event(event, DEFAULT_EVENT_ARGS);
     } if (document.createEvent) {
