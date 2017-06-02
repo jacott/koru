@@ -15,6 +15,29 @@ define(function (require, exports, module) {
       assert.same(uDate.atHour(5 + +date, 5).toISOString(), '2014-05-06T05:00:00.005Z');
     },
 
+    "test toDiscreteDay"() {
+      const dt = uDate.toDiscreteDay(123456789 + +new Date(2017, 2, 5, 15));
+
+      assert.equals(dt, new Date(2017, 2, 7));
+    },
+
+    "test toDiscrete"() {
+      const dt = new Date(2017, 2, 6, 13, 17, 36, 123);
+
+      assert.equals(new Date(dt), new Date(2017, 2, 6, 13, 17, 36, 123));
+      assert.equals(uDate.toDiscrete(dt, DAY), new Date(2017, 2, 6));
+      assert.equals(uDate.toDiscrete(dt, HOUR), new Date(2017, 2, 6, 13));
+      assert.equals(uDate.toDiscrete(dt, MIN), new Date(2017, 2, 6, 13, 17));
+      assert.equals(uDate.toDiscrete(dt, 1000), new Date(2017, 2, 6, 13, 17, 36));
+    },
+
+    "test toSunday"() {
+      const dt = uDate.toSunday(new Date(2017, 5, 2, 15));
+
+      assert.equals(dt, new Date(2017, 4, 28));
+      assert.equals(uDate.toSunday(new Date(2017, 4, 28)), new Date(2017, 4, 28));
+    },
+
     "test atDowHour (at day of week, hour)"() {
       const thu = 4;
 
@@ -34,6 +57,7 @@ define(function (require, exports, module) {
       assert.same(format(12*HOUR + +d), '5 Jan 2017 2:03am');
 
       assert.same( uDate.format(d, `DD'YY hh`), `04'17 02`);
+      assert.same( uDate.format(d, `m[m]`), `3m`);
     },
 
     "test from"() {
