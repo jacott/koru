@@ -81,7 +81,7 @@ isClient && define(function (require, exports, module) {
       });
       document.activeElement.blur();
       assert.dom('.glassPane');
-      TH.pointerDownUp('.glassPane li');
+      TH.click('.glassPane li');
       assert.same(document.activeElement, html);
       const range = Dom.getRange();
       assert.same(range.startContainer, html.firstChild);
@@ -99,7 +99,7 @@ isClient && define(function (require, exports, module) {
         },
       });
 
-      TH.pointerDownUp('.glassPane li');
+      TH.click('.glassPane li');
 
       assert.same(document.activeElement, input);
       assert.same(input.selectionEnd, 3);
@@ -395,30 +395,36 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test select by pointer"() {
-        const test = this;
-        assert.dom(document.body, function () {
-          assert.dom('#SelectMenu>ul', function () {
-            assert.dom('li:first-child', function () {
-              TH.trigger(this, 'pointerdown');
-              test.spy(Dom, 'stopEvent');
-              TH.trigger(this, 'pointerup');
-              assert.called(Dom.stopEvent);
-              assert.same(v.elm, this);
-              assert.same(v.currentTarget, this);
-              v.elm = undefined;
-              TH.trigger(this, 'pointerup');
-              assert.same(v.elm, undefined);
+      "test select drag release"() {
+        assert.dom('#SelectMenu>ul', ul=>{
+          assert.dom('li:first-child', li =>{
+            TH.trigger(li, 'pointerup');
+            assert.same(v.elm, li);
+          });
+        });
+      },
 
-            });
+      "test select by pointer"() {
+        assert.dom('#SelectMenu>ul', ul=>{
+          assert.dom('li:first-child', li =>{
+            TH.test.spy(Dom, 'stopEvent');
+            TH.click(li);
+            assert.called(Dom.stopEvent);
+            assert.same(v.elm, li);
+            assert.same(v.currentTarget, ul);
+            v.elm = undefined;
+            TH.trigger(li, 'pointerdown');
+            TH.trigger(li, 'pointerup');
+            assert.same(v.elm, undefined);
 
           });
-          assert.dom('#SelectMenu');
-          TH.trigger(this, 'pointerdown');
-          assert.dom('#SelectMenu');
-          TH.trigger('body>.glassPane', 'pointerdown');
-          refute.dom('#SelectMenu');
+
         });
+        assert.dom('#SelectMenu');
+        TH.trigger(document.body, 'pointerdown');
+        assert.dom('#SelectMenu');
+        TH.trigger('body>.glassPane', 'pointerdown');
+        refute.dom('#SelectMenu');
       },
 
       "test pointercancel"() {
@@ -445,7 +451,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('#SelectMenu>ul', function () {
             assert.dom('li:first-child', function () {
               v.result = true;
-              TH.pointerDownUp(this);
+              TH.click(this);
               assert.same(v.elm, this);
             });
           });

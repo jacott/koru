@@ -209,7 +209,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.glassPane', function () {
           assert.dom('li', 'C');
-          TH.pointerDownUp('li', 'Ruby');
+          TH.click('li', 'Ruby');
         });
 
         assert.dom('pre[data-lang="ruby"]');
@@ -333,7 +333,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('.glassPane', function () {
         assert.dom('li>font[size="6"]', 'XX large');
-        TH.pointerDownUp('li>font[size="2"]', 'Small');
+        TH.click('li>font[size="2"]', 'Small');
       });
 
       assert.dom('.input', function () {

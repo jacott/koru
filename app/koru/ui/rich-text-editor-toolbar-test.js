@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('.glassPane', function () {
           this.focus();
           assert.dom('li', 'C');
-          TH.pointerDownUp('li', 'Common Lisp, elisp');
+          TH.click('li', 'Common Lisp, elisp');
         });
 
         assert.dom('.input', function () {
@@ -271,7 +271,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.glassPane', function () {
           assert.dom('li>font[face="whiteboard"]', 'Whiteboard');
-          TH.pointerDownUp('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
+          TH.click('li>font[face="poster"],li>font[face="foo font"]', 'Poster');
         });
 
         assert.dom('.input', function () {
@@ -285,7 +285,7 @@ isClient && define(function (require, exports, module) {
         TH.pointerDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.pointerDownUp('li>font[face="handwriting"]', 'Handwriting');
+          TH.click('li>font[face="handwriting"]', 'Handwriting');
         });
         assert.dom('[name=fontName]', 'Handwriting');
 
@@ -301,7 +301,7 @@ isClient && define(function (require, exports, module) {
         TH.pointerDownUp('.rtToolbar [name=fontName]');
 
         assert.dom('.glassPane', function () {
-          TH.pointerDownUp('li>font[face="sans-serif"]', 'Sans serif');
+          TH.click('li>font[face="sans-serif"]', 'Sans serif');
         });
 
         assert.dom('[name=fontName]', 'Sans serif');
@@ -311,7 +311,7 @@ isClient && define(function (require, exports, module) {
         TH.pointerDownUp('.rtToolbar [name=fontSize]');
 
         assert.dom('.glassPane', function () {
-          TH.pointerDownUp('li>font[size="4"]', 'Large');
+          TH.click('li>font[size="4"]', 'Large');
         });
 
         assert.dom('.input', function () {
@@ -332,7 +332,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.getAttribute('title'), 'Center [ctrl-shift-E]');
           });
           assert.dom('li>[name=justifyRight]');
-          TH.pointerDownUp('li>[name=justifyFull]');
+          TH.click('li>[name=justifyFull]');
         });
 
         assert.dom('.input', function () {

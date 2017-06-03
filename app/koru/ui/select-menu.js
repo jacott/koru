@@ -4,10 +4,8 @@ define(function(require, exports, module) {
   require('./each');
   const Modal = require('./modal');
 
-  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./select-menu'));
+  const Tpl = Dom.newTemplate(module, require('koru/html!./select-menu'));
   const $ = Dom.current;
-
-  const passive = Dom.supportsPassiveEvents ? {capture: true, passive: true} : true;
 
   function keydownHandler(event, details) {
     let nextElm, firstElm, curr, nSel;
@@ -171,36 +169,30 @@ define(function(require, exports, module) {
       Dom.removeClass(curr, 'selected');
       Dom.addClass(this, 'selected');
     },
+
+    'click .ui-ul>li:not(.disabled)'(event) {
+      Dom.stopEvent();
+      select($.ctx.parentCtx, this, event);
+    },
   });
 
   Tpl.List.$extend({
     $created(ctx, elm) {
-      ctx.onDestroy(() => {
-        elm.removeEventListener('pointerdown', pd, true);
-        elm.removeEventListener('touchstart', pd, true);
-      });
-      elm.addEventListener('pointerdown', pd, true);
-      elm.addEventListener('touchstart', pd, true);
-
-      function pd(event) {
-        const li = event.target.closest('.ui-ul>li');
-        if (li) {
-          const pu = event => {
-            cancel();
-            Dom.stopEvent(event);
-
-            Dom.hasClass(li, 'disabled') ||
-              select(ctx.parentCtx, li, event);
-          };
-          const cancel = ()=>{
-            li.removeEventListener('pointerup', pu, true);
-            li.removeEventListener('pointercancel', cancel, passive);
-          };
-
-          li.addEventListener('pointerup', pu, true);
-          li.addEventListener('pointercancel', cancel, passive);
+      const pd = ()=>{
+        document.removeEventListener('pointerdown', pd, true);
+        elm.removeEventListener('pointerup', pu, true);
+      };
+      const pu = event => {
+        Dom.stopEvent(event);
+        pd();
+        const li = event.target.closest('.ui-ul>li:not(.disabled)');
+        if (li != null) {
+          select(ctx.parentCtx, li, event);
         }
-      }
+      };
+      document.addEventListener('pointerdown', pd, true);
+      elm.addEventListener('pointerup', pu, true);
+      ctx.onDestroy(pd);
     },
   });
 
@@ -228,4 +220,6 @@ define(function(require, exports, module) {
       Dom.remove(ctx.element());
     }
   }
+
+  return Tpl;
 });

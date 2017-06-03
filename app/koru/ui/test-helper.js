@@ -237,18 +237,18 @@ define(function(require, exports, module) {
           TH.geddon.__elidePoint = pre;
           switch (typeof func) {
           case 'function':
-            if (func.call(li, li)) TH.pointerDownUp(li);
+            if (func.call(li, li)) TH.click(li);
             break;
           case 'object':
             if (func.menu) {
               assert.dom(li.parentNode, menu => {
                 if (func.menu.call(menu, menu, li))
-                  TH.pointerDownUp(li);;
+                  TH.click(li);;
               });
               break;
             }
           default:
-            TH.pointerDownUp(li);
+            TH.click(li);
           }
         });
       });

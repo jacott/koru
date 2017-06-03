@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
         v.list = [['a', 'A'], ['b', 'B']];
         TH.selectMenu('.select', 'a', function () {
           assert(document.querySelector('#SelectMenu.fooClass'));
-          TH.pointerDownUp(this);
+          TH.click(this);
         });
 
         assert.dom('.select', 'A');
@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'b');
             });
-            TH.pointerDownUp(this);
+            TH.click(this);
           });
           assert.dom('.select', 'a');
           assert.dom('[type=hidden]', {value: 'a'});
@@ -360,7 +360,7 @@ isClient && define(function (require, exports, module) {
 
         TH.trigger('.foo', 'pointerdown');
 
-        assert.calledWith(v.func, TH.match(function (event) {
+        assert.calledWith(v.func, TH.match(event => {
           assert.same(event.type, 'pointerdown');
           assert.same(event.target, document.querySelector('.foo'));
           return true;

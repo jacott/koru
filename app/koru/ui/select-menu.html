@@ -1,5 +1,6 @@
 <template name="SelectMenu">
-  <div class="glassPane"><div id="SelectMenu" class="{{classes}}" {{customize}}>{{search}}{{content}}</div></div>
+  <div class="glassPane"><div id="SelectMenu" class="{{classes}}"
+                              {{customize}}>{{search}}{{content}}</div></div>
 
   <template name="List">
     <ul class="ui-ul">{{each "items" template="Item"}}</ul>
