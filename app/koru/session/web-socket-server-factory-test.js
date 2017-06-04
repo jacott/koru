@@ -53,21 +53,21 @@ define(function (require, exports, module) {
       "test Random.id"() {
         v.msgId = "a1212345671234567890";
         v.run(arg => {
-          assert.same(Random.id(), "53WvgALyAjBQW7BJF");
+          assert.same(Random.id(), "Fs3Fn26qRzQI9PL1H");
           v.ans = Random.id();
         });
 
-        assert.same(v.ans, 'qnem23EJbTPoFbt3w');
+        assert.same(v.ans, 'W2gquYPP21ZS1N14d');
 
         v.msgId = "a12123456712345678Aa";
         v.run(arg => {
           assert.same(util.thread.msgId, 'a12123456712345678Aa');
 
-          assert.same(Random.id(), "Z8bHgA4SxwAwbNtzW");
+          assert.same(Random.id(), "FFykqEzyflL6oKnqR");
           v.ans = Random.id();
         });
 
-        assert.same(v.ans, 'm2SM9qzob6D9Y6GZb');
+        assert.same(v.ans, 'ygIaapK60J3Lx3KGY');
       },
 
       "test old msgId"() {

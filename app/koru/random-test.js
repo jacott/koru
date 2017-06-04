@@ -17,10 +17,14 @@ define(function (require, exports, module) {
 
     "test sequnce"() {
       const random = Random.create(0);
-      assert.same(random.id(), "cp9hWvhg8GSvuZ9os");
-      assert.same(random.id(), "3f3k6Xo7rrHCifQhR");
-      assert.same(random.id(), "shxDnjWWmnKPEoLhM");
-      assert.same(random.id(), "6QTjB8C5SEqhmz4ni");
+      assert.same(random.id(), "kFsE9G6DL26jiPd2U");
+      assert.same(random.id(), "o8kyB8YoOT2NCM03U");
+      assert.same(random.id(), "3KkBsZqIxSLG9cNmT");
+      assert.same(random.id(), "j1JePqz3IKW31RKSR");
+
+      assert.equals(random.fraction(), 0.12989023071713746);
+      assert.equals(random.fraction(), 0.8229060908779502);
+      assert.equals(random.fraction(), 0.07078907801769674);
     },
 
     "test format"() {
@@ -28,14 +32,14 @@ define(function (require, exports, module) {
               : test.spy(window.crypto, 'getRandomValues');
       const id = Random.id();
       assert.same(id.length, util.idLen);
-      assert.match(id, /^[2-9a-zA-Z]*$/);
+      assert.match(id, /^[0-9a-zA-Z]*$/);
 
 
       if (isServer) {
         assert.calledWith(randSpy, 17);
       } else {
         assert.calledWith(randSpy, TH.match(
-          u8 => u8.constructor === Uint8Array && u8.length === 17));
+          u32 => u32.constructor === Uint32Array));
       }
 
       randSpy.reset();
@@ -66,7 +70,7 @@ define(function (require, exports, module) {
       assert.same(Random.id(), "123");
       const id = Random.global.id();
       assert.same(id.length, 17);
-      assert.match(id, /^[2-9a-zA-Z]*$/);
+      assert.match(id, /^[0-9a-zA-Z]*$/);
       assert.same(Random.hexString("a123"), "hsa123");
     },
 
