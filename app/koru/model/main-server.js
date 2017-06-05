@@ -130,12 +130,12 @@ define(function(require, exports, module) {
         let {changes} = doc; doc.changes = {};
         const now = util.newDate();
 
-        _support._updateTimestamps(changes, model.updateTimestamps, now);
         if(doc.attributes._id == null) {
           if (! model.$fields._id.auto)
             changes._id = changes._id || Random.id();
           _support._addUserIds(changes, model.userIds, util.thread.userId);
           _support._updateTimestamps(changes, model.createTimestamps, now);
+          _support._updateTimestamps(changes, model.updateTimestamps, now);
 
           changes = Object.assign(doc.attributes, changes);
           _support.performInsert(doc);

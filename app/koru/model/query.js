@@ -102,7 +102,9 @@ define(function(require, exports, module) {
     makeSubject(Query, 'onAnyChange', notifyAC$);
 
     function condition(query, map, params, value) {
-      const conditions = (query[map] = query[map] || {});
+      let conditions = query[map];
+      if (conditions === undefined) conditions = query[map] = {};
+
       if (typeof params === 'string')
         conditions[params] = value;
       else

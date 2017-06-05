@@ -208,7 +208,6 @@ define(function(require, exports, module) {
   function localUpdate(doc, changes, userId) {
     const model = doc.constructor;
     const now = util.newDate();
-    _support._updateTimestamps(changes, model.updateTimestamps, now);
     _support.performUpdate(doc, changes);
   }
 

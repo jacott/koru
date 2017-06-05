@@ -210,17 +210,16 @@ define(function(require, exports, module) {
         return this.model.docs.exists(this);
       },
 
-      update(origChanges, value) {
+      update(origChanges={}, value) {
+        const model = this.model;
+        const docs = model.docs;
         if (typeof origChanges === 'string') {
           const changes = {};
           changes[origChanges] = value;
           origChanges = changes;
-        } else
-          origChanges = origChanges || {};
+        }
 
-        const model = this.model;
-        const docs = model.docs;
-        let items = null;
+        Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
         const cmd = buildUpdate(this, origChanges);
 
@@ -232,7 +231,7 @@ define(function(require, exports, module) {
           });
           this.forEach(doc => {
             let fields, dups;
-            let changes = util.deepCopy(origChanges);
+            const changes = util.deepCopy(origChanges);
             ++count;
             const attrs = doc.attributes;
 
@@ -244,46 +243,53 @@ define(function(require, exports, module) {
 
             let itemCount = 0;
 
-            if (items = this._addItems) {
-              fields = {};
-              let atLeast1 = false;
-              for(let field in items) {
-                let list = attrs[field] || (attrs[field] = []);
-                util.forEach(items[field], item => {
-                  if (util.addItem(list, item) == null) {
-                    atLeast1 = true;
-                    changes[field + ".$-" + ++itemCount] = item;
-                  }
-                });
-                if (atLeast1) fields[field] = {$each: items[field]};
+            {
+              const items = this._addItems;
+
+              if (items !== undefined) {
+                fields = {};
+                let atLeast1 = false;
+                for(let field in items) {
+                  let list = attrs[field] || (attrs[field] = []);
+                  util.forEach(items[field], item => {
+                    if (util.addItem(list, item) == null) {
+                      atLeast1 = true;
+                      changes[field + ".$-" + ++itemCount] = item;
+                    }
+                  });
+                  if (atLeast1) fields[field] = {$each: items[field]};
+                }
+                if (atLeast1)
+                  cmd.$addToSet = fields;
               }
-              if (atLeast1)
-                cmd.$addToSet = fields;
             }
 
-            if (items = this._removeItems) {
-              const pulls = {};
-              dups = {};
-              for(let field in items) {
-                const matches = [];
-                let match, list = attrs[field];
-                util.forEach(items[field], item => {
-                  if (list && (match = util.removeItem(list, item)) !== undefined) {
-                    changes[field + ".$+" + ++itemCount] = match;
-                    matches.push(match);
+            {
+              const items = this._removeItems;
+              if (items !== undefined) {
+                const pulls = {};
+                dups = {};
+                for(let field in items) {
+                  const matches = [];
+                  let match, list = attrs[field];
+                  util.forEach(items[field], item => {
+                    if (list && (match = util.removeItem(list, item)) !== undefined) {
+                      changes[field + ".$+" + ++itemCount] = match;
+                      matches.push(match);
+                    }
+                  });
+                  if (matches.length) {
+                    let upd = matches.length === 1 ? matches[0] : {$in: matches};
+                    if (fields && fields.hasOwnProperty(field))
+                      dups[field] = upd;
+                    else
+                      pulls[field] = upd;
                   }
-                });
-                if (matches.length) {
-                  let upd = matches.length === 1 ? matches[0] : {$in: matches};
-                  if (fields && fields.hasOwnProperty(field))
-                    dups[field] = upd;
-                  else
-                    pulls[field] = upd;
                 }
-              }
-              for (let field in pulls) {
-                cmd.$pull = pulls;
-                break;
+                for (let field in pulls) {
+                  cmd.$pull = pulls;
+                  break;
+                }
               }
             }
 

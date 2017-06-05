@@ -498,7 +498,6 @@ define(function(require, exports, module) {
       if (upper == 0) return -1;
       if (start < lower) start = lower;
       else if (start >= upper) start = upper-1;
-      let debug = 0;
       for (let ans = compare(list[start]); ans != 0; ans = compare(list[start])) {
         if (upper-1 <= lower)
           return (ans < 0 && lower == 0) || (ans > 0 && upper == list.length) ? -1 : lower;

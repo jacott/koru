@@ -296,18 +296,18 @@ define(function(require, exports, module) {
           });
         },
 
-        update(origChanges, value) {
+        update(origChanges={}, value) {
           return TransQueue.transaction(() => {
+            let count = 0;
+            const {model, docs} = this;
+
             if (typeof origChanges === 'string') {
               const changes = {};
               changes[origChanges] = value;
               origChanges = changes;
-            } else
-              origChanges = origChanges || {};
+            }
+            Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
-            let count = 0;
-            const {model, docs} = this;
-            let items;
             if (session.state.pendingCount() && this.isFromServer) {
               const changes = fromServer(model, this.singleId, origChanges);
               const doc = docs[this.singleId];
@@ -336,26 +336,31 @@ define(function(require, exports, module) {
                 Changes.applyAll(attrs, changes);
 
                 let itemCount = 0;
-
-                if ((items = this._addItems) !== undefined) for(const field in items) {
-                  const list = attrs[field] || (attrs[field] = []);
-                  util.forEach(items[field], item => {
-                    if (util.addItem(list, item) === undefined) {
-                      session.state.pendingCount() && recordItemChange(model, attrs, field);
-                      changes[field + ".$-" + ++itemCount] = item;
-                    }
-                  });
+                {
+                  const items = this._addItems;
+                  if (items !== undefined) for(const field in items) {
+                    const list = attrs[field] || (attrs[field] = []);
+                    util.forEach(items[field], item => {
+                      if (util.addItem(list, item) === undefined) {
+                        session.state.pendingCount() && recordItemChange(model, attrs, field);
+                        changes[field + ".$-" + ++itemCount] = item;
+                      }
+                    });
+                  }
                 }
 
-                if ((items = this._removeItems) !== undefined) for(const field in items) {
-                  const list = attrs[field];
-                  let match;
-                  util.forEach(items[field], item => {
-                    if (list !== undefined && (match = util.removeItem(list, item)) !== undefined) {
-                      session.state.pendingCount() && recordItemChange(model, attrs, field);
-                      changes[field + ".$+" + ++itemCount] = match;
-                    }
-                  });
+                {
+                  const items = this._removeItems;
+                  if (items !== undefined) for(const field in items) {
+                    const list = attrs[field];
+                    let match;
+                    util.forEach(items[field], item => {
+                      if (list !== undefined && (match = util.removeItem(list, item)) !== undefined) {
+                        session.state.pendingCount() && recordItemChange(model, attrs, field);
+                        changes[field + ".$+" + ++itemCount] = match;
+                      }
+                    });
+                  }
                 }
 
                 for(const key in changes) {
@@ -511,7 +516,7 @@ define(function(require, exports, module) {
           if (util.isObjEmpty(nc))
             delete docs[id];
           else
-          docs[id] = nc;
+            docs[id] = nc;
 
           return changes;
         }

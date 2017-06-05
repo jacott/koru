@@ -669,7 +669,8 @@ define(function(require, exports, module) {
     _updateTimestamps(changes, timestamps, now) {
       if (timestamps) {
         for(const key in timestamps)  {
-          changes[key] = changes[key] || now;
+          if (changes[key] === undefined)
+            changes[key] = now;
         }
       }
     },

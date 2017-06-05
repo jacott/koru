@@ -784,26 +784,25 @@ define(function (require, exports, module) {
       'test timestamps'() {
         v.TestModel.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
 
-        assert.equals(v.TestModel.createTimestamps, { createdAt: true });
-        assert.equals(v.TestModel.updateTimestamps, { updatedAt: true });
+        assert.equals(v.TestModel.createTimestamps, {createdAt: true});
+        assert.equals(v.TestModel.updateTimestamps, {updatedAt: true});
 
-        let start = util.dateNow();
+        v.now = Date.now()+1234;
+        this.intercept(util, 'dateNow', ()=>v.now);
 
         const doc = v.TestModel.create({name: 'testing'});
 
         assert(doc._id);
 
-        assert.between(+doc.createdAt, start, Date.now());
+        assert.same(+doc.createdAt, v.now);
 
-        const oldCreatedAt = new Date(start - 1000);
+        const oldCreatedAt = v.now - 2000;
 
         doc.createdAt = oldCreatedAt;
         doc.updatedAt = oldCreatedAt;
         doc.$$save();
 
         doc.$reload();
-
-        start = util.dateNow();
 
         doc.name = 'changed';
         doc.$save();
@@ -812,7 +811,14 @@ define(function (require, exports, module) {
 
         assert.same(+doc.createdAt, +oldCreatedAt);
         refute.same(+doc.updatedAt, +oldCreatedAt);
-        assert.between(+doc.updatedAt, start, util.dateNow());
+
+        v.now += 4000;
+        doc.$update({name: 'changed again'});
+
+        doc.$reload();
+
+        assert.same(+doc.createdAt, +oldCreatedAt);
+        assert.same(+doc.updatedAt, v.now);
       },
 
       "belongs_to": {
