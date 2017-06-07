@@ -637,6 +637,25 @@ isClient && define(function (require, exports, module) {
       v.db.deleteObjectStore('TestModel');
       refute(v.foo._store.TestModel);
     },
+
+    "test deleteDatabase"() {
+       /**
+       * delete an entire database
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      api.method('deleteDatabase');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel")
+          .createIndex('name', 'name', {unique: false});
+      }});
+      poll();
+      v.foo = v.idb._dbs.foo;
+
+      QueryIDB.deleteDatabase('foo').then(() => v.done = true);
+      poll();
+      assert(v.done);
+      refute(v.idb._dbs.foo);
+    },
   });
 
   function then(queue, idx=0) {

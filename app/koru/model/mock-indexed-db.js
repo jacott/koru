@@ -269,6 +269,7 @@ define(function(require, exports, module) {
       this._version = version;
       this.restore = TH.stubProperty(window, 'indexedDB', {value: this});
       this._dbs = {};
+      this._pending = [];
     }
 
     open(name, newVersion) {
@@ -291,6 +292,17 @@ define(function(require, exports, module) {
       };
     }
 
+    deleteDatabase(name) {
+      delete this._dbs[name];
+      const pending = this._pending;
+      return {
+        set onsuccess(func) {
+          pending.push(()=>{
+            func({target: {result: null}});
+          });
+        }
+      };
+    }
 
     yield(timer) {
       if (timer === undefined)
@@ -300,11 +312,17 @@ define(function(require, exports, module) {
     }
   }
 
-  function flushPending({_dbs}) {
+  function flushPending(idb) {
+    const {_pending, _dbs} = idb;
+    if (_pending.length != 0) {
+      idb._pending = [];
+      _pending.forEach(p => {p()});
+    }
+
     for (let name in _dbs) {
       const db = _dbs[name];
       const pending = db._pending;
-      if (! pending.length) continue;
+      if (pending.length == 0) continue;
       db._pending = [];
       pending.forEach(p => {p()});
     }

@@ -92,6 +92,14 @@ define(function(require, exports, module) {
       return window.IDBKeyRange.bound('Lucy', 'Ronald', false, true).includes !== undefined;
     }
 
+    static deleteDatabase(name) {
+      return new Promise((resolve, reject) => {
+        const req = window.indexedDB.deleteDatabase(name);
+        req.onsuccess = resolve;
+        req.onerror = reject;
+      });
+    }
+
     get objectStoreNames() {
       return this[iDB$].objectStoreNames;
     }

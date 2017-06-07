@@ -32,6 +32,17 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test deleteDatabase"() {
+      const idb = new sut(1);
+      idb._dbs.foo = {};
+      const req = idb.deleteDatabase('foo');
+      const onsuccess = req.onsuccess = this.stub();
+
+      idb.yield();
+
+      assert.called(onsuccess);
+    },
+
     "objectStore": {
       setUp() {
         v.idb = new sut(1);
