@@ -39,6 +39,12 @@ isClient && define(function (require, exports, module) {
       assert.same(sut.getItem('test-foo'), '5');
     },
 
+    "test clear"() {
+      sut.setItem('test-foo', 5);
+      sut.clear();
+      assert.same(sut.getItem('test-foo'), null);
+    },
+
     "test onChange"() {
       /**
        * listen for a change on a key

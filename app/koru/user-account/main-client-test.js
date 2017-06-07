@@ -261,7 +261,7 @@ isClient && define(function (require, exports, module) {
         session._onMessage(session, 'VS');
 
         assert.same(koru.userId(), null);
-        assert.same(localStorage.getItem('koru.loginToken'), undefined);
+        assert.same(localStorage.getItem('koru.loginToken'), null);
       },
 
       "test logoutOtherClients"() {

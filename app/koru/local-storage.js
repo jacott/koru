@@ -22,6 +22,10 @@ define(function(require, exports, module) {
       window.localStorage.removeItem(key);
     },
 
+    clear() {
+      window.localStorage.clear();
+    },
+
     onChange(key, callback) {
       if (! observers) {
         observers = {};
