@@ -398,8 +398,30 @@ isClient && define(function (require, exports, module) {
       "test select drag release"() {
         assert.dom('#SelectMenu>ul', ul=>{
           assert.dom('li:first-child', li =>{
+            TH.trigger(li, 'pointermove', {clientX: 50, clientY: 150});
+            TH.trigger(li, 'pointermove', {clientX: 57, clientY: 141});
             TH.trigger(li, 'pointerup');
             assert.same(v.elm, li);
+          });
+        });
+      },
+
+      "test select small-drag release"() {
+        assert.dom('#SelectMenu>ul', ul=>{
+          assert.dom('li:first-child', li =>{
+            TH.trigger(li, 'pointermove', {clientX: 50, clientY: 150});
+            TH.trigger(li, 'pointermove', {clientX: 57, clientY: 143});
+            TH.trigger(li, 'pointerup');
+            refute.same(v.elm, li);
+          });
+        });
+      },
+
+      "test select no-drag release"() {
+        assert.dom('#SelectMenu>ul', ul=>{
+          assert.dom('li:first-child', li =>{
+            TH.trigger(li, 'pointerup');
+            refute.same(v.elm, li);
           });
         });
       },

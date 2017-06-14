@@ -181,17 +181,34 @@ define(function(require, exports, module) {
       const pd = ()=>{
         document.removeEventListener('pointerdown', pd, true);
         elm.removeEventListener('pointerup', pu, true);
+        elm.removeEventListener('pointermove', pm, true);
       };
+      let moved = false;
       const pu = event => {
         Dom.stopEvent(event);
         pd();
+        if (! moved) return;
         const li = event.target.closest('.ui-ul>li:not(.disabled)');
         if (li != null) {
           select(ctx.parentCtx, li, event);
         }
       };
+
+      let x = 0, y  = 0;
+
+      const pm = event =>{
+        if (x == 0) {
+          x = event.clientX;
+          y = event.clientY;
+        } else {
+          let xd = x - event.clientX, yd = y - event.clientY;
+          moved = (xd*xd + yd*yd > 100);
+        }
+      };
+
       document.addEventListener('pointerdown', pd, true);
       elm.addEventListener('pointerup', pu, true);
+      elm.addEventListener('pointermove', pm, true);
       ctx.onDestroy(pd);
     },
   });
