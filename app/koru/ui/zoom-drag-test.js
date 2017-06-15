@@ -183,6 +183,47 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test touch pinchZoom"() {
+      const raf = this.stub(window, 'requestAnimationFrame').returns(123);
+      const {target} = v;
+      const event = Dom.buildEvent('touchstart', {
+        touches: [{clientX: 123+17, clientY: 45+51},
+                  {clientX: 100+17, clientY: 155+51}]
+      });
+      const onChange = this.stub();
+      this.onEnd(sut.start({
+        event,
+        target,
+        onChange,
+        onComplete(geom, {click}) {
+          v.click = click;
+          v.geom = Object.assign({}, geom);
+        }
+      }));
+
+      TH.trigger(target, 'touchmove', {touches: [
+        {clientX: 123+17, clientY: 45+51}, {clientX: 115+17, clientY: 85+51}
+      ]});
+      raf.yieldAll().reset();
+      assert.calledWith(onChange, {
+        scale: near(0.363, 0.001), midX: 111.5, midY: 100, adjustX: 7.5, adjustY: -35});
+
+      onChange.reset();
+      TH.trigger(target, 'touchmove', {touches: [
+        {clientX: 100+17, clientY: 55+51}, {clientX: 115+17, clientY: 85+51}
+      ]});
+      raf.yieldAll().reset();
+      assert.calledWith(onChange, {
+        scale: near(0.298, 0.001), midX: 111.5, midY: 100, adjustX: -4, adjustY: -30});
+
+      TH.trigger(target, 'touchend', {touches: [{clientX: 100+17, clientY: 55+51}]});
+
+      assert.equals(v.geom, {
+        scale: near(0.298, 0.001), midX: 111.5, midY: 100, adjustX: -4, adjustY: -30});
+
+      assert.isFalse(v.click);
+    },
+
     "test pinchZoom"() {
       const raf = this.stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;

@@ -17,10 +17,11 @@ define(function(require, exports, module) {
         adjustX: 0, adjustY: 0,
       };
 
-      if (event.type === 'wheel')
-        return wheelZoom(options, dim, targetGeometry);
-      else
-        return pointerZoom(options, dim, targetGeometry);
+      switch(event.type) {
+      case 'wheel': return wheelZoom(options, dim, targetGeometry);
+      case 'touchstart': return touchZoom(options, dim, targetGeometry);
+      default: return pointerZoom(options, dim, targetGeometry);
+      }
     },
   };
 
@@ -101,6 +102,93 @@ define(function(require, exports, module) {
     return {stop};
   };
 
+
+  const touchZoom = (options, dim, targetGeometry)=>{
+    const {
+      event, target=event.target, onChange, onComplete,
+      constrainZoom, threshold=100,
+    } = options;
+
+
+    const {left, top} = targetGeometry;
+
+    const t0 = {x: 0, y: 0}, t1 = {x: 0, y: 0};
+
+    let pendingMove = 0, sMag = 1;
+
+    const {touches} = event;
+
+    const x0 = t0.x = touches[0].clientX - left;
+    const y0 = t0.y = touches[0].clientY - top;
+
+    const x1 = t1.x = touches[1].clientX - left;
+    const y1 = t1.y = touches[1].clientY - top;
+
+    const dx = x1 - x0, dy = y1 - y0;
+
+    sMag = constrainZoom === 'x' ? Math.abs(dx)
+      : constrainZoom === 'y' ? Math.abs(dy) : Math.sqrt(dx*dx + dy*dy);
+    dim.midX = x0 + dx/2;
+    dim.midY = y0 + dy/2;
+
+    const touchmove = ({touches}) =>{
+      t0.x = touches[0].clientX - left;
+      t0.y = touches[0].clientY - top;
+
+      t1.x = touches[1].clientX - left;
+      t1.y = touches[1].clientY - top;
+
+      if (pendingMove == 0)
+        pendingMove = window.requestAnimationFrame(reportMove);
+    };
+
+    const reportMove = ()=>{
+      pendingMove = 0;
+      const x0 = t0.x, x1 = t1.x;
+      const y0 = t0.y, y1 = t1.y;
+      const dx = x1 - x0, dy = y1 - y0;
+      const cx = x0 + dx/2, cy = y0 + dy/2;
+
+      dim.adjustX = cx - dim.midX; dim.adjustY = cy - dim.midY;
+      dim.scale = (
+        constrainZoom === 'x' ? Math.abs(dx) : constrainZoom === 'y'
+          ? Math.abs(dy) : Math.sqrt(dx*dx + dy*dy)
+      ) / sMag;
+
+      onChange(dim);
+    };
+
+    const touchend = event =>{
+      if (pendingMove != 0) {
+        window.cancelAnimationFrame(pendingMove);
+        reportMove();
+      }
+      if (event.type === 'touchend' && event.touches.length >= 2) return;
+
+      stop();
+      onComplete(dim, {click: false});
+    };
+
+    const stop = ()=>{
+      if (pendingMove != 0) {
+        window.cancelAnimationFrame(pendingMove);
+        pendingMove = 0;
+      }
+
+      document.removeEventListener('touchmove', touchmove, Dom.captureEventOption);
+      document.removeEventListener('touchend', touchend, Dom.captureEventOption);
+      document.removeEventListener('touchcancel', touchend, Dom.captureEventOption);
+    };
+
+
+    document.addEventListener('touchmove', touchmove, Dom.captureEventOption);
+    document.addEventListener('touchend', touchend, Dom.captureEventOption);
+    document.addEventListener('touchcancel', touchend, Dom.captureEventOption);
+
+    return {
+      stop,
+    };
+  };
 
   const pointerZoom = (options, dim, targetGeometry)=>{
     const {
