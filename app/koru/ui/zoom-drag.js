@@ -30,6 +30,7 @@ define(function(require, exports, module) {
       event, target=event.target, onChange, onComplete, constrainZoom,
       updateDelay=200,
     } = options;
+    const {isFinished} = options;
 
     const {left, top} = targetGeometry;
 
@@ -37,18 +38,22 @@ define(function(require, exports, module) {
     let x = 0, y = 0, delta = 0;
     let endTime = 0, afTimeout = null;
 
-    const {isFinished} = options;
+    const recordPos = event=>{
+      x = event.clientX - left;
+      y = event.clientY - top;
+
+      if (pendingMove == 0)
+        pendingMove = window.requestAnimationFrame(reportMove);
+    };
+
 
     const wheel = event=>{
       Dom.stopEvent(event);
-      x = event.clientX - left;
-      y = event.clientY - top;
+      recordPos(event);
 
       const mult = event.deltaMode == 0 ? 1 : 79.5/3;
       delta -= event.deltaY*mult;
 
-      if (pendingMove == 0)
-        pendingMove = window.requestAnimationFrame(reportMove);
 
       endTime = util.dateNow() + updateDelay;
 
@@ -68,7 +73,8 @@ define(function(require, exports, module) {
 
     const reportMove = ()=>{
       pendingMove = 0;
-      dim.adjustX = x - dim.midX; dim.adjustY = y - dim.midY;
+      dim.midX = x;
+      dim.midY = y;
       dim.scale = Math.pow(Math.E, delta/400);
       onChange(dim);
     };
@@ -82,8 +88,14 @@ define(function(require, exports, module) {
       onComplete(dim, {});
     };
 
-    const checkFinished = typeof isFinished === 'function' ?
-            event => {isFinished(event) && complete()} : complete;
+    const checkFinished = typeof isFinished === 'function' ? event => {
+      Dom.stopEvent(event);
+      if (isFinished(event)) {
+        complete();
+      } else if (typeof event.clientX === 'number') {
+        recordPos(event);
+      }
+    } : complete;
 
     document.addEventListener('wheel', wheel, true);
     window.addEventListener('keyup', checkFinished, true);

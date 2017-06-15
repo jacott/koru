@@ -130,18 +130,27 @@ isClient && define(function (require, exports, module) {
       },
 
       "test modifier prevents timeout"() {
+        const {raf} = v;
         const isFinished = this.stub(ev => ev.foo == 2);
         v.start({isFinished});
 
         TH.keyup(v.target, 16);
+        raf.yieldAll().reset();
         refute.called(koru.afTimeout);
 
+        assert.called(v.onChange);
+        v.onChange.reset();
         TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155, foo: 4});
+        raf.yieldAll().reset();
         refute(v.geom);
+        assert.calledWith(v.onChange, {
+          scale: near(1.22), midX: 84, midY: 104, adjustX: 0, adjustY: 0});
+
 
         TH.keyup(v.target, 17, {foo: 2});
 
-        assert(v.geom);
+        assert.equals(v.geom, {
+          scale: near(1.22), midX: 84, midY: 104, adjustX: 0, adjustY: 0});
 
         assert.calledWith(isFinished, TH.match(ev => ev.which = 16));
 
