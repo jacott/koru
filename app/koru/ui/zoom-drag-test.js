@@ -130,17 +130,22 @@ isClient && define(function (require, exports, module) {
       },
 
       "test modifier prevents timeout"() {
-        v.start({modifier: 17});
+        const isFinished = this.stub(ev => ev.foo == 2);
+        v.start({isFinished});
 
         TH.keyup(v.target, 16);
         refute.called(koru.afTimeout);
 
-        TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155});
+        TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155, foo: 4});
         refute(v.geom);
 
-        TH.keyup(v.target, 17);
+        TH.keyup(v.target, 17, {foo: 2});
 
         assert(v.geom);
+
+        assert.calledWith(isFinished, TH.match(ev => ev.which = 16));
+
+        assert.calledWith(isFinished, TH.match(ev => ev.clientX == 101));
       },
 
       "test timeout"() {

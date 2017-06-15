@@ -37,9 +37,7 @@ define(function(require, exports, module) {
     let x = 0, y = 0, delta = 0;
     let endTime = 0, afTimeout = null;
 
-    const {modifier} = options;
-
-    const keyup = modifier > 0 ? event => {event.which === modifier && complete()} : null;
+    const {isFinished} = options;
 
     const wheel = event=>{
       Dom.stopEvent(event);
@@ -54,7 +52,7 @@ define(function(require, exports, module) {
 
       endTime = util.dateNow() + updateDelay;
 
-      if (afTimeout === null && keyup === null)
+      if (afTimeout === null && checkFinished === complete)
         afTimeout = koru.afTimeout(finishZoom, updateDelay);
     };
 
@@ -84,20 +82,19 @@ define(function(require, exports, module) {
       onComplete(dim, {});
     };
 
+    const checkFinished = typeof isFinished === 'function' ?
+            event => {isFinished(event) && complete()} : complete;
+
     document.addEventListener('wheel', wheel, true);
-    if (keyup !== null)
-      window.addEventListener('keyup', keyup, true);
-    else
-      document.addEventListener('pointermove', complete, true);
+    window.addEventListener('keyup', checkFinished, true);
+    document.addEventListener('pointermove', checkFinished, true);
 
     wheel(event);
 
     const stop = ()=>{
       document.removeEventListener('wheel', wheel, true);
-      if (keyup !== null)
-        window.removeEventListener('keyup', keyup, true);
-      else
-        document.removeEventListener('pointermove', complete, true);
+      window.removeEventListener('keyup', checkFinished, true);
+      document.removeEventListener('pointermove', checkFinished, true);
       if (pendingMove != 0) {
         window.cancelAnimationFrame(pendingMove);
         pendingMove = 0;
