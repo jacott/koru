@@ -8,7 +8,7 @@ isClient && define(function (require, exports, module) {
   const sut  = require('./local-storage');
   var v;
 
-  const {setItem, getItem, removeItem} = sut;
+  const {setItem, getItem, removeItem, clear} = sut;
 
   TH.testCase(module, {
     setUp() {
@@ -17,10 +17,12 @@ isClient && define(function (require, exports, module) {
       v.setItem = sut.setItem;
       v.getItem = sut.getItem;
       v.removeItem = sut.removeItem;
+      v.clear = sut.clear;
 
       sut.setItem = setItem;
       sut.getItem = getItem;
       sut.removeItem = removeItem;
+      sut.clear = clear;
     },
 
     tearDown() {
@@ -31,6 +33,7 @@ isClient && define(function (require, exports, module) {
       sut.setItem = v.setItem;
       sut.getItem = v.getItem;
       sut.removeItem = v.removeItem;
+      sut.clear = v.clear;
       v = null;
     },
 
