@@ -184,6 +184,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test touch pinchZoom"() {
+      this.spy(Dom, 'stopEvent');
       const raf = this.stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('touchstart', {
@@ -201,9 +202,13 @@ isClient && define(function (require, exports, module) {
         }
       }));
 
-      TH.trigger(target, 'touchmove', {touches: [
+      assert.calledWith(Dom.stopEvent, event);
+
+      TH.trigger(target, 'touchmove', {test: 1, touches: [
         {clientX: 123+17, clientY: 45+51}, {clientX: 115+17, clientY: 85+51}
       ]});
+      assert.calledWith(Dom.stopEvent, TH.match(e => e.test === 1));
+
       raf.yieldAll().reset();
       assert.calledWith(onChange, {
         scale: near(0.363, 0.001), midX: 111.5, midY: 100, adjustX: 7.5, adjustY: -35});

@@ -109,6 +109,7 @@ define(function(require, exports, module) {
       constrainZoom, threshold=100,
     } = options;
 
+    Dom.stopEvent(event);
 
     const {left, top} = targetGeometry;
 
@@ -131,7 +132,9 @@ define(function(require, exports, module) {
     dim.midX = x0 + dx/2;
     dim.midY = y0 + dy/2;
 
-    const touchmove = ({touches}) =>{
+    const touchmove = event =>{
+      Dom.stopEvent(event);
+      const {touches} = event;
       t0.x = touches[0].clientX - left;
       t0.y = touches[0].clientY - top;
 
