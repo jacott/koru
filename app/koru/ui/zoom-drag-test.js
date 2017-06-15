@@ -117,17 +117,34 @@ isClient && define(function (require, exports, module) {
         v.raf = this.stub(window, 'requestAnimationFrame').returns(123);
         const event = new window.WheelEvent('wheel', {
           deltaY: -79.5, clientX: 117, clientY: 155});
-        this.onEnd(sut.start({
-          event, target: v.target,
-          updateDelay: 200,
-          onChange: v.onChange = this.stub(),
-          onComplete(geom, {click}) {
-            v.geom = Object.assign({}, geom);
-          }
-        }));
+        v.start = (opts={}) => {
+          this.onEnd(sut.start(Object.assign({
+            event, target: v.target,
+            updateDelay: 200,
+            onChange: v.onChange = this.stub(),
+            onComplete(geom, {click}) {
+              v.geom = Object.assign({}, geom);
+            }
+          }, opts)));
+        };
+      },
+
+      "test modifier prevents timeout"() {
+        v.start({modifier: 17});
+
+        TH.keyup(v.target, 16);
+        refute.called(koru.afTimeout);
+
+        TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155});
+        refute(v.geom);
+
+        TH.keyup(v.target, 17);
+
+        assert(v.geom);
       },
 
       "test timeout"() {
+        v.start();
         const {target, onChange, raf} = v;
         assert.calledWith(koru.afTimeout, TH.match.func, 200);
         TH.trigger(target, 'wheel', {
@@ -168,6 +185,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test mouseMove when wheelZoom"() {
+        v.start();
         this.stub(window, 'cancelAnimationFrame');
         TH.trigger(v.target, 'wheel', {deltaMode: 1, deltaY: 2, clientX: 117, clientY: 155});
         TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155});

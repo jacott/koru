@@ -37,6 +37,10 @@ define(function(require, exports, module) {
     let x = 0, y = 0, delta = 0;
     let endTime = 0, afTimeout = null;
 
+    const {modifier} = options;
+
+    const keyup = modifier > 0 ? event => {event.which === modifier && complete()} : null;
+
     const wheel = event=>{
       Dom.stopEvent(event);
       x = event.clientX - left;
@@ -50,7 +54,7 @@ define(function(require, exports, module) {
 
       endTime = util.dateNow() + updateDelay;
 
-      if (afTimeout === null)
+      if (afTimeout === null && keyup === null)
         afTimeout = koru.afTimeout(finishZoom, updateDelay);
     };
 
@@ -80,15 +84,20 @@ define(function(require, exports, module) {
       onComplete(dim, {});
     };
 
-
     document.addEventListener('wheel', wheel, true);
-    document.addEventListener('pointermove', complete, true);
+    if (keyup !== null)
+      window.addEventListener('keyup', keyup, true);
+    else
+      document.addEventListener('pointermove', complete, true);
 
     wheel(event);
 
     const stop = ()=>{
-      document.removeEventListener('pointermove', complete, true);
       document.removeEventListener('wheel', wheel, true);
+      if (keyup !== null)
+        window.removeEventListener('keyup', keyup, true);
+      else
+        document.removeEventListener('pointermove', complete, true);
       if (pendingMove != 0) {
         window.cancelAnimationFrame(pendingMove);
         pendingMove = 0;
