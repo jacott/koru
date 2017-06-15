@@ -92,6 +92,13 @@ define(function (require, exports, module) {
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
 
+    "test keyStartsWith"() {
+      assert.isFalse(util.keyStartsWith(null, 'foo'));
+      assert.isFalse(util.keyStartsWith({foz: 1, fizz: 2}, 'foo'));
+      assert.isTrue(util.keyStartsWith({faz: true, fooz: undefined, fizz: 2}, 'foo'));
+      assert.isTrue(util.keyStartsWith({foo: 1, fizz: 2}, 'foo'));
+    },
+
     "test firstParam"() {
       assert.same(util.firstParam({a: 1, b: 2}), 1);
       assert.same(util.firstParam({}), undefined);

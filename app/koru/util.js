@@ -331,6 +331,11 @@ define(function(require, exports, module) {
       return true;
     },
 
+    keyStartsWith(obj, key) {
+      for (const id in obj) if (id.startsWith(key)) return true;
+      return false;
+    },
+
     firstParam(obj) {
       if (obj) for(const key in obj) {return obj[key];}
     },
