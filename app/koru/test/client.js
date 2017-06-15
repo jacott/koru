@@ -65,6 +65,9 @@ define(function(require, exports, module) {
     localStorage.removeItem = key => {
       delete ls[key];
     };
+    localStorage.clear = ()=>{
+      ls = {};
+    };
   });
 
   test.geddon.onTestStart(()=>{ls = localStorage._resetValue()});
@@ -74,6 +77,7 @@ define(function(require, exports, module) {
     localStorage.setItem = setItem;
     localStorage.getItem = getItem;
     localStorage.removeItem = removeItem;
+    localStorage.clear = clear;
   });
 
   test.testHandle('A');
