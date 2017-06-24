@@ -12,10 +12,6 @@ define(function(require, exports, module) {
     setTextAsHTML(content) {
       exports.setTextAsHTML($.element, content);
     },
-
-    planTextEditor(content, options) {
-      return Tpl.$autoRender({content: content, options: options});
-    },
   });
 
   Tpl.$extend({

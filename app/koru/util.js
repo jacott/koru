@@ -917,8 +917,7 @@ define(function(require, exports, module) {
       return ans;
     },
 
-    parseEmailAddresses(input) {
-      input = input || "";
+    parseEmailAddresses(input="") {
       const addresses = [];
 
       const remainder = input.replace(

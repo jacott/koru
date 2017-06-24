@@ -701,7 +701,8 @@ define(function(require, exports, module) {
       if (ctx.selectItem && ! $.data(ctx.selectItem).span.parentNode) {
         Dom.remove(ctx.selectItem);
       }
-      setMode(ctx, Dom.getRange());
+      const range = Dom.getRange();
+      range == null || setMode(ctx, range);
     },
   });
 
