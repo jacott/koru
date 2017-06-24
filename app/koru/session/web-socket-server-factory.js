@@ -19,13 +19,12 @@ define(function (require, exports, module) {
     let dictHash = [1,2,3,5, 7,11,13,17]; // dont' change this without bumping koru.PROTOCOL_VERSION
     let dictHashStr = null;
 
-    let version = 'dev', versionHash = 'h'+Date.now();
-
-    if (process.env.KORU_APP_VERSION !== undefined) {
+    const {version, versionHash} = (()=>{
+      if (process.env.KORU_APP_VERSION === undefined)
+        return {version: 'dev', versionHash: 'h'+Date.now()};
       const parts = process.env.KORU_APP_VERSION.split(',');
-      version = parts[0]; versionHash = parts[1];
-    }
-
+      return {version: parts[0], versionHash: parts[1]};
+    })();
 
     globalDictAdders[module.id] = adder => {
       for (const name in session._rpcs) {
@@ -49,21 +48,23 @@ define(function (require, exports, module) {
       const newSession = (wrapOnMessage, url=ugr.url) => {
         let newVersion = '';
         let gdict = globalDictEncoded(), dictHash = dictHashStr;
+        const parts = url === null ? null : url.split('?', 2);
+        const [clientProtocol, clientVersion, clientHash] = url === null ?
+                [] : parts[0].split('/').slice(2);
         if (url !== null) {
-          const parts = url.split('?', 2);
-          const [protocol, version, hash] = parts[0].split('/').slice(2);
-          if (+protocol !== koru.PROTOCOL_VERSION) {
+          if (+clientProtocol !== koru.PROTOCOL_VERSION) {
             ws.send('Lforce-reload');
             ws.close();
             return;
           }
 
-          if (hash !== session.versionHash && hash) {
+          if (clientHash !== session.versionHash && clientHash) {
             if (session.version === 'dev')
               newVersion = session.version;
             else {
-              const cmp = session.compareVersion ? session.compareVersion(version, hash)
-                      : util.compareVersion(version, session.version);
+              const cmp = session.compareVersion ?
+                      session.compareVersion(clientVersion, clientHash)
+                      : util.compareVersion(clientVersion, session.version);
               if (cmp < 0) newVersion = session.version;
               else if (cmp > 0) return; // client on greater version; we will update (hopefully) so
               // just wait around
@@ -100,7 +101,7 @@ define(function (require, exports, module) {
           newVersion, session.versionHash,
           gdict, dictHash]);
         koru.info(
-          `New conn id:${sessId}, tot:${session.totalSessions}, ver:${version}, `+
+          `New conn id:${sessId}, tot:${session.totalSessions}, ver:${clientVersion}, `+
             `${conn.engine}, ${remoteAddress}:${conn.remotePort}`);
         session.countNotify.notify(conn, true);
         return conn;

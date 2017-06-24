@@ -244,6 +244,23 @@ define(function (require, exports, module) {
           TH.noInfo();
         },
 
+        "test info"() {
+          koru.info.restore();
+          this.stub(koru, 'info');
+          v.ws.upgradeReq.socket = {remoteAddress: '127.0.0.1', remotePort: '12345'};
+          v.ws.upgradeReq.headers = {
+            'user-agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "+
+              "(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36",
+            'x-real-ip': '11.22.33.44',
+          };
+
+          v.sess.onConnection(v.ws);
+
+          assert.calledWith(
+            koru.info,
+            "New conn id:1, tot:1, ver:v1.2.2, Chrome 59.0.3071.104, 11.22.33.44:12345");
+        },
+
         "test override halts response"() {
           this.stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = this.stub().returns(1);
