@@ -57,6 +57,7 @@ isClient && define(function (require, exports, module) {
 
       "test wiried"() {
         assert.equals(v.slot, ['paste', '', v.origPaste]);
+        assert.same(sut.pasteFilter, v.origPaste);
       },
 
       "test text/html"() {

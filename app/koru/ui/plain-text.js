@@ -29,6 +29,19 @@ define(function(require, exports, module) {
     insert: EditorCommon.insert,
   });
 
+  const pasteFilter = event=>{
+    const cb = event.clipboardData;
+    if (cb) {
+      const text = event.clipboardData.getData('text/html');
+      if (text) {
+        const md = exports.fromHtml(Dom.html('<div>'+text+'</div>'));
+          if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
+            Dom.stopEvent();
+        return;
+      }
+    }
+  };
+
   Tpl.$events({
     'keydown'(event) {
       if (event.ctrlKey) switch(event.which) {
@@ -38,22 +51,13 @@ define(function(require, exports, module) {
       }
     },
 
-    'paste'(event) {
-      const cb = event.clipboardData;
-      if (cb) {
-        const text = event.clipboardData.getData('text/html');
-        if (text) {
-          const md = exports.fromHtml(Dom.html('<div>'+text+'</div>'));
-          if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
-            Dom.stopEvent();
-          return;
-        }
-      }
-    },
+    'paste': pasteFilter,
   });
 
   return exports = {
     Editor: Tpl,
+
+    pasteFilter,
 
     setTextAsHTML(elm, content) {
       Dom.removeChildren(elm);
