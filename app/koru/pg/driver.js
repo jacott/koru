@@ -757,7 +757,7 @@ define(function(require, exports, module) {
       this._sql = sql;
       this._values = values;
 
-      if (options) for (let op in options) {
+      if (options) for (const op in options) {
         const func = this[op];
         if (typeof func === 'function')
           func.call(this, options[op]);
@@ -782,7 +782,7 @@ define(function(require, exports, module) {
 
     next(count) {
       initCursor(this);
-      if (this.hasOwnProperty('_index')) {
+      if (this._index !== undefined) {
         if (count === undefined) {
           if (this._index >= this._rows.length)
             return;

@@ -354,6 +354,7 @@ isServer && define(function (require, exports, module) {
 
       "test cursor next"() {
         var cursor = v.foo.find({age: 10});
+        cursor.batchSize(2);
 
         assert(cursor);
         try {

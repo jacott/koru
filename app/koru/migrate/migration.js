@@ -9,85 +9,97 @@ define(function(require, exports, module) {
   const koru     = require('../main');
   const util     = require('../util');
 
+  const actions$ = Symbol();
+
   class MigrationControl {
-    constructor(add, client) {
-      this.client = client;
-      this.add = add;
+    constructor() {
+      this[actions$] = [];
     }
 
-    createTable(options, fields, indexes) {
-      let name;
-      if (typeof options === 'object') {
-        name = options.name;
-        fields = options.fields;
-        indexes = options.indexes;
+    createTable(name, fields, indexes) {
+      const args = {};
+      if (typeof name === 'object') {
+        Object.assign(args, name);
       } else {
-        name = options;
-        options = {};
+        args.name = name;
+        args.fields = fields;
+        args.indexes = indexes;
       }
-      const qname = '"'+name+'"';
-      if (this.add) {
-        const list = ['_id varchar(24) PRIMARY KEY'];
-        for (var col in fields) {
-          const colspec = this.client.jsFieldToPg(col, fields[col]);
-          if (/\bprimary key\b/i.test(colspec))
-            list[0] = colspec;
-          else
-            list.push(colspec);
-        }
-        this.client.query(`CREATE${options.unlogged ? ' UNLOGGED' : ''} TABLE ${qname} (${list.join(',')})`);
-        if (indexes) {
-          indexes.forEach(spec => {
-            let i = 0;
-            const unique = spec[0] === '*unique';
-            if (unique) spec = spec.slice(1);
-            const iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
-            this.client.query(`${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON ${qname} USING btree (${
-spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
-})`);
-          });
-        }
-      } else {
-        this.client.query('DROP TABLE IF EXISTS '+qname);
-      }
-      resetTable(name);
+      this[actions$].push({action: createTable, args});
     }
 
     reversible(options) {
-      if (this.add && options.add)
-        options.add(this.client);
-      if (! this.add && options.revert)
-        options.revert(this.client);
-      util.forEach(options.resetTables, name => resetTable(name));
+      this[actions$].push({action: reversible, args: options});
     }
 
     addColumns(tableName, ...args) {
-      const fields = {};
-      args.forEach(arg => {
-        if (typeof arg === 'string') {
-          const [k,n='text'] = arg.split(':', 2);
-          fields[k] = n;
-        } else
-          util.merge(fields, arg);
-      });
-      const {client} = this;
-      if (this.add) {
-        client.query(`ALTER TABLE "${tableName}" ${
-Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(",")
-}`);
-      } else {
-        client.query(`ALTER TABLE "${tableName}" ${
-Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
-}`);
-      }
-      resetTable(tableName);
+      this[actions$].push({action: addColumns, args: {tableName, args}});
     }
   }
 
-  function resetTable(tableName) {
+  const createTable = (add, client, {name, fields, unlogged, indexes}) => {
+    if (add) {
+      const list = ['_id varchar(24) PRIMARY KEY'];
+      for (const col in fields) {
+        const colspec = client.jsFieldToPg(col, fields[col]);
+        if (/\bprimary key\b/i.test(colspec))
+          list[0] = colspec;
+        else
+          list.push(colspec);
+      }
+
+      client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
+      if (indexes) {
+        indexes.forEach(spec => {
+          let i = 0;
+          const unique = spec[0] === '*unique';
+          if (unique) spec = spec.slice(1);
+          const iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
+          client.query(
+            `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${name}" USING btree (${
+spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
+})`);
+        });
+      }
+    } else {
+      client.query(`DROP TABLE IF EXISTS "${name}"`);
+    }
+    resetTable(name);
+  };
+
+  const reversible = (add, client, options)=>{
+    if (add && options.add)
+      options.add(client);
+    if (! add && options.revert)
+      options.revert(client);
+    util.forEach(options.resetTables, name => resetTable(name));
+  };
+
+  const addColumns = (add, client, {tableName, args})=>{
+    const fields = {};
+    args.forEach(arg => {
+      if (typeof arg === 'string') {
+        const [k,n='text'] = arg.split(':', 2);
+        fields[k] = n;
+      } else
+        util.merge(fields, arg);
+    });
+    if (add) {
+      client.query(`ALTER TABLE "${tableName}" ${
+Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(",")
+}`);
+    } else {
+      client.query(`ALTER TABLE "${tableName}" ${
+Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
+}`);
+    }
+    resetTable(tableName);
+  };
+
+  const resetTable = tableName => {
     const model = ModelMap[tableName];
     model && model.docs._resetTable();
-  }
+  };
 
   class Migration {
     constructor(client) {
@@ -157,15 +169,19 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
     }
 
     _doMigration(add, name, change) {
-      this._client.transaction(tx => {
+      const client = this._client;
+      client.transaction(tx => {
         if (this.migrationExists(name) === add) return;
 
-        change(new MigrationControl(add, this._client));
+        const mc = new MigrationControl();
+        change(mc);
         if (add) {
-          this._client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
+          mc[actions$].forEach(({action, args}) => {action(add, client, args)});
+          client.query('INSERT INTO "Migration" VALUES ($1)', [name]);
           this._migrations[name] = true;
         } else {
-          this._client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
+          mc[actions$].reverse().forEach(({action, args}) => {action(add, client, args)});
+          client.query('DELETE FROM "Migration" WHERE name=$1', [name]);
           delete this._migrations[name];
         }
       });
