@@ -566,14 +566,22 @@ isClient && define(function (require, exports, module) {
         v.db.index("TestModel", "name")
           .getAll(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ans = docs);
 
+        v.db.index("TestModel", "name")
+          .getAllKeys(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ansKeys = docs);
+
         poll();
         assert.equals(v.ans, [v.r4]);
+        assert.equals(v.ansKeys, ['r4']);
 
         v.db.index("TestModel", "name")
           .getAll().then(docs => v.ans = docs);
 
+        v.db.index("TestModel", "name")
+          .getAllKeys().then(docs => v.ansKeys = docs);
+
         poll();
         assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
+        assert.equals(v.ansKeys, ['r3', 'r4', 'r1', 'r2']);
 
         v.db.index("TestModel", "name")
           .count(IDBKeyRange.bound('Lucy', 'Ronald', false, false)).then(ans => v.ans = ans);

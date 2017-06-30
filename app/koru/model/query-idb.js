@@ -57,6 +57,19 @@ define(function(require, exports, module) {
     }
   }
 
+  if (window.IDBIndex !== undefined) {
+    if (window.IDBIndex.prototype.getAllKeys === undefined) {
+      Index.prototype.getAllKeys = function (query, count) {
+        return wrapRequest(this._queryIDB, () => this._withIndex().getAll(query, count))
+          .then(ans => ans.map(rec => rec._id));
+      };
+    } else {
+      Index.prototype.getAllKeys = function (query, count) {
+        return wrapRequest(this._queryIDB, () => this._withIndex().getAllKeys(query, count));
+      };
+    }
+  }
+
   class QueryIDB {
     constructor({name, version, upgrade}) {
       this.dbId = dbBroker.dbId;

@@ -131,6 +131,21 @@ define(function(require, exports, module) {
       };
     }
 
+    getAllKeys(query) {
+      const self = this;
+      const {docs, db: {_pending}} = this.os;
+      return {
+        set onsuccess(f) {
+          const result = Object.keys(docs)
+                  .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
+                  .map(k => docs[k])
+                  .sort(self.compare)
+                  .map(d => d._id);
+          _pending.push(() => {f({target: {result}});});
+        },
+      };
+    }
+
     openCursor(query, direction) {
       const self = this;
       return {
