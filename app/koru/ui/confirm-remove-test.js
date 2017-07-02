@@ -3,11 +3,10 @@ isClient && define(function (require, exports, module) {
   const TH  = require('./test-helper');
 
   const sut = require('./confirm-remove');
-  var test, v;
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
@@ -17,30 +16,45 @@ isClient && define(function (require, exports, module) {
     },
 
     "test cancel"() {
-      sut.show('foo bar', v.confirm = test.stub());
+      sut.show({onConfirm: v.confirm = this.stub()});
 
       assert.dom('.Dialog', function () {
-        assert.dom('#ConfirmRemove h1', 'Remove foo bar?');
+        assert.dom('#ConfirmRemove h1', 'Are you sure?');
         TH.click('[name=cancel]');
       });
       refute.dom('.Dialog');
       refute.called(v.confirm);
     },
 
-    "test description"() {
-      sut.show('with desc', test.stub(), {description: Dom.h({div: 'how now brown cow'})});
+    "test options"() {
+      sut.show({
+        title: 'my title',
+        classes: 'myclass',
+        okay: 'my remove',
+        description: Dom.h({div: 'how now brown cow'}),
+        onConfirm: v.onConfirm = this.stub(),
+      });
 
       assert.dom('.Dialog', function () {
+        assert.dom('.ui-dialog.myclass');
+        assert.dom('h1', 'my title');
         assert.dom('div', 'how now brown cow');
+        assert.dom('[name=okay]', 'my remove');
+      });
+    },
+
+    "test name"() {
+      sut.show({name: 'foo', onConfirm() {}});
+
+      assert.dom('.Dialog', function () {
+        assert.dom('h1', 'Remove foo?');
       });
     },
 
     "test okay"() {
-      sut.show('foo bar', v.confirm = test.stub());
+      sut.show({onConfirm: v.confirm = this.stub()});
 
-      assert.dom('.Dialog', function () {
-        TH.click('[name=okay]');
-      });
+      TH.click('.Dialog [name=okay]');
       refute.dom('.Dialog');
       assert.called(v.confirm);
     },

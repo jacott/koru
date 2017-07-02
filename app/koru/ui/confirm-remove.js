@@ -6,17 +6,25 @@ define(function(require, exports, module) {
   const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
 
   Tpl.$extend({
-    show(name, func, opts) {
+    show({
+      name,
+      title=name ? `Remove ${name}?` :'Are you sure?',
+      okay='Remove',
+      classes='warn',
+      description,
+      onConfirm,
+    }) {
       Dialog.confirm(Object.assign({
-        classes: 'warn',
-        okay: 'Remove',
+        classes,
+        title,
+        description,
+        okay,
         content: Tpl,
-        name: name,
         callback(confirmed) {
-          confirmed && func();
+          confirmed && onConfirm();
           Dialog.close();
         },
-      }, opts || {}));
+      }));
     },
   });
 });
