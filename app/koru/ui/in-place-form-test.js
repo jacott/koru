@@ -1,10 +1,11 @@
 isClient && define(function (require, exports, module) {
+  const Dom    = require('../dom');
+  const ipfTpl = require('../html!./in-place-form-test');
+  const util   = require('../util');
+  const TH     = require('./test-helper');
+
+  const sut    = require('./in-place-form');
   var test, v;
-  var TH = require('./test-helper');
-  var Dom = require('../dom');
-  var sut = require('./in-place-form');
-  var util = require('../util');
-  var ipfTpl = require('../html!./in-place-form-test');
 
   TH.testCase(module, {
     setUp() {
@@ -26,7 +27,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('input[type=text][name=name]', function () {
           assert.same(this.value, '');
         });
-        assert.dom('fieldset', function () {
+        assert.dom('.actions', function () {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
@@ -48,7 +49,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('input[type=text][name=name]', function () {
           assert.same(this.value, 'foo');
         });
-        assert.dom('fieldset', function () {
+        assert.dom('.actions', function () {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
@@ -65,7 +66,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('input#My_foo[type=text][name=foo][maxLength="4"]', function () {
           assert.same(this.value, 'abc');
         });
-        assert.dom('fieldset', function () {
+        assert.dom('.actions', function () {
           assert.dom('button[name=apply]', 'Save');
         });
       });

@@ -4,7 +4,7 @@
     <div class="dialogContainer">
       <div class="ui-dialog">
         {{customFieldset}}
-        <fieldset class="palette">
+        <div class="palette">
           {{palette "ff0000"}}
           {{palette "ff8000"}}
           {{palette "ffff00"}}
@@ -16,23 +16,23 @@
           {{palette "ff00ff"}}
           {{palette "000000"}}
           {{palette "ffffff"}}
-        </fieldset>
-        <fieldset>
+        </div>
+        <div>
           {{> ColorPart part="h" max="360"}}
           {{> ColorPart part="s" max="100"}}
           {{> ColorPart part="l" max="100"}}
           {{> ColorPart part="a" max="100"}}
-        </fieldset>
-        <fieldset>
+        </div>
+        <div>
           <label>
             #RRGGBB{{alphaLabel}} <input name="hex" {{hexValue}} {{setBackgroundColor hexColorHash}} {{maxlength}}>
           </label>
-        </fieldset>
-        <fieldset class="actions">
+        </div>
+        <div class="actions">
           <button type="submit" name="apply" {{disabled}}>Apply</button>
           {{customButton}}
           <button type="button" name="cancel">Cancel</button>
-        </fieldset>
+        </div>
       </div>
     </div>
     <span tabindex="0" class="endTab"></span>

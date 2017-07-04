@@ -1,10 +1,10 @@
 <template name="InPlaceForm">
   <form {{htmlAttrs}}>{{field}}
-    <fieldset class="actions">
+    <div class="actions">
       <button type="submit" name="apply">{{applyName}}</button>
       <button type="button" name="cancel">Cancel</button>
       {{deleteButton}}
-    </fieldset>
+    </div>
   </form>
   <template name="GenericShow">
     <div class="{{classes}}">
