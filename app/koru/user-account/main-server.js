@@ -192,7 +192,7 @@ define(function(require, exports, module) {
 
   function SRPBegin(request) {
     const doc = UserLogin.findBy('email', request.email);
-    if (! doc) throw new koru.Error(403, 'failure');
+    if (doc === undefined || doc.srp == null) throw new koru.Error(403, 'failure');
     const srp = new SRP.Server(doc.srp);
     this.$srp = srp;
     this.$srpUserAccount = doc;

@@ -223,7 +223,14 @@ define(function (require, exports, module) {
 
       "test wrong email"() {
         v.lu.$update({email: 'bad@bar.co'});
-        assert.exception(function () {
+        assert.exception(()=>{
+          session._rpcs.SRPBegin.call(v.conn, v.request);
+        }, {error: 403, reason: 'failure'});
+      },
+
+      "test null srp"() {
+        v.lu.$update('srp', null);
+        assert.exception(()=>{
           session._rpcs.SRPBegin.call(v.conn, v.request);
         }, {error: 403, reason: 'failure'});
       },
