@@ -232,7 +232,7 @@ define(function(require, exports, module) {
         var ctx = Dom.ctx(elm);
       }
 
-      ctx.updateAllTags({doc: this, options: options});
+      ctx == null || ctx.updateAllTags({doc: this, options: options});
 
       return elm;
     },
