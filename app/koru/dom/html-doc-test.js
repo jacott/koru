@@ -105,12 +105,14 @@ define(function (require, exports, module) {
 
     "test comments"() {
       assert.same(document.COMMENT_NODE, 8);
+      const comment = document.createComment('testing');
+      assert.same(comment.nodeType, document.COMMENT_NODE);
+      assert.same(comment.data, 'testing');
 
       const div = document.createElement('div');
       div.innerHTML = "<!-- my comment-->";
 
       assert.equals(div.firstChild.textContent, ' my comment');
-
 
       assert.same(div.innerHTML, "<!-- my comment-->");
     },

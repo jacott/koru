@@ -6,6 +6,90 @@ define(function(require, exports, module) {
     return parent.querySelector(cssQuery);
   }
 
+  const NO_DOLLAR = {id: true, class: true};
+
+  const h = body => {
+    let id = '', className = '', content = null, tagName = 'div', attrs = {};
+
+    if (typeof body === "string") {
+      if (body.indexOf("\n") !== -1) {
+        content = document.createDocumentFragment();
+        body.split('\n').forEach(function (line, index) {
+          index && content.appendChild(document.createElement('br'));
+          line && content.appendChild(document.createTextNode(line));
+        });
+        return content;
+      } else
+        return document.createTextNode(body);
+    }
+
+    if (body.nodeType) return body;
+
+    if (Array.isArray(body)) {
+      const elm = document.createDocumentFragment();
+      body.forEach(item => {
+        item != null && elm.appendChild(h(item));
+      });
+      return elm;
+    }
+
+    const comment = body.$comment$;
+    if (comment !== undefined) return document.createComment(comment);
+
+
+    for(const key in body) {
+      const value = body[key];
+      switch(key) {
+      case "id": id = value; break;
+      case "class": className = value; break;
+
+      default:
+        if (key[0] === '$') {
+          attrs[key.slice(1)] = value;
+        } else {
+          tagName = key;
+          content = value && h(value);
+        }
+        break;
+      }
+    }
+
+    const elm = document.createElement(tagName);
+    if (className !== '') elm.className = className;
+    if (id !== '') elm.id = id;
+    for(const key in attrs) {
+      elm.setAttribute(key, attrs[key]);
+    }
+
+    content && elm.appendChild(content);
+
+    return elm;
+  };
+
+  const htmlToJson = node=>{
+    const {childNodes} = node;
+    switch(node.nodeType) {
+    case document.TEXT_NODE: return node.textContent;
+    case document.ELEMENT_NODE:
+      const result = {};
+      util.forEach(node.attributes, ({name, value}) => {
+        result[NO_DOLLAR[name] ? name : `$${name}`] = value;
+      });
+      const tagName = node.tagName.toLowerCase();
+      switch(childNodes.length) {
+      case 0: break;
+      case 1: result[tagName] = htmlToJson(node.firstChild); break;
+      default:
+        result[tagName] = util.map(childNodes, htmlToJson);
+      }
+      return result;
+    case document.DOCUMENT_FRAGMENT_NODE:
+      return util.map(node.childNodes, htmlToJson);
+    case document.COMMENT_NODE:
+      return {$comment$: node.data};
+    }
+  };
+
   util.merge(Dom, {
     html,
     h,
@@ -87,97 +171,6 @@ define(function(require, exports, module) {
       }
     },
   });
-
-  function htmlToJson(node) {
-    if (typeof node === 'string')
-      return node;
-
-    if (node.nodeType !== 1)
-      return node.textContent;
-
-    const ans = {};
-    let body;
-
-
-    switch (node.childNodes.length) {
-    case 0: body = node.textContent; break;
-    case 1:
-      body = htmlToJson(node.childNodes[0]);
-      break;
-    default:
-      body = util.map(node.childNodes, n => htmlToJson(n));
-      break;
-    }
-
-    ans[node.tagName.toLowerCase()] = body;
-
-    util.forEach(node.attributes, attr => {
-      switch(attr.name) {
-      case 'id': case 'class':
-        ans[attr.name] = attr.value;
-        break;
-      default:
-        ans['$'+attr.name] = attr.value;
-        break;
-      }
-    });
-
-    return ans;
-  }
-
-  function h(body) {
-    let id = '', className = '', content = null, tagName = 'div', attrs = {};
-
-    if (typeof body === "string") {
-      if (body.indexOf("\n") !== -1) {
-        content = document.createDocumentFragment();
-        body.split('\n').forEach(function (line, index) {
-          index && content.appendChild(document.createElement('br'));
-          line && content.appendChild(document.createTextNode(line));
-        });
-        return content;
-      } else
-        return document.createTextNode(body);
-    }
-
-    if (body.nodeType) return body;
-
-    if (Array.isArray(body)) {
-      const elm = document.createDocumentFragment();
-      body.forEach(item => {
-        item != null && elm.appendChild(h(item));
-      });
-      return elm;
-    }
-
-    for(const key in body) {
-      const value = body[key];
-      switch(key) {
-      case "id": id = value; break;
-      case "class": className = value; break;
-
-      default:
-        if (key[0] === '$') {
-          attrs[key.slice(1)] = value;
-        } else {
-          tagName = key;
-          content = value && h(value);
-        }
-        break;
-      }
-    }
-
-    const elm = document.createElement(tagName);
-    if (className !== '') elm.className = className;
-    if (id !== '') elm.id = id;
-    for(const key in attrs) {
-      elm.setAttribute(key, attrs[key]);
-    }
-
-    content && elm.appendChild(content);
-
-    return elm;
-  }
 
   /**
    * Convert text to html

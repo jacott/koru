@@ -72,6 +72,7 @@ define(function(require, exports, module) {
     createElement(tag) {return new Element(tag)},
     createTextNode(value) {return new TextNode(value)},
     createDocumentFragment() {return new DocumentFragment()},
+    createComment(data) {return new CommentNode(data)},
 
     removeChild(node) {
       const nodes = this.childNodes;

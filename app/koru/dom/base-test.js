@@ -73,6 +73,16 @@ define(function (require, exports, module) {
 
       api.method('htmlToJson');
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
+
+      const assertConvert = json => {
+        assert.elideFromStack.equals(Dom.htmlToJson(Dom.h(json)), json);
+      };
+
+      assertConvert({div: 'simple'});
+      assertConvert({});
+      assertConvert({id: 'Spinner', class: 'spinner dark'});
+      assertConvert({ol: [{li: 'one'}, {$name: 'li2', li: 'two', $myattr: 'attr3'}]});
+      assertConvert(['one', 'two', 'three']);
     },
 
     "test html"() {
@@ -90,7 +100,7 @@ define(function (require, exports, module) {
        * Convert an `object` into a html node.
        *
        * `id` and `class` convert to attributes but other attributes
-       * must be prefixed with a `$`.
+       * must be prefixed with a `$`. `$comment$` makes a comment
        *
        * Array is used when multiple children.
        * Non prefixed key is used for `tagName`.
@@ -98,7 +108,7 @@ define(function (require, exports, module) {
       api.method('h');
 
       const obj = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {li: 'two'}],
+        ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'}],
       }, '$data-lang': 'en'};
 
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
