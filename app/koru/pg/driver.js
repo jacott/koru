@@ -132,7 +132,7 @@ define(function(require, exports, module) {
             return result;
           } catch(ex1) {
             ex = ex1;
-            query(tx.conn, "ROLLBACK TO SAVEPOINT s"+tx.savepoint);
+            tx.conn.isClosed() || query(tx.conn, "ROLLBACK TO SAVEPOINT s"+tx.savepoint);
             runOnAborts(tx, 'ROLLBACK');
             if (ex === 'abort')
               ex = null;
@@ -152,7 +152,7 @@ define(function(require, exports, module) {
         } finally {
           const command = tx.transaction;
           tx.transaction = null;
-          query(tx.conn, command);
+          tx.conn.isClosed() || query(tx.conn, command);
           runOnAborts(tx, command);
         }
       } finally {
@@ -183,6 +183,17 @@ define(function(require, exports, module) {
     if (! tx) {
       client._weakMap.set(util.thread, tx = fetchPool(client).acquire());
     }
+    if (tx.conn.isClosed()) {
+      try {
+        const future = new Future;
+        tx.conn = new Libpq(client._url, wait(future));
+        future.wait();
+      } catch(ex) {
+        koru.unhandledException(ex);
+        throw ex;
+      }
+    }
+
     ++tx.count;
 
     return tx.conn;
@@ -235,13 +246,21 @@ define(function(require, exports, module) {
   }
 
   function query(conn, text, params) {
-    const future = new Future;
-    if (params)
-      conn.execParams(text, params, wait(future));
-    else
-      conn.exec(text, wait(future));
+    try {
+      const future = new Future;
+      if (params)
+        conn.execParams(text, params, wait(future));
+      else
+        conn.exec(text, wait(future));
 
-    return future.wait();
+      return future.wait();
+    } catch(ex) {
+      if (ex.sqlState === undefined) {
+        conn.finish();
+      }
+
+      throw ex;
+    }
   }
 
   class Table {
@@ -1023,15 +1042,13 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
     table._colMap = util.toMap('column_name', null, table._columns);
   }
 
-  function wait(future) {
-    return function (err, result) {
-      if (err) {
-        err.message = err.message.replace(/^ERROR:\s*/, '');
-        future.throw(err);
-      }
-      else future.return(result);
-    };
-  }
+  const wait = future => (err, result)=>{
+    if (err) {
+      err.message = err.message.replace(/^ERROR:\s*/, '');
+      future.throw(err);
+    }
+    else future.return(result);
+  };
 
   module.exports = {
     isPG: true,

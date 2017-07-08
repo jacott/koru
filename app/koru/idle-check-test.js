@@ -43,8 +43,8 @@ isServer && define(function (require, exports, module) {
       setUp() {
         v.idleCheck = new IdleCheck();
         v.idleCheck.maxTime = 1*60*1000;
-        this.stub(koru, 'setTimeout').returns(112233);
-        this.stub(koru, 'clearTimeout');
+        this.stub(global, 'setTimeout').returns(112233);
+        this.stub(global, 'clearTimeout');
         v.f2 = Fiber(() => {
           v.idleCheck.inc();
           try {
@@ -62,24 +62,25 @@ isServer && define(function (require, exports, module) {
 
       "test running too long"() {
         this.stub(koru, 'error');
-        assert.calledWith(koru.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+
+        assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
         v.func();
 
-        assert.equals(v.ex.message, 'This Fiber is a zombie');
+        assert.equals(v.ex.message, 'Thread timeout [504]');
         assert.calledWith(koru.error, 'aborted; timed out. dbId: foo1, userId: u123');
       },
 
       "test finish in time"() {
-        assert.calledWith(koru.setTimeout, TH.match(f => v.func = f), 1*60*1000);
+        assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
-        refute.called(koru.clearTimeout);
+        refute.called(global.clearTimeout);
 
         v.f2.run();
 
         refute(v.ex);
 
-        assert.calledWith(koru.clearTimeout, 112233);
+        assert.calledWith(global.clearTimeout, 112233);
       },
     },
 
@@ -147,7 +148,7 @@ isServer && define(function (require, exports, module) {
     "exitProcessWhenIdle": {
       setUp() {
         this.stub(process, 'exit');
-        this.stub(koru, 'setTimeout');
+        this.stub(global, 'setTimeout');
         v.idleCheck = new IdleCheck();
         v.f2 = Fiber(() => {
           if (! (v && v.idleCheck)) return;
@@ -178,8 +179,8 @@ isServer && define(function (require, exports, module) {
         v.f2.run();
         v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000});
 
-        assert.calledWith(koru.setTimeout, TH.match(f => v.force = f), 20*1000);
-        assert.calledWith(koru.setTimeout, TH.match.func, 10*1000);
+        assert.calledWith(global.setTimeout, TH.match(f => v.force = f), 20*1000);
+        assert.calledWith(global.setTimeout, TH.match.func, 10*1000);
 
         refute.called(process.exit);
         v.force();
@@ -190,8 +191,8 @@ isServer && define(function (require, exports, module) {
         v.f2.run();
         v.idleCheck.exitProcessWhenIdle({abortTxAfter: 10*1000});
 
-        assert.calledWith(koru.setTimeout, TH.match.func, 20*1000);
-        assert.calledWith(koru.setTimeout, TH.match(f => v.abort = f), 10*1000);
+        assert.calledWith(global.setTimeout, TH.match.func, 20*1000);
+        assert.calledWith(global.setTimeout, TH.match(f => v.abort = f), 10*1000);
 
         refute.called(process.exit);
 

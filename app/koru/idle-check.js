@@ -33,10 +33,10 @@ define(function(require, exports, module) {
       if (this.fibers.get(fiber))
         throw new Error('IdleCheck.inc called twice on fiber');
       this.fibers.set(fiber, Date.now());
-      this.maxTime && (fiber[timeout$] = koru.setTimeout(() => {
+      this.maxTime && (fiber[timeout$] = setTimeout(() => {
         const {appThread={}} = fiber;
         koru.error(`aborted; timed out. dbId: ${appThread.dbId}, userId: ${appThread.userId}`);
-        fiber.reset();
+        fiber.throwInto(new koru.Error(504, 'Thread timeout'));
       }, this.maxTime));
       return ++this._count;
     }
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
     dec() {
       const fiber = Fiber.current;
       const cto = fiber[timeout$];
-      cto && koru.clearTimeout(cto);
+      cto && clearTimeout(cto);
       const start = this.fibers.get(fiber);
       if (! start)
         throw new Error('IdleCheck.dec called with no corresponding inc');
@@ -58,8 +58,8 @@ define(function(require, exports, module) {
     }
 
     exitProcessWhenIdle({forceAfter=20*1000, abortTxAfter=10*1000}={}) {
-      koru.setTimeout(shutdown, forceAfter);
-      koru.setTimeout(() => {
+      setTimeout(shutdown, forceAfter);
+      setTimeout(() => {
         for (const [fiber] of this.fibers) {
           try {
             fiber.reset();
