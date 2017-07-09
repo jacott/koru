@@ -91,16 +91,16 @@ define(function(require, exports, module) {
       }
     }
 
-    ws.on('close', function() {
+    ws.on('close', ()=>{
       session.provide('L', oldLogHandle);
       session.provide('T', oldTestHandle);
     });
-    ws.on('message', function(data, flags) {
+    ws.on('message', (data, flags)=>{
       const args = data.split('\t');
       switch(args[0]) {
       case 'T':
         testClientCount = +args[3];
-        koru.Fiber(function () {
+        koru.runFiber(()=>{
           try {
           buildCmd.runTests(session, args[1], args[2], function (mode, exec) {
             testMode = mode;
@@ -128,11 +128,11 @@ define(function(require, exports, module) {
             testWhenReady();
           });
           } catch(ex) {
-            koru.error(util.extractError(ex));
+            koru.unhandledException(ex);
             ws.send('FServer\x00' + ex.toString());
             ws.close();
           }
-        }).run();
+        });
         break;
       case 'I':
         switch(args[1]) {

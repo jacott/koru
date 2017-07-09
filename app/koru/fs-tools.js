@@ -27,14 +27,15 @@ function lstat(path) {
   return waitMethod(fs.lstat, path);
 }
 
-const rm_rf_w = Future.wrap(function (dir, callback) {
-  Fiber(function () {
+const rm_rf_w = Future.wrap((dir, callback) => {
+  let restart = false;
+  Fiber(()=>{
+    if (restart) return;
+    restart = true;
     try {
       const filenames = readdir_w(dir).wait();
 
-      const stats = filenames.map(function (filename) {
-        return stat_w(Path.join(dir, filename));
-      });
+      const stats = filenames.map(filename => stat_w(Path.join(dir, filename)));
 
       wait(stats);
 
@@ -125,10 +126,10 @@ function mkdir_p(path) {
   mkdir(path);
 }
 
-function futureWrap(obj, func, args) {
+const futureWrap = (obj, func, args)=>{
   const future = new Future;
 
-  var callback = function (error, data) {
+  const callback = (error, data)=>{
     if (error) {
       future.throw(error);
       return;
@@ -138,7 +139,7 @@ function futureWrap(obj, func, args) {
   args.push(callback);
   func.apply(obj, args);
   return future.wait();
-}
+};
 
 define({
   mkdir,

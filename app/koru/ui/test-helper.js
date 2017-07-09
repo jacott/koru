@@ -289,7 +289,7 @@ define(function(require, exports, module) {
     try {
       elm.dispatchEvent(event);
       if (evex) {
-        koru.error(util.extractError(evex));
+        koru.unhandledException(evex);
         throw new Error("event Dispatch => " + evex);
       }
     } finally {

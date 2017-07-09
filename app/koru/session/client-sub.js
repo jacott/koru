@@ -83,7 +83,7 @@ define(function(require, exports, module) {
         this.isResubscribe = this._called;
         this._subscribe.apply(this, this.args);
       } catch(ex) {
-        koru.error(util.extractError(ex));
+        koru.unhandledException(ex);
       }
       this._called = true;
       this.isResubscribe = false;

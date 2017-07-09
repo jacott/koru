@@ -153,14 +153,14 @@ define(function (require, exports, module) {
       let retFut = new Future;
       let waitFut = new Future;
 
-      util.Fiber(function () {
+      util.Fiber(()=>{
         try {
           while(retFut) {
             const what= retFut.wait();
             waitFut.return(what && what());
           }
         } catch(ex) {
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
           waitFut.throw(ex);
         }
       }).run();

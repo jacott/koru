@@ -24,6 +24,15 @@ define(function (require, exports, module) {
       assert.same(koru.global, window);
     },
 
+    "test runFiber"() {
+      koru.runFiber(() => {v.success = true});
+      assert(v.success);
+
+      test.stub(koru, 'error');
+      koru.runFiber(()=>{throw new Error("Foo")});
+      assert.calledWith(koru.error, TH.match(/Foo/));
+    },
+
     "afTimeout": {
       setUp() {
         assert.same(TH.geddon._origAfTimeout, koru._afTimeout);

@@ -192,7 +192,7 @@ define(function (require, exports, module) {
         if (ex.error) {
           this.sendBinary('M', [msgId, 'e', ex.error, ex.reason]);
         } else {
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
           this.sendBinary('M', [msgId, 'e', ex.toString()]);
         }
       }

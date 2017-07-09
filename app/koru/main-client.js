@@ -15,28 +15,33 @@ define(function(require, exports, module) {
         (window.top || window).location.reload(true);
       },
 
-      Fiber: util.Fiber,
-
       appDir: module.toUrl('').slice(0,-1),
 
       setTimeout(func, duration) {
-        return setTimeout(function () {
+        return setTimeout(()=> {
           try {
             func();
           } catch(ex) {
-            koru.error(util.extractError(ex));
+            koru.unhandledException(ex);
           }
         }, duration);
+      },
+
+      runFiber(func) {
+        try {
+          func();
+        } catch(ex) {
+          koru.unhandledException(ex);
+        }
       },
 
       fiberConnWrapper(func, conn, data) {
         try {
           func(conn, data);
         } catch(ex) {
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
         }
       },
-
 
       getLocation() {
         return window.location;
@@ -57,7 +62,7 @@ define(function(require, exports, module) {
             try {
               func();
             } catch(ex) {
-              koru.error(util.extractError(ex));
+              koru.unhandledException(ex);
             }
           });
         }

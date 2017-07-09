@@ -103,17 +103,6 @@ define(function (require, exports, module) {
       return l.protocol+'//'+l.host+l.pathname;
     },
 
-    fiberRun(func) {
-      util.Fiber(() => {
-        try {
-          func();
-        } catch(ex) {
-          koru.error(util.extractError(ex));
-        }
-      }).run();
-    },
-
-
     nullFunc() {},
 
     /**

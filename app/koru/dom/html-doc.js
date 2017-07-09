@@ -19,10 +19,13 @@ define(function(require, exports, module) {
   const threadMap = new WeakMap;
 
   Object.defineProperty(global, 'document', {configurable: true, get() {
-    var key = util.Fiber.current || global;
-    var doc = threadMap.get(key);
-    if (! doc)
-      threadMap.set(key, doc = new Document);
+    const key = util.Fiber.current || global;
+    const doc = threadMap.get(key);
+    if (doc == null) {
+      const doc = new Document;
+      threadMap.set(key, doc);
+      return doc;
+    }
 
     return doc;
   }});

@@ -7,7 +7,7 @@ define(function(require, exports, module) {
   const koru    = require('./main');
   const session = require('./session/base');
 
-  const {Fiber, appDir: top} = koru;
+  const {runFiber, appDir: top} = koru;
 
   koru.onunload(module, 'reload');
 
@@ -30,15 +30,13 @@ define(function(require, exports, module) {
     watch(Path.resolve(dir), Path.resolve(top)+'/');
   };
 
-  Fiber(function () {
-    watch(top, top+'/');
-  }).run();
+  runFiber(()=>{watch(top, top+'/')});
 
   function watch(dir, top) {
     const dirs = Object.create(null);
 
-    const watcher = fs.watch(dir, function (event, filename) {
-      Fiber(() => {
+    const watcher = fs.watch(dir, (event, filename)=>{
+      runFiber(() => {
         if (! filename.match(/^\w/)) return;
         let path = manage(dirs, dir, filename, top);
         if (! path) return;
@@ -50,7 +48,7 @@ define(function(require, exports, module) {
 
         handler ? handler(m[1], path, top, session) :
           defaultUnloader(path);
-      }).run();
+      });
     });
     fst.readdir(dir).forEach(filename => {
       if (! filename.match(/^\w/)) return;

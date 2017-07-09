@@ -26,7 +26,7 @@ define(function(require, exports, module) {
         this.ws = null;
         if (subs) for(const key in subs) {
           try {subs[key].stop();}
-          catch(ex) {koru.error(util.extractError(ex));}
+          catch(ex) {koru.unhandledException(ex);}
         }
         close();
       };
@@ -88,7 +88,7 @@ define(function(require, exports, module) {
           try {
             this._session._onMessage(this, current[0]);
           } catch(ex) {
-            koru.error(util.extractError(ex));
+            koru.unhandledException(ex);
           } finally {
             IdleCheck.dec();
 

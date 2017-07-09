@@ -6,7 +6,7 @@ define(function(require, exports, module) {
 
     koru.onunload(module, 'reload');
 
-    let dbBroker;
+    let dbBroker = null;
 
     util.merge(koru, {
       global,
@@ -33,12 +33,28 @@ define(function(require, exports, module) {
       },
 
       setTimeout(func, duration) {
-        return setTimeout(() => koru.fiberRun(func), duration);
+        return setTimeout(() => koru.runFiber(func), duration);
+      },
+
+      runFiber(func) {
+        let restart = false;
+        util.Fiber(()=>{
+          if (restart) return;
+          restart = true;
+          try {
+            func();
+          } catch(ex) {
+            koru.unhandledException(ex);
+          }
+        }).run();
       },
 
       fiberConnWrapper(func, conn, data) {
-        dbBroker || require(['koru/model/db-broker'], value => dbBroker = value);
+        dbBroker !== null || require(['koru/model/db-broker'], value => dbBroker = value);
+        let restart = false;
         util.Fiber(() => {
+          if (restart) return;
+          restart = true;
           try {
             const thread = util.thread;
             thread.userId = conn.userId;
@@ -47,7 +63,7 @@ define(function(require, exports, module) {
 
             func(conn, data);
           } catch(ex) {
-            koru.error(util.extractError(ex));
+            koru.unhandledException(ex);
           }
         }).run();
       },

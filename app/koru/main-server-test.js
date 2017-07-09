@@ -32,10 +32,31 @@ define(function (require, exports, module) {
       assert.calledWith(global.clearTimeout, 123);
     },
 
+
+    "test runFiber"() {
+      test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
+
+      koru.runFiber(() => {v.success = true});
+      assert.called(v.run);
+      util.Fiber.args(0, 0)();
+      assert(v.success);
+
+      util.Fiber.reset();
+      test.stub(koru, 'error');
+      koru.runFiber(()=>{throw new Error("Foo")});
+      util.Fiber.args(0, 0)();
+      assert.calledWith(koru.error, TH.match(/Foo/));
+
+      /** can't restart fiber **/
+      koru.error.reset();
+      util.Fiber.args(0, 0)();
+      refute.called(koru.error);
+    },
+
     "test fiberConnWrapper"() {
       test.stub(util, 'Fiber').returns({run: v.run = test.stub()});
 
-      koru.fiberConnWrapper(function (conn, data) {
+      koru.fiberConnWrapper((conn, data)=>{
         v.thread = util.merge({This: conn, data: data}, util.thread);
       }, v.conn = {userId: 'u123', db: v.mydb = {id: "mydb"}}, v.data = [1, 2]);
       assert.called(v.run);
@@ -53,6 +74,11 @@ define(function (require, exports, module) {
       koru.fiberConnWrapper(function () {throw new Error("Foo")}, v.conn, v.data);
       util.Fiber.args(0, 0)();
       assert.calledWith(koru.error, TH.match(/Foo/));
+
+      /** can't restart fiber **/
+      koru.error.reset();
+      util.Fiber.args(0, 0)();
+      refute.called(koru.error);
     },
   });
 

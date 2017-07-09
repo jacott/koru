@@ -108,7 +108,7 @@ define(function(require, exports, module) {
         if (ex.error) {
           this.error(ex);
         } else {
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
           this.error(new koru.Error(500, 'Internal server error'));
         }
       }

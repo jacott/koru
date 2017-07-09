@@ -36,7 +36,7 @@ define(['./core', '../main'], function (geddon, koru) {
         cbs[i](test);
       } catch(ex) {
         firstEx = firstEx || ex;
-        koru.error(koru.util.extractError(ex));
+        koru.unhandledException(ex);
       }
     }
 

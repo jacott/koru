@@ -3,7 +3,6 @@ define(function(require, exports, module) {
 
   util.engine = util.browserVersion(navigator.userAgent);
   util.thread = {dbId: ''};
-  util.Fiber = func => ({run: func});
 
   return util;
 });

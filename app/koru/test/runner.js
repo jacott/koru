@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   const koru = require('koru');
   const geddon = require('./core');
-  const asyncNext = func => {koru.fiberRun(func)};
+  const asyncNext = func => {koru.runFiber(func)};
 
   geddon.start = function (testCases, runNextWrapper) {
     let tests = geddon._tests = [],

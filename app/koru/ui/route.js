@@ -119,7 +119,7 @@ define(function(require, exports, module) {
             ex.location && this.replacePath(ex.location);
             return;
           }
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
           throw ex;
         }
 

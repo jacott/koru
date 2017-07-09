@@ -52,7 +52,7 @@ define(function(require, exports, module) {
         try {
           this._commands[msg[0]].call(this, msg[1]);
         } catch(ex) {
-          koru.error(util.extractError(ex));
+          koru.unhandledException(ex);
         }
       });
     });
@@ -66,7 +66,7 @@ define(function(require, exports, module) {
       else try {
         func.apply(this, data.slice(1));
       } catch(ex) {
-        koru.error(util.extractError(ex));
+        koru.unhandledException(ex);
       }
     });
 

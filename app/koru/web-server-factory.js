@@ -16,6 +16,67 @@ define(function (require, exports, module) {
 
     const handlers = {};
 
+    const requestListener = (req, res)=>{
+      koru.runFiber(()=>{
+        IdleCheck.inc();
+        try {
+          let path = parseurl(req).pathname;
+          let reqRoot = root;
+
+          if (path === '/')
+            path = DEFAULT_PAGE;
+
+          let m = /^\/([^/]+)(.*)$/.exec(path);
+          if (m) {
+            var special = SPECIALS[m[1]];
+
+            if (special) {
+              var pr = typeof special === 'function' ? special(m) : special;
+              path = pr[0]; reqRoot = pr[1];
+
+            } else if(special = handlers[m[1]]) {
+              special(req, res, m[2], error);
+              return;
+            }
+          }
+
+          m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
+
+          if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
+            send(req, path, {root: reqRoot, index: false})
+              .on('error', error)
+              .on('directory', error)
+              .pipe(res);
+          }
+        } catch(ex) {
+          koru.unhandledException(ex);
+          error(ex);
+        } finally {
+          IdleCheck.dec();
+        }
+
+        function error(err, msg) {
+          if (! err || 404 === err.status) {
+            notFound(res);
+          } else if (typeof err === 'number') {
+            const attrs = {};
+            msg = msg || '';
+            if (typeof msg !== 'string') {
+              msg = JSON.stringify(msg);
+              attrs['Content-Type'] = 'application/json';
+            }
+            attrs['Content-Length'] = msg.length;
+            res.writeHead(err, attrs);
+            res.end(msg);
+          } else {
+            res.statusCode = 500;
+            res.end('Internal server error!');
+          }
+        }
+
+      });
+    };
+
     const server = http.createServer(requestListener);
 
     const webServer = {
@@ -65,65 +126,6 @@ define(function (require, exports, module) {
         return handlers[key];
       },
     };
-
-    function requestListener(req, res) {koru.Fiber(function () {
-      IdleCheck.inc();
-      try {
-        let path = parseurl(req).pathname;
-        let reqRoot = root;
-
-        if (path === '/')
-          path = DEFAULT_PAGE;
-
-        let m = /^\/([^/]+)(.*)$/.exec(path);
-        if (m) {
-          var special = SPECIALS[m[1]];
-
-          if (special) {
-            var pr = typeof special === 'function' ? special(m) : special;
-            path = pr[0]; reqRoot = pr[1];
-
-          } else if(special = handlers[m[1]]) {
-            special(req, res, m[2], error);
-            return;
-          }
-        }
-
-        m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
-
-        if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
-          send(req, path, {root: reqRoot, index: false})
-            .on('error', error)
-            .on('directory', error)
-            .pipe(res);
-        }
-      } catch(ex) {
-        koru.error(koru.util.extractError(ex));
-        error(ex);
-      } finally {
-        IdleCheck.dec();
-      }
-
-      function error(err, msg) {
-        if (! err || 404 === err.status) {
-          notFound(res);
-        } else if (typeof err === 'number') {
-          const attrs = {};
-          msg = msg || '';
-          if (typeof msg !== 'string') {
-            msg = JSON.stringify(msg);
-            attrs['Content-Type'] = 'application/json';
-          }
-          attrs['Content-Length'] = msg.length;
-          res.writeHead(err, attrs);
-          res.end(msg);
-        } else {
-          res.statusCode = 500;
-          res.end('Internal server error!');
-        }
-      }
-
-    }).run();}
 
     function compileTemplate(req, res, type, path, suffix) {
       const compiler = webServer.compilers[type];

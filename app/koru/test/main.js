@@ -119,18 +119,16 @@ define(function(require, exports, module) {
       geddon.runArg = pattern;
       count = skipCount = errorCount = 0;
 
-      require(tests, function (...args) {
-        koru.fiberRun(() => {geddon.start(args)});
-      }, errorLoading);
-
-      function errorLoading(err) {
+      require(tests, (...args)=>{
+        koru.runFiber(() => {geddon.start(args)});
+      }, err => {
         ++errorCount;
         if (err.module) {
           koru.error(`Error loading dependancies:
 ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
         }
         endRun();
-      }
+      });
     },
 
     testCase(module, option) {
@@ -140,11 +138,9 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     },
 
     normHTMLStr(html) {
-      return html.replace(/(<[^>]+)>/g, function (m, m1) {
+      return html.replace(/(<[^>]+)>/g, (m, m1)=>{
         if (m[1] === '/') return m;
-        var parts = m1.replace(/="[^"]*"/g, function (m) {
-          return m.replace(/ /g, '\xa0');
-        }).split(' ');
+        var parts = m1.replace(/="[^"]*"/g, m => m.replace(/ /g, '\xa0')).split(' ');
         if (parts.length === 1) return m;
         var p1 = parts[0];
         parts = parts.slice(1).sort();
@@ -153,19 +149,19 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     }
   };
 
-  koru.logger = function (type, ...args) {
+  koru.logger = (type, ...args)=>{
     console.log.apply(console, args);
     exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
   };
 
   geddon.onEnd(endRun);
 
-  geddon.onTestStart(function (test) {
+  geddon.onTestStart(test=>{
     timer = Date.now();
     isClient && (geddon._origAfTimeout = koru.afTimeout, koru.afTimeout = koru.nullFunc);
   });
 
-  geddon.onTestEnd(function (test) {
+  geddon.onTestEnd(test=>{
     koru.afTimeout = geddon._origAfTimeout;
     if (test.errors) {
       ++errorCount;
