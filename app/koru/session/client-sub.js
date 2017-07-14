@@ -10,16 +10,16 @@ define(function(require, exports, module) {
   };
 
   function stopSub() {
-    if (this._id === null) return;
+    const {_id} = this;
+    if (_id === null) return;
     debug_subscribe && koru.logger('D', (this.waiting ? '' : '*')+'DebugSub >',
-                                   this._id, this.name, 'STOP');
+                                   _id, this.name, 'STOP');
     const session = this.session;
-    session.sendP(this._id);
+    session.sendP(_id);
     stopped(this);
     if (! this.waiting) return;
 
-    session.state.decPending();
-    this.waiting = false;
+    session.state.decPending(); this.waiting = false;
   }
 
   function stopped(sub) {
@@ -84,19 +84,20 @@ define(function(require, exports, module) {
         this._subscribe.apply(this, this.args);
       } catch(ex) {
         koru.unhandledException(ex);
-      }
-      this._called = true;
-      this.isResubscribe = false;
+      } finally {
+        this._called = true;
+        this.isResubscribe = false;
 
-      killMatches(oldMatches, models);
+        killMatches(oldMatches, models);
+      }
     }
 
     _wait() {
       debug_subscribe && koru.logger('D', (this.waiting ? '*' : '')+'DebugSub >',
                                      this._id, this.name, JSON.stringify(this.args));
       if (this.waiting) return;
-      this.session.state.incPending();
-      this.waiting = true;
+
+      this.session.state.incPending(); this.waiting = true;
     }
 
     _received(code, data) {
@@ -109,8 +110,7 @@ define(function(require, exports, module) {
         this.lastSubscribed = data;
       if (! this.waiting) return;
 
-      this.session.state.decPending();
-      this.waiting = false;
+      this.session.state.decPending(); this.waiting = false;
       if (callback !== null) {
         code === 200 ? callback(null) : callback([code, data]);
         if (! this.repeatResponse)

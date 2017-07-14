@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   const message = require('./message');
 
   const retryCount$ = Symbol(), waitSends$ = Symbol();
+  const heatbeatSentAt$ = Symbol();
 
   const completeBaseSetup = base => {
     base.provide('X', function ([newVersion, hash, dict, dictHash]) {
@@ -39,7 +40,16 @@ define(function(require, exports, module) {
       waitSends.length = 0;
     });
 
-    base.provide('K', function ack() {});
+    base.provide('K', function ack(data) {
+      const now = util.dateNow();
+      const serverTime = +data;
+      const sentAt = this[heatbeatSentAt$];
+
+      if (serverTime < sentAt || serverTime > now) {
+        util.adjustTime(serverTime - Math.floor((sentAt + now)/2));
+      }
+    });
+
     base.provide('L', data => {require([data], () => {})});
     base.provide('U', function unload(data) {
       const [hash, modId] = data.split(':', 2);
@@ -158,7 +168,7 @@ define(function(require, exports, module) {
     }
 
     function connect() {
-      let heartbeatTO, heatbeatTime;
+      let heartbeatTO = null, heatbeatTime = 0;
 
       if (session.ws) return;
       sessState._state = 'startup';
@@ -184,6 +194,7 @@ define(function(require, exports, module) {
         } else {
           heatbeatTime = null;
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
+          session[heatbeatSentAt$] = util.dateNow();
           ws.send('H');
         }
       };
@@ -206,6 +217,7 @@ define(function(require, exports, module) {
         stopReconnTimeout();
         if (heartbeatTO) heartbeatTO();
         heatbeatTime = heartbeatTO = session.ws = ws = session._queueHeatBeat = null;
+        if (event === undefined) return;
         if (event.code) session[retryCount$] != 0 ||
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',
                     event.code, new Date());

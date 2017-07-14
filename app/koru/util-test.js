@@ -805,6 +805,25 @@ define(function (require, exports, module) {
       refute('d' in sub);
     },
 
+    "test adjustTime"() {
+      this.stub(Date, 'now').returns(12345);
+      this.onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+      assert.same(util.timeAdjust, 0);
+      assert.same(util.timeUncertainty, 0);
+
+      assert.same(util.dateNow(), 12345);
+
+      util.adjustTime(4, 3);
+
+      assert.same(util.timeUncertainty, 3);
+      assert.same(util.dateNow(), 12349);
+
+      util.adjustTime(-1);
+
+      assert.same(util.timeUncertainty, 0);
+      assert.same(util.dateNow(), 12348);
+    },
+
     "test withDateNow"() {
       const date = new Date("2013-06-09T23:10:36.855Z");
       const result = util.withDateNow(date, function () {

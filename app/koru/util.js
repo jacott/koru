@@ -17,6 +17,8 @@ define(function(require, exports, module) {
 
   const typeorder = obj => obj === null ? -1 : TYPEORDER[typeof obj];
 
+  let timeAdjust = 0, timeUncertainty = 0;
+
   const slice = Array.prototype.slice;
 
   const egal = Object.is === undefined ? (x, y) => {
@@ -869,8 +871,16 @@ define(function(require, exports, module) {
       }
     },
 
+    adjustTime(value, uncertainty=0) {
+      timeAdjust += value;
+      timeUncertainty = uncertainty;
+    },
+
+    get timeAdjust() {return timeAdjust},
+    get timeUncertainty() {return timeUncertainty},
+
     dateNow() {
-      return util.thread.date || Date.now();
+      return util.thread.date || (Date.now()+timeAdjust);
     },
 
     newDate() {

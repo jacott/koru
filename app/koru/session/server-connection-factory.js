@@ -77,6 +77,9 @@ define(function(require, exports, module) {
     }
 
     onMessage (data, flags) {
+      if (data[0] === 'H')
+        return void this.send(`K${Date.now()}`);
+
       if (this._last) {
         this._last = this._last[1] = [data, null];
         return;

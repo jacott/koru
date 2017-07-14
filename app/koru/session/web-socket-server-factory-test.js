@@ -173,16 +173,6 @@ define(function (require, exports, module) {
       assert.same(sess.version, "dev");
     },
 
-    "test heartbeat response"() {
-      const sess = sut(v.mockSess);
-
-      assert(sess._commands.H);
-
-      sess._commands.H.call({send: v.send = this.stub()}, 'H');
-
-      assert.calledWith(v.send, 'K');
-    },
-
     "onConnection": {
       setUp() {
         v.sess = sut(v.mockSess);

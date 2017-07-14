@@ -19,7 +19,7 @@ define(function (require, exports, module) {
       const base = new SessionBase('foo');
       test.stub(base, 'provide');
       v.sess = sut(base, v.state = stateFactory());
-      v.sess.newWs = function () {return v.ws = {}};
+      v.sess.newWs = ()=> v.ws = {};
       api.module();
     },
 
@@ -77,6 +77,34 @@ define(function (require, exports, module) {
       v.sess.connect();
 
       assert.same(v.sess.state._state, 'startup');
+    },
+
+    "test heartbeat adjust time"() {
+      this.onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+
+      let kFunc;
+      assert.calledWith(v.sess.provide, 'K', TH.match(f => kFunc = f));
+
+      let now = Date.now();
+      this.intercept(util, 'dateNow', ()=>now);
+
+      v.sess.connect();
+      this.onEnd(v.ws.onclose);
+
+      v.ws.send = this.stub();
+
+      v.sess._queueHeatBeat();
+      now += 234;
+      kFunc.call(v.sess, ''+(now - 400));
+
+      assert.equals(util.timeAdjust, -283);
+
+      kFunc.call(v.sess, ''+(now + 800));
+
+      assert.equals(util.timeAdjust, 634);
+
+      kFunc.call(v.sess, ''+(now));
+      assert.equals(util.timeAdjust, 634);
     },
 
     "test state"() {

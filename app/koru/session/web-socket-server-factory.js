@@ -170,9 +170,6 @@ define(function (require, exports, module) {
 
     makeSubject(session.countNotify = {});
 
-    session.provide('H', function (data) {
-      this.send('K');
-    });
     session.provide('M', function (data) {
       const msgId = data[0];
       const func = session._rpcs[data[1]];

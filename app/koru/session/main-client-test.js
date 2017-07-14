@@ -120,7 +120,6 @@ define(function (require, exports, module) {
       },
 
       "test setup"() {
-        assert.calledWith(v.sess.provide, 'K', TH.match.func);
         assert.same(v.sess.ws, v.ws);
 
         assert(v.ws.onmessage);
@@ -133,44 +132,45 @@ define(function (require, exports, module) {
       },
 
       "test heartbeat when idle"() {
-        util.withDateNow(util.dateNow(), () => {
-          var event = {data: v.data = "foo"};
-          v.ws.onmessage(event);
+        let now = Date.now();
+        this.intercept(util, 'dateNow', ()=>now);
 
-          assert.same(v.sess.heartbeatInterval, 20000);
+        var event = {data: v.data = "foo"};
+        v.ws.onmessage(event);
 
-          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
+        assert.same(v.sess.heartbeatInterval, 20000);
 
-          koru._afTimeout.reset();
-          util.thread.date += 15000;
-          v.ws.onmessage(event);
+        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
 
-          refute.called(koru._afTimeout);
+        koru._afTimeout.reset();
+        now += 15000;
+        v.ws.onmessage(event);
 
-          util.thread.date += 7000;
-          v.actualConn._queueHeatBeat();
+        refute.called(koru._afTimeout);
 
-          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 13000);
+        now += 7000;
+        v.actualConn._queueHeatBeat();
 
-          koru._afTimeout.reset();
+        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 13000);
 
-          util.thread.date += 14000;
-          v.actualConn._queueHeatBeat();
+        koru._afTimeout.reset();
 
-          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 10000);
-          koru._afTimeout.reset();
+        now += 14000;
+        v.actualConn._queueHeatBeat();
 
-          assert.calledOnce(v.ws.send);
-          assert.calledWith(v.ws.send, 'H');
+        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 10000);
+        koru._afTimeout.reset();
 
-          util.thread.date += 1000;
+        assert.calledOnce(v.ws.send);
+        assert.calledWith(v.ws.send, 'H');
 
-          v.ws.onmessage(event);
-          refute.called(koru._afTimeout);
+        now += 1000;
 
-          v.actualConn._queueHeatBeat();
-          assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
-        });
+        v.ws.onmessage(event);
+        refute.called(koru._afTimeout);
+
+        v.actualConn._queueHeatBeat();
+        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
       },
 
       "test no response close fails"() {

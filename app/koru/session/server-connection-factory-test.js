@@ -57,6 +57,14 @@ isServer && define(function (require, exports, module) {
         delete session._commands.t;
       },
 
+      "test heartbeat response"() {
+        const now = Date.now();
+        this.intercept(util, 'dateNow', ()=>now);
+
+        v.conn.onMessage('H junk');
+
+        assert.calledWith(v.ws.send, 'K'+now);
+      },
 
       "test waitIdle"() {
         test.spy(IdleCheck, 'inc');
