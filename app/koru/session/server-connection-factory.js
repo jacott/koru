@@ -130,7 +130,7 @@ define(function(require, exports, module) {
       util.thread.batchMessage = null;
     }
 
-    sendBinary (type, args, func) {
+    sendBinary(type, args, func) {
       const bm = util.thread.batchMessage;
       if (this[sideQueue$] && (! bm  || bm.conn !== this)) {
         this[sideQueue$].push([type, args, func]);
@@ -150,15 +150,15 @@ define(function(require, exports, module) {
         this.close();
       }
     }
-    added (name, id, attrs, filter) {
+    added(name, id, attrs, filter) {
       this.sendBinary('A', [name, id, filterAttrs(attrs, filter)]);
     }
 
-    changed (name, id, attrs, filter) {
+    changed(name, id, attrs, filter) {
       this.sendBinary('C', [name, id, filterAttrs(attrs, filter)]);
     }
 
-    removed (name, id) {
+    removed(name, id) {
       this.sendBinary('R', [name, id]);
     }
 
@@ -204,8 +204,8 @@ define(function(require, exports, module) {
 
     const result = {};
 
-    for(let key in attrs) {
-      if (! filter.hasOwnProperty(key))
+    for(const key in attrs) {
+      if (filter[key] === undefined)
         result[key] = attrs[key];
     }
 

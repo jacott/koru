@@ -1,7 +1,8 @@
 define(function(require, exports, module) {
-  const Trace   = require('koru/trace');
-  const koru    = require('../main');
-  const message = require('./message');
+  const {private$} = require('koru/symbols');
+  const Trace      = require('koru/trace');
+  const koru       = require('../main');
+  const message    = require('./message');
 
   const rpcType$ = Symbol();
 
@@ -13,6 +14,7 @@ define(function(require, exports, module) {
       this._id = id;
       this._rpcs = {};
       this._commands = {};
+      this[private$] = {};
     }
 
     defineRpc(name, func) {
@@ -73,6 +75,5 @@ define(function(require, exports, module) {
     }
   };
 
-  exports = new SessionBase('default');
-  return exports;
+  return new SessionBase('default');
 });

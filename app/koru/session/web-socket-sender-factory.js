@@ -1,12 +1,13 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define(function(require, exports, module) {
-  const koru    = require('../main');
-  const util    = require('../util');
-  const message = require('./message');
+  const {private$} = require('koru/symbols');
+  const koru       = require('../main');
+  const util       = require('../util');
+  const message    = require('./message');
 
   const retryCount$ = Symbol(), waitSends$ = Symbol();
-  const heatbeatSentAt$ = Symbol();
+  const heatbeatSentAt$ = Symbol(), heatbeatTime$ = Symbol();
 
   const completeBaseSetup = base => {
     base.provide('X', function ([newVersion, hash, dict, dictHash]) {
@@ -44,10 +45,15 @@ define(function(require, exports, module) {
       const now = util.dateNow();
       const serverTime = +data;
       const sentAt = this[heatbeatSentAt$];
+      const uncertainty = now - sentAt;
 
-      if (serverTime < sentAt || serverTime > now) {
-        util.adjustTime(serverTime - Math.floor((sentAt + now)/2));
-      }
+      this[heatbeatTime$] = util.dateNow() + this.heartbeatInterval;
+
+      util.adjustTime(
+        serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now)/2) : 0,
+        util.timeUncertainty === 0 ? uncertainty
+          : Math.min(uncertainty, (util.timeUncertainty*4 + uncertainty)*0.2)
+      );
     });
 
     base.provide('L', data => {require([data], () => {})});
@@ -168,7 +174,7 @@ define(function(require, exports, module) {
     }
 
     function connect() {
-      let heartbeatTO = null, heatbeatTime = 0;
+      let heartbeatTO = null;
 
       if (session.ws) return;
       sessState._state = 'startup';
@@ -176,9 +182,11 @@ define(function(require, exports, module) {
       let ws = session.ws = session.newWs();
       ws.binaryType = 'arraybuffer';
 
+      session[heatbeatTime$] = 0;
+
       const queueHeatBeat = () => {
         heartbeatTO = null;
-        if (heatbeatTime === null) {
+        if (session[heatbeatTime$] === null) {
           try {
             ws.close();
           } finally {
@@ -189,22 +197,29 @@ define(function(require, exports, module) {
           return;
         }
         const now = util.dateNow();
-        if (now < heatbeatTime) {
-          heartbeatTO = koru._afTimeout(queueHeatBeat, heatbeatTime - now);
+        if (now < session[heatbeatTime$]) {
+          heartbeatTO = koru._afTimeout(queueHeatBeat, session[heatbeatTime$] - now);
         } else {
-          heatbeatTime = null;
+          session[heatbeatTime$] = null;
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval / 2);
           session[heatbeatSentAt$] = util.dateNow();
+
           ws.send('H');
         }
       };
 
-      session._queueHeatBeat = queueHeatBeat;
+      if (session[private$] === undefined)
+        session[private$] = {};
+
+      session[private$].queueHeatBeat = () => {
+        heartbeatTO && heartbeatTO();
+        queueHeatBeat();
+      };
 
       let onMessage = null;
 
       ws.onmessage = event => {
-        heatbeatTime = util.dateNow() + session.heartbeatInterval;
+        session[heatbeatTime$] = util.dateNow() + session.heartbeatInterval;
         if (! heartbeatTO) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
         }
@@ -216,7 +231,7 @@ define(function(require, exports, module) {
       const onclose  = event => {
         stopReconnTimeout();
         if (heartbeatTO) heartbeatTO();
-        heatbeatTime = heartbeatTO = session.ws = ws = session._queueHeatBeat = null;
+        session[heatbeatTime$] = heartbeatTO = session.ws = ws = session._queueHeatBeat = null;
         if (event === undefined) return;
         if (event.code) session[retryCount$] != 0 ||
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',

@@ -21,19 +21,17 @@ define(function(require, exports, module) {
     const subId = data[0];
     const name = data[1];
     const subs = this._subs;
-    if (! subs) return; // we are closed
+    if (subs == null) return; // we are closed
 
     let sub = subs[subId];
 
     this.batchMessages();
     try {
-      if (! name) {
-        if (sub) {
-          stopped(sub);
-        }
+      if (name === undefined) {
+        sub === undefined || stopped(sub);
       } else {
         const func = pubs[name];
-        if (! func) {
+        if (func === undefined) {
           const msg = 'unknown publication: ' + name;
           this.sendBinary('P', [subId, 500, msg]);
           koru.info(msg);

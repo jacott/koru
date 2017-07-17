@@ -53,11 +53,9 @@ isServer && define(function (require, exports, module) {
     "test session closing before subscribe" () {
       v.conn = publishTH.mockConnection();
       v.conn._subs = null; // no subscribes
-      refute.exception(function () {
-        session._onMessage(
-          v.conn,
-          message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
-      });
+      session._onMessage(
+        v.conn,
+        message.encodeMessage('P', ['a123', 'foo', [1,2,3]], session.globalDict));
       refute.called(v.conn.batchMessages);
     },
 

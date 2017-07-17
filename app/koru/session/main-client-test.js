@@ -1,9 +1,10 @@
 define(function (require, exports, module) {
-  const koru                 = require('../main');
-  const util                 = require('../util');
-  const message              = require('./message');
-  const stateFactory         = require('./state').constructor;
-  const TH                   = require('./test-helper');
+  const {private$}   = require('koru/symbols');
+  const koru         = require('../main');
+  const util         = require('../util');
+  const message      = require('./message');
+  const stateFactory = require('./state').constructor;
+  const TH           = require('./test-helper');
 
   const sessionClientFactory = require('./main-client');
   var v, sessState;
@@ -27,6 +28,7 @@ define(function (require, exports, module) {
     },
 
     tearDown() {
+
       sessState._resetPendingCount();
       v = null;
     },
@@ -112,11 +114,15 @@ define(function (require, exports, module) {
             var event = {data: v.data = "foo"};
             v.ws.onmessage(event);
             util.thread.date += 21000;
-            v.actualConn._queueHeatBeat();
+            v.actualConn[private$].queueHeatBeat();
 
             return util.thread.date;
           });
         };
+      },
+
+      tearDown() {
+        util.adjustTime(-util.timeAdjust);
       },
 
       "test setup"() {
@@ -140,7 +146,7 @@ define(function (require, exports, module) {
 
         assert.same(v.sess.heartbeatInterval, 20000);
 
-        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
+        assert.calledWith(koru._afTimeout, TH.match.func, 20000);
 
         koru._afTimeout.reset();
         now += 15000;
@@ -149,16 +155,14 @@ define(function (require, exports, module) {
         refute.called(koru._afTimeout);
 
         now += 7000;
-        v.actualConn._queueHeatBeat();
+        v.actualConn[private$].queueHeatBeat();
 
-        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 13000);
-
-        koru._afTimeout.reset();
+        assert.equals(koru._afTimeout.lastCall.args, [TH.match.func, 13000]);
 
         now += 14000;
-        v.actualConn._queueHeatBeat();
+        koru._afTimeout.lastCall.yield();
 
-        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 10000);
+        assert.calledWith(koru._afTimeout, TH.match.func, 10000);
         koru._afTimeout.reset();
 
         assert.calledOnce(v.ws.send);
@@ -169,8 +173,8 @@ define(function (require, exports, module) {
         v.ws.onmessage(event);
         refute.called(koru._afTimeout);
 
-        v.actualConn._queueHeatBeat();
-        assert.calledWith(koru._afTimeout, v.actualConn._queueHeatBeat, 20000);
+        v.actualConn[private$].queueHeatBeat();
+        assert.calledWith(koru._afTimeout, TH.match.func, 20000);
       },
 
       "test no response close fails"() {
@@ -180,7 +184,7 @@ define(function (require, exports, module) {
         v.ws.close = () => {throw new Error("close fail")};
         this.spy(v.ws, 'onclose');
         assert.exception(() => {
-          v.actualConn._queueHeatBeat();
+          v.actualConn[private$].queueHeatBeat();
         }, "Error", "close fail");
 
         assert.called(v.ws.onclose);
@@ -194,7 +198,7 @@ define(function (require, exports, module) {
         };
         this.spy(v.ws, 'close');
         this.spy(v.ws, 'onclose');
-        v.actualConn._queueHeatBeat();
+        v.actualConn[private$].queueHeatBeat();
 
         assert.calledOnce(v.ws.close);
         assert.calledOnce(v.ws.onclose);

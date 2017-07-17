@@ -2,15 +2,17 @@ define(function (require, exports, module) {
   /**
    * Build WebSocket clients (senders).
    **/
-  var test, v;
   const koru         = require('koru');
   const message      = require('koru/session/message');
+  const {private$}   = require('koru/symbols');
   const api          = require('koru/test/api');
   const util         = require('koru/util');
   const SessionBase  = require('./base').constructor;
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
-  const sut          = require('./web-socket-sender-factory');
+
+  const sut = require('./web-socket-sender-factory');
+  var test, v;
 
   TH.testCase(module, {
     setUp () {
@@ -93,18 +95,30 @@ define(function (require, exports, module) {
 
       v.ws.send = this.stub();
 
-      v.sess._queueHeatBeat();
+      now += 120000;
+      v.sess[private$].queueHeatBeat();
       now += 234;
       kFunc.call(v.sess, ''+(now - 400));
 
       assert.equals(util.timeAdjust, -283);
+      assert.near(util.timeUncertainty, 234);
+      util.adjustTime(16, 40);
 
+      now += 120000;
+      v.sess[private$].queueHeatBeat();
+      now += 105;
       kFunc.call(v.sess, ''+(now + 800));
 
-      assert.equals(util.timeAdjust, 634);
+      assert.equals(util.timeAdjust, 586);
+      assert.near(util.timeUncertainty, 53);
 
+
+      now += 120000;
+      v.sess[private$].queueHeatBeat();
+      now += 120;
       kFunc.call(v.sess, ''+(now));
-      assert.equals(util.timeAdjust, 634);
+      assert.equals(util.timeAdjust, 586);
+      assert.near(util.timeUncertainty, 66);
     },
 
     "test state"() {
