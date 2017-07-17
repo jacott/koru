@@ -131,7 +131,7 @@ define(function(require, exports, module) {
         },
         reload() {
           getIdx();
-          idx = indexes[dbId] = {};
+          idx = indexes[dbId] = leadLen === -1 ? new BTree(btCompare) : emptyIdx();
           const docs = model.docs;
           for(const id in docs) {
             onChange(docs[id]);
@@ -151,7 +151,9 @@ define(function(require, exports, module) {
 
         dbId = model.dbId;
         idx = indexes[dbId];
-        if (idx === undefined) idx = indexes[dbId] = emptyIdx();
+
+        if (idx === undefined) idx = indexes[dbId] =
+          leadLen === -1 ? new BTree(btCompare) : emptyIdx();
 
         return idx;
       }
@@ -164,39 +166,61 @@ define(function(require, exports, module) {
 
         if (doc != null) {
           if (old != null) {
-            let i = 0, tm;
-            for(; i < len; ++i) {
-              const field = fields[i];
-              if (doc[field] !== old[field]) {
-                // make a temporary old version
-                deleteEntry(idx, tm = tmpModel(doc, old), 0);
-                break;
+            if (leadLen === -1) {
+              const tm = tmpModel(doc, old);
+              const n = idx.nodeFrom(tm);
+
+              if (n === null || btCompare(tm, n.value) !== 0) {
+                idx.add(new BTValue(doc));
+              } else {
+                idx.deleteNode(n);
+                n.value = new BTValue(doc);
+                idx.addNode(n);
+              }
+              return;
+            } else {
+              let i = 0, tm;
+              for(; i < len; ++i) {
+                const field = fields[i];
+                if (doc[field] !== old[field]) {
+                  // make a temporary old version
+                  deleteEntry(idx, tm = tmpModel(doc, old), 0);
+                  break;
+                }
+              }
+              if (i === len && tm !== undefined) {
+                tm = tmpModel(doc, old);
+                if (btCompare !== null && btCompare(doc, tm) !== 0) {
+                  deleteEntry(idx, new BTValue(tm), 0);
+                } else
+                  return;
               }
             }
-            if (i === len && tm !== undefined) {
-              tm = tmpModel(doc, old);
-              if (btCompare !== null && btCompare(doc, tm) !== 0) {
-                deleteEntry(idx, new BTValue(tm), 0);
-              } else
-                return;
+          }
+          if (leadLen === -1) {
+            idx.add(new BTValue(doc));
+          } else {
+            let tidx = idx;
+            for(let i = 0; i < leadLen; ++i) {
+              const value = doc[fields[i]];
+              if (value === undefined) return;
+              tidx = tidx[value] === undefined ? (tidx[value] = {}) : tidx[value];
+            }
+            const value = doc[fields[leadLen]];
+            if (btCompare !== null) {
+              const tree = tidx[value] === undefined ?
+                      (tidx[value] = new BTree(btCompare)) : tidx[value];
+              tree.add(new BTValue(doc));
+            } else {
+              tidx[value] = doc._id;
             }
           }
-          let tidx = idx;
-          for(let i = 0; i < leadLen; ++i) {
-            const value = doc[fields[i]];
-            if (value === undefined) return;
-            tidx = tidx[value] === undefined ? (tidx[value] = {}) : tidx[value];
-          }
-          const value = doc[fields[leadLen]];
-          if (btCompare !== null) {
-            const tree = tidx[value] === undefined ?
-                    (tidx[value] = new BTree(btCompare)) : tidx[value];
-            tree.add(new BTValue(doc));
-          } else {
-            tidx[value] = doc._id;
-          }
         } else if (old != null) {
-          deleteEntry(idx, old, 0);
+          if (leadLen === -1) {
+            idx.delete(old);
+          } else {
+            deleteEntry(idx, old, 0);
+          }
         }
       }
 
@@ -206,7 +230,7 @@ define(function(require, exports, module) {
         const entry = tidx[value];
         if (count === leadLen) {
           if (btCompare !== null && entry !== undefined) {
-             entry.delete(doc);
+            entry.delete(doc);
             if (entry.size !== 0)
               return false;
           } else if (entry !== doc._id) return false;

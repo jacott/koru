@@ -52,6 +52,36 @@ define(function (require, exports, module) {
         v.sortedIndex = v.TestModel.addIndex('id2', -1, 'points', 'updatedAt');
       },
 
+      "test fully sorted"() {
+        v.sortedIndex = v.TestModel.addIndex(-1, 'points', 'updatedAt');
+
+        const tree = v.sortedIndex.entries;
+        assert(tree instanceof BTree);
+        const a4 = v.TestModel.create({
+          _id: 'a4', id1: '1', id2: '4', points: 5, updatedAt: new Date(2017, 1, 3)});
+        assert.equals(
+          Array.from(tree.cursor({from: {points: 5, updatedAt: new Date(2017, 1, 5)}})),
+          [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+           {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+           {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
+
+        a4.$update({points: 7});
+
+        assert.equals(
+          Array.from(tree.cursor({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [
+            {points: 7, updatedAt: a4.updatedAt, _id: 'a4'},
+            {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
+          ]);
+
+        a4.$remove();
+
+        assert.equals(
+          Array.from(tree.cursor({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})),
+          [{points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
+           {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'}]);
+      },
+
       "test add"() {
         const tree = v.sortedIndex.lookup({id2: '4'}).container;
         assert(tree instanceof BTree);
