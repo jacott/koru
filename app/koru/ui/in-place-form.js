@@ -186,7 +186,9 @@ define(function(require, exports, module) {
       template.$events({
         'click .ui-editable'(event) {
           Dom.stopEvent();
-          var target = this;
+          const range = Dom.getRange();
+          if (range !== null && ! range.collapsed) return;
+          const target = this;
           if (Dom.matches(target, '.readOnly *')) return;
           var ctx = Dom.ctx(target);
           ctx.options.value = (ctx.options.doc = ctx.data.doc)[ctx.options.name];

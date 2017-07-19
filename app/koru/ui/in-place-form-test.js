@@ -91,6 +91,23 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test click with selection does nothing"() {
+      sut.autoRegister(v.Ipf);
+      var doc = {autoShowEdit: 'bar', $reload: this.stub()};
+      document.body.appendChild(v.Ipf.$autoRender(doc));
+
+      assert.dom('#InPlaceFormTest', function () {
+        const range = document.createRange();
+        Dom.setRange(range);
+        const editable = Dom('[name=autoShowEdit].ui-editable.showTpl');
+        TH.click(editable);
+        TH.click('form [name=cancel]');
+        Dom.selectElm(editable);
+        TH.click(editable);
+        refute.dom('form');
+      });
+    },
+
     "test apply event"() {
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(v.clickStub = function (arg) {
