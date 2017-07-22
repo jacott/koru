@@ -46,7 +46,7 @@ isServer && define(function (require, exports, module) {
       v.sess.versionHash = 'h1';
 
       TH.noInfo();
-      v.func(v.ws);
+      v.func(v.ws, v.ws._upgradeReq);
 
       assert.calledWith(v.ws.send, TH.match(arg => {
         v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);

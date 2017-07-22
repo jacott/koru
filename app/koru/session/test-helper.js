@@ -7,14 +7,14 @@ define(function(require, exports, module) {
 
   return TH.util.protoCopy(TH, {
     sessionConnect(ws) {
-      session.onConnection(ws);
+      session.onConnection(ws, ws._upgradeReq);
       return session.conns[session._sessCounter.toString(36)];
     },
 
     mockWs() {
       const {test} = geddon;
       return {
-        upgradeReq: {socket: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`},
+        _upgradeReq: {connection: {}, headers: {}, url: `/ws/${koru.PROTOCOL_VERSION}/dev/`},
         on: test.stub(),
         send: test.stub(),
         close: test.stub(),

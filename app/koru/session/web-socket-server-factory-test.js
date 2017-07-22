@@ -188,9 +188,9 @@ define(function (require, exports, module) {
       },
 
       "test wrong protocol received"() {
-        v.ws.upgradeReq.url = '/4/dev/';
+        v.ws._upgradeReq.url = '/4/dev/';
 
-        v.sess.onConnection(v.ws);
+        v.sess.onConnection(v.ws, v.ws._upgradeReq);
 
         assert.calledOnceWith(v.ws.send, 'Lforce-reload');
       },
@@ -199,15 +199,15 @@ define(function (require, exports, module) {
         setUp() {
           v.sess.addToDict('Helium');
           v.sess.addToDict('Tungsten');
-          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h123';
           v.sess.version = 'v1.2.2';
           TH.noInfo();
         },
 
         "test wrong dictHash received"() {
-          v.ws.upgradeReq.url += '?dict=abcdf23';
-          v.sess.onConnection(v.ws);
+          v.ws._upgradeReq.url += '?dict=abcdf23';
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent([
             '', 'h123',
             TH.match(dict=>v.dict=dict),
@@ -219,16 +219,16 @@ define(function (require, exports, module) {
         },
 
         "test correct dictHash received"() {
-          v.ws.upgradeReq.url +=
+          v.ws._upgradeReq.url +=
             '?dict=0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0';
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent(['', 'h123', null, undefined]);
         },
       },
 
       "compareVersion": {
         setUp() {
-          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h456';
           v.sess.version = 'v1.2.3';
           TH.noInfo();
@@ -237,14 +237,14 @@ define(function (require, exports, module) {
         "test info"() {
           koru.info.restore();
           this.stub(koru, 'info');
-          v.ws.upgradeReq.socket = {remoteAddress: '127.0.0.1', remotePort: '12345'};
-          v.ws.upgradeReq.headers = {
+          v.ws._upgradeReq.connection = {remoteAddress: '127.0.0.1', remotePort: '12345'};
+          v.ws._upgradeReq.headers = {
             'user-agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "+
               "(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36",
             'x-real-ip': '11.22.33.44',
           };
 
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
 
           assert.calledWith(
             koru.info,
@@ -255,7 +255,7 @@ define(function (require, exports, module) {
           this.stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = this.stub().returns(1);
 
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
 
           refute.called(util.compareVersion);
           assert.calledWith(compareVersion, 'v1.2.2', 'h123');
@@ -268,7 +268,7 @@ define(function (require, exports, module) {
           this.stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = this.stub().returns(-1);
 
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
 
           refute.called(util.compareVersion);
           assert.called(compareVersion);
@@ -278,29 +278,29 @@ define(function (require, exports, module) {
 
         "test compareVersion"() {
           /** client < server **/
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
 
           /** client > server **/
           v.sess.version = 'v1.2.1';
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           refute.called(v.ws.send);
 
           /** client == server **/
           v.sess.version = 'v1.2.2';
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test no version,hash"() {
-          v.ws.upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
-          v.sess.onConnection(v.ws);
+          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test old version but good hash"() {
           v.sess.versionHash = 'h123';
-          v.sess.onConnection(v.ws);
+          v.sess.onConnection(v.ws, v.ws._upgradeReq);
           v.assertSent(['', 'h123', TH.match.any, TH.match.string]);
         },
       },    },

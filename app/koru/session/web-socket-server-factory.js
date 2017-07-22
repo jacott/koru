@@ -39,9 +39,8 @@ define(function (require, exports, module) {
       message.addToDict(_preloadDict, word);
     };
 
-    const onConnection = ws => {
-      const ugr = ws.upgradeReq;
-      const _remoteAddress = ugr.socket.remoteAddress;
+    const onConnection = (ws, ugr) => {
+      const _remoteAddress = ugr.connection.remoteAddress;
       const remoteAddress = /127\.0\.0\.1/.test(_remoteAddress) ?
               ugr.headers['x-real-ip'] || _remoteAddress : _remoteAddress;
 
@@ -80,7 +79,7 @@ define(function (require, exports, module) {
 
         ++session.totalSessions;
         const sessId = (++sessCounter).toString(36);
-        const conn = session.conns[sessId] = new Connection(ws, sessId, () => {
+        const conn = session.conns[sessId] = new Connection(ws, ugr, sessId, () => {
           ws.close();
           const conn = session.conns[sessId];
           if (conn) {
@@ -92,7 +91,7 @@ define(function (require, exports, module) {
         });
         conn.engine = util.browserVersion(ugr.headers['user-agent']||'');
         conn.remoteAddress = remoteAddress;
-        conn.remotePort = ugr.socket.remotePort;
+        conn.remotePort = ugr.connection.remotePort;
 
         const onMessage = conn.onMessage.bind(conn);
         ws.on('message', wrapOnMessage === undefined ? onMessage : wrapOnMessage(onMessage));
@@ -108,7 +107,7 @@ define(function (require, exports, module) {
       };
 
       if (session.connectionIntercept)
-        session.connectionIntercept(newSession, ws, remoteAddress);
+        session.connectionIntercept(newSession, ws, ugr, remoteAddress);
       else {
         newSession();
       }

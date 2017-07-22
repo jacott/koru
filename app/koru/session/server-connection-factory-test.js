@@ -18,7 +18,7 @@ isServer && define(function (require, exports, module) {
       v = {};
       v.conn = new Connection(v.ws = {
         send: test.stub(), close: test.stub(), on: test.stub(),
-      }, 123, v.sessClose = test.stub());
+      }, {}, 123, v.sessClose = test.stub());
       test.stub(v.conn, 'sendBinary');
       test.intercept(session, 'execWrapper', function (func, conn) {
         var thread = util.thread;
@@ -153,7 +153,7 @@ isServer && define(function (require, exports, module) {
       TH.stubProperty(util, 'thread', {get() {return v.thread}});
       v.conn2 = new Connection(v.ws = {
         send: test.stub(), close: test.stub(), on: test.stub(),
-      }, 456, v.sessClose = test.stub());
+      }, {}, 456, v.sessClose = test.stub());
 
       const bm2 = v.conn2.batchMessages();
       this.spy(bm2, 'batch');

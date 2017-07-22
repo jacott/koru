@@ -47,13 +47,16 @@ define(function(require, exports, module) {
       const sentAt = this[heatbeatSentAt$];
       const uncertainty = now - sentAt;
 
+
       this[heatbeatTime$] = util.dateNow() + this.heartbeatInterval;
 
-      util.adjustTime(
-        serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now)/2) : 0,
-        util.timeUncertainty === 0 ? uncertainty
-          : Math.min(uncertainty, (util.timeUncertainty*4 + uncertainty)*0.2)
-      );
+      if (serverTime > util.DAY) {
+        util.adjustTime(
+          serverTime < sentAt || serverTime > now ? serverTime - Math.floor((sentAt + now)/2) : 0,
+          util.timeUncertainty === 0 ? uncertainty
+            : Math.min(uncertainty, (util.timeUncertainty*4 + uncertainty)*0.2)
+        );
+      }
     });
 
     base.provide('L', data => {require([data], () => {})});

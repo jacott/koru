@@ -20,7 +20,7 @@ define(function(require, exports, module) {
     mockConnection (sessId, session=this.mockSession()) {
       const test = TH.test;
       const conn = new (SCFactory(session))(
-        {send: test.stub(), on: test.stub()}, sessId || 's123', function () {}
+        {send: test.stub(), on: test.stub()}, {}, sessId || 's123', function () {}
       );
       test.spy(conn, 'batchMessages');
       test.spy(conn, 'releaseMessages');

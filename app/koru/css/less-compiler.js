@@ -29,7 +29,7 @@ define(function(require, exports, module) {
     less.render(src, {
       syncImport: true,
       paths: [dir], // for @import
-      filename: '/'+path.substring(topLen),
+      filename: path.substring(topLen - 1),
       sourceMap: {
         sourceMapFileInline: true,
       },
@@ -44,12 +44,12 @@ define(function(require, exports, module) {
         })+"\n");
         future.return(null);
       } else {
-        postcss.process(output.css).then(function (result) {
-          result.warnings().forEach(function (warn) {
+        postcss.process(output.css).then(result => {
+          result.warnings().forEach(warn=> {
             console.warn(warn.toString());
           });
           future.return(result.css);
-        });
+        }, err => {future.throw(err)});
       }
     });
 

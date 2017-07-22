@@ -16,8 +16,8 @@ define(function(require, exports, module) {
         koru.logger('INFO', this.sessId, this.engine, data);
     });
 
-    session.connectionIntercept = function (newSession, ws, remoteAddress) {
-      if (/127\.0\.0\.1/.test(remoteAddress) && ws.upgradeReq.url === '/rc') {
+    session.connectionIntercept = function (newSession, ws, ugr, remoteAddress) {
+      if (/127\.0\.0\.1/.test(remoteAddress) && ugr.url === '/rc') {
         session.remoteControl && session.remoteControl(ws);
         return;
       }

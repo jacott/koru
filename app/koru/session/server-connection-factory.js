@@ -11,8 +11,9 @@ define(function(require, exports, module) {
   const sideQueue$ = Symbol();
 
   class Base {
-    constructor (ws, sessId, close) {
+    constructor (ws, request, sessId, close) {
       this.ws = ws;
+      this.request = request;
       this.sessId = sessId;
       this._subs = Object.create(null);
       this._onClose = null;
@@ -190,8 +191,8 @@ define(function(require, exports, module) {
 
   function serverConnectionFactory (session) {
     class ServerConnection extends Base {
-      constructor (ws, sessId, close) {
-        super(ws, sessId, close);
+      constructor (ws, request, sessId, close) {
+        super(ws, request, sessId, close);
         this._session = session;
       }
     }
