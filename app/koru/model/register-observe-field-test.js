@@ -24,6 +24,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test values must be an array"() {
+      v.TestModel.registerObserveField('toys');
+      assert.exception(()=>{
+        v.TestModel.observeToys('robot', this.stub());
+      }, {message: 'values must be an array'});
+    },
+
     "test multi dbs"() {
       v.TestModel.registerObserveField('toys');
       var origId = v.dbId = dbBroker.dbId;

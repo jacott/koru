@@ -20,6 +20,9 @@ define(function(require, exports, module) {
       model['observe'+ util.capitalize(field)] = (values, callback) => {
         const obsSet = Object.create(null);
         const options = [++key, callback];
+        if (values.constructor !== Array)
+          throw new Error('values must be an array');
+
         for(let i = 0;i < values.length;++i) {
           const ob = observeValue(values[i], options);
           obsSet[ob.value]=ob;
