@@ -4,6 +4,17 @@ define(function (require, exports, module) {
   const sut = require('./changes');
 
   TH.testCase(module, {
+    "test simple changes"() {
+      const attrs = {bar: 1, foo: 2, fuz: 3, fiz: 4};
+      const changes = {foo: null, fuz: undefined, fiz: 5, nit: 6};
+      sut.applyOne(attrs, 'foo', changes);
+      sut.applyOne(attrs, 'fuz', changes);
+      sut.applyOne(attrs, 'fiz', changes);
+      sut.applyOne(attrs, 'nit', changes);
+      assert.equals(attrs, {bar: 1, fiz: 5, nit: 6});
+      assert.equals(changes, {foo: 2, fuz: 3, fiz: 4, nit: TH.match.null});
+    },
+
     "test with non numeric array index"() {
       // say "foo.bar.baz" instead of "foo.0.baz"
       assert.exception(() => {
@@ -105,6 +116,10 @@ define(function (require, exports, module) {
 
       assert.equals(orig, {a: ["x"]});
       assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
+    },
+
+    "version 2": {
+
     },
   });
 });

@@ -12,9 +12,9 @@ define(function(require, exports, module) {
       if (nv === ov || deepEqual(nv, ov))
         delete changes[key];
       else
-        changes[key] = ov;
+        changes[key] = ov === undefined ? null : ov;
 
-      if (nv === undefined)
+      if (nv == null)
         delete attrs[key];
       else
         attrs[key] = nv;
