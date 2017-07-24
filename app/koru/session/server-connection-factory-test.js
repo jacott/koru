@@ -59,7 +59,7 @@ isServer && define(function (require, exports, module) {
 
       "test heartbeat response"() {
         const now = Date.now();
-        this.intercept(util, 'dateNow', ()=>now);
+        this.intercept(Date, 'now', ()=>now);
 
         v.conn.onMessage('H junk');
 

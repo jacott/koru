@@ -1,18 +1,9 @@
 define(function (require, exports, module) {
-  const TH   = require('./test');
+  const TH = require('./test');
 
-  const sut  = require('./changes');
-  var v;
+  const sut = require('./changes');
 
   TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
-
-    tearDown() {
-      v = null;
-    },
-
     "test with non numeric array index"() {
       // say "foo.bar.baz" instead of "foo.0.baz"
       assert.exception(() => {
@@ -115,7 +106,5 @@ define(function (require, exports, module) {
       assert.equals(orig, {a: ["x"]});
       assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
     },
-
-
   });
 });
