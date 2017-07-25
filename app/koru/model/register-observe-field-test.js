@@ -95,13 +95,16 @@ define(function (require, exports, module) {
       },
 
       "test add/remove to observered field"() {
-        v.doc.$onThis.addItem('toys', 'woody');
+        v.doc.$onThis.addItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$-1': 'woody'});
+        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {$partial: {
+          toys: ['$remove', ['woody']]}});
 
-        v.doc.$onThis.removeItem('toys', 'woody');
+        v.callback.reset();
+        v.doc.$onThis.removeItems('toys', ['woody']);
 
-        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {'toys.$+1': 'woody'});
+        assert.calledWith(v.callback, TH.matchModel(v.doc.$reload()), {$partial: {
+          toys: ['$add', ['woody']]}});
       },
 
       "test updating other field"() {

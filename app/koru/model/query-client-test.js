@@ -127,7 +127,7 @@ define(function (require, exports, module) {
       _session.ws = {send: this.stub()};
       clientRpcBase(_session);
       _session.defineRpc('fooUpdate', function () {
-        new _Query(v.TestModel).onId('foo2').update('nested.b', 3);
+        new _Query(v.TestModel).onId('foo2').update({$partial: {nested: ['b', 3]}});
       });
 
       const _QueryClient = sut.__init__(_session);
@@ -140,7 +140,7 @@ define(function (require, exports, module) {
       _Query.insertFromServer(v.TestModel, 'foo2', {nested: {a: 1, b: 2}});
       const query = new _Query(v.TestModel).onId('foo2');
       query.isFromServer = true;
-      query.update({'nested.b': 3});
+      query.update({$partial: {nested: ['b', 3]}});
 
       _sessState.decPending();
       assert.equals(v.TestModel.docs.foo2.nested, {a: 1, b: 3});
@@ -187,9 +187,9 @@ define(function (require, exports, module) {
 
       sessState.incPending();
 
-      v.foo.$onThis.addItem('ary','b');
+      v.foo.$onThis.update({$partial: {ary: ['$add', ['b']]}});
 
-      v.TestModel.serverQuery.onId(v.foo._id).update({'ary.1': 'b'});
+      v.TestModel.serverQuery.onId(v.foo._id).update({$partial: {ary: ['$add', ['b']]}});
 
       assert.equals(v.foo.attributes.ary, ['a', 'b']);
 
@@ -200,11 +200,11 @@ define(function (require, exports, module) {
 
     "test add item on undefined"() {
       sessState.incPending();
-      v.foo.$onThis.addItem('ary','b');
+      v.foo.$onThis.update({$partial: {ary: ['$add', ['b']]}});
 
       assert.equals(v.foo.attributes.ary, ['b']);
 
-      v.TestModel.serverQuery.onId(v.foo._id).update({'ary.0': 'b'});
+      v.TestModel.serverQuery.onId(v.foo._id).update({$partial: {ary: ['$add', ['b']]}});
 
       sessState.decPending();
 
@@ -263,6 +263,27 @@ define(function (require, exports, module) {
         sessState.incPending();
       },
 
+      "test multiple partial simulations"() {
+        v.foo.$updatePartial('name', ['$append', '.one']);
+        v.foo.$updatePartial('name', ['$append', '.two']);
+
+        assert.same(v.foo.name, 'foo.one.two');
+
+        this.onEnd(v.TestModel.onChange(v.st = this.stub()));
+
+        v.TestModel.serverQuery.onId(v.foo._id).updatePartial('name', ['$append', '.one']);
+
+        assert.calledOnceWith(v.st, v.foo, {name: 'foo.one.two'});
+        v.st.reset();
+
+        assert.same(v.foo.name, 'foo.one');
+
+        sessState.decPending();
+
+        assert.same(v.foo.name, 'foo.one');
+        refute.called(v.st);
+      },
+
       "test client only updates"() {
         v.TestModel.query.update({name: 'bar'});
 
@@ -319,7 +340,9 @@ define(function (require, exports, module) {
       },
 
       "test nested structures"() {
-        v.TestModel.query.update({"nested.0.arg.0": 'f'});
+        v.TestModel.query.update({$partial: {nested: ["0.arg.0", 'f']}});
+
+        assert.equals(v.foo.nested[0].arg, ['f']);
 
         const tmchanges = Model._databases.foo.TestModel.simDocs;
 
@@ -329,8 +352,8 @@ define(function (require, exports, module) {
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['m']}]);
 
-        v.TestModel.serverQuery.onId(v.foo._id).update({"nested.0.ary.0": 'M'});
-        v.TestModel.serverQuery.onId(v.foo._id).update({"nested.0.ary.1": 'f'});
+        v.TestModel.serverQuery.onId(v.foo._id).update({$partial: {nested: ["0.ary.0", 'M']}});
+        v.TestModel.serverQuery.onId(v.foo._id).update({$partial: {nested: ["0.ary.1", 'f']}});
 
         assert.equals(tmchanges[v.foo._id].nested, [{ary: ['M', 'f']}]);
 
@@ -357,7 +380,6 @@ define(function (require, exports, module) {
 
         assert.same(bar.name, 'baz');
         assert.same(bar.age, 7);
-
 
         refute.called(v.change);
       },

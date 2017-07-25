@@ -446,20 +446,20 @@ isServer && define(function (require, exports, module) {
 
       "test can't add field"() {
         assert.exception(function () {
-          v.foo.update({name: 'abc'}, {$set: {foo: 'eee'}});
+          v.foo.update({name: 'abc'}, {foo: 'eee'});
         }, {sqlState: '42703'});
       },
 
       "test nested transactions"() {
         try {
           v.foo.transaction(function (tran) {
-            v.foo.update({_id: '123'}, {$set: {name: 'eee'}});
+            v.foo.updateById('123', {name: 'eee'});
             tran.onAbort(v.onAbort = test.stub());
             tran.onAbort(v.onAbort2 = test.stub());
             try {
               v.foo.transaction(function (tran) {
                 tran.onAbort(v.onAbort3 = test.stub());
-                v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+                v.foo.updateById('123', {name: 'fff'});
                 throw 'abort';
               });
             } catch(ex) {
@@ -485,7 +485,7 @@ isServer && define(function (require, exports, module) {
         v.foo.transaction(function (tran) {
           tran.onAbort(v.onAbort = test.stub());
           v.foo.transaction(function (tran) {
-            v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+            v.foo.updateById('123', {name: 'fff'});
           });
           assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
           throw 'abort';
@@ -498,7 +498,7 @@ isServer && define(function (require, exports, module) {
         v.foo.transaction(function (tran) {
           tran.onAbort(v.onAbort = test.stub());
           v.foo.transaction(function (tran) {
-            v.foo.update({_id: '123'}, {$set: {name: 'fff'}});
+            v.foo.updateById('123', {name: 'fff'});
           });
         });
         assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
@@ -511,9 +511,9 @@ isServer && define(function (require, exports, module) {
           age: {type: 'number', default: 10},
           createdAt: 'timestamp',
         };
-        v.foo.update({name: 'abc'}, {$set: {name: 'eee'}});
+        v.foo.update({name: 'abc'}, {name: 'eee'});
         assert.equals(v.foo.query({name: 'eee'}), [{_id: "123", name: "eee", age: 10}]);
-        v.foo.update({_id: '123'}, {$set: {createdAt: v.createdAt = new Date()}});
+        v.foo.updateById('123', {createdAt: v.createdAt = new Date()});
         assert.equals(v.foo.findOne({_id: "123"}).createdAt, v.createdAt);
       },
     },
@@ -534,7 +534,7 @@ isServer && define(function (require, exports, module) {
       "test transaction rollback"() {
         try {
           v.foo.transaction(function () {
-            assert.same(v.foo.update({_id: '123'}, {$set: {foo: 'eee'}}), 1);
+            assert.same(v.foo.updateById('123', {foo: 'eee'}), 1);
             assert.equals(v.foo.findOne({_id: '123'}).foo, 'eee');
             throw 'abort';
           });
@@ -549,11 +549,16 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.foo.query({}), [{_id: "123", name: "abc"}, {_id: "456", name: "abc"}]);
       },
 
+      "test updateById"() {
+        assert.same(v.foo.updateById('123', {name: 'zzz', age: 7}), 1);
+        assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz", age: 7}]);
+      },
+
       "test update"() {
-        assert.same(v.foo.update({name: 'abc'}, {$set: {name: 'def'}}), 2);
+        assert.same(v.foo.update({name: 'abc'}, {name: 'def'}), 2);
 
         assert.equals(v.foo.query({name: 'def'}), [{_id: "123", name: "def"}, {_id: "456", name: "def"}]);
-        assert.same(v.foo.update({_id: '123'}, {$set: {name: 'zzz', age: 7}}), 1);
+        assert.same(v.foo.update({_id: '123'}, {name: 'zzz', age: 7}), 1);
 
         assert.equals(v.foo.query({_id: "123"}), [{_id: "123", name: "zzz", age: 7}]);
         assert.equals(v.foo.findOne({_id: "123"}), {_id: "123", name: "zzz", age: 7});

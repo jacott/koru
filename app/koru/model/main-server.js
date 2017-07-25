@@ -123,7 +123,7 @@ define(function(require, exports, module) {
         return this;
       };
 
-      ModelEnv.save = function (doc, callback) {
+      ModelEnv.save = (doc, callback)=>{
         if (util.isObjEmpty(doc.changes)) return doc;
         const model = doc.constructor;
         const _id = doc._id;
@@ -140,17 +140,10 @@ define(function(require, exports, module) {
           changes = Object.assign(doc.attributes, changes);
           _support.performInsert(doc);
         } else {
-          const copy = util.deepCopy(changes);
           _support.performUpdate(doc, changes);
-
-          // This a bit of a hack; should we bother?
-          Changes.applyAll(doc.attributes, copy);
+          Object.assign(doc.attributes, Changes.topLevelChanges(doc.attributes, changes));
         }
         if (callback) callback(doc);
-      };
-
-      ModelEnv.put = function (doc, updates) {
-        session.rpc('put', doc.constructor.modelName, doc._id, updates);
       };
 
       const ID_ERROR = {baseName: '_id'};
@@ -172,11 +165,16 @@ define(function(require, exports, module) {
             doc = new model();
           }
 
-          doc.changes = changes;
+          const topLevel = changes.$partial && Changes.topLevelChanges(doc.attributes, changes);
+          doc.changes = topLevel === undefined ? changes : util.deepCopy(topLevel);
           Val.allowAccessIf(doc.authorize);
           doc.authorize(userId);
           doc.$assertValid();
-          doc.$save();
+          if (topLevel !== undefined) {
+            Changes.updateCommands(changes, doc.changes, topLevel);
+            doc.changes = changes;
+          }
+          doc.$save('force');
         });
       });
 

@@ -277,6 +277,15 @@ define(function(require, exports, module) {
       return a > b ? 1 : -1;
     },
 
+    elemMatch(a, b) {
+      if (a === null || typeof a !== 'object')
+        return a === b;
+      for (const key in a) {
+        if (! deepEqual(a[key], b[key])) return false;
+      }
+      return true;
+    },
+
     invert(map, func) {
       const result = {};
       for(const prop in map) {

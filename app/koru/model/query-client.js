@@ -15,6 +15,8 @@ define(function(require, exports, module) {
     return o;
   }
 
+  const EMPTY_OBJ = {};
+
   function Constructor(session) {
     return function(Query, condition, notifyAC$) {
       let syncOb, stateOb;
@@ -46,9 +48,9 @@ define(function(require, exports, module) {
                   const newDoc = doc === undefined;
                   if (newDoc)
                     doc = modelDocs[id] = new model({_id: id});
-                  Changes.applyAll(doc.attributes, fields);
-                  for(const _ in fields) {
-                    notify(model, doc, newDoc ? null : fields, true);
+                  const undo = Changes.applyAll(doc.attributes, fields);
+                  for(const _ in undo) {
+                    notify(model, doc, newDoc ? null : undo, true);
                     break;
                   }
                 }
@@ -80,9 +82,9 @@ define(function(require, exports, module) {
               const changes = fromServer(model, id, attrs);
               const doc = model.docs[id];
               if (doc !== undefined && changes !== attrs) { // found existing
-                Changes.applyAll(doc.attributes, changes);
-                for(const noop in changes) {
-                  notify(model, doc, changes, true);
+                const undo = Changes.applyAll(doc.attributes, changes);
+                for(const noop in undo) {
+                  notify(model, doc, undo, true);
                   break;
                 }
                 return doc._id;
@@ -296,80 +298,46 @@ define(function(require, exports, module) {
           });
         },
 
-        update(origChanges={}, value) {
+        update(changesOrField={}, value) {
+          const origChanges = (typeof changesOrField === 'string')
+                  ? {[changesOrField]: value} : changesOrField;
           return TransQueue.transaction(() => {
             let count = 0;
             const {model, docs} = this;
 
-            if (typeof origChanges === 'string') {
-              const changes = {};
-              changes[origChanges] = value;
-              origChanges = changes;
-            }
             Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
 
-            if (session.state.pendingCount() && this.isFromServer) {
-              const changes = fromServer(model, this.singleId, origChanges);
-              const doc = docs[this.singleId];
-              if (doc !== undefined) {
-                Changes.applyAll(doc.attributes, changes);
-                dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
-                  for(const noop in changes) {
-                    notify(model, doc, changes, this.isFromServer);
-                    break;
-                  }
-                });
+            return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
+              if (session.state.pendingCount() && this.isFromServer) {
+                const changes = fromServer(model, this.singleId, origChanges);
+                const doc = docs[this.singleId];
+                if (doc === undefined) return 0;
+                const undo = Changes.applyAll(doc.attributes, changes);
+                for(const noop in undo) {
+                  notify(model, doc, undo, this.isFromServer);
+                  break;
+                }
+                return 1;
               }
-              return 1;
-            }
-            dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
               this.forEach(doc => {
-                const changes = util.deepCopy(origChanges);
                 ++count;
                 const attrs = doc.attributes;
 
                 if (this._incs !== undefined) for(const field in this._incs) {
-                  changes[field] = attrs[field] + this._incs[field];
+                  origChanges[field] = attrs[field] + this._incs[field];
                 }
 
-                session.state.pendingCount() && recordChange(model, attrs, changes);
-                Changes.applyAll(attrs, changes);
+                session.state.pendingCount() == 0 ||
+                  recordChange(model, attrs, origChanges);
 
-                let itemCount = 0;
-                {
-                  const items = this._addItems;
-                  if (items !== undefined) for(const field in items) {
-                    const list = attrs[field] || (attrs[field] = []);
-                    util.forEach(items[field], item => {
-                      if (util.addItem(list, item) === undefined) {
-                        session.state.pendingCount() && recordItemChange(model, attrs, field);
-                        changes[field + ".$-" + ++itemCount] = item;
-                      }
-                    });
-                  }
-                }
-
-                {
-                  const items = this._removeItems;
-                  if (items !== undefined) for(const field in items) {
-                    const list = attrs[field];
-                    let match;
-                    util.forEach(items[field], item => {
-                      if (list !== undefined && (match = util.removeItem(list, item)) !== undefined) {
-                        session.state.pendingCount() && recordItemChange(model, attrs, field);
-                        changes[field + ".$+" + ++itemCount] = match;
-                      }
-                    });
-                  }
-                }
-
-                for(const key in changes) {
-                  notify(model, doc, changes, this.isFromServer);
+                const undo = Changes.applyAll(attrs, origChanges);
+                for(const key in undo) {
+                  notify(model, doc, undo, this.isFromServer);
                   break;
                 }
               });
+              return count;
             });
-            return count;
           });
         },
       });
@@ -503,11 +471,11 @@ define(function(require, exports, module) {
         }
         const keys = docs[id];
         if (keys === undefined) return changes;
+        const doc = model.docs[id];
         if (keys === 'new') {
           changes = util.deepCopy(changes);
           delete changes._id;
           const nc = {};
-          const doc = model.docs[id];
           if (doc !== undefined) for(const key in doc.attributes) {
             if (key === '_id') continue;
             if (! changes.hasOwnProperty(key))
@@ -522,17 +490,32 @@ define(function(require, exports, module) {
         }
 
         const nc = {};
-
         for(const key in changes) {
           if (key === '_id') continue;
-          const _m = key.match(/^([^.]+)\./);
-          const m = _m ? _m[1] : key;
+          if (key === '$partial') {
+            const ncp = nc.$partial = {};
+            const partial = changes.$partial;
+            for(const key in partial) {
+              const alreadyChanged = keys.hasOwnProperty(key);
+              const undo = [];
+              Changes.applyPartial(keys, key, partial[key], undo);
+              if (alreadyChanged) {
+                // This will override any other simulated partial change but otherwise the partial
+                // change may not apply correctly
+                nc[key] = keys[key];
+              } else {
+                ncp[key] = partial[key];
+              }
+            }
+          } else {
+            if (! keys.hasOwnProperty(key)) nc[key] = changes[key];
 
-          if (! keys.hasOwnProperty(m)) {
-            nc[key] = changes[key];
+            Changes.applyOne(keys, key, changes);
           }
-          Changes.applyOne(keys, key, changes);
         }
+
+        if (util.isObjEmpty(nc.$partial))
+          delete nc.$partial;
 
         return nc;
       }
@@ -541,11 +524,16 @@ define(function(require, exports, module) {
         const docs = simDocsFor(model);
         const keys = docs[attrs._id] || (docs[attrs._id] = {});
         if (changes !== undefined) {
-          for(let key in changes) {
-            const m = key.match(/^([^.]+)\./);
-            if (m != null) key=m[1];
-            if (! keys.hasOwnProperty(key))
-              keys[key] = util.deepCopy(attrs[key]);
+          if (keys !== 'new') for (const key in changes) {
+            if (key === '$partial') {
+              for (const key in changes.$partial) {
+                if (! (key in keys))
+                  keys[key] = util.deepCopy(attrs[key]);
+              }
+            } else {
+              if (! (key in keys))
+                keys[key] = util.deepCopy(attrs[key]);
+            }
           }
         } else {
           // remove
@@ -554,15 +542,6 @@ define(function(require, exports, module) {
               keys[key] = util.deepCopy(attrs[key]);
           }
         }
-      }
-
-      function recordItemChange(model, attrs, key) {
-        const docs = simDocsFor(model);
-        const keys = docs[attrs._id] || (docs[attrs._id] = {});
-        const m = key.match(/^([^.]+)\./);
-        if (m != null) key=m[1];
-        if (! keys.hasOwnProperty(key))
-          keys[key] = util.deepCopy(attrs[key]);
       }
 
       const newEmptyObj = () => Object.create(null);

@@ -172,6 +172,19 @@ define(function (require, exports, module) {
       },
     },
 
+    "test subField"() {
+      v.TestModel.defineFields({html: 'object'});
+      v.foo.$updatePartial(
+        'html', ['div.0.b', 'hello', 'input.$partial', ['id', 'world']],
+        'name', ['$append', '.suffix']
+      );
+
+      v.foo.$reload();
+
+      assert.equals(v.foo.name, 'foo.suffix');
+      assert.equals(v.foo.html, {div: [{b: 'hello'}], input: {id: 'world'}});
+    },
+
     "test arrays"() {
       v.TestModel.defineFields({ages: 'integer[]'});
       v.foo.$update('ages', [5]);
@@ -307,21 +320,41 @@ define(function (require, exports, module) {
       this.onEnd(() => handle.stop());
       const st = new Query(v.TestModel).onId(v.foo._id);
 
-      st.update("foo.bar", {baz: 'fnord', alice: 'rabbit', delme: 'please'});
+      st.update("$partial", {foo: [
+        'bar.baz', 'fnord',
+        'bar.alice', 'rabbit',
+        'bar.delme', 'please'
+      ]});
 
-      assert.calledWith(v.ob, TH.matchModel(v.foo.$reload()), {"foo.bar": undefined});
+      v.foo.$reload();
+      assert.calledWith(v.ob, TH.matchModel(v.foo), {$partial: {foo: ['$replace', null]}});
       assert.same(v.foo.attributes.foo.bar.baz, 'fnord');
+      v.ob.reset();
 
-      st.update({"foo.bar.alice": 'cat', "foo.bar.delme": undefined});
-      assert.calledWith(v.ob, TH.matchModel(v.foo.$reload()), {"foo.bar.alice": 'rabbit', "foo.bar.delme": 'please'});
-      assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'cat'});
+      st.update({$partial: {foo: [
+        "bar.$partial", [
+          "alice.$partial", ['$append', ' and cat'],
+          "delme", null,
+        ]]}});
+      v.foo.$reload();
+      assert.equals(v.foo.attributes.foo.bar, {baz: 'fnord', alice: 'rabbit and cat'});
+      assert.equals(v.ob.lastCall.args[1], {
+        $partial: {foo: [
+          "bar.$partial", [
+            "delme", 'please',
+            "alice.$partial", ['$patch', [-8, 8, null]],
+          ]
+        ]}});
     },
 
     "test update arrays"() {
       v.TestModel.defineFields({foo: 'jsonb', x: 'integer[]'});
       const st = new Query(v.TestModel).onId(v.foo._id);
 
-      st.update({name: 'new Name', 'foo.bar.baz': 123, 'x.$+1': 11, 'x.$+2': 22});
+      st.update({name: 'new Name', $partial: {
+        foo: ['bar.baz', 123],
+        x: ['$add', [11, 22]],
+      }});
 
       const attrs = v.foo.$reload().attributes;
 
@@ -353,70 +386,33 @@ define(function (require, exports, module) {
       assert.same(v.foo.$reload().age, 8);
     },
 
-    "test addItem removeItem"() {
+    "test addItems, removeItems"() {
       v.TestModel.defineFields({cogs: 'text[]'});
       this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
 
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'a');
+      v.TestModel.query.onId(v.foo._id).addItems('cogs', ['a']);
       assert.equals(v.foo.$reload().cogs, ['a']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'a'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$remove', ['a']]}});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+      v.TestModel.query.onId(v.foo._id).addItems('cogs', ['b']);
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'b'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$remove', ['b']]}});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).addItem('cogs', 'b');
+
+      v.TestModel.query.onId(v.foo._id).addItems('cogs', ['b']);
       assert.equals(v.foo.$reload().cogs, ['a', 'b']);
       refute.called(v.onChange);
 
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
+      v.TestModel.query.onId(v.foo._id).removeItems('cogs', ['a']);
       assert.equals(v.foo.$reload().cogs, ['b']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": 'a'});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$add', ['a']]}});
 
       v.onChange.reset();
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'b');
+      v.TestModel.query.onId(v.foo._id).removeItems('cogs', ['b']);
       assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": 'b'});
-
-      v.TestModel.query.onId(v.foo._id).addItemAnd('cogs', 'a').addItem('cogs', ['b', 'c']);
-      assert.equals(v.foo.$reload().cogs, ['a', 'b', 'c']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'a', "cogs.$-2": 'b', "cogs.$-3": 'c'});
-
-      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', ['a', 'c']).addItemAnd('cogs', 'f').removeItem('cogs', 'b');
-      assert.equals(v.foo.$reload().cogs, ['f']);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$-1": 'f', "cogs.$+2": 'a', "cogs.$+3": 'c', "cogs.$+4": 'b'});
-    },
-
-    "test 1st removeItem"() {
-      v.TestModel.defineFields({cogs: 'text[]'});
-      v.TestModel.query.onId(v.foo._id).update({cogs: ['a', 'b', 'c']});
-      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
-
-
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', 'a');
-
-      assert.calledWith(v.onChange, TH.matchModel(v.foo.$reload()), {"cogs.$+1": 'a'});
-
-      assert.equals(v.foo.$withChanges({"cogs.$+1": 'a'}).cogs, ['b', 'c', 'a']);
-    },
-
-    "test removeItem object"() {
-      v.TestModel.defineFields({cogs: 'jsonb'});
-      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
-
-      v.foo = v.TestModel.create({_id: 'foo2', cogs: [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]});
-
-      this.onEnd(v.TestModel.onChange(v.onChange = this.stub()));
-
-      v.TestModel.query.onId(v.foo._id).removeItem('cogs', {x: 2});
-      assert.equals(v.foo.$reload().cogs, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
-      refute.called(v.onChange);
-
-      v.TestModel.query.onId(v.foo._id).removeItemAnd('cogs', [{id: 4}, {id: 5}]).removeItem('cogs', {x: 1});
-      assert.equals(v.foo.$reload().cogs, []);
-      assert.calledWith(v.onChange, TH.matchModel(v.foo), {"cogs.$+1": {id: 4, name: "foo"}, "cogs.$+2": {id: 5, name: "bar"}, "cogs.$+3": {x: 1}});
+      assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$add', ['b']]}});
     },
 
     "test sort"() {

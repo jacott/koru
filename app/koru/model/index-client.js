@@ -136,19 +136,19 @@ define(function(require, exports, module) {
         return true;
       };
 
-      const onChange = (doc, old)=>{
+      const onChange = (doc, undo)=>{
         const idx = getIdx();
+        const old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
         if (condition !== null && doc != null && ! condition(doc)) {
-          old = doc; doc = null;
+          doc = null;
         }
 
         if (doc != null) {
           if (old != null) {
             if (leadLen === -1) {
-              const tm = tmpModel(doc, old);
-              const n = idx.nodeFrom(tm);
+              const n = idx.nodeFrom(old);
 
-              if (n === null || btCompare(tm, n.value) !== 0) {
+              if (n === null || btCompare(old, n.value) !== 0) {
                 idx.add(BTValue(doc));
               } else {
                 idx.deleteNode(n);
@@ -157,19 +157,17 @@ define(function(require, exports, module) {
               }
               return;
             } else {
-              let i = 0, tm;
+              let i = 0;
               for(; i < len; ++i) {
                 const field = fields[i];
                 if (doc[field] !== old[field]) {
-                  // make a temporary old version
-                  deleteEntry(idx, tm = tmpModel(doc, old), 0);
+                  deleteEntry(idx, old, 0);
                   break;
                 }
               }
-              if (i === len && tm !== undefined) {
-                tm = tmpModel(doc, old);
-                if (btCompare !== null && btCompare(doc, tm) !== 0) {
-                  deleteEntry(idx, BTValue(tm), 0);
+              if (i === len) {
+                if (btCompare !== null && btCompare(doc, old) !== 0) {
+                  deleteEntry(idx, old, 0);
                 } else
                   return;
               }

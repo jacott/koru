@@ -147,13 +147,13 @@ define(function(require, exports, module) {
         } else if (sim !== undefined) {
           simDocsFor(model)[rec._id] = sim;
         }
-        let changes = null;
+        let undo = null;
         notMe = model.docs[rec._id] = curr !== undefined ? (
-          Changes.applyAll(curr.attributes, rec),
-          changes = rec,
+          undo = Changes.applyAll(curr.attributes, rec),
           curr
         ) : new model(rec);
-        Query.notify(notMe, changes, sim === undefined);
+        if (undo === null || ! util.isObjEmpty(undo))
+          Query.notify(notMe, undo, sim === undefined);
       } finally {
         notMe = orig;
       }

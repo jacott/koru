@@ -265,6 +265,17 @@ define(function(require, exports, module) {
     }
   }
 
+  const buildUpdate = (table, params)=>{
+    table._ensureTable();
+
+    const set = toColumns(table, params);
+    return {
+      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',')}`,
+      set
+    };
+  };
+
+
   class Table {
     constructor(name, schema, client) {
       const table = this;
@@ -368,33 +379,6 @@ define(function(require, exports, module) {
       return toColumns(this, rowSet, cols).values;
     }
 
-    koruUpdate(doc, changes) {
-      doc = doc.attributes;
-      const params = {};
-      for (let key in changes) {
-        const sc = changes[key];
-        for (key in  sc) {
-          const di = key.indexOf('.');
-          if (di === -1)
-            params[key] = doc[key];
-          else {
-            key = key.substring(0, di);
-            if (! params.hasOwnProperty(key))
-              params[key] = doc[key];
-          }
-        }
-      }
-      let sql = 'UPDATE "'+this._name+'" SET ';
-      const set = toColumns(this, params);
-      sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
-
-      set.values.push(doc._id);
-
-      sql += ' WHERE _id=$'+set.values.length;
-
-      return performTransaction(this, sql, set);
-    }
-
     ensureIndex(keys, options) {
       this._ensureTable();
       options = options || {};
@@ -411,24 +395,24 @@ define(function(require, exports, module) {
       }
     }
 
-    update(where, params) {
-      this._ensureTable();
+    updateById(id, params) {
+      const {sql, set} = buildUpdate(this, params);
 
-      let sql = 'UPDATE "'+this._name+'" SET ';
+      set.values.push(id);
 
-      const set = toColumns(this, params.$set);
-      sql += set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',');
+      return performTransaction(this, `${sql} WHERE _id=$${set.values.length}`, set);
+    }
 
-      where = this.where(where, set.values);
+    update(whereParams, params) {
+      const {sql, set} = buildUpdate(this, params);
 
-      if (where)
-        sql += ' WHERE '+where;
+      const where = this.where(whereParams, set.values);
 
-      return performTransaction(this, sql, set);
+      return performTransaction(this, where === undefined ? sql : `${sql} WHERE ${where}`, set);
     }
 
     where(query, whereValues) {
-      if (! query) return;
+      if (query == null) return;
       const table = this;
       let count = whereValues.length;
       const colMap = table._colMap;
@@ -450,7 +434,7 @@ define(function(require, exports, module) {
         if (fields = query._whereNots) {
           const subSql = [];
           foundIn(fields, subSql);
-          whereSql.push("(" + subSql.join(" OR ") + ") IS NOT TRUE");
+          whereSql.push(`(${subSql.join(" OR ")}) IS NOT TRUE`);
         }
 
         if (fields = query._whereSomes) {
@@ -512,16 +496,15 @@ define(function(require, exports, module) {
       function foundIn(fields, result) {
         let qkey;
         for(let key in fields) {
-          let value = fields[key];
+          const value = fields[key];
           const splitIndex = key.indexOf(".");
           if (splitIndex !== -1) {
             const remKey = key.slice(splitIndex+1);
             key = key.slice(0,splitIndex);
-            qkey = ['"'+key+'"'];
-            remKey.split(".").forEach(p => qkey.push("'"+p+ "'"));
-            qkey = qkey.join("->");
+            qkey = `"${key}"`;
+            remKey.split(".").forEach(p=>{qkey+=`->'${p}'`});
             if (value == null) {
-              result.push(qkey+' = $'+ ++count);
+              result.push(`${qkey}=$${++count}`);
               whereValues.push(null);
               continue;
             }
@@ -542,7 +525,7 @@ define(function(require, exports, module) {
               result.push('('+parts.join(key === '$and' ? ' AND ' :  ' OR ')+(key === '$nor'? ') IS NOT TRUE' : ')'));
               continue;
             }
-            qkey = '"'+key+'"';
+            qkey = `"${key}"`;
             if (value == null) {
               result.push(qkey+' IS NULL');
               continue;
@@ -626,15 +609,15 @@ define(function(require, exports, module) {
                     result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
                     whereValues.push(regex);
                     continue;
-                  case '$ne':
-                    value = value[vk];
-                    if (value == null) {
+                  case '$ne': {
+                    const sv = value[vk];
+                    if (sv == null) {
                       result.push(qkey+' IS NOT NULL');
                     } else {
                       result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
-                      whereValues.push(value);
+                      whereValues.push(sv);
                     }
-                    continue;
+                  } continue;
                   case '$gt':
                     op = '>';
                   case '$gte':

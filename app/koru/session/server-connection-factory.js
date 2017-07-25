@@ -62,17 +62,18 @@ define(function(require, exports, module) {
       }
     }
 
-    sendMatchUpdate (doc, changes, filter) {
+    sendMatchUpdate (doc, undo, filter) {
       if (doc && this.match.has(doc)) {
-        if (changes && this.match.has(doc.$withChanges(changes))) {
-          this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(changes), filter);
+        if (undo != null && this.match.has(doc.$withChanges(undo))) {
+          this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(undo), filter);
           return 'changed';
         } else {
           this.added(doc.constructor.modelName, doc._id, doc.attributes, filter);
           return 'added';
         }
-      } else if (changes && this.match.has(doc ? doc.$withChanges(changes) : changes)) {
-        this.removed((doc||changes).constructor.modelName, (doc||changes)._id);
+      } else if (undo != null && this.match.has(doc != null ? doc.$withChanges(undo) : undo)) {
+        if (doc == null) doc = undo;
+        this.removed(doc.constructor.modelName, doc._id);
         return 'removed';
       }
     }

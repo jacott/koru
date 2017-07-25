@@ -174,7 +174,7 @@ define(function(require, exports, module) {
     },
 
     logout(_id, token) {
-      UserLogin.onId(_id).update({['tokens.'+token]: undefined});
+      UserLogin.onId(_id).update({$partial: {tokens: [token, null]}});
     },
 
     logoutOtherClients(_id, token) {

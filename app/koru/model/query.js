@@ -33,20 +33,21 @@ define(function(require, exports, module) {
         return this;
       }
 
-      addItemAnd(field, values) {
-        return buildList(this, '_addItems', field, values);
+      addItems(field, values) {
+        return this.update({$partial: {[field]: ['$add', values]}});
       }
 
-      removeItemAnd(field, values) {
-        return buildList(this, '_removeItems', field, values);
+      removeItems(field, values) {
+        return this.update({$partial: {[field]: ['$remove', values]}});
       }
 
-      addItem(field, values) {
-        return this.addItemAnd(field, values).update();
-      }
+      updatePartial(...args) {
+        const $partial = {};
+        for(let i = 0; i < args.length; i+=2) {
+          $partial[args[i]] = args[i+1];
+        }
 
-      removeItem(field, values) {
-        return this.removeItemAnd(field, values).update();
+        return this.update({$partial});
       }
 
       whereSome(...args) {

@@ -31,7 +31,6 @@ define(function(require, exports, module) {
 
   const ModelEnv = {
     save: save,
-    put: put,
 
     destroyModel(model, drop) {
       if (! model) return;
@@ -236,11 +235,6 @@ define(function(require, exports, module) {
       break;
     }
     doc.$reload();
-  }
-
-  function put(doc, updates) {
-    _support.validatePut(doc, updates);
-    session.rpc('put', doc.constructor.modelName, doc._id, updates);
   }
 
   return ModelEnv;

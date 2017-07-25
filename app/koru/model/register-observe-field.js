@@ -6,9 +6,49 @@ define(function(require, exports, module) {
   return model => {
     const {modelName} = model;
 
-    model.registerObserveField = registerObserveField;
+    const callObservers = (observers, called, doc, undo, value)=>{
+      const cbs = observers[value];
+      if (cbs) for(const key in cbs) {
+        const options = cbs[key];
+        if (! (options[0] in called)) {
+          called[options[0]] = true;
+          options[1](doc, undo);
+        }
+      }
+    };
 
-    function registerObserveField(field) {
+    const getModelOb = (modelObMap, field, observers)=>{
+      const t = modelObMap[dbBroker.dbId];
+      if (t) return t;
+
+      const ob = model.onChange((doc, undo) => {
+        const nowValue = doc == null ? undefined : doc[field];
+        const asBefore = doc == null ? undo : undo == null ? undefined : doc.$withChanges(undo);
+        const oldValue = asBefore === undefined ? undefined : asBefore[field];
+
+        const called = {}; // ensure only called once;
+
+        if (oldValue != undefined) {
+          if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
+            callObservers(observers, called, doc, undo, oldValue[i]);
+          } else {
+            callObservers(observers, called, doc, undo, oldValue);
+          }
+        }
+
+        if (nowValue != undefined && nowValue !== oldValue) {
+          if (Array.isArray(nowValue)) for(let i = 0; i < nowValue.length; ++i) {
+            callObservers(observers, called, doc, undo, nowValue[i]);
+          } else {
+            callObservers(observers, called, doc, undo, nowValue);
+          }
+        }
+      });
+
+      return modelObMap[dbBroker.dbId] = ob;
+    };
+
+    model.registerObserveField = field=>{
       const dbObservers = Object.create(null);
       const modelObMap = Object.create(null);
       let key = 0;
@@ -35,7 +75,7 @@ define(function(require, exports, module) {
         const observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
         const obs = observers[value] || (observers[value] = Object.create(null));
         obs[options[0]] = options;
-        const modelObserver = getModelOb(observers);
+        const modelObserver = getModelOb(modelObMap, field, observers);
         return stopObserver(value, obs, options, observers);
       };
 
@@ -43,9 +83,9 @@ define(function(require, exports, module) {
         return {
           stop() {
             delete obs[options[0]];
-            for(let key in obs) return;
+            for(const _ in obs) return;
             delete observers[value];
-            for(let key in observers) return;
+            for(const _ in observers) return;
             const modelObserver = modelObMap[dbBroker.dbId];
             if (modelObserver) {
               modelObserver.stop();
@@ -60,7 +100,7 @@ define(function(require, exports, module) {
       function stopObservers(obsSet, options) {
         return {
           stop() {
-            for(let key in obsSet) obsSet[key].stop();
+            for(const key in obsSet) obsSet[key].stop();
           },
 
           addValue(value) {
@@ -93,52 +133,10 @@ define(function(require, exports, module) {
                 obsSet[newValue] = observeValue(rawValue, options);
               }
             }
-            for(let value in delObs) delObs[value].stop();
+            for(const value in delObs) delObs[value].stop();
           },
         };
       }
-
-      function getModelOb(observers) {
-        const t = modelObMap[dbBroker.dbId];
-        if (t) return t;
-
-        const ob = model.onChange((doc, was) => {
-          const nowValue = doc && doc[field];
-          const asBefore = doc ? was && doc.$withChanges(was) : was;
-          const oldValue = asBefore && asBefore[field];
-
-          const called = {}; // ensure only called once;
-
-          if (oldValue != undefined) {
-            if (Array.isArray(oldValue)) for(let i = 0; i < oldValue.length; ++i) {
-              callObservers(called, doc, was, oldValue[i]);
-            } else {
-              callObservers(called, doc, was, oldValue);
-            }
-          }
-
-          if (nowValue != undefined && nowValue !== oldValue) {
-            if (Array.isArray(nowValue)) for(let i = 0; i < nowValue.length; ++i) {
-              callObservers(called, doc, was, nowValue[i]);
-            } else {
-              callObservers(called, doc, was, nowValue);
-            }
-          }
-        });
-
-        return modelObMap[dbBroker.dbId] = ob;
-
-        function callObservers(called, doc, was, value) {
-          const cbs = observers[value];
-          if (cbs) for(let key in cbs) {
-            const options = cbs[key];
-            if (! (options[0] in called)) {
-              called[options[0]] = true;
-              options[1](doc, was);
-            }
-          }
-        }
-      }
-    }
+    };
   };
 });

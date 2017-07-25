@@ -1,4 +1,5 @@
 define(function(require, exports, module) {
+  const Changes              = require('koru/changes');
   const ModelEnv             = require('koru/env!./main');
   const dbBroker             = require('koru/model/db-broker');
   const Query                = require('koru/model/query');
@@ -290,19 +291,16 @@ define(function(require, exports, module) {
       return this;
     }
 
-    $put(updates, value) {
-      if (arguments.length === 2) {
-        const key = updates;
-        updates = {};
-        updates[key] = value;
-      }
-
-      ModelEnv.put(this, updates);
-      return this;
-    }
-
     $$save() {
       return this.$save('assert');
+    }
+
+    $savePartial(...args) {
+      return savePartial(this, args);
+    }
+
+    $$savePartial(...args) {
+      return savePartial(this, args, 'assert');
     }
 
     $isValid() {
@@ -361,85 +359,17 @@ define(function(require, exports, module) {
       return false;
     }
 
-    /**
-     * Return a doc representing this doc with the supplied changes
-     * staged against it such that calling doc.$save will apply the changes.
-     *
-     * If this method is called again with the same changes object
-     * then a cached version of the before doc is returned.
-     */
     $withChanges(changes) {
       if (changes == null) return null;
       const cached = changes[changes$];
       if (cached !== undefined) return cached;
 
-      let simple = true;
-      for(const attr in changes) {
-        if (attr.indexOf(".") !== -1) {
-          simple = false;
-          break;
-        }
-      }
-
-      const attrs = this.attributes;
-
-      if (simple)
-        return changes[changes$] = new this.constructor(attrs, changes);
-
-      const cc = {};
-
-      for(const attr in changes) {
-        const index = attr.indexOf(".");
-        const desc = Object.getOwnPropertyDescriptor(changes, attr);
-
-        if (index === -1) {
-          Object.defineProperty(cc, attr, desc);
-        } else { // update part of attribute
-          let ov, parts = attr.split(".");
-          let curr = cc[parts[0]];
-          if (! curr)
-            curr = cc[parts[0]] = util.deepCopy(attrs[parts[0]]) || {};
-          let i;
-          for(i = 1; i < parts.length - 1; ++i) {
-            const part = parts[i];
-            curr = curr[part] || (curr[part] = {});
-          }
-          let part = parts[i];
-          const m = part.match(/^\$([+\-])(\d+)/);
-          if (m) {
-            part = +m[2];
-            if (m[1] === '-')
-              util.removeItem(curr, desc.value);
-            else
-              util.addItem(curr, desc.value);
-          } else
-            Object.defineProperty(curr, part,  desc);
-        }
-      }
-      return changes[changes$] = new this.constructor(attrs, cc);
+      return changes[changes$] = new this.constructor(
+        this.attributes, Changes.topLevelChanges(this.attributes, changes));
     }
 
-    /**
-     * Use the {beforeChange} keys to extract the new values.
-     *
-     * @returns new hash of extracted values.
-     */
     $asChanges(beforeChange) {
-      const attrs = this.attributes;
-      const result = {};
-      for(const key in beforeChange) {
-        const idx = key.lastIndexOf(".");
-        if (idx === -1) {
-          result[key] = attrs[key];
-        } else if (key[idx+1] !== '$') {
-          result[key] = util.lookupDottedValue(key, attrs);
-        } else {
-          result[key.slice(0, idx+2) + (key[idx+2] === '-' ? '+' : '-') + key.slice(idx+3)] =
-            beforeChange[key];
-        }
-
-      }
-      return result;
+      return Changes.extractChangeKeys(this.attributes, beforeChange);
     }
 
     get $onThis() {
@@ -448,6 +378,10 @@ define(function(require, exports, module) {
 
     $update(...args) {
       return this.$onThis.update(...args);
+    }
+
+    $updatePartial(...args) {
+      return this.$onThis.updatePartial(...args);
     }
 
     $clearChanges() {
@@ -480,6 +414,17 @@ define(function(require, exports, module) {
     }
   }
 
+  const savePartial = (doc, args, force)=>{
+    const $partial = {};
+    for(let i = 0; i < args.length; i+=2) {
+      $partial[args[i]] = args[i+1];
+    }
+
+    doc.changes = {$partial};
+    return doc.$save(force);
+  };
+
+
   const getField = (doc, field) => doc.changes.hasOwnProperty(field) ?
           doc.changes[field] : doc.attributes[field];
 
@@ -504,40 +449,12 @@ define(function(require, exports, module) {
   BaseModel.getField = getField;
   BaseModel.setField = setField;
 
-  session.defineRpc("put", function (modelName, id, updates) {
-    Val.assertCheck([modelName, id], ['string']);
-    const model = ModelMap[modelName];
-    Val.allowIfFound(model);
-    const  doc = model.findById(id);
-    Val.allowIfFound(doc);
-
-    const [changes, pSum] = _support.validatePut(doc, updates);
-    let ex;
-    try {
-
-      callBeforeObserver('beforeUpdate', doc, pSum);
-      callBeforeObserver('beforeSave', doc, pSum);
-      const query = doc.$onThis;
-      for (const key in pSum) {
-        Object.assign(changes, pSum[key]);
-      }
-      doc.changes = {};
-      query.update(changes);
-    } catch(ex1) {
-      ex = ex1;
-    } finally {
-      callWhenFinally(doc, ex);
-    }
-    if (ex) throw ex;
-  });
-
-
-  const callBeforeObserver = (type, doc, partials) => {
+  const callBeforeObserver = (type, doc) => {
     const model = doc.constructor;
     const modelObservers = allObservers.get(model);
     const observers = modelObservers === undefined ? undefined : modelObservers[type];
     if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
-      observers[i][0].call(model, doc, type, partials);
+      observers[i][0].call(model, doc, type);
     }
   };
 
@@ -590,29 +507,6 @@ define(function(require, exports, module) {
 
   const _support = {
     setupExtras: [],
-
-    validatePut(doc, updates) {
-      const userId = koru.userId();
-      Val.allowAccessIf(userId && doc.authorizePut);
-      const changes = {};
-      const partials = {};
-      ModelMap.splitUpdateKeys(changes, partials, updates);
-      doc.changes = changes;
-      if (typeof doc.authorizePut === 'function')
-        doc.authorizePut(userId, partials);
-      else {
-        doc.authorize && doc.authorize(userId, {put: partials});
-        for (const key in partials) {
-          const validator = doc.authorizePut[key];
-          Val.allowAccessIf(validator, 'no validator for ' + key);
-          validator(doc, partials[key], key);
-        }
-
-      }
-      doc.$assertValid();
-
-      return [changes, partials];
-    },
 
     performBumpVersion(model, _id, _version) {
       new Query(model).onId(_id).where({_version: _version}).inc("_version", 1).update();
@@ -755,19 +649,6 @@ define(function(require, exports, module) {
           modelObservers[name] = modelObservers[name].filter(entry => {
             return entry[1] !== model;
           });
-        }
-      }
-    },
-
-    splitUpdateKeys(changes, partials, updates) {
-      for (const key in updates) {
-        const pos = key.indexOf(".");
-        if (pos === -1)
-          changes[key] = updates[key];
-        else {
-          let mainKey = key.slice(0, pos);
-          let section = partials[mainKey] || (partials[mainKey] = {});
-          section[key] = updates[key];
         }
       }
     },

@@ -301,6 +301,22 @@ define(function (require, exports, module) {
       }, {message: 'deepEqual maxLevel exceeded'});
     },
 
+    "test elemMatch"() {
+      /**
+       * true if all keys in a are deepEqual to the corresponding keys in b
+       **/
+
+      assert.isTrue(util.elemMatch({}, {}));
+      assert.isTrue(util.elemMatch(0, 0));
+      assert.isTrue(util.elemMatch(1, 1));
+      assert.isFalse(util.elemMatch(1, 2));
+      assert.isTrue(util.elemMatch(null, null));
+
+      assert.isTrue(util.elemMatch({a: {b: 1}}, {a: {b: 1}, c: 3}));
+
+      assert.isFalse(util.elemMatch({a: {b: 1}}, {a: {b: 1, c: 3}}));
+    },
+
     "test invert"() {
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
       assert.equals(util.invert({a: 1, b: 2}, x => x+x), {'1': "aa", '2': "bb"});

@@ -1,9 +1,23 @@
 define(function (require, exports, module) {
-  const TH = require('./test');
+  const util = require('koru/util');
+  const TH   = require('./test');
 
   const sut = require('./changes');
 
+  var v = null;
+
   TH.testCase(module, {
+    "test has"() {
+      /**
+       * test if undo has changed field
+       **/
+      assert.isTrue(sut.has({foo: undefined}, 'foo'));
+      assert.isTrue(sut.has({foo: false}, 'foo'));
+      assert.isFalse(sut.has({foo: undefined}, 'bar'));
+      assert.isTrue(sut.has({$partial: {foo: undefined}}, 'foo'));
+      assert.isFalse(sut.has({$partial: {foo: undefined}}, 'bar'));
+    },
+
     "test simple changes"() {
       const attrs = {bar: 1, foo: 2, fuz: 3, fiz: 4};
       const changes = {foo: null, fuz: undefined, fiz: 5, nit: 6};
@@ -28,26 +42,35 @@ define(function (require, exports, module) {
 
     "test with objects"() {
       const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      let changes = {a: 2, b: undefined, d: 4, "nest.bar": 'bar'};
+      let changes = {a: 2, b: undefined, d: 4, $partial: {nest: ["bar", 'bar']}};
 
-      assert.same(sut.applyAll(orig, changes), orig);
+      const undo = sut.applyAll(orig, changes);
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
-      assert.equals(changes, {a: 1, b: 2, d: undefined, "nest.bar": undefined});
+      assert.equals(undo, {a: 1, b: 2, d: undefined, $partial: {nest: ["bar", undefined]}});
+      assert.equals(changes, {a: 2, b: undefined, d: 4, $partial: {nest: ["bar", 'bar']}});
+      {
+        const changes = {$partial: {nest: ["bar", 'new'], new: ["deep.list", 'deeplist']}};
+        const undo = sut.applyAll(orig, changes);
 
-      changes = {"nest.bar": 'new', "new.deep.list": 'deeplist'};
-      sut.applyAll(orig, changes);
-
-      assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
-                           d: 4, new: {deep: {list: 'deeplist'}}});
-      assert.equals(changes, {"nest.bar": 'bar', "new.deep.list": undefined});
+        assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'new'},
+                             d: 4, new: {deep: {list: 'deeplist'}}});
+        assert.equals(undo, {$partial: {nest: ["bar", 'bar'], "new": ['$replace', null]}});
+      }
     },
 
-    "test deleting array entry"() {
+    "test deleting array entry by string"() {
       const orig = {a: [1,2,3]};
-      const changes = {'a.1': undefined};
+      const changes = {$partial: {a: ['1', undefined]}};
 
-      sut.applyAll(orig, changes);
+      assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
+      assert.equals(orig.a, [1, 3]);
+    },
 
+    "test deleting array entry by number"() {
+      const orig = {a: [1,2,3]};
+      const changes = {$partial: {a: [1, undefined]}};
+
+      assert.equals(sut.applyAll(orig, changes), {$partial: {a: ['1', 2]}});
       assert.equals(orig.a, [1, 3]);
     },
 
@@ -55,71 +78,676 @@ define(function (require, exports, module) {
       const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
       const changes = {a: 1, b: 2, c: 4, nest: {foo: 'foo'}};
 
-      sut.applyAll(orig, changes);
-
-      assert.equals(changes, {c: 3});
+      assert.equals(sut.applyAll(orig, changes), {c: 3});
     },
 
     "test with empty array"() {
-      const orig = {ar: []};
-      const changes = {"ar.1.foo": 3};
+      const orig = {top: {ar: []}};
+      const changes = {$partial: {top: ["ar.1.foo", 3]}};
 
-      sut.applyAll(orig, changes);
+      const undo = sut.applyAll(orig, changes);
 
-      assert.equals(orig, {ar: [, {foo: 3}]});
-      assert.equals(changes, {"ar.1.foo": undefined});
+      assert.equals(orig, {top: {ar: [, {foo: 3}]}});
+      assert.equals(undo, {$partial: {top: ['ar.1', null]}});
+      sut.applyAll(orig, undo);
+
+      assert.equals(orig, {top: {ar: [,]}});
     },
 
     "test change array"() {
-      const orig = {ar: []};
-      const changes = {"ar.0": 'new'};
+      const orig = {top: {ar: []}};
+      const changes = {$partial: {top: ["ar.0", 'new']}};
 
-      sut.applyAll(orig, changes);
-
-      assert.equals(orig, {ar: ["new"]});
-      assert.equals(changes, {"ar.0": undefined});
+      assert.equals(sut.applyAll(orig, changes), {$partial: {top: ['ar.0', undefined]}});
+      assert.equals(orig, {top: {ar: ["new"]}});
     },
 
     "test with array"() {
       const orig = {ar: [{foo: 1}, {foo: 2}]};
-      const changes = {"ar.1.foo": 3};
+      const changes = {$partial: {ar: ["1.foo", 3]}};
 
-      sut.applyAll(orig, changes);
-
+      assert.equals(sut.applyAll(orig, changes), {$partial: {ar: ['1.foo', 2]}});
       assert.equals(orig, {ar: [{foo: 1}, {foo: 3}]});
-      assert.equals(changes, {"ar.1.foo": 2});
     },
 
-    "test addItem applyAll"() {
-      const orig = {a: ["x"]};
-      const changes = {"a.$+1": "a", "a.$+2": "b"};
+    "$partial": {
+      "$match": {
+        setUp() {
+          /**
+           * Match commands ensure we only update if the current value matches. The whole
+           * transaction is aborted if the match is not satisfied.
 
-      sut.applyAll(orig, changes);
+           * Note: $match can be used on any type but $matchMD5 and $matchSHA256 can only be used on
+           * strings
+           **/
+        },
 
-      assert.equals(orig, {a: ["x", "a", "b"]});
-      assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
+        "$match equal": {
+          "test equal"() {
+            const attrs = {obj: {name: 'old name', number: 5}};
+            const changes = ['$match', {name: 'old name', number: 5}];
+            refute.exception(_=>{
+              sut.applyPartial(attrs, 'obj', changes);
+            });
+            assert.equals(attrs, {obj: {name: 'old name', number: 5}});
+          },
+
+          "test not equal"() {
+            const attrs = {obj: {name: 'old name', number: 5}};
+            const changes = ['$match', {name: 'old name', number: 6}];
+            assert.exception(_=>{
+              sut.applyPartial(attrs, 'obj', changes);
+            }, {error: 409, reason: {obj: 'not_match'}});
+          },
+        },
+
+        "$match md5": {
+          "test equal"() {
+            const attrs = {name: 'old name'};
+            const changes = ['$match', {md5: '58a5352c62'}];
+            refute.exception(_=>{
+              sut.applyPartial(attrs, 'name', changes);
+            });
+            assert.equals(attrs, {name: 'old name'});
+
+          },
+
+          "test not equal"() {
+            const attrs = {name: 'old name'};
+            const changes = ['$match', {md5: '58a5352c63'}];
+            assert.exception(_=>{
+              sut.applyPartial(attrs, 'name', changes);
+            }, {error: 409, reason: {name: 'not_match'}});
+          },
+        },
+
+        "$match sha256": {
+          "test equal"() {
+            const attrs = {name: 'old name'};
+            const changes = ['$match', {sha256: '2b727fb85cff'}];
+            refute.exception(_=>{
+              sut.applyPartial(attrs, 'name', changes);
+            });
+            assert.equals(attrs, {name: 'old name'});
+
+          },
+
+          "test not equal"() {
+            const attrs = {name: 'old name'};
+            const changes = ['$match', {sha256: '2b727fb85cfe'}];
+            assert.exception(_=>{
+              sut.applyPartial(attrs, 'name', changes);
+            }, {error: 409, reason: {name: 'not_match'}});
+          },
+        },
+      },
+
+      "$replace": {
+        setUp() {
+          /**
+           * Replace the content of the field. Add the field is does not exists. Delete the field if
+           * value is null.
+           **/
+        },
+
+        "test no change"() {
+          const attrs = {name: 'old name'};
+          const changes = ['$replace', 'old name'];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'old name'});
+          assert.equals(undo, []);
+        },
+
+        "test modify"() {
+          const attrs = {name: 'old name'};
+          const changes = ['$replace', 'new name'];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'new name'});
+          assert.equals(undo, ['$replace', 'old name']);
+        },
+
+        "test add"() {
+          const attrs = {};
+          const changes = ['$replace', 'new name'];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'new name'});
+          assert.equals(undo, ['$replace', null]);
+        },
+
+        "test delete"() {
+          const attrs = {name: 'old name'};
+          const changes = ['$replace', null];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {});
+          assert.equals(undo, ['$replace', 'old name']);
+        },
+      },
+
+      "$prepend, $append": {
+        setUp() {
+          /**
+           * Add contents to the start or end of a field. Fields can be of type string or array.
+           **/
+        },
+
+        "test wrong type"() {
+          const attrs = {name: 123};
+          const undo = [];
+          assert.exception(_=>{
+            sut.applyPartial(attrs, 'name', ['$prepend', 'me'], undo);
+          }, {error: 400, reason: {name: 'wrong_type'}});
+
+          assert.exception(_=>{
+            sut.applyPartial(attrs, 'name', ['$append', 'me'], undo);
+          }, {error: 400, reason: {name: 'wrong_type'}});
+        },
+
+        "test string"() {
+          const name = 'orig name';
+          const attrs = {name};
+          const prepend = 'put me at front', append = 'put me at end';
+          const changes = ['$prepend', prepend, '$append', append];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'put me at frontorig nameput me at end'});
+          assert.equals(undo, ['$patch', [
+            0, prepend.length, null,
+            -append.length, append.length, null
+          ]]);
+        },
+
+        "test array"() {
+          const numbers = [2, 4, 3];
+          const attrs = {numbers};
+          const prepend = [45, 12], append = [16, 18];
+          const changes = ['$prepend', prepend, '$append', append];
+          const undo = [];
+          sut.applyPartial(attrs, 'numbers', changes, undo);
+          assert.equals(attrs, {numbers: [45, 12, 2, 4, 3, 16, 18]});
+          assert.equals(undo, ['$patch', [
+            0, 2, null,
+            -2, 2, null,
+          ]]);
+        },
+
+        "test $append only"() {
+          const name = 'orig name';
+          const attrs = {name};
+          const append = 'put me at end';
+          const changes = ['$append', append];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'orig nameput me at end'});
+          assert.equals(undo, ['$patch', [
+            -append.length, append.length, null
+          ]]);
+        },
+      },
+
+      "$patch": {
+        setUp() {
+          /**
+           * Patch the field using an array of 3-tuples. A 3-tuple consists of:
+
+           *   move-delta, delete-delta and add-content
+
+           * Fields can be of type string or
+           * array. Not allowed with $append, $prepend or $replace.
+           **/
+        },
+
+        "test string"() {
+          const name = 'orig content';
+          const attrs = {name};
+          const changes = ['$patch', [
+            0, 1, "",                 // delete only
+            2, 4, "i was changed ",   // delete and add
+            3, 0, "and I was added. " // add only
+          ]];
+          const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'rii was changed nteand I was added. nt'});
+          assert.equals(undo, ['$patch', [
+            0, 0, "o",
+            2, "i was changed ".length, "g co",
+            3, "and I was added. ".length, null,
+          ]]);
+          const undo2 = [];
+          sut.applyPartial(attrs, 'name', undo, undo2);
+          assert.equals(attrs, {name: 'orig content'});
+          assert.equals(undo2, ['$patch', [
+            0, 1, null,                 // delete only
+            2, 4, "i was changed ",   // delete and add
+            3, 0, "and I was added. " // add only
+          ]]);
+        },
+
+        "test -ve delta"() {
+          const name = 'orig content';
+          const attrs = {name};
+          const changes = ['$patch', [
+            3, 0, "_",
+            -4, 2, "-ve delta. ", // -ve deltas are always from end of content
+          ]];
+           const undo = [];
+          sut.applyPartial(attrs, 'name', changes, undo);
+          assert.equals(attrs, {name: 'ori_g con-ve delta. nt'});
+          assert.equals(undo, ['$patch', [
+            3, 1, null,
+            -13, 11, 'te',
+          ]]);
+          const undo2 = [];
+          sut.applyPartial(attrs, 'name', undo, undo2);
+          assert.equals(attrs, {name: 'orig content'});
+          assert.equals(undo2, ['$patch', [
+             3, 0, "_",
+            -4, 2, "-ve delta. ",
+          ]]);
+        },
+
+        "test array"() {
+          const numbers = [1,2,3,4,5,6];
+          const attrs = {numbers};
+          const changes = ['$patch', [
+            3, 0, [12, 18, 16],
+            -3, 2, [15, 11], // -ve deltas are always from end of content
+          ]];
+          const undo = [];
+          sut.applyPartial(attrs, 'numbers', changes, undo);
+          assert.equals(attrs, {numbers: [1, 2, 3, 12, 18, 16, 15, 11, 6]});
+          assert.equals(undo, ['$patch', [
+            3, 3, null,
+            -3, 2, [4, 5],
+          ]]);
+          const undo2 = [];
+          sut.applyPartial(attrs, 'numbers', undo, undo2);
+          assert.equals(attrs, {numbers: [1,2,3,4,5,6]});
+          assert.equals(undo2, ['$patch', [
+            3, 0, [12, 18, 16],
+            -3, 2, [15, 11],
+          ]]);
+        },
+      },
+
+      "$add, $remove": {
+        setUp() {
+          /**
+           * Add items unless already exists and remove items if they exist.
+
+           * The $add and $remove commands can only be used with arrays
+           **/
+        },
+
+        "test $add"() {
+          const attrs = {books: [{title: 's&s', author: 'JA'}]};
+          const changes = [
+            '$add', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'books', changes, undo);
+          assert.equals(attrs, {books: [{title: 's&s', author: 'JA'}, {title: 'p&p', author: 'JA'}]});
+          assert.equals(undo, ['$remove', [{title: 'p&p', author: 'JA'}]]);
+        },
+
+        "test $remove"() {
+          const attrs = {books: [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}]};
+          const changes = [
+            '$remove', [{title: 'p&p'}, {title: 'e'}],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'books', changes, undo);
+          assert.equals(attrs, {books: [{title: 's&s', author: 'JA'}]});
+          assert.equals(undo, ['$add', [{title: 'p&p', author: 'JA'}]]);
+        },
+
+        "test no change $add"() {
+          const attrs = {books: [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}]};
+          const changes = [
+            '$add', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'books', changes, undo);
+          assert.equals(attrs, {books: [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}]});
+          assert.equals(undo, []);
+        },
+
+        "test no change $remove"() {
+          const attrs = {books: []};
+          const changes = [
+            '$remove', [{title: 'p&p', author: 'JA'}, {title: 's&s', author: 'JA'}],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'books', changes, undo);
+          assert.equals(attrs, {books: []});
+          assert.equals(undo, []);
+        },
+
+        "test undo"() {
+          const numbers = [1,2,3,4,16,15];
+          const attrs = {numbers};
+          const changes = [
+            '$add', [4, 7, 8],
+            '$remove', [2, 9, 1],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'numbers', changes, undo);
+          assert.equals(attrs, {numbers: [3, 4, 16, 15, 7, 8]});
+          assert.equals(undo, [
+            '$add', [1, 2],
+            '$remove', [7, 8],
+          ]);
+          const undo2 = [];
+          sut.applyPartial(attrs, 'numbers', undo, undo2);
+          assert.equals(attrs, {numbers: [3,4,16,15,1,2]});
+          assert.equals(undo2, [
+            '$add', [7, 8],
+            '$remove', [1, 2],
+          ]);
+        },
+
+        "test add to null"() {
+          const attrs = {};
+          const changes = [
+            '$add', ['a', 'b'],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'letters', changes, undo);
+          assert.equals(attrs, {letters: ['a', 'b']});
+          assert.equals(undo, [
+            '$remove', ['a', 'b'],
+          ]);
+        },
+
+        "test remove from null"() {
+          const attrs = {};
+          const changes = [
+            '$remove', ['a', 'b'],
+          ];
+          const undo = [];
+          sut.applyPartial(attrs, 'letters', changes, undo);
+          assert.equals(attrs, {});
+          assert.equals(undo, []);
+        },
+      },
+
+      "subfields": {
+        setUp() {
+          /**
+           * Sub-fields can consist of field names or array indexes. If the last segment is
+           * '$partial' then value is a partial command otherwise it is the replacement value.
+           **/
+
+          v = {};
+          v.attrs = {html: {
+            ol: [{li: {b: 'one'}}, {li: {b: 'two'}}, {li: ['3', ' ', 'three']}]
+          }};
+        },
+
+        tearDown() {
+          v = null;
+        },
+
+        "test simple replacement"() {
+          const changes = [
+            'ol.1.li.b', '2',
+          ];
+
+          const undo = [];
+          sut.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs.html.ol[1], {li: {b: '2'}});
+          assert.equals(undo, [
+            'ol.1.li.b', 'two',
+          ]);
+        },
+
+        "test no change"() {
+          const changes = [
+            'ol.2.li.0', '3',
+          ];
+
+          const old = util.deepCopy(v.attrs);
+          const undo = [];
+          sut.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs, old);
+          assert.equals(undo, []);
+        },
+
+        "test missing top"() {
+          const changes = ['div.1.i', 'hello', 'div.2.b', 'bye bye'];
+          const undo = [];
+          sut.applyPartial(v.attrs, 'foo', changes, undo);
+          assert.equals(v.attrs.foo, {div: [, {i: 'hello'}, {b: 'bye bye'}]});
+          assert.equals(undo, [
+            '$replace', null,
+          ]);
+          sut.applyPartial(v.attrs, 'foo', undo, []);
+          assert.equals(v.attrs, {html: TH.match.object});
+        },
+
+        "test missing sub"() {
+          const changes = ['div.1.i', 'hello'];
+          const undo = [];
+          sut.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs.html, {ol: TH.match.object, div: [, {i: 'hello'}]});
+          assert.equals(undo, [
+            'div', null,
+          ]);
+          sut.applyPartial(v.attrs, 'html', undo, []);
+          assert.equals(v.attrs, {html: TH.match.object});
+        },
+
+        "test partial"() {
+          const changes = [
+            'ol.2.li.$partial', [
+              '$add', ['4', '5']
+            ]
+          ];
+
+          const undo = [];
+          sut.applyPartial(v.attrs, 'html', changes, undo);
+          assert.equals(v.attrs.html.ol[2], {li: ['3', ' ', 'three', '4', '5']});
+          assert.equals(undo, [
+            'ol.2.li.$partial', [
+              '$remove', ['4', '5']
+            ],
+          ]);
+        },
+      },
+
+      "test top level match"() {
+        const attrs = {foo: 1, bar: "two"};
+        const changes = {$match: {foo: 1, bar: {md5: "b8a9"}}};
+        refute.exception(_=>{sut.applyAll(attrs, changes)});
+        assert.equals(attrs, {foo: 1, bar: "two"});
+        assert.equals(changes, {$match: {foo: 1, bar: {md5: "b8a9"}}});
+      },
+
+      "test top level not match"() {
+        const attrs = {foo: 1, bar: {md5: "bad"}};
+        const changes = {$match: {foo: 1, bar: "two"}};
+        assert.exception(
+          _=>{sut.applyAll(attrs, changes)},
+          {error: 409, reason: {bar: 'not_match'}}
+        );
+      },
+
+      "test applyAll"() {
+        /**
+         * Apply all commands to an attributes object. Commands can have:
+
+         * 1. a $match object which assert the supplied fields match the attribute
+
+         * 2. a $partial object which calls applyPartial for each field
+
+         * @returns undo command which when applied to the updated attributes reverts it to its
+         * original content. Calling `Changes.original` on undo will return the original commands
+         * object
+         **/
+        const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}, simple: [123]};
+        const changes = {
+          foo: 2,
+          $partial: {
+            bar: ['$replace', 4],
+            simple: 456,
+            baz: [
+              'bif.2.$partial', [
+                'bip', 'new',
+                'bob.$partial', [
+                  '$append', ' appended'
+                ]
+              ],
+            ],
+          },
+        };
+        const undo = sut.applyAll(attrs, changes);
+        assert.equals(changes, {
+          foo: 2,
+          simple: 456,
+          $partial: {
+            bar: ['$replace', 4],
+            baz: [
+              'bif.2.$partial', [
+                'bip', 'new',
+                'bob.$partial', [
+                  '$append', ' appended'
+                ]
+              ],
+            ],
+          },
+        });
+        assert.same(sut.original(undo), changes);
+
+        assert.equals(attrs, {
+          foo: 2, bar: 4,  baz: {
+            bif: [1, 2, {bob: 'text appended', bip: 'new'}]
+          },
+          simple: 456,
+        });
+        assert.equals(undo, {
+          foo: 1,
+          simple: [123],
+          $partial: {
+            bar: ['$replace', 2],
+            baz: [
+              'bif.2.$partial', [
+                'bob.$partial', [
+                  '$patch', [-9, 9, null]
+                ],
+                'bip', null,
+              ],
+            ],
+          }
+        });
+
+        sut.applyAll(attrs, undo);
+        assert.equals(attrs, {
+          foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]},
+          simple: [123],
+        });
+      },
+
+      "test no changes in applyAll"() {
+        const attrs = {foo: 1, bar: [1,2]};
+        const changes = {
+          foo: 1,
+          $partial: {
+            bar: ['$add', [1]],
+          },
+        };
+        ;
+        assert.equals(sut.applyAll(attrs, changes), {});
+        assert.equals(attrs, {foo: 1, bar: [1, 2]});
+      },
     },
 
-    "test addItem to undefined sublist"() {
-      const orig = {};
-      const changes = {"a.$+1": "x"};
+    "test updateCommands"() {
+      /**
+       * Given an original change command (commands), a modified top-level changes (modified), and
+       * the original top-level changes (original) update commands to reflect the modifications
+       **/
 
-      sut.applyAll(orig, changes);
-      assert.equals(orig, {a: ["x"]});
+      const commands = {
+        foo: 2,
+        $partial: {
+          bar: [
+            'baz.0', 4,
+            'bif', 'five',
+          ],
+          buz: ['$append', '.foo'],
+          zip: ['$prepend', 'bar.'],
+        },
+        fuz: 5,
+      };
+      const modified = {foo: 3, bar: {baz: [3], bif: 'six'}, buz: 'buz.foo', newone: [1,2,3]};
+      const original = {foo: 2, bar: {baz: [4], bif: 'six'}, buz: 'buz.foo', zip: 'bar.zip', fuz: 5};
+
+      sut.updateCommands(commands, modified, original);
+      assert.equals(commands, {
+        foo: 3,
+        newone: [1,2,3],
+        bar: {baz: [3], bif: 'six'},
+        $partial: {
+          buz: ['$append', '.foo'],
+        },
+      });
     },
 
-    "test removeItem applyAll"() {
-      const orig = {a: ["x", "a", "b"]};
-      const changes = {"a.$-1": "a", "a.$-2": "b"};
+    "test empty partial in updateCommands"() {
+      const commands = {
+        $partial: {
+          zip: ['$prepend', 'bar.'],
+        },
+        fuz: 5,
+      };
+      const modified = {fuz: 5, zip: 'zap'};
+      const original = {fuz: 5, zip: 'bar.zip'};
 
-      sut.applyAll(orig, changes);
-
-      assert.equals(orig, {a: ["x"]});
-      assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
+      sut.updateCommands(commands, modified, original);
+      assert.equals(commands, {
+        fuz: 5,
+        zip: 'zap',
+      });
     },
 
-    "version 2": {
+    "test extractChangeKeys"() {
+      /**
+       * Extract top level parameters that have changed given a set of attributes and a undo
+       * command
+       **/
 
+      const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
+      const changes = {
+        foo: 2,
+        $partial: {
+          bar: ['$replace', 4],
+        },
+        fuz: 5,
+      };
+
+      const params = sut.extractChangeKeys(attrs, changes);
+      assert.equals(params, {foo: 1, bar: 2, fuz: null});
     },
+
+    "test topLevelChanges"() {
+      /**
+       * Extract top level fields that have changed given a set of attributes and a change command
+       **/
+
+      const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
+      const changes = {
+        foo: 2,
+        $partial: {
+          baz: ['bif.2.bob', 'changed'],
+        },
+        fuz: 5,
+      };
+
+      const params = sut.topLevelChanges(attrs, changes);
+      assert.equals(params, {foo: 2, baz: {bif: [1, 2, {bob: 'changed'}]}, fuz: 5});
+    }
   });
 });

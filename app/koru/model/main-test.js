@@ -296,26 +296,6 @@ define(function (require, exports, module) {
         refute(v.obs.beforeCreate);
       },
 
-      "test $put"() {
-        v.TestModel.defineFields({x: 'jsonb'});
-        test.stub(koru, 'userId').returns('u123');
-        v.TestModel.prototype.authorizePut = {x: test.stub()};
-
-        v.tc.name = 'bar';
-        v.tc.changes['x.y'] = 'abc';
-
-        v.tc.$put(v.tc.changes);
-
-        assert.equals(v.obs.beforeUpdate, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'},
-                                            {x: {'x.y': "abc"}}]]);
-        assert.equals(v.obs.beforeSave, [[{name: 'foo', _id: v.tc._id}, {name: 'bar'},
-                                          {x: {'x.y': "abc"}}]]);
-        assert.equals(v.obs.afterLocalChange, [[{name: 'bar', _id: v.tc._id, x: {y: 'abc'}},
-                                                {name: 'foo',
-                                                 'x.y': undefined}]]);
-        assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
-      },
-
       "test create calls"() {
         test.onEnd(v.TestModel.onChange(v.onChange = test.stub()).stop);
 
@@ -656,6 +636,14 @@ define(function (require, exports, module) {
       },
 
       "test withChanges on objects"() {
+        /**
+         * Return a doc representing this doc with the supplied changes
+         * staged against it such that calling doc.$save will apply the changes.
+         *
+         * If this method is called again with the same changes object
+         * then a cached version of the before doc is returned.
+         */
+
         v.TestModel.defineFields({queen: 'text'});
 
         const doc = new v.TestModel({
@@ -664,10 +652,16 @@ define(function (require, exports, module) {
         assert.same(doc.$withChanges(), null);
 
 
-        let was = {"foo.bar.baz": "orig", "foo.bar.buzz": 2, queen: 'Mary', 'foo.fnord.a': 2};
+        let was = {$partial: {
+          foo: [
+            "bar.baz.$partial", ['$match', 'new val', '$patch', [0,3,"orig"]],
+            "bar.buzz", 2,
+            'fnord.a', 2],
+          queen: ['$replace', 'Mary'],
+        }};
         let old = doc.$withChanges(was);
 
-        assert.same(old.foo.bar.baz, "orig");
+        assert.same(old.foo.bar.baz, "orig val");
         assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, "Mary");
 
@@ -677,64 +671,38 @@ define(function (require, exports, module) {
 
         assert.same(doc.$withChanges(was), old);
 
-        was = {"foo.bar.baz": undefined, "foo.bar.buzz": 2, queen: undefined, 'foo.fnord.a': 2};
+        was = {$partial: {
+          foo: [
+            "bar.baz", null,
+            "bar.buzz", 2,
+            'fnord.a', 2],
+          queen: ['$replace', null],
+        }};
 
         old = doc.$withChanges(was);
+
         assert.same(old.foo.bar.baz, undefined);
         assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, undefined);
       },
 
-      "test withChanges on arrays addItem"() {
-        const doc = new v.TestModel({_id: 'f123', foo: ['f123']});
-        const was = {'foo.$-1': 'f123'};
-        const old = doc.$withChanges(was);
-        assert.equals(old.foo, []);
-      },
-
-      "test withChanges on array removeItem"() {
-        const doc = new v.TestModel({_id: "123", foo: []});
-        const was = {"foo.1.bar": 3};
-
-        let old = doc.$withChanges(was);
-
-        assert.equals(old.foo, [, {bar: 3}]);
-
-        doc.attributes.foo = [1, {bar: 3}];
-
-        old = doc.$withChanges({"foo.$-0": 1});
-        assert.equals(old.foo, [{bar: 3}]);
-      },
 
       "test $asChanges"() {
-        const beforeChange = {a: 1, b: 2, c: 3, "e.1.f": 42};
+        /**
+         * Use the {beforeChange} keys to extract the new values.
+         *
+         * @returns new hash of extracted values.
+         */
+        const beforeChange = {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}};
         const doc = new v.TestModel({_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
 
         const changes = doc.$asChanges(beforeChange);
 
-        assert.equals(changes, {a: 2, b: undefined, c: undefined, "e.1.f": 69});
+        assert.equals(changes, {a: 2, b: null, c: null, e: [1, {f: 69}]});
 
         // should not alter passed in arguments
-        assert.equals(beforeChange, {a: 1, b: 2, c: 3, "e.1.f": 42});
+        assert.equals(beforeChange, {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}});
         assert.equals(doc.attributes, {_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
-      },
-
-      "test addItem $asChanges"() {
-        const beforeChange = {"a.$-1": "a", "a.$-2": "b"};
-        const doc = new v.TestModel({id: "1", a: ["x", "a", "b"]});
-
-        const changes = doc.$asChanges(beforeChange);
-
-        assert.equals(changes, {"a.$+1": "a", "a.$+2": "b"});
-      },
-
-      "test removeItem $asChanges"() {
-        const beforeChange = {"a.$+1": "a", "a.$+2": "b"};
-        const doc = new v.TestModel({id: "1", a: ["x"]});
-
-        const changes = doc.$asChanges(beforeChange);
-
-        assert.equals(changes, {"a.$-1": "a", "a.$-2": "b"});
       },
 
       "test change"() {
@@ -976,6 +944,26 @@ define(function (require, exports, module) {
             _id: doc._id, name: "testing"});
       },
 
+      "test $savePartial"() {
+        const doc = v.TestModel.create({_id: '123', name: 'testing'});
+        this.stub(doc, '$save').returns('answer');
+        const ans = doc.$savePartial('name', ['$append', '.sfx'], 'foo', ['bar', 'abc']);
+        assert.equals(ans, 'answer');
+
+        assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
+      },
+
+      "test $$savePartial"() {
+        const doc = v.TestModel.create({_id: '123', name: 'testing'});
+        this.stub(doc, '$save').returns('answer');;
+        const ans = doc.$$savePartial('name', ['$append', '.sfx'], 'foo', ['bar', 'abc']);
+        assert.equals(ans, 'answer');
+
+        assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
+
+        assert.calledWith(doc.$save, 'assert');
+      },
+
       "test duplicate id"() {
         const doc = v.TestModel.create({_id: '123', name: 'testing'});
 
@@ -1029,105 +1017,6 @@ define(function (require, exports, module) {
 
         if(isClient)
           assert.calledOnceWith(session.rpc,'save', 'TestModel', doc._id, {name: "new"});
-      },
-
-      "put": {
-        setUp() {
-          test.intercept(koru, 'userId', function () {return 'u123'});
-          v.TestModel.defineFields({myAry: 'varchar(24) ARRAY', deep: 'object'});
-          v.doc = v.TestModel.create({name: 'old', myAry: ['zero', 'three'], deep: {a: 1}});
-
-          isClient && this.spy(session, "rpc");
-        },
-
-        "test no authorizePut"() {
-          TH.noInfo();
-          assert.accessDenied(function () {
-            v.doc.$put({name: 'new'});
-          });
-        },
-
-        "test simple"() {
-          v.TestModel.prototype.authorizePut = test.stub();
-          v.doc.$put('name', 'changed');
-          assert.same(v.doc.$reload().name, 'changed');
-        },
-
-        "test authorizePut function"() {
-          v.TestModel.prototype.authorizePut = v.auth = test.stub();
-
-          v.doc.$put({
-            name: 'new',
-            'myAry.$+1': 'one', 'myAry.$+2': 'two',
-            'myAry.$-3': 'three',
-            'deep.nested': {value: 123}});
-
-          assert.equals(v.doc.changes, {});
-
-          assert.calledWith(v.auth, 'u123', {
-            myAry: {"myAry.$+1": "one", "myAry.$+2": "two",
-                    "myAry.$-3": "three"}, deep: {"deep.nested": {value: 123}}});
-          assert.equals(v.auth.firstCall.thisValue, TH.matchModel(v.doc));
-          if (isClient) {
-            assert.calledTwice(v.auth);
-            assert.equals(v.auth.getCall(1).thisValue, TH.matchModel(v.doc));
-            assert(v.auth.calledBefore(session.rpc));
-          }
-
-          v.doc.$reload();
-
-          assert.same(v.doc.name, 'new');
-          assert.equals(v.doc.myAry, ['zero', 'one', 'two']);
-          assert.equals(v.doc.deep, {a: 1, nested: {value: 123}});
-
-          assert[isClient ? 'same' : 'equals'](v.doc.attributes, v.TestModel
-                                               .findById(v.doc._id).attributes);
-
-          if(isClient)
-            assert.calledOnceWith(session.rpc,'put', 'TestModel', v.doc._id, {
-              name: 'new',
-              'myAry.$+1': 'one', 'myAry.$+2': 'two',
-              'myAry.$-3': 'three',
-              'deep.nested': {value: 123}
-            });
-        },
-
-        "test authorizePut object"() {
-          v.TestModel.prototype.authorizePut = {
-            myAry: v.myAry = test.stub(),
-            deep(doc, updates, key) {
-              updates[key+'.nested'].value = 444;
-            },
-          },
-          v.TestModel.prototype.authorize = v.auth = test.stub();
-
-          v.doc.$put({
-            name: 'new',
-            'myAry.$+1': 'one', 'myAry.$+2': 'two',
-            'myAry.$-3': 'three',
-            'deep.nested': {value: 123}});
-
-          assert.calledWith(v.auth, 'u123', {
-            put: {
-              myAry: v.myAryUpdates = {"myAry.$+1": "one", "myAry.$+2": "two", "myAry.$-3": "three"},
-              deep: {"deep.nested": {value: 444}}
-            }
-          });
-          assert.equals(v.auth.firstCall.thisValue, TH.matchModel(v.doc));
-          if (isClient) {
-            assert.calledTwice(v.auth);
-            assert.same(v.myAry.callCount, 2);
-            assert.equals(v.auth.getCall(1).thisValue, TH.matchModel(v.doc));
-            assert(v.auth.calledBefore(session.rpc));
-          }
-          assert.calledWith(v.myAry, TH.matchModel(v.doc), v.myAryUpdates, 'myAry');
-
-          v.doc.$reload();
-
-          assert.same(v.doc.name, 'new');
-          assert.equals(v.doc.myAry, ['zero', 'one', 'two']);
-          assert.equals(v.doc.deep, {a: 1, nested: {value: 444}});
-        },
       },
 
       'test build'() {
@@ -1230,22 +1119,6 @@ define(function (require, exports, module) {
 
       tsc.withDef = undefined;
       assert.same(tsc.withDef, 0);
-    },
-
-    "test splitUpdateKeys"() {
-      const changes = {}, partials = {};
-      const updates = {
-        single: 1,
-        'anotherSingle': 'a',
-        'multi.part': 2,
-        'multi.also.here': 3,
-        'added.$+1': 4,
-      };
-      Model.splitUpdateKeys(changes, partials, updates);
-
-      assert.equals(changes, {single: 1, anotherSingle: "a"});
-      assert.equals(partials, {multi: {"multi.part": 2, "multi.also.here": 3},
-                               added: {"added.$+1": 4}});
     },
   });
 });

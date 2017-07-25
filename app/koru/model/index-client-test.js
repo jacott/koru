@@ -65,7 +65,7 @@ define(function (require, exports, module) {
            {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
            {points: 5, updatedAt: a4.updatedAt, _id: 'a4'}]);
 
-        a4.$update({points: 7});
+        a4.$update({$partial: {points: ['$replace', 7]}});
 
         assert.equals(
           Array.from(tree.cursor({from: {points: 7, updatedAt: new Date(2017, 1, 5)}})), [

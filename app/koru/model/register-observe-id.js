@@ -2,7 +2,7 @@ define(function(require, exports, module) {
   const makeSubject = require('koru/make-subject');
   const dbBroker    = require('./db-broker');
 
-  return function (model) {
+  return model=>{
     const dbObservers = Object.create(null);
     const modelObMap = Object.create(null);
     const modelName = model.modelName;
@@ -27,9 +27,9 @@ define(function(require, exports, module) {
       return {
         stop() {
           delete obs[key];
-          for(key in obs) return;
+          for(const _ in obs) return;
           delete observers[id];
-          for(id in observers) return;
+          for(const _ in observers) return;
           const modelObserver = modelObMap[dbId];
           if (modelObserver) {
             modelObserver.stop();
@@ -37,7 +37,7 @@ define(function(require, exports, module) {
           }
         },
 
-        id: id
+        id,
       };
     }
 
@@ -74,11 +74,11 @@ define(function(require, exports, module) {
     function observeModel(observers) {
       if (modelObMap[dbBroker.dbId]) return;
 
-      modelObMap[dbBroker.dbId] = model.onChange((doc, was) => {
-        const cbs = observers[(doc || was)._id];
-        if (cbs) for(let i in cbs) {
+      modelObMap[dbBroker.dbId] = model.onChange((doc, undo) => {
+        const cbs = observers[(doc == null ? undo : doc)._id];
+        if (cbs) for(const i in cbs) {
           const cb = cbs[i];
-          cb(doc, was);
+          cb(doc, undo);
         }
       });
     }

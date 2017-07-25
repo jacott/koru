@@ -210,18 +210,13 @@ define(function(require, exports, module) {
         return this.model.docs.exists(this);
       },
 
-      update(origChanges={}, value) {
+      update(changesOrField={}, value) {
+        const origChanges = (typeof changesOrField === 'string')
+                ? {[changesOrField]: value} : changesOrField;
         const model = this.model;
         const docs = model.docs;
-        if (typeof origChanges === 'string') {
-          const changes = {};
-          changes[origChanges] = value;
-          origChanges = changes;
-        }
 
         Model._support._updateTimestamps(origChanges, model.updateTimestamps, util.newDate());
-
-        const cmd = buildUpdate(this, origChanges);
 
         let count = 0;
         let onSuccess = [], onAbort = [];
@@ -229,82 +224,31 @@ define(function(require, exports, module) {
           TransQueue.onAbort(() => {
             onAbort.forEach(doc => model._$docCacheDelete(doc));
           });
+          const where = {_id: ''};
           this.forEach(doc => {
-            let fields, dups;
-            const changes = util.deepCopy(origChanges);
+            let fields;
             ++count;
             const attrs = doc.attributes;
 
             if (this._incs !== undefined) for (let field in this._incs) {
-              changes[field] = attrs[field] + this._incs[field];
+              origChanges[field] = attrs[field] + this._incs[field];
             }
 
-            Changes.applyAll(attrs, changes);
+            const params = Changes.topLevelChanges(attrs, origChanges);
+            if (util.isObjEmpty(params)) return 0;
+            docs.update({_id: doc._id}, params);
+            const undo = Changes.applyAll(attrs, origChanges);
 
-            let itemCount = 0;
-
-            {
-              const items = this._addItems;
-
-              if (items !== undefined) {
-                fields = {};
-                let atLeast1 = false;
-                for(let field in items) {
-                  let list = attrs[field] || (attrs[field] = []);
-                  util.forEach(items[field], item => {
-                    if (util.addItem(list, item) == null) {
-                      atLeast1 = true;
-                      changes[field + ".$-" + ++itemCount] = item;
-                    }
-                  });
-                  if (atLeast1) fields[field] = {$each: items[field]};
-                }
-                if (atLeast1)
-                  cmd.$addToSet = fields;
-              }
+            if (! util.isObjEmpty(undo)) {
+              onAbort.push(doc);
+              model._$docCacheSet(doc.attributes);
+              Model._support.callAfterObserver(doc, undo);
+              onSuccess.push([doc, undo]);
             }
-
-            {
-              const items = this._removeItems;
-              if (items !== undefined) {
-                const pulls = {};
-                dups = {};
-                for(let field in items) {
-                  const matches = [];
-                  let match, list = attrs[field];
-                  util.forEach(items[field], item => {
-                    if (list && (match = util.removeItem(list, item)) !== undefined) {
-                      changes[field + ".$+" + ++itemCount] = match;
-                      matches.push(match);
-                    }
-                  });
-                  if (matches.length) {
-                    let upd = matches.length === 1 ? matches[0] : {$in: matches};
-                    if (fields && fields.hasOwnProperty(field))
-                      dups[field] = upd;
-                    else
-                      pulls[field] = upd;
-                  }
-                }
-                for (let field in pulls) {
-                  cmd.$pull = pulls;
-                  break;
-                }
-              }
-            }
-
-            if (util.isObjEmpty(cmd)) return 0;
-
-            docs.koruUpdate(doc, cmd, dups);
-
-            model._$docCacheSet(doc.attributes);
-            onAbort.push(doc);
-            Model._support.callAfterObserver(doc, changes);
-            onSuccess.push([doc, changes]);
           });
         });
         TransQueue.onSuccess(() => {
-          onSuccess.forEach(([doc, changes]) => notify(model, doc, changes));
+          onSuccess.forEach(([doc, undo]) => notify(model, doc, undo));
         });
         return count;
       },
@@ -356,25 +300,5 @@ define(function(require, exports, module) {
     query._batchSize && cursor.batchSize(query._batchSize);
     query._limit && cursor.limit(query._limit);
     query._sort && cursor.sort(query._sort);
-  }
-
-  function buildUpdate(query, changes) {
-    const cmd = {};
-
-    if (query._incs !== undefined) cmd.$inc = query._incs;
-
-    let set, unset;
-    for(let field in changes) {
-      const value = changes[field];
-      if (value === undefined)
-        (unset = unset || {})[field] = '';
-      else
-        (set = set || {})[field] = value;
-    }
-
-    if (set) cmd.$set = set;
-    if (unset) cmd.$unset = unset;
-
-    return cmd;
   }
 });

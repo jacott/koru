@@ -172,7 +172,7 @@ define(function (require, exports, module) {
       });
       waitFut.wait();
 
-      TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'fuz'}});
+      TestModel.docs.updateById(v.doc._id, {name: 'fuz'});
 
       assert.same(v.doc.$reload(), v.doc);
       assert.same(v.doc.name, 'baz');
@@ -187,7 +187,7 @@ define(function (require, exports, module) {
       ;
       assert.same(waitFut.wait().name, 'cache foo');
 
-      TestModel.docs.update({_id: v.doc._id}, {$set: {name: 'doz'}});
+      TestModel.docs.updateById(v.doc._id, {name: 'doz'});
       assert.same(v.doc.$reload().name, 'fuz');
     },
 
@@ -290,7 +290,7 @@ define(function (require, exports, module) {
 
       TestModel.onChange(v.onChangeSpy = test.stub());
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
       });
 
@@ -303,6 +303,76 @@ define(function (require, exports, module) {
       assert.same(v.doc.$reload().name, 'bar');
 
       assert.calledOnce(v.onChangeSpy);
+      TransQueue.onSuccess.yield();
+      assert.calledTwice(v.onChangeSpy);
+      assert.calledWithExactly(v.auth, "u123");
+
+      assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
+    },
+
+    "test saveRpc partial no modification"() {
+      var TestModel = Model.define('TestModel', {
+        authorize: v.auth = test.stub()
+      }).defineFields({name: 'text', html: 'object'});
+
+
+      v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
+
+      TestModel.onChange(v.onChangeSpy = test.stub());
+
+      test.spy(TransQueue, 'onSuccess');
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {$partial: {
+        html: [
+          'div.2', 'baz'
+        ]
+      }});
+
+      assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'baz']});
+
+      assert.calledOnceWith(v.onChangeSpy, TH.matchModel(v.doc), {$partial: {
+        html: [
+          'div.2', null,
+        ]
+      }});
+      TransQueue.onSuccess.yield();
+      assert.calledTwice(v.onChangeSpy);
+      assert.calledWithExactly(v.auth, "u123");
+
+      assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
+    },
+
+    "test saveRpc partial validate modifies"() {
+      var TestModel = Model.define('TestModel', {
+        authorize: v.auth = test.stub()
+      }).defineFields({name: 'text', html: 'object'});
+
+      TestModel.prototype.validate = function () {
+        if (this.changes.html.div[2] === 3) {
+          this.changes.html.div[2] = 'three';
+        }
+      };
+
+      v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
+
+      TestModel.onChange(v.onChangeSpy = test.stub());
+
+      test.spy(TransQueue, 'onSuccess');
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {
+        name: 'fiz',
+        $partial: {
+          html: [
+            'div.2', 3
+          ]
+        }});
+
+      assert.equals(v.doc.$reload().html, {div: ['foo', 'bar', 'three']});
+
+      assert.calledOnceWith(v.onChangeSpy, TH.matchModel(v.doc), {
+        name: 'foo',
+        html: {div: ['foo', 'bar']},
+      });
       TransQueue.onSuccess.yield();
       assert.calledTwice(v.onChangeSpy);
       assert.calledWithExactly(v.auth, "u123");
