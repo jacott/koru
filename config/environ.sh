@@ -13,10 +13,6 @@ if [ ! -e "$tmpdir" ];then
     mkdir -p "$tmpdir"
 fi
 
-export MONGO_DIR=/tmp/testdb
-export MONGO_PORT=3004
-export MONGO_CFG=test-mongo.yml
-
 branch=${branch-${1-demo}}
 [ -e config/${branch}.sh ] && . config/${branch}.sh
 
