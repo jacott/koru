@@ -259,7 +259,9 @@ define(function(require, exports, module) {
         conn.finish();
       }
 
-      throw ex;
+      const err = new Error(ex.message);
+      err.sqlState = ex.sqlState;
+      throw err;
     }
   }
 
