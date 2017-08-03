@@ -359,6 +359,10 @@ define(function(require, exports, module) {
       return false;
     }
 
+    $fieldDiffs(field) {
+      return Changes.fieldDiff(field, this.attributes, this.changes);
+    }
+
     $withChanges(changes) {
       if (changes == null) return null;
       const cached = changes[changes$];
