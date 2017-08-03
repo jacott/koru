@@ -147,7 +147,7 @@ define(function(require, exports, module) {
       function has(re) {return !! modifiers.match(re)};
     },
 
-    dispatchEvent: dispatchEvent,
+    dispatchEvent,
 
     change: domEvent('change', function (node, value) {
       if ('value' in node)
@@ -283,19 +283,6 @@ define(function(require, exports, module) {
   }
 
   function dispatchEvent(elm, event) {
-    const old_unhandledException = koru.unhandledException;
-    let evex;
-    koru.unhandledException = unhandledException;
-    try {
-      elm.dispatchEvent(event);
-      if (evex) {
-        koru.unhandledException(evex);
-        throw new Error("event Dispatch => " + evex);
-      }
-    } finally {
-      koru.unhandledException = old_unhandledException;
-    }
-
-    function unhandledException(ex) {evex = ex}
+    elm.dispatchEvent(event);
   }
 });
