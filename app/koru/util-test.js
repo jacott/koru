@@ -230,7 +230,20 @@ define(function (require, exports, module) {
                     {a: 1, c: 3, d: 4});
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
                     {a: 1, c: 3, d: 4});
+    },
 
+    "test extractKeys"() {
+      assert.equals(
+        util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, ['a', 'c', 'e']),
+        {a: 4, c: {value: true}}
+      );
+    },
+
+    "test extractNotKeys"() {
+      assert.equals(
+        util.extractNotKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true}),
+        {b: "abc", c: {value: true}}
+      );
     },
 
     "test egal"() {
@@ -324,6 +337,8 @@ define(function (require, exports, module) {
 
     "test lookupDottedValue"() {
       assert.same(util.lookupDottedValue("foo.1.bar.baz", {
+        a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
+      assert.same(util.lookupDottedValue(['foo', 1, 'bar', 'baz'], {
         a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
     },
 

@@ -178,6 +178,26 @@ define(function(require, exports, module) {
       return dest;
     },
 
+    extractKeys(obj, keys) {
+      const len = keys.length;
+      const result = {};
+      for(let i = 0; i < len; ++i) {
+        const key = keys[i];
+        if (key in obj)
+          result[key] = obj[key];
+      }
+      return result;
+    },
+
+    extractNotKeys(obj, keys) {
+      const result = {};
+      for (const key in obj) {
+        if (! (key in keys))
+          result[key] = obj[key];
+      }
+      return result;
+    },
+
     forEach(list, func) {
       if (! list) return;
       const len = list.length;
@@ -295,7 +315,7 @@ define(function(require, exports, module) {
     },
 
     lookupDottedValue(key, attributes) {
-      const parts = key.split('.');
+      const parts = typeof key === 'string' ? key.split('.') : key;
       let val = attributes[parts[0]];
       for(let i=1; val && i < parts.length;++i) {
         val = val[parts[i]];
