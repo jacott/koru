@@ -326,6 +326,8 @@ define(function(require, exports, module) {
 
     get attributes() {
       const ans = [];
+      if (this.style.length != 0)
+        ans.push({name: 'style', value: this.style._origCssText()});
       for (let name in this._attributes)
         ans.push({name, value: this._attributes[name]});
       return ans;

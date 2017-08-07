@@ -4,14 +4,14 @@ define(function (require, exports, module) {
    * [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)
    *
    **/
-  var test, v;
   const api = require('koru/test/api');
-  const TH  = require('../test');
-  const Dom = require('../dom');
+  const TH  = require('koru/test');
+  const Dom = require('koru/dom');
+
+  var v;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       api.module(module.get('koru/dom'));
     },
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
       assertConvert({div: 'simple'});
       assertConvert({});
       assertConvert({id: 'Spinner', class: 'spinner dark'});
-      assertConvert({ol: [{li: 'one'}, {$name: 'li2', li: 'two', $myattr: 'attr3'}]});
+      assertConvert({ol: [{li: 'one'}, {$style: 'width:10px', $name: 'li2', li: 'two', $myattr: 'attr3'}]});
       assertConvert(['one', 'two', 'three']);
     },
 

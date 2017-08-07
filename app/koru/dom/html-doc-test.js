@@ -118,11 +118,13 @@ define(function (require, exports, module) {
     },
 
     "test style backgroundColor"() {
-      var top = document.createElement('div');
+      const top = document.createElement('div');
       assert.same(top.style.backgroundColor, '');
       top.style.backgroundColor = '#ffff00';
       assert.same(top.style.backgroundColor, 'rgb(255, 255, 0)');
       assert.same(top.getAttribute('style'), 'background-color: rgb(255, 255, 0);');
+      assert.equals(util.map(top.attributes, x=>`${x.name}:${x.value}`),
+                    ['style:background-color: rgb(255, 255, 0);']);
     },
 
     "test style.cssText"() {
