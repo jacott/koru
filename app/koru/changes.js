@@ -7,7 +7,49 @@ define(function(require, exports, module) {
          deepEqual, deepCopy, elemMatch,
          addItem, removeItem} = require('koru/util');
 
+  const same = (a,b)=>a==b;
+
   const original$ = Symbol();
+
+  const diffSeq = (oldSeq, newSeq, equal=same)=>{
+    const lo = oldSeq.length-1, ln = newSeq.length-1;
+    const minLast = Math.min(lo, ln);
+    let s = 0, e = 0;
+    while(s <= minLast && equal(oldSeq[s], newSeq[s])) ++s;
+    if (lo == ln && s == minLast+1) return;
+    while(s <= minLast - e && equal(oldSeq[lo-e], newSeq[ln-e])) ++e;
+
+    return [s, 1+lo-(e+s), newSeq.slice(s, e === 0 ? undefined : -e)];
+  };
+
+  const applyPatch = (ov, patch, key, undoPatch)=>{
+    let si = 0;
+    for(let i = 0; i < patch.length; i += 3) {
+      const ds = patch[i], dl = patch[i+1], content = patch[i+2];
+      const clen = content == null ? 0 : content.length;
+      if (ds < 0) {
+        if (patch.length - 3 !== i) throw new koru.Error(
+          400, {[key]: 'negative delta may only be in the last patch block'});
+        si = ov.length + ds;
+      } else {
+        si += ds;
+      }
+      const ei = si+dl;
+      const urep = ov.slice(si, ei);
+      if (typeof ov === 'string')
+        ov = `${ov.slice(0, si)}${clen == 0 ? '' : content}${ov.slice(ei)}`;
+      else
+        ov.splice(si, ei - si, ...(content == null ? [] : content));
+      si += clen;
+
+      undoPatch !== undefined && undoPatch.push(
+        ds < 0 ? ds - clen + urep.length : ds,
+        clen, urep.length == 0 ? null : urep
+      );
+    }
+    return ov;
+  };
+
 
   const applySimple = (attrs, key, changes)=>{
     const nv = changes[key];
@@ -155,31 +197,7 @@ define(function(require, exports, module) {
 
       let ov = attrs[key];
       const undoPatch = [];
-      let si = 0;
-      for(let i = 0; i < patch.length; i += 3) {
-        const ds = patch[i], dl = patch[i+1], content = patch[i+2];
-        const clen = content == null ? 0 : content.length;
-        if (ds < 0) {
-          if (patch.length - 3 !== i) throw new koru.Error(
-            400, {[key]: 'negative delta may only be in the last patch block'});
-          si = ov.length + ds;
-        } else {
-          si += ds;
-        }
-        const ei = si+dl;
-        const urep = ov.slice(si, ei);
-        if (typeof ov === 'string')
-          ov = `${ov.slice(0, si)}${clen == 0 ? '' : content}${ov.slice(ei)}`;
-        else
-          ov.splice(si, ei - si, ...(content == null ? [] : content));
-        si += clen;
-
-        undoPatch.push(
-          ds < 0 ? ds - clen + urep.length : ds,
-          clen, urep.length == 0 ? null : urep
-        );
-      }
-      attrs[key] = ov;
+      attrs[key] = applyPatch(ov, patch, key, undoPatch);
       undo.push('$patch', undoPatch);
     },
 
@@ -268,8 +286,123 @@ define(function(require, exports, module) {
     }
   };
 
+  const diff = (from, to)=>{
+    const ft = typeof from, tt = typeof to;
+    if (ft === 'string' && tt === 'string')
+      return diffSeq(from, to);
+    if ((from != null && to != null &&
+        (ft !== 'object' || tt !== 'object' ||
+         to.constructor !== from.constructor)) ||
+        from == null && to == null)
+      return to;
+
+    switch((from == null ? to : from).constructor) {
+    case Object: {
+      if (from === to) return {};
+      if (from == null) from = {};
+      else if (to == null) to = {};
+      const diff = {};
+      for (const key in from) {
+        if (! (key in to)) diff[key] = null;
+      }
+      for (const key in to) {
+        const orig = from[key];
+        const value = to[key];
+        if (! deepEqual(orig, value))
+          diff[key] = value;
+      }
+      return isObjEmpty(diff) ? undefined : diff;
+    } break;
+    case Array: {
+      if (from === to) return [];
+      if (from == null) from = [];
+      else if (to == null) to = [];
+      return diffSeq(from, to, deepEqual);
+    } break;
+    }
+    return to;
+  };
+
+  const has = (undo, field)=>{
+    return undo == null ? false :
+      undo.hasOwnProperty(field) || (
+        undo.$partial !== undefined && undo.$partial.hasOwnProperty(field));
+  };
+
+  const fromTo = (fields, from, to)=>{
+    const len = fields.length;
+    const cFrom = fieldDiff(fields[0], to, from);
+    to = fieldDiff(fields[0], from, to);
+    from = cFrom;
+    for(let i = 1; i < len; ++i) {
+      const field = fields[i];
+      from = from !== null && typeof from === 'object' ? from[field] : null;
+      to = to !== null && typeof to === 'object' ? to[field] : null;
+    }
+    return {from, to};
+  };
+
+  const fieldDiff = (field, from, to)=>{
+    if (from == null) {
+      if (to == null) return;
+      if (to.$partial !== undefined) throw new Error("illegal arguments");
+      return to[field];
+    }
+    if (to == null) {
+      if (from.$partial !== undefined) throw new Error("illegal arguments");
+      const ovalue = from[field];
+      if (ovalue == null || typeof ovalue !== 'object')
+        return;
+      return diff(ovalue, {});
+    }
+
+    if (from.$partial !== undefined) {
+      if (to.$partial !== undefined) throw new Error("illegal arguments");
+
+      const partial = from.$partial[field];
+      if (partial === undefined) return;
+      const cvalue = to[field];
+
+      from = {[field]: deepCopy(cvalue)};
+      const undo = [];
+      applyPartial(from, field, partial, undo);
+      return diff(from[field], cvalue);
+    }
+    if (to.$partial !== undefined) {
+      const partial = to.$partial[field];
+      if (partial === undefined) return;
+      const ovalue = from[field];
+      to = {[field]: deepCopy(ovalue)};
+      const undo = [];
+      applyPartial(to, field, partial, undo);
+      return diff(ovalue, to[field]);
+    }
+
+    const cvalue = to[field];
+    const ovalue = from[field];
+    return diff(from[field], to[field]);
+  };
+
+  const toString = o => ''+o;
+
+  const arrayToMap = (list, hash=toString)=>{
+    if (list == null) return {};
+    const map = {}, {length} = list;
+    for(let i = 0; i < length; ++i) {
+      const entry = list[i];
+      map[hash(entry)] = entry;
+    }
+    return map;
+  };
+
 
   return {
+    KEYWORDS: [
+      '$partial', '$patch', '$replace',
+      '$append', '$prepend', '$add', '$remove',
+      '$match'
+    ],
+
     applyAll(attrs, changes) {
       const topUndo = {[original$]: changes};
       const match = changes.$match;
@@ -310,6 +443,7 @@ define(function(require, exports, module) {
 
     applyOne,
     applyPartial,
+    applyPatch,
 
     topLevelChanges(attrs, changes) {
       const ans = {};
@@ -322,6 +456,8 @@ define(function(require, exports, module) {
             applyPartial(ans, key, partial[key], undo);
             if (undo.length == 0)
               delete ans[key];
+            else if (ans[key] === undefined)
+              ans[key] = null;
           }
         } else {
           const value = changes[key];
@@ -370,11 +506,23 @@ define(function(require, exports, module) {
     },
 
     original(undo) {return undo[original$]},
+    setOriginal(undo, orig) {undo[original$] = orig},
 
-    has(undo, field) {
-      return undo == null ? false :
-        undo.hasOwnProperty(field) || (
-          undo.$partial !== undefined && undo.$partial.hasOwnProperty(field));
-    }
+    arrayChanges(after, before, hash) {
+      const am = arrayToMap(after, hash), bm = arrayToMap(before, hash);
+
+      const added = [], removed = [];
+
+      for (const key in am) (key in bm) || added.push(am[key]);
+      for (const key in bm) (key in am) || removed.push(bm[key]);
+
+      return {added, removed};
+    },
+
+    has,
+    diff,
+    fieldDiff,
+    fromTo,
+    diffSeq,
   };
 });

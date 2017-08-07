@@ -195,39 +195,6 @@ define(function(require, exports, module) {
       });
     }
 
-    static changesTo(field, doc, was) {
-      let cache = this._changesToCache;
-      if (cache && cache.field === field && cache.doc === doc && cache.was === was)
-        return cache.keyMap;
-
-      cache = this._changesToCache = {field: field, doc: doc, was: was};
-
-      if (doc) {
-
-        if (was) {
-          if (field in was) {
-            cache.keyMap = 'upd';
-          } else {
-            const regex = new RegExp("^"+field+"\\.([^.]+)");
-            let m;
-            for (const key in was) {
-              if (m = regex.exec(key)) {
-                if (! cache.keyMap) {
-                  cache.keyMap = {};
-                };
-                cache.keyMap[m[1]] = key;
-              }
-            }
-          }
-        } else if (field in doc.attributes) {
-          cache.keyMap = 'add';
-        }
-      } else if (field in was.attributes) {
-        cache.keyMap = 'del';
-      }
-      return cache.keyMap;
-    }
-
     static addVersioning() {
       const model = this;
       const proto = model.prototype;
@@ -309,6 +276,14 @@ define(function(require, exports, module) {
 
       if (this._errors !== undefined) this._errors = undefined;
 
+      const origChanges = this.changes;
+      const topLevel = origChanges.$partial &&
+              Changes.topLevelChanges(this.attributes, origChanges);
+      if (topLevel) {
+        this.changes = util.deepCopy(topLevel);
+        Changes.setOriginal(this.changes, origChanges);
+      }
+
       if(fVTors !== undefined) {
         for(const field in fVTors) {
           const validators = fVTors[field];
@@ -325,7 +300,15 @@ define(function(require, exports, module) {
 
       this.validate && this.validate();
 
-      return ! this._errors;
+      const isOkay = this._errors === undefined;
+      if (topLevel !== undefined) {
+        if (isOkay) {
+          Changes.updateCommands(origChanges, this.changes, topLevel);
+        }
+        this.changes = origChanges;
+      }
+
+      return isOkay;
     }
 
     $assertValid() {
@@ -361,6 +344,10 @@ define(function(require, exports, module) {
 
     $fieldDiffs(field) {
       return Changes.fieldDiff(field, this.attributes, this.changes);
+    }
+
+    $fieldDiffsFrom(field, undo) {
+      return Changes.fieldDiff(field, undo, this.attributes);
     }
 
     $withChanges(changes) {

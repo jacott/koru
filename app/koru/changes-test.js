@@ -664,6 +664,13 @@ define(function (require, exports, module) {
       },
     },
 
+    "test original"() {
+      const undo = {foo: 123}, orig = {foo: 456};
+
+      sut.setOriginal(undo, orig);
+      assert.same(sut.original(undo), orig);
+    },
+
     "test updateCommands"() {
       /**
        * Given an original change command (commands), a modified top-level changes (modified), and
@@ -736,6 +743,8 @@ define(function (require, exports, module) {
       /**
        * Extract top level fields that have changed given a set of attributes and a change command
        **/
+      assert.equals(sut.topLevelChanges({foo: {a: 1}}, {$partial: {foo: ['$replace', null]}}),
+                    {foo: null});
 
       const attrs = {foo: 1, bar: 2, baz: {bif: [1, 2, {bob: 'text'}]}};
       const changes = {
@@ -748,6 +757,191 @@ define(function (require, exports, module) {
 
       const params = sut.topLevelChanges(attrs, changes);
       assert.equals(params, {foo: 2, baz: {bif: [1, 2, {bob: 'changed'}]}, fuz: 5});
-    }
+
+
+    },
+
+    "diffSeq": {
+      setUp() {
+        /**
+         * build an instruction to convert oldSeq to newSeq
+         **/
+      },
+
+      "test equal"() {
+        assert.equals(sut.diffSeq([1,2,3], [1,2,3]), undefined);
+      },
+
+      "test customCompare"() {
+        const o = n => ({a: n});
+        assert.equals(sut.diffSeq([1,2,3].map(o), [1,4,3].map(o), util.deepEqual), [
+          1, 1, [{a: 4}]
+        ]);
+      },
+
+      "test simple"() {
+        assert.equals(sut.diffSeq([1,2,3,4,5,6], [1,2,2,8,7,5,6]), [
+          2, 2, [2, 8, 7]
+        ]);
+        assert.equals(sut.diffSeq([2,3,4,5,6], [1,2,2,8,7,5,6]), [
+          0, 3, [1, 2, 2, 8, 7]
+        ]);
+        assert.equals(sut.diffSeq([2,3,4,5,6], [1,2,2,8,7,5,6,1]), [
+          0, 5, [1,2,2,8,7,5,6,1]
+        ]);
+      },
+
+      "test string"() {
+        assert.equals(sut.diffSeq("it1", "it21"), [2, 0, '2']);
+        assert.equals(sut.diffSeq("it21", "it1"), [2, 1, '']);
+        assert.equals(sut.diffSeq("cl 123.2", "cl 123"), [6, 2, '']);
+        assert.equals(sut.diffSeq("helo worlld", "hello world"), [3, 6, 'lo wor']);
+        assert.equals(sut.diffSeq("hello world", "helo worlld"), [3, 6, 'o worl']);
+        assert.equals(sut.diff("hello world", "helo worlld"), [3, 6, 'o worl']);
+        assert.equals(sut.diffSeq("hello world", "hello world"), undefined);
+      },
+    },
+
+    "test applyPatch"() {
+      assert.equals(sut.applyPatch("it1", [2, 0, '2']), "it21");
+      assert.equals(sut.applyPatch("it1", [0, 0]), "it1");
+    },
+
+
+
+    "arrayChanges"() {
+      /**
+       * Extract a list of added and removed elems from an after and before
+
+       * Note: converts elements to strings to compare unless hash method supplied
+       **/
+
+      assert.equals(sut.arrayChanges([1,2,6], [3,1]), {added: [2, 6], removed: [3]});
+      assert.equals(sut.arrayChanges([1,"5",6], [3,1]), {added: ["5", 6], removed: [3]});
+      assert.equals(sut.arrayChanges([1,"5",6]), {added: [1,"5",6], removed: []});
+      assert.equals(sut.arrayChanges(null, ["5", 1.2]), {added: [], removed: ["5", 1.2]});
+
+      assert.equals(
+        sut.arrayChanges(
+          [{id: 1, a: 2}, {id: 5, b: 3}], [{id: 5, b: 3}, {id: 'x', a: 2}],
+          o=>''+o.id
+        ),
+        {added: [{id: 1, a: 2}], removed: [{id: 'x', a: 2}]});
+    },
+
+    "fieldDiff": {
+      setUp() {
+        /**
+         * determine which sub-fields have changed
+
+         * @param field the field to diff
+         * @param from value (or undo partial) before change
+         * @param to value (or apply partial) after change
+         * @returns a partial command list
+         **/
+      },
+
+      "test not in change"() {
+        const attrs = {_id: 't123'};
+        assert.equals(sut.fieldDiff('foo', attrs, {fuz: '123'}), undefined);
+      },
+
+      "test no change"() {
+        const attrs = {_id: 't123', foo: {one: 123, two: 'a string', three: true}};
+        const changes = {foo: {one: 123, two: 'a string', three: true}};
+
+        assert.equals(sut.fieldDiff('foo', attrs, changes), undefined);
+      },
+
+      "test bad args"() {
+        assert.exception(_=>{
+          sut.fieldDiff('foo', undefined, {$partial: {}});
+        }, {message: 'illegal arguments'});
+
+        assert.exception(_=>{
+          sut.fieldDiff('foo', {$partial: {}}, undefined);
+        }, {message: 'illegal arguments'});
+
+        assert.exception(_=>{
+          sut.fieldDiff('foo', {$partial: {}}, {$partial: {}});
+        }, {message: 'illegal arguments'});
+      },
+
+      "test fromTo"() {
+        const attrs = {one: {two: {three: {a: 123, b: 456}}}};
+        const changes = {$partial: {one: ["two.three.b", 789]}};
+
+        assert.equals(sut.fromTo(['one', 'two', 'three'], attrs, changes), {
+          from: {a: 123, b: 456}, to: {a: 123, b: 789}
+        });
+      },
+
+      "test object"() {
+        const attrs = {_id: 't123', foo: {one: 123, two: 'a string', three: true}};
+        const changes = {foo: {two: 'new string', three: true, four: [1,2,3]}};
+
+        assert.equals(sut.diff(attrs.foo, changes.foo), {
+          one: null,
+          two: 'new string',
+          four: [1,2,3],
+        });
+
+        assert.same(sut.fieldDiff('foo', null, null), undefined);
+
+        assert.equals(sut.fieldDiff('foo', attrs, undefined), {one: null, two: null, three: null});
+        assert.equals(sut.fieldDiff('foo', undefined, attrs),
+                      {one: 123, two: 'a string', three: true});
+
+        assert.equals(sut.fieldDiff('foo', attrs, {}), {one: null, two: null, three: null});
+        assert.equals(sut.fieldDiff('foo', attrs, attrs), {});
+
+
+        assert.equals(sut.fieldDiff('foo', attrs, changes), {
+          one: null,
+          two: 'new string',
+          four: [1,2,3],
+        });
+
+
+
+        assert.equals(sut.fieldDiff('foo', {}, changes), {
+          two: 'new string', three: true, four: [1,2,3]});
+
+        assert.equals(sut.fieldDiff('foo', attrs, {foo: 123}), 123);
+        assert.equals(sut.fieldDiff('foo', {foo: {}}, {foo: new Date(2017, 1, 1)}),
+                      new Date(2017, 1, 1));
+
+        assert.equals(sut.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}), {
+          one: null, two: null, three: null
+        });
+
+        assert.equals(sut.fieldDiff('foo', {$partial: {foo: ['$replace', null]}}, attrs), {
+          one: 123, two: 'a string', three: true
+        });
+
+        assert.equals(sut.fieldDiff('foo', {foo: {}}, {$partial: {
+          foo: ['two', 'new string', 'three', true, 'four', [1,2,3]]
+        }}), {
+          two: 'new string', three: true, four: [1,2,3]});
+
+        assert.equals(sut.fieldDiff('foo', {$partial: {
+          foo: ['two', 'old string', 'three', true, 'five', 5]
+        }}, attrs), {
+          two: 'a string', five: null});
+      },
+
+      "test array"() {
+        const attrs = {_id: 't123', foo: [1,2,3,4]};
+        const changes = {foo: [1,2,4,5,6]};
+
+        assert.equals(sut.fieldDiff('foo', attrs, changes), [2, 2, [4, 5, 6]]);
+
+        assert.equals(sut.fieldDiff('foo', attrs, {$partial: {foo: ['$replace', null]}}),
+                      [0, 4, []]);
+        assert.equals(sut.fieldDiff('foo', {$partial: {foo: ['$replace', null]}}, attrs),
+                      [0, 0, [1,2,3,4]]);
+
+      },
+    },
   });
 });

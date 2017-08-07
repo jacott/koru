@@ -23,6 +23,8 @@ define(function(require, exports, module) {
     session.deregisterGlobalDictionaryAdder(module);
   });
 
+  Changes.KEYWORDS.forEach(word=>{session.addToDict(word)});
+
   const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;

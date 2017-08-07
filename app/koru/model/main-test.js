@@ -3,6 +3,7 @@ define(function (require, exports, module) {
    * Object persistence manager. Defines application models.
    **/
   const koru     = require('koru');
+  const Changes  = require('koru/changes');
   const dbBroker = require('koru/model/db-broker');
   const Query    = require('koru/model/query');
   const session  = require('koru/session');
@@ -514,24 +515,6 @@ define(function (require, exports, module) {
         assert.same(v.TestModel.getField(sut, 'luckyNumber'), 42);
       },
 
-      "test changesTo"() {
-        let res = v.TestModel.changesTo(
-          "foo", v.doc = {foo: {123: {name: 'y'}}},
-          v.was = {baz: "x.y.z", "foo.123.name": 'x', "foo.456.age": 4});
-
-        assert.equals(res, {123: 'foo.123.name', 456: 'foo.456.age'});
-        assert.same(v.TestModel.changesTo("foo", v.doc, v.was), res);
-
-        res = v.TestModel.changesTo("baz", v.doc, v.was);
-        assert.equals(res, 'upd');
-
-        assert.equals(v.TestModel.changesTo("daz", v.doc, v.was), undefined);
-
-        assert.equals(v.TestModel.changesTo("daz", {daz: 123}, {daz: undefined}), 'upd');
-        assert.equals(v.TestModel.changesTo("daz", {attributes: {daz: 123}}, null), 'add');
-        assert.equals(v.TestModel.changesTo("daz", null, {attributes: {daz: 123}}), 'del');
-      },
-
       "test classMethods"() {
         const doc = v.TestModel.build();
         assert.same(doc.constructor, doc.classMethods);
@@ -928,6 +911,31 @@ define(function (require, exports, module) {
             _id: doc._id, name: "testing"});
       },
 
+      "test $partial in $isValid"() {
+        const doc = v.TestModel.create({_id: '123', name: 'testing'});
+        doc.validate = function () {
+          v.changes = this.changes;
+          v.original = Changes.original(v.changes);
+
+          this.foo.baz = 1;
+          this._errors = v.errors;
+        };
+        doc.changes = {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}};
+        assert.isTrue(doc.$isValid());
+
+        assert.equals(doc.changes, {
+          foo: {bar: 'abc', baz: 1}, $partial: {name: ['$append', '.sfx']}});
+
+        assert.equals(v.changes, {name: 'testing.sfx', foo: {bar: 'abc', baz: 1}});
+        assert.same(v.original, doc.changes);
+
+        v.errors = {};
+        doc.changes = {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}};
+        assert.isFalse(doc.$isValid());
+
+        assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
+      },
+
       "test $savePartial"() {
         const doc = v.TestModel.create({_id: '123', name: 'testing'});
         this.stub(doc, '$save').returns('answer');
@@ -946,6 +954,31 @@ define(function (require, exports, module) {
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
 
         assert.calledWith(doc.$save, 'assert');
+      },
+
+      "test $fieldDiffs"() {
+        const doc = new v.TestModel({_id: 't123', foo: {one: 123, two: 'a string', three: true}});
+        doc.changes = {$partial: {foo: [
+          'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1,2,3]]}};
+
+        doc.validate = function () {
+          assert.equals(doc.changes.foo, {
+            two: 'a string.sfx', three: true, four: [1, 2, 3]});
+          assert.equals(doc.$fieldDiffs('foo'), {
+            one: null,
+            two: 'a string.sfx',
+            four: [1,2,3],
+          });
+
+        };
+        doc.$isValid();
+      },
+
+      "test $fieldDiffsFrom"() {
+        this.stub(Changes, 'fieldDiff').returns('success');
+        const doc = new v.TestModel({_id: 't123', foo: 456});
+        assert.equals(doc.$fieldDiffsFrom('foo', {undo: 123}), 'success');
+        assert.calledWith(Changes.fieldDiff, 'foo', {undo: 123}, {_id: 't123', foo: 456});
       },
 
       "test duplicate id"() {
