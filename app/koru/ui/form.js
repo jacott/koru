@@ -215,12 +215,12 @@ define(function(require, exports, module) {
       Tpl.clearErrors(form);
 
 
-      if (errors) {
-        for(let field in errors) {
+      if (errors !== undefined) {
+        for(const field in errors) {
 
           const msg = Val.Error.msgFor(doc, field);
           if (msg) {
-            var fieldElm = Tpl.renderError(form, field, msg);
+            const fieldElm = Tpl.renderError(form, field, msg);
             if (fieldElm)
               focus = focus || fieldElm;
             else
@@ -641,13 +641,13 @@ define(function(require, exports, module) {
   function saveChange(doc, field, value, options) {
     const form = document.getElementById(options.template.name);
     Tpl.clearErrors(form);
-    let errors;
+    let _errors;
     switch (typeof options.update) {
     case 'string':
-      errors = doc[options.update](field, value, options.undo);
+      _errors = doc[options.update](field, value, options.undo);
       break;
     case 'function':
-      errors = options.update(doc, field, value, options.undo);
+      _errors = options.update(doc, field, value, options.undo);
 
       break;
     default:
@@ -655,7 +655,7 @@ define(function(require, exports, module) {
       Tpl.saveChanges(doc, form, options.undo);
       return;
     }
-    errors && Tpl.renderErrors({_errors: errors}, form);
+    _errors === undefined || Tpl.renderErrors({_errors}, form);
   }
 
   return Tpl;

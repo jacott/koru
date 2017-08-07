@@ -518,8 +518,7 @@ define(function(require, exports, module) {
   }
 
   class HtmlBuilder {
-    constructor (lines, markup, html) {
-      html = html || document.createDocumentFragment();
+    constructor (lines, markup, html=document.createDocumentFragment()) {
       lines = typeof lines === 'string' ? lines.split("\n") : lines;
       this.markup = markup || [];
       this.lidx = this.midx = 0;

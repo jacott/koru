@@ -245,6 +245,7 @@ define(function (require, exports, module) {
     },
 
     "test validateField"() {
+      let errors = 'set';
       Val.register(v.myModule, {addIt(doc, field, x) {
         doc[field] += x;
         doc._errors = errors;
@@ -252,14 +253,13 @@ define(function (require, exports, module) {
       this.onEnd(function () {Val.register(v.myModule)});
       const doc = {age: 10};
 
-      let errors = 'set';
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
       assert.same(doc._errors, 'set');
       assert.same(doc.age, 15);
 
       doc.age = 'x';
-      errors = null;
+      errors = undefined;
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
       assert.equals(doc._errors, {age: [['wrong_type', 'number']]});
@@ -287,7 +287,7 @@ define(function (require, exports, module) {
       v.opts.onError();
 
       assert.equals(doc._errors, {foo: [['is_invalid']]});
-      doc._errors = null;
+      doc._errors = undefined;
 
       v.opts.onError('abc', 'def');
 

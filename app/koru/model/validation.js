@@ -12,8 +12,9 @@ define(function(require, exports, module) {
   const Val = module.exports = {
     Error: {
       msgFor(doc, field, other_error) {
-        const errors = doc._errors ? doc._errors[field] : typeof doc === 'string' ? [[doc]] : doc;
-        if (errors) {
+        const errors = doc._errors !== undefined ? doc._errors[field]
+                : typeof doc === 'string' ? [[doc]] : doc;
+        if (errors !== undefined) {
           return errors.map(Val.text).join(", ");
         } else if (other_error) {
           console.log('ERROR: ', JSON.stringify(doc._errors));
@@ -62,7 +63,7 @@ define(function(require, exports, module) {
             check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.$test(subSpec)) {
-          for(let key in obj) {
+          for(const key in obj) {
             try {
               if (subSpec.hasOwnProperty(key)) {
                 check1(obj[key], subSpec[key], name ? name+'.'+key : key);
@@ -113,7 +114,7 @@ define(function(require, exports, module) {
       let error, reason;
       if (! options || ! options.hasOwnProperty('onError'))
         options = Object.assign({onError(name, obj) {
-          if (obj && obj._errors) {
+          if (obj && obj._errors !== undefined) {
             reason = obj._errors;
           } else if (name) {
             reason = {}; reason[name] = [['is_invalid']];
@@ -134,10 +135,10 @@ define(function(require, exports, module) {
     },
 
     matchFields(fieldSpec, name) {
-      const m = match(function (doc) {
+      const m = match(doc=>{
         if (! doc) return false;
-        doc._errors = undefined;
-        for (let field in doc) {
+        if (doc._errors !== undefined) doc._errors = undefined;
+        for (const field in doc) {
           if (field === '_errors') continue;
           if (! fieldSpec.hasOwnProperty(field)) {
             Val.addError(doc, field, 'unexpected_field');
@@ -145,22 +146,22 @@ define(function(require, exports, module) {
           }
         }
 
-        for (let field in fieldSpec)
+        for (const field in fieldSpec)
           Val.validateField(doc, field, fieldSpec[field]);
 
-        return ! doc._errors;
+        return doc._errors === undefined;
       }, name || {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
     },
 
     validateField(doc, field, spec) {
-      for(let name in spec) {
+      for(const name in spec) {
         const validator = validators[name];
         validator && validator(doc, field, spec[name]);
       }
 
-      if (doc._errors) return false;
+      if (doc._errors !== undefined) return false;
 
       const value = doc[field];
       if (value != null && ! Val.check(value, spec.type)) {
@@ -168,7 +169,7 @@ define(function(require, exports, module) {
         return;
       }
 
-      return ! doc._errors;
+      return doc._errors === undefined;
     },
 
     denyAccessIf(falsey, message) {
@@ -206,10 +207,10 @@ define(function(require, exports, module) {
     errorsToString(doc) {
       const errs = doc._errors;
 
-      if (! errs) return;
+      if (errs === undefined) return;
 
       const result = [];
-      for(let field in errs) {
+      for(const field in errs) {
         const msgs = errs[field].map(m => util.inspect(m));
 
         result.push(field + ': ' + msgs.join('; '));
@@ -227,7 +228,7 @@ define(function(require, exports, module) {
       if (! truthy) {
         let reason;
         if (doc) {
-          if (doc._errors)
+          if (doc._errors !== undefined)
             reason = doc._errors;
           else {
             reason = {}; reason[doc] = [['is_invalid']];
@@ -266,13 +267,13 @@ define(function(require, exports, module) {
 
     register(module, map) {
       const registered = [];
-      for (let regName in map) {
+      for (const regName in map) {
         const item = map[regName];
         if (typeof item === 'function') {
           validators[regName] = item.bind(this);
           registered.push(regName);
         } else {
-          for(let regName in item) {
+          for(const regName in item) {
             validators[regName] = item[regName].bind(this);
             registered.push(regName);
           }
@@ -291,7 +292,7 @@ define(function(require, exports, module) {
     },
 
     addError(doc,field, ...args) {
-      const errors = doc._errors || (doc._errors = {}),
+      const errors = doc._errors === undefined ? (doc._errors = {}) : doc._errors,
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
@@ -319,13 +320,13 @@ define(function(require, exports, module) {
         if (Array.isArray(item)) {
           for(let j=0;j < item.length;++j) {
             const obj = item[j];
-            for(let key in obj) {
+            for(const key in obj) {
               output[key] = [convertPermitSpec(obj[key])];
             }
           }
         } else {
-          for(let key in item) {
-            let list = item[key];
+          for(const key in item) {
+            const list = item[key];
             if (Array.isArray(list))
               output[key] = convertPermitSpec(list);
             else

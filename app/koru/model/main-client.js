@@ -62,7 +62,7 @@ define(function(require, exports, module) {
           const doc = this.build(attrs, true);
           doc[stopGap$] = true;
           doc.$isValid();
-          doc._errors = null;
+          if (doc._errors !== undefined) doc._errors = undefined;
           doc.$save('force');
           return doc;
         },
@@ -82,8 +82,8 @@ define(function(require, exports, module) {
           const doc = this.constructor.findById(this._id);
           this.attributes = doc ? doc.attributes : {};
           this.changes = {};
-          this._errors = null;
-          this._cache = null;
+          if (this._errors !== undefined) this._errors = undefined;
+          if (this._cache !== undefined) this._cache = undefined;
           return this;
         }
       });

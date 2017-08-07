@@ -117,8 +117,8 @@ define(function(require, exports, module) {
           this.attributes = {};
         }
         this.changes = {};
-        this._errors = null;
-        this._cache = null;
+        if (this._errors !== undefined) this._errors = undefined;
+        if (this._cache !== undefined) this._cache = undefined;
 
         return this;
       };

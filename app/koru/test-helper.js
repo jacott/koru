@@ -83,10 +83,10 @@ define(function(require, exports, module) {
 
   ga.add('modelErrors', {
     assert(doc, expected) {
-      const result = {}, errors = doc._errors || {};
+      const result = {}, {_errors} = doc;
 
-      for(let field in errors) {
-        const msgs = errors[field].map(function (m) {
+      for(let field in _errors) {
+        const msgs = _errors[field].map(function (m) {
           if (m.length === 1)
             return m[0];
           return m.map(function (n) {

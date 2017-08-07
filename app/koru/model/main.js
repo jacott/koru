@@ -307,7 +307,7 @@ define(function(require, exports, module) {
       const model = this.constructor,
             fVTors = model._fieldValidators;
 
-      this._errors = null;
+      if (this._errors !== undefined) this._errors = undefined;
 
       if(fVTors !== undefined) {
         for(const field in fVTors) {

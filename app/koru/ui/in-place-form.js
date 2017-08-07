@@ -202,11 +202,11 @@ define(function(require, exports, module) {
               if (func.call(widget, doc, ctx.options.name, value, form) === 'exit')
                 return;
             }
-            if (! doc._errors) for(var noop in doc.changes) {
+            if (doc._errors === undefined) for(const _ in doc.changes) {
               doc.$save();
               break;
             }
-            if (doc._errors) {
+            if (doc._errors !== undefined) {
               Dom.removeClass(form, 'submitting');
               Dom.Form.renderErrors(doc, form);
             } else {
