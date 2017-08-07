@@ -162,6 +162,9 @@ define(function(require, exports, module) {
   };
 
   Client.prototype.aryToSqlStr = aryToSqlStr;
+  Client.prototype.columnsToInsValues = columns => `(${columns.map(k=>`"${k}"`).join(",")})
+values (${columns.map(k=>`{$${k}}`).join(",")})`;
+
 
 
   function closeDefaultDb() {
