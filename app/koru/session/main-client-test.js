@@ -214,13 +214,13 @@ define(function (require, exports, module) {
       v.sess.connect();         // connect
 
       assert.called(v.sess.newWs);
-      assert.same(v.sess._url(), 'wss://test.host:123/ws/4/dev/');
+      assert.same(v.sess._url(), 'wss://test.host:123/ws/5/dev/');
       v.sess.hash = 'h123';
-      assert.same(v.sess._pathPrefix(), 'ws/4/dev/h123');
-      assert.same(v.sess._pathPrefix({foo: 123}), 'ws/4/dev/h123?foo=123');
+      assert.same(v.sess._pathPrefix(), 'ws/5/dev/h123');
+      assert.same(v.sess._pathPrefix({foo: 123}), 'ws/5/dev/h123?foo=123');
       v.sess.dictHash = 'dh1234';
-      assert.same(v.sess._pathPrefix(), 'ws/4/dev/h123?dict=dh1234');
-      assert.same(v.sess._pathPrefix({bar: 'extra bit'}), 'ws/4/dev/h123?dict=dh1234&bar=extra%20bit');
+      assert.same(v.sess._pathPrefix(), 'ws/5/dev/h123?dict=dh1234');
+      assert.same(v.sess._pathPrefix({bar: 'extra bit'}), 'ws/5/dev/h123?dict=dh1234&bar=extra%20bit');
 
 
       refute.called(sessState.connected);
