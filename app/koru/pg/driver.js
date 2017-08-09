@@ -869,7 +869,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
           break;
         case 'jsonb':
         case 'json':
-          value = JSON.stringify(value);
+          value = value == null ? null : JSON.stringify(value);
           break;
         case 'date':
         case 'timestamp with time zone':

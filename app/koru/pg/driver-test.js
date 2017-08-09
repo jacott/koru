@@ -212,14 +212,18 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.foo.values(data, ['createdOn', 'widget']), ["2015-06-12T00:00:00.000Z", '[1,2,{"a":3}]']);
     },
 
-    "test string in json"() {
+    "test json"() {
       v.foo = pg.defaultDb.table('Foo', {
         widget: 'object',
       });
       v.foo.insert({_id: '123', widget: "dodacky"});
+      v.foo.insert({_id: '124', widget: null});
 
       assert.equals(v.foo.count({widget: "dodacky"}), 1);
       assert.equals(v.foo.count({widget: "wazzit"}), 0);
+
+      //should be null; not json:null
+      assert.equals(v.foo.count({widget: null}), 1);
     },
 
     "test ARRAY column"() {
