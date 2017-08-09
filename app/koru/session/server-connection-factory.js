@@ -63,7 +63,7 @@ define(function(require, exports, module) {
     }
 
     sendMatchUpdate (doc, undo, filter) {
-      if (doc && this.match.has(doc)) {
+      if (doc != null && this.match.has(doc)) {
         if (undo != null && this.match.has(doc.$withChanges(undo))) {
           this.changed(doc.constructor.modelName, doc._id, doc.$asChanges(undo), filter);
           return 'changed';
