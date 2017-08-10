@@ -4,11 +4,11 @@ define(function(require, exports, module) {
   const util     = require('koru/util');
   const koru     = require('../main');
 
-  const rpcQueue$ = Symbol(), baseId$ = Symbol();
+  const rpcQueue$ = Symbol(), baseId$ = Symbol(),
+        lastMsgId$ = Symbol(), nextMsgId$ = Symbol();
 
   function init(session, {rpcQueue=new RPCQueue()}={}) {
     util.merge(session, {
-      _msgId: 0,
       rpc,
       _sendM,
       cancelRpc(msgId) {
@@ -19,9 +19,16 @@ define(function(require, exports, module) {
           return true;
         }
       },
-      get lastMsgId() {return  session._msgId.toString(36)+this[baseId$]},
+      get lastMsgId() {return  this[lastMsgId$]},
       isRpcPending() {return rpcQueue.isRpcPending()},
+      checkMsgId(msgId) {
+        const nid = parseInt(msgId.slice(0, -this[baseId$].length));
+        if (nid >= this[nextMsgId$])
+          this[nextMsgId$] = nid+1;
+      },
     });
+    session[nextMsgId$]= 1,
+    session[lastMsgId$]= '',
     session[baseId$] = Random.global.id();
     session[rpcQueue$] = rpcQueue;
 
@@ -51,7 +58,7 @@ define(function(require, exports, module) {
   }
 
   function _sendM(name, args, func) {
-    var msgId = (++this._msgId).toString(36)+this[baseId$];
+    const msgId = this[lastMsgId$] = (this[nextMsgId$]++).toString(36)+this[baseId$];
     var data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
     this[rpcQueue$].push(this, data, func);

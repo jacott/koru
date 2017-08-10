@@ -55,7 +55,7 @@ isClient && define(function (require, exports, module) {
       "test persistence"() {
         const queue = new sut(v.db);
 
-        const session = {isRpcGet() {return false}};
+        const session = {isRpcGet() {return false}, checkMsgId() {}};
         function func() {}
 
         queue.push(session, v.data = ['a12', 'foo', 1], func);
@@ -69,7 +69,7 @@ isClient && define(function (require, exports, module) {
       "test get not persisted"() {
         const queue = new sut(v.db);
 
-        const session = {isRpcGet(arg) {return arg === 'foo'}};
+        const session = {isRpcGet(arg) {return arg === 'foo'}, checkMsgId() {}};
 
         function func() {}
 
@@ -99,7 +99,8 @@ isClient && define(function (require, exports, module) {
           sendBinary(type, data) {
             assert.same(type, 'M');
             ans.push(data);
-          }
+          },
+          checkMsgId() {},
         };
 
         queue.reload(sess).then(() => {queue.resend(sess)});

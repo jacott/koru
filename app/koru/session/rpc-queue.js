@@ -7,7 +7,10 @@ define(function(require, exports, module) {
       this.queue.tmp = null;
       delete this.queue.tmp; // hint to optimizer
     }
-    push(session, data, func) {this.queue[data[0]] = [data, func]}
+    push(session, data, func) {
+      this.queue[data[0]] = [data, func];
+      session.checkMsgId(data[0]);
+    }
     delete(id) {delete this.queue[id]}
     get(id) {return this.queue[id]}
     isRpcPending() {return ! util.isObjEmpty(this.queue)}

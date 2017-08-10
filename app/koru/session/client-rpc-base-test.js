@@ -32,9 +32,7 @@ define(function (require, exports, module) {
       this.stub(Random.global, 'id').returns('rid1');
       v.sess = sut(new MySession());
 
-      v.recvM = function (...args) {
-        v.sess._commands.M.call(v.sess, args);
-      };
+      v.recvM = (...args)=>{v.sess._commands.M.call(v.sess, args)};
       api.module();
     },
 
@@ -59,6 +57,22 @@ define(function (require, exports, module) {
       sut(v.sess, {rpcQueue});
       v.sess.rpc('foo.rpc', 1, 2);
       assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
+    },
+
+    "test checkMsgId"() {
+      /**
+       * Ensure than next msgId will be greater than this one
+       **/
+      const rpcQueue = new RPCQueue();
+      sut(v.sess, {rpcQueue});
+      api.method('checkMsgId', v.sess);
+
+      const id = 40+Random.id();
+      assert.equals(v.sess._sendM('foo'), '1rid1');
+      v.sess.checkMsgId(id);
+      assert.equals(v.sess._sendM('foo'), '15rid1');
+      v.sess.checkMsgId(id);
+      assert.equals(v.sess._sendM('foo'), '16rid1');
     },
 
     "test lastRpc"() {
@@ -134,77 +148,52 @@ define(function (require, exports, module) {
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
 
       v.sess.rpc('foo.rpc', 'a');
+      const msgIdA = v.sess.lastMsgId;
       assert.equals(v.args, ['a']);
 
 
       v.sess.rpc('foo.rpc', 'b', v.bstub = test.stub());
+      const msgIdB = v.sess.lastMsgId;
       assert.equals(v.args, ['b']);
 
       v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
-      var msgId = v.sess._msgId;
+      const msgIdC = v.sess.lastMsgId;
+      v.recvM(msgIdC, 'e', '404', 'error Msg');
 
-      v.recvM(msgId.toString(36), 'e', '404,error Msg');
-
-      assert.calledWithExactly(v.cstub, TH.match(function (err) {
+      assert.calledWithExactly(v.cstub, TH.match(err=>{
         assert.same(err.error, 404);
         assert.same(err.reason, 'error Msg');
         return true;
       }));
 
-      v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
-      v.recvM((msgId - 1).toString(36), 'r', [1,2,3]);
+      refute.called(v.bstub);
+
+      v.recvM(msgIdB, 'r', [1,2,3]);
+      v.recvM(msgIdB, 'r', [1,2,3]);
 
       assert.calledOnce(v.bstub);
 
-      assert.calledWithExactly(v.bstub, null, TH.match(function (result) {
-        assert.equals(result, [1,2,3]);
-        return true;
-      }));
+      assert.calledWithExactly(v.bstub, null, TH.match(result=>(
+        assert.equals(result, [1,2,3]), true)));
 
       v.sess.rpc('foo.rpc', 'x');
-      msgId = v.sess._msgId;
+      const msgIdX = v.sess.lastMsgId;
 
-      v.recM(msgId.toString(36), 'e', '404,global cb');
-      assert.calledOnceWith(koru.globalCallback, 404, 'global cb');
+      v.recvM(msgIdX, 'e', '404', 'global cb');
+      assert.calledOnceWith(koru.globalCallback, TH.match(err => {
+        assert.equals(err.error, 404);
+        assert.equals(err.reason, 'global cb');
+        return true;
+      }));
 
       function rpcSimMethod(...args) {
         v.args = args.slice();
       }
     },
 
-    "test onChange rpc" () {
-      v.ready = true;
-      test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
-
-      assert.same(v.state.pendingCount(), 0);
-
-      v.sess.rpc('foo.rpc', [1, 2]);
-
-      assert.calledOnceWith(v.ob, true);
-
-      v.sess.rpc('foo.rpc');
-      assert.calledOnce(v.ob);
-
-      assert.same(v.state.pendingCount(), 1);
-
-      v.ob.reset();
-
-      var msgId = v.sess._msgId;
-      v.recvM((msgId - 1).toString(36), 'r');
-
-      refute.called(v.ob);
-
-      v.recvM(msgId.toString(36), 'r');
-
-      assert.calledWith(v.ob, false);
-
-      assert.same(v.state.pendingCount(), 0);
-    },
-
-
     "test rpc" () {
       v.ready = true;
-      var fooId;
+      let _msgId = 0, fooId;
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
       v.sess.defineRpcGet('foo.s2', rpcSimMethod2);
 
@@ -218,14 +207,14 @@ define(function (require, exports, module) {
       assert.equals(v.args, [1, 2, 3]);
       assert.same(v.thisValue, util.thread);
 
-      assert.same(v.sess._msgId, fooId);
+      assert.same(v.sess.lastMsgId, '1rid1');
 
       v.sess.rpc('foo.s2');
 
       assert.same(v.state.pendingCount(), 2);
       assert.same(v.state.pendingUpdateCount(), 1);
 
-      assert.same(v.sess._msgId, fooId+1);
+      assert.same(v.sess.lastMsgId, '2rid1');
 
       v.recvM('2rid1', 'r');
 
@@ -237,16 +226,14 @@ define(function (require, exports, module) {
       assert.same(v.state.pendingCount(), 0);
       assert.same(v.state.pendingUpdateCount(), 0);
 
-
-
       function rpcSimMethod(...args) {
         v.thisValue = this;
         v.args = args.slice();
-        fooId = v.sess._msgId;
-        assert.calledWith(v.sendBinary, 'M', [fooId.toString(36)+'rid1', "foo.rpc"].concat(v.args));
+        fooId = (++_msgId).toString(36)+'rid1';
+        assert.calledWith(v.sendBinary, 'M', [fooId, "foo.rpc"].concat(v.args));
         assert.isTrue(v.sess.isSimulation);
         v.sess.rpc('foo.s2', 'aaa');
-        assert.same(v.sess._msgId, fooId);
+        assert.same(v.sess.lastMsgId, fooId);
 
         assert.isTrue(v.sess.isSimulation);
         assert.same(v.s2Name, 'aaa');
@@ -257,56 +244,20 @@ define(function (require, exports, module) {
         v.s2Name = name;
         v.s2This = this;
         assert.isTrue(v.sess.isSimulation);
-        refute.exception(function () {v.sess.rpc('foo.remote')});
+        refute.exception(()=>{v.sess.rpc('foo.remote')});
       }
     },
 
     "test server only rpc" () {
       v.ready = true;
-      refute.exception(function () {
-        v.sess.rpc('foo.rpc', 1, 2, 3);
-      });
+      refute.exception(()=>{v.sess.rpc('foo.rpc', 1, 2, 3)});
 
       assert.same(v.state.pendingCount(), 1);
       assert.same(v.state.pendingUpdateCount(), 1);
 
 
-      assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36)+'rid1', "foo.rpc", 1, 2, 3]);
-    },
-
-    "test callback rpc" () {
-      v.sess.defineRpc('foo.rpc', rpcSimMethod);
-
-      v.sess.rpc('foo.rpc', 'a');
-      assert.equals(v.args, ['a']);
-
-      v.sess.rpc('foo.rpc', 'b', v.bstub = test.stub());
-      assert.equals(v.args, ['b']);
-
-      v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
-      var msgId = v.sess._msgId;
-
-      v.recvM(msgId.toString(36)+'rid1', 'e', '404', 'error Msg');
-
-      assert.calledWithExactly(v.cstub, TH.match(function (err) {
-        assert.same(err.error, 404);
-        assert.same(err.reason, 'error Msg');
-        return true;
-      }));
-
-      v.recvM((msgId - 1).toString(36)+'rid1', 'r', [1,2,3]);
-      v.recvM((msgId - 1).toString(36)+'rid1', 'r', [1,2,3]);
-
-      assert.calledOnce(v.bstub);
-
-      assert.calledWithExactly(v.bstub, null, TH.match(function (result) {
-        assert.equals(result, [1,2,3]);
-        return true;
-      }));
-
-      function rpcSimMethod(...args) {
-        v.args = args.slice();
-      }
+      assert.calledWith(v.sendBinary, 'M', [
+        v.sess.lastMsgId, "foo.rpc", 1, 2, 3]);
     },
 
     "test onChange rpc" () {
@@ -316,6 +267,7 @@ define(function (require, exports, module) {
 
       assert.isFalse(v.sess.isRpcPending());
       v.sess.rpc('foo.rpc', [1, 2]);
+      const msgId1 = v.sess.lastMsgId;
       assert.isTrue(v.sess.isRpcPending());
 
       assert.calledOnceWith(v.ob, true);
@@ -328,12 +280,11 @@ define(function (require, exports, module) {
 
       v.ob.reset();
 
-      var msgId = v.sess._msgId;
-      v.recvM((msgId - 1).toString(36)+'rid1', 'r');
+      v.recvM(msgId1, 'r');
 
       refute.called(v.ob);
 
-      v.recvM(msgId.toString(36)+'rid1', 'r');
+      v.recvM(v.sess.lastMsgId, 'r');
 
       assert.calledWith(v.ob, false);
       assert.isFalse(v.sess.isRpcPending());

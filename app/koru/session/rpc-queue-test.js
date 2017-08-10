@@ -29,8 +29,18 @@ isClient && define(function (require, exports, module) {
 
       const queue = new_RPCQueue();
 
-      queue.push({}, v.data = [12, 'save'], v.func = this.stub());
+      queue.push({checkMsgId() {}}, v.data = [12, 'save'], v.func = this.stub());
       assert.equals(queue.get(12), [v.data, v.func]);
+    },
+
+    "test push updates nextMsgId"() {
+      /**
+       * enque msg and call session.checkMsgId
+       **/
+      const queue = new sut();
+      const session = {checkMsgId: this.stub()};
+      queue.push(session, ['50'+'abcdef', 'list']);
+      assert.calledWith(session.checkMsgId, '50abcdef');
     },
 
     "test resend"() {
@@ -44,7 +54,8 @@ isClient && define(function (require, exports, module) {
         sendBinary(type, data) {
           assert.same(type, 'M');
           ans.push(data);
-        }
+        },
+        checkMsgId() {},
       };
 
       const queue = new sut();
