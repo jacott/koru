@@ -32,7 +32,6 @@ define(function(require, exports, module) {
     }
 
     createObjectStore(name, options) {
-
       if (options.keyPath !== '_id')
         throw new Error('MockIndexedDB only supports _id for keyPath');
       if (this._store[name])
@@ -47,7 +46,6 @@ define(function(require, exports, module) {
     close() {}
 
     transaction() {
-      const self = this;
       return new Transaction(this);
     }
   }
@@ -295,7 +293,7 @@ define(function(require, exports, module) {
         set onupgradeneeded(func) {
           if (oldVersion !== newVersion)
             pending.push(() => {
-              func({oldVersion, newVersion, target: {result: db, transaction: db}});
+              func({oldVersion, newVersion, target: {result: db, transaction: db.transaction()}});
             });
         },
         set onsuccess(func) {
