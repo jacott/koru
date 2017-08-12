@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
 
-  module.exports = function (mig) {
+  module.exports = mig => {
     mig.createTable({
       name: '$$modelName$$',
       fields: {

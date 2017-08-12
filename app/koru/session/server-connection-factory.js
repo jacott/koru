@@ -210,7 +210,6 @@ define(function(require, exports, module) {
       if (filter[key] === undefined)
         result[key] = attrs[key];
     }
-
     return result;
   }
 

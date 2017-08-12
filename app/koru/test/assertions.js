@@ -129,15 +129,17 @@ define(function(require, exports, module) {
         if (typeof actual === 'string' && typeof expected === 'string') {
           const al = actual.length, el = expected.length;
           const len = Math.min(al, el);
-          let s = 0;
-          while(s < len && actual[s] === expected[s])
-            ++s;
-          let e = -1;
-          while(e + len - s >= 0 && actual[e + al] === expected[e + el])
-            --e;
-          setHint(actual.slice(s, e+1 || undefined), expected.slice(s, e+1 || undefined),
-                  'diff '+JSON.stringify(actual.slice(0, s)).slice(1, -1)
-                  .replace(/./g, '-')+'^');
+          if (len > 20) {
+            let s = 0;
+            while(s < len && actual[s] === expected[s])
+              ++s;
+            let e = -1;
+            while(e + len - s >= 0 && actual[e + al] === expected[e + el])
+              --e;
+            setHint(actual.slice(s, e+1 || undefined), expected.slice(s, e+1 || undefined),
+                    'diff '+JSON.stringify(actual.slice(0, s)).slice(1, -1)
+                    .replace(/./g, '-')+'^');
+          }
         }
         setHint();
       }

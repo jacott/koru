@@ -3,25 +3,23 @@ define(function (require, exports, module) {
   const Factory = require('test/factory');
 
   const $$reqModel$$;
-  let test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
       TH.startTransaction();
-      test = this;
       v = {};
     },
 
     tearDown() {
-      v = test =null;
+      v = null;
       TH.endTransaction();
     },
 
     "test persistence"() {
       const doc = Factory.create$$modelName$$();
 
-      // avoid cache
-      const loaded = $$modelName$$.where('_id', doc._id).fetchOne();
+      const loaded = doc.$reload(true); // true avoids cache
       assert.same($$modelName$$.query.count(), 1);
       $$persistenceTest$$
     },

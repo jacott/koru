@@ -117,8 +117,8 @@ define(function (require, exports, module) {
            * Match commands ensure we only update if the current value matches. The whole
            * transaction is aborted if the match is not satisfied.
 
-           * Note: $match can be used on any type but $matchMD5 and $matchSHA256 can only be used on
-           * strings
+           * Note: $match can be used on any type but $match.md5 and $match.sha256 can only be used
+           * on strings
            **/
         },
 
@@ -324,6 +324,11 @@ define(function (require, exports, module) {
             2, 4, "i was changed ",   // delete and add
             3, 0, "and I was added. " // add only
           ]]);
+
+          const attrs2 = {name: 'Austin;'};
+          sut.applyPartial(attrs2, 'name', [
+            '$patch', [0, 0, 'Jane ', 4, 1, 'e', -1, 1, '.']], []);
+          assert.equals(attrs2.name, 'Jane Austen.');
         },
 
         "test -ve delta"() {
