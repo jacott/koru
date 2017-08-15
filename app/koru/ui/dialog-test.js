@@ -72,6 +72,26 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test onConfirm confirmDialog"() {
+      const data = {
+        content: Dom.h({h1: 'This is the message'}),
+        onConfirm(arg) {
+          assert.same(arg, data);
+          assert.same(this, Dom('.Dialog'));
+          v.called = true;
+        }
+      };
+      Dialog.confirm(data);
+      TH.click('.Dialog.Confirm [name=cancel]');
+      refute.dom('.Dialog');
+      refute(v.called);
+
+      Dialog.confirm(data);
+      TH.click('.Dialog.Confirm [name=okay]');
+      refute.dom('.Dialog');
+      assert.isTrue(v.called);
+    },
+
     'test confirmDialog'() {
       const data = {
         classes: 'small',
@@ -120,7 +140,7 @@ isClient && define(function (require, exports, module) {
     'test cancel confirmDialog with defaults '() {
       const data = {
         content: 'bla',
-        callback: function(value) {
+        callback(value) {
           v.result = value;
         }
       };

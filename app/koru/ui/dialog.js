@@ -54,7 +54,7 @@ define(function(require, exports, module) {
 
   Tpl.$helpers({
     content() {
-      const content = this.content;
+      const {content} = this;
 
       if (Dom.hasClass(content, 'dialogContainer'))
         return content;
@@ -79,6 +79,7 @@ define(function(require, exports, module) {
 
   Tpl.Confirm.$helpers({
     classes() {
+      if (this.id) $.element.id = this.id;
       $.element.setAttribute('class', 'ui-dialog '+ (this.classes || ''));
     },
 
@@ -92,8 +93,17 @@ define(function(require, exports, module) {
 
   Tpl.Confirm.$events({
     'click button'(event) {
-      const data = $.ctx.data;
-      data.callback && data.callback.call(data, this.name === 'okay', event.currentTarget);
+      const {data} = $.ctx;
+      const {onConfirm, callback} = data;
+      const confirmed = this.name === 'okay';
+      if (onConfirm) {
+        if (confirmed)
+          onConfirm.call(event.currentTarget, data);
+        else
+          Tpl.close(event.currentTarget);
+      } else
+        if (callback)
+          callback.call(data, confirmed, event.currentTarget);
       Dom.remove(event.currentTarget);
     },
   });

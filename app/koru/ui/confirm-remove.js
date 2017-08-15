@@ -14,17 +14,14 @@ define(function(require, exports, module) {
       description,
       onConfirm,
     }) {
-      Dialog.confirm(Object.assign({
+      Dialog.confirm({
         classes,
         title,
         description,
         okay,
         content: Tpl,
-        callback(confirmed) {
-          confirmed && onConfirm();
-          Dialog.close();
-        },
-      }));
+        onConfirm,
+      });
     },
   });
 });
