@@ -198,6 +198,17 @@ define(function(require, exports, module) {
       return result;
     },
 
+    splitKeys(obj, includeKeys) {
+      const include = {}, exclude = {};
+      for (const key in obj) {
+        if (key in includeKeys)
+          include[key] = obj[key];
+        else
+          exclude[key] = obj[key];
+      }
+      return {include, exclude};
+    },
+
     forEach(list, func) {
       if (! list) return;
       const len = list.length;

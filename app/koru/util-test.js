@@ -246,6 +246,15 @@ define(function (require, exports, module) {
       );
     },
 
+    "test splitKeys"() {
+      const {include, exclude} = util.splitKeys(
+        {a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true});
+
+      assert.equals(include, {a: 4});
+      assert.equals(exclude, {b: "abc", c: {value: true}});
+    },
+
+
     "test egal"() {
       assert.same(util.egal, util.is);
       assert.isTrue(util.egal(null, null));
