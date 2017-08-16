@@ -603,11 +603,14 @@ define(function(require, exports, module) {
         return value;
       }
 
-      function sortFunc(params) {
+      function sortFunc(sort) {
+        const slen = sort.length;
         return (a, b) => {
-          for(const key in params) {
+          for(let i = 0; i < slen; ++i) {
+            const key = sort[i];
+            const dir = i+1 == slen || typeof sort[i+1] !== 'number' ? 1 : (++i, -1);
             const aVal = a[key]; const bVal = b[key];
-            if (aVal !== bVal) return  (aVal < bVal) ? -params[key]  : params[key];
+            if (aVal !== bVal) return  (aVal < bVal) ? -dir : dir;
           }
           return 0;
         };

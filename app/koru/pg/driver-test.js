@@ -380,9 +380,15 @@ isServer && define(function (require, exports, module) {
       },
 
       "test cursor with options"() {
-        var cursor = v.foo.find({age: 10}, {limit: 1, sort: {name: 1}});
+        let cursor = v.foo.find({age: 10}, {limit: 1, sort: ['name']});
         try {
           assert.equals(cursor.next(2), [mf('name', 'five')]);
+        } finally {
+          cursor.close();
+        }
+        cursor = v.foo.find({age: 10}, {limit: 1, offset: 2, sort: ['name']});
+        try {
+          assert.equals(cursor.next(2), [mf('name', 'one')]);
         } finally {
           cursor.close();
         }

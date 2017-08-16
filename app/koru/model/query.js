@@ -70,21 +70,27 @@ define(function(require, exports, module) {
 
       sort(...fields) {
         if (this._index !== undefined) throw new Error('withIndex may not be used with sort');
-        const _sort = this._sort || (this._sort = {});
-        for(let i = 0; i < fields.length; ++i) {
-          const val = fields[i];
-          if (typeof val === 'string')
-            _sort[val] = 1;
-          else
-            _sort[fields[i-1]] = val;
-        }
+        fields = fields.filter(n => n !== 1);
+        if (this._sort === undefined)
+          this._sort = fields;
+        else
+          this._sort = this._sort.concat(fields);
         return this;
       }
 
       reverseSort() {
-        if (this._sort === undefined) return this;
-        for (const field in this._sort)
-          this._sort[field] = -this._sort[field];
+        const {_sort} = this;
+        if (_sort === undefined) return this;
+        const ns = [], slen = _sort.length;
+        for(let i = 0; i < slen; ++i) {
+          if (i+1 == slen || typeof _sort[i+1] !== 'number')
+            ns.push(_sort[i], -1);
+          else
+            ns.push(_sort[i++]);
+        }
+        this._sort = ns;
+
+        return this;
       }
 
       fetchField(field) {

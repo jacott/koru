@@ -734,11 +734,22 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     const client = cursor.table._client;
     const tx = client._weakMap.get(util.thread);
     let sql = cursor._sql;
+
     if (cursor._sort) {
-      sql += ' ORDER BY '+Object.keys(cursor._sort)
-        .map(k => '"'+k+(cursor._sort[k] === -1 ? '" DESC' : '"')).join(',');
+      let sort = '';
+      const {_sort} = cursor, len = _sort.length;
+      for(let i = 0; i < len; ++i) {
+        const val = _sort[i];
+        if (typeof val === 'string') {
+          sort += `${sort.length == 0 ? '' : ','}"${val}"`;
+        } else if (val === -1) {
+          sort += ' DESC';
+        }
+      }
+      sql += ' ORDER BY '+sort;
     }
     if (cursor._limit) sql+= ' LIMIT '+cursor._limit;
+    if (cursor._offset) sql+= ' OFFSET '+cursor._offset;
 
     if (cursor._batchSize) {
       const cname = 'c'+(++cursorCount).toString(36);
@@ -813,6 +824,11 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     limit(value) {
       this._limit = value;
+      return this;
+    }
+
+    offset(value) {
+      this._offset = value;
       return this;
     }
 

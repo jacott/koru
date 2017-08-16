@@ -95,6 +95,11 @@ define(function(require, exports, module) {
         return this;
       },
 
+      offset(offset) {
+        this._offset = offset;
+        return this;
+      },
+
       batchSize(size) {
         this._batchSize = size;
         return this;
@@ -299,6 +304,7 @@ define(function(require, exports, module) {
   function applyCursorOptions(query, cursor) {
     query._batchSize && cursor.batchSize(query._batchSize);
     query._limit && cursor.limit(query._limit);
+    query._offset && cursor.offset(query._offset);
     query._sort && cursor.sort(query._sort);
   }
 });
