@@ -34,8 +34,7 @@ isServer && define(function (require, exports, module) {
       assert.same(doc.myName, "foo");
       var row = v.client.query("SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
                                ['TestTable', '_id'])[0];
-      assert.equals(row.character_maximum_length, 24);
-      assert.equals(row.data_type, "character varying");
+      assert.equals(row.data_type, "text");
 
       var row = v.client.query("SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
                                ['TestTable', 'myName'])[0];

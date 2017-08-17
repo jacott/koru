@@ -336,7 +336,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       readColumns(this);
       const {schema} = this;
       if (this._columns.length === 0) {
-        const fields = ['_id varchar(24) PRIMARY KEY'];
+        const fields = ['_id text PRIMARY KEY'];
         if (schema) {
           for (let col in schema) {
             const spec = jsFieldToPg(col, schema[col], this._client);
@@ -973,13 +973,13 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     case 'belongs_to':
     case 'id':
     case 'user_id_on_create':
-      return 'varchar(24)';
+      return 'text';
     case 'has_many':
-      return 'varchar(24) ARRAY';
+      return 'text ARRAY';
     case 'auto_timestamp':
       return 'timestamp';
     case 'color':
-      return 'varchar(9)';
+      return 'text';
     case 'object':
     case 'baseObject':
       return 'jsonb';
