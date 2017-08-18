@@ -83,6 +83,8 @@ define(function (require, exports, module) {
       assertConvert({id: 'Spinner', class: 'spinner dark'});
       assertConvert({ol: [{li: 'one'}, {style: 'width:10px', name: 'li2', li: ['two'], myattr: 'attr3'}]});
       assertConvert(['one', 'two', 'three']);
+      assertConvert({input: [], name: 'email'});
+      assertConvert({input: ''});
     },
 
     "test more Dom.h"() {
@@ -115,6 +117,21 @@ define(function (require, exports, module) {
       }, {message: 'Ambiguous markup'});
     },
 
+    "test svg Dom.h"() {
+      const elm = Dom.h({div: {svg: {path: [], d: 'M0,0 10,10Z'}}});
+      assert.dom(elm, elm =>{
+        assert.dom('svg', svg =>{
+          isClient && assert(svg instanceof window.SVGSVGElement);
+          assert.dom('path', path => {
+            isClient && assert(path instanceof window.SVGPathElement);
+            assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
+          });
+        });
+      });
+
+      assert.equals(Dom.htmlToJson(elm), {div: {svg: {path: [], d: 'M0,0 10,10Z'}}});
+    },
+
     "test escapeHTML"() {
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
     },
@@ -128,14 +145,27 @@ define(function (require, exports, module) {
        *
        * Array is used when multiple children. Comments have a key of `$comment$`. The tagName will
        * default to "div" if none is given.
+
+       * When a tag is svg, itself and its children will be in the svg namespace (Client only).
+       *
+       * @param body an object to convert to a Dom node
+
+       * @param xmlns use xmlns instead of html
+
+       * @returns A Dom node
        **/
       api.method('h');
 
       const obj = {class: 'greeting', id: "gId", section: {
-        ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'}],
+        ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
+             {li: {svg: [], viewBox: "0 0 100 100"}}],
       }, 'data-lang': 'en'};
 
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
+
+      if (isClient) {
+        assert(Dom.h({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS) instanceof window.SVGPathElement);
+      }
     },
 
     "test classList"() {

@@ -73,6 +73,7 @@ define(function(require, exports, module) {
     DOCUMENT_FRAGMENT_NODE,
 
     createElement(tag) {return new Element(tag)},
+    createElementNS(xmlns, tag) {return new Element(tag)},
     createTextNode(value) {return new TextNode(value)},
     createDocumentFragment() {return new DocumentFragment()},
     createComment(data) {return new CommentNode(data)},

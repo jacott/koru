@@ -8,7 +8,9 @@ define(function(require, exports, module) {
     return parent.querySelector(cssQuery);
   }
 
-  const h = body => {
+  const SVGNS = Dom.SVGNS = "http://www.w3.org/2000/svg";
+
+  const h = (body, xmlns) => {
     let id = '', className = '', content = null, tagName = '';
 
     if (typeof body === "string") {
@@ -28,7 +30,7 @@ define(function(require, exports, module) {
     if (Array.isArray(body)) {
       const elm = document.createDocumentFragment();
       body.forEach(item => {
-        item != null && elm.appendChild(h(item));
+        item != null && elm.appendChild(h(item, xmlns));
       });
       return elm;
     }
@@ -65,7 +67,9 @@ define(function(require, exports, module) {
             pTag = '';
           }
           tagName = key;
-          content = value && h(value);
+          if (tagName === 'svg')
+            xmlns = SVGNS;
+          content = value && h(value, xmlns);
         }
         break;
       }
@@ -77,10 +81,12 @@ define(function(require, exports, module) {
       }
 
       tagName = pTag;
-      content = h(content);
+      content = h(content, xmlns);
     }
 
-    const elm = document.createElement(tagName||'div');
+    const elm = xmlns === SVGNS ?
+            document.createElementNS(SVGNS, tagName)
+            : document.createElement(tagName||'div');
     if (className !== '') elm.className = className;
     if (id !== '') elm.id = id;
     for(const key in attrs) {
@@ -105,7 +111,10 @@ define(function(require, exports, module) {
       });
       const tagName = node.tagName.toLowerCase();
       switch(childNodes.length) {
-      case 0: break;
+      case 0:
+        if (tagName !== 'div')
+          result[tagName] = ambig ? [] : '';
+        break;
       case 1: {
         const v = htmlToJson(node.firstChild);
         result[tagName] = ambig && typeof v === 'string' ? [v] : v;

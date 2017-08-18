@@ -12,7 +12,7 @@ define(function(require, exports, module) {
   const dragTouchStart$ = Symbol();
 
   let currentEvent;
-  const svgns = "http://www.w3.org/2000/svg";
+  const {SVGNS} = Dom;
 
   class DomTemplate {
     constructor(name, parent, blueprint) {
@@ -407,10 +407,10 @@ ${ex.message}`});
       } else {
         const {name, attrs, children} = node;
         const elm = svg === true || name === 'svg' ?
-                document.createElementNS(svgns, name)
+                document.createElementNS(SVGNS, name)
                 : document.createElement(name);
         setAttrs(template, elm, attrs);
-        children && addNodes(template, elm, children, elm.namespaceURI === svgns);
+        children && addNodes(template, elm, children, elm.namespaceURI === SVGNS);
         parent.appendChild(elm);
       }
     }
