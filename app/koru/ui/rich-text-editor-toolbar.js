@@ -82,8 +82,8 @@ define(function(require, exports, module) {
       const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(function (id) {
         frag.appendChild(Dom.h({
-          button: id, class: mentions[id].buttonClass, $name: 'mention',
-          '$data-type': id, $title: mentions[id].title}));
+          button: [id], class: mentions[id].buttonClass, $name: 'mention',
+          'data-type': id, title: mentions[id].title}));
       });
       return frag;
     },

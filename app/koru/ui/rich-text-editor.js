@@ -26,7 +26,7 @@ define(function(require, exports, module) {
 
   const {shift, ctrl} = KeyMap;
 
-  const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, '$data-lang': 'text'});
+  const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
   const FONT_LIST = RichText.standardFonts.map(
     (name, id) => [

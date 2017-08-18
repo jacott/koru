@@ -2,14 +2,14 @@ define(function(require, exports, module) {
   const koru = require('koru');
   const util = require('koru/util');
 
+  const ATTRS = {id: true, class: true, style: true};
+
   function Dom(cssQuery, parent=document.body) {
     return parent.querySelector(cssQuery);
   }
 
-  const NO_DOLLAR = {id: true, class: true};
-
   const h = body => {
-    let id = '', className = '', content = null, tagName = 'div', attrs = {};
+    let id = '', className = '', content = null, tagName = '';
 
     if (typeof body === "string") {
       if (body.indexOf("\n") !== -1) {
@@ -36,6 +36,8 @@ define(function(require, exports, module) {
     const comment = body.$comment$;
     if (comment !== undefined) return document.createComment(comment);
 
+    const attrs = {};
+    let pTag = '', ambig = false;
 
     for(const key in body) {
       const value = body[key];
@@ -46,7 +48,22 @@ define(function(require, exports, module) {
       default:
         if (key[0] === '$') {
           attrs[key.slice(1)] = value;
+        } else if (tagName !== '') {
+          attrs[key] = value;
+        } else if (typeof value === 'string') {
+          if (ATTRS[key]) {
+            attrs[key] = value;
+          } else if (pTag === '') {
+            pTag = key; content = value;
+          } else {
+            ambig = true;
+            attrs[key] = value;
+          }
         } else {
+          if (pTag !== '') {
+            attrs[pTag] = content;
+            pTag = '';
+          }
           tagName = key;
           content = value && h(value);
         }
@@ -54,7 +71,16 @@ define(function(require, exports, module) {
       }
     }
 
-    const elm = document.createElement(tagName);
+    if (pTag !== '') {
+      if (ambig) {
+        throw new Error('Ambiguous markup');
+      }
+
+      tagName = pTag;
+      content = h(content);
+    }
+
+    const elm = document.createElement(tagName||'div');
     if (className !== '') elm.className = className;
     if (id !== '') elm.id = id;
     for(const key in attrs) {
@@ -72,13 +98,18 @@ define(function(require, exports, module) {
     case document.TEXT_NODE: return node.textContent;
     case document.ELEMENT_NODE:
       const result = {};
+      let ambig = false;
       util.forEach(node.attributes, ({name, value}) => {
-        result[NO_DOLLAR[name] ? name : `$${name}`] = value;
+        if (! ATTRS[name]) ambig = true;
+        result[name] = value;
       });
       const tagName = node.tagName.toLowerCase();
       switch(childNodes.length) {
       case 0: break;
-      case 1: result[tagName] = htmlToJson(node.firstChild); break;
+      case 1: {
+        const v = htmlToJson(node.firstChild);
+        result[tagName] = ambig && typeof v === 'string' ? [v] : v;
+      } break;
       default:
         result[tagName] = util.map(childNodes, htmlToJson);
       }

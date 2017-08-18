@@ -69,7 +69,7 @@ define(function (require, exports, module) {
 
       const obj = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {li: 'two'}],
-      }, '$data-lang': 'en'};
+      }, 'data-lang': 'en'};
 
       api.method('htmlToJson');
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
@@ -81,14 +81,38 @@ define(function (require, exports, module) {
       assertConvert({div: 'simple'});
       assertConvert({});
       assertConvert({id: 'Spinner', class: 'spinner dark'});
-      assertConvert({ol: [{li: 'one'}, {$style: 'width:10px', $name: 'li2', li: 'two', $myattr: 'attr3'}]});
+      assertConvert({ol: [{li: 'one'}, {style: 'width:10px', name: 'li2', li: ['two'], myattr: 'attr3'}]});
       assertConvert(['one', 'two', 'three']);
     },
 
-    "test html"() {
-      document.body.appendChild(v.result = Dom.h({"class": 'bar', id: "s123", section: {span: "Goodbye"}}));
+    "test more Dom.h"() {
+      assert.sameHtml(
+        Dom.h({name: 'bar', id: "s123", section: {span: "Goodbye"}}).outerHTML,
+        '<section name="bar" id="s123"><span>Goodbye</span></section>');
 
-      assert.sameHtml(v.result.outerHTML, '<section class="bar" id="s123"><span>Goodbye</span></section>');
+      assert.sameHtml(
+        Dom.h({name: 'bar', id: "s123", h1: ['a', 'b']}).outerHTML,
+        '<h1 name="bar" id="s123">ab</h1>');
+
+      assert.sameHtml(
+        Dom.h({class: 'bar', id: "s123", section: {span: "Goodbye"}}).outerHTML,
+        '<section class="bar" id="s123"><span>Goodbye</span></section>');
+
+      assert.sameHtml(
+        Dom.h({title: 'bar', name: "foo", section: ['hello']}).outerHTML,
+        '<section name="foo" title="bar">hello</section>');
+
+      assert.sameHtml(
+        Dom.h({$div: 'bar', ul: "foo\nbar"}).outerHTML,
+        '<ul div="bar">foo<br>bar</ul>');
+
+      assert.sameHtml(
+        Dom.h({style: ['input {width:100%}'], class: 'myStyle'}).outerHTML,
+        '<style class="myStyle">input {width:100%}</style>');
+
+      assert.exception(_=>{
+        Dom.h({div: 'bar', ul: 'fuz'});
+      }, {message: 'Ambiguous markup'});
     },
 
     "test escapeHTML"() {
@@ -99,17 +123,17 @@ define(function (require, exports, module) {
       /**
        * Convert an `object` into a html node.
        *
-       * `id` and `class` convert to attributes but other attributes
-       * must be prefixed with a `$`. `$comment$` makes a comment
+       * The tagName is determined by either its content not being a string or the other keys are
+       * `id`, `class`, or `style` or start with a `$` (the $ is stripped).
        *
-       * Array is used when multiple children.
-       * Non prefixed key is used for `tagName`.
+       * Array is used when multiple children. Comments have a key of `$comment$`. The tagName will
+       * default to "div" if none is given.
        **/
       api.method('h');
 
       const obj = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'}],
-      }, '$data-lang': 'en'};
+      }, 'data-lang': 'en'};
 
       assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
     },

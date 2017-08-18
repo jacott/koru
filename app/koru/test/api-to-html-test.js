@@ -41,14 +41,14 @@ isServer && define(function (require, exports, module) {
         {table: {tbody: [
           {tr: [
             {td: '_id'},
-            {td: {a: 'string', $href: TH.match(/mozilla.*String/)}},
-            {class: 'jsdoc-info', '$data-env': 'server',
+            {td: {a: ['string'], href: TH.match(/mozilla.*String/)}},
+            {class: 'jsdoc-info', 'data-env': 'server',
              td: {class: 'jsdoc-value', code: '"id-value"'}},
           ]},
           {tr: [
             {td: 'singleton'},
-            {td: {a: 'mod', $href: '#my/mod'}},
-            {class: 'jsdoc-info', '$data-env': 'server', td: {div: [
+            {td: {a: ['mod'], href: '#my/mod'}},
+            {class: 'jsdoc-info', 'data-env': 'server', td: {div: [
               {p: [
                 'prints ',
                 {class: 'jsdoc-value', code: '{my:singleton}'},
@@ -193,17 +193,17 @@ isServer && define(function (require, exports, module) {
             {p: 'Abstract'}, '\n',
             {p: [
               'See ',
-              {a: 'Module', class: 'jsdoc-link', $href: '#my/module'},
+              {a: ['Module'], class: 'jsdoc-link', href: '#my/module'},
               ' ',
-              {a: 'Module.method', class: 'jsdoc-link', $href: '#my/module.method'},
-              '\n', {a: 'mod#protoMethod', class: 'jsdoc-link',
-                     $href: '#my/mod#protoMethod'}
+              {a: ['Module.method'], class: 'jsdoc-link', href: '#my/module.method'},
+              '\n', {a: ['mod#protoMethod'], class: 'jsdoc-link',
+                     href: '#my/mod#protoMethod'}
               , ' ',
-              {a: '.thisModMethod', class: 'jsdoc-link',
-               $href: '#this/module.thisModMethod'},
+              {a: ['.thisModMethod'], class: 'jsdoc-link',
+               href: '#this/module.thisModMethod'},
               '\n',
-              {a: '#thisModeProtoMethod', class: 'jsdoc-link',
-               $href: '#this/module#thisModeProtoMethod'}]},
+              {a: ['#thisModeProtoMethod'], class: 'jsdoc-link',
+               href: '#this/module#thisModeProtoMethod'}]},
             '\n'
           ]});
       },
@@ -236,7 +236,7 @@ isServer && define(function (require, exports, module) {
             assert.equals(Dom.htmlToJson(html), {div: [
               {p: [
                 'markup ',
-                {a: 'module', class: 'jsdoc-link', $href: '#this/module'}
+                {a: ['module'], class: 'jsdoc-link', href: '#this/module'}
               ]}, '\n',
             ]});
             return true;
@@ -259,7 +259,7 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(Dom.htmlToJson(div), {
           div: [
-            {p: ['A ', {a: 'normal', $href: '#link'}, ' link']},
+            {p: ['A ', {a: ['normal'], href: '#link'}, ' link']},
             '\n'
           ]});
       },

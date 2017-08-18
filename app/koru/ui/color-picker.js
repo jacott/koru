@@ -60,7 +60,7 @@ define(function(require, exports, module) {
     palette(color) {
       if ($.element.nodeType === document.ELEMENT_NODE) return;
 
-      const elm = Dom.h({button: '', "$data-color": color, $tabindex: "-1"});
+      const elm = Dom.h({button: [], "data-color": color, $tabindex: "-1"});
       elm.style.backgroundColor = '#'+color;
       return elm;
     },
