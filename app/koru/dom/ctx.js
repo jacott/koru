@@ -48,8 +48,13 @@ define(function(require, exports, module) {
           const node = attrEvals[i];
           currentElement = node[0];
           const value = (getValue(data, node[2], node[3])||'').toString();
-          if (node[1] != null && node[0].getAttribute(node[1]) !== value)
-            node[0].setAttribute(node[1], value);
+          const name = node[1];
+          if (name != null && currentElement.getAttribute(name) !== value) {
+            if (name === 'xlink:href')
+              currentElement.setAttributeNS('http://www.w3.org/1999/xlink', 'href', value);
+            else
+              currentElement.setAttribute(name, value);
+          }
         }
 
         for(let i = 0; i < evals.length; ++i) {

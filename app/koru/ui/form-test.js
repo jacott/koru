@@ -278,7 +278,7 @@ isClient && define(function (require, exports, module) {
 
     "modalize": {
       setUp() {
-        document.body.appendChild(Dom.html(
+        document.body.appendChild(Dom.textToHtml(
           '<div id="top">' +
             '<div class="ta"><input type="text" id="os" value="outside txt"></div>' +
             '<div class="foo"><div class="bar">' +

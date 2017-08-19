@@ -17,7 +17,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test open / close"() {
-      Dialog.open(Dom.html('<form id="Foo"><input type="text"></form>'));
+      Dialog.open(Dom.textToHtml('<form id="Foo"><input type="text"></form>'));
       assert.dom('.Dialog', function () {
         assert.dom('form#Foo', function () {
           assert.dom('input', function () {
@@ -28,7 +28,7 @@ isClient && define(function (require, exports, module) {
 
       assert.isTrue(Dialog.isOpen());
 
-      Dialog.open(Dom.html('<div id="Nested" tabindex="0"><input></div>'), 'nofocus');
+      Dialog.open(Dom.textToHtml('<div id="Nested" tabindex="0"><input></div>'), 'nofocus');
 
       assert.dom('.Dialog:last-child>span.startTab', function () {
         assert.same(document.activeElement, this);
@@ -44,7 +44,7 @@ isClient && define(function (require, exports, module) {
 
       Dialog.close('Foo');
 
-      Dialog.open(Dom.html('<div id="Nested" tabindex="0"><input></div>'));
+      Dialog.open(Dom.textToHtml('<div id="Nested" tabindex="0"><input></div>'));
       assert.dom('#Nested', function () {
         assert.same(document.activeElement, this);
       });
@@ -57,7 +57,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test full wrapping"() {
-      Dialog.open(Dom.html('<div id="foo">Foo!!</div>'));
+      Dialog.open(Dom.textToHtml('<div id="foo">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
         assert.dom('>.dialogContainer>.ui-dialog>#foo', 'Foo!!');
@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test partial wrapping"() {
-      Dialog.open(Dom.html('<div id="foo" class="ui-dialog">Foo!!</div>'));
+      Dialog.open(Dom.textToHtml('<div id="foo" class="ui-dialog">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
         assert.dom('>.dialogContainer>#foo.ui-dialog', 'Foo!!');
@@ -98,7 +98,7 @@ isClient && define(function (require, exports, module) {
         content: {
           $autoRender(arg) {
             v.data = arg;
-            return Dom.html('<h1>This is the message</h1>');
+            return Dom.textToHtml('<h1>This is the message</h1>');
           },
         },
         okay: 'Foo',
@@ -128,7 +128,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test modalize"() {
-      Dialog.open(Dom.html('<form id="Foo"></form>'));
+      Dialog.open(Dom.textToHtml('<form id="Foo"></form>'));
 
       assert.dom('.Dialog', function () {
         TH.trigger(this, 'keydown', {which: 27});

@@ -28,6 +28,7 @@ define(function (require, exports, module) {
       document.body.appendChild(v.result = Dom.h({"class": 'bar',
                                                   section: {span: "Goodbye"}}));
 
+
       if (isClient) {
         assert.same(Dom('body>.bar>span').textContent, "Goodbye");
         assert.same(Dom('span').textContent, "Hello");
@@ -118,18 +119,35 @@ define(function (require, exports, module) {
     },
 
     "test svg Dom.h"() {
-      const elm = Dom.h({div: {svg: {path: [], d: 'M0,0 10,10Z'}}});
+      const elm = Dom.h({div: {svg: [{
+        path: [], d: 'M0,0 10,10Z'
+      }, {
+        foreignObject: {div: 'hello', xmlns: "http://www.w3.org/1999/xhtml"}
+      }]}});
       assert.dom(elm, elm =>{
         assert.dom('svg', svg =>{
+          assert.same(svg.namespaceURI, 'http://www.w3.org/2000/svg');
           isClient && assert(svg instanceof window.SVGSVGElement);
           assert.dom('path', path => {
+            assert.same(path.namespaceURI, 'http://www.w3.org/2000/svg');
             isClient && assert(path instanceof window.SVGPathElement);
             assert.equals(path.getAttribute('d'), 'M0,0 10,10Z');
+          });
+          assert.dom('foreignObject', foreignObject => {
+            isClient && assert(foreignObject instanceof window.SVGForeignObjectElement);
+            assert.dom('div', div => {
+              assert.same(div.namespaceURI, 'http://www.w3.org/1999/xhtml');
+              isClient && assert(div instanceof window.HTMLDivElement);
+            });
           });
         });
       });
 
-      assert.equals(Dom.htmlToJson(elm), {div: {svg: {path: [], d: 'M0,0 10,10Z'}}});
+      assert.equals(Dom.htmlToJson(elm), {div: {svg: [{
+        path: [], d: 'M0,0 10,10Z'
+      }, {
+        foreignObject: {xmlns: 'http://www.w3.org/1999/xhtml', div: 'hello'}
+      }]}});
     },
 
     "test escapeHTML"() {
@@ -141,7 +159,7 @@ define(function (require, exports, module) {
        * Convert an `object` into a html node.
        *
        * The tagName is determined by either its content not being a string or the other keys are
-       * `id`, `class`, or `style` or start with a `$` (the $ is stripped).
+       * `id`, `class`, `style`, `xmlns` or start with a `$` (the $ is stripped).
        *
        * Array is used when multiple children. Comments have a key of `$comment$`. The tagName will
        * default to "div" if none is given.

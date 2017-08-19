@@ -121,7 +121,7 @@ define(function(require, exports, module) {
   }
 
   function apiToHtml(title, json, sourceHtml) {
-    const index = document.createElement();
+    const index = document.createElement('div');
 
     index.innerHTML = sourceHtml;
 

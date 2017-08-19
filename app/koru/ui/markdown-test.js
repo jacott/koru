@@ -18,7 +18,7 @@ define(function (require, exports, module) {
     "fromHtml": {
       setUp() {
         v.c = function (html) {
-          return Markdown.fromHtml(Dom.html(html));
+          return Markdown.fromHtml(Dom.textToHtml(html));
         };
       },
 

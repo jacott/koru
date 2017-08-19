@@ -34,7 +34,7 @@ define(function(require, exports, module) {
     if (cb) {
       const text = event.clipboardData.getData('text/html');
       if (text) {
-        const md = exports.fromHtml(Dom.html('<div>'+text+'</div>'));
+        const md = exports.fromHtml(Dom.textToHtml(`<div>${text}</div>`));
           if (Tpl.insert(exports.toHtml(md)) || Tpl.insert(md))
             Dom.stopEvent();
         return;

@@ -90,7 +90,7 @@ define(function(require, exports, module) {
       const prevCtx = Ctx._currentCtx;
       const ctx = Ctx._currentCtx = new Ctx(this, parentCtx || Ctx._currentCtx, data);
       let frag = document.createDocumentFragment();
-      this.nodes && addNodes(this, frag, this.nodes);
+      this.nodes && addNodes(this, frag, this.nodes, this.ns);
       const firstChild = frag.firstChild;
       if (firstChild) {
         if (frag.lastChild === firstChild) frag = firstChild;
@@ -393,10 +393,11 @@ ${ex.message}`});
     }
   }
 
-  function addNodes(template, parent, nodes, svg) {
+  function addNodes(template, parent, nodes, pns) {
     const len = nodes.length;
     for (let i = 0; i < len; ++i) {
       const node = nodes[i];
+      let ns = pns;
 
       if (typeof node === 'string') {
         parent.appendChild(document.createTextNode(node));
@@ -406,11 +407,18 @@ ${ex.message}`});
         elm && parent.appendChild(elm);
       } else {
         const {name, attrs, children} = node;
-        const elm = svg === true || name === 'svg' ?
-                document.createElementNS(SVGNS, name)
-                : document.createElement(name);
+        if (node.ns !== undefined) {
+          ns = node.ns;
+          if (ns === 'http://www.w3.org/1999/xhtml')
+            ns = undefined;
+        }
+        const elm = ns === undefined ? (
+          name === 'svg' ?
+            document.createElementNS(ns=SVGNS, name)
+            : document.createElement(name))
+              : document.createElementNS(ns, name);
         setAttrs(template, elm, attrs);
-        children && addNodes(template, elm, children, elm.namespaceURI === SVGNS);
+        children && addNodes(template, elm, children, ns);
         parent.appendChild(elm);
       }
     }
@@ -496,13 +504,15 @@ ${ex.message}`});
         elm.setAttribute(attr, '');
 
       } else if (attr[0] === '=') {
-
-        if (typeof attr[2] === 'string') {
-
-          elm.setAttribute(attr[1], attr[2]);
+        const name = attr[1], value = attr[2];
+        if (typeof value === 'string') {
+          if (name === 'xlink:href')
+            elm.setAttributeNS('http://www.w3.org/1999/xlink', 'href', value);
+          else
+            elm.setAttribute(name, value);
 
         } else {
-          addAttrEval(template, attr[1], attr[2], elm);
+          addAttrEval(template, name, value, elm);
         }
       } else { // custom element mutator
         addAttrEval(template, null, attr, elm);
@@ -544,6 +554,7 @@ ${ex.message}`});
       Object.setPrototypeOf(tpl, sup);
       tpl._helpers = helpers;
     }
+    tpl.ns = blueprint.ns;
     tpl.nodes = blueprint.nodes;
   }
 });

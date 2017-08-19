@@ -427,7 +427,7 @@ define(function(require, exports, module) {
     keyMap: keyMap,
 
     paste(htmlText) {
-      const html = RichText.fromToHtml(Dom.html('<div>'+htmlText+'</div>'));
+      const html = RichText.fromToHtml(Dom.textToHtml(`<div>${htmlText}</div>`));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
@@ -484,7 +484,7 @@ define(function(require, exports, module) {
     },
 
     paste(htmlText) {
-      const html = RichText.fromToHtml(Dom.html('<pre><div>'+htmlText+'</div></pre>'));
+      const html = RichText.fromToHtml(Dom.textToHtml(`<pre><div>${htmlText}</div></pre>`));
       Tpl.insert(html.firstChild.firstChild, 'inner') ||
         Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
     },

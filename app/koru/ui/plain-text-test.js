@@ -120,7 +120,7 @@ isClient && define(function (require, exports, module) {
     "fromHtml": {
       setUp() {
         v.c = function (html) {
-          return sut.fromHtml(Dom.html(html));
+          return sut.fromHtml(Dom.textToHtml(html));
         };
       },
 

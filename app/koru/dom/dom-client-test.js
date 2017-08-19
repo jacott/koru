@@ -126,7 +126,7 @@ define(function (require, exports, module) {
     },
 
     "test html string"() {
-      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
       document.body.appendChild(elm);
@@ -141,7 +141,7 @@ define(function (require, exports, module) {
 
       assert.same(Dom.h(elm), elm);
 
-      const nested = Dom.h({div: [Dom.html('<div>hello</div>'), elm]});
+      const nested = Dom.h({div: [Dom.textToHtml('<div>hello</div>'), elm]});
       assert.same(nested.firstChild.nextSibling, elm);
       assert.same(nested.firstChild.textContent, 'hello');
     },
@@ -230,7 +230,7 @@ define(function (require, exports, module) {
     },
 
     "test getUpDownByClass"() {
-      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div>'+
                            '<div class="dest"></div></div></div>');
 
@@ -242,7 +242,7 @@ define(function (require, exports, module) {
     },
 
     "test searchUpFor"() {
-      const top = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+      const top = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.isNull(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
@@ -265,7 +265,7 @@ define(function (require, exports, module) {
     },
 
     "test $getClosest"() {
-      document.body.appendChild(Dom.html('<div><div class="foo"><div class="bar">'+
+      document.body.appendChild(Dom.textToHtml('<div><div class="foo"><div class="bar">'+
                                          '<button type="button" id="sp"></button>'+
                                          '</div></div></div>'));
 
@@ -327,10 +327,10 @@ define(function (require, exports, module) {
     },
 
     "test forEach"() {
-      const elm = Dom.html('<div></div>');
+      const elm = Dom.textToHtml('<div></div>');
       document.body.appendChild(elm);
       for(let i = 0; i < 5; ++i) {
-        elm.appendChild(Dom.html('<div class="foo">'+i+'</div>'));
+        elm.appendChild(Dom.textToHtml('<div class="foo">'+i+'</div>'));
       }
 
       let results = [];
@@ -361,7 +361,7 @@ define(function (require, exports, module) {
     },
 
     "test contains"() {
-      const elm = Dom.html('<div id="top"><div class="foo"><div class="bar">'+
+      const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);

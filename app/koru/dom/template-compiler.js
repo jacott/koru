@@ -1,6 +1,8 @@
 const Path = require('path');
 const htmlparser = requirejs.nodeRequire("htmlparser2");
 
+const IGNORE = {xmlns: true};
+
 const Compiler = {
   Error(message, point) {
     this.message = message;
@@ -25,7 +27,8 @@ const Compiler = {
             if (! template)
               throw new Compiler.Error("Out most element must be a template", parser.startIndex);
 
-            template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex));
+            template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex),
+                             attrs.xmlns);
           }
         },
         ontext(text){
@@ -41,7 +44,7 @@ const Compiler = {
             template.endNode();
           }
         }
-      });
+      }, {lowerCaseTags: false, lowerCaseAttributeNames: false});
       parser.write(code);
       parser.end();
       return result;
@@ -55,15 +58,18 @@ class Template {
   constructor(parent, attrs) {
     this.nested = [];
     this.name = attrs.name;
-    this.extends = attrs.extends;
+    this.attrs = attrs;
     this.nodes = {children: []};
     this.parent = parent;
     if (parent) parent.add(this);
   }
 
-  addNode(name, attrs) {
+  addNode(name, attrs, xmlns) {
     attrs = extractAttrs(attrs.endsWith('/') ? attrs.slice(0, -1) : attrs);
-    const newNodes = {name: name, attrs: attrs, children: [], parent: this.nodes};
+    const newNodes = {name, attrs, children: [], parent: this.nodes};
+
+    if (xmlns)
+      newNodes.ns = xmlns;
 
     this.nodes.children.push(newNodes);
 
@@ -97,8 +103,7 @@ class Template {
   }
 
   toHash() {
-    const content = {name: this.name};
-    if (this.extends) content.extends = this.extends;
+    const content = Object.assign({}, this.attrs);
     if (this.nested.length)
       content.nested = this.nested.map(row => row.toHash());
 
@@ -122,7 +127,7 @@ function nodeToHash(node) {
   if (typeof node === 'string' || node.shift)
     return node;
 
-  const result =  {name: node.name, attrs: node.attrs};
+  const result =  {name: node.name, attrs: node.attrs, ns: node.ns};
   if (node.children.length)
     result.children = node.children.map(node => nodeToHash(node));
 
@@ -203,7 +208,7 @@ function tokenizeWithQuotes(bexpr, result) {
     bexpr = bexpr.trim();
     if (bexpr.length === 0) return;
 
-    const m = /^((?:"[^"]*"|'[^']*')|{{(?:[^}]+}}|(?:[^}]+}[^}])+[^}]*}})|[-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
+    const m = /^((?:"[^"]*"|'[^']*')|{{(?:[^}]+}}|(?:[^}]+}[^}])+[^}]*}})|[:-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
 
     if (m) {
       addToken(m[1], result);
@@ -215,9 +220,9 @@ function tokenizeWithQuotes(bexpr, result) {
 }
 
 function addToken(token, result) {
-  const m = /^([-\w]+)=([\s\S]*)$/.exec(token);
+  const m = /^([:-\w]+)=([\s\S]*)$/.exec(token);
   if (m) {
-    result.push(['=', m[1], quotenorm(m[2])]);
+    IGNORE[m[1]] || result.push(['=', m[1], quotenorm(m[2])]);
   } else {
     result.push(quotenorm(token));
   }

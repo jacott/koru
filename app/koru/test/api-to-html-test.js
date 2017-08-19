@@ -34,7 +34,7 @@ isServer && define(function (require, exports, module) {
       };
 
       const html = apiToHtml('Foo', json, sourceHtml);
-      const properties = Dom.html(html).getElementsByClassName('jsdoc-properties');
+      const properties = Dom.textToHtml(html).getElementsByClassName('jsdoc-properties');
 
       assert.equals(Dom.htmlToJson(properties[0]).div, [
         {h5: 'Properties'},
@@ -70,7 +70,7 @@ isServer && define(function (require, exports, module) {
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
-        const result = Dom.html(html).getElementsByClassName('jsdoc-require')[0].textContent;
+        const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0].textContent;
 
         assert.equals(result, 'const MyMod = require('+
                       '"my/mod");'); // stop yaajs thinking it's a require
@@ -85,7 +85,7 @@ isServer && define(function (require, exports, module) {
         };
 
         const html = apiToHtml('Foo', json, sourceHtml);
-        const result = Dom.html(html).getElementsByClassName('jsdoc-require')[0];
+        const result = Dom.textToHtml(html).getElementsByClassName('jsdoc-require')[0];
 
         assert.equals(result.textContent, 'const MyMod = require('+
                       '"my/mod").m1;');
@@ -107,13 +107,13 @@ isServer && define(function (require, exports, module) {
 
         const html = apiToHtml('Foo', json, sourceHtml);
 
-        let meth = Dom.html(html).getElementsByClassName('jsdoc-example')[0];
+        let meth = Dom.textToHtml(html).getElementsByClassName('jsdoc-example')[0];
         let req = meth.childNodes[0];
 
         assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
         assert.equals(Dom.htmlToJson(req).div.length, 10);
 
-        let pmeth = Dom.html(html).getElementsByClassName('jsdoc-inst-init')[0];
+        let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1 = new M1();');
 
         req = pmeth.parentNode.childNodes[0];
@@ -138,7 +138,7 @@ isServer && define(function (require, exports, module) {
 
         const html = apiToHtml('Foo', json, sourceHtml);
 
-        let meth = Dom.html(html).getElementsByClassName('jsdoc-example')[0];
+        let meth = Dom.textToHtml(html).getElementsByClassName('jsdoc-example')[0];
 
         let req = meth.childNodes[0];
         assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
@@ -148,7 +148,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(ex.textContent, 'const myM1 = MyMod.Foo();');
         assert.className(ex, 'highlight jsdoc-init');
 
-        let pmeth = Dom.html(html).getElementsByClassName('jsdoc-inst-init')[0];
+        let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
 
       },

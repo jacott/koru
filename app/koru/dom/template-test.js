@@ -709,7 +709,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test focus"() {
-          document.body.appendChild(Dom.html('<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>'));
+          document.body.appendChild(Dom.textToHtml('<form><button name="bt"><input type="text" name="inp"><button name="b2"></form>'));
           assert.dom('form', function () {
             assert.dom('[name=b2]', function () {
               this.focus();
@@ -795,6 +795,44 @@ isClient && define(function (require, exports, module) {
       });
     },
 
+    "test setting namespace"() {
+      DomTemplate.newTemplate({
+        name: "Foo", ns: "http://www.w3.org/2000/svg",
+        nodes: [{
+          name: 'g',
+          children: [{
+          name:"image",
+            attrs: [["=","xlink:href","/abc.jpg"]],
+          }, {
+            name:"image",
+            attrs: [["=","xlink:href", ["", "image2"]]],
+          }, {
+            name:"foreignObject",
+            attrs: [], children: [
+              {name:"div", ns:"http://www.w3.org/1999/xhtml"}
+            ],
+          }]
+        }],
+      });
+
+      assert.dom(Dom.Foo.$render({image2: '/def.jpg'}), g => {
+        assert.dom('image:first-child', image =>{
+          assert(image instanceof window.SVGImageElement);
+          assert.equals(image.getAttributeNS('http://www.w3.org/1999/xlink', 'href'), '/abc.jpg');
+        });
+        assert.dom('image:nth-child(2)', image =>{
+          assert(image instanceof window.SVGImageElement);
+          assert.equals(image.getAttributeNS('http://www.w3.org/1999/xlink', 'href'), '/def.jpg');
+        });
+        assert.dom('foreignObject', foreignObject => {
+          isClient && assert(foreignObject instanceof window.SVGForeignObjectElement);
+          assert.dom('div', div => {
+            isClient && assert(div instanceof window.HTMLDivElement);
+          });
+        });
+      });
+    },
+
     "test rendering fragment"() {
       DomTemplate.newTemplate({
         name: "Foo",
@@ -834,9 +872,9 @@ isClient && define(function (require, exports, module) {
 
       content = function () {
         const frag = document.createDocumentFragment();
-        frag.appendChild(Dom.html('<div id="e1">e1</div>'));
-        frag.appendChild(Dom.html('<div id="e2">e2</div>'));
-        frag.appendChild(Dom.html('<div id="e3">e3</div>'));
+        frag.appendChild(Dom.h({id: "e1", div: 'e1'}));
+        frag.appendChild(Dom.h({id: "e2", div: 'e2'}));
+        frag.appendChild(Dom.h({id: "e3", div: 'e3'}));
         return frag;
       };
 
@@ -847,8 +885,8 @@ isClient && define(function (require, exports, module) {
 
       content = function () {
         const frag = document.createDocumentFragment();
-        frag.appendChild(Dom.html('<p id="n1">n1</p>'));
-        frag.appendChild(Dom.html('<p id="n2">n2</p>'));
+        frag.appendChild(Dom.h({id: "n1", p: 'n1'}));
+        frag.appendChild(Dom.h({id: "n2", p: 'n2'}));
         return frag;
       };
 

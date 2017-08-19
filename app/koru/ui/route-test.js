@@ -53,7 +53,7 @@ isClient && define(function (require, exports, module) {
       const RootBar = {
         name: 'RootBar',
         $autoRender() {
-          return Dom.html('<div id="RootBar">x</div>');
+          return Dom.textToHtml('<div id="RootBar">x</div>');
         },
       };
 
@@ -86,7 +86,7 @@ isClient && define(function (require, exports, module) {
         v.RootBar = {
           name: 'RootBar',
           $autoRender() {
-            return Dom.html('<div id="RootBar">x</div>');
+            return Dom.textToHtml('<div id="RootBar">x</div>');
           },
           onEntry: test.stub(),
           onExit: test.stub(),
@@ -742,7 +742,7 @@ isClient && define(function (require, exports, module) {
         onExit: v.onExit = test.stub(),
 
         $autoRender(arg) {
-          return Dom.html('<div id="Baz">'+arg+'</div>');
+          return Dom.textToHtml('<div id="Baz">'+arg+'</div>');
         },
       };
 

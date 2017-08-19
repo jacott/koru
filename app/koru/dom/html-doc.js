@@ -7,6 +7,8 @@ define(function(require, exports, module) {
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
   const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
+  const style$ = Symbol(), attributes$ = Symbol();
+
   const cssParser = new CssSelectorParser();
 
   cssParser.registerSelectorPseudos('has');
@@ -72,8 +74,24 @@ define(function(require, exports, module) {
     COMMENT_NODE,
     DOCUMENT_FRAGMENT_NODE,
 
+    namespaceURI: "http://www.w3.org/1999/xhtml",
+
     createElement(tag) {return new Element(tag)},
-    createElementNS(xmlns, tag) {return new Element(tag)},
+    createElementNS(xmlns, tag) {
+      const canon = Dom.CANONICAL_TAG_NAMES[tag];
+      if (canon === undefined) {
+        if (xmlns === "http://www.w3.org/2000/svg")
+          Dom.CANONICAL_TAG_NAMES[tag] = tag;
+        else {
+          const lc = tag.toLowerCase();
+          Dom.CANONICAL_TAG_NAMES[lc] = lc;
+          Dom.CANONICAL_TAG_NAMES[tag.toUpperCase()] = lc;
+        }
+      }
+      const elm = new Element(tag);
+      elm.namespaceURI = xmlns;
+      return elm;
+    },
     createTextNode(value) {return new TextNode(value)},
     createDocumentFragment() {return new DocumentFragment()},
     createComment(data) {return new CommentNode(data)},
@@ -174,8 +192,8 @@ define(function(require, exports, module) {
     },
 
     get style() {
-      if (this.__style) return this.__style;
-      return this.__style = new Style(this);
+      if (this[style$] !== undefined) return this[style$];
+      return this[style$] = new Style(this);
     },
 
     get firstChild() {
@@ -246,7 +264,7 @@ define(function(require, exports, module) {
       util.forEach(this.childNodes, node => {
         if (node.nodeType !== ELEMENT_NODE) return;
 
-        if (node.tagName.toLowerCase() === css.tagName)
+        if (Dom.canonicalTagName(node) === css.tagName)
           results.push(node);
       });
       return results;
@@ -272,15 +290,23 @@ define(function(require, exports, module) {
   });
 
 
-  function Element(tag) {
+  function Element(tagName) {
+    if (typeof tagName !== 'string')
+      throw new Error('tagName is not a string');
     common(this, ELEMENT_NODE);
-    this.tagName = (''+tag).toUpperCase();
-    this._attributes = {};
+    const canon = Dom.CANONICAL_TAG_NAMES[tagName];
+    const uc = tagName.toUpperCase();
+    if (canon === undefined || canon !== tagName) {
+      this.tagName = uc;
+    } else {
+      this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== undefined ? uc : canon;
+    }
+    this[attributes$] = {};
   }
   buildNodeType(Element, {
     cloneNode(deep) {
-      var copy = new Element(this.tagName);
-      copy._attributes = util.deepCopy(this._attributes);
+      const copy = new this.constructor(this.tagName);
+      copy[attributes$] = util.deepCopy(this[attributes$]);
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;
     },
@@ -289,9 +315,9 @@ define(function(require, exports, module) {
     set className(value) {this.setAttribute('class', value)},
     get className() {return this.getAttribute('class') || ''},
     get outerHTML() {
-      var tn = this.tagName.toLowerCase();
-      var attrs = this._attributes;
-      if (this.__style) {
+      var tn = Dom.canonicalTagName(this);
+      var attrs = this[attributes$];
+      if (this[style$] !== undefined) {
         var cssText = this.style._origCssText();
       }
       if (util.isObjEmpty(attrs)) {
@@ -316,21 +342,21 @@ define(function(require, exports, module) {
       if (name === 'style')
         this.style.cssText = value;
       else
-        this._attributes[name] = value;
+        this[attributes$][name] = value;
     },
     getAttribute(name) {
       if (name === 'style')
         return this.style._origCssText();
       else
-        return this._attributes[name];
+        return this[attributes$][name];
     },
 
     get attributes() {
       const ans = [];
       if (this.style.length != 0)
         ans.push({name: 'style', value: this.style._origCssText()});
-      for (let name in this._attributes)
-        ans.push({name, value: this._attributes[name]});
+      for (let name in this[attributes$])
+        ans.push({name, value: this[attributes$][name]});
       return ans;
     },
 
@@ -346,7 +372,7 @@ define(function(require, exports, module) {
         if (node.nodeType !== ELEMENT_NODE)
           return false;
 
-        re.test(node._attributes.class) &&
+        re.test(node[attributes$].class) &&
           ans.push(node);
       });
       return ans;
@@ -360,12 +386,12 @@ define(function(require, exports, module) {
 
     contains(className) {
       return new RegExp("(?:^|\\s)" + util.regexEscape(className) + "(?=\\s|$)")
-        .test(this.node._attributes.class);
+        .test(this.node[attributes$].class);
     }
 
     add(value) {
       value = ''+value;
-      var attrs = this.node._attributes;
+      var attrs = this.node[attributes$];
       if (attrs.class) {
         this.contains(value) || (attrs.class += ' ' + value);
       } else {
@@ -374,7 +400,7 @@ define(function(require, exports, module) {
     }
 
     remove(value) {
-      var attrs = this.node._attributes;
+      var attrs = this.node[attributes$];
       attrs.class = attrs.class.replace(new RegExp("\\s?\\b" + util.regexEscape(value) + "\\b"), '');
     }
   }
