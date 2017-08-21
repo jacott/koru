@@ -181,10 +181,15 @@ define(function(require, exports, module) {
     extractKeys(obj, keys) {
       const len = keys.length;
       const result = {};
-      for(let i = 0; i < len; ++i) {
+      if (Array.isArray(keys)) for(let i = 0; i < len; ++i) {
         const key = keys[i];
         if (key in obj)
           result[key] = obj[key];
+      } else {
+        for (const key in keys) {
+          if (key in obj)
+            result[key] = obj[key];
+        }
       }
       return result;
     },

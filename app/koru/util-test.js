@@ -237,6 +237,10 @@ define(function (require, exports, module) {
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, ['a', 'c', 'e']),
         {a: 4, c: {value: true}}
       );
+      assert.equals(
+        util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, c: false, e: null}),
+        {a: 4, c: {value: true}}
+      );
     },
 
     "test extractNotKeys"() {
