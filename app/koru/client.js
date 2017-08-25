@@ -17,7 +17,7 @@ define(function (require, exports, module) {
   window.addEventListener('error', errorListener);
 
   function errorListener(ev) {
-    if (ev.filename) {
+    if (ev.filename && ! ev.error) {
       koru.logger('ERROR', koru.util.extractError({
         toString() {
           return ev.error;
@@ -30,7 +30,7 @@ define(function (require, exports, module) {
   }
 
   koru.logger = function (type, ...args) {
-    console.log.apply(console, args);
+    console.log(...args);
     if (type === 'ERROR')
       session.send('E', args.join(' '));
     else
