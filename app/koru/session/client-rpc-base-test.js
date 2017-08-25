@@ -65,7 +65,7 @@ define(function (require, exports, module) {
        **/
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      api.method('checkMsgId', v.sess);
+      api.protoMethod('checkMsgId', v.sess);
 
       const id = 40+Random.id();
       assert.equals(v.sess._sendM('foo'), '1rid1');
@@ -90,7 +90,7 @@ define(function (require, exports, module) {
        **/
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      api.method('cancelRpc', v.sess);
+      api.protoMethod('cancelRpc', v.sess);
 
       v.sess.rpc('foo.rpc', 1, 2, 3);
       const msgId = v.sess.lastMsgId;
