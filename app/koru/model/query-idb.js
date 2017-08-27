@@ -255,7 +255,7 @@ define(function(require, exports, module) {
     db[idleQueue$] = null;
     if (db.catchAll)
       db.catchAll(ex);
-    else throw new Error((ex.target && ex.target.error) || ex);
+    else throw ex;
   };
 
   const getPendingUpdates = db => {

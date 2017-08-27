@@ -176,7 +176,7 @@ define(function(require, exports, module) {
   }
 
   function values(rec, keyPath) {
-    return Array.isArray(keyPath) ? keyPath.map(f => rec[f]) : rec[keyPath];
+    return Array.isArray(keyPath) ? keyPath.map(f => rec[f]) : (rec[keyPath] || '');
   }
 
   function findDoc(docs, keyPath, key) {
