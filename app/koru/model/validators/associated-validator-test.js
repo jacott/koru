@@ -256,6 +256,34 @@ define(function (require, exports, module) {
       assert.same(query.model, Model.Foo);
     },
 
+    "test changes_only belongs_to"() {
+      let count = test.stub(Query.prototype, 'count').returns(0);
+      const doc = {
+        foo_id: "y", constructor: {
+          $fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}},
+        attributes: {foo_id: "y"},
+        changes: {}
+      };
+
+      const where = stubWhere();
+
+      sut(doc,'foo_id', {changesOnly: true});
+      refute(doc._errors);
+      refute.called(count);
+
+      doc.changes = {foo_id: doc.foo_id = 'x'};
+
+      sut(doc,'foo_id', {changesOnly: true});
+      assert.equals(doc._errors, {foo_id: [['not_found']]});
+
+      count.returns(1);
+
+      const query = count.lastCall.thisValue;
+      assert.same(query, v.query);
+      assert.calledWithExactly(where, '_id', ["x"]);
+      assert.same(query.model, Model.Foo);
+    },
+
     'test using model default'() {
       const foo_ids = ['x', 'y'];
 

@@ -53,7 +53,9 @@ define(function(require, exports, module) {
 
 
     const orig = doc.attributes[field];
-    if (options.changesOnly && orig != null && orig.length != 0 && value.length != 0) {
+    if (! belongs_to &&
+        options.changesOnly && orig != null && orig.length != 0 &&
+        value.length != 0) {
       orig.sort();
       value.sort();
       const newIds = [];
