@@ -401,7 +401,11 @@ define(function (require, exports, module) {
           Book.defineFields({bar: {type: 'text', required: true}});
           const foo = Book.build({bar: null});
 
+          this.spy(foo, '$isValid');
+
           foo.$save('force');
+
+          assert.called(foo.$isValid); // insure validation methods were run
 
           assert(Book.findById(foo._id));
         },

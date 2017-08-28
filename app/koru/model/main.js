@@ -248,7 +248,7 @@ define(function(require, exports, module) {
 
       switch(force) {
       case 'assert': this.$assertValid(); break;
-      case 'force': break;
+      case 'force': this.$isValid(); break;
       default:
         if (! this.$isValid())
           return false;
