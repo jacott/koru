@@ -24,7 +24,7 @@ isServer && define(function (require, exports, module) {
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
           myName: {type: 'text', default: 'George'}
-        }, [['*unique', 'myName DESC', '_id'], ['myName']]);
+        }, [{columns: ['myName DESC', '_id'], unique: true}, ['myName']]);
       });
       assert.called(v.resetTable);
 
@@ -101,11 +101,58 @@ isServer && define(function (require, exports, module) {
       assert.isFalse(doc.hasOwnProperty('_id'));
     },
 
-    "test addColumns by object"() {
-      v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
-
+    "test addIndex"() {
       this.onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
+
+      v.sut.addMigration(
+        '20151003T20-30-20-create-TestModel',
+        mig => mig.createTable('TestTable', {name: 'text', age: 'int8',}));
+
+      v.sut.addMigration('20151004T20-30-20-add-index', v.migBody = mig => {
+        mig.addIndex('TestTable', {
+          columns: ['name DESC', 'age'], unique: true,
+          where: "age > 50"
+        });
+
+        mig.addIndex('TestTable', {
+          name: "override_name",
+          columns: ['name DESC', 'age'],
+          where: "age < 50"
+        });
+      });
+
+      let index = v.client.query(
+        'select indexdef from pg_indexes where indexname = $1', ['TestTable_name_age'])[0];
+
+      assert(index);
+      assert.same(
+        index.indexdef,
+        'CREATE UNIQUE INDEX "TestTable_name_age" ON "TestTable" USING btree (name DESC, age)'+
+          ' WHERE (age > 50)');
+
+      index = v.client.query(
+        'select indexdef from pg_indexes where indexname = $1', ['override_name'])[0];
+
+      assert(index);
+      assert.same(
+        index.indexdef,
+        'CREATE INDEX override_name ON "TestTable" USING btree (name DESC, age)'+
+          ' WHERE (age < 50)');
+
+      v.sut.revertMigration('20151004T20-30-20-add-index', v.migBody);
+
+      assert.equals(v.client.query(
+        'select indexname from pg_indexes where tablename = $1', ['TestTable'])
+                    .map(r=>r.indexname), ['TestTable_pkey']);
+    },
+
+    "test addColumns by object"() {
+      this.onEnd(() => delete ModelMap.TestTable);
+      ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
+
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
+
       v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
                          .addColumns('TestTable', {myAge: 'number', dob: 'date'}));
 
@@ -125,9 +172,9 @@ isServer && define(function (require, exports, module) {
     },
 
     "test addColumns by arguments"() {
+      this.onEnd(() => delete ModelMap.TestTable);
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
-      this.onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
       v.sut.addMigration('20151004T20-30-20-add-column', v.migBody = mig => mig
                          .addColumns('TestTable', 'myAge:number', 'dob:date'));

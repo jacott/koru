@@ -35,6 +35,10 @@ define(function(require, exports, module) {
     addColumns(tableName, ...args) {
       this[actions$].push({action: addColumns, args: {tableName, args}});
     }
+
+    addIndex(tableName, spec) {
+      this[actions$].push({action: addIndex, args: {tableName, args: spec}});
+    }
   }
 
   const createTable = (add, client, {name, fields, unlogged, indexes}) => {
@@ -50,16 +54,7 @@ define(function(require, exports, module) {
 
       client.query(`CREATE${unlogged ? ' UNLOGGED' : ''} TABLE "${name}" (${list.join(',')})`);
       if (indexes) {
-        indexes.forEach(spec => {
-          let i = 0;
-          const unique = spec[0] === '*unique';
-          if (unique) spec = spec.slice(1);
-          const iname = name+'_'+spec.map(field => field.replace(/\s.*$/, '')).join('_');
-          client.query(
-            `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${name}" USING btree (${
-spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
-})`);
-        });
+        indexes.forEach(args=>{addIndex(true, client, {tableName: name, args})});
       }
     } else {
       client.query(`DROP TABLE IF EXISTS "${name}"`);
@@ -73,6 +68,26 @@ spec.map(field => field.replace(/(^\S+)/, '"$1"')).join(',')
     if (! add && options.revert)
       options.revert(client);
     util.forEach(options.resetTables, name => resetTable(name));
+  };
+
+  const addIndex = (add, client, {tableName, args})=>{
+    let i = 0;
+    const isArray = Array.isArray(args);
+    const unique = isArray ? args[0] === '*unique' : !! args.unique;
+    const columns = isArray ?
+            (unique ? args.slice(1) : args)
+          : args.columns;
+    const iname = args.name ||
+            tableName+'_'+columns.map(field => field.replace(/\s.*$/, '')).join('_');
+    if (add) {
+      const order = columns.map(field => field.replace(/(^\S+)/, '"$1"')).join(',');
+      const where = args.where ? `where ${args.where}` : '';
+      client.query(
+        `${unique ? 'CREATE UNIQUE' : 'CREATE'} INDEX "${iname}" ON "${tableName}"
+USING btree (${order}) ${where}`);
+    } else {
+      client.query(`DROP INDEX "${iname}"`);
+    }
   };
 
   const addColumns = (add, client, {tableName, args})=>{
