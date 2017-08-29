@@ -104,9 +104,10 @@ define(function(require, exports, module) {
         const ans = {};
         for(let i = 0; i < compKeysLen; ++i) {
           const key = compKeys[i];
-          ans[key] = doc[key];
+          const value = doc[key];
+          if (value !== undefined) ans[key] = value;
         }
-        return ans;
+        for (const _ in ans) return ans;
       };
 
       const leadLen = len - 1;

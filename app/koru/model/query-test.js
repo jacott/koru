@@ -100,7 +100,7 @@ define(function (require, exports, module) {
 
     "query sorted withIndex": {
       setUp() {
-        v.idx = v.TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1);
+        v.idx = v.TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1, '_id');
 
         v.TestModel.query.remove();
 
@@ -140,11 +140,26 @@ define(function (require, exports, module) {
       },
 
       "test partial"() {
-        const i6 = v.TestModel.create({_id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
-        v.TestModel.create({_id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
-        v.TestModel.create({_id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
-        const i72 = v.TestModel.create({_id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
-        v.TestModel.create({_id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
+        const i6 = v.TestModel.create({
+          _id: '6', name: 'n6', age: 1, gender: 'm', hobby: 'h5'});
+        v.TestModel.create({
+          _id: '70', name: 'n7', age: 1, gender: 'm', hobby: 'h6'});
+        v.TestModel.create({
+          _id: '71', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        const i72 = v.TestModel.create({
+          _id: '72', name: 'n7', age: 1, gender: 'm', hobby: 'h7'});
+        v.TestModel.create({
+          _id: '8', name: 'n8', age: 1, gender: 'm', hobby: 'h8'});
+
+
+        if (isClient) {
+          const btree = v.idx.entries.m[1];
+
+          assert.equals(
+            v.TestModel.where({age: 1, gender: 'm'}).fetch().sort(btree.compare).map(d=>d._id),
+            ['8', '71', '72', '70', '6', '2', '1']);
+        }
+
 
         const fetch = options => v.TestModel.query.withIndex(
           v.idx, {gender: 'm', age: 1}, options
@@ -157,6 +172,14 @@ define(function (require, exports, module) {
         assert.equals(
           fetch({from: i72, to: i6}),
           ['72', '70', '6']);
+
+        assert.equals(
+          fetch({direction: 1}),
+          ['8', '71', '72', '70', '6', '2', '1']);
+
+        assert.equals(
+          fetch({direction: -1}),
+          ['1', '2', '6', '70', '72', '71', '8']);
 
         assert.equals(
           fetch({direction: -1, from: i6, to: i72}),

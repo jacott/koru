@@ -107,11 +107,14 @@ define(function (require, exports, module) {
           {direction: -1}
         );
         assert(reverseCursor.next);
-
         assert.equals(Array.from(reverseCursor), [
           {points: 5, updatedAt: v.doc1.updatedAt, _id: 'doc1'},
           {points: 5, updatedAt: v.doc3.updatedAt, _id: 'doc3'},
         ]);
+
+        assert.equals(
+          Array.from(v.sortedIndex.lookup({id2: '4'}, {direction: -1})).map(d=>d._id),
+          ['a4', 'doc1', 'doc3']);
 
         assert.equals(v.sortedIndex.entries, {
           4: tree, 2: v.sortedIndex.lookup({id2: '2'}).container});
