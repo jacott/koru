@@ -8,17 +8,20 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
-  function newSimDocs() {
+  const {private$} = require('koru/symbols');
+
+  const newSimDocs = ()=>{
     const o = Object.create(null);
     o.temp = null;
     delete o.temp; // hint to optimizer
     return o;
-  }
+  };
 
   const EMPTY_OBJ = {};
 
   function Constructor(session) {
     return function(Query, condition, notifyAC$) {
+      const {exprToFunc} = Query[private$];
       let syncOb, stateOb;
       const origWhere = Query.prototype.where;
 
@@ -238,34 +241,15 @@ define(function(require, exports, module) {
         },
 
         exists() {
-          return this.count(1) === 1;
+          if (this.singleId !== undefined)
+            return this.findOne(this.singleId) !== undefined;
+          else
+            return this.count(1) === 1;
         },
 
         findOne(id) {
           const doc = this.docs[id];
-          if (doc === undefined) return;
-          const attrs = doc.attributes;
-
-          if (this._whereNots !== undefined && foundIn(this._whereNots, false)) return;
-
-          if (this._wheres !== undefined && ! foundIn(this._wheres)) return;
-
-          if (this._whereFuncs !== undefined && this._whereFuncs.some(func => ! func(doc)))
-            return;
-
-          if (this._whereSomes !== undefined &&
-              ! this._whereSomes.some(
-                ors => ors.some(o => foundIn(o)))) return;
-
-          return doc;
-
-          function foundIn(fields, affirm=true) {
-            for(const key in fields) {
-              if (foundItem(attrs[key], fields[key]) !== affirm)
-                return ! affirm;
-            }
-            return affirm;
-          }
+          return doc !== undefined && this.matches(doc, doc.attributes) ? doc : undefined;
         },
 
         remove() {
@@ -391,30 +375,6 @@ define(function(require, exports, module) {
             return true;
         }
         return false;
-      }
-
-      function foundItem(value, expected) {
-        if (typeof expected === 'object') {
-          if (Array.isArray(expected)) {
-            const av = Array.isArray(value);
-            for(let i = 0; i < expected.length; ++i) {
-              const exv = expected[i];
-              if (av) {
-                if (value.some(item => util.deepEqual(item, exv)))
-                  return true;
-              } else if (util.deepEqual(exv, value))
-                return true;
-            }
-            return false;
-          }
-          if (Array.isArray(value))
-            return value.some(item => util.deepEqual(item, expected));
-
-        } else if (Array.isArray(value)) {
-          return ! value.every(item => ! util.deepEqual(item, expected));
-        }
-
-        return util.deepEqual(expected, value);
       }
 
       function notify(model, doc, changes, isFromServer) {
@@ -577,31 +537,6 @@ define(function(require, exports, module) {
         stateOb != null && stateOb.stop();
       }
 
-      const EXPRS = {
-        $ne(param, obj) {
-          const expected = obj.$ne;
-          return doc => ! foundItem(doc[param], expected);
-        },
-        $nin(param, obj) {
-          const expected = new Set(obj.$nin);
-          return doc => ! expected.has(doc[param]);
-        },
-        $in(param, obj) {
-          return insertectFunc(param, obj.$in);
-        },
-      };
-
-      function exprToFunc(param, value) {
-        if (typeof value === 'object' && value !== null) {
-          if (Array.isArray(value)) {
-            return insertectFunc(param, value);
-          }
-          for (var key in value) break;
-          const expr = EXPRS[key];
-          if (typeof expr === 'function') return expr(param, value);
-        }
-        return value;
-      }
 
       function sortFunc(sort) {
         const slen = sort.length;
@@ -613,15 +548,6 @@ define(function(require, exports, module) {
             if (aVal !== bVal) return  (aVal < bVal) ? -dir : dir;
           }
           return 0;
-        };
-      }
-
-      function insertectFunc(param, list) {
-        const expected = new Set(list);
-        return doc => {
-          const value = doc[param];
-          return Array.isArray(value) ? value.some(value => expected.has(value)) :
-            expected.has(value);
         };
       }
     };

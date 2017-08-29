@@ -10,8 +10,10 @@ define(function (require, exports, module) {
   const Query                = require('./query');
   const TH                   = require('./test-helper');
 
-  const sut                  = require('./query-client');
-  var v;
+  const {private$} = require('koru/symbols');
+
+  const sut = require('./query-client');
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -100,8 +102,6 @@ define(function (require, exports, module) {
         refute.called(v.stub);
       },
     },
-
-
 
     /**
      * This was causing a undefined exception
@@ -216,7 +216,8 @@ define(function (require, exports, module) {
       const syncOC = this.stub(sessState.pending, 'onChange')
               .returns(v.syncOb = {stop: this.stub()});
 
-      function MockQuery() {}
+      function MockQuery() {};
+      MockQuery[private$] = {};
       MockQuery.notifyAC = this.stub();
       sut(MockQuery, null, 'notifyAC');
 

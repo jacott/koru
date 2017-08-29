@@ -3,11 +3,102 @@ define(function(require, exports, module) {
   const koru        = require('../main');
   const util        = require('../util');
 
-  koru.onunload(module, function () {
-    exports._unload && exports._unload();
-  });
+  const {private$} = require('koru/symbols');
+
+  koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
   const notifyAC$ = Symbol();
+
+  const foundIn = (attrs, fields, affirm=true)=>{
+    for(const key in fields) {
+      if (foundItem(attrs[key], fields[key]) !== affirm)
+        return ! affirm;
+    }
+    return affirm;
+  };
+
+  const foundItem = (value, expected)=>{
+    if (typeof expected === 'object') {
+      if (Array.isArray(expected)) {
+        const av = Array.isArray(value);
+        for(let i = 0; i < expected.length; ++i) {
+          const exv = expected[i];
+          if (av) {
+            if (value.some(item => util.deepEqual(item, exv)))
+              return true;
+          } else if (util.deepEqual(exv, value))
+            return true;
+        }
+        return false;
+      }
+      if (Array.isArray(value))
+        return value.some(item => util.deepEqual(item, expected));
+
+    } else if (Array.isArray(value)) {
+      return ! value.every(item => ! util.deepEqual(item, expected));
+    }
+
+    return util.deepEqual(expected, value);
+  };
+
+  const EXPRS = {
+    $ne(param, obj) {
+      const expected = obj.$ne;
+      return doc => ! foundItem(doc[param], expected);
+    },
+    $nin(param, obj) {
+      const expected = new Set(obj.$nin);
+      return doc => ! expected.has(doc[param]);
+    },
+    $in(param, obj) {
+      return insertectFunc(param, obj.$in);
+    },
+  };
+
+
+  function insertectFunc(param, list) {
+    const expected = new Set(list);
+    return doc => {
+      const value = doc[param];
+      return Array.isArray(value) ? value.some(value => expected.has(value)) :
+        expected.has(value);
+    };
+  }
+
+
+  const exprToFunc = (param, value)=>{
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        return insertectFunc(param, value);
+      }
+      for (var key in value) break;
+      const expr = EXPRS[key];
+      if (typeof expr === 'function') return expr(param, value);
+    }
+    return value;
+  };
+
+  function condition(query, map, params, value) {
+    let conditions = query[map];
+    if (conditions === undefined) conditions = query[map] = {};
+
+    if (typeof params === 'string')
+      conditions[params] = value;
+    else
+      Object.assign(conditions, params);
+    return query;
+  }
+
+  function buildList(query, listName, field, values) {
+    const items = query[listName] || (query[listName] = {});
+    const list = items[field] || (items[field] = []);
+
+    if (Array.isArray(values)) values.forEach(value => list.push(value));
+    else list.push(values);
+
+    return query;
+  }
+
 
   function Constructor(QueryEnv) {
     class Query {
@@ -104,30 +195,27 @@ define(function(require, exports, module) {
       fetchIds() {
         return this.fetchField('_id');
       }
+
+      matches(doc, attrs=doc) {
+        if (this._whereNots !== undefined && foundIn(attrs, this._whereNots, false)) return false;
+
+        if (this._wheres !== undefined && ! foundIn(attrs, this._wheres)) return false;
+
+        if (this._whereFuncs !== undefined && this._whereFuncs.some(func => ! func(doc)))
+          return false;
+
+        if (this._whereSomes !== undefined &&
+            ! this._whereSomes.some(
+              ors => ors.some(o => foundIn(attrs, o)))) return false;
+        return true;
+      }
     };
+
+    Query[private$] = {exprToFunc};
+
 
     makeSubject(Query, 'onAnyChange', notifyAC$);
 
-    function condition(query, map, params, value) {
-      let conditions = query[map];
-      if (conditions === undefined) conditions = query[map] = {};
-
-      if (typeof params === 'string')
-        conditions[params] = value;
-      else
-        Object.assign(conditions, params);
-      return query;
-    }
-
-    function buildList(query, listName, field, values) {
-      const items = query[listName] || (query[listName] = {});
-      const list = items[field] || (items[field] = []);
-
-      if (Array.isArray(values)) values.forEach(value => list.push(value));
-      else list.push(values);
-
-      return query;
-    }
 
     QueryEnv(Query, condition, notifyAC$);
 

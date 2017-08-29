@@ -279,6 +279,16 @@ define(function (require, exports, module) {
       assert.same(new Query(v.TestModel).exists({_id: v.foo._id}), true);
     },
 
+    "test matches"() {
+      const query = new Query(v.TestModel);
+      assert.same(query.matches({}), true);
+
+      query.where({_id: 'id1'});
+      assert.same(query.matches({_id: 'id1'}), true);
+      assert.same(query.matches({_id: 'id2'}), false);
+      assert.same(query.matches({_id: 'id2'}, {_id: 'id1'}), true);
+    },
+
     "test onId exists"() {
       const st = new Query(v.TestModel);
 
