@@ -8,7 +8,7 @@ define(function(require, exports, module) {
 
   const each$ = Symbol();
 
-  function each(startEach, data, func, options) {
+  const each = (startEach, data, func, options)=>{
     let each = startEach[each$];
     if (each === undefined) {
       startEach = createEach(startEach, func, options);
@@ -17,7 +17,7 @@ define(function(require, exports, module) {
     each.call(data, options);
 
     return startEach;
-  }
+  };
 
   Dom.registerHelpers({
     each(func, options) {
@@ -25,13 +25,13 @@ define(function(require, exports, module) {
     },
   });
 
-  function createEach(insertPoint, func, options) {
+  const createEach = (insertPoint, func, options)=>{
     const eachCtx = $.ctx;
     const ctpl = $.template;
     const helper = ctpl._helpers[func];
     if (helper === undefined)
-      throw new Error("helper '" + func +
-                      "' not found in template '" + ctpl.name + "'");
+      throw new Error(
+        `helper "${func}" not found in template "${ctpl.name}"`);
 
     if (typeof func !== 'string')
       throw new Error("first argument must be name of helper method to call");
@@ -56,8 +56,8 @@ define(function(require, exports, module) {
     if (! row) {
       row = Dom.lookupTemplate.call(ctpl, templateName) ||
         Dom.lookupTemplate(templateName);
-      if (! row) throw new Error("template '" + templateName +
-                                 "' not found in template '" + ctpl.name + "'");
+      if (! row) throw new Error(
+        `template "${templateName}" not found in template "${ctpl.name}"`);
     }
 
     const callback = (doc, old, sort) => {
@@ -89,7 +89,7 @@ define(function(require, exports, module) {
 
     callback.setDefaultDestroy = setDefaultDestroy;
     callback.render = callbackRender;
-    callback.clear = function (func) {
+    callback.clear = func =>{
       const parent = startEach.parentNode;
       if (! parent) return;
       for(let key in rows) {
@@ -127,14 +127,14 @@ define(function(require, exports, module) {
 
       endEach.parentNode.insertBefore(elm, before);
     }
-  }
+  };
 
   function setDefaultDestroy() {
     const callback = this;
     if (callback._destroy) {
       callback._destroy();
     } else {
-      $.ctx.onDestroy(callback._destroy = function () {
+      $.ctx.onDestroy(callback._destroy = ()=>{
         callback._handle && callback._handle.stop();
         callback._handle = null;
         callback.clear();
@@ -142,7 +142,10 @@ define(function(require, exports, module) {
     }
   }
 
-  function callbackRender({model,  params,  filter,  changed,  intercept, sort, index}) {
+  function callbackRender({
+    model,  params,  filter,  changed,  intercept, sort,
+    query=params ? model.where(params) : model.query
+  }) {
     const callback = this;
 
     if (typeof sort === 'string')
@@ -150,19 +153,19 @@ define(function(require, exports, module) {
 
     callback.setDefaultDestroy();
 
-    params = params || {};
-    let results = index ? index.fetch(params) : model.where(params).fetch();
+    let results = query.where(params).fetch();
     if (filter) results = results.filter(doc => filter(doc));
 
-    util.forEach(results.sort(sort), doc => {
-      if (! (intercept && intercept(doc)))
-        callback(doc);
-    });
+    util.forEach(
+      results.sort(sort),
+      intercept ? doc =>{intercept(doc) || callback(doc)}
+      : callback);
 
-    callback._handle = model.onChange((doc, was) => {
-      let old = doc != null ? doc.$withChanges(was) : was;
-      if (doc != null && params && ! util.includesAttributes(params, doc)) doc = null;
-      if (old != null && params && ! util.includesAttributes(params, old)) old = null;
+    callback._handle = model.onChange((doc, undo) => {
+      let old = doc != null ? doc.$withChanges(undo) : undo;
+
+      if (doc != null && ! query.matches(doc)) doc = null;
+      if (old != null && ! query.matches(old)) old = null;
 
       if (filter) {
         if (old != null && ! filter(old)) old = null;
@@ -171,7 +174,7 @@ define(function(require, exports, module) {
 
       if ((doc == null ? old : doc) && ! (intercept && intercept(doc, old))) {
         callback(doc, old, sort);
-        changed != null && changed(doc, was);
+        changed != null && changed(doc, undo);
       }
     });
   }

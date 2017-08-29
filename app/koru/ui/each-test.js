@@ -93,13 +93,13 @@ isClient && define(function (require, exports, module) {
         });
       },
 
-      "test params"() {
+      "test query"() {
         v.Each.$helpers({
           fooList(callback) {
             if (! v.spy) v.spy = TH.test.spy(callback, 'setDefaultDestroy');
             return callback.render({
               model: v.TestModel,
-              params: {id1: Dom.current.data().major, id2: '2'},
+              query: v.TestModel.where({id1: Dom.current.data().major, id2: '2'}),
               sort: util.compareByName,
               changed: v.changedStub = TH.test.stub(),
             });
@@ -152,6 +152,26 @@ isClient && define(function (require, exports, module) {
 
           refute.dom('li', 'm12');
 
+        });
+      },
+
+      "test params"() {
+        /**
+         * deprecated - use query
+         **/
+        v.Each.$helpers({
+          fooList(callback) {
+            if (! v.spy) v.spy = TH.test.spy(callback, 'setDefaultDestroy');
+            return callback.render({
+              model: v.TestModel,
+              params: {id1: Dom.current.data().major, id2: '2'},
+            });
+          }
+        });
+
+        assert.dom(v.Each.$render({major: '1'}), elm => {
+          var barney = v.TestModel.create({id1: '1', id2: '2', name: 'barny'});
+          assert.dom('li', {count: 3});
         });
       },
 
