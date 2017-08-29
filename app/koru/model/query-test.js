@@ -279,14 +279,112 @@ define(function (require, exports, module) {
       assert.same(new Query(v.TestModel).exists({_id: v.foo._id}), true);
     },
 
-    "test matches"() {
-      const query = new Query(v.TestModel);
-      assert.same(query.matches({}), true);
+    "matches": {
+      "test field compare"() {
+        const query = new Query(v.TestModel);
+        assert.same(query.matches({}), true);
 
-      query.where({_id: 'id1'});
-      assert.same(query.matches({_id: 'id1'}), true);
-      assert.same(query.matches({_id: 'id2'}), false);
-      assert.same(query.matches({_id: 'id2'}, {_id: 'id1'}), true);
+        query.where({_id: 'id1'});
+        assert.same(query.matches({_id: 'id1'}), true);
+        assert.same(query.matches({_id: 'id2'}), false);
+        assert.same(query.matches({_id: 'id2'}, {_id: 'id1'}), true);
+      },
+
+      "test functions"() {
+        const query = new Query(v.TestModel).where(doc => doc.foo == 5);
+
+        assert.same(query.matches({foo: 5}), true);
+        assert.same(query.matches({foo: 5}, {foo: 4}), true);
+        assert.same(query.matches({foo: 4}), false);
+        assert.same(query.matches({foo: 4}, {foo: 5}), false);
+      },
+
+      "test $gt."() {
+        const query = new Query(v.TestModel).where({foo: {$gt: 50}});
+
+        assert.same(query.matches({foo: 54}), true);
+        assert.same(query.matches({foo: 50.1}), true);
+        assert.same(query.matches({foo: 50}), false);
+        assert.same(query.matches({foo: 49.9}), false);
+        assert.same(query.matches({foo: "x"}), false);
+      },
+
+      "test $gte"() {
+        const query = new Query(v.TestModel).where({foo: {$gte: 50}});
+
+        assert.same(query.matches({foo: 54}), true);
+        assert.same(query.matches({foo: 50.1}), true);
+        assert.same(query.matches({foo: 50}), true);
+        assert.same(query.matches({foo: 49.9}), false);
+        assert.same(query.matches({foo: "x"}), false);
+
+        /** whereNot **/ {
+          const query = new Query(v.TestModel).whereNot({foo: {$gte: 50}});
+
+          assert.same(query.matches({foo: 54}), false);
+          assert.same(query.matches({foo: 50.1}), false);
+          assert.same(query.matches({foo: 50}), false);
+          assert.same(query.matches({foo: 49.9}), true);
+          assert.same(query.matches({foo: "x"}), true);
+        }
+
+        /** whereSome **/ {
+          const query = new Query(v.TestModel).whereSome({foo: {$lte: 50}}, {foo: {$gte: 100}});
+
+          assert.same(query.matches({foo: 40}), true);
+          assert.same(query.matches({foo: 50}), true);
+          assert.same(query.matches({foo: 50.1}), false);
+          assert.same(query.matches({foo: 74}), false);
+          assert.same(query.matches({foo: 100}), true);
+          assert.same(query.matches({foo: 150}), true);
+        }
+      },
+
+      "test $lt."() {
+        const query = new Query(v.TestModel).where({foo: {$lt: 50}});
+
+        assert.same(query.matches({foo: 54}), false);
+        assert.same(query.matches({foo: 50.1}), false);
+        assert.same(query.matches({foo: 50}), false);
+        assert.same(query.matches({foo: 49.9}), true);
+        assert.same(query.matches({foo: "x"}), false);
+      },
+
+      "test $lte"() {
+        const query = new Query(v.TestModel).where({foo: {$lte: 50}});
+
+        assert.same(query.matches({foo: 54}), false);
+        assert.same(query.matches({foo: 50.1}), false);
+        assert.same(query.matches({foo: 50}), true);
+        assert.same(query.matches({foo: 49.9}), true);
+        assert.same(query.matches({foo: "x"}), false);
+      },
+
+      "test $in"() {
+        const query = new Query(v.TestModel).where({foo: {$in: [1,2,3]}});
+
+        assert.same(query.matches({foo: 0}), false);
+        assert.same(query.matches({foo: "x"}), false);
+        assert.same(query.matches({foo: 1}), true);
+        assert.same(query.matches({foo: 2}), true);
+      },
+
+      "test $nin"() {
+        const query = new Query(v.TestModel).where({foo: {$nin: [1,2,3]}});
+
+        assert.same(query.matches({foo: 0}), true);
+        assert.same(query.matches({foo: "x"}), true);
+        assert.same(query.matches({foo: 1}), false);
+        assert.same(query.matches({foo: 2}), false);
+      },
+
+      "test $ne"() {
+        const query = new Query(v.TestModel).where({foo: {$ne: 42}});
+
+        assert.same(query.matches({foo: 40}), true);
+        assert.same(query.matches({foo: "x"}), true);
+        assert.same(query.matches({foo: 42}), false);
+      },
     },
 
     "test onId exists"() {
@@ -495,14 +593,17 @@ define(function (require, exports, module) {
     },
 
     "test whereSome"() {
-      let ids = new Query(v.TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm').fetchIds().sort();
+      let ids = new Query(v.TestModel).whereSome({age: 5}, {age: 10}).where('gender', 'm')
+            .fetchIds().sort();
       assert.equals(ids, ['bar456', 'foo123']);
 
-      ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'}).where('gender', 'm').fetchIds();
+      ids =  new Query(v.TestModel).whereSome({age: 5, name: 'baz'}, {age: 10, name: 'bar'})
+        .where('gender', 'm').fetchIds();
 
       assert.equals(ids, ['bar456']);
 
-      assert.equals(v.TestModel.query.whereSome({age: [5, 10]}).fetchIds().sort(), ['bar456', 'foo123']);
+      assert.equals(
+        v.TestModel.query.whereSome({age: [5, 10]}).fetchIds().sort(), ['bar456', 'foo123']);
 
     },
 

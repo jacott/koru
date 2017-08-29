@@ -7,11 +7,16 @@ define(function(require, exports, module) {
 
   koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
-  const notifyAC$ = Symbol();
+  const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol();
 
-  const foundIn = (attrs, fields, affirm=true)=>{
-    for(const key in fields) {
-      if (foundItem(attrs[key], fields[key]) !== affirm)
+  const foundIn = (doc, attrs, fields, affirm=true)=>{
+    const funcs = fields[func$];
+    for(const key in funcs) {
+      const func = funcs[key];
+      if (func === undefined) {
+        if (foundItem(attrs[key], fields[key]) !== affirm)
+          return ! affirm;
+      } else if (! func(doc) === affirm)
         return ! affirm;
     }
     return affirm;
@@ -53,18 +58,33 @@ define(function(require, exports, module) {
     $in(param, obj) {
       return insertectFunc(param, obj.$in);
     },
+    $gt(param, obj) {
+      const expected = obj.$gt;
+      return doc => doc[param] > expected;
+    },
+    $gte(param, obj) {
+      const expected = obj.$gte;
+      return doc => doc[param] >= expected;
+    },
+    $lt(param, obj) {
+      const expected = obj.$lt;
+      return doc => doc[param] < expected;
+    },
+    $lte(param, obj) {
+      const expected = obj.$lte;
+      return doc => doc[param] <= expected;
+    }
   };
 
 
-  function insertectFunc(param, list) {
+  const insertectFunc = (param, list)=>{
     const expected = new Set(list);
     return doc => {
       const value = doc[param];
       return Array.isArray(value) ? value.some(value => expected.has(value)) :
         expected.has(value);
     };
-  }
-
+  };
 
   const exprToFunc = (param, value)=>{
     if (typeof value === 'object' && value !== null) {
@@ -78,16 +98,39 @@ define(function(require, exports, module) {
     return value;
   };
 
-  function condition(query, map, params, value) {
-    let conditions = query[map];
-    if (conditions === undefined) conditions = query[map] = {};
+  const assignCondition = (conditions, field, value)=>{
+    conditions[field] = value;
+    const func = exprToFunc(field, value);
+    conditions[func$][field] = func === value ? undefined : func;
+  };
 
-    if (typeof params === 'string')
-      conditions[params] = value;
-    else
-      Object.assign(conditions, params);
-    return query;
-  }
+  const condition = (query, map, params, value)=>{
+    if (Array.isArray(params)) {
+      let conditions = query[map];
+      if (conditions === undefined) conditions = query[map] = [];
+      conditions.push(params.map(o => {
+        const term = {[func$]: {}};
+        for (const field in o)
+          assignCondition(term, field, o[field]);
+        return term;
+      }));
+      return;
+    }
+
+    let conditions = query[map];
+    if (conditions === undefined) conditions = query[map] = {[func$]: {}};
+    const type = typeof params;
+    if (type === 'function') {
+      const count = conditions[counter$] = (conditions[counter$] || 0) + 1;
+      conditions[func$][count] = params;
+
+    } else if (type === 'string') {
+      assignCondition(conditions, params, value);
+
+    } else for (const field in params) {
+      assignCondition(conditions, field, params[field]);
+    }
+  };
 
   function buildList(query, listName, field, values) {
     const items = query[listName] || (query[listName] = {});
@@ -141,14 +184,19 @@ define(function(require, exports, module) {
         return this.update({$partial});
       }
 
+      where(params, value) {
+        condition(this, '_wheres', params, value);
+        return this;
+      }
+
       whereSome(...args) {
-        const conditions = (this._whereSomes = this._whereSomes || []);
-        conditions.push(args);
+        condition(this, '_whereSomes', args);
         return this;
       }
 
       whereNot(params, value) {
-        return condition(this, '_whereNots', params, value);
+        condition(this, '_whereNots', params, value);
+        return this;
       }
 
       fields(...fields) {
@@ -187,9 +235,7 @@ define(function(require, exports, module) {
       fetchField(field) {
         this.fields(field);
 
-        return this.map(function (doc) {
-          return doc[field];
-        });
+        return this.map(doc => doc[field]);
       }
 
       fetchIds() {
@@ -197,16 +243,15 @@ define(function(require, exports, module) {
       }
 
       matches(doc, attrs=doc) {
-        if (this._whereNots !== undefined && foundIn(attrs, this._whereNots, false)) return false;
+        if (this._whereNots !== undefined && foundIn(doc, attrs, this._whereNots, false))
+          return false;
 
-        if (this._wheres !== undefined && ! foundIn(attrs, this._wheres)) return false;
-
-        if (this._whereFuncs !== undefined && this._whereFuncs.some(func => ! func(doc)))
+        if (this._wheres !== undefined && ! foundIn(doc, attrs, this._wheres))
           return false;
 
         if (this._whereSomes !== undefined &&
-            ! this._whereSomes.some(
-              ors => ors.some(o => foundIn(attrs, o)))) return false;
+            ! this._whereSomes.every(
+              ors => ors.some(o => foundIn(doc, attrs, o)))) return false;
         return true;
       }
     };

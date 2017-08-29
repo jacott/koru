@@ -34,10 +34,6 @@ define(function(require, exports, module) {
     });
 
     util.merge(Query.prototype, {
-      where(params, value) {
-        return condition(this, '_wheres', params, value);
-      },
-
       whereSql(...args) {
         (this._whereSqls || (this._whereSqls = [])).push(args);
         return this;

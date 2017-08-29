@@ -140,30 +140,6 @@ define(function(require, exports, module) {
           return this._docs || (this._docs = this.model.docs);
         },
 
-        where(params, value) {
-          const type = typeof params;
-          if (type === 'function') {
-            const funcs = this._whereFuncs || (this._whereFuncs = []);
-            funcs.push(params);
-            return this;
-          } else {
-            const wheres = this._wheres || (this._wheres = {});
-            switch (type) {
-            case 'string':
-              value = exprToFunc(params, value);
-              if (typeof value === 'function')
-                return this.where(value);
-              break;
-            case 'object':
-              for(const key in params) {
-                this.where(key, params[key]);
-              }
-              return this;
-            }
-            return condition(this, '_wheres', params, value);
-          }
-        },
-
         withIndex(idx, params, options={}) {
           if (this._sort) throw new Error('withIndex may not be used with sort');
           const orig = dbBroker.dbId;
