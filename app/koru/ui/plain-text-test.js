@@ -17,6 +17,37 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test buildKeydownEvent"() {
+      const elm = document.createElement('div');
+      const cb = {cancel: this.stub(), okay: this.stub()};
+      const keydown = sut.buildKeydownEvent(cb);
+
+      this.stub(Dom, 'stopEvent');
+
+      keydown.call(elm, {which: 27});
+      assert.calledWith(cb.cancel, elm);
+      refute.called(Dom.stopEvent);
+      cb.cancel.reset();
+
+      keydown({which: 66, ctrlKey: true});
+      assert.calledOnce(Dom.stopEvent);
+      keydown({which: 85, ctrlKey: true});
+      keydown({which: 73, ctrlKey: true});
+
+      assert.same(Dom.stopEvent.callCount, 3);
+      Dom.stopEvent.reset();
+
+      keydown({which: 74, ctrlKey: true});
+      refute.called(Dom.stopEvent);
+
+      refute.called(cb.cancel);
+      refute.called(cb.okay);
+
+      keydown.call(elm, {which: 13});
+      assert.calledWith(cb.okay, elm);
+      assert.calledOnce(Dom.stopEvent);
+    },
+
     "test editor"() {
       document.body.appendChild(sut.Editor.$autoRender({content: "foo", options: {
         placeholder: "hello"}}));

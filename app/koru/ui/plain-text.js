@@ -59,6 +59,23 @@ define(function(require, exports, module) {
 
     pasteFilter,
 
+    buildKeydownEvent({cancel, okay}) {
+      return function (event) {
+        switch (event.which) {
+        case 66: case 85: case 73:
+          if (event.ctrlKey) Dom.stopEvent();
+          break;
+        case 27:
+          cancel(this);
+          return;
+        case 13:
+          Dom.stopEvent();
+          okay(this);
+          return;
+        }
+      };
+    },
+
     setTextAsHTML(elm, content) {
       Dom.removeChildren(elm);
       elm.appendChild(exports.toHtml(content));
