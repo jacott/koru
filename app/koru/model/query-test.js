@@ -79,7 +79,14 @@ define(function (require, exports, module) {
         v.TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f'});
       },
 
-      "test no matches"() {
+      "test matches"() {
+        const query = v.TestModel.query.withIndex(v.idx, {gender: 'x'});
+
+        assert.same(query.matches({gender: 'y'}), false);
+        assert.same(query.matches({gender: 'x'}), true);
+      },
+
+      "test count no matches"() {
         assert.same(v.TestModel.query.withIndex(v.idx, {gender: 'x'}).count(), 0);
       },
 
@@ -98,9 +105,12 @@ define(function (require, exports, module) {
       },
     },
 
-    "query sorted withIndex": {
+    "query sorted withIndex and filterTest": {
       setUp() {
-        v.idx = v.TestModel.addIndex('gender', 'age', -1, 'name', 'hobby', 1, '_id');
+        v.idx = v.TestModel.addIndex(
+          'gender', 'age', -1, 'name', 'hobby', 1, '_id',
+          ({hobby})=> hobby != null && hobby[0] === 'h'
+        );
 
         v.TestModel.query.remove();
 
@@ -109,6 +119,13 @@ define(function (require, exports, module) {
         v.TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm', hobby: 'h2'});
         v.TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f', hobby: 'h3'});
         v.TestModel.create({_id: '5', name: 'n5', age: 2, gender: 'm', hobby: 'h4'});
+      },
+
+      "test matches"() {
+        const query = v.TestModel.query.withIndex(v.idx, {gender: 'm'});
+        assert.same(query.matches({gender: 'm', hobby: 'h1'}), true);
+        assert.same(query.matches({gender: 'f', hobby: 'h1'}), false);
+        assert.same(query.matches({gender: 'm', hobby: 'g1'}), false);
       },
 
       "test no matches"() {

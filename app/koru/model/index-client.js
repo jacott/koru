@@ -37,8 +37,8 @@ define(function(require, exports, module) {
       return condition;
     };
 
-    const buildIndex = (_fields, _condition) => {
-      const fields = _fields, condition = _condition;
+    const buildIndex = (_fields, _filterTest) => {
+      const fields = _fields, filterTest = _filterTest;
       let i = 0, comp = null;
       const compKeys = [];
       let dbId = "", idx = null;
@@ -140,7 +140,7 @@ define(function(require, exports, module) {
       const onChange = (doc, undo)=>{
         const idx = getIdx();
         const old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
-        if (condition !== null && doc != null && ! condition(doc)) {
+        if (filterTest !== null && doc != null && ! filterTest(doc)) {
           doc = null;
         }
 
@@ -205,6 +205,7 @@ define(function(require, exports, module) {
       const handle = model._indexUpdate.onChange(onChange);
 
       const uIndex = {
+        filterTest,
         lookup(keys, options) {
           let ret = getIdx();
 

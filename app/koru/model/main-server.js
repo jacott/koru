@@ -63,8 +63,11 @@ define(function(require, exports, module) {
       }
 
       function prepareIndex(type, model, args) {
-        if (typeof args[args.length-1] === 'function')
+        let filterTest = null;
+        if (typeof args[args.length-1] === 'function') {
+          filterTest = args[args.length-1];
           --args.length;
+        }
         const name = model.modelName;
         const queue = type[name] || (type[name] = []);
         queue.push(args);
@@ -82,7 +85,7 @@ define(function(require, exports, module) {
           }
           if (from == -1) from = i;
         }
-        return {model, sort, from: args.slice(from)};
+        return {model, sort, from: args.slice(from), filterTest};
       }
 
       function _ensureIndexes(type, options) {

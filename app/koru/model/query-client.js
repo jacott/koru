@@ -144,6 +144,8 @@ define(function(require, exports, module) {
           if (this._sort) throw new Error('withIndex may not be used with sort');
           const orig = dbBroker.dbId;
           dbBroker.dbId = this._dbId || orig;
+          this.where(params);
+          if (idx.filterTest) this.where(idx.filterTest);
           this._index = {idx: idx.lookup(params, options) || {}, options};
 
           dbBroker.dbId = orig;
