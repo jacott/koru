@@ -17,6 +17,10 @@ define(function(require, exports, module) {
     return o;
   };
 
+  const trimResults = (limit, results)=>{
+    if (limit !== null && results.length > limit) results.length = limit;
+  };
+
   const EMPTY_OBJ = {};
 
   function Constructor(session) {
@@ -198,7 +202,9 @@ define(function(require, exports, module) {
               const results = [];
               const compare = sortFunc(this._sort);
               findMatching.call(this, doc => results.push(doc));
-              results.sort(compare).some(func);
+              results.sort(compare);
+              trimResults(this._limit, results);
+              results.some(func);
 
             } else findMatching.call(this, func);
           }
@@ -313,7 +319,9 @@ define(function(require, exports, module) {
             const results = [];
             const compare = sortFunc(this._sort);
             findMatching.call(this, doc => results.push(doc));
-            yield *results.sort(compare);
+            results.sort(compare);
+            trimResults(this._limit, results);
+            yield *results;
 
           } else
             yield *g_findMatching(this);
@@ -321,6 +329,7 @@ define(function(require, exports, module) {
       };
 
       function *g_findMatching(q) {
+        let {_limit} = q || 0;
         if (q.model === undefined) return;
 
         if (q._index !== undefined) {
@@ -328,7 +337,7 @@ define(function(require, exports, module) {
 
         } else for(const id in q.docs) {
           const doc = q.findOne(id);
-          if (doc !== undefined && (yield doc) === true)
+          if ((doc !== undefined && (yield doc) === true) || --_limit == 0)
             break;
         }
       }
@@ -366,12 +375,14 @@ define(function(require, exports, module) {
       function findMatching(func) {
         if (this.model === undefined) return;
 
+        let limit = this._sort == null || this._limit == null ? 0 : this._limit;
+
         if (this._index !== undefined) {
           findByIndex(this, this._index.idx, this._index.options, func);
 
         } else for(const id in this.docs) {
           const doc = this.findOne(id);
-          if (doc !== undefined && func(doc) === true)
+          if ((doc !== undefined && func(doc) === true) || --limit == 0)
             break;
         }
       }

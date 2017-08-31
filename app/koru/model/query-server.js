@@ -88,11 +88,6 @@ define(function(require, exports, module) {
         return this;
       },
 
-      limit(limit) {
-        this._limit = limit;
-        return this;
-      },
-
       offset(offset) {
         this._offset = offset;
         return this;

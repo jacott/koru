@@ -207,6 +207,11 @@ define(function(require, exports, module) {
         return this;
       }
 
+      limit(limit) {
+        this._limit = limit;
+        return this;
+      }
+
       sort(...fields) {
         if (this._index !== undefined) throw new Error('withIndex may not be used with sort');
         fields = fields.filter(n => n !== 1);

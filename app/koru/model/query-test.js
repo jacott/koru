@@ -29,6 +29,12 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test limit"() {
+      v.TestModel.create({name: 'foo2'});
+
+      assert.equals(v.TestModel.query.sort('name').limit(2).fetchField('name'), ['bar', 'foo']);
+    },
+
     "test un/match array element"() {
       v.TestModel.defineFields({aoo: 'object'});
       v.foo.$onThis.update('aoo', [{a: 1, b:2}, {a: 1, b: 3}]);
