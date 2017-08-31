@@ -739,9 +739,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       let sort = '';
       const {_sort} = cursor, len = _sort.length;
       for(let i = 0; i < len; ++i) {
-        const val = _sort[i];
+        let val = _sort[i];
         if (typeof val === 'string') {
-          sort += `${sort.length == 0 ? '' : ','}"${val}"`;
+          if (val[0] !== '(') val = `"${val}"`;
+          sort += `${sort.length == 0 ? '' : ','}${val}`;
         } else if (val === -1) {
           sort += ' DESC';
         }

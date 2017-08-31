@@ -288,8 +288,8 @@ isServer && define(function (require, exports, module) {
         });
 
         test.spy(v.foo, '_ensureTable');
-        v.foo.transaction(function () {
-          "one two three four five".split(' ').forEach((name, i) => {
+        v.foo.transaction(()=>{
+          "one two three Four five".split(' ').forEach((name, i) => {
             v.foo.insert({_id: name+i, name: name,
                           createdAt: new Date(util.dateNow()-i*1e6)});
           });
@@ -314,15 +314,15 @@ isServer && define(function (require, exports, module) {
       "test array param"() {
         assert.equals(v.foo.count({name: ['one', 'three']}), 2);
         assert.equals(v.foo.count({name: []}), 0);
-        assert.equals(v.foo.count({name: ['four']}), 1);
+        assert.equals(v.foo.count({name: ['Four']}), 1);
 
         assert.equals(v.foo.count({name: {$in: ['one', 'three']}}), 2);
         assert.equals(v.foo.count({name: {$in: []}}), 0);
-        assert.equals(v.foo.count({name: {$in: ['four']}}), 1);
+        assert.equals(v.foo.count({name: {$in: ['Four']}}), 1);
 
         assert.equals(v.foo.count({name: {$nin: ['one', 'three']}}), 3);
         assert.equals(v.foo.count({name: {$nin: []}}), 5);
-        assert.equals(v.foo.count({name: {$nin: ['four']}}), 4);
+        assert.equals(v.foo.count({name: {$nin: ['Four']}}), 4);
       },
 
       "test named params on _client"() {
@@ -330,15 +330,15 @@ isServer && define(function (require, exports, module) {
         assert.equals(
           client.query(
             'select count(*) from "Foo" where name like {$likeE} OR name = {$four}',
-            {likeE: '%e', four: 'four'}),
+            {likeE: '%e', four: 'Four'}),
           [{count: '4'}]);
       },
 
       "test $sql"() {
         assert.equals(v.foo.count({$sql: "name like '%e'"}), 3);
         assert.equals(v.foo.count({$sql: ["name like {$likeE} OR name = {$four}",
-                                          {likeE: '%e', four: 'four'}]}), 4);
-        assert.equals(v.foo.count({$sql: ["name like $1 OR name = $2", ['%e', 'four']]}), 4);
+                                          {likeE: '%e', four: 'Four'}]}), 4);
+        assert.equals(v.foo.count({$sql: ["name like $1 OR name = $2", ['%e', 'Four']]}), 4);
         assert.equals(v.foo.show({$sql: ["{$one} + {$two} + {$one}", {one: 11, two: 22, three: 33}]}),
                       ' WHERE $1 + $2 + $1 ([11, 22])');
       },
@@ -392,6 +392,18 @@ isServer && define(function (require, exports, module) {
         } finally {
           cursor.close();
         }
+      },
+
+      "test collation"() {
+        let cursor = v.foo.find({}, {sort: ['(name collate "C")']});
+        assert.equals(cursor.next(100).map(d=>d.name), [
+          'Four', 'five', 'one', 'three', 'two'
+        ]);
+
+        cursor = v.foo.find({}, {sort: ['name']}); // natural en_US
+        assert.equals(cursor.next(100).map(d=>d.name), [
+          'five', 'Four', 'one', 'three', 'two'
+        ]);
       },
     },
 
