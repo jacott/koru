@@ -143,7 +143,7 @@ define(function(require, exports, module) {
   }
 
   function callbackRender({
-    model,  params,  filter,  changed,  intercept, sort,
+    model,  params,  filter,  changed,  intercept, sort=util.compare,
     query=params ? model.where(params) : model.query
   }) {
     const callback = this;

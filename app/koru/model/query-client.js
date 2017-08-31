@@ -8,8 +8,6 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
-  const {private$} = require('koru/symbols');
-
   const newSimDocs = ()=>{
     const o = Object.create(null);
     o.temp = null;
@@ -25,7 +23,6 @@ define(function(require, exports, module) {
 
   function Constructor(session) {
     return function(Query, condition, notifyAC$) {
-      const {exprToFunc} = Query[private$];
       let syncOb, stateOb;
       const origWhere = Query.prototype.where;
 

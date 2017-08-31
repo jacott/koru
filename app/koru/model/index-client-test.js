@@ -39,6 +39,8 @@ define(function (require, exports, module) {
         v.TestModel.defineFields({
           points: 'number',
           updatedAt: 'timestamp',
+          name: 'text',
+          code: {type: 'ascii', default: ''},
         });
 
         v.doc1.attributes.points = 5;
@@ -50,6 +52,25 @@ define(function (require, exports, module) {
         v.doc3.attributes.updatedAt = new Date(2017, 1, 5);
 
         v.sortedIndex = v.TestModel.addIndex('id2', -1, 'points', 'updatedAt');
+      },
+
+      "test en-US compare"() {
+        v.sortedIndex = v.TestModel.addIndex('id1', 1, 'updatedAt', 'name', -1, 'code', 'updatedAt');
+        const updatedAt = new Date();
+        const n1 = v.TestModel.create({
+          _id: 'n1', id1: 'x', updatedAt, name: 'Helen'});
+        const n2 = v.TestModel.create({
+          _id: 'n2', id1: 'x', updatedAt, name: 'david', code: 'ax'});
+        const n3 = v.TestModel.create({
+          _id: 'n3', id1: 'x', updatedAt, name: 'david', code: 'Tx'});
+        const n4 = v.TestModel.create({
+          _id: 'n4', id1: 'x', updatedAt: new Date(+updatedAt + 399), name: 'Alan', code: 'Tx'});
+
+        const tree = v.sortedIndex.entries.x;
+        assert(tree instanceof BTree);
+
+        assert.equals(Array.from(tree).map(d=>d.name+d.code), [
+          'davidax', 'davidTx', 'Helen', 'AlanTx']);
       },
 
       "test fully sorted"() {

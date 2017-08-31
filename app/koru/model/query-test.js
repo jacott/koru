@@ -337,99 +337,127 @@ define(function (require, exports, module) {
       },
 
       "test functions"() {
-        const query = new Query(v.TestModel).where(doc => doc.foo == 5);
+        const query = new Query(v.TestModel).where(doc => doc.age == 5);
 
-        assert.same(query.matches({foo: 5}), true);
-        assert.same(query.matches({foo: 5}, {foo: 4}), true);
-        assert.same(query.matches({foo: 4}), false);
-        assert.same(query.matches({foo: 4}, {foo: 5}), false);
+        assert.same(query.matches({age: 5}), true);
+        assert.same(query.matches({age: 5}, {age: 4}), true);
+        assert.same(query.matches({age: 4}), false);
+        assert.same(query.matches({age: 4}, {age: 5}), false);
       },
 
       "test $gt."() {
-        const query = new Query(v.TestModel).where({foo: {$gt: 50}});
+        const query = new Query(v.TestModel).where({age: {$gt: 50}});
 
-        assert.same(query.matches({foo: 54}), true);
-        assert.same(query.matches({foo: 50.1}), true);
-        assert.same(query.matches({foo: 50}), false);
-        assert.same(query.matches({foo: 49.9}), false);
-        assert.same(query.matches({foo: "x"}), false);
+        assert.same(query.matches({age: 54}), true);
+        assert.same(query.matches({age: 50.1}), true);
+        assert.same(query.matches({age: 50}), false);
+        assert.same(query.matches({age: 49.9}), false);
+        assert.same(query.matches({age: "x"}), false);
+
+        const textQuery = new Query(v.TestModel).where({name: {$gt: 'Terry'}});
+
+        assert.same(textQuery.matches({name: 'zac'}), true);
+        assert.same(textQuery.matches({name: 'Terry'}), false);
+        assert.same(textQuery.matches({name: 'terry'}), false);
+        assert.same(textQuery.matches({name: 'aulb'}), false);
       },
 
       "test $gte"() {
-        const query = new Query(v.TestModel).where({foo: {$gte: 50}});
+        const query = new Query(v.TestModel).where({age: {$gte: 50}});
 
-        assert.same(query.matches({foo: 54}), true);
-        assert.same(query.matches({foo: 50.1}), true);
-        assert.same(query.matches({foo: 50}), true);
-        assert.same(query.matches({foo: 49.9}), false);
-        assert.same(query.matches({foo: "x"}), false);
+        assert.same(query.matches({age: 54}), true);
+        assert.same(query.matches({age: 50.1}), true);
+        assert.same(query.matches({age: 50}), true);
+        assert.same(query.matches({age: 49.9}), false);
+        assert.same(query.matches({age: "x"}), false);
+
+        const textQuery = new Query(v.TestModel).where({name: {$gte: 'Terry'}});
+
+        assert.same(textQuery.matches({name: 'zac'}), true);
+        assert.same(textQuery.matches({name: 'terry'}), false);
+        assert.same(textQuery.matches({name: 'Terry'}), true);
+        assert.same(textQuery.matches({name: 'aulb'}), false);
 
         /** whereNot **/ {
-          const query = new Query(v.TestModel).whereNot({foo: {$gte: 50}});
+          const query = new Query(v.TestModel).whereNot({age: {$gte: 50}});
 
-          assert.same(query.matches({foo: 54}), false);
-          assert.same(query.matches({foo: 50.1}), false);
-          assert.same(query.matches({foo: 50}), false);
-          assert.same(query.matches({foo: 49.9}), true);
-          assert.same(query.matches({foo: "x"}), true);
+          assert.same(query.matches({age: 54}), false);
+          assert.same(query.matches({age: 50.1}), false);
+          assert.same(query.matches({age: 50}), false);
+          assert.same(query.matches({age: 49.9}), true);
+          assert.same(query.matches({age: "x"}), true);
         }
 
         /** whereSome **/ {
-          const query = new Query(v.TestModel).whereSome({foo: {$lte: 50}}, {foo: {$gte: 100}});
+          const query = new Query(v.TestModel).whereSome({age: {$lte: 50}}, {age: {$gte: 100}});
 
-          assert.same(query.matches({foo: 40}), true);
-          assert.same(query.matches({foo: 50}), true);
-          assert.same(query.matches({foo: 50.1}), false);
-          assert.same(query.matches({foo: 74}), false);
-          assert.same(query.matches({foo: 100}), true);
-          assert.same(query.matches({foo: 150}), true);
+          assert.same(query.matches({age: 40}), true);
+          assert.same(query.matches({age: 50}), true);
+          assert.same(query.matches({age: 50.1}), false);
+          assert.same(query.matches({age: 74}), false);
+          assert.same(query.matches({age: 100}), true);
+          assert.same(query.matches({age: 150}), true);
         }
       },
 
       "test $lt."() {
-        const query = new Query(v.TestModel).where({foo: {$lt: 50}});
+        const query = new Query(v.TestModel).where({age: {$lt: 50}});
 
-        assert.same(query.matches({foo: 54}), false);
-        assert.same(query.matches({foo: 50.1}), false);
-        assert.same(query.matches({foo: 50}), false);
-        assert.same(query.matches({foo: 49.9}), true);
-        assert.same(query.matches({foo: "x"}), false);
+        assert.same(query.matches({age: 54}), false);
+        assert.same(query.matches({age: 50.1}), false);
+        assert.same(query.matches({age: 50}), false);
+        assert.same(query.matches({age: 49.9}), true);
+        assert.same(query.matches({age: "x"}), false);
+
+        const textQuery = new Query(v.TestModel).where({name: {$lt: 'terry'}});
+
+        assert.same(textQuery.matches({name: 'Zac'}), false);
+        assert.same(textQuery.matches({name: 'Terry'}), false);
+        assert.same(textQuery.matches({name: 'terry'}), false);
+        assert.same(textQuery.matches({name: 'Aulb'}), true);
       },
 
       "test $lte"() {
-        const query = new Query(v.TestModel).where({foo: {$lte: 50}});
+        const query = new Query(v.TestModel).where({age: {$lte: 50}});
 
-        assert.same(query.matches({foo: 54}), false);
-        assert.same(query.matches({foo: 50.1}), false);
-        assert.same(query.matches({foo: 50}), true);
-        assert.same(query.matches({foo: 49.9}), true);
-        assert.same(query.matches({foo: "x"}), false);
+        assert.same(query.matches({age: 54}), false);
+        assert.same(query.matches({age: 50.1}), false);
+        assert.same(query.matches({age: 50}), true);
+        assert.same(query.matches({age: 49.9}), true);
+        assert.same(query.matches({age: "x"}), false);
+
+        const textQuery = new Query(v.TestModel).where({name: {$lte: 'terry'}});
+
+        assert.same(textQuery.matches({name: 'Zac'}), false);
+        assert.same(textQuery.matches({name: 'Terry'}), false);
+        assert.same(textQuery.matches({name: 'terry'}), true);
+        assert.same(textQuery.matches({name: 'Aulb'}), true);
       },
 
       "test $in"() {
-        const query = new Query(v.TestModel).where({foo: {$in: [1,2,3]}});
+        const query = new Query(v.TestModel).where({age: {$in: [1,2,3]}});
 
-        assert.same(query.matches({foo: 0}), false);
-        assert.same(query.matches({foo: "x"}), false);
-        assert.same(query.matches({foo: 1}), true);
-        assert.same(query.matches({foo: 2}), true);
+        assert.same(query.matches({age: 0}), false);
+        assert.same(query.matches({age: "x"}), false);
+        assert.same(query.matches({age: 1}), true);
+        assert.same(query.matches({age: 2}), true);
       },
 
       "test $nin"() {
-        const query = new Query(v.TestModel).where({foo: {$nin: [1,2,3]}});
+        const query = new Query(v.TestModel).where({age: {$nin: [1,2,3]}});
 
-        assert.same(query.matches({foo: 0}), true);
-        assert.same(query.matches({foo: "x"}), true);
-        assert.same(query.matches({foo: 1}), false);
-        assert.same(query.matches({foo: 2}), false);
+        assert.same(query.matches({age: 0}), true);
+        assert.same(query.matches({age: "x"}), true);
+        assert.same(query.matches({age: 1}), false);
+        assert.same(query.matches({age: 2}), false);
       },
 
       "test $ne"() {
-        const query = new Query(v.TestModel).where({foo: {$ne: 42}});
+        const query = new Query(v.TestModel).where({age: {$ne: 42}});
 
-        assert.same(query.matches({foo: 40}), true);
-        assert.same(query.matches({foo: "x"}), true);
-        assert.same(query.matches({foo: 42}), false);
+        assert.same(query.matches({age: 40}), true);
+        assert.same(query.matches({age: "x"}), true);
+        assert.same(query.matches({age: 42}), false);
       },
     },
 

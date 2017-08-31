@@ -1,3 +1,4 @@
+/* global Intl */
 define(function(require, exports, module) {
   const match       = require('./match');
   const stacktrace  = require('./stacktrace');
@@ -34,6 +35,9 @@ define(function(require, exports, module) {
     // isNaN("foo") => true
     return x !== x && y !== y;
   } : Object.is;
+
+  const enUsCollator = new Intl.Collator("en-US");
+  const {compare} = enUsCollator;
 
   function sansSuffix(value) {
       return value ? typeof value === 'string' ?
@@ -792,10 +796,12 @@ define(function(require, exports, module) {
     sansPx: sansSuffix.bind(2),
     sansPc: sansSuffix.bind(1),
 
+    compare,
+
     compareByName(a, b) {
       const aname = (a && a.name) || '';
       const bname = (b && b.name) || '';
-      return aname === bname ? 0 : aname < bname ? -1 : 1;
+      return compare(aname, bname);
     },
 
     compareByOrder(a, b) {
@@ -806,12 +812,15 @@ define(function(require, exports, module) {
 
     compareByField(field, direction) {
       direction = direction === -1 ? -1 : 1;
+      const isId = field.slice(-3) === '_id';
       return (a, b) => {
         const afield = a && a[field], bfield = b && b[field];
         const atype = typeorder(afield), btype = typeorder(bfield);
+        if (afield === bfield) return 0;
         if (atype !== btype)
           return atype < btype ? -direction : direction;
-        return afield === bfield ? 0 : afield < bfield ? -direction : direction;
+        return ((atype !== 1 || isId)  ? afield < bfield : compare(afield, bfield) < 0)
+          ? -direction : direction;
       };
     },
 
@@ -826,10 +835,12 @@ define(function(require, exports, module) {
           }
           const afield = a && a[field], bfield = b && b[field];
           const atype = typeorder(afield), btype = typeorder(bfield);
+          if (afield === bfield)
+            continue;
           if (atype !== btype)
             return atype < btype ? -direction : direction;
-          if (afield !== bfield)
-            return afield < bfield ? -direction : direction;
+          return (atype === 1 && field.slice(-3) !== '_id' ?
+                  compare(afield, bfield) < 0 : afield < bfield) ? -direction : direction;
         }
         return 0;
       };
@@ -852,7 +863,8 @@ define(function(require, exports, module) {
             if (atype !== btype)
               return atype < btype ? -dir : dir;
 
-            return af < bf ? -dir : dir;
+            return (atype === 1 && field.slice(-3) !== '_id' ?
+                    compare(af, bf) < 0 : af < bf) ? -dir : dir;
           }
         }
         return 0;

@@ -23,10 +23,23 @@ isServer && define(function (require, exports, module) {
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = this.stub()}};
       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
         mig.createTable('TestTable', {
-          myName: {type: 'text', default: 'George'}
+          myName: {type: 'text', default: 'George'},
+          color: 'color',
         }, [{columns: ['myName DESC', '_id'], unique: true}, ['myName']]);
       });
       assert.called(v.resetTable);
+
+      const TestTable = v.client.table('TestTable');
+      TestTable._ensureTable();
+
+      assert.equals(TestTable._colMap._id.data_type, 'text');
+      assert.equals(TestTable._colMap._id.collation_name, 'C');
+
+      assert.equals(TestTable._colMap.myName.data_type, 'text');
+      assert.equals(TestTable._colMap.myName.collation_name, undefined);
+
+      assert.equals(TestTable._colMap.color.data_type, 'text');
+      assert.equals(TestTable._colMap.color.collation_name, 'C');
 
       v.client.query('INSERT INTO "TestTable" (_id, "myName") values ($1,$2)', ["12345670123456789", "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];

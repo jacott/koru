@@ -336,7 +336,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       readColumns(this);
       const {schema} = this;
       if (this._columns.length === 0) {
-        const fields = ['_id text PRIMARY KEY'];
+        const fields = ['_id text collate "C" PRIMARY KEY'];
         if (schema) {
           for (let col in schema) {
             const spec = jsFieldToPg(col, schema[col], this._client);
@@ -976,7 +976,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     case 'user_id_on_create':
       return 'text';
     case 'has_many':
-      return 'text ARRAY';
+      return 'text[]';
     case 'auto_timestamp':
       return 'timestamp';
     case 'color':
@@ -992,7 +992,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   function jsFieldToPg(col, colSchema, client) {
     let defaultVal = '';
 
-    const type = pgFieldType(colSchema);
+    const richType = (typeof colSchema === 'string') ?
+            colSchema : colSchema ? colSchema.type : 'text';
+
+    const type = pgFieldType(richType);
 
     if(typeof colSchema === 'object' && colSchema.default != null) {
       let literal = colSchema.default;
@@ -1014,7 +1017,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       });
       defaultVal = ` DEFAULT ${literal}`;
     }
-    return `"${col}" ${type}${defaultVal}`;
+    const collate = (type === 'text' && richType !== 'text' || richType === 'has_many')
+            ? ' collate "C"' : '';
+    return `"${col}" ${type}${collate}${defaultVal}`;
   }
 
   function updateSchema(table, schema) {

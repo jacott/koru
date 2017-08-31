@@ -9,6 +9,8 @@ define(function(require, exports, module) {
     return ans;
   };
 
+  const {compare} = util;
+
   return model => {
     model._indexUpdate = makeSubject({
       indexes: new Map,
@@ -40,7 +42,7 @@ define(function(require, exports, module) {
     const buildIndex = (_fields, _filterTest) => {
       const fields = _fields, filterTest = _filterTest;
       let i = 0, comp = null;
-      const compKeys = [];
+      const compKeys = [], compMethod = [];
       let dbId = "", idx = null;
       const indexes = {};
 
@@ -61,35 +63,30 @@ define(function(require, exports, module) {
       for(; i < fieldslen; ++i) {
         let dir = fields[i];
         if (dir === 1 || dir === -1) {
-          const compArgs = fields.slice(i);
-          const cLen = compArgs.length;
-          for(let i = 0; i < cLen; ++i) {
-            const f = compArgs[i];
-             switch(f) {
-             case 1: case -1: break;
-             default: compKeys.push(f);
-             }
+          for(let j = i; j < fieldslen; ++j) {
+            const f = fields[j];
+            switch(f) {
+            case 1: case -1: dir = f; break;
+            default: {
+              const {type} = model.$fields[f];
+              compMethod.push(type === 'text'? dir*2 : dir);
+              compKeys.push(f);
+            }
+            }
           }
+          const cLen = compKeys.length;
           comp = (a, b) => {
             let dir = 1;
             for(let i = 0; i < cLen; ++i) {
-              const f = compArgs[i];
-              switch(f) {
-              case 1: dir = 1; break;
-              case -1: dir = -1; break;
-              default:
-                const af = a[f], bf = b[f];
-                if (af !== bf) {
-                  if (af === undefined) {
-                    if (bf === undefined) {
-                      return 0;
-                    }
-                    return -1;
-                  }
-                  if (bf === undefined) return 1;
-                  if (af < bf) return -dir;
-                  if (af > bf) return dir;
-                }
+              const f = compKeys[i];
+              const af = a[f], bf = b[f];
+              if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
+                const dir = compMethod[i];
+                if (af === undefined) return -1;
+                if (bf === undefined) return 1;
+                if (dir < -1 || dir > 1)
+                  return compare(af, bf) < 0 ? -dir : dir;
+                return af < bf ? -dir : dir;
               }
             }
             return 0;

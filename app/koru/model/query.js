@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const koru        = require('../main');
   const util        = require('../util');
 
-  const {private$} = require('koru/symbols');
+  const {compare} = util;
 
   koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
@@ -58,20 +58,29 @@ define(function(require, exports, module) {
     $in(param, obj) {
       return insertectFunc(param, obj.$in);
     },
-    $gt(param, obj) {
+
+    $gt(param, obj, {model: {$fields: {[param]: {type}}}}) {
       const expected = obj.$gt;
+      if (type === 'text')
+        return doc => compare(doc[param], expected) > 0;
       return doc => doc[param] > expected;
     },
-    $gte(param, obj) {
+    $gte(param, obj, {model: {$fields: {[param]: {type}}}}) {
       const expected = obj.$gte;
+      if (type === 'text')
+        return doc => compare(doc[param], expected) >= 0;
       return doc => doc[param] >= expected;
     },
-    $lt(param, obj) {
+    $lt(param, obj, {model: {$fields: {[param]: {type}}}}) {
       const expected = obj.$lt;
+      if (type === 'text')
+        return doc => compare(doc[param], expected) < 0;
       return doc => doc[param] < expected;
     },
-    $lte(param, obj) {
+    $lte(param, obj, {model: {$fields: {[param]: {type}}}}) {
       const expected = obj.$lte;
+      if (type === 'text')
+        return doc => compare(doc[param], expected) <= 0;
       return doc => doc[param] <= expected;
     }
   };
@@ -86,21 +95,21 @@ define(function(require, exports, module) {
     };
   };
 
-  const exprToFunc = (param, value)=>{
+  const exprToFunc = (query, param, value)=>{
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value)) {
         return insertectFunc(param, value);
       }
       for (var key in value) break;
       const expr = EXPRS[key];
-      if (typeof expr === 'function') return expr(param, value);
+      if (typeof expr === 'function') return expr(param, value, query);
     }
     return value;
   };
 
-  const assignCondition = (conditions, field, value)=>{
+  const assignCondition = (query, conditions, field, value)=>{
     conditions[field] = value;
-    const func = exprToFunc(field, value);
+    const func = exprToFunc(query, field, value);
     conditions[func$][field] = func === value ? undefined : func;
   };
 
@@ -111,7 +120,7 @@ define(function(require, exports, module) {
       conditions.push(params.map(o => {
         const term = {[func$]: {}};
         for (const field in o)
-          assignCondition(term, field, o[field]);
+          assignCondition(query, term, field, o[field]);
         return term;
       }));
       return;
@@ -125,10 +134,10 @@ define(function(require, exports, module) {
       conditions[func$][count] = params;
 
     } else if (type === 'string') {
-      assignCondition(conditions, params, value);
+      assignCondition(query, conditions, params, value);
 
     } else for (const field in params) {
-      assignCondition(conditions, field, params[field]);
+      assignCondition(query, conditions, field, params[field]);
     }
   };
 
@@ -260,9 +269,6 @@ define(function(require, exports, module) {
         return true;
       }
     };
-
-    Query[private$] = {exprToFunc};
-
 
     makeSubject(Query, 'onAnyChange', notifyAC$);
 

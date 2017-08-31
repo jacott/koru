@@ -690,6 +690,16 @@ define(function (require, exports, module) {
 
     },
 
+    "test compare"() {
+      /**
+       * uses en-US collating
+       **/
+      assert.isTrue(util.compare("albert", "Beatrix") < 0);
+      assert.isTrue(util.compare("Albert", "beatrix") < 0);
+      assert.isTrue(util.compare("Albert", "albert") > 0);
+      assert.isTrue(util.compare("Albert", "Albert") == 0);
+    },
+
     "test compareByName"() {
       const a = {name: "Bob"};
       const b = {name: "Bob"};
@@ -700,6 +710,9 @@ define(function (require, exports, module) {
       assert.same(util.compareByName(a,b), -1);
 
       b.name = 'Arnold';
+      assert.same(util.compareByName(a,b), 1);
+
+      b.name = 'arnold';
       assert.same(util.compareByName(a,b), 1);
 
       assert.same(util.compareByName(null, b), -1);
@@ -727,8 +740,11 @@ define(function (require, exports, module) {
     },
 
     "test compareByField"() {
-      const a = {f1: "Bob", f2: 1};
-      const b = {f1: "Bob", f2: 2};
+      const a = {f1: "Bob", f2: 1, foo_id: 'Xbc'};
+      const b = {f1: "Bob", f2: 2, foo_id: 'cbc'};
+
+      assert.same(util.compareByField('foo_id')(a,b), -1);
+
 
       assert.same(util.compareByField('f1')(a,b), 0);
 
@@ -736,7 +752,7 @@ define(function (require, exports, module) {
       assert.same(util.compareByField('f1')(a,b), -1);
       assert.same(util.compareByField('f1', -1)(a,b), 1);
 
-      b.f1 = 'Arnold';
+      b.f1 = 'arnold';
       assert.same(util.compareByField('f1')(a,b), 1);
       assert.same(util.compareByField('f2')(a,b), -1);
       assert.same(util.compareByField('f2')(b,a), 1);
@@ -752,9 +768,10 @@ define(function (require, exports, module) {
     },
 
     "test compareByFields"() {
-      const a = {f1: "Bob", f2: 1};
-      const b = {f1: "Bob", f2: 2};
+      const a = {f1: "bob", f2: 1, foo_id: 'Xbc'};
+      const b = {f1: "bob", f2: 2, foo_id: 'cbc'};
 
+      assert.same(util.compareByFields(-1, 'foo_id')(a,b), 1);
       assert.same(util.compareByFields('f2', 'f1')(a,b), -1);
       assert.same(util.compareByFields('f1')(a,b), 0);
       assert.same(util.compareByFields('f2')(a,b), -1);
@@ -769,15 +786,17 @@ define(function (require, exports, module) {
     },
 
     "test compareBy list"() {
-      const a = {f1: "Bob", f2: 1};
-      let b = {f1: "Bob", f2: 2};
+      const a = {f1: "Bob", f2: 1, foo_id: 'Xbc'};
+      let b = {f1: "Bob", f2: 2, foo_id: 'cbc'};
 
+      assert.same(util.compareBy(['foo_id'])(a,b), -1);
+      assert.same(util.compareBy(['foo_id', -1])(a,b), 1);
       assert.same(util.compareBy(['f1'])(a,b), 0);
       assert.same(util.compareBy(['f1', 'f2'])(a,b), -1);
       assert.same(util.compareBy(['f2', -1])(a,b), 1);
       b.f2 = "2";
       assert.same(util.compareBy(['f1', 'f2'])(a,b), 1);
-      b = {f1: 'Amy', f2: 3};
+      b = {f1: 'amy', f2: 3};
       assert.same(util.compareBy(['f1', 1, 'f2'])(a,b), 1);
       assert.same(util.compareBy(['f2', 1, 'f1'])(a,b), -1);
     },

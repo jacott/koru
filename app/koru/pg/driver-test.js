@@ -60,6 +60,10 @@ isServer && define(function (require, exports, module) {
       api.innerSubject(pg.defaultDb.constructor)
         .protoMethod('jsFieldToPg');
 
+      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'text'), '"foo" text');
+      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'color'), '"foo" text collate "C"');
+      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'belongs_to'), '"foo" text collate "C"');
+      assert.equals(pg.defaultDb.jsFieldToPg('foo', 'has_many'), '"foo" text[] collate "C"');
       assert.equals(pg.defaultDb.jsFieldToPg('runs', 'number'), '"runs" double precision');
       assert.equals(pg.defaultDb.jsFieldToPg('name'), '"name" text');
       assert.equals(pg.defaultDb.jsFieldToPg('dob', {type: 'date'}), '"dob" date');
@@ -147,7 +151,7 @@ isServer && define(function (require, exports, module) {
         bar_ids: 'has_many',
       });
 
-      assert.same(v.foo.dbType('bar_ids'), 'text ARRAY');
+      assert.same(v.foo.dbType('bar_ids'), 'text[]');
 
       v.foo.insert({_id: '123', bar_ids: ["1","2","3"]});
       assert.equals(v.foo.findOne({}).bar_ids, ['1', '2', '3']);

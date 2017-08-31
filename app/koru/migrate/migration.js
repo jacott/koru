@@ -43,7 +43,7 @@ define(function(require, exports, module) {
 
   const createTable = (add, client, {name, fields, unlogged, indexes}) => {
     if (add) {
-      const list = ['_id text PRIMARY KEY'];
+      const list = ['_id text collate "C" PRIMARY KEY'];
       for (const col in fields) {
         const colspec = client.jsFieldToPg(col, fields[col]);
         if (/\bprimary key\b/i.test(colspec))
