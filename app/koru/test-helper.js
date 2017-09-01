@@ -137,20 +137,17 @@ define(function(require, exports, module) {
       if (actual && actual.attributes)
         actual = actual.attributes;
 
-      this.actual = actual;
+      this.actual = actual = util.extractKeys(actual, expected);
       this.expected = expected;
 
-      for(let key in expected) {
-        if (! gu.deepEqual(actual[key], expected[key], this, 'diff')) {
-          this.key = key;
-          return false;
-        }
+      if (! gu.deepEqual(actual, expected, this, 'diff')) {
+        return false;
       }
 
       return true;
     },
 
-    assertMessage: "attribute {i$key} to be equal{$diff}",
+    assertMessage: "attributes to be equal but {$diff}",
     refuteMessage: "attributes to be equal",
   }),
 
