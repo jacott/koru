@@ -7,7 +7,8 @@ define(function(require, exports, module) {
 
   koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
-  const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol();
+  const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol(),
+        compare$ = Symbol(), compareKeys$ = Symbol();
 
   const foundIn = (doc, attrs, fields, affirm=true)=>{
     const funcs = fields[func$];
@@ -228,8 +229,56 @@ define(function(require, exports, module) {
           this._sort = fields;
         else
           this._sort = this._sort.concat(fields);
+        this[compare$] = undefined;
         return this;
       }
+
+      get compare() {
+        if (this[compare$] === undefined) {
+          const {_sort} = this;
+          if (_sort == null) return undefined;
+          const slen = _sort.length, {$fields} = this.model;
+          const compKeys = this[compareKeys$] = [], compMethod = [];
+
+          for(let i = 0; i < slen; ++i) {
+            const key = _sort[i];
+            const dir = i+1 == slen || typeof _sort[i+1] !== 'number' ? 1 : (++i, -1);
+            const {type} = $fields[key];
+
+            compMethod.push(type === 'text'? dir*2 : dir);
+            compKeys.push(key);
+          }
+          if (compKeys[compKeys.length-1] !== '_id') {
+            compMethod.push(1);
+            compKeys.push('_id');
+          }
+          const clen = compKeys.length;
+          this[compare$] = (a, b) => {
+            let dir = 1;
+            for(let i = 0; i < clen; ++i) {
+              const f = compKeys[i];
+              const af = a[f], bf = b[f];
+              if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
+                const dir = compMethod[i];
+                if (af === undefined) return -1;
+                if (bf === undefined) return 1;
+                if (dir < -1 || dir > 1)
+                  return compare(af, bf) < 0 ? -dir : dir;
+                return af < bf ? -dir : dir;
+              }
+            }
+            return 0;
+          };
+        }
+
+        return this[compare$];
+      }
+
+      get compareKeys() {
+        const {compare} = this;
+        return this[compareKeys$];
+      }
+
 
       reverseSort() {
         const {_sort} = this;
@@ -242,7 +291,7 @@ define(function(require, exports, module) {
             ns.push(_sort[i++]);
         }
         this._sort = ns;
-
+        this[compare$] = undefined;
         return this;
       }
 

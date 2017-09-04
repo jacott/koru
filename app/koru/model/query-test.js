@@ -248,13 +248,44 @@ define(function (require, exports, module) {
     },
 
     "test sort"() {
-      assert.equals(new Query(v.TestModel).sort('a', 'b', -1).sort('c')._sort, {a: 1, b: -1, c: 1});
-
       assert.equals(v.TestModel.query.sort('gender', 'age', -1).fetchIds(), [v.bar._id, v.foo._id]);
       assert.same(v.TestModel.query.sort('gender', 'age', -1).fetchOne()._id, v.bar._id);
 
       assert.equals(v.TestModel.query.sort('gender', 'age').fetchIds(), [v.foo._id, v.bar._id]);
       assert.same(v.TestModel.query.sort('gender', 'age').fetchOne()._id, v.foo._id);
+
+      v.TestModel.create({name: 'bar', age: 2});
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', 'age').fetch(), 'age'),
+                    [2, 10, 5]);
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age').fetch(), 'age'),
+                    [5, 2, 10]);
+
+      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age', -1).fetch(), 'age'),
+                    [5, 10, 2]);
+    },
+
+    "test compare"() {
+      const {query} = v.TestModel;
+      assert.same(query.compare, undefined);
+
+      const {compare} = query.sort('name', 'age');
+      assert.same(query.compare, compare);
+
+
+      assert.equals(compare({name: "foo"}, {name: "Bar"}), 2);
+      assert.equals(compare({name: "Foo"}, {name: "bar"}), 2);
+      assert.equals(compare({name: "foo"}, {name: "Foo"}), -2);
+      assert.equals(compare({name: "foo", age: 1}, {name: "foo", age: 22}), -1);
+      assert.equals(compare({name: "foo", age: 1, _id: "def"},
+                            {name: "foo", age: 1, _id: "abc"}), 1);
+    },
+
+    "test compareKeys"() {
+      const {compareKeys} = v.TestModel.query.sort('name', -1, 'age');
+
+      assert.equals(compareKeys, ['name', 'age', '_id']);
     },
 
     "test fetch"() {
@@ -595,16 +626,6 @@ define(function (require, exports, module) {
       v.TestModel.query.onId(v.foo._id).removeItems('cogs', ['b']);
       assert.equals(v.foo.$reload().cogs, []);
       assert.calledWith(v.onChange, TH.matchModel(v.foo), {$partial: {cogs: ['$add', ['b']]}});
-    },
-
-    "test sort"() {
-      v.TestModel.create({name: 'bar', age: 2});
-
-      assert.equals(util.mapField(v.TestModel.query.sort('name', 'age').fetch(), 'age'), [2, 10, 5]);
-
-      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age').fetch(), 'age'), [5, 2, 10]);
-
-      assert.equals(util.mapField(v.TestModel.query.sort('name', -1, 'age', -1).fetch(), 'age'), [5, 10, 2]);
     },
 
     "test whereNot"() {

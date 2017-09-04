@@ -197,9 +197,8 @@ define(function(require, exports, module) {
           } else {
             if (this._sort !== undefined) {
               const results = [];
-              const compare = sortFunc(this._sort);
               findMatching.call(this, doc => results.push(doc));
-              results.sort(compare);
+              results.sort(this.compare);
               trimResults(this._limit, results);
               results.some(func);
 
@@ -314,9 +313,8 @@ define(function(require, exports, module) {
         } else {
           if (this._sort !== undefined) {
             const results = [];
-            const compare = sortFunc(this._sort);
             findMatching.call(this, doc => results.push(doc));
-            results.sort(compare);
+            results.sort(this.compare);
             trimResults(this._limit, results);
             yield *results;
 
@@ -521,20 +519,6 @@ define(function(require, exports, module) {
       function unload() {
         syncOb != null && syncOb.stop();
         stateOb != null && stateOb.stop();
-      }
-
-
-      function sortFunc(sort) {
-        const slen = sort.length;
-        return (a, b) => {
-          for(let i = 0; i < slen; ++i) {
-            const key = sort[i];
-            const dir = i+1 == slen || typeof sort[i+1] !== 'number' ? 1 : (++i, -1);
-            const aVal = a[key]; const bVal = b[key];
-            if (aVal !== bVal) return  (aVal < bVal) ? -dir : dir;
-          }
-          return 0;
-        };
       }
     };
   }
