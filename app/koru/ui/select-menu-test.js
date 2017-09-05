@@ -105,26 +105,6 @@ isClient && define(function (require, exports, module) {
       assert.same(input.selectionEnd, 3);
     },
 
-    "test can select by object"() {
-      const stub = function(arg) {
-        v.arg = arg;
-      };
-      const items = sut.List._helpers.items;
-
-      $._ctx = {parentCtx: {}};
-      this.onEnd(function () {$._ctx = null});
-
-      items.call({list: [v.expect = {name: 123}]}, stub);
-
-      assert.same($.ctx.parentCtx.callback, stub);
-
-      assert.same(v.arg, v.expect);
-
-      items.call({list: [[123, 'foo']]}, stub);
-
-      assert.equals(v.arg, {id: 123, name: 'foo'});
-    },
-
     "test decorator"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
         v.button = this;
@@ -134,17 +114,11 @@ isClient && define(function (require, exports, module) {
         decorator: v.decorator = this.stub(),
       });
 
-      assert.calledWith(v.decorator, TH.match(function (arg) {
-        return arg.id === 1;
-      }), TH.match(function (arg) {
-        return arg.textContent === 'One';
-      }));
+      assert.calledWith(v.decorator, TH.match(arg => arg._id === 1),
+                        TH.match(arg => arg.textContent === 'One'));
 
-      assert.calledWith(v.decorator, TH.match(function (arg) {
-        return arg.id === 2;
-      }), TH.match(function (arg) {
-        return arg.textContent === 'Two';
-      }));
+      assert.calledWith(v.decorator, TH.match(arg => arg._id === 2),
+                        TH.match(arg => arg.textContent === 'Two'));
     },
 
     "test class lines"() {
@@ -174,7 +148,7 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.dom('body>.glassPane', function () {
-        assert.dom('.selected', {data:TH.match.field('id', 0)});
+        assert.dom('.selected', {data:TH.match.field('_id', 0)});
       });
     },
 
@@ -390,8 +364,6 @@ isClient && define(function (require, exports, module) {
           refute.dom('input');
           assert.dom('li[touch-action=auto]', 'One');
           assert.dom('li', 'Two');
-          sut.$ctx(this).callback({id: 'newx', name: 'New'});
-          assert.dom('li', 'New');
         });
       },
 

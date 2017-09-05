@@ -212,7 +212,7 @@ define(function(require, exports, module) {
 
     options = Object.assign({
       onSelect(item) {
-        const id = $.data(item).id;
+        const id = $.data(item)._id;
 
         // close dialog before notify to restore range
         Dom.remove(Dom.getClosest(item, '.glassPane'));

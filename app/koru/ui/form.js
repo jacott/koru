@@ -317,9 +317,8 @@ define(function(require, exports, module) {
 
       } else {
         const value = this.doc[this.name];
-        for (let row  of this.selectList()) {
-          const id = row[0] != null ? row[0] :
-                  row.id != null ? row.id : row._id;
+        for (const row of this.selectList()) {
+          const id = row[0] != null ? row[0] : row._id;
           if (id == value) {
             result = row[1] || row.name;
             found = true;
@@ -395,9 +394,9 @@ define(function(require, exports, module) {
         onSelect(elm) {
           const data = $.data(elm);
           button.textContent = data.name && data.name.nodeType ? data.name.textContent : data.name;
-          const id = data._id || data.id;
+          const id = data._id;
           hidden.value = id;
-          Dom.setClass('noValue', ! id, button);
+          Dom.setClass('noValue', id == null, button);
           Dom.triggerEvent(hidden, 'change');
 
           return true;

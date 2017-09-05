@@ -93,7 +93,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'b');
-          TH.selectMenu('.select', TH.match.field('id', 'a'), function () {
+          TH.selectMenu('.select', TH.match.field('_id', 'a'), function () {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'b');
             });
@@ -115,7 +115,7 @@ isClient && define(function (require, exports, module) {
         document.body.appendChild(selectList.$autoRender({foo_id: 'b'}));
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'B');
-          TH.selectMenu('.select', TH.match.field('id', 0), function () {
+          TH.selectMenu('.select', TH.match.field('_id', 0), function () {
             assert.dom(this.parentNode, function () {
               assert.dom('li.selected', 'B');
             });
@@ -123,7 +123,7 @@ isClient && define(function (require, exports, module) {
           });
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: '0'});
-          TH.selectMenu('.select', TH.match.field('id', ''), {menu() {
+          TH.selectMenu('.select', TH.match.field('_id', ''), {menu() {
             assert.dom('li:first-child>i.blank', 'blanky blank');
             assert.dom('li:nth-child(2).selected', 'A');
             assert.dom('li:last-child:not(.selected)', 'B');
@@ -141,7 +141,7 @@ isClient && define(function (require, exports, module) {
         document.body.appendChild(selectList.$autoRender({}));
         assert.dom('[data-errorField="foo_id"]', function () {
           assert.dom('button[name=foo_id].select.fuz', 'blanky blank');
-          TH.selectMenu('.select', TH.match.field('id', 0));
+          TH.selectMenu('.select', TH.match.field('_id', 0));
           assert.dom('.select', 'A');
           assert.dom('[type=hidden]', {value: '0'});
         });

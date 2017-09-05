@@ -141,7 +141,7 @@ define(function(require, exports, module) {
             classes: 'rtTextAlign',
             list: TEXT_ALIGN_LIST,
             onSelect(elm) {
-              actions[$.data(elm).id](event);
+              actions[$.data(elm)._id](event);
               return true;
             },
           });

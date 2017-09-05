@@ -229,7 +229,7 @@ define(function(require, exports, module) {
       case 'string':
       case 'number':
         const id = value;
-        value = TH.match(arg => (arg._id || arg.id) === id, {toString() {return `id of '${id}'`}});
+        value = TH.match(arg => arg._id === id, {toString() {return `id of '${id}'`}});
         break;
       }
       assert.elideFromStack.dom(menu, function () {

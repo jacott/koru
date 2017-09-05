@@ -121,13 +121,13 @@ define(function(require, exports, module) {
   });
 
   Tpl.List.$helpers({
-    items(callback) {
-      $.ctx.parentCtx.callback = callback;
-      util.forEach(this.list, function (row, index) {
+    items() {
+      const {list} = this;
+      if (list != null) return util.map(list, (row, index)=>{
         if (typeof row === 'string')
-          callback({parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}});
+          return {parent: {class: row.indexOf(' ') === -1 ? row : row.split(' ')}};
         else
-          callback(Array.isArray(row) ? {id: row[0], name: row[1]} : row);
+          return row;
       });
     },
   });
