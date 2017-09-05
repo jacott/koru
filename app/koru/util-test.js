@@ -701,9 +701,17 @@ define(function (require, exports, module) {
     },
 
     "test compareByName"() {
+      assert.equals(util.compareByName.compareKeys, ['name', '_id']);
+
       const a = {name: "Bob"};
       const b = {name: "Bob"};
 
+      assert.same(util.compareByName(a,b), 0);
+      b._id = 'Abc';
+      assert.same(util.compareByName(a,b), -1);
+      a._id = 'zbc';
+      assert.same(util.compareByName(a,b), 1);
+      a._id = 'Abc';
       assert.same(util.compareByName(a,b), 0);
 
       b.name = 'Cary';
@@ -722,10 +730,17 @@ define(function (require, exports, module) {
     },
 
     "test compareByOrder"() {
+      assert.equals(util.compareByOrder.compareKeys, ['order', '_id']);
       const a = {order: 300};
       const b = {order: 300};
 
       assert.same(util.compareByOrder(a,b), 0);
+      b._id = 'Abc';
+      assert.same(util.compareByName(a,b), -1);
+      a._id = 'zbc';
+      assert.same(util.compareByName(a,b), 1);
+      a._id = 'Abc';
+      assert.same(util.compareByName(a,b), 0);
 
       b.order = 400;
       assert.same(util.compareByOrder(a,b), -1);
@@ -736,7 +751,6 @@ define(function (require, exports, module) {
       assert.same(util.compareByOrder(null, b), -1);
       assert.same(util.compareByOrder(b, null), 1);
       assert.same(util.compareByOrder(undefined, null), 0);
-
     },
 
     "test compareByField"() {
@@ -745,8 +759,19 @@ define(function (require, exports, module) {
 
       assert.same(util.compareByField('foo_id')(a,b), -1);
 
+      assert.equals(util.compareByField('_id').compareKeys, ['_id']);
 
-      assert.same(util.compareByField('f1')(a,b), 0);
+      const f1 = util.compareByField('f1');
+      assert.equals(f1.compareKeys, ['f1', '_id']);
+
+      assert.same(f1(a,b), 0);
+
+      b._id = 'Abc';
+      assert.same(f1(a,b), -1);
+      a._id = 'zbc';
+      assert.same(f1(a,b), 1);
+      a._id = 'Abc';
+      assert.same(f1(a,b), 0);
 
       b.f1 = 'Cary';
       assert.same(util.compareByField('f1')(a,b), -1);
@@ -765,40 +790,59 @@ define(function (require, exports, module) {
       b.f2 = "2"; // string less than number
       assert.same(util.compareByField('f2')(a,b), 1);
       assert.same(util.compareByField('f2')(b,a), -1);
+
+      // using symbol for key
+      const sym = Symbol();
+      a[sym] = "G"; b[sym] = "c";
+      const compare = util.compareByField(sym);
+      assert.same(compare(a,b), -1);
+      assert.same(compare(b,a), 1);
+      assert.same(compare(b,{[sym]: 'c'}), 0);
+      assert.equals(compare.compareKeys, [sym]);
     },
 
     "test compareByFields"() {
       const a = {f1: "bob", f2: 1, foo_id: 'Xbc'};
       const b = {f1: "bob", f2: 2, foo_id: 'cbc'};
 
-      assert.same(util.compareByFields(-1, 'foo_id')(a,b), 1);
-      assert.same(util.compareByFields('f2', 'f1')(a,b), -1);
+      assert.same(util.compareByFields('foo_id', -1)(a,b), 1);
+      assert.same(util.compareByFields('f2', 'f1')(a,b), -2);
       assert.same(util.compareByFields('f1')(a,b), 0);
-      assert.same(util.compareByFields('f2')(a,b), -1);
-      assert.same(util.compareByFields('f1', 'f2')(a,b), -1);
-      assert.same(util.compareByFields('f1', -1, 'f2')(a,b), 1);
-      assert.same(util.compareByFields('f1', 'f2')({f1: 'Bab'}, a), -1);
+      assert.same(util.compareByFields('f2')(a,b), -2);
+      assert.same(util.compareByFields('f1', 'f2')(a,b), -2);
+      assert.same(util.compareByFields('f1', 'f2', -1)(a,b), 2);
+      assert.equals(util.compareByFields('f1', 'f2', -1).compareKeys, ['f1', 'f2', '_id']);
+      assert.equals(util.compareByFields('f1', '_id', -1).compareKeys, ['f1', '_id']);
+
+      assert.same(util.compareByFields('f1', 'f2')({f1: 'Bab'}, a), -2);
       assert.same(util.compareByFields('f1', 'f2')(a, a), 0);
 
       b.f1 = 'Cary';
-      assert.same(util.compareByFields(1, 'f1')(a,b), -1);
-      assert.same(util.compareByFields(-1, 'f1')(a,b), 1);
-    },
+      assert.same(util.compareByFields('f1', 1)(a,b), -2);
+      assert.same(util.compareByFields('f1', -1)(a,b), 2);
 
-    "test compareBy list"() {
-      const a = {f1: "Bob", f2: 1, foo_id: 'Xbc'};
-      let b = {f1: "Bob", f2: 2, foo_id: 'cbc'};
+      a.f1 = 'Cary';
+      const f1 = util.compareByFields('f1', -1);
 
-      assert.same(util.compareBy(['foo_id'])(a,b), -1);
-      assert.same(util.compareBy(['foo_id', -1])(a,b), 1);
-      assert.same(util.compareBy(['f1'])(a,b), 0);
-      assert.same(util.compareBy(['f1', 'f2'])(a,b), -1);
-      assert.same(util.compareBy(['f2', -1])(a,b), 1);
-      b.f2 = "2";
-      assert.same(util.compareBy(['f1', 'f2'])(a,b), 1);
-      b = {f1: 'amy', f2: 3};
-      assert.same(util.compareBy(['f1', 1, 'f2'])(a,b), 1);
-      assert.same(util.compareBy(['f2', 1, 'f1'])(a,b), -1);
+      assert.same(f1(a, b), 0);
+
+      b._id = 'Abc';
+      assert.same(f1(a,b), -1);
+      a._id = 'zbc';
+      assert.same(f1(a,b), 1);
+      a._id = 'Abc';
+      assert.same(f1(a,b), 0);
+
+      // using symbol for key
+      const sym = Symbol();
+      a[sym] = "G"; b[sym] = "c";
+      const compare = util.compareByFields('f1', sym);
+      assert.same(compare(a,b), -1);
+      assert.same(compare(b,a), 1);
+      a.f1 = 'Zord';
+      assert.same(compare(b,a), -2);
+      assert.same(compare(b,{f1: b.f1, [sym]: 'c'}), 0);
+      assert.equals(compare.compareKeys, ['f1', sym]);
     },
 
     "test colorToArray"() {

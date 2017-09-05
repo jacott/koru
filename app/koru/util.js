@@ -39,6 +39,28 @@ define(function(require, exports, module) {
   const enUsCollator = new Intl.Collator("en-US");
   const {compare} = enUsCollator;
 
+  const compareByName = (a, b)=>{
+    const aname = (a && a.name) || '';
+    const bname = (b && b.name) || '';
+    const ans = compare(aname, bname);
+    if (ans == 0) {
+      if (a == null) return 0;
+      const ai = a._id || '', bi = b._id || '';
+      return ai === bi ? 0 : ai < bi ? -1 : 1;
+    }
+    return ans < 0 ? -1 : 1;
+  }; compareByName.compareKeys = ['name', '_id'];
+
+  const compareByOrder = (a, b)=>{
+    const ao = (a && a.order) || 0;
+    const bo = (b && b.order) || 0;
+    if (ao === bo) {
+      if (a == null) return 0;
+      const ai = a._id || '', bi = b._id || '';
+      return ai === bi ? 0 : ai < bi ? -1 : 1;
+    } else return  ao < bo ? -1 : 1;
+  }; compareByOrder.compareKeys = ['order', '_id'];
+
   function sansSuffix(value) {
       return value ? typeof value === 'string' ?
       +value.substring(0, value.length - this) : +value : 0;
@@ -797,78 +819,67 @@ define(function(require, exports, module) {
     sansPc: sansSuffix.bind(1),
 
     compare,
-
-    compareByName(a, b) {
-      const aname = (a && a.name) || '';
-      const bname = (b && b.name) || '';
-      return compare(aname, bname);
-    },
-
-    compareByOrder(a, b) {
-      a = (a && a.order) || 0;
-      b = (b && b.order) || 0;
-      return a === b ? 0 : a < b ? -1 : 1;
-    },
+    compareByName,
+    compareByOrder,
 
     compareByField(field, direction) {
       direction = direction === -1 ? -1 : 1;
-      const isId = field.slice(-3) === '_id';
-      return (a, b) => {
+      const isSym = typeof field === 'symbol';
+      const isId = isSym || field.slice(-3) === '_id';
+      const cmp = (a, b) => {
         const afield = a && a[field], bfield = b && b[field];
         const atype = typeorder(afield), btype = typeorder(bfield);
-        if (afield === bfield) return 0;
+        if (afield === bfield) {
+          if (a == null || isSym) return 0;
+          const ai = a._id || '', bi = b._id || '';
+          return ai === bi ? 0 : ai < bi ? -1 : 1;
+        }
         if (atype !== btype)
           return atype < btype ? -direction : direction;
         return ((atype !== 1 || isId)  ? afield < bfield : compare(afield, bfield) < 0)
           ? -direction : direction;
       };
+      cmp.compareKeys = isSym || field === '_id' ? [field] : [field, '_id'];
+      return cmp;
     },
 
     compareByFields(...fields) {
-      return (a, b) => {
-        let direction = 1;
-        for (let i = 0; i < fields.length; ++i) {
-          const field = fields[i];
-          if (typeof field === 'number') {
-            direction = field;
-            continue;
-          }
-          const afield = a && a[field], bfield = b && b[field];
-          const atype = typeorder(afield), btype = typeorder(bfield);
-          if (afield === bfield)
-            continue;
-          if (atype !== btype)
-            return atype < btype ? -direction : direction;
-          return (atype === 1 && field.slice(-3) !== '_id' ?
-                  compare(afield, bfield) < 0 : afield < bfield) ? -direction : direction;
-        }
-        return 0;
-      };
-    },
+      const flen = fields.length;
+      const compKeys = [], compMethod = [];
 
-    compareBy(list) {
-      const len = list.length;
-      return (a, b) => {
-        for(let i = 0; i < len; ++i) {
-          const field = list[i];
-          let dir = list[i+1];
-          if (typeof dir === 'number')
-            ++i;
-          else
-            dir = 1;
-          const af = a[field];
-          const bf = b[field];
-          if (af !== bf) {
+      for(let i = 0; i < flen; ++i) {
+        const key = fields[i];
+        const dir = i+1 == flen || typeof fields[i+1] !== 'number' ? 1 : Math.sign(fields[++i]);
+        compMethod.push(typeof key !== 'symbol' && key.slice(-3) !== '_id' ? dir*2 : dir);
+        compKeys.push(key);
+      }
+      const lastKey = compKeys[compKeys.length-1];
+      if (lastKey !== '_id' && typeof lastKey !== 'symbol') {
+        compMethod.push(1);
+        compKeys.push('_id');
+      }
+      const clen = compKeys.length;
+      const cmp = (a, b) => {
+        let dir = 1;
+        for(let i = 0; i < clen; ++i) {
+          const f = compKeys[i];
+          const af = a[f], bf = b[f];
+          if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
             const atype = typeorder(af), btype = typeorder(bf);
+            const dir = compMethod[i];
             if (atype !== btype)
               return atype < btype ? -dir : dir;
-
-            return (atype === 1 && field.slice(-3) !== '_id' ?
-                    compare(af, bf) < 0 : af < bf) ? -dir : dir;
+            if (af == null) return -1;
+            if (bf == null) return 1;
+            if (atype == 1 && (dir < -1 || dir > 1))
+              return compare(af, bf) < 0 ? -dir : dir;
+            return af < bf ? -dir : dir;
           }
         }
         return 0;
       };
+      cmp.compareKeys = compKeys;
+      return cmp;
     },
 
     colorToArray,
