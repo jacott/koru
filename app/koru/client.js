@@ -17,16 +17,18 @@ define(function (require, exports, module) {
   window.addEventListener('error', errorListener);
 
   function errorListener(ev) {
-    if (ev.filename && ! ev.error) {
+    if (ev.filename) {
       koru.logger('ERROR', koru.util.extractError({
         toString() {
           return ev.error;
         },
         stack: "\tat "+ ev.filename + ':' + ev.lineno + ':' + ev.colno,
       }));
-      return;
+      if (ev.error.name === 'SyntaxError')
+        return;
     }
-    koru.logger('ERROR', koru.util.extractError(ev.error));
+    if (ev.error)
+      koru.logger('ERROR', koru.util.extractError(ev.error));
   }
 
   koru.logger = function (type, ...args) {

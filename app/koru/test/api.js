@@ -656,15 +656,16 @@ define(function(require, exports, module) {
   }
 
   function property(api, field, subject, name, options) {
-    inner(name, options,
+    inner(subject, name, options,
           Object.getOwnPropertyDescriptor(subject, name),
-          subject[name],
           api[field] || (api[field] = {}));
 
-    function inner(name, options, desc, value, properties) {
+    function inner(subject, name, options, desc, properties) {
       const property = properties[name] || (properties[name] = {});
+
+      let savedValue = desc == null || desc.get == null ? subject[name] : undefined;
+
       if (! desc || desc.get || desc.set) {
-        let savedValue = subject[name];
         const calls = property.calls || (property.calls = []);
         koru.replaceProperty(subject, name, {
           get() {
@@ -692,14 +693,14 @@ define(function(require, exports, module) {
         });
 
       } else {
-        property.value = api.valueTag(value);
+        property.value = api.valueTag(savedValue);
       }
       switch (typeof options) {
       case 'string':
         property.info = options;
         break;
       case 'function':
-        property.info = options(value);
+        property.info = options(savedValue);
         break;
       case 'object':
         if (options != null) {
@@ -709,9 +710,9 @@ define(function(require, exports, module) {
             const properties = property.properties ||
                     (property.properties = {});
             for (let name in options.properties) {
-              inner(name, options.properties[name],
-                    Object.getOwnPropertyDescriptor(value, name),
-                    value[name], properties);
+              inner(savedValue, name, options.properties[name],
+                    savedValue && Object.getOwnPropertyDescriptor(savedValue, name),
+                    properties);
             }
           }
           break;
