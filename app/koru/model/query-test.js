@@ -8,10 +8,11 @@ define(function (require, exports, module) {
   const TH    = require('./test-helper');
 
   const Query = require('./query');
-  var v;
+  let v = null, test;
 
   TH.testCase(module, {
     setUp() {
+      test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'text', age: 'number', gender: 'text', hobby: 'text'});
@@ -44,11 +45,11 @@ define(function (require, exports, module) {
       v.bar.$onThis.update('aoo', {a: 2, b:2});
 
       if (isServer) {
-         assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
-         assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
+        assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+        assert.same(v.TestModel.where('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 0);
 
-         assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
-         assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
+        assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 1}}).count(), 2);
+        assert.same(v.TestModel.query.whereNot('aoo', {$elemMatch: {a: 1, b: 3}}).count(), 1);
       }
 
       assert.same(v.TestModel.where('aoo', {a: 1, b: 3}).count(), 1);
@@ -98,14 +99,14 @@ define(function (require, exports, module) {
 
       "test last"() {
         const result = v.TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+                .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(result, ['2']);
       },
 
       "test only major"() {
         const result = v.TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm'}).fetchIds();
+                .withIndex(v.idx, {gender: 'm'}).fetchIds();
 
         assert.equals(result.sort(), ['2', '3']);
       },
@@ -140,7 +141,7 @@ define(function (require, exports, module) {
 
       "test last"() {
         const result = v.TestModel.query.whereNot('_id', '1')
-              .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
+                .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(result, ['2']);
       },
@@ -244,7 +245,8 @@ define(function (require, exports, module) {
     },
 
     "test fields"() {
-      assert.equals(new Query(v.TestModel).fields('a', 'b').fields('c')._fields, {a: true, b:true, c: true});
+      assert.equals(new Query(v.TestModel).fields('a', 'b').fields('c')._fields,
+                    {a: true, b:true, c: true});
     },
 
     "test sort"() {
@@ -286,6 +288,56 @@ define(function (require, exports, module) {
       const {compareKeys} = v.TestModel.query.sort('name', -1, 'age');
 
       assert.equals(compareKeys, ['name', 'age', '_id']);
+    },
+
+    "test onChange"() {
+      /**
+       * Observe changes to documents matching query
+       *
+       * See {#koru/make-subject::makeSubject().onChange}
+       **/
+      api.protoMethod('onChange');
+      const {TestModel} = v;
+
+      const onChange = TestModel.onChange;
+      test.intercept(TestModel, 'onChange', func =>{
+        const handle = onChange.call(TestModel, func);
+        v.stopSpy = test.spy(handle, 'stop');
+        return handle;
+      });
+
+      api.example(_=>{
+        const query = TestModel.query.where(doc => doc.name.startsWith('F'));
+        const stub = test.stub();
+        const handle = query.onChange(stub);
+
+        const fred = TestModel.create({name: 'Fred'});
+
+        assert.calledWith(stub, TH.matchModel(fred), null);
+        stub.reset();
+
+        const emma = TestModel.create({name: 'Emma'});
+        refute.called(stub);
+
+        emma.$update('name', 'Fiona');
+        assert.calledWith(stub, TH.matchModel(emma.$reload()), null);
+        emma.$update('name', 'Fi');
+        assert.calledWith(stub, TH.matchModel(emma.$reload()), {name: 'Fiona'});
+
+        fred.$update('name', 'Eric');
+        assert.calledWith(stub, null, TH.matchModel(fred.$reload()));
+
+
+        /** stop cancels observer **/
+        handle.stop();
+
+        stub.reset();
+        fred.$update('name', 'Freddy');
+
+        refute.called(stub);
+      });
+
+      assert.called(v.stopSpy);
     },
 
     "test fetch"() {
@@ -336,7 +388,8 @@ define(function (require, exports, module) {
       const exp_ids = [1,2,3].map(num => v.TestModel.create({age: num})._id);
 
       assert.equals(v.TestModel.query.fetchIds().sort(), exp_ids.slice(0).sort());
-      assert.equals(v.TestModel.query.whereNot('age', 1).fetchIds().sort(), exp_ids.slice(1,4).sort());
+      assert.equals(v.TestModel.query.whereNot('age', 1).fetchIds().sort(),
+                    exp_ids.slice(1,4).sort());
       assert.equals(v.TestModel.query.sort('age', -1).fetchIds(), exp_ids.slice(0).reverse());
     },
 

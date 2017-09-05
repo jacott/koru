@@ -8,7 +8,8 @@ define(function(require, exports, module) {
   koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
   const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol(),
-        compare$ = Symbol(), compareKeys$ = Symbol();
+        compare$ = Symbol(), compareKeys$ = Symbol(),
+        onChange$ = Symbol();
 
   const foundIn = (doc, attrs, fields, affirm=true)=>{
     const funcs = fields[func$];
@@ -85,7 +86,6 @@ define(function(require, exports, module) {
       return doc => doc[param] <= expected;
     }
   };
-
 
   const insertectFunc = (param, list)=>{
     const expected = new Set(list);
@@ -242,7 +242,7 @@ define(function(require, exports, module) {
 
           for(let i = 0; i < slen; ++i) {
             const key = _sort[i];
-            const dir = i+1 == slen || typeof _sort[i+1] !== 'number' ? 1 : (++i, -1);
+            const dir = i+1 == slen || typeof _sort[i+1] !== 'number' ? 1 : Math.sign(_sort[++i]);
             const {type} = $fields[key];
 
             compMethod.push(type === 'text'? dir*2 : dir);
@@ -278,7 +278,6 @@ define(function(require, exports, module) {
         const {compare} = this;
         return this[compareKeys$];
       }
-
 
       reverseSort() {
         const {_sort} = this;
@@ -316,6 +315,24 @@ define(function(require, exports, module) {
             ! this._whereSomes.every(
               ors => ors.some(o => foundIn(doc, attrs, o)))) return false;
         return true;
+      }
+
+      onChange(callback) {
+        if (this[onChange$] === undefined) {
+          const subject = this[onChange$] = makeSubject({stop: this.model.onChange((doc, undo) =>{
+            let old = doc != null ? doc.$withChanges(undo) : undo;
+            if (doc != null && ! this.matches(doc)) doc = null;
+            if (old != null && ! this.matches(old)) old = null;
+            if (doc == null && old == null) return;
+
+            subject.notify(doc, doc == null ? old : old && undo);
+
+          }).stop}, 'onChange', 'notify', {
+            allStopped(subject) {subject.stop()}
+          });
+
+        }
+        return this[onChange$].onChange(callback);
       }
     };
 
