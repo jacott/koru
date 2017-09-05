@@ -361,6 +361,13 @@ define(function(require, exports, module) {
     [Symbol.iterator]() {
       return new BTreeCursor(this, {})[Symbol.iterator]();
     }
+
+    forEach(body) {
+      const cursor = new BTreeCursor(this, {});
+      for (let node = cursor.next(); node !== null; node = cursor.next()) {
+        body(node.value);
+      }
+    }
   }
 
   BTree.prototype.nextNode = nextNode;

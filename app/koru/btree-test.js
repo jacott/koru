@@ -317,8 +317,24 @@ r  170 *
       const tree = new BTree();
       insertNodes(tree, [123, 456]);
       assert.equals(Array.from(tree), [123, 456]);
+      assert.equals(Array.from(tree), [123, 456]);
       tree.add(53);
       assert.equals(Array.from(tree), [53, 123, 456]);
+    },
+
+    "test forEach"() {
+      /**
+       * call body for each iteration in order
+       **/
+      const tree = new BTree();
+      insertNodes(tree, [123, 456]);
+      const ans = [];
+      tree.forEach(v => ans.push(v));
+      assert.equals(ans, [123, 456]);
+      tree.add(53); ans.length = 0;
+      tree.forEach(v => ans.push(v));
+      assert.equals(ans, [53, 123, 456]);
+
     },
 
     "test cursor from to"() {
