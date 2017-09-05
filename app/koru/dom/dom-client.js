@@ -431,9 +431,10 @@ define(function(require, exports, module) {
     },
 
     remove(elm) {
-      if (elm) {
+      if (elm != null) {
         Dom.destroyData(elm);
-        elm.parentNode && elm.parentNode.removeChild(elm);
+        if (elm.parentNode === null) return false;
+        elm.parentNode.removeChild(elm);
         return true;
       }
     },
@@ -449,7 +450,7 @@ define(function(require, exports, module) {
     },
 
     removeChildren(elm) {
-      if (! elm) return;
+      if (elm == null) return;
 
       let row;
       while((row = elm.firstChild) !== null) {

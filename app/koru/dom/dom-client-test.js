@@ -348,6 +348,25 @@ define(function (require, exports, module) {
       assert.same(results, 6);
     },
 
+    "test remove"() {
+      /**
+       * Remove element and descontruct its {#koru/dom/ctx}
+       **/
+      api.method('remove');
+      api.example(_=>{
+        const elm = Dom.h({});
+        Dom.setCtx(elm, new Dom.Ctx());
+        document.body.appendChild(elm);
+
+        assert.same(Dom.remove(elm), true);
+        assert.same(Dom.myCtx(elm), null);
+        assert.same(elm.parentNode, null);
+
+        assert.same(Dom.remove(elm), false);
+        assert.same(Dom.remove(null), undefined);
+      });
+    },
+
     "test removeAll"() {
       this.stub(Dom, 'remove');
 
