@@ -2,9 +2,11 @@ define(function(require, exports, module) {
   const util = require('koru/util');
   const koru = require('./main');
 
+  const {private$} = require('koru/symbols');
+
   class Pool {
     constructor(config) {
-      const v = this._private = Object.assign({
+      const v = this[private$] = Object.assign({
         max: 10,
         min: 0,
         idleTimeoutMillis: 30*1000,
@@ -13,7 +15,7 @@ define(function(require, exports, module) {
     }
 
     acquire() {
-      var v = this._private;
+      var v = this[private$];
       if (v.draining) throw new Error('The pool is closed for draining');
       var head = fetchHead(v, 'idle');
       if (head) {
@@ -45,7 +47,7 @@ define(function(require, exports, module) {
     }
 
     release(conn) {
-      var v = this._private;
+      var v = this[private$];
 
       var wait = fetchHead(v, 'wait');
 
@@ -84,7 +86,7 @@ define(function(require, exports, module) {
     }
 
     drain() {
-      const v = this._private;
+      const v = this[private$];
 
       v.draining = true;
       clearWait(v, new Error('The pool is closed for draining'));

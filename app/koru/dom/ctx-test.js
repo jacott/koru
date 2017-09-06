@@ -9,7 +9,7 @@ isClient && define(function (require, exports, module) {
   const util = require('koru/util');
   const Dom  = require('../dom');
 
-  const {ctx$} = require('koru/symbols');
+  const {private$, ctx$} = require('koru/symbols');
 
   const Ctx  = require('./ctx');
   var test, v;
@@ -29,7 +29,7 @@ isClient && define(function (require, exports, module) {
 
     "evalArgs": {
       "test constant"() {
-        assert.equals(Ctx._private.evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
+        assert.equals(Ctx[private$].evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
       },
     },
 

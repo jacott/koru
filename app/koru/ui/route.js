@@ -6,6 +6,8 @@ define(function(require, exports, module) {
   require('koru/ui/dom-ext');
   const util        = require('koru/util');
 
+  const {hasOwnProperty} = Object.prototype;
+
   const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
   let inGotoPage = 0;
   let currentPage = null;
@@ -33,7 +35,8 @@ define(function(require, exports, module) {
 
       this.path = path || '';
       this.template = template;
-      this.parent = options && options.hasOwnProperty('parent') ? options.parent : parent;
+      this.parent = options !== undefined && hasOwnProperty.call(options, 'parent')
+        ? options.parent : parent;
       this.routes = {};
 
       util.reverseMerge(this, options);

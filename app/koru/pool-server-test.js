@@ -1,17 +1,18 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const koru   = require('./main');
-  const sut    = require('./pool-server');
   const TH     = require('./test-helper');
   const util   = require('./util');
   const Future = requirejs.nodeRequire('fibers/future');
+
+  const sut = require('./pool-server');
+  var test, v;
 
   TH.testCase(module, {
     setUp() {
       test = this;
       v = {};
 
-      v.create = function (cb) {
+      v.create = cb=>{
         cb(null, v.conn);
       };
 

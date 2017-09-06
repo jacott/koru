@@ -2,14 +2,14 @@ define(function(require, exports, module) {
   const Dom  = require('koru/dom/base');
   const util = require('koru/util');
 
-  const {ctx$, endMarker$} = require('koru/symbols');
+  const {private$, ctx$, endMarker$} = require('koru/symbols');
 
   const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
 
   const {forEach} = util;
 
-  let currentCtx, currentElement;
+  let currentCtx = null, currentElement = null;
 
   let animationEndCount = 0;
 
@@ -130,7 +130,7 @@ define(function(require, exports, module) {
         return ctx && ctx.data;
       }
 
-      return currentCtx && currentCtx.data;
+      return currentCtx == null ? null : currentCtx.data;
     },
 
     get template() {return currentCtx.template},
@@ -318,7 +318,7 @@ define(function(require, exports, module) {
       document.body.removeEventListener('animationend', animationEnd, true);
   }
 
-  Ctx._private = {
+  Ctx[private$] = {
     getValue: getValue,
     evalArgs: evalArgs,
     set currentElement(value) {

@@ -1,11 +1,12 @@
 define(function(require, exports, module) {
+  const Changes  = require('koru/changes');
   const util     = require('koru/util');
   const RichText = require('./rich-text');
 
   return {
     richText(doc, field, options) {
       const {changes} = doc;
-      if (changes && ! changes.hasOwnProperty(field))
+      if (changes != null && ! Changes.has(changes, field))
         return;
 
       const val = doc[field];
@@ -37,8 +38,8 @@ define(function(require, exports, module) {
       const markupField = field;
       field = markupField.slice(0, -6);
       const {changes} = doc;
-      if (! changes) return;
-      if (! changes.hasOwnProperty(field) && ! changes.hasOwnProperty(markupField))
+      if (changes == null || (
+        ! Changes.has(changes, field) && ! Changes.has(changes, markupField)))
         return;
 
 

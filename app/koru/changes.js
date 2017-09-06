@@ -7,6 +7,8 @@ define(function(require, exports, module) {
          deepEqual, deepCopy, elemMatch,
          addItem, removeItem} = require('koru/util');
 
+  const {hasOwnProperty} = Object.prototype;
+
   const same = (a,b)=>a==b;
 
   const original$ = Symbol();
@@ -325,8 +327,8 @@ define(function(require, exports, module) {
 
   const has = (undo, field)=>{
     return undo == null ? false :
-      undo.hasOwnProperty(field) || (
-        undo.$partial !== undefined && undo.$partial.hasOwnProperty(field));
+      hasOwnProperty.call(undo, field) || (
+        undo.$partial !== undefined && hasOwnProperty.call(undo.$partial, field));
   };
 
   const fromTo = (fields, from, to)=>{

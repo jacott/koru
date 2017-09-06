@@ -4,7 +4,7 @@ define(function (require, exports, module) {
   const TH  = require('koru/test-helper');
   const api = require('koru/test/api');
 
-  const {endMarker$} = require('koru/symbols');
+  const {private$, endMarker$} = require('koru/symbols');
 
   const Dom = require('koru/dom');
   let v;
@@ -187,7 +187,7 @@ define(function (require, exports, module) {
       Dom.setClassBySuffix('discard', 'Avatar', elm);
       assert.same(elm.className, 'designMode discardAvatar');
 
-      Ctx._private.currentElement = elm;
+      Ctx[private$].currentElement = elm;
 
       Dom.setClassBySuffix('use', 'Mode');
       assert.same(elm.className, 'discardAvatar useMode');
@@ -212,7 +212,7 @@ define(function (require, exports, module) {
       Dom.setClassByPrefix('design', 'mode-', elm);
       assert.same(elm.className, 'mode-design');
 
-      Ctx._private.currentElement = elm;
+      Ctx[private$].currentElement = elm;
 
       Dom.setClassByPrefix('discard', 'avatar-');
       assert.same(elm.className, 'mode-design avatar-discard');
@@ -469,7 +469,7 @@ define(function (require, exports, module) {
 
     "inputValue helper": {
       "test restore"() {
-        const elm = Ctx._private.currentElement = {};
+        const elm = Ctx[private$].currentElement = {};
         TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = this.stub()});
         Dom.restoreOriginalValue(elm);
         refute.called(v.stub);

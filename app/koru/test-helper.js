@@ -127,30 +127,6 @@ define(function(require, exports, module) {
   });
 
 
-  ga.add('specificAttributes', {
-    assert(actual, expected) {
-      if (! (actual && expected)) {
-        this.actual = actual;
-        this.expected = expected;
-        return ! this._asserting;
-      }
-      if (actual && actual.attributes)
-        actual = actual.attributes;
-
-      this.actual = actual = util.extractKeys(actual, expected);
-      this.expected = expected;
-
-      if (! gu.deepEqual(actual, expected, this, 'diff')) {
-        return false;
-      }
-
-      return true;
-    },
-
-    assertMessage: "attributes to be equal but {$diff}",
-    refuteMessage: "attributes to be equal",
-  }),
-
   ga.add('attributesEqual', {
     assert(actual, expected, exclude) {
       if (! (actual && expected)) {

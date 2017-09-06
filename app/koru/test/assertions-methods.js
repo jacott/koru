@@ -593,6 +593,36 @@ define(function(require, exports, module) {
     message: "{0} to throw an exception"
   });
 
+  ga.add('specificAttributes', {
+    assert(actual, expected) {
+      if (! (actual && expected)) {
+        this.actual = actual;
+        this.expected = expected;
+        return ! this._asserting;
+      }
+      if (Array.isArray(expected)) {
+        this.actual = actual = actual.map((row, i) => util.extractKeys(
+          row && row.attributes ? row.attributes : row, expected[i]));
+
+      } else {
+        if (actual && actual.attributes)
+          actual = actual.attributes;
+
+        this.actual = actual = util.extractKeys(actual, expected);
+      }
+      this.expected = expected;
+
+      if (! gu.deepEqual(actual, expected, this, 'diff')) {
+        return false;
+      }
+
+      return true;
+    },
+
+    assertMessage: "attributes to be equal but {$diff}",
+    refuteMessage: "attributes to be equal",
+  });
+
   function delegate(meth) {
     ga.add(meth, {
       assert (spy, ...args) {

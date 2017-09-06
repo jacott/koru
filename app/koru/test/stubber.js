@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   require('./assertions');
   const deepEqual        = require('./core')._u.deepEqual;
 
+  const {hasOwnProperty} = Object.prototype;
+
   const Stubber = exports;
 
   const yields$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
@@ -214,7 +216,7 @@ define(function(require, exports, module) {
 
       notifyListeners(this, call);
 
-      if (this.hasOwnProperty(returns$))
+      if (hasOwnProperty.call(this, returns$))
         call.returnValue = this[returns$];
     },
 

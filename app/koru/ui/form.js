@@ -498,7 +498,7 @@ define(function(require, exports, module) {
     },
 
     field(name, options) {
-      const data = (options && options.hasOwnProperty('data')) ? options.data : this;
+      const data = (options != null && hasOwnProperty.call(options, 'data')) ? options.data : this;
       return field(data, name, options);
     },
 
@@ -509,7 +509,7 @@ define(function(require, exports, module) {
       }
 
       options = options || {};
-      const data = options.hasOwnProperty('data') ? options.data : this;
+      const data = hasOwnProperty.call(options, 'data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
         name,
         options,
@@ -519,7 +519,7 @@ define(function(require, exports, module) {
     },
 
     displayField(name, options={}) {
-      const data = options.hasOwnProperty('data') ? options.data : this;
+      const data = hasOwnProperty.call(options, 'data') ? options.data : this;
 
       const value = document.createElement('span');
       value.className = 'value';
@@ -550,7 +550,8 @@ define(function(require, exports, module) {
   OnOff.$helpers({
     classes() {
       let on = this.doc[this.name];
-      if (this.options && this.options.hasOwnProperty('on')) on = on === this.options.on;
+      const {options} = this;
+      if (options != null && hasOwnProperty.call(options, 'on')) on = on === options.on;
       return on ? 'on onOff' : 'onOff';
     },
 
@@ -565,10 +566,10 @@ define(function(require, exports, module) {
 
   OnOff.$events({
     'click'(event) {
-      const data = $.ctx.data;
+      const data = $.ctx.data, {options} = data;
       Dom.toggleClass(this, 'on');
       let on = Dom.hasClass(this, 'on');
-      if (data.options && data.options.hasOwnProperty('on')) {
+      if (options != null && hasOwnProperty.call(options, 'on')) {
         on = on ? data.options.on : data.options.off;
       }
       data.doc[data.name] = on;
