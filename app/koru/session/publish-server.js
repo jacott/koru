@@ -78,7 +78,7 @@ define(function(require, exports, module) {
     error(error) {
       const {id, conn} = this;
       if (conn.ws) {
-        if (error.errorType === 'KoruError') {
+        if (error.name === 'KoruError') {
           conn.sendBinary('P', [id, error.error, error.reason]);
         } else {
           conn.sendBinary('P', [id, 500, error.toString()]);

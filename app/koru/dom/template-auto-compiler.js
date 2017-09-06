@@ -10,7 +10,7 @@ define(function(require, exports, module) {
 
   function compiler(type, path, outPath) {
     const html = fst.readFile(path).toString();
-    const js = templateCompiler.toJavascript(html);
+    const js = templateCompiler.toJavascript(html, path);
 
     fst.writeFile(outPath, "define("+ js + ")");
   }

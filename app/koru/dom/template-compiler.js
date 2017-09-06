@@ -3,12 +3,16 @@ const htmlparser = requirejs.nodeRequire("htmlparser2");
 
 const IGNORE = {xmlns: true};
 
-const Compiler = {
-  Error(message, point) {
-    this.message = message;
+class CompilerError extends SyntaxError {
+  constructor(message, filename, point) {
+    super(`${message}\n\tat ${filename}:${point}`);
+    this.filename = filename;
     this.point = point;
-  },
-  toJavascript(code) {
+  }
+}
+
+const Compiler = {
+  toJavascript(code, filename) {
     let template;
     let result = '';
     try {
@@ -17,15 +21,18 @@ const Compiler = {
           if (name === 'template') {
             name = attrs.name;
             if (! name)
-              throw new Compiler.Error("Template name is missing", parser.startIndex);
+              throw new CompilerError(
+                "Template name is missing", filename, parser.startIndex);
             if (! name.match(/^([A-Z]\w*\.?)+$/))
-              throw new Compiler.Error(
-                `Template name must match the format: Foo(.Bar)* ${name}`, parser.startIndex);
+              throw new CompilerError(
+                `Template name must match the format: Foo(.Bar)* ${name}`,
+                filename, parser.startIndex);
             template = new Template(template, attrs);
 
           } else {
             if (! template)
-              throw new Compiler.Error("Out most element must be a template", parser.startIndex);
+              throw new CompilerError("Out most element must be a template",
+                                      filename, parser.startIndex);
 
             template.addNode(name, code.slice(parser.startIndex+2+name.length, parser.endIndex),
                              attrs.xmlns);

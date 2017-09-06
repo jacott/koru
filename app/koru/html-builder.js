@@ -11,8 +11,9 @@ define(function(require, exports, module) {
 
   return {
     load(name, req, onload) {
-      const html = fs.readFileSync(baseUrl + name + ".html").toString();
-      const js = templateCompiler.toJavascript(html);
+      const filename = baseUrl + name + ".html";
+      const html = fs.readFileSync(filename).toString();
+      const js = templateCompiler.toJavascript(html, filename);
 
       onload.fromText("define(" + js + ");\n");
       onload();

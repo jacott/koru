@@ -42,9 +42,9 @@ define(['module', './main'], function(module, koru) {
       let key = {
         function: func,
         stop() {
-          if (! key) return;
+          if (key === null) return;
           observers.delete(key);
-          for (let o of observers) return;
+          for (const o of observers) return;
           firstOb = true;
           key = null;
           allStopped && allStopped(subject);

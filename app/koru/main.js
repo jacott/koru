@@ -1,7 +1,18 @@
 define(function (require, exports, module) {
   const yaajsGraph = require('koru/yaajs-graph');
-  const errors     = require('./errors');
   const util       = require('./util');
+
+  class KoruError extends Error {
+    constructor(error, reason, details) {
+      super(typeof reason === 'string' ?
+            `${reason} [${error}]` : `${util.inspect(reason)} [${error}]`);
+      this.error = error;
+      this.reason = reason;
+      this.details = details;
+    }
+  }
+  KoruError.name = 'KoruError';
+  KoruError.prototype.name = 'KoruError';
 
   /**
    * Map of module dependencies. Entries list what to unload when
@@ -60,7 +71,7 @@ define(function (require, exports, module) {
       return oldValue;
     },
 
-    Error: errors.Error.bind(errors),
+    Error: KoruError,
     util,
 
     absId(require, id) {
