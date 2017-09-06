@@ -263,6 +263,8 @@ define(function(require, exports, module) {
       return n;
     }
 
+    findNode(value) {return find(this.root, this.compare, value)}
+
     nodeFrom(value) {
       const {compare} = this;
       let n = this.root;

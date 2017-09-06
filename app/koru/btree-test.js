@@ -165,6 +165,18 @@ r            1000
         {key: 50, value: 'v50'}]);
     },
 
+    "test findNode"() {
+      const tree = new BTree();
+      const list = [100, 200, 50, 150, 250];
+      insertNodes(tree, list);
+      list.forEach(v => {
+        assert.same(tree.findNode(v).value, v);
+      });
+      assert.same(tree.findNode(49), null);
+      assert.same(tree.findNode(120), null);
+      assert.same(tree.findNode(300), null);
+    },
+
     "test insert balancing case 1,2,3"() {
       /**
        * ensure correct coloring of tree
