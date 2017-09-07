@@ -1,8 +1,10 @@
 /* global Intl */
 define(function(require, exports, module) {
-  const match       = require('./match');
-  const stacktrace  = require('./stacktrace');
-  const util        = require('./util-base');
+  const match      = require('./match');
+  const stacktrace = require('./stacktrace');
+  const util       = require('./util-base');
+
+  const {withId$} = require('koru/symbols');
 
   const TYPEORDER = {
     undefined: 0,
@@ -1029,6 +1031,12 @@ define(function(require, exports, module) {
           return step("next");
         });
       };
+    },
+
+    withId(object, _id, key=withId$) {
+      const assoc = object[key] || (object[key] = Object.create(object));
+      if (assoc._id !== _id) assoc._id = _id;
+      return assoc;
     },
   });
 

@@ -7,6 +7,7 @@ define(function (require, exports, module) {
       const {symbol} = TH.match;
       assert.equals(sut, {
         stubName$: symbol,
+        withId$: symbol,
         ctx$: symbol,
         endMarker$: symbol,
         stopGap$: symbol,

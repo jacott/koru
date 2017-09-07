@@ -1078,5 +1078,39 @@ define(function (require, exports, module) {
 
       bar(12);
     },
+
+    "test withId"() {
+      /**
+       * Associate an _id with an object.
+
+       * @param object to associate with the `_id`
+
+       * @param _id to associate with the `object`
+
+       * @param key defaults to {#Symbol.withId$}
+
+       * @returns an associated object which has the given `_id` and a prototype of the given
+       * `object`. If an association for `key` is already attached to the `object` then it is used
+       * otherwise a new one will be greated.
+       **/
+      api.method('withId');
+
+      api.example(_=>{
+        const jane = {name: 'Jane', likes: ['Books']};
+        const myKey$ = Symbol();
+        const assoc = util.withId(jane, 123, myKey$);
+        assert.same(assoc.likes, jane.likes);
+        assert.same(Object.getPrototypeOf(assoc), jane);
+
+        assert.same(assoc._id, 123);
+
+        assert.same(util.withId(jane, 456, myKey$), assoc);
+        assert.same(assoc._id, 456);
+
+        refute.same(util.withId(jane, 456), assoc);
+        assert.same(util.withId(jane, 456).likes, jane.likes);
+      });
+
+    },
   });
 });
