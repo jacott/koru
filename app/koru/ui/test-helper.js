@@ -2,12 +2,11 @@ define(function(require, exports, module) {
   const Dom   = require('../dom');
   const koru  = require('../main');
   const TH    = Object.create(require('../test-helper'));
-  const util  = require('../util');
   const Route = require('./route');
 
-  koru.onunload(module, function () {
-    Route.history = TH._orig_history;
-  });
+  const {stub, spy, onEnd, util} = TH;
+
+  koru.onunload(module, ()=>{Route.history = TH._orig_history});
 
   Route._orig_history = Route.history;
   Route.history = {
@@ -48,7 +47,7 @@ define(function(require, exports, module) {
     refuteMessage: "range tp be equal\n  {i$actual}",
   });
 
-  function domEvent(eventName, func) {
+  const domEvent = (eventName, func)=>{
     return trigger;
     function trigger(node, arg1, arg2) {
       let value = arg1;
@@ -65,7 +64,7 @@ define(function(require, exports, module) {
       TH.trigger(node, eventName);
       return this;
     }
-  }
+  };
 
   module.exports = util.merge(TH, {
     domTearDown() {
@@ -80,7 +79,7 @@ define(function(require, exports, module) {
       if (koru.afTimeout.restore)
         koru.afTimeout.restore();
       else
-        TH.geddon.test.stub(koru, 'afTimeout').returns(koru.nullFunc);
+        stub(koru, 'afTimeout').returns(koru.nullFunc);
     },
 
     yieldAfTimeout() {
@@ -90,8 +89,8 @@ define(function(require, exports, module) {
 
     createMockEvent(currentTarget, options={}) {
       return Object.assign({}, {
-        preventDefault: geddon.test.stub(),
-        stopImmediatePropagation: geddon.test.stub(),
+        preventDefault: stub(),
+        stopImmediatePropagation: stub(),
         currentTarget: currentTarget,
       }, options);
     },
@@ -119,17 +118,22 @@ define(function(require, exports, module) {
     }),
 
     keypress(elm, keycode, modifiers='') {
+      const has = re => !! modifiers.match(re);
+
       if (typeof keycode === 'string') keycode = keycode.charCodeAt(0);
 
-      const pressEvent = document.createEvent ("KeyboardEvent");  //https://developer.mozilla.org/en/DOM/event.initKeyEvent
+      const pressEvent = document.createEvent ("KeyboardEvent");
+      //https://developer.mozilla.org/en/DOM/event.initKeyEvent
+
 
       if ('initKeyboardEvent' in pressEvent) {
         if (Dom.vendorPrefix === 'ms')
           pressEvent.initKeyboardEvent("keypress", true, true, window,
                                        keycode, null, modifiers, false, "");
         else {
-          pressEvent.initKeyboardEvent("keypress", true, true, window,
-                                       keycode, null,  has(/ctrl/), has(/alt/), has(/shift/), has(/meta/));
+          pressEvent.initKeyboardEvent(
+            "keypress", true, true, window,
+            keycode, null,  has(/ctrl/), has(/alt/), has(/shift/), has(/meta/));
         }
 
         // Chromium Hack
@@ -143,13 +147,11 @@ define(function(require, exports, module) {
       }
       dispatchEvent(elm, pressEvent);
       return this;
-
-      function has(re) {return !! modifiers.match(re)};
     },
 
     dispatchEvent,
 
-    change: domEvent('change', function (node, value) {
+    change: domEvent('change', (node, value)=>{
       if ('value' in node)
         node.value = value;
       else

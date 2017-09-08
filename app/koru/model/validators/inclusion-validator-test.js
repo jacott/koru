@@ -1,8 +1,8 @@
 define(function (require, exports, module) {
-  var test;
-  var geddon = require('../../test');
-  var validation = require('../validation');
-  var sut = require('./inclusion-validator').bind(validation);
+  const geddon     = require('../../test');
+  const validation = require('../validation');
+
+  const sut = require('./inclusion-validator').bind(validation);
 
   geddon.testCase(module, {
     "test allow null"() {

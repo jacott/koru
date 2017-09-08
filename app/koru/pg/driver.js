@@ -7,6 +7,7 @@ define(function(require, exports, module) {
   const Pool        = require('../pool-server');
   const util        = require('../util');
 
+  const {hasOwn} = util;
   const pools = Object.create(null);
   let clientCount = 0;
   let cursorCount = 0;
@@ -724,7 +725,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     }
     if (! add) for(col in table._colMap) {
       if (col === '_id') continue;
-      fields.hasOwnProperty(col) || result.push('"'+col+'"');
+      hasOwn(fields, col) || result.push('"'+col+'"');
     }
     return result.join(',');
   }
@@ -1026,7 +1027,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     const needCols = {};
     const colMap = table._colMap;
     for ( let col in schema) {
-      colMap.hasOwnProperty(col) ||
+      hasOwn(colMap, col) ||
         (needCols[col] = jsFieldToPg(col, schema[col], table._client));
     }
 

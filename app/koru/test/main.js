@@ -1,16 +1,44 @@
 define(function(require, exports, module) {
-  const koru   = require('../main');
-  const util   = require('../util');
+  const stubber = require('koru/test/stubber');
+  const koru    = require('../main');
+  const util    = require('../util');
   require('./assertions-methods');
   require('./callbacks');
-  const geddon = require('./core');
-  const match  = require('./match');
+  const geddon  = require('./core');
+  const match   = require('./match');
   require('./runner');
   require('./test-case');
 
   const Module = module.constructor;
+  const restorSpy = spy => ()=>{spy.restore && spy.restore()};
 
   const topDoc = isClient && (window.top ? window.top.document : document);
+
+  const onEnd = func=>geddon.test.onEnd(func);
+  const stub = (...args)=>geddon.test.stub(...args);
+  const spy = (...args)=>geddon.test.spy(...args);
+
+  const intercept = (...args)=>{
+    const spy = stubber.intercept(...args);
+    geddon.test.onEnd(restorSpy(spy));
+    return spy;
+  };
+
+  const stubProperty = (object, prop, newValue)=>{
+    if (typeof newValue !== 'object')
+      newValue = {value: newValue};
+    const oldValue = koru.replaceProperty(object, prop, newValue);
+    geddon.test.onEnd(restore);
+
+    function restore() {
+      if (oldValue)
+        Object.defineProperty(object, prop, oldValue);
+      else
+        delete object[prop];
+    }
+
+    return restore;
+};
 
   Error.stackTraceLimit = 50;
 
@@ -76,32 +104,18 @@ define(function(require, exports, module) {
   };
 
   exports = {
-    geddon,
-
-    match,
-
-    MockModule,
-
     get test() {return geddon.test},
+    geddon,
+    match,
+    MockModule,
+    stubProperty,
+    onEnd,
+    spy,
+    stub,
+    intercept,
 
     logHandle(type, msg) {
       console.error(type, msg);
-    },
-
-    stubProperty(object, prop, newValue) {
-      if (typeof newValue !== 'object')
-        newValue = {value: newValue};
-      var oldValue = koru.replaceProperty(object, prop, newValue);
-      geddon.test.onEnd(restore);
-
-      function restore() {
-        if (oldValue)
-          Object.defineProperty(object, prop, oldValue);
-        else
-          delete object[prop];
-      }
-
-      return restore;
     },
 
     run(pattern, tests) {

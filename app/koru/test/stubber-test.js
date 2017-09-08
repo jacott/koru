@@ -125,7 +125,7 @@ define(function (require, exports, module) {
 
       const spy = this.spy(Bar.prototype, 'bar');
 
-      assert(Bar.prototype.hasOwnProperty('bar'));
+      assert.hasOwn(Bar.prototype, 'bar');
 
       new Bar().bar();
 
@@ -133,7 +133,7 @@ define(function (require, exports, module) {
 
       spy.restore();
 
-      refute(Bar.prototype.hasOwnProperty('bar'));
+      refute.hasOwn(Bar.prototype, 'bar');
     },
 
     "test spy"() {

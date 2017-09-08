@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  var Dom = require('koru/dom');
+  const Dom   = require('koru/dom');
+  const Query = require('koru/model/query');
   require('koru/ui/each');
-  var Query = require('koru/model/query');
 
   var Todo =    require('models/todo');
 
@@ -22,7 +22,7 @@ define(function(require, exports, module) {
         ++total;
         for(var i = 0; i < tags.length; ++i) {
           var tag = tags[i];
-          if (! tagSummary.hasOwnProperty(tag))
+          if (! (tag in tagSummary))
             tagSummary[tag] = 1;
           else
             ++tagSummary[tag];

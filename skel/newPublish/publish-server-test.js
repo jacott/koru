@@ -3,21 +3,22 @@ define(function (require, exports, module) {
   const publishTH = require('koru/session/publish-test-helper-server');
   const Factory   = require('test/factory');
 
+  const {stub, spy, onEnd, util} = TH;
+
   const $$modelName$$ = require('models/$$modelModule$$');
   require('publish/$$publishModule$$');
 
-  let test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
       TH.startTransaction();
-      test = this;
       v = {};
       v.session = publishTH.mockSession();
     },
 
     tearDown() {
-      v = test = null;
+      v = null;
       TH.endTransaction();
     },
 

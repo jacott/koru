@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const TH        = require('koru/test/main');
   const util      = require('koru/util');
 
+  const {stub, spy, onEnd} = TH;
+
   class MockClientSub extends ClientSub {
     constructor(name, args) {
       super({}, 's123', name, args);
@@ -27,7 +29,7 @@ define(function(require, exports, module) {
   const publishTH = {
     mockSubscribe(name, ...args) {
       const sub = new MockClientSub(name, args);
-      TH.test.spy(sub, 'onStop');
+      spy(sub, 'onStop');
       const pub = publish._pubs[name];
       pub.apply(sub, args);
       return sub;

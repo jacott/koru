@@ -2,7 +2,6 @@ define(function (require, exports, module) {
   /**
    * Utilities to help test server publish/subscribe
    **/
-  var test, v;
   const koru      = require('koru');
   const session   = require('koru/session');
   const message   = require('koru/session/message');
@@ -13,11 +12,13 @@ define(function (require, exports, module) {
   const Stubber   = require('koru/test/stubber');
   const publishTH = require('./publish-test-helper-server');
 
+  const {stub, spy, onEnd} = TH;
+
   const SessionBase = session.constructor;
 
+  let v = null;
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       api.module(null, 'publishTH');
     },
@@ -32,7 +33,7 @@ define(function (require, exports, module) {
        **/
       api.method("mockSession");
 
-      test.stub(message, 'newGlobalDict').returns("stubbedGlobalDict");
+      stub(message, 'newGlobalDict').returns("stubbedGlobalDict");
 
       let mockSession = publishTH.mockSession("myMockSession");
       assert(mockSession instanceof SessionBase);
@@ -50,7 +51,7 @@ define(function (require, exports, module) {
        * [SeverConnection](#koru/session/server-connection-factory::ServerConnection)
        **/
       api.method("mockConnection");
-      test.stub(koru, 'userId').returns("u123");
+      stub(koru, 'userId').returns("u123");
 
       let mockConnection = publishTH.mockConnection("s456", v.sess = publishTH.mockSession());
 
@@ -65,7 +66,7 @@ define(function (require, exports, module) {
       assert(Stubber.isStubbed(mockConnection.removed));
       assert.equals(mockConnection.userId, "u123");
 
-      test.stub(publishTH, 'mockSession').returns(v.sess = {});
+      stub(publishTH, 'mockSession').returns(v.sess = {});
 
       mockConnection = publishTH.mockConnection();
       assert.called(publishTH.mockSession);
@@ -91,9 +92,9 @@ define(function (require, exports, module) {
 
       v.session = publishTH.mockSession();
       v.session._commands.P = session._commands.P;
-      test.onEnd(() => delete publish._pubs.Book);
+      onEnd(() => delete publish._pubs.Book);
 
-      const bookPub = publish._pubs.Book = test.stub();
+      const bookPub = publish._pubs.Book = stub();
 
       let sub = publishTH.mockSubscribe(v, 's123', 'Book', v.args = {author: 'Jane Austen'});
       assert(sub);

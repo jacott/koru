@@ -75,11 +75,11 @@ define(function(require, exports, module) {
       if (query !== undefined) {
         stopObserver(pv);
         pv.query = query;
-
-        if (compare === undefined) compare = query.compare || pv.compare;
-        if (compareKeys === undefined)
-          compareKeys = query.compareKeys || compare.compareKeys || pv.compareKeys;
       }
+
+      if (compare === undefined) compare = pv.query.compare || pv.compare;
+      if (compareKeys === undefined)
+        compareKeys = pv.query.compareKeys || compare.compareKeys || pv.compareKeys;
 
       if (pv.compare !== undefined) pv.compare = compare;
       if (pv.compareKeys !== undefined) pv.compareKeys = compareKeys;
@@ -89,13 +89,13 @@ define(function(require, exports, module) {
       const oldTree = pv.entries;
       // tag docs with elms
 
-      const newTree = pv.entries = new BTree(compare);
+      const newTree = pv.entries = new BTree(pv.compare);
 
       if (query !== undefined) {
         pv.observer = pv.query.onChange == null ? null : pv.query.onChange(pv.onChange);
       }
 
-      query.forEach(doc => {
+      pv.query.forEach(doc => {
         const node = doc[sym$];
 
         if (node == null)
@@ -103,7 +103,7 @@ define(function(require, exports, module) {
         else {
           doc[doc$] = undefined;
           oldTree.deleteNode(node);
-          node.value = extractKeys(doc, compareKeys);
+          node.value = extractKeys(doc, pv.compareKeys);
           newTree.addNode(node);
           updateAllTags && myCtx(node[elm$]).updateAllTags();
           insertElm(pv, node);

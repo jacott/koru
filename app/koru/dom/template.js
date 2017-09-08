@@ -5,9 +5,10 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
+  const {hasOwn, mergeNoEnum, forEach} = util;
+
   const {ctx$} = require('koru/symbols');
 
-  const {mergeNoEnum, forEach} = util;
   const {DOCUMENT_NODE, TEXT_NODE} = document;
   const dragTouchStart$ = Symbol();
 
@@ -529,7 +530,7 @@ ${ex.message}`});
         parent = parent[nm] || (parent[nm] =  new DomTemplate(nm, parent));
       });
     }
-    if (parent.hasOwnProperty(name) && parent[name]) {
+    if (hasOwn(parent, name) && parent[name]) {
       parent = parent[name];
       initBlueprint(parent, blueprint);
     } else {

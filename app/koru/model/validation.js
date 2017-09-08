@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   const ResourceString = require('../resource-string');
   const util           = require('../util');
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   const validators = {};
 
@@ -67,9 +67,9 @@ define(function(require, exports, module) {
         } else if (match.baseObject.$test(subSpec)) {
           for(const key in obj) {
             try {
-              if (hasOwnProperty.call(subSpec, key)) {
+              if (hasOwn(subSpec, key)) {
                 check1(obj[key], subSpec[key], name ? name+'.'+key : key);
-              } else if (subSpec === spec && altSpec && hasOwnProperty.call(altSpec, key)) {
+              } else if (subSpec === spec && altSpec && hasOwn(altSpec, key)) {
                 check1(obj[key], altSpec[key], name ? name+'.'+key : key);
               } else {
                 bad(name ? name+'.'+key : key, obj, subSpec, key);
@@ -114,7 +114,7 @@ define(function(require, exports, module) {
 
     assertCheck(obj, spec, options) {
       let error, reason;
-      if (options == null || ! hasOwnProperty.call(options, 'onError'))
+      if (options == null || ! hasOwn(options, 'onError'))
         options = Object.assign({onError(name, obj) {
           if (obj && obj._errors !== undefined) {
             reason = obj._errors;
@@ -142,7 +142,7 @@ define(function(require, exports, module) {
         if (doc._errors !== undefined) doc._errors = undefined;
         for (const field in doc) {
           if (field === '_errors') continue;
-          if (! hasOwnProperty.call(fieldSpec, field)) {
+          if (! hasOwn(fieldSpec, field)) {
             Val.addError(doc, field, 'unexpected_field');
             return false;
           }

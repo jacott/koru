@@ -96,7 +96,7 @@ isServer && define(function (require, exports, module) {
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
-      assert.isFalse(doc.hasOwnProperty('_id'));
+      refute.hasOwn(doc, '_id');
     },
 
     "test unlogged create"() {
@@ -111,7 +111,7 @@ isServer && define(function (require, exports, module) {
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
-      assert.isFalse(doc.hasOwnProperty('_id'));
+      refute.hasOwn(doc, '_id');
     },
 
     "test addIndex"() {

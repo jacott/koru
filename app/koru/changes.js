@@ -2,12 +2,13 @@ define(function(require, exports, module) {
   const koru   = require('koru');
   const md5sum = require('koru/md5sum');
   const sha256 = require('koru/srp/sha256');
+  const util   = require('koru/util');
 
   const {isObjEmpty,
          deepEqual, deepCopy, elemMatch,
          addItem, removeItem} = require('koru/util');
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   const same = (a,b)=>a==b;
 
@@ -327,8 +328,8 @@ define(function(require, exports, module) {
 
   const has = (undo, field)=>{
     return undo == null ? false :
-      hasOwnProperty.call(undo, field) || (
-        undo.$partial !== undefined && hasOwnProperty.call(undo.$partial, field));
+      hasOwn(undo, field) || (
+        undo.$partial !== undefined && hasOwn(undo.$partial, field));
   };
 
   const fromTo = (fields, from, to)=>{

@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const geddon = require('./core');
   const match  = require('./match');
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   const gu = geddon._u;
   const {egal} = util;
@@ -183,7 +183,7 @@ define(function(require, exports, module) {
     }
     for (let i = 0; i < akeys.length; ++i) {
       const key = akeys[i];
-      if (! hasOwnProperty.call(expected, key))
+      if (! hasOwn(expected, key))
         return badKey(key);
     }
     return true;

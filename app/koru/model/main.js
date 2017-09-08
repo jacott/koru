@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   const registerObserveId    = require('./register-observe-id');
   const Val                  = require('./validation');
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   function Lock() {
     this.temp = '';
@@ -418,13 +418,13 @@ define(function(require, exports, module) {
   };
 
 
-  const getField = (doc, field) => hasOwnProperty.call(doc.changes, field) ?
+  const getField = (doc, field) => hasOwn(doc.changes, field) ?
           doc.changes[field] : doc.attributes[field];
 
   const setField = (doc, field, value) => {
     const {changes} = doc;
     if (value === doc.attributes[field]) {
-      if (hasOwnProperty.call(changes, field)) {
+      if (hasOwn(changes, field)) {
         if (value === undefined && doc.constructor._defaults[field] !== undefined)
           changes[field] = util.deepCopy(doc.constructor._defaults[field]);
         else

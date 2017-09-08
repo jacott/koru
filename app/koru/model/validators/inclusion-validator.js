@@ -1,6 +1,9 @@
-define(function () {
+define(function(require, exports, module) {
+  const util  = require('koru/util');
+  const {hasOwn} = util;
+
   return function (doc, field, options) {
-    var value = doc[field];
+    const value = doc[field];
     if (! value) {
       var allowBlank = options.allowBlank;
       if (allowBlank || value == null && allowBlank === null) return;
@@ -10,7 +13,7 @@ define(function () {
     if ('in' in options) {
       var list = options.in;
       if (Array.isArray(list) ? list.indexOf(value) === -1 :
-          typeof value !== 'string' || ! list.hasOwnProperty(value))
+          typeof value !== 'string' || ! hasOwn(list, value))
         return this.addError(doc,field,'not_in_list');
     }
 

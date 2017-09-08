@@ -8,6 +8,8 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
+  const {hasOwn} = util;
+
   const newSimDocs = ()=>{
     const o = Object.create(null);
     o.temp = null;
@@ -422,7 +424,7 @@ define(function(require, exports, module) {
           const nc = {};
           if (doc !== undefined) for(const key in doc.attributes) {
             if (key === '_id') continue;
-            if (! changes.hasOwnProperty(key))
+            if (! hasOwn(changes, key))
               nc[key] = undefined;
           }
           if (util.isObjEmpty(nc))
@@ -440,7 +442,7 @@ define(function(require, exports, module) {
             const ncp = nc.$partial = {};
             const partial = changes.$partial;
             for(const key in partial) {
-              const alreadyChanged = keys.hasOwnProperty(key);
+              const alreadyChanged = hasOwn(keys, key);
               const undo = [];
               Changes.applyPartial(keys, key, partial[key], undo);
               if (alreadyChanged) {
@@ -452,7 +454,7 @@ define(function(require, exports, module) {
               }
             }
           } else {
-            if (! keys.hasOwnProperty(key)) nc[key] = changes[key];
+            if (! hasOwn(keys, key)) nc[key] = changes[key];
 
             Changes.applyOne(keys, key, changes);
           }

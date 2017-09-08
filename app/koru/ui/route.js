@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   require('koru/ui/dom-ext');
   const util        = require('koru/util');
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   const excludes = Object.freeze({append: 1, href: 1, hash: 1, search: 1});
   let inGotoPage = 0;
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
 
       this.path = path || '';
       this.template = template;
-      this.parent = options !== undefined && hasOwnProperty.call(options, 'parent')
+      this.parent = options !== undefined && hasOwn(options, 'parent')
         ? options.parent : parent;
       this.routes = {};
 

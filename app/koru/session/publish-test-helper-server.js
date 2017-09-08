@@ -7,6 +7,8 @@ define(function(require, exports, module) {
   const TH        = require('koru/test/main');
   const util      = require('koru/util');
 
+  const {stub, spy, onEnd} = TH;
+
   const SessionBase = session.constructor;
 
   class MockSession extends SessionBase {
@@ -18,18 +20,17 @@ define(function(require, exports, module) {
 
   const publishTH = {
     mockConnection (sessId, session=this.mockSession()) {
-      const test = TH.test;
       const conn = new (SCFactory(session))(
-        {send: test.stub(), on: test.stub()}, {}, sessId || 's123', function () {}
+        {send: stub(), on: stub()}, {}, sessId || 's123', function () {}
       );
-      test.spy(conn, 'batchMessages');
-      test.spy(conn, 'releaseMessages');
-      test.spy(conn, 'abortMessages');
+      spy(conn, 'batchMessages');
+      spy(conn, 'releaseMessages');
+      spy(conn, 'abortMessages');
       conn.userId = koru.userId();
-      conn.sendBinary = test.stub();
-      conn.added = test.stub();
-      conn.changed = test.stub();
-      conn.removed = test.stub();
+      conn.sendBinary = stub();
+      conn.added = stub();
+      conn.changed = stub();
+      conn.removed = stub();
       return conn;
     },
 

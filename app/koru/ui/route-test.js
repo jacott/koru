@@ -40,7 +40,7 @@ isClient && define(function (require, exports, module) {
       Route.root = v.root;
       Route._onGotoPath = v.onGotoPath;
       Route._reset();
-      delete Dom.Test;
+      Dom.Test = undefined;
       Dom.removeChildren(document.body);
       v = null;
     },

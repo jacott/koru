@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   const util = require('./util-base');
 
+  const {hasOwn} = util;
+
   function Constructor() {
     const match = (test, message) => new Match(test, message);
 
@@ -58,7 +60,7 @@ define(function(require, exports, module) {
                      regexp.test(value), name || 'match.regExp');
       },
       has (set, name) {
-        return match(value => set.hasOwnProperty(value), name || 'match.has');
+        return match(value => hasOwn(set, value), name || 'match.has');
       },
       or (...args) {
         return match(value => args.some(match => match.$test(value)),

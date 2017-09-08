@@ -11,6 +11,8 @@ define(function (require, exports, module) {
   const api = require('koru/test/api');
   const TH  = require('./main');
 
+  const {stub} = TH;
+
   const MockPromise = require('./mock-promise');
   var v;
 
@@ -51,7 +53,7 @@ define(function (require, exports, module) {
 
       const pc = new MockPromise((r, e) => {
         e(v.err = new Error("no catch"));
-      }).then(foo => foo).catch(v.catch = this.stub());
+      }).then(foo => foo).catch(v.catch = stub());
       refute.exception(() => {MockPromise._poll()});
       assert.calledWith(v.catch, v.err);
     },
@@ -59,8 +61,8 @@ define(function (require, exports, module) {
     "test then chaining"() {
       const {p, resolve} = makePromise();
 
-      p.then(v.r1 = this.stub().returns(5)).then(v.r3 = this.stub());
-      p.then(v.r2 = this.stub());
+      p.then(v.r1 = stub().returns(5)).then(v.r3 = stub());
+      p.then(v.r2 = stub());
 
 
       resolve(4);
@@ -86,7 +88,7 @@ define(function (require, exports, module) {
       const p1 = makePromise();
       const p2 = makePromise();
 
-      MockPromise.all([p1.p, p2.p, null]).then(v.done = this.stub());
+      MockPromise.all([p1.p, p2.p, null]).then(v.done = stub());
 
       p1.resolve(3);
       MockPromise._poll();
@@ -103,7 +105,7 @@ define(function (require, exports, module) {
       const p1 = makePromise();
       const p2 = makePromise();
 
-      p1.p.then(v.r1 = this.stub().returns(p2.p)).then(v.r2 = this.stub());
+      p1.p.then(v.r1 = stub().returns(p2.p)).then(v.r2 = stub());
 
       p1.resolve(1);
       MockPromise._poll();
@@ -120,8 +122,8 @@ define(function (require, exports, module) {
     "test then throws error"() {
       const {p, resolve} = makePromise();
 
-      p.then(() => {throw (v.error = new Error("fin1"))}).catch(v.c1 = this.stub());
-      p.then(v.r2 = this.stub());
+      p.then(() => {throw (v.error = new Error("fin1"))}).catch(v.c1 = stub());
+      p.then(v.r2 = stub());
 
       resolve(4);
       MockPromise._poll();
@@ -133,7 +135,7 @@ define(function (require, exports, module) {
     },
 
     "test Promise.resolve"() {
-      MockPromise.resolve(2).catch(v.c1 = this.stub()).then(v.r1 = this.stub());
+      MockPromise.resolve(2).catch(v.c1 = stub()).then(v.r1 = stub());
       refute.called(v.r1);
       MockPromise._poll();
       assert.calledWith(v.r1, 2);
@@ -141,7 +143,7 @@ define(function (require, exports, module) {
     },
 
     "test Promise.reject"() {
-      MockPromise.reject(2).then(v.r1 = this.stub()).catch(v.c1 = this.stub());
+      MockPromise.reject(2).then(v.r1 = stub()).catch(v.c1 = stub());
       refute.called(v.c1);
       MockPromise._poll();
       refute.called(v.r1);

@@ -6,9 +6,9 @@ isClient && define(function (require, exports, module) {
   const TH      = require('../model/test-helper');
   const util    = require('../util');
 
-  const $ = Dom.current;
-
+  const {stub, spy, onEnd} = TH;
   const {endMarker$} = require('koru/symbols');
+  const $ = Dom.current;
 
   const each    = require('./each');
   var v;
@@ -19,7 +19,7 @@ isClient && define(function (require, exports, module) {
       v.Each = Dom.newTemplate(util.deepCopy(eachTpl));
 
       v.Each.$helpers({
-        fooList: v.fooList = this.stub(),
+        fooList: v.fooList = stub(),
       });
 
       Dom.newTemplate({
@@ -34,7 +34,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       Dom.removeChildren(document.body);
-      delete Dom.Test;
+      Dom.Test = undefined;
       v = null;
     },
 
@@ -59,10 +59,10 @@ isClient && define(function (require, exports, module) {
     "test calling global helper"() {
       delete v.Each._helpers.fooList;
       Dom.registerHelpers({
-        fooList: this.stub(),
+        fooList: stub(),
       });
 
-      this.onEnd(() => delete Dom._helpers.fooList);
+      onEnd(() => delete Dom._helpers.fooList);
 
       v.Each.$render({});
 
@@ -91,7 +91,7 @@ isClient && define(function (require, exports, module) {
           fooList(each) {
             return each.autoList({
               query: v.TestModel.where({id1: $.data().major, id2: '2'}).sort('name'),
-              changed: v.changedStub = TH.test.stub(),
+              changed: v.changedStub = stub(),
             });
           }
         });
@@ -149,7 +149,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('li', {count: 3});
 
           assert.dom('li', 'alice', elm => {
-            Dom.ctx(elm).onDestroy(v.oldCtx = this.stub());
+            Dom.ctx(elm).onDestroy(v.oldCtx = stub());
           });
 
           refute(v.list);
@@ -202,7 +202,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test helper returns query"() {
-      this.onEnd(_=>{Ctx._currentCtx = null});
+      onEnd(_=>{Ctx._currentCtx = null});
       Ctx._currentCtx = new Ctx(v.Each);
 
       const container = Dom.h({div: ""});

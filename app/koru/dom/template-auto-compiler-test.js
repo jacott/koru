@@ -3,19 +3,12 @@ isClient && define(function(require, exports, module) {
   const TH      = require('koru/test');
   const Dom     = require('./dom-client');
 
-  var test, v;
   const $ = Dom.current;
 
   TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
-
     tearDown() {
-      v = null;
       Dom.removeChildren(document.body);
-      delete Dom.Test;
+      Dom.Test = undefined;
     },
 
     "test rendering html template"() {

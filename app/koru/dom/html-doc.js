@@ -7,6 +7,8 @@ define(function(require, exports, module) {
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
   const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
+  const {hasOwn} = util;
+
   const style$ = Symbol(), attributes$ = Symbol();
 
   const cssParser = new CssSelectorParser();
@@ -332,7 +334,7 @@ define(function(require, exports, module) {
         open = open.join(' ');
       }
 
-      if (! this.childNodes.length && NOCLOSE.hasOwnProperty(this.tagName))
+      if (! this.childNodes.length && hasOwn(NOCLOSE, this.tagName))
         return "<"+open+">";
 
       return "<"+open+">"+this.innerHTML+"</"+tn+">";

@@ -27,6 +27,9 @@
  */
 
 define(function(require, exports, module) {
+  const util = require('koru/util');
+  const {hasOwn} = util;
+
   const DIFF_DELETE = -1;
   const DIFF_INSERT = 1;
   const DIFF_EQUAL = 0;
@@ -275,8 +278,7 @@ define(function(require, exports, module) {
         }
         var line = text.substring(lineStart, lineEnd + 1);
         lineStart = lineEnd + 1;
-        if (lineHash.hasOwnProperty ? lineHash.hasOwnProperty(line) :
-            (lineHash[line] !== undefined)) {
+        if (hasOwn(lineHash, line)) {
           chars += String.fromCharCode(lineHash[line]);
         } else {
           chars += String.fromCharCode(lineArrayLength);
@@ -529,20 +531,20 @@ define(function(require, exports, module) {
       }
       var char1 = one.charAt(one.length - 1);
       var char2 = two.charAt(0);
-      var nonAlphaNumeric1 = char1.match(diff.nonAlphaNumericRegex_);
-      var nonAlphaNumeric2 = char2.match(diff.nonAlphaNumericRegex_);
+      var nonAlphaNumeric1 = char1.match(Diff.nonAlphaNumericRegex_);
+      var nonAlphaNumeric2 = char2.match(Diff.nonAlphaNumericRegex_);
       var whitespace1 = nonAlphaNumeric1 &&
-            char1.match(diff.whitespaceRegex_);
+            char1.match(Diff.whitespaceRegex_);
       var whitespace2 = nonAlphaNumeric2 &&
-            char2.match(diff.whitespaceRegex_);
+            char2.match(Diff.whitespaceRegex_);
       var lineBreak1 = whitespace1 &&
-            char1.match(diff.linebreakRegex_);
+            char1.match(Diff.linebreakRegex_);
       var lineBreak2 = whitespace2 &&
-            char2.match(diff.linebreakRegex_);
+            char2.match(Diff.linebreakRegex_);
       var blankLine1 = lineBreak1 &&
-            one.match(diff.blanklineEndRegex_);
+            one.match(Diff.blanklineEndRegex_);
       var blankLine2 = lineBreak2 &&
-            two.match(diff.blanklineStartRegex_);
+            two.match(Diff.blanklineStartRegex_);
       if (blankLine1 || blankLine2) {
         return 5;
       } else if (lineBreak1 || lineBreak2) {

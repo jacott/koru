@@ -2,9 +2,10 @@ define(function (require, exports, module) {
   /**
    * The util module provides commonly performed utility functions.
    **/
-  const api   = require('koru/test/api');
-  const match = require('./match');
-  const TH    = require('./test');
+  const Random = require('koru/random');
+  const api    = require('koru/test/api');
+  const match  = require('./match');
+  const TH     = require('./test');
 
   const util  = require('./util');
   var v;
@@ -843,6 +844,23 @@ define(function (require, exports, module) {
       assert.same(compare(b,a), -2);
       assert.same(compare(b,{f1: b.f1, [sym]: 'c'}), 0);
       assert.equals(compare.compareKeys, ['f1', sym]);
+    },
+
+    "test hasOwn"() {
+      const a = {
+        y: null,
+        z: undefined,
+      };
+
+      const b = Object.create(a);
+      b.y = false; b.a = 0;
+
+      const {hasOwn} = util;
+
+      assert.isTrue(hasOwn(a, 'z'));
+      assert.isTrue(hasOwn(a, 'y'));
+      assert.isFalse(hasOwn(b, 'z'));
+      assert.isTrue(hasOwn(b, 'y'));
     },
 
     "test colorToArray"() {

@@ -1,10 +1,11 @@
 define(function(require, exports, module) {
   const {stubName$}      = require('koru/symbols');
+  const util             = require('koru/util');
   const {merge, inspect} = require('koru/util');
   require('./assertions');
   const deepEqual        = require('./core')._u.deepEqual;
 
-  const {hasOwnProperty} = Object.prototype;
+  const {hasOwn} = util;
 
   const Stubber = exports;
 
@@ -216,7 +217,7 @@ define(function(require, exports, module) {
 
       notifyListeners(this, call);
 
-      if (hasOwnProperty.call(this, returns$))
+      if (hasOwn(this, returns$))
         call.returnValue = this[returns$];
     },
 

@@ -8,6 +8,8 @@ define(function (require, exports, module) {
   const TH        = require('koru/test/main');
   const publishTH = require('./publish-test-helper-client');
 
+  const {stubProperty} = TH;
+
   TH.testCase(module, {
     setUp() {
       test = this;
@@ -25,7 +27,7 @@ define(function (require, exports, module) {
        **/
       api.method('mockSubscribe');
       const FooStub = test.stub();
-      TH.stubProperty(publish._pubs, "Foo", FooStub);
+      stubProperty(publish._pubs, "Foo", FooStub);
       const sub = publishTH.mockSubscribe("Foo", 1, 2);
       assert(sub);
       assert(sub._mockMatches);
@@ -46,7 +48,7 @@ define(function (require, exports, module) {
          * the return from {#koru/session/subscribe}
          **/
       }
-      TH.stubProperty(publish._pubs, "books", function () {});
+      stubProperty(publish._pubs, "books", function () {});
       const sub = publishTH.mockSubscribe("books", 1, 2);
       const iapi = api.innerSubject(sub.constructor, null, {
         abstract,

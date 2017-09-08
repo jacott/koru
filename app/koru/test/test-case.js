@@ -1,5 +1,4 @@
 define(['./core', './stubber'], function (geddon, stubber) {
-
   let onSetUpOnceEnd;
 
   class TestCase {
@@ -34,12 +33,12 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     endTestCase() {
-      if (this._setUpOnce) {
-        this._setUpOnce = null;
+      if (this._setUpOnce !== undefined) {
+        this._setUpOnce = undefined;
         if (this.tearDownOnce)
           this.tearDownOnce.call(geddon.test);
         this.runOnEnds(geddon.test, onSetUpOnceEnd);
-        onSetUpOnceEnd = null;
+        onSetUpOnceEnd = undefined;
         this.tc && this.tc.runTearDown();
       }
       const after = this._after;
@@ -49,8 +48,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
 
     runSetUp(test) {
-      if (this.setUpAround) return false;
-      if (! this._setUpOnce) {
+      if (this.setUpAround !== undefined) return false;
+      if (this._setUpOnce === undefined) {
         if (this.tc && ! this.tc.runSetUp(test))
           return false;
         test._currentTestCase = this;
@@ -88,7 +87,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
     runSetUpArround(test, func) {
       let tex;
       const tc = this;
-      if (tc.setUpAround) {
+      if (tc.setUpAround !== undefined) {
         test._currentTestCase = tc;
         tc.setUpAround.call(test, doit);
       } else
@@ -191,6 +190,10 @@ define(['./core', './stubber'], function (geddon, stubber) {
     }
   }
 
+  const restorSpy = spy => ()=>{spy.restore && spy.restore()};
+
+  geddon.testCase = (name, option)=> new TestCase(name, null, option);
+
   class Test {
     constructor(name, tc, func) {
       this.name = name;
@@ -227,15 +230,4 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
     get moduleId() {return this.tc.moduleId;}
   };
-
-  function restorSpy(spy) {
-    return function() {
-      spy.restore && spy.restore();
-    };
-  }
-
-  geddon.testCase = function (name, option) {
-    return new TestCase(name, null, option);
-  };
-
 });

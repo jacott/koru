@@ -1,7 +1,10 @@
 define(function(require, exports, module) {
+  const {hasOwnProperty} = Object.prototype;
+  const hasOwn = (obj, prop)=>hasOwnProperty.call(obj, prop);
   const qstr = s => JSON.stringify(s).slice(1, -1);
 
   module.exports = {
+    hasOwn,
     idLen: 17,
     browserVersion(ua) {
       const isMobile = /\bMobi(le)?\b/.test(ua);

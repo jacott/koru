@@ -2,6 +2,8 @@ define(function (require, exports, module) {
   const TH      = require('koru/model/test-db-helper');
   const Factory = require('test/factory');
 
+  const {stub, spy, onEnd, util} = TH;
+
   const $$reqModel$$;
   let v = null;
 

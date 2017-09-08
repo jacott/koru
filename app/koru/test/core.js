@@ -1,5 +1,7 @@
 define(function(require, exports, module) {
-  const util = require('koru/util');
+  const util                    = require('koru/util');
+
+  const {inspect, extractError} = util;
 
   const geddon = {
     _init() {
@@ -11,10 +13,8 @@ define(function(require, exports, module) {
         return elm != null && typeof elm === 'object' && typeof elm.isSameNode === 'function';
       },
     },
-    inspect: util.inspect,
-
-    extractError: util.extractError,
-
+    inspect,
+    extractError,
     util,
 
     abort(ex) {throw ex}

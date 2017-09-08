@@ -28,7 +28,7 @@ define(function (require, exports, module) {
     },
 
     "test provide"() {
-      refute(session._commands.hasOwnProperty('t'));
+      refute.hasOwn(session._commands, 't');
 
       refute(session.provide('t', v.t = test.stub()));
       assert.same(session.provide('t', v.t), v.t);

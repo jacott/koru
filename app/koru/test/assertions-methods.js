@@ -4,48 +4,77 @@ define(function(require, exports, module) {
   const Stubber    = require('koru/test/stubber');
   const geddon     = require('./core');
 
+  const util = geddon.util;
+  const {hasOwn} = util;
   const {ctx$} = require('koru/symbols');
+  const empty = ()=>{};
+
+  const gu = geddon._u;
+  const ga = geddon.assertions;
 
   const performance = isClient ? window.performance : {now() {
     const tm = process.hrtime();
     return tm[0]*1000 + 1e-6 *tm[1];
   }};
 
-  const gu = geddon._u;
-  const ga = geddon.assertions;
-
-  const util = geddon.util;
-
-  const empty = ()=>{};
 
   geddon.assert.benchMark = ({subject, duration=1000, control=empty})=>{
-    let ans = {meanTpms: 0, controlMeanTpms: 0};
-    for(let i = 0; i < 2; ++i) {
-      let endAt = Date.now()+duration;
+    control();
+    subject();
 
-      let count = 0;
-
-      subject(); subject();
-
-      let st = performance.now();
-      while(endAt > Date.now()) {
-        subject();
-        ++count;
-      }
-      ans.meanTpms = count/(performance.now()-st);
-
-      let i = count;
-
-      control(); control();
-
-      st = performance.now();
-      while(endAt <= Date.now() && i > 0) {
-        control();
-        --i;
-      }
-      ans.controlMeanTpms = count/(performance.now()-st);
+    let count = 0, st = 0;
+    let result;
+    let endAt = Date.now()+Math.floor(duration/6);
+    st = performance.now();
+    while(endAt > Date.now()) {
+      result = subject(count, result);
+      ++count;
     }
-    return ans;
+    for(let i = 0; i < count; ++i) {
+      result = control(i, result);
+    }
+
+    st = performance.now();
+    for(let i = 0; i < count; ++i) {
+      result = control(i, result);
+    }
+    let control1 = (performance.now()-st)/count;
+
+    st = performance.now();
+    for(let i = 0; i < count; ++i) {
+      result = subject(i, result);
+    }
+
+    let subject1 = (performance.now()-st)/count;
+
+    st = performance.now();
+    for(let i = 0; i < count; ++i) {
+      result = control(i, result);
+    }
+    const control2 = (performance.now()-st)/count;
+
+    st = performance.now();
+    for(let i = 0; i < count; ++i) {
+      result = subject(i, result);
+    }
+    const subject2 = (performance.now()-st)/count;
+
+    let error = Math.abs(control1 - control2) + Math.abs(subject1 - subject2);
+
+    const rounding = 10**(Math.floor(Math.log(error)/Math.log(10)));
+
+    const ns = Math.round(1000000 * Math.round(
+      (subject1 + subject2 - control1 - control2)*0.5/rounding)*rounding);
+
+    return {
+      ns,
+      error: Math.round(1000000 * Math.ceil(error*0.5/rounding)*rounding),
+      controllNs: Math.round(1000000 * Math.round(
+        (control1 + control2)*0.5/rounding)*rounding),
+
+      subjectlNs: Math.round(1000000 * Math.round(
+        (subject1 + subject2)*0.5/rounding)*rounding)
+    };
   };
 
   ga.add('same', {
@@ -68,6 +97,15 @@ define(function(require, exports, module) {
     },
 
     message: "equality but {$diff}"
+  });
+
+  ga.add('hasOwn', {
+    assert (object, property) {
+      return typeof object === 'object' && object !== null &&
+        hasOwn(object, property);
+    },
+
+    message: "own property {i1}"
   });
 
   ga.add('isTrue', {
@@ -502,7 +540,7 @@ define(function(require, exports, module) {
                 selectNode = elm = ef;
               }
             }
-            if(options.hasOwnProperty('data')) {
+            if(hasOwn(options, 'data')) {
               const hint = {};
               const ef = filter(elm, i => i[ctx$] !== undefined && gu.deepEqual(i[ctx$].data, options.data));
               if (ef.length === 0) {

@@ -3,6 +3,8 @@ define(function(require, exports, module) {
   const util  = require('../util');
   const Model = require('./main');
 
+  const {hasOwn} = util;
+
   const traits = {};
   const postCreate = {};
   const defines = {};
@@ -16,7 +18,7 @@ define(function(require, exports, module) {
     }
 
     addField(field, value) {
-      if (! this.options.hasOwnProperty(field)) {
+      if (! hasOwn(this.options, field)) {
         switch(typeof value) {
         case 'undefined': break;
         case 'function':
@@ -30,7 +32,7 @@ define(function(require, exports, module) {
     }
 
     field(field) {
-      return (this.options.hasOwnProperty(field) ? this.options : this.default_opts)[field];
+      return (hasOwn(this.options, field) ? this.options : this.default_opts)[field];
     }
 
     attributes() {
@@ -64,7 +66,7 @@ define(function(require, exports, module) {
 
     addRef(ref, doc) {
       var refId = ref+'_id';
-      if (! this.options.hasOwnProperty(refId)) {
+      if (! hasOwn(this.options, refId)) {
         var model = this.model.fieldTypeMap[refId];
         if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
         var modelName = model.modelName;

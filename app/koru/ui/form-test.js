@@ -18,7 +18,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       Dom.removeChildren(document.body);
-      delete Dom.Test;
+      Dom.Test = undefined;
       v = null;
     },
 

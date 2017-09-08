@@ -2,6 +2,8 @@ define(function (require, exports, module) {
   var test, v;
   const TH   = require('./main');
 
+  const {match} = TH;
+
   TH.testCase(module, {
     setUp() {
       test = this;
@@ -14,7 +16,7 @@ define(function (require, exports, module) {
 
     "test benchmark"() {
       const ans = assert.benchMark({
-        duration: 10,
+        duration: 100,
         subject() {
           return 'abc' + 'def';
         },
@@ -24,7 +26,7 @@ define(function (require, exports, module) {
       });
 
       assert.equals(ans, {
-        meanTpms: TH.match.number, controlMeanTpms: TH.match.number});
+        ns: match.number, error: match.number, controllNs: match.number, subjectlNs: match.number});
     },
 
     "test _u.deepEqual"() {

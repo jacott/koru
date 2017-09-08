@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const Dom         = require('./base');
 
+  const {hasOwn} = util;
   const {ctx$, endMarker$} = require('koru/symbols');
 
   let vendorTransform;
@@ -340,7 +341,7 @@ define(function(require, exports, module) {
     originalValue(elm) {return elm[origValue$]},
     setOriginalValue(elm, value) {elm[origValue$] = value},
     restoreOriginalValue(elm) {
-      if (elm.hasOwnProperty(origValue$))
+      if (hasOwn(elm, origValue$))
         elm.value = elm[origValue$];
     },
 

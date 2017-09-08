@@ -9,6 +9,8 @@ define(function(require, exports, module) {
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
   const Route                 = require('./route');
 
+  const {hasOwn} = util;
+
   const Tpl = Dom.newTemplate(require('../html!./form'));
   const $ = Dom.current;
   const OnOff = Tpl.OnOff;
@@ -497,7 +499,7 @@ define(function(require, exports, module) {
     },
 
     field(name, options) {
-      const data = (options != null && hasOwnProperty.call(options, 'data')) ? options.data : this;
+      const data = (options != null && hasOwn(options, 'data')) ? options.data : this;
       return field(data, name, options);
     },
 
@@ -508,7 +510,7 @@ define(function(require, exports, module) {
       }
 
       options = options || {};
-      const data = hasOwnProperty.call(options, 'data') ? options.data : this;
+      const data = hasOwn(options, 'data') ? options.data : this;
       return Tpl.LabelField.$autoRender({
         name,
         options,
@@ -518,7 +520,7 @@ define(function(require, exports, module) {
     },
 
     displayField(name, options={}) {
-      const data = hasOwnProperty.call(options, 'data') ? options.data : this;
+      const data = hasOwn(options, 'data') ? options.data : this;
 
       const value = document.createElement('span');
       value.className = 'value';
@@ -550,7 +552,7 @@ define(function(require, exports, module) {
     classes() {
       let on = this.doc[this.name];
       const {options} = this;
-      if (options != null && hasOwnProperty.call(options, 'on')) on = on === options.on;
+      if (options != null && hasOwn(options, 'on')) on = on === options.on;
       return on ? 'on onOff' : 'onOff';
     },
 
@@ -568,7 +570,7 @@ define(function(require, exports, module) {
       const data = $.ctx.data, {options} = data;
       Dom.toggleClass(this, 'on');
       let on = Dom.hasClass(this, 'on');
-      if (options != null && hasOwnProperty.call(options, 'on')) {
+      if (options != null && hasOwn(options, 'on')) {
         on = on ? data.options.on : data.options.off;
       }
       data.doc[data.name] = on;

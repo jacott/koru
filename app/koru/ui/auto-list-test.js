@@ -9,8 +9,8 @@ isClient && define(function (require, exports, module) {
   const Model       = require('koru/model');
   const TH          = require('koru/model/test-helper');
   const api         = require('koru/test/api');
-  const util        = require('koru/util');
 
+  const {stub, spy, onEnd, util} = TH;
   const {endMarker$} = require('koru/symbols');
 
   const AutoList = require('./auto-list');
@@ -41,7 +41,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       Dom.removeChildren(document.body);
-      delete Dom.Test;
+      Dom.Test = undefined;
       Model._destroyModel('Book', 'drop');
       v = null;
     },
@@ -116,7 +116,7 @@ isClient && define(function (require, exports, module) {
 
       const container = Dom.h({});
 
-      const observeUpdates = this.stub();
+      const observeUpdates = stub();
 
       createBook(2); createBook(3);
 
@@ -202,7 +202,7 @@ isClient && define(function (require, exports, module) {
       const container = Dom.h({});
 
       api.example(_=>{
-        const observeUpdates = TH.test.stub();
+        const observeUpdates = stub();
         const list = new AutoList({
           template: row, container,
           query: {
@@ -624,11 +624,11 @@ isClient && define(function (require, exports, module) {
 
       const list = new AutoList({query: {
         compare: util.compareByName,
-        onChange: _=> ({stop: v.stop = this.stub()}),
+        onChange: _=> ({stop: v.stop = stub()}),
         forEach: body =>{body(person)},
       }, template: row, container});
 
-      this.spy(list, 'stop');
+      spy(list, 'stop');
 
       const sym = Object.getOwnPropertySymbols(person)[0];
       assert.equals(person[sym].value, person);
