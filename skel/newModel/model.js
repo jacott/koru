@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
-  const Model = require('koru/model');
+  const BaseModel = require('koru/model/base-model');
 
-  class $$modelName$$ extends Model.BaseModel {
+  class $$modelName$$ extends BaseModel {
   }
   $$modelName$$.define({
     module,

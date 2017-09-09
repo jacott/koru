@@ -450,6 +450,9 @@ define(function(require, exports, module) {
       if (value === undefined)
         return ['U', 'undefined'];
 
+      if (typeof value === 'symbol')
+        return ['S', 'symbol'];
+
       return value;
     }
 
