@@ -3,6 +3,7 @@ define(function(require, exports, module) {
   const util = require('koru/util');
 
   const {private$, ctx$, endMarker$} = require('koru/symbols');
+  const {onDestroy$} = Symbol();
 
   const {DOCUMENT_NODE, ELEMENT_NODE, COMMENT_NODE,
          DOCUMENT_FRAGMENT_NODE, TEXT_NODE} = document;
@@ -24,8 +25,8 @@ define(function(require, exports, module) {
 
     onDestroy(obj) {
       if (obj == null) return;
-      const list = this.__onDestroy;
-      (list === undefined ? (this.__onDestroy = []) : list).push(obj);
+      const list = this[onDestroy$];
+      (list === undefined ? (this[onDestroy$] = []) : list).push(obj);
       return this;
     }
 
@@ -112,6 +113,8 @@ define(function(require, exports, module) {
 
     static get _currentElement() {return currentElement}
   };
+
+  Ctx[private$] = {onDestroy$};
 
   function findFirstElement(ctx) {
     let evals = ctx.evals;

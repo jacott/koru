@@ -6,7 +6,10 @@ define(function(require, exports, module) {
   const Dom         = require('./base');
 
   const {hasOwn} = util;
-  const {ctx$, endMarker$} = require('koru/symbols');
+  const {globalId$, ctx$, endMarker$, private$} = require('koru/symbols');
+  const destoryObservers$ = Ctx[private$].destoryObservers$ = Symbol();
+  const destoryWith$ = Symbol();
+  const {onDestroy$} = Ctx[private$];
 
   let vendorTransform;
   const vendorStylePrefix = (() => {
@@ -286,10 +289,7 @@ define(function(require, exports, module) {
       if (typeof event === 'string')
         event = buildEvent(event, args);
 
-      if (Event || document.createEvent)
-        node.dispatchEvent(event);
-      else
-        node.fireEvent("on" + event.__name, event);
+      node.dispatchEvent(event);
 
       return event;
     },
@@ -366,56 +366,56 @@ define(function(require, exports, module) {
       return ctx;
     },
 
-    destroyMeWith(elm, ctx) {
-      if (ctx[ctx$]) ctx = ctx[ctx$];
+    destroyMeWith(elm, ctxOrElm) {
+      const ctx = ctxOrElm[ctx$] ? ctxOrElm[ctx$] : ctxOrElm;
       const elmCtx = elm[ctx$];
       const id = getId(elmCtx);
-      const observers = ctx.__destoryObservers;
-      ((observers === undefined) ? (ctx.__destoryObservers = Object.create(null)) : observers
+      const observers = ctx[destoryObservers$];
+      ((observers === undefined) ? (ctx[destoryObservers$] = Object.create(null)) : observers
       )[id] = elm;
-      elmCtx.__destoryWith = ctx;
+      elmCtx[destoryWith$] = ctx;
     },
 
     destroyData(elm) {
-      const ctx = elm && elm[ctx$];
+      const ctx = elm == null ? null : elm[ctx$];
       if (ctx != null) {
-        const dw = ctx.__destoryWith;
+        const dw = ctx[destoryWith$];
         if (dw !== undefined) {
-          ctx.__destoryWith = undefined;
-          const observers = dw.__destoryObservers;
+          ctx[destoryWith$] = undefined;
+          const observers = dw[destoryObservers$];
           if (observers !== undefined) {
-            delete observers[ctx.__id];
+            delete observers[ctx[globalId$]];
             if (util.isObjEmpty(observers))
-              dw.__destoryObservers = undefined;
+              dw[destoryObservers$] = undefined;
           }
         }
-        const observers = ctx && ctx.__destoryObservers;
+        const observers = ctx[destoryObservers$];
         if (observers !== undefined) {
-          ctx.__destoryObservers = undefined;
+          ctx[destoryObservers$] = undefined;
           for (const id in observers) {
             const withElm = observers[id];
             const withCtx = withElm[ctx$];
             if (withCtx != null)  {
-              withCtx.__destoryWith = undefined;
+              withCtx[destoryWith$] = undefined;
             }
             Dom.remove(withElm);
           }
         }
 
-        if (ctx.__onDestroy !== undefined) {
-          const list = ctx.__onDestroy;
-          ctx.__onDestroy = undefined;
+        if (ctx[onDestroy$] !== undefined) {
+          const list = ctx[onDestroy$];
+          ctx[onDestroy$] = undefined;
           for(let i = list.length - 1; i >=0; --i) {
             const row = list[i];
             if (typeof row === 'function')
-              row.call(ctx);
+              row.call(ctx, ctx, elm);
             else
-              row.stop();
+              row.stop(ctx, elm);
           }
         }
-        ctx.destroyed && ctx.destroyed(ctx, elm);
+        ctx.destroyed !== undefined && ctx.destroyed(ctx, elm);
         const tpl = ctx.template;
-        tpl != null && tpl.$destroyed && tpl.$destroyed.call(tpl, ctx, elm);
+        tpl != null && tpl.$destroyed !== undefined && tpl.$destroyed.call(tpl, ctx, elm);
         elm[ctx$] = null;
       }
       Dom.destroyChildren(elm);
@@ -629,6 +629,7 @@ define(function(require, exports, module) {
   case 'moz':
     (function(){
       // polyfill for focusin, focusout
+      // firefox >= 52 now has proper support for focusin/out
       var w = window,
           d = w.document;
 
@@ -668,8 +669,8 @@ define(function(require, exports, module) {
 
   let globalIds = 0;
   const getId = ctx => {
-    const id = ctx.__id;
-    return id === undefined ? (ctx.__id = (++globalIds).toString(36)) : id;
+    const id = ctx[globalId$];
+    return id === undefined ? (ctx[globalId$] = (++globalIds).toString(36)) : id;
   };
 
   return Dom;

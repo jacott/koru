@@ -4,7 +4,9 @@ define(function (require, exports, module) {
   const TH  = require('koru/test-helper');
   const api = require('koru/test/api');
 
-  const {private$, endMarker$} = require('koru/symbols');
+  const {stub, spy} = TH;
+
+  const {ctx$, private$, globalId$, endMarker$} = require('koru/symbols');
 
   const Dom = require('koru/dom');
   let v;
@@ -273,7 +275,7 @@ define(function (require, exports, module) {
 
       const foobar = document.querySelector('.foo>.bar');
 
-      this.stub(Dom, 'ctx').withArgs(foobar).returns('the ctx');
+      stub(Dom, 'ctx').withArgs(foobar).returns('the ctx');
 
       assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
@@ -281,7 +283,7 @@ define(function (require, exports, module) {
 
     "hideAndRemove": {
       setUp() {
-        v.onAnimationEnd = this.stub(Dom.Ctx.prototype, 'onAnimationEnd');
+        v.onAnimationEnd = stub(Dom.Ctx.prototype, 'onAnimationEnd');
       },
 
       "test non existent"() {
@@ -312,7 +314,7 @@ define(function (require, exports, module) {
 
         Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
 
-        this.spy(v.ctx, 'onDestroy');
+        spy(v.ctx, 'onDestroy');
 
         Dom.hideAndRemove(v.elm);
 
@@ -368,7 +370,7 @@ define(function (require, exports, module) {
     },
 
     "test removeAll"() {
-      this.stub(Dom, 'remove');
+      stub(Dom, 'remove');
 
       const r1 = Dom.remove.withArgs(1);
       const r2 = Dom.remove.withArgs(2);
@@ -402,7 +404,7 @@ define(function (require, exports, module) {
       parent.appendChild(elm[endMarker$]);
       parent.appendChild(document.createElement('i'));
 
-      this.spy(Dom, 'destroyChildren');
+      spy(Dom, 'destroyChildren');
 
       Dom.removeInserts(elm);
 
@@ -489,7 +491,7 @@ define(function (require, exports, module) {
     "inputValue helper": {
       "test restore"() {
         const elm = Ctx[private$].currentElement = {};
-        TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = this.stub()});
+        TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = stub()});
         Dom.restoreOriginalValue(elm);
         refute.called(v.stub);
 
@@ -516,6 +518,101 @@ define(function (require, exports, module) {
         Dom.restoreOriginalValue(elm);
         assert.calledWith(v.stub, 'bar');
 
+      },
+    },
+
+    "destroyMeWith": {
+      setUp () {
+        v.elm = Dom.h({div: "subject"});
+        v.elmCtx = Dom.setCtx(v.elm);
+
+        v.dep = Dom.h({div: "dep"});
+        v.depCtx = Dom.setCtx(v.dep);
+
+        document.body.appendChild(v.elm);
+        document.body.appendChild(v.dep);
+        Dom.destroyMeWith(v.dep, v.elm);
+
+        v.dep2 = Dom.h({div: "dep2"});
+        v.dep2Ctx = Dom.setCtx(v.dep2);
+
+        document.body.appendChild(v.dep2);
+        Dom.destroyMeWith(v.dep2, v.elm);
+      },
+
+      "test removes with"() {
+        Dom.remove(v.elm);
+        assert.same(v.elm[ctx$], null);
+        assert.same(v.dep[ctx$], null);
+        assert.same(v.dep.parentNode, null);
+        assert.same(v.dep2[ctx$], null);
+        assert.same(v.dep2.parentNode, null);
+      },
+
+      "test detaches if removed"() {
+        const {destoryObservers$} = Ctx[private$];
+        Dom.remove(v.dep);
+        const obs = {};
+        assert(v.dep2Ctx[globalId$]);
+        obs[v.dep2Ctx[globalId$]] = v.dep2;
+        assert.equals(v.elm[ctx$][destoryObservers$], obs);
+
+        Dom.remove(v.dep2);
+        assert.same(v.elm[ctx$][destoryObservers$], undefined);
+      },
+    },
+
+    "test onDestroy"() {
+      v.elm = Dom.h({div: "subject"});
+      v.elmCtx = Dom.setCtx(v.elm);
+      v.elmCtx.onDestroy(v.st1 = stub());
+      v.elmCtx.onDestroy(v.st2 = {stop: stub()});
+
+      Dom.destroyData(v.elm);
+      assert.calledWith(v.st1, v.elmCtx, v.elm);
+      assert.same(v.st1.firstCall.thisValue, v.elmCtx);
+      assert.calledWith(v.st2.stop, v.elmCtx, v.elm);
+      assert.same(v.st2.stop.firstCall.thisValue, v.st2);
+    },
+
+    "destroyMeWith": {
+      setUp () {
+        v.elm = Dom.h({div: "subject"});
+        v.elmCtx = Dom.setCtx(v.elm);
+
+        v.dep = Dom.h({div: "dep"});
+        v.depCtx = Dom.setCtx(v.dep);
+
+        document.body.appendChild(v.elm);
+        document.body.appendChild(v.dep);
+        Dom.destroyMeWith(v.dep, v.elm);
+
+        v.dep2 = Dom.h({div: "dep2"});
+        v.dep2Ctx = Dom.setCtx(v.dep2);
+
+        document.body.appendChild(v.dep2);
+        Dom.destroyMeWith(v.dep2, v.elm);
+      },
+
+      "test removes with"() {
+        Dom.remove(v.elm);
+        assert.same(v.elm[ctx$], null);
+        assert.same(v.dep[ctx$], null);
+        assert.same(v.dep.parentNode, null);
+        assert.same(v.dep2[ctx$], null);
+        assert.same(v.dep2.parentNode, null);
+      },
+
+      "test detaches if removed"() {
+        const {destoryObservers$} = Ctx[private$];
+        Dom.remove(v.dep);
+        const obs = {};
+        assert(v.dep2Ctx[globalId$]);
+        obs[v.dep2Ctx[globalId$]] = v.dep2;
+        assert.equals(v.elm[ctx$][destoryObservers$], obs);
+
+        Dom.remove(v.dep2);
+        assert.same(v.elm[ctx$][destoryObservers$], undefined);
       },
     },
   });

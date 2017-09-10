@@ -8,6 +8,7 @@ define(function (require, exports, module) {
       assert.equals(sut, {
         stubName$: symbol,
         withId$: symbol,
+        globalId$: symbol,
         ctx$: symbol,
         endMarker$: symbol,
         stopGap$: symbol,

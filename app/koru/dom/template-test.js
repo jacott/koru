@@ -963,46 +963,6 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(Dom.destroyData, TH.match(elm => elm.tagName === 'DIV'));
       },
 
-      "destroyMeWith": {
-        setUp () {
-          v.elm = Dom.h({div: "subject"});
-          v.elmCtx = Dom.setCtx(v.elm);
-
-          v.dep = Dom.h({div: "dep"});
-          v.depCtx = Dom.setCtx(v.dep);
-
-          document.body.appendChild(v.elm);
-          document.body.appendChild(v.dep);
-          Dom.destroyMeWith(v.dep, v.elm);
-
-          v.dep2 = Dom.h({div: "dep2"});
-          v.dep2Ctx = Dom.setCtx(v.dep2);
-
-          document.body.appendChild(v.dep2);
-          Dom.destroyMeWith(v.dep2, v.elm);
-        },
-
-        "test removes with"() {
-          Dom.remove(v.elm);
-          assert.same(v.elm[ctx$], null);
-          assert.same(v.dep[ctx$], null);
-          assert.same(v.dep.parentNode, null);
-          assert.same(v.dep2[ctx$], null);
-          assert.same(v.dep2.parentNode, null);
-        },
-
-        "test detaches if removed"() {
-          Dom.remove(v.dep);
-          const obs = {};
-          assert(v.dep2Ctx.__id);
-          obs[v.dep2Ctx.__id] = v.dep2;
-          assert.equals(v.elm[ctx$].__destoryObservers, obs);
-
-          Dom.remove(v.dep2);
-          assert.same(v.elm[ctx$].__destoryObservers, undefined);
-        },
-      },
-
       "test no frag if only one child node"() {
         Dom.newTemplate({
           name: "Foo",
