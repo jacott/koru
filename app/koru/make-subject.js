@@ -14,6 +14,9 @@ define(['module', './main'], function(module, koru) {
       };
     }
 
+    if (subject[observeName] || subject[notifyName])
+      throw new Error('Already a subject');
+
     subject[observeName] = callback => {
       if (typeof callback !== 'function')
         throw new TypeError('callback is not a function');
@@ -29,7 +32,7 @@ define(['module', './main'], function(module, koru) {
     };
 
     subject[notifyName] = (...args) => {
-      for(let handle of observers) {
+      for(const handle of observers) {
         handle.function(...args);
       }
 
