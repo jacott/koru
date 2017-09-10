@@ -132,6 +132,12 @@ define(function(require, exports, module) {
       return yieldCall(args, params);
     },
 
+    yieldAndReset(...params) {
+      const ans = this.yield(...params);
+      this.reset();
+      return ans;
+    },
+
     yieldAll(...params) {
       const {calls} = this;
       if (calls === undefined)

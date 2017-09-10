@@ -206,6 +206,17 @@ define(function (require, exports, module) {
       assert.same(v.foo, 2);
     },
 
+    "test yieldAndReset"() {
+      const obj = {run(arg) {}};
+      var x = test.stub(obj, "run");
+      obj.run((arg1, arg2)=> v.foo = arg2);
+      assert.equals(x.yieldAndReset(1,2), 2);
+      assert.same(v.foo, 2);
+      refute.called(x);
+      obj.run(_=>3);
+      assert.equals(x.yieldAndReset(), 3);
+    },
+
     "test yieldAll"() {
       var x = test.stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});
