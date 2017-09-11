@@ -1,12 +1,15 @@
 define(function(require, exports, module) {
   const Future = requirejs.nodeRequire('fibers/future');
   const Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
-  const koru        = require('../main');
-  const makeSubject = require('../make-subject');
-  const match       = require('../match');
-  const Pool        = require('../pool-server');
-  const util        = require('../util');
+  const koru            = require('../main');
+  const makeSubject     = require('../make-subject');
+  const match           = require('../match');
+  const Pool            = require('../pool-server');
+  const util            = require('../util');
 
+  const {private$} = require('koru/symbols');
+
+  const id$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
   const pools = Object.create(null);
   let clientCount = 0;
@@ -22,12 +25,11 @@ define(function(require, exports, module) {
 
   let defaultDb = null;
 
-
   class Client {
     constructor(url, name) {
-      this._id = (++clientCount).toString(36);
+      this[id$] = (++clientCount).toString(36);
+      this[tx$] = Symbol();
       this._url = url;
-      this._weakMap = new WeakMap;
       this.name = name || this.schemaName;
     }
 
@@ -47,11 +49,11 @@ define(function(require, exports, module) {
     }
 
     end() {
-      const pool = pools[this._id];
+      const pool = pools[this[id$]];
       if (pool) {
         pool.drain();
       }
-      delete pools[this._id];
+      delete pools[this[id$]];
     }
 
     _getConn() {
@@ -63,7 +65,7 @@ define(function(require, exports, module) {
     }
 
     withConn(func) {
-      const tx = this._weakMap.get(util.thread);
+      const tx = util.thread[this[tx$]];
       if (tx)
         return func.call(this, tx.conn);
       try {
@@ -116,7 +118,7 @@ define(function(require, exports, module) {
 
     transaction(func) {
       getConn(this); // ensure connection
-      const tx = this._weakMap.get(util.thread);
+      const tx = util.thread[this[tx$]];
       try {
         if (tx.transaction) {
           const onAborts = tx._onAborts;
@@ -162,6 +164,8 @@ define(function(require, exports, module) {
     }
   };
 
+  Client.prototype[private$] = {tx$};
+
   Client.prototype.aryToSqlStr = aryToSqlStr;
   Client.prototype.columnsToInsValues = columns => `(${columns.map(k=>`"${k}"`).join(",")})
 values (${columns.map(k=>`{$${k}}`).join(",")})`;
@@ -183,10 +187,8 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   }
 
   function getConn(client) {
-    let tx = client._weakMap.get(util.thread);
-    if (! tx) {
-      client._weakMap.set(util.thread, tx = fetchPool(client).acquire());
-    }
+    const {thread} = util, sym = client[tx$];
+    const tx = thread[sym] || (thread[sym] = fetchPool(client).acquire());
     if (tx.conn.isClosed()) {
       try {
         const future = new Future;
@@ -204,18 +206,18 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   }
 
   function releaseConn(client) {
-    const tx = client._weakMap.get(util.thread);
-    if (tx && --tx.count === 0) {
+    const tx = util.thread[client[tx$]];
+    if (tx !== undefined && --tx.count === 0) {
       fetchPool(client).release(tx);
-      client._weakMap.set(util.thread, null);
+      util.thread[client[tx$]] = undefined;
     }
   }
 
   function fetchPool(client) {
-    const pool = pools[client._id];
+    const pool = pools[client[id$]];
     if (pool) return pool;
-    return pools[client._id] = new Pool({
-      name: client._id,
+    return pools[client[id$]] = new Pool({
+      name: client[id$],
       create(callback) {
         ++conns;
         new Connection(client, callback);
@@ -731,9 +733,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   }
 
   function initCursor(cursor) {
-    if (cursor._name) return;
+    if (cursor._name != null) return;
     const client = cursor.table._client;
-    const tx = client._weakMap.get(util.thread);
+    const tx =util.thread[client[tx$]];
     let sql = cursor._sql;
 
     if (cursor._sort) {
@@ -755,7 +757,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     if (cursor._batchSize) {
       const cname = 'c'+(++cursorCount).toString(36);
-      if (tx && tx.transaction) {
+      if (tx !== undefined && tx.transaction) {
         cursor._inTran = true;
         client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
       } else client.transaction(function () {
@@ -1061,7 +1063,7 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
     else future.return(result);
   };
 
-  module.exports = {
+  const Driver = {
     isPG: true,
 
     aryToSqlStr,
@@ -1079,4 +1081,7 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
       return new Client(url, name);
     },
   };
+  Driver[private$] = {id$};
+
+  return Driver;
 });

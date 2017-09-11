@@ -12,6 +12,7 @@ define(function(require, exports, module) {
   const registerObserveId    = require('./register-observe-id');
 
   const {private$} = require('koru/symbols');
+  const allObservers$ = Symbol(), allObserverHandles$ = Symbol();
   const {hasOwn} = util;
 
   const changes$ = Symbol();
@@ -20,18 +21,6 @@ define(function(require, exports, module) {
     this.temp = '';
     delete this.temp;
   }
-
-  /**
-   * Track before/after/finally observers observing a model.
-   **/
-  const allObservers = new WeakMap;
-
-
-  /**
-   * Track before/after/finally observers registered to a model. This
-   * allows a observer to be deallocated when a model is destroyed.
-   **/
-  const allObserverHandles = new WeakMap;
 
   const savePartial = (doc, args, force)=>{
     const $partial = {};
@@ -50,19 +39,15 @@ define(function(require, exports, module) {
   };
 
   const registerObserver = (model, subject, name, callback)=>{
-    let modelObservers = allObservers.get(subject);
-    if (! modelObservers)
-      allObservers.set(subject, modelObservers = Object.create(null));
+    const modelObservers = subject[allObservers$] || (subject[allObservers$] = Object.create(null));
     (modelObservers[name] || (modelObservers[name] = [])).push([callback, model]);
-    let oh = allObserverHandles.get(model);
-    if (! oh)
-      allObserverHandles.set(model, oh = new Set);
+    const oh = model[allObserverHandles$]  || (model[allObserverHandles$] = new Set);
     oh.add(modelObservers);
   };
 
   const callBeforeObserver = (type, doc) => {
     const model = doc.constructor;
-    const modelObservers = allObservers.get(model);
+    const modelObservers = model[allObservers$];
     const observers = modelObservers === undefined ? undefined : modelObservers[type];
     if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       observers[i][0].call(model, doc, type);
@@ -71,7 +56,7 @@ define(function(require, exports, module) {
 
   const callAfterObserver = (doc, was) => {
     const model = (doc || was).constructor;
-    const modelObservers = allObservers.get(model);
+    const modelObservers = model[allObservers$];
     const observers = modelObservers === undefined ? undefined : modelObservers.afterLocalChange;
     if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       observers[i][0].call(model, doc, was);
@@ -80,7 +65,7 @@ define(function(require, exports, module) {
 
   const callWhenFinally = (doc, ex) => {
     const model = doc.constructor;
-    const modelObservers = allObservers.get(model);
+    const modelObservers = model[allObservers$];
     const observers = modelObservers === undefined ? undefined : modelObservers.whenFinally;
     if (observers !== undefined) for (let i = 0; i < observers.length; ++i) {
       try {
@@ -688,7 +673,7 @@ define(function(require, exports, module) {
   };
 
   BaseModel[private$] = {
-    allObserverHandles,
+    allObserverHandles$,
     _support,
   };
 

@@ -7,11 +7,14 @@ isServer && define(function (require, exports, module) {
    * PQconnectdb](http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html)
    *
    **/
-  const api  = require('koru/test/api');
-  const TH   = require('../test');
-  const util = require('../util');
+  const api             = require('koru/test/api');
+  const TH              = require('../test');
+  const util            = require('../util');
 
+  const {private$} = require('koru/symbols');
   const pg = require('./driver');
+  const {id$} = pg[private$];
+
   var test, v;
   const mf = TH.match.field;
 
@@ -53,7 +56,7 @@ isServer && define(function (require, exports, module) {
       assert.same(client.name, 'public');
       assert.same(client2.name, 'my name');
 
-      assert(client._id < client2._id );
+      assert(client[id$] < client2[id$] );
     },
 
     "test jsFieldToPg"() {

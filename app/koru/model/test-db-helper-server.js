@@ -5,6 +5,7 @@ define(function(require, exports, module) {
   const Factory  = require('./test-factory');
   const BaseTH   = require('./test-helper');
 
+  const {private$} = require('koru/symbols');
   let txSave = null, txClient = null, inTran = 0;
 
   const TH = util.protoCopy(BaseTH, {
@@ -41,7 +42,7 @@ define(function(require, exports, module) {
   TH.geddon.onStart(() => {
     txClient = dbBroker.db;
     txClient._getConn();
-    txSave = txClient._weakMap.get(util.thread);
+    txSave = util.thread[txClient[txClient[private$].tx$]];
     txSave.transaction = 'ROLLBACK';
   });
 
@@ -54,5 +55,5 @@ define(function(require, exports, module) {
     }
   });
 
-  module.exports = TH;
+  return TH;
 });

@@ -11,17 +11,15 @@ define(function(require, exports, module) {
   const TransQueue  = require('./trans-queue');
   const Val         = require('./validation');
 
-  let _support, BaseModel, ModelMap;
-
   const uniqueIndexes = {};
   const indexes = {};
   const _resetDocs = {};
 
+  let _support, BaseModel, ModelMap;
+
   session.registerGlobalDictionaryAdder(module, addToDictionary);
 
-  koru.onunload(module, function () {
-    session.deregisterGlobalDictionaryAdder(module);
-  });
+  koru.onunload(module, ()=>{session.deregisterGlobalDictionaryAdder(module)});
 
   Changes.KEYWORDS.forEach(word=>{session.addToDict(word)});
 
@@ -230,27 +228,28 @@ define(function(require, exports, module) {
     },
 
     setupModel(model) {
-      const notifyMap = new WeakMap;
+      const notifyMap$ = Symbol(), docCache$ = Symbol(), dbMap$ = Symbol();
+
       const anyChange = makeSubject({});
 
-      const docCache = new WeakMap;
-      let dbMap = new WeakMap;
 
       let docs, db;
 
       _resetDocs[model.modelName] = function () {
-        db = docs = null;
-        dbMap = new WeakMap;
+        if (db !== undefined) {
+          db[dbMap$] = undefined;
+          db = docs = undefined;
+        }
       };
 
       function getDc() {
-        const dc = docCache.get(util.thread);
+        const dc = util.thread[docCache$];
         return dc && model.db === dc.$db && dc;
       }
 
       util.merge(model, {
         notify(...args) {
-          const subject = notifyMap.get(model.db);
+          const subject = model.db[notifyMap$];
           if (subject)
             subject.notify.apply(subject, args);
 
@@ -258,23 +257,21 @@ define(function(require, exports, module) {
         },
         onAnyChange: anyChange.onChange,
         onChange(callback) {
-          let subject = notifyMap.get(model.db);
-          subject || notifyMap.set(db, subject = makeSubject({}));
-
+          const subject = model.db[notifyMap$] || (model.db[notifyMap$] =  makeSubject({}));
           return subject.onChange(callback);
         },
         get docs() {
-          if (! this.db) return;
-          docs = docs || dbMap.get(db);
+          if (this.db === undefined) return;
+          docs = docs || db[dbMap$];
           if (docs) return docs;
 
-          dbMap.set(db, docs = db.table(model.modelName, model.$fields));
+          db[dbMap$] = docs = db.table(model.modelName, model.$fields);
           return docs;
         },
         get db() {
           const tdb = dbBroker.db;
           if (tdb !== db) {
-            docs = null;
+            docs = undefined;
             db = tdb;
           }
           return db;
@@ -293,7 +290,7 @@ define(function(require, exports, module) {
             dc = Object.create(null);
             dc.$db = null; delete dc.$db; // de-op object
             dc.$db = model.db;
-            docCache.set(thread, dc);
+            thread[docCache$] = dc;
           }
           dc[doc._id] = doc;
         },
@@ -307,7 +304,7 @@ define(function(require, exports, module) {
         },
 
         _$docCacheClear() {
-          return docCache.delete(util.thread);
+          return util.thread[docCache$] = undefined;
         },
       });
     },

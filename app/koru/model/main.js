@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   koru.onunload(module, () => {koru.unload(koru.absId(require, './map'))});
 
-  const {allObserverHandles, _support} = BaseModel[private$];
+  const {allObserverHandles$, _support} = BaseModel[private$];
 
   ModelEnv.init(ModelMap, BaseModel, _support);
 
@@ -73,7 +73,7 @@ define(function(require, exports, module) {
 
       delete ModelMap[name];
 
-      let oh = allObserverHandles.get(model);
+      let oh = model[allObserverHandles$];
       if (oh) for (const modelObservers of oh) {
         for (const name in modelObservers) {
           modelObservers[name] = modelObservers[name].filter(entry => {

@@ -10,6 +10,7 @@ define(function(require, exports, module) {
   const {hasOwn} = util;
 
   const style$ = Symbol(), attributes$ = Symbol();
+  const doc$ = Symbol();
 
   const cssParser = new CssSelectorParser();
 
@@ -20,14 +21,13 @@ define(function(require, exports, module) {
 
   koru.onunload(module, () => global.document = null);
 
-  const threadMap = new WeakMap;
 
   Object.defineProperty(global, 'document', {configurable: true, get() {
     const key = util.Fiber.current || global;
-    const doc = threadMap.get(key);
+    const doc = key[doc$];
     if (doc == null) {
       const doc = new Document;
-      threadMap.set(key, doc);
+      key[doc$] = doc;
       return doc;
     }
 
