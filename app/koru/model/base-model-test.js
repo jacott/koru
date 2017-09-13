@@ -216,14 +216,6 @@ define(function (require, exports, module) {
         assert[isClient ? 'same' : 'equals'](Book.findById(doc._id).attributes, doc.attributes);
       },
 
-      "test findAttrsById"() {
-        const {Book} = v;
-        const doc = Book.create({foo: {bar: {baz: 'orig'}}});
-
-        const attrs = Book.findAttrsById(doc._id);
-        assert.same(attrs, Book.findById(doc._id).attributes);
-      },
-
       "test findBy."() {
         const {Book} = v;
         const doc = Book.create({name: 'Sam', foo: 'bar'});
@@ -408,7 +400,7 @@ define(function (require, exports, module) {
         v.now += 4000;
         doc.$update({name: 'changed again'});
 
-        doc.$reload();
+        doc.$reload(true);
 
         assert.same(+doc.createdAt, +oldCreatedAt);
         assert.same(+doc.updatedAt, v.now);
@@ -605,7 +597,18 @@ define(function (require, exports, module) {
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
       },
 
-      "test $savePartial"() {
+      "test $save with partial"() {
+        const {Book} = v;
+        const doc = Book.create({_id: '123', name: 'testing'});
+
+        doc.changes.$partial = {name: ['$append', ' 123']};
+        doc.$$save();
+
+        assert.equals(doc.name, 'testing 123');
+        assert.equals(doc.$reload(true).name, 'testing 123');
+      },
+
+      "test $savePartial calls save"() {
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
         stub(doc, '$save').returns('answer');
@@ -615,7 +618,7 @@ define(function (require, exports, module) {
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
       },
 
-      "test $$savePartial"() {
+      "test $$savePartial calls save"() {
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
         stub(doc, '$save').returns('answer');;
@@ -669,7 +672,7 @@ define(function (require, exports, module) {
 
         doc.$remove();
 
-        assert.same(doc.$reload(), doc);
+        assert.same(doc.$reload(true), doc);
 
         assert.equals(doc.attributes, {});
       },

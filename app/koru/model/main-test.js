@@ -292,6 +292,8 @@ define(function (require, exports, module) {
       const Book = Model.define('Book').defineFields({name: 'text'});
       const foo = Book.create();
 
+      assert.same(foo, Book.findById(foo._id));
+
       foo.$cache.boo = 5;
 
       assert.same(foo.$cache.boo, 5);

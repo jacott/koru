@@ -103,7 +103,7 @@ define(function(require, exports, module) {
       const doc = new this({});
       attributes != null && Object.assign(doc.changes, util.deepCopy(attributes));
       doc.$save();
-      return isServer ? doc : (doc.constructor.findById(doc._id) || doc);
+      return doc;
     }
 
     static _insertAttrs(attrs) {

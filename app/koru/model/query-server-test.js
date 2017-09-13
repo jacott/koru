@@ -19,8 +19,8 @@ define(function (require, exports, module) {
     },
 
     "test fields"() {
-      assert.equals(v.TestModel.query.fields('age').fetchOne().attributes, {_id: 'foo123', age: 5});
-      assert.equals(v.TestModel.query.fields('age', 'name').fetch()[0].attributes, {_id: 'foo123', name: 'foo', age: 5});
+      assert.equals(v.TestModel.query.fields('age').fetchOne(), {_id: 'foo123', age: 5});
+      assert.equals(v.TestModel.query.fields('age', 'name').fetch()[0], {_id: 'foo123', name: 'foo', age: 5});
     },
 
     "test offset"() {

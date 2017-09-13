@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   const {allObserverHandles$, _support} = BaseModel[private$];
 
-  ModelEnv.init(ModelMap, BaseModel, _support);
+  ModelEnv.init(BaseModel, _support);
 
   util.mergeNoEnum(ModelMap, {
     BaseModel,

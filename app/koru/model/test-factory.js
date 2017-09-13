@@ -115,7 +115,6 @@ define(function(require, exports, module) {
           doc.$save('force');
         else
           doc.$$save();
-        doc = this.model.findById(doc._id) || doc;
       } else
         var doc = this.insert();
 

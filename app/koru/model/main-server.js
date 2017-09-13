@@ -1,21 +1,26 @@
 define(function(require, exports, module) {
-  const Changes     = require('koru/changes');
-  const Query       = require('koru/model/query');
-  const driver      = require('../config!DBDriver');
-  const koru        = require('../main');
-  const makeSubject = require('../make-subject');
-  const Random      = require('../random');
-  const session     = require('../session');
-  const util        = require('../util');
-  const dbBroker    = require('./db-broker');
-  const TransQueue  = require('./trans-queue');
-  const Val         = require('./validation');
+  const Changes         = require('koru/changes');
+  const ModelMap        = require('koru/model/map');
+  const Query           = require('koru/model/query');
+  const driver          = require('../config!DBDriver');
+  const koru            = require('../main');
+  const makeSubject     = require('../make-subject');
+  const Random          = require('../random');
+  const session         = require('../session');
+  const util            = require('../util');
+  const dbBroker        = require('./db-broker');
+  const TransQueue      = require('./trans-queue');
+  const Val             = require('./validation');
+
+  const {private$} = require('koru/symbols');
+  const pv = ModelMap[private$];
+  const {makeDoc$, docCache$} = pv;
 
   const uniqueIndexes = {};
   const indexes = {};
   const _resetDocs = {};
 
-  let _support, BaseModel, ModelMap;
+  let _support, BaseModel;
 
   session.registerGlobalDictionaryAdder(module, addToDictionary);
 
@@ -34,12 +39,10 @@ define(function(require, exports, module) {
       delete indexes[model.modelName];
     },
 
-    init(_ModelMap, _BaseModel, _baseSupport) {
-      ModelMap = _ModelMap;
+    init(_BaseModel, _baseSupport) {
       BaseModel = _BaseModel;
       _support = _baseSupport;
       BaseModel.findById = findById;
-      BaseModel.findAttrsById = findAttrsById;
       BaseModel.addUniqueIndex = addUniqueIndex;
       BaseModel.addIndex = addIndex;
 
@@ -104,21 +107,33 @@ define(function(require, exports, module) {
         get defaultDb() {return driver.defaultDb},
       });
 
+      BaseModel[makeDoc$] = function (attrs) {
+        const doc = this._$docCacheGet(attrs._id);
+        if (doc === undefined) {
+          const doc = new this(attrs);
+          this._$docCacheSet(doc);
+          return doc;
+        }
+        doc.attributes = attrs;
+        return doc;
+      };
+
       BaseModel.prototype.$remove =  function () {
         return new Query(this.constructor).onId(this._id).remove();
       };
 
       BaseModel.prototype.$reload = function (full) {
         const model = this.constructor;
-        const doc = full ? model.docs.findOne({_id: this._id}) : model.findAttrsById(this._id);
-
-        if (doc) {
-          full && model._$docCacheSet(doc);
-          this.attributes = doc;
-        } else {
-          model._$docCacheDelete(this);
-          this.attributes = {};
+        if (full) {
+          const rec = model.docs.findOne({_id: this._id});
+          if (rec === undefined) {
+            model._$docCacheDelete(this);
+            this.attributes = {};
+          } else {
+            this.attributes = rec;
+          }
         }
+
         this.changes = {};
         if (this._errors !== undefined) this._errors = undefined;
         if (this._cache !== undefined) this._cache = undefined;
@@ -127,7 +142,6 @@ define(function(require, exports, module) {
       };
 
       ModelEnv.save = (doc, callback)=>{
-        if (util.isObjEmpty(doc.changes)) return doc;
         const model = doc.constructor;
         const _id = doc._id;
         let {changes} = doc; doc.changes = {};
@@ -143,8 +157,8 @@ define(function(require, exports, module) {
           changes = Object.assign(doc.attributes, changes);
           _support.performInsert(doc);
         } else {
+          if (util.isObjEmpty(changes)) return doc;
           _support.performUpdate(doc, changes);
-          Object.assign(doc.attributes, Changes.topLevelChanges(doc.attributes, changes));
         }
         if (callback) callback(doc);
       };
@@ -287,8 +301,7 @@ define(function(require, exports, module) {
           const thread = util.thread;
           let dc = getDc();
           if (! dc || dc.$db !== model.db) {
-            dc = Object.create(null);
-            dc.$db = null; delete dc.$db; // de-op object
+            dc = Object.create(null); dc.$db = null; delete dc.$db; // de-op object
             dc.$db = model.db;
             thread[docCache$] = dc;
           }
@@ -322,20 +335,18 @@ define(function(require, exports, module) {
     return keys;
   }
 
-  function findAttrsById(id) {
+  function findById(id) {
     if (! id) return;
     if (typeof id !== 'string') throw new Error('invalid id: '+ id);
     let doc = this._$docCacheGet(id);
-    if (! doc) {
-      doc = this.docs.findOne({_id: id});
-      doc && this._$docCacheSet(doc);
+    if (doc === undefined) {
+      const rec = this.docs.findOne({_id: id});
+      if (rec !== undefined) {
+        doc = new this(rec);
+        this._$docCacheSet(doc);
+      }
     }
     return doc;
-  }
-
-  function findById(id) {
-    const doc = this.findAttrsById(id);
-    if (doc) return new this(doc);
   }
 
   function addToDictionary(adder) {

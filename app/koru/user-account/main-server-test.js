@@ -286,8 +286,8 @@ define(function (require, exports, module) {
           TH.match.field('_id', v.lu._id), v.token]);
         assert.between(v.lu.tokens[v.token],
                        Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
-        assert.same(v.lu.resetToken, undefined);
-        assert.same(v.lu.resetTokenExpire, undefined);
+        assert.equals(v.lu.resetToken, null);
+        assert.equals(v.lu.resetTokenExpire, null);
 
 
         assert.calledWith(v.ws.send, matchStart('VS' + v.lu.userId));

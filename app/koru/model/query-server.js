@@ -7,7 +7,11 @@ define(function(require, exports, module) {
   const TransQueue = require('./trans-queue');
   const Future     = requirejs.nodeRequire('fibers/future');
 
+  const {private$} = require('koru/symbols');
+  const {makeDoc$} = Model[private$];
+
   return function (Query, condition, notifyAC$) {
+
     function notify(model, now, was) {
       Query[notifyAC$](now, was);
       model.notify(now, was);
@@ -20,7 +24,7 @@ define(function(require, exports, module) {
         if (Array.isArray(result))
           doc.attributes._id = result[0]._id;
 
-        model._$docCacheSet(doc.attributes);
+        model._$docCacheSet(doc);
         TransQueue.onAbort(() => model._$docCacheDelete(doc));
         Model._support.callAfterObserver(doc, null);
         TransQueue.onSuccess(() => notify(model, doc, null));
@@ -29,7 +33,6 @@ define(function(require, exports, module) {
       _insertAttrs(model, attrs) {
         if (! attrs._id && ! model.$fields._id.auto) attrs._id = Random.id();
         model.docs.insert(attrs);
-        model._$docCacheSet(attrs);
       },
     });
 
@@ -152,14 +155,15 @@ define(function(require, exports, module) {
           const doc = this.fetchOne();
           doc && func(doc);
         } else {
+          const hasFields = this._fields !== undefined;
           const {model} = this;
           const options = {};
-          if (this._fields) options.fields = this._fields;
+          if (hasFields) options.fields = this._fields;
           const cursor = model.docs.find(this, options);
           try {
             applyCursorOptions(this, cursor);
-            for (let doc = cursor.next(); doc; doc = cursor.next()) {
-              if (func(new model(doc)) === true)
+            for (let rec = cursor.next(); rec !== undefined; rec = cursor.next()) {
+              if (func(hasFields ? rec : model[makeDoc$](rec)) === true)
                 break;
             }
           } finally {
@@ -239,7 +243,7 @@ define(function(require, exports, module) {
 
             if (! util.isObjEmpty(undo)) {
               onAbort.push(doc);
-              model._$docCacheSet(doc.attributes);
+              model._$docCacheSet(doc);
               Model._support.callAfterObserver(doc, undo);
               onSuccess.push([doc, undo]);
             }
@@ -252,39 +256,40 @@ define(function(require, exports, module) {
       },
 
       fetchOne() {
-        let opts, doc;
+        let rec;
+        const hasFields = this._fields !== undefined;
         if (this._sort && ! this.singleId) {
           const options = {limit: 1};
           if (this._sort) options.sort = this._sort;
-          if (this._fields) options.fields = this._fields;
+          if (hasFields) options.fields = this._fields;
           let cursor = this.model.docs.find(this, options);
           try {
-            doc = cursor.next();
+            rec = cursor.next();
           } finally {
             cursor.close();
           }
         } else {
-          if (this._fields) opts = this._fields;
-          doc = this.model.docs.findOne(this, opts);
+          rec = this.model.docs.findOne(this, this._fields);
         }
-        if (! doc) return;
-        return new this.model(doc);
+        if (rec === undefined) return;
+        return hasFields ? rec : this.model[makeDoc$](rec);
       },
     });
 
     Query.prototype[Symbol.iterator] = function *() {
+        const hasFields = this._fields !== undefined;
       if (this.singleId) {
         const doc = this.fetchOne();
         doc && (yield doc);
       } else {
         const {model} = this;
         const options = {};
-        if (this._fields) options.fields = this._fields;
+        if (hasFields) options.fields = this._fields;
         const cursor = model.docs.find(this, options);
         try {
           applyCursorOptions(this, cursor);
-          for (let doc = cursor.next(); doc; doc = cursor.next()) {
-            if ((yield new model(doc)) === true)
+          for (let rec = cursor.next(); rec; rec = cursor.next()) {
+            if ((yield hasFields ? rec : model[makeDoc$](rec)) === true)
               break;
           }
         } finally {

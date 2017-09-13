@@ -176,7 +176,7 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.$reload(), v.doc);
       assert.same(v.doc.name, 'baz');
-      assert.same(v.doc.$reload('full'), v.doc);
+      assert.same(v.doc.$reload(true), v.doc);
       assert.same(v.doc.name, 'fuz');
 
       waitFut = new Future;

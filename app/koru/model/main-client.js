@@ -1,16 +1,19 @@
 define(function(require, exports, module) {
   'use strict';
-  const koru        = require('koru');
-  const makeSubject = require('koru/make-subject');
-  const Query       = require('koru/model/query');
-  const Random      = require('koru/random');
-  const session     = require('koru/session/client-rpc');
-  const {stopGap$}  = require('koru/symbols');
-  const util        = require('koru/util');
-  const dbBroker    = require('./db-broker');
-  const clientIndex = require('./index-client');
+  const koru            = require('koru');
+  const makeSubject     = require('koru/make-subject');
+  const ModelMap        = require('koru/model/map');
+  const Query           = require('koru/model/query');
+  const Random          = require('koru/random');
+  const session         = require('koru/session/client-rpc');
+  const util            = require('koru/util');
+  const dbBroker        = require('./db-broker');
+  const clientIndex     = require('./index-client');
 
-  let _support, ModelMap;
+  const {stopGap$} = require('koru/symbols');
+  const {isObjEmpty} = util;
+
+  let _support;
 
   const dbs = Object.create(null);
 
@@ -42,8 +45,7 @@ define(function(require, exports, module) {
       }
     },
 
-    init(_ModelMap, BaseModel, supportBase) {
-      ModelMap = _ModelMap;
+    init(BaseModel, supportBase) {
       _support = supportBase;
 
       Object.defineProperty(ModelMap, '_databases', {enumerable: false, get() {return dbs}});
@@ -52,7 +54,6 @@ define(function(require, exports, module) {
 
       util.merge(BaseModel, {
         findById,
-        findAttrsById,
         get serverQuery() {
           const query = new Query(this);
           query.isFromServer = true;
@@ -95,9 +96,12 @@ define(function(require, exports, module) {
             now = util.newDate();
 
 
-        if (doc) {
+        if (doc !== undefined) {
           if (id) {
             localUpdate(doc, changes, this.userId);
+          } else if (isObjEmpty(doc.attributes)) {
+            doc.attributes = changes;
+            localInsert(doc, this.userId);
           }
         } else if (! id) {
           localInsert(new model(changes), this.userId);
@@ -188,11 +192,6 @@ define(function(require, exports, module) {
 
   function findById(id) {return this.docs[id]}
 
-  function findAttrsById(id) {
-    const doc = this.docs[id];
-    return doc && doc.attributes;
-  }
-
   function localInsert(doc, userId) {
     const model = doc.constructor;
     const changes = doc.attributes;
@@ -217,13 +216,15 @@ define(function(require, exports, module) {
     if(_id == null) {
       if (! doc.changes._id) doc.changes._id = Random.id();
       _id = doc.changes._id;
-      if (model.docs[_id]) throw new koru.Error(400, {_id: [['not_unique']]});
-      if (doc[stopGap$]) {
+      if (model.docs[_id] !== undefined) throw new koru.Error(400, {_id: [['not_unique']]});
+      if (doc[stopGap$] !== undefined) {
         doc.attributes = doc.changes;
         doc.changes = {};
         localInsert(doc, koru.userId());
-      } else
+      } else {
+        model.docs[_id] = doc;
         session.rpc("save", model.modelName, null, doc.changes, callback);
+      }
     } else for(let noop in doc.changes) {
       // only call if at least one change
       const changes = doc.changes;

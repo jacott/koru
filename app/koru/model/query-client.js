@@ -231,7 +231,8 @@ define(function(require, exports, module) {
 
         findOne(id) {
           const doc = this.docs[id];
-          return doc !== undefined && this.matches(doc, doc.attributes) ? doc : undefined;
+          return doc !== undefined && this.matches(doc, doc.attributes)
+            ? (this._fields ? doc.attributes : doc) : undefined;
         },
 
         remove() {

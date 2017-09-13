@@ -529,20 +529,6 @@ define(function(require, exports, module) {
       return null;
     },
 
-    // TODO import by performing a binary search. Also allow passing a
-    // hint of the best place to start searching. It might be the upper
-    // or lower bound or the point of insertion or not even in the list
-    findFirstByCtxData(parent, finder) {
-      var iter = parent && parent.firstChild;
-      while(iter) {
-        var row = iter;
-        iter = iter.nextSibling; // incase side affect
-        var b = row[ctx$];
-        if (b && finder(b.data)) return row;
-      }
-      return null; // need null for IE
-    },
-
     updateInput(input, value) {
       if (value !== input.value) {
         input.value = value;

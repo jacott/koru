@@ -40,7 +40,7 @@ define(function(require, exports, module) {
     return restore;
 };
 
-  Error.stackTraceLimit = 50;
+  Error.stackTraceLimit = 100;
 
   koru._geddon_ = geddon; // helpful for errors finding test name
 
