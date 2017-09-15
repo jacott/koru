@@ -2,14 +2,14 @@ define(function(require) {
   const util   = require('koru/util');
   const driver = require('koru/config!DBDriver');
 
-  var dbBroker = {
+  const dbBroker = {
     get db() {
-      var thread = util.thread;
+      const {thread} = util;
       return thread.db || (thread.db = driver.defaultDb);
     },
     set db(value) {
       value = value || driver.defaultDb;
-      var thread = util.thread;
+      const {thread} = util;
       thread.db = value;
       thread.dbId = value.name;
     },

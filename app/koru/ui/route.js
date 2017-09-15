@@ -83,11 +83,11 @@ define(function(require, exports, module) {
       pageCount = 0;
     }
 
-    static replacePage(...args) {
+    static replacePage(page, pageRoute) {
       const orig = pageState;
       pageState = pageState && 'replaceState';
       try {
-        return this.gotoPage(...args);
+        return this.gotoPage(page, pageRoute);
       } finally {
         pageState = orig;
       }

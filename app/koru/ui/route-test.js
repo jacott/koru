@@ -467,13 +467,21 @@ isClient && define(function (require, exports, module) {
        * rather than adding to it.
        **/
       api.method('replacePage');
+
+      const MyPage = Dom.newTemplate({
+        name: 'Test.MyPage',
+        nodes: [{name: 'div'}]
+      });
+
+      Route.root.addTemplate(MyPage);
+
       test.stub(Route, 'gotoPage', () => {v.pageState = Route.pageState});
 
-      Route.replacePage('myPage', {append: 'myId'});
+      Route.replacePage(MyPage, {append: 'myId'});
 
       assert.same(v.pageState, 'replaceState');
       assert.same(Route.pageState, 'pushState');
-      assert.calledWith(Route.gotoPage, 'myPage', {append: 'myId'});
+      assert.calledWith(Route.gotoPage, MyPage, {append: 'myId'});
     },
 
     "test replacePath passes all args"() {

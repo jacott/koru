@@ -66,10 +66,10 @@ define(function(require, exports, module) {
     $inspect() {return `{Module: ${this.id}}`;}
   }
 
-  module.ctx.onError = function (err, mod) {
+  module.ctx.onError = (err, mod)=>{
     if (err.onload) {
-      var ctx = mod.ctx;
-      var stack = Object.keys(koru.fetchDependants(mod)).map(function (id) {
+      const {ctx} = mod;
+      const stack = Object.keys(koru.fetchDependants(mod)).map(id =>{
         if (id === mod.id) return '';
         return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
       }).join('\n');
@@ -87,12 +87,12 @@ define(function(require, exports, module) {
       return;
     }
 
-    var errEvent = err.event;
+    const errEvent = err.event;
 
     if (errEvent && errEvent.filename) {
       exports.logHandle('ERROR', koru.util.extractError({
         toString() {
-          var uer = errEvent && errEvent.error;
+          const uer = errEvent && errEvent.error;
           return uer ? uer.toString() : err.toString();
         },
         stack: "\tat "+ errEvent.filename + ':' + errEvent.lineno + ':' + errEvent.colno,
@@ -101,6 +101,10 @@ define(function(require, exports, module) {
     }
 
     exports.logHandle('ERROR', koru.util.extractError(err));
+  };
+
+  const warnFullPageReload = ()=>{
+    exports.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   };
 
   exports = {
@@ -146,19 +150,17 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     },
 
     testCase(module, option) {
-      var tc = geddon.testCase(module.id.replace(/-test$/, ''), option);
-      module.exports = tc;
-      return tc;
+      return module.exports = geddon.testCase(module.id.replace(/-test$/, ''), option);
     },
 
     normHTMLStr(html) {
       return html.replace(/(<[^>]+)>/g, (m, m1)=>{
         if (m[1] === '/') return m;
-        var parts = m1.replace(/="[^"]*"/g, m => m.replace(/ /g, '\xa0')).split(' ');
+        let parts = m1.replace(/="[^"]*"/g, m => m.replace(/ /g, '\xa0')).split(' ');
         if (parts.length === 1) return m;
-        var p1 = parts[0];
+        const p1 = parts[0];
         parts = parts.slice(1).sort();
-        return p1 + ' ' + parts.join(' ').replace(/\xa0/g, ' ') + '>';
+        return `${p1} ${parts.join(' ').replace(/\xa0/g, ' ')}>`;
       });
     }
   };
@@ -180,9 +182,9 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     if (test.errors) {
       ++errorCount;
 
-      var result= test.name + "\x00";
-      var errors = test.errors;
-      for(var i=0;i < errors.length; ++i) {
+      let result = `${test.name}\x00`;
+      const {errors} = test;
+      for(let i = 0; i < errors.length; ++i) {
         result += errors[i]+"\n";
       }
       exports.testHandle('E', result);
@@ -190,7 +192,8 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
 
     test.skipped ? ++skipCount : ++count;
 
-    exports.testHandle('R', test.name+ "\x00" + [count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
+    exports.testHandle('R', `${test.name}\x00` + [
+      count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
   function endRun() {
@@ -201,17 +204,13 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
 
     if (isClient) {
       topDoc.title = topDoc.title.replace(/Running:\s*/, '');
-      window.onbeforeunload === warnFullPageReload && window.setTimeout(function () {
+      window.onbeforeunload === warnFullPageReload && window.setTimeout(()=>{
         window.onbeforeunload = null;
       }, 1);
     }
 
     exports.testHandle('F', errorCount);
     geddon._init();
-  }
-
-  function warnFullPageReload() {
-    exports.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   }
 
   module.exports = exports;

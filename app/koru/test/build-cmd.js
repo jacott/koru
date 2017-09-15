@@ -11,16 +11,28 @@ define(function(require, exports, module) {
   const readdir = Future.wrap(fs.readdir);
   const stat = Future.wrap(fs.stat);
 
-  return exports = {
-    runTests(session, type, pattern, callback) {
-      if (type !== 'server') {
-        var cTests = [];
-      }
-      if (type !== 'client') {
-        var sTests = [];
-      }
+  const BuildCmd = {
+    runTests(session, type, pattern='', callback) {
+      const cTests = type !== 'server' ? [] : null;
+      const sTests = type !== 'client' ? [] : null;
 
-      pattern = pattern || '';
+      const findAll = dir =>{
+        const dirPath = Path.join(topDir, dir);
+        const filenames = readdir(dirPath).wait().filter(fn => /^[\w-]*(?:-test\.js$|$)/.test(fn));
+        const stats = filenames.map(filename => stat(Path.join(dirPath, filename)));
+
+        wait(stats);
+
+        for(let i = 0; i < filenames.length; ++i) {
+          if (stats[i].get().isDirectory()) {
+            findAll(Path.join(dir, filenames[i]));
+          } else if (filenames[i].match(/^\w.*-test\.js$/)) {
+            const path = Path.join(dir,filenames[i].slice(0,-3));
+            cTests && !path.match(/\bserver\b/i) && cTests.push(path);
+            sTests && !path.match(/\bclient\b/i) && sTests.push(path);
+          }
+        }
+      };
 
       if (pattern === '') {
         if (process.env.KORUAPI) {
@@ -31,21 +43,19 @@ define(function(require, exports, module) {
             fst.rm_f(Path.resolve(koru.appDir, '../doc/api-server.json'));
         }
         // all
-        var config = module.config();
-        var exDirs = koru.util.toMap(config.excludeDirs||[]);
-        util.forEach(config.testDirs ||
-         readdir(topDir).wait().filter(function (fn) {
-           return stat(fn).wait().isDirectory() &&
-             (!(fn in exDirs));
-         }), function (dir) {
-          findAll(dir);
-        });
+        const config = module.config();
+        const exDirs = koru.util.toMap(config.excludeDirs||[]);
+        util.forEach(
+          config.testDirs ||
+            readdir(topDir).wait().filter(
+              fn => stat(fn).wait().isDirectory() &&
+                (!(fn in exDirs))), dir =>{findAll(dir)});
       } else {
         // one
-        var idx = pattern.indexOf(' ');
-        var path = (idx === -1 ? pattern : pattern.slice(0, idx))+'-test';
-        cTests && cTests.push(path);
-        sTests && sTests.push(path);
+        const idx = pattern.indexOf(' ');
+        const path = (idx === -1 ? pattern : pattern.slice(0, idx))+'-test';
+        cTests === null || cTests.push(path);
+        sTests === null || sTests.push(path);
       }
 
       type = 'none';
@@ -60,12 +70,12 @@ define(function(require, exports, module) {
         return;
 
       if (type !== 'client') {
-        var dest = module.toUrl('test/server-ready.js');
+        const dest = module.toUrl('test/server-ready.js');
         if (module.ctx.modules['test/server-ready']) {
-          exports.serverReady = new Future;
+          BuildCmd.serverReady = new Future;
           fs.unlinkSync(dest);
-          exports.serverReady.wait();
-          exports.serverReady = null;
+          BuildCmd.serverReady.wait();
+          BuildCmd.serverReady = null;
         }
         try {
           fs.symlinkSync(module.toUrl('./server-ready-prep.js'), dest);
@@ -74,8 +84,8 @@ define(function(require, exports, module) {
 
       callback(type, {
         server() {
-          require(['./server', 'test/server-ready'], function (TH, serverReady) {
-            serverReady(koru, exports);
+          require(['./server', 'test/server-ready'], (TH, serverReady)=>{
+            serverReady(koru, BuildCmd);
             TH.run(pattern, sTests);
           });
         },
@@ -84,28 +94,8 @@ define(function(require, exports, module) {
           conn.sendBinary('T', [pattern, clientTests]);
         }
       });
-
-      function findAll(dir) {
-        const dirPath = Path.join(topDir, dir);
-        const filenames = readdir(dirPath).wait().filter(function (fn) {
-          return /^[\w-]*(?:-test\.js$|$)/.test(fn);
-        });
-        const stats = filenames.map(function (filename) {
-          return stat(Path.join(dirPath, filename));
-        });
-
-        wait(stats);
-
-        for(let i = 0; i < filenames.length; ++i) {
-          if (stats[i].get().isDirectory()) {
-            findAll(Path.join(dir, filenames[i]));
-          } else if (filenames[i].match(/^\w.*-test\.js$/)) {
-            var path = Path.join(dir,filenames[i].slice(0,-3));
-            cTests && !path.match(/\bserver\b/i) && cTests.push(path);
-            sTests && !path.match(/\bclient\b/i) && sTests.push(path);
-          }
-        }
-      }
     },
   };
+
+  return BuildCmd;
 });

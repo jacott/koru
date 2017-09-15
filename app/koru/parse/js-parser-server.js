@@ -17,7 +17,7 @@ define(function(require, exports, module) {
     return code.slice(code.indexOf('\n')+1, code.lastIndexOf('\n'));
   }
 
-  function highlight(codeIn) {
+  function highlight(codeIn, tag='div') {
     if (! codeIn) return;
 
     let srcPos = 0;
@@ -39,7 +39,7 @@ define(function(require, exports, module) {
 
     ast = parse(codeIn);
 
-    const div = document.createElement('div');
+    const div = document.createElement(tag);
     div.className = 'highlight';
 
     function binaryExpr(node) {

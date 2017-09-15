@@ -246,8 +246,7 @@ define(function(require, exports, module) {
       delete node[doc$][sym$];
       checkLimitBeforeRemove(pv, node);
       pv.entries.deleteNode(node);
-      Dom.remove(node[elm$]);
-      node[elm$] = null;
+      pv.removeElm(node[elm$]); node[elm$] = null;
     }
   };
 

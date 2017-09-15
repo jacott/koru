@@ -11,6 +11,24 @@ define(function(require, exports, module) {
 
   let nameGen, last, lastNow;
 
+  const getUniqueNow = ()=>{
+    let now = util.dateNow();
+
+    if(lastNow && now <= lastNow) {
+      now = ++lastNow;
+    } else {
+      lastNow = now;
+    }
+
+    return new Date(now);
+  };
+
+  const generateName = (prefix, space)=>{
+    if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
+    return `${prefix}${space == null ? ' ' : space}${++nameGen[prefix]}`;
+  };
+
+
   class BaseBuilder {
     constructor(options={}, default_opts={}) {
       this.options = options;
@@ -37,17 +55,16 @@ define(function(require, exports, module) {
 
     attributes() {
       const result = {};
-      addAttributes(this.default_opts);
-      addAttributes(this.options);
-      return result;
-
-      function addAttributes(attrs) {
-        for(let key in attrs) {
+      const addAttributes = attrs =>{
+        for(const key in attrs) {
           const value = attrs[key];
           if (value !== undefined)
             result[key] = value;
         }
-      }
+      };
+      addAttributes(this.default_opts);
+      addAttributes(this.options);
+      return result;
     }
 
     field(name) {
@@ -65,11 +82,12 @@ define(function(require, exports, module) {
     }
 
     addRef(ref, doc) {
-      var refId = ref+'_id';
+      const refId = `${ref}_id`;
       if (! hasOwn(this.options, refId)) {
-        var model = this.model.fieldTypeMap[refId];
-        if (! model) throw new Error('model not found for reference: ' + refId + ' in model ' + this.model.modelName);
-        var modelName = model.modelName;
+        const model = this.model.fieldTypeMap[refId];
+        if (! model) throw new Error(
+          `model not found for reference: ${refId} in model ${this.model.modelName}`);
+        const {modelName} = model;
         if (typeof doc === 'function')
           doc = doc(this);
         doc = doc ||
@@ -90,11 +108,11 @@ define(function(require, exports, module) {
     }
 
     insert() {
-      var id = this.model._insertAttrs(this.attributes());
-      var doc = this.model.findById(id);
-      if (! doc) {
+      const id = this.model._insertAttrs(this.attributes());
+      const doc = this.model.findById(id);
+      if (doc == null)
         throw Error("Factory insert failed! " + this.model.modelName + ": " + id);
-      }
+
       isClient && this.model._indexUpdate.notify(doc);
       Model._support.callAfterObserver(doc);
       this.model.notify(doc);
@@ -102,21 +120,22 @@ define(function(require, exports, module) {
     }
 
     build() {
-      var doc = new this.model();
+      const doc = new this.model();
       Object.assign(doc.changes, this.attributes());
       return doc;
     }
 
     create() {
+      let doc;
       if (this._canSave) {
-        var doc = this.model.build({});
+        doc = this.model.build({});
         doc.changes = this.attributes();
         if (this._canSave === 'force')
           doc.$save('force');
         else
           doc.$$save();
       } else
-        var doc = this.insert();
+        doc = this.insert();
 
 
       this._afterCreate && this._afterCreate.call(this, doc);
@@ -193,7 +212,7 @@ define(function(require, exports, module) {
     },
 
     defines(defines) {
-      for(var key in defines) {
+      for(const key in defines) {
         this['build'+key] = buildFunc(key, defines[key]);
         this['create'+key] = createFunc(key, defines[key]);
       }
@@ -204,31 +223,26 @@ define(function(require, exports, module) {
     Builder,
   };
 
-  test.geddon.onTestStart(function () {
+  test.geddon.onTestStart(()=>{
     nameGen = {};
     last = {};
     lastNow = null;
   });
 
-  function buildFunc(key, def) {
-    return function (...args /** traits and options */) {
-      return def.call(Factory, buildOptions(key, args)).build();
-    };
-  }
+  const buildFunc = (key, def)=> (...traitsAndOptions)=> def.call(
+    Factory, buildOptions(key, traitsAndOptions)).build();
 
-  function createFunc(key, def) {
-    return function (...args /** traits and options */) {
-      const result =
-            def.call(Factory, buildOptions(key, args)).create();
+  const createFunc = (key, def)=> (...traitsAndOptions)=>{
+    const result =
+            def.call(Factory, buildOptions(key, traitsAndOptions)).create();
 
-      if (postCreate[key])
-        return postCreate[key](result, key, args);
-      else
-        return last[key.substring(0,1).toLowerCase()+key.substring(1)] = result;
-    };
-  }
+    if (postCreate[key])
+      return postCreate[key](result, key, traitsAndOptions);
+    else
+      return last[key.substring(0,1).toLowerCase()+key.substring(1)] = result;
+  };
 
-  function buildOptions(key, args) {
+  const buildOptions = (key, args)=>{
     const options = {}, keyTraits = traits[key] || {};
     for(let i=0; i < args.length;++i) {
       if (typeof args[i] === 'string') {
@@ -241,22 +255,5 @@ define(function(require, exports, module) {
       }
     }
     return options;
-  }
-
-  function getUniqueNow() {
-    let now = util.dateNow();
-
-    if(lastNow && now <= lastNow) {
-      now = ++lastNow;
-    } else {
-      lastNow = now;
-    }
-
-    return new Date(now);
-  }
-
-  function generateName(prefix, space) {
-    if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
-    return prefix + (space == null ? ' ' : space) + ++nameGen[prefix];
-  }
+  };
 });

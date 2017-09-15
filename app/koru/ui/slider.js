@@ -1,9 +1,9 @@
 define(function(require, exports, module) {
-  var util = require('../util');
-  var Dom = require('../dom');
+  const Dom             = require('../dom');
+  const util            = require('../util');
 
-  var Tpl = Dom.newTemplate(module, require('../html!./slider'));
-  var $ = Dom.current;
+  const Tpl = Dom.newTemplate(module, require('../html!./slider'));
+  const $ = Dom.current;
 
   Tpl.$helpers({
     position() {
@@ -18,29 +18,29 @@ define(function(require, exports, module) {
       document.addEventListener('pointermove', adjust, true);
       document.addEventListener('pointerup', cancel, true);
 
-      var ctx = $.ctx;
-      var data = ctx.data;
+      const {ctx} = $;
+      const {data} = ctx;
       ctx.cancel = cancel;
 
-      var x = event.clientX;
+      let x = event.clientX;
 
-      var sliderElm = this;
-      var width = sliderElm.clientWidth;
+      const sliderElm = this;
+      const width = sliderElm.clientWidth;
 
-      var handle = event.target;
+      let handle = event.target;
 
       if (handle === sliderElm) {
         handle = sliderElm.firstElementChild;
-        var bbox = sliderElm.getBoundingClientRect();
+        const bbox = sliderElm.getBoundingClientRect();
 
         data.pos = (x - bbox.left) / width;
       }
 
-      var handleStyle = handle.style;
+      const handleStyle = handle.style;
       handleStyle.willChange = 'left';
 
-      var xMin = x - (width * data.pos);
-      var af = null;
+      const xMin = x - (width * data.pos);
+      let af = null;
 
       Dom.addClass(sliderElm, 'ui-dragging');
 
@@ -63,7 +63,7 @@ define(function(require, exports, module) {
         document.removeEventListener('pointerup', cancel, true);
         Dom.removeClass(sliderElm, 'ui-dragging');
         handleStyle.willChange = '';
-        var data = ctx.data;
+        const {data} = ctx;
         data.callback && data.callback(data.pos, ctx, sliderElm);
       }
 
@@ -84,8 +84,8 @@ define(function(require, exports, module) {
     },
 
     move(sliderElm, pos) {
-      var ctx = Dom.myCtx(sliderElm);
-      var data = ctx.data;
+      const ctx = Dom.myCtx(sliderElm);
+      const {data} = ctx;
       data.pos = pos;
 
       sliderElm.style.left = pos*100+'%';

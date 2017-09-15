@@ -1,7 +1,8 @@
 define(function(require) {
-  var defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default', dbIdStack = [];
+  let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';
+  const dbIdStack = [];
 
-  var dbBroker = {
+  const dbBroker = {
     get dbId() {return threadDbId},
     set dbId(value) {threadDbId = value || defaultDbId},
 

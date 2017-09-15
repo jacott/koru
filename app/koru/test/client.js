@@ -30,12 +30,7 @@ define(function(require, exports, module) {
 
   let ls;
 
-  session.provide('T', data => {
-    var pattern = data[0];
-    var tests = data[1];
-
-    test.run(pattern, tests);
-  });
+  session.provide('T', data => {test.run(data[0], data[1])});
 
   const setItem = localStorage.setItem;
   const getItem = localStorage.getItem;

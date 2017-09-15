@@ -20,31 +20,31 @@ define(function(require, exports, module) {
     },
 
     dates() {
-      var today = util.newDate();
-      var som = new Date(Date.UTC(this.getFullYear(), this.getMonth(), 1));
-      var day = (som.getUTCDay() + 6) % 7;
-      var sd = +som - day*DAY;
-      var eom = new Date(Date.UTC(this.getFullYear(), this.getMonth()+1, 1) - DAY);
+      const today = util.newDate();
+      const som = new Date(Date.UTC(this.getFullYear(), this.getMonth(), 1));
+      let day = (som.getUTCDay() + 6) % 7;
+      let sd = +som - day*DAY;
+      const eom = new Date(Date.UTC(this.getFullYear(), this.getMonth()+1, 1) - DAY);
       day = (7 - eom.getUTCDay()) % 7;
-      var ed = +eom + day*DAY;
+      const ed = +eom + day*DAY;
 
-      var prevm = new Date(sd).getUTCMonth();
-      var pd = prevm === this.getMonth() ? 0 : -1;
+      let prevm = new Date(sd).getUTCMonth();
+      let pd = prevm === this.getMonth() ? 0 : -1;
 
-      var frag = document.createDocumentFragment();
-      var tr = TR.cloneNode();
+      const frag = document.createDocumentFragment();
+      let tr = TR.cloneNode();
 
-      var dom = this.getDate();
+      const dom = this.getDate();
 
       for (; sd-9000 < ed; sd += DAY) { // 9000 is a fudge factor
-        var c = new Date(sd);
-        var cDom = c.getUTCDate();
-        var currm = c.getUTCMonth();
+        const c = new Date(sd);
+        const cDom = c.getUTCDate();
+        const currm = c.getUTCMonth();
         if (currm !== prevm) {
           ++pd; prevm = currm;
         }
 
-        var td = TD.cloneNode();
+        const td = TD.cloneNode();
         Dom.addClass(td, MCLASS[pd+1]);
         if (today.getDate() === cDom &&
             today.getMonth() === c.getUTCMonth() &&
@@ -67,12 +67,12 @@ define(function(require, exports, module) {
   Tpl.$events({
     'click [name=previous],[name=next]'(event) {
       Dom.stopEvent();
-
-      var date = $.ctx.data;
-      var delta = this.getAttribute('name') === 'next' ? 1 : -1;
-      var expM = new Date(date.getFullYear(), date.getMonth() + delta, 1);
-      for (var i = 0; i < 4; ++i) {
-        var nd = new Date(expM.getFullYear(), expM.getMonth(), date.getDate() - i);
+      const date = $.ctx.data;
+      const delta = this.getAttribute('name') === 'next' ? 1 : -1;
+      const expM = new Date(date.getFullYear(), date.getMonth() + delta, 1);
+      let nd;
+      for (let i = 0; i < 4; ++i) {
+        nd = new Date(expM.getFullYear(), expM.getMonth(), date.getDate() - i);
         if (nd.getMonth() === expM.getMonth()) break;
       }
       $.ctx.updateAllTags(nd);
@@ -88,14 +88,14 @@ define(function(require, exports, module) {
   function selectDate(event) {
     Dom.stopEvent();
 
-    var day = +this.textContent;
-    var date = $.ctx.data;
-    var offset = Dom.hasClass(this, 'previous') ? -1 : Dom.hasClass(this, 'next') ? 1 : 0;
+    const day = +this.textContent;
+    let date = $.ctx.data;
+    const offset = Dom.hasClass(this, 'previous') ? -1 : Dom.hasClass(this, 'next') ? 1 : 0;
 
     date = new Date(Date.UTC(date.getFullYear(), date.getMonth() + offset, day));
 
-    var input = $.ctx._input;
-    var newDate = util.dateInputFormat(date);
+    const input = $.ctx._input;
+    const newDate = util.dateInputFormat(date);
     if (input.value !== newDate) {
       input.value = newDate;
       Dom.triggerEvent(input, 'change');
@@ -117,58 +117,53 @@ define(function(require, exports, module) {
       });
       template.$event('keyup'+css, function (event) {
         if (event.which !== 27) return;
-        var ctx = Dom.myCtx(this);
+        const ctx = Dom.myCtx(this);
         if (! (ctx && ctx._koruCalendar)) return;
         Dom.remove(ctx._koruCalendar);
         Dom.stopEvent();
       });
 
       template.$event('keydown'+css, function (event) {
+        let value = 0;
         switch(event.which) {
         case 27:
           Dom.stopEvent();
           return;
         case 38:
-          var value = -DAY;
+          value = -DAY;
           break;
         case 40:
-          var value = DAY;
+          value = DAY;
           break;
         default:
           return;
         }
-        var ctx = Dom.myCtx(this);
-        if (! (ctx && ctx._koruCalendar)) return;
-        Dom.stopEvent();
-        ctx = Dom.ctx(ctx._koruCalendar);
-        var date = +ctx.data;
-        date += value;
-        date = new Date(date);
+        const ctx = Dom.myCtx(this);
+        if (ctx && ctx._koruCalendar) {
+          Dom.stopEvent();
+          const calCtx = Dom.ctx(ctx._koruCalendar);
+          const date = new Date(+calCtx.data + value);
 
-        this.value = util.dateInputFormat(date);
-        ctx.updateAllTags(date);
+          this.value = util.dateInputFormat(date);
+          calCtx.updateAllTags(date);
+        }
       });
 
       function open(event) {
-        var ctx = Dom.myCtx(this);
-        if (! ctx) ctx = Dom.setCtx(this);
+        const ctx = Dom.myCtx(this) || Dom.setCtx(this);
         Dom.remove(ctx._koruCalendar);
 
-        var date = Date.parse(this.value);
+        let date = Date.parse(this.value);
 
         if (date !== date) date = util.dateNow();
         date = new Date(date);
-        var popup = Tpl.$autoRender(date);
+        const popup = Tpl.$autoRender(date);
         ctx._koruCalendar = popup;
-        ctx.onDestroy(function () {
-          Dom.remove(ctx._koruCalendar);
-        });
-        var cCtx = Dom.myCtx(popup);
+        ctx.onDestroy(()=>{Dom.remove(ctx._koruCalendar)});
+        const cCtx = Dom.myCtx(popup);
         cCtx._input = this;
 
-        cCtx.onDestroy(function () {
-          ctx._koruCalendar = null;
-        });
+        cCtx.onDestroy(()=>{ctx._koruCalendar = null});
 
         options && options.customize && options.customize(popup, this);
 

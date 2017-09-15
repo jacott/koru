@@ -71,10 +71,9 @@ define(function(require, exports, module) {
       if (testMode !== 'none') {
         if (testMode !== 'server' &&
             testExec.client && clientCount) {
-          top:
-          for (let key in clients) {
+          top: for (const key in clients) {
             const cs = clients[key];
-            for (let sessId in cs) {
+            for (const sessId in cs) {
               const channel = cs[sessId];
               if (! readyForTests(channel))
                 break top;
@@ -102,31 +101,31 @@ define(function(require, exports, module) {
         testClientCount = +args[3];
         koru.runFiber(()=>{
           try {
-          buildCmd.runTests(session, args[1], args[2], function (mode, exec) {
-            testMode = mode;
-            testExec = exec;
-            if (mode === 'client')
-              testExec.server = null;
-            const ct = testExec.clientTests;
+            buildCmd.runTests(session, args[1], args[2], (mode, exec)=>{
+              testMode = mode;
+              testExec = exec;
+              if (mode === 'client')
+                testExec.server = null;
+              const ct = testExec.clientTests;
 
-            if (ct) {
-              if (testClientCount === 1)
-                pendingClientTests = [ct];
-              else {
-                const ctLen = ct.length;
-                testClientCount = Math.max(1, Math.min(testClientCount, ctLen));
-                pendingClientTests = new Array(testClientCount);
-                for(let i = 0; i < testClientCount; ++i) {
-                  pendingClientTests[i] = [];
-                }
+              if (ct) {
+                if (testClientCount === 1)
+                  pendingClientTests = [ct];
+                else {
+                  const ctLen = ct.length;
+                  testClientCount = Math.max(1, Math.min(testClientCount, ctLen));
+                  pendingClientTests = new Array(testClientCount);
+                  for(let i = 0; i < testClientCount; ++i) {
+                    pendingClientTests[i] = [];
+                  }
 
-                for(let i = 0; i < ctLen; ++i) {
-                  pendingClientTests[i % testClientCount].push(ct[i]);
+                  for(let i = 0; i < ctLen; ++i) {
+                    pendingClientTests[i % testClientCount].push(ct[i]);
+                  }
                 }
               }
-            }
-            testWhenReady();
-          });
+              testWhenReady();
+            });
           } catch(ex) {
             koru.unhandledException(ex);
             ws.send('FServer\x00' + ex.toString());

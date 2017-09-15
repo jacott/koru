@@ -169,8 +169,9 @@ define(function(require, exports, module) {
     }
 
     innerSubject(subject, subjectName, options) {
+      let propertyName;
       if (typeof subject === 'string') {
-        var propertyName = subject;
+        propertyName = subject;
         if (! (this.properties && this.properties[subject]))
           this.property(subject, options);
         if (! subjectName)

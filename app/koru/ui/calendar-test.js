@@ -1,16 +1,18 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
   const Dom  = require('../dom');
   const util = require('../util');
   const sut  = require('./calendar');
   const Each = require('./each');
   const TH   = require('./test-helper');
 
+  const {stub, onEnd, spy} = TH;
+
   const $ = Dom.current;
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.TestTpl = Dom.newTemplate(module, require('koru/html!./calendar-test'));
       v.open = function (date) {
@@ -87,9 +89,9 @@ isClient && define(function (require, exports, module) {
 
     "test pick date"() {
       v.open(new Date(2015, 11, 31));
-      Dom('[name=testField]').addEventListener('change', v.change = test.stub());
+      Dom('[name=testField]').addEventListener('change', v.change = stub());
       assert.dom('body>.Calendar td', '25', function () {
-        test.spy(Dom, 'stopEvent');
+        spy(Dom, 'stopEvent');
         TH.trigger(document.body.lastChild, 'pointerdown');
         assert.called(Dom.stopEvent);
         TH.click(this);
@@ -190,7 +192,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('td.select', '2');
         assert.dom('span', 'January 2013');
       });
-      test.spy(Dom, 'stopEvent');
+      spy(Dom, 'stopEvent');
       keydown(27);
       assert.dom('.Calendar');
       assert.called(Dom.stopEvent);

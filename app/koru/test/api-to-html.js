@@ -140,7 +140,7 @@ define(function(require, exports, module) {
     const {header, links, pages} = tags;
     const linkModules = [];
 
-    Object.keys(json).sort(function (a,b) {
+    Object.keys(json).sort((a,b)=>{
       a = a.replace(/\/main$/, '');
       b = b.replace(/\/main$/, '');
       return a === b ? 0 : a < b ? -1 : 1;
@@ -242,7 +242,6 @@ define(function(require, exports, module) {
           {class: 'jsdoc-module-sidebar', aside},
           {div: [
             config,
-            constructor,
             properties.length && {class: 'jsdoc-properties', div: [
               {h5: 'Properties'},
               {table: {tbody: properties}}
@@ -329,7 +328,7 @@ define(function(require, exports, module) {
       ]},
     ]};
     return section(api, {$name: 'constructor', div: [
-      {h4: sig},
+      {h4: defToHtml(sig)},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
       examples,
@@ -403,7 +402,7 @@ define(function(require, exports, module) {
       return section(api, {
         '$data-env': env(method),
         $name: (type === 'proto' ? '#'+name : name), div: [
-          {h5: sigJoin ? `${subject.name}${sigJoin}${sig}` : sig},
+          {h5: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : defToHtml(sig)},
           {abstract},
           params,
           examples,
@@ -417,6 +416,16 @@ define(function(require, exports, module) {
     div.class = `${div.class||''} jsdoc-module-section`;
     return div;
   }
+
+  const defToHtml = (sig)=>{
+    const elm = jsParser.highlight(`function _${sig} {}`, 'span');
+    elm.removeChild(elm.firstChild);
+    elm.removeChild(elm.firstChild);
+    elm.firstChild.textContent = elm.firstChild.textContent.slice(1);
+    elm.lastChild.textContent = elm.lastChild.textContent.slice(0, -3);
+    return elm;
+  };
+
 
   function codeToHtml(codeIn) {
     return jsParser.highlight(codeIn);
