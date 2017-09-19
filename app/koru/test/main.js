@@ -6,6 +6,9 @@ define(function(require, exports, module) {
   require('./callbacks');
   const geddon  = require('./core');
   const match   = require('./match');
+
+  const {inspect$} = require('koru/symbols');
+
   require('./runner');
   require('./test-case');
 
@@ -63,7 +66,7 @@ define(function(require, exports, module) {
 
     onUnload() {}
 
-    $inspect() {return `{Module: ${this.id}}`;}
+    [inspect$]() {return `{Module: ${this.id}}`;}
   }
 
   module.ctx.onError = (err, mod)=>{

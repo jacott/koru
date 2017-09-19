@@ -3,6 +3,8 @@ define(function(require, exports, module) {
   const koru        = require('../main');
   const util        = require('../util');
 
+  const {inspect$} = require('koru/symbols');
+
   const {compare} = util;
 
   koru.onunload(module, ()=>{exports._unload && exports._unload()});
@@ -159,7 +161,7 @@ define(function(require, exports, module) {
         this.model = model;
       }
 
-      $inspect() {return `{Query ${this.model.modelName}}`}
+      [inspect$]() {return `{Query ${this.model.modelName}}`}
 
       onModel(model) {
         this.model = model;

@@ -14,6 +14,7 @@ define(function (require, exports, module) {
         stopGap$: symbol,
         private$: symbol,
         test$: symbol,
+        inspect$: symbol,
       });
     },
   });

@@ -10,6 +10,8 @@ define(function (require, exports, module) {
   const api      = require('koru/test/api');
   const TH       = require('./test-helper');
 
+  const {inspect$} = require('koru/symbols');
+
   const val       = require('./validation');
 
   const {stub, spy, onEnd, intercept, util} = TH;
@@ -746,10 +748,10 @@ define(function (require, exports, module) {
 
       },
 
-      "test $inspect"() {
+      "test inspect$"() {
         const {Book} = v;
         const doc = new Book({_id: 'id123', name: 'bar'});
-        assert.equals(doc.$inspect(), '{Model: Book_id123 bar}');
+        assert.equals(doc[inspect$](), '{Model: Book_id123 bar}');
       },
 
       "test toId"() {

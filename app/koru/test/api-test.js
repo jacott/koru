@@ -8,6 +8,8 @@ define(function (require, exports, module) {
   const util    = require('koru/util');
   const MainAPI = require('./api');
 
+  const {inspect$} = require('koru/symbols');
+
   const ctx = module.ctx;
   let API;
   const APIModule = ctx.modules['koru/test/api'];
@@ -452,7 +454,7 @@ define(function (require, exports, module) {
         constructor(name) {
           this.name = name;
         }
-        $inspect() {return `{Hobbit:${this.name}}`;}
+        [inspect$]() {return `{Hobbit:${this.name}}`;}
       }
 
       API.module({id: 'myMod', exports: Hobbit});

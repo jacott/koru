@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   const util        = require('koru/util');
   const TH          = require('./main');
 
+  const {inspect$} = require('koru/symbols');
+
   const ctx = module.ctx;
 
   class API {
@@ -320,7 +322,7 @@ define(function(require, exports, module) {
       TH.test._apiOnEnd && TH.test._apiOnEnd();
     }
 
-    $inspect() {
+    [inspect$]() {
       return `{API(${this.subjectName})}`;
     }
 
@@ -833,7 +835,7 @@ define(function(require, exports, module) {
 
   function inspect(obj) {
     if (typeof obj !== 'object' || obj === null ||
-        obj.$inspect || ('outerHTML' in obj) || obj.nodeType === 3)
+        obj[inspect$] || ('outerHTML' in obj) || obj.nodeType === 3)
       return util.inspect(obj, 4, 150);
 
     const coreDisplay = obj && API._coreDisplay.get(obj.constructor);

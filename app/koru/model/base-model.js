@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   const registerObserveField = require('./register-observe-field');
   const registerObserveId    = require('./register-observe-id');
 
-  const {private$} = require('koru/symbols');
+  const {private$, inspect$} = require('koru/symbols');
   const allObservers$ = Symbol(), allObserverHandles$ = Symbol();
   const {hasOwn} = util;
 
@@ -288,7 +288,7 @@ define(function(require, exports, module) {
 
     get classMethods() {return this.constructor;}
 
-    $inspect() {
+    [inspect$]() {
       return `{Model: ${this.constructor.modelName}_${this._id} ${this.name||''}}`;
     }
 

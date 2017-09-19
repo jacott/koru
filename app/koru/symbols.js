@@ -7,4 +7,5 @@ define({
   stopGap$: Symbol(),
   private$: Symbol(),
   test$: Symbol(),
+  inspect$: Symbol(),
 });

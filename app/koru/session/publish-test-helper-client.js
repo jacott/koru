@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const TH        = require('koru/test/main');
   const util      = require('koru/util');
 
+  const {inspect$} = require('koru/symbols');
+
   const {stub, spy, onEnd} = TH;
 
   class MockClientSub extends ClientSub {
@@ -23,7 +25,7 @@ define(function(require, exports, module) {
       this._mockMatches.set(model, func);
     }
 
-    $inspect() {return `{MockSub:"${this.name}"}`;}
+    [inspect$]() {return `{MockSub:"${this.name}"}`;}
   }
 
   const publishTH = {

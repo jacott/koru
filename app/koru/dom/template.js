@@ -7,7 +7,7 @@ define(function(require, exports, module) {
 
   const {hasOwn, mergeNoEnum, forEach} = util;
 
-  const {ctx$} = require('koru/symbols');
+  const {ctx$, inspect$} = require('koru/symbols');
 
   const {DOCUMENT_NODE, TEXT_NODE} = document;
   const dragTouchStart$ = Symbol();
@@ -168,7 +168,7 @@ ${ex.message}`});
       return this;
     }
 
-    $inspect() {
+    [inspect$]() {
       return "DomTemplate:" + this.$fullname;
     }
 

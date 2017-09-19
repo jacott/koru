@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   const util = require('./util-base');
 
+  const {inspect$} = require('koru/symbols');
+
   const {hasOwn} = util;
 
   function Constructor() {
@@ -96,7 +98,7 @@ define(function(require, exports, module) {
       },
     });
 
-    Match.prototype.$inspect = Match.prototype.toString;
+    Match.prototype[inspect$] = Match.prototype.toString;
 
     return match;
 

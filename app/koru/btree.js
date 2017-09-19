@@ -1,6 +1,8 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
+  const {inspect$} = require('koru/symbols');
+
   const size$ = Symbol(), memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
@@ -314,7 +316,7 @@ define(function(require, exports, module) {
 
     _display(formatter=n => n) {return display(formatter, this.root)}
 
-    $inspect() {
+    [inspect$]() {
       return `<BTree: ${this.size}>`;
     }
 

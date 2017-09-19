@@ -7,7 +7,7 @@ define(function(require, exports, module) {
   const Pool            = require('../pool-server');
   const util            = require('../util');
 
-  const {private$} = require('koru/symbols');
+  const {private$, inspect$} = require('koru/symbols');
 
   const id$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
@@ -33,7 +33,7 @@ define(function(require, exports, module) {
       this.name = name || this.schemaName;
     }
 
-    $inspect() {
+    [inspect$]() {
       return "Pg:" + this._url;
     }
 

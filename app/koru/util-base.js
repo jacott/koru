@@ -3,6 +3,8 @@ define(function(require, exports, module) {
   const hasOwn = (obj, prop)=>hasOwnProperty.call(obj, prop);
   const qstr = s => JSON.stringify(s).slice(1, -1);
 
+  const {inspect$} = require('koru/symbols');
+
   module.exports = {
     hasOwn,
     idLen: 17,
@@ -75,8 +77,8 @@ define(function(require, exports, module) {
           return o.outerHTML;
         if (o.nodeType === 3)
           return "$TextNode:"+o.textContent;
-        if (o.$inspect)
-          return o.$inspect();
+        if (o[inspect$])
+          return o[inspect$]();
         if (o.constructor === Date) return "<"+o.toISOString()+">";
         if (Array.isArray(o)) {
           if (i)
