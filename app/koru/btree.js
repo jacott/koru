@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  const {inspect$} = require('koru/symbols');
+  const {inspect$, test$} = require('koru/symbols');
 
-  const size$ = Symbol(), memo$ = Symbol();
+  const red$ = Symbol(), up$ = Symbol(), right$ = Symbol(), left$ = Symbol(),
+        size$ = Symbol(), memo$ = Symbol();
 
   const simpleCompare = (a, b) => a == b ? 0 : a < b ? -1 : 1;
   const ident = n => n;
@@ -19,7 +20,7 @@ define(function(require, exports, module) {
         while (node[f1] !== null) node = node[f1];
         return node;
       }
-      for (let n = node.up; n !== null; n = n.up) {
+      for (let n = node[up$]; n !== null; n = n[up$]) {
         if (n[f1] === node) return n;
         node = n;
       }
@@ -27,19 +28,19 @@ define(function(require, exports, module) {
     };
   };
 
-  const nextNode = iterNode('left', 'right');
-  const previousNode = iterNode('right', 'left');
+  const nextNode = iterNode(left$, right$);
+  const previousNode = iterNode(right$, left$);
 
   const addNode = (tree, node) => {
     ++tree[size$];
     if (tree.root === null) {
       tree.root = node;
-      node.red = false;
+      node[red$] = false;
       return node;
     }
     insert(tree.root, tree.compare, node.value, node);
     ic1(node);
-    const g = tree.root.up;
+    const g = tree.root[up$];
     if (g !== null) {
       tree.root = g;
     }
@@ -101,7 +102,7 @@ define(function(require, exports, module) {
         while (node !== null) {
           const cmp = from(node);
           if (cmp === 0) break;
-          const t = cmp < 0 ? node.left : node.right;
+          const t = cmp < 0 ? node[left$] : node[right$];
           if (t !== null)
             node = t;
           else
@@ -109,17 +110,17 @@ define(function(require, exports, module) {
         }
         const cmp = from(node);
         if (cmp*dir > 0) {
-          node = node.up;
+          node = node[up$];
         }
         memo.state = 3;
         return memo.pos = to(node);
       case 3:
         if (state == 3) {
           if (dir == 1) {
-            if (node.right === null) {
+            if (node[right$] === null) {
               let up = null;
-              while ((up = node.up) !== null) {
-                if (up.left === node) {
+              while ((up = node[up$]) !== null) {
+                if (up[left$] === node) {
                   node = up;
                   return memo.pos = to(node);
                 }
@@ -127,12 +128,12 @@ define(function(require, exports, module) {
               }
               return node = null;
             }
-            node = node.right;
+            node = node[right$];
           } else {
-            if (node.left === null) {
+            if (node[left$] === null) {
               let up = null;
-              while ((up = node.up) !== null) {
-                if (up.right === node) {
+              while ((up = node[up$]) !== null) {
+                if (up[right$] === node) {
                   node = up;
                   return memo.pos = to(node);
                 }
@@ -140,17 +141,17 @@ define(function(require, exports, module) {
               }
               return node = null;
             }
-            node = node.left;
+            node = node[left$];
           }
         }
         // fall through
       case 1:
         if (dir == 1) {
-          while (node.left !== null)
-            node = node.left;
+          while (node[left$] !== null)
+            node = node[left$];
         } else {
-          while (node.right !== null)
-            node = node.right;
+          while (node[right$] !== null)
+            node = node[right$];
         }
         memo.state = 3;
         return memo.pos = to(node);
@@ -173,13 +174,13 @@ define(function(require, exports, module) {
     }
 
     add(value) {
-      const node = {value, left: null, right: null, up: null, red: true};
+      const node = {value, [left$]: null, [right$]: null, [up$]: null, [red$]: true};
       return addNode(this, node);
     }
 
     addNode(node) {
-      node.up = node.right = node.left = null;
-      node.red = true;
+      node[up$] = node[right$] = node[left$] = null;
+      node[red$] = true;
       return addNode(this, node);
     }
 
@@ -192,61 +193,62 @@ define(function(require, exports, module) {
       if (n === null) return null;
 
       --this[size$];
-      let p = n.up;
-      let {left, right: child} = n;
+      let p = n[up$];
+      let {[left$]: left, [right$]: child} = n;
+
       if (left !== null && child !== null) {
-        while (child.left !== null) child = child.left;
+        while (child[left$] !== null) child = child[left$];
         // fully swap nodes (rather than just value) because node
         // exposed outside of module
 
         if (p === null)
           root = this.root = child;
-        else if (p.right === n)
-          p.right = child;
+        else if (p[right$] === n)
+          p[right$] = child;
         else
-          p.left = child;
+          p[left$] = child;
 
-        left = n.left;
-        const {right, red} = n;
-        n.red = child.red; child.red = red;
-        const childUp = child.up;
+        left = n[left$];
+        const {[right$]: right, [red$]: red} = n;
+        n[red$] = child[red$]; child[red$] = red;
+        const childUp = child[up$];
 
-        n.left = null; n.right = child.right;
-        n.up = childUp === n ? child : childUp;
+        n[left$] = null; n[right$] = child[right$];
+        n[up$] = childUp === n ? child : childUp;
 
-        child.up = p;
-        child.right = right === child ? n : right;
-        child.left = left === child ? n : left;
-        if (child.left !== null) child.left.up = child;
-        if (child.right !== null) child.right.up = child;
-        if (n.right !== null) n.right.up = n;
-        if (childUp !== n) n.up.left = n;
+        child[up$] = p;
+        child[right$] = right === child ? n : right;
+        child[left$] = left === child ? n : left;
+        if (child[left$] !== null) child[left$][up$] = child;
+        if (child[right$] !== null) child[right$][up$] = child;
+        if (n[right$] !== null) n[right$][up$] = n;
+        if (childUp !== n) n[up$][left$] = n;
 
-        p = n.up; left = null; child = n.right;
+        p = n[up$]; left = null; child = n[right$];
       }
 
       if (child === null) child = left;
       if (child === null) {
         if (p !== null) {
-          n.red || dc1(n);
-          if (root.up !== null) {
-            while (root.up !== null) root = root.up;
+          n[red$] || dc1(n);
+          if (root[up$] !== null) {
+            while (root[up$] !== null) root = root[up$];
             this.root = root;
           }
-          if (p.left === n) p.left = null; else p.right = null;
+          if (p[left$] === n) p[left$] = null; else p[right$] = null;
         } else {
           this.root = null;
         }
         return n;
       }
       if (p !== null) {
-        if (p.left === n) p.left = child; else p.right = child;
+        if (p[left$] === n) p[left$] = child; else p[right$] = child;
       } else {
         this.root = child;
       }
-      child.up = p;
-      if (! n.red)
-        child.red = false;
+      child[up$] = p;
+      if (! n[red$])
+        child[red$] = false;
 
       return n;
     }
@@ -254,14 +256,14 @@ define(function(require, exports, module) {
     get firstNode() {
       let n = this.root;
       if (n === null) return null;
-      while(n.left !== null) n = n.left;
+      while(n[left$] !== null) n = n[left$];
       return n;
     }
 
     get lastNode() {
       let n = this.root;
       if (n === null) return null;
-      while(n.right !== null) n = n.right;
+      while(n[right$] !== null) n = n[right$];
       return n;
     }
 
@@ -274,14 +276,14 @@ define(function(require, exports, module) {
         const cmp = compare(value, n.value);
         if (cmp === 0) return n;
         if (cmp < 0) {
-          if (n.left === null) return n;
-          n = n.left;
+          if (n[left$] === null) return n;
+          n = n[left$];
         } else {
-          if (n.right === null) {
-            n = n.up;
+          if (n[right$] === null) {
+            n = n[up$];
             return n !== null && compare(value, n.value) < 0 ? n : null;
           }
-          n = n.right;
+          n = n[right$];
         }
       }
       return n;
@@ -294,14 +296,14 @@ define(function(require, exports, module) {
         const cmp = compare(value, n.value);
         if (cmp === 0) return n;
         if (cmp < 0) {
-          if (n.left === null) {
-            n = n.up;
+          if (n[left$] === null) {
+            n = n[up$];
             return n !== null && compare(value, n.value) > 0 ? n : null;
           }
-          n = n.left;
+          n = n[left$];
         } else {
-          if (n.right === null) return n;
-          n = n.right;
+          if (n[right$] === null) return n;
+          n = n[right$];
         }
       }
       return n;
@@ -333,16 +335,16 @@ define(function(require, exports, module) {
                 `prev: ${prev && dsp(prev, dv, 3)}\n${this._display(dv)}`;
         ++nodeCount;
         text = 'links invalid';
-        assertTrue(node.up || node === this.root, displayError);
-        assertTrue(node.up == null || node.up.right === node || node.up.left === node, displayError);
+        assertTrue(node[up$] || node === this.root, displayError);
+        assertTrue(node[up$] == null || node[up$][right$] === node || node[up$][left$] === node, displayError);
         text = 'out of order';
         assertTrue(! prev || compare(prev.value, node.value) < 0 , displayError);
         let count = 1;
-        let bc = node.left || node.right ? -1 : 0;
-        for (let p = node; p !== root; p = p.up) {
+        let bc = node[left$] || node[right$] ? -1 : 0;
+        for (let p = node; p !== root; p = p[up$]) {
           ++count;
-          if (p.red) {
-            assertTrue(! p.up.red,
+          if (p[red$]) {
+            assertTrue(! p[up$][red$],
                        dv => `dup red at ${p.value} leaf: ${dsp(node, dv)}\n${this._display(dv)}`);
           } else if (bc >=0) ++bc;
         }
@@ -379,57 +381,57 @@ define(function(require, exports, module) {
 
   function dc1(n) {
     let p = null;
-    while ((p = n.up) !== null) {
+    while ((p = n[up$]) !== null) {
       if (p === null) return;
 
       // dc2(n);
-      let s = n === p.left ? p.right : p.left;
+      let s = n === p[left$] ? p[right$] : p[left$];
 
-      if (s !== null && s.red) {
-        p.red = true;
-        s.red = false;
-        if (n === p.left)
+      if (s !== null && s[red$]) {
+        p[red$] = true;
+        s[red$] = false;
+        if (n === p[left$])
           rotateLeft(p);
         else
           rotateRight(p);
-        s = n === p.left ? p.right : p.left;
+        s = n === p[left$] ? p[right$] : p[left$];
       }
       // dc3(n);
-      let sRed = s !== null && s.red;
-      const slRed = s !== null && s.left !== null && s.left.red;
-      const srRed = s !== null && s.right !== null && s.right.red;
-      if (! p.red && ! sRed && ! slRed && ! srRed) {
-        if (s !== null) s.red = true;
+      let sRed = s !== null && s[red$];
+      const slRed = s !== null && s[left$] !== null && s[left$][red$];
+      const srRed = s !== null && s[right$] !== null && s[right$][red$];
+      if (! p[red$] && ! sRed && ! slRed && ! srRed) {
+        if (s !== null) s[red$] = true;
         n = p;
       } else {
         // dc4(n);
-        if (p.red && ! sRed && ! slRed && ! srRed) {
-          if (s !== null) s.red = true;
-          p.red = false;
+        if (p[red$] && ! sRed && ! slRed && ! srRed) {
+          if (s !== null) s[red$] = true;
+          p[red$] = false;
         } else {
           // dc5(n);
           if  (! sRed) {
-            if (n === p.left && slRed && ! srRed) {
-              s.red = true;
-              s.left.red = false;
+            if (n === p[left$] && slRed && ! srRed) {
+              s[red$] = true;
+              s[left$][red$] = false;
               rotateRight(s);
-            } else if (n === p.right && ! slRed && srRed) {
-              s.red = true;
-              s.right.red = false;
+            } else if (n === p[right$] && ! slRed && srRed) {
+              s[red$] = true;
+              s[right$][red$] = false;
               rotateLeft(s);
             }
-            s = n === p.left ? p.right : p.left;
-            sRed = s !== null && s.red;
+            s = n === p[left$] ? p[right$] : p[left$];
+            sRed = s !== null && s[red$];
           }
           // dc6(n);
-          s.red = p.red;
-          p.red = false;
+          s[red$] = p[red$];
+          p[red$] = false;
 
-          if (n === p.left) {
-            s.right.red = false;
+          if (n === p[left$]) {
+            s[right$][red$] = false;
             rotateLeft(p);
           } else {
-            s.left.red = false;
+            s[left$][red$] = false;
             rotateRight(p);
           }
         }
@@ -440,11 +442,11 @@ define(function(require, exports, module) {
 
   function insert(parent, compare, value, node) {
     while (parent !== null) {
-      const field = compare(value, parent.value) < 0 ? 'left' : 'right';
+      const field = compare(value, parent.value) < 0 ? left$ : right$;
       const fv = parent[field];
       if (fv === null) {
         parent[field] = node;
-        node.up = parent;
+        node[up$] = parent;
         break;
       }
       parent = fv;
@@ -455,40 +457,40 @@ define(function(require, exports, module) {
     while (n !== null) {
       const cmp = compare(value, n.value);
       if (cmp === 0) return n;
-      n = cmp < 0 ? n.left : n.right;
+      n = cmp < 0 ? n[left$] : n[right$];
     }
     return null;
   }
 
   function ic1(n) {
-    while (n.up !== null) {
+    while (n[up$] !== null) {
       // ic2
-      if (! n.up.red) return;
+      if (! n[up$][red$]) return;
       // ic3
 
-      const p = n.up;
-      const g = p === null ? null : p.up;
-      const u = g !== null ? n.up === g.left ? g.right : g.left : null;
-      if (u !== null && u.red) {
-        n.up.red = false;
-        u.red = false;
-        g.red = true;
+      const p = n[up$];
+      const g = p === null ? null : p[up$];
+      const u = g !== null ? n[up$] === g[left$] ? g[right$] : g[left$] : null;
+      if (u !== null && u[red$]) {
+        n[up$][red$] = false;
+        u[red$] = false;
+        g[red$] = true;
         n = g;
       } else { // ic4
-        if (n === p.right && p === g.left) {
+        if (n === p[right$] && p === g[left$]) {
           rotateLeft(p);
-          n = n.left;
+          n = n[left$];
 
-        } else if (n === p.left && p === g.right) {
+        } else if (n === p[left$] && p === g[right$]) {
           rotateRight(p);
-          n = n.right;
+          n = n[right$];
         }
 
         { // ic5
-          const p = n.up, g = p.up;
-          p.red = false;
-          g.red = true;
-          if (n === p.left)
+          const p = n[up$], g = p[up$];
+          p[red$] = false;
+          g[red$] = true;
+          if (n === p[left$])
             rotateRight(g);
           else
             rotateLeft(g);
@@ -497,37 +499,37 @@ define(function(require, exports, module) {
         return;
       }
     }
-    n.red = false;
+    n[red$] = false;
   }
 
   function rotateLeft(n) {
-    const p = n.up;
-    const r = n.right;
-    const rl = r.left;
-    n.right = rl; if (rl !== null) rl.up = n;
+    const p = n[up$];
+    const r = n[right$];
+    const rl = r[left$];
+    n[right$] = rl; if (rl !== null) rl[up$] = n;
     if (p !== null) {
-      if (p.left === n)
-        p.left = r;
+      if (p[left$] === n)
+        p[left$] = r;
       else
-        p.right = r;
+        p[right$] = r;
     }
-    r.up = p;
-    r.left = n; n.up = r;
+    r[up$] = p;
+    r[left$] = n; n[up$] = r;
   }
 
   function rotateRight(n) {
-    const p = n.up;
-    const l = n.left;
-    const lr = l.right;
-    n.left = lr; if (lr !== null) lr.up = n;
+    const p = n[up$];
+    const l = n[left$];
+    const lr = l[right$];
+    n[left$] = lr; if (lr !== null) lr[up$] = n;
     if (p !== null) {
-      if (p.left === n)
-        p.left = l;
+      if (p[left$] === n)
+        p[left$] = l;
       else
-        p.right = l;
+        p[right$] = l;
     }
-    l.up = p;
-    l.right = n; n.up = l;
+    l[up$] = p;
+    l[right$] = n; n[up$] = l;
   }
 
   function pad(level, pad) {
@@ -538,16 +540,16 @@ define(function(require, exports, module) {
   function display(formatter, node, level=0, prefix='') {
     if (node === null || level > 10) return '';
     return `
-${pad(level, prefix)}${formatter(node.value)}${node.red ? ' *' : ''}${display(
-formatter, node.left, level+1, 'l')}${display(
-formatter, node.right, level+1, 'r')}`;
+${pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''}${display(
+formatter, node[left$], level+1, 'l')}${display(
+formatter, node[right$], level+1, 'r')}`;
   }
 
   function dsp(node, dv, l=2) {
     if (! node) return 'null';
     return --l == 0 ? `${dv(node.value)}` :
-      `{value: ${dv(node.value)}, up: ${dsp(node.up, dv, l)}, `+
-      `l: ${dsp(node.left, dv, l)}, r: ${dsp(node.right, dv, l)}}`;
+      `{value: ${dv(node.value)}, up: ${dsp(node[up$], dv, l)}, `+
+      `l: ${dsp(node[left$], dv, l)}, r: ${dsp(node[right$], dv, l)}}`;
   }
 
   function assertTrue(truthy, displayError) {
@@ -557,6 +559,8 @@ formatter, node.right, level+1, 'r')}`;
     err.name = 'TreeError';
     throw err;
   }
+
+  BTree[test$] = {left$, right$, up$, red$};
 
   return BTree;
 });

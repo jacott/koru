@@ -2,8 +2,12 @@ define(function (require, exports, module) {
   const koru = require('koru');
   const TH   = require('koru/test-helper');
 
+  const {test$} = require('koru/symbols');
+
   const BTree = require('koru/btree');
-  var v;
+  const {left$, right$, up$, red$} = BTree[test$];
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -189,14 +193,14 @@ r            1000
       assertTree(tree, `
 123
 `);
-      assert.same(tree.root.up, null);
+      assert.same(tree.root[up$], null);
       const n456 = tree.add(456);
-      assert.same(n456.up, n123);
+      assert.same(n456[up$], n123);
       assertTree(tree, `
 123
 r  456 *
 `);
-      assert.same(tree.root.up, null);
+      assert.same(tree.root[up$], null);
       tree.add(13);
       assertTree(tree, `
 123
@@ -440,7 +444,7 @@ r    99 *
 r  200
 r    250 *
 `);
-        assert.same(n.up.value, 50);
+        assert.same(n[up$].value, 50);
       },
 
       "test deleteNode with two-children and right has left child"() {
@@ -536,8 +540,8 @@ r  200 *
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200]);
         const p = tree.root;
-        p.left.red = false;
-        p.right.red = false;
+        p[left$][red$] = false;
+        p[right$][red$] = false;
         assertTree(tree, `
 150
 l  100
@@ -595,9 +599,9 @@ l    80 *
       "test dc4 with no sibling"() {
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 210]);
-        const p = tree.root.right;
-        p.red = true;
-        p.right.red = false;
+        const p = tree.root[right$];
+        p[red$] = true;
+        p[right$][red$] = false;
         assertTree(tree, `
 150
 l  100
@@ -616,9 +620,9 @@ r  200
       "test dc3: P, S, Sl and Sr are black"() {
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 220, 210]);
-        const p = tree.root.right;
-        p.left.red = false;
-        p.right.red = false;
+        const p = tree.root[right$];
+        p[left$][red$] = false;
+        p[right$][red$] = false;
         assertTree(tree, `
 150
 l  100
@@ -682,8 +686,8 @@ r  100
       "test no S"() {
         const tree = new BTree();
         insertNodes(tree, [100, 110]);
-        const n = tree.root.right;
-        n.red = false;
+        const n = tree.root[right$];
+        n[red$] = false;
         assertTree(tree, `
 100
 r  110
@@ -753,10 +757,10 @@ ${exp}
         const level = levelStr.length/2;
         while (level <= cl) {
           --cl;
-          curr = curr.up;
+          curr = curr[up$];
         }
-        const node = {value: +value, left: null, right: null, up: curr, red: star === '*'};
-        curr[left === 'l' ? 'left' : 'right'] = node;
+        const node = {value: +value, [left$]: null, [right$]: null, [up$]: curr, [red$]: star === '*'};
+        curr[left === 'l' ? left$ : right$] = node;
         cl = level;
         curr = node;
       }
