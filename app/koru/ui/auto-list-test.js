@@ -50,24 +50,32 @@ isClient && define(function (require, exports, module) {
       /**
        * Build a new AutoList
        *
-       * @param query A {#koru/model/query} or at least has methods `compare` and `forEach`. The
-       * method `onChange` will be used to auto-update the list if present.
-
        * @param template to render each row
 
        * @param container to render into. Can be a start `Comment` node with symbol `endMarker$`
        * (see {#koru/symbols}) pointing to end `Comment` in which case the rows will be rendered
        * between the comments.
 
-       * @param limit maximum number of elements to show. (see `limit` property)
+       * @param [query] A {#koru/model/query} or at least has methods `compare` and `forEach`. The
+       * method `onChange` will be used to auto-update the list if present.
 
-       * @param compare function to order data. Defaults to `query.compare`
+       * @param [limit] maximum number of elements to show. (see `limit` property)
 
-       * @param compareKeys Array of keys used for ordering data. Defaults to `compare.compareKeys`
+       * @param [compare] function to order data. Defaults to `query.compare` or if no query then
+       * order items are added
 
-       * @param observeUpdates The list can be monitored for changes by passing an `observeUpdates`
-       * function which is called for each change with the arguments `(list, doc, action)`
-       * where:
+       * @param [compareKeys] Array of keys used for ordering data. Defaults to
+       * `compare.compareKeys`
+
+       * @param [observeUpdates] The list can be monitored for changes by passing an
+       * `observeUpdates` function which is called for each change with the arguments `(list, doc,
+       * action)` where:
+
+       * @param [removeElement] Method used to remove an element. Defaults to
+       * {#koru/dom-client.remove}
+
+       * @param [parentCtx] The {#koru/dom/ctx} to use for rendering elements. Defaults to the
+       * current context.
 
        * * `list` is this `AutoList`
 
@@ -92,6 +100,34 @@ isClient && define(function (require, exports, module) {
           assert.dom(':first-child', 'The Eye of the World');
           assert.dom(':last-child', 'The Great Hunt');
         });
+      });
+    },
+
+    "test no query and addOrder"() {
+      const container = Dom.h({});
+      const list = new AutoList({
+        template: {$autoRender(data) {return Dom.h({div: ''+data.n})}},
+        container,
+      });
+
+      const doc1 = {n: 'doc1'};
+      const doc2 = {n: 'doc2'};
+
+      assert.dom(container, ()=>{
+        refute.dom(':first-child');
+        list.updateEntry(doc2);
+        list.updateEntry(doc1);
+        assert.same(list.thisNode(doc1).value, 2);
+        assert.same(list.thisNode(doc2).value, 1);
+        assert.dom(':first-child', 'doc2', elm =>{
+          assert.same(elm, list.elm(doc2));
+        });
+        assert.dom(':last-child', 'doc1');
+        list.updateEntry(doc2, 'remove');
+        assert.dom('div', {count: 1});
+        list.updateEntry(doc2);
+        assert.dom(':last-child', 'doc2');
+        assert.same(list.thisNode(doc2).value, 3);
       });
     },
 
@@ -637,6 +673,8 @@ isClient && define(function (require, exports, module) {
 
       Dom.remove(container);
       assert.msg('should delete symbol').equals(Object.getOwnPropertySymbols(person), []);
+      assert.same(container.firstChild, null);
+
       assert.called(v.stop);
       assert.called(list.stop);
       list.stop(); // should be harmless to call again

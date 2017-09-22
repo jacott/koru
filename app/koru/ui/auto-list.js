@@ -8,38 +8,60 @@ define(function(require, exports, module) {
   const {extractKeys} = require('koru/util');
 
   const {private$, endMarker$} = require('koru/symbols');
-  const elm$ = Symbol(), doc$ = Symbol();
+  const elm$ = Symbol(), addOrder$ = Symbol(), doc$ = Symbol();
   const {COMMENT_NODE} = document;
+
+  const addOrder = (pv, obj)=>obj[addOrder$] || (obj[addOrder$] = ++pv.globalAddOrder);
+  const compareAddOrder = (a,b)=>a-b;
+  const addOrderKeys = compareAddOrder.compareKeys = [addOrder$];
 
   class AutoList {
     constructor({
-      query, template, container,
-      limit=Infinity, parentCtx=$.ctx,
-      compare=query.compare,
-      compareKeys=compare.compareKeys || query.compareKeys,
+      template, container,
+      query,
+      limit=Infinity,
+      compare=query ? query.compare : compareAddOrder,
+      compareKeys=compare.compareKeys || (query && query.compareKeys),
       observeUpdates,
+      removeElement=Dom.remove,
+      parentCtx=$.ctx,
     })  {
       let endMarker = null;
       if (container.nodeType === COMMENT_NODE) {
         endMarker = container[endMarker$];
         container = container.parentNode;
       }
+      const onChange = makeOnChange(this);
       const pv = this[private$] = {
-        query, template, container, limit, endMarker, parentCtx,
-        compare, compareKeys,
-        onChange: makeOnChange(this),
+        template, container,
+        query,
+        limit,
+        compare,
+        compareKeys,
+        observeUpdates,
+        removeElement,
+        parentCtx,
+
+        endMarker,
+        onChange,
         entries: new BTree(compare),
         sym$: Symbol(),
-        observer: null,
+        observer: query && (query.onChange == null ? null : query.onChange(onChange)),
         lastVis: null,
-        observeUpdates,
+        globalAddOrder: 0,
       };
-      pv.observer = pv.query.onChange == null ? null : pv.query.onChange(pv.onChange);
 
       const ctx = Dom.ctx(pv.container);
       if (ctx != null) ctx.onDestroy(this);
 
-      query.forEach(doc => {addRow(pv, doc)});
+      query === undefined || query.forEach(doc => {addRow(pv, doc)});
+    }
+
+    thisNode(doc) {return doc[this[private$].sym$]}
+
+    thisElm(doc) {
+      const node = doc[this[private$].sym$];
+      return node == null ? null : node[elm$];
     }
 
     elm(doc, force) {
@@ -47,7 +69,7 @@ define(function(require, exports, module) {
       const pv = this[private$];
       const {entries, sym$} = pv;
       const node = doc[sym$] || entries.findNode(doc);
-      if (node === null) return null;
+      if (node == null) return null;
       const elm = node[elm$];
 
       if (elm !== null || force !== 'render') return elm;
@@ -95,7 +117,7 @@ define(function(require, exports, module) {
         pv.observer = pv.query.onChange == null ? null : pv.query.onChange(pv.onChange);
       }
 
-      pv.query.forEach(doc => {
+      pv.query && pv.query.forEach(doc => {
         const node = doc[sym$];
 
         if (node == null)
@@ -103,7 +125,8 @@ define(function(require, exports, module) {
         else {
           doc[doc$] = undefined;
           oldTree.deleteNode(node);
-          node.value = extractKeys(doc, pv.compareKeys);
+          node.value = pv.compareKeys === addOrderKeys ?
+            addOrder(pv, doc) : extractKeys(doc, pv.compareKeys);
           newTree.addNode(node);
           updateAllTags && myCtx(node[elm$]).updateAllTags();
           insertElm(pv, node);
@@ -113,7 +136,7 @@ define(function(require, exports, module) {
       const cursor = oldTree.cursor();
       for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next()) {
         delete node[doc$][sym$];
-        Dom.remove(node[elm$]);
+        pv.removeElement(node[elm$]);
       }
     }
 
@@ -133,7 +156,8 @@ define(function(require, exports, module) {
         } else {
           action = 'changed';
           if (pv.compare(doc, node.value) != 0) {
-            node.value = extractKeys(doc, pv.compareKeys);
+            node.value = pv.compareKeys === addOrderKeys ?
+              addOrder(pv, doc) : extractKeys(doc, pv.compareKeys);
             moveNode(pv, node);
           }
           node[elm$] == null || myCtx(node[elm$]).updateAllTags(doc);
@@ -175,7 +199,7 @@ define(function(require, exports, module) {
 
       lastVis = node;
       while(node = entries.nextNode(node)) {
-        Dom.remove(node[elm$]); node[elm$] = null;
+        pv.removeElement(node[elm$]); node[elm$] = null;
       }
     }
     pv.lastVis === lastVis || (pv.lastVis = lastVis);
@@ -188,28 +212,31 @@ define(function(require, exports, module) {
     }
   };
 
+  const cleanupDoc = (pv, doc)=>{
+    delete doc[pv.sym$];
+    if (pv.compareKeys === addOrderKeys)
+      delete doc[addOrder$];
+  };
+
   const stop = pv=>{
     stopObserver(pv);
-    const {endMarker, entries, sym$} = pv;
+    const {endMarker, entries} = pv;
     if (entries == null) return;
     let cursor = entries.cursor();
-    for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next()) {
-      delete node[doc$][sym$];
-    }
-    if (endMarker == null) {
-      Dom.removeChildren(pv.container);
-    } else {
-      let n = endMarker.previousSibling;
-      while (n != null && n.nodeType !== COMMENT_NODE && n[endMarker$] != endMarker) {
-        const p = n.previousSibling;
-        Dom.remove(n);
-        n = p;
-      }
+    for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next())
+      cleanupDoc(pv, node[doc$]);
+    let n = endMarker == null ? pv.container.lastChild : endMarker.previousSibling;
+    while (n != null && n.nodeType !== COMMENT_NODE &&
+           (endMarker == null || n[endMarker$] != endMarker)) {
+      const p = n.previousSibling;
+      pv.removeElement(n);
+      n = p;
     }
   };
 
   const addRow = (pv, doc)=>{
-    const node = pv.entries.add(extractKeys(doc, pv.compareKeys));
+    const node = pv.entries.add(pv.compareKeys === addOrderKeys ?
+                                addOrder(pv, doc) : extractKeys(doc, pv.compareKeys));
     node[doc$] = doc;
     doc[pv.sym$] = node;
     const elm = checkToRender(pv, node);
@@ -223,11 +250,10 @@ define(function(require, exports, module) {
     const nn = entries.nextNode(node);
 
     if (overLimit > 0) {
-      // checkLimit(pv);
       if (nn === null || nn[elm$] === null)
         return node[elm$] = null;
       const {lastVis} = pv;
-      Dom.remove(lastVis[elm$]); lastVis[elm$] = null;
+      pv.removeElement(lastVis[elm$]); lastVis[elm$] = null;
       pv.lastVis = entries.previousNode(lastVis);
 
     } else if (overLimit == 0) {
@@ -243,10 +269,10 @@ define(function(require, exports, module) {
     const {sym$} = pv;
     const node = doc[sym$] || pv.entries.findNode(doc);
     if (node !== null) {
-      delete node[doc$][sym$];
+      cleanupDoc(pv, node[doc$]);
       checkLimitBeforeRemove(pv, node);
       pv.entries.deleteNode(node);
-      pv.removeElm(node[elm$]); node[elm$] = null;
+      pv.removeElement(node[elm$]); node[elm$] = null;
     }
   };
 
@@ -292,7 +318,7 @@ define(function(require, exports, module) {
         if (nn !== null && nn[elm$] !== null) {
           /** to visible **/
           renderNode(pv, node);
-          Dom.remove(lastVis[elm$]); lastVis[elm$] = null;
+          pv.removeElement(lastVis[elm$]); lastVis[elm$] = null;
           pv.lastVis = entries.previousNode(lastVis);
         } /** else to hidden requires nothing **/
       } else {
@@ -301,7 +327,7 @@ define(function(require, exports, module) {
           /** to not visible (unless === lastFromVis) **/
           lastVis = pv.lastVis = node === lastFromVis ? fromNode : entries.nextNode(lastVis);
           if (node !== lastVis) {
-            Dom.remove(node[elm$]); node[elm$] = null;
+            pv.removeElement(node[elm$]); node[elm$] = null;
 
             lastVis === null || renderNode(pv, lastVis);
           }
@@ -314,6 +340,8 @@ define(function(require, exports, module) {
     }
     node[elm$] === null || insertElm(pv, node);
   };
+
+  AutoList.elm$ = elm$;
 
   return AutoList;
 });
