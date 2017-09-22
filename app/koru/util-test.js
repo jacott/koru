@@ -560,6 +560,21 @@ define(function (require, exports, module) {
       assert.same(dest.a, 'aa');
     },
 
+    "test createDictionary"() {
+      /**
+       * Create an object that's hints to VM that it will be used in dictionary mode rahter than
+       * class mode.
+
+       * @return a new object with no prototype
+       **/
+      api.method('createDictionary');
+
+      const dict = util.createDictionary();
+      assert.same(Object.getPrototypeOf(dict), null);
+      assert(util.isObjEmpty(dict));
+      assert(dict && typeof dict === 'object');
+    },
+
     "test shallowCopy"() {
       assert.same(util.shallowCopy(1), 1);
       assert.same(util.shallowCopy(true), true);

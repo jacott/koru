@@ -630,6 +630,12 @@ define(function(require, exports, module) {
       return util.merge(Object.create(source), attributes);
     },
 
+    createDictionary() {
+      const dict = Object.create(null);
+      dict[';123abc'] = undefined; delete dict[';123abc'];
+      return dict;
+    },
+
     /**
      * Do a shallow copy of a type
      */
