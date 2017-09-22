@@ -11,8 +11,7 @@ define(function (require, exports, module) {
       this.details = details;
     }
   }
-  KoruError.name = 'KoruError';
-  KoruError.prototype.name = 'KoruError';
+  KoruError.name = KoruError.prototype.name = 'KoruError';
 
   /**
    * Map of module dependencies. Entries list what to unload when

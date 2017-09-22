@@ -11,6 +11,11 @@ define(function(require, exports, module) {
 
   let __elidePoint;
 
+  class AssertionError extends Error {
+  }
+  AssertionError.name = AssertionError.prototype.name = 'AssertionError';
+  this.AssertionError = AssertionError;
+
   function assert(truth, msg) {
     ++geddon.assertCount;
     let {__msg} = geddon;
@@ -70,16 +75,14 @@ define(function(require, exports, module) {
       } else {
         ex.stack = __elidePoint.stack.split("\n").slice(2).join("\n");
       }
+      throw ex;
     } else {
-      ex = new Error(message);
+      throw new AssertionError(message);
     }
-    ex.name = "AssertionError";
-
-    throw ex;
   };
 
   function getElideFromStack() {
-    geddon.__elidePoint = geddon.__elidePoint || new Error('');
+    geddon.__elidePoint = geddon.__elidePoint || new AssertionError('');
     return this;
   }
 

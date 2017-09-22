@@ -9,6 +9,8 @@ define(function(require, exports, module) {
 
   const Stubber = exports;
 
+  const {AssertionError} = this;
+
   const yields$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
         returns$ = Symbol(), id$ = Symbol(),
         replacement$ = Symbol();
@@ -127,21 +129,23 @@ define(function(require, exports, module) {
       const {firstCall} = this;
       const args = this.firstCall === undefined ? undefined : firstCall.args;
       if (args === undefined)
-        throw AssertionError(new Error("Can't yield; stub has not been called"));
+        throw new AssertionError("Can't yield; stub has not been called");
 
       return yieldCall(args, params);
     },
 
     yieldAndReset(...params) {
-      const ans = this.yield(...params);
+      const args = this.firstCall === undefined ? undefined : this.firstCall.args;
+      if (args === undefined)
+        throw new AssertionError("Can't yield; stub has not been called");
       this.reset();
-      return ans;
+      return yieldCall(args, params);
     },
 
     yieldAll(...params) {
       const {calls} = this;
       if (calls === undefined)
-        throw AssertionError(new Error("Can't yield; stub has not been called"));
+        throw new AssertionError("Can't yield; stub has not been called");
       const {length} = calls;
       for(let i = 0; i < length; ++i) {
         calls[i].yield(...params);
@@ -253,7 +257,7 @@ define(function(require, exports, module) {
         return arg.apply(null, callParams);
       }
     }
-    throw AssertionError(new Error("Can't yield; no function in arguments"));
+    throw new AssertionError("Can't yield; no function in arguments");
   };
 
   const notifyListeners = (proxy, call, thisValue, args) => {
@@ -294,36 +298,31 @@ define(function(require, exports, module) {
     return result;
   };
 
-  const AssertionError = (ex) => {
-    ex.name = 'AssertionError';
-    return ex;
-  };
-
   Stubber.stub = (object, property, repFunc) => {
     let func, desc, orig;
     if (repFunc !== undefined && typeof repFunc !== 'function')
-      throw AssertionError(new Error("Third argument to stub must be a function if supplied"));
+      throw new AssertionError("Third argument to stub must be a function if supplied");
     if (object != null && typeof object !== 'string' && ! (
       typeof object === 'function' && property === undefined &&
         repFunc === undefined)) {
         if (typeof property !== 'string')
-          throw AssertionError(new Error(
-            `Invalid stub call: ${inspect(property)} is not a string`));
+          throw new AssertionError(
+            `Invalid stub call: ${inspect(property)} is not a string`);
         if (! (property in object))
-          throw AssertionError(new Error(
-            `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`));
+          throw new AssertionError(
+            `Invalid stub call: ${inspect(property)} does not exist in ${inspect(object, 1)}`);
 
         desc = Object.getOwnPropertyDescriptor(object, property);
         orig = desc !== undefined ? desc.value : object[property];
         if (orig !== undefined && typeof orig.restore === 'function')
-          throw AssertionError(new Error(`Already stubbed ${property}`));
+          throw new AssertionError(`Already stubbed ${property}`);
         if (typeof orig === 'function') {
           func = stubFunction(orig, stubProto);
           func[replacement$] = repFunc;
           if (repFunc !== undefined) func[replacement$] = repFunc;
         } else {
           if (repFunc !== undefined) {
-            throw AssertionError(new Error("Attempt to stub non function with a function"));
+            throw new AssertionError("Attempt to stub non function with a function");
           }
 
           func = Object.create(stubProto);
@@ -346,7 +345,7 @@ define(function(require, exports, module) {
 
   Stubber.spy = (object, property, func) => {
     if (func !== undefined && typeof func !== 'function')
-      throw AssertionError(new Error("third argument to spy must be a function or null"));
+      throw new AssertionError("third argument to spy must be a function or null");
     if (object != null && typeof property === 'string') {
       const desc = Object.getOwnPropertyDescriptor(object, property);
       const orig = desc === undefined ? object[property] : desc.value;
@@ -360,7 +359,7 @@ define(function(require, exports, module) {
       }
     }
 
-    throw AssertionError(new Error("Attempt to spy on non function"));
+    throw new AssertionError("Attempt to spy on non function");
   };
 
   Stubber.intercept = (object, prop, replacement, restore) => {

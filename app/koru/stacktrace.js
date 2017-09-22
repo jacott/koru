@@ -7,7 +7,7 @@ define(['require', 'koru/util-base'], function (require, util) {
 
   let originRe;
 
-  return function(ex) {
+  return ex =>{
     if (!ex.stack) return;
 
     const lines = ex.stack.split('\n'),
@@ -49,7 +49,8 @@ define(['require', 'koru/util-base'], function (require, util) {
       url = url.replace(originRe, '');
 
       if (! util.FULL_STACK) {
-        if (/(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) && ! /-test.js$/.test(url)) {
+        if (/(?:^|\/)(?:koru\/test\/|yaajs|node_modules\/|\.build\/)/.test(url) &&
+            ! /-test.js$/.test(url)) {
           if (/koru\/test\/client.js$/.test(url))
             break;
           if (notUs) continue;
