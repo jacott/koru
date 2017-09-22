@@ -162,6 +162,11 @@ define(function(require, exports, module) {
     }
   };
 
+  const hasClass = (elm, name)=> elm == null || elm.classList === undefined
+          ? false : elm.classList.contains(name);
+  const addClass = (elm, name)=>{elm == null || elm.classList.add(name)};
+  const removeClass = (elm, name)=>{elm == null || elm.classList.remove(name)};
+
   util.merge(Dom, {
     textToHtml(body, tagName='div') {
       const elm = document.createElement(tagName);
@@ -176,42 +181,23 @@ define(function(require, exports, module) {
       return pre.innerHTML;
     },
 
-    hasClass(elm, name) {
-      if (elm == null) return false;
-      const classList = elm.classList;
-      return classList === undefined ? false : classList.contains(name);
-    },
-
-    addClass(elm, name) {
-      if (elm == null) return;
-      const classList = elm.classList;
-      classList === undefined || elm.classList.add(name);
-    },
+    hasClass, addClass, removeClass,
 
     addClasses(elm, name) {
       if (elm != null) {
-        const classList = elm.classList;
+        const {classList} = elm;
         if (classList === undefined) return;
         for(let i = name.length - 1; i >= 0; --i)
           classList.add(name[i]);
       }
     },
 
-    removeClass(elm, name) {
-      if (elm == null) return;
-      const classList = elm.classList;
-      classList === undefined || elm.classList.remove(name);
-    },
-
-    toggleClass(elm, name) {
-      if (elm == null) return;
-      if (Dom.hasClass(elm, name)) {
-        Dom.removeClass(elm, name);
-        return false;
+    toggleClass: (elm, name)=>{
+      if (elm != null) {
+        const {classList} = elm;
+        return classList.contains(name) ? (classList.remove(name), false)
+          : (classList.add(name), true);
       }
-
-      Dom.addClass(elm, name);
-      return true;
     },
 
     nodeIndex(node) {

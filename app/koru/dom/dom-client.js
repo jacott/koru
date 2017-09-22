@@ -48,22 +48,6 @@ define(function(require, exports, module) {
   Dom.WIDGET_SELECTOR = Dom.INPUT_SELECTOR+',button,a';
   Dom.FOCUS_SELECTOR = '[tabindex="0"],'+Dom.INPUT_SELECTOR;
 
-  if (document.head.classList === undefined) {
-    Dom.hasClass = function (elm, name) {
-      return elm != null && new RegExp("\\b" + name + "\\b").test(elm.className);
-    };
-    Dom.addClass = function (elm, name) {
-      if (elm == null || elm.nodeType !== 1) return;
-      const className = " " + elm.className + " ";
-      elm.className = (className.replace(" " + name + " ", " ") + name).trim();
-    };
-    Dom.removeClass = function (elm, name) {
-      if (elm == null || elm.nodeType !== 1) return;
-      const className = " " + elm.className + " ";
-      elm.className = (className.replace(" " + name + " ", " ")).trim();
-    };
-  }
-
   let supportsPassiveEvents = false;
   window.addEventListener('test', null, Object.defineProperty({}, 'passive', {
     get() { supportsPassiveEvents = true; },
@@ -72,7 +56,7 @@ define(function(require, exports, module) {
   const captureEventOption = supportsPassiveEvents ? {capture: true, passive: false} : true;
 
   util.merge(Dom, {
-    Ctx: Ctx,
+    Ctx,
     current: Ctx.current,
 
     supportsPassiveEvents,
