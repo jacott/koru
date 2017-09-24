@@ -331,21 +331,21 @@ define(function(require, exports, module) {
         if (q.model === undefined) return;
 
         if (q._index !== undefined) {
-          yield *g_findByIndex(q, q._index.idx, q._index.options);
+          yield *g_findByIndex(q, q._index.idx, q._index.options, {_limit});
 
         } else for(const id in q.docs) {
           const doc = q.findOne(id);
-          if ((doc !== undefined && (yield doc) === true) || --_limit == 0)
+          if (doc !== undefined && ((yield doc) === true || --_limit == 0))
             break;
         }
       }
 
-      function *g_findByIndex(query, idx, options) {
+      function *g_findByIndex(query, idx, options, v) {
         if (idx[Symbol.iterator]) {
           if (idx.cursor) idx = idx.cursor(options);
           for (const {_id} of idx) {
             const doc = query.findOne(_id);
-            if (doc !== undefined && (yield doc) === true)
+            if (doc !== undefined && ((yield doc) === true || --v._limit == 0))
               return true;
           }
 
@@ -353,10 +353,10 @@ define(function(require, exports, module) {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc !== undefined && (yield doc) === true)
+            if (doc !== undefined && ((yield doc) === true || --v._limit == 0))
               return true;
 
-          } else if ((yield *g_findByIndex(query, value, options)) === true)
+          } else if ((yield *g_findByIndex(query, value, options, v)) === true)
             return true;
         }
         return false;
@@ -373,24 +373,24 @@ define(function(require, exports, module) {
       function findMatching(func) {
         if (this.model === undefined) return;
 
-        let limit = this._sort == null || this._limit == null ? 0 : this._limit;
+        let _limit = this._sort !== undefined || this._limit == null ? 0 : this._limit;
 
         if (this._index !== undefined) {
-          findByIndex(this, this._index.idx, this._index.options, func);
+          findByIndex(this, this._index.idx, this._index.options, func, {_limit});
 
         } else for(const id in this.docs) {
           const doc = this.findOne(id);
-          if ((doc !== undefined && func(doc) === true) || --limit == 0)
+          if ((doc !== undefined && func(doc) === true) || --_limit == 0)
             break;
         }
       }
 
-      function findByIndex(query, idx, options, func) {
+      function findByIndex(query, idx, options, func, v) {
         if (idx[Symbol.iterator]) {
           if (idx.cursor) idx = idx.cursor(options);
           for (const {_id} of idx) {
             const doc = query.findOne(_id);
-            if (doc !== undefined && func(doc) === true)
+            if (doc !== undefined && (func(doc) === true || --v._limit == 0))
               return true;
           }
 
@@ -398,10 +398,10 @@ define(function(require, exports, module) {
           const value = idx[key];
           if (typeof value === 'string') {
             const doc = query.findOne(value);
-            if (doc !== undefined && func(doc) === true)
+            if (doc !== undefined && (func(doc) === true || --v._limit == 0) )
               return true;
 
-          } else if (findByIndex(query, value, options, func) === true)
+          } else if (findByIndex(query, value, options, func, v) === true)
             return true;
         }
         return false;

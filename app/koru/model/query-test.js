@@ -7,12 +7,13 @@ define(function (require, exports, module) {
   const Model = require('./main');
   const TH    = require('./test-helper');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const Query = require('./query');
-  let v = null, test;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'text', age: 'number', gender: 'text', hobby: 'text'});
@@ -34,6 +35,8 @@ define(function (require, exports, module) {
       v.TestModel.create({name: 'foo2'});
 
       assert.equals(v.TestModel.query.sort('name').limit(2).fetchField('name'), ['bar', 'foo']);
+
+      assert.equals(v.TestModel.query.limit(1).fetchField('name'), [TH.match.string]);
     },
 
     "test un/match array element"() {
@@ -110,6 +113,15 @@ define(function (require, exports, module) {
 
         assert.equals(result.sort(), ['2', '3']);
       },
+
+      "test limit"() {
+        const q = v.TestModel.query.whereNot('_id', '4')
+                .withIndex(v.idx, {gender: 'm'}).limit(2);
+
+        assert.equals(q.fetchIds().length, 2);
+
+        assert.equals(Array.from(q).length, 2);
+      },
     },
 
     "query sorted withIndex and filterTest": {
@@ -144,6 +156,14 @@ define(function (require, exports, module) {
                 .withIndex(v.idx, {gender: 'm', age: 1}).fetchIds();
 
         assert.equals(result, ['2']);
+      },
+
+      "test limit"() {
+        const q = v.TestModel.query.whereNot('_id', '1')
+                .withIndex(v.idx, {gender: 'm'}).limit(2);
+
+        assert.equals(q.fetchIds(), ['2', '5']);
+        assert.equals(Array.from(q).map(d =>d._id), ['2', '5']);
       },
 
       "test only major"() {
@@ -300,41 +320,41 @@ define(function (require, exports, module) {
       const {TestModel} = v;
 
       const onChange = TestModel.onChange;
-      test.intercept(TestModel, 'onChange', func =>{
+      intercept(TestModel, 'onChange', func =>{
         const handle = onChange.call(TestModel, func);
-        v.stopSpy = test.spy(handle, 'stop');
+        v.stopSpy = spy(handle, 'stop');
         return handle;
       });
 
       api.example(_=>{
         const query = TestModel.query.where(doc => doc.name.startsWith('F'));
-        const stub = test.stub();
-        const handle = query.onChange(stub);
+        const oc = stub();
+        const handle = query.onChange(oc);
 
         const fred = TestModel.create({name: 'Fred'});
 
-        assert.calledWith(stub, TH.matchModel(fred), null);
-        stub.reset();
+        assert.calledWith(oc, TH.matchModel(fred), null);
+        oc.reset();
 
         const emma = TestModel.create({name: 'Emma'});
-        refute.called(stub);
+        refute.called(oc);
 
         emma.$update('name', 'Fiona');
-        assert.calledWith(stub, TH.matchModel(emma.$reload()), null);
+        assert.calledWith(oc, TH.matchModel(emma.$reload()), null);
         emma.$update('name', 'Fi');
-        assert.calledWith(stub, TH.matchModel(emma.$reload()), {name: 'Fiona'});
+        assert.calledWith(oc, TH.matchModel(emma.$reload()), {name: 'Fiona'});
 
         fred.$update('name', 'Eric');
-        assert.calledWith(stub, null, TH.matchModel(fred.$reload()));
+        assert.calledWith(oc, null, TH.matchModel(fred.$reload()));
 
 
         /** stop cancels observer **/
         handle.stop();
 
-        stub.reset();
+        oc.reset();
         fred.$update('name', 'Freddy');
 
-        refute.called(stub);
+        refute.called(oc);
       });
 
       assert.called(v.stopSpy);
@@ -381,6 +401,15 @@ define(function (require, exports, module) {
         results.push(doc);
       }
       assert.equals(results.sort(util.compareByField('_id')), [v.bar, v.foo]);
+    },
+
+
+    "test iterate limit"() {
+      v.TestModel.create({_id: 'tre789', name: 'tre', age: 3, gender: 'm'});
+
+      const q = new Query(v.TestModel).limit(2);
+
+      assert.equals(Array.from(q).length, 2);
     },
 
     'test fetchIds'() {
