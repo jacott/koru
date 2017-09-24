@@ -522,7 +522,10 @@ define(function(require, exports, module) {
     toMap (keyName, valueName/*, lists */) {
       const result = {};
       if (arguments.length === 1) {
-        keyName && util.forEach(keyName, item => {result[item] = true});
+        if (Array.isArray(keyName)) {
+          const list = keyName, len = list.length;
+          for(let i = 0; i < len; ++i) result[list[i]] = true;
+        }
         return result;
       }
       let func;
