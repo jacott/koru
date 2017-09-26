@@ -19,6 +19,25 @@ define(function(require, exports, module) {
       return box;
     },
 
+    tPoint(t, ps, curve) {
+      if (curve.length == 2) {
+        return [ps[0]+t*(curve[0]-ps[0]), ps[1]+t*(curve[1]-ps[1])];
+      } else {
+        const r = 1-t, r2 = r*r, r3 = r*r2;
+        const t2 = t*t, t3 = t*t2;
+        return [
+          r3 * ps[0]
+            + 3 * r2 * t * curve[0]
+            + 3 * r * t2 * curve[2]
+            + t3 * curve[4],
+          r3 * ps[1]
+            + 3 * r2 * t * curve[1]
+            + 3 * r * t2 * curve[3]
+            + t3 * curve[5],
+        ];
+      }
+    },
+
     bezierBox: (ps, curve)=>{
       const cs = [curve[0], curve[1]];
       const ce = [curve[2], curve[3]];
