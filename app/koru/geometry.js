@@ -38,6 +38,23 @@ define(function(require, exports, module) {
       }
     },
 
+    splitBezier(t, ps, curve) {
+      const ls = [ps[0], ps[1]], lc = [0,0, 0,0, 0,0];
+      const rs = [0, 0], rc = [0,0, 0,0, curve[4],curve[5]];
+
+      for(let i = 0; i < 2; ++i) {
+        const s1 = ps[i], s2 = curve[i], s3 = curve[i+2], s4 = curve[i+4];
+        const s12 = lc[i] = (s2-s1)*t+s1;
+        const s23 = (s3-s2)*t+s2;
+        const s34 = rc[i+2] = (s4-s3)*t+s3;
+        const s123 = lc[i+2] = (s23-s12)*t+s12;
+        const s234 = rc[i] = (s34-s23)*t+s23;
+        rs[i] = lc[i+4] = (s234-s123)*t+s123;
+      }
+
+      return {left: {ps: ls, curve: lc}, right: {ps: rs, curve: rc}};
+    },
+
     bezierBox: (ps, curve)=>{
       const cs = [curve[0], curve[1]];
       const ce = [curve[2], curve[3]];

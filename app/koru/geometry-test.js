@@ -89,6 +89,27 @@ define(function (require, exports, module) {
                   [25938, 28750]);
     },
 
+    "test splitBezier"() {
+      /**
+       * Split a bezier curve into two at point t.
+
+       * @param t 0 < t < 1 where 0 is start point and 1 is end point
+
+       * @param ps start point
+
+       * @param curve bezier curve (See {##bezierBox})
+
+       * @returns the two curves in form `{left: {ps, curve}, right: {ps, curve}}`
+       **/
+      api.method('splitBezier');
+
+      const {left, right} = sut.splitBezier(
+          .5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]);
+
+      assert.equals(left, {ps: [10000,20000], curve: [2500, 5000, 14375, 17500, 25937.5, 28750]});
+      assert.equals(right, {ps: [25937.5, 28750], curve: [37500, 40000, 48750, 50000, 40000, 30000]});
+    },
+
     "test bezierBox"() {
       /**
        * Calculate the boundry box for a cubic bezier curve
@@ -126,7 +147,11 @@ define(function (require, exports, module) {
       // const width = right-left, height = bottom-top;
       // const sw = 5;
 
-      // const [cx, cy] = sut.tPoint(.95, ps, c);
+      // const t = .1;
+
+      // const [cx, cy] = sut.tPoint(t, ps, c);
+
+      // const {left: c1, right: c2} = sut.splitBezier(t, ps, c);
 
       // Dom.remove(Dom('div'));
       // document.body.appendChild(Dom.h({
@@ -138,6 +163,14 @@ define(function (require, exports, module) {
       //     svg: [{
       //       style: `stroke: #f00; stroke-width:${sw*2};fill:none`,
       //       d: `M${ps[0]},${ps[1]} C${c.join(',')}`,
+      //       path: [],
+      //     }, {
+      //       style: `stroke: #000; stroke-width:1;fill:none`,
+      //       d: `M${c1.ps[0]},${c1.ps[1]} C${c1.curve.join(',')}`,
+      //       path: [],
+      //     }, {
+      //       style: `stroke: #fff; stroke-width:1;fill:none`,
+      //       d: `M${c2.ps[0]},${c2.ps[1]} C${c2.curve.join(',')}`,
       //       path: [],
       //     }, {
       //       style: `fill:blue`,
