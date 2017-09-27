@@ -1,4 +1,5 @@
 define(function (require, exports, module) {
+  const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
   const TH              = require('./test');
 
@@ -87,6 +88,49 @@ define(function (require, exports, module) {
 
       assert.near(sut.tPoint(.5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
                   [25938, 28750]);
+    },
+
+    "test tTangent"() {
+      /**
+       * Calculate the point at t along a line or a bezier curve
+
+       * @param t 0 < t < 1 where 0 is start point and 1 is end point
+
+       * @param ps start point
+
+       * @param curve bezier curve (See {##bezierBox}) or end point for line
+
+       * @returns the tangent normalized vector in form `[xd, yd]`
+       **/
+      api.method('tTangent');
+      assert.near(sut.tTangent(0, [10, 30], [-40, 70]), [-0.7808, 0.6246], 0.0001);
+      const tn = sut.tTangent(.3, [10, 30], [-40, 70]);
+      assert.near(tn, [-0.7808, 0.6246], 0.0001);
+      assert.same(tn[0]*tn[0]+tn[1]*tn[1], 1);
+
+      assert.near(sut.tTangent(0, [0,0], [0,0, 20,25, 20,25]),
+                  sut.tTangent(0, [0,0], [20,25]), 0.00001);
+
+      assert.equals(sut.tTangent(.5, [0,0], [0,0, 20,25, 20,25]),
+                    sut.tTangent(0, [0,0], [20,25]));
+
+      assert.near(sut.tTangent(1, [0,0], [0,0, 20,25, 20,25]),
+                  sut.tTangent(.5, [0,0], [20,25]), 0.00001);
+
+      assert.near(sut.tTangent(.5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
+                  [0.71672, 0.69735], 0.00001);
+
+      // const ps = [300, 130], curve = [400, 200, -40, 200, 100, 300];
+
+      // // addPath({d: ['M', ps, 'C', curve]});
+      // // const t = .99;
+      // // var [cx, cy] = sut.tPoint(t, ps, curve);
+      // // addCircle({cx, cy});
+      // // const [tx, ty] = sut.tTangent(t, ps, curve);
+
+      // // addPath({d: ['M', [cx+tx*50, cy+ty*50], 'L', [cx-tx*50, cy-ty*50]], strokeWidth: 2, color: 'black'});
+
+
     },
 
     "test splitBezier"() {
@@ -181,4 +225,43 @@ define(function (require, exports, module) {
       // }));
     },
   });
+
+  const test$ = Symbol();
+
+  const getSvg = ()=>{
+    let div = Dom('div');
+    if (div != null) {
+      if (div[test$] === TH.test) return div.querySelector('svg');
+      Dom.remove(div);
+    }
+    div = Dom.h({
+      style: `position:absolute;border:1px solid blue;`+
+        `left:20px;top:20px;width:400px;height:400px`,
+      div: {
+        viewBox: `0 0 400 400`,
+        style: `overflow:visible`,
+        svg: []
+      }
+    });
+    div[test$] = TH.test;
+    document.body.appendChild(div);
+    return div.querySelector('svg');
+  };
+
+  const addPath = ({d, color='red', strokeWidth=5})=>{
+    const svg = getSvg();
+    svg.appendChild(Dom.h({
+      path: [],
+      d: typeof d === 'string' ? d : d.join(''),
+      style: `fill:none;stroke:${color};stroke-width:${strokeWidth}`
+    }, "http://www.w3.org/1999/xhtml"));
+  };
+
+  const addCircle = ({r=5, cx, cy, color='blue'})=>{
+    const svg = getSvg();
+    svg.appendChild(Dom.h({
+      circle: [], r, cx,cy, style: `fill:${color}`
+    }, "http://www.w3.org/1999/xhtml"));
+  };
+
 });

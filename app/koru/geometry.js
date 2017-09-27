@@ -21,20 +21,57 @@ define(function(require, exports, module) {
 
     tPoint(t, ps, curve) {
       if (curve.length == 2) {
-        return [ps[0]+t*(curve[0]-ps[0]), ps[1]+t*(curve[1]-ps[1])];
+        const xo = ps[0], yo = ps[1];
+        return [xo+t*(curve[0]-xo), yo+t*(curve[1]-yo)];
       } else {
         const r = 1-t, r2 = r*r, r3 = r*r2;
         const t2 = t*t, t3 = t*t2;
+        // P*(1-t)^3 + Q*3*t(1-t)^2 + 3*R*t^2*(1-t) + S*t^3
         return [
-          r3 * ps[0]
-            + 3 * r2 * t * curve[0]
-            + 3 * r * t2 * curve[2]
-            + t3 * curve[4],
-          r3 * ps[1]
-            + 3 * r2 * t * curve[1]
-            + 3 * r * t2 * curve[3]
-            + t3 * curve[5],
+          r3 * ps[0] +
+            3 * r2 * t * curve[0] +
+            3 * r * t2 * curve[2] +
+            t3 * curve[4],
+          r3 * ps[1] +
+            3 * r2 * t * curve[1] +
+            3 * r * t2 * curve[3] +
+            t3 * curve[5],
         ];
+      }
+    },
+
+    tTangent(t, ps, curve) {
+      if (curve.length == 2) {
+        const x = curve[0]-ps[0], y = curve[1]-ps[1];
+        const norm = Math.sqrt(x*x+y*y);
+        return [x/norm, y/norm];
+      } else {
+        const x0 = ps[0], y0 = ps[1];
+        const x1 = curve[0], y1 = curve[1];
+        const x2 = curve[2], y2 = curve[3];
+        const x3 = curve[4], y3 = curve[5];
+
+        if (t == 0 && x0 == x1 && y0 == y1)
+          t = 0.00001;
+        else if (t == 1 && x2 == x3 && y2 == y3)
+          t = 0.99999;
+
+        const r = 1-t, r2 = r*r;
+        const t2 = t*t;
+
+          // -3 P (1 - t)^2 + Q(3 (1 - t)^2 - 6 (1 - t) t) + R(6 (1 - t) t - 3 t^2) + 3 S t^2
+
+        const x = -3 * x0*r2 +
+                x1*(3*r2 - 6*r*t) +
+                x2*(6*r*t - 3*t2) +
+                x3*3*t2,
+              y = -3 * y0*r2 +
+                y1*(3*r2 - 6*r*t) +
+                y2*(6*r*t - 3*t2) +
+                y3*3*t2;
+
+        const norm = Math.sqrt(x*x+y*y);
+        return [x/norm, y/norm];
       }
     },
 
