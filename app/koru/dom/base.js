@@ -33,6 +33,7 @@ define(function(require, exports, module) {
   };
 
   const SVGNS = Dom.SVGNS = "http://www.w3.org/2000/svg";
+  const XHTMLNS = Dom.XHTMLNS = "http://www.w3.org/1999/xhtml";
 
   const HTML_IGNORE = {id: true, class: true, xmlns: true};
 
@@ -68,7 +69,7 @@ define(function(require, exports, module) {
     let pTag = '', ambig = false;
 
     if (body.xmlns !== undefined)
-      xmlns = body.xmlns === "http://www.w3.org/1999/xhtml" ? undefined : body.xmlns;
+      xmlns = body.xmlns === XHTMLNS ? undefined : body.xmlns;
 
     for(const key in body) {
       if (HTML_IGNORE[key]) continue;
@@ -125,7 +126,7 @@ define(function(require, exports, module) {
     return elm;
   };
 
-  const htmlToJson = (node, ns="http://www.w3.org/1999/xhtml")=>{
+  const htmlToJson = (node, ns=XHTMLNS)=>{
     const {childNodes} = node;
     switch(node.nodeType) {
     case document.TEXT_NODE: return node.textContent;

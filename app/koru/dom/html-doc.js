@@ -8,6 +8,7 @@ define(function(require, exports, module) {
   const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
   const {hasOwn} = util;
+  const {SVGNS} = Dom;
 
   const style$ = Symbol(), attributes$ = Symbol();
   const doc$ = Symbol();
@@ -76,13 +77,13 @@ define(function(require, exports, module) {
     COMMENT_NODE,
     DOCUMENT_FRAGMENT_NODE,
 
-    namespaceURI: "http://www.w3.org/1999/xhtml",
+    namespaceURI: Dom.XHTMLNS,
 
     createElement(tag) {return new Element(tag)},
     createElementNS(xmlns, tag) {
       const canon = Dom.CANONICAL_TAG_NAMES[tag];
       if (canon === undefined) {
-        if (xmlns === "http://www.w3.org/2000/svg")
+        if (xmlns === SVGNS)
           Dom.CANONICAL_TAG_NAMES[tag] = tag;
         else {
           const lc = tag.toLowerCase();

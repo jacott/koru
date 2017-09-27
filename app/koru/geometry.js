@@ -1,5 +1,33 @@
 define(function(require, exports, module) {
 
+  const IGR = 2/(Math.sqrt(5) + 1) ;
+
+  const tPoint = (t, ps, curve)=>{
+    if (curve.length == 2) {
+      const xo = ps[0], yo = ps[1];
+      return [xo+t*(curve[0]-xo), yo+t*(curve[1]-yo)];
+    } else {
+      const r = 1-t, r2 = r*r, r3 = r*r2;
+      const t2 = t*t, t3 = t*t2;
+      // P*(1-t)^3 + Q*3*t(1-t)^2 + 3*R*t^2*(1-t) + S*t^3
+      return [
+        r3 * ps[0] +
+          3 * r2 * t * curve[0] +
+          3 * r * t2 * curve[2] +
+          t3 * curve[4],
+        r3 * ps[1] +
+          3 * r2 * t * curve[1] +
+          3 * r * t2 * curve[3] +
+          t3 * curve[5],
+      ];
+    }
+  };
+
+  const dist2 = (p1, p2)=>{
+    const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+    return dx*dx+dy*dy;
+  };
+
   return {
     combineBox(a, b) {
       a.left = Math.min(a.left, b.left);
@@ -19,26 +47,7 @@ define(function(require, exports, module) {
       return box;
     },
 
-    tPoint(t, ps, curve) {
-      if (curve.length == 2) {
-        const xo = ps[0], yo = ps[1];
-        return [xo+t*(curve[0]-xo), yo+t*(curve[1]-yo)];
-      } else {
-        const r = 1-t, r2 = r*r, r3 = r*r2;
-        const t2 = t*t, t3 = t*t2;
-        // P*(1-t)^3 + Q*3*t(1-t)^2 + 3*R*t^2*(1-t) + S*t^3
-        return [
-          r3 * ps[0] +
-            3 * r2 * t * curve[0] +
-            3 * r * t2 * curve[2] +
-            t3 * curve[4],
-          r3 * ps[1] +
-            3 * r2 * t * curve[1] +
-            3 * r * t2 * curve[3] +
-            t3 * curve[5],
-        ];
-      }
-    },
+    tPoint,
 
     tTangent(t, ps, curve) {
       if (curve.length == 2) {
@@ -75,9 +84,44 @@ define(function(require, exports, module) {
       }
     },
 
+    closestT(point, ps, curve, tol=0.00001) {
+      if (curve.length == 2) {
+        const xo = ps[0], yo = ps[1];
+        const a1 = point[0] - xo, a2 = point[1] - yo;
+        const b1 = curve[0] - xo, b2 = curve[1] - yo;
+        // t = a·b/b·b
+        return Math.min(Math.max(0, (a1*b1+a2*b2)/(b1*b1+b2*b2)), 1);
+      } else {
+        // numerical method using Golden-section-search
+        let sb = .33, mt = 0, md = dist2(point, tPoint(0, ps, curve));
+        for(let sa = 0; sa < 1 ; sa = sb, sb += .33) {
+          let a = sa, b = sb > 1 ? 1 : sb;
+          let c = b - (b - a)*IGR,
+              d = a + (b - a)*IGR;
+          while (Math.abs(c - d) > tol) {
+            if (dist2(point, tPoint(c, ps, curve)) < dist2(point, tPoint(d, ps, curve)))
+              b = d;
+            else
+              a = c;
+
+            c = b - (b - a)*IGR;
+            d = a + (b - a)*IGR;
+          }
+          const t = .5*(b + a);
+          const td = dist2(point, tPoint(t, ps, curve));
+
+          if (td < md) {
+            mt = t; md = td;
+          }
+        }
+
+        return (dist2(point, tPoint(1, ps, curve)) < md) ? 1 : mt;
+      }
+    },
+
     splitBezier(t, ps, curve) {
-      const ls = [ps[0], ps[1]], lc = [0,0, 0,0, 0,0];
-      const rs = [0, 0], rc = [0,0, 0,0, curve[4],curve[5]];
+      const ls = [ps[0], ps[1]], lc = curve;
+      const rc = [0,0, 0,0, curve[4],curve[5]];
 
       for(let i = 0; i < 2; ++i) {
         const s1 = ps[i], s2 = curve[i], s3 = curve[i+2], s4 = curve[i+4];
@@ -86,10 +130,10 @@ define(function(require, exports, module) {
         const s34 = rc[i+2] = (s4-s3)*t+s3;
         const s123 = lc[i+2] = (s23-s12)*t+s12;
         const s234 = rc[i] = (s34-s23)*t+s23;
-        rs[i] = lc[i+4] = (s234-s123)*t+s123;
+        lc[i+4] = (s234-s123)*t+s123;
       }
 
-      return {left: {ps: ls, curve: lc}, right: {ps: rs, curve: rc}};
+      return rc;
     },
 
     bezierBox: (ps, curve)=>{

@@ -4,6 +4,7 @@ define(function (require, exports, module) {
   const TH              = require('./test');
 
   const {stub, spy, onEnd, util} = TH;
+  const {SVGNS} = Dom;
 
   const sut = require('./geometry');
 
@@ -119,23 +120,75 @@ define(function (require, exports, module) {
 
       assert.near(sut.tTangent(.5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
                   [0.71672, 0.69735], 0.00001);
+    },
 
-      // const ps = [300, 130], curve = [400, 200, -40, 200, 100, 300];
+    "test closestT"() {
+      /**
+       * Calculate t along a line or a bezier curve closes to point
 
-      // // addPath({d: ['M', ps, 'C', curve]});
-      // // const t = .99;
-      // // var [cx, cy] = sut.tPoint(t, ps, curve);
-      // // addCircle({cx, cy});
-      // // const [tx, ty] = sut.tTangent(t, ps, curve);
+       * @param point the point to project on to curve
 
-      // // addPath({d: ['M', [cx+tx*50, cy+ty*50], 'L', [cx-tx*50, cy-ty*50]], strokeWidth: 2, color: 'black'});
+       * @param ps start point
+
+       * @param curve bezier curve (See {##bezierBox}) or end point for line
+
+       * @returns t along the curve
+       **/
+      api.method('closestT');
+
+      {
+        /** line **/
+        const ps = [300, 30], curve = [100, 70];
+
+        // addPath({d: ['M', ps, 'L', curve].join('')});
+
+        // const cx = 230, cy = 150;
+
+        // var [ax, ay] = sut.tPoint(sut.closestT([cx, cy], ps, curve), ps, curve);
+        // addCircle({r: 10, cx, cy, color: 'pink'});
+        // addCircle({r: 10, cx: ax, cy: ay});
+
+        assert.equals(sut.closestT(ps, ps, curve), 0);
+        assert.equals(sut.closestT(curve, ps, curve), 1);
+        assert.equals(sut.closestT([-15, 50], ps, curve), 1);
+        assert.near(sut.closestT([230, 150], ps, curve), 0.4519, 0.0001);
 
 
+        assert.equals(sut.closestT([-1000, -3000], ps, curve), 1);
+        assert.equals(sut.closestT([2500, 43], ps, curve), 0);
+      }
+
+      {
+        /** bezier **/
+
+        const ps = [300, 130], curve = [-400, -200, 1140, 500, 200, 100];
+
+        assert.equals(sut.closestT(ps, ps, curve), 0);
+        assert.equals(sut.closestT(curve.slice(4), ps, curve), 1);
+        assert.near(sut.closestT([-15, 50], ps, curve), 0.19700, 0.0001);
+        assert.near(sut.closestT([195, 100], ps, curve), 1, 0.0001);
+        assert.near(sut.closestT([600, 200], ps, curve), 0.74987, 0.0001);
+        assert.near(sut.closestT([-1000, -3000], ps, curve), 0.20027, 0.00001);
+      }
+
+      assert.equals(sut.closestT([-14, 0], [0,0], [0,0, 20,25, 20,25]),
+                    0);
+
+      assert.near(sut.closestT([10, 12.5], [0,0], [0,0, 20,25, 20,25]),
+                  .5, 0.00001);
+
+      assert.equals(sut.closestT([20, 25], [0,0], [0,0, 20,25, 20,25]),
+                    1);
+
+      assert.near(sut.closestT(
+        [25978, 28790], [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
+                  .50059, 0.00001);
     },
 
     "test splitBezier"() {
       /**
-       * Split a bezier curve into two at point t.
+       * Split a bezier curve into two at point t. The passed curve is modified and the second curve
+       * is returned.
 
        * @param t 0 < t < 1 where 0 is start point and 1 is end point
 
@@ -143,15 +196,15 @@ define(function (require, exports, module) {
 
        * @param curve bezier curve (See {##bezierBox})
 
-       * @returns the two curves in form `{left: {ps, curve}, right: {ps, curve}}`
+       * @returns the second curves in form `[cs, ce, pe]`
        **/
       api.method('splitBezier');
 
-      const {left, right} = sut.splitBezier(
-          .5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]);
+      const curve1 = [-5000,-10000, 57500,70000, 40000,30000];
+      const curve2 = sut.splitBezier(.5, [10000,20000], curve1);
 
-      assert.equals(left, {ps: [10000,20000], curve: [2500, 5000, 14375, 17500, 25937.5, 28750]});
-      assert.equals(right, {ps: [25937.5, 28750], curve: [37500, 40000, 48750, 50000, 40000, 30000]});
+      assert.equals(curve1, [2500, 5000, 14375, 17500, 25937.5, 28750]);
+      assert.equals(curve2, [37500, 40000, 48750, 50000, 40000, 30000]);
     },
 
     "test bezierBox"() {
@@ -181,7 +234,7 @@ define(function (require, exports, module) {
                     {left: -20, top: -25, right: 0, bottom: 0});
 
       assert.near(sut.bezierBox([10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
-                    {left: 7653, top: 13101, right: 43120, bottom: 41454});
+                  {left: 7653, top: 13101, right: 43120, bottom: 41454});
 
 
       // // show visually
@@ -224,6 +277,46 @@ define(function (require, exports, module) {
       //   }
       // }));
     },
+
+    // "test draw"() {
+    //   //const ps = [400, 330], curve = [-200, 100, 700, 100, 400, 330];
+    //   const ps = [300, 130], curve = [-400, -200, 1140, 500, 200, 100];
+
+    //   addPath({d: ['M', ps, 'C', curve]});
+
+    //   const blue = addCircle({});
+
+
+    //   const path = addPath({strokeWidth: 2, color: 'black'});
+
+    //   const point = [100, 260];
+
+    //   const pink = addCircle({cx: point[0], cy: point[1], color: 'pink'});
+
+    //   const drawt = (t)=>{
+    //     var [cx, cy] = sut.tPoint(t, ps, curve);
+    //     var [tx, ty] = sut.tTangent(t, ps, curve);
+    //     let d = ['M', [cx+tx*50, cy+ty*50], 'L', [cx-tx*50, cy-ty*50]].join('');
+
+    //     pink.setAttribute('cx', point[0]);
+    //     pink.setAttribute('cy', point[1]);
+
+    //     blue.setAttribute('cx', cx);
+    //     blue.setAttribute('cy', cy);
+    //     path.setAttribute('d', d);
+    //   };
+
+    //   drawt(sut.closestT(point, ps, curve, 0.00001));
+
+
+    //   getSvg().addEventListener('pointermove', ev=>{
+    //     point[0] = ev.clientX - 20;
+    //     point[1] = ev.clientY - 20;
+    //     drawt(sut.closestT(point, ps, curve, 0.00001));
+    //     //   ip = sut.closestT(point, ps, curve);
+    //     //   drawt(t += ev.which == 66 ? -.01 : 0.01);
+    //   });
+    // },
   });
 
   const test$ = Symbol();
@@ -236,9 +329,9 @@ define(function (require, exports, module) {
     }
     div = Dom.h({
       style: `position:absolute;border:1px solid blue;`+
-        `left:20px;top:20px;width:400px;height:400px`,
+        `left:20px;top:20px;width:600px;height:600px`,
       div: {
-        viewBox: `0 0 400 400`,
+        viewBox: `0 0 600 600`,
         style: `overflow:visible`,
         svg: []
       }
@@ -248,20 +341,24 @@ define(function (require, exports, module) {
     return div.querySelector('svg');
   };
 
-  const addPath = ({d, color='red', strokeWidth=5})=>{
+  const addPath = ({d='', color='red', strokeWidth=5})=>{
     const svg = getSvg();
-    svg.appendChild(Dom.h({
+    const shape = Dom.h({
       path: [],
       d: typeof d === 'string' ? d : d.join(''),
       style: `fill:none;stroke:${color};stroke-width:${strokeWidth}`
-    }, "http://www.w3.org/1999/xhtml"));
+    }, SVGNS);
+    svg.appendChild(shape);
+    return shape;
   };
 
-  const addCircle = ({r=5, cx, cy, color='blue'})=>{
+  const addCircle = ({r=5, cx=0, cy=0, color='blue'})=>{
     const svg = getSvg();
-    svg.appendChild(Dom.h({
+    const shape = Dom.h({
       circle: [], r, cx,cy, style: `fill:${color}`
-    }, "http://www.w3.org/1999/xhtml"));
+    }, SVGNS);
+    svg.appendChild(shape);
+    return shape;
   };
 
 });

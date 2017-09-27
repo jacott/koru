@@ -6,6 +6,7 @@ define(function(require, exports, module) {
   const Dom         = require('./base');
 
   const {hasOwn, mergeNoEnum, forEach} = util;
+  const {SVGNS, XHTMLNS} = Dom;
 
   const {ctx$, inspect$} = require('koru/symbols');
 
@@ -13,7 +14,6 @@ define(function(require, exports, module) {
   const dragTouchStart$ = Symbol();
 
   let currentEvent;
-  const {SVGNS} = Dom;
 
   class DomTemplate {
     constructor(name, parent, blueprint) {
@@ -410,7 +410,7 @@ ${ex.message}`});
         const {name, attrs, children} = node;
         if (node.ns !== undefined) {
           ns = node.ns;
-          if (ns === 'http://www.w3.org/1999/xhtml')
+          if (ns === XHTMLNS)
             ns = undefined;
         }
         const elm = ns === undefined ? (
