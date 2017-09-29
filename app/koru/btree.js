@@ -173,6 +173,11 @@ define(function(require, exports, module) {
       return new BTreeCursor(this, opts);
     }
 
+    find(value) {
+      const node = this.findNode(value);
+      return node == null ? undefined : node.value;
+    }
+
     add(value) {
       const node = {value, [left$]: null, [right$]: null, [up$]: null, [red$]: true};
       return addNode(this, node);
