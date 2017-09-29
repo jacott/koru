@@ -189,15 +189,15 @@ define(function(require, exports, module) {
       return this;
     },
 
-    pointerDownUp(node, args) {
+    pointerDownUp(node, args={pointerId: 1}) {
       if (typeof node === 'string') {
         if (typeof args === 'string') {
-          assert.elideFromStack.dom(node, args, function () {node = this});
+          assert.elideFromStack.dom(node, args, elm=>{node = elm});
           TH.trigger(node, 'pointerdown');
           TH.trigger(node, 'pointerup');
           return;
         }
-        assert.elideFromStack.dom(node, function () {node = this});
+        assert.elideFromStack.dom(node, elm=>{node = elm});
       }
       TH.trigger(node, 'pointerdown', args);
       TH.trigger(node, 'pointerup', args);

@@ -17,6 +17,8 @@ define(function(require, exports, module) {
     return tm[0]*1000 + 1e-6 *tm[1];
   }};
 
+  // assert.dom
+  let selectNode = null;
 
   geddon.assert.benchMark = ({subject, duration=1000, control=empty})=>{
     control();
@@ -279,25 +281,28 @@ define(function(require, exports, module) {
 
   ga.add("className", {
     assert (element, className) {
+      if (typeof element === 'string' && arguments.length == 1 && selectNode != null) {
+        className = element;
+        element = selectNode[0];
+      }
       if (typeof element.className == "undefined") {
         return geddon.fail(format("{1} Expected object to have className property", className));
       }
-
+      this.expected = className;
       const expected = typeof className == "string" ? className.split(" ") : className;
-      const actual = element.className.split(" ");
+      const actual = element.classList;
 
-      this.names = element.className;
-
-      for (var i = 0, l = expected.length; i < l; i++) {
-        if (actual.indexOf(expected[i]) < 0) {
+      for (let i = 0, l = expected.length; i < l; i++) {
+        if (! actual.contains(expected[i])) {
+          this.names = actual;
           return false;
         }
       }
 
       return true;
     },
-    assertMessage: "Expected object's className to include {i1} but was {i$names}",
-    refuteMessage: "Expected object's className not to include {i1}",
+    assertMessage: "Expected object's className to include {$expected} but was {$names}",
+    refuteMessage: "Expected object's className not to include {$expected}",
   });
 
   ga.add('sameHtml', {
@@ -397,10 +402,8 @@ define(function(require, exports, module) {
     message: "{$field} {$actual} to be near {$expected}{$unit} by delta {$delta}",
   });
 
-  // assert.dom
-  (function () {
-    let selectNode = null;
 
+  {
     ga.add('domParent', {
       assert (elm, options, body /* arguments */) {
         if (! selectNode)
@@ -596,7 +599,7 @@ define(function(require, exports, module) {
         return !!(elm && elm.length != 0);
       }
     }
-  })();
+  };
 
   called('');
   called('Once');

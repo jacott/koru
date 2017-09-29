@@ -309,9 +309,8 @@ define(function(require, exports, module) {
         if (! (key in to)) diff[key] = null;
       }
       for (const key in to) {
-        const orig = from[key];
         const value = to[key];
-        if (! deepEqual(orig, value))
+        if (! deepEqual(from[key], value))
           diff[key] = value;
       }
       return isObjEmpty(diff) ? undefined : diff;
