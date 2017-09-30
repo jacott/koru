@@ -48,7 +48,8 @@ define(function(require, exports, module) {
         for(let i = 0; i < attrEvals.length; ++i) {
           const node = attrEvals[i];
           currentElement = node[0];
-          const value = (getValue(data, node[2], node[3])||'').toString();
+          const raw = getValue(data, node[2], node[3]);
+          const value = (raw === 0 ? '0' : raw ||'').toString();
           const name = node[1];
           if (name != null && currentElement.getAttribute(name) !== value) {
             if (name === 'xlink:href')

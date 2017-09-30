@@ -1022,6 +1022,13 @@ isClient && define(function (require, exports, module) {
           assert.same(elm.getAttribute('data-id'), '123');
 
           assert.same(elm.getAttribute('draggable'), 'true');
+
+          const ctx = Dom.myCtx(elm);
+          ctx.data.user._id = 0;
+          ctx.updateAllTags();
+
+          assert.same(elm.getAttribute('data-id'), '0');
+
         });
       },
 
