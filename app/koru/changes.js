@@ -325,6 +325,52 @@ define(function(require, exports, module) {
     return to;
   };
 
+  const nestedDiff = (from, to, depth=0)=> _nestedDiff([], '', from, to, depth)[1];
+
+  const _nestedDiff = (ans, field, from, to, depth)=>{
+    const ft = typeof from, tt = typeof to;
+    if (ft === 'string' && tt === 'string') {
+      ans.push(field+'.$partial', ['$patch', diffSeq(from, to)]); return ans;
+    }
+    if ((from != null && to != null &&
+        (ft !== 'object' || tt !== 'object' ||
+         to.constructor !== from.constructor)) ||
+        from == null && to == null) {
+      ans.push(field, to); return ans;
+    }
+
+    switch((from == null ? to : from).constructor) {
+    case Object: {
+      if (from === to) return ans;
+      if (from == null) from = {};
+      else if (to == null) to = {};
+      const partial = [];
+      for (const key in from) {
+        if (! (key in to)) partial.push(key, null);
+      }
+      for (const key in to) {
+        const old = from[key], value = to[key];
+        if (! deepEqual(old, value)) {
+          if (depth == 0) partial.push(key, value);
+          else {
+            _nestedDiff(partial, key, old, value, depth-1);
+          }
+        }
+      }
+      if (partial.length !== 0) ans.push(field+'.$partial', partial);
+      return ans;
+    } break;
+    case Array: {
+      if (from === to) return [];
+      if (from == null) from = [];
+      else if (to == null) to = [];
+      ans.push(field+'.$partial', ['$patch', diffSeq(from, to, deepEqual)]); return ans;
+    } break;
+    }
+    ans.push(field, to);
+    return ans;
+  };
+
   const has = (undo, field)=>{
     return undo == null ? false :
       hasOwn(undo, field) || (
@@ -523,6 +569,7 @@ define(function(require, exports, module) {
 
     has,
     diff,
+    nestedDiff,
     fieldDiff,
     fromTo,
     diffSeq,

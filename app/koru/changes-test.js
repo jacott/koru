@@ -4,6 +4,8 @@ define(function (require, exports, module) {
 
   const sut = require('./changes');
 
+  const {deepCopy} = util;
+
   var v = null;
 
   TH.testCase(module, {
@@ -338,7 +340,7 @@ define(function (require, exports, module) {
             3, 0, "_",
             -4, 2, "-ve delta. ", // -ve deltas are always from end of content
           ]];
-           const undo = [];
+          const undo = [];
           sut.applyPartial(attrs, 'name', changes, undo);
           assert.equals(attrs, {name: 'ori_g con-ve delta. nt'});
           assert.equals(undo, ['$patch', [
@@ -349,7 +351,7 @@ define(function (require, exports, module) {
           sut.applyPartial(attrs, 'name', undo, undo2);
           assert.equals(attrs, {name: 'orig content'});
           assert.equals(undo2, ['$patch', [
-             3, 0, "_",
+            3, 0, "_",
             -4, 2, "-ve delta. ",
           ]]);
         },
@@ -479,6 +481,63 @@ define(function (require, exports, module) {
         },
       },
 
+      "test nestedDiff"() {
+        /**
+         * Create diff in partial format to the specified depth.
+         *
+         * @param was the previous value of the object
+
+         * @param now the current value of the object
+
+         * @param depth How deep to recurse subfields defaults to 0
+
+         * @return diff in partial format
+         **/
+
+        const was = {level1: {level2: {iLike: 'I like three', numbers: [2, 9, 11]}}};
+        const now = deepCopy(was);
+        now.level1.level2.iLike = 'I like the rimu tree';
+        now.level1.level2.iAlsoLike = 'Tuis';
+        let changes = sut.nestedDiff(was, now, 5);
+
+        /** depth 5 **/
+        assert.equals(changes, [
+          'level1.$partial', [
+            'level2.$partial', [
+              'iLike.$partial', ['$patch', [9, 0, 'e rimu t']],
+              'iAlsoLike', 'Tuis'
+            ]]]);
+
+        const wasCopy = deepCopy(was);
+        sut.applyAll({likes: wasCopy},  {$partial: {likes: changes}});
+        assert.equals(wasCopy, now);
+
+        /** depth 2 **/
+        assert.equals(sut.nestedDiff(was, now, 2), [
+          'level1.$partial', ['level2.$partial', [
+            'iLike', 'I like the rimu tree', 'iAlsoLike', 'Tuis',
+          ]]]);
+
+        /** depth 0 **/
+        assert.equals(sut.nestedDiff(was, now), [
+          'level1', {level2: {
+            iLike: 'I like the rimu tree', iAlsoLike: 'Tuis', numbers: [2, 9, 11]}}]);
+
+        { /** arrays and multiple entries **/
+          const now = deepCopy(was);
+          now.level1.level2.numbers = [2, 3, 5, 7, 11];
+          now.level1.level2a = 'Another branch';
+
+          assert.equals(sut.nestedDiff(was, now, 5), [
+            'level1.$partial', [
+              'level2.$partial', [
+                'numbers.$partial', ['$patch', [1, 1, [3, 5, 7]]],
+              ],
+              'level2a', 'Another branch',
+            ]]);
+        }
+      },
+
       "subfields": {
         setUp() {
           /**
@@ -514,7 +573,7 @@ define(function (require, exports, module) {
             'ol.2.li.0', '3',
           ];
 
-          const old = util.deepCopy(v.attrs);
+          const old = deepCopy(v.attrs);
           const undo = [];
           sut.applyPartial(v.attrs, 'html', changes, undo);
           assert.equals(v.attrs, old);
