@@ -378,6 +378,19 @@ define(function (require, exports, module) {
             -3, 2, [15, 11],
           ]]);
         },
+
+        "test missing from"() {
+          const attrs = {}, undo = [];
+          sut.applyPartial(attrs, 'numbers', ['$patch', [0, 0, [1,2]]], undo);
+          assert.equals(attrs, {numbers: [1,2]});
+          assert.equals(undo, ['$patch', [0, 2, null]]);
+
+          const undo2 = [];
+          sut.applyPartial(attrs, 'numbers', undo, undo2);
+
+          assert.equals(attrs, {numbers: []});
+          assert.equals(undo2, ['$patch', [0, 0, [1, 2]]]);
+        },
       },
 
       "$add, $remove": {

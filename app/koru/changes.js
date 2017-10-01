@@ -26,6 +26,14 @@ define(function(require, exports, module) {
   };
 
   const applyPatch = (ov, patch, key, undoPatch)=>{
+    if (ov == null) {
+      if (patch.length !== 3 || patch[0] != 0 || patch[1] != 0)
+        throw new koru.Error(400, 'invalid patch');
+
+      const ov = patch[2];
+      undoPatch !== undefined && undoPatch.push(0, ov.length, null);
+      return ov;
+    }
     let si = 0;
     for(let i = 0; i < patch.length; i += 3) {
       const ds = patch[i], dl = patch[i+1], content = patch[i+2];
