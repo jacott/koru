@@ -301,8 +301,8 @@ define(function(require, exports, module) {
 
       return true;
     },
-    assertMessage: "Expected object's className to include {$expected} but was {$names}",
-    refuteMessage: "Expected object's className not to include {$expected}",
+    assertMessage: `Expected object's className to include "{$expected}" but was "{$names}"`,
+    refuteMessage: `Expected object's className not to include "{$expected}"`,
   });
 
   ga.add('sameHtml', {
