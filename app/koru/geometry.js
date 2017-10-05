@@ -50,38 +50,46 @@ define(function(require, exports, module) {
     tPoint,
 
     tTangent(t, ps, curve) {
+      let x, y;
+      const x0 = ps[0], y0 = ps[1];
+      const x1 = curve[0], y1 = curve[1];
       if (curve.length == 2) {
-        const x = curve[0]-ps[0], y = curve[1]-ps[1];
-        const norm = Math.sqrt(x*x+y*y);
-        return [x/norm, y/norm];
+        x = x1-x0; y = y1-y0;
       } else {
-        const x0 = ps[0], y0 = ps[1];
-        const x1 = curve[0], y1 = curve[1];
         const x2 = curve[2], y2 = curve[3];
         const x3 = curve[4], y3 = curve[5];
 
-        if (t == 0 && x0 == x1 && y0 == y1)
-          t = 0.00001;
-        else if (t == 1 && x2 == x3 && y2 == y3)
-          t = 0.99999;
-
-        const r = 1-t, r2 = r*r;
-        const t2 = t*t;
+        if (t == 0) {
+          if (x0 == x1 && y0 == y1) {
+            x = x2-x0; y = y2-x0;
+          } else {
+            x = x1-x0; y = y1-y0;
+          }
+        } else if (t == 1) {
+          if (x2 == x3 && y2 == y3) {
+            x = x3-x1; y = y3-y1;
+          } else {
+            x = x3-x2; y = y3-y2;
+          }
+        } else {
+          const r = 1-t, r2 = r*r;
+          const t2 = t*t;
 
           // -3 P (1 - t)^2 + Q(3 (1 - t)^2 - 6 (1 - t) t) + R(6 (1 - t) t - 3 t^2) + 3 S t^2
 
-        const x = -3 * x0*r2 +
-                x1*(3*r2 - 6*r*t) +
-                x2*(6*r*t - 3*t2) +
-                x3*3*t2,
-              y = -3 * y0*r2 +
-                y1*(3*r2 - 6*r*t) +
-                y2*(6*r*t - 3*t2) +
-                y3*3*t2;
-
-        const norm = Math.sqrt(x*x+y*y);
-        return [x/norm, y/norm];
+          x = -3 * x0*r2 +
+            x1*(3*r2 - 6*r*t) +
+            x2*(6*r*t - 3*t2) +
+            x3*3*t2;
+          y = -3 * y0*r2 +
+            y1*(3*r2 - 6*r*t) +
+            y2*(6*r*t - 3*t2) +
+            y3*3*t2;
+        }
       }
+
+      const norm = Math.sqrt(x*x+y*y);
+      return [x/norm, y/norm];
     },
 
     closestT(point, ps, curve, tol=0.00001) {

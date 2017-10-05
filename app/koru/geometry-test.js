@@ -104,22 +104,28 @@ define(function (require, exports, module) {
        * @returns the tangent normalized vector in form `[xd, yd]`
        **/
       api.method('tTangent');
+
+      const ps = [10000,20000], curve = [-5000,-10000, 57500,70000, 40000,30000];
+
+      assert.near(sut.tTangent(0, ps, curve), [-0.44721, -0.89443], 0.00001);
+      assert.near(sut.tTangent(.5, ps, curve), [0.71672, 0.69735], 0.00001);
+      assert.near(sut.tTangent(1, ps, curve), [-0.40082, -0.916157], 0.00001);
+
       assert.near(sut.tTangent(0, [10, 30], [-40, 70]), [-0.7808, 0.6246], 0.0001);
+      assert.near(sut.tTangent(1, [10, 30], [-40, 70]), [-0.7808, 0.6246], 0.0001);
       const tn = sut.tTangent(.3, [10, 30], [-40, 70]);
       assert.near(tn, [-0.7808, 0.6246], 0.0001);
       assert.same(tn[0]*tn[0]+tn[1]*tn[1], 1);
 
-      assert.near(sut.tTangent(0, [0,0], [0,0, 20,25, 20,25]),
-                  sut.tTangent(0, [0,0], [20,25]), 0.00001);
+      assert.equals(sut.tTangent(0, [0,0], [0,0, 20,25, 20,25]),
+                    sut.tTangent(0, [0,0], [20,25]));
 
       assert.equals(sut.tTangent(.5, [0,0], [0,0, 20,25, 20,25]),
                     sut.tTangent(0, [0,0], [20,25]));
 
-      assert.near(sut.tTangent(1, [0,0], [0,0, 20,25, 20,25]),
-                  sut.tTangent(.5, [0,0], [20,25]), 0.00001);
+      assert.equals(sut.tTangent(1, [0,0], [0,0, 20,25, 20,25]),
+                    sut.tTangent(1, [0,0], [20,25]));
 
-      assert.near(sut.tTangent(.5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
-                  [0.71672, 0.69735], 0.00001);
     },
 
     "test closestT"() {
