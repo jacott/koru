@@ -78,7 +78,7 @@ define(function(require, exports, module) {
         attrs[key.slice(1)] = value;
       } else if (tagName !== '') {
         attrs[key] = value;
-      } else if (typeof value === 'string') {
+      } else if (typeof value !== 'object' && value !== undefined) {
         if (ATTRS[key]) {
           attrs[key] = value;
         } else if (pTag === '') {

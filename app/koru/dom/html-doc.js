@@ -342,6 +342,7 @@ define(function(require, exports, module) {
     },
 
     setAttribute(name, value) {
+      if (typeof value !== 'string') value = ''+value;
       if (name === 'style')
         this.style.cssText = value;
       else

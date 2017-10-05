@@ -2,15 +2,16 @@ define(function (require, exports, module) {
   /**
    * Server side implementation of the DOM tree.
    **/
-  var test, v;
-  const Dom  = require('koru/dom');
-  const TH   = require('koru/test');
-  const util = require('koru/util');
+  const Dom             = require('koru/dom');
+  const TH              = require('koru/test');
+  const util            = require('koru/util');
+
   const sut  = require('./html-doc');
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
@@ -56,6 +57,12 @@ define(function (require, exports, module) {
       assert.same(newNode.parentNode, parent);
       assert.same(parent.lastChild, newNode);
       assert.same(oldParent.childNodes.length, 0);
+    },
+
+    "test setAttribute"() {
+      const elm = document.createElement('div');
+      elm.setAttribute('width', 500);
+      assert.same(elm.getAttribute('width'), '500');
     },
 
     "test construction"() {

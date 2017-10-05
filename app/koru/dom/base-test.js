@@ -4,9 +4,10 @@ define(function (require, exports, module) {
    * [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)
    *
    **/
-  const api = require('koru/test/api');
-  const TH  = require('koru/test');
-  const Dom = require('koru/dom');
+  const Dom             = require('koru/dom');
+  const TH              = require('koru/test');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
 
   var v;
 
@@ -176,10 +177,13 @@ define(function (require, exports, module) {
 
       const obj = {class: 'greeting', id: "gId", section: {
         ul: [{li: {span: "Hello"}}, {$comment$: 'a comment'}, {li: 'two'},
-             {li: {svg: [], viewBox: "0 0 100 100"}}],
+             {li: {width: 500, svg: [], viewBox: "0 0 100 100"}}],
       }, 'data-lang': 'en'};
 
-      assert.equals(Dom.htmlToJson(Dom.h(obj)), obj);
+      const ans = util.deepCopy(obj);
+      ans.section.ul[3].li.width = '500';
+
+      assert.equals(Dom.htmlToJson(Dom.h(obj)), ans);
 
       if (isClient) {
         assert(Dom.h({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS) instanceof window.SVGPathElement);
