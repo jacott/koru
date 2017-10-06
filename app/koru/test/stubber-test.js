@@ -1,13 +1,15 @@
 define(function (require, exports, module) {
-  const util = require('koru/util');
-  const TH   = require('../test-helper');
+  const util            = require('koru/util');
+  const TH              = require('../test-helper');
 
-  const sut  = require('./stubber');
-  var test, v;
+  const {stub, spy, onEnd} = TH;
+
+  const sut = require('./stubber');
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
@@ -16,11 +18,11 @@ define(function (require, exports, module) {
     },
 
     "test withArgs, calledAfter/Before"() {
-      var base = test.stub();
+      const base = stub();
 
-      var argOne = base.withArgs(1);
-      var argTwo = base.withArgs(1,{t: 2});
-      var argDiff = base.withArgs(2);
+      const argOne = base.withArgs(1);
+      const argTwo = base.withArgs(1,{t: 2});
+      const argDiff = base.withArgs(2);
 
       base(1, {t: 2});
 
@@ -51,15 +53,15 @@ define(function (require, exports, module) {
     },
 
     "test withArgs returns"() {
-      var obj = {
-        foo: test.stub().returns(null).withArgs('foo').returns('bar')
+      const obj = {
+        foo: stub().returns(null).withArgs('foo').returns('bar')
           .withArgs("bar").throws(new Error("bar error")),
       };
-      var fnord = obj.foo.withArgs("fnord");
+      const fnord = obj.foo.withArgs("fnord");
       refute.same(fnord, obj.foo);
       assert.same(obj.foo(), null);
       assert.same(obj.foo("foo"), 'bar');
-      assert.exception(function () {
+      assert.exception(()=>{
         obj.foo("bar");
       }, 'Error', 'bar error');
       assert.same(fnord("fnord"), null);
@@ -69,8 +71,8 @@ define(function (require, exports, module) {
     },
 
     "test onCall"() {
-      var obj = {
-        foo: test.stub().onCall(0).returns(0)
+      const obj = {
+        foo: stub().onCall(0).returns(0)
       };
 
       obj.foo.withArgs(1).onCall(0).returns(1).onCall(1).returns(2);
@@ -81,14 +83,14 @@ define(function (require, exports, module) {
       assert.calledOnce(obj.foo);
       assert.same(obj.foo.subject.callCount, 3);
 
-      var call = obj.foo.subject.getCall(1);
+      const call = obj.foo.subject.getCall(1);
       assert(call.calledWith(1, 4));
       refute(call.calledWith(1, 4, 2));
     },
 
     "test yields"() {
       const obj = {
-        foo: test.stub().yields(1,2,3)
+        foo: stub().yields(1,2,3)
       };
 
       assert.same(obj.foo(1, function (a,b,c) {return v.result = [c,b,a]}, function () {return "fail"}), undefined);
@@ -100,14 +102,14 @@ define(function (require, exports, module) {
         return this === call && call.args[0] === 1;
       }
       const obj = {
-        foo: test.stub().invokes(callback)
+        foo: stub().invokes(callback)
       };
 
       assert.isTrue(obj.foo(1));
     },
 
     "test cancelYields"() {
-      var foo = test.stub().yields(1);
+      const foo = stub().yields(1);
       foo.cancelYields();
       v.result = 0;
       foo(function () {v.result = 1});
@@ -123,32 +125,32 @@ define(function (require, exports, module) {
       class Bar extends Foo {
       }
 
-      const spy = this.spy(Bar.prototype, 'bar');
+      const subject = spy(Bar.prototype, 'bar');
 
       assert.hasOwn(Bar.prototype, 'bar');
 
       new Bar().bar();
 
-      assert.called(spy);
+      assert.called(subject);
 
-      spy.restore();
+      subject.restore();
 
       refute.hasOwn(Bar.prototype, 'bar');
     },
 
     "test spy"() {
-      var obj = {foo(a,b,c) {
+      const obj = {foo(a,b,c) {
         v.thisValue = this;
         v.args = [a,b,c];
         return 123;
       }};
 
-      var spy = test.spy(obj, 'foo');
-      assert.same(spy.callCount, 0);
+      const subject = spy(obj, 'foo');
+      assert.same(subject.callCount, 0);
 
-      var with12 = spy.withArgs(1, 2);
+      const with12 = subject.withArgs(1, 2);
 
-      assert.same(spy, obj.foo);
+      assert.same(subject, obj.foo);
 
       // invoke
       assert.same(obj.foo(1,2,3), 123);
@@ -156,29 +158,29 @@ define(function (require, exports, module) {
       assert.same(v.thisValue, obj);
       assert.equals(v.args, [1,2,3]);
 
-      assert.calledWith(spy, 1, 2, 3);
+      assert.calledWith(subject, 1, 2, 3);
 
       assert.called(with12);
       assert.same(with12.lastCall.returnValue, 123);
-      assert.same(spy.callCount, 1);
+      assert.same(subject.callCount, 1);
 
 
       obj.foo.call({diff: 'this'}, 'a');
 
-      assert.equals(spy.firstCall, {globalCount: TH.match.number, args: [1, 2, 3], thisValue: obj, returnValue: 123});
-      assert.equals(spy.lastCall, {globalCount: TH.match.number, args: ['a'], thisValue: {diff: 'this'}, returnValue: 123});
+      assert.equals(subject.firstCall, {globalCount: TH.match.number, args: [1, 2, 3], thisValue: obj, returnValue: 123});
+      assert.equals(subject.lastCall, {globalCount: TH.match.number, args: ['a'], thisValue: {diff: 'this'}, returnValue: 123});
 
-      assert.same(spy.callCount, 2);
-      assert.same(spy.args(0, 1), 2);
-      assert.same(spy.args(1, 0), 'a');
-      assert.same(spy.args(-2, -1), 3);
+      assert.same(subject.callCount, 2);
+      assert.same(subject.args(0, 1), 2);
+      assert.same(subject.args(1, 0), 'a');
+      assert.same(subject.args(-2, -1), 3);
     },
 
     "test replace func"() {
-      var obj = {foo() {v.args = 'orig'}};
-      var stub = test.stub(obj, 'foo', function (a,b,c) {v.args = [a,b,c]});
+      const obj = {foo() {v.args = 'orig'}};
+      const subject = stub(obj, 'foo', function (a,b,c) {v.args = [a,b,c]});
 
-      assert.same(stub, obj.foo);
+      assert.same(subject, obj.foo);
 
 
       obj.foo(1,2,3);
@@ -192,15 +194,15 @@ define(function (require, exports, module) {
     },
 
     "test stub function"() {
-      const stub = this.stub(function (a,b,c) {v.args = [a,b,c]});
+      const subject = stub(function (a,b,c) {v.args = [a,b,c]});
 
-      stub(1,2,3);
+      subject(1,2,3);
 
-      assert.calledWith(stub, 1, 2, 3);
+      assert.calledWith(subject, 1, 2, 3);
     },
 
     "test yield."() {
-      var x = test.stub();
+      const x = stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});
       x.yield(1,2);
       assert.same(v.foo, 2);
@@ -208,7 +210,7 @@ define(function (require, exports, module) {
 
     "test yieldAndReset"() {
       const obj = {run(arg) {}};
-      var x = test.stub(obj, "run");
+      const x = stub(obj, "run");
       obj.run((arg1, arg2)=> v.foo = arg2);
       assert.equals(x.yieldAndReset(1,2), 2);
       assert.same(v.foo, 2);
@@ -218,7 +220,7 @@ define(function (require, exports, module) {
     },
 
     "test yieldAll"() {
-      var x = test.stub();
+      const x = stub();
       x(function foo(arg1, arg2) {v.foo = arg2;});
       x(function bar(arg1, arg2) {v.bar = arg2;});
       assert.same(x.yieldAll(1,2), x);
@@ -228,14 +230,14 @@ define(function (require, exports, module) {
     },
 
     "test stub with function"() {
-      var obj = {foo() {}};
-      test.stub(obj, 'foo', function (a, b) {return [a,b]});
+      const obj = {foo() {}};
+      stub(obj, 'foo', function (a, b) {return [a,b]});
       assert.equals(obj.foo(1,2), [1,2]);
       assert.calledWith(obj.foo, 1, 2);
     },
 
     "test basics"() {
-      const x = test.stub();
+      const x = stub();
       refute.called(x);
       assert.isFalse(x.called);
       x.call(v.this = {val: "this"}, 123, {x: "123"});
