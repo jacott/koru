@@ -234,17 +234,18 @@ define(function (require, exports, module) {
       assert.equals(v.idx.lookup({}), {'4': {'4': v.doc1._id, '2': v.doc2._id, '1': v.doc3._id}});
     },
 
-    "test don't index undefined keys"() {
-      v.doc1.id2 = undefined;
+    "test nullToUndef keys"() {
+      v.doc1.id2 = null;
       v.doc1.$$save();
 
-      assert.equals(v.idx.lookup({id1: '3'}), {2: {2: 'doc2'}, 4: {1: 'doc3'}});
+      assert.equals(v.idx.lookup({id1: '3'}), {
+        2: {2: 'doc2'}, 4: {1: 'doc3'}, undefined: {3: 'doc1'}});
     },
 
     "test null in data"() {
-      var doc = v.TestModel.create({id1: '1', id2: null});
+      const doc = v.TestModel.create({id1: '1', id2: null});
 
-      assert.same(v.idx.lookup({id1: '1', id2: null}), doc._id);
+      assert.same(v.idx.lookup({id1: '1', id2: undefined}), doc._id);
     },
 
     "test deleting"() {

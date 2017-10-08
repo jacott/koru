@@ -9,7 +9,8 @@ define(function(require, exports, module) {
     return ans;
   };
 
-  const {compare} = util;
+  const {compare, hasOwn} = util;
+  const nullToUndef= val=>val === null ? undefined : val;
 
   return model => {
     model._indexUpdate = makeSubject({
@@ -80,7 +81,8 @@ define(function(require, exports, module) {
             for(let i = 0; i < cLen; ++i) {
               const f = compKeys[i];
               const af = a[f], bf = b[f];
-              if (af == null || bf == null ? af !== bf : af.valueOf() !== bf.valueOf()) {
+              if ((af === undefined || bf === undefined) ? af != bf
+                  : af.valueOf() !== bf.valueOf()) {
                 const dir = compMethod[i];
                 if (af === undefined) return -1;
                 if (bf === undefined) return 1;
@@ -177,7 +179,6 @@ define(function(require, exports, module) {
             let tidx = idx;
             for(let i = 0; i < leadLen; ++i) {
               const value = doc[fields[i]];
-              if (value === undefined) return;
               tidx = tidx[value] === undefined ? (tidx[value] = {}) : tidx[value];
             }
             const value = doc[fields[leadLen]];
@@ -208,8 +209,8 @@ define(function(require, exports, module) {
 
           for(let i = 0; ret && i < len; ++i) {
             const field = fields[i];
-            if (keys[field] === undefined) return ret;
-            ret = ret[keys[field]];
+            if (! hasOwn(keys, field)) return ret;
+            ret = ret[nullToUndef(keys[field])];
           }
 
           if (ret !== undefined && btCompare !== null) {
