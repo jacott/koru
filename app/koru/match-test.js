@@ -27,6 +27,7 @@ define(function (require, exports, module) {
       assert.isTrue(sut.id.$test("aAgGzZqQ8901234567890123"));
       assert.isFalse(sut.id.$test("0123456789012345678901234"));
       assert.isFalse(sut.id.$test("12"));
+      assert.isFalse(sut.id.$test("undefined"));
     },
 
     "test non function construction"() {
