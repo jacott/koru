@@ -49,6 +49,16 @@ define(function (require, exports, module) {
         };
       },
 
+      "test nullToUndef"() {
+        const book = new v.Book();
+        book.name = null;
+        assert.same(book.name, undefined);
+        assert.same(book.attributes.name, undefined);
+
+        book.changes.name = null;
+        assert.same(book.name, undefined);
+      },
+
       "test onChange"() {
         /**
          * Observe changes to model records.

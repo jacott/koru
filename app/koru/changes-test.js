@@ -44,12 +44,16 @@ define(function (require, exports, module) {
 
     "test with objects"() {
       const orig = {a: 1, b: 2, c: 3, nest: {foo: 'foo'}};
-      let changes = {a: 2, b: undefined, d: 4, $partial: {nest: ["bar", 'bar']}};
+      let changes = {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}};
 
       const undo = sut.applyAll(orig, changes);
       assert.equals(orig, {a:2, c: 3, nest: {foo: 'foo', bar: 'bar'}, d: 4});
-      assert.equals(undo, {a: 1, b: 2, d: undefined, $partial: {nest: ["bar", undefined]}});
-      assert.equals(changes, {a: 2, b: undefined, d: 4, $partial: {nest: ["bar", 'bar']}});
+      assert.equals(undo, {a: 1, b: 2, d: null, $partial: {nest: ["bar", null]}});
+      assert.same(undo.d, null);
+
+      assert.equals(changes, {a: 2, b: null, d: 4, $partial: {nest: ["bar", 'bar']}});
+      assert.same(changes.b, null);
+
       {
         const changes = {$partial: {nest: ["bar", 'new'], new: ["deep.list", 'deeplist']}};
         const undo = sut.applyAll(orig, changes);

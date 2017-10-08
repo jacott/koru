@@ -388,7 +388,7 @@ define(function (require, exports, module) {
       assert.same(tsc.withDef,'set');
 
       tsc.withDef = null;
-      assert.same(tsc.withDef,null);
+      assert.same(tsc.withDef, 0);
 
       tsc.withDef = undefined;
       assert.same(tsc.withDef, 0);
