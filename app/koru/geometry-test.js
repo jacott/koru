@@ -13,6 +13,17 @@ define(function (require, exports, module) {
       api.module(module);
     },
 
+    "test rotatePoints"() {
+      const p = [0,0, -10, -20, 30, 40];
+      assert.equals(sut.rotatePoints(p, 180), [0,0, 10, 20, -30, -40]);
+      assert.equals(sut.rotatePoints(p, -180), [0,0, 10, 20, -30, -40]);
+      assert.equals(sut.rotatePoints(p, 90), [0,0, 20, -10, -40, 30]);
+      assert.equals(sut.rotatePoints(p, -90), [0,0, -20, 10, 40, -30]);
+
+      assert.near(sut.rotatePoints(p, 45), [
+        0, 0, 7.071, -21.213, -7.071, 49.497], 0.001);
+    },
+
     "test combineBox"() {
       /**
        * Combine two boundry boxes

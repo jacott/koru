@@ -1,6 +1,7 @@
 define(function(require, exports, module) {
-
   const IGR = 2/(Math.sqrt(5) + 1) ;
+
+  const DTR = Math.PI/180;
 
   const tPoint = (t, ps, curve)=>{
     if (curve.length == 2) {
@@ -29,6 +30,44 @@ define(function(require, exports, module) {
   };
 
   return {
+    rotatePoints(points, angle) {
+      const ans = points.slice(), plen = points.length;
+      switch (angle) {
+      case 0: return ans;
+      case -180: case 180:
+        for(let i = 0; i < plen; i += 2) {
+          const x = ans[i], y = ans[i+1];
+          if (x != 0) ans[i] = -x;
+          if (y != 0) ans[i+1] = -y;
+        }
+        return ans;
+      case 90:
+        for(let i = 0; i < plen; i += 2) {
+          const x = ans[i], y = ans[i+1];
+          ans[i] = y == 0 ? 0 : -y;
+          ans[i+1] = x;
+        }
+        return ans;
+      case -90:
+        for(let i = 0; i < plen; i += 2) {
+          const x = ans[i], y = ans[i+1];
+          ans[i] = y;
+          ans[i+1] = x == 0 ? 0 : -x;
+        }
+        return ans;
+      default:
+        const t = DTR*angle;
+        const sint = Math.sin(t), cost = Math.cos(t);
+
+        for(let i = 0; i < plen; i += 2) {
+          const x = ans[i], y = ans[i+1];
+          ans[i] = x*cost-y*sint;
+          ans[i+1] = x*sint+y*cost;
+        }
+        return ans;
+      }
+    },
+
     combineBox(a, b) {
       a.left = Math.min(a.left, b.left);
       a.top = Math.min(a.top, b.top);
