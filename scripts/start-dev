@@ -14,4 +14,4 @@ fi
 
 cd app
 echo -e "starting ${branch}...\c"
-exec ${NODE} --inspect --es_staging ../lib/koru.js "$@"
+exec ${NODE} --es_staging ../lib/koru.js "$@"

@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
-  const koru        = require('koru');
-  const jsParser    = require('koru/parse/js-parser');
-  const {stubName$} = require('koru/symbols');
-  const util        = require('koru/util');
-  const TH          = require('./main');
+  const koru            = require('koru');
+  const moduleGraph     = require('koru/module-graph');
+  const jsParser        = require('koru/parse/js-parser');
+  const {stubName$}     = require('koru/symbols');
+  const util            = require('koru/util');
+  const TH              = require('./main');
 
   const {inspect$} = require('koru/symbols');
 
@@ -394,9 +395,9 @@ define(function(require, exports, module) {
             const {modules} = this.module.ctx;
             otherIds.forEach(oId => {
               const oMod = modules[oId];
-              if (oMod && koru.isRequiredBy(oMod, this.module))
+              if (oMod && moduleGraph.isRequiredBy(oMod, this.module))
                 modifies.push(oId);
-              else if (oMod && koru.isRequiredBy(this.module, oMod))
+              else if (oMod && moduleGraph.isRequiredBy(this.module, oMod))
                 modifiedBy.push(oId);
             });
             if (modifies.length)
