@@ -6,4 +6,4 @@ branch=${1-demo}
 
 cd app
 echo -e "starting ${branch}...\c"
-exec ${NODE} --inspect --es_staging --expose-gc $KORU_MODULE/lib/koru.js "$@"
+exec ${NODE} --es_staging --expose-gc $KORU_MODULE/lib/koru.js "$@"

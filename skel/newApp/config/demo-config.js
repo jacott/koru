@@ -2,7 +2,7 @@ const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
 const {env} = process;
 
-exports.server = function (cfg) {
+exports.server = cfg =>{
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
     "koru/config": {
@@ -30,7 +30,7 @@ exports.server = function (cfg) {
   ]);
 };
 
-exports.client = function (cfg) {
+exports.client = cfg =>{
   cfg.merge('requirejs.config.client.extraRequires', [
     'demo-client',
   ]);

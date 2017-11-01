@@ -2,7 +2,7 @@ const path = require('path');
 const appDir = path.resolve(__dirname, '../app');
 const {env} = process;
 
-exports.server = function (cfg) {
+exports.server = cfg =>{
   cfg.set('requirejs.baseUrl', appDir);
   cfg.merge('requirejs.config', {
     "koru/config": {
@@ -34,13 +34,13 @@ exports.server = function (cfg) {
   cfg.set('clientjs', 'test/client');
 };
 
-exports.common = function (cfg) {
+exports.common = cfg =>{
   // Auto api compiling when tests are run is controlled by env.KORUAPI
   const record = !! env.KORUAPI;
   cfg.set('requirejs.recordExports', record);
   cfg.set('requirejs.config.koru/test/api.record', record);
 };
 
-exports.client = function (cfg) {
+exports.client = cfg =>{
   cfg.merge('requirejs.packages', ["koru/test"]);
 };

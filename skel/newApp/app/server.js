@@ -1,20 +1,20 @@
 define(function(require, exports, module) {
-  const koru      = require('koru');
-  const IdleCheck = require('koru/idle-check').singleton;
-  const session   = require('koru/session');
-  const webServer = require('koru/web-server');
-  const startup   = require('./startup-server');
+  const koru            = require('koru');
+  const IdleCheck       = require('koru/idle-check').singleton;
+  const session         = require('koru/session');
+  const webServer       = require('koru/web-server');
+  const startup         = require('./startup-server');
 
   koru.onunload(module, 'reload');
 
-  return function () {
+  return ()=>{
     startup();
 
-    process.on('SIGTERM', function () {
+    process.on('SIGTERM', ()=>{
       console.log('Closing [SIGTERM]');
       webServer.stop();
       session.stop();
-      IdleCheck.waitIdle(function () {
+      IdleCheck.waitIdle(()=>{
         console.log('=> Shutdown ' + new Date());
         process.exit(0);
       });
