@@ -1,5 +1,4 @@
 define(function (require, exports, module) {
-  const yaajsGraph = require('koru/yaajs-graph');
   const util       = require('./util');
 
   class KoruError extends Error {
@@ -130,9 +129,6 @@ define(function (require, exports, module) {
     },
 
     fetchDependants: fetchDependants,
-
-    findPath: yaajsGraph.findPath,
-    isRequiredBy: yaajsGraph.isRequiredBy,
   };
 
   function fetchDependants(mod, result) {
