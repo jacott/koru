@@ -33,8 +33,8 @@ define(function(require, exports, module) {
 
       const tpl = addTemplates(Dom, blueprint);
       tpl.$module = module;
-      koru.onunload(module, function () {
-        (tpl.parent || Dom)[tpl.name] = null;
+      koru.onunload(module, ()=>{
+        (tpl.parent || Dom)[tpl.name] = undefined;
         for (const name in tpl) {
           const sub = tpl[name];
           if (sub && sub.$module && sub instanceof DomTemplate) {

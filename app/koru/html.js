@@ -8,6 +8,12 @@ define(function(require, exports, module) {
 
   koru.onunload(module, 'reload');
 
+  if (isServer) {
+    const loader = {};
+    require(['koru/html-server'], htmlServer => htmlServer(loader));
+    return loader;
+  }
+
   return {
     load(name, req, onload, config) {
       const mod = req.module;

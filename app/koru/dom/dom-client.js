@@ -329,15 +329,6 @@ define(function(require, exports, module) {
         elm.value = elm[origValue$];
     },
 
-    registerHelpers(helpers) {
-      util.merge(this._helpers, helpers);
-      return this;
-    },
-
-    newTemplate: DomTemplate.newTemplate,
-
-    lookupTemplate(name) {return DomTemplate.lookupTemplate(this, name)},
-
     stopEvent: DomTemplate.stopEvent,
     stopPropigation: DomTemplate.stopPropigation,
 
@@ -481,7 +472,7 @@ define(function(require, exports, module) {
 
     replaceElement(newElm, oldElm, noRemove) {
       var ast = oldElm[endMarker$];
-      if (ast) {
+      if (ast !== undefined) {
         Dom.removeInserts(oldElm);
         Dom.remove(ast);
       }
