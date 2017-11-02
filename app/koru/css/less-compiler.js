@@ -5,13 +5,13 @@ const autoprefixer = requirejs.nodeRequire("autoprefixer")({browsers: ['> 5%', '
 const postcss = requirejs.nodeRequire("postcss")([autoprefixer]);
 
 define(function(require, exports, module) {
-  const fst       = require('../fs-tools');
-  const koru      = require('../main');
-  const webServer = require('../web-server');
+  const koru            = require('koru');
+  const Compilers       = require('koru/compilers');
+  const fst             = require('koru/fs-tools');
 
   koru.onunload(module, 'reload');
 
-  webServer.compilers['less'] = compile;
+  Compilers.set('less',compile);
 
   const topLen = Path.resolve(koru.appDir).length + 1;
 

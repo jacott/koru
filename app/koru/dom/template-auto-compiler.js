@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
-  const fst              = require('../fs-tools');
-  const koru             = require('../main');
-  const webServer        = require('../web-server');
+  const Compilers       = require('koru/compilers');
+  const fst             = require('../fs-tools');
+  const koru            = require('../main');
   const templateCompiler = require('./template-compiler');
 
   koru.onunload(module, 'reload');
 
-  webServer.compilers['html'] = compiler;
+  Compilers.set('html', compiler);
 
   function compiler(type, path, outPath) {
     const html = fst.readFile(path).toString();

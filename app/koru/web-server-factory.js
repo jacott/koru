@@ -1,23 +1,43 @@
 define(function (require, exports, module) {
-  const fst        = require('./fs-tools');
-  const IdleCheck  = require('./idle-check').singleton;
-  const koru       = require('./main');
-  const queue      = require('./queue')();
-  const util       = require('./util');
-  const Path      = requirejs.nodeRequire('path');
-  const http      = requirejs.nodeRequire('http');
-  const parseurl  = requirejs.nodeRequire('parseurl');
-  const Future    = requirejs.nodeRequire('fibers/future');
+  const Compilers       = require('koru/compilers');
+  const fst             = require('./fs-tools');
+  const IdleCheck       = require('./idle-check').singleton;
+  const koru            = require('./main');
+  const util            = require('./util');
+
+  const Future          = requirejs.nodeRequire('fibers/future');
+  const http            = requirejs.nodeRequire('http');
+  const parseurl        = requirejs.nodeRequire('parseurl');
+  const Path            = requirejs.nodeRequire('path');
 
   let send      = requirejs.nodeRequire('send');
 
-  module.exports = function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
+  function WebServerFactory(host, port, root, DEFAULT_PAGE='/index.html', SPECIALS={}) {
     const koruParent = Path.join(koru.libDir, 'app');
 
     const handlers = {};
 
+    const sendError = (err, msg='', res)=>{
+      if (! err || 404 === err.status || 404 === err.error) {
+        notFound(res);
+      } else if (typeof err === 'number') {
+        const attrs = {};
+        if (typeof msg !== 'string') {
+          msg = JSON.stringify(msg);
+          attrs['Content-Type'] = 'application/json';
+        }
+        attrs['Content-Length'] = msg.length;
+        res.writeHead(err, attrs);
+        res.end(msg);
+      } else {
+        res.statusCode = 500;
+        res.end('Internal server error!');
+      }
+    };
+
     const requestListener = (req, res)=>{
       koru.runFiber(()=>{
+        const error = (err, msg)=>{sendError(err, msg, res)};
         IdleCheck.inc();
         try {
           let path = parseurl(req).pathname;
@@ -42,11 +62,14 @@ define(function (require, exports, module) {
 
           m = /^(.*\.build\/.*\.([^.]+))(\..+)$/.exec(path);
 
-          if (! (m && compileTemplate(req, res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
-            send(req, path, {root: reqRoot, index: false})
-              .on('error', error)
-              .on('directory', error)
-              .pipe(res);
+          if (! (m && compileTemplate(res, m[2], Path.join(reqRoot, m[1]), m[3]))) {
+            if (handlers.DEFAULT === undefined ||
+                handlers.DEFAULT(req, res, path, error) === false) {
+              send(req, path, {root: reqRoot, index: false})
+                .on('error', error)
+                .on('directory', error)
+                .pipe(res);
+            }
           }
         } catch(ex) {
           koru.unhandledException(ex);
@@ -54,26 +77,6 @@ define(function (require, exports, module) {
         } finally {
           IdleCheck.dec();
         }
-
-        function error(err, msg) {
-          if (! err || 404 === err.status) {
-            notFound(res);
-          } else if (typeof err === 'number') {
-            const attrs = {};
-            msg = msg || '';
-            if (typeof msg !== 'string') {
-              msg = JSON.stringify(msg);
-              attrs['Content-Type'] = 'application/json';
-            }
-            attrs['Content-Length'] = msg.length;
-            res.writeHead(err, attrs);
-            res.end(msg);
-          } else {
-            res.statusCode = 500;
-            res.end('Internal server error!');
-          }
-        }
-
       });
     };
 
@@ -89,7 +92,6 @@ define(function (require, exports, module) {
       },
 
       server,
-      compilers: {},
       requestListener,
 
       send,
@@ -110,9 +112,7 @@ define(function (require, exports, module) {
           func = key;
           key = module;
         } else {
-          koru.onunload(module, function () {
-            webServer.deregisterHandler(key);
-          });
+          koru.onunload(module, ()=>{webServer.deregisterHandler(key)});
         }
         if (key in handlers) throw new Error(key + ' already registered as a web-server hander');
         handlers[key] = func;
@@ -127,30 +127,17 @@ define(function (require, exports, module) {
       },
     };
 
-    function compileTemplate(req, res, type, path, suffix) {
-      const compiler = webServer.compilers[type];
-      if (! compiler) return;
+    function compileTemplate(res, type, path, suffix) {
+      if (! Compilers.has(type)) return;
 
-      return queue(path, function () {
-        const outPath = path+suffix;
-        let paths = path.split('.build/');
-        path = paths.join('');
-
-        const srcSt = fst.stat(path);
-        const jsSt = fst.stat(outPath);
-
-
-        if (! srcSt) {
-          notFound(res); // not found
-          return true;
-        }
-
-        if (!jsSt) fst.mkdir(paths[0]+'.build');
-
-        if (! jsSt || +jsSt.mtime < +srcSt.mtime) {
-          compiler(type, path, outPath);
-        }
-      });
+      const paths = path.split('.build/');
+      const outPath = path+suffix;
+      try {
+        return Compilers.compile(type, paths.join(''), outPath);
+      } catch (err) {
+        sendError(err, err.reason, res);
+        return true;
+      }
     }
 
     function notFound(res) {
@@ -160,4 +147,6 @@ define(function (require, exports, module) {
 
     return webServer;
   };
+
+  return WebServerFactory;
 });

@@ -21,33 +21,37 @@ isServer && define(function (require, exports, module) {
    * @config koru where to find koru files; defaults to `app/koru`
    *
    **/
-  var test, v;
-  const koru             = require('koru/main');
-  const api              = require('koru/test/api');
+  const Compilers       = require('koru/compilers');
+  const koru            = require('koru/main');
+  const api             = require('koru/test/api');
   const WebServerFactory = require('koru/web-server-factory');
-  const fst              = require('./fs-tools');
-  const IdleCheck        = require('./idle-check').singleton;
-  const TH               = require('./test');
-  const webServer        = require('./web-server');
+  const fst             = require('./fs-tools');
+  const IdleCheck       = require('./idle-check').singleton;
+  const TH              = require('./test');
+
+  const {stub, spy, onEnd} = TH;
+
   const Future           = requirejs.nodeRequire('fibers/future');
+
+  const webServer        = require('./web-server');
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.future = new Future();
       v.req = {
         headers: {},
-        on: test.stub(),
+        on: stub(),
       };
       v.res = {
-        getHeader: test.stub(),
-        setHeader: test.stub(),
-        on: test.stub(),
-        once: test.stub(),
-        emit: test.stub(),
-        write: test.stub(),
-        writeHead: test.stub(),
+        getHeader: stub(),
+        setHeader: stub(),
+        on: stub(),
+        once: stub(),
+        emit: stub(),
+        write: stub(),
+        writeHead: stub(),
         end(data) {
           v.future.return(data);
         },
@@ -61,7 +65,7 @@ isServer && define(function (require, exports, module) {
           },
         };
 
-        v.sendRet.on = test.stub().returns(v.sendRet);
+        v.sendRet.on = stub().returns(v.sendRet);
 
         webServer._replaceSend(v.send = function (...args) {
           func && func.apply(this, args);
@@ -94,11 +98,11 @@ isServer && define(function (require, exports, module) {
           v.res.end('success');
         });
       });
-      test.onEnd(function () {webServer.deregisterHandler('foox')});
+      onEnd(function () {webServer.deregisterHandler('foox')});
 
       v.req.url = '/foox/bar';
-      test.spy(IdleCheck, 'inc');
-      test.spy(IdleCheck, 'dec');
+      spy(IdleCheck, 'inc');
+      spy(IdleCheck, 'dec');
 
       v.replaceSend();
 
@@ -109,12 +113,11 @@ isServer && define(function (require, exports, module) {
 
 
     "test compilation no build"() {
-      test.stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});
-      test.stub(fst, 'mkdir');
-      var foo = webServer.compilers.foo = test.stub();
-      test.onEnd(function () {
-        delete webServer.compilers.foo;
-      });
+      stub(fst, 'stat').withArgs(TH.match(/web-server-test\.foo$/)).returns({mtime: 1243});
+      stub(fst, 'mkdir');
+      const foo = stub();
+      Compilers.set('foo', foo);
+      onEnd(()=>{Compilers.set('foo', undefined)});
 
       v.req.url = '/koru/.build/web-server-test.foo.bar';
 
@@ -136,7 +139,7 @@ isServer && define(function (require, exports, module) {
           error(406, v.msg);
         });
         v.req.url = '/foo/bar';
-        test.spy(v.res, 'end');
+        spy(v.res, 'end');
         v.replaceSend();
       },
 
@@ -168,7 +171,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test usage"() {
-      api.module();
+      api.module(module.get('./web-server'));
       api.method('start');
 
       const webServerModule = module.ctx.modules['koru/web-server'];
@@ -176,27 +179,35 @@ isServer && define(function (require, exports, module) {
       api.example(() => {
         const {Server} = requirejs.nodeRequire('http');
 
-        const listen = test.stub(Server.prototype, 'listen').yields();
+        const listen = stub(Server.prototype, 'listen').yields();
         webServer.start();
         assert.calledWith(listen, webServerModule.config().port);
       });
     },
 
+    "test DEFAULT handler"() {
+      onEnd(_=>{webServer.deregisterHandler('DEFAULT')});
+      webServer.registerHandler('DEFAULT', v.stub = stub());
+
+      v.req.url = '/foo/bar';
+      v.replaceSend();
+      webServer.requestListener(v.req, v.res);
+
+      assert.calledWith(v.stub, v.req, v.res, '/foo/bar', TH.match.func);
+    },
+
     "test exception"() {
-      test.stub(koru, 'error');
-      webServer.registerHandler('foo', function (req, res, path, error) {
+      stub(koru, 'error');
+      webServer.registerHandler('foo', (req, res, path, error)=>{
         v.res.called = true;
         v.req.called = true;
         throw new Error("Foo");
       });
-
-      test.onEnd(function () {
-        webServer.deregisterHandler('foo');
-      });
+      onEnd(()=>{webServer.deregisterHandler('foo')});
 
       v.req.url = '/foo/bar';
 
-      test.spy(v.res, 'end');
+      spy(v.res, 'end');
 
       v.replaceSend();
 
