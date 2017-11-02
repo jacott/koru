@@ -104,7 +104,6 @@ define(function (require, exports, module) {
 
       assert.equals(util.map(top.childNodes[0].attributes, a => a.name+':'+a.value).sort(), ['class:un deux trois', 'id:top123']);
 
-
       assert.sameHtml(top.innerHTML, '<div id="top123" class="un deux trois">hello world<foo alt="baz" bold="bold">bar</foo></div>');
 
       assert.same(top.textContent, 'hello worldbar');
@@ -173,9 +172,20 @@ define(function (require, exports, module) {
 
     "test innerHTML"() {
       var elm = document.createElement('div');
-      elm.innerHTML = v.exp = '<div id="top123" class="un deux trois">hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo></div>';
+      elm.innerHTML = v.exp = `<div id="top123" class="un deux trois">
+hello &lt;world&#62;<foo alt="baz" bold="bold">bar<br>baz</foo>
+<style>
+body>div {
+  color: red;
+}
+</style>
+<script>
+if (i < 5) error("bad i");
+</script>
+</div>`;
+
       assert.same(elm.firstChild.id, "top123");
-      assert.same(elm.firstChild.firstChild.textContent, 'hello <world>');
+      assert.same(elm.firstChild.firstChild.textContent, '\nhello <world>');
       assert.same(elm.innerHTML, v.exp.replace(/&#62/, '&gt'));
     },
 

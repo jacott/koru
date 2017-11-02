@@ -10,6 +10,8 @@ define(function(require, exports, module) {
 
   const CANONICAL_TAG_NAMES = Dom.CANONICAL_TAG_NAMES = {
     div: 'div', DIV: 'div',
+    style: 'style', STYLE: 'style',
+    script: 'script', SCRIPT: 'script',
     br: 'br', BR: 'br',
 
     // svg
@@ -133,6 +135,7 @@ define(function(require, exports, module) {
     case document.ELEMENT_NODE:
       const tagName = canonicalTagName(node);
       const result = {};
+
       if (ns !== node.namespaceURI) {
         ns = node.namespaceURI;
         if (tagName !== 'svg')

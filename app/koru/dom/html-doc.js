@@ -35,9 +35,7 @@ define(function(require, exports, module) {
     return doc;
   }});
 
-  function copyArray(from, to) {
-    util.forEach(from, elm => to.push(elm.cloneNode(true)));
-  }
+  const copyArray = (from, to)=>{util.forEach(from, elm => to.push(elm.cloneNode(true)))};
 
   const ELEMENT_NODE = 1;
   const TEXT_NODE = 3;
@@ -63,42 +61,11 @@ define(function(require, exports, module) {
     '\xa0': '&nbsp;',
   };
 
-  function Document() {
-    common(this, DOCUMENT_NODE);
-    this.appendChild(this.body = new Element('body'));
-
-  }
-
-  Document.prototype = {
-    constructor: Document,
-
-    ELEMENT_NODE,
-    TEXT_NODE,
-    COMMENT_NODE,
-    DOCUMENT_FRAGMENT_NODE,
-
-    namespaceURI: Dom.XHTMLNS,
-
-    createElement(tag) {return new Element(tag)},
-    createElementNS(xmlns, tag) {
-      const canon = Dom.CANONICAL_TAG_NAMES[tag];
-      if (canon === undefined) {
-        if (xmlns === SVGNS)
-          Dom.CANONICAL_TAG_NAMES[tag] = tag;
-        else {
-          const lc = tag.toLowerCase();
-          Dom.CANONICAL_TAG_NAMES[lc] = lc;
-          Dom.CANONICAL_TAG_NAMES[tag.toUpperCase()] = lc;
-        }
-      }
-      const elm = new Element(tag);
-      elm.namespaceURI = xmlns;
-      return elm;
-    },
-    createTextNode(value) {return new TextNode(value)},
-    createDocumentFragment() {return new DocumentFragment()},
-    createComment(data) {return new CommentNode(data)},
-
+  class Element {
+    constructor(nodeType) {
+      this.nodeType = nodeType;
+      this.childNodes = [];
+    }
     removeChild(node) {
       const nodes = this.childNodes;
 
@@ -109,7 +76,7 @@ define(function(require, exports, module) {
           return;
         }
       }
-    },
+    }
 
     replaceChild(newNode, oldNode) {
       const nodes = this.childNodes;
@@ -124,7 +91,7 @@ define(function(require, exports, module) {
           return oldNode;
         }
       }
-    },
+    }
 
     insertBefore(node, before) {
       var parent = this;
@@ -158,7 +125,7 @@ define(function(require, exports, module) {
         }
       }
       throw new Error("before node is not a child");
-    },
+    }
 
     appendChild(node) {
       if (node.parentNode)
@@ -175,7 +142,7 @@ define(function(require, exports, module) {
         node.parentNode = this;
         this.childNodes.push(node);
       }
-    },
+    }
 
     cloneNode(deep) {
       var copy = new this.constructor;
@@ -192,24 +159,24 @@ define(function(require, exports, module) {
       }
 
       return copy;
-    },
+    }
 
     get style() {
       if (this[style$] !== undefined) return this[style$];
       return this[style$] = new Style(this);
-    },
+    }
 
     get firstChild() {
       var nodes = this.childNodes;
       return nodes.length ? nodes[0] : null;
-    },
+    }
 
     get lastChild() {
       var nodes = this.childNodes;
       return nodes.length ? nodes[nodes.length - 1] : null;
-    },
+    }
 
-    get outerHTML() {return this.innerHTML},
+    get outerHTML() {return this.innerHTML}
     get innerHTML() {
       var childNodes = this.childNodes;
       var len = childNodes.length;
@@ -219,13 +186,13 @@ define(function(require, exports, module) {
       }
 
       return result.join('');
-    },
+    }
     set innerHTML(code) {
       var node = this;
       node.childNodes = [];
       var parser = new htmlparser.Parser({
         onopentag(name, attrs){
-          var elm = new Element(name);
+          var elm = createHTMLElement(name);
           node.appendChild(elm);
           for(var attr in attrs)
             elm.setAttribute(attr, attrs[attr]);
@@ -244,9 +211,9 @@ define(function(require, exports, module) {
       });
       parser.write(code);
       parser.end();
-    },
+    }
 
-    set textContent(value) {this.childNodes = [new TextNode(value)]},
+    set textContent(value) {this.childNodes = [new TextNode(value)]}
 
     get textContent() {
       var childNodes = this.childNodes;
@@ -258,7 +225,7 @@ define(function(require, exports, module) {
         result[i] = childNodes[i].textContent;
       }
       return result.join('');
-    },
+    }
 
     querySelectorAll(css) {
       css = cssParser.parse(css).rule;
@@ -271,8 +238,48 @@ define(function(require, exports, module) {
           results.push(node);
       });
       return results;
-    },
+    }
+  }
+
+  Element.prototype.namespaceURI = Dom.XHTMLNS;
+
+  const createHTMLElement = (tag)=>{
+    return new (SPECIAL_TYPE[tag]||HTMLElement)(tag);
   };
+
+  class Document extends Element {
+    constructor() {
+      super(DOCUMENT_NODE);
+      this.appendChild(this.body = createHTMLElement('body'));
+    }
+
+    createElement(tag) {return createHTMLElement(tag)}
+    createElementNS(xmlns, tag) {
+      const canon = Dom.CANONICAL_TAG_NAMES[tag];
+      if (canon === undefined) {
+        if (xmlns === SVGNS)
+          Dom.CANONICAL_TAG_NAMES[tag] = tag;
+        else {
+          const lc = tag.toLowerCase();
+          Dom.CANONICAL_TAG_NAMES[lc] = lc;
+          Dom.CANONICAL_TAG_NAMES[tag.toUpperCase()] = lc;
+        }
+      }
+      const elm = createHTMLElement(tag);
+      elm.namespaceURI = xmlns;
+      return elm;
+    }
+    createTextNode(value) {return new TextNode(value)}
+    createDocumentFragment() {return new DocumentFragment()}
+    createComment(data) {return new CommentNode(data)}
+  }
+
+  Object.assign(Document.prototype, {
+    ELEMENT_NODE,
+    TEXT_NODE,
+    COMMENT_NODE,
+    DOCUMENT_FRAGMENT_NODE,
+  });
 
   function parseCss(css) {
     return [{
@@ -280,43 +287,44 @@ define(function(require, exports, module) {
     }];
   }
 
-  function DocumentFragment() {
-    common(this, DOCUMENT_FRAGMENT_NODE);
-  }
-  buildNodeType(DocumentFragment, {
+  class DocumentFragment extends Element {
+    constructor() {
+      super(DOCUMENT_FRAGMENT_NODE);
+    }
+
     cloneNode(deep) {
       var copy = new DocumentFragment();
 
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;
-    },
-  });
-
-
-  function Element(tagName) {
-    if (typeof tagName !== 'string')
-      throw new Error('tagName is not a string');
-    common(this, ELEMENT_NODE);
-    const canon = Dom.CANONICAL_TAG_NAMES[tagName];
-    const uc = tagName.toUpperCase();
-    if (canon === undefined || canon !== tagName) {
-      this.tagName = uc;
-    } else {
-      this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== undefined ? uc : canon;
     }
-    this[attributes$] = {};
   }
-  buildNodeType(Element, {
+
+  class HTMLElement extends Element {
+    constructor(tagName) {
+      if (typeof tagName !== 'string')
+        throw new Error('tagName is not a string');
+      super(ELEMENT_NODE);
+      const canon = Dom.CANONICAL_TAG_NAMES[tagName];
+      const uc = tagName.toUpperCase();
+      if (canon === undefined || canon !== tagName) {
+        this.tagName = uc;
+      } else {
+        this.tagName = Dom.CANONICAL_TAG_NAMES[uc] !== undefined ? uc : canon;
+      }
+      this[attributes$] = {};
+    }
+
     cloneNode(deep) {
       const copy = new this.constructor(this.tagName);
       copy[attributes$] = util.deepCopy(this[attributes$]);
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;
-    },
-    set id(value) {this.setAttribute('id', value)},
-    get id() {return this.getAttribute('id')},
-    set className(value) {this.setAttribute('class', value)},
-    get className() {return this.getAttribute('class') || ''},
+    }
+    set id(value) {this.setAttribute('id', value)}
+    get id() {return this.getAttribute('id')}
+    set className(value) {this.setAttribute('class', value)}
+    get className() {return this.getAttribute('class') || ''}
     get outerHTML() {
       var tn = Dom.canonicalTagName(this);
       var attrs = this[attributes$];
@@ -339,7 +347,7 @@ define(function(require, exports, module) {
         return "<"+open+">";
 
       return "<"+open+">"+this.innerHTML+"</"+tn+">";
-    },
+    }
 
     setAttribute(name, value) {
       if (typeof value !== 'string') value = ''+value;
@@ -347,13 +355,13 @@ define(function(require, exports, module) {
         this.style.cssText = value;
       else
         this[attributes$][name] = value;
-    },
+    }
     getAttribute(name) {
       if (name === 'style')
         return this.style._origCssText();
       else
         return this[attributes$][name];
-    },
+    }
 
     get attributes() {
       const ans = [];
@@ -362,11 +370,11 @@ define(function(require, exports, module) {
       for (let name in this[attributes$])
         ans.push({name, value: this[attributes$][name]});
       return ans;
-    },
+    }
 
     get classList() {
       return new ClassList(this);
-    },
+    }
 
     getElementsByClassName(className) {
       const ans = [];
@@ -380,8 +388,21 @@ define(function(require, exports, module) {
           ans.push(node);
       });
       return ans;
-    },
-  });
+    }
+  }
+
+  class StyleElement extends HTMLElement {
+    get innerHTML() {return this.textContent}
+  }
+
+  class ScriptElement extends HTMLElement {
+    get innerHTML() {return this.textContent}
+  }
+
+  const SPECIAL_TYPE = {
+    style: StyleElement,
+    script: ScriptElement,
+  };
 
   class ClassList {
     constructor(node) {
@@ -409,43 +430,34 @@ define(function(require, exports, module) {
     }
   }
 
-  function TextNode(value) {
-    common(this, TEXT_NODE);
-    this.wholeText = value;
-  }
-  buildNodeType(TextNode, {
+  class TextNode extends Element {
+    constructor(value) {
+      super(TEXT_NODE);
+      this.wholeText = value;
+    }
+
     cloneNode(deep) {
       return new TextNode(this.wholeText);
-    },
-    get textContent() {return this.wholeText},
-    set textContent(value) {this.wholeText = value},
-    get innerHTML() {return escapeHTML(this.wholeText)},
-    set innerHTML(value) {this.wholeText = unescapeHTML(value)},
-  });
-
-  function CommentNode(value) {
-    common(this, COMMENT_NODE);
-    this.data = value;
+    }
+    get textContent() {return this.wholeText}
+    set textContent(value) {this.wholeText = value}
+    get innerHTML() {return escapeHTML(this.wholeText)}
+    set innerHTML(value) {this.wholeText = unescapeHTML(value)}
   }
-  buildNodeType(CommentNode, {
+
+  class CommentNode extends Element {
+    constructor(value) {
+      super(COMMENT_NODE);
+      this.data = value;
+    }
+
     cloneNode(deep) {
       return new CommentNode(this.data);
-    },
-    get textContent() {return this.data},
-    set textContent(value) {this.data = value},
-    get innerHTML() {return `<!--${escapeHTML(this.data)}-->`},
-    set innerHTML(value) {this.data = unescapeHTML(value)},
-  });
-
-  function buildNodeType(func, proto) {
-    func.prototype = Object.create(Document.prototype);
-    func.prototype.constructor = func;
-    util.merge(func.prototype, proto);
-  }
-
-  function common(node, nodeType) {
-    node.nodeType = nodeType;
-    node.childNodes = [];
+    }
+    get textContent() {return this.data}
+    set textContent(value) {this.data = value}
+    get innerHTML() {return `<!--${escapeHTML(this.data)}-->`}
+    set innerHTML(value) {this.data = unescapeHTML(value)}
   }
 
   function escapeHTML(html) {
