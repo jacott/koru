@@ -8,8 +8,8 @@ define(function(require, exports, module) {
 
   koru.onunload(module, 'reload');
 
-  return loader => {
-    loader.load = (name, req, onload, config)=>{
+  return {
+    load(name, req, onload, config) {
       const mod = req.module;
 
       const provider = koru.buildPath(name)+'.html';
@@ -25,7 +25,6 @@ define(function(require, exports, module) {
         return pMod.exports;
       };
       onload();
-    };
+    },
   };
-
 });

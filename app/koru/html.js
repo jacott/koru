@@ -9,8 +9,8 @@ define(function(require, exports, module) {
   koru.onunload(module, 'reload');
 
   if (isServer) {
-    const loader = {};
-    require(['koru/html-server'], htmlServer => htmlServer(loader));
+    let loader;
+    require(['koru/html-server'], htmlServer => loader = htmlServer);
     return loader;
   }
 

@@ -21,7 +21,7 @@ define(function(require, exports, module) {
         const jsSt = fst.stat(outPath);
 
         if (srcSt === undefined)
-          throw new koru.Error(404, 'not found');
+          throw new koru.Error(404, outPath + ' not found');
 
         if (jsSt === undefined) fst.mkdir(Path.dirname(outPath));
 
