@@ -45,7 +45,7 @@ isClient && define(function(require, exports, module) {
 
       assert.dom('div#Foo', function () {
         assert.same(this.className, 'e1 e2');
-        assert.dom('span#barId', 'a\nb\nc\nAdam');
+        assert.dom('span#barId', 'a\nb\nc\nAdam some & <other>\u00a0text');
         assert.same(this.getAttribute('data-x'), 'x123');
         assert.same(this.getAttribute('data-dotted'), 'success');
       });

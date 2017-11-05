@@ -3,11 +3,13 @@ const htmlparser = requirejs.nodeRequire("htmlparser2");
 
 define(function(require, exports, module) {
   const Compilers       = require('koru/compilers');
+  const htmlEncode      = require('koru/dom/html-encode');
   const fst             = require('../fs-tools');
   const koru            = require('../main');
 
   koru.onunload(module, 'reload');
 
+  const {unescapeHTML} = htmlEncode;
   const IGNORE = {xmlns: true};
 
   class CompilerError extends SyntaxError {
@@ -49,7 +51,7 @@ define(function(require, exports, module) {
             }
           },
           ontext(text){
-            template.addText(text.replace(/^\s+/, ' ').replace(/\s+$/, ' '));
+            template.addText(unescapeHTML(text.replace(/(?:^\s+|\s+$)/g, ' ')));
           },
           onclosetag(name){
             if (name === 'template') {

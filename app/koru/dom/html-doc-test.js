@@ -244,7 +244,7 @@ if (i < 5) error("bad i");
 
     "test HTML entities"() {
       var div = document.createElement('div');
-      div.innerHTML = "&lt;&QUOT;&quot;&gt;&#39;&amp;&nbsp;&euro;";
+      div.innerHTML = "&lt;&quot;&quot;&gt;&#39;&amp;&nbsp;&euro;";
       assert.same(div.firstChild.textContent, '<"">\'&\xa0\u20ac');
       assert.same(div.innerHTML, '&lt;""&gt;\'&amp;&nbsp;\u20ac');
     },

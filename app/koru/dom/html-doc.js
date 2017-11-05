@@ -1,14 +1,17 @@
 define(function(require, exports, module) {
   if (isClient) return window.document.constructor;
-  const koru              = require('koru');
-  const Dom               = require('koru/dom/base');
-  const util              = require('koru/util');
-  const uColor            = require('koru/util-color');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom/base');
+  const htmlEncode      = require('koru/dom/html-encode');
+  const util            = require('koru/util');
+  const uColor          = require('koru/util-color');
+
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
   const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
   const {hasOwn} = util;
   const {SVGNS} = Dom;
+  const {escapeHTML, unescapeHTML} = htmlEncode;
 
   const style$ = Symbol(), cssText$ = Symbol(), pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
         needBuild$ = Symbol(), attributes$ = Symbol(),
@@ -45,22 +48,6 @@ define(function(require, exports, module) {
   const DOCUMENT_FRAGMENT_NODE = 11;
 
   const NOCLOSE = util.toMap("BR HR INPUT LINK META".split(' '));
-
-  const NAME_TO_CHAR = {
-    amp: '&',
-    quot: '"',
-    lt: '<',
-    gt: '>',
-    nbsp: '\xa0',
-    euro: '\u20ac',
-  };
-
-  const CHAR_TO_NAME = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '\xa0': '&nbsp;',
-  };
 
   const insertNodes = (from, toNode, pos)=>{
     const to = toNode.childNodes;
@@ -446,19 +433,6 @@ define(function(require, exports, module) {
     set textContent(value) {this.data = value}
     get innerHTML() {return `<!--${escapeHTML(this.data)}-->`}
     set innerHTML(value) {this.data = unescapeHTML(value)}
-  }
-
-  function escapeHTML(html) {
-    return String(html)
-      .replace(/[&<>\xa0]/g, m => CHAR_TO_NAME[m]);
-  }
-
-  function unescapeHTML(html) {
-    return html.replace(
-        /\&(#\d+|[a-z]+);/gi,
-      (m, d) => d[0] === '#' ? String.fromCharCode(+d.slice(1))
-        : NAME_TO_CHAR[d.toLowerCase()] || m
-    );
   }
 
   const origCssText = style=>{

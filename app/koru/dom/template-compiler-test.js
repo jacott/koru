@@ -28,7 +28,8 @@ isServer && define(function (require, exports, module) {
             name: 'span',
             attrs: [['=', 'id', ['', 'korulet']]],
             children: [
-              ' ', ['', 'helperName', ['=', 'foo', '\"a\nb\nc\n']], ' ',
+              ' ', ['', 'helperName', ['=', 'foo', '\"a\nb\nc\n']],
+              ' some & <other>\u00a0text\n      \t',
               ['', 'h2.has.parts'], ' ']
           }]}, {
             name: 'Fnord'
