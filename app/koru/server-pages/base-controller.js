@@ -11,16 +11,17 @@ define(function(require, exports, module) {
 
   const defaultActions = {
     index: ctl =>{
-      ctl.render(ctl.constructor.View.$render(ctl));
+      ctl.render(ctl.view.$render(ctl));
     },
     show: ctl =>{
-      const {View} = ctl.constructor;
-      ctl.render((View.Show||View).$render(ctl));
+      const {view} = ctl;
+      ctl.render((view.Show||view).$render(ctl));
     },
   };
 
   class BaseController {
-    constructor({request, response, pathParts, params}) {
+    constructor({view, request, response, pathParts, params}) {
+      this.view = view;
       this.request = request;
       this.response = response;
       this.pathParts = pathParts;
@@ -33,10 +34,10 @@ define(function(require, exports, module) {
 
     get App() {return this.constructor.App}
 
-    render(elm, {layout=this.App.defaultLayout}={}) {
+    render(content, {layout=this.App.defaultLayout}={}) {
       this[rendered$] = true;
       this.response.write('<!DOCTYPE html>\n');
-      this.response.end(layout.$render({controller: this, content: elm}).outerHTML);
+      this.response.end(layout.$render({controller: this, content}).outerHTML);
     }
 
     index() {return defaultActions.index(this)}

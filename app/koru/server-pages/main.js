@@ -34,7 +34,6 @@ define(function(require, exports, module) {
   const addViewController = (sp, name, View, Controller)=>{
     View.Controller = Controller;
     View.Controller.App = sp;
-    Controller.View = View;
     sp[views$][name] = View;
   };
 
@@ -43,14 +42,23 @@ define(function(require, exports, module) {
   };
 
   const requirePage = (id, {onunload}={})=>{
-    const htmlId = `koru/html!${id}`;
-    let View, Controller;
+    let viewId = `koru/html!${id}`;
+    require(viewId, _=>{}, (err, mod) =>{
+      if (err.error !== 404) return;
+      mod.unload();
+      viewId =`koru/html-md!${id}`;
+      require(viewId, _=>{}, err2 =>{
+        throw err2.error === 404 ? err : err2;
+      });
+    });
+    const viewMod = module.get(viewId);
+    let View, Controller = BaseController;
 
-    require([id, htmlId], (tplf, html) => {
+    require(id, (tplf) => {
       const controllerMod = module.get(id);
-      const viewMod = module.get(htmlId);
-      View = DomTemplate.newTemplate(viewMod, html);
-      Controller = tplf({View, Controller: BaseController});
+      View = DomTemplate.newTemplate(viewMod, viewMod.exports);
+      if (typeof tplf === 'function')
+        Controller = tplf({View, Controller: BaseController}) || BaseController;
       const unload = ()=>{
         koru.unload(controllerMod.id);
         koru.unload(viewMod.id);
@@ -106,7 +114,7 @@ define(function(require, exports, module) {
         if (view === undefined) return false;
         const params = searchIdx == -1 ? {}
               : util.searchStrToMap(urlPath.slice(searchIdx+1));
-        new view.Controller({request, response, pathParts, params});
+        new view.Controller({view, request, response, pathParts, params});
       };
       WebServer.registerHandler(module, pathRoot, this._handleRequest);
     }

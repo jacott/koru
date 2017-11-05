@@ -5,6 +5,7 @@ isServer && define(function (require, exports, module) {
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const DomTemplate     = require('koru/dom/template');
+  const fst             = require('koru/fs-tools');
   const TH              = require('koru/test');
   const api             = require('koru/test/api');
 
@@ -100,7 +101,9 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.webServer.deregisterHandler, 'DEFAULT');
       },
 
-      "test auto load"() {
+      "test auto load html"() {
+        removeTestBuild();
+
         const {sp} = v;
 
         sp._handleRequest(v.req, v.res, '/test-page1.html');
@@ -114,6 +117,17 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
                           '<div> Test page 1 message-1 </div> </body></html>');
+      },
+
+      "test auto load markdown"() {
+        removeTestBuild();
+        const {sp} = v;
+
+        sp._handleRequest(v.req, v.res, '/test-page-md.html');
+
+        assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
+        assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
+                          '<h2 id="test-foo-">test Markdown</h2> </body></html>');
       },
 
       "test $parser"() {
@@ -149,4 +163,9 @@ isServer && define(function (require, exports, module) {
       },
     },
   });
+
+  const removeTestBuild = ()=>{
+    fst.rm_r(path.join(v.sp._pageDirPath, '.build'));
+  };
+
 });

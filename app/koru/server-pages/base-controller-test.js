@@ -39,7 +39,7 @@ define(function (require, exports, module) {
       class MyController extends sut {
       }
 
-      MyController.View = {Show: {$render(ctl) {
+      opts.view = {Show: {$render(ctl) {
         return Dom.h({div: ctl.params.id});
       }}};
 
