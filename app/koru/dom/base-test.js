@@ -39,7 +39,7 @@ define(function (require, exports, module) {
     },
 
     "test nodeIndex"() {
-      var node = Dom.h({div: ['one', 'two',  'three']});
+      const node = Dom.h({div: ['one', 'two',  'three']});
 
       assert.same(Dom.nodeIndex(node.firstChild), 0);
       assert.same(Dom.nodeIndex(node.childNodes[1]), 1);

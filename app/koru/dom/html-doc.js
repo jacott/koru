@@ -10,8 +10,9 @@ define(function(require, exports, module) {
   const {hasOwn} = util;
   const {SVGNS} = Dom;
 
-  const style$ = Symbol(), attributes$ = Symbol();
-  const doc$ = Symbol();
+  const style$ = Symbol(), cssText$ = Symbol(), pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
+        needBuild$ = Symbol(), attributes$ = Symbol(),
+        doc$ = Symbol();
 
   const cssParser = new CssSelectorParser();
 
@@ -61,6 +62,23 @@ define(function(require, exports, module) {
     '\xa0': '&nbsp;',
   };
 
+  const insertNodes = (from, toNode, pos)=>{
+    const to = toNode.childNodes;
+    let mlen = to.length - pos;
+
+    let tlen = to.length += from.length;
+    while (--mlen >= 0)
+      to[--tlen] = to[pos+mlen];
+
+    for(let i = pos+from.length-1; i >= pos ; --i) {
+      const fnode = from[i-pos];
+      fnode.parentNode = toNode;
+      to[i] = fnode;
+    }
+
+    from.length = 0;
+  };
+
   class Element {
     constructor(nodeType) {
       this.nodeType = nodeType;
@@ -84,81 +102,56 @@ define(function(require, exports, module) {
       for(let i = 0; i < nodes.length; ++i) {
         if (nodes[i] === oldNode) {
           oldNode.parentNode = null;
-          if (newNode.parentNode)
-            newNode.parentNode.removeChild(newNode);
-          nodes[i] = newNode;
-          newNode.parentNode = this;
+          if (newNode.nodeType === DOCUMENT_FRAGMENT_NODE) {
+            const cns = newNode.childNodes;
+            nodes[i] = cns.pop();
+            insertNodes(cns, this, i);
+          } else {
+            if (newNode.parentNode != null)
+              newNode.parentNode.removeChild(newNode);
+            nodes[i] = newNode;
+            newNode.parentNode = this;
+          }
           return oldNode;
         }
       }
     }
 
     insertBefore(node, before) {
-      var parent = this;
       if (! before)
-        return parent.appendChild(node);
+        return this.appendChild(node);
 
       if (node.parentNode)
         node.parentNode.removeChild(node);
 
-      var nodes = parent.childNodes;
+      const nodes = this.childNodes;
 
-      for(var i = 0; i < nodes.length; ++i) {
+      for(let i = 0; i < nodes.length; ++i) {
         if (nodes[i] === before) {
           if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
-            var cns = node.childNodes;
-            var cnsLen = cns.length;
-            var j = nodes.length += cnsLen;
-            ++i;
-            while(--j > i)
-              nodes[j] = nodes[j-cnsLen];
-
-            while (--cnsLen >= 0)
-              (nodes[j--] = cns[cnsLen]).parentNode = parent;
-            cns.length = 0;
+            insertNodes(node.childNodes, this, i);
           } else {
 
-            node.parentNode = parent;
+            node.parentNode = this;
             nodes.splice(i, 0, node);
           }
-          return;
+          return node;
         }
       }
       throw new Error("before node is not a child");
     }
 
     appendChild(node) {
-      if (node.parentNode)
-        node.parentNode.removeChild(node);
       if (node.nodeType === DOCUMENT_FRAGMENT_NODE) {
-        var nodes = this.childNodes;
-        var cns = node.childNodes;
-        var cnsLen = cns.length;
-        var j = nodes.length += cnsLen;
-        while (--cnsLen >= 0)
-          (nodes[--j] = cns[cnsLen]).parentNode = this;
-        cns.length = 0;
+        insertNodes(node.childNodes, this, this.childNodes.length);
       } else {
+        if (node.parentNode != null)
+          node.parentNode.removeChild(node);
+
         node.parentNode = this;
         this.childNodes.push(node);
       }
-    }
-
-    cloneNode(deep) {
-      var copy = new this.constructor;
-
-      if (deep && copy.nodeType === DOCUMENT_NODE) {
-        var to = copy.childNodes;
-        to.pop();
-        util.forEach(this.childNodes, elm => {
-          elm = elm.cloneNode(true);
-          if (elm.tagName === 'BODY')
-            copy.body = elm;
-          to.push(elm);
-        });
-      }
-
-      return copy;
+      return node;
     }
 
     get style() {
@@ -167,34 +160,33 @@ define(function(require, exports, module) {
     }
 
     get firstChild() {
-      var nodes = this.childNodes;
+      const nodes = this.childNodes;
       return nodes.length ? nodes[0] : null;
     }
 
     get lastChild() {
-      var nodes = this.childNodes;
+      const nodes = this.childNodes;
       return nodes.length ? nodes[nodes.length - 1] : null;
     }
 
     get outerHTML() {return this.innerHTML}
     get innerHTML() {
-      var childNodes = this.childNodes;
-      var len = childNodes.length;
-      var result = [];
-      for(var i = 0; i < len; ++i) {
-        result[i] = childNodes[i].outerHTML;
+      const {childNodes} = this, len = childNodes.length;
+      let result = '';
+      for(let i = 0; i < len; ++i) {
+        result += childNodes[i].outerHTML;
       }
 
-      return result.join('');
+      return result;
     }
     set innerHTML(code) {
-      var node = this;
+      let node = this;
       node.childNodes = [];
-      var parser = new htmlparser.Parser({
+      const parser = new htmlparser.Parser({
         onopentag(name, attrs){
-          var elm = createHTMLElement(name);
+          const elm = createHTMLElement(name);
           node.appendChild(elm);
-          for(var attr in attrs)
+          for(const attr in attrs)
             elm.setAttribute(attr, attrs[attr]);
 
           node = elm;
@@ -216,21 +208,19 @@ define(function(require, exports, module) {
     set textContent(value) {this.childNodes = [new TextNode(value)]}
 
     get textContent() {
-      var childNodes = this.childNodes;
-      var len = childNodes.length;
+      const {childNodes} = this, len = childNodes.length;
 
-      var result = [];
-      for(var i = 0; i < len; ++i) {
-        var elm = childNodes[i];
-        result[i] = childNodes[i].textContent;
+      let result = '';
+      for(let i = 0; i < len; ++i) {
+        result += childNodes[i].textContent;
       }
-      return result.join('');
+      return result;
     }
 
     querySelectorAll(css) {
       css = cssParser.parse(css).rule;
 
-      var results = [];
+      const results = [];
       util.forEach(this.childNodes, node => {
         if (node.nodeType !== ELEMENT_NODE) return;
 
@@ -293,7 +283,7 @@ define(function(require, exports, module) {
     }
 
     cloneNode(deep) {
-      var copy = new DocumentFragment();
+      const copy = new DocumentFragment();
 
       deep && copyArray(this.childNodes, copy.childNodes);
       return copy;
@@ -326,24 +316,22 @@ define(function(require, exports, module) {
     set className(value) {this.setAttribute('class', value)}
     get className() {return this.getAttribute('class') || ''}
     get outerHTML() {
-      var tn = Dom.canonicalTagName(this);
-      var attrs = this[attributes$];
-      if (this[style$] !== undefined) {
-        var cssText = this.style._origCssText();
-      }
+      const tn = Dom.canonicalTagName(this);
+      const attrs = this[attributes$];
+      const cssText = this[style$] !== undefined ? origCssText(this.style) : undefined;
+      let open = tn;
       if (util.isObjEmpty(attrs)) {
-        var open = tn;
         if (cssText) open += ' style="'+cssText+'"';
       } else {
-        var open = [tn];
-        for(var attr in attrs) {
-          open.push(attr+'="'+attrs[attr]+'"');
+        const oa = [tn];
+        for(const attr in attrs) {
+          oa.push(attr+'="'+attrs[attr]+'"');
         }
-        cssText && open.push('style="'+cssText+'"');
-        open = open.join(' ');
+        cssText === undefined ||oa.push('style="'+cssText+'"');
+        open = oa.join(' ');
       }
 
-      if (! this.childNodes.length && hasOwn(NOCLOSE, this.tagName))
+      if (this.childNodes.length == 0 && hasOwn(NOCLOSE, this.tagName))
         return "<"+open+">";
 
       return "<"+open+">"+this.innerHTML+"</"+tn+">";
@@ -358,7 +346,7 @@ define(function(require, exports, module) {
     }
     getAttribute(name) {
       if (name === 'style')
-        return this.style._origCssText();
+        return origCssText(this.style);
       else
         return this[attributes$][name];
     }
@@ -366,7 +354,7 @@ define(function(require, exports, module) {
     get attributes() {
       const ans = [];
       if (this.style.length != 0)
-        ans.push({name: 'style', value: this.style._origCssText()});
+        ans.push({name: 'style', value: origCssText(this.style)});
       for (let name in this[attributes$])
         ans.push({name, value: this[attributes$][name]});
       return ans;
@@ -416,7 +404,7 @@ define(function(require, exports, module) {
 
     add(value) {
       value = ''+value;
-      var attrs = this.node[attributes$];
+      const attrs = this.node[attributes$];
       if (attrs.class) {
         this.contains(value) || (attrs.class += ' ' + value);
       } else {
@@ -425,7 +413,7 @@ define(function(require, exports, module) {
     }
 
     remove(value) {
-      var attrs = this.node[attributes$];
+      const attrs = this.node[attributes$];
       attrs.class = attrs.class.replace(new RegExp("\\s?\\b" + util.regexEscape(value) + "\\b"), '');
     }
   }
@@ -473,85 +461,94 @@ define(function(require, exports, module) {
     );
   }
 
-  function Style(node) {
-    var me = this;
-    me._node = node;
-    me._styles = {};
-    me._styleArray = [];
-    this._needBuild = true;
-  }
+  const origCssText = style=>{
+    if (style[needBuild$]) {
+      style[needBuild$] = false;
+      style[cssText$] = style.cssText;
+    }
+    return style[cssText$];
+  };
 
+  class Style {
+    constructor(node) {
+      this[styles$] = {};
+      this[styleArray$] = [];
+      this[pos$] = {};
+      this[needBuild$] = true;
+    }
 
-  Style.prototype = {
-    constructor: Style,
+    get length() {return this[styleArray$].length}
 
-    get length() {return this._styleArray.length},
+    item(index) {return this[styleArray$][index]}
 
-    item(index) {return this._styleArray[index]},
-
-    _setStyle(name, dname, value) {
-      this._needBuild = true;
-      var styles = this._styles;
-      var oldValue = styles[name];
+    setProperty(dname, value='') {
+      if (dname.slice(-5) === 'color')
+        value = value && uColor.toRgbStyle(value);
+      this[needBuild$] = true;
+      const styles = this[styles$];
+      const oldValue = styles[dname];
       if (oldValue === value) return;
       if (oldValue === undefined) {
-        styles[this._styleArray.length] = name;
-        this._styleArray.push(dname);
+        this[pos$][dname] = this[styleArray$].length;
+        this[styleArray$].push(dname);
       }
-      styles[dname] = styles[name] = value;
-    },
+      styles[dname] = value;
+    }
 
-    _origCssText() {
-      this._needBuild && this._rebuild();
-      return this._cssText;
-    },
+    getPropertyValue(dname) {
+      return this[styles$][dname];
+    }
 
-    _rebuild() {
-      this._needBuild = false;
-      this._cssText = this.cssText;
-    },
+    removeProperty(dname) {
+      const styles = this[styles$];
+      if (styles[dname] !== undefined) {
+        const poses = this[pos$];
+        this[styleArray$].splice(poses[dname], 1);
+        delete styles[dname];
+        delete poses[dname];
+        this[needBuild$] = true;
+      }
+    }
 
     get cssText() {
-      var sm = this._styles;
-      return this._styleArray.map(dname => {
-        var value = sm[dname];
-        if (! /color/.test(dname) && / /.test(value))
+      const sm = this[styles$];
+      return this[styleArray$].map(dname => {
+        let value = sm[dname];
+        if (dname === 'font-family' && value.indexOf(' ') !== -1)
           value = "'"+value+"'";
         return dname+": "+value+";";
       }).join(" ");
-    },
+    }
 
     set cssText(cssText) {
-      this._cssText = cssText;
-      var sm = this._styles = {};
-      var sa = this._styleArray = [];
-      this._needBuild = false;
-      var styles = cssText.split(/\s*;\s*/);
-      for(var i = 0; i < styles.length; ++i) {
-        var style = styles[i];
+      this[cssText$] = cssText;
+      const sm = this[styles$] = {};
+      const sa = this[styleArray$] = [];
+      this[needBuild$] = false;
+      const styles = cssText.split(/\s*;\s*/);
+      for(let i = 0; i < styles.length; ++i) {
+        const style = styles[i];
         if (! style) {
           styles.length = i;
           break;
         }
-        var idx = style.indexOf(':');
-        var dname = style.slice(0, idx);
-        var name = util.camelize(dname);
-        var value = style.slice(idx+1).trim();
+        const idx = style.indexOf(':');
+        const dname = style.slice(0, idx);
+        const name = util.camelize(dname);
+        let value = style.slice(idx+1).trim();
         if (/color/.test(dname))
           value = (value && uColor.toRgbStyle(value)) || '';
         sm[dname] = sm[name] = value;
         sa.push(dname);
       }
-    },
-  };
+    }
+  }
 
   'text-align font-size font-family font-weight font-style text-decoration background-color color'
     .split(' ').forEach(dname => {
       const name = util.camelize(dname);
-      function get() {return this._styles[name] || ''};
-      const set = /color/i.test(name) ? function (value) {
-        this._setStyle(name, dname, (value && uColor.toRgbStyle(value)) || '');
-      } : function (value) {this._setStyle(name, dname, value)};
+      function get() {return this[styles$][dname] || ''};
+      function set(value) {this.setProperty(dname, value)};
 
       Object.defineProperty(Style.prototype, name, {
         configurable: true,

@@ -38,6 +38,25 @@ define(function (require, exports, module) {
       assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
     },
 
+    "test appendChild"() {
+       const parent = Dom.h({div: [
+        {class: 'foo'},
+        {class: 'old-node'},
+      ]});
+      const oldParent = Dom.h({div: {class: 'new-node'}});
+      const newNode = oldParent.firstChild;
+
+      oldParent.appendChild(Dom.h({id: 'foo'}));
+
+      assert.same(
+        parent.appendChild(newNode),
+        newNode);
+      assert.equals(util.map(oldParent.childNodes, n => n.outerHTML), ['<div id=\"foo\"></div>']);
+
+      assert.same(newNode.parentNode, parent);
+      assert.same(parent.lastChild, newNode);
+    },
+
     "test replaceChild"() {
       /**
        * Replace the `oldChild` with the `newChild`
@@ -59,10 +78,36 @@ define(function (require, exports, module) {
       assert.same(oldParent.childNodes.length, 0);
     },
 
+    "test fragment to replaceChild"() {
+      const parent = Dom.h({div: [
+        {class: 'foo', div: 'f'},
+        {class: 'old-node', div: 'o'},
+        {class: 'bar', div: 'bar'},
+      ]});
+      const newNode = Dom.h(["x", "y", "z"]);
+
+      const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
+      assert.className(oldNode, 'old-node');
+      refute(oldNode.parentNode);
+      assert.equals(util.map(parent.childNodes, i => i.textContent).join(''),
+                    'fxyzbar');
+    },
+
     "test setAttribute"() {
       const elm = document.createElement('div');
       elm.setAttribute('width', 500);
       assert.same(elm.getAttribute('width'), '500');
+    },
+
+    "test doc fragment cloneNode"() {
+      const df1 =Dom.h(['a', 'b', 'c']);
+
+      const df2 = df1.cloneNode();
+      assert.same(df2.childNodes.length, 0);
+
+      const df3 = df1.cloneNode(true);
+      assert.equals(util.map(df3.childNodes, i => i.textContent), ['a', 'b', 'c']);
+      refute.same(df1.firstChild, df3.firstChild);
     },
 
     "test construction"() {
@@ -135,21 +180,23 @@ define(function (require, exports, module) {
 
     "test style.cssText"() {
       var top = document.createElement('div');
-      top.setAttribute('style', 'color:#ff0000;font-weight:bold');
+      top.setAttribute('style', 'border:1px solid red;font-weight:bold;color:#ff0000');
       assert.same(top.style.color, 'rgb(255, 0, 0)');
       assert.same(top.style.fontWeight, 'bold');
       assert.same(top.style['font-weight'], 'bold');
-      assert.same(top.style.cssText, 'color: rgb(255, 0, 0); font-weight: bold;');
-      assert.same(top.getAttribute('style'), 'color:#ff0000;font-weight:bold');
+      assert.same(top.style.getPropertyValue('font-weight'), 'bold');
+      assert.same(top.style.cssText, 'border: 1px solid red; font-weight: bold; color: rgb(255, 0, 0);');
+      assert.same(top.getAttribute('style'), 'border:1px solid red;font-weight:bold;color:#ff0000');
+      top.style.removeProperty('border');
       top.style.fontWeight = 'normal';
-      assert.same(top.getAttribute('style'), 'color: rgb(255, 0, 0); font-weight: normal;');
+      assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0);');
       top.style.textDecoration = 'underline';
       assert.match(top.style.item(2), /^text-decoration/);
-      assert.same(top.getAttribute('style'), 'color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline;');
+      assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;');
       assert.same(top.style.textAlign, '');
-      assert.same(top.outerHTML, '<div style="color: rgb(255, 0, 0); font-weight: normal; text-decoration: underline;"></div>');
+      assert.same(top.outerHTML, '<div style="font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;"></div>');
       top.style.fontFamily = 'foo bar';
-      assert.match(top.style.cssText, /^color: rgb\(255, 0, 0\); font-weight: normal; text-decoration: underline; font-family: ['"]?foo bar["']?;$/);
+      assert.match(top.style.cssText, /^font-weight: normal; color: rgb\(255, 0, 0\); text-decoration: underline; font-family: ['"]?foo bar["']?;$/);
     },
 
     "test insertBefore"() {
@@ -164,10 +211,16 @@ define(function (require, exports, module) {
       var frag = document.createDocumentFragment();
       frag.appendChild(document.createElement('x1'));
       frag.appendChild(document.createElement('x2'));
+      frag.appendChild(document.createElement('x3'));
+      frag.appendChild(document.createElement('x4'));
+      frag.appendChild(document.createElement('x5'));
 
       top.insertBefore(frag, b);
 
-      assert.sameHtml(top.innerHTML, '<i></i><x1></x1><x2></x2><b></b>');
+      assert.same(top.childNodes[2].parentNode, top);
+
+
+      assert.sameHtml(util.map(top.childNodes, n=>n.tagName).join(''), 'IX1X2X3X4X5B');
     },
 
     "test innerHTML"() {
