@@ -19,6 +19,8 @@ define(function(require, exports, module) {
     },
   };
 
+  const HEADER = '<!DOCTYPE html>\n', HEADER_LEN = HEADER.length;
+
   class BaseController {
     constructor({view, request, response, pathParts, params}) {
       this.view = view;
@@ -35,9 +37,15 @@ define(function(require, exports, module) {
     get App() {return this.constructor.App}
 
     render(content, {layout=this.App.defaultLayout}={}) {
+      const data = layout.$render({controller: this, content}).outerHTML;
+      const headerLen = data.slice(0,2) === '<!' ? 0 : HEADER_LEN;
       this[rendered$] = true;
-      this.response.write('<!DOCTYPE html>\n');
-      this.response.end(layout.$render({controller: this, content}).outerHTML);
+      this.response.writeHead(200, {
+        'Content-Length': HEADER_LEN+Buffer.byteLength(data, 'utf8'),
+        'Content-Type': 'text/html; charset=utf-8',
+      });
+      if (headerLen !== 0) this.response.write(HEADER);
+      this.response.end(data);
     }
 
     index() {return defaultActions.index(this)}

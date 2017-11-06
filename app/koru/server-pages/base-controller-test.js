@@ -20,6 +20,7 @@ define(function (require, exports, module) {
       v.opts = {
         request: {},
         response: {
+          writeHead: stub(),
           write: stub(),
           end: stub(),
         },
@@ -71,7 +72,7 @@ define(function (require, exports, module) {
         }
 
         foo() {
-          this.render(Dom.h({div: ['foo']}), {layout: {$render({content}) {
+          this.render(Dom.h({div: ['foo€']}), {layout: {$render({content}) {
             return Dom.h({main: content});
           }}});
         }
@@ -84,7 +85,39 @@ define(function (require, exports, module) {
       assert.same(controller.pathParts, opts.pathParts);
       assert.same(controller.params, opts.params);
 
-      assert.calledWith(opts.response.end, '<main><div>foo</div></main>');
+      assert.calledWith(opts.response.writeHead, 200, {
+        'Content-Length': 46,
+        'Content-Type': 'text/html; charset=utf-8',
+      });
+      assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
+      assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
+    },
+
+    "test DOCTYPE supplied"() {
+      const {opts} = v;
+      opts.pathParts = [];
+
+      class MyController extends sut {
+        index() {
+          this.render(Dom.h({body: ['x']}), {layout: {$render({content}) {
+            return {outerHTML: '<!CUSTOM>'+content.outerHTML};
+          }}});
+        }
+      }
+
+      const controller = new MyController(opts);
+
+      assert.same(controller.request, opts.request);
+      assert.same(controller.response, opts.response);
+      assert.same(controller.pathParts, opts.pathParts);
+      assert.same(controller.params, opts.params);
+
+      assert.calledWith(opts.response.writeHead, 200, {
+        'Content-Length': 39,
+        'Content-Type': 'text/html; charset=utf-8',
+      });
+      refute.called(opts.response.write);
+      assert.calledWith(opts.response.end, '<!CUSTOM><body>x</body>');
     },
   });
 });
