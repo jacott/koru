@@ -42,7 +42,7 @@ define(function(require, exports, module) {
   };
 
   const requirePage = (id, {onunload}={})=>{
-    let viewId = `koru/html!${id}`;
+    let viewId = `koru/html-server!${id}`;
     require(viewId, _=>{}, (err, mod) =>{
       if (err.error !== 404) return;
       mod.unload();
