@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-cd `dirname "$0"`/..
+test "$2" = "nochdir" || cd `dirname "$0"`/..
 
 export KORU_APP_NAME=$$appName$$
 export TZ=UTC
