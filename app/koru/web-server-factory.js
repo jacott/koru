@@ -26,7 +26,7 @@ define(function (require, exports, module) {
           msg = JSON.stringify(msg);
           attrs['Content-Type'] = 'application/json';
         }
-        attrs['Content-Length'] = msg.length;
+        attrs['Content-Length'] = Buffer.byteLength(msg);
         res.writeHead(err, attrs);
         res.end(msg);
       } else {

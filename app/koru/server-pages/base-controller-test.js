@@ -1,8 +1,9 @@
 define(function (require, exports, module) {
   const Dom             = require('koru/dom');
   const TH              = require('koru/test');
+  const util            = require('koru/util');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd} = TH;
 
   const sut  = require('./base-controller');
   let v = null;
@@ -18,7 +19,9 @@ define(function (require, exports, module) {
     setUp() {
       v = {};
       v.opts = {
-        request: {},
+        request: {
+          headers: {},
+        },
         response: {
           writeHead: stub(),
           write: stub(),
@@ -33,11 +36,33 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test defaultETag"() {
+      assert.match(sut.defaultETag, /^h[0-9]+$/);
+    },
+
+    "test not modified"() {
+      const {opts} = v;
+      opts.view = {$render(ctl) {
+        return Dom.h({div: ctl.params.id});
+      }};
+      opts.pathParts = [];
+      opts.request.headers['if-none-match'] = '  W/"'+sut.defaultETag + '"\n\n';
+
+      class MyController extends sut {
+        get App() {return genericApp()}
+      }
+      new MyController(opts);
+
+      assert.same(opts.response.statusCode, 304);
+
+    },
+
     "test default show"() {
       const {opts} = v;
       opts.pathParts = ['123'];
 
       class MyController extends sut {
+        get eTag() {return "x123"}
       }
 
       opts.view = {Show: {$render(ctl) {
@@ -48,6 +73,10 @@ define(function (require, exports, module) {
 
       new MyController(opts);
 
+      assert.calledWith(opts.response.writeHead, 200, {
+        'Content-Length': 43, 'Content-Type': 'text/html; charset=utf-8',
+        ETag: 'W/\"x123\"',
+      });
       assert.calledWith(opts.response.end, '<main><div>123</div></main>');
 
       /** implement show **/
@@ -88,6 +117,7 @@ define(function (require, exports, module) {
       assert.calledWith(opts.response.writeHead, 200, {
         'Content-Length': 46,
         'Content-Type': 'text/html; charset=utf-8',
+        ETag: TH.match.string,
       });
       assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
       assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
@@ -115,6 +145,7 @@ define(function (require, exports, module) {
       assert.calledWith(opts.response.writeHead, 200, {
         'Content-Length': 39,
         'Content-Type': 'text/html; charset=utf-8',
+        ETag: TH.match.string,
       });
       refute.called(opts.response.write);
       assert.calledWith(opts.response.end, '<!CUSTOM><body>x</body>');

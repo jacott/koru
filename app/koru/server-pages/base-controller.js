@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
-  const util  = require('koru/util');
+  const koru            = require('koru');
+  const util            = require('koru/util');
 
   const rendered$ = Symbol();
 
@@ -11,11 +12,11 @@ define(function(require, exports, module) {
 
   const defaultActions = {
     index: ctl =>{
-      ctl.render(ctl.view.$render(ctl));
+      ctl.checkETag() || ctl.render(ctl.view.$render(ctl));
     },
     show: ctl =>{
       const {view} = ctl;
-      ctl.render((view.Show||view).$render(ctl));
+      ctl.checkETag() || ctl.render((view.Show||view).$render(ctl));
     },
   };
 
@@ -36,14 +37,30 @@ define(function(require, exports, module) {
 
     get App() {return this.constructor.App}
 
+    get eTag() {return this.constructor.defaultETag}
+
+    checkETag() {
+      const reqETag = this.request.headers['if-none-match'];
+      if (reqETag === undefined || reqETag.replace(/^[^"]*"([^"]*)"[\s\S]*$/, '$1') !== this.eTag)
+        return false;
+
+      this.response.statusCode = 304;
+      this.response.end('Not Modified');
+      return true;
+    }
+
     render(content, {layout=this.App.defaultLayout}={}) {
       const data = layout.$render({controller: this, content}).outerHTML;
       const headerLen = data.slice(0,2) === '<!' ? 0 : HEADER_LEN;
       this[rendered$] = true;
-      this.response.writeHead(200, {
+      const header = {
         'Content-Length': HEADER_LEN+Buffer.byteLength(data, 'utf8'),
         'Content-Type': 'text/html; charset=utf-8',
-      });
+      };
+      const {eTag} = this;
+      if (eTag !== undefined)
+        header.ETag = `W/"${eTag}"`;
+      this.response.writeHead(200, header);
       if (headerLen !== 0) this.response.write(HEADER);
       this.response.end(data);
     }
@@ -63,6 +80,8 @@ define(function(require, exports, module) {
       }
     }
   }
+
+  BaseController.defaultETag = koru.versionHash;
 
   return BaseController;
 });
