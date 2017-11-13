@@ -18,13 +18,7 @@ define(function (require, exports, module) {
     let _preloadDict = message.newGlobalDict();
     let dictHash = [1,2,3,5, 7,11,13,17]; // dont' change this without bumping koru.PROTOCOL_VERSION
     let dictHashStr = null;
-
-    const {version, versionHash} = (()=>{
-      if (process.env.KORU_APP_VERSION === undefined)
-        return {version: 'dev', versionHash: 'h'+Date.now()};
-      const parts = process.env.KORU_APP_VERSION.split(',');
-      return {version: parts[0], versionHash: parts[1]};
-    })();
+    const {version, versionHash} = koru;
 
     globalDictAdders[module.id] = adder => {
       for (const name in session._rpcs) {

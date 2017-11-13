@@ -1,3 +1,5 @@
+/*global WebSocket, KORU_APP_VERSION */
+
 define(function(require, exports, module) {
   const util     = require('./util-server');
 
@@ -7,6 +9,12 @@ define(function(require, exports, module) {
     koru.onunload(module, 'reload');
 
     let dbBroker = null;
+
+    {
+      const versionParts = (process.env.KORU_APP_VERSION || 'dev,h'+util.dateNow()).split(',');
+      koru.version = versionParts[0];
+      koru.versionHash = versionParts[1];
+    }
 
     util.merge(koru, {
       global,
@@ -23,6 +31,7 @@ define(function(require, exports, module) {
 
       appDir: koru.config.appDir || module.toUrl('').slice(0,-1),
       libDir: requirejs.nodeRequire('path').resolve(module.toUrl('.'), '../../..'),
+
 
       afTimeout(func, duration) {
         let cancel = koru.setTimeout(func, duration);

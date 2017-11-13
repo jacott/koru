@@ -1,4 +1,4 @@
-/*global WebSocket, KORU_APP_VERSION */
+/*global WebSocket */
 
 define(function (require, exports, module) {
   const util                   = require('koru/util');

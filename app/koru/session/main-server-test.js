@@ -39,9 +39,7 @@ isServer && define(function (require, exports, module) {
         adder('g1'); adder('g2');
       });
 
-      assert.same(v.sess.versionHash[0], 'h');
-
-      assert.between(v.sess.versionHash.slice(1), Date.now() - 2000, Date.now() + 2000);
+      assert.same(v.sess.versionHash, koru.versionHash);
 
       v.sess.versionHash = 'h1';
 

@@ -161,12 +161,8 @@ define(function (require, exports, module) {
     },
 
     "test initial KORU_APP_VERSION"() {
-      this.onEnd(function () {
-        delete process.env['KORU_APP_VERSION'];
-      });
-
-      process.env['KORU_APP_VERSION'] = "dev,h1";
-
+      TH.stubProperty(koru, 'version', 'dev');
+      TH.stubProperty(koru, 'versionHash', 'h1');
       const sess = sut(v.mockSess);
 
       assert.same(sess.versionHash, "h1");
