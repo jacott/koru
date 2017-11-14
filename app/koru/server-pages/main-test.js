@@ -94,6 +94,14 @@ isServer && define(function (require, exports, module) {
                           TH.match(/layouts\/\.build\/default\.less\.css/));
       },
 
+      "test css helper"() {
+        stub(fst, 'readFile').returns({toString() {return "css-output"}});
+        assert.equals(Dom._helpers.css.call({controller: {App: v.sp}}, "my-css-page"),
+                      'css-output');
+
+        assert.calledWith(fst.readFile, v.sp._pageDirPath+'/my-css-page.css');
+      },
+
       "test stop"() {
         const {sp} = v;
         v.webServer.deregisterHandler = stub();

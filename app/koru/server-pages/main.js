@@ -26,6 +26,11 @@ define(function(require, exports, module) {
       }
     },
 
+    css(file) {
+      const {App} = this.controller;
+      return fst.readFile(path.join(App._pageDirPath, file+".css")).toString();
+    },
+
     page() {
       return this.controller.pathParts[0] || "index";
     },
