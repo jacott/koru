@@ -26,9 +26,10 @@ isServer && define(function (require, exports, module) {
         nested: [{
           name: 'Bar', nodes: [{
             name: 'span',
-            attrs: [['=', 'id', ['', 'korulet']]],
+            attrs: [['=', 'id', ['', 'join', 'korulet', '"\n           ']],
+                    ['=', 'data-foo', ['', 'join', '"the', 'quick', '"brown', 'fox']]],
             children: [
-              ' ', ['', 'helperName', ['=', 'foo', '\"a\nb\nc\n']],
+              ' ', ['', 'helperName', ['=', 'foo', '"a\nb\nc\n']],
               ' some & <other>\u00a0text\n      \t',
               ['', 'h2.has.parts'], ' ']
           }]}, {
@@ -40,7 +41,7 @@ isServer && define(function (require, exports, module) {
           name: 'div',
           attrs: [
             ['=', 'id', 'Foo'], ['=', 'class', ['', 'classes']],
-            ['', 'attrs'], ['', 'dotted', '.arg.has.parts']],
+            ['', 'attrs'], ['', 'dotted', '.arg.has.parts', '"literal']],
           children: [
             ' ', ['>', 'Bar'], ' ', {
               name: 'svg',

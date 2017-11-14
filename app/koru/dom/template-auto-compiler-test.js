@@ -34,7 +34,9 @@ isClient && define(function(require, exports, module) {
       Dom.Test.Foo.Bar.$helpers({
         korulet() {
           return 'barId';
-        }
+        },
+        quick() {return 'QUICK'},
+        fox() {return 'FOX'},
       });
 
       const elm = Dom.Test.Foo.$autoRender({
@@ -45,7 +47,10 @@ isClient && define(function(require, exports, module) {
 
       assert.dom('div#Foo', function () {
         assert.same(this.className, 'e1 e2');
-        assert.dom('span#barId', 'a\nb\nc\nAdam some & <other>\u00a0text');
+        assert.dom('span[data-foo]', 'a\nb\nc\nAdam some & <other>\u00a0text', span =>{
+          assert.equals(span.id, 'barId\n           ');
+          assert.equals(span.getAttribute('data-foo'), 'theQUICKbrownFOX');
+        });
         assert.same(this.getAttribute('data-x'), 'x123');
         assert.same(this.getAttribute('data-dotted'), 'success');
       });

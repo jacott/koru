@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const Dom             = require('koru/env!koru/dom/dom');
   const util            = require('koru/util');
 
+  Dom._helpers.join = (...args) => args.join('');
+
   util.merge(Dom, {
     registerHelpers(helpers) {
       util.merge(this._helpers, helpers);

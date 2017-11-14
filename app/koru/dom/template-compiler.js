@@ -5,9 +5,6 @@ define(function(require, exports, module) {
   const Compilers       = require('koru/compilers');
   const htmlEncode      = require('koru/dom/html-encode');
   const fst             = require('../fs-tools');
-  const koru            = require('../main');
-
-  koru.onunload(module, 'reload');
 
   const {unescapeHTML} = htmlEncode;
   const IGNORE = {xmlns: true};
@@ -157,16 +154,16 @@ define(function(require, exports, module) {
   }
 
   function extractBraces(text) {
-    const parts = text.split('{{');
+    const parts = text.split(/({{[\s\S]*?}})/);
+
     if (parts.length === 1) return text;
+    if (parts[parts.length-1] === '') parts.pop();
     if (parts[0] === '') parts.shift();
 
     for(let i = 0; i < parts.length; ++i) {
-
-      const m = /([\s\S]*)}}([\s\S]*)/.exec(parts[i]);
-      if (m) {
-        parts[i] = [compileBraceExpr(m[1]), m[2].replace(/^\s+$/, ' ')];
-      }
+      const part = parts[i];
+      if (/^{{[\s\S]*?}}$/.test(part))
+        parts[i] = [compileBraceExpr(part.slice(2,-2).trim())];
     }
 
     return parts;
@@ -207,11 +204,13 @@ define(function(require, exports, module) {
   function justOne(nodes) {
     if (typeof nodes === 'string') return nodes;
 
+
     for(let i=0; i < nodes.length; ++i) {
       let row = nodes[i];
       if (row) {
-        row = row[0];
-        if (typeof row === 'string' || row.length < 3) return row;
+        if (typeof row === 'string') continue;
+        row = nodes[i] = row[0];
+        if (typeof row === 'string' || row.length < 3) continue;
         for(let j = 0; j < row.length; ++j) {
           const part = row[j];
           if (part.indexOf('.') !== -1) {
@@ -219,9 +218,24 @@ define(function(require, exports, module) {
           }
         }
 
-        return row;
+//        return row;
       }
     }
+    if (nodes.length == 1) return nodes[0];
+    const ans = ['', 'join'];
+    for(let i=0; i < nodes.length; ++i) {
+      const row = nodes[i];
+      if (typeof row === 'string')
+        ans.push('"'+row);
+      else {
+        if (row.length == 2)
+          ans.push(row[1]);
+        else
+          ans.push(row);
+      }
+
+    }
+    return ans;
   }
 
   function tokenizeWithQuotes(bexpr, result) {
@@ -230,7 +244,7 @@ define(function(require, exports, module) {
       bexpr = bexpr.trim();
       if (bexpr.length === 0) return;
 
-      const m = /^((?:"[^"]*"|'[^']*')|{{(?:[^}]+}}|(?:[^}]+}[^}])+[^}]*}})|[:-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
+      const m = /^((?:"[^"]*"|'[^']*')|{{[\s\S]*?}}|[:-\w]+=(?:"[^"]*"|'[^']*'|[-\w]+))([\s\S]*)$/.exec(bexpr) || /([-\w\/\.]+)([\s\S]*)$/.exec(bexpr);
 
       if (m) {
         addToken(m[1], result);
