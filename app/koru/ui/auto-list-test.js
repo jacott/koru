@@ -395,11 +395,24 @@ isClient && define(function (require, exports, module) {
         assertVisible(list, [1,2,4], [5]);
       },
 
-      "test remove all invisible"() {
+      "test remove all visible"() {
         const list = v.newList(4);
         v.b3.$remove();
         v.b1.$remove();
         assertVisible(list, [2,4,5]);
+      },
+
+      "test remove invisible"() {
+        const list = v.newList(3);
+        createBook(6);
+        createBook(7);
+        assertVisible(list, [1,2,3], [4,5,6,7]);
+
+        v.b6.$remove();
+        v.b7.$remove();
+        createBook(2.5);
+
+        assertVisible(list, [1,2,2.5], [3,4,5]);
       },
 
       "test last visible ticket value not important"() {
@@ -440,6 +453,12 @@ isClient && define(function (require, exports, module) {
 
         v.b2.$remove(); // check lastVis
         assertVisible(list, [1,3,4], [5]);
+      },
+
+      "test move lastVis to lastVis"() {
+        const list = v.newList(3);
+        v.b3.$update('pageCount', v.b3.pageCount+.5);
+        assertVisible(list, [1,2,3], [4,5]);
       },
 
       "test move within hidden to hidden"() {
@@ -623,7 +642,7 @@ isClient && define(function (require, exports, module) {
         refute.dom('div', 'a2');
         refute(list.elm(v.b2));
         assert.equals(mapEntries(), ['b4', 'b1', 'b3']);
-        assert.dom(':nth-child(3', 'b3');
+        assert.dom(':nth-child(3)', 'b3');
 
         v.b4.$remove();
         refute.dom('div', 'b4');

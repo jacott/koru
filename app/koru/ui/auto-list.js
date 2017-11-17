@@ -313,6 +313,7 @@ define(function(require, exports, module) {
       entries.deleteNode(node);
       entries.addNode(node);
       const nn = entries.nextNode(node);
+      if (nn === fromNode) return; // position not changed
       if (node[elm$] === null) {
         /** hidden from **/
         if (nn !== null && nn[elm$] !== null) {
@@ -342,6 +343,36 @@ define(function(require, exports, module) {
   };
 
   AutoList.elm$ = elm$;
+
+  /*
+  **  const assertPv = pv=>{
+  **    const {limit, entries: {size}, lastVis} = pv;
+  **
+  **    const overLimit = size - limit;
+  **
+  **    try {
+  **      if (overLimit > 0) {
+  **        if (lastVis == null)
+  **          throw new Error("lastVis is null");
+  **        else {
+  **          let node = pv.entries.lastNode;
+  **          for (let i = size; i > limit; --i)
+  **            node = pv.entries.previousNode(node);
+  **          if (lastVis !== node)
+  **            throw new Error("lastVis in wrong place");
+  **        }
+  **      } else if (overLimit == 0) {
+  **        if (lastVis !== pv.entries.lastNode)
+  **          throw new Error("lastVis not lastNode");
+  **      } else if (lastVis != null) {
+  **        throw new Error("lastVis not null");
+  **      }
+  **    } catch(ex) {
+  **      debugger;
+  **    }
+  **  };
+  **
+  */
 
   return AutoList;
 });
