@@ -410,7 +410,7 @@ define(function(require, exports, module) {
       if (elm != null) {
         Dom.destroyData(elm);
         if (elm.parentNode === null) return false;
-        elm.parentNode.removeChild(elm);
+        elm.remove();
         return true;
       }
     },
@@ -420,7 +420,7 @@ define(function(require, exports, module) {
       if (! parent) return;
       const end = start[endMarker$];
       for(let elm = start.nextSibling; elm && elm !== end; elm = start.nextSibling) {
-        parent.removeChild(elm);
+        elm.remove();
         Dom.destroyData(elm);
       }
     },
@@ -431,7 +431,7 @@ define(function(require, exports, module) {
       let row;
       while((row = elm.firstChild) !== null) {
         Dom.destroyData(row);
-        elm.removeChild(row);
+        row.remove();
       }
     },
 
@@ -544,11 +544,11 @@ define(function(require, exports, module) {
     removeToInsertLater(element) {
       var parentNode = element.parentNode;
       var nextSibling = element.nextSibling;
-      parentNode.removeChild(element);
+      element.remove();
       if (nextSibling) {
-        return function() {parentNode.insertBefore(element, nextSibling)};
+        return ()=> parentNode.insertBefore(element, nextSibling);
       } else {
-        return function() {parentNode.appendChild(element)};
+        return ()=> parentNode.appendChild(element);
       };
     },
   });

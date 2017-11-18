@@ -21,11 +21,11 @@ define(function(require, exports, module) {
           if (idx === -1) return;
           name = name.slice(0, idx) + "/.build" + name.slice(idx) + '.css';
         }
-        let node = head.querySelector('head>link[href="/'+name+'"]');
-        node && head.removeChild(node);
+        const node = head.querySelector('head>link[href="/'+name+'"]');
+        node === null || node.remove();
 
         if (type === 'L') {
-          node = document.createElement('link');
+          const node = document.createElement('link');
           node.rel = 'stylesheet';
           node.async = true;
           node.href = '/'+name;
@@ -41,7 +41,7 @@ define(function(require, exports, module) {
       const {head} = document;
       const sheets = document.querySelectorAll('head>link[rel=stylesheet]');
       for(let i = 0; i < sheets.length; ++i) {
-        head.removeChild(sheets[i]);
+        sheets[i].remove();
       }
     }
   }

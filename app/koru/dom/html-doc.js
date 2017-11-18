@@ -69,8 +69,15 @@ define(function(require, exports, module) {
   class Element {
     constructor(nodeType) {
       this.nodeType = nodeType;
+      this.parentNode = null;
       this.childNodes = [];
     }
+
+    remove() {
+      if (this.parentNode != null)
+        this.parentNode.removeChild(this);
+    }
+
     removeChild(node) {
       const nodes = this.childNodes;
 
@@ -108,7 +115,7 @@ define(function(require, exports, module) {
       if (! before)
         return this.appendChild(node);
 
-      if (node.parentNode)
+      if (node.parentNode != null)
         node.parentNode.removeChild(node);
 
       const nodes = this.childNodes;

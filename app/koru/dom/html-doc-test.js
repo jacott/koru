@@ -57,6 +57,13 @@ define(function (require, exports, module) {
       assert.same(parent.lastChild, newNode);
     },
 
+    "test remove"() {
+      const n = Dom.h({div: [{id: 'a'}, {id: 'b'}]});
+
+      n.lastChild.remove();
+      assert.same(n.lastChild.id, 'a');
+    },
+
     "test replaceChild"() {
       /**
        * Replace the `oldChild` with the `newChild`

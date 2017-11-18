@@ -289,7 +289,7 @@ define(function(require, exports, module) {
         range.collapse();
         Dom.setRange(range);
         execCommand('insertHTML', '<div><br></div>');
-        temp.parentNode.removeChild(temp);
+        temp.remove();
       }
     },
     previousSection() {
@@ -308,7 +308,7 @@ define(function(require, exports, module) {
         range.collapse();
         Dom.setRange(range);
         execCommand('insertHTML', '<div><br></div>');
-        temp.parentNode.removeChild(temp);
+        temp.remove();
       }
     },
     newline() {
@@ -584,7 +584,7 @@ define(function(require, exports, module) {
       const input = event.target;
       const fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
-        input.removeChild(fc);
+        fc.remove();
 
       util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), function (node) {
         switch (node.tagName) {
@@ -996,15 +996,15 @@ define(function(require, exports, module) {
     const node = range.startContainer;
     if (node.nodeType !== TEXT_NODE) return;
     let offset = range.startOffset;
-    let other, parent = node.parentNode;
+    let other, parent = other.parentNode;
     while ((other = node.previousSibling) && other.nodeType === TEXT_NODE) {
       node.textContent = other.textContent + node.textContent;
       offset += other.textContent.length;
-      parent.removeChild(other);
+      other.remove();
     }
     while ((other = node.nextSibling) && other.nodeType === TEXT_NODE) {
       node.textContent = node.textContent + other.textContent;
-      parent.removeChild(other);
+      other.remove();
     }
     node.textContent = fixSpaces(node.textContent);
     node.textContent.length || killNode();
@@ -1020,7 +1020,7 @@ define(function(require, exports, module) {
         if (other && other.nodeType === TEXT_NODE)
           offset =  other.textContent.length;
       }
-      parent.removeChild(node);
+      node.remove();
       if (! other) {
         if (isBlockNode(parent))
           parent.appendChild(node = BR.cloneNode());

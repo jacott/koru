@@ -180,8 +180,7 @@ define(function(require, exports, module) {
     const ln = editorELm.getElementsByClassName('ln')[0];
     if (ln) {
       const dest = ln.previousSibling;
-      const parent = ln.parentNode;
-      parent && parent.removeChild(ln);
+      ln.remove();
       if (dest) {
         const destOffset = dest.length;
 
