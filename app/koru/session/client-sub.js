@@ -19,7 +19,8 @@ define(function(require, exports, module) {
     stopped(this);
     if (! this.waiting) return;
 
-    session.state.decPending(); this.waiting = false;
+    this.waiting = false;
+    session.state.decPending();
   }
 
   function stopped(sub) {
@@ -97,7 +98,8 @@ define(function(require, exports, module) {
                                      this._id, this.name, JSON.stringify(this.args));
       if (this.waiting) return;
 
-      this.session.state.incPending(); this.waiting = true;
+      this.waiting = true;
+      this.session.state.incPending();
     }
 
     _received(code, data) {
@@ -110,7 +112,8 @@ define(function(require, exports, module) {
         this.lastSubscribed = data;
       if (! this.waiting) return;
 
-      this.session.state.decPending(); this.waiting = false;
+      this.waiting = false;
+      this.session.state.decPending();
       if (callback !== null) {
         code === 200 ? callback(null) : callback([code, data]);
         if (! this.repeatResponse)

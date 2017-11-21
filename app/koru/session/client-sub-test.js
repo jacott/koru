@@ -12,6 +12,8 @@ isClient && define(function (require, exports, module) {
   const stateFactory = require('./state').constructor;
   const TH           = require('./test-helper');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const ClientSub    = require('./client-sub');
   var test, v;
 
@@ -39,6 +41,25 @@ isClient && define(function (require, exports, module) {
       v = null;
     },
 
+    "test no longer waiting when decPending"() {
+      const sub = new ClientSub(v.sess, "1", "Library", []);
+      let incCount = 0, decCount = 0;
+      intercept(v.sess.state, 'incPending', ()=>{
+        ++incCount;
+        assert.isTrue(sub.waiting);
+      });
+      intercept(v.sess.state, 'decPending', ()=>{
+        ++decCount;
+        assert.isFalse(sub.waiting);
+      });
+
+      sub._wait();
+      sub._received(200);
+
+      assert.same(incCount, 1);
+      assert.same(decCount, 1);
+    },
+
     "test onResponse"() {
       /**
        * Use this instead of passing a callback to subscribe to be notified each time the server
@@ -50,7 +71,7 @@ isClient && define(function (require, exports, module) {
        **/
       api.protoMethod('onResponse');
       const sub = new ClientSub(v.sess, "1", "Library", []);
-      sub.onResponse(v.cb = this.stub());
+      sub.onResponse(v.cb = stub());
       sub._wait();
       assert.isTrue(sub.waiting);
 
@@ -83,7 +104,7 @@ isClient && define(function (require, exports, module) {
        **/
       api.protoMethod('onFirstResponse');
       const sub = new ClientSub(v.sess, "1", "Library", []);
-      sub.onFirstResponse(v.cb = this.stub());
+      sub.onFirstResponse(v.cb = stub());
       sub._wait();
       assert.isTrue(sub.waiting);
 
