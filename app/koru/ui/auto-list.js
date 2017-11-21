@@ -368,7 +368,7 @@ define(function(require, exports, module) {
   **        throw new Error("lastVis not null");
   **      }
   **    } catch(ex) {
-  **      debugger;
+  **      throw ex;
   **    }
   **  };
   **

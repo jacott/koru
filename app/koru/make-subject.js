@@ -1,16 +1,19 @@
-define(['module', './main'], function(module, koru) {
-  return function makeSubject(
+define(function(require, exports, module) {
+  const util  = require('koru/util');
+
+  return (
     subject={}, observeName='onChange', notifyName='notify',
     {allStopped, init, stopAllName}={}
-  ) {
+  )=>{
     let firstOb = true;
-    const observers = new Set;
+    let globalId = 0;
+    const observers = util.createDictionary();
 
     if (stopAllName) {
       subject[stopAllName] = () => {
         firstOb = true;
-        observers.clear();
-        allStopped && allStopped(subject);
+        for (const key in observers) delete observers[key];
+        observersEmpty();
       };
     }
 
@@ -25,35 +28,33 @@ define(['module', './main'], function(module, koru) {
         init && init.call(subject);
       }
 
-      const obj = handle(callback);
-      observers.add(obj);
-
-      return obj;
+      let key = (++globalId).toString(36);
+      return observers[key] = {
+        callback,
+        stop() {
+          if (key === undefined) return;
+          delete observers[key];
+          key = undefined;
+          for (const _ in observers) return;
+          observersEmpty();
+        }
+      };
     };
 
     subject[notifyName] = (...args) => {
-      for(const handle of observers) {
-        handle.function(...args);
+      for(const key in observers) {
+        observers[key].callback(...args);
       }
 
       return args[0];
     };
 
-    return subject;
+    const observersEmpty = ()=>{
+      firstOb = true;
+      globalId = 0;
+      allStopped && allStopped(subject);
+    };
 
-    function handle(func) {
-      let key = {
-        function: func,
-        stop() {
-          if (key === null) return;
-          observers.delete(key);
-          for (const o of observers) return;
-          firstOb = true;
-          key = null;
-          allStopped && allStopped(subject);
-        }
-      };
-      return key;
-    }
+    return subject;
   };
 });

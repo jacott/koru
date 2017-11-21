@@ -170,7 +170,6 @@ define(function(require, exports, module) {
         var was = doc.$asChanges(changes);
       }
       if (doc.$save()) {
-
         onChange && onChange(doc, changes, was);
         return true;
       }
