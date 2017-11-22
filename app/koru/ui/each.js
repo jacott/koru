@@ -118,7 +118,7 @@ define(function(require, exports, module) {
     get list() {return this[private$].list}
 
     append(row) {
-      if (row == null) return;
+      if (! row) return;
       const {endEach} = this;
       const elm = (row.nodeType) ? row : this[private$].template.$autoRender(
           Array.isArray(row) ? {_id: row[0], name: row[1]} : row,

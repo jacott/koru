@@ -174,7 +174,9 @@ isClient && define(function (require, exports, module) {
         refute.dom('li');
         assert.calledOnce(v.fooList);
         const each = v.fooList.firstCall.args[0];
-        each.staticList([{_id: 'a', name: 'zac'}, ['b', 'alice']]);
+        each.staticList([{_id: 'a', name: 'zac'}, ['b', 'alice'], false, null]);
+
+        assert.dom('li', {count: 2});
 
         assert.dom('li:first-child', 'zac', elm =>{
           assert.equals($.data(elm), {_id: 'a', name: 'zac'});
