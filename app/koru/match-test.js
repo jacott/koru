@@ -7,8 +7,8 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      v.assertThrows =  function (m, v, msg) {
-        var aMsg;
+      v.assertThrows =  (m, v, msg)=>{
+        let aMsg;
         try {
           m.$throwTest(v);
           assert.msg("failed")(false);
@@ -20,6 +20,22 @@ define(function (require, exports, module) {
 
     tearDown() {
       v = null;
+    },
+
+    "test match.optional"() {
+      assert.isTrue(sut.optional.id.$test(null));
+      assert.isTrue(sut.optional.id.$test(undefined));
+      assert.isTrue(sut.optional.id.$test("aAgGzZqQ8901234567890123"));
+      assert.isFalse(sut.optional.id.$test("0123456789012345678901234"));
+
+      assert.isTrue(sut.optional.date.$test(null));
+
+      assert.isTrue(sut.optional.string.$test(null));
+      assert.isTrue(sut.optional.string.$test('0'));
+      assert.isFalse(sut.optional.string.$test(0));
+
+      assert.isTrue(sut.optional(sut.string).$test(null));
+      assert.isFalse(sut.optional(sut.string).$test(0));
     },
 
     "test match.id"() {
@@ -43,6 +59,7 @@ define(function (require, exports, module) {
       assert.same(''+sut(function fooMatch(arg) {return true}), 'match(fooMatch)');
       assert.same(''+sut(function (arg) {return true}, 'my message'), 'my message');
 
+      assert.same(''+sut.optional.string, 'match.string[opt]');
       assert.same(''+sut.string, 'match.string');
       assert.same(''+sut.boolean, 'match.boolean');
       assert.same(''+sut.number, 'match.number');
@@ -132,7 +149,7 @@ define(function (require, exports, module) {
     },
 
     "test match.tuple"() {
-      var mtup = sut.tuple([sut.object, sut.number, sut.equal({a: sut.number})]);
+      const mtup = sut.tuple([sut.object, sut.number, sut.equal({a: sut.number})]);
 
       assert.same(mtup.message, 'match.tuple');
 
@@ -145,6 +162,14 @@ define(function (require, exports, module) {
       v.assertThrows(mtup, [{}, 1, {b: 'x'}], 'match.equal');
       v.assertThrows(mtup, [1, {a: 'x'}], 'match.tuple');
       v.assertThrows(mtup, {}, 'match.tuple');
+
+      const opt = sut.optional(sut.tuple([sut.number, sut.string]));
+
+      assert.isTrue(opt.$test(null));
+      assert.isTrue(opt.$test([1, '2']));
+      assert.isFalse(opt.$test(['1', 2]));
+
+      v.assertThrows(opt, ['1', 2], 'match.number');
     },
 
     "test matching"() {

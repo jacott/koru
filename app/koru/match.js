@@ -27,19 +27,24 @@ define(function(require, exports, module) {
       }
 
       $throwTest(value) {
-        if (! this.$test(value, 'throw')) {
+        if (! this.$test(value, '$throwTest')) {
           throw this.message;
         }
         return true;
       }
+
     };
 
+    match.optional = m => match(
+      (value, mthd='$test') => value == null ||
+        m[mthd](value), m.message+'[opt]');
 
     'string number boolean undefined function'.split(' ').forEach(t => {
-      match[t] = match(value => typeof value === t, `match.${t}`);
+      match.optional[t] = match.optional(
+        match[t] = match(value => typeof value === t, `match.${t}`));
     });
 
-    util.merge(match, {
+    const MATCHERS = {
       any: match(() => true, 'match.any'),
       null: match(value => value === null, 'match.null'),
       nil: match(value => value == null, 'match.nil'),
@@ -51,42 +56,46 @@ define(function(require, exports, module) {
       match: match(value => value != null && value.constructor === Match, 'match.match'),
       symbol: match(value => value != null && value.constructor === Symbol, 'match.Symbol'),
       id: match(value => value !== 'undefined' && /^[a-z0-9]{3,24}$/i.test(value), 'match.id'),
-      equal (expected, name) {
+    };
+
+    for (const t in MATCHERS) {
+      match.optional[t] = match.optional(
+        match[t] = MATCHERS[t]);
+    }
+
+    Object.assign(match, {
+      equal(expected, name) {
         return match(value => util.deepEqual(value, expected), name || 'match.equal');
       },
-      is (expected, name) {
+      is(expected, name) {
         return match(value => util.is(value, expected), name || 'match.is');
       },
-      regExp (regexp, name) {
+      regExp(regexp, name) {
         return match(value => typeof value === 'string' &&
                      regexp.test(value), name || 'match.regExp');
       },
-      has (set, name) {
+      has(set, name) {
         return match(value => hasOwn(set, value), name || 'match.has');
       },
-      or (...args) {
+      or(...args) {
         return match(value => args.some(match => match.$test(value)),
                      typeof args[args.length-1] === 'string' ? args.pop() : 'match.or');
       },
-      and (...args) {
-        return match((value, msg) => {
-          const mthd = msg ? '$throwTest' : '$test';
-
-          return args.every(match => match[mthd](value, msg));
+      and(...args) {
+        return match((value, mthd='$test') => {
+          return args.every(match => match[mthd](value));
         }, typeof args[args.length-1] === 'string' ? args.pop() : 'match.and');
       },
-      tuple (array, name) {
+      tuple(array, name) {
         const len = array.length;
-        return match((value, msg) => {
-          const mthd = msg ? '$throwTest' : '$test';
-
+        return match((value, mthd='$test') => {
           if (! Array.isArray(value) || value.length !== len)
             return false;
 
           for(let i = 0; i < len; ++i) {
             const sm = array[i];
             if (mthd in sm) {
-              if (! sm[mthd](value[i], msg))
+              if (! sm[mthd](value[i]))
                 return false;
             } else {
               if (! util.deepEqual(value[i], sm))
@@ -101,7 +110,6 @@ define(function(require, exports, module) {
     Match.prototype[inspect$] = Match.prototype.toString;
 
     return match;
-
   }
 
   exports = Constructor();
