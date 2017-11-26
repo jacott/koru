@@ -14,7 +14,7 @@ define(function(require, exports, module) {
 
   const original$ = Symbol();
 
-  const diffSeq = (oldSeq, newSeq, equal=same)=>{
+  const diffArray = (oldSeq, newSeq, equal=same)=>{
     const lo = oldSeq.length-1, ln = newSeq.length-1;
     const minLast = Math.min(lo, ln);
     let s = 0, e = 0;
@@ -24,6 +24,35 @@ define(function(require, exports, module) {
 
     return [s, 1+lo-(e+s), newSeq.slice(s, e === 0 ? undefined : -e)];
   };
+
+  const surrogate1stRE = /[\uD800-\uDBFF]/;
+  const surrogate2ndRE = /[\uDC00-\uDFFF]/;
+
+  const diffString = (os, ns)=>{
+    const lo = os.length-1, ln = ns.length-1;
+    const minLast = Math.min(lo, ln);
+    let s = 0, e = 0;
+    while(s <= minLast && os[s] === ns[s]) {
+      if (surrogate1stRE.test(os[s]) && s < minLast) {
+        if (os[s+1] !== ns[s+1]) break;
+        ++s;
+      }
+      ++s;
+    }
+    if (lo == ln && s == minLast+1) return;
+    while(s <= minLast - e && os[lo-e] === ns[ln-e]) ++e;
+
+    return [s, 1+lo-(e+s), ns.slice(s, e === 0 ? undefined : -e)];
+  };
+
+
+  const diffSeq = (oldSeq, newSeq, equal)=>{
+    if (typeof oldSeq === 'string') {
+      return diffString(oldSeq, newSeq);
+    } else
+      return diffArray(oldSeq, newSeq, equal);
+  };
+
 
   const applyPatch = (ov, patch, key, undoPatch)=>{
     if (ov == null) {

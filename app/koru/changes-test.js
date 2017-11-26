@@ -853,6 +853,14 @@ define(function (require, exports, module) {
         assert.equals(sut.diffSeq([1,2,3], [1,2,3]), undefined);
       },
 
+      "test unicode"() {
+        assert.equals("bomb 🔜𝌆".length, 9);
+        assert.equals(Array.from("bomb 🔜𝌆").length, 7);
+
+        assert.equals(sut.diffSeq("b💣mb 🔜𝌆abc", "b💣mb 💣abc"), [6, 4, "💣"]);
+      },
+
+
       "test customCompare"() {
         const o = n => ({a: n});
         assert.equals(sut.diffSeq([1,2,3].map(o), [1,4,3].map(o), util.deepEqual), [
