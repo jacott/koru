@@ -1,14 +1,14 @@
 define(function (require, exports, module) {
-  const Random  = require('koru/random');
-  const TH      = require('koru/test');
-  const session = require('./main');
+  const Random          = require('koru/random');
+  const TH              = require('koru/test');
+  const session         = require('./main');
 
   const message = require('./message');
-  var test, v;
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.gDict = message.newGlobalDict();
       message.finalizeGlobalDict(v.gDict);
@@ -62,10 +62,10 @@ define(function (require, exports, module) {
 
     "test small string"() {
       v.gDict.limit = 0;
-      assert.equals(_encode('hé\xff\u20AC', v.gDict),  v.ans = [
-        136, 104, 195, 169, 195, 191, 226, 130, 172]);
+      assert.equals(_encode('h💣é\xff\u20AC', v.gDict),  v.ans = [
+        140, 104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172]);
 
-      assert.same(_decode(v.ans), 'hé\xff\u20AC');
+      assert.same(_decode(v.ans), 'h💣é\xff\u20AC');
     },
 
     "test big string"() {

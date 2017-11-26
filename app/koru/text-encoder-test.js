@@ -1,19 +1,9 @@
 define(function (require, exports, module) {
-  const TH   = require('./test');
+  const TH              = require('./test');
 
-  const sut  = require('./text-encoder');
-  var v;
+  const sut = require('./text-encoder');
 
   TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
-
-    tearDown() {
-      v = null;
-    },
-
-
     "test utf16to8"() {
       const buf = [1, 2];
       sut.utf16to8(buf, '\na bit more Ჾ蠇 text\n\x01\xf7\x00\n\n\n');
@@ -23,13 +13,13 @@ define(function (require, exports, module) {
         10, 1, 195, 183, 0, 10, 10, 10]);
     },
 
-    "test small string"() {
+    "test surrogate characters"() {
+      const utf8 = [104, 240, 159, 146, 163, 195, 169, 195, 191, 226, 130, 172];
       const buf = [];
-      sut.utf16to8(buf, 'hé\xff\u20AC');
-      assert.equals(buf,  v.ans = [
-        104, 195, 169, 195, 191, 226, 130, 172]);
+      sut.utf16to8(buf, 'h💣é\xff\u20AC');
+      assert.equals(buf, utf8);
 
-      assert.equals(sut.utf8to16(new Uint8Array(v.ans)), ['hé\xff\u20AC', 8]);
+      assert.equals(sut.utf8to16(new Uint8Array(utf8)), ['h💣é\xff\u20AC', 12]);
     },
 
 
