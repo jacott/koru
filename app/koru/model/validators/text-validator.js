@@ -1,10 +1,12 @@
-define(function () {
-  var colorRe = /^#([0-9a-f]{2}){3}?$/;
-  var alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
+define(function(require, exports, module) {
+  const UtilDate        = require('koru/util-date');
+
+  const colorRe = /^#([0-9a-f]{2}){3}?$/;
+  const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
     normalize(doc,field, options) {
-      var val = doc[field];
+      const val = doc[field];
       if (! val) return;
 
       if (options === 'downcase') {
@@ -16,13 +18,13 @@ define(function () {
     },
 
     color(doc,field, alpha) {
-      var val = doc[field];
+      const val = doc[field];
       if (val && ! (alpha === 'alpha' ? alphaColorRe : colorRe).test(val))
         this.addError(doc,field,'is_invalid');
     },
 
     date(doc,field, options) {
-      var val = doc[field];
+      let val = doc[field];
 
       if (val === '') {
         doc[field] = null;
@@ -34,7 +36,8 @@ define(function () {
       if (options === true || options == null) options = {};
 
       if (! (val && val.constructor === Date && val.getDate() === val.getDate())) {
-        if (typeof val !== 'string' || ((val = new Date(Date.parse(val))) && val.getDate() !== val.getDate()))
+        if (typeof val !== 'string' ||
+            (val = UtilDate.parse(val)) && val.getDate() !== val.getDate())
           return this.addError(doc,field,'not_a_date');
       }
 
@@ -42,7 +45,7 @@ define(function () {
     },
 
     number(doc,field, options) {
-      var val = doc[field];
+      let val = doc[field];
 
       if (val === '') {
         doc[field] = null;
@@ -79,7 +82,7 @@ define(function () {
     },
 
     boolean(doc, field, boolType) {
-      var val = doc[field];
+      let val = doc[field];
 
       if (val != null) {
         if (typeof val === 'string') {
@@ -105,7 +108,7 @@ define(function () {
     },
 
     trim(doc, field, type) {
-      var val = doc[field];
+      let val = doc[field];
 
       if (val != null) {
         if (typeof val !== 'string')

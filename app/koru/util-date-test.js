@@ -8,11 +8,20 @@ define(function (require, exports, module) {
   const DAY = 24*HOUR;
 
   TH.testCase(module, {
-    "test atHour"() {
-      const date = uDate.atHour(Date.UTC(2014,4,5), 6);
+    "test parse"() {
+      assert.equals(uDate.parse('2017-12-26'), new Date(2017, 11, 26));
+      assert.equals(uDate.parse('2017-12-26Z'), new Date("2017-12-26Z"));
+    },
+
+    "test shiftToLocale"() {
+      assert.equals(uDate.shiftToLocale(new Date('2017-12-26T14:00Z')), new Date(2017, 11, 26, 14));
+    },
+
+    "test atUTCHour"() {
+      const date = uDate.atUTCHour(Date.UTC(2014,4,5), 6);
       assert.same(date.toISOString(), '2014-05-05T06:00:00.000Z');
 
-      assert.same(uDate.atHour(5 + +date, 5).toISOString(), '2014-05-06T05:00:00.005Z');
+      assert.same(uDate.atUTCHour(5 + +date, 5).toISOString(), '2014-05-06T05:00:00.005Z');
     },
 
     "test toDiscreteDay"() {
@@ -38,15 +47,15 @@ define(function (require, exports, module) {
       assert.equals(uDate.toSunday(new Date(2017, 4, 28)), new Date(2017, 4, 28));
     },
 
-    "test atDowHour (at day of week, hour)"() {
+    "test atUTCDowHour (at day of week, hour)"() {
       const thu = 4;
 
-      let date = uDate.atDowHour(Date.UTC(2014,4,5), thu, 9);
+      let date = uDate.atUTCDowHour(Date.UTC(2014,4,5), thu, 9);
       assert.same(date.toISOString(), '2014-05-08T09:00:00.000Z');
 
-      assert.same(uDate.atDowHour(123 + +date, thu, 8).toISOString(), '2014-05-15T08:00:00.123Z');
+      assert.same(uDate.atUTCDowHour(123 + +date, thu, 8).toISOString(), '2014-05-15T08:00:00.123Z');
 
-      date = uDate.atDowHour(Date.UTC(2014,4,10), thu, 9);
+      date = uDate.atUTCDowHour(Date.UTC(2014,4,10), thu, 9);
       assert.same(date.toISOString(), '2014-05-15T09:00:00.000Z');
     },
 

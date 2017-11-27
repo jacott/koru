@@ -42,7 +42,23 @@ define(function(require, exports, module) {
     MIN, HOUR, DAY,
     AVG_MONTH, AVG_YEAR,
 
-    atHour(date, hour) {
+    parse(dateStr) {
+      const ts = Date.parse(dateStr);
+      if (ts !== Date.parse(dateStr+'Z'))
+        return new Date(ts);
+
+      tmpDate.setTime(ts);
+
+      return uDate.shiftToLocale(tmpDate);
+    },
+
+    shiftToLocale(dt) {
+      return new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(),
+                      dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(),
+                      dt.getUTCMilliseconds());
+    },
+
+    atUTCHour(date, hour) {
       const orig = +date;
       const ans = new Date(orig);
 
@@ -54,7 +70,7 @@ define(function(require, exports, module) {
       return ans;
     },
 
-    atDowHour(date, dow, hour) {
+    atUTCDowHour(date, dow, hour) {
       const orig = +date;
       tmpDate.setTime(orig);
 

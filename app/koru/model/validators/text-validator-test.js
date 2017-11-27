@@ -101,17 +101,24 @@ define(function (require, exports, module) {
 
     "date": {
       "test valid"() {
-        var doc = {startDate: new Date()};
+        let doc = {startDate: new Date()};
 
         sut.validators('date')(doc, 'startDate');
         refute(doc._errors);
 
-        var doc = {startDate: '2015-12-31'};
+        doc = {startDate: '2015-12-31'};
 
         sut.validators('date')(doc, 'startDate');
         refute(doc._errors);
 
-        assert.equals(doc.startDate, new Date(Date.parse('2015-12-31')));
+        assert.equals(doc.startDate, new Date(2015, 11, 31));
+
+        doc = {startDate: '2015-12-31T13:14Z'};
+
+        sut.validators('date')(doc, 'startDate');
+        refute(doc._errors);
+
+        assert.equals(doc.startDate, new Date('2015-12-31T13:14Z'));
       },
 
       'test invalid'() {
