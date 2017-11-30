@@ -67,6 +67,12 @@ define(function (require, exports, module) {
 
       assert.same( uDate.format(d, `DD'YY hh`), `04'17 02`);
       assert.same( uDate.format(d, `m[m]`), `3m`);
+      assert.same( uDate.format(d, `MM`), `01`);
+      assert.same( uDate.format(d, `ss`), `12`);
+      assert.same( uDate.format(d, `s`), `12`);
+      d.setSeconds(9);
+      assert.same( uDate.format(d, `ss`), `09`);
+      assert.same( uDate.format(d, `s`), `9`);
     },
 
     "test from"() {

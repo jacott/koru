@@ -7,16 +7,18 @@ define(function(require, exports, module) {
 
   const MONTH_NAMES = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
-  const SPLITTER = /(\[.+?\]|D{1,2}|M{3}|Y{2,4}|h{1,2}|m{1,2}|s{1,3}|a)/;
+  const SPLITTER = /(\[.+?\]|D{1,2}|M{2,3}|Y{2,4}|h{1,2}|m{1,2}|s{1,3}|a)/;
 
   const tmpDate = new Date(0);
 
+  const twoDigits = d => (d < 10 ? '0' : '')+d;
+
   const TOKENS = {
     D: ()=> ''+tmpDate.getDate(),
-    DD: ()=> {
-      const d = tmpDate.getDate();
-      return (d < 10 ? '0' : '')+d;
-    },
+    DD: ()=> twoDigits(tmpDate.getDate()),
+    s: ()=> ''+tmpDate.getSeconds(),
+    ss: ()=> twoDigits(tmpDate.getSeconds()),
+    MM: ()=> twoDigits(tmpDate.getMonth()+1),
     MMM: ()=> ''+MONTH_NAMES[tmpDate.getMonth()],
     YYYY: ()=> ''+tmpDate.getFullYear(),
     YY: ()=> (''+tmpDate.getYear()).slice(-2),
