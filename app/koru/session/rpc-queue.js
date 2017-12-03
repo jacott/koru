@@ -1,11 +1,9 @@
 define(function(require, exports, module) {
-  const util  = require('koru/util');
+  const util            = require('koru/util');
 
   class RPCQueue {
     constructor() {
-      this.queue = Object.create(null);
-      this.queue.tmp = null;
-      delete this.queue.tmp; // hint to optimizer
+      this.queue = util.createDictionary();
     }
     push(session, data, func) {
       this.queue[data[0]] = [data, func];
@@ -17,7 +15,7 @@ define(function(require, exports, module) {
     resend(session) {
       const {queue} = this;
       const ids = Object.keys(queue).sort(compare);
-      if (ids.length) {
+      if (ids.length != 0) {
         const last = parseInt(queue[ids[ids.length - 1]][0][0].slice(0,-util.idLen), 36) ||
                 ids.length+1000; // lets try and move past any bad ones
         if (last > session._msgId)

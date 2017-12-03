@@ -15,6 +15,8 @@ isClient && define(function (require, exports, module) {
   const MockPromise   = require('koru/test/mock-promise');
   const TH            = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const QueryIDB = require('./query-idb');
   const {IDBKeyRange} = window;
   var v;
@@ -91,13 +93,13 @@ isClient && define(function (require, exports, module) {
 
       "test simulated add, update"() {
         session.state.incPending();
-        this.onEnd(_=> {session.state.decPending()});
+        onEnd(_=> {session.state.decPending()});
 
         api.example(() => {
           poll(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
-            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
             v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
             v.fIgnore = v.TestModel.createStopGap({
               _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
@@ -129,13 +131,13 @@ isClient && define(function (require, exports, module) {
 
       "test simulated remove"() {
         session.state.incPending();
-        this.onEnd(_=> {session.state.decPending()});
+        onEnd(_=> {session.state.decPending()});
 
         api.example(() => {
           poll(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
-            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
             Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
             v.f1 = v.TestModel.findById('foo123');
           }
@@ -161,7 +163,7 @@ isClient && define(function (require, exports, module) {
           poll(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
-            this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+            onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
             v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
             v.fIgnore = v.TestModel.createStopGap({
               _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
@@ -209,7 +211,7 @@ isClient && define(function (require, exports, module) {
         v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
         v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
         session.state.incPending();
-        this.onEnd(_=> {session.state.decPending()});
+        onEnd(_=> {session.state.decPending()});
       },
 
       "test simulated insert"() {
@@ -229,7 +231,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test non simulated insert"() {
-        v.TestModel.onChange(v.oc = this.stub());
+        v.TestModel.onChange(v.oc = stub());
         assert.equals(v.simDocs(), undefined);
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
@@ -291,7 +293,7 @@ isClient && define(function (require, exports, module) {
         },
 
         "test non simulated update"() {
-          v.TestModel.onChange(v.oc = this.stub());
+          v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
           poll();
@@ -321,7 +323,7 @@ isClient && define(function (require, exports, module) {
 
       "test stopGap$"() {
         session.state.incPending();
-        this.onEnd(_=> {session.state.decPending()});
+        onEnd(_=> {session.state.decPending()});
 
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
@@ -434,7 +436,7 @@ isClient && define(function (require, exports, module) {
       v.idb.yield(0);
       v.db.whenReady(() => {
         v.idb.yield(0);
-        this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+        onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
         v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
         v.db.get("TestModel", "foo123").then(doc => {
@@ -463,7 +465,7 @@ isClient && define(function (require, exports, module) {
       v.idb.yield(0);
       v.db.whenReady(() => {
         v.idb.yield(0);
-        this.onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
+        onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
         TransQueue.transaction(() => {
           v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
           v.f2 = v.TestModel.create({_id: 'foo124', name: 'foo2', age: 10, gender: 'f'});
@@ -511,8 +513,8 @@ isClient && define(function (require, exports, module) {
          **/
         api.protoMethod('transaction');
         const t = v.db.transaction('TestModel', 'readwrite', v.opts = {
-          oncomplete: this.stub(),
-          onabort: this.stub(),
+          oncomplete: stub(),
+          onabort: stub(),
         });
 
         assert.same(t.oncomplete, v.opts.oncomplete);

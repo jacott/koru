@@ -7,26 +7,35 @@ define(function(require, exports, module) {
   const rpcQueue$ = Symbol(), baseId$ = Symbol(),
         lastMsgId$ = Symbol(), nextMsgId$ = Symbol();
 
+  function cancelRpc(msgId) {
+    const rpcQueue = this[rpcQueue$];
+    const entry = rpcQueue.get(msgId);
+    if (entry) {
+      rpcQueue.delete(msgId);
+      this.state.decPending(! this.isRpcGet(entry[0][1]));
+      return true;
+    }
+  }
+
+  function checkMsgId(msgId) {
+    const nid = parseInt(msgId.slice(0, -this[baseId$].length));
+    if (nid >= this[nextMsgId$])
+      this[nextMsgId$] = nid+1;
+  }
+
+  function lastMsgId() {return this[lastMsgId$]}
+
+  function isRpcPending() {return this[rpcQueue$].isRpcPending()}
+
   function init(session, {rpcQueue=new RPCQueue()}={}) {
-    util.merge(session, {
+    Object.assign(session, {
       rpc,
       _sendM,
-      cancelRpc(msgId) {
-        const entry = rpcQueue.get(msgId);
-        if (entry) {
-          rpcQueue.delete(msgId);
-          session.state.decPending(! session.isRpcGet(entry[0][1]));
-          return true;
-        }
-      },
-      get lastMsgId() {return  this[lastMsgId$]},
-      isRpcPending() {return rpcQueue.isRpcPending()},
-      checkMsgId(msgId) {
-        const nid = parseInt(msgId.slice(0, -this[baseId$].length));
-        if (nid >= this[nextMsgId$])
-          this[nextMsgId$] = nid+1;
-      },
+      cancelRpc,
+      isRpcPending,
+      checkMsgId,
     });
+    Object.defineProperty(session, 'lastMsgId', {configurable: true, get: lastMsgId});
     session[nextMsgId$]= 1,
     session[lastMsgId$]= '',
     session[baseId$] = Random.global.id();

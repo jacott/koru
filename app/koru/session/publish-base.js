@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
-  const koru = require('../main');
-  const util = require('../util');
+  const koru            = require('../main');
+  const util            = require('../util');
 
   let pubs = Object.create(null);
   const preload$ = Symbol();

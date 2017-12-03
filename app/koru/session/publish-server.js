@@ -1,53 +1,19 @@
 define(function(require, exports, module) {
-  const koru    = require('../main');
-  const session = require('../session/base');
-  const util    = require('../util');
-  const message = require('./message');
-  const publish = require('./publish-base');
-
-  session.provide('P', subscribe);
-
-  session.registerGlobalDictionaryAdder(module, addToDictionary);
-
-  koru.onunload(module, function () {
-    session.deregisterGlobalDictionaryAdder(module);
-  });
+  const koru            = require('koru');
+  const session         = require('koru/session');
+  const util            = require('koru/util');
+  const message         = require('./message');
+  const publish         = require('./publish-base');
 
   const subscribe$ = Symbol();
 
-  const pubs = publish._pubs;
-
-  function subscribe(data) {
-    const subId = data[0];
-    const name = data[1];
-    const subs = this._subs;
-    if (subs == null) return; // we are closed
-
-    let sub = subs[subId];
-
-    this.batchMessages();
-    try {
-      if (name === undefined) {
-        sub === undefined || stopped(sub);
-      } else {
-        const func = pubs[name];
-        if (func === undefined) {
-          const msg = 'unknown publication: ' + name;
-          this.sendBinary('P', [subId, 500, msg]);
-          koru.info(msg);
-        } else {
-          sub = subs[subId] = new Sub(this, subId, func, data[2], data[3]);
-          sub.resubscribe();
-          subs[subId] && this.sendBinary('P', [
-            subId, 200, sub.lastSubscribed = util.dateNow()]); // ready
-        }
-      }
-      this.releaseMessages();
-    } catch(ex) {
-      this.abortMessages();
-      throw ex;
-    }
-  }
+  const stopped = sub =>{
+    if (sub.conn._subs) delete sub.conn._subs[sub.id];
+    sub._stop && sub._stop();
+    util.forEach(sub._matches, m => m.stop());
+    sub._matches = [];
+    sub.stopped = true;
+  };
 
   class Sub {
     constructor(conn, subId, subscribe, args, lastSubscribed) {
@@ -117,18 +83,43 @@ define(function(require, exports, module) {
     get userId() {return this.conn.userId}
   };
 
-  function stopped(sub) {
-    if (sub.conn._subs) delete sub.conn._subs[sub.id];
-    sub._stop && sub._stop();
-    util.forEach(sub._matches, m => m.stop());
-    sub._matches = [];
-    sub.stopped = true;
-  }
+  session.provide('P', function subscribe(data) {
+    const subId = data[0];
+    const name = data[1];
+    const subs = this._subs;
+    if (subs == null) return; // we are closed
 
-  function addToDictionary(adder) {
+    let sub = subs[subId];
+
+    this.batchMessages();
+    try {
+      if (name === undefined) {
+        sub === undefined || stopped(sub);
+      } else {
+        const func = publish._pubs[name];
+        if (func === undefined) {
+          const msg = 'unknown publication: ' + name;
+          this.sendBinary('P', [subId, 500, msg]);
+          koru.info(msg);
+        } else {
+          sub = subs[subId] = new Sub(this, subId, func, data[2], data[3]);
+          sub.resubscribe();
+          subs[subId] && this.sendBinary('P', [
+            subId, 200, sub.lastSubscribed = util.dateNow()]); // ready
+        }
+      }
+      this.releaseMessages();
+    } catch(ex) {
+      this.abortMessages();
+      throw ex;
+    }
+  });
+
+  session.registerGlobalDictionaryAdder(module, adder =>{
     for (const name in publish._pubs) adder(name);
-  }
+  });
 
+  koru.onunload(module, ()=>{session.deregisterGlobalDictionaryAdder(module)});
 
   return publish;
 });

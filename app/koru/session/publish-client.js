@@ -1,12 +1,10 @@
 define(function(require, exports, module) {
-  const ModelMap   = require('koru/model/map');
-  const Query      = require('koru/model/query');
-  const TransQueue = require('koru/model/trans-queue');
-  const koru       = require('../main');
-  const util       = require('../util');
-  const match      = require('./match');
-  const publish    = require('./publish-base');
-
+  const ModelMap        = require('koru/model/map');
+  const Query           = require('koru/model/query');
+  const TransQueue      = require('koru/model/trans-queue');
+  const util            = require('koru/util');
+  const match           = require('./match');
+  const publish         = require('./publish-base');
 
   util.merge(publish, {
     match: match(),

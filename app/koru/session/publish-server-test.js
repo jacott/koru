@@ -7,14 +7,15 @@ isServer && define(function (require, exports, module) {
   const publishTH = require('./publish-test-helper-server');
   const scFactory = require('./server-connection-factory');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const publish   = require('./publish');
-  var test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp () {
-      test = this;
       v = {};
-      v.pubFunc = test.stub(function () {
+      v.pubFunc = stub(function () {
         v.lastSubscribedReceived = this.lastSubscribed;
       });
       publish({name: "foo", init(...args) {
@@ -26,7 +27,7 @@ isServer && define(function (require, exports, module) {
 
       v.callSub = () => {
         v.conn =  publishTH.mockConnection();
-        v.conn.sendBinary = test.stub();
+        v.conn.sendBinary = stub();
         session._onMessage(v.conn, message.encodeMessage('P', [
           'a123', 'foo', [1,2,3], v.lastSubscribed
         ], session.globalDict));
@@ -41,7 +42,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test unknown publication" () {
-      test.intercept(koru, 'info');
+      intercept(koru, 'info');
       session._onMessage(
         v.conn = publishTH.mockConnection(),
         message.encodeMessage('P', ['a123', 'bar', [1,2,3]], session.globalDict));
@@ -72,7 +73,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test onStop" () {
-      v.sub.onStop(v.onStop = test.stub());
+      v.sub.onStop(v.onStop = stub());
 
       refute(v.sub.stopped);
 
@@ -89,7 +90,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test stop" () {
-      v.sub.onStop(v.onStop = test.stub());
+      v.sub.onStop(v.onStop = stub());
 
       v.sub.stop();
       assert.called(v.onStop);
@@ -101,7 +102,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test when closed stop" () {
-      v.sub.onStop(v.onStop = test.stub());
+      v.sub.onStop(v.onStop = stub());
       v.sub.conn._subs = null;
       v.sub.conn.ws = null;
 
@@ -132,12 +133,12 @@ isServer && define(function (require, exports, module) {
     },
 
     "test error on resubscribe" () {
-      test.stub(koru, 'error');
+      stub(koru, 'error');
       v.pubFunc = function () {
         throw new Error('foo error');
       };
 
-      v.sub._stop = test.stub();
+      v.sub._stop = stub();
 
       v.sub.resubscribe();
 
@@ -191,16 +192,12 @@ isServer && define(function (require, exports, module) {
         this.error(new Error('Foo error'));
       };
 
-      refute.exception(function () {
-        v.callSub();
-      });
+      refute.exception(()=>{v.callSub()});
     },
 
     "sendMatchUpdate": {
       setUp () {
-        v.sub.match('Foo', v.m1 = function (doc) {
-          return doc.attributes.name === 'John';
-        });
+        v.sub.match('Foo', v.m1 = doc => doc.attributes.name === 'John');
         v.docProto = {
           $withChanges(changes) {
             const old = util.deepCopy(this);
@@ -213,7 +210,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test stop" () {
-        v.sub.match('Bar', v.m2 = test.stub());
+        v.sub.match('Bar', v.m2 = stub());
 
         assert.equals(Object.keys(v.conn.match._models).sort(), ['Bar', 'Foo']);
 
@@ -223,116 +220,116 @@ isServer && define(function (require, exports, module) {
       },
 
       "test added via add" () {
-        var stub = v.conn.added = test.stub();
+        const added = v.conn.added = stub();
 
-        var doc = util.deepCopy(v.docProto);
+        const doc = util.deepCopy(v.docProto);
 
         v.sub.sendMatchUpdate(doc, null, 'filter');
 
-        assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
+        assert.calledWith(added, 'Foo', 'id123', v.attrs, 'filter');
       },
 
       "test added via change" () {
-        var stub = v.conn.added = test.stub();
+        const added = v.conn.added = stub();
 
-        var doc = util.deepCopy(v.docProto);
-        var was = {name: 'Sam'};
+        const doc = util.deepCopy(v.docProto);
+        const undo = {name: 'Sam'};
 
-        v.sub.sendMatchUpdate(doc, was);
+        v.sub.sendMatchUpdate(doc, undo);
 
-        assert.calledWith(stub, 'Foo', 'id123', v.attrs);
+        assert.calledWith(added, 'Foo', 'id123', v.attrs);
       },
 
       "test change" () {
-        var stub = v.conn.changed = test.stub();
+        const changed= v.conn.changed = stub();
 
-        var doc = util.deepCopy(v.docProto);
-        var was = {age: 7};
+        const doc = util.deepCopy(v.docProto);
+        const undo = {age: 7};
 
-        v.sub.sendMatchUpdate(doc, was, 'filter');
+        v.sub.sendMatchUpdate(doc, undo, 'filter');
 
-        assert.calledWith(stub, 'Foo', 'id123', {age: 5}, 'filter');
+        assert.calledWith(changed, 'Foo', 'id123', {age: 5}, 'filter');
       },
 
       "test removed via change" () {
-        var stub = v.conn.removed = test.stub();
+        const removed = v.conn.removed = stub();
 
-        var doc = util.deepCopy(v.docProto);
-        var was = {name: 'John'};
+        const doc = util.deepCopy(v.docProto);
+        const undo = {name: 'John'};
         util.merge(doc.attributes, {name: 'Sam'});
 
-        v.sub.sendMatchUpdate(doc, was);
+        v.sub.sendMatchUpdate(doc, undo);
 
-        assert.calledWith(stub, 'Foo', 'id123');
+        assert.calledWith(removed, 'Foo', 'id123');
       },
 
       "test removed via remove" () {
-        var stub = v.conn.removed = test.stub();
+        const removed = v.conn.removed = stub();
 
-        var old = util.deepCopy(v.docProto);
+        const old = util.deepCopy(v.docProto);
 
         v.sub.sendMatchUpdate(null, old, old);
 
-        assert.calledWith(stub, 'Foo', 'id123');
+        assert.calledWith(removed, 'Foo', 'id123');
       },
 
       "test remove no match" () {
-        var stub = v.conn.removed = test.stub();
+        const removed = v.conn.removed = stub();
 
-        var old = util.deepCopy(v.docProto);
+        const old = util.deepCopy(v.docProto);
         util.merge(old.attributes, {name: 'Sam'});
 
         v.sub.sendMatchUpdate(null, old);
 
-        refute.called(stub);
+        refute.called(removed);
       },
 
       "test change no match" () {
-        var stub = v.conn.changed = test.stub();
+        const changed = v.conn.changed = stub();
 
-        var doc = util.deepCopy(v.docProto);
+        const doc = util.deepCopy(v.docProto);
         doc.attributes.name = 'Sam';
-        var was = {age: 7};
+        const undo = {age: 7};
 
-        v.sub.sendMatchUpdate(doc, was);
+        v.sub.sendMatchUpdate(doc, undo);
 
-        refute.called(stub);
+        refute.called(changed);
       },
 
       "test add no match" () {
-        var stub = v.conn.added = test.stub();
+        const added = v.conn.added = stub();
 
-        var doc = util.deepCopy(v.docProto);
+        const doc = util.deepCopy(v.docProto);
         doc.attributes.name = 'Sam';
 
         v.sub.sendMatchUpdate(doc);
-        refute.called(stub);
+        refute.called(added);
       },
     },
 
     "test sendUpdate added" () {
-      var stub = v.conn.added = test.stub();
+      const added = v.conn.added = stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123',
                         attributes: v.attrs = {name: 'John'}}, null, 'filter');
 
-      assert.calledWith(stub, 'Foo', 'id123', v.attrs, 'filter');
+      assert.calledWith(added, 'Foo', 'id123', v.attrs, 'filter');
     },
 
     "test sendUpdate changed" () {
-      var stub = v.conn.changed = test.stub();
+      const changed = v.conn.changed = stub();
       v.sub.sendUpdate({constructor: {modelName: 'Foo'}, _id: 'id123', $asChanges: $asChanges,
                         attributes: v.attrs = {name: 'John', age: 7}},
                        {age: 5}, 'filter');
 
-      assert.calledWith(stub, 'Foo', 'id123', {age: 7}, 'filter');
+      assert.calledWith(changed, 'Foo', 'id123', {age: 7}, 'filter');
     },
 
     "test sendUpdate removed" () {
-      var stub = v.conn.removed = test.stub();
+      const removed = v.conn.removed = stub();
       v.sub.sendUpdate(null, {constructor: {modelName: 'Foo'}, _id: 'id123',
                               attributes: v.attrs = {name: 'John', age: 7}});
 
-      assert.calledWith(stub, 'Foo', 'id123');
+      assert.calledWith(removed, 'Foo', 'id123');
     },
   });
 
