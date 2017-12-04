@@ -356,6 +356,28 @@ isClient && define(function (require, exports, module) {
       },
     },
 
+    "test catchAll"() {
+      /**
+       * Catch all errors from database actions
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      const catchAll = stub();
+      const open = spy(v.idb, 'open');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }, catchAll});
+      poll();
+
+      const req = open.firstCall.returnValue;
+      req.onerror('my error');
+
+      assert.calledWith(catchAll, 'my error');
+
+      req.onerror({currentTarget: {error: 'ev error'}});
+
+      assert.calledWith(catchAll, 'ev error');
+    },
+
     "test loadDocs"() {
       /**
        * Insert a list of records into a model. See {##loadDoc}

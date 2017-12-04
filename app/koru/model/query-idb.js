@@ -71,9 +71,10 @@ define(function(require, exports, module) {
   }
 
   class QueryIDB {
-    constructor({name, version, upgrade}) {
+    constructor({name, version, upgrade, catchAll}) {
       this.dbId = dbBroker.dbId;
       this[pendingUpdates$] = this[idleQueue$] = null;
+      this.catchAll = catchAll;
       const bq = this[busyQueue$] = new BusyQueue(this);
       bq.whenIdle = whenIdle;
       bq.whenBusy = whenBusy;
@@ -95,6 +96,7 @@ define(function(require, exports, module) {
           idb.onerror = onerror;
           bq.nextAction();
         };
+
       });
     }
 
@@ -200,6 +202,7 @@ define(function(require, exports, module) {
     }
 
     close() {
+      this[busyQueue$] = new BusyQueue(this);
       this[iDB$] && this[iDB$].close();
     }
 
@@ -249,7 +252,8 @@ define(function(require, exports, module) {
     }
   }
 
-  const error = (db, ex) => {
+  const error = (db, ev) => {
+    const ex = ev.currentTarget ? ev.currentTarget.error : ev;
     const iq = db[idleQueue$];
     iq && iq.e(ex);
     db[idleQueue$] = null;
