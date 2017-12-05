@@ -5,7 +5,8 @@ define(function(require, exports, module) {
 
   class MockPromise {
     constructor(body) {
-      this._arg = this._state = null;
+      this._arg = undefined;
+      this._state = null;
       this._pendingFirst = this._pendingLast = null;
       const resolve = (arg) => {
         _action(this, arg, 'resolved');
@@ -62,6 +63,10 @@ define(function(require, exports, module) {
       return p;
     }
 
+    static _pendingCount() {
+      return execute.size;
+    }
+
     static _poll() {
       let finished = false;
       while (! finished) {
@@ -72,8 +77,12 @@ define(function(require, exports, module) {
           finished = false;
 
           const {_arg, _state} = p;
+          if (_state === null) continue;
           let caught = _state === 'resolved';
+
           for (let curr = p._pendingFirst; curr; curr = curr.next) {
+            if (p._pendingFirst === p._pendingLast)
+              p._pendingLast = null;
             p._pendingFirst = curr.next;
 
             try {
@@ -81,9 +90,21 @@ define(function(require, exports, module) {
                 const {onFulfilled} = curr;
                 __resolve(curr, onFulfilled ? onFulfilled(_arg) : _arg);
               } else {
+
                 const {onRejected} = curr;
-                caught = caught || !! curr.reject;
-                __resolve(curr, onRejected ? onRejected(_arg) : _arg, 'reject');
+                if (onRejected !== null) {
+                  caught = true;
+                  try {
+                    const ans = onRejected(_arg);
+                    __resolve(curr, ans);
+                  } catch(ex) {
+                    __resolve(curr, ex, 'reject');
+                  }
+                } else {
+                  caught = caught || !! curr.reject;
+                  __resolve(curr, _arg, 'reject');
+                }
+
               }
             } catch(ex) {
               if (! curr) throw ex;
@@ -107,17 +128,19 @@ define(function(require, exports, module) {
     then(onFulfilled, onRejected) {
       const entry = {
         value: this._arg,
-        onFulfilled: typeof onFulfilled === 'function' && onFulfilled,
-        onRejected: typeof onRejected === 'function' && onRejected,
+        onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
+        onRejected: typeof onRejected === 'function' ? onRejected : null,
       };
       entry.p = new MockPromise((resolve, reject) => {
         entry.resolve = resolve; entry.reject = reject;
       });
+
       if (this._pendingLast)
         this._pendingLast.next = entry;
       else if (! this._pendingFirst)
         this._pendingFirst = entry;
       this._pendingLast = entry;
+
       this._state && execute.add(this);
       return entry.p;
     }
@@ -130,6 +153,7 @@ define(function(require, exports, module) {
   function __resolve(entry, ans, method='resolve') {
     if (entry.p === ans) throw new TypeError("MockPromise cycle detected");
     const then = ans && ans.then;
+
     if (then) {
       const resP = arg => {
         if (! entry) return;
@@ -148,7 +172,7 @@ define(function(require, exports, module) {
       entry[method](ans);
   }
 
-  function _action(p, arg, state, pending) {
+  function _action(p, arg, state) {
     if (p._state)
       throw new Error("MockPromise already "+state);
     p._arg = arg;

@@ -14,7 +14,7 @@ define(function (require, exports, module) {
   const {stub} = TH;
 
   const MockPromise = require('./mock-promise');
-  var v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -23,6 +23,7 @@ define(function (require, exports, module) {
     },
 
     tearDown() {
+      MockPromise._stop();
       v = null;
     },
 
@@ -58,6 +59,20 @@ define(function (require, exports, module) {
       assert.calledWith(v.catch, v.err);
     },
 
+    "test catch rejects"() {
+      const p = MockPromise.reject(new Error("no catch"))
+            .then(foo => foo).catch(foo => MockPromise.reject(123));
+      assert.exception(() => {MockPromise._poll()}, {
+        message: "Uncaught rejected MockPromise",
+      });
+
+      const pc = new MockPromise((r, e) => {
+        e(v.err = new Error("no catch"));
+      }).then(foo => foo).catch(v.catch = stub());
+      refute.exception(() => {MockPromise._poll()});
+      assert.calledWith(v.catch, v.err);
+    },
+
     "test then chaining"() {
       const {p, resolve} = makePromise();
 
@@ -82,6 +97,34 @@ define(function (require, exports, module) {
 
       assert.calledOnce(v.r1);
       assert.calledOnce(v.r3);
+    },
+
+    "test order of fulfilment"() {
+      const ans = [];
+      const action = (n, x)=>(ans.push([n, x]),
+                              n);
+
+      const a = MockPromise.resolve(0);
+      a
+        .then(x => action(1, x))
+        .then(x => (
+          action(2, x),
+          a.then(x => action(2.1, x))
+            .then(x => action(2.2, x))
+            .then(x => new MockPromise((g,b)=>{
+              a.catch(x => action(-1, x));
+              b(x);
+              a.then(x => action(5, x));
+            })).catch(x => action(-2, x))
+        ));
+      a
+        .then(x => action(3, x))
+        .then(x => action(4, x));
+
+      MockPromise._poll();
+
+      assert.equals(ans, [
+        [1, 0], [3, 0], [2, 1], [4, 3], [2.1, 0], [2.2, 2.1], [5, 0], [-2, 2.2]]);
     },
 
     "test promise.all"() {
@@ -134,7 +177,7 @@ define(function (require, exports, module) {
       assert(v.r2.calledBefore(v.c1));
     },
 
-    "test Promise.resolve"() {
+    "test MockPromise.resolve"() {
       MockPromise.resolve(2).catch(v.c1 = stub()).then(v.r1 = stub());
       refute.called(v.r1);
       MockPromise._poll();
@@ -142,7 +185,7 @@ define(function (require, exports, module) {
       refute.called(v.c1);
     },
 
-    "test Promise.reject"() {
+    "test MockPromise.reject"() {
       MockPromise.reject(2).then(v.r1 = stub()).catch(v.c1 = stub());
       refute.called(v.c1);
       MockPromise._poll();
