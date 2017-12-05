@@ -42,6 +42,7 @@ isClient && define(function (require, exports, module) {
 
     tearDown() {
       Model._destroyModel('TestModel', 'drop');
+      MockPromise._stop();
       v = null;
     },
 
@@ -71,6 +72,8 @@ isClient && define(function (require, exports, module) {
         });
       });
       v.idb.yield(0);
+
+      assert.same(v.db.name, 'foo');
     },
 
     "queueChange": {
@@ -96,7 +99,7 @@ isClient && define(function (require, exports, module) {
         onEnd(_=> {session.state.decPending()});
 
         api.example(() => {
-          poll(); {
+          flush(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
             onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
@@ -104,29 +107,29 @@ isClient && define(function (require, exports, module) {
             v.fIgnore = v.TestModel.createStopGap({
               _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
           }
-          poll(); {
+          flush(); {
             refute(v.foo._store.TestModel.docs.fooIgnore);
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
 
             v.f1.$update('age', 10);
-            poll();
+            flush();
           }
-          poll(); {
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm', $sim: 'new'});
 
             v.f1.$remove();
-            poll();
+            flush();
           }
-          poll(); {
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, undefined);
           }
           // this results in the calls to queueChange below
         });
 
-        poll();
+        flush();
       },
 
       "test simulated remove"() {
@@ -134,20 +137,20 @@ isClient && define(function (require, exports, module) {
         onEnd(_=> {session.state.decPending()});
 
         api.example(() => {
-          poll(); {
+          flush(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
             onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
             Query.insertFromServer(v.TestModel, 'foo123', {name: 'foo', age: 5, gender: 'm'});
             v.f1 = v.TestModel.findById('foo123');
           }
-          poll(); {
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
             v.f1.$remove();
-            poll();
+            flush();
           }
-          poll(); {
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', $sim: {
               _id: 'foo123', name: 'foo', age: 5, gender: 'm'}});
@@ -155,12 +158,12 @@ isClient && define(function (require, exports, module) {
           // this results in the calls to queueChange below
         });
 
-        poll();
+        flush();
       },
 
       "test non simulated"() {
         api.example(() => {
-          poll(); {
+          flush(); {
             v.foo = v.idb._dbs.foo;
             assert.same(v.foo._version, 2);
             onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
@@ -168,29 +171,29 @@ isClient && define(function (require, exports, module) {
             v.fIgnore = v.TestModel.createStopGap({
               _id: 'fooIgnore', name: 'foo ignore', age: 10, gender: 'f'});
           }
-          poll(); {
+          flush(); {
             refute(v.foo._store.TestModel.docs.fooIgnore);
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
             v.f1.$update('age', 10);
-            poll();
           }
-          poll(); {
+
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, {_id: 'foo123', name: 'foo', age: 10, gender: 'm'});
 
             v.f1.$remove();
-            poll();
+            flush();
           }
-          poll(); {
+          flush(); {
             const iDoc = v.foo._store.TestModel.docs.foo123;
             assert.equals(iDoc, undefined);
           }
           // this results in the calls to queueChange below
         });
 
-        poll();
+        flush();
       },
     },
 
@@ -207,7 +210,7 @@ isClient && define(function (require, exports, module) {
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
         }});
-        poll();
+        flush();
         v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
         v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
         session.state.incPending();
@@ -218,7 +221,7 @@ isClient && define(function (require, exports, module) {
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
 
-        poll();
+        flush();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -236,7 +239,7 @@ isClient && define(function (require, exports, module) {
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-        poll();
+        flush();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -252,7 +255,7 @@ isClient && define(function (require, exports, module) {
       "test simulated update"() {
         v.db.loadDoc('TestModel', {
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
-        poll();
+        flush();
 
         const {foo123} = v.TestModel.docs;
         assert.equals(foo123.name, 'foo2');
@@ -264,7 +267,7 @@ isClient && define(function (require, exports, module) {
       "test simulated remove"() {
         v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
-        poll();
+        flush();
 
         assert.same(v.TestModel.docs.foo123, undefined);
 
@@ -283,7 +286,7 @@ isClient && define(function (require, exports, module) {
         "test simulated update"() {
           v.db.loadDoc('TestModel', {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
-          poll();
+          flush();
 
           assert.equals(v.foo123.name, 'foo2');
 
@@ -296,7 +299,7 @@ isClient && define(function (require, exports, module) {
           v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
-          poll();
+          flush();
 
 
           assert.equals(v.foo123.name, 'foo2');
@@ -310,7 +313,7 @@ isClient && define(function (require, exports, module) {
         "test simulated remove"() {
           v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
-          poll();
+          flush();
 
           assert.same(v.TestModel.docs.foo123, undefined);
 
@@ -328,7 +331,7 @@ isClient && define(function (require, exports, module) {
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-        poll();
+        flush();
         v.foo = v.idb._dbs.foo;
 
         const {foo123} = v.TestModel.docs;
@@ -338,14 +341,14 @@ isClient && define(function (require, exports, module) {
 
         v.called = false;
         v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-        poll();
+        flush();
         assert.same(foo123.attributes, v.rec);
         assert.equals(foo123.name, 'foo');
 
         refute(v.called);
         v.TestModel.docs.foo123[stopGap$] = true;
         v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'm'});
-        poll();
+        flush();
         assert.equals(foo123.name, 'foo2');
 
         assert.same(v.TestModel.docs.foo123, foo123);
@@ -356,7 +359,7 @@ isClient && define(function (require, exports, module) {
       },
     },
 
-    "test catchAll"() {
+    "test catchAll on open"() {
       /**
        * Catch all errors from database actions
        **/
@@ -366,14 +369,31 @@ isClient && define(function (require, exports, module) {
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }, catchAll});
-      poll();
 
       const req = open.firstCall.returnValue;
       req.onerror('my error');
 
       assert.calledWith(catchAll, 'my error');
+    },
 
-      req.onerror({currentTarget: {error: 'ev error'}});
+    "test catchAll on put"() {
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      const catchAll = stub();
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }, catchAll});
+      flush();
+
+      const transaction = spy(v.idb._dbs.foo, 'transaction');
+
+      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+      poll();
+
+      assert.calledOnceWith(transaction, ['TestModel'], 'readwrite');
+
+      const t = transaction.firstCall.returnValue;
+
+      t.onabort({currentTarget: {error: 'ev error'}});
 
       assert.calledWith(catchAll, 'ev error');
     },
@@ -387,19 +407,39 @@ isClient && define(function (require, exports, module) {
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
         db.createObjectStore("TestModel");
       }});
-      poll();
+      flush();
       v.TestModel.onChange((now, was) => {v.db.queueChange(now, was); v.called = true;});
       v.db.loadDocs('TestModel', v.recs = [
         {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         {_id: 'foo456', name: 'bar', age: 10, gender: 'f'},
       ]);
-      poll();
+      flush();
       v.foo = v.idb._dbs.foo;
 
       assert.equals(v.TestModel.docs.foo123.attributes, v.recs[0]);
       assert.equals(v.TestModel.docs.foo456.attributes, v.recs[1]);
       assert.equals(v.foo._store.TestModel.docs, {});
       assert(v.called);
+    },
+
+    "test close"() {
+      /**
+       * Close a database. Once closed it may not be used anymore.
+       **/
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      api.protoMethod('close');
+      v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+
+      v.db.close();
+      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+      const ready = stub();
+      v.db.whenReady(ready);
+      flush();
+      v.foo = v.idb._dbs.foo;
+      assert.equals(v.foo._store.TestModel.docs, {});
+      refute.called(ready);
     },
 
     "test put"() {
@@ -412,10 +452,8 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel");
       }});
 
-      v.db.whenReady(() => {
-        v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-      });
-      poll();
+      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+      flush();
       v.foo = v.idb._dbs.foo;
       assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
     },
@@ -430,7 +468,7 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel");
       }});
       v.foo = v.idb._dbs.foo;
-      poll();
+      flush();
       v.foo._store.TestModel.docs = {
         foo123: {_id: 'foo123', name: 'foo', age: 5, gender: 'm'},
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'},
@@ -439,7 +477,7 @@ isClient && define(function (require, exports, module) {
       v.db.whenReady(() => {
         v.db.delete('TestModel', 'foo123');
       });
-      poll();
+      flush();
       assert.equals(v.foo._store.TestModel.docs, {
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     },
@@ -517,7 +555,7 @@ isClient && define(function (require, exports, module) {
           db.createObjectStore("TestModel")
             .createIndex('name', 'name', {unique: false});
         }});
-        poll();
+        flush();
         v.foo = v.idb._dbs.foo;
 
         v.t1 = v.foo._store.TestModel;
@@ -545,7 +583,7 @@ isClient && define(function (require, exports, module) {
         t.objectStore('TestModel').delete('r1');
 
         refute.called(v.opts.oncomplete);
-        poll();
+        flush();
         assert.called(v.opts.oncomplete);
       },
 
@@ -559,7 +597,7 @@ isClient && define(function (require, exports, module) {
         v.db.count('TestModel', IDBKeyRange.bound('r1', 'r4', false, true))
           .then(ans => v.ans = ans);
 
-        poll();
+        flush();
 
         assert.same(v.ans, 3);
       },
@@ -577,7 +615,7 @@ isClient && define(function (require, exports, module) {
             cursor.continue();
           }
         });
-        poll();
+        flush();
         assert.equals(v.ans, [v.r1, v.r2, v.r3]);
       },
 
@@ -593,7 +631,7 @@ isClient && define(function (require, exports, module) {
         v.db.index("TestModel", "name")
           .getAllKeys(IDBKeyRange.bound('Lucy', 'Ronald', false, true)).then(docs => v.ansKeys = docs);
 
-        poll();
+        flush();
         assert.equals(v.ans, [v.r4]);
         assert.equals(v.ansKeys, ['r4']);
 
@@ -603,20 +641,20 @@ isClient && define(function (require, exports, module) {
         v.db.index("TestModel", "name")
           .getAllKeys().then(docs => v.ansKeys = docs);
 
-        poll();
+        flush();
         assert.equals(v.ans, [v.r3, v.r4, v.r1, v.r2]);
         assert.equals(v.ansKeys, ['r3', 'r4', 'r1', 'r2']);
 
         v.db.index("TestModel", "name")
           .count(IDBKeyRange.bound('Lucy', 'Ronald', false, false)).then(ans => v.ans = ans);
 
-        poll();
+        flush();
         assert.equals(v.ans, 3);
 
         v.db.index("TestModel", "name")
           .get('Ronald').then(docs => v.ans = docs);
 
-        poll();
+        flush();
         assert.equals(v.ans, v.r1);
       },
 
@@ -632,7 +670,7 @@ isClient && define(function (require, exports, module) {
             cursor.continue();
           });
 
-        poll();
+        flush();
         assert.equals(v.ans, [v.r2, v.r1, v.r4, v.r3]);
       },
 
@@ -648,7 +686,7 @@ isClient && define(function (require, exports, module) {
             cursor.continue();
           });
 
-        poll();
+        flush();
         assert.equals(v.ans, ['r2', 'r1', 'r4', 'r3']);
       },
     },
@@ -663,7 +701,7 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel")
           .createIndex('name', 'name', {unique: false});
       }});
-      poll();
+      flush();
       v.foo = v.idb._dbs.foo;
 
       v.db.deleteObjectStore('TestModel');
@@ -680,11 +718,11 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel")
           .createIndex('name', 'name', {unique: false});
       }});
-      poll();
+      flush();
       v.foo = v.idb._dbs.foo;
 
       QueryIDB.deleteDatabase('foo').then(() => v.done = true);
-      poll();
+      flush();
       assert(v.done);
       refute(v.idb._dbs.foo);
     },
@@ -700,5 +738,15 @@ isClient && define(function (require, exports, module) {
     }).catch(v.error);
   }
 
-  function poll() {v.idb.yield(); Promise._poll();}
+  const flush = (max=10)=>{
+    v.idb.yield();
+    while (--max >= 0 && Promise._pendingCount() > 0) {
+      Promise._poll(); v.idb.yield();
+    }
+  };
+
+  const poll = ()=>{
+    v.idb.yield();
+    Promise._poll();
+  };
 });

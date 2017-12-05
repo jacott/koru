@@ -105,6 +105,7 @@ isClient && define(function (require, exports, module) {
 
         queue.reload(sess).then(() => {queue.resend(sess)});
         poll();
+        poll();
         assert.same(sess._msgId.toString(36), 'a102');
 
         assert.same(state.incPending.callCount, 3);
