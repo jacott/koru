@@ -52,6 +52,10 @@ isClient && define(function (require, exports, module) {
       /**
        * listen for a change on a key
        **/
+
+      // ensure works without any listeners
+      sut._storageChanged({key: 'test-foo'});
+
       this.spy(window, 'addEventListener');
       const stopFoo1 = sut.onChange('test-foo', v.fooChanged1 = this.stub());
       const stopFoo2 = sut.onChange('test-foo', v.fooChanged2 = this.stub());

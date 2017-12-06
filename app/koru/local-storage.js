@@ -3,8 +3,9 @@ define(function(require, exports, module) {
 
   let observers;
   function storageChanged(event) {
+    if (observers === undefined) return;
     const keyOb = observers[event.key];
-    if (! keyOb) return;
+    if (keyOb === undefined) return;
 
     keyOb.notify(event);
   }
