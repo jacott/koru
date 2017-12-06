@@ -52,6 +52,20 @@ isClient && define(function (require, exports, module) {
         poll();
       },
 
+      "test works if db closed"() {
+        const queue = new sut(v.db);
+
+        const session = {isRpcGet() {return false}, checkMsgId() {}};
+        function func() {}
+
+        v.db.close();
+
+        queue.push(session, v.data = ['a12', 'foo', 1], func);
+        poll();
+        assert.equals(v.os_rpcQueue.docs, {});
+        assert.equals(queue.get('a12'), [v.data, func]);
+      },
+
       "test persistence"() {
         const queue = new sut(v.db);
 

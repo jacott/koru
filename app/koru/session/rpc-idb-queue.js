@@ -10,7 +10,7 @@ define(function(require, exports, module) {
     }
 
     push(session, data, func) {
-      if (! session.isRpcGet(data[1])) {
+      if (! (this.qdb.isClosed() || session.isRpcGet(data[1]))) {
         const rec = {_id: data[0], data};
         this.qdb.put('rpcQueue', rec);
       }
