@@ -2,22 +2,23 @@ define(function (require, exports, module) {
   /**
    * Attach rpc to a session
    **/
-  const Random       = require('koru/random');
-  const SessionBase  = require('koru/session/base').constructor;
-  const RPCQueue     = require('koru/session/rpc-queue');
-  const api          = require('koru/test/api');
-  const koru         = require('../main');
-  const util         = require('../util');
-  const message      = require('./message');
-  const stateFactory = require('./state').constructor;
-  const TH           = require('./test-helper');
+  const Random          = require('koru/random');
+  const SessionBase     = require('koru/session/base').constructor;
+  const RPCQueue        = require('koru/session/rpc-queue');
+  const api             = require('koru/test/api');
+  const koru            = require('../main');
+  const util            = require('../util');
+  const message         = require('./message');
+  const stateFactory    = require('./state').constructor;
+  const TH              = require('./test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const sut = require('./client-rpc-base');
-  var test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp () {
-      test = this;
       v = {};
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
@@ -26,10 +27,10 @@ define(function (require, exports, module) {
         constructor() {
           super();
           this.state = v.state;
-          this.sendBinary = v.sendBinary = test.stub();
+          this.sendBinary = v.sendBinary = stub();
         }
       }
-      this.stub(Random.global, 'id').returns('rid1');
+      stub(Random.global, 'id').returns('rid1');
       v.sess = sut(new MySession());
 
       v.recvM = (...args)=>{v.sess._commands.M.call(v.sess, args)};
@@ -57,6 +58,28 @@ define(function (require, exports, module) {
       sut(v.sess, {rpcQueue});
       v.sess.rpc('foo.rpc', 1, 2);
       assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
+    },
+
+    "test replaceRpcQueue"() {
+      /**
+       * Replace the rpc queue with a different one.
+       **/
+      const rpcQueue = new RPCQueue();
+      sut(v.sess, {rpcQueue});
+      api.protoMethod('replaceRpcQueue', v.sess);
+
+      const cb = stub();
+      v.sess.rpc('foo.rpc', 1, 2, 3, cb);
+      v.sess.rpc('bar.rpc', 'x');
+
+      const myQueue = {
+        push: stub(),
+      };
+
+      v.sess.replaceRpcQueue(myQueue);
+
+      assert.calledWith(myQueue.push, v.sess, ['1rid1', 'foo.rpc', 1, 2, 3], cb);
+      assert.calledWith(myQueue.push, v.sess, ['2rid1', 'bar.rpc', 'x'], null);
     },
 
     "test checkMsgId"() {
@@ -143,7 +166,7 @@ define(function (require, exports, module) {
     },
 
     "test callback rpc" () {
-      test.stub(koru, 'globalCallback');
+      stub(koru, 'globalCallback');
 
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
 
@@ -152,11 +175,11 @@ define(function (require, exports, module) {
       assert.equals(v.args, ['a']);
 
 
-      v.sess.rpc('foo.rpc', 'b', v.bstub = test.stub());
+      v.sess.rpc('foo.rpc', 'b', v.bstub = stub());
       const msgIdB = v.sess.lastMsgId;
       assert.equals(v.args, ['b']);
 
-      v.sess.rpc('foo.rpc', 'c', v.cstub = test.stub());
+      v.sess.rpc('foo.rpc', 'c', v.cstub = stub());
       const msgIdC = v.sess.lastMsgId;
       v.recvM(msgIdC, 'e', '404', 'error Msg');
 
@@ -261,7 +284,7 @@ define(function (require, exports, module) {
     },
 
     "test onChange rpc" () {
-      test.onEnd(v.state.pending.onChange(v.ob = test.stub()));
+      onEnd(v.state.pending.onChange(v.ob = stub()));
 
       assert.same(v.state.pendingCount(), 0);
 

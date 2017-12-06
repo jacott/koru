@@ -27,6 +27,14 @@ define(function(require, exports, module) {
 
   function isRpcPending() {return this[rpcQueue$].isRpcPending()}
 
+  function replaceRpcQueue(value) {
+    const {queue} = this[rpcQueue$];
+    this[rpcQueue$] = value;
+    for (const id in queue) {
+      value.push(this, ...queue[id]);
+    }
+  }
+
   function init(session, {rpcQueue=new RPCQueue()}={}) {
     Object.assign(session, {
       rpc,
@@ -34,6 +42,7 @@ define(function(require, exports, module) {
       cancelRpc,
       isRpcPending,
       checkMsgId,
+      replaceRpcQueue,
     });
     Object.defineProperty(session, 'lastMsgId', {configurable: true, get: lastMsgId});
     session[nextMsgId$]= 1,
