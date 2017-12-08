@@ -25,7 +25,7 @@ define(function (require, exports, module) {
   const waitLoad = {};
   function reload(mod) {
     console.log(`Unloading ${mod.id}`);
-    return koru.reload(mod);
+    return koru.reload();
   }
 
   function onunload(moduleOrId, callback) {

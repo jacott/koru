@@ -38,7 +38,7 @@ define(function(require, exports, module) {
     },
 
     clearAllOnChange() {
-      observers = null;
+      observers = undefined;
       window.removeEventListener('storage', storageChanged);
     },
 
