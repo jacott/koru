@@ -16,9 +16,11 @@ define(function(require, exports, module) {
       const cTests = type !== 'server' ? [] : null;
       const sTests = type !== 'client' ? [] : null;
 
-      const findAll = dir =>{
-        const dirPath = Path.join(topDir, dir);
-        const filenames = readdir(dirPath).wait().filter(fn => /^[\w-]*(?:-test\.js$|$)/.test(fn));
+      const findAll = (dir, exDirs) =>{
+                const dirPath = Path.join(topDir, dir);
+        const filenames = readdir(dirPath).wait().filter(fn => (
+          (exDirs === undefined || exDirs[fn] === undefined) &&
+            (fn.endsWith("-test.js") || ! fn.endsWith(".js"))));
         const stats = filenames.map(filename => stat(Path.join(dirPath, filename)));
 
         wait(stats);
@@ -26,7 +28,7 @@ define(function(require, exports, module) {
         for(let i = 0; i < filenames.length; ++i) {
           if (stats[i].get().isDirectory()) {
             findAll(Path.join(dir, filenames[i]));
-          } else if (filenames[i].match(/^\w.*-test\.js$/)) {
+          } else if (filenames[i].endsWith("-test.js")) {
             const path = Path.join(dir,filenames[i].slice(0,-3));
             cTests && !path.match(/\bserver\b/i) && cTests.push(path);
             sTests && !path.match(/\bclient\b/i) && sTests.push(path);
@@ -45,11 +47,7 @@ define(function(require, exports, module) {
         // all
         const config = module.config();
         const exDirs = koru.util.toMap(config.excludeDirs||[]);
-        util.forEach(
-          config.testDirs ||
-            readdir(topDir).wait().filter(
-              fn => stat(fn).wait().isDirectory() &&
-                (!(fn in exDirs))), dir =>{findAll(dir)});
+        util.forEach(config.testDirs || ["."], dir =>{findAll(dir, exDirs)});
       } else {
         // one
         const idx = pattern.indexOf(' ');
