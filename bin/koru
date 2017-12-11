@@ -44,10 +44,7 @@ default:
     .description('run tests.')
     .action(load('test'));
 
-  program
-    .command('db-migrate')
-    .description('Apply migration scripts to the database');
-
+  load('db-commands')(program);
 
   program.parse(process.argv);
 
