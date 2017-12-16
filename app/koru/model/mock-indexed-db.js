@@ -2,6 +2,8 @@ define(function(require, exports, module) {
   const TH   = require('koru/test/main');
   const util = require('koru/util');
 
+  const idField$ = Symbol();
+
   class Transaction {
     constructor(db) {
       this.db = db;
@@ -32,11 +34,11 @@ define(function(require, exports, module) {
     }
 
     createObjectStore(name, options) {
-      if (options.keyPath !== '_id')
-        throw new Error('MockIndexedDB only supports _id for keyPath');
+      if (typeof options.keyPath !== 'string')
+        throw new Error('MockIndexedDB only supports strings for keyPath');
       if (this._store[name])
         throw new Error("MockIndexedDB already has objectStore: "+ name);
-      return this._store[name] = new ObjectStore(name, this);
+      return this._store[name] = new ObjectStore(name, this, options.keyPath);
     }
 
     deleteObjectStore(name) {
@@ -69,7 +71,7 @@ define(function(require, exports, module) {
 
     get value() {return this._data[this._position]}
 
-    get primaryKey() {return this._data[this._position]._id}
+    get primaryKey() {return this._data[this._position][this.store[idField$]]}
 
     delete() {
       if (this._isKeyCursor) throw new Error(`can't delete with keycursor`);
@@ -84,6 +86,7 @@ define(function(require, exports, module) {
       this.keyPath = keyPath;
       this.options = options;
       this.docs = os.docs;
+      this[idField$] = os[idField$];
       this.compare = Array.isArray(keyPath) ? (
         ar, br) => {
           const av = values(ar, keyPath), bv = values(br, keyPath);
@@ -131,6 +134,7 @@ define(function(require, exports, module) {
 
     getAllKeys(query) {
       const self = this;
+      const idField = this[idField$];
       const {docs, db: {_pending}} = this.os;
       return {
         set onsuccess(f) {
@@ -138,7 +142,7 @@ define(function(require, exports, module) {
                   .filter(k => ! query || query.includes(values(docs[k], self.keyPath)))
                   .map(k => docs[k])
                   .sort(self.compare)
-                  .map(d => d._id);
+                  .map(d => d[idField]);
           _pending.push(() => {f({target: {result}});});
         },
       };
@@ -185,8 +189,8 @@ define(function(require, exports, module) {
         (v, i) => doc[keyPath[i]] === v
       )) : doc => doc[keyPath] === key;
     const ans = [];
-    for (let _id in docs) {
-      const doc = docs[_id];
+    for (let id in docs) {
+      const doc = docs[id];
       matcher(doc) && ans.push(doc);
     }
     return ans;
@@ -197,9 +201,10 @@ define(function(require, exports, module) {
   }
 
   class ObjectStore {
-    constructor(name, db) {
+    constructor(name, db, idField='_id') {
       this.db = db;
       this.name = name;
+      this[idField$] = idField;
       this.docs = {};
       this.indexes = {};
     }
@@ -247,18 +252,19 @@ define(function(require, exports, module) {
     }
 
     put(doc) {
-      this.docs[doc._id] = util.deepCopy(doc);
+      const idField = this[idField$];
+      this.docs[doc[idField]] = util.deepCopy(doc);
       const {_pending} = this.db;
       return {
         set onsuccess(f) {
-          const result = doc._id;
+          const result = doc[idField];
           _pending.push(() => {f({target: {result}});});
         },
       };
     }
 
-    delete(_id) {
-      delete this.docs[_id];
+    delete(id) {
+      delete this.docs[id];
       const {_pending} = this.db;
       return {
         set onsuccess(f) {_pending.push(() => {f({target: {result: undefined}})})},
@@ -290,6 +296,7 @@ define(function(require, exports, module) {
       const pending = db._pending;
       const oldVersion = this._version;
       return {
+        result: db,
         set onupgradeneeded(func) {
           if (oldVersion !== newVersion)
             pending.push(() => {
