@@ -108,8 +108,9 @@ define(function(require, exports, module) {
   };
 
 
-  function webSocketSenderFactory(session, sessState, execWrapper=koru.fiberConnWrapper,
-                                  base=session) {
+  function webSocketSenderFactory(_session, sessState, execWrapper=koru.fiberConnWrapper,
+                                  base=_session) {
+    const session = _session;
     const waitSends = session[waitSends$] = [];
     session[retryCount$] = 0;
     let reconnTimeout = null;
@@ -182,7 +183,7 @@ define(function(require, exports, module) {
       if (session.ws) return;
       sessState._state = 'startup';
       stopReconnTimeout();
-      let ws = session.ws = session.newWs();
+      const ws = session.ws = session.newWs();
       ws.binaryType = 'arraybuffer';
 
       session[heatbeatTime$] = 0;
@@ -190,13 +191,15 @@ define(function(require, exports, module) {
       const queueHeatBeat = () => {
         heartbeatTO = null;
         if (session[heatbeatTime$] === null) {
-          try {
-            ws.close();
-          } finally {
-            if (ws) {
-              ws.onclose({code: 'Heartbeat fail'});
+          if (ws != null) {
+            ws.onclose = null;
+            try {
+              ws.close();
+            } finally {
+              onclose({code: 'Heartbeat fail'});
             }
           }
+
           return;
         }
         const now = util.dateNow();
@@ -221,9 +224,11 @@ define(function(require, exports, module) {
 
       let onMessage = null;
 
+      ws._session = session;
+
       ws.onmessage = event => {
         session[heatbeatTime$] = util.dateNow() + session.heartbeatInterval;
-        if (! heartbeatTO) {
+        if (heartbeatTO == null) {
           heartbeatTO = koru._afTimeout(queueHeatBeat, session.heartbeatInterval);
         }
         if (onMessage === null)
@@ -233,8 +238,9 @@ define(function(require, exports, module) {
 
       const onclose  = event => {
         stopReconnTimeout();
+        ws.onmessage = null;
         if (heartbeatTO) heartbeatTO();
-        session[heatbeatTime$] = heartbeatTO = session.ws = ws = session._queueHeatBeat = null;
+        session[heatbeatTime$] = heartbeatTO = session.ws = session._queueHeatBeat = null;
         if (event === undefined) return;
         if (event.code) session[retryCount$] != 0 ||
           koru.info(event.wasClean ? 'Connection closed' : 'Abnormal close', 'code',

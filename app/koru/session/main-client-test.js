@@ -1,45 +1,47 @@
 define(function (require, exports, module) {
-  const {private$}   = require('koru/symbols');
-  const koru         = require('../main');
-  const util         = require('../util');
-  const message      = require('./message');
-  const stateFactory = require('./state').constructor;
-  const TH           = require('./test-helper');
+  const {private$}      = require('koru/symbols');
+  const koru            = require('../main');
+  const util            = require('../util');
+  const message         = require('./message');
+  const stateFactory    = require('./state').constructor;
+  const TH              = require('./test-helper');
 
   const sessionClientFactory = require('./main-client');
-  var v, sessState;
+
+  const {stub, spy, onEnd, intercept} = TH;
+
+  let v = null, sessState;
 
   TH.testCase(module, {
     setUp() {
       v = {};
       sessState = stateFactory();
       v.sess = sessionClientFactory({
-        provide: this.stub(),
+        provide: stub(),
         _rpcs: {},
         globalDict: v.gDict = message.newGlobalDict(),
         _commands: {},
       }, sessState);
-      v.sess.newWs = this.stub().returns(v.ws = {
-        send: this.stub(),
-        close: this.stub(),
+      v.sess.newWs = stub().returns(v.ws = {
+        send: stub(),
+        close: stub(),
       });
       v.ready = false;
       TH.mockConnectState(v);
     },
 
     tearDown() {
-
       sessState._resetPendingCount();
-      v = null;
+      sessState = v = null;
     },
 
     "test initial KORU_APP_VERSION"() {
-      this.onEnd(() => delete window.KORU_APP_VERSION);
+      onEnd(() => delete window.KORU_APP_VERSION);
 
       window.KORU_APP_VERSION = "v1,hash";
 
        v.sess = sessionClientFactory({
-         provide: this.stub(),
+         provide: stub(),
          _rpcs: {},
        }, sessState);
 
@@ -52,7 +54,7 @@ define(function (require, exports, module) {
       assert.same(v.sess.version, undefined);
       assert.same(v.sess.hash, undefined);
 
-      this.stub(koru, 'reload');
+      stub(koru, 'reload');
       assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
 
       v.sess.addToDict('foo'); // does nothing
@@ -93,9 +95,9 @@ define(function (require, exports, module) {
 
     "onmessage": {
       setUp() {
-        v.ws = {send: this.stub()};
+        v.ws = {send: stub()};
         v.sess = {
-          provide: this.stub(),
+          provide: stub(),
           _onMessage(conn, data) {
             v.actualConn = conn;
             assert.same(data, v.data);
@@ -103,9 +105,9 @@ define(function (require, exports, module) {
         };
         sessionClientFactory(v.sess, sessState);
 
-        v.sess.newWs = this.stub().returns(v.ws);
+        v.sess.newWs = stub().returns(v.ws);
 
-        this.stub(koru, '_afTimeout').returns(v.afTimeoutStop = this.stub());
+        stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
 
         v.sess.connect();
 
@@ -139,7 +141,7 @@ define(function (require, exports, module) {
 
       "test heartbeat when idle"() {
         let now = Date.now();
-        this.intercept(util, 'dateNow', ()=>now);
+        intercept(util, 'dateNow', ()=>now);
 
         var event = {data: v.data = "foo"};
         v.ws.onmessage(event);
@@ -182,34 +184,29 @@ define(function (require, exports, module) {
         v.time = v.readyHeatbeat();
 
         v.ws.close = () => {throw new Error("close fail")};
-        this.spy(v.ws, 'onclose');
+        const onclose = spy(v.ws, 'onclose');
         assert.exception(() => {
           v.actualConn[private$].queueHeatBeat();
         }, "Error", "close fail");
 
-        assert.called(v.ws.onclose);
+        refute.called(onclose);
       },
 
       "test no response close succeeds"() {
         v.time = v.readyHeatbeat();
 
-        v.ws.close = () => {
-          v.ws.onclose({});
-        };
-        this.spy(v.ws, 'close');
-        this.spy(v.ws, 'onclose');
+        const close = v.ws.close = stub();
         v.actualConn[private$].queueHeatBeat();
 
-        assert.calledOnce(v.ws.close);
-        assert.calledOnce(v.ws.onclose);
+        assert.calledOnce(close);
       },
     },
 
     "test connection cycle"() {
-      this.spy(sessState, 'connected');
-      this.spy(sessState, 'retry');
-      this.spy(sessState, 'close');
-      this.stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
+      spy(sessState, 'connected');
+      spy(sessState, 'retry');
+      spy(sessState, 'close');
+      stub(koru, 'getLocation').returns({protocol: 'https:', host: 'test.host:123'});
 
       v.sess.connect();         // connect
 
@@ -232,7 +229,7 @@ define(function (require, exports, module) {
 
       assert.calledWith(sessState.connected, TH.match(conn => conn.ws === v.ws));
 
-      this.stub(koru, '_afTimeout').returns(v.afTimeoutStop = this.stub());
+      stub(koru, '_afTimeout').returns(v.afTimeoutStop = stub());
       TH.noInfo();
 
       v.ws.onclose({code: 4404, reason: 'not found'});         // remote close
@@ -268,7 +265,7 @@ define(function (require, exports, module) {
     },
 
     "test before connected"() {
-      this.stub(message, 'encodeMessage', (type, msg) => ['x', type, msg]);
+      stub(message, 'encodeMessage', (type, msg) => ['x', type, msg]);
       v.sess.sendBinary('P', [null]);
       v.sess.sendBinary('M', [1]);
       v.sess.send('S', 'Labc');
