@@ -143,12 +143,37 @@ isServer && define(function (require, exports, module) {
         stub(tpl, '$render').returns(Dom.h({}));
 
         sp.addViewController('foo', tpl, class extends sp.BaseController {
-          $parser(pathParts) {this.params.pp = pathParts.join(':'); return 'index'}
+          $parser() {this.params.pp = this.pathParts.join(':'); return 'index'}
         });
 
         sp._handleRequest(v.req, v.res, '/foo/1/2%201/3?a=x');
 
-        assert.calledWith(tpl.$render, TH.match(ctl => ctl.params.pp == '1:2 1:3'));
+        assert.calledWith(tpl.$render, TH.match(ctl => {
+          assert.equals(ctl.params, {a: 'x', pp: '1:2 1:3'});
+          return true;
+        }));
+      },
+
+      "test trailing slash"() {
+        const {sp, tpl} = v;
+
+        stub(tpl, '$render').returns(Dom.h({}));
+        sp.addViewController('foo', tpl, class extends sp.BaseController {});
+
+        sp._handleRequest(v.req, v.res, '/?abc=123');
+        refute.called(v.res.end);
+
+        sp._handleRequest(v.req, v.res, '/foo/?abc=123');
+
+        assert.calledWith(tpl.$render, TH.match(ctl => {
+          assert.equals(ctl.params, {abc: '123', id: ''});
+          return true;
+        }));
+
+        assert.called(v.res.end);
+
+        assert.equals(Dom.htmlToJson(Dom.textToHtml(
+          v.res.end.firstCall.args[0])).html.id, 'defLayout');
       },
 
       "test CRUD"() {

@@ -29,7 +29,7 @@ define(function(require, exports, module) {
       this.response = response;
       this.pathParts = pathParts;
       this.params = params;
-      const action = this.$parser(pathParts);
+      const action = this.$parser();
       if (action !== undefined && this[rendered$] === undefined) {
         render(this, action);
       }
@@ -69,7 +69,8 @@ define(function(require, exports, module) {
 
     show() {return defaultActions.show(this)}
 
-    $parser(pathParts) {
+    $parser() {
+      const {pathParts} = this;
       switch(pathParts[0]) {
       case undefined:
         render(this, 'index');

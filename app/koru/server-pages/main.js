@@ -77,7 +77,7 @@ define(function(require, exports, module) {
 
   const fetchView = (sp, parts, pos=0, views=sp[views$], root=sp._pageDirPath)=>{
     while (pos < parts.length && ! parts[pos]) ++pos;
-    const key = parts[pos];
+    const key = parts[pos] || '';
     let view = views[key];
     if (view === undefined) {
       const fn = path.resolve(root, key) + ".js";
@@ -106,7 +106,7 @@ define(function(require, exports, module) {
       this._handleRequest = (request, response, urlPath)=>{
         const searchIdx = urlPath.indexOf('?');
         const parts = (searchIdx == -1 ? urlPath : urlPath.slice(0, searchIdx))
-              .split('/').map(i => util.decodeURIComponent(i)), plen = parts.length;
+              .split('/').map(i => util.decodeURIComponent(i) || ''), plen = parts.length;
         const suffixIdx = plen == 0 ? '' : parts[plen-1].search(/\.[^.]+$/);
         if (suffixIdx == -1) {
           this.suffix = 'html';
