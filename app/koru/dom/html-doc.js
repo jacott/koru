@@ -225,6 +225,8 @@ define(function(require, exports, module) {
     }
   }
 
+  global.Element = Element;
+
   Element.prototype.namespaceURI = Dom.XHTMLNS;
 
   const createHTMLElement = (tag)=>{

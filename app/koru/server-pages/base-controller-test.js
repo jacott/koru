@@ -1,5 +1,6 @@
 define(function (require, exports, module) {
   const Dom             = require('koru/dom');
+  const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test');
   const util            = require('koru/util');
 
@@ -19,15 +20,14 @@ define(function (require, exports, module) {
     setUp() {
       v = {};
       v.opts = {
-        request: {
-          headers: {},
-        },
+        request: new HttpHelper.RequestStub({method: 'GET'}),
         response: {
           writeHead: stub(),
           write: stub(),
           end: stub(),
         },
         params: {},
+        pathParts: [],
       };
 
     },
@@ -38,6 +38,40 @@ define(function (require, exports, module) {
 
     "test defaultETag"() {
       assert.match(sut.defaultETag, /^h[0-9]+$/);
+    },
+
+    "test body"() {
+      const {request} = v.opts;
+      request._setBody({sample: 'json'});
+
+      request.headers['content-type'] = 'application/json';
+
+      class MyController extends sut {
+        $parser() {}
+      }
+      const ctl = new MyController(v.opts);
+
+      const ans = ctl.body;
+
+      assert.equals(ans, {sample: 'json'});
+      assert.same(ans, ctl.body);
+    },
+
+    "test error"() {
+      const {response} = v.opts;
+
+      class MyController extends sut {
+        $parser() {
+          this.error(407, 'foo');
+          return 'foo';
+        }
+      }
+      const ctl = new MyController(v.opts);
+
+
+      refute.called(response.writeHead);
+      assert.calledOnceWith(response.end, 'foo');
+      assert.equals(response.statusCode, 407);
     },
 
     "test not modified"() {
@@ -54,7 +88,75 @@ define(function (require, exports, module) {
       new MyController(opts);
 
       assert.same(opts.response.statusCode, 304);
+    },
 
+    "test No Content"() {
+      const {response} = v.opts;
+
+      class MyController extends sut {
+        $parser() {return 'foo'}
+        foo() {}
+      }
+
+      new MyController(v.opts);
+
+      assert.same(response.statusCode, 204);
+      assert.calledWithExactly(response.end);
+    },
+
+    "test html response"() {
+      const {response} = v.opts;
+
+      class MyController extends sut {
+        $parser() {return 'foo'}
+        foo() {return Dom.h({html: {body: 'foo'}})}
+      }
+
+      new MyController(v.opts);
+
+      assert.calledWith(response.writeHead, 200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Length': 45,
+        ETag: TH.match(/W\/"h[0-9]+"/),
+      });
+
+      assert.calledWithExactly(response.end, '<html><body>foo</body></html>');
+    },
+
+    "test json response"() {
+      const {response} = v.opts;
+
+      class MyController extends sut {
+        $parser() {return 'foo'}
+        foo() {return {html: {body: 'foo'}}}
+      }
+
+      new MyController(v.opts);
+
+      assert.calledWith(response.writeHead, 200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Length': 23,
+        ETag: TH.match(/W\/"h[0-9]+"/),
+      });
+      refute.called(response.write);
+      assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
+    },
+
+    "test method"() {
+      const {opts} = v;
+      opts.request.method = 'FOO';
+
+      const foo = stub();
+
+      class MyController extends sut {
+        foo() {foo(this)}
+      }
+
+      MyController.App = genericApp();
+
+      const controller = new MyController(opts);
+
+      assert.calledWith(foo, controller);
     },
 
     "test default show"() {
@@ -143,7 +245,7 @@ define(function (require, exports, module) {
       assert.same(controller.params, opts.params);
 
       assert.calledWith(opts.response.writeHead, 200, {
-        'Content-Length': 39,
+        'Content-Length': 23,
         'Content-Type': 'text/html; charset=utf-8',
         ETag: TH.match.string,
       });

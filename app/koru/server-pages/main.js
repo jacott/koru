@@ -103,7 +103,7 @@ define(function(require, exports, module) {
         ? requirePage(defaultLayoutId).View : genericLayout;
 
       this[views$] = {};
-      this._handleRequest = (request, response, urlPath)=>{
+      this._handleRequest = (request, response, urlPath, error)=>{
         const searchIdx = urlPath.indexOf('?');
         const parts = (searchIdx == -1 ? urlPath : urlPath.slice(0, searchIdx))
               .split('/').map(i => util.decodeURIComponent(i) || ''), plen = parts.length;
@@ -119,7 +119,14 @@ define(function(require, exports, module) {
         if (view === undefined) return false;
         const params = searchIdx == -1 ? {}
               : util.searchStrToMap(urlPath.slice(searchIdx+1));
-        new view.Controller({view, request, response, pathParts, params});
+        try {
+          new view.Controller({view, request, response, pathParts, params});
+        } catch(ex) {
+          if (typeof ex.error === 'number')
+            error(ex.error, ex.reason);
+          else
+            error(ex);
+        }
       };
       WebServer.registerHandler(module, pathRoot, this._handleRequest);
     }

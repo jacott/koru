@@ -30,6 +30,7 @@ define(function (require, exports, module) {
         res.writeHead(err, attrs);
         res.end(msg);
       } else {
+        koru.unhandledException(err);
         res.statusCode = 500;
         res.end('Internal server error!');
       }
@@ -72,7 +73,6 @@ define(function (require, exports, module) {
             }
           }
         } catch(ex) {
-          koru.unhandledException(ex);
           error(ex);
         } finally {
           IdleCheck.dec();

@@ -2,6 +2,7 @@ isServer && define(function (require, exports, module) {
   /**
    * Server side page rendering coordinator.
    **/
+  const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const DomTemplate     = require('koru/dom/template');
@@ -20,6 +21,7 @@ isServer && define(function (require, exports, module) {
     setUp() {
       v = {};
       v.req = {
+        method: 'GET',
         headers: {},
         on: stub(),
       };
@@ -174,6 +176,24 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(Dom.htmlToJson(Dom.textToHtml(
           v.res.end.firstCall.args[0])).html.id, 'defLayout');
+      },
+
+      "test exception"() {
+        const {sp, tpl} = v;
+
+
+        class MyController extends sp.BaseController {
+          $parser() {return 'foo'}
+          foo() {throw new koru.Error(400, {name: [['invalid']]})}
+        }
+
+        sp.addViewController('foo', tpl, MyController);
+
+        const error = stub();
+
+        sp._handleRequest(v.req, v.res, '/foo/1234', error);
+
+        assert.calledWith(error, 400, {name: [['invalid']]});
       },
 
       "test CRUD"() {
