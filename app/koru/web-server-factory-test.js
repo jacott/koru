@@ -12,26 +12,27 @@ isServer && define(function (require, exports, module) {
   const IdleCheck        = require('./idle-check').singleton;
   const TH               = require('./test');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const WebServerFactory = require('./web-server-factory');
-  var test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.future = new Future();
       v.req = {
         headers: {},
-        on: test.stub(),
+        on: stub(),
       };
       v.res = {
-        getHeader: test.stub(),
-        setHeader: test.stub(),
-        on: test.stub(),
-        once: test.stub(),
-        emit: test.stub(),
-        write: test.stub(),
-        writeHead: test.stub(),
+        getHeader: stub(),
+        setHeader: stub(),
+        on: stub(),
+        once: stub(),
+        emit: stub(),
+        write: stub(),
+        writeHead: stub(),
         end(data) {
           v.future.return(data);
         },
@@ -43,9 +44,9 @@ isServer && define(function (require, exports, module) {
           },
         };
 
-        v.sendRet.on = test.stub().returns(v.sendRet);
+        v.sendRet.on = stub().returns(v.sendRet);
 
-        test.intercept(v.webServer, '_replaceSend', v.send = function (...args) {
+        intercept(v.webServer, '_replaceSend', v.send = function (...args) {
           func && func.apply(this, args);
           return v.sendRet;
         });
@@ -69,7 +70,7 @@ isServer && define(function (require, exports, module) {
 
       api.example(() => {
         const http = requirejs.nodeRequire('http');
-        test.stub(http, 'createServer');
+        stub(http, 'createServer');
         v.webServer = WebServerFactory(
           '0.0.0.0', '80', '/rootDir/',
           '/index2.html',
@@ -85,7 +86,7 @@ isServer && define(function (require, exports, module) {
 
       api.example(() => {
         const {Server} = requirejs.nodeRequire('http');
-        const listen = test.stub(Server.prototype, 'listen').yields();
+        const listen = stub(Server.prototype, 'listen').yields();
 
         v.webServer.start();
         assert.calledWith(listen, '9876', 'localhost');
@@ -98,7 +99,7 @@ isServer && define(function (require, exports, module) {
 
       api.example(() => {
         const {Server} = requirejs.nodeRequire('http');
-        const close = test.stub(Server.prototype, 'close');
+        const close = stub(Server.prototype, 'close');
 
         v.webServer.stop();
         assert.called(close);
@@ -111,6 +112,26 @@ isServer && define(function (require, exports, module) {
 
       assert.equals(v.webServer.parseUrlParams('stuff?foo=bar&name=bob'), {foo: 'bar', name: 'bob'});
       assert.equals(v.webServer.parseUrlParams({url: 'stuff?foo=bar'}), {foo: 'bar'});
+    },
+
+    "test handlers override specials"() {
+      intercept(koru, 'runFiber', func => func());
+      const req = {url: '/bar/baz'}, res = {end: stub()};
+      stub(koru, 'unhandledException');
+
+      v.webServer = WebServerFactory('localhost', '9876', '/', '', {
+        bar() {throw v.ex = new koru.Error(499, {test: 123})}});
+
+      v.webServer.requestListener(req, res);
+
+      assert.calledWith(koru.unhandledException, v.ex);
+
+      const bar = stub();
+      v.webServer.registerHandler(module, 'bar', bar);
+
+      v.webServer.requestListener(req, res);
+
+      assert.called(bar);
     },
   });
 });

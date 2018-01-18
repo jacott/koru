@@ -49,15 +49,16 @@ define(function (require, exports, module) {
 
           let m = /^\/([^/]+)(.*)$/.exec(path);
           if (m) {
-            var special = SPECIALS[m[1]];
-
-            if (special) {
-              var pr = typeof special === 'function' ? special(m) : special;
-              path = pr[0]; reqRoot = pr[1];
-
-            } else if(special = handlers[m[1]]) {
-              special(req, res, m[2], error);
+            const handler = handlers[m[1]];
+            if (handler !== undefined) {
+              handler(req, res, m[2], error, m[1]);
               return;
+            }
+            const special = SPECIALS[m[1]];
+
+            if (special !== undefined) {
+              const pr = typeof special === 'function' ? special(m) : special;
+              path = pr[0]; reqRoot = pr[1];
             }
           }
 
