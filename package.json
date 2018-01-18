@@ -42,7 +42,7 @@
     "raw-body": "^2.3.2",
     "send": "^0.16.1",
     "ws": "^3.3.2",
-    "yaajs": "^2.1.2"
+    "yaajs": "^3.0.0"
   },
   "devDependencies": {
     "pg-libpq": "^1.1.1"

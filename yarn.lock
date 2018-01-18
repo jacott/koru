@@ -100,7 +100,7 @@ babel-runtime@^6.22.0, babel-runtime@^6.26.0:
     core-js "^2.4.0"
     regenerator-runtime "^0.11.0"
 
-babel-traverse@^6.9.0:
+babel-traverse@^6.25.0:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-traverse/-/babel-traverse-6.26.0.tgz#46a9cbd7edcc62c8e5c064e2d2d8d0f4035766ee"
   dependencies:
@@ -114,7 +114,7 @@ babel-traverse@^6.9.0:
     invariant "^2.2.2"
     lodash "^4.17.4"
 
-babel-types@^6.10.2, babel-types@^6.26.0:
+babel-types@^6.26.0:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-types/-/babel-types-6.26.0.tgz#a3b073f94ab49eb6fa55cd65227a334380632497"
   dependencies:
@@ -123,7 +123,7 @@ babel-types@^6.10.2, babel-types@^6.26.0:
     lodash "^4.17.4"
     to-fast-properties "^1.0.3"
 
-babylon@^6.18, babylon@^6.18.0, babylon@^6.8.1:
+babylon@^6.18, babylon@^6.18.0:
   version "6.18.0"
   resolved "https://registry.yarnpkg.com/babylon/-/babylon-6.18.0.tgz#af2f3b88fa6f5c1e4c634d1a0f8eac4f55b395e3"
 
@@ -946,10 +946,10 @@ xtend@^4.0.0:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.1.tgz#a5c6d532be656e23db820efb943a1f04998d63af"
 
-yaajs@^2.1.2:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/yaajs/-/yaajs-2.1.2.tgz#3b481654ee65daa488f693f540827770abcb570c"
+yaajs@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/yaajs/-/yaajs-3.0.0.tgz#ea72259df937e0cd300e64722ebe8aa9a850318d"
   dependencies:
-    babel-traverse "^6.9.0"
-    babel-types "^6.10.2"
-    babylon "^6.8.1"
+    babel-traverse "^6.25.0"
+    babel-types "^6.26.0"
+    babylon "^6.18"
