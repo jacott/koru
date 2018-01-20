@@ -199,7 +199,7 @@ define(function(require, exports, module) {
     refuteMessage: "Expected {0} not to be between {1} and {2}",
   });
 
-  function match(object, matcher) {
+  const match = (object, matcher)=>{
     if (matcher && typeof matcher.test === "function") {
       return matcher.test(object);
     }
@@ -231,7 +231,7 @@ define(function(require, exports, module) {
 
     throw new Error("Matcher (" + format("{i0}", matcher) + ") was not a " +
                     "string, a number, a function, a boolean or an object");
-  }
+  };
 
   ga.match = match;
 
@@ -341,10 +341,8 @@ define(function(require, exports, module) {
 
       function attrsToList(node) {
         const result = [];
-        util.forEach(node.attributes, function (a) {
-          result.push([a.name, a.value]);
-        });
-        result.sort(function (a, b) {
+        util.forEach(node.attributes, a =>{result.push([a.name, a.value])});
+        result.sort((a, b)=>{
           a = a[0]; b=b[0];
           return a === b ? 0 : a < b ? -1 : 1;
         });
@@ -428,9 +426,7 @@ define(function(require, exports, module) {
       refuteMessage: "Did not Expect {$htmlClue}",
     });
 
-    function filter(elms, func) {
-      return Array.prototype.filter.call(elms, func);
-    }
+    const filter = (elms, func)=> Array.prototype.filter.call(elms, func);
 
     function findAll(elms, query) {
       const directChild = query[0] === '>';
@@ -517,7 +513,7 @@ define(function(require, exports, module) {
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
-              const ef = filter(elm, function (i) {return gu.deepEqual(i.value, options.value)});
+              const ef = filter(elm, i => gu.deepEqual(i.value, options.value));
               if (ef.length === 0) {
                 setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;

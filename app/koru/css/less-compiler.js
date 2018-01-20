@@ -26,10 +26,12 @@ define(function(require, exports, module) {
     const src = fst.readFile(path).toString();
     const future = new Future;
 
+    const filename = path.substring(topLen - 1);
+
     less.render(src, {
       syncImport: true,
       paths: [dir], // for @import
-      filename: path.substring(topLen - 1),
+      filename,
       sourceMap: {
         sourceMapFileInline: true,
       },
@@ -44,7 +46,7 @@ define(function(require, exports, module) {
         })+"\n");
         future.return(null);
       } else {
-        postcss.process(output.css).then(result => {
+        postcss.process(output.css, {from: undefined}).then(result => {
           result.warnings().forEach(warn=> {
             console.warn(warn.toString());
           });

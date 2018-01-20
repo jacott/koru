@@ -85,13 +85,11 @@ define(function(require, exports, module) {
     assert(doc, expected) {
       const result = {}, {_errors} = doc;
 
-      for(let field in _errors) {
-        const msgs = _errors[field].map(function (m) {
+      for(const field in _errors) {
+        const msgs = _errors[field].map(m =>{
           if (m.length === 1)
             return m[0];
-          return m.map(function (n) {
-            return typeof n === 'object' ? util.inspect(n) : n;
-          }).join(', ');
+          return m.map(n => typeof n === 'object' ? util.inspect(n) : n).join(', ');
         });
 
         result[field] = msgs.join('; ');
@@ -112,11 +110,13 @@ define(function(require, exports, module) {
         this.key = Object.keys(validators);
         return false;
       }
-      for(let key in expected) {
+
+      for(const key in expected) {
         const val = validators[key];
         this.key = key;
         this.actual = val && val.slice(1,2);
         this.expected = expected[key];
+
         if (! (val && gu.deepEqual(val.slice(1,2), expected[key]))) return false;
       }
       return true;
@@ -137,14 +137,10 @@ define(function(require, exports, module) {
       if (! Array.isArray(actual)) actual = [actual];
       if (! Array.isArray(expected)) expected = [expected];
       if (actual[0] && actual[0].attributes) {
-        actual = actual.map(function (i) {
-          return i.attributes;
-        });
+        actual = actual.map(i => i.attributes);
       }
       if (expected[0] && expected[0].attributes) {
-        expected = expected.map(function (i) {
-          return i.attributes;
-        });
+        expected = expected.map(i => i.attributes);
       }
       actual = mapFields(actual, exclude);
       expected = mapFields(expected, exclude);
@@ -157,26 +153,27 @@ define(function(require, exports, module) {
     message: "attributes to be equal{$diff}",
   });
 
-  function mapFields(list, exclude) {
+  const mapFields = (list, exclude)=>{
     const result = {};
     if (list.length === 0) return result;
-    var useId = (! exclude || exclude.indexOf('_id') === -1) && !! list[0]._id;
+    const useId = (! exclude || exclude.indexOf('_id') === -1) && !! list[0]._id;
     for (let i = 0; i < list.length; ++i) {
       const row = list[i];
+      let attrs;
       if (exclude) {
-        var attrs = {};
-        for (let key in row) {
+        attrs = {};
+        for (const key in row) {
           if (exclude.indexOf(key) === -1) {
             attrs[key] = row[key];
           }
         }
       } else {
-        var attrs = row;
+        attrs = row;
       }
       result[useId ? row._id : i] = attrs;
     }
     return result;
-  }
+  };
 
   return TH;
 });
