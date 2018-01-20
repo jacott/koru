@@ -35,6 +35,10 @@ define(function(require, exports, module) {
       this.match = match();
       this.sessAuth = null;
 
+      ws.on('error', err => {
+        koru.info('web socket error', err);
+        this.close();
+      });
       ws.on('close', () => this.close());
     }
 

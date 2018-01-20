@@ -5,7 +5,6 @@ define(function (require, exports, module) {
   const makeSubject     = require('../make-subject');
   const util            = require('../util');
   const message         = require('./message');
-  const WebSocketServer = requirejs.nodeRequire('ws').Server;
 
   function webSocketServerFactory(session, execWrapper) {
     const Connection = require('./server-connection-factory')(session);
