@@ -11,11 +11,15 @@ define(function(require, exports, module) {
     req.addEventListener("load", function () {
       if (! callback) return;
       if (Math.floor(req.status/100) === 2) {
+        let resp = null;
         try {
-          callback(null, req.responseText ? JSON.parse(req.responseText) : null);
+          if (req.responseText)
+            resp = JSON.parse(req.responseText);
         } catch (ex) {
           callback(ex);
+          return;
         }
+        callback(null, resp);
       }
       else {
         callback(new koru.Error(req.status, req.responseText));

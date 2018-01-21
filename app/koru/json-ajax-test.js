@@ -1,5 +1,6 @@
 isClient && define(function (require, exports, module) {
-  const TH  = require('koru/test');
+  const koru            = require('koru');
+  const TH              = require('koru/test');
 
   const sut = require('./json-ajax');
   var test, v;
@@ -28,6 +29,20 @@ isClient && define(function (require, exports, module) {
       v.req.responseText = "";
       v.load();
       assert.calledWith(v.callback, null, null);
+    },
+
+    "test callback exception"() {
+      sut.get("/url", v.callback = test.stub().withArgs(TH.match(ex => {
+        assert.match(ex.message, /JSON/);
+        return true;
+      })).throws(new koru.Error(400, 'testing')));
+      assert.calledWith(v.req.addEventListener, "load", TH.match(f => v.load = f));
+
+      v.req.status = 200;
+      v.req.responseText = "invalid}json";
+      assert.exception(()=>{
+        v.load();
+      }, {error: 400});
     },
 
     "test get"() {
