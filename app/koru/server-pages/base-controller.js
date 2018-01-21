@@ -92,23 +92,17 @@ define(function(require, exports, module) {
 
     renderHTML(html) {
       const data = html.outerHTML;
-      this.renderContent(data, 'text/html', 'utf-8',
-                         data.slice(0,2) === '<!' ? undefined : HEADER);
+      this.renderContent({
+        data, contentType: 'text/html',
+        prefix: data.slice(0,2) === '<!' ? undefined : HEADER,
+        eTag: this.eTag});
     }
 
-    renderJSON(json) {this.renderContent(JSON.stringify(json), 'application/json')}
+    renderJSON(json) {this.renderContent({data: JSON.stringify(json), contentType: 'application/json'})}
 
-    renderContent(data, contentType='text', encoding='utf-8', prefix) {
-      const header = {
-        'Content-Length': (prefix === undefined ? 0 : prefix.length)+Buffer.byteLength(data, encoding),
-        'Content-Type': `${contentType}; charset=${encoding}`,
-      };
-      const {eTag} = this;
-      if (eTag !== undefined) header.ETag = `W/"${eTag}"`;
+    renderContent(opts) {
       this[rendered$] = true;
-      this.response.writeHead(200, header);
-      if (prefix !== undefined) this.response.write(prefix);
-      this.response.end(data);
+      HttpUtil.renderContent(this.response, opts);
     }
 
     index() {return defaultActions.index(this)}

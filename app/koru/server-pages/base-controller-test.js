@@ -136,7 +136,6 @@ define(function (require, exports, module) {
       assert.calledWith(response.writeHead, 200, {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Length': 23,
-        ETag: TH.match(/W\/"h[0-9]+"/),
       });
       refute.called(response.write);
       assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');

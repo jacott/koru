@@ -34,5 +34,29 @@ define(function(require, exports, module) {
         return body;
       }
     },
+
+    renderContent(response, {data, contentType, encoding='utf-8', prefix, eTag}) {
+      if (data === undefined) {
+        response.writeHead(204, {'Content-Length': 0});
+        response.end('');
+        return;
+      }
+      if (contentType === undefined) {
+        if (typeof data === 'string') {
+          contentType = 'text';
+        } else {
+          contentType = 'application/json';
+          data = JSON.stringify(data);
+        }
+      }
+      const header = {
+        'Content-Length': (prefix === undefined ? 0 : prefix.length)+Buffer.byteLength(data, encoding),
+        'Content-Type': `${contentType}; charset=${encoding}`,
+      };
+      if (eTag !== undefined) header.ETag = `W/"${eTag}"`;
+      response.writeHead(200, header);
+      if (prefix !== undefined) response.write(prefix);
+      response.end(data);
+    },
   };
 });
