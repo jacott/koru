@@ -116,6 +116,8 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
     model && model.docs._resetTable();
   };
 
+  const onlyMigrateFiles = fn => /\d.*.js$/.test(fn);
+
   class Migration {
     constructor(client) {
       this._client = client;
@@ -130,9 +132,7 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
     }
 
     recordAllMigrations(dirPath) {
-      const filenames = readdir(dirPath).wait().filter(function (fn) {
-        return /.js$/.test(fn);
-      }).sort();
+      const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
 
       const migrations = this._getMigrations();
 
@@ -147,9 +147,7 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 
     migrateTo(dirPath, pos, verbose) {
       if (! pos) throw new Error("Please specifiy where to migrate to");
-      const filenames = readdir(dirPath).wait().filter(function (fn) {
-        return /.js$/.test(fn);
-      }).sort();
+      const filenames = readdir(dirPath).wait().filter(onlyMigrateFiles).sort();
 
       const migrations = this._getMigrations();
 
