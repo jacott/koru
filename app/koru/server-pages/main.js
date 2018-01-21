@@ -31,12 +31,13 @@ define(function(require, exports, module) {
       return fst.readFile(path.join(App._pageDirPath, file+".css")).toString();
     },
 
-    page() {
-      return this.controller.pathParts[0] || "index";
-    },
+    controllerId() {return this.controller.constructor.modId},
+
+    page() {return this.controller.pathParts[0] || "index"},
   });
 
   const addViewController = (sp, name, View, Controller)=>{
+    Controller.modId = name;
     View.Controller = Controller;
     View.Controller.App = sp;
     sp[views$][name] = View;

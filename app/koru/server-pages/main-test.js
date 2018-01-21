@@ -104,6 +104,16 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(fst.readFile, v.sp._pageDirPath+'/my-css-page.css');
       },
 
+      "test page helper"() {
+        assert.equals(Dom._helpers.page.call({controller: {pathParts: []}}), 'index');
+        assert.equals(Dom._helpers.page.call({controller: {pathParts: ['show']}}), 'show');
+      },
+
+      "test controllerId helper"() {
+        assert.equals(Dom._helpers.controllerId.call({
+          controller: {constructor: {modId: 'foo'}}}), 'foo');
+      },
+
       "test stop"() {
         const {sp} = v;
         v.webServer.deregisterHandler = stub();
