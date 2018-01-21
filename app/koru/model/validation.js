@@ -39,8 +39,8 @@ define(function(require, exports, module) {
       return ResourceString.en[msg] || msg;
     },
 
-    check(obj, spec, options) {
-      const {onError: error, altSpec, baseName: name, filter} = options || {};
+    check(obj, spec, options={}) {
+      const {onError: error, altSpec, baseName: name, filter} = options;
       try {
         check1(obj, spec, name);
         return true;
@@ -61,7 +61,7 @@ define(function(require, exports, module) {
         } else if (Array.isArray(subSpec)) {
           if (! Array.isArray(obj)) bad(name, obj, subSpec);
           subSpec = subSpec[0];
-          util.forEach(obj, function (item, index) {
+          util.forEach(obj, (item, index)=>{
             check1(item, subSpec, name ? name + '.' + index : index);
           });
         } else if (match.baseObject.$test(subSpec)) {
@@ -125,7 +125,7 @@ define(function(require, exports, module) {
           }
           error = new koru.Error(400, reason);
         }}, options);
-      if ( !this.check.call(this, obj, spec, options))
+      if (! this.check.call(this, obj, spec, options))
         throw error;
     },
 
@@ -155,6 +155,17 @@ define(function(require, exports, module) {
       }, name || {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
+    },
+
+    typeSpec(model, name) {
+      const ans = {};
+      const fields = model.$fields;
+      for (const name in fields) {
+        const field = fields[name];
+        if (! field.readOnly)
+          ans[name] = field.type;
+      }
+      return ans;
     },
 
     validateField(doc, field, spec) {
@@ -282,10 +293,8 @@ define(function(require, exports, module) {
         }
       }
 
-      koru.onunload(module, function () {
-        registered.forEach(function (key) {
-          delete validators[key];
-        });
+      koru.onunload(module, ()=>{
+        registered.forEach(key =>{delete validators[key]});
       });
     },
 

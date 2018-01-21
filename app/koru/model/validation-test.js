@@ -5,8 +5,10 @@ define(function (require, exports, module) {
   const Model = require('./main');
   const TH    = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const Val   = require('./validation');
-  var v;
+  let v;
 
   const Module = module.constructor;
 
@@ -105,14 +107,14 @@ define(function (require, exports, module) {
     },
 
     "test assertCheck"() {
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.assertCheck(1, 'string');
       }, {error: 400, reason: 'is_invalid'});
       Val.assertCheck(1, 'number');
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.assertCheck({name: 1}, {name: 'string'});
       }, {error: 400, reason: {name: [['is_invalid']]}});
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.assertCheck({_id: 'abc'}, {name: 'string'});
       }, {error: 400, reason: {_id: [['is_invalid']]}});
 
@@ -120,15 +122,15 @@ define(function (require, exports, module) {
       Val.register(v.myModule, {valAbc(doc, field) {
         this.addError(doc, field, 'is_abc');
       }});
-      this.onEnd(function () {Val.register(v.myModule)});
+      onEnd(()=>{Val.register(v.myModule)});
 
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.assertCheck({name: 'abc'}, Val.matchFields({name: {type: 'string', valAbc: true}}));
       }, {error: 400, reason: {name: [['is_abc']]}});
     },
 
     "test assertDocChanges"() {
-      this.spy(Val, 'assertCheck');
+      spy(Val, 'assertCheck');
       const existing = {changes: {name: 'new name'}, $isNewRecord() {return false}};
       Val.assertDocChanges(existing, {name: 'string'});
 
@@ -153,59 +155,59 @@ define(function (require, exports, module) {
     },
 
     "test allowIfSimple"() {
-      assert.accessDenied(function () {Val.allowIfSimple([12, {}])});
-      assert.accessDenied(function () {Val.allowIfSimple({})});
-      refute.accessDenied(function () {Val.allowIfSimple('sdfs')});
-      refute.accessDenied(function () {Val.allowIfSimple(123)});
-      refute.accessDenied(function () {Val.allowIfSimple([], ['abc', 1234])});
+      assert.accessDenied(()=>{Val.allowIfSimple([12, {}])});
+      assert.accessDenied(()=>{Val.allowIfSimple({})});
+      refute.accessDenied(()=>{Val.allowIfSimple('sdfs')});
+      refute.accessDenied(()=>{Val.allowIfSimple(123)});
+      refute.accessDenied(()=>{Val.allowIfSimple([], ['abc', 1234])});
     },
 
     "test allowAccessIf"() {
-      assert.accessDenied(function () {Val.allowAccessIf(false);});
-      refute.accessDenied(function () {Val.allowAccessIf(true);});
+      assert.accessDenied(()=>{Val.allowAccessIf(false);});
+      refute.accessDenied(()=>{Val.allowAccessIf(true);});
     },
 
     "test ensureString"() {
-      refute.accessDenied(function () {
+      refute.accessDenied(()=>{
         Val.ensureString("a", "b");
       });
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         Val.ensureString("a", 2, "b");
       });
     },
 
     "test ensure"() {
-      refute.accessDenied(function () {
+      refute.accessDenied(()=>{
         Val.ensure(match.string, "a", "b");
-        Val.ensure('func', function () {});
+        Val.ensure('func', ()=>{});
         Val.ensure(match.number, 2, 3);
       });
 
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.ensure(match.number, 2, "b");
       }, {error: 403, details: 'expected match.number'});
     },
 
     "test ensureDate"() {
-      refute.accessDenied(function () {
+      refute.accessDenied(()=>{
         Val.ensureDate(new Date(), new Date(2000, 1, 1));
       });
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         Val.ensureDate(new Date(), 2, new Date());
       });
     },
 
     "test invalidRequest"() {
-      assert.invalidRequest(function () {Val.allowIfValid(false);});
-      assert.exception(function () {
+      assert.invalidRequest(()=>{Val.allowIfValid(false);});
+      assert.exception(()=>{
         Val.allowIfValid(false, 'foo');
       }, {error: 400, reason: {foo: [['is_invalid']]}});
-      assert.exception(function () {
+      assert.exception(()=>{
         Val.allowIfValid(false, {_errors: {x: 123}});
       }, {error: 400, reason: {x: 123}});
-      refute.invalidRequest(function () {Val.allowIfValid(true);});
+      refute.invalidRequest(()=>{Val.allowIfValid(true);});
     },
 
     'test validators'() {
@@ -217,7 +219,7 @@ define(function (require, exports, module) {
         bar2() {},
       };
 
-      const myunload = this.stub(koru, 'onunload').withArgs('mymod');
+      const myunload = stub(koru, 'onunload').withArgs('mymod');
 
       Val.register('mymod', {fooVal: fooStub, bar: barStub});
 
@@ -250,7 +252,7 @@ define(function (require, exports, module) {
         doc[field] += x;
         doc._errors = errors;
       }});
-      this.onEnd(function () {Val.register(v.myModule)});
+      onEnd(()=>{Val.register(v.myModule)});
       const doc = {age: 10};
 
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
@@ -267,7 +269,7 @@ define(function (require, exports, module) {
     },
 
     "test nestedFieldValidator"() {
-      const sut = Val.nestedFieldValidator(v.func = this.stub());
+      const sut = Val.nestedFieldValidator(v.func = stub());
 
       sut.call({changes: {}}, 'foo');
 
@@ -298,12 +300,19 @@ define(function (require, exports, module) {
       assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
     },
 
+    "test typeSpec"() {
+      assert.equals(
+        Val.typeSpec({$fields: {foo: {type: 'a'}, bar: {type: 'b'}, notMe: {type: 'b', readOnly: true}}}),
+        {foo: 'a', bar: 'b'});
+
+    },
+
     "test matchFields"() {
       Val.register(v.myModule, {divByx(doc, field, x) {
         if (doc[field] % x !== 0)
           this.addError(doc, field, 'is_invalid');
       }});
-      this.onEnd(function () {Val.register(v.myModule)});
+      onEnd(()=>{Val.register(v.myModule)});
 
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
       let doc = {foo: 4};
