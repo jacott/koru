@@ -46,7 +46,8 @@ define(function(require, exports, module) {
 
     parse(dateStr) {
       const ts = Date.parse(dateStr);
-      if (ts !== Date.parse(dateStr+'Z'))
+      const utc = Date.parse(dateStr+'Z') || Date.parse(dateStr+'T00:00:00Z');
+      if (ts !== utc)
         return new Date(ts);
 
       tmpDate.setTime(ts);

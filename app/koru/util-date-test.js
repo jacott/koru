@@ -10,7 +10,7 @@ define(function (require, exports, module) {
   TH.testCase(module, {
     "test parse"() {
       assert.equals(uDate.parse('2017-12-26'), new Date(2017, 11, 26));
-      assert.equals(uDate.parse('2017-12-26Z'), new Date("2017-12-26Z"));
+      assert.equals(uDate.parse('2017-12-26T00:00:00Z'), new Date("2017-12-26T00:00:00Z"));
     },
 
     "test shiftToLocale"() {

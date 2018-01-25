@@ -160,10 +160,10 @@ define(function(require, exports, module) {
     typeSpec(model, name) {
       const ans = {};
       const fields = model.$fields;
-      for (const name in fields) {
-        const field = fields[name];
+      for (const id in fields) {
+        const field = fields[id];
         if (! field.readOnly)
-          ans[name] = field.type;
+          ans[id] = field.type;
       }
       return ans;
     },
