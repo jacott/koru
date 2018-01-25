@@ -42,9 +42,11 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('iframe', function () {
         v.html.style.width = '110px';
-        assert.same(
-          this.style.cssText.replace(/\s+/g, '').split(';').sort().join(';'),
-          ';border:none;height:100%;left:0px;margin:1px0px0px;opacity:0;pointer-events:none;position:absolute;top:-100%;width:100%');
+        assert.equals(
+          this.style.cssText.replace(/medium none/, 'none')
+            . replace(/\s+/g, '').split(';').sort().join(';'),
+          ';border:none;height:100%;left:0px;margin:1px0px0px;opacity:0;'+
+            'pointer-events:none;position:absolute;top:-100%;width:100%');
 
         this.contentWindow.onresize();
         this.contentWindow.onresize();

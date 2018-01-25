@@ -4,6 +4,8 @@ isClient && define(function (require, exports, module) {
   const TH   = require('koru/ui/test-helper');
   const util = require('koru/util');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const sut  = require('./zoom-drag');
   var v;
 
@@ -15,8 +17,8 @@ isClient && define(function (require, exports, module) {
       v.target = Dom.h({
         $style: 'position:absolute;top:51px;left:17px;width:400px;height:100px;'});
       document.body.appendChild(v.target);
-      v.target.setPointerCapture = this.stub();
-      v.target.releasePointerCapture = this.stub();
+      stub(v.target, 'setPointerCapture');
+      stub(v.target, 'releasePointerCapture');
     },
 
     tearDown() {
@@ -28,7 +30,7 @@ isClient && define(function (require, exports, module) {
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123+17, clientY: 45+51});
-      this.onEnd(sut.start({
+      onEnd(sut.start({
         event,
         target,
         onComplete(zoomDrag, {click}) {
@@ -51,7 +53,7 @@ isClient && define(function (require, exports, module) {
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123, clientY: 45});
-      this.onEnd(sut.start({
+      onEnd(sut.start({
         event,
         target,
         onComplete(zoomDrag, {click}) {v.click = click}
@@ -65,12 +67,12 @@ isClient && define(function (require, exports, module) {
     },
 
     "test drag"() {
-      const raf = this.stub(window, 'requestAnimationFrame').returns(123);
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = new window.PointerEvent('pointerdown', {
         pointerId: 1, clientX: 123, clientY: 145});
-      const onChange = this.stub();
-      this.onEnd(sut.start({
+      const onChange = stub();
+      onEnd(sut.start({
         event,
         target,
         onChange,
@@ -112,16 +114,16 @@ isClient && define(function (require, exports, module) {
     "wheelZoom": {
       setUp() {
         v.now = Date.now();
-        this.intercept(util, 'dateNow', ()=>v.now);
-        this.stub(koru, 'afTimeout').returns(this.stub());
-        v.raf = this.stub(window, 'requestAnimationFrame').returns(123);
+        intercept(util, 'dateNow', ()=>v.now);
+        stub(koru, 'afTimeout').returns(stub());
+        v.raf = stub(window, 'requestAnimationFrame').returns(123);
         const event = new window.WheelEvent('wheel', {
           deltaY: -79.5, clientX: 117, clientY: 155});
         v.start = (opts={}) => {
-          this.onEnd(sut.start(Object.assign({
+          onEnd(sut.start(Object.assign({
             event, target: v.target,
             updateDelay: 200,
-            onChange: v.onChange = this.stub(),
+            onChange: v.onChange = stub(),
             onComplete(geom, {click}) {
               v.geom = Object.assign({}, geom);
             }
@@ -131,7 +133,7 @@ isClient && define(function (require, exports, module) {
 
       "test modifier prevents timeout"() {
         const {raf} = v;
-        const isFinished = this.stub(ev => ev.foo == 2);
+        const isFinished = stub(ev => ev.foo == 2);
         v.start({isFinished});
 
         TH.keyup(v.target, 16);
@@ -200,7 +202,7 @@ isClient && define(function (require, exports, module) {
 
       "test mouseMove when wheelZoom"() {
         v.start();
-        this.stub(window, 'cancelAnimationFrame');
+        stub(window, 'cancelAnimationFrame');
         TH.trigger(v.target, 'wheel', {deltaMode: 1, deltaY: 2, clientX: 117, clientY: 155});
         TH.trigger(v.target, 'pointermove', {clientX: 101, clientY: 155});
         assert.calledWith(window.cancelAnimationFrame, 123);
@@ -216,15 +218,15 @@ isClient && define(function (require, exports, module) {
     },
 
     "test touch pinchZoom"() {
-      this.spy(Dom, 'stopEvent');
-      const raf = this.stub(window, 'requestAnimationFrame').returns(123);
+      spy(Dom, 'stopEvent');
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('touchstart', {
         touches: [{clientX: 123+17, clientY: 45+51},
                   {clientX: 100+17, clientY: 155+51}]
       });
-      const onChange = this.stub();
-      this.onEnd(sut.start({
+      const onChange = stub();
+      onEnd(sut.start({
         event,
         target,
         onChange,
@@ -262,13 +264,13 @@ isClient && define(function (require, exports, module) {
     },
 
     "test pinchZoom"() {
-      const raf = this.stub(window, 'requestAnimationFrame').returns(123);
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123+17, clientY: 45+51
       });
-      const onChange = this.stub();
-      this.onEnd(sut.start({
+      const onChange = stub();
+      onEnd(sut.start({
         event,
         target,
         onChange,
@@ -305,18 +307,19 @@ isClient && define(function (require, exports, module) {
     },
 
     "test constrainZoom"() {
-      const raf = this.stub(window, 'requestAnimationFrame').returns(123);
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123+17, clientY: 45+51
       });
-      const onChange = this.stub();
-      this.onEnd(sut.start({
+      const onChange = stub();
+      const handle = sut.start({
         event, target,
         constrainZoom: 'x',
         onChange,
         onComplete() {},
-      }));
+      });
+      onEnd(handle);
 
       TH.trigger(target, 'pointerdown', {pointerId: 2, clientX: 100+17, clientY: 155+51});
 
@@ -324,6 +327,12 @@ isClient && define(function (require, exports, module) {
       raf.yieldAll().reset();
       assert.calledWith(onChange, {
         scale: near(2.174, 0.001), midX: 111.5, midY: 100, adjustX: 13.5, adjustY: 5});
+
+      assert.calledWith(target.setPointerCapture, 1);
+
+      handle.stop();
+
+      assert.calledWith(target.releasePointerCapture, 1);
     },
   });
 });

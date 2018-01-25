@@ -432,7 +432,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('.input', function () {
         if (Dom('span>span'))
           assert.dom('span>span>span', 'b', function () {
-            assert.same(window.getComputedStyle(this).backgroundColor, 'transparent');
+            assert.same(window.getComputedStyle(this).backgroundColor, 'rgba(0, 0, 0, 0)');
           });
         else assert.dom('*', 'b', function () {
           assert.colorEqual(window.getComputedStyle(this).backgroundColor, 'rgba(0,0,0,0)');

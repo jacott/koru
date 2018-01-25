@@ -198,12 +198,18 @@ define(function (require, exports, module) {
       top.style.fontWeight = 'normal';
       assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0);');
       top.style.textDecoration = 'underline';
-      assert.match(top.style.item(2), /^text-decoration/);
+      let i = 0;
+      for(; i < 8; ++i) {
+        if (/^text-decoration/.test(top.style.item(i)||''))
+          break;
+      }
+      assert.match(top.style.item(i), /^text-decoration/);
       assert.same(top.getAttribute('style'), 'font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;');
       assert.same(top.style.textAlign, '');
       assert.same(top.outerHTML, '<div style="font-weight: normal; color: rgb(255, 0, 0); text-decoration: underline;"></div>');
       top.style.fontFamily = 'foo bar';
-      assert.match(top.style.cssText, /^font-weight: normal; color: rgb\(255, 0, 0\); text-decoration: underline; font-family: ['"]?foo bar["']?;$/);
+
+      assert.match(top.style.cssText, /^font-weight: normal; color: rgb\(255, 0, 0\); text-decoration: underline; font-family: ['"]?foo\\? bar["']?;$/);
     },
 
     "test insertBefore"() {
