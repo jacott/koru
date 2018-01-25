@@ -152,10 +152,9 @@ define(function(require, exports, module) {
         for(let i = 0; i < expParts.length; ++i) {
           const e = expParts[i], a = actParts[i];
           if (i%2) {
-            if (delta === undefined) {
-              const [,f=''] = e.split('.');
-              this.delta = delta = 1/Math.pow(10, f.length);
-            }
+            const [,f=''] = e.split('.');
+            this.delta = delta = 1/Math.pow(10, f.length);
+
             if (! withinDelta(+a, +e, delta)) {
               this.delta = delta;
               this.va = a; this.ve = `${e} at ${expParts[i-1]}`;
