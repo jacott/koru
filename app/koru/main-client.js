@@ -1,6 +1,9 @@
 define(function(require, exports, module) {
-  require('koru/polyfill/pep');
+  const pep = require('koru/polyfill/pep');
   const util = require('./util-client');
+
+  if (pep.PointerEvent === window.PointerEvent)
+    window.PointerEvent.pep = true;
 
   return function (koru) {
     window['_koru'+'_'] = koru; // avoid search for de-bug statements
