@@ -352,6 +352,16 @@ isClient && define(function (require, exports, module) {
         assert.className(v.div1, 'selected');
       },
 
+      "test disabled"() {
+        v.div2.classList.add('disabled');
+        TH.trigger(v.div2, 'pointerover');
+
+        refute.className(v.div2, 'selected');
+        TH.pointerDownUp(v.div2);
+
+        assert.dom('.rtMention');
+      },
+
       "test key down, up, enter "() {
         assert.dom('.rtMention', function () {
           assert.dom('input', function () {
@@ -377,6 +387,16 @@ isClient && define(function (require, exports, module) {
             refute.className(v.div2, 'selected');
             assert.className(v.div1, 'selected');
 
+            v.div2.classList.add('disabled');
+
+            TH.trigger(this, 'keydown', {which: 40});
+            refute.className(v.div1, 'selected');
+            assert.className(v.div3, 'selected');
+
+            TH.trigger(this, 'keydown', {which: 38});
+            assert.className(v.div1, 'selected');
+            refute.className(v.div3, 'selected');
+
             TH.trigger(this, 'keydown', {which: 40});
             TH.trigger(this, 'keydown', {which: 13});
           });
@@ -386,7 +406,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom(v.input, function () {
           refute.dom('.ln');
-          assert.dom('a[href="/#g2"]', 'Gordon Snow');
+          assert.dom('a[href="/#g3"]', 'Gayle Gunter');
         });
       },
     },

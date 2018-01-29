@@ -64,7 +64,7 @@ define(function(require, exports, module) {
   });
 
   Tpl.$events({
-    'pointerover .rtMention>div>*'(event) {
+    'pointerover .rtMention>div>:not(.disabled)'(event) {
       Dom.removeClass(event.currentTarget.getElementsByClassName('selected')[0], 'selected');
       Dom.addClass(this, 'selected');
     },
@@ -73,7 +73,7 @@ define(function(require, exports, module) {
       Dom.stopEvent();
     },
 
-    'pointerup .rtMention>div>*'(event) {
+    'pointerup .rtMention>div>:not(.disabled)'(event) {
       acceptItem(event, this);
     },
 
@@ -109,9 +109,12 @@ define(function(require, exports, module) {
       case 40: // down
         Dom.stopEvent();
         const elm = event.currentTarget.getElementsByClassName('selected')[0];
-        if (!elm) return;
-        const nextElm = event.which === 38 ? elm.previousElementSibling : elm.nextElementSibling;
-        if (nextElm) {
+        if (elm == null) return;
+        let nextElm = elm;
+        do {
+          nextElm = event.which === 38 ? nextElm.previousElementSibling : nextElm.nextElementSibling;
+        } while(nextElm != null && nextElm.classList.contains('disabled'))
+        if (nextElm != null) {
           Dom.removeClass(elm, 'selected');
           Dom.addClass(nextElm, 'selected');
         }
