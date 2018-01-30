@@ -202,20 +202,25 @@ define(function(require, exports, module) {
               if (func.call(widget, doc, ctx.options.name, value, form) === 'exit')
                 return;
             }
-            if (doc._errors === undefined) for(const _ in doc.changes) {
-              doc.$save();
-              break;
-            }
-            if (doc._errors !== undefined) {
-              Dom.removeClass(form, 'submitting');
-              Dom.Form.renderErrors(doc, form);
-            } else {
-              widget.close(form);
-            }
+            Tpl.saveField(doc, form, this);
           });
         },
       });
       return this;
+    },
+
+    saveField(doc, form, widget) {
+      if (doc._errors === undefined) for(const _ in doc.changes) {
+        doc.$save();
+        break;
+      }
+      if (doc._errors !== undefined) {
+        Dom.removeClass(form, 'submitting');
+        Dom.Form.renderErrors(doc, form);
+      } else {
+        widget == null || widget.close(form);
+      }
+
     },
   });
 
