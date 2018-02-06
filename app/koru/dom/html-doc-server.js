@@ -322,7 +322,7 @@ define(function(require, exports, module) {
         for(const attr in attrs) {
           oa.push(attr+'="'+attrs[attr]+'"');
         }
-        cssText === undefined ||oa.push('style="'+cssText+'"');
+        cssText && oa.push('style="'+cssText+'"');
         open = oa.join(' ');
       }
 

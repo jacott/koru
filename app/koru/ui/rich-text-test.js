@@ -274,6 +274,18 @@ define(function (require, exports, module) {
                     '<ul><li><div style=\"text-align: left;\">Item 1</div></li></ul><li><br></li>');
     },
 
+    "test decorations on link"() {
+      // assertConvert('<div><a draggable="false" href="/123"><span style=\"font-weight: bold;\">hello</span></a></div>', 'x');
+      assertConvert(
+        '<div><a style="font-weight:bold" draggable="false" href="/123">hello</a></div>',
+        '<div><a draggable="false" href="/123"><span style=\"font-weight: bold;\">hello</span></a></div>',
+      );
+      assertConvert(
+        '<div><a style="font-weight: bold;font-family: monospace;" draggable="false" href="/123">hello</a></div>',
+        '<div><a draggable="false" href="/123"><span style=\"font-weight: bold; font-family: monospace;\">hello</span></a></div>',
+      );
+    },
+
     "test multiple" () {
       sut.mapFontNames({poster: 'foo font'});
 
@@ -340,26 +352,25 @@ define(function (require, exports, module) {
     },
   });
 
-  function assertConvert(text, expect) {
+  const assertConvert = (text, expect)=>{
     expect = expect || text;
-    var html = document.createElement('p');
+    const html = document.createElement('p');
     html.innerHTML = text;
-    var rt = sut.fromHtml(html);
+    const rt = sut.fromHtml(html);
 
-    assert.elideFromStack.msg(function () {return rt})
-      .same(TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML).replace(/\&quot;/g, "'"), expect);
-  }
+    assert.elideFromStack.msg(()=> rt)
+      .equals(TH.normHTMLStr(sut.toHtml(rt[0], rt[1], document.createElement('p')).innerHTML)
+              .replace(/\&quot;/g, "'"), expect);
+  };
 
-  function assertBothConvert(text, expect) {
+  const assertBothConvert = (text, expect)=>{
     assertConvert(text, expect);
     assertConvert(expect);
-  }
+  };
 
-  function inspectFrag(frag) {
-    var result = [];
-    util.forEach(frag.childNodes, function (elm) {
-      result.push(elm.outerHTML);
-    });
+  const inspectFrag = frag=>{
+    const result = [];
+    util.forEach(frag.childNodes, elm =>{result.push(elm.outerHTML)});
     return result;
-  }
+  };
 });

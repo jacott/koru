@@ -24,7 +24,7 @@ define(function(require, exports, module) {
   };
 
   const FONT_ID_TO_FACE = [];
-  for (var id in FONT_FACE_TO_ID)
+  for (let id in FONT_FACE_TO_ID)
     FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
 
   const FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
@@ -38,7 +38,7 @@ define(function(require, exports, module) {
 
 
   const ALIGN_CODE_TO_TEXT = [];
-  for (var id in ALIGN_TEXT_TO_CODE)
+  for (let id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
   Object.assign(ALIGN_TEXT_TO_CODE, {
@@ -47,21 +47,19 @@ define(function(require, exports, module) {
     'justify-all': JUSTIFY
   });
 
-  const LINK_TO_HTML = [
-    {
-      id: 0,
-      class: "",
-      fromHtml(node) {return node.getAttribute('href')},
-      toHtml(node, ref) {
-        if (! /[\/#]/.test(ref[0])) {
-          node.setAttribute('target', '_blank');
-          node.setAttribute('rel', 'noopener');
-        }
+  const LINK_TO_HTML = [{
+    id: 0,
+    class: "",
+    fromHtml(node) {return node.getAttribute('href')},
+    toHtml(node, ref) {
+      if (! /[\/#]/.test(ref[0])) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener');
+      }
         node.setAttribute('href', ref.replace(/^javascript:/,''));
-        node.setAttribute('draggable', 'false');
-      },
+      node.setAttribute('draggable', 'false');
     },
-  ];
+  }];
 
   const LINK_FROM_HTML = {
     '': LINK_TO_HTML[0]
@@ -152,7 +150,8 @@ define(function(require, exports, module) {
     ignoreInline () {}
 
     fromChildren(parent) {
-      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent) && (parent.getAttribute('align') || parent.style.textAlign))
+      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent)
+          && (parent.getAttribute('align') || parent.style.textAlign))
         var endAlign = textAlign.call(this, parent);
 
       var nodes = parent.childNodes;
@@ -199,11 +198,11 @@ define(function(require, exports, module) {
   };
 
   function textAlign(node) {
-    var start = this.lines.length;
-    var code = ALIGN_TEXT_TO_CODE[node.style.textAlign || node.getAttribute('align')];
+    const start = this.lines.length;
+    const code = ALIGN_TEXT_TO_CODE[node.style.textAlign || node.getAttribute('align')];
     if (code === undefined) return;
     this.markup.push(code, this.relative(start), 0);
-    var endMarker = this.markup.length - 1;
+    const endMarker = this.markup.length - 1;
 
     return function () {
       this.markup[endMarker] = this.lines.length - 1 - start;
@@ -215,9 +214,9 @@ define(function(require, exports, module) {
   }
 
   function fromLi(node) {
-    var start = this.lines.length;
+    const start = this.lines.length;
     this.markup.push(LI, this.relative(start), 0);
-    var endMarker = this.markup.length - 1;
+    const endMarker = this.markup.length - 1;
 
     this.fromChildren(node, {});
 
@@ -400,7 +399,7 @@ define(function(require, exports, module) {
     }
   }
 
-  var SPAN_STYLES = {
+  const SPAN_STYLES = {
     'background-color': [BGCOLOR, fromColor],
     'color': [COLOR, fromColor],
     'font-family': [FONT, fromFace],
@@ -438,7 +437,7 @@ define(function(require, exports, module) {
   };
 
   function fromSize(muIndex, code, name, value, index) {
-    var size = FONT_SIZE_TO_EM[value.replace(/^-[a-z]+-/,'')];
+    const size = FONT_SIZE_TO_EM[value.replace(/^-[a-z]+-/,'')];
     if (! size && value.slice(-2) !== 'em')
       return;
 
@@ -456,13 +455,11 @@ define(function(require, exports, module) {
       return;
     }
 
-    var attrs = [];
-    var style = node.style;
-    var markupLen = this.markup.length;
-    for(var i = 0; i < style.length; ++i) {
-
-      var name = style.item(i);
-      var spanStyle = SPAN_STYLES[name];
+    const {style} = node;
+    const markupLen = this.markup.length;
+    for(let i = 0; i < style.length; ++i) {
+      const name = style.item(i);
+      const spanStyle = SPAN_STYLES[name];
 
       if (spanStyle) {
         spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index, spanStyle[2]);
@@ -493,17 +490,38 @@ define(function(require, exports, module) {
     PRE: fromPre,
 
     A(node, index, pos) {
-      var code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
+      const code = LINK_FROM_HTML[node.className] || LINK_TO_HTML[0];
+
+      const {style} = node;
+
       if (pos === undefined) {
         if (this.hasATag) return;
         this.hasATag = true;
         this.markup.push(LINK, this.relative(index), this.lines[index].length, 0, code.id, 0);
+        const markupLen = this.markup.length;
+        for(let i = 0; i < style.length; ++i) {
+          const name = style.item(i);
+          const spanStyle = SPAN_STYLES[name];
+
+          if (spanStyle) {
+            spanStyle[1].call(this, markupLen, spanStyle[0], name, style[name], index, spanStyle[2]);
+          }
+        }
       } else {
         this.hasATag = null;
-        this.markup[pos+5] = index;
-        var lineIdx = this.lines.length - 1;
+        let count = pos+5;
+        this.markup[count] = index;
+        const lineIdx = this.lines.length - 1;
         this.lines[lineIdx] += ' (' + code.fromHtml(node) + ')';
         this.markup[pos+3] = this.lines[lineIdx].length;
+        for(let i = 0; i < style.length; ++i) {
+          const name = style.item(i);
+          const spanStyle = SPAN_STYLES[name];
+
+          if (spanStyle) {
+            this.markup[(count+=4)] = index;
+          }
+        }
       }
     },
   };
