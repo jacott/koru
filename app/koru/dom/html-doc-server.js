@@ -339,6 +339,7 @@ define(function(require, exports, module) {
       else
         this[attributes$][name] = value;
     }
+    setAttributeNS(ns, name, value) {this.setAttribute(name, value)}
     getAttribute(name) {
       if (name === 'style')
         return origCssText(this.style);

@@ -106,6 +106,12 @@ define(function (require, exports, module) {
       assert.same(elm.getAttribute('width'), '500');
     },
 
+    "test setAttributeNS"() {
+      const elm = document.createElement('div');
+      elm.setAttributeNS(Dom.XHTMLNS, 'width', 500);
+      assert.same(elm.getAttribute('width'), '500');
+    },
+
     "test doc fragment cloneNode"() {
       const df1 =Dom.h(['a', 'b', 'c']);
 
