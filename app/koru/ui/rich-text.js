@@ -58,6 +58,7 @@ define(function(require, exports, module) {
           node.setAttribute('rel', 'noopener');
         }
         node.setAttribute('href', ref.replace(/^javascript:/,''));
+        node.setAttribute('draggable', 'false');
       },
     },
   ];
