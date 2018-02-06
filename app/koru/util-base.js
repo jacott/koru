@@ -1,67 +1,8 @@
 define(function(require, exports, module) {
   const {hasOwnProperty} = Object.prototype;
-  const hasOwn = (obj, prop)=>hasOwnProperty.call(obj, prop);
   const qstr = s => JSON.stringify(s).slice(1, -1);
 
   const {inspect$} = require('koru/symbols');
-
-  module.exports = {
-    hasOwn,
-    idLen: 17,
-    browserVersion(ua) {
-      const isMobile = /\bMobi(le)?\b/.test(ua);
-      const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
-      if(/trident/i.test(m[1])){
-        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
-        return 'IE '+(tmp[1] || '');
-      }
-      m[1] = m[1] ? m[1].replace(/\s.*/, '') : 'Unknown';
-      const tmp = ua.match(/version\/([\.\d]+)/i);
-      if(tmp != null) m[2]= tmp[1];
-      return (isMobile ? 'Mobile ' : '') + m.slice(1).join(' ');
-    },
-
-    merge(dest, source) {
-      for(const prop in source) {
-        const desc = Object.getOwnPropertyDescriptor(source, prop);
-        desc === undefined || Object.defineProperty(dest, prop, desc);
-      }
-      return dest;
-    },
-
-    mergeNoEnum(dest, source) {
-      for(const prop in source) {
-        const desc = Object.getOwnPropertyDescriptor(source, prop);
-        if (desc !== undefined) {
-          desc.enumerable = false;
-          Object.defineProperty(dest, prop, desc);
-        }
-      }
-      return dest;
-    },
-
-    last(ary) {
-      return ary[ary.length -1];
-    },
-
-    regexEscape(s) {
-      return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    },
-
-    newEscRegex(s) {
-      return new RegExp(this.regexEscape(s));
-    },
-
-    inspect(o, count, len) {
-      return inspect1(o, count || 4).toString().slice(0, len || 1000);
-    },
-
-    qstr,
-  };
-  /**
-   * @deprecated extend - too confusing with class extends so use merge
-   **/
-  module.exports.extend = module.exports.merge;
 
   const inspect1 = (o, i) => {
     try {
@@ -110,4 +51,59 @@ define(function(require, exports, module) {
       return '??';
     }
   };
+
+  const regexEscape = s => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+  const util = {
+    hasOwn: (obj, prop)=>hasOwnProperty.call(obj, prop),
+    idLen: 17,
+    browserVersion(ua) {
+      const isMobile = /\bMobi(le)?\b/.test(ua);
+      const m = ua.match(/(opr|opera|chrome|safari|iphone.*applewebkit|firefox|msie|edge|trident(?=\/))\/?\s*([\d\.]+)/i) || [];
+      if(/trident/i.test(m[1])){
+        const tmp = /\brv[ :]+(\d+(\.\d+)?)/g.exec(ua) || [];
+        return 'IE '+(tmp[1] || '');
+      }
+      m[1] = m[1] ? m[1].replace(/\s.*/, '') : 'Unknown';
+      const tmp = ua.match(/version\/([\.\d]+)/i);
+      if(tmp != null) m[2]= tmp[1];
+      return (isMobile ? 'Mobile ' : '') + m.slice(1).join(' ');
+    },
+
+    merge(dest, source) {
+      for(const prop in source) {
+        const desc = Object.getOwnPropertyDescriptor(source, prop);
+        desc === undefined || Object.defineProperty(dest, prop, desc);
+      }
+      return dest;
+    },
+
+    mergeNoEnum(dest, source) {
+      for(const prop in source) {
+        const desc = Object.getOwnPropertyDescriptor(source, prop);
+        if (desc !== undefined) {
+          desc.enumerable = false;
+          Object.defineProperty(dest, prop, desc);
+        }
+      }
+      return dest;
+    },
+
+    last: ary => ary[ary.length -1],
+
+    regexEscape,
+
+    newEscRegex: s => new RegExp(regexEscape(s)),
+
+    inspect: (o, count, len)=> inspect1(o, count || 4).toString().slice(0, len || 1000),
+
+    qstr,
+  };
+
+  /**
+   * @deprecated extend - too confusing with class extends so use merge
+   **/
+  util.extend = util.merge;
+
+  return util;
 });

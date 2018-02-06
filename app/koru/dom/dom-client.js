@@ -446,9 +446,7 @@ define(function(require, exports, module) {
       }
     },
 
-    myCtx(elm) {
-      return elm == null ? null : elm[ctx$];
-    },
+    myCtx: elm => elm == null ? null : elm[ctx$],
 
     ctx(elm) {
       if (typeof elm === 'string')
