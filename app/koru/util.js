@@ -401,8 +401,15 @@ define(function(require, exports, module) {
       return slice.call(list, from, to);
     },
 
-    isObjEmpty(obj) {
-      if (obj) for(const noop in obj) {return false;}
+    isObjEmpty: obj =>{
+      for(const noop in obj) {return false;}
+      return true;
+    },
+
+    hasOnly: (obj, keyMap)=>{
+      for(const noop in obj) {
+        if (keyMap[noop] === undefined) return false;
+      }
       return true;
     },
 

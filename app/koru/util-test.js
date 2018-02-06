@@ -93,6 +93,14 @@ define(function (require, exports, module) {
       assert.isFalse(util.isObjEmpty({a: 1}));
     },
 
+    "test hasOnly"() {
+      assert.isFalse(util.hasOnly({a: 1}, {b: true}));
+      assert.isFalse(util.hasOnly({a: 1, b: 1}, {b: true}));
+      assert.isTrue(util.hasOnly({b: 1}, {b: true}));
+      assert.isTrue(util.hasOnly({}, {b: true}));
+      assert.isTrue(util.hasOnly({b: 1, c: 2}, {b: true, c: false}));
+    },
+
     "test keyStartsWith"() {
       assert.isFalse(util.keyStartsWith(null, 'foo'));
       assert.isFalse(util.keyStartsWith({foz: 1, fizz: 2}, 'foo'));
