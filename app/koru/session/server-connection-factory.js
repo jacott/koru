@@ -35,11 +35,11 @@ define(function(require, exports, module) {
       this.match = match();
       this.sessAuth = null;
 
-      ws.on('error', err => {
+      ws.on('error', err => koru.fiberConnWrapper(()=>{
         koru.info('web socket error', err);
         this.close();
-      });
-      ws.on('close', () => this.close());
+      }, this));
+      ws.on('close', () => koru.fiberConnWrapper(()=>this.close(), this));
     }
 
     onClose (func) {

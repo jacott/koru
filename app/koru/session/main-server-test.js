@@ -6,19 +6,20 @@ isServer && define(function (require, exports, module) {
   const message = require('./message');
   const TH      = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const serverSession = require('./main-server');
-  var test, v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.ws = TH.mockWs();
       v.mockSess = {
         _wssOverride: function() {
           return v.ws;
         },
-        provide: test.stub(),
+        provide: stub(),
         _rpcs: {},
       };
     },
@@ -80,24 +81,51 @@ isServer && define(function (require, exports, module) {
         return v.func = func;
       }));
 
-      test.stub(koru, 'logger');
+      stub(koru, 'logger');
       v.sess.sessId = 's123';
-      v.func.call({send: v.send = test.stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
+      v.func.call({send: v.send = stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
       assert.calledWith(koru.logger, 'INFO', 's123', 'test engine', 'hello world');
+    },
+
+    "test onerror"() {
+      stub(koru, 'info');
+      const conn = TH.sessionConnect(v.ws);
+
+      assert.calledWith(v.ws.on, 'error', TH.match(func => v.func = func));
+
+      spy(conn, 'close');
+
+      stub(koru, 'fiberConnWrapper');
+
+      v.func('my error');
+
+      refute.called(conn.close);
+      assert.calledWith(koru.fiberConnWrapper, TH.match.func, conn);
+
+      koru.info.reset();
+      koru.fiberConnWrapper.yield();
+
+      assert.calledWith(koru.info, 'web socket error', 'my error');
+      assert.called(conn.close);
+      refute(conn.sessId in session.conns);
     },
 
     "test onclose"() {
       TH.noInfo();
-      var conn = TH.sessionConnect(v.ws);
+      const conn = TH.sessionConnect(v.ws);
 
-      assert.calledWith(v.ws.on, 'close', TH.match(function (func) {
-        v.func = func;
-        return typeof func === 'function';
-      }));
+      assert.calledWith(v.ws.on, 'close', TH.match(func => v.func = func));
 
-      test.spy(conn, 'close');
+      spy(conn, 'close');
+
+      stub(koru, 'fiberConnWrapper');
 
       v.func();
+
+      refute.called(conn.close);
+
+      assert.calledWith(koru.fiberConnWrapper, TH.match.func, conn);
+      koru.fiberConnWrapper.yield();
 
       assert.called(conn.close);
       refute(conn.sessId in session.conns);
