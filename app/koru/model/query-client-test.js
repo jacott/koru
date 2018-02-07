@@ -10,7 +10,7 @@ define(function (require, exports, module) {
   const Query                = require('./query');
   const TH                   = require('./test-helper');
 
-  const {private$} = require('koru/symbols');
+  const {private$, stopGap$} = require('koru/symbols');
 
   const sut = require('./query-client');
   let v = null;
@@ -144,6 +144,26 @@ define(function (require, exports, module) {
 
       _sessState.decPending();
       assert.equals(v.TestModel.docs.foo2.nested, {a: 1, b: 3});
+    },
+
+    "test insertFromServer stopGap doc already exists"() {
+      const foo = v.TestModel.createStopGap({name: 'foo'});
+      assert.isTrue(foo[stopGap$]);
+
+      Query.insertFromServer(v.TestModel, foo._id, {
+        _id: foo._id, name: 'foo new'});
+
+      assert.same(foo[stopGap$], undefined);
+
+      const bar = v.TestModel.createStopGap({name: 'bar'});
+      sessState.incPending();
+      bar.name = 'bar new';
+      bar.$$save();
+
+      Query.insertFromServer(v.TestModel, bar._id, {
+        _id: bar._id, name: 'bar new'});
+
+      assert.same(bar[stopGap$], undefined);
     },
 
     "test insertFromServer doc already exists."() {

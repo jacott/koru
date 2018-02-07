@@ -8,6 +8,8 @@ define(function(require, exports, module) {
   const util       = require('../util');
   const dbBroker   = require('./db-broker');
 
+  const {stopGap$} = require('koru/symbols');
+
   const {hasOwn} = util;
 
   const newSimDocs = ()=>{
@@ -84,10 +86,11 @@ define(function(require, exports, module) {
 
         insertFromServer(model, id, attrs) {
           return TransQueue.transaction(() => {
+            const doc = model.docs[id];
             if (session.state.pendingCount()) {
               const changes = fromServer(model, id, attrs);
-              const doc = model.docs[id];
               if (doc !== undefined && changes !== attrs) { // found existing
+                doc[stopGap$] = undefined;
                 const undo = Changes.applyAll(doc.attributes, changes);
                 for(const noop in undo) {
                   notify(model, doc, undo, true);
@@ -98,9 +101,10 @@ define(function(require, exports, module) {
             }
 
             // otherwise new doc
-            if (model.docs[id] !== undefined) {
+            if (doc !== undefined) {
               // already exists; convert to update
-              const old = model.docs[id].attributes;
+              doc[stopGap$] = undefined;
+              const old = doc.attributes;
               for(const key in old) {
                 if (attrs[key] === undefined)
                   attrs[key] = undefined;
@@ -118,9 +122,7 @@ define(function(require, exports, module) {
             } else {
               // insert doc
               attrs._id = id;
-              const doc = new model(attrs);
-              model.docs[doc._id] = doc;
-              notify(model, doc, null, true);
+              notify(model, model.docs[id] = new model(attrs), null, true);
             }
           });
         },
