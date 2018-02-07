@@ -252,7 +252,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test removed via change" () {
-        const removed = v.conn.removed = stub();
+        const changed = v.conn.changed = stub();
 
         const doc = util.deepCopy(v.docProto);
         const undo = {name: 'John'};
@@ -260,7 +260,7 @@ isServer && define(function (require, exports, module) {
 
         v.sub.sendMatchUpdate(doc, undo);
 
-        assert.calledWith(removed, 'Foo', 'id123');
+        assert.calledWith(changed, 'Foo', 'id123', {name: 'Sam'});
       },
 
       "test removed via remove" () {

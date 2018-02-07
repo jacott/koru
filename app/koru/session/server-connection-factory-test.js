@@ -325,8 +325,8 @@ isServer && define(function (require, exports, module) {
       v.doc.$withChanges.reset();
       v.conn.sendBinary.reset();
       v.func = function (doc) {return doc === v.before};
-      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'removed');
-      assert.calledOnceWith(v.conn.sendBinary, 'R', ['Foo', 'f123']);
+      assert.same(v.conn.sendMatchUpdate(v.doc, 'changes'), 'changed');
+      assert.calledOnceWith(v.conn.sendBinary, 'C', ['Foo', 'f123', v.changes]);
     },
 
     "test added"() {
