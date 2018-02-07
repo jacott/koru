@@ -193,6 +193,7 @@ define(function (require, exports, module) {
       },
 
       "test no response close succeeds"() {
+        TH.noInfo();
         v.time = v.readyHeatbeat();
 
         const close = v.ws.close = stub();
