@@ -398,19 +398,26 @@ define(function(require, exports, module) {
         .test(this.node[attributes$].class);
     }
 
-    add(value) {
-      value = ''+value;
-      const attrs = this.node[attributes$];
-      if (attrs.class) {
-        this.contains(value) || (attrs.class += ' ' + value);
-      } else {
-        attrs.class = value;
+    add(...args) {
+      for(let i = 0; i < args.length; ++i) {
+        const value = args[i];
+        const attrs = this.node[attributes$];
+        if (attrs.class) {
+          this.contains(value) || (attrs.class += ' ' + value);
+        } else {
+          attrs.class = value;
+        }
       }
     }
 
-    remove(value) {
+    remove(...args) {
       const attrs = this.node[attributes$];
-      attrs.class = attrs.class.replace(new RegExp("\\s?\\b" + util.regexEscape(value) + "\\b"), '');
+      if (typeof attrs.class === 'string') {
+        for(let i = 0; i < args.length; ++i) {
+          attrs.class = attrs.class
+            .replace(new RegExp("\\s?\\b" + util.regexEscape(args[i]) + "\\b"), '');
+        }
+      }
     }
   }
 
@@ -527,8 +534,9 @@ define(function(require, exports, module) {
     }
   }
 
-  'text-align font-size font-family font-weight font-style text-decoration background-color color'
-    .split(' ').forEach(dname => {
+  ('text-align font-size font-family font-weight font-style text-decoration '+
+    'border-color background-color color'
+  ).split(' ').forEach(dname => {
       const name = util.camelize(dname);
       function get() {return this[styles$][dname] || ''};
       function set(value) {this.setProperty(dname, value)};

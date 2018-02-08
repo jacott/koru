@@ -1,5 +1,8 @@
 define(function (require, exports, module) {
-  const TH     = require('./test');
+  const HtmlDoc         = require('koru/dom/html-doc');
+  const TH              = require('./test');
+
+  const {stub, spy, onEnd} = TH;
 
   const uColor = require('./util-color');
 
@@ -26,7 +29,7 @@ define(function (require, exports, module) {
     },
 
     "test toRgbStyle"() {
-      assert.equals(uColor.toRgbStyle('rgba(100, 3, 45, .75)'), 'rgba(100, 3, 45, 0)');
+      assert.equals(uColor.toRgbStyle('rgba(100, 3, 45, .75)'), 'rgba(100, 3, 45, 0.75)');
       assert.equals(uColor.toRgbStyle('rgba(100, 3, 45)'), 'rgb(100, 3, 45)');
     },
 
@@ -80,35 +83,45 @@ define(function (require, exports, module) {
       assert.equals(uColor.hsl2rgb({h: 1, s: 1, l: 0.25}), {r: 128, g: 0, b: 0});
     },
 
-    "test setBackgroundAndBoarderColorStyle"() {
-      const style = {foo: 123};
+    "test setBackgroundAndBorderColorStyle"() {
+      const style = {setProperty: stub()};
 
-      uColor.setBackgroundAndBoarderColorStyle(style, '#717a1d');
-      assert.equals(style, {foo: 123, "backgroundColor": "#717a1d",
-                            color: "#fcfcfc", "borderColor": "rgba(252,252,252,0.3)"});
+      uColor.setBackgroundAndBorderColorStyle(style, '#717a1d');
 
-      uColor.setBackgroundAndBoarderColorStyle(style, '#717a1d80');
-      assert.equals(style, {foo: 123, "backgroundColor": "rgba(113,122,29,0.5)",
-                            color: "#fcfcfc", "borderColor": "rgba(252,252,252,0.3)"});
+      assert.calledWith(style.setProperty, 'background-color', "#717a1d");
+      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
+      assert.calledWith(style.setProperty, 'border-color', "rgba(252,252,252,0.3)");
+
+      style.setProperty.reset();
+      uColor.setBackgroundAndBorderColorStyle(style, '#717a1d80');
+      assert.calledWith(style.setProperty, 'background-color', "rgba(113,122,29,0.5)");
+      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
+      assert.calledWith(style.setProperty, 'border-color', "rgba(252,252,252,0.3)");
     },
 
     "test setBackgroundColorStyle"() {
-      const style = {foo: 123};
+      const style = {setProperty: stub()};
 
       uColor.setBackgroundColorStyle(style, '#717a1d');
-      assert.equals(style, {foo: 123, "backgroundColor": "#717a1d", color: "#fcfcfc"});
+      assert.calledTwice(style.setProperty);
+      assert.calledWith(style.setProperty, 'background-color', "#717a1d");
+      assert.calledWith(style.setProperty, 'color', "#fcfcfc");
+
+      style.setProperty.reset();
 
       uColor.setBackgroundColorStyle(style, '');
-      assert.equals(style, {foo: 123, "backgroundColor": "", color: "#4d4d4d"});
+      assert.calledTwice(style.setProperty);
+      assert.calledWith(style.setProperty, 'background-color', "");
+      assert.calledWith(style.setProperty, 'color', "#4d4d4d");
     },
 
     "test backgroundColorStyle"() {
       assert.same(uColor.backgroundColorStyle('#11aadda0'),
-                  "background-color:rgba(17,170,221,0.626);color:#040404");
+                  "background-color:rgba(17,170,221,0.626);color:#040404;");
 
-      assert.same(uColor.backgroundColorStyle('#11aadd'), "background-color:#11aadd;color:#040404");
+      assert.same(uColor.backgroundColorStyle('#11aadd'), "background-color:#11aadd;color:#040404;");
 
-      assert.same(uColor.backgroundColorStyle('#717a1d'), "background-color:#717a1d;color:#fcfcfc");
+      assert.same(uColor.backgroundColorStyle('#717a1d'), "background-color:#717a1d;color:#fcfcfc;");
     },
 
     "test colorOnLight"() {
@@ -137,6 +150,22 @@ define(function (require, exports, module) {
 
     "test fade"() {
       assert.same(uColor.fade('#717a9d', 50), 'rgba(113,122,157,0.5)');
+    },
+
+    "test addColorClass"() {
+      const elm = document.createElement('div');
+
+      uColor.addColorClass(elm, '#717a9d');
+      assert.same(elm.className, 'dark');
+
+      uColor.addColorClass(elm, '#111a1d');
+      assert.same(elm.className, 'verydark');
+
+      uColor.addColorClass(elm, '#f1fafd');
+      assert.same(elm.className, 'verylight');
+
+      uColor.addColorClass(elm, '#818afd');
+      assert.same(elm.className, 'light');
     },
   });
 });
