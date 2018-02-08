@@ -1,9 +1,10 @@
 define(function(require, exports, module) {
-  const Dom    = require('../dom');
-  const util   = require('../util');
-  const uColor = require('../util-color');
-  const Modal  = require('./modal');
-  const Slider = require('./slider');
+  const ColorHelpers    = require('koru/color-helpers');
+  const Dom             = require('../dom');
+  const util            = require('../util');
+  const uColor          = require('../util-color');
+  const Modal           = require('./modal');
+  const Slider          = require('./slider');
 
   const Tpl = Dom.newTemplate(module, require('../html!./color-picker'));
   const $ = Dom.current;

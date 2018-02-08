@@ -100,7 +100,9 @@ isClient && define(function (require, exports, module) {
           assert.cssNear(this, 'left', 50, 0.1,'%');
         });
       });
-      assert.dom('[name=hex]', {value: 'bfbf4087'});
+      assert.dom('[name=hex]', {value: 'bfbf4087'}, input =>{
+        assert.colorEqual(input.style.backgroundColor, [191, 191, 64, 1]);
+      });
       TH.click('[name=apply]');
       assert.calledOnceWith(v.cb, '#bfbf4087');
     },
