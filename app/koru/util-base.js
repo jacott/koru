@@ -18,6 +18,8 @@ define(function(require, exports, module) {
           return o.outerHTML;
         if (o.nodeType === 3)
           return "$TextNode:"+o.textContent;
+        if (o.nodeType === 11)
+          return "$docFrag:"+inspect1(o.firstChild, i-1);
         if (o[inspect$])
           return o[inspect$]();
         if (o.constructor === Date) return "<"+o.toISOString()+">";
