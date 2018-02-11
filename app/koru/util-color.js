@@ -148,7 +148,7 @@ define(function(require, exports, module) {
         else
           return hex2rgb(input, 'validate');
       }
-      return null;
+      return input;
     },
 
     toHex(input) {
