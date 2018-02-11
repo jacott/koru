@@ -144,6 +144,9 @@ define(function(require, exports, module) {
     isElement() {
       return currentElement.nodeType === ELEMENT_NODE;
     },
+    getValue(name, ...args) {
+      return getValue(currentCtx.data, name, args);
+    }
   };
 
   module.exports = Ctx;

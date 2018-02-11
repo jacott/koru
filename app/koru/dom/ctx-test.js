@@ -81,24 +81,37 @@ isClient && define(function (require, exports, module) {
 
             v.data = Ctx.current.data(v.elm);
 
+            v.testHelper = Ctx.current.getValue('testHelper', 5, 7);
+
             return v.elm;
+          },
+
+          testHelper(a, b) {
+            return a + b;
           },
         });
 
-        var data = {me: true};
+        const data = {me: true};
 
         v.elm = Dom.h({});
         v.elm[ctx$] = {data: data};
 
         v.isElement = false;
 
-        var foo = Dom.Foo.$render(v.x = {x: 1});
+        const foo = Dom.Foo.$render(v.x = {x: 1});
+
+        assert.same(v.testHelper, 12);
 
         assert.same(v.data, data);
 
         v.isElement = true;
 
+        v.data = null;
+
         Dom.myCtx(foo).updateAllTags(v.x = {x: 2});
+
+        assert.same(v.data, data);
+        assert.same(Dom.myCtx(foo).data, v.x);
       },
     },
 
