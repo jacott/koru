@@ -9,6 +9,7 @@ define(function(require, exports, module) {
   const glassPane = Dom.h({class: 'glassPane'});
 
   const Eyedropper = {
+    options: null,
     pick(callback) {
       const cancel = ()=>{
         document.removeEventListener('pointerdown', pointerdown, true);
@@ -171,6 +172,9 @@ define(function(require, exports, module) {
         style.setProperty('left', 0);
         style.setProperty('top', 0);
         style.setProperty('margin', 0);
+
+        if (Eyedropper.options != null && Eyedropper.options.setupSvg != null)
+          Eyedropper.options.setupSvg(imageClone, x, y, image);
 
         const data = `<svg xmlns="${Dom.SVGNS}" ${imageClone.outerHTML.slice(4)}`;
         const blob = new window.Blob([data], {type: 'image/svg+xml'});

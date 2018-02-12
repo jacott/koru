@@ -14,6 +14,7 @@ isClient && define(function (require, exports, module) {
     },
 
     tearDown() {
+      sut.options = null;
       TH.domTearDown();
       v = null;
     },
@@ -46,8 +47,11 @@ isClient && define(function (require, exports, module) {
       const bbox = div.getBoundingClientRect();
       sut.pick(callback);
 
-      TH.trigger(document.body, 'pointerdown', {
-        clientX: bbox.left + .5*bbox.width, clientY: bbox.top + .5*bbox.height});
+      const clientX = bbox.left + .5*bbox.width, clientY = bbox.top + .5*bbox.height;
+
+      TH.trigger(document.body, 'pointerdown', {clientX, clientY});
+
+      assert.calledWith(sut.getPointColors, clientX, clientY, TH.match.func);
 
       sut.getPointColors.yield(null, {
         textColor: {r: 10, g: 20, b: 30, a: 1},
@@ -238,6 +242,14 @@ isClient && define(function (require, exports, module) {
       //   document.body.appendChild(canvas);
       // }
 
+      sut.options = {setupSvg(svgc, ox, oy, orig) {
+        assert.equals(ox, x-dr.left);
+        assert.equals(oy, y-dr.top);
+        assert.same(orig, svg);
+
+        svgc.lastChild.style.setProperty('stroke', 'rgb(155, 50, 253)');
+      }};
+
       sut.getColorFromImage(Dom('svg'), x, y, (err, color) => {
         try {
           // document.body.appendChild(Dom.h({
@@ -256,7 +268,7 @@ isClient && define(function (require, exports, module) {
 
           assert.same(err, null);
 
-          assert.equals(color, {r: 151, g: 22, b: 253, a: 1});
+          assert.equals(color, {r: 155, g: 50, b: 253, a: 1});
           done();
         } catch(ex) {
           done(ex);
