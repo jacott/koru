@@ -24,6 +24,64 @@ define(function (require, exports, module) {
         0, 0, 7.071, -21.213, -7.071, 49.497], 0.001);
     },
 
+    "test topLeftTransformOffset"() {
+      const rect = {left: -30, top: 40, width: 107, height: 213};
+
+      assert.equals(sut.topLeftTransformOffset(rect, [1, 0, 0, 1, 0, 0]), {left: 0, top: 0});
+      assert.near(sut.topLeftTransformOffset(rect, [1, 0.5, -0.6, 1, 10, 20]), {
+        left: 141.8, top: -5}, 0.1);
+
+      assert.near(sut.topLeftTransformOffset(rect, [1, 0.5, -0.6, 1, 10, 20], 35, -80), {
+        left: 189.8, top: 12.5}, 0.1);
+    },
+
+    "test transformPoints"() {
+      const p = [0, 0, -10, -20, 30, 40];
+
+      assert.equals(sut.transformPoints(p, [1, 0, 0, 1, 0, 0]), p);
+      assert.equals(sut.transformPoints(p, [1, 0.5, -0.6, 1, 10, 20]), [10, 20, 12, -5, 16, 75]);
+
+      // Dom.removeChildren(document.body);
+      // document.body.removeAttribute('class');
+      // document.body.removeAttribute('style');
+
+      // //const ps = [400, 330], curve = [-200, 100, 700, 100, 400, 330];
+      // const ps = [300, 130], curve = [400, 200];
+
+      // const line1 = addPath({d: ['M', ps, 'L', curve]});
+      // const line2 = addPath({d: ['M', ps, 'L', curve], color: 'blue'});
+      // line2.style.transformOrigin = '20px 40px';
+      // line2.style.transform = 'translateX(-40px) translateY(-200px) rotate(30deg) scale(2)';
+
+      // const blue = addCircle({});
+
+
+      // const point = [100, 260];
+
+      // const pink = addCircle({cx: point[0], cy: point[1], color: 'pink'});
+
+      // const drawt = (t)=>{
+      //   pink.setAttribute('cx', point[0]);
+      //   pink.setAttribute('cy', point[1]);
+
+      //   blue.setAttribute('cx', t[0]);
+      //   blue.setAttribute('cy', t[1]);
+      // };
+
+      // drawt(sut.closestT(point, ps, curve, 0.00001));
+
+
+      // getSvg().addEventListener('pointermove', ev=>{
+      //   point[0] = ev.clientX - 20;
+      //   point[1] = ev.clientY - 20;
+      //   const matrix = window.getComputedStyle(line2).getPropertyValue('transform').split(/([-\d.]+)/)
+      //         .filter(m => /^[-\d.]/.test(m)).map(m => +m);
+      //   drawt(sut.transformPoints(point, matrix, 20, 40));
+      //   //   ip = sut.closestT(point, ps, curve);
+      //   //   drawt(t += ev.which == 66 ? -.01 : 0.01);
+      // });
+    },
+
     "test combineBox"() {
       /**
        * Combine two boundry boxes

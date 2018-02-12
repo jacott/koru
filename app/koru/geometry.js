@@ -29,7 +29,7 @@ define(function(require, exports, module) {
     return dx*dx+dy*dy;
   };
 
-  return {
+  const Geometry = {
     rotatePoints(points, angle) {
       const ans = points.slice(), plen = points.length;
       switch (angle) {
@@ -66,6 +66,24 @@ define(function(require, exports, module) {
         }
         return ans;
       }
+    },
+
+    transformPoints(points, matrix, ox=0, oy=0) {
+      const ans = points.slice();
+      for(let i = 0; i < ans.length; i+=2) {
+        const x = points[i]-ox, y = points[i+1]-oy;
+        ans[i] = x * matrix[0] + y * matrix[2] + matrix[4] + ox;
+        ans[i+1] = x * matrix[1] + y * matrix[3] + matrix[5] + oy;
+      }
+      return ans;
+    },
+
+    topLeftTransformOffset({left=0, top=0, width=0, height=0}, matrix, ox=0, oy=0) {
+      const p = Geometry.transformPoints(
+        [left, top, left+width, top, left+width, top+height, left, top+height],
+        matrix, ox, oy);
+
+      return {left: left-Math.min(p[0], p[2], p[4], p[6]), top: top-Math.min(p[1], p[3], p[5], p[7])};
     },
 
     combineBox(a, b) {
@@ -225,4 +243,6 @@ define(function(require, exports, module) {
       return {left: ms[0], top: ms[1], right: me[0], bottom: me[1]};
     },
   };
+
+  return Geometry;
 });
