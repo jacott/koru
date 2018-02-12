@@ -72,6 +72,7 @@ define(function(require, exports, module) {
       Route._reset();
       Dom.removeChildren(document.body);
       document.body.removeAttribute('class');
+      document.body.removeAttribute('style');
       Dom.Test = null;
     },
 
