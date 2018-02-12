@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
   const ColorHelpers    = require('koru/color-helpers');
+  const Eyedropper      = require('koru/ui/eyedropper');
   const Dom             = require('../dom');
   const util            = require('../util');
   const uColor          = require('../util-color');
@@ -14,6 +15,20 @@ define(function(require, exports, module) {
     'input [name=hex]'(event) {
       Tpl.setColor($.ctx, this.value);
     },
+
+    'click .eyedropper'(event) {
+      Dom.stopEvent();
+      const name = this.getAttribute('name').slice(0, -11);
+      const button = this.nextElementSibling;
+      const {ctx} = $;
+
+      Eyedropper.pick((err, color) => {
+        if (err == null && color != null) {
+          Tpl.setColor(ctx, color);
+        }
+      });
+    },
+
     'click [name=apply]'(event) {
       event.preventDefault();
       Dom.stopEvent();

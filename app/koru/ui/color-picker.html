@@ -23,10 +23,14 @@
           {{> ColorPart part="l" max="100"}}
           {{> ColorPart part="a" max="100"}}
         </div>
-        <div>
+        <div class="display">
+          <div class="sample">
+            <div {{setBackgroundColor hexColorHash}}></div>
+          </div>
           <label>
             #RRGGBB{{alphaLabel}} <input name="hex" {{hexValue}} {{setBackgroundColor hexColorHash "noAlpha"}} {{maxlength}}>
           </label>
+          <button name="hex-eyedropper" class="eyedropper"></button>
         </div>
         <div class="actions">
           <button type="submit" name="apply" {{disabled}}>Apply</button>

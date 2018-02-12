@@ -1,13 +1,16 @@
 isClient && define(function (require, exports, module) {
-  const Dom = require('../dom');
-  const TH  = require('./test-helper');
+  const Eyedropper      = require('koru/ui/eyedropper');
+  const Dom             = require('../dom');
+  const TH              = require('./test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const sut = require('./color-picker');
-  var test, v;
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
@@ -17,7 +20,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test standard palette"() {
-      sut.choose('#fffa1387', 'alpha', v.cb = test.stub());
+      sut.choose('#fffa1387', 'alpha', v.cb = stub());
 
       assert.dom('[data-color="ffff00"]', function () {
         assert.same(this.style.backgroundColor, 'rgb(255, 255, 0)');
@@ -32,7 +35,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test callback on destroy"() {
-      sut.choose('#fffa1387', {}, v.cb = test.stub());
+      sut.choose('#fffa1387', {}, v.cb = stub());
 
       Dom.removeId('ColorPicker');
 
@@ -40,7 +43,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test custom button"() {
-      sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = test.stub());
+      sut.choose('#fffa1387', {alpha: true, custom: ['My prompt', 'ret_val']}, v.cb = stub());
 
       TH.click('[name=custom]', 'My prompt');
 
@@ -48,13 +51,13 @@ isClient && define(function (require, exports, module) {
     },
 
     "test customFieldset"() {
-      sut.choose('#fffa1387', {alpha: true, customFieldset: Dom.h({div: 'hello', class: 'myCustom'})}, v.cb = test.stub());
+      sut.choose('#fffa1387', {alpha: true, customFieldset: Dom.h({div: 'hello', class: 'myCustom'})}, v.cb = stub());
 
       assert.dom('.ui-dialog>.myCustom', 'hello');
     },
 
     "test hue slider"() {
-      sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
+      sut.choose('#ffff0087', 'alpha', v.cb = stub());
 
       assert.dom('.colorPart.h', function () {
         assert.dom('.handle', function () {
@@ -82,7 +85,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test saturation input"() {
-      sut.choose('#ffff0087', 'alpha', v.cb = test.stub());
+      sut.choose('#ffff0087', 'alpha', v.cb = stub());
 
       assert.dom('.colorPart.s', function () {
         this.focus();
@@ -107,9 +110,32 @@ isClient && define(function (require, exports, module) {
       assert.calledOnceWith(v.cb, '#bfbf4087');
     },
 
+    "test eyedropper"() {
+      stub(Eyedropper, 'pick');
+      sut.choose('#ff113387', v.cb = stub());
+
+      assert.dom('#ColorPicker .ui-dialog', dialog =>{
+        assert.dom('[name=hex-eyedropper]', ed =>{
+          TH.click(ed);
+          ed.focus();
+        });
+
+        assert.calledWith(Eyedropper.pick, TH.match.func);
+
+        Eyedropper.pick.yield(null, {r: 123, g: 21, b: 255, a: .3});
+
+        assert.dom('[name=hex]', {value: '7b15ff'}, input => {
+          assert.colorEqual(input.style.backgroundColor, [123, 21, 255, 1]);
+        });
+        TH.click('[name=apply]');
+      });
+
+      assert.calledOnceWith(v.cb, '#7b15ff');
+    },
+
     "hex input": {
       "test no alpha"() {
-        sut.choose('#ff113387', v.cb = test.stub());
+        sut.choose('#ff113387', v.cb = stub());
 
         assert.dom('#ColorPicker:not(.alpha).Dialog.Confirm>.dialogContainer>.ui-dialog', function () {
           assert.dom('input', {value: 'ff1133'});
@@ -121,11 +147,14 @@ isClient && define(function (require, exports, module) {
       },
 
       "test alpha"() {
-        sut.choose('#ff113387', 'alpha', v.cb = test.stub());
+        sut.choose('#ff113387', 'alpha', v.cb = stub());
 
         assert.dom('#ColorPicker.alpha', function () {
           assert.dom('[name=hex]', {value: 'ff113387'});
           TH.input('[name=hex]', '11223344');
+          assert.dom('.sample>div', sample =>{
+            assert.colorEqual(sample.style.backgroundColor, [17,34,51,0.267]);
+          });
           TH.click('[name=apply]');
         });
 
@@ -133,7 +162,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test invalid color"() {
-        sut.choose(null, v.cb = test.stub());
+        sut.choose(null, v.cb = stub());
 
         assert.dom('#ColorPicker', function () {
           assert.dom('[name=apply]:not([disabled])');
