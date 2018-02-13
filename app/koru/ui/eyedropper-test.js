@@ -71,11 +71,15 @@ isClient && define(function (require, exports, module) {
         style: 'position:absolute;top:0;background-color:rgba(250,130,200,.09);width:300px;height:200px'}));
       const divCalled = stub();
       div.addEventListener('pointerdown', divCalled, true);
-      const callback = stub();
 
+      let glassPane;
+
+      const callback = stub(()=>{
+        TH.trigger(document.body, 'pointerdown', {clientX: bbox.left + .5*bbox.width, clientY: bbox.top + .5*bbox.height});
+      });
       sut.pick(callback);
 
-      let glassPane = Dom('body>.glassPane:last-child');
+      glassPane = Dom('body>.glassPane:last-child');
       assert(glassPane);
       assert.className(document.body, 'eyedropper-active');
 
@@ -117,7 +121,7 @@ isClient && define(function (require, exports, module) {
       refute.dom('#SelectMenu');
       refute.className(document.body, 'eyedropper-active');
 
-      assert.calledWith(callback, null, 'rgb(255, 238, 51)');
+      assert.calledOnceWith(callback, null, 'rgb(255, 238, 51)');
       refute.called(divCalled);
     },
 

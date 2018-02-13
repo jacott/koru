@@ -11,13 +11,18 @@ define(function(require, exports, module) {
   const Eyedropper = {
     options: null,
     pick(callback) {
-      const cancel = ()=>{
+      const cancelEventListener = ()=>{
         document.removeEventListener('pointerdown', pointerdown, true);
+      };
+
+      const cancel = ()=>{
+        cancelEventListener();
         document.body.classList.remove('eyedropper-active');
         glassPane.remove();
       };
 
       const pointerdown = event=>{
+        cancelEventListener();
         Dom.stopEvent(event);
         glassPane.remove();
 
