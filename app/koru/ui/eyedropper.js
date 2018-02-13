@@ -38,20 +38,20 @@ define(function(require, exports, module) {
 
             const addColor = name=>{
               const color = colors[name];
+              if (color == null) return;
               for(let i = 0; i < list.length; ++i) {
                 if (util.deepEqual(color, colors[list[i][0]]))
                   return;
               }
 
-              color == null || list.push([name, Dom.h({div: {
+              list.push([name, Dom.h({div: {
                 style: `background-color:${uColor.toRgbStyle(color)};`, div: []
               }})]);
-
-
             };
 
             addColor('imageColor');
             addColor('backgroundColor');
+            addColor('borderColor');
             addColor('textColor');
 
             if (list.length < 2) {
@@ -87,7 +87,7 @@ define(function(require, exports, module) {
 
     getPointColors(x, y, callback) {
       const stack = [];
-      let color = null, textColor = null;
+      let color = null, textColor = null, borderColor = null;
       const {body} = document;
 
       let image;
@@ -108,6 +108,10 @@ define(function(require, exports, module) {
           }
         } else {
           color = uColor.toRGB(cs.getPropertyValue('background-color'));
+
+          if (borderColor === null && cs.getPropertyValue('border-width') !== '0px') {
+            borderColor =  uColor.toRGB(cs.getPropertyValue('border-color'));
+          }
           if (textColor === null) {
             const tn = document.caretPositionFromPoint
                   ? document.caretPositionFromPoint(x, y) : document.caretRangeFromPoint(x,y).startContainer;
@@ -138,6 +142,8 @@ define(function(require, exports, module) {
       }
 
       const colors = {textColor, backgroundColor: color, imageColor: undefined};
+      if (borderColor !== null)
+        colors.borderColor = borderColor;
 
       if (callback !== undefined) {
         if (image !== undefined)

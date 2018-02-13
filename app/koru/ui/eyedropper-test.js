@@ -65,7 +65,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test pick multi options"() {
-      const div = Dom.h({style: "background-color:#ffee33;", div: {style: 'color:rgba(255, 0, 0, .8);', span: ["foo bar"]}});
+      const div = Dom.h({style: "background-color:#ffee33;", div: {style: 'border: 1px solid #556644;color:rgba(255, 0, 0, .8);', span: ["foo bar"]}});
       document.body.appendChild(div);
       document.body.appendChild(Dom.h({
         style: 'position:absolute;top:0;background-color:rgba(250,130,200,.09);width:300px;height:200px'}));
@@ -108,9 +108,12 @@ isClient && define(function (require, exports, module) {
       assert.isNull(glassPane.parentNode);
 
       assert.dom('#SelectMenu.eyedropper-chooser', menu =>{
-        assert.dom('li', {count: 2});
+        assert.dom('li', {count: 3});
         assert.dom('li:last-child>div>div', elm =>{
           assert.colorEqual(elm.style.backgroundColor, [255, 0, 0, 0.8]);
+        });
+        assert.dom('li:nth-child(2)>div>div', elm =>{
+          assert.colorEqual(elm.style.backgroundColor, [85, 102, 68, 1]);
         });
         assert.dom('li:first-child>div>div', elm =>{
           assert.colorEqual(elm.style.backgroundColor, [255, 238, 51]);
