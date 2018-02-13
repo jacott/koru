@@ -282,13 +282,15 @@ define(function (require, exports, module) {
       },
 
       'test valid non-alpha'() {
-        var colors = ['#000000', '#12ab34', '#123456', '#ffffff'],
-            doc = {color: ''};
+        const colors = ['#00000005', '#12ab3480', '#123456', '#ffffff'],
+              doc = {color: ''};
 
-        for(var i=0,item;item=colors[i];++i) {
+        for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           sut.validators('color')(doc,'color');
           refute.msg('should be valid: '+item)(doc._errors);
+          assert.same(doc.color, item.slice(0, 7));
+
         }
       },
 
@@ -306,7 +308,7 @@ define(function (require, exports, module) {
       },
 
       'test invalid nonalpha'() {
-        var colors = ['#ac', '#0000', '#11223344', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
+        var colors = ['#ac', '#0000', '#123456zz', '123456', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
         for(var i=0,item;item=colors[i];++i) {

@@ -1,7 +1,6 @@
 define(function(require, exports, module) {
   const UtilDate        = require('koru/util-date');
 
-  const colorRe = /^#([0-9a-f]{2}){3}?$/;
   const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
@@ -17,10 +16,18 @@ define(function(require, exports, module) {
       }
     },
 
-    color(doc,field, alpha) {
+    color(doc, field, alpha) {
       const val = doc[field];
-      if (val && ! (alpha === 'alpha' ? alphaColorRe : colorRe).test(val))
-        this.addError(doc,field,'is_invalid');
+      if (val != null) {
+        if (val == '') doc[field] = null;
+        else if (alphaColorRe.test(val)) {
+          if (alpha !== 'alpha' && val.length == 9) {
+            doc[field] = val.slice(0, 7);
+          }
+        } else {
+          this.addError(doc, field,'is_invalid');
+        }
+      }
     },
 
     date(doc,field, options) {
