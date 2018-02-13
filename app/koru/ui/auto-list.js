@@ -23,6 +23,7 @@ define(function(require, exports, module) {
       compare=query ? query.compare : compareAddOrder,
       compareKeys=compare.compareKeys || (query && query.compareKeys),
       observeUpdates,
+      overLimit,
       removeElement=Dom.remove,
       parentCtx=$.ctx,
     })  {
@@ -42,6 +43,7 @@ define(function(require, exports, module) {
         removeElement,
         parentCtx,
 
+        overLimit,
         endMarker,
         onChange,
         entries: new BTree(compare),
@@ -136,7 +138,7 @@ define(function(require, exports, module) {
       const cursor = oldTree.cursor();
       for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next()) {
         delete node[doc$][sym$];
-        pv.removeElement(node[elm$]);
+        pv.removeElement(node[elm$], true); node[elm$] = null;
       }
     }
 
@@ -229,7 +231,7 @@ define(function(require, exports, module) {
     while (n != null && n.nodeType !== COMMENT_NODE &&
            (endMarker == null || n[endMarker$] != endMarker)) {
       const p = n.previousSibling;
-      pv.removeElement(n);
+      pv.removeElement(n, true);
       n = p;
     }
   };
@@ -250,6 +252,7 @@ define(function(require, exports, module) {
     const nn = entries.nextNode(node);
 
     if (overLimit > 0) {
+      pv.overLimit === undefined || pv.overLimit();
       if (nn === null || nn[elm$] === null)
         return node[elm$] = null;
       const {lastVis} = pv;
@@ -272,7 +275,7 @@ define(function(require, exports, module) {
       cleanupDoc(pv, node[doc$]);
       checkLimitBeforeRemove(pv, node);
       pv.entries.deleteNode(node);
-      pv.removeElement(node[elm$]); node[elm$] = null;
+      pv.removeElement(node[elm$], true); node[elm$] = null;
     }
   };
 

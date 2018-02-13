@@ -345,12 +345,15 @@ isClient && define(function (require, exports, module) {
         const container = Dom.h({});
         v.newList = limit =>{
           return new AutoList({
-            query: Book.query.sort('pageCount', 'title'), template: row, container, limit});
+            query: Book.query.sort('pageCount', 'title'), template: row, container, limit,
+            overLimit: v.overLimit = stub(),
+          });
         };
       },
 
       "test elm not rendered"() {
         const list = v.newList(2);
+
         assert.same(list.elm(v.b4), null);
 
         assertVisible(list, [1,2], [3,4,5]);
@@ -378,15 +381,20 @@ isClient && define(function (require, exports, module) {
         /** initial **/
         assertVisible(list, [1,2,3], [4,5]);
 
+        assert.same(v.overLimit.callCount, 2);
+
         /** insert **/
 
+        v.overLimit.reset();
         createBook(6, {pageCount: 150});
+        assert.calledOnce(v.overLimit);
 
         assertVisible(list, [1,6,2], [3,4,5]);
 
         /** remove **/
         v.b1.$remove();
         assertVisible(list, [6,2,3], [4,5]);
+        assert.calledOnce(v.overLimit);
       },
 
       "test remove last visible"() {
