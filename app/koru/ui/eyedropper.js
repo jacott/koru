@@ -160,7 +160,7 @@ define(function(require, exports, module) {
 
     getColorFromImage(image, x, y, callback) {
       const ics = window.getComputedStyle(image);
-      const {left, top, width, height} = image.getBoundingClientRect();
+      const {left, top} = image.getBoundingClientRect();
       const owidth = +ics.getPropertyValue('width').slice(0,-2);
       const oheight = +ics.getPropertyValue('height').slice(0,-2);
 
@@ -179,6 +179,7 @@ define(function(require, exports, module) {
         const {style} = imageClone;
         style.removeProperty('transform');
         style.removeProperty('transform-origin');
+        style.setProperty('overflow', 'visible');
         style.setProperty('position', 'absolute');
         style.setProperty('left', 0);
         style.setProperty('top', 0);
@@ -205,20 +206,22 @@ define(function(require, exports, module) {
       img.onload = ()=>{
         try {
           Dom.remove(Dom('canvas'));
-          const canvas = Dom.h({canvas: [], width, height});
+          const canvas = Dom.h({canvas: [], width: 1, height: 1});
 
           const ctx = canvas.getContext('2d');
 
           if (matrix !== null) {
             let {left: ox, top: oy} = Geometry.topLeftTransformOffset(
               {width: owidth, height: oheight}, matrix);
-            ctx.translate(ox, oy);
+            ctx.translate(ox-x, oy-y);
             ctx.transform(...matrix);
+          } else {
+            ctx.translate(-x, -y);
           }
 
           ctx.drawImage(img, 0, 0, owidth, oheight);
           window.URL.revokeObjectURL(url);
-          const c = ctx.getImageData(x, y, 1, 1).data;
+          const c = ctx.getImageData(0, 0, 1, 1).data;
 
           callback(null, c[3] == 0 ? null : {r: c[0], g: c[1], b: c[2], a: c[3]/255});
         } catch(ex) {
