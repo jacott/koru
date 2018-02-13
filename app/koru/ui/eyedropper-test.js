@@ -64,6 +64,26 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(callback, null, 'rgb(10, 20, 30)');
     },
 
+    "test image overrides"() {
+      const callback = stub();
+      stub(sut, 'getPointColors');
+      sut.pick(callback);
+      TH.trigger(document.body, 'pointerdown', {clientX: 1, clientY: 2});
+
+      assert.calledWith(sut.getPointColors, 1, 2);
+
+      sut.getPointColors.yield(null, {
+        imageColor: {r: 123, g: 213, b: 132, a: 1},
+        borderColor: {r: 23, g: 23, b: 13, a: 1},
+        textColor: {r: 12, g: 21, b: 13, a: 1},
+        backgroundColor: {r: 13, g: 13, b: 12, a: 1},
+      });
+
+      refute.dom('#SelectMenu');
+
+      assert.calledWith(callback, null, 'rgb(123, 213, 132)');
+    },
+
     "test pick multi options"() {
       const div = Dom.h({style: "background-color:#ffee33;", div: {style: 'border: 1px solid #556644;color:rgba(255, 0, 0, .8);', span: ["foo bar"]}});
       document.body.appendChild(div);

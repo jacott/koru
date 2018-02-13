@@ -50,9 +50,11 @@ define(function(require, exports, module) {
             };
 
             addColor('imageColor');
-            addColor('backgroundColor');
-            addColor('borderColor');
-            addColor('textColor');
+            if (list.length == 0) {
+              addColor('backgroundColor');
+              addColor('borderColor');
+              addColor('textColor');
+            }
 
             if (list.length < 2) {
               cancel();
@@ -98,13 +100,18 @@ define(function(require, exports, module) {
         const cs = window.getComputedStyle(elm);
 
         if (elm.namespaceURI === Dom.SVGNS) {
-          const fv = cs.getPropertyValue('fill'), sv = cs.getPropertyValue('stroke');
-          if (fv !== 'none') color = uColor.toRGB(fv);
-          if (sv !== 'none' && textColor === null) textColor = uColor.toRGB(sv);
+          if (elm.tagName === 'svg') {
+            color = uColor.toRGB(cs.getPropertyValue('background-color'));
+            if (image === undefined) image = elm;
+          } else {
+            const fv = cs.getPropertyValue('fill'), sv = cs.getPropertyValue('stroke');
+            if (fv !== 'none') color = uColor.toRGB(fv);
+            if (sv !== 'none' && textColor === null) textColor = uColor.toRGB(sv);
 
-          if (fv !== 'none' && color.a >= .1 && callback !== undefined) {
-            image = elm.closest('svg');
-            break;
+            if (fv !== 'none' && color.a >= .1 && callback !== undefined) {
+              image = elm.closest('svg');
+              break;
+            }
           }
         } else {
           color = uColor.toRGB(cs.getPropertyValue('background-color'));
@@ -113,9 +120,10 @@ define(function(require, exports, module) {
             borderColor =  uColor.toRGB(cs.getPropertyValue('border-color'));
           }
           if (textColor === null) {
-            const tn = document.caretPositionFromPoint
-                  ? document.caretPositionFromPoint(x, y) : document.caretRangeFromPoint(x,y).startContainer;
-            if (tn.nodeType === document.TEXT_NODE) {
+            const range = (document.caretPositionFromPoint
+                           ? document.caretPositionFromPoint(x, y)
+                           : document.caretRangeFromPoint(x,y));
+            if (range !== null && range.startContainer.nodeType === document.TEXT_NODE) {
               textColor = uColor.toRGB(cs.getPropertyValue('color'));
             }
           }
