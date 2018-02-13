@@ -138,7 +138,7 @@ define(function(require, exports, module) {
       const cursor = oldTree.cursor();
       for (let node = cursor.next(); node !== null && node[elm$] != null; node = cursor.next()) {
         delete node[doc$][sym$];
-        pv.removeElement(node[elm$], true); node[elm$] = null;
+        removeElm(pv, node, true);
       }
     }
 
@@ -201,7 +201,7 @@ define(function(require, exports, module) {
 
       lastVis = node;
       while(node = entries.nextNode(node)) {
-        pv.removeElement(node[elm$]); node[elm$] = null;
+        removeElm(pv, node);
       }
     }
     pv.lastVis === lastVis || (pv.lastVis = lastVis);
@@ -256,7 +256,7 @@ define(function(require, exports, module) {
       if (nn === null || nn[elm$] === null)
         return node[elm$] = null;
       const {lastVis} = pv;
-      pv.removeElement(lastVis[elm$]); lastVis[elm$] = null;
+      removeElm(pv, lastVis);
       pv.lastVis = entries.previousNode(lastVis);
 
     } else if (overLimit == 0) {
@@ -266,7 +266,15 @@ define(function(require, exports, module) {
     return elm == null ? renderNode(pv, node) : elm;
   };
 
-  const renderNode = (pv,node)=>{node[elm$] = pv.template.$autoRender(node[doc$], pv.parentCtx)};
+  const renderNode = (pv, node)=>{node[elm$] = pv.template.$autoRender(node[doc$], pv.parentCtx)};
+
+  const removeElm = (pv, node, isNodeRemove=false)=>{
+    const elm = node[elm$];
+    if (elm !== null) {
+      node[elm$] = null;
+      pv.removeElement(elm, isNodeRemove);
+    }
+  };
 
   const removeRow = (pv, doc)=>{
     const {sym$} = pv;
@@ -275,7 +283,7 @@ define(function(require, exports, module) {
       cleanupDoc(pv, node[doc$]);
       checkLimitBeforeRemove(pv, node);
       pv.entries.deleteNode(node);
-      pv.removeElement(node[elm$], true); node[elm$] = null;
+      removeElm(pv, node, true);
     }
   };
 
@@ -322,7 +330,7 @@ define(function(require, exports, module) {
         if (nn !== null && nn[elm$] !== null) {
           /** to visible **/
           renderNode(pv, node);
-          pv.removeElement(lastVis[elm$]); lastVis[elm$] = null;
+          removeElm(pv, lastVis);
           pv.lastVis = entries.previousNode(lastVis);
         } /** else to hidden requires nothing **/
       } else {
@@ -331,9 +339,9 @@ define(function(require, exports, module) {
           /** to not visible (unless === lastFromVis) **/
           lastVis = pv.lastVis = node === lastFromVis ? fromNode : entries.nextNode(lastVis);
           if (node !== lastVis) {
-            pv.removeElement(node[elm$]); node[elm$] = null;
+            removeElm(pv, node);
 
-            lastVis === null || renderNode(pv, lastVis);
+            lastVis === null || renderNode(pv, node = lastVis);
           }
         } else if (node === lastVis) {
           /** to visible **/

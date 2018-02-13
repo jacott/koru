@@ -11,7 +11,7 @@ isClient && define(function (require, exports, module) {
   const api         = require('koru/test/api');
 
   const {stub, spy, onEnd, util} = TH;
-  const {endMarker$} = require('koru/symbols');
+  const {endMarker$, private$} = require('koru/symbols');
 
   const AutoList = require('./auto-list');
   let v = null;
@@ -709,9 +709,16 @@ isClient && define(function (require, exports, module) {
   });
 
   const assertVisible = (list, shown, hidden=[]) => {
-    let bad = 0;
+    let bad = 0, elm;
     let exp = n => n;
-    const check = n => (bad = n, exp(list.elm(v[`b${n}`])));
+
+    const {container} = list[private$];
+
+    const check = n => (
+      bad = n,
+      elm = list.elm(v[`b${n}`]),
+      exp(elm) && (elm == null || elm.parentNode == container)
+    );
     assert.elideFromStack(shown.every(check), `doc b${bad} not shown`);
     exp = n => ! n;
     assert.elideFromStack(hidden.every(check), `doc b${bad} not hidden`);
