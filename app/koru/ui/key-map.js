@@ -6,11 +6,11 @@ define(function(require, exports, module) {
   const MOD_NAMES = {};
   const SYM_NAMES = {};
 
-  exports = module.exports = funcs =>{
+  exports = module.exports = (funcs, options) =>{
     const keyMap = new KeyMap();
     keyMap.exec = exec.bind(keyMap);
 
-    keyMap.addKeys(funcs);
+    keyMap.addKeys(funcs, options);
 
     return keyMap;
   };
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
       this.descMap = {};
     }
 
-    addKeys(funcs) {
+    addKeys(funcs, {mapCtrlToMeta}={}) {
       const top = this.map;
       let mod, km;
 
@@ -39,26 +39,36 @@ define(function(require, exports, module) {
         const func = line[lastIdx];
         this.descMap[name] = [line[0], func];
         for(let j = 0; j < lastIdx; ++j) {
-          const keySeq = line[j];
-          km = top;
-          mod = 0;
-          let i = 0;
-          for(; i < keySeq.length - 1; ++i) {
-            const code = keySeq[i];
-            const modk = MODIFIERS[code];
+          let keySeq = line[j];
+          for(let k = 0; k < mapCtrlToMeta ? 2 : 1; ++k) {
+            km = top;
+            mod = 0;
+            let i = 0;
+            for(; i < keySeq.length - 1; ++i) {
+              const code = keySeq[i];
+              const modk = MODIFIERS[code];
 
-            if (modk) {
-              mod = mod | modk;
-              continue;
+              if (modk) {
+                mod = mod | modk;
+                continue;
+              }
+              procMod();
+              km = km[code] || (km[code] = {});
+              if (Array.isArray(km))
+                throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
             }
             procMod();
-            km = km[code] || (km[code] = {});
-            if (Array.isArray(km))
-            throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
-          }
-          procMod();
 
-          km[keySeq[i]] = [name, func];
+            km[keySeq[i]] = [name, func];
+            if (k == 0 && mapCtrlToMeta && ! /\u005B/.test(keySeq)) {
+              const seq2 = keySeq.replace(/\u0011/g,  '\u005B');
+              if (seq2 !== keySeq) {
+                keySeq = seq2;
+                continue;
+              }
+            }
+            break;
+          }
         }
       }
     }
@@ -71,12 +81,14 @@ define(function(require, exports, module) {
   };
 
   function makeTitle(name, keySeq) {
-    keySeq = keySeq.replace(/[\u0010-\u002B]/g, function (m) {
+    keySeq = keySeq.replace(/[\u0010-\u002B,\u0080-\u00DE]/g, function (m) {
       const mc = MOD_NAMES[m];
       if (mc)
         return mc+'-';
-      else
-        return "<"+SYM_NAMES[m]+">";
+      else {
+        const name = SYM_NAMES[m];
+        return name.length == 1 ? name : "<"+name+">";
+      }
     });
     return keySeq ? name + ' ['+keySeq+']' : name;
   }
@@ -116,7 +128,11 @@ define(function(require, exports, module) {
       '\u0023end',
       '\u0024home',
       '\u001Besc',
-      '\u002Edel'
+      '\u002Edel',
+      'Û[',
+      'Ý]',
+      'Ü\\',
+      '\u00c0`',
     );
   }
 
@@ -129,6 +145,7 @@ define(function(require, exports, module) {
     if (event.ctrlKey) mod += 2;
     if (event.altKey) mod += 4;
     if (event.metaKey) mod += 8;
+
     return mod;
   };
 

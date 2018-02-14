@@ -310,7 +310,7 @@ isClient && define(function (require, exports, module) {
           this.focus();
           TH.setRange(this);
 
-          TH.keydown(this, '`', {ctrlKey: true});
+          TH.keydown(this, KeyMap['`'], {ctrlKey: true});
 
           assert.dom('pre[data-lang="text"]>div>br');
           sut.insert(' foo');
@@ -447,7 +447,7 @@ isClient && define(function (require, exports, module) {
         document.execCommand('styleWithCSS', false, true);
         this.focus();
         TH.setRange(this.lastChild.firstChild, 0, this.lastChild.firstChild, 1);
-        TH.keydown(this, '`', {ctrlKey: true});
+        TH.keydown(this, 'À', {ctrlKey: true});
         assert.dom('span', '2', function () {
           assert.same(this.style.fontFamily, 'monospace');
         });
@@ -456,7 +456,7 @@ isClient && define(function (require, exports, module) {
           assert.same(this.style.fontFamily, 'monospace');
         });
 
-        TH.keydown(this, '`', {ctrlKey: true});
+        TH.keydown(this, 'À', {ctrlKey: true});
         sut.insert(' bar');
         assert.dom('span', 'foo', function () {
           assert.same(this.style.fontFamily, 'monospace');
@@ -465,7 +465,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('span+span', 'bar', function () {
           assert.same(this.style.fontFamily, 'initial');
         });
-        TH.keydown(this, '`', {ctrlKey: true});
+        TH.keydown(this, 'À', {ctrlKey: true});
         sut.insert('baz');
         assert.dom('span', /^f/, function () {
           assert.same(this.style.fontFamily, 'monospace');
@@ -480,7 +480,7 @@ isClient && define(function (require, exports, module) {
             assert.same(this.style.fontFamily, 'initial');
             TH.setRange(v.start, 0, this.nextSibling, 1);
           });
-          TH.keydown(this, '`', {ctrlKey: true});
+          TH.keydown(this, 'À', {ctrlKey: true});
           assert.dom('font[face=initial]', 'fbazo');
         } else {
           assert.dom('span', 'baz', function () {
@@ -490,7 +490,7 @@ isClient && define(function (require, exports, module) {
             assert.same(oo.style.fontFamily, 'monospace');
             TH.setRange(v.start, 0, oo.firstChild, 1);
           });
-          TH.keydown(this, '`', {ctrlKey: true});
+          TH.keydown(this, 'À', {ctrlKey: true});
           assert.dom('span', 'o', function () {
             assert.same(this.style.fontFamily, 'monospace');
           });
@@ -573,14 +573,6 @@ isClient && define(function (require, exports, module) {
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
-        TH.keydown(this, ']', {ctrlKey: true});
-        assert.calledOnceWith(v.ec, 'indent');
-
-        TH.keydown(this, '[', {ctrlKey: true});
-        assert.calledWith(v.ec, 'outdent');
-
-        v.ec.reset();
-
         TH.keydown(this, 'Ý', {ctrlKey: true});
         assert.calledWith(v.ec, 'indent');
 
@@ -748,7 +740,7 @@ isClient && define(function (require, exports, module) {
       assert.dom('.input[contenteditable=true]', function () {
         this.focus();
         TH.setRange(this.firstChild.firstChild, 0);
-        TH.keydown(this, ']', {ctrlKey: true});
+        TH.keydown(this, KeyMap[']'], {ctrlKey: true});
         assert.dom('blockquote', 'hello', function () {
           assert.same(this.getAttribute('style'), null);
         });
@@ -804,7 +796,7 @@ isClient && define(function (require, exports, module) {
           v.pos = Dom.getRange().getBoundingClientRect();
         });
 
-        TH.keydown('.input', "K", {ctrlKey: true});
+        TH.keydown('.input', "K", {metaKey: true});
 
         assert.dom('.rtLink', function () {
           assert.cssNear(this, 'top', v.pos.bottom);

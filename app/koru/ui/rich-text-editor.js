@@ -24,7 +24,7 @@ define(function(require, exports, module) {
 
   const {INLINE_TAGS, FONT_SIZE_TO_EM} = RichText;
 
-  const {shift, ctrl} = KeyMap;
+  const {shift, ctrl, meta} = KeyMap;
 
   const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
@@ -180,14 +180,21 @@ define(function(require, exports, module) {
     },
   });
 
+  const mapActions = (keys, actions)=>{
+    for (const name in keys) {
+      keys[name] = [keys[name], actions[name]];
+    }
+    return keys;
+  };
+
   const keyMap = KeyMap(mapActions({
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
     insertOrderedList: ctrl+shift+'7',
     insertUnorderedList: ctrl+shift+'8',
-    outdent: ctrl+'Û', // '['
-    indent: ctrl+'Ý', // ']'
+    outdent: ctrl+'Û',
+    indent: ctrl+'Ý',
     link: ctrl+'K',
     code: ctrl+'À',
     justifyLeft: ctrl+shift+"L",
@@ -197,14 +204,7 @@ define(function(require, exports, module) {
     removeFormat: ctrl+'Ü',
     fontColor: ctrl+shift+'H',
     fontName: ctrl+shift+'O',
-  }, actions));
-
-  keyMap.addKeys(mapActions({
-    outdent: ctrl+'[',
-    indent: ctrl+']',
-    code: ctrl+'`',
-    removeFormat: ctrl+'\\',
-  }, actions));
+  }, actions), {mapCtrlToMeta: true});
 
   function chooseFromMenu(event, options, onSelect) {
     const ctx = Tpl.$ctx(event.target);
@@ -325,7 +325,7 @@ define(function(require, exports, module) {
     previousSection: ctrl+KeyMap.up,
     syntaxHighlight: ctrl+shift+'H',
     newline: "\x0d",
-  }, codeActions));
+  }, codeActions), {mapCtrlToMeta: true});
 
   function noop() {}
 
@@ -346,14 +346,6 @@ define(function(require, exports, module) {
       func[cmd] = commandify(func[cmd], cmd);
     }
     return func;
-  }
-
-
-  function mapActions(keys, actions) {
-    for (let name in keys) {
-      keys[name] = [keys[name], actions[name]];
-    }
-    return keys;
   }
 
   const optionKeys = {
@@ -460,7 +452,7 @@ define(function(require, exports, module) {
     },
 
     keydown(event) {
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         keyMap.exec(event, 'ignoreFocus');
         return;
       }

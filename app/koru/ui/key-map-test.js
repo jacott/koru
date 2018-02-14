@@ -62,12 +62,18 @@ isClient && define(function (require, exports, module) {
 
       assert.same(v.km.getTitle('mbar2 desc', 'mbar2'), "mbar2 desc [Qctrl-shift-2]");
 
+      const f = ()=>{};
+
       v.km.addKeys({
-        home: [sut.home, stub()],
-        end: [sut.end, stub()],
-        pgdn: [sut.pgDown, stub()],
-        pgup: [sut.pgUp, stub()],
-        esc: [sut.esc, stub()],
+        home: [sut.home, f],
+        end: [sut.end, f],
+        pgdn: [sut.pgDown, f],
+        pgup: [sut.pgUp, f],
+        esc: [sut.esc, f],
+        lbkt: ['Û', f],
+        rbkt: ['Ý', f],
+        bslash: ['Ü', f],
+        grave: ['À', f],
       });
 
       assert.same(v.km.getTitle('home', 'home'), "home [<home>]");
@@ -75,6 +81,35 @@ isClient && define(function (require, exports, module) {
       assert.same(v.km.getTitle('pgdn', 'pgdn'), "pgdn [<pgDown>]");
       assert.same(v.km.getTitle('pgup', 'pgup'), "pgup [<pgUp>]");
       assert.same(v.km.getTitle('esc', 'esc'), "esc [<esc>]");
+      assert.same(v.km.getTitle('lbkt', 'lbkt'), "lbkt [[]");
+      assert.same(v.km.getTitle('rbkt', 'rbkt'), "rbkt []]");
+      assert.same(v.km.getTitle('bslash', 'bslash'), "bslash [\\]");
+      assert.same(v.km.getTitle('grave', 'grave'), "grave [`]");
+    },
+
+    "test mapCtrlToMeta"() {
+      const f = ()=>{};
+      const km = sut({
+        f1: [sut.ctrl+"A", f],
+        f2: [sut.shift+"B", f],
+      }, {mapCtrlToMeta: true});
+
+      km.addKeys({
+        f3: [sut.shift+sut.ctrl+"C", sut.ctrl+"X", f],
+        f4: [sut.ctrl+sut.meta+"D", f],
+      }, {mapCtrlToMeta: true});
+
+      km.addKeys({
+        f5: [sut.shift+sut.ctrl+"E", f],
+      });
+
+      assert.equals(km.map, {
+        '\u0002': {A: ['f1', f], X: ['f3', f]},
+        '\u0001': {B: ['f2', f]},
+        '\u0003': {C: ['f3', f], E: ['f5', f]},
+        '\u0008': {A: ['f1', f], X: ['f3', f]},
+        '\u0009': {C: ['f3', f]},
+        '\u000a': {D: ['f4', f]}});
     },
 
     "test single key" () {
@@ -96,6 +131,16 @@ isClient && define(function (require, exports, module) {
       TH.keydown('2', {shiftKey: true, ctrlKey: true});
       assert.calledOnce(v.mbar2);
       refute.called(v.bar2);
+    },
+
+    "test secondary keys"() {
+      v.km.exec(TH.buildEvent('keydown', {which: 'B'.charCodeAt(0), metaKey: true}));
+      assert.calledOnce(v.foo3);
+      v.km.exec(TH.buildEvent('keydown', {which: 'A'.charCodeAt(0), metaKey: true}));
+      assert.calledTwice(v.foo3);
+      v.km.exec(TH.buildEvent('keydown', {which: 'B'.charCodeAt(0), altKey: true}));
+      v.km.exec(TH.buildEvent('keydown', {which: 'A'.charCodeAt(0), altKey: true}));
+      assert.calledThrice(v.foo3);
     },
 
     "test modifier first key" () {
