@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
-  const Dom  = require('../dom');
-  const util = require('../util');
+  const Dom             = require('../dom');
+  const util            = require('../util');
 
   const MODIFIERS = {};
   const MOD_NAMES = {};
   const SYM_NAMES = {};
 
-  exports = module.exports = function (funcs) {
+  exports = module.exports = funcs =>{
     const keyMap = new KeyMap();
     keyMap.exec = exec.bind(keyMap);
 
@@ -25,37 +25,41 @@ define(function(require, exports, module) {
       const top = this.map;
       let mod, km;
 
-      function procMod() {
-        if (mod) {
+      const procMod = ()=>{
+        if (mod != 0) {
           mod = String.fromCharCode(mod);
           km = km[mod] || (km[mod] = {});
           mod = 0;
         }
-      }
+      };
 
-      for(let name in funcs) {
+      for(const name in funcs) {
         const line = funcs[name];
-        const keySeq = line[0];
-        km = top;
-        mod = 0;
-        this.descMap[name] = [keySeq, line[1]];
-        let i = 0;
-        for(; i < keySeq.length - 1; ++i) {
-          const code = keySeq[i];
-          const modk = MODIFIERS[code];
+        const lastIdx = line.length -1;
+        const func = line[lastIdx];
+        this.descMap[name] = [line[0], func];
+        for(let j = 0; j < lastIdx; ++j) {
+          const keySeq = line[j];
+          km = top;
+          mod = 0;
+          let i = 0;
+          for(; i < keySeq.length - 1; ++i) {
+            const code = keySeq[i];
+            const modk = MODIFIERS[code];
 
-          if (modk) {
-            mod = mod | modk;
-            continue;
+            if (modk) {
+              mod = mod | modk;
+              continue;
+            }
+            procMod();
+            km = km[code] || (km[code] = {});
+            if (Array.isArray(km))
+            throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
           }
           procMod();
-          km = km[code] || (km[code] = {});
-          if (Array.isArray(km))
-            throw new Error(`Not a key map for: '${keySeq.slice(0,i + 1)}' => ${km}`);
-        }
-        procMod();
 
-        km[keySeq[i]] = [name, line[1]];
+          km[keySeq[i]] = [name, func];
+        }
       }
     }
 
@@ -80,11 +84,12 @@ define(function(require, exports, module) {
   addModifiers(
     '\u0010shift',
     '\u0011ctrl',
-    '\u0012alt'
+    '\u0012alt',
+    '\u005Bmeta',
   );
 
   function addModifiers(...args) {
-    util.forEach(args, (code, i) => {
+    args.forEach((code, i) => {
       const name = code.slice(1);
       exports[name] = code = code[0];
       MODIFIERS[code] = 1 << i;
@@ -93,29 +98,38 @@ define(function(require, exports, module) {
     });
   }
 
-  addCodes(
-    '\u0025left',
-    '\u0026up',
-    '\u0027right',
-    '\u0028down',
-    '\u0021pgUp',
-    '\u0022pgDown',
-    '\u0023end',
-    '\u0024home',
-    '\u001Besc',
-    '\u002Edel'
-  );
-
-  function addCodes(...args) {
-    util.forEach(args, (code, i) => {
-      const name = code.slice(1);
-      exports[name] = code = code[0];
-      SYM_NAMES[code] = name;
-    });
+  {
+    const addCodes = (...args)=>{
+      util.forEach(args, (code, i) => {
+        const name = code.slice(1);
+        exports[name] = code = code[0];
+        SYM_NAMES[code] = name;
+      });
+    };
+    addCodes(
+      '\u0025left',
+      '\u0026up',
+      '\u0027right',
+      '\u0028down',
+      '\u0021pgUp',
+      '\u0022pgDown',
+      '\u0023end',
+      '\u0024home',
+      '\u001Besc',
+      '\u002Edel'
+    );
   }
 
-  exports.modCodeToName = function (code) {
-    return MOD_NAMES[code];
+
+  exports.modCodeToName = code => MOD_NAMES[code];
+
+  const eventMod = event=>{
+    let mod = 0;
+    if (event.shiftKey) mod = 1;
+    if (event.ctrlKey) mod += 2;
+    if (event.altKey) mod += 4;
+    if (event.metaKey) mod += 8;
+    return mod;
   };
 
   function exec(event, ignoreFocus) {
@@ -128,9 +142,9 @@ define(function(require, exports, module) {
 
     let map, mod = eventMod(event);
 
-    if (mod) {
+    if (mod != 0) {
       map = keyMap.map[String.fromCharCode(mod)];
-      if (! map) return;
+      if (map === undefined) return;
     } else {
       map = keyMap.map;
     }
@@ -142,47 +156,36 @@ define(function(require, exports, module) {
     if (Array.isArray(map)) {
       map[1](event, map[0]);
     } else {
+      const cancel = ()=>{
+        window.removeEventListener('keydown', nextKey, true);
+        document.body.removeEventListener('pointerleave', cancel, true);
+      };
+      const nextKey = event =>{
+        const code = String.fromCharCode(event.which);
+        if (MODIFIERS[code] !== undefined) return;
+
+        mod = eventMod(event);
+
+        if (mod != 0) {
+          map = map[String.fromCharCode(mod)];
+          if (map === undefined) {
+            cancel();
+            return;
+          }
+        }
+
+        map = map[String.fromCharCode(event.which)];
+        if (map && ! Array.isArray(map)) {
+          Dom.stopEvent(event);
+          return;
+        }
+        cancel();
+        if (map === undefined) return;
+        Dom.stopEvent(event);
+        map[1](event, map[0]);
+      };
       window.addEventListener('keydown', nextKey, true);
       document.body.addEventListener('pointerleave', cancel, true);
     }
-
-    function nextKey(event) {
-      const code = String.fromCharCode(event.which);
-      if (MODIFIERS[code]) return;
-
-      mod = eventMod(event);
-
-      if (mod) {
-        map = map[String.fromCharCode(mod)];
-        if (! map) {
-          cancel();
-          return;
-        }
-      }
-
-      map = map[String.fromCharCode(event.which)];
-      if (map && ! Array.isArray(map)) {
-        Dom.stopEvent(event);
-        return;
-      }
-      cancel();
-      if (! map) return;
-      Dom.stopEvent(event);
-      map[1](event, map[0]);
-    }
-
-    function cancel() {
-      window.removeEventListener('keydown', nextKey, true);
-      document.body.removeEventListener('pointerleave', cancel, true);
-    }
-
-  }
-
-  function eventMod(event) {
-    let mod = 0;
-    if (event.shiftKey) mod = 1;
-    if (event.ctrlKey) mod += 2;
-    if (event.altKey) mod += 4;
-    return mod;
   }
 });
