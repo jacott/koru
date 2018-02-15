@@ -298,9 +298,9 @@ define(function(require, exports, module) {
       if (pointer === undefined) return;
       target.releasePointerCapture(pointer.id);
       pointer.id = 0;
-      if (--count == 1) return;
+      if (--count == 1 && event.type !== 'lostpointercapture') return;
       stop();
-      onComplete(dim, {click: ! moved});
+      onComplete(dim, {click: ! moved, cancelled: event.type === 'lostpointercapture'});
     };
 
     const stop = ()=>{
@@ -316,12 +316,14 @@ define(function(require, exports, module) {
       target.removeEventListener('pointerdown', pointerdown, true);
       target.removeEventListener('pointermove', pointermove, true);
       target.removeEventListener('pointerup', pointerup, true);
+      target.removeEventListener('lostpointercapture', pointerup, true);
     };
 
 
     target.addEventListener('pointerdown', pointerdown, true);
     target.addEventListener('pointermove', pointermove, true);
     target.addEventListener('pointerup', pointerup, true);
+    target.addEventListener('lostpointercapture', pointerup, true);
 
     pointerdown(event);
 

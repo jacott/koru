@@ -306,6 +306,32 @@ isClient && define(function (require, exports, module) {
       assert.isFalse(v.click);
     },
 
+    "test lostpointercapture"() {
+      const raf = stub(window, 'requestAnimationFrame').returns(123);
+      const {target} = v;
+      const event = Dom.buildEvent('pointerdown', {
+        pointerId: 1, clientX: 123+17, clientY: 45+51
+      });
+      const onComplete = stub();
+
+      const handle = sut.start({
+        event, target,
+        constrainZoom: 'x',
+        onChange() {},
+        onComplete,
+      });
+      TH.trigger(target, 'pointerdown', {pointerId: 2, clientX: 100+17, clientY: 155+51});
+      TH.trigger(target, 'pointermove', {pointerId: 1, clientX: 150+17, clientY: 55+51});
+
+      assert.calledWith(target.setPointerCapture, 1);
+      assert.calledWith(target.setPointerCapture, 2);
+
+      TH.trigger(target, 'lostpointercapture', {pointerId: 1});
+
+      assert.calledWith(onComplete, TH.match.object, {click: false, cancelled: true});
+    },
+
+
     "test constrainZoom"() {
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
@@ -319,7 +345,6 @@ isClient && define(function (require, exports, module) {
         onChange,
         onComplete() {},
       });
-      onEnd(handle);
 
       TH.trigger(target, 'pointerdown', {pointerId: 2, clientX: 100+17, clientY: 155+51});
 
