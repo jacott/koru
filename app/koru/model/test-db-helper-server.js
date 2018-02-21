@@ -39,14 +39,14 @@ define(function(require, exports, module) {
     },
   });
 
-  TH.geddon.onStart(() => {
+  TH.Core.onStart(() => {
     txClient = dbBroker.db;
     txClient._getConn();
     txSave = util.thread[txClient[txClient[private$].tx$]];
     txSave.transaction = 'ROLLBACK';
   });
 
-  TH.geddon.onEnd(() => {
+  TH.Core.onEnd(() => {
     if (txSave !== null) {
       txSave.transaction = null;
       txSave = null;

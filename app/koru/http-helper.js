@@ -41,7 +41,7 @@ define(function(require, exports, module) {
     makeResponse(v) {
       v.output = [];
       return {
-        writeHead: koru._geddon_.test.stub(),
+        writeHead: koru._TEST_.test.stub(),
         write(data) {
           refute(v.ended);
           v.output.push(data);

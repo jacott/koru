@@ -1,9 +1,9 @@
 define(function (require, exports, module) {
-  var geddon = require('../../test');
-  var validation = require('../validation');
-  var sut = require('./length-validator');
+  const Core            = require('../../test');
+  const validation      = require('../validation');
+  const sut             = require('./length-validator');
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     setUp() {
     },
 

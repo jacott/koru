@@ -3,7 +3,7 @@ define(function(require, exports, module) {
   const session = require('../session/base');
   const TH      = require('../test-helper');
 
-  const {geddon, stub, util} = TH;
+  const {Core, stub, util} = TH;
 
   return util.protoCopy(TH, {
     sessionConnect(ws) {

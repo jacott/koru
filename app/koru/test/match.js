@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   const util   = require('koru/util');
   const match  = require('../match').__initBase__();
-  const geddon = require('./core');
+  const Core = require('./core');
 
   util.merge(match, {
     near (expected, delta) {
@@ -13,7 +13,7 @@ define(function(require, exports, module) {
 
     field (name, value) {
       return match(function matchField(actual) {
-        return actual && geddon._u.deepEqual(actual[name], value);
+        return actual && Core._u.deepEqual(actual[name], value);
       }, "match.field(" + name + ", " + value + ")");
     },
   });

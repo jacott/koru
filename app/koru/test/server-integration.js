@@ -1,14 +1,14 @@
 define(function(require, exports, module) {
-  var util = require('koru/util');
-  var TH = require('./main');
-  var session = require('../session/main');
-  var message = require('../session/message');
-  var Future = requirejs.nodeRequire('fibers/future');
+  const util            = require('koru/util');
+  const session         = require('../session/main');
+  const message         = require('../session/message');
+  const TH              = require('./main');
+  const Future          = requirejs.nodeRequire('fibers/future');
 
-  var geddon = TH.geddon;
-  var clientMessage, cmFuture;
+  const {Core} = TH;
+  let clientMessage, cmFuture;
 
-  session.provide('i', function (data) {
+  session.provide('i', data =>{
     clientMessage = data;
     cmFuture && cmFuture.return('');
   });
@@ -18,7 +18,7 @@ define(function(require, exports, module) {
       clientMessage = null;
     },
     startClient(v, module) {
-      for (var key in session.conns) {
+      for (const key in session.conns) {
         v.conn = session.conns[key];
         break;
       }
@@ -34,7 +34,7 @@ define(function(require, exports, module) {
           if (cm[0] === 'ok')
             assert.elideFromStack.same(cm[1][0], when);
           else
-            geddon.fail(cm[1]);
+            Core.fail(cm[1]);
 
           if (func) {
             var response = func.apply(this, cm[1]);

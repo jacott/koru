@@ -30,7 +30,7 @@ define(function (require, exports, module) {
     },
 
     "test _u.deepEqual"() {
-      const {deepEqual} = TH.geddon._u;
+      const {deepEqual} = TH.Core._u;
       const hint = {};
 
       assert.isTrue(deepEqual(null, null));

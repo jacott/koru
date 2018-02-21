@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const util    = require('../util');
   require('./assertions-methods');
   require('./callbacks');
-  const geddon  = require('./core');
+  const Core  = require('./core');
   const match   = require('./match');
 
   const {inspect$} = require('koru/symbols');
@@ -17,13 +17,13 @@ define(function(require, exports, module) {
 
   const topDoc = isClient && (window.top ? window.top.document : document);
 
-  const onEnd = func=>geddon.test.onEnd(func);
-  const stub = (...args)=>geddon.test.stub(...args);
-  const spy = (...args)=>geddon.test.spy(...args);
+  const onEnd = func=>Core.test.onEnd(func);
+  const stub = (...args)=>Core.test.stub(...args);
+  const spy = (...args)=>Core.test.spy(...args);
 
   const intercept = (...args)=>{
     const spy = stubber.intercept(...args);
-    geddon.test.onEnd(restorSpy(spy));
+    Core.test.onEnd(restorSpy(spy));
     return spy;
   };
 
@@ -31,7 +31,7 @@ define(function(require, exports, module) {
     if (typeof newValue !== 'object')
       newValue = {value: newValue};
     const oldValue = koru.replaceProperty(object, prop, newValue);
-    geddon.test.onEnd(restore);
+    Core.test.onEnd(restore);
 
     function restore() {
       if (oldValue)
@@ -45,14 +45,14 @@ define(function(require, exports, module) {
 
   Error.stackTraceLimit = 100;
 
-  koru._geddon_ = geddon; // helpful for errors finding test name
+  koru._TEST_ = Core; // helpful for errors finding test name
 
   koru.onunload(module, 'reload');
 
   const top = isServer ? global : window;
 
-  top.assert = geddon.assert;
-  top.refute = geddon.refute;
+  top.assert = Core.assert;
+  top.refute = Core.refute;
 
   let count, skipCount, errorCount, timer;
 
@@ -76,7 +76,7 @@ define(function(require, exports, module) {
         if (id === mod.id) return '';
         return "   at " + (isClient ? document.baseURI + id + '.js:1:1' : ctx.uri(id, '.js')+":1:1");
       }).join('\n');
-      exports.logHandle("ERROR", koru.util.extractError({
+      Main.logHandle("ERROR", koru.util.extractError({
         toString() {
           return "failed to load module: " + mod.id + '\nwith dependancies:\n';
         },
@@ -86,14 +86,14 @@ define(function(require, exports, module) {
     }
     if (err.name === 'SyntaxError') {
       const m = /^([\S]*)([\s\S]*)    at.*vm.js:/m.exec(err.stack);
-      exports.logHandle('ERROR', m ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
+      Main.logHandle('ERROR', m ? `\n    at ${m[1]}\n${m[2]}` : util.extractError(err));
       return;
     }
 
     const errEvent = err.event;
 
     if (errEvent && errEvent.filename) {
-      exports.logHandle('ERROR', koru.util.extractError({
+      Main.logHandle('ERROR', koru.util.extractError({
         toString() {
           const uer = errEvent && errEvent.error;
           return uer ? uer.toString() : err.toString();
@@ -103,16 +103,16 @@ define(function(require, exports, module) {
       return;
     }
 
-    exports.logHandle('ERROR', koru.util.extractError(err));
+    Main.logHandle('ERROR', koru.util.extractError(err));
   };
 
   const warnFullPageReload = ()=>{
-    exports.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
+    Main.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   };
 
-  exports = {
-    get test() {return geddon.test},
-    geddon,
+  const Main = {
+    get test() {return Core.test},
+    Core,
     match,
     MockModule,
     stubProperty,
@@ -126,9 +126,9 @@ define(function(require, exports, module) {
     },
 
     run(pattern, tests) {
-      if (geddon.reload) {
-        exports.testHandle('E', 'Reloading...\x00');
-        exports.testHandle('F', 1);
+      if (Core.reload) {
+        Main.testHandle('E', 'Reloading...\x00');
+        Main.testHandle('F', 1);
         return koru.reload();
       }
       if (isClient) {
@@ -137,11 +137,11 @@ define(function(require, exports, module) {
       }
       console.log('*** test-start ' + ++testRunCount);
 
-      geddon.runArg = pattern;
+      Core.runArg = pattern;
       count = skipCount = errorCount = 0;
 
       require(tests, (...args)=>{
-        koru.runFiber(() => {geddon.start(args)});
+        koru.runFiber(() => {Core.start(args)});
       }, err => {
         ++errorCount;
         if (err.module) {
@@ -153,7 +153,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     },
 
     testCase(module, option) {
-      return module.exports = geddon.testCase(module.id.replace(/-test$/, ''), option);
+      return module.exports = Core.testCase(module.id.replace(/-test$/, ''), option);
     },
 
     normHTMLStr(html) {
@@ -170,18 +170,18 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
 
   koru.logger = (type, ...args)=>{
     console.log.apply(console, args);
-    exports.logHandle(type, (type === '\x44EBUG' ? geddon.inspect(args, 7) : args.join(' ')));
+    Main.logHandle(type, (type === '\x44EBUG' ? Core.inspect(args, 7) : args.join(' ')));
   };
 
-  geddon.onEnd(endRun);
+  Core.onEnd(endRun);
 
-  geddon.onTestStart(test=>{
+  Core.onTestStart(test=>{
     timer = Date.now();
-    isClient && (geddon._origAfTimeout = koru.afTimeout, koru.afTimeout = koru.nullFunc);
+    isClient && (Core._origAfTimeout = koru.afTimeout, koru.afTimeout = koru.nullFunc);
   });
 
-  geddon.onTestEnd(test=>{
-    koru.afTimeout = geddon._origAfTimeout;
+  Core.onTestEnd(test=>{
+    koru.afTimeout = Core._origAfTimeout;
     if (test.errors) {
       ++errorCount;
 
@@ -190,19 +190,19 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       for(let i = 0; i < errors.length; ++i) {
         result += errors[i]+"\n";
       }
-      exports.testHandle('E', result);
+      Main.testHandle('E', result);
     }
 
     test.skipped ? ++skipCount : ++count;
 
-    exports.testHandle('R', `${test.name}\x00` + [
-      count,geddon.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
+    Main.testHandle('R', `${test.name}\x00` + [
+      count,Core.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
 
   function endRun() {
-    if (geddon.testCount === 0) {
+    if (Core.testCount === 0) {
       errorCount = 1;
-      exports.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+      Main.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
     }
 
     if (isClient) {
@@ -212,9 +212,9 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       }, 1);
     }
 
-    exports.testHandle('F', errorCount);
-    geddon._init();
+    Main.testHandle('F', errorCount);
+    Core._init();
   }
 
-  module.exports = exports;
+  return Main;
 });

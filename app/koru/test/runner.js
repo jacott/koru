@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
   const koru = require('koru');
-  const geddon = require('./core');
+  const Core = require('./core');
   const asyncNext = func => {koru.runFiber(func)};
 
-  geddon.start = function (testCases, runNextWrapper) {
-    let tests = geddon._tests = [],
+  Core.start = function (testCases, runNextWrapper) {
+    let tests = Core._tests = [],
         promise, _runNext,
         next = 0;
 
@@ -20,26 +20,26 @@ define(function(require, exports, module) {
 
     const tcs = [];
 
-    geddon.abnormalEnd = false;
+    Core.abnormalEnd = false;
 
     if (runNextWrapper) {
       runNextWrapper(function () {
-        geddon.runCallBacks('start');
+        Core.runCallBacks('start');
         _runNext = function () {runNextWrapper(runNext)};
         _runNext();
       });
     } else {
-      geddon.runCallBacks('start');
+      Core.runCallBacks('start');
       _runNext = function () {
         try {
           runNext();
         } catch(ex) {
-          geddon.abort(ex);
+          Core.abort(ex);
         }
       };
       _runNext();
-      if (geddon.abnormalEnd)
-        geddon.runCallBacks('end');;
+      if (Core.abnormalEnd)
+        Core.runCallBacks('end');;
     }
 
     function runNext(abort) {
@@ -50,21 +50,21 @@ define(function(require, exports, module) {
           for(let i = tcs.length-1; i !== -1; --i) {
             tcs[i].endTestCase();
           }
-          geddon.test = null;
-          geddon.runCallBacks('end');
+          Core.test = null;
+          Core.runCallBacks('end');
           return;
         }
 
-        if (! geddon.test || geddon.test.tc !== test.tc) {
+        if (! Core.test || Core.test.tc !== test.tc) {
           newTestCase(test.tc);
         }
-        geddon.lastTest = geddon.test;
-        geddon.test = test;
-        geddon.runCallBacks('testStart', test);
+        Core.lastTest = Core.test;
+        Core.test = test;
+        Core.runCallBacks('testStart', test);
 
         if (test.skipped) {
           test.success = true;
-          geddon.runCallBacks('testEnd', test);
+          Core.runCallBacks('testEnd', test);
           continue;
         } else {
           let ex;
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
               return;
             }
           } else {
-            const {assertCount} = geddon;
+            const {assertCount} = Core;
             ex = runSync(test, around);
             ex || checkAssertionCount(test, assertCount);
           }
@@ -126,7 +126,7 @@ define(function(require, exports, module) {
   }
 
   function promiseFunc(test, runNext) {
-    const {assertCount} = geddon;
+    const {assertCount} = Core;
     function promise(ex) {
       promise.done = true;
 
@@ -164,11 +164,11 @@ define(function(require, exports, module) {
     if (ex === 'abortTests')
       throw ex;
     test.success = false;
-    test.errors = [geddon.extractError(ex)];
+    test.errors = [Core.extractError(ex)];
   }
 
   function checkAssertionCount(test, assertCount) {
-    if (assertCount === geddon.assertCount) {
+    if (assertCount === Core.assertCount) {
       test.success = false;
       test.errors = ["No assertions!"];
     } else {
@@ -186,11 +186,11 @@ define(function(require, exports, module) {
       if (test.success)
         failed(test, ex);
       else
-        test.errors.push(geddon.extractError(ex));
-      geddon.abnormalEnd = true;
+        test.errors.push(Core.extractError(ex));
+      Core.abnormalEnd = true;
       return 'abort';
     } finally {
-      geddon.runCallBacks('testEnd', test);
+      Core.runCallBacks('testEnd', test);
     }
 
   }

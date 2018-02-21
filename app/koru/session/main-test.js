@@ -5,10 +5,10 @@ define(function (require, exports, module) {
    **/
   var test, v;
   const api     = require('koru/test/api');
-  const geddon  = require('../test');
+  const Core  = require('../test');
   const session = require('./main');
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     setUp() {
       test = this;
       v = {};

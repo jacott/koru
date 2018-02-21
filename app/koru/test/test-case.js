@@ -1,4 +1,4 @@
-define(['./core', './stubber'], function (geddon, stubber) {
+define(['./core', './stubber'], function (Core, stubber) {
   let onSetUpOnceEnd;
 
   class TestCase {
@@ -36,8 +36,8 @@ define(['./core', './stubber'], function (geddon, stubber) {
       if (this._setUpOnce !== undefined) {
         this._setUpOnce = undefined;
         if (this.tearDownOnce)
-          this.tearDownOnce.call(geddon.test);
-        this.runOnEnds(geddon.test, onSetUpOnceEnd);
+          this.tearDownOnce.call(Core.test);
+        this.runOnEnds(Core.test, onSetUpOnceEnd);
         onSetUpOnceEnd = undefined;
         this.tc && this.tc.runTearDown();
       }
@@ -131,7 +131,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
           func.forEach(f => (f.stop || f).call(test));
         else if (! func || typeof func.stop !== 'function')
           throw new Error("test.onEnd called with non function or object.stop function"
-                          +geddon.util.inspect(func));
+                          +Core.util.inspect(func));
         else
           func.stop();
       }
@@ -159,14 +159,14 @@ define(['./core', './stubber'], function (geddon, stubber) {
           skipped || (this[name] = func);
           break;
         default:
-          if (! geddon.runArg || this.fullName(name).indexOf(geddon.runArg) !== -1) {
+          if (! Core.runArg || this.fullName(name).indexOf(Core.runArg) !== -1) {
 
-            ++geddon.testCount;
+            ++Core.testCount;
             if (skipped) {
-              ++geddon.skipCount;
-              geddon._tests.push(new Test(this.fullName(name), this));
+              ++Core.skipCount;
+              Core._tests.push(new Test(this.fullName(name), this));
             } else {
-              geddon._tests.push(new Test(this.fullName(name), this, func));
+              Core._tests.push(new Test(this.fullName(name), this, func));
             }
           }
         }
@@ -192,7 +192,7 @@ define(['./core', './stubber'], function (geddon, stubber) {
 
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
 
-  geddon.testCase = (name, option)=> new TestCase(name, null, option);
+  Core.testCase = (name, option)=> new TestCase(name, null, option);
 
   class Test {
     constructor(name, tc, func) {

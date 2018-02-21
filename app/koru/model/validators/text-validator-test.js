@@ -1,11 +1,11 @@
 define(function (require, exports, module) {
   var test, doc;
-  var geddon = require('../../test');
+  var Core = require('../../test');
   var sut = require('../validation');
 
   sut.register(module, {required: require('./text-validator')});
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     "normalize": {
       "test downcase"() {
         var doc = {name: 'mixedCase'};

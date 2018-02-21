@@ -21,7 +21,7 @@ define(function(require, exports, module) {
         if (expect === actual) return true;
         if (expect && actual && expect.constructor === actual.constructor &&
             expect._id === actual._id) {
-          return TH.geddon._u.deepEqual(actual.attributes, expect.attributes);
+          return TH.Core._u.deepEqual(actual.attributes, expect.attributes);
         }
       }, {toString() {return util.inspect(expect)}});
     },

@@ -3,12 +3,12 @@ define(function (require, exports, module) {
    * Make a subject that can be observered.
    **/
   const api    = require('koru/test/api');
-  const geddon = require('./test');
+  const Core = require('./test');
 
   const sut = require('./make-subject');
   var v;
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     setUp() {
       v = {};
       api.module();

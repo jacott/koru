@@ -1,12 +1,12 @@
 define(function (require, exports, module) {
-  const geddon     = require('../../test');
+  const Core     = require('../../test');
   const Query      = require('../query');
   const validation = require('../validation');
 
   const sut        = require('./unique-validator').bind(validation);
   var v;
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     setUp() {
       v = {};
       v.query = new Query({});

@@ -39,15 +39,15 @@ define(function(require, exports, module) {
 
   koru.onunload(module, () => {requirejs.onError = null});
 
-  test.geddon.abort = ex => {
+  test.Core.abort = ex => {
     test.logHandle('E', koru.util.extractError(ex)+"\n\n**** Tests aborted! *****");
-    test.testHandle('F', test.geddon.testCount + 1);
-    test.geddon.reload = true;
+    test.testHandle('F', test.Core.testCount + 1);
+    test.Core.reload = true;
     throw ex;
   };
 
   localStorage._resetValue = ()=>Object.create(null);
-  test.geddon.onStart(() => {
+  test.Core.onStart(() => {
     localStorage.setItem = (key, value) => {
       const oldValue = ls[key];
       ls[key] = value;
@@ -65,9 +65,9 @@ define(function(require, exports, module) {
     };
   });
 
-  test.geddon.onTestStart(()=>{ls = localStorage._resetValue()});
+  test.Core.onTestStart(()=>{ls = localStorage._resetValue()});
 
-  test.geddon.onEnd(()=>{
+  test.Core.onEnd(()=>{
     ls = null;
     localStorage.setItem = setItem;
     localStorage.getItem = getItem;

@@ -1,12 +1,12 @@
 define(function(require, exports, module) {
   const util   = require('koru/util');
   const format = require('../format');
-  const geddon = require('./core');
+  const Core = require('./core');
   const match  = require('./match');
 
   const {hasOwn} = util;
 
-  const gu = geddon._u;
+  const gu = Core._u;
   const {egal} = util;
 
   let __elidePoint;
@@ -17,11 +17,11 @@ define(function(require, exports, module) {
   this.AssertionError = AssertionError;
 
   function assert(truth, msg) {
-    ++geddon.assertCount;
-    let {__msg} = geddon;
-    __elidePoint = geddon.__elidePoint;
-    geddon.__msg = null;
-    geddon.__elidePoint = null;
+    ++Core.assertCount;
+    let {__msg} = Core;
+    __elidePoint = Core.__elidePoint;
+    Core.__msg = null;
+    Core.__elidePoint = null;
 
     if (truth) return truth;
 
@@ -34,10 +34,10 @@ define(function(require, exports, module) {
   };
 
   function refute (truth, msg) {
-    geddon.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
+    Core.assert(!truth, msg || 'Did not expect ' + util.inspect(truth));
   };
 
-  util.merge(geddon, {
+  util.merge(Core, {
     assert, refute,
     fail(message) {assert(false, message);},
 
@@ -54,7 +54,7 @@ define(function(require, exports, module) {
   Object.defineProperty(refute, 'elideFromStack', {get: getElideFromStack});
 
   assert.msg = function(msg) {
-    geddon.__msg = msg;
+    Core.__msg = msg;
     return this;
   };
 
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
   };
 
   function getElideFromStack() {
-    geddon.__elidePoint = geddon.__elidePoint || new AssertionError('');
+    Core.__elidePoint = Core.__elidePoint || new AssertionError('');
     return this;
   }
 
@@ -105,10 +105,10 @@ define(function(require, exports, module) {
 
       if (pass === ! func.apply(sideAffects, args)) {
         args.push(sideAffects);
-        geddon.assert(false, format.apply(null, util.append([
+        Core.assert(false, format.apply(null, util.append([
           pass ? options.assertMessage : options.refuteMessage], args)));
       }
-      geddon.assert(true);
+      Core.assert(true);
       return pass ? assert : refute;
     };
   }

@@ -2,15 +2,15 @@ define(function(require, exports, module) {
   const format     = require('koru/format');
   const assertions = require('koru/test/assertions');
   const Stubber    = require('koru/test/stubber');
-  const geddon     = require('./core');
+  const Core     = require('./core');
 
-  const util = geddon.util;
+  const util = Core.util;
   const {hasOwn} = util;
   const {ctx$} = require('koru/symbols');
   const empty = ()=>{};
 
-  const gu = geddon._u;
-  const ga = geddon.assertions;
+  const gu = Core._u;
+  const ga = Core.assertions;
 
   const performance = isClient ? window.performance : {now() {
     const tm = process.hrtime();
@@ -20,7 +20,7 @@ define(function(require, exports, module) {
   // assert.dom
   let selectNode = null;
 
-  geddon.assert.benchMark = ({subject, duration=1000, control=empty})=>{
+  Core.assert.benchMark = ({subject, duration=1000, control=empty})=>{
     control();
     subject();
 
@@ -285,7 +285,7 @@ define(function(require, exports, module) {
         element = selectNode[0];
       }
       if (typeof element.className == "undefined") {
-        return geddon.fail(format("{1} Expected object to have className property", className));
+        return Core.fail(format("{1} Expected object to have className property", className));
       }
       this.expected = className;
       const expected = typeof className == "string" ? className.split(" ") : className;
@@ -730,6 +730,6 @@ define(function(require, exports, module) {
 
   function checkSpy(spy) {
     Stubber.isStubbed(spy) ||
-      geddon.fail("Argument is not a spy/stub");
+      Core.fail("Argument is not a spy/stub");
   }
 });

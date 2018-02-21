@@ -223,7 +223,7 @@ define(function(require, exports, module) {
     Builder,
   };
 
-  test.geddon.onTestStart(()=>{
+  test.Core.onTestStart(()=>{
     nameGen = {};
     last = {};
     lastNow = null;

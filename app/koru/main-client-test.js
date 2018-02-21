@@ -35,7 +35,7 @@ define(function (require, exports, module) {
 
     "afTimeout": {
       setUp() {
-        assert.same(TH.geddon._origAfTimeout, koru._afTimeout);
+        assert.same(TH.Core._origAfTimeout, koru._afTimeout);
         test.stub(window, 'setTimeout').returns(7766);
         test.stub(window, 'clearTimeout');
 

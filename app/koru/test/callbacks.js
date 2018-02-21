@@ -1,4 +1,4 @@
-define(['./core', '../main'], function (geddon, koru) {
+define(['./core', '../main'], function (Core, koru) {
   const callbacks = {};
 
   registerCallBack('start');
@@ -9,13 +9,13 @@ define(['./core', '../main'], function (geddon, koru) {
 
   function registerCallBack(name) {
     const capped = name[0].toUpperCase()+name.slice(1);
-    geddon['cancel'+capped] = deregister;
+    Core['cancel'+capped] = deregister;
     function deregister(func) {
       callbacks[name] = callbacks[name].filter(i => {
         return i !== func;
       });
     }
-    geddon['on'+capped] = function(module, func) {
+    Core['on'+capped] = function(module, func) {
       if (func) {
         koru.onunload(module, () => deregister(func));
       } else {
@@ -26,7 +26,7 @@ define(['./core', '../main'], function (geddon, koru) {
   }
 
 
-  geddon.runCallBacks = function(name, test) {
+  Core.runCallBacks = function(name, test) {
     const cbs = callbacks[name];
 
     let firstEx;

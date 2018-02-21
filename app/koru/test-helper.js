@@ -3,8 +3,8 @@ define(function(require, exports, module) {
   const main   = require('./test/main');
 
   const {util} = koru;
-  const {geddon} = main;
-  const gu = geddon._u;
+  const {Core} = main;
+  const gu = Core._u;
 
   const TH = koru.util.reverseMerge({
     util: koru.util,
@@ -21,11 +21,11 @@ define(function(require, exports, module) {
     },
     noInfo () {
       if (! koru.info.restore)
-        geddon.test.intercept(koru, 'info');
+        Core.test.intercept(koru, 'info');
     },
   }, main);
 
-  const ga = geddon.assertions;
+  const ga = Core.assertions;
 
   ga.add('difference', {
     assert(options, body) {
@@ -104,6 +104,8 @@ define(function(require, exports, module) {
 
   ga.add('validators', {
     assert(validators, expected) {
+      if (validators == null)
+        Core.fail("Could not find field");
       this.actual = validators;
       this.expected = expected;
       if (Object.keys(expected).length !== Object.keys(validators).length) {
@@ -122,7 +124,7 @@ define(function(require, exports, module) {
       return true;
     },
 
-    assertMessage: "Expected {i$actual} to match {i$expected}. {i$key}",
+    assertMessage: "Expected {i$actual} to match {i$expected}. For {i$key}",
     refuteMessage: "Did not expect {i0} to match {i1}"
   });
 

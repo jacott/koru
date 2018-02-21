@@ -557,7 +557,7 @@ define(function(require, exports, module) {
     API._instance = new APIOff();
   }
 
-  TH.geddon.onEnd(module, function () {
+  TH.Core.onEnd(module, function () {
     if (API.isRecord) {
       API._record();
       API.reset();

@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
-  const geddon     = require('../../test');
+  const Core     = require('../../test');
   const validation = require('../validation');
 
   const sut = require('./inclusion-validator').bind(validation);
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     "test allow null"() {
       var doc = {state: null};
       sut(doc,'state', {allowBlank: true, matches: /foo/});

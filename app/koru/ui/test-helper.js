@@ -15,8 +15,8 @@ define(function(require, exports, module) {
     back() {},
   };
 
-  const geddon = TH.geddon;
-  const ga = geddon.assertions;
+  const Core = TH.Core;
+  const ga = Core.assertions;
 
   ga.add('rangeEquals', {
     assert(startContainer, startOffset, endContainer, endOffset) {
@@ -40,7 +40,7 @@ define(function(require, exports, module) {
         endOffset: endOffset,
       };
 
-      return geddon._u.deepEqual(this.actual, expected, this, 'diff');
+      return Core._u.deepEqual(this.actual, expected, this, 'diff');
     },
 
     assertMessage: "range to be equal{$diff}",
@@ -227,7 +227,7 @@ define(function(require, exports, module) {
             (TH.click(node), Dom('body>.glassPane>#SelectMenu'));
       if (! menu)
         assert.elideFromStack(false, "Can't find #SelectMenu");
-      const pre = TH.geddon.__elidePoint;
+      const pre = TH.Core.__elidePoint;
       switch(typeof value) {
       case 'string':
       case 'number':
@@ -237,7 +237,7 @@ define(function(require, exports, module) {
       }
       assert.elideFromStack.dom(menu, function () {
         assert.dom('li', {data: value}, li => {
-          TH.geddon.__elidePoint = pre;
+          TH.Core.__elidePoint = pre;
           switch (typeof func) {
           case 'function':
             if (func.call(li, li)) TH.click(li);

@@ -3,15 +3,12 @@ define(function(require, exports, module) {
 
   const {inspect, extractError} = util;
 
-  const geddon = {
+  const Core = {
     _init() {
       this.testCount = this.skipCount = this.assertCount = 0;
     },
 
     _u: {
-      isElement(elm) {
-        return elm != null && typeof elm === 'object' && typeof elm.isSameNode === 'function';
-      },
     },
     inspect,
     extractError,
@@ -20,7 +17,7 @@ define(function(require, exports, module) {
     abort(ex) {throw ex}
   };
 
-  geddon._init();
+  Core._init();
 
-  return geddon;
+  return Core;
 });

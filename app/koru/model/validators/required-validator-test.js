@@ -1,10 +1,10 @@
 define(function (require, exports, module) {
   var test, doc;
-  var geddon = require('../../test');
+  var Core = require('../../test');
   var validation = require('../validation');
   var sut = require('./required-validator').bind(validation);
 
-  geddon.testCase(module, {
+  Core.testCase(module, {
     setUp() {
       doc = {exists: 'a', empty: ''};
     },
