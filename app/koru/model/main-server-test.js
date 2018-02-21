@@ -8,14 +8,16 @@ define(function (require, exports, module) {
   const TransQueue = require('./trans-queue');
   const Val        = require('./validation');
 
-  const Model      = require('./main');
-  var test, v;
+  const {stub, spy, onEnd} = TH;
+
+  const Model = require('./main');
+
+  let v = null;
 
   const Future   = util.Future;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       TH.noInfo();
     },
@@ -66,38 +68,38 @@ define(function (require, exports, module) {
     },
 
     "test auto Id"() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
       TestModel.defineFields({
         _id: {type: 'serial', auto: true},
         name: 'text',
       });
 
       TestModel.create({name: 'foo'});
-      var bar = TestModel.create({name: 'bar'});
+      const bar = TestModel.create({name: 'bar'});
       assert.same(bar._id, 2);
 
-      var doc = TestModel.findBy('name', 'bar');
+      const doc = TestModel.findBy('name', 'bar');
       assert(doc);
       assert.same(doc._id, 2);
     },
 
     "test invalid findById"() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
 
       assert.same(TestModel.findById(null), undefined);
 
-      assert.exception(function () {
+      assert.exception(()=>{
         TestModel.findById({});
       }, 'Error', 'invalid id: [object Object]');
     },
 
     "test globalDictAdders"() {
-      var adder = session._globalDictAdders[koru.absId(require, './main-server')];
+      const adder = session._globalDictAdders[koru.absId(require, './main-server')];
       assert.isFunction(adder);
 
-      var TestModel = Model.define('TestModel').defineFields({name: 'text', 'age': 'number'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text', 'age': 'number'});
 
-      adder(v.stub = test.stub());
+      adder(v.stub = stub());
 
       assert.calledWith(v.stub, '_id');
       assert.calledWith(v.stub, 'name');
@@ -105,13 +107,13 @@ define(function (require, exports, module) {
     },
 
     "test remote"() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
 
-      TestModel.remote({foo: v.foo = test.stub().returns('result')});
+      TestModel.remote({foo: v.foo = stub().returns('result')});
 
-      test.spy(TestModel.db, 'transaction');
+      spy(TestModel.db, 'transaction');
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         session._rpcs['TestModel.foo'].call({userId: null});
       });
 
@@ -128,11 +130,11 @@ define(function (require, exports, module) {
     },
 
     "test when no changes in save"() {
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
-      test.onEnd(TestModel.onChange(v.onChange = test.stub()));
-      TestModel.beforeSave(TestModel, v.beforeSave = test.stub());
+      onEnd(TestModel.onChange(v.onChange = stub()));
+      TestModel.beforeSave(TestModel, v.beforeSave = stub());
 
       v.doc.$save();
       TestModel.query.onId(v.doc._id).update({});
@@ -165,9 +167,9 @@ define(function (require, exports, module) {
         }
       }).run();
 
-      retFut.return(function () {
+      retFut.return(()=>{
         retFut = new Future;
-        var doc = TestModel.findById(v.doc._id);
+        const doc = TestModel.findById(v.doc._id);
         doc.attributes.name = 'cache foo';
       });
       waitFut.wait();
@@ -180,7 +182,7 @@ define(function (require, exports, module) {
       assert.same(v.doc.name, 'fuz');
 
       waitFut = new Future;
-      retFut.return(function () {
+      retFut.return(()=>{
         retFut = null;
         return TestModel.findById(v.doc._id);
       });
@@ -192,10 +194,10 @@ define(function (require, exports, module) {
     },
 
     "test overrideSave"() {
-      var TestModel = Model.define('TestModel').defineFields({name: 'text'});
-      TestModel.overrideSave = test.stub();
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+      TestModel.overrideSave = stub();
 
-      var saveSpy = test.spy(TestModel.prototype, '$save');
+      const saveSpy = spy(TestModel.prototype, '$save');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", "fooid", {name: 'bar'});
 
@@ -206,16 +208,16 @@ define(function (require, exports, module) {
 
     "test overrideRemove"() {
       const TestModel = Model.define('TestModel', {
-        overrideRemove: v.overrideRemove = test.stub()
+        overrideRemove: v.overrideRemove = stub()
       }).defineFields({name: 'text'});
 
-      const removeSpy = test.spy(TestModel.prototype, '$remove');
+      const removeSpy = spy(TestModel.prototype, '$remove');
       const doc = TestModel.create({name: 'remove me'});
 
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", doc._id);
 
       assert.calledWith(v.overrideRemove, 'u123');
-      var model = v.overrideRemove.firstCall.thisValue;
+      const model = v.overrideRemove.firstCall.thisValue;
       assert.same(model.constructor, TestModel);
       assert.same(model.name, 'remove me');
 
@@ -230,25 +232,45 @@ define(function (require, exports, module) {
       assert.calledWith(v.callback, doc);
     },
 
+    "test defaults for saveRpc new"() {
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
+      }).defineFields({name: 'text', language: {type: 'text', default: 'en'}});
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {
+        _id: "fooid", name: 'Mel'});
+
+      const mel = TestModel.findById("fooid");
+
+      assert.same(mel.language, 'en');
+
+      session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {
+        _id: "barid", name: 'Jen', language: 'no'});
+
+      const jen = TestModel.findById('barid');
+
+      assert.same(jen.language, 'no');
+    },
+
     "test saveRpc new"() {
-      var TestModel = Model.define('TestModel', {
-        authorize: v.auth = test.stub()
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
       }).defineFields({name: 'text'});
 
 
-      test.spy(TestModel.db, 'transaction');
-      TestModel.onChange(v.onChangeSpy = test.stub());
+      spy(TestModel.db, 'transaction');
+      TestModel.onChange(v.onChangeSpy = stub());
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         session._rpcs.save.call({userId: null}, "TestModel", null, {_id: "fooid", name: 'bar'});
       });
 
       refute(TestModel.exists("fooid"));
 
-      test.spy(Val, 'assertCheck');
+      spy(Val, 'assertCheck');
 
-      test.spy(TransQueue, 'onSuccess');
-      test.spy(TransQueue, 'onAbort');
+      spy(TransQueue, 'onSuccess');
+      spy(TransQueue, 'onAbort');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar'});
 
@@ -270,7 +292,7 @@ define(function (require, exports, module) {
 
       assert.calledOnce(TestModel.db.transaction);
 
-      test.stub(TestModel, '_$docCacheDelete');
+      stub(TestModel, '_$docCacheDelete');
       TransQueue.onAbort.yield();
       assert.calledWith(TestModel._$docCacheDelete, TH.match.field('_id', 'fooid'));
 
@@ -281,14 +303,14 @@ define(function (require, exports, module) {
     },
 
     "test saveRpc existing"() {
-      var TestModel = Model.define('TestModel', {
-        authorize: v.auth = test.stub()
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
       }).defineFields({name: 'text'});
 
 
       v.doc = TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.onChangeSpy = test.stub());
+      TestModel.onChange(v.onChangeSpy = stub());
 
       assert.accessDenied(()=>{
         session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
@@ -296,7 +318,7 @@ define(function (require, exports, module) {
 
       assert.same(v.doc.$reload().name, 'foo');
 
-      test.spy(TransQueue, 'onSuccess');
+      spy(TransQueue, 'onSuccess');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {name: 'bar'});
 
@@ -311,16 +333,16 @@ define(function (require, exports, module) {
     },
 
     "test saveRpc partial no modification"() {
-      var TestModel = Model.define('TestModel', {
-        authorize: v.auth = test.stub()
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
       }).defineFields({name: 'text', html: 'object'});
 
 
       v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
 
-      TestModel.onChange(v.onChangeSpy = test.stub());
+      TestModel.onChange(v.onChangeSpy = stub());
 
-      test.spy(TransQueue, 'onSuccess');
+      spy(TransQueue, 'onSuccess');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {$partial: {
         html: [
@@ -343,8 +365,8 @@ define(function (require, exports, module) {
     },
 
     "test saveRpc partial validate modifies"() {
-      var TestModel = Model.define('TestModel', {
-        authorize: v.auth = test.stub()
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
       }).defineFields({name: 'text', html: 'object'});
 
       TestModel.prototype.validate = function () {
@@ -355,9 +377,9 @@ define(function (require, exports, module) {
 
       v.doc = TestModel.create({name: 'foo', html: {div: ['foo', 'bar']}});
 
-      TestModel.onChange(v.onChangeSpy = test.stub());
+      TestModel.onChange(v.onChangeSpy = stub());
 
-      test.spy(TransQueue, 'onSuccess');
+      spy(TransQueue, 'onSuccess');
 
       session._rpcs.save.call({userId: 'u123'}, "TestModel", v.doc._id, {
         name: 'fiz',
@@ -381,21 +403,21 @@ define(function (require, exports, module) {
     },
 
     'test removeRpc'() {
-      var TestModel = Model.define('TestModel', {
-        authorize: v.auth = test.stub()
+      const TestModel = Model.define('TestModel', {
+        authorize: v.auth = stub()
       }).defineFields({name: 'text'});
 
-      test.spy(TestModel.db, 'transaction');
+      spy(TestModel.db, 'transaction');
 
       v.doc = TestModel.create({name: 'foo'});
 
-      TestModel.onChange(v.onChangeSpy = test.stub());
+      TestModel.onChange(v.onChangeSpy = stub());
 
-      assert.accessDenied(function () {
+      assert.accessDenied(()=>{
         session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
       });
 
-      test.spy(TransQueue, 'onSuccess');
+      spy(TransQueue, 'onSuccess');
 
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
 
@@ -410,9 +432,9 @@ define(function (require, exports, module) {
     },
 
     "test addUniqueIndex"() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
 
-      var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
+      const ensureIndex = stub(TestModel.docs, 'ensureIndex');
 
       TestModel.addUniqueIndex('a', 'b', -1, 'c', 1, 'd', ignoreme=>{});
 
@@ -424,9 +446,9 @@ define(function (require, exports, module) {
     },
 
     "test addIndex"() {
-      var TestModel = Model.define('TestModel');
+      const TestModel = Model.define('TestModel');
 
-      var ensureIndex = test.stub(TestModel.docs, 'ensureIndex');
+      const ensureIndex = stub(TestModel.docs, 'ensureIndex');
 
       TestModel.addIndex('a', 'b', -1, 'c', 1, 'd');
 
@@ -438,13 +460,13 @@ define(function (require, exports, module) {
     },
 
     "test transaction"() {
-      var TestModel = Model.define('TestModel');
-      var stub = test.stub().returns('result');
-      var tx = test.spy(TestModel.db, 'transaction');
-      assert.same(TestModel.transaction(stub), 'result');
+      const TestModel = Model.define('TestModel');
+      const body = stub().returns('result');
+      const tx = spy(TestModel.db, 'transaction');
+      assert.same(TestModel.transaction(body), 'result');
 
-      assert.called(stub);
-      assert.calledWith(tx, stub);
+      assert.called(body);
+      assert.calledWith(tx, body);
     },
   });
 });

@@ -96,8 +96,10 @@ define(function(require, exports, module) {
       } else {
         // new record
         this.attributes = {};
-        this.changes = attributes == null ? {} : attributes;
-        Object.assign(this.changes, this.constructor._defaults);
+        this.changes = Object.assign({}, this.constructor._defaults);
+        if (attributes != null)
+          Object.assign(this.changes, attributes);
+        Object.assign(this.changes, changes);
       }
     }
 

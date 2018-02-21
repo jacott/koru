@@ -368,11 +368,11 @@ define(function (require, exports, module) {
       assert.same(tsc.attributes, testAttrs);
       assert.same(tsc.t1, 123);
 
-      assert.same(Book.defineFields({name: 'text',
-                                          level: 'not used yet',
-                                          withDef: {type: 'text', default: 0},
-                                         }),
-                  Book);
+      assert.same(Book.defineFields({
+        name: 'text',
+        level: 'not used yet',
+        withDef: {type: 'any', default: 0},
+      }), Book);
 
       tsc = new Book({name: 'abc'});
 
@@ -392,6 +392,9 @@ define(function (require, exports, module) {
 
       tsc.withDef = undefined;
       assert.same(tsc.withDef, 0);
+
+      tsc = new Book({name: 'foo', withDef: 1});
+      assert.same(tsc.withDef, 1);
     },
   });
 });

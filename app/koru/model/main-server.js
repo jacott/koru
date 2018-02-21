@@ -176,14 +176,15 @@ define(function(require, exports, module) {
             return model.overrideSave(id, changes, userId);
           let doc = model.findById(id || changes._id);
 
-          if (id) Val.allowIfFound(doc);
-          else {
+          const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ||
+                changes;
+          if (id) {
+            Val.allowIfFound(doc);
+            doc.changes = topLevel;
+          } else {
             if (doc) return; // replay or duplicate id so don't update, don't throw error
-            doc = new model();
+            doc = new model(null, topLevel);
           }
-
-          const topLevel = changes.$partial && Changes.topLevelChanges(doc.attributes, changes);
-          doc.changes = topLevel === undefined ? changes : util.deepCopy(topLevel);
           Val.allowAccessIf(doc.authorize);
           doc.authorize(userId);
           doc.$assertValid();
