@@ -27,8 +27,8 @@ define(function(require, exports, module) {
 
       const procMod = ()=>{
         if (mod != 0) {
-          mod = String.fromCharCode(mod);
-          km = km[mod] || (km[mod] = {});
+          const key = '*'+String.fromCharCode(mod);
+          km = km[key] || (km[key] = {});
           mod = 0;
         }
       };
@@ -160,14 +160,14 @@ define(function(require, exports, module) {
     let map, mod = eventMod(event);
 
     if (mod != 0) {
-      map = keyMap.map[String.fromCharCode(mod)];
+      map = keyMap.map['*'+String.fromCharCode(mod)];
       if (map === undefined) return;
     } else {
       map = keyMap.map;
     }
 
-    map = map[String.fromCharCode(event.which)];
-    if (! map) return;
+    map = map[code];
+    if (map === undefined) return;
     Dom.stopEvent(event);
 
     if (Array.isArray(map)) {
@@ -184,14 +184,14 @@ define(function(require, exports, module) {
         mod = eventMod(event);
 
         if (mod != 0) {
-          map = map[String.fromCharCode(mod)];
+          map = map['*'+String.fromCharCode(mod)];
           if (map === undefined) {
             cancel();
             return;
           }
         }
 
-        map = map[String.fromCharCode(event.which)];
+        map = map[code];
         if (map && ! Array.isArray(map)) {
           Dom.stopEvent(event);
           return;

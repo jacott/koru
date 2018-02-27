@@ -38,12 +38,12 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.km.map, {
         X: ['foo', v.foo],
         Q: {
-          '\u0003': {2: ['mbar2', v.mbar2]},
+          '*\u0003': {2: ['mbar2', v.mbar2]},
           X: {1: ['bar', v.bar], 2: ['bar2', v.bar2]}
         },
-        '\u0002': {A: ['foo2', v.foo2]},
-        '\u0004': {B: ['foo3', v.foo3]},
-        '\u0008': {A: ['foo3', v.foo3], B: ['foo3', v.foo3]}
+        '*\u0002': {A: ['foo2', v.foo2]},
+        '*\u0004': {B: ['foo3', v.foo3]},
+        '*\u0008': {A: ['foo3', v.foo3], B: ['foo3', v.foo3]}
       });
     },
 
@@ -104,12 +104,12 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.equals(km.map, {
-        '\u0002': {A: ['f1', f], X: ['f3', f]},
-        '\u0001': {B: ['f2', f]},
-        '\u0003': {C: ['f3', f], E: ['f5', f]},
-        '\u0008': {A: ['f1', f], X: ['f3', f]},
-        '\u0009': {C: ['f3', f]},
-        '\u000a': {D: ['f4', f]}});
+        '*\u0002': {A: ['f1', f], X: ['f3', f]},
+        '*\u0001': {B: ['f2', f]},
+        '*\u0003': {C: ['f3', f], E: ['f5', f]},
+        '*\u0008': {A: ['f1', f], X: ['f3', f]},
+        '*\u0009': {C: ['f3', f]},
+        '*\u000a': {D: ['f4', f]}});
     },
 
     "test single key" () {
