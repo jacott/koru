@@ -384,19 +384,12 @@ define(function(require, exports, module) {
       return this.changes[field] = util.deepCopy(this[field]);
     }
 
-    $hasChanged(field, changes=this.changes) {
-      if (field in changes) return true;
-
-      const len = field.length;
-
-      for(const key in changes) {
-        if (key.length > len && key[len] === "." && key.slice(0, len)  === field) return true;
-      }
-      return false;
-    }
+    $hasChanged(field, changes=this.changes) {return Changes.has(changes, field)}
 
     $fieldDiffs(field) {
-      return Changes.fieldDiff(field, this.attributes, this.changes);
+      return Changes.has(this.changes, field)
+        ? Changes.fieldDiff(field, this.attributes, this.changes)
+        : undefined;
     }
 
     $fieldDiffsFrom(field, undo) {

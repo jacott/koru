@@ -648,6 +648,9 @@ define(function (require, exports, module) {
         doc.changes = {$partial: {foo: [
           'two.$partial', ['$append', '.sfx'], 'one', null, 'four', [1,2,3]]}};
 
+        assert.isTrue(doc.$hasChanged('foo'));
+        assert.isFalse(doc.$hasChanged('bar'));
+
         doc.validate = function () {
           assert.equals(doc.changes.foo, {
             two: 'a string.sfx', three: true, four: [1, 2, 3]});

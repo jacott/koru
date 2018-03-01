@@ -408,10 +408,10 @@ define(function(require, exports, module) {
     return ans;
   };
 
-  const has = (undo, field)=>{
-    return undo == null ? false :
-      hasOwn(undo, field) || (
-        undo.$partial !== undefined && hasOwn(undo.$partial, field));
+  const has = (changes, field)=>{
+    return changes == null ? false :
+      hasOwn(changes, field) || (
+        changes.$partial !== undefined && hasOwn(changes.$partial, field));
   };
 
   const fromTo = (fields, from, to)=>{
