@@ -42,6 +42,8 @@ define(function(require, exports, module) {
   }
 
   const createTable = (add, client, {name, fields, unlogged, indexes}) => {
+    if (Array.isArray(fields))
+      fields = buildFields(fields);
     if (add) {
       const list = ['_id text collate "C" PRIMARY KEY'];
       for (const col in fields) {
@@ -90,15 +92,20 @@ USING btree (${order}) ${where}`);
     }
   };
 
-  const addColumns = (add, client, {tableName, args})=>{
+  const buildFields = args=>{
     const fields = {};
     args.forEach(arg => {
       if (typeof arg === 'string') {
-        const [k,n='text'] = arg.split(':', 2);
-        fields[k] = n;
+        const k = arg.split(':', 1)[0];
+        fields[k] = arg.slice(k.length+1)|| 'text';
       } else
-        util.merge(fields, arg);
+        Object.assign(fields, arg);
     });
+    return fields;
+  };
+
+  const addColumns = (add, client, {tableName, args})=>{
+    const fields = buildFields(args);
     if (add) {
       client.query(`ALTER TABLE "${tableName}" ${
 Object.keys(fields).map(col => `ADD column ${client.jsFieldToPg(col, fields[col])}`).join(",")
