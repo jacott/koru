@@ -83,6 +83,8 @@ isClient && define(function (require, exports, module) {
 
             v.testHelper = Ctx.current.getValue('testHelper', 5, 7);
 
+            v.dataValue = Ctx.current.getValue('myundef');
+
             return v.elm;
           },
 
@@ -101,6 +103,9 @@ isClient && define(function (require, exports, module) {
         const foo = Dom.Foo.$render(v.x = {x: 1});
 
         assert.same(v.testHelper, 12);
+        assert.same(v.dataValue, null);
+        v.dataValue = undefined;
+
 
         assert.same(v.data, data);
 
@@ -108,10 +113,11 @@ isClient && define(function (require, exports, module) {
 
         v.data = null;
 
-        Dom.myCtx(foo).updateAllTags(v.x = {x: 2});
+        Dom.myCtx(foo).updateAllTags(v.x = {x: 2, get myundef() {}});
 
         assert.same(v.data, data);
         assert.same(Dom.myCtx(foo).data, v.x);
+        assert.same(v.dataValue, null);
       },
     },
 

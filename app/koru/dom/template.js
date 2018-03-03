@@ -100,7 +100,7 @@ define(function(require, exports, module) {
       ctx.firstElement = firstChild;
       try {
         this.$created && this.$created(ctx, frag);
-        ctx.data === undefined || ctx.updateAllTags(ctx.data);
+        ctx.data == null || ctx.updateAllTags(ctx.data);
         return frag;
       } catch(ex) {
         try {

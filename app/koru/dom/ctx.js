@@ -188,12 +188,18 @@ define(function(require, exports, module) {
 
       if (func === 'this') return data;
 
-      var value = data && data[func];
-      if (value === undefined) {
-        value = currentCtx.template._helpers[func];
+      let value;
+      if (data != null) {
+        const {_helpers} = currentCtx.template;
+        if (func in _helpers) {
+          value = _helpers[func];
+        } else {
+          value = data[func];
+          if (value === undefined) value = null;
+        }
       }
       if (parts !== null) {
-        for(let i = 2; value !== undefined && i < parts.length; ++i) {
+        for(let i = 2; value != null && i < parts.length; ++i) {
           data = value;
           value = value[parts[i]];
         }

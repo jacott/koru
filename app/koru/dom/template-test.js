@@ -675,6 +675,22 @@ isClient && define(function (require, exports, module) {
         });
       },
 
+      "test updateAllTags called only if data"() {
+        const myHelper = stub();
+        Dom.Foo.$helpers({
+          myHelper,
+        });
+
+        Dom.Foo.$render();
+        Dom.Foo.$render(null);
+        refute.called(myHelper);
+
+        const data = {foo: 1};
+        Dom.Foo.$render(data);
+        assert.calledOnce(myHelper);
+        assert.same(myHelper.firstCall.thisValue, data);
+      },
+
       "test setBoolean"() {
         assert.exception(function () {
           Dom.setBoolean('disabled', true);
