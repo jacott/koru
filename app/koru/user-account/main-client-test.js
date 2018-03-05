@@ -1,21 +1,24 @@
 isClient && define(function (require, exports, module) {
-  var test, v;
-  const localStorage = require('../local-storage');
-  const koru         = require('../main');
-  const session      = require('../session');
-  const SRP          = require('../srp/srp');
-  const TH           = require('../test-helper');
-  const util         = require('../util');
-  const login        = require('./client-login');
-  const userAccount  = require('./main');
+  const localStorage    = require('../local-storage');
+  const koru            = require('../main');
+  const session         = require('../session');
+  const SRP             = require('../srp/srp');
+  const TH              = require('../test-helper');
+  const util            = require('../util');
+  const login           = require('./client-login');
+
+  const {stub, spy, onEnd} = TH;
+
+  const userAccount = require('./main');
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.oldUserId = util.thread.userId;
-      v.handle = login.onChange(session, v.onChange = test.stub());
-      test.stub(session, 'rpc');
+      v.handle = login.onChange(session, v.onChange = stub());
+      stub(session, 'rpc');
     },
 
     tearDown() {
@@ -27,20 +30,16 @@ isClient && define(function (require, exports, module) {
 
 
     "test secureCall"() {
-      userAccount.secureCall('fooBar', 'email@vimaly.com', 'secret', [1, 2], v.callback = test.stub());
+      userAccount.secureCall('fooBar', 'email@vimaly.com', 'secret', [1, 2], v.callback = stub());
 
       assert.calledWithExactly(
         session.rpc, 'SRPBegin',
-        TH.match(function (request) {
+        TH.match(request =>{
           v.request = request;
           assert.same(request.email, 'email@vimaly.com');
           return ('A' in request);
-
         }),
-        TH.match(function (callback) {
-          v.sutCallback = callback;
-          return true;
-        })
+        TH.match(callback => v.sutCallback = callback)
       );
 
       var verifier = SRP.generateVerifier('secret');
@@ -64,7 +63,7 @@ isClient && define(function (require, exports, module) {
 
     "changePassword": {
       setUp() {
-        userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = test.stub());
+        userAccount.changePassword('foo@bar.co', 'secret', 'new pw', v.callback = stub());
 
         assert.calledWithExactly(
           session.rpc, 'SRPBegin',
@@ -124,7 +123,7 @@ isClient && define(function (require, exports, module) {
 
     "loginWithPassword": {
       setUp() {
-        userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = test.stub());
+        userAccount.loginWithPassword('foo@bar.co', 'secret', v.callback = stub());
 
         assert.calledWithExactly(
           session.rpc, 'SRPBegin',
@@ -215,7 +214,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test setSessionPersistence"() {
-      test.onEnd(() => {
+      onEnd(() => {
         userAccount.stop();
         userAccount.storage = localStorage;
       });
@@ -226,7 +225,7 @@ isClient && define(function (require, exports, module) {
       };
       userAccount.storage = myStorage;
       assert.same(userAccount.storage, myStorage);
-      test.stub(session, 'send');
+      stub(session, 'send');
       userAccount.logout();
       assert.calledWith(myStorage.removeItem, 'koru.loginToken');
       assert.calledWith(session.send, 'VXmy token');
@@ -235,7 +234,7 @@ isClient && define(function (require, exports, module) {
     "token login/logout": {
       setUp() {
         session.state._state = 'ready';
-        test.stub(session, 'send');
+        stub(session, 'send');
         userAccount.init();
       },
 
@@ -244,7 +243,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test resetPassword"() {
-        userAccount.resetPassword('the key', 'new password', v.callback = test.stub());
+        userAccount.resetPassword('the key', 'new password', v.callback = stub());
         assert.calledWith(session.rpc, 'resetPassword', 'the key', TH.match(function (hash) {
           return SRP.checkPassword('new password', hash);
         }), v.callback);
@@ -306,7 +305,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test no loginToken onConnect"() {
-        test.stub(login, 'ready');
+        stub(login, 'ready');
 
         userAccount._onConnect();
 

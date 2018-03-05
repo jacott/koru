@@ -1,27 +1,23 @@
 define(function(require, exports, module) {
-  const localStorage = require('../local-storage');
-  const koru         = require('../main');
-  const session      = require('../session/client-rpc');
-  const SRP          = require('../srp/srp');
-  const login        = require('./client-login');
-
-  koru.onunload(module, function () {
-    exports.stop();
-  });
+  const localStorage    = require('../local-storage');
+  const koru            = require('../main');
+  const session         = require('../session/client-rpc');
+  const SRP             = require('../srp/srp');
+  const login           = require('./client-login');
 
   let storage = localStorage;
 
-  function onConnect(session) {
-    var token = exports.token;
+  const onConnect = session =>{
+    const {token} = UserAccount;
     if (token) {
       session.send('VL', token);
       login.wait(session);
     } else {
       login.ready(session);
     }
-  }
+  };
 
-  exports = {
+  const UserAccount = {
     get token() {return storage.getItem('koru.loginToken')},
     set token(value) {
       return value ? storage.setItem('koru.loginToken', value) :
@@ -33,7 +29,7 @@ define(function(require, exports, module) {
       session.provide('V', function (data) {
         switch(data[0]) {
         case 'T':
-          exports.token = data.slice(1).toString();
+          UserAccount.token = data.slice(1).toString();
           break;
         case 'S':
           const [userId, crypto] = data.slice(1).toString().split(':');
@@ -63,9 +59,9 @@ define(function(require, exports, module) {
     loginWithPassword(email, password, callback) {
       SRPCall(
         'SRPLogin', email, password, callback,
-        function() {},
-        function (err, result) {
-          exports.token = result.loginToken;
+        ()=>{},
+        (err, result)=>{
+          UserAccount.token = result.loginToken;
           login.setUserId(session, result.userId);
           callback();
         }
@@ -75,10 +71,8 @@ define(function(require, exports, module) {
     changePassword(email, oldPassword, newPassword, callback) {
       SRPCall(
         'SRPChangePassword', email, oldPassword, callback,
-        function (response) {
-          response.newPassword = SRP.generateVerifier(newPassword);
-        },
-        function () {callback()}
+        response =>{response.newPassword = SRP.generateVerifier(newPassword)},
+        ()=>{callback()}
       );
     },
 
@@ -87,18 +81,16 @@ define(function(require, exports, module) {
     },
 
     logout() {
-      session.send('VX'+exports.token);
-      exports.token = null;
+      session.send('VX'+UserAccount.token);
+      UserAccount.token = null;
     },
 
     logoutOtherClients() {
-      session.send('VO'+exports.token);
+      session.send('VO'+UserAccount.token);
     },
 
     secureCall(method, email, password, payload, callback) {
-      SRPCall(method, email, password, callback, function (response) {
-        response.payload = payload;
-      });
+      SRPCall(method, email, password, callback, response =>{response.payload = payload});
     },
   };
 
@@ -106,7 +98,7 @@ define(function(require, exports, module) {
     const srp = new SRP.Client(password);
     const request = srp.startExchange();
     request.email = email;
-    session.rpc('SRPBegin', request, function (err, result) {
+    session.rpc('SRPBegin', request, (err, result)=>{
       if (err) {
         if (callback)
           callback(err);
@@ -114,9 +106,9 @@ define(function(require, exports, module) {
           koru.error("Authentication error: " + err);
         return;
       }
-      var response = srp.respondToChallenge(result);
+      const response = srp.respondToChallenge(result);
       modifyResponse(response);
-      session.rpc(method, response, function (err, result) {
+      session.rpc(method, response, (err, result)=>{
         if (! responseFunc) {
           callback && callback(err, result);
 
@@ -128,5 +120,7 @@ define(function(require, exports, module) {
     });
   }
 
-  return exports;
+  koru.onunload(module, ()=>{UserAccount.stop()});
+
+  return UserAccount;
 });

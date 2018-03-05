@@ -1,14 +1,21 @@
 define(function(require, exports, module) {
-  const Email   = require('koru/email');
-  const koru    = require('koru/main');
-  const Model   = require('koru/model/main');
-  const Val     = require('koru/model/validation');
-  const Random  = require('koru/random').global;
-  const session = require('koru/session');
-  const SRP     = require('koru/srp/srp');
-  const util    = require('koru/util');
+  const Email           = require('koru/email');
+  const koru            = require('koru/main');
+  const Model           = require('koru/model/main');
+  const Val             = require('koru/model/validation');
+  const Random          = require('koru/random').global;
+  const session         = require('koru/session');
+  const SRP             = require('koru/srp/srp');
+  const util            = require('koru/util');
 
   let emailConfig;
+
+  const getToken = data =>{
+    data = data.slice(1).toString();
+    if (data.match(/^[\d\w]+\|[\d\w]+$/))
+      return data.split('|');
+    return [];
+  };
 
   class UserLogin extends Model.BaseModel {
     unexpiredTokens() {
@@ -55,7 +62,7 @@ define(function(require, exports, module) {
     },
   });
 
-  const UserAccount = module.exports = {
+  const UserAccount = {
     init() {
       session.provide('V', onMessage);
     },
@@ -243,6 +250,7 @@ define(function(require, exports, module) {
     const lu = result[0];
     this.send('VT', lu._id + '|' + result[1]);
     this.userId = lu.userId;
+    this.loginToken = result[1];
   });
 
   function configureEmail() {
@@ -268,6 +276,7 @@ define(function(require, exports, module) {
 
       if (lu && lu.unexpiredTokens()[token]) {
         conn.userId = lu.userId; // will send a VS + VC. See server-connection
+        conn.loginToken = token;
       } else {
         conn.send('VF');
       }
@@ -292,10 +301,5 @@ define(function(require, exports, module) {
     }}
   }
 
-  function getToken(data) {
-    data = data.slice(1).toString();
-    if (data.match(/^[\d\w]+\|[\d\w]+$/))
-      return data.split('|');
-    return [];
-  }
+  return UserAccount;
 });

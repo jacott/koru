@@ -1,16 +1,20 @@
 define(function (require, exports, module) {
-  const Email       = require('koru/email');
-  const koru        = require('koru/main');
-  const Model       = require('koru/model/main');
-  const Val         = require('koru/model/validation');
-  const Random      = require('koru/random').global;
-  const session     = require('koru/session');
-  const TH          = require('koru/session/test-helper');
-  const SRP         = require('koru/srp/srp');
-  const crypto      = requirejs.nodeRequire('crypto');
+  const Email           = require('koru/email');
+  const koru            = require('koru/main');
+  const Model           = require('koru/model/main');
+  const Val             = require('koru/model/validation');
+  const Random          = require('koru/random').global;
+  const session         = require('koru/session');
+  const TH              = require('koru/session/test-helper');
+  const SRP             = require('koru/srp/srp');
+
+  const {stub, spy, onEnd, intercept} = TH;
+
+  const crypto          = requirejs.nodeRequire('crypto');
 
   const userAccount = require('./main');
-  var v;
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -22,11 +26,11 @@ define(function (require, exports, module) {
         userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
-      this.spy(Val, 'assertCheck');
-      this.spy(Val, 'ensureString');
-      this.stub(crypto, 'randomBytes', (num, cb) => {
+      spy(Val, 'assertCheck');
+      spy(Val, 'ensureString');
+      stub(crypto, 'randomBytes', (num, cb) => {
         if (cb) {
-          cb(null, {toString: this.stub().withArgs('base64').returns('crypto64Id')});
+          cb(null, {toString: stub().withArgs('base64').returns('crypto64Id')});
         } else
           return new Uint8Array(num);
       });
@@ -34,14 +38,14 @@ define(function (require, exports, module) {
 
     tearDown() {
       userAccount.model.docs.remove({});
-      this.intercept(koru, 'logger');
+      intercept(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
       v = null;
     },
 
     "test makeResetPasswordKey"() {
-      this.stub(Random, 'id')
+      stub(Random, 'id')
         .onCall(0).returns('randid=')
         .onCall(1).returns('r2');
 
@@ -54,7 +58,7 @@ define(function (require, exports, module) {
 
     "sendResetPasswordEmail": {
       setUp() {
-        this.stub(Email, 'send');
+        stub(Email, 'send');
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
           emailConfig: {
@@ -93,13 +97,13 @@ define(function (require, exports, module) {
     },
 
     "test createUserLogin"() {
-      const spy = this.spy(SRP, 'generateVerifier');
+      const generateVerifier = spy(SRP, 'generateVerifier');
       const lu = userAccount.createUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
 
-      assert.calledWith(spy, 'test pw');
+      assert.calledWith(generateVerifier, 'test pw');
 
-      assert.equals(lu.$reload().srp, spy.firstCall.returnValue);
+      assert.equals(lu.$reload().srp, generateVerifier.firstCall.returnValue);
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
@@ -260,7 +264,7 @@ define(function (require, exports, module) {
       },
 
       "test success"() {
-        this.spy(userAccount, 'resetPassword');
+        spy(userAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
         v.lu.$$save();
@@ -271,6 +275,7 @@ define(function (require, exports, module) {
           identity: 'string', salt: 'string', verifier: 'string' });
 
         assert.same(v.conn.userId, v.lu.userId);
+        assert.same(v.conn.loginToken, '11111111111111111');
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
         assert.calledWith(v.ws.send, TH.match(function (data) {
@@ -302,8 +307,8 @@ define(function (require, exports, module) {
       },
 
       "test intercept"() {
-        this.onEnd(() => userAccount.interceptChangePassword = null);
-        userAccount.interceptChangePassword = this.stub();
+        onEnd(() => userAccount.interceptChangePassword = null);
+        userAccount.interceptChangePassword = stub();
 
          v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
@@ -376,7 +381,7 @@ define(function (require, exports, module) {
 
       tearDown() {
         userAccount.stop();
-        this.intercept(koru, 'logger');
+        intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
         v.connOther && v.connOther.close();
@@ -384,7 +389,7 @@ define(function (require, exports, module) {
       },
 
       "test logout with token"() {
-        this.spy(userAccount, 'logout');
+        spy(userAccount, 'logout');
         v.conn.userId = 'uid111';
         v.conn.sessAuth = 'sessauth';
 
@@ -409,7 +414,7 @@ define(function (require, exports, module) {
       },
 
       "test logoutOtherClients"() {
-        this.spy(userAccount, 'logoutOtherClients');
+        spy(userAccount, 'logoutOtherClients');
         v.ws2 = TH.mockWs();
         v.ws3 = TH.mockWs();
         v.ws4 = TH.mockWs();
@@ -455,6 +460,7 @@ define(function (require, exports, module) {
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
+        assert.same(v.conn.loginToken, 'abc');
 
         assert.calledWith(v.ws.send, matchStart('VSuid111:'));
       },
