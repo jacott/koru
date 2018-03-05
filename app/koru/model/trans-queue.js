@@ -2,13 +2,13 @@ define(function(require) {
   const util  = require('koru/util');
 
   const success$ = Symbol(), abort$ = Symbol();
-  let lastTime;
+  let lastTime = null;
 
   const TransQueue = {
     transaction(db, body) {
       let prevTime;
       let list = util.thread[success$];
-      const firstLevel = ! list;
+      const firstLevel = list === undefined;
       if (firstLevel) {
         list = util.thread[success$] = [];
         prevTime = util.thread.date;
@@ -21,7 +21,7 @@ define(function(require) {
         const result = body === undefined ?
                 db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
-          util.thread[success$] = null;
+          util.thread[success$] = undefined;
           for(let i = 0; i < list.length; ++i) {
             list[i]();
           }
@@ -38,26 +38,26 @@ define(function(require) {
       } finally {
         if (firstLevel) {
           util.thread.date = prevTime;
-          util.thread[success$] = util.thread[abort$] = null;
+          util.thread[success$] = util.thread[abort$] = undefined;
         }
       }
     },
 
     onSuccess(func) {
       const list = util.thread[success$];
-      if (list)
+      if (list !== undefined)
         list.push(func);
       else
         func();
     },
 
     onAbort(func) {
-      if (! util.thread[success$]) return;
+      if (util.thread[success$] === undefined) return;
       const list = util.thread[abort$];
-      if (list)
-        list.push(func);
-      else
+      if (list === undefined)
         util.thread[abort$] = [func];
+      else
+        list.push(func);
     },
 
     _clearLastTime() {lastTime = null},

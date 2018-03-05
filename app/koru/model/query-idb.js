@@ -237,19 +237,19 @@ define(function(require, exports, module) {
     if (pu != null) return pu;
     TransQueue.onAbort(() => {db[pendingUpdates$] = null});
     TransQueue.onSuccess(() => {
-      db.whenReady(() => {flushPendng(db)});
+      db.whenReady(() => flushPending(db));
     });
     return db[pendingUpdates$] = {};
   };
 
-  const flushPendng = db => {
+  const flushPending = db => {
     return new Promise((resolve, reject)=>{
       const pu = db[pendingUpdates$];
       if (pu === null) return;
       db[pendingUpdates$] = null;
       const models = Object.keys(pu);
       const tran = db[iDB$].transaction(models, 'readwrite');
-      tran.onabort = ex => {
+      tran.onerror = tran.onabort = ex => {
         error(db, ex, reject);
       };
       tran.oncomplete = resolve;

@@ -19,7 +19,8 @@ isClient && define(function (require, exports, module) {
 
   const QueryIDB = require('./query-idb');
   const {IDBKeyRange} = window;
-  var v;
+
+  let v = null;
 
   if (!QueryIDB.canIUse()) {
     TH.testCase(module, {
@@ -452,10 +453,16 @@ isClient && define(function (require, exports, module) {
         db.createObjectStore("TestModel");
       }});
 
-      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
-      flush();
       v.foo = v.idb._dbs.foo;
-      assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
+      v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+      refute(v.foo._store.TestModel);
+      v.db.whenReady(()=>{
+        assert.equals(v.foo._store.TestModel.docs.foo123, v.rec);
+        v.success = true;
+      });
+      refute(v.success);
+      flush();
+      assert(v.success);
     },
 
     "test delete"() {
