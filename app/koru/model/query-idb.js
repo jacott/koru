@@ -210,6 +210,8 @@ define(function(require, exports, module) {
       return new Index(this, modelName, name);
     }
 
+    promisify(body) {return runBody(this, body)}
+
     queueChange(now, was) {
       const doc = (now != null ? now : was);
       if (doc === notMe || doc[stopGap$] === true) return;

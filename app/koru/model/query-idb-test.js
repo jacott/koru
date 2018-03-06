@@ -77,6 +77,32 @@ isClient && define(function (require, exports, module) {
       assert.same(v.db.name, 'foo');
     },
 
+    "test promisify"() {
+      /**
+       * perform a database action returning a promise
+       *
+       * @param {function} body the returns an `IDBRequest`
+
+       * @returns {Promise}
+       **/
+
+      api.protoMethod('promisify');
+      TH.stubProperty(window, 'Promise', {value: MockPromise});
+      const db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
+        db.createObjectStore("TestModel");
+      }});
+      flush();
+      api.example(()=>{
+        let id;
+        const promise = db.promisify(
+          ()=>db.transaction(['TestModel'], 'readwrite')
+            .objectStore('TestModel').put({_id: "id1", name: "foo"})
+        ).then(v => {id = v});
+        flush();
+        assert.equals(id, "id1");
+      });
+    },
+
     "queueChange": {
       setUp() {
         /**
