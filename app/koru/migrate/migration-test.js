@@ -72,9 +72,9 @@ isServer && define(function (require, exports, module) {
       assert.equals(indexes[0].indexname, 'TestTable_myName');
       assert.equals(indexes[1].indexname, 'TestTable_myName__id');
 
-      assert.same(indexes[0].indexdef,
+      assert.same(indexes[0].indexdef.replace(/public\./g, ''),
                   'CREATE INDEX "TestTable_myName" ON "TestTable" USING btree ("myName")');
-      assert.same(indexes[1].indexdef,
+      assert.same(indexes[1].indexdef.replace(/public\./g, ''),
                   'CREATE UNIQUE INDEX "TestTable_myName__id" ON "TestTable" USING btree ("myName" DESC, _id)');
 
       v.sut.addMigration('20151003T20-30-20-create-TestModel', function (mig) {
@@ -158,7 +158,7 @@ isServer && define(function (require, exports, module) {
 
       assert(index);
       assert.same(
-        index.indexdef,
+        index.indexdef.replace(/public\./g, ''),
         'CREATE UNIQUE INDEX "TestTable_name_age" ON "TestTable" USING btree (name DESC, age)'+
           ' WHERE (age > 50)');
 
@@ -167,7 +167,7 @@ isServer && define(function (require, exports, module) {
 
       assert(index);
       assert.same(
-        index.indexdef,
+        index.indexdef.replace(/public\./g, ''),
         'CREATE INDEX override_name ON "TestTable" USING btree (name DESC, age)'+
           ' WHERE (age < 50)');
 
