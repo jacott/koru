@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   const {stopGap$} = require('koru/symbols');
   const util       = require('koru/util');
 
-  const iDB$ = Symbol(), pendingUpdates$ = Symbol();
+  const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol();
   const busyQueue$ = Symbol();
 
   let notMe;
@@ -65,9 +65,11 @@ define(function(require, exports, module) {
       this.name = name;
       this.dbId = dbBroker.dbId;
       this[pendingUpdates$] = null;
+      this[ready$] = false;
       this.catchAll = catchAll;
       const bq = this[busyQueue$] = new Promise((resolve, reject) => {
         const req = window.indexedDB.open(name, version);
+
         if (upgrade !== undefined) req.onupgradeneeded = (event) => {
           this[iDB$] = event.target.result;
           upgrade({
@@ -75,11 +77,15 @@ define(function(require, exports, module) {
             event, transaction: event.target.transaction,
           });
         };
-        req.onerror = event => {
+        req.onerror = req.onblocked = event => {
+          this[busyQueue$] = undefined;
           error(this, event, reject);
         };
         req.onsuccess = event => {
+          if (bq === this[busyQueue$])
+            this[busyQueue$] = null;
           const idb = this[iDB$] = event.target.result;
+          this[ready$] = this[pendingUpdates$] === null;
           resolve();
         };
       });
@@ -97,6 +103,7 @@ define(function(require, exports, module) {
         const req = window.indexedDB.deleteDatabase(name);
         req.onsuccess = resolve;
         req.onerror = reject;
+        req.onblocked = reject;
       });
     }
 
@@ -186,16 +193,36 @@ define(function(require, exports, module) {
       });
     }
 
-    isClosed() {return this[busyQueue$] === null}
+    get isClosed() {return this[busyQueue$] === undefined}
 
     close() {
-      this[busyQueue$] = null;
+      this[busyQueue$] = undefined;
       this[iDB$] && this[iDB$].close();
     }
 
+    get isReady() {return this[ready$]}
+
     whenReady(onFulfilled) {
-      if (this[busyQueue$] == null) return;
-      return this[busyQueue$].then(onFulfilled);
+      if (this[busyQueue$] === undefined) return;
+      if (this[busyQueue$] === null) {
+        if (onFulfilled === undefined)
+          return Promise.resolve();
+        this[busyQueue$] = Promise.resolve();
+      }
+
+      const oldPromise = this[busyQueue$] = this[busyQueue$].then(onFulfilled).then(result => {
+        if (oldPromise === this[busyQueue$])
+          this[busyQueue$] = null;
+        return result;
+      }, ev => {
+        if (oldPromise === this[busyQueue$])
+          this[busyQueue$] = null;
+        const ex = ev.currentTarget ? ev.currentTarget.error : ev;
+        this.catchAll == null || this.catchAll(ex);
+        throw ex;
+      });
+
+      return this[busyQueue$];
     }
 
     createObjectStore(name) {
@@ -236,11 +263,10 @@ define(function(require, exports, module) {
 
   const getPendingUpdates = db => {
     const pu = db[pendingUpdates$];
-    if (pu != null) return pu;
-    TransQueue.onAbort(() => {db[pendingUpdates$] = null});
-    TransQueue.onSuccess(() => {
-      db.whenReady(() => flushPending(db));
-    });
+    if (pu !== null) return pu;
+    db[ready$] = false;
+    TransQueue.onAbort(() => {db[pendingUpdates$] = null; db[ready$] = true});
+    TransQueue.onSuccess(() => {db.whenReady(() => flushPending(db))});
     return db[pendingUpdates$] = {};
   };
 
@@ -251,10 +277,14 @@ define(function(require, exports, module) {
       db[pendingUpdates$] = null;
       const models = Object.keys(pu);
       const tran = db[iDB$].transaction(models, 'readwrite');
-      tran.onerror = tran.onabort = ex => {
-        error(db, ex, reject);
+      tran.onerror = tran.onabort = (ev)=>{
+        db[ready$] = db[pendingUpdates$] === null;
+        reject(ev);
       };
-      tran.oncomplete = resolve;
+      tran.oncomplete = ()=>{
+        db[ready$] = db[pendingUpdates$] === null;
+        resolve();
+      };
 
       dbBroker.withDB(db.dbId, () => {
         for(const modelName of models) {
@@ -285,24 +315,23 @@ define(function(require, exports, module) {
   const wrapOSRequest = (db, modelName, body)=> wrapRequest(
     db, () => body(db[iDB$].transaction(modelName).objectStore(modelName)));
 
-  const wrapRequest = (db, body)=> db[busyQueue$].then(() => runBody(db, body));
+  const wrapRequest = (db, body)=> runBody(db, body);
 
-  const runBody = (db, body)=>{
-    return new Promise((resolve, reject) => {
-      try {
-        const req = body();
-        req.onerror = event => {
-          error(db, event, reject);
-        };
-        req.onsuccess = event => {
-          resolve(event.target.result);
-        };
-      } catch(ex) {
-        error(db, ex, reject);
-        return;
-      }
-    });
-  };
+  const runBody = (db, body)=> new Promise((resolve, reject) => {
+    try {
+      const req = body();
+      req.onerror = event => {
+        error(db, event, reject);
+      };
+      req.onsuccess = event => {
+        resolve(event.target.result);
+      };
+    } catch(ex) {
+      error(db, ex, reject);
+      return;
+    }
+  });
+
 
   const newEmptyObj = () => Object.create(null);
 

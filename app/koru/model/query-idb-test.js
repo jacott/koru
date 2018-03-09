@@ -414,15 +414,26 @@ isClient && define(function (require, exports, module) {
       const transaction = spy(v.idb._dbs.foo, 'transaction');
 
       v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
+
+      v.db.whenReady().catch(v.catch = stub());
       poll();
 
       assert.calledOnceWith(transaction, ['TestModel'], 'readwrite');
 
       const t = transaction.firstCall.returnValue;
 
-      t.onabort({currentTarget: {error: 'ev error'}});
+      t.oncomplete = null;
+      const error = new Error('ev error');
+      assert.isFalse(v.db.isReady);
 
-      assert.calledWith(catchAll, 'ev error');
+      t.onabort({currentTarget: {error}});
+
+      assert.isTrue(v.db.isReady);
+
+      flush();
+
+      assert.calledWith(catchAll, error);
+      assert.calledWith(v.catch, error);
     },
 
     "test loadDocs"() {
@@ -515,7 +526,7 @@ isClient && define(function (require, exports, module) {
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
     },
 
-    "test get"(done) {
+    "test get."(done) {
       /**
        * Find a record in a {#koru/model/main} by its `_id`
        *
@@ -532,14 +543,14 @@ isClient && define(function (require, exports, module) {
         onEnd(v.TestModel.onChange(v.db.queueChange.bind(v.db)).stop);
         v.f1 = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
 
-        v.db.get("TestModel", "foo123").then(doc => {
+        v.db.whenReady(()=> v.db.get("TestModel", "foo123").then(doc => {
           try {
             assert.equals(doc, {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
             done();
           } catch(ex) {
             done(ex);
           }
-        }).catch(v.error);
+        }).catch(v.error));
         v.idb.yield(0);
       }).catch(v.error);
     },
@@ -564,18 +575,14 @@ isClient && define(function (require, exports, module) {
           v.f2 = v.TestModel.create({_id: 'foo124', name: 'foo2', age: 10, gender: 'f'});
         });
 
-        v.db.getAll("TestModel").then(docs => {
-          try {
-            assert.equals(docs, [{
-              _id: 'foo123', name: 'foo', age: 5, gender: 'm',
-            }, {
-              _id: 'foo124', name: 'foo2', age: 10, gender: 'f',
-            }]);
-            done();
-          } catch(ex) {
-            done(ex);
-          }
-        }).catch(v.error);
+        v.db.whenReady(()=> v.db.getAll("TestModel").then(docs => {
+          assert.equals(docs, [{
+            _id: 'foo123', name: 'foo', age: 5, gender: 'm',
+          }, {
+            _id: 'foo124', name: 'foo2', age: 10, gender: 'f',
+          }]);
+          done();
+        })).catch(v.error);
         v.idb.yield(0);
       }).catch(v.error);
     },

@@ -10,7 +10,7 @@ define(function(require, exports, module) {
       this.onabort = this.oncomplete = null;
       db._pending.push(() => {
         this.onabort = null;
-        this.oncomplete && this.oncomplete();
+        this.oncomplete == null || this.oncomplete();
       });
     }
 
@@ -19,7 +19,7 @@ define(function(require, exports, module) {
     }
 
     abort() {
-      this.oncomplete = false;
+      this.oncomplete = null;
       this.onabort && this.onabort();
     }
   }

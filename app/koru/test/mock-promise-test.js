@@ -186,11 +186,13 @@ define(function (require, exports, module) {
     },
 
     "test MockPromise.reject"() {
-      MockPromise.reject(2).then(v.r1 = stub()).catch(v.c1 = stub());
+      MockPromise.reject(2).then(v.r1 = stub())
+        .catch(ex => {throw ex}).catch(v.c1 = stub()).then(v.r2 = stub());
       refute.called(v.c1);
       MockPromise._poll();
       refute.called(v.r1);
       assert.calledWith(v.c1, 2);
+      assert.called(v.r2);
     },
   });
 
