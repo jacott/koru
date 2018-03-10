@@ -43,7 +43,7 @@ define(function(require, exports, module) {
     makeToken() {
       const token = Random.id();
       const tokens = this.unexpiredTokens();
-      tokens[token] = Date.now()+180*24*1000*60*60;
+      tokens[token] = Date.now()+60*24*1000*60*60;
       this.tokens = tokens;
       return token;
     }
