@@ -68,7 +68,7 @@ define(function(require, exports, module) {
 
       const func = this._commands[type];
 
-      if (func === undefined)
+      if (typeof func !== 'function')
         koru.info('Unexpected session message: '+ type, conn.sessId);
       else
         func.call(conn, obj);
