@@ -209,7 +209,7 @@ define(function (require, exports, module) {
         assert.same(v.lu._id, tparts[0]);
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', tparts[1], 'def'].sort());
         assert(v.ts = v.lu.tokens[tparts[1]]);
-        assert.between(v.ts, Date.now()+59*24*1000*60*60, Date.now()+61*24*1000*60*60);
+        assert.between(v.ts, Date.now()+179*24*1000*60*60, Date.now()+181*24*1000*60*60);
         assert.same(v.conn.userId, 'uid111');
       },
 
@@ -290,7 +290,7 @@ define(function (require, exports, module) {
         assert.equals(userAccount.resetPassword.firstCall.returnValue, [
           TH.match.field('_id', v.lu._id), v.token]);
         assert.between(v.lu.tokens[v.token],
-                       Date.now()+60*24*1000*60*60-1000, Date.now()+60*24*1000*60*60+1000);
+                       Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
         assert.equals(v.lu.resetToken, null);
         assert.equals(v.lu.resetTokenExpire, null);
 
