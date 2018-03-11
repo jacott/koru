@@ -283,18 +283,28 @@ define(function (require, exports, module) {
     },
 
     "test addIndex with condition"() {
+      Model._destroyModel('TestModel', 'drop');
+      v.TestModel = Model.define('TestModel').defineFields({
+        id1: 'text',
+        id2: 'text',
+      });
+
       v.test = doc => {
         return doc.id2 === '4';
       };
       const id1Idx = v.TestModel.addIndex('id1', doc => v.test(doc));
 
-      v.TestModel.create({_id: 'tm1', id1: '2', id2: '6'});
+      const tm1 = v.TestModel.create({_id: 'tm1', id1: '2', id2: '6'});
       const tm2 = v.TestModel.create({_id: 'tm2', id1: '1', id2: '4'});
+      const tm3 = v.TestModel.create({_id: 'tm3', id1: '1', id2: '4'});
 
-      assert.equals(id1Idx.lookup({}), {1: {doc3: 'doc3', tm2: 'tm2'}, 3: {doc1: 'doc1'}});
+      assert.equals(id1Idx.lookup({}), {1: {tm2: 'tm2', tm3: 'tm3'}});
 
       tm2.$update('id2', '3');
-      assert.equals(id1Idx.lookup({id1: '1'}), {doc3: 'doc3'});
+      assert.equals(id1Idx.lookup({id1: '1'}), {tm3: 'tm3'});
+
+      tm2.$update('id2', '4');
+      assert.equals(id1Idx.lookup({id1: '1'}), {tm2: 'tm2', tm3: 'tm3'});
     },
 
     "test reloadAll"() {

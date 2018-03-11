@@ -138,9 +138,10 @@ define(function(require, exports, module) {
 
       const onChange = (doc, undo)=>{
         const idx = getIdx();
-        const old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
-        if (filterTest !== null && doc != null && ! filterTest(doc)) {
-          doc = null;
+        let old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
+        if (filterTest !== null) {
+          if (doc != null && ! filterTest(doc)) doc = null;
+          if (old != null && ! filterTest(old)) old = null;
         }
 
         if (doc != null) {
@@ -168,8 +169,9 @@ define(function(require, exports, module) {
               if (i === len) {
                 if (btCompare !== null && btCompare(doc, old) !== 0) {
                   deleteEntry(idx, old, 0);
-                } else
+                } else {
                   return;
+                }
               }
             }
           }
