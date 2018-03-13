@@ -114,6 +114,27 @@ isServer && define(function (require, exports, module) {
       var doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
       refute.hasOwn(doc, '_id');
+      assert.exception(()=>{
+        v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
+      }, {sqlState: '23505'});
+   },
+
+    "test no primary key"() {
+       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+         mig.createTable({
+           name: 'TestTable',
+           primaryKey: false,
+           fields: {
+             name: 'text',
+             foo: {type: 'integer'},
+           }
+         });
+      });
+      v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
+      v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
+      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      assert.same(doc.foo, 2);
+      refute.hasOwn(doc, '_id');
     },
 
     "test unlogged create"() {

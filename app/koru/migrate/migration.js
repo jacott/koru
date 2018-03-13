@@ -41,11 +41,11 @@ define(function(require, exports, module) {
     }
   }
 
-  const createTable = (add, client, {name, fields, unlogged, indexes}) => {
+  const createTable = (add, client, {name, fields, unlogged, indexes, primaryKey=true}) => {
     if (Array.isArray(fields))
       fields = buildFields(fields);
     if (add) {
-      const list = ['_id text collate "C" PRIMARY KEY'];
+      const list = primaryKey ? ['_id text collate "C" PRIMARY KEY'] : [];
       for (const col in fields) {
         const colspec = client.jsFieldToPg(col, fields[col]);
         if (/\bprimary key\b/i.test(colspec))
