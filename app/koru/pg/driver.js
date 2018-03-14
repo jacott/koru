@@ -301,14 +301,13 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     }
 
     _resetTable() {
-      this._ready = null;
+      this._ready = undefined;
     }
 
     _ensureTable() {
       if (this._ready === true) return;
 
-
-      if (this._ready) {
+      if (typeof this._ready === 'object') {
         const future = new Future;
         const handle = this._ready.onChange(() => future.return());
         try {

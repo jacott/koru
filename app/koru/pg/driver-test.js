@@ -432,7 +432,7 @@ isServer && define(function (require, exports, module) {
       "test _resetTable"() {
         assert.same(v.foo._ready, true);
         v.foo._resetTable();
-        assert.same(v.foo._ready, null);
+        assert.same(v.foo._ready, undefined);
 
         assert.equals(v.foo.find({name: 'abc'}).next(), {_id: '123', name: 'abc', age: 10});
         assert.same(v.foo._ready, true);
