@@ -5,7 +5,7 @@ define(function(require, exports, module) {
   const Factory  = require('./test-factory');
   const BaseTH   = require('./test-helper');
 
-  let txSave = null, txClient = null, inTran=false;
+  let inTran=false;
 
   const TH = util.protoCopy(BaseTH, {
     startTransaction() {
@@ -15,7 +15,7 @@ define(function(require, exports, module) {
       inTran=true;
     },
 
-    endTransaction() {
+    rollbackTransaction() {
       if (! inTran)
         throw new Error("NO Transaction is in progress!");
 

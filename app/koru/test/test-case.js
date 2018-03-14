@@ -63,6 +63,7 @@ define(['./core', './stubber'], function (Core, stubber) {
           this._setUpOnce = true;
         }
       }
+      test._currentTestCase = this;
       this.setUp && this.setUp.call(test);
       return true;
     }

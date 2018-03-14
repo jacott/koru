@@ -4,9 +4,13 @@ define(function(require, exports, module) {
   const koru            = require('koru');
   const fileWatch       = require('koru/file-watch');
   const Model           = require('koru/model');
+  const TH              = require('koru/model/test-db-helper');
   const test            = require('koru/test/server');
   const stubber         = require('koru/test/stubber');
   const webServer       = require('koru/web-server');
+
+  TH.Core.onStart(()=>{TH.coreStartTransaction()});
+  TH.Core.onEnd(()=>{TH.coreRollbackTransaction()});
 
   require('koru/server');
   require('koru/server-rc');

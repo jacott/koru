@@ -19,7 +19,7 @@ define(function (require, exports, module) {
 
     tearDown() {
       v = null;
-      TH.endTransaction();
+      TH.rollbackTransaction();
     },
 
     "test publish"() {

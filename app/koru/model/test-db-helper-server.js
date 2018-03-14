@@ -1,17 +1,22 @@
 define(function(require, exports, module) {
-  const util     = require('koru/util');
-  const Model    = require('./main');
-  const dbBroker = require('./db-broker');
-  const Factory  = require('./test-factory');
-  const BaseTH   = require('./test-helper');
+  const dbBroker        = require('koru/model/db-broker');
+  const Driver          = require('koru/pg/driver');
+  const util            = require('koru/util');
+  const Model           = require('./main');
+  const Factory         = require('./test-factory');
+  const BaseTH          = require('./test-helper');
+
+  const inTran$ = Symbol(), txSave$ = Symbol();
 
   const {private$} = require('koru/symbols');
-  let txSave = null, txClient = null, inTran = 0;
 
   const TH = util.protoCopy(BaseTH, {
-    startTransaction() {
+    startTransaction(txClient=Driver.defaultDb) {
       dbBroker.db = txClient;
-      if (++inTran === 1) {
+      const txSave = txClient[txSave$];
+      const inTran = ++txClient[inTran$];
+
+      if (inTran === 1) {
         txSave && txClient.query('BEGIN');
       } else {
         Factory.startTransaction();
@@ -19,8 +24,10 @@ define(function(require, exports, module) {
       }
     },
 
-    endTransaction() {
-      if (--inTran < 0)
+    rollbackTransaction(txClient=Driver.defaultDb) {
+      const txSave = util.thread[txClient[txClient[private$].tx$]];
+      const inTran = --txClient[inTran$];
+      if (inTran < 0)
         throw new Error("NO Transaction is in progress!");
 
       for(const name in Model) {
@@ -37,23 +44,24 @@ define(function(require, exports, module) {
         txSave && txClient.query("ROLLBACK TO SAVEPOINT s"+(inTran+1));
       }
     },
+
+    coreStartTransaction(txClient=Driver.defaultDb) {
+    txClient[inTran$] = 0;
+      txClient._getConn();
+      const txSave = txClient[txSave$] = util.thread[txClient[txClient[private$].tx$]];
+      txSave.transaction = 'ROLLBACK';
+    },
+
+    coreRollbackTransaction(txClient=Driver.defaultDb) {
+      const txSave = txClient[txSave$];
+      if (txSave !== undefined) {
+        txSave.transaction = null;
+        txClient[txSave$] = undefined;
+        txClient._releaseConn();
+      }
+    },
   });
 
-  TH.Core.onStart(() => {
-    txClient = dbBroker.db;
-    txClient._getConn();
-    txSave = util.thread[txClient[txClient[private$].tx$]];
-    txSave.transaction = 'ROLLBACK';
-  });
-
-  TH.Core.onEnd(() => {
-    if (txSave !== null) {
-      txSave.transaction = null;
-      txSave = null;
-      txClient._releaseConn();
-      txClient = null;
-    }
-  });
 
   return TH;
 });
