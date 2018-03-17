@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const Dom         = require('./base');
 
   const {hasOwn} = util;
-  const {globalId$, ctx$, endMarker$, private$} = require('koru/symbols');
+  const {globalId$, ctx$, endMarker$, private$, original$} = require('koru/symbols');
   const destoryObservers$ = Ctx[private$].destoryObservers$ = Symbol();
   const destoryWith$ = Symbol();
   const {onDestroy$} = Ctx[private$];
@@ -30,7 +30,6 @@ define(function(require, exports, module) {
         document.documentElement.matchesSelector;
 
   const {DOCUMENT_NODE} = document;
-  const origValue$ = Symbol();
 
   if (document.documentElement.closest === undefined) {
     Element.prototype.closest = function (selector) {
@@ -322,11 +321,11 @@ define(function(require, exports, module) {
       },
     },
 
-    originalValue(elm) {return elm[origValue$]},
-    setOriginalValue(elm, value) {elm[origValue$] = value},
+    originalValue(elm) {return elm[original$]},
+    setOriginalValue(elm, value) {elm[original$] = value},
     restoreOriginalValue(elm) {
-      if (hasOwn(elm, origValue$))
-        elm.value = elm[origValue$];
+      if (hasOwn(elm, original$))
+        elm.value = elm[original$];
     },
 
     stopEvent: DomTemplate.stopEvent,

@@ -1,7 +1,9 @@
 define(function(require, exports, module) {
-  const util  = require('koru/util');
-  const Model = require('../main');
-  const Query = require('../query');
+  const util            = require('koru/util');
+  const Model           = require('../main');
+  const Query           = require('../query');
+
+  const {original$} = require('koru/symbols');
 
   const toMap = list => {
     const ans = {}, {length} = list;
@@ -10,8 +12,15 @@ define(function(require, exports, module) {
   };
 
   return function (doc, field, options) {
-    if (options.changesOnly && ! (field in doc.changes)) return;
+    const origInDoc = original$ in doc;
     let value = doc[field];
+    if (
+      options.changesOnly && (
+        origInDoc
+          ? doc[original$] !== undefined && doc[original$][field] === value
+          : ! (field in doc.changes))) return;
+
+
     if (value == null) return;
 
     const fieldOpts = doc.constructor.$fields && doc.constructor.$fields[field];
@@ -27,7 +36,7 @@ define(function(require, exports, module) {
 
     switch (typeof options) {
     case 'object':
-      var modelName = options.modelName;
+      var modelName = options.model ? options.model.modelName : options.modelName;
       var finder = options.finder;
       var filter = options.filter;
       break;
@@ -50,20 +59,20 @@ define(function(require, exports, module) {
       doc[scopeName+'Find'] ||
       (values => new Query(Model[modelName]).where('_id', values));
 
-
-
-    const orig = doc.attributes[field];
+    const orig = origInDoc ? doc[original$] : doc.attributes;
+    const oValue = orig === undefined ? undefined : orig[field];
     if (! belongs_to &&
-        options.changesOnly && orig != null && orig.length != 0 &&
+        options.changesOnly && Array.isArray(oValue) && oValue.length != 0 &&
         value.length != 0) {
-      orig.sort();
+
+      oValue.sort();
       value.sort();
       const newIds = [];
       let ki = 0;
-      const ol = orig.length, nl = value.length;
+      const ol = oValue.length, nl = value.length;
       let ni = 0, nv = value[0];
       for(let i = 0; i < ol; ++i) {
-        const ov = orig[i];
+        const ov = oValue[i];
         while (nv < ov && ++ni < nl) {
           if(newIds.length == 0 || newIds[newIds.length-1] !== nv)
             newIds.push(nv);

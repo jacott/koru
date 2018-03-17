@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const sha256 = require('koru/srp/sha256');
   const util   = require('koru/util');
 
+  const {original$} = require('koru/symbols');
+
   const {isObjEmpty,
          deepEqual, deepCopy, elemMatch,
          addItem, removeItem} = require('koru/util');
@@ -11,8 +13,6 @@ define(function(require, exports, module) {
   const {hasOwn} = util;
 
   const same = (a,b)=>a==b;
-
-  const original$ = Symbol();
 
   const diffArray = (oldSeq, newSeq, equal=same)=>{
     const lo = oldSeq.length-1, ln = newSeq.length-1;

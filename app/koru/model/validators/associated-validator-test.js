@@ -4,7 +4,7 @@ define(function (require, exports, module) {
   const Query      = require('../query');
   const validation = require('../validation');
 
-  const {error$} = require('koru/symbols');
+  const {error$, original$} = require('koru/symbols');
 
   const sut        = require('./associated-validator').bind(validation);
   var test, v;
@@ -12,7 +12,7 @@ define(function (require, exports, module) {
   TH.testCase(module, {
     setUp() {
       test = this;
-      Model.Foo = {};
+      Model.Foo = {modelName: 'Foo'};
       v = {};
     },
 
@@ -290,7 +290,7 @@ define(function (require, exports, module) {
       const foo_ids = ['x', 'y'];
 
       const count = test.stub(Query.prototype, 'count').returns(2);
-      const doc = {foo_ids: foo_ids, attributes: {}};
+      const doc = {foo_ids: foo_ids};
 
       const where = stubWhere();
 
@@ -301,6 +301,44 @@ define(function (require, exports, module) {
       assert.same(query, v.query);
       assert.calledWithExactly(where, '_id', ["x", "y"]);
       assert.same(query.model, Model.Foo);
+    },
+
+    "using original$": {
+      "test is undefined"() {
+        const foos = ['x', 'y'];
+
+        const count = test.stub(Query.prototype, 'count').returns(1);
+        const doc = {foos, [original$]: undefined};
+
+        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        assert.equals(doc[error$], {foos: [['not_found']]});
+      },
+
+      "test no changes"() {
+        const foos = ['x', 'y'];
+
+        const doc = {foos, [original$]: {foos}};
+
+        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        refute(doc[error$]);
+      },
+
+      "test changes"() {
+        const foos = ['x', 'y'];
+
+        const count = test.stub(Query.prototype, 'count').returns(1);
+        const doc = {foos, [original$]: {foos: ['y']}};
+
+        const where = stubWhere();
+
+        sut(doc,'foos', {model: Model.Foo, changesOnly: true});
+        refute(doc[error$]);
+
+        const query = count.firstCall.thisValue;
+        assert.same(query, v.query);
+        assert.calledWithExactly(where, '_id', ["x"]);
+        assert.same(query.model, Model.Foo);
+      },
     },
   });
 
