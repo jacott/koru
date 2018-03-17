@@ -321,7 +321,12 @@ define(function(require, exports, module) {
         else
           subErrors[name].forEach(r => {fieldErrors.push(r)});
       }
-    }
+    },
+
+    clearErrors(doc) {
+      if (doc !== null && typeof doc === 'object' && doc[error$] !== undefined)
+        doc[error$] = undefined;
+    },
   };
 
   function accessDenied(details, nolog) {

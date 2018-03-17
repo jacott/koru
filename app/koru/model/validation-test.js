@@ -72,6 +72,21 @@ define(function (require, exports, module) {
       });
     },
 
+    "test clearErrors"() {
+      Val.clearErrors();
+      Val.clearErrors(null);
+      Val.clearErrors(123);
+
+      const doc = {[error$]: {}};
+      Val.clearErrors(doc);
+
+      assert.equals(doc[error$], undefined);
+
+      const empty = {};
+      Val.clearErrors(empty);
+      assert.equals(Object.getOwnPropertySymbols(empty), []);
+    },
+
     'test text'() {
       assert.same(Val.text('foo'), 'foo');
       assert.same(Val.text(['foo']), 'foo');
