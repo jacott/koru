@@ -17,7 +17,8 @@ define(function (require, exports, module) {
           'private$: Symbol(private$), '+
           'test$: Symbol(test$), '+
           'inspect$: Symbol(inspect$), '+
-          'error$: Symbol(error$)'+
+          'error$: Symbol(error$), '+
+          'original$: Symbol(original$)'+
           '}'
       );
     },

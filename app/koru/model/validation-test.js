@@ -1,9 +1,9 @@
 define(function (require, exports, module) {
-  const koru  = require('../main');
-  const match = require('../match');
-  const util  = require('../util');
-  const Model = require('./main');
-  const TH    = require('./test-helper');
+  const koru            = require('../main');
+  const match           = require('../match');
+  const util            = require('../util');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
 
   const {error$} = require('koru/symbols');
 
@@ -11,7 +11,7 @@ define(function (require, exports, module) {
 
   const Val   = require('./validation');
 
-  let v;
+  let v = null;
 
   const Module = module.constructor;
 
@@ -41,6 +41,37 @@ define(function (require, exports, module) {
       },
     },
 
+    "test addError"() {
+      const doc = {};
+      Val.addError(doc, 'foo', 'is_too_big', 400);
+      Val.addError(doc, 'foo', 'is_wrong_color', 'red');
+
+      assert.equals(doc[error$], {foo: [['is_too_big', 400], ['is_wrong_color', 'red']]});
+    },
+
+    "test addSubErrors"() {
+      const doc = {};
+      Val.addSubErrors(doc, 'foo', {
+        bar: v.barErrors = [['is_too_big', 400], ['is_wrong_color', 'red']],
+        fiz: [['is_invalid']]
+      });
+
+      Val.addSubErrors(doc, 'foo', {
+        bar: [['is_wrong_type'], ['is_not_included', 'pink']],
+        fuz: [['is_required']]
+      });
+
+      assert.equals(v.barErrors.length, 2);
+
+
+      assert.equals(doc[error$], {
+        'foo.bar': [['is_too_big', 400], ['is_wrong_color', 'red'],
+                    ['is_wrong_type'], ['is_not_included', 'pink']],
+        'foo.fiz': [['is_invalid']],
+        'foo.fuz': [['is_required']],
+      });
+    },
+
     'test text'() {
       assert.same(Val.text('foo'), 'foo');
       assert.same(Val.text(['foo']), 'foo');
@@ -66,7 +97,8 @@ define(function (require, exports, module) {
 
       // types
       spec = {foo: 'string', bar: {baz: 'number'}, 'as if': 'date', any: 'any', numberAry: ['number']};
-      assert(Val.check({foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
+      assert(Val.check(
+        {foo: 'x', bar: {baz: 1}, 'as if': new Date(), numberAry: [1, 2, 3], any() {}}, spec));
 
 
       refute(Val.check({foo: 1, bar: {baz: 1}, 'as if': new Date()}, spec));
@@ -142,11 +174,13 @@ define(function (require, exports, module) {
       const newDoc = {changes: {_id: '123', name: 'new name'}, $isNewRecord() {return true}};
       Val.assertDocChanges(newDoc, {name: 'string'});
 
-      assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
+      assert.calledWithExactly(
+        Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'id'}});
 
       Val.assertDocChanges(newDoc, {name: 'string'}, {_id: 'any'});
 
-      assert.calledWithExactly(Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'any'}});
+      assert.calledWithExactly(
+        Val.assertCheck, newDoc.changes, {name: 'string'}, {altSpec: {_id: 'any'}});
     },
 
 
@@ -283,10 +317,7 @@ define(function (require, exports, module) {
 
       sut.call(doc, 'foo');
 
-      assert.calledOnceWith(v.func, doc, 'foo', 'bar', TH.match(function (opts) {
-        v.opts = opts;
-        return true;
-      }));
+      assert.calledOnceWith(v.func, doc, 'foo', 'bar', TH.match(opts => v.opts = opts));
 
       assert.isFunction(v.opts.onError);
       v.opts.onError();
@@ -300,12 +331,14 @@ define(function (require, exports, module) {
 
       v.opts.onError('xyz', {[error$]: {def: [['not_numeric']]}});
 
-      assert.equals(doc[error$], {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
+      assert.equals(doc[error$], {
+        foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
     },
 
     "test typeSpec"() {
       assert.equals(
-        Val.typeSpec({$fields: {foo: {type: 'a'}, bar: {type: 'b'}, notMe: {type: 'b', readOnly: true}}}),
+        Val.typeSpec({$fields: {foo: {type: 'a'}, bar: {type: 'b'},
+                                notMe: {type: 'b', readOnly: true}}}),
         {foo: 'a', bar: 'b'});
 
     },

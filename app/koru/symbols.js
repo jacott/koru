@@ -9,4 +9,5 @@ define({
   test$: Symbol('test$'),
   inspect$: Symbol('inspect$'),
   error$: Symbol('error$'),
+  original$: Symbol('original$'),
 });

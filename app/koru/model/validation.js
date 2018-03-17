@@ -304,12 +304,24 @@ define(function(require, exports, module) {
       delete validators[key];
     },
 
-    addError(doc,field, ...args) {
+    addError(doc, field, ...args) {
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
     },
+
+    addSubErrors(doc, field, subErrors) {
+      const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$];
+      for (const name in subErrors) {
+        const fullname = `${field}.${name}`;
+        const fieldErrors = errors[fullname];
+        if (fieldErrors === undefined)
+          errors[fullname] = subErrors[name].slice();
+        else
+          subErrors[name].forEach(r => {fieldErrors.push(r)});
+      }
+    }
   };
 
   function accessDenied(details, nolog) {
