@@ -5,9 +5,12 @@ define(function (require, exports, module) {
   const Model = require('./main');
   const TH    = require('./test-helper');
 
+  const {error$} = require('koru/symbols');
+
   const {stub, spy, onEnd} = TH;
 
   const Val   = require('./validation');
+
   let v;
 
   const Module = module.constructor;
@@ -25,13 +28,13 @@ define(function (require, exports, module) {
 
     "Error": {
       'test msgFor'() {
-        const doc = {_errors: {foo: [['too_long', 34]]}};
+        const doc = {[error$]: {foo: [['too_long', 34]]}};
 
         assert.same(Val.Error.msgFor(doc, 'foo'), "34 characters is the maximum allowed");
       },
 
       "test toString"() {
-        const doc = {_errors: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
+        const doc = {[error$]: {foo: [['too_long', 34]], bar: [['is_invalid']]}};
 
         assert.same(Val.Error.toString(doc), 'foo: 34 characters is the maximum allowed; '+
                     'bar: is not valid');
@@ -205,7 +208,7 @@ define(function (require, exports, module) {
         Val.allowIfValid(false, 'foo');
       }, {error: 400, reason: {foo: [['is_invalid']]}});
       assert.exception(()=>{
-        Val.allowIfValid(false, {_errors: {x: 123}});
+        Val.allowIfValid(false, {[error$]: {x: 123}});
       }, {error: 400, reason: {x: 123}});
       refute.invalidRequest(()=>{Val.allowIfValid(true);});
     },
@@ -250,21 +253,21 @@ define(function (require, exports, module) {
       let errors = 'set';
       Val.register(v.myModule, {addIt(doc, field, x) {
         doc[field] += x;
-        doc._errors = errors;
+        doc[error$] = errors;
       }});
       onEnd(()=>{Val.register(v.myModule)});
       const doc = {age: 10};
 
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
-      assert.same(doc._errors, 'set');
+      assert.same(doc[error$], 'set');
       assert.same(doc.age, 15);
 
       doc.age = 'x';
       errors = undefined;
       Val.validateField(doc, 'age', {type: 'number', addIt: 5});
 
-      assert.equals(doc._errors, {age: [['wrong_type', 'number']]});
+      assert.equals(doc[error$], {age: [['wrong_type', 'number']]});
       assert.same(doc.age, 'x5');
     },
 
@@ -288,16 +291,16 @@ define(function (require, exports, module) {
       assert.isFunction(v.opts.onError);
       v.opts.onError();
 
-      assert.equals(doc._errors, {foo: [['is_invalid']]});
-      doc._errors = undefined;
+      assert.equals(doc[error$], {foo: [['is_invalid']]});
+      doc[error$] = undefined;
 
       v.opts.onError('abc', 'def');
 
-      assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def']]});
+      assert.equals(doc[error$], {foo: [['is_invalid', 'abc', 'def']]});
 
-      v.opts.onError('xyz', {_errors: {def: [['not_numeric']]}});
+      v.opts.onError('xyz', {[error$]: {def: [['not_numeric']]}});
 
-      assert.equals(doc._errors, {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
+      assert.equals(doc[error$], {foo: [['is_invalid', 'abc', 'def'], ['is_invalid', 'xyz', {def: [['not_numeric']]}]]});
     },
 
     "test typeSpec"() {
@@ -317,7 +320,7 @@ define(function (require, exports, module) {
       const matcher = Val.matchFields({foo: {type: 'number', divByx: 2}});
       let doc = {foo: 4};
       assert.isTrue(matcher.$test(doc));
-      assert.same(doc._errors, undefined);
+      assert.same(doc[error$], undefined);
       doc.foo = 1;
       assert.isFalse(matcher.$test(doc));
       assert.modelErrors(doc, {foo: 'is_invalid'});

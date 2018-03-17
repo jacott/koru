@@ -4,6 +4,8 @@ define(function(require, exports, module) {
   const Dialog = require('./dialog');
   const Form   = require('./form');
 
+  const {error$} = require('koru/symbols');
+
   const Tpl = module.exports = Dom.newTemplate(require('../html!./in-place-form'));
   const $ = Dom.current;
 
@@ -210,11 +212,11 @@ define(function(require, exports, module) {
     },
 
     saveField(doc, form, widget) {
-      if (doc._errors === undefined) for(const _ in doc.changes) {
+      if (doc[error$] === undefined) for(const _ in doc.changes) {
         doc.$save();
         break;
       }
-      if (doc._errors !== undefined) {
+      if (doc[error$] !== undefined) {
         Dom.removeClass(form, 'submitting');
         Dom.Form.renderErrors(doc, form);
       } else {

@@ -12,7 +12,7 @@ define(function(require, exports, module) {
   const TransQueue      = require('./trans-queue');
   const Val             = require('./validation');
 
-  const {private$} = require('koru/symbols');
+  const {private$, error$} = require('koru/symbols');
   const pv = ModelMap[private$];
   const {makeDoc$, docCache$} = pv;
 
@@ -135,7 +135,7 @@ define(function(require, exports, module) {
         }
 
         this.changes = {};
-        if (this._errors !== undefined) this._errors = undefined;
+        if (this[error$] !== undefined) this[error$] = undefined;
         if (this._cache !== undefined) this._cache = undefined;
 
         return this;

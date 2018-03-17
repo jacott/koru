@@ -4,6 +4,8 @@ define(function (require, exports, module) {
   const Query      = require('../query');
   const validation = require('../validation');
 
+  const {error$} = require('koru/symbols');
+
   const sut        = require('./associated-validator').bind(validation);
   var test, v;
 
@@ -31,7 +33,7 @@ define(function (require, exports, module) {
       const fields = this.spy(Query.prototype, 'fields');
 
       sut(doc,'foo_ids', {filter: true});
-      refute(doc._errors);
+      refute(doc[error$]);
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, ["abc", "xyz"]);
 
@@ -50,7 +52,7 @@ define(function (require, exports, module) {
       const forEach = test.intercept(Query.prototype, 'forEach');
 
       sut(doc,'foo_ids', {filter: true});
-      refute(doc._errors);
+      refute(doc[error$]);
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, []);
     },
@@ -59,7 +61,7 @@ define(function (require, exports, module) {
       const doc = {};
       sut(doc,'foo_ids', true);
 
-      refute(doc._errors);
+      refute(doc[error$]);
     },
 
     'test not found'() {
@@ -71,8 +73,8 @@ define(function (require, exports, module) {
       const doc = {foo_ids: ["xyz"], attributes: {}};
       sut(doc,'foo_ids', true);
 
-      assert(doc._errors);
-      assert.equals(doc._errors['foo_ids'],[["not_found"]]);
+      assert(doc[error$]);
+      assert.equals(doc[error$]['foo_ids'],[["not_found"]]);
     },
 
     "test changes only"() {
@@ -84,7 +86,7 @@ define(function (require, exports, module) {
 
       sut(doc,'foo_ids', {changesOnly: true});
 
-      refute(doc._errors);
+      refute(doc[error$]);
 
       let count = 2;
 
@@ -98,33 +100,33 @@ define(function (require, exports, module) {
 
       sut(doc,'foo_ids', {changesOnly: true, filter: true});
 
-      refute(doc._errors);
+      refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ["abc", "bef", "can", "xyz"]);
 
       sut(doc,'foo_ids', {changesOnly: true});
-      refute(doc._errors);
+      refute(doc[error$]);
 
       doc.changes.foo_ids = ["can", "def", "bef", "xyz", "abc", 'new'];
       sut(doc,'foo_ids', {changesOnly: true});
 
-      assert(doc._errors);
+      assert(doc[error$]);
 
       count = 1;
-      doc._errors = undefined;
+      doc[error$] = undefined;
       doc.changes.foo_ids = ['M', 'E'];
       doc.attributes.foo_ids = ['M'];
 
       sut(doc,'foo_ids', {changesOnly: true});
-      refute(doc._errors);
+      refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ['E', 'M']);
 
       count = 3;
-      doc._errors = undefined;
+      doc[error$] = undefined;
       doc.changes.foo_ids = ['ra', 'rq', 'A', 'B', 'ra', 'A'];
       doc.attributes.foo_ids = ['ra'];
 
       sut(doc,'foo_ids', {changesOnly: true});
-      refute(doc._errors);
+      refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ['A', 'B', 'ra', 'rq']);
     },
 
@@ -148,7 +150,7 @@ define(function (require, exports, module) {
         sut(doc,'foo_ids', {});
 
         assert.equals(doc.changes.foo_ids, ["a", "a", "b", "e", "e", "f"]);
-        assert.equals(doc._errors, {foo_ids: [['duplicates']]});
+        assert.equals(doc[error$], {foo_ids: [['duplicates']]});
       },
 
       "test filtered"() {
@@ -165,13 +167,13 @@ define(function (require, exports, module) {
         };
 
         sut(doc,'foo_ids', {changesOnly: true, filter: true});
-        refute(doc._errors);
+        refute(doc[error$]);
 
         // don't filter out old ids
         assert.equals(doc.changes.foo_ids, ["a", "b", "e", "f"]);
 
         sut(doc,'foo_ids', {filter: true});
-        refute(doc._errors);
+        refute(doc[error$]);
 
         // filter out old ids
         assert.equals(doc.changes.foo_ids, ["e", "f"]);
@@ -182,8 +184,8 @@ define(function (require, exports, module) {
       const doc = {foo_ids: "abc", attributes: {}};
       sut(doc,'foo_ids', true);
 
-      assert(doc._errors);
-      assert.equals(doc._errors['foo_ids'],[["is_invalid"]]);
+      assert(doc[error$]);
+      assert.equals(doc[error$]['foo_ids'],[["is_invalid"]]);
     },
 
     "test using scoped finder"() {
@@ -197,7 +199,7 @@ define(function (require, exports, module) {
       sut(doc,'foo_ids', {finder: fooFinder});
 
       assert.equals(v.values, v.foo_ids);
-      refute(doc._errors);
+      refute(doc[error$]);
     },
 
     "test using scoped default"() {
@@ -213,7 +215,7 @@ define(function (require, exports, module) {
       sut(doc,'foo_ids', true);
 
       assert.equals(v.values, v.foo_ids);
-      refute(doc._errors);
+      refute(doc[error$]);
     },
 
     "test overriding model name"() {
@@ -224,7 +226,7 @@ define(function (require, exports, module) {
       const where = stubWhere();
 
       sut(doc,'bar_ids', {modelName: 'Foo'});
-      refute(doc._errors);
+      refute(doc[error$]);
 
       let query = count.firstCall.thisValue;
       assert.same(query, v.query);
@@ -248,7 +250,7 @@ define(function (require, exports, module) {
       const where = stubWhere();
 
       sut(doc,'foo_id', true);
-      refute(doc._errors);
+      refute(doc[error$]);
 
       const query = count.firstCall.thisValue;
       assert.same(query, v.query);
@@ -268,13 +270,13 @@ define(function (require, exports, module) {
       const where = stubWhere();
 
       sut(doc,'foo_id', {changesOnly: true});
-      refute(doc._errors);
+      refute(doc[error$]);
       refute.called(count);
 
       doc.changes = {foo_id: doc.foo_id = 'x'};
 
       sut(doc,'foo_id', {changesOnly: true});
-      assert.equals(doc._errors, {foo_id: [['not_found']]});
+      assert.equals(doc[error$], {foo_id: [['not_found']]});
 
       count.returns(1);
 
@@ -293,7 +295,7 @@ define(function (require, exports, module) {
       const where = stubWhere();
 
       sut(doc,'foo_ids', true);
-      refute(doc._errors);
+      refute(doc[error$]);
 
       const query = count.firstCall.thisValue;
       assert.same(query, v.query);

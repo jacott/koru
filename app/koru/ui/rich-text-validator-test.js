@@ -3,6 +3,8 @@ define(function (require, exports, module) {
   const TH       = require('koru/test');
   const RichText = require('./rich-text');
 
+  const {error$} = require('koru/symbols');
+
   const sut = require('../model/validation');
   var test, v;
 
@@ -28,7 +30,7 @@ define(function (require, exports, module) {
         var doc = {changes: {foo: v.rt}, foo: v.rt};
 
         sut.validators('richText')(doc, 'foo');
-        assert.same(doc._errors, undefined);
+        assert.same(doc[error$], undefined);
         assert.equals(v.args, v.rt);
         assert.equals(doc.foo, ['one\ntwo', [11, 0, 0, 3]]);
       },
@@ -37,7 +39,7 @@ define(function (require, exports, module) {
         var doc = {changes: {foo: "just\ntext"}, foo: "just\ntext"};
 
         sut.validators('richText')(doc, 'foo');
-        assert.same(doc._errors, undefined);
+        assert.same(doc[error$], undefined);
         assert.equals(v.args, undefined);
         assert.equals(doc.foo, 'just\ntext');
       },
@@ -46,7 +48,7 @@ define(function (require, exports, module) {
         var doc = {foo: v.rt = [['one', 'two'], null]};
 
         sut.validators('richText')(doc, 'foo');
-        assert.same(doc._errors, undefined);
+        assert.same(doc[error$], undefined);
         assert.equals(doc.foo, 'one\ntwo');
       },
 
@@ -54,7 +56,7 @@ define(function (require, exports, module) {
         var doc = {foo: [123, [3]], changes: {other: true}};
 
         sut.validators('richText')(doc, 'foo');
-        refute(doc._errors);
+        refute(doc[error$]);
         assert.same(v.args, undefined);
       },
 
@@ -64,7 +66,7 @@ define(function (require, exports, module) {
         v.rt = [11, 2];
 
         sut.validators('richText')(doc, 'foo');
-        assert.equals(doc._errors['foo'],[['invalid_html']]);
+        assert.equals(doc[error$]['foo'],[['invalid_html']]);
       },
 
 
@@ -73,7 +75,7 @@ define(function (require, exports, module) {
         var doc = {foo: foo, changes: {foo:  foo}};
 
         sut.validators('richText')(doc, 'foo', 'filter');
-        refute(doc._errors);
+        refute(doc[error$]);
         assert.equals(doc.changes.foo, ['a\nb', [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]]);
         assert.same(doc.foo, doc.changes.foo);
       },
@@ -83,7 +85,7 @@ define(function (require, exports, module) {
         var doc = {foo: foo, changes: {foo:  foo}};
 
         sut.validators('richText')(doc, 'foo', 'filter');
-        refute(doc._errors);
+        refute(doc[error$]);
         assert.equals(doc.foo, 'bold');
       },
     },
@@ -94,7 +96,7 @@ define(function (require, exports, module) {
         var doc = {changes: {foo: v.rt[0] = "one\ntwo"}, foo: v.rt[0], fooMarkup:  v.rt[1] = [3, 0, 0, 3]};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert.same(doc._errors, undefined);
+        assert.same(doc[error$], undefined);
         assert.equals(v.args, [v.rt[0], v.rt[1]]);
       },
 
@@ -103,7 +105,7 @@ define(function (require, exports, module) {
         var doc = {foo: 'a\nb', fooMarkup: markup, changes: {foo:  markup}};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup', 'filter');
-        refute(doc._errors);
+        refute(doc[error$]);
         assert.equals(doc.foo, 'a\nb');
         assert.equals(doc.fooMarkup, [1, 0, 1, 20, 0, 0, 7, 0, 0, 20, 1, 0, 7, 0, 0]);
       },
@@ -113,7 +115,7 @@ define(function (require, exports, module) {
         var doc = {foo: 123, fooMarkup:  [[3]], changes: {other: true}};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        refute(doc._errors);
+        refute(doc[error$]);
         assert.same(v.args, undefined);
       },
 
@@ -121,7 +123,7 @@ define(function (require, exports, module) {
         var doc = {foo: 123, changes: {fooMarkup:  [[3]]}, fooMarkup: 1122};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert.equals(doc._errors['fooHTML'],[['invalid_html']]);
+        assert.equals(doc[error$]['fooHTML'],[['invalid_html']]);
         assert.equals(v.args, [123, 1122]);
       },
 
@@ -129,8 +131,8 @@ define(function (require, exports, module) {
         var doc = {changes: {foo: "one\ntwo"}, foo: 1234, fooMarkup:  [-1, 0, 0, 3]};
 
         sut.validators('richTextMarkup')(doc, 'fooMarkup');
-        assert(doc._errors);
-        assert.equals(doc._errors['fooHTML'],[['invalid_html']]);
+        assert(doc[error$]);
+        assert.equals(doc[error$]['fooHTML'],[['invalid_html']]);
         assert.equals(v.args, [1234, [-1, 0, 0, 3]]);
       },
     }

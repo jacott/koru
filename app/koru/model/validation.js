@@ -5,6 +5,8 @@ define(function(require, exports, module) {
   const ResourceString = require('../resource-string');
   const util           = require('../util');
 
+  const {error$} = require('koru/symbols');
+
   const {hasOwn} = util;
 
   const validators = {};
@@ -12,21 +14,22 @@ define(function(require, exports, module) {
   const ID_SPEC = {_id: 'id'};
 
   const Val = module.exports = {
+    error$,
     Error: {
       msgFor(doc, field, other_error) {
-        const errors = doc._errors !== undefined ? doc._errors[field]
+        const errors = doc[error$] !== undefined ? doc[error$][field]
                 : typeof doc === 'string' ? [[doc]] : doc;
         if (errors !== undefined) {
           return errors.map(Val.text).join(", ");
         } else if (other_error) {
-          console.log('ERROR: ', JSON.stringify(doc._errors));
+          console.log('ERROR: ', JSON.stringify(doc[error$]));
           return ResourceString.en[other_error];
         } else
           return null;
       },
 
       toString(doc) {
-        const errors = doc._errors || doc;
+        const errors = doc[error$] || doc;
         return Object.keys(errors)
           .map(field => `${field}: ${this.msgFor(errors[field])}`)
           .join("; ");
@@ -40,7 +43,7 @@ define(function(require, exports, module) {
     },
 
     check(obj, spec, options={}) {
-      const {onError: error, altSpec, baseName: name, filter} = options;
+      const {onError, altSpec, baseName: name, filter} = options;
       try {
         check1(obj, spec, name);
         return true;
@@ -87,7 +90,7 @@ define(function(require, exports, module) {
       }
 
       function bad(...args) {
-        if (error && error.apply(this, args))
+        if (typeof onError === 'function' && onError.apply(this, args))
           return;
         throw false;
       }
@@ -102,7 +105,7 @@ define(function(require, exports, module) {
             onError(name, obj) {
               if (name)
                 Val.addError(doc, field, 'is_invalid',
-                             name, typeof obj === 'string' ? obj : obj && obj._errors);
+                             name, typeof obj === 'string' ? obj : obj && obj[error$]);
               else
                 Val.addError(doc, field, 'is_invalid');
 
@@ -116,8 +119,8 @@ define(function(require, exports, module) {
       let error, reason;
       if (options == null || ! hasOwn(options, 'onError'))
         options = Object.assign({onError(name, obj) {
-          if (obj && obj._errors !== undefined) {
-            reason = obj._errors;
+          if (obj && obj[error$] !== undefined) {
+            reason = obj[error$];
           } else if (name) {
             reason = {}; reason[name] = [['is_invalid']];
           } else {
@@ -139,9 +142,8 @@ define(function(require, exports, module) {
     matchFields(fieldSpec, name) {
       const m = match(doc=>{
         if (! doc) return false;
-        if (doc._errors !== undefined) doc._errors = undefined;
+        if (doc[error$] !== undefined) doc[error$] = undefined;
         for (const field in doc) {
-          if (field === '_errors') continue;
           if (! hasOwn(fieldSpec, field)) {
             Val.addError(doc, field, 'unexpected_field');
             return false;
@@ -151,7 +153,7 @@ define(function(require, exports, module) {
         for (const field in fieldSpec)
           Val.validateField(doc, field, fieldSpec[field]);
 
-        return doc._errors === undefined;
+        return doc[error$] === undefined;
       }, name || {toString() {return 'match.fields(' + util.inspect(fieldSpec) + ')'}});
       m.$spec = fieldSpec;
       return m;
@@ -174,7 +176,7 @@ define(function(require, exports, module) {
         validator && validator(doc, field, spec[name]);
       }
 
-      if (doc._errors !== undefined) return false;
+      if (doc[error$] !== undefined) return false;
 
       const value = doc[field];
       if (value != null && ! Val.check(value, spec.type)) {
@@ -182,7 +184,7 @@ define(function(require, exports, module) {
         return;
       }
 
-      return doc._errors === undefined;
+      return doc[error$] === undefined;
     },
 
     denyAccessIf(falsey, message) {
@@ -218,7 +220,7 @@ define(function(require, exports, module) {
     ensure(type, ...args) {ensure(type, args)},
 
     errorsToString(doc) {
-      const errs = doc._errors;
+      const errs = doc[error$];
 
       if (errs === undefined) return;
 
@@ -241,8 +243,8 @@ define(function(require, exports, module) {
       if (! truthy) {
         let reason;
         if (doc) {
-          if (doc._errors !== undefined)
-            reason = doc._errors;
+          if (doc[error$] !== undefined)
+            reason = doc[error$];
           else {
             reason = {}; reason[doc] = [['is_invalid']];
           }
@@ -303,7 +305,7 @@ define(function(require, exports, module) {
     },
 
     addError(doc,field, ...args) {
-      const errors = doc._errors === undefined ? (doc._errors = {}) : doc._errors,
+      const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);

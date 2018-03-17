@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   const registerObserveField = require('./register-observe-field');
   const registerObserveId    = require('./register-observe-id');
 
-  const {private$, inspect$} = require('koru/symbols');
+  const {private$, inspect$, error$} = require('koru/symbols');
   const allObservers$ = Symbol(), allObserverHandles$ = Symbol();
   const {hasOwn} = util;
 
@@ -288,9 +288,11 @@ define(function(require, exports, module) {
      * Instance methods
      **/
 
-    get _id() {return this.attributes._id || this.changes._id;}
+    get _id() {return this.attributes._id || this.changes._id}
 
-    get classMethods() {return this.constructor;}
+    get classMethods() {return this.constructor}
+
+    get _errors() {return this[error$]}
 
     [inspect$]() {
       return `{Model: ${this.constructor.modelName}_${this._id} ${this.name||''}}`;
@@ -327,7 +329,7 @@ define(function(require, exports, module) {
       const model = this.constructor,
             fVTors = model._fieldValidators;
 
-      if (this._errors !== undefined) this._errors = undefined;
+      if (this[error$] !== undefined) this[error$] = undefined;
 
       const origChanges = this.changes;
       const topLevel = origChanges.$partial &&
@@ -353,7 +355,7 @@ define(function(require, exports, module) {
 
       this.validate && this.validate();
 
-      const isOkay = this._errors === undefined;
+      const isOkay = this[error$] === undefined;
       if (topLevel !== undefined) {
         if (isOkay) {
           Changes.updateCommands(origChanges, this.changes, topLevel);

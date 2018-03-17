@@ -4,6 +4,8 @@ isClient && define(function (require, exports, module) {
   const util   = require('../util');
   const TH     = require('./test-helper');
 
+  const {error$} = require('koru/symbols');
+
   const {stub, spy, onEnd} = TH;
 
   const sut = require('./in-place-form');
@@ -119,7 +121,7 @@ isClient && define(function (require, exports, module) {
       assert.called(widget.close);
 
       widget.close.reset();
-      doc = {$save() {this._errors = {name: [['is_invalid']]}}, changes: {name: 'nn'}};
+      doc = {$save() {this[error$] = {name: [['is_invalid']]}}, changes: {name: 'nn'}};
       sut.saveField(doc, form, widget);
       refute.className(form, 'submitting');
       assert.dom(form, form =>{

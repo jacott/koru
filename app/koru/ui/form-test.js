@@ -5,10 +5,13 @@ isClient && define(function (require, exports, module) {
   const Route   = require('./route');
   const TH      = require('./test-helper');
 
+  const {error$} = require('koru/symbols');
+
   const Form    = require('./form');
-  var v;
 
   const $ = Dom.current;
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -203,7 +206,7 @@ isClient && define(function (require, exports, module) {
       ctx.data = {
         constructor,
         $save() {
-          this._errors = {name: [['bad name']]};
+          this[error$] = {name: [['bad name']]};
         },
       };
 

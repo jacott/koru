@@ -3,6 +3,8 @@ define(function (require, exports, module) {
   const Query      = require('../query');
   const validation = require('../validation');
 
+  const {error$} = require('koru/symbols');
+
   const sut        = require('./unique-validator').bind(validation);
   var v;
 
@@ -25,8 +27,8 @@ define(function (require, exports, module) {
       v.doc.org = 'abc';
       sut(v.doc,'name', {scope: 'org'});
 
-      assert(v.doc._errors);
-      assert.equals(v.doc._errors['name'],[['not_unique']]);
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'],[['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -40,7 +42,7 @@ define(function (require, exports, module) {
 
       sut(v.doc,'name', {scope: {org: 'org', fuz: {$ne: 'foo'}}});
 
-      assert(v.doc._errors);
+      assert(v.doc[error$]);
 
       assert.equals(v.query._wheres, {name: 'foo', org: 'abc', fuz: {$ne: ['bar']}});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -61,7 +63,7 @@ define(function (require, exports, module) {
 
       sut(v.doc,'name', {scope: scopeFunc});
 
-      assert(v.doc._errors);
+      assert(v.doc[error$]);
 
       assert.equals(v.query._wheres, {name: 'foo', namex: 123});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -73,8 +75,8 @@ define(function (require, exports, module) {
       v.doc.org = 'abc';
       sut(v.doc,'name', {scope: ['bar', 'org']});
 
-      assert(v.doc._errors);
-      assert.equals(v.doc._errors['name'],[['not_unique']]);
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'],[['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo', bar: 'baz', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -84,7 +86,7 @@ define(function (require, exports, module) {
       this.stub(v.query, 'count').withArgs(1).returns(0);
       sut(v.doc,'name');
 
-      refute(v.doc._errors);
+      refute(v.doc[error$]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -94,8 +96,8 @@ define(function (require, exports, module) {
       this.stub(v.query, 'count').withArgs(1).returns(1);
       sut(v.doc,'name');
 
-      assert(v.doc._errors);
-      assert.equals(v.doc._errors['name'],[['not_unique']]);
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'],[['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
@@ -108,8 +110,8 @@ define(function (require, exports, module) {
       this.stub(v.query, 'count').withArgs(1).returns(1);
       sut(v.doc,'name');
 
-      assert(v.doc._errors);
-      assert.equals(v.doc._errors['name'],[['not_unique']]);
+      assert(v.doc[error$]);
+      assert.equals(v.doc[error$]['name'],[['not_unique']]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.same(v.query._whereNots, undefined);

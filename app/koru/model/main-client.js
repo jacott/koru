@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   const dbBroker        = require('./db-broker');
   const clientIndex     = require('./index-client');
 
-  const {stopGap$} = require('koru/symbols');
+  const {stopGap$, error$} = require('koru/symbols');
   const {isObjEmpty} = util;
 
   let _support;
@@ -63,7 +63,7 @@ define(function(require, exports, module) {
           const doc = this.build(attrs, true);
           doc[stopGap$] = true;
           doc.$isValid();
-          if (doc._errors !== undefined) doc._errors = undefined;
+          if (doc[error$] !== undefined) doc[error$] = undefined;
           doc.$save('force');
           return doc;
         },
@@ -83,7 +83,7 @@ define(function(require, exports, module) {
           const doc = this.constructor.findById(this._id);
           this.attributes = doc ? doc.attributes : {};
           this.changes = {};
-          if (this._errors !== undefined) this._errors = undefined;
+          if (this[error$] !== undefined) this[error$] = undefined;
           if (this._cache !== undefined) this._cache = undefined;
           return this;
         }

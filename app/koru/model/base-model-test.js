@@ -10,7 +10,7 @@ define(function (require, exports, module) {
   const api      = require('koru/test/api');
   const TH       = require('./test-helper');
 
-  const {inspect$} = require('koru/symbols');
+  const {inspect$, error$} = require('koru/symbols');
 
   const val       = require('./validation');
 
@@ -591,7 +591,7 @@ define(function (require, exports, module) {
           v.original = Changes.original(v.changes);
 
           this.foo.baz = 1;
-          this._errors = v.errors;
+          this[error$] = v.errors;
         };
         doc.changes = {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}};
         assert.isTrue(doc.$isValid());

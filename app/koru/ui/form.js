@@ -9,6 +9,8 @@ define(function(require, exports, module) {
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
   const Route                 = require('./route');
 
+  const {error$} = require('koru/symbols');
+
   const {hasOwn} = util;
 
   const Tpl = Dom.newTemplate(require('../html!./form'));
@@ -210,7 +212,7 @@ define(function(require, exports, module) {
     },
 
     renderErrors(doc, form) {
-      const errors = doc._errors;
+      const errors = doc[error$];
       const otherMsgs = [];
       let focus = null;
       Tpl.clearErrors(form);
@@ -642,13 +644,13 @@ define(function(require, exports, module) {
   function saveChange(doc, field, value, options) {
     const form = document.getElementById(options.template.name);
     Tpl.clearErrors(form);
-    let _errors;
+    let errors;
     switch (typeof options.update) {
     case 'string':
-      _errors = doc[options.update](field, value, options.undo);
+      errors = doc[options.update](field, value, options.undo);
       break;
     case 'function':
-      _errors = options.update(doc, field, value, options.undo);
+      errors = options.update(doc, field, value, options.undo);
 
       break;
     default:
@@ -656,7 +658,7 @@ define(function(require, exports, module) {
       Tpl.saveChanges(doc, form, options.undo);
       return;
     }
-    _errors === undefined || Tpl.renderErrors({_errors}, form);
+    errors === undefined || Tpl.renderErrors({[error$]: errors}, form);
   }
 
   return Tpl;

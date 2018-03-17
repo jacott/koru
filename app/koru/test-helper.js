@@ -2,6 +2,8 @@ define(function(require, exports, module) {
   const koru = require('./main');
   const main   = require('./test/main');
 
+  const {error$} = require('koru/symbols');
+
   const {util} = koru;
   const {Core} = main;
   const gu = Core._u;
@@ -83,10 +85,10 @@ define(function(require, exports, module) {
 
   ga.add('modelErrors', {
     assert(doc, expected) {
-      const result = {}, {_errors} = doc;
+      const result = {}, {[error$]: errors} = doc;
 
-      for(const field in _errors) {
-        const msgs = _errors[field].map(m =>{
+      for(const field in errors) {
+        const msgs = errors[field].map(m =>{
           if (m.length === 1)
             return m[0];
           return m.map(n => typeof n === 'object' ? util.inspect(n) : n).join(', ');
