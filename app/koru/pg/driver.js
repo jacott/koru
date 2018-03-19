@@ -16,14 +16,108 @@ define(function(require, exports, module) {
   let cursorCount = 0;
   let conns = 0;
 
-
-  koru.onunload(module, 'reload');
-
-  koru.onunload(module, closeDefaultDb);
-
   const autoSchema = module.config().autoSchema || false;
 
   let defaultDb = null;
+
+  const closeDefaultDb = ()=>{
+    defaultDb && defaultDb.end();
+    defaultDb = null;
+  };
+
+  const aryToSqlStr = value =>{
+    if (! value) return value;
+
+    if (! Array.isArray(value))
+      throw new Error('Value is not an array: '+util.inspect(value));
+
+    return '{'+value.map(v => JSON.stringify(v)).join(',')+'}';
+  };
+
+  const getConn = client =>{
+    const {thread} = util, sym = client[tx$];
+    const tx = thread[sym] || (thread[sym] = fetchPool(client).acquire());
+    if (tx.conn.isClosed()) {
+      try {
+        const future = new Future;
+        tx.conn = new Libpq(client._url, wait(future));
+        future.wait();
+      } catch(ex) {
+        koru.unhandledException(ex);
+        throw ex;
+      }
+    }
+
+    ++tx.count;
+
+    return tx.conn;
+  };
+
+  const releaseConn = client =>{
+    const tx = util.thread[client[tx$]];
+    if (tx !== undefined && --tx.count === 0) {
+      fetchPool(client).release(tx);
+      util.thread[client[tx$]] = undefined;
+    }
+  };
+
+  const fetchPool = client =>{
+    const pool = pools[client[id$]];
+    if (pool) return pool;
+    return pools[client[id$]] = new Pool({
+      name: client[id$],
+      create(callback) {
+        ++conns;
+        new Connection(client, callback);
+      },
+      destroy(tx) {
+        --conns;
+        tx.conn.finish();
+      },
+      idleTimeoutMillis: 30*1000,
+    });
+  };
+
+  const runOnAborts = (tx, command)=>{
+    let onAborts = tx._onAborts;
+    if (onAborts) {
+      tx._onAborts = null;
+      if (command === 'ROLLBACK')
+        for (; onAborts; onAborts = onAborts.next)
+          onAborts.func();
+    }
+  };
+
+  const query = (conn, text, params)=>{
+    try {
+      const future = new Future;
+      if (params)
+        conn.execParams(text, params, wait(future));
+      else
+        conn.exec(text, wait(future));
+
+      return future.wait();
+    } catch(ex) {
+      if (ex.sqlState === undefined) {
+        conn.finish();
+      }
+
+      const err = new Error(ex.message);
+      err.sqlState = ex.sqlState;
+      throw err;
+    }
+  };
+
+  const buildUpdate = (table, params)=>{
+    table._ensureTable();
+
+    const set = toColumns(table, params);
+    return {
+      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',')}`,
+      set
+    };
+  };
+
 
   class Client {
     constructor(url, name) {
@@ -170,66 +264,6 @@ define(function(require, exports, module) {
   Client.prototype.columnsToInsValues = columns => `(${columns.map(k=>`"${k}"`).join(",")})
 values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
-
-
-  function closeDefaultDb() {
-    defaultDb && defaultDb.end();
-    defaultDb = null;
-  }
-
-  function aryToSqlStr(value) {
-    if (! value) return value;
-
-    if (! Array.isArray(value))
-      throw new Error('Value is not an array: '+util.inspect(value));
-
-    return '{'+value.map(v => JSON.stringify(v)).join(',')+'}';
-  }
-
-  function getConn(client) {
-    const {thread} = util, sym = client[tx$];
-    const tx = thread[sym] || (thread[sym] = fetchPool(client).acquire());
-    if (tx.conn.isClosed()) {
-      try {
-        const future = new Future;
-        tx.conn = new Libpq(client._url, wait(future));
-        future.wait();
-      } catch(ex) {
-        koru.unhandledException(ex);
-        throw ex;
-      }
-    }
-
-    ++tx.count;
-
-    return tx.conn;
-  }
-
-  function releaseConn(client) {
-    const tx = util.thread[client[tx$]];
-    if (tx !== undefined && --tx.count === 0) {
-      fetchPool(client).release(tx);
-      util.thread[client[tx$]] = undefined;
-    }
-  }
-
-  function fetchPool(client) {
-    const pool = pools[client[id$]];
-    if (pool) return pool;
-    return pools[client[id$]] = new Pool({
-      name: client[id$],
-      create(callback) {
-        ++conns;
-        new Connection(client, callback);
-      },
-      destroy(tx) {
-        --conns;
-        tx.conn.finish();
-      },
-      idleTimeoutMillis: 30*1000,
-    });
-  }
-
   class Connection {
     constructor(client, callback) {
       this.conn = new Libpq(client._url, err => callback(err, this));
@@ -241,52 +275,12 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     }
   }
 
-  function runOnAborts(tx, command) {
-    let onAborts = tx._onAborts;
-    if (onAborts) {
-      tx._onAborts = null;
-      if (command === 'ROLLBACK')
-        for (; onAborts; onAborts = onAborts.next)
-          onAborts.func();
-    }
-  }
-
-  function query(conn, text, params) {
-    try {
-      const future = new Future;
-      if (params)
-        conn.execParams(text, params, wait(future));
-      else
-        conn.exec(text, wait(future));
-
-      return future.wait();
-    } catch(ex) {
-      if (ex.sqlState === undefined) {
-        conn.finish();
-      }
-
-      const err = new Error(ex.message);
-      err.sqlState = ex.sqlState;
-      throw err;
-    }
-  }
-
-  const buildUpdate = (table, params)=>{
-    table._ensureTable();
-
-    const set = toColumns(table, params);
-    return {
-      sql: `UPDATE "${table._name}" SET ${set.cols.map((col, i) => '"'+col+'"=$'+(i+1)).join(',')}`,
-      set
-    };
-  };
-
-
   class Table {
     constructor(name, schema, client) {
       const table = this;
       table._name = name;
       table._client = client;
+      table.ready = undefined;
       Object.defineProperty(table, 'schema', {
         configurable: true,
         get() {return schema},
@@ -308,6 +302,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       if (this._ready === true) return;
 
       if (typeof this._ready === 'object') {
+        if (this._ready === null) this._ready = makeSubject({});
         const future = new Future;
         const handle = this._ready.onChange(() => future.return());
         try {
@@ -318,16 +313,17 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
         return this._ensureTable();
       }
 
-      const subject = this._ready = makeSubject({});
+      this._ready = null;
 
       if (autoSchema) {
         this.autoCreate();
       } else {
         readColumns(this);
       }
-      if (this._ready)
-        this._ready = true;
-      subject.notify();
+      const subject = this._ready;
+      this._ready = true;
+      if (subject !== null)
+        subject.notify();
     }
 
     dbType(col) {
@@ -872,12 +868,12 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   }
 
   function toColumns(table, params, cols) {
-    const needCols = autoSchema && {};
+    const needCols = autoSchema ? {} : undefined;
     cols = cols || Object.keys(params);
     const values = new Array(cols.length);
     const colMap = table._colMap;
 
-    util.forEach(cols, function (col, i) {
+    util.forEach(cols, (col, i)=>{
       let value = params[col];
       if (value === undefined) value = null;
       const desc = colMap[col];
@@ -907,7 +903,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       }
       values[i] = value;
 
-      if (needCols && ! desc) {
+      if (needCols !== undefined && ! desc) {
         needCols[col] = mapType(col, params[col]);
       }
     });
@@ -1081,6 +1077,9 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
     },
   };
   Driver[private$] = {id$};
+
+  koru.onunload(module, closeDefaultDb);
+  koru.onunload(module, 'reload');
 
   return Driver;
 });

@@ -38,14 +38,14 @@ define(function(require) {
       return thread.db || (thread.db = driver.defaultDb);
     },
     set db(value) {
-      value = value || driver.defaultDb;
+      if (value == null) value = driver.defaultDb;
       const {thread} = util;
       thread.db = value;
       thread.dbId = value.name;
     },
     get dbId() {return dbBroker.db.name},
 
-    clearDbId() {dbBroker.db = null},
+    clearDbId() {dbBroker.db = undefined},
 
     makeFactory(DBRunner, ...args) {
       return new DBS(DBRunner, ...args);
