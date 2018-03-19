@@ -12,13 +12,6 @@ define(function(require, exports, module) {
 
   const {hasOwn} = util;
 
-  const newSimDocs = ()=>{
-    const o = Object.create(null);
-    o.temp = null;
-    delete o.temp; // hint to optimizer
-    return o;
-  };
-
   const trimResults = (limit, results)=>{
     if (limit !== null && results.length > limit) results.length = limit;
   };
@@ -42,7 +35,7 @@ define(function(require, exports, module) {
               if (modelDocs === undefined) continue;
               const docs = dbs[modelName].simDocs;
               if (docs === undefined) continue;
-              dbs[modelName].simDocs = newSimDocs();
+              dbs[modelName].simDocs = util.createDictionary();
               for(const id in docs) {
                 let doc = modelDocs[id];
                 const fields = docs[id];
@@ -513,7 +506,7 @@ define(function(require, exports, module) {
             const model = Model[name];
             if (model === undefined) continue;
             const docs = model.docs;
-            const sd = dbs[name].simDocs = {};
+            const sd = dbs[name].simDocs = util.createDictionary();
             for(const id in docs) {
               sd[id] = 'new';
             }

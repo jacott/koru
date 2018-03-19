@@ -3,11 +3,7 @@ define(function(require, exports, module) {
   const dbBroker        = require('koru/model/db-broker');
   const util            = require('koru/util');
 
-  const dbMap$ = Symbol(), timer$ = Symbol(), queue$ = Symbol();
-
-  const MQDBList = [];
-
-  let db, mqdb;
+  const timer$ = Symbol(), queue$ = Symbol();
 
   const TABLE_SCHEMA = `
 CREATE TABLE _message_queue (
@@ -121,7 +117,8 @@ select "dueAt" from _message_queue where name = $1
   }
 
   class MQDB {
-    constructor(db) {
+    constructor() {
+      const {db} = dbBroker;
       const table = this.table = db.table('_message_queue', fields);
       table._ensureTable();
       if (table._columns === undefined) {
@@ -134,50 +131,31 @@ select "dueAt" from _message_queue where name = $1
     getQueue(name) {
       return this[queue$][name] || (this[queue$][name] = new MQ(this, name));
     }
+
+    stop() {
+      const queue = this[queue$];
+      for (const name in queue) {
+        const timers = queue[name][timer$];
+        if (timers.handle !== 0) {
+          koru.clearTimeout(timers.handle);
+          timers.handle = timers.ts = 0;
+        }
+      }
+    }
   }
 
-  const getDb = ()=>{
-    const tdb = dbBroker.db;
-    if (tdb !== db) {
-      mqdb = undefined;
-      db = tdb;
-    }
-    return db;
-  };
-
-  const getMQDB = ()=>{
-    if (getDb() === undefined) return;
-    if (mqdb !== undefined) return mqdb;
-    mqdb = db[dbMap$];
-    if (mqdb !== undefined) return mqdb;
-
-    MQDBList.push(db);
-
-    return db[dbMap$] = mqdb = new MQDB(db);
-  };
+  const dbs = dbBroker.makeFactory(MQDB);
 
   const MessageQueues = {
     start() {
-      const mqdb = getMQDB();
+      const mqdb = dbs.current;
       for (const name in actions) {
         queueNext(mqdb.getQueue(name));
       }
     },
 
     stopAll() {
-      MQDBList.forEach(db => {
-        const queue = db[dbMap$][queue$];
-        for (const name in queue) {
-          const timers = queue[name][timer$];
-          if (timers.handle !== 0) {
-            koru.clearTimeout(timers.handle);
-            timers.handle = timers.ts = 0;
-          }
-        }
-        delete db[dbMap$];
-      });
-      MQDBList.length = 0;
-      mqdb = db = undefined;
+      dbs.stop();
     },
     registerQueue({module, name, action, retryInterval}) {
       if (actions[name] !== undefined) throw new Error(`MessageQueue '${name}' already registered`);
@@ -192,7 +170,7 @@ select "dueAt" from _message_queue where name = $1
       delete retryIntervals[name];
     },
     getQueue(name) {
-      return getMQDB().getQueue(name);
+      return dbs.current.getQueue(name);
     }
   };
 

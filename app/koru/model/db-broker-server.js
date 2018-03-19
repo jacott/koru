@@ -2,6 +2,36 @@ define(function(require) {
   const util   = require('koru/util');
   const driver = require('koru/config!DBDriver');
 
+  const initArgs$ = Symbol();
+
+  const initDbs = dbs=>{
+    dbs.list = {};
+    dbs.dbId = '';
+    dbs.db = undefined;
+  };
+
+
+  class DBS {
+    constructor(DBRunner, ...args) {
+      this.DBRunner = DBRunner;
+      this[initArgs$] = args;
+      initDbs(this);
+    }
+
+    get current() {
+      if (dbBroker.dbId === this.dbId) return this.db;
+      this.db = this.list[this.dbId = dbBroker.dbId];
+      if (this.db !== undefined) return this.db;
+      return this.db = this.list[this.dbId] = new this.DBRunner(...this[initArgs$]);
+    }
+
+    stop() {
+      const {list} = this;
+      initDbs(this);
+      for (const id in list) list[id].stop();
+    }
+  }
+
   const dbBroker = {
     get db() {
       const {thread} = util;
@@ -15,7 +45,11 @@ define(function(require) {
     },
     get dbId() {return dbBroker.db.name},
 
-    clearDbId() {dbBroker.db = null}
+    clearDbId() {dbBroker.db = null},
+
+    makeFactory(DBRunner, ...args) {
+      return new DBS(DBRunner, ...args);
+    },
   };
 
   return dbBroker;

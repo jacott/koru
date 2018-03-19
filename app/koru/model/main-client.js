@@ -15,7 +15,7 @@ define(function(require, exports, module) {
 
   let _support;
 
-  const dbs = Object.create(null);
+  const dbs = util.createDictionary();
 
   function getProp(dbId, modelName, prop) {
     const obj = dbs[dbId];
