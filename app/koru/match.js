@@ -64,18 +64,22 @@ define(function(require, exports, module) {
     }
 
     Object.assign(match, {
-      equal(expected, name) {
-        return match(value => util.deepEqual(value, expected), name || 'match.equal');
+      equal(expected, name='match.equal') {
+        return match(value => util.deepEqual(value, expected), name);
       },
-      is(expected, name) {
-        return match(value => util.is(value, expected), name || 'match.is');
+      is(expected, name='match.is') {
+        return match(value => util.is(value, expected), name);
       },
-      regExp(regexp, name) {
+      regExp(regexp, name='match.regExp') {
         return match(value => typeof value === 'string' &&
-                     regexp.test(value), name || 'match.regExp');
+                     regexp.test(value), name);
       },
-      has(set, name) {
-        return match(value => hasOwn(set, value), name || 'match.has');
+      between(from, to, incFrom=true, incTo=true, name='match.between') {
+        return match(value => (incFrom ? value >= from : value > from) &&
+                     (incTo ? value <= to : value < to), name);
+      },
+      has(set, name='match.has') {
+        return match(value => hasOwn(set, value), name);
       },
       or(...args) {
         return match(value => args.some(match => match.$test(value)),
@@ -86,7 +90,7 @@ define(function(require, exports, module) {
           return args.every(match => match[mthd](value));
         }, typeof args[args.length-1] === 'string' ? args.pop() : 'match.and');
       },
-      tuple(array, name) {
+      tuple(array, name='match.tuple') {
         const len = array.length;
         return match((value, mthd='$test') => {
           if (! Array.isArray(value) || value.length !== len)
@@ -103,7 +107,7 @@ define(function(require, exports, module) {
             }
           }
           return true;
-        }, name || 'match.tuple');
+        }, name);
       },
     });
 

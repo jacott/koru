@@ -1,11 +1,11 @@
 define(function (require, exports, module) {
-  var test, v;
   const sut = require('./match');
   const TH  = require('./test-helper');
 
+  let v = null;
+
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       v.assertThrows =  (m, v, msg)=>{
         let aMsg;
@@ -92,20 +92,40 @@ define(function (require, exports, module) {
     },
 
     "test match.is"() {
-      var me = sut.is(v.foo = {foo: 123});
+      const me = sut.is(v.foo = {foo: 123});
       assert.isTrue(me.$test(v.foo));
       assert.isFalse(me.$test({foo: 123}));
     },
 
     "test match.regExp"() {
-      var mr = sut.regExp(/^ab*c$/i);
+      const mr = sut.regExp(/^ab*c$/i);
 
       assert.isTrue(mr.$test("abbbc"));
       assert.isFalse(mr.$test("abbbcd"));
     },
 
+    "test match.between"() {
+      const mb = sut.between(6, 9);
+      assert.isTrue(mb.$test(6));
+      assert.isTrue(mb.$test(7.5));
+      assert.isTrue(mb.$test(9));
+      assert.isFalse(mb.$test(9.1));
+      assert.isFalse(mb.$test(5.9));
+
+
+      const mbe = sut.between(6, 9, false, true);
+      assert.isFalse(mbe.$test(6));
+      assert.isTrue(mbe.$test(7.5));
+      assert.isTrue(mbe.$test(9));
+      assert.isTrue(mb.$test(6.1));
+      assert.isFalse(mb.$test(5.9));
+
+      const mbtf = sut.between(6, 9, true, false);
+      assert.isTrue(mbtf.$test(6));
+    },
+
     "test match.has"() {
-      var mi = sut.has({a: 0, b: 2});
+      const mi = sut.has({a: 0, b: 2});
 
       assert.isTrue(mi.$test('a'));
       assert.isTrue(mi.$test('b'));
@@ -113,7 +133,7 @@ define(function (require, exports, module) {
     },
 
     "test match.or"() {
-      var mor = sut.or(sut.number, sut.string, sut.boolean, 'mymatch');
+      let mor = sut.or(sut.number, sut.string, sut.boolean, 'mymatch');
 
       assert.same(mor.message, 'mymatch');
 
@@ -133,7 +153,7 @@ define(function (require, exports, module) {
     },
 
     "test match.and"() {
-      var mand = sut.and(sut.object, sut.baseObject, sut.equal({a: sut.number}), 'mymatch');
+      const mand = sut.and(sut.object, sut.baseObject, sut.equal({a: sut.number}), 'mymatch');
 
       assert.same(mand.message, 'mymatch');
 
