@@ -11,6 +11,8 @@ const koruPackage = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../packa
 
 const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
+let loadded = false;
+
 switch (match ? match[1] : process.argv[2]) {
 
 case 'generate': case 'g':
@@ -57,8 +59,11 @@ default:
   }
 
   function load(command) {
+    if (loadded) return ()=>{};
+    loadded = true;
     return function () {
       this.koruVersion = koruPackage.version;
+      this.koruPackage = koruPackage;
       program = null;
       require('../lib/'+command).apply(this, arguments);
     };
