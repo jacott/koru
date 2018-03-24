@@ -179,7 +179,7 @@ define(function(require, exports, module) {
           const topLevel = (changes.$partial && Changes.topLevelChanges(doc.attributes, changes)) ||
                 changes;
           if (id) {
-            Val.allowIfFound(doc);
+            Val.allowIfFound(doc, '_id');
             doc.changes = topLevel;
           } else {
             if (doc) return; // replay or duplicate id so don't update, don't throw error
@@ -209,7 +209,7 @@ define(function(require, exports, module) {
         Val.allowIfFound(model);
         TransQueue.transaction(model.db, () => {
           const doc = model.findById(id);
-          Val.allowIfFound(doc);
+          Val.allowIfFound(doc, '_id');
           if (doc.overrideRemove)
             doc.overrideRemove(userId);
           else {

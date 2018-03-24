@@ -307,7 +307,6 @@ define(function (require, exports, module) {
         authorize: v.auth = stub()
       }).defineFields({name: 'text'});
 
-
       v.doc = TestModel.create({name: 'foo'});
 
       TestModel.onChange(v.onChangeSpy = stub());
@@ -315,6 +314,10 @@ define(function (require, exports, module) {
       assert.accessDenied(()=>{
         session._rpcs.save.call({userId: null}, "TestModel", v.doc._id, {name: 'bar'});
       });
+
+      assert.exception(()=>{
+        session._rpcs.save.call({userId: 'u123'}, "TestModel", 'x'+v.doc._id, {name: 'bar'});
+      }, {error: 404, reason: {_id: [['not_found']]}});
 
       assert.same(v.doc.$reload().name, 'foo');
 
@@ -417,6 +420,10 @@ define(function (require, exports, module) {
         session._rpcs.remove.call({userId: null}, "TestModel", v.doc._id);
       });
 
+      assert.exception(()=>{
+        session._rpcs.remove.call({userId: 'u123'}, "TestModel", 'x'+v.doc._id);
+      }, {error: 404, reason: {_id: [['not_found']]}});
+
       spy(TransQueue, 'onSuccess');
 
       session._rpcs.remove.call({userId: 'u123'}, "TestModel", v.doc._id);
@@ -428,7 +435,7 @@ define(function (require, exports, module) {
       assert.calledTwice(v.onChangeSpy);
       assert.calledWith(v.auth, "u123", {remove: true});
 
-      assert.calledTwice(TestModel.db.transaction);
+      assert.calledThrice(TestModel.db.transaction);
     },
 
     "test addUniqueIndex"() {
