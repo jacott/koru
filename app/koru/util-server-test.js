@@ -1,12 +1,14 @@
 define(function (require, exports, module) {
-  var test, v;
   const TH   = require('./test');
+
+  const {stub, spy, onEnd, intercept} = TH;
 
   const util  = require('./util');
 
+  let v = null;
+
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
@@ -14,35 +16,78 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "test waitCallback"() {
-      var future = {throw: test.stub(), return: test.stub()};
+    "waitCallback": {
+      setUp() {
+        stub(global, 'setTimeout').returns(123);
+        stub(global, 'clearTimeout');
+        v.origCallTimeout = util.thread.callTimeout;
+        util.thread.callTimeout = undefined;
+      },
 
-      var func = util.waitCallback(future);
+      tearDown() {
+        util.thread.callTimeout = v.origCallTimeout;
+      },
 
-      func(v.foo = new Error("foo"));
+      "test callback"() {
+        let resolved = false;
+        const future = {throw: stub(), return: stub(), isResolved: ()=> resolved};
 
-      assert.calledWith(future.throw, v.foo);
-      refute.called(future.return);
+        const func = util.waitCallback(future);
 
-      func(null, "message");
-      assert.calledWith(future.return, "message");
-      assert.calledOnce(future.throw);
-      func(123);
-      assert.calledWith(future.throw, TH.match(err => err.message === "123"));
+        assert.calledWith(setTimeout, TH.match.func, 20*1000);
+        refute.called(clearTimeout);
+
+        func(v.foo = new Error("foo"));
+
+        assert.calledWith(future.throw, v.foo);
+        refute.called(future.return);
+
+        func(null, "message");
+        assert.calledWith(future.return, "message");
+        assert.calledOnce(future.throw);
+        func(123);
+        assert.calledWith(future.throw, TH.match(err => err.message === "123"));
+
+        future.throw.reset(); future.return.reset();
+        resolved = true;
+        func(123);
+        refute.called(future.throw);
+        refute.called(future.return);
+      },
+
+      "test timeout"() {
+        util.thread.callTimeout = 10*1000;
+        setTimeout.restore();
+        const origSetTimeout = setTimeout;
+        intercept(global, 'setTimeout', (func, to)=>{
+          assert.same(to, 10*1000);
+          origSetTimeout(func, 0);
+        });
+
+        const future = new util.Future;
+        const func = util.waitCallback(future);
+
+        assert.exception(()=>{
+          future.wait();
+        }, {error: 504, reason: 'Timed out'});
+
+        refute.called(clearTimeout);
+
+        func(123); // no exception
+      },
     },
 
     "test callWait"() {
-      const wait = this.stub().returns("success");
+      const wait = stub().returns("success");
       const future = {wait};
       function myFuture() {return future}
-      const method = this.stub();
-      this.stub(util, "waitCallback").returns("waitCallback-call");
+      const method = stub();
+      stub(util, "waitCallback").returns("waitCallback-call");
       const myThis = {method};
 
-      this.intercept(util, 'Future', myFuture);
+      intercept(util, 'Future', myFuture);
 
       assert.same(util.callWait(method, myThis, "foo", 1, 2), "success");
-
 
       assert.calledWith(method, "foo", 1, 2, "waitCallback-call");
       assert.same(method.firstCall.thisValue, myThis);
