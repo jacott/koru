@@ -75,7 +75,7 @@ define(function(require, exports, module) {
     /** private */
 
     _transport: {
-      // throw exceptiion by default
+      // throw exception by default
       send(options, callback) {
         throw new Error('Email has not been initialized');
       }
