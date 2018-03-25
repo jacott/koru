@@ -1,6 +1,9 @@
 isServer && define(function (require, exports, module) {
+  const request = requirejs.nodeRequire('request');
   const HttpHelper      = require('koru/http-helper');
-  const TH              = require('./test');
+  const TH              = require('koru/test');
+
+  const {test$} = require('koru/symbols');
 
   const {stub, spy, onEnd, util} = TH;
 
@@ -14,6 +17,80 @@ isServer && define(function (require, exports, module) {
 
     tearDown() {
       v = null;
+    },
+
+    "request": {
+      setUp() {
+        v = {};
+        v.orig = sut[test$].request;
+        v.req = stub();
+        sut[test$].request = v.req;
+      },
+
+      tearDown() {
+        sut[test$].request = v.orig;
+        v = null;
+      },
+
+      "test setup"() {
+        assert.same(v.orig, request);
+      },
+
+      "test HttpError"() {
+        let response = {statusCode: 403};
+        let error = new sut.HttpError({response, body: 'the body'});
+        assert.same(error.message, 'Bad Request');
+        assert.same(error.statusCode, 403);
+        assert.same(error.response, response);
+        assert.same(error.body, 'the body');
+
+        error = new sut.HttpError({message: 'foo', statusCode: 418, response});
+        assert.same(error.message, 'foo');
+        assert.same(error.statusCode, 418);
+        assert.same(error.response, response);
+        assert.same(error.body, undefined);
+
+
+        error = new sut.HttpError({statusCode: 418});
+        assert.same(error.statusCode, 418);
+        assert.same(error.response, undefined);
+        assert.same(error.body, undefined);
+
+        error = new sut.HttpError();
+        assert.same(error.message, 'Bad Request');
+        assert.same(error.statusCode, 400);
+        assert.same(error.response, undefined);
+        assert.same(error.body, undefined);
+      },
+
+      "test timeout"() {
+        v.req.yields({message: 'Timeout', code: 'ETIMEDOUT'});
+        assert.exception(()=>{sut.request({method: 'HEAD'})}, {message: 'Timeout', statusCode: 504});
+
+        assert.calledWith(v.req, {method: 'HEAD', timeout: 20*1000});
+      },
+
+      "test ECONNREFUSED"() {
+        v.req.yields({message: 'Connection Refused', errno: 'ECONNREFUSED'});
+        assert.exception(
+          ()=>{sut.request({method: 'PUT', timeout: 12345})},
+          {message: 'Connection Refused', statusCode: 503});
+
+        assert.calledWith(v.req, {method: 'PUT', timeout: 12345});
+      },
+
+      "test general error"() {
+        v.req.yields(new Error('foo'));
+        assert.exception(()=>{sut.request({method: 'HEAD'})}, {message: 'foo', statusCode: 500});
+      },
+
+      "test success"() {
+        const response = {headers: 'foo'}, body = 'the body';
+        v.req.yields(null, response, body);
+
+        assert.equals(sut.request({method: 'HEAD'}), {response, body});
+      },
+
     },
 
     "test readBody"() {

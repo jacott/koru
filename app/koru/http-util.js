@@ -1,18 +1,53 @@
-const Future = requirejs.nodeRequire('fibers/future');
-const rawBody = requirejs.nodeRequire('raw-body');
-
 define(function(require, exports, module) {
   const koru            = require('koru');
   const util            = require('koru/util');
 
+  const {test$} = require('koru/symbols');
+
+  const rawBody         = requirejs.nodeRequire('raw-body');
+
+  let request = requirejs.nodeRequire('request');
+
+  class HttpError extends Error {
+    constructor({message='Bad Request', statusCode, response, body}={}) {
+      super(message);
+      this.statusCode = statusCode === undefined
+        ? response === undefined ? 400 : response.statusCode
+      : statusCode;
+      this.response = response;
+      this.body = body;
+    }
+  }
+
   return {
+    HttpError,
+
+    request: (options)=>{
+      const future = new util.Future;
+      if (options.timeout === undefined)
+        options.timeout = 20*1000;
+      request(options, (error, response, body)=>{
+        future.return(error != null ? {
+          message: error.message,
+          statusCode: error.code === 'ETIMEDOUT'
+            ? 504 : (error.errno === 'ECONNREFUSED' ? 503 : 500)
+        } : {response, body});
+      });
+
+      const result = future.wait();
+      if (result.statusCode > 299) {
+        throw new HttpError(result);
+      }
+      return result;
+    },
+
     readBody(req, {
       encoding="utf8",
       length=req.headers['content-length'],
       limit="1mb",
       asJson=/\bjson\b/.test(req.headers['content-type']),
     }={}) {
-      const future = new Future;
+      const future = new util.Future;
       rawBody(req, {length, length, encoding}, (err, string) => {
         if (err) {
           future.throw(new Error(err.toString()));
@@ -57,6 +92,11 @@ define(function(require, exports, module) {
       response.writeHead(200, header);
       if (prefix !== undefined) response.write(prefix);
       response.end(data);
+    },
+
+    [test$]: {
+      get request() {return request},
+      set request(v) {request = v},
     },
   };
 });
