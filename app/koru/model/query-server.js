@@ -5,7 +5,6 @@ define(function(require, exports, module) {
   const koru       = require('../main');
   const util       = require('../util');
   const TransQueue = require('./trans-queue');
-  const Future     = requirejs.nodeRequire('fibers/future');
 
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
@@ -110,7 +109,7 @@ define(function(require, exports, module) {
       waitForOne(timeout) {
         timeout = timeout || 2000;
         const query = this;
-        const future = new Future;
+        const future = new util.Future;
         const handle = this.model.onChange(() => {
           const doc = query.fetchOne();
           if (doc) future.return(doc);

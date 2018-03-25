@@ -78,7 +78,7 @@ define(function(require, exports, module) {
     }
   }
 
-  module.exports = IdleCheck;
-
   IdleCheck.singleton = new IdleCheck();
+
+  return IdleCheck;
 });

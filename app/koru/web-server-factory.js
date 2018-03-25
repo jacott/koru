@@ -5,7 +5,6 @@ define(function (require, exports, module) {
   const koru            = require('./main');
   const util            = require('./util');
 
-  const Future          = requirejs.nodeRequire('fibers/future');
   const http            = requirejs.nodeRequire('http');
   const parseurl        = requirejs.nodeRequire('parseurl');
   const Path            = requirejs.nodeRequire('path');
@@ -85,7 +84,7 @@ define(function (require, exports, module) {
 
     const webServer = {
       start() {
-        Future.wrap(server.listen).call(server, port, host).wait();
+        util.Future.wrap(server.listen).call(server, port, host).wait();
       },
 
       stop() {
