@@ -1,16 +1,6 @@
 define(function (require, exports, module) {
-  const util       = require('./util');
-
-  class KoruError extends Error {
-    constructor(error, reason, details) {
-      super(typeof reason === 'string' ?
-            `${reason} [${error}]` : `${util.inspect(reason)} [${error}]`);
-      this.error = error;
-      this.reason = reason;
-      this.details = details;
-    }
-  }
-  KoruError.name = KoruError.prototype.name = 'KoruError';
+  const KoruError       = require('koru/koru-error');
+  const util            = require('./util');
 
   /**
    * Map of module dependencies. Entries list what to unload when
