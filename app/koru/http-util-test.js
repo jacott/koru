@@ -1,5 +1,6 @@
 isServer && define(function (require, exports, module) {
   const request = requirejs.nodeRequire('request');
+  const koru            = require('koru');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test');
   const util            = require('koru/util');
@@ -122,6 +123,21 @@ isServer && define(function (require, exports, module) {
         assert.exception(()=>{
           sut.request({method: 'HEAD'}, throw404);
         }, {statusCode: 409});
+      },
+
+      "test kill fiber"() {
+        const handle = {abort: stub()};
+        v.req.returns(handle);
+        let fib, ans;
+        koru.runFiber(()=>{
+          fib = util.Fiber.current;
+          ans = sut.request({method: 'HEAD'});
+        });
+
+        fib.throwInto('testing 123');
+
+        assert.equals(ans, {interrupt: 'testing 123'});
+        assert.called(handle.abort);
       },
     },
 

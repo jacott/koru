@@ -51,7 +51,9 @@ define(function(require, exports, module) {
       }
 
       const future = new util.Future;
-      request(options, (error, response, body)=>{
+      let reqHandle;
+      reqHandle = request(options, (error, response, body)=>{
+        reqHandle = undefined;
         future.return(error != null ? {
           message: error.message,
           statusCode: error.code === 'ETIMEDOUT'
@@ -59,7 +61,18 @@ define(function(require, exports, module) {
         } : {statusCode: response.statusCode, response, body});
       });
 
-      const result = future.wait();
+      let result;
+      try {
+        result = future.wait();
+      } catch(ex) {
+        if (reqHandle !== undefined)
+          reqHandle.abort();
+
+        if (ex instanceof Error) throw ex;
+        if (ex.constructor === Object)
+          return ex;
+        return {interrupt: ex};
+      }
       const {statusCode} = result;
       if (statusCode > 299) {
         const actionOpts = action === undefined ? THROW_5XX : action;
