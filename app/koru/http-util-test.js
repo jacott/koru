@@ -2,10 +2,11 @@ isServer && define(function (require, exports, module) {
   const request = requirejs.nodeRequire('request');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test');
+  const util            = require('koru/util');
 
   const {test$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, intercept} = TH;
 
   const sut  = require('./http-util');
   let v = null;
@@ -25,6 +26,14 @@ isServer && define(function (require, exports, module) {
         v.orig = sut[test$].request;
         v.req = stub();
         sut[test$].request = v.req;
+      },
+
+      "test throw opts"() {
+        assert.equals(sut.THROW_5XX, {serverError: 'throw'});
+        assert.equals(sut.THROW_NONE, {});
+        assert.equals(sut.THROW_ERROR, {serverError: 'throw', clientError: 'throw'});
+        assert.equals(sut.THROW_ERROR_NOT_404, {
+          serverError: 'throw', clientError: 'throw', 404: 'return'});
       },
 
       tearDown() {
@@ -73,10 +82,17 @@ isServer && define(function (require, exports, module) {
       "test ECONNREFUSED"() {
         v.req.yields({message: 'Connection Refused', errno: 'ECONNREFUSED'});
         assert.exception(
-          ()=>{sut.request({method: 'PUT', timeout: 12345})},
+          ()=>{sut.request({method: 'PUT', timeout: 12345}, {serverError: 'throw'})},
           {message: 'Connection Refused', statusCode: 503});
 
         assert.calledWith(v.req, {method: 'PUT', timeout: 12345});
+
+        v.req.reset();
+
+        const ans = sut.request({method: 'PUT', timeout: 12345}, {serverError: 'return'});
+
+        assert.equals(ans.statusCode, 503);
+        assert.equals(ans.message, 'Connection Refused');
       },
 
       "test general error"() {
@@ -85,12 +101,28 @@ isServer && define(function (require, exports, module) {
       },
 
       "test success"() {
-        const response = {headers: 'foo'}, body = 'the body';
+        const response = {headers: 'foo', statusCode: 200}, body = 'the body';
         v.req.yields(null, response, body);
 
-        assert.equals(sut.request({method: 'HEAD'}), {response, body});
+        assert.equals(sut.request({method: 'HEAD'}), {statusCode: 200, response, body});
       },
 
+      "test return 404, else throw"() {
+        const response = {headers: 'foo', statusCode: 404}, body = 'the body';
+        v.req.yields(null, response, body);
+
+        const throw404 = {404: 'return', clientError: 'throw'};
+
+        assert.equals(sut.request({method: 'HEAD'}), {statusCode: 404, response, body});
+        assert.equals(sut.request({method: 'HEAD'}, throw404),
+                      {statusCode: 404, response, body});
+
+        response.statusCode = 409;
+        assert.equals(sut.request({method: 'HEAD'}), {statusCode: 409, response, body});
+        assert.exception(()=>{
+          sut.request({method: 'HEAD'}, throw404);
+        }, {statusCode: 409});
+      },
     },
 
     "test readBody"() {

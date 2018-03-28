@@ -19,24 +19,61 @@ define(function(require, exports, module) {
     }
   }
 
+
+  const THROW_NONE = {};
+
+  const THROW_5XX = {
+    serverError: 'throw',
+  };
+
+  const THROW_ERROR = {
+    serverError: 'throw',
+    clientError: 'throw',
+  };
+
+  const THROW_ERROR_NOT_404 = Object.assign({404: 'return'}, THROW_ERROR);
+
+
   return {
     HttpError,
 
-    request: (options)=>{
-      const future = new util.Future;
+    THROW_NONE,
+    THROW_ERROR,
+    THROW_5XX,
+    THROW_ERROR_NOT_404,
+
+    request: (options, action)=>{
       if (options.timeout === undefined)
         options.timeout = 20*1000;
+
+      if (typeof action === 'function') {
+        return request(options, action);
+      }
+
+      const future = new util.Future;
       request(options, (error, response, body)=>{
         future.return(error != null ? {
           message: error.message,
           statusCode: error.code === 'ETIMEDOUT'
             ? 504 : (error.errno === 'ECONNREFUSED' ? 503 : 500)
-        } : {response, body});
+        } : {statusCode: response.statusCode, response, body});
       });
 
       const result = future.wait();
-      if (result.statusCode > 299) {
-        throw new HttpError(result);
+      const {statusCode} = result;
+      if (statusCode > 299) {
+        const actionOpts = action === undefined ? THROW_5XX : action;
+        let actionCmd = undefined;
+        if (statusCode > 399) {
+          if (statusCode > 499) {
+            actionCmd = actionOpts.serverError;
+          } else {
+            actionCmd = actionOpts[''+statusCode] || actionOpts.clientError;
+          }
+        }
+
+        if (actionCmd === 'throw')
+          throw new HttpError(result);
       }
       return result;
     },
