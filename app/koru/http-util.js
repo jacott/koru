@@ -91,6 +91,34 @@ define(function(require, exports, module) {
       return result;
     },
 
+    expBackoff(func, config={}) {
+      config.retryCount = 0;
+      if (config.minDelay == null) config.minDelay = 30*1000;
+      if (config.maxDelay == null) config.maxDelay = 90*60*1000;
+      if (config.variance == null) config.variance = 10*1000;
+      const wrapper = ()=>{
+        config.timer = 0;
+        try {
+          const ans = func();
+        } catch(ex) {
+          if (config.isRetry === undefined ? ex.statusCode >= 500 : config.isRetry(ex)) {
+            config.timer = koru.setTimeout(
+              wrapper,
+              Math.min(
+                config.maxDelay,
+                (2**config.retryCount++)*config.minDelay + Math.floor(Math.random()*config.variance))
+            );
+
+          } else if (config.onFailure === undefined) {
+            throw ex;
+          } else {
+            config.onFailure(ex);
+          }
+        }
+      };
+      config.timer = koru.setTimeout(wrapper, 0);
+    },
+
     readBody(req, {
       encoding="utf8",
       length=req.headers['content-length'],

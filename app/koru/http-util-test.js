@@ -7,7 +7,7 @@ isServer && define(function (require, exports, module) {
 
   const {test$} = require('koru/symbols');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match} = TH;
 
   const sut  = require('./http-util');
   let v = null;
@@ -138,6 +138,91 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(ans, {interrupt: 'testing 123'});
         assert.called(handle.abort);
+      },
+    },
+
+    "expBackoff": {
+      setUp() {
+        let timerHandle = 100;
+        stub(koru, 'setTimeout').invokes(call => ++timerHandle);
+        stub(koru, 'clearTimeout');
+      },
+
+      "test success"() {
+        const config = {onSuccess: stub(), onFailure: stub()};
+        sut.expBackoff(()=>{
+          return {statusCode: 200};
+        }, config);
+
+
+        refute.called(config.onSuccess);
+
+        assert.calledWith(koru.setTimeout, match.func, 0);
+        assert.equals(config.timer, 101);
+        assert.equals(config.retryCount, 0);
+
+
+        koru.setTimeout.yieldAndReset();
+
+        refute.called(config.onFailure);
+
+        refute.called(koru.setTimeout);
+        refute.called(koru.clearTimeout);
+      },
+
+      "test failure"() {
+        const config = {onSuccess: stub(), onFailure: stub()};
+        sut.expBackoff(()=>{
+          throw v.error = new sut.HttpError({statusCode: 400});
+        }, config);
+
+        refute.called(config.onFailure);
+
+        koru.setTimeout.yieldAndReset();
+
+        assert.calledWith(config.onFailure, v.error);
+        refute.called(config.onSuccess);
+
+        refute.called(koru.setTimeout);
+        refute.called(koru.clearTimeout);
+      },
+
+      "test retry"() {
+        const config = {onSuccess: stub(), onFailure: stub()};
+        sut.expBackoff(()=>{
+          throw v.error = new sut.HttpError({statusCode: 500});
+        }, config);
+
+        assert.same(config.retryCount, 0);
+        assert.same(config.timer, 101);
+
+        koru.setTimeout.yieldAndReset();
+
+        refute.called(config.onFailure);
+        refute.called(config.onSuccess);
+
+        assert.calledWith(koru.setTimeout, match.func, match.between(30*1000, 40*1000));
+        assert.same(config.timer, 102);
+        assert.same(config.retryCount, 1);
+
+        config.retryCount = 7;
+
+        config.isRetry = function (ex) {v.ex = ex; v.config = this; return true};
+        koru.setTimeout.yieldAndReset();
+
+        assert.equals(v.config, config);
+        assert.equals(v.ex.statusCode, 500);
+
+        assert.calledWith(koru.setTimeout, match.func, match.between(3840*1000, (3840+10)*1000));
+        koru.setTimeout.yieldAndReset();
+        assert.calledWith(koru.setTimeout, match.func, match.between(90*60*1000, (90*60+10)*1000));
+        koru.setTimeout.yieldAndReset();
+        assert.calledWith(koru.setTimeout, match.func, match.between(90*60*1000, (90*60+10)*1000));
+
+        config.isRetry = () => false;
+        koru.setTimeout.yieldAndReset();
+
+        refute.called(koru.setTimeout);
       },
     },
 
