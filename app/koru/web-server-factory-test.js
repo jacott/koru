@@ -116,7 +116,7 @@ isServer && define(function (require, exports, module) {
 
     "test handlers override specials"() {
       intercept(koru, 'runFiber', func => func());
-      const req = {url: '/bar/baz'}, res = {end: stub()};
+      const req = {url: '/bar/baz'}, res = {end: stub(), writeHead: stub()};
       stub(koru, 'unhandledException');
 
       v.webServer = WebServerFactory('localhost', '9876', '/', '', {
@@ -124,7 +124,7 @@ isServer && define(function (require, exports, module) {
 
       v.webServer.requestListener(req, res);
 
-      assert.calledWith(koru.unhandledException, v.ex);
+      refute.called(koru.unhandledException);
 
       const bar = stub();
       v.webServer.registerHandler(module, 'bar', bar);

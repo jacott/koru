@@ -16,28 +16,34 @@ define(function (require, exports, module) {
 
     const handlers = {};
 
-    const sendError = (err, msg='', res)=>{
-      if (! err || 404 === err.status || 404 === err.error) {
+    const sendError = (res, err, msg='')=>{
+      if (err == null) {
         notFound(res);
-      } else if (typeof err === 'number') {
-        const attrs = {};
-        if (typeof msg !== 'string') {
-          msg = JSON.stringify(msg);
-          attrs['Content-Type'] = 'application/json';
-        }
-        attrs['Content-Length'] = Buffer.byteLength(msg);
-        res.writeHead(err, attrs);
-        res.end(msg);
       } else {
-        koru.unhandledException(err);
-        res.statusCode = 500;
-        res.end('Internal server error!');
+        const code = typeof err === 'number'
+              ? err
+              : +(err.statusCode || err.error || err.status);
+        if (code == 0 || code != code) {
+          res.statusCode = 500;
+          res.end('Internal server error!');
+          koru.unhandledException(err);
+        } else {
+          if (typeof err === 'object' && msg === '') msg = err.reason || err.message;
+          const attrs = {};
+          if (typeof msg !== 'string') {
+            msg = JSON.stringify(msg);
+            attrs['Content-Type'] = 'application/json';
+          }
+          attrs['Content-Length'] = Buffer.byteLength(msg);
+          res.writeHead(code, attrs);
+          res.end(msg);
+        }
       }
     };
 
     const requestListener = (req, res)=>{
       koru.runFiber(()=>{
-        const error = (err, msg)=>{sendError(err, msg, res)};
+        const error = (err, msg)=>{sendError(res, err, msg)};
         IdleCheck.inc();
         try {
           let path = parseurl(req).pathname;
@@ -135,7 +141,10 @@ define(function (require, exports, module) {
       try {
         return Compilers.compile(type, paths.join(''), outPath);
       } catch (err) {
-        sendError(err, err.reason, res);
+        if (err.error === 404)
+          notFound(res);
+        else
+          sendError(res, err);
         return true;
       }
     }
