@@ -148,7 +148,7 @@ define(function(require, exports, module) {
             title = page.title || Route.title;
           }
 
-          Route.recordHistory(page, href, pageRoute);
+          Route.recordHistory(page, href);
           currentHref = href;
           currentPage = page;
           Route.setTitle(title);
