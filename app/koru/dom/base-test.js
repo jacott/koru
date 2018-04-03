@@ -120,7 +120,7 @@ define(function (require, exports, module) {
     },
 
     "test svg Dom.h"() {
-      const elm = Dom.h({div: {svg: [{
+      const elm = Dom.h({div: {class: "foo bar", svg: [{
         path: [], d: 'M0,0 10,10Z'
       }, {
         foreignObject: {div: 'hello', xmlns: "http://www.w3.org/1999/xhtml"}
@@ -144,7 +144,7 @@ define(function (require, exports, module) {
         });
       });
 
-      assert.equals(Dom.htmlToJson(elm), {div: {svg: [{
+      assert.equals(Dom.htmlToJson(elm), {div: {class: "foo bar", svg: [{
         path: [], d: 'M0,0 10,10Z'
       }, {
         foreignObject: {xmlns: 'http://www.w3.org/1999/xhtml', div: 'hello'}

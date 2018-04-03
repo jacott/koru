@@ -37,7 +37,7 @@ define(function(require, exports, module) {
   const SVGNS = Dom.SVGNS = "http://www.w3.org/2000/svg";
   const XHTMLNS = Dom.XHTMLNS = "http://www.w3.org/1999/xhtml";
 
-  const HTML_IGNORE = {id: true, class: true, xmlns: true};
+  const HTML_IGNORE = {id: true, xmlns: true};
 
   const html = (body, xmlns) => {
     let content = null, tagName = '';
@@ -117,7 +117,6 @@ define(function(require, exports, module) {
             : document.createElement(tagName||'div');
     canonicalTagName(elm);
 
-    if (body.class !== undefined) elm.className = body.class;
     if (body.id !== undefined) elm.id = body.id;
     for(const key in attrs) {
       elm.setAttribute(key, attrs[key]);
