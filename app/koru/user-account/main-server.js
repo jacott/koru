@@ -169,9 +169,8 @@ define(function(require, exports, module) {
 
     assertResponse(conn, response) {
       if (response && conn.$srp && response.M === conn.$srp.M) return;
-      throw new koru.Error(403, 'failure');
+      throw new koru.Error(403, 'Invalid password');
     },
-
 
     SRPBegin(state, request) {
       return SRPBegin.call(state, request);

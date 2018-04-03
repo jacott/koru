@@ -220,7 +220,7 @@ define(function (require, exports, module) {
 
         assert.exception(function () {
           session._rpcs.SRPLogin.call(v.conn, response);
-        }, {error: 403, reason: 'failure'});
+        }, {error: 403, reason: 'Invalid password'});
 
         assert.same(v.conn.userId, undefined);
       },
