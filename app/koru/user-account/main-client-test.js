@@ -30,6 +30,7 @@ isClient && define(function (require, exports, module) {
 
 
     "test secureCall"() {
+      assert.isTrue(session.isRpcGet('SRPBegin'));
       userAccount.secureCall('fooBar', 'email@vimaly.com', 'secret', [1, 2], v.callback = stub());
 
       assert.calledWithExactly(
@@ -82,6 +83,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test success"() {
+        assert.isTrue(session.isRpcGet('SRPChangePassword'));
         var verifier = SRP.generateVerifier('secret');
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
@@ -145,6 +147,7 @@ isClient && define(function (require, exports, module) {
         var srp = new SRP.Server(verifier);
         var challenge = srp.issueChallenge({A: v.request.A});
 
+        assert.isTrue(session.isRpcGet('SRPLogin'));
         session.rpc.reset();
         v.sutCallback(null, challenge);
 
@@ -243,6 +246,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test resetPassword"() {
+        assert.isTrue(session.isRpcGet('resetPassword'));
         userAccount.resetPassword('the key', 'new password', v.callback = stub());
         assert.calledWith(session.rpc, 'resetPassword', 'the key', TH.match(function (hash) {
           return SRP.checkPassword('new password', hash);

@@ -94,6 +94,11 @@ define(function(require, exports, module) {
     },
   };
 
+  session.defineRpcGet('resetPassword', ()=>{});
+  session.defineRpcGet('SRPBegin', ()=>{});
+  session.defineRpcGet('SRPLogin', ()=>{});
+  session.defineRpcGet('SRPChangePassword', ()=>{});
+
   function SRPCall(method, email, password,  callback, modifyResponse, responseFunc) {
     const srp = new SRP.Client(password);
     const request = srp.startExchange();
