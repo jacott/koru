@@ -15,6 +15,19 @@ define(function (require, exports, module) {
       v = null;
     },
 
+    "test inspect"() {
+      const obj = {"": 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, "\\a": 5};
+      assert.equals(
+        sut.inspect(obj),
+        `{123: 1, "": 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, "\\\\a": 5}`);
+    },
+
+    "test qlabel"() {
+      assert.equals(sut.qlabel("1234"), '1234');
+      assert.equals(sut.qlabel("1'234"), `"1'234"`);
+
+    },
+
     "test mergeNoEnum"() {
       /**
        * Merge `source` into `dest` but do not set `enumerable` on the
