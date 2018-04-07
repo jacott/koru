@@ -190,7 +190,7 @@ define(function(require, exports, module) {
       for(let i = 0; i < fields.length; ++i) {
         const fieldElm = fields[i];
         const name = fieldElm.getAttribute('name');
-        if (modelFields[name])
+        if (modelFields === undefined || modelFields[name])
           doc[name] = fieldElm.value;
       }
 
@@ -202,6 +202,8 @@ define(function(require, exports, module) {
         if (modelFields[name])
           doc[name] = Tpl.getRadioValue(fieldElm, name);
       }
+
+      return doc;
     },
 
     clearErrors(form) {

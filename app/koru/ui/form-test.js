@@ -165,6 +165,7 @@ isClient && define(function (require, exports, module) {
       let form = Dom.h({form: [
         {button: 'hello', $name: 'foo_id'},
         {input: '', $name: 'bar', $value: 'barVal'},
+        {input: '', $name: 'other', $value: 'otherV'},
       ]});
 
       let doc = {
@@ -176,6 +177,9 @@ isClient && define(function (require, exports, module) {
 
       assert.equals(doc.bar, 'barVal');
       assert.equals(doc.foo_id, 'fv');
+      assert.equals(doc.other, undefined);
+
+      assert.equals(Form.fillDoc({}, form), {bar: 'barVal', other: 'otherV'});
     },
 
     "test helper elmId"() {
