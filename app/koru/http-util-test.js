@@ -49,13 +49,13 @@ isServer && define(function (require, exports, module) {
       "test HttpError"() {
         let response = {statusCode: 403};
         let error = new sut.HttpError({response, body: 'the body'});
-        assert.same(error.message, 'Bad Request');
+        assert.same(error.message, 'Bad Request [403]');
         assert.same(error.statusCode, 403);
         assert.same(error.response, response);
         assert.same(error.body, 'the body');
 
         error = new sut.HttpError({message: 'foo', statusCode: 418, response});
-        assert.same(error.message, 'foo');
+        assert.same(error.message, 'foo [418]');
         assert.same(error.statusCode, 418);
         assert.same(error.response, response);
         assert.same(error.body, undefined);
@@ -67,7 +67,7 @@ isServer && define(function (require, exports, module) {
         assert.same(error.body, undefined);
 
         error = new sut.HttpError();
-        assert.same(error.message, 'Bad Request');
+        assert.same(error.message, 'Bad Request [400]');
         assert.same(error.statusCode, 400);
         assert.same(error.response, undefined);
         assert.same(error.body, undefined);
@@ -75,7 +75,8 @@ isServer && define(function (require, exports, module) {
 
       "test timeout"() {
         v.req.yields({message: 'Timeout', code: 'ETIMEDOUT'});
-        assert.exception(()=>{sut.request({method: 'HEAD'})}, {message: 'Timeout', statusCode: 504});
+        assert.exception(()=>{sut.request({method: 'HEAD'})}, {
+          message: 'Timeout [504]', statusCode: 504});
 
         assert.calledWith(v.req, {method: 'HEAD', timeout: 20*1000});
       },
@@ -84,7 +85,7 @@ isServer && define(function (require, exports, module) {
         v.req.yields({message: 'Connection Refused', errno: 'ECONNREFUSED'});
         assert.exception(
           ()=>{sut.request({method: 'PUT', timeout: 12345}, {serverError: 'throw'})},
-          {message: 'Connection Refused', statusCode: 503});
+          {message: 'Connection Refused [503]', statusCode: 503});
 
         assert.calledWith(v.req, {method: 'PUT', timeout: 12345});
 
@@ -98,7 +99,7 @@ isServer && define(function (require, exports, module) {
 
       "test general error"() {
         v.req.yields(new Error('foo'));
-        assert.exception(()=>{sut.request({method: 'HEAD'})}, {message: 'foo', statusCode: 500});
+        assert.exception(()=>{sut.request({method: 'HEAD'})}, {message: 'foo [500]', statusCode: 500});
       },
 
       "test success"() {

@@ -10,10 +10,10 @@ define(function(require, exports, module) {
 
   class HttpError extends Error {
     constructor({message='Bad Request', statusCode, response, body}={}) {
-      super(message);
-      this.statusCode = statusCode === undefined
-        ? response === undefined ? 400 : response.statusCode
-      : statusCode;
+      if (statusCode === undefined)
+        statusCode = response === undefined ? 400 : response.statusCode;
+      super(`${message} [${statusCode}]`);
+      this.statusCode = statusCode;
       this.response = response;
       this.body = body;
     }
