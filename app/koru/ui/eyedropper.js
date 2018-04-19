@@ -28,7 +28,7 @@ define(function(require, exports, module) {
 
         try {
           Eyedropper.getPointColors(event.clientX, event.clientY, (err, colors)=>{
-            if (err) {
+            if (err != null) {
               koru.unhandledException(err);
               callback(err);
               return;
@@ -123,7 +123,8 @@ define(function(require, exports, module) {
             const range = (document.caretPositionFromPoint
                            ? document.caretPositionFromPoint(x, y)
                            : document.caretRangeFromPoint(x,y));
-            if (range !== null && range.startContainer.nodeType === document.TEXT_NODE) {
+            if (range !== null && range.startContainer !== undefined &&
+                range.startContainer.nodeType === document.TEXT_NODE) {
               textColor = uColor.toRGB(cs.getPropertyValue('color'));
             }
           }

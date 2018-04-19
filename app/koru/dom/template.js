@@ -104,7 +104,8 @@ define(function(require, exports, module) {
         return frag;
       } catch(ex) {
         try {
-          Object.defineProperty(ex, 'toString', {value: () => `while rendering: ${this.$fullname}
+          Object.defineProperty(ex, 'toString', {
+            value: () => `while rendering: ${this.$fullname}
 ${ex.message}`});
         // clean up what we can
           Dom.destroyData(frag);
@@ -185,18 +186,11 @@ ${ex.message}`});
     static set _currentEvent(value) {currentEvent =  value}
   }; module.exports = DomTemplate;
 
-  DomTemplate.lookupTemplate = lookupTemplate;
-
-  function nativeOn(parent, eventType, selector, func) {
-    let events = parent[ctx$].__events;
-
-    if (! events) {
-      events = parent[ctx$].__events = {};
-    }
+  const nativeOn = (parent, eventType, selector, func)=>{
+    const events = parent[ctx$].__events || (parent[ctx$].__events = {});
 
     let eventTypes = events[eventType];
-
-    if (! eventTypes) {
+    if (eventTypes === undefined) {
       eventTypes = events[eventType] = {};
       switch(eventType) {
       case 'focus':
@@ -222,11 +216,11 @@ ${ex.message}`});
     }
 
     eventTypes[selector||':TOP'] = func;
-  }
+  };
 
   let lastTouch;
 
-  function menustart(event) {
+  const menustart = event =>{
     if (lastTouch && event.type === "click") {
       if (lastTouch !== 1)
         return;
@@ -237,7 +231,7 @@ ${ex.message}`});
     } else {
       lastTouch = 1;
     }
-  }
+  };
 
   function dragTouchStart(event) {
     let v = event.currentTarget[dragTouchStart$];
@@ -297,11 +291,7 @@ ${ex.message}`});
     };
   }
 
-  const onBlur = (event)=>{
-    if (document.activeElement === event.target) return;
-    onEvent(event);
-  };
-
+  const onBlur = event =>{if (document.activeElement !== event.target) onEvent(event)};
 
   function onEvent(event, type=event.type) {
     const prevEvent = currentEvent;
@@ -357,16 +347,16 @@ ${ex.message}`});
     }
   }
 
-  function fire(event, elm, func) {
+  const fire = (event, elm, func)=>{
     if (func.call(elm, event) === false || currentEvent !== event) {
       currentEvent === 'propigation' || event.preventDefault();
       event.stopImmediatePropagation();
       return true;
     }
     return false;
-  }
+  };
 
-  function nativeOff(parent, eventType, selector, func) {
+  const nativeOff = (parent, eventType, selector, func)=>{
     const events = parent[ctx$] && parent[ctx$].__events;
 
     if (events) {
@@ -394,9 +384,9 @@ ${ex.message}`});
         parent.removeEventListener(eventType, onEvent);
       }
     }
-  }
+  };
 
-  function nativeOnOff(parent, func, selector, events) {
+  const nativeOnOff = (parent, func, selector, events)=>{
     parent = parent.nodeType ? parent : parent[0];
 
     if (selector) {
@@ -409,7 +399,7 @@ ${ex.message}`});
       const row = events[i];
       func(parent, row[0], row[1], row[row.length -1]);
     }
-  }
+  };
 
   function addNodes(template, parent, nodes, pns) {
     const len = nodes.length;
@@ -469,14 +459,13 @@ ${ex.message}`});
     return result;
   }
 
-  function lookupTemplate(tpl, name) {
+  const lookupTemplate = DomTemplate.lookupTemplate = (tpl, name)=>{
     const m = /^((?:\.\.\/)*[^\.]+)\.(.*)$/.exec(name);
 
-    if (m)
-      return fetchTemplate(tpl, m[1], m[2].split("."));
-
-    return fetchTemplate(tpl, name);
-  }
+    return m == null
+      ? fetchTemplate(tpl, name)
+      : fetchTemplate(tpl, m[1], m[2].split("."));
+  };
 
   function fetchTemplate(template, name, rest) {
     if (name[0] === '/') {
@@ -510,9 +499,9 @@ ${ex.message}`});
     return elm;
   }
 
-  function addAttrEval(template, id, node, elm) {
+  const addAttrEval = (template, id, node, elm)=>{
     Ctx._currentCtx.attrEvals.push(parseNode(template, node, [elm, id]));
-  }
+  };
 
   function setAttrs(template, elm, attrs) {
     if (attrs) for(let j=0; j < attrs.length; ++j) {

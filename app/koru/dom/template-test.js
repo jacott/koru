@@ -3,19 +3,19 @@ isClient && define(function (require, exports, module) {
    * DomTemplate is used to create interactive
    * [Dom Trees](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  const koru = require('koru');
-  const Dom  = require('koru/dom');
-  const Ctx  = require('koru/dom/ctx');
-  const TH   = require('koru/test');
-  const api  = require('koru/test/api');
-  const util = require('koru/util');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const Ctx             = require('koru/dom/ctx');
+  const TH              = require('koru/test');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
 
   const {stub, spy, onEnd, match} = TH;
 
   const {ctx$} = require('koru/symbols');
 
   const DomTemplate = require('./template');
-  var v;
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
@@ -251,10 +251,8 @@ isClient && define(function (require, exports, module) {
         const data = {arg: 'me'};
         Dom.Foo.$render(data);
 
-        assert.calledWith(Dom.Bar.$created, match(function (ctx) {
-          assert.same(ctx.data, data);
-          return true;
-        }));
+        assert.calledWith(Dom.Bar.$created, match(
+          ctx => (assert.same(ctx.data, data), true)));
       },
 
       "test scoping"() {
@@ -415,7 +413,7 @@ isClient && define(function (require, exports, module) {
           target: v.target,
           touches: [{clientX: 30, clientY: 60}],
         };
-        v.start = function () {
+        v.start = ()=>{
           v.touchstart(v.touchstartEvent);
 
           assert.calledWith(document.addEventListener, 'touchend', match(f => v.touchend = f),
@@ -542,7 +540,7 @@ isClient && define(function (require, exports, module) {
 
       assert.dom('body>div', function () {
         const top = this;
-        onEnd(function () {Dom.remove(top)});
+        onEnd(()=>{Dom.remove(top)});
         spy(top, 'addEventListener');
         Dom.Foo.$attachEvents(top);
         assert.calledOnce(top.addEventListener);
@@ -708,9 +706,7 @@ isClient && define(function (require, exports, module) {
       },
 
       "test setBoolean"() {
-        assert.exception(function () {
-          Dom.setBoolean('disabled', true);
-        });
+        assert.exception(()=>{Dom.setBoolean('disabled', true)});
 
         assert.dom(document.createElement('div'), function () {
           Dom.setBoolean('checked', true, this);
@@ -764,7 +760,7 @@ isClient && define(function (require, exports, module) {
           Dom.newTemplate({name: 'Foo.Bar', nodes: [{name: 'span'}]});
           Dom.newTemplate({name: 'Foo.Baz', nodes: [{name: 'h1'}]});
 
-          const dStub = Dom.Foo.Bar.$destroyed = function (...args) {
+          const dStub = Dom.Foo.Bar.$destroyed = (...args)=>{
             if (v) v.args = args;
           };
 
@@ -904,7 +900,7 @@ isClient && define(function (require, exports, module) {
         },
       });
 
-      content = function () {
+      content = ()=>{
         const frag = document.createDocumentFragment();
         frag.appendChild(Dom.h({id: "e1", div: 'e1'}));
         frag.appendChild(Dom.h({id: "e2", div: 'e2'}));
@@ -917,7 +913,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('div', {count: 3});
       });
 
-      content = function () {
+      content = ()=>{
         const frag = document.createDocumentFragment();
         frag.appendChild(Dom.h({id: "n1", p: 'n1'}));
         frag.appendChild(Dom.h({id: "n2", p: 'n2'}));
@@ -930,7 +926,7 @@ isClient && define(function (require, exports, module) {
         assert.dom('p', {count: 2});
       });
 
-      content = function () {
+      content = ()=>{
         const elm = document.createElement('span');
         elm.textContent = 'foo';
         return elm;
@@ -1177,10 +1173,7 @@ isClient && define(function (require, exports, module) {
         _test_age() {return "global age"},
       });
 
-      onEnd(function () {
-        Dom._helpers._test_name = null;
-        Dom._helpers._test_age = null;
-      });
+      onEnd(()=>{Dom._helpers._test_name = Dom._helpers._test_age = null});
 
       const data = {name: 'sally'};
 

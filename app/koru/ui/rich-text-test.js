@@ -1,20 +1,20 @@
 define(function (require, exports, module) {
-  var test, v;
   const Dom  = require('koru/dom/base');
   const util = require('koru/util');
   const TH   = require('../test');
-  const sut  = require('./rich-text');
 
-  var OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
-      LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
-      MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
-      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
-      LI = 20;
+  const sut  = require('./rich-text');
+  let v = null;
+
+  const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
+        LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
+        MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
+        FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
+        LI = 20;
 
 
   TH.testCase(module, {
     setUp () {
-      test = this;
       v = {};
       v.p = document.createElement('p');
     },
@@ -149,10 +149,8 @@ define(function (require, exports, module) {
           node.setAttribute('href', ref+"_foo");
         },
       });
-      test.onEnd(function () {
-        sut.deregisterLinkType(1);
-      });
-      var html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
+      TH.onEnd(()=>{sut.deregisterLinkType(1)});
+      const html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
       assert.equals(sut.fromHtml(html), ['a foo (link_to)', [LINK, 0, 0, 15, 1, 5]]);
       assertConvert(TH.normHTMLStr(html.outerHTML));
     },

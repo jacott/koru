@@ -228,7 +228,7 @@ isClient && define(function (require, exports, module) {
       const rect = Dom('rect');
       const bbox = rect.getBoundingClientRect();
 
-      sut.getColorFromImage(Dom('svg'), bbox.left + 1, bbox.top + 1, (err, color) => {
+      sut.getColorFromImage(Dom('svg'), bbox.left+1, bbox.top+1, (err, color) => {
         try {
           assert.same(err, null);
 

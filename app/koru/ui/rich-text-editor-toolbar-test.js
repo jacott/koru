@@ -276,7 +276,7 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('.input', function () {
           assert.dom('b span', 'Hel', function () {
-            assert.match(this.style.fontFamily, /^["']?foo font["']?$/);
+            assert.match(this.style.fontFamily, /^["']?foo\\? font["']?$/);
           });
         });
 

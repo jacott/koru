@@ -24,7 +24,7 @@ define(function(require, exports, module) {
   };
 
   const FONT_ID_TO_FACE = [];
-  for (let id in FONT_FACE_TO_ID)
+  for (const id in FONT_FACE_TO_ID)
     FONT_ID_TO_FACE[FONT_FACE_TO_ID[id]] = id;
 
   const FONT_ID_TO_STD = FONT_ID_TO_FACE.slice();
@@ -38,7 +38,7 @@ define(function(require, exports, module) {
 
 
   const ALIGN_CODE_TO_TEXT = [];
-  for (let id in ALIGN_TEXT_TO_CODE)
+  for (const id in ALIGN_TEXT_TO_CODE)
     ALIGN_CODE_TO_TEXT[ALIGN_TEXT_TO_CODE[id]] = id;
 
   Object.assign(ALIGN_TEXT_TO_CODE, {
@@ -67,15 +67,15 @@ define(function(require, exports, module) {
 
   const INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
-  function fromHtml(html, options) {
-    var builder = new MarkupBuilder(options);
+  const fromHtml = (html, options)=>{
+    const builder = new MarkupBuilder(options);
     if (options && options.includeTop)
       (FROM_RULE[html.tagName] || fromDiv).call(builder, html);
     else
       builder.fromChildren(html);
-    var markup = builder.markup;
+    const markup = builder.markup;
     return [builder.lines, markup.length ? markup : null];
-  }
+  };
 
   class MarkupBuilder {
     constructor () {
@@ -88,7 +88,7 @@ define(function(require, exports, module) {
     }
 
     relative (pos) {
-      var rel = pos - this._relativePos;
+      const rel = pos - this._relativePos;
       this._relativePos = pos;
       return rel;
     }
@@ -105,8 +105,8 @@ define(function(require, exports, module) {
         value === undefined || this.markup.push(value);
         return;
       }
-      var cc = this.markup[muIndex];
-      var values = this.markup[muIndex+4];
+      const cc = this.markup[muIndex];
+      let values = this.markup[muIndex+4];
       if (cc !== MULTILINE) {
         this.markup[muIndex] = MULTILINE;
         if (values === undefined)
@@ -120,11 +120,11 @@ define(function(require, exports, module) {
 
     resetInlines () {
       if (this.inlineIdx === 0) return;
-      var lineLength = this.lines[this.lines.length - 1].length;
-      for(var i = this.inlineIdx-1; i >= 0; --i) {
-        var entry = this.inlines[i];
-        var node = entry[0];
-        var rule = FROM_RULE[node.tagName] || this.ignoreInline;
+      const lineLength = this.lines[this.lines.length - 1].length;
+      for(let i = this.inlineIdx-1; i >= 0; --i) {
+        const entry = this.inlines[i];
+        const node = entry[0];
+        const rule = FROM_RULE[node.tagName] || this.ignoreInline;
         entry[1] === null || rule.call(this, node, lineLength, entry[1]);
       }
 
@@ -132,12 +132,13 @@ define(function(require, exports, module) {
     }
 
     applyInlines () {
-      var index = this.lines.length - 1;
-      for(var i = this.inlineIdx; i < this.inlines.length; ++i) {
-        var entry = this.inlines[i];
-        var node = entry[0];
-        var rule = FROM_RULE[node.tagName] || this.ignoreInline;;
-        var len = this.markup.length;
+      const index = this.lines.length - 1;
+      let i;
+      for(i = this.inlineIdx; i < this.inlines.length; ++i) {
+        const entry = this.inlines[i];
+        const node = entry[0];
+        const rule = FROM_RULE[node.tagName] || this.ignoreInline;;
+        const len = this.markup.length;
         rule.call(this, node, index);
         if (len === this.markup.length)
           entry[1] = null;
@@ -150,14 +151,14 @@ define(function(require, exports, module) {
     ignoreInline () {}
 
     fromChildren(parent) {
-      if (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent)
-          && (parent.getAttribute('align') || parent.style.textAlign))
-        var endAlign = textAlign.call(this, parent);
+      const endAlign =  (parent.nodeType === ELEMENT_NODE && ! isInlineNode(parent)
+                         && (parent.getAttribute('align') || parent.style.textAlign))
+            ? textAlign.call(this, parent) : undefined;
 
-      var nodes = parent.childNodes;
-      var last = nodes.length - 1;
-      for(var index = 0; index <= last; ++index) {
-        var node = nodes[index];
+      const nodes = parent.childNodes;
+      const last = nodes.length - 1;
+      for(let index = 0; index <= last; ++index) {
+        const node = nodes[index];
 
         if(node.tagName === 'BR') {
           if (this.needNL)
@@ -169,8 +170,7 @@ define(function(require, exports, module) {
 
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
-            var text = node.textContent;
-            text = text.replace(/[ \n\t\r]+/g, ' ');
+            const text = node.textContent.replace(/[ \n\t\r]+/g, ' ');
             if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
             this.needNL && this.newLine();
             this.applyInlines();
@@ -178,15 +178,15 @@ define(function(require, exports, module) {
           } else {
             this.inlines.push([node, null]);
             this.fromChildren(node);
-            var rule = FROM_RULE[node.tagName] || this.ignoreInline;
-            var entry = this.inlines.pop();
+            const rule = FROM_RULE[node.tagName] || this.ignoreInline;
+            const entry = this.inlines.pop();
             if (entry[1] !== null)
               rule.call(this, node, this.lines[this.lines.length - 1].length, entry[1]);
             this.inlineIdx = Math.min(this.inlineIdx, this.inlines.length);
           }
         } else {
           this.needNL = true;
-          var rule = fromBlockRule(node);
+          const rule = fromBlockRule(node);
           rule.call(this, node);
           this.needNL = true;
           this.resetInlines();
@@ -196,6 +196,8 @@ define(function(require, exports, module) {
       endAlign && endAlign.call(this, parent);
     }
   };
+
+  const isInlineNode = item => item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
 
   function textAlign(node) {
     const start = this.lines.length;
@@ -223,47 +225,38 @@ define(function(require, exports, module) {
     this.markup[endMarker] = this.lines.length - 1 - start;
   };
 
-  function fromInline(code) {
-    return function fromInline(node, index, pos) {
-      if (pos === undefined)
-        this.markup.push(code, this.relative(index), this.lines[index].length, 0);
-      else
-        this.markup[pos+3] = index;
-    };
-  }
+  const fromInline = code => function fromInline(node, index, pos) {
+    if (pos === undefined)
+      this.markup.push(code, this.relative(index), this.lines[index].length, 0);
+    else
+      this.markup[pos+3] = index;
+  };
 
-  function fromBlock(code) {
-    return function fromBlock(node) {
-      var start = this.lines.length;
-      this.markup.push(code, this.relative(start), 0);
-      var endMarker = this.markup.length - 1;
-      this.fromChildren(node);
-      this.markup[endMarker] = this.lines.length - 1 - start;
-    };
-  }
+  const fromBlock = code => function fromBlock(node) {
+    const start = this.lines.length;
+    this.markup.push(code, this.relative(start), 0);
+    const endMarker = this.markup.length - 1;
+    this.fromChildren(node);
+    this.markup[endMarker] = this.lines.length - 1 - start;
+  };
 
   function fromPre(parent) {
-    var needNl = true;
-    var builder =this;
-    var lines = builder.lines;
-    var start = lines.length;
+    const builder =this;
+    let needNl = true;
+    const {lines} = builder;
+    const start = lines.length;
     builder.markup.push(CODE, builder.relative(start), 0);
-    var pos = builder.markup.length - 1;
+    const pos = builder.markup.length - 1;
     builder.newLine();
     lines[start] = "code:"+(parent.getAttribute('data-lang')||'text');
 
-    var nodes = parent.childNodes;
-    var last = nodes.length - 1;
-    var hlCode;
-    var prevLen = 0;
-    for(var index = 0; index <= last; ++index) {
-      extractText(nodes[index]);
-    }
-    builder.markup[pos] = builder.lines.length - start - 1;
+    const nodes = parent.childNodes;
+    const last = nodes.length - 1;
+    let hlCode, prevLen = 0;
 
-    function addText(text) {
-      var cIdx = lines.length - 1;
-      var lPos = lines[cIdx].length;
+    const addText = text =>{
+      const cIdx = lines.length - 1;
+      const lPos = lines[cIdx].length;
       lines[cIdx] += text;
       if (hlCode !== undefined && lines[cIdx].length !== lPos) {
         builder.markup.push(hlCode, builder.relative(cIdx), lPos - prevLen, lines[cIdx].length - lPos);
@@ -271,10 +264,9 @@ define(function(require, exports, module) {
         prevLen = lines[cIdx].length;
 
       }
-    }
+    };
 
-    function extractText(node) {
-
+    const extractText = node =>{
       if (node.tagName === 'SPAN') {
         hlCode = CLASS_TO_CODE[node.className];
       }
@@ -285,9 +277,9 @@ define(function(require, exports, module) {
           builder.newLine();
           needNl = false;
         }
-        var rows = node.textContent.split("\n");
+        const rows = node.textContent.split("\n");
         addText(rows[0]);
-        for(var i = 1; i < rows.length; ++i) {
+        for(let i = 1; i < rows.length; ++i) {
           needNl = false;
           prevLen = 0;
           builder.newLine();
@@ -299,14 +291,20 @@ define(function(require, exports, module) {
       } else {
         if (! INLINE_TAGS[node.tagName])
           needNl = true;
-        var nodes = node.childNodes;
-        for(var i = 0; i < nodes.length; ++i) {
+        const nodes = node.childNodes;
+        for(let i = 0; i < nodes.length; ++i) {
           extractText(nodes[i]);
         }
         if (! INLINE_TAGS[node.tagName])
           needNl = true;
       }
+    };
+
+
+    for(let index = 0; index <= last; ++index) {
+      extractText(nodes[index]);
     }
+    builder.markup[pos] = builder.lines.length - start - 1;
   }
 
   const CODE_TO_CLASS = [
@@ -385,17 +383,16 @@ define(function(require, exports, module) {
       return;
     }
 
-    var markupLen = this.markup.length;
+    const markupLen = this.markup.length;
     if (node.tagName === 'FONT') {
-      var face = node.getAttribute('face');
+      const face = node.getAttribute('face');
       face && fromFace.call(this, markupLen, FONT, 'font-family', face, index);
-      var color = uColor.toHex(node.getAttribute('color'));
+      const color = uColor.toHex(node.getAttribute('color'));
       color && fromColor.call(this, markupLen, COLOR, 'color', color, index);
-      var size = node.getAttribute('size');
+      const size = node.getAttribute('size');
       size && fromSize.call(this, markupLen, SIZE, 'size', size, index);
     } else {
       fromFace.call(this, markupLen, FONT, 'font-family', 'monospace', index);
-      var face = 'monospace';
     }
   }
 
@@ -415,7 +412,7 @@ define(function(require, exports, module) {
   }
 
   function fromFace(muIndex, code, name, value, index) {
-    var id = FONT_FACE_TO_ID[value.replace(/'/g,'')];
+    const id = FONT_FACE_TO_ID[value.replace(/'/g,'')];
     this.addInline(muIndex, code, index, id === undefined ? value : id);
   }
 
@@ -532,9 +529,7 @@ define(function(require, exports, module) {
 
   // TO HTML
 
-  function toHtml(lines, markup, result) {
-    return new HtmlBuilder(lines, markup, result);
-  }
+  const toHtml = (lines, markup, result)=> new HtmlBuilder(lines, markup, result);
 
   class HtmlBuilder {
     constructor (lines, markup, html=document.createDocumentFragment()) {
@@ -542,11 +537,11 @@ define(function(require, exports, module) {
       this.markup = markup || [];
       this.lidx = this.midx = 0;
       this.lineCount = [this.offset(1)];
-      var state = {result: html, rule: toDiv, begun: true};
+      let state = {result: html, rule: toDiv, begun: true};
 
-      var nrule;
+      let nrule;
       this.line = null;
-      for(var index = 0; index < lines.length; ++index) {
+      for(let index = 0; index < lines.length; ++index) {
         this.line = lines[this.lidx = index];
         while (index === this.nextMarkupLine() && ((nrule = TO_RULES[this.offset(0)]) && ! nrule.inline)) {
           state = {result: state.result, rule: nrule, last: this.endMarkup(), oldState: state};
@@ -566,33 +561,26 @@ define(function(require, exports, module) {
       return html;
     }
 
-    offset(offset) {
-      return this.markup[this.midx + offset];
-    }
+    offset(offset) {return this.markup[this.midx + offset]}
 
     nextRule (offset) {
       this.midx += offset;
       this.lineCount[this.midx] = this.lidx + this.markup[this.midx + 1];
     }
 
-    nextMarkupLine () {
-      return this.lineCount[this.midx];
-    }
+    nextMarkupLine () {return this.lineCount[this.midx]}
 
-    endMarkup () {
-      var line = this.lineCount[this.midx] + this.offset(2);
-      return line;
-    }
+    endMarkup () {return this.lineCount[this.midx] + this.offset(2)}
 
     toChildren(state) {
-      var nextMarkup = this.nextMarkupLine();
-      var startPos = state.inlineStart;
-      var endPos = state.inlineEnd;
+      let nextMarkup = this.nextMarkupLine();
+      let startPos = state.inlineStart;
+      let endPos = state.inlineEnd;
 
       if (this.lidx === nextMarkup) {
         while(this.lidx ===  nextMarkup && this.offset(2) < endPos) {
-          var rule = TO_RULES[this.offset(0)];
-          var text = this.line.slice(state.inlineStart || 0, this.offset(2));
+          const rule = TO_RULES[this.offset(0)];
+          const text = this.line.slice(state.inlineStart || 0, this.offset(2));
 
           if (text)
             state.result.appendChild(document.createTextNode(text));
@@ -620,9 +608,9 @@ define(function(require, exports, module) {
       if (! this.line) {
         state.result.appendChild(document.createElement('BR'));
       } else {
-        var text = this.line.slice(startPos, endPos);
+        const text = this.line.slice(startPos, endPos);
 
-        text &&
+        text !== '' &&
           state.result.appendChild(document.createTextNode(text));
       }
       state.inlineEnd = endPos;
@@ -648,7 +636,7 @@ define(function(require, exports, module) {
   }
 
   function toInnerLi(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     if (state.result.firstChild || this.align) {
       oldResult.appendChild(state.result = document.createElement('DIV'));
       if (this.align)
@@ -661,7 +649,7 @@ define(function(require, exports, module) {
   function toAlign(state) {
     if (! state.begun) {
       state.rule = state.oldState.rule;
-      var oldAlign = this.align;
+      const oldAlign = this.align;
       this.align = ALIGN_CODE_TO_TEXT[this.offset(0)];
       this.nextRule(3);
       state.endCall = function () {
@@ -679,7 +667,7 @@ define(function(require, exports, module) {
         this.nextRule(3);
         return state.begun = true;
       }
-      var oldResult = state.result;
+      const oldResult = state.result;
       oldResult.appendChild(state.result = document.createElement(tag));
       if (this.align)
         state.result.style.textAlign = this.align;
@@ -690,10 +678,10 @@ define(function(require, exports, module) {
 
   function toCode(state) {
     if (! state.begun) {
-      var pre = document.createElement('PRE');
-      var inner = document.createElement('DIV');
+      const pre = document.createElement('PRE');
+      const inner = document.createElement('DIV');
       if (state.oldState.rule.tag === 'LI') {
-        var li = document.createElement('LI');
+        const li = document.createElement('LI');
         if (this.align)
           li.style.textAlign = this.align;
         li.appendChild(pre);
@@ -707,10 +695,8 @@ define(function(require, exports, module) {
       state.skip = true;
       pre.setAttribute('data-lang', this.line.slice(5));
       state.rulePos = this.midx;
-      var markup = this.markup;
-      state.offset = function (delta) {
-        return markup[state.rulePos + delta];
-      };
+      const markup = this.markup;
+      state.offset = delta => markup[state.rulePos + delta];
 
       while (state.lastLine >= (this.lidx = this.nextMarkupLine())) {
         this.nextRule(4);
@@ -725,17 +711,17 @@ define(function(require, exports, module) {
       return;
     }
 
-    var line = this.line;
+    const {line} = this;
 
-    var startPos = 0;
+    let startPos = 0;
 
-    var delta = state.offset(1);
+    let delta = state.offset(1);
     while(this.lidx === (state.currLine + delta)) {
-      var eIdx = startPos + state.offset(2);
+      const eIdx = startPos + state.offset(2);
       if (eIdx > startPos)
         state.result.appendChild(document.createTextNode(line.slice(startPos, eIdx)));
 
-      var span = document.createElement('SPAN');
+      const span = document.createElement('SPAN');
       span.className = CODE_TO_CLASS[state.offset(0)];
       span.textContent = line.slice(eIdx, startPos = eIdx + state.offset(3));
 
@@ -744,7 +730,7 @@ define(function(require, exports, module) {
       state.rulePos+=4;
       delta = state.offset(1);
     }
-    var text = line.slice(startPos);
+    let text = line.slice(startPos);
 
     if (this.lidx !== state.lastLine)
       text += "\n";
@@ -767,34 +753,33 @@ define(function(require, exports, module) {
   CODE_TO_STYLE_NAME[SIZE] = 'font-size';
 
   function toInline(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('SPAN'));
-    var code = this.markup[state.index];
+    const code = this.markup[state.index];
     state.result.style[CODE_TO_STYLE_NAME[code]] = CODE_TO_STYLE_VALUE[code];
     this.toChildren(state);
     state.result = oldResult;
   } toInline.inline = true; toInline.muInc = 4;
 
   function toInlineValue(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('SPAN'));
-    var code = this.markup[state.index];
-    var value = this.markup[state.index+4];
-    var decode = CODE_TO_STYLE_VALUE[code];
+    const code = this.markup[state.index];
+    const value = this.markup[state.index+4];
+    const decode = CODE_TO_STYLE_VALUE[code];
     state.result.style[CODE_TO_STYLE_NAME[code]] = decode ? decode(value) : value;
     this.toChildren(state);
     state.result = oldResult;
   } toInlineValue.inline = true; toInlineValue.muInc = 5;
 
   function toMultiInline(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('SPAN'));
-    var value = this.markup[state.index+4];
-    var idx = 0;
-    var style = state.result.style;
-    for(var idx = 0; idx < value.length; ++idx) {
-      var code = value[idx];
-      var decode = CODE_TO_STYLE_VALUE[code];
+    const value = this.markup[state.index+4];
+    const {style} = state.result;
+    for(let idx = 0; idx < value.length; ++idx) {
+      const code = value[idx];
+      const decode = CODE_TO_STYLE_VALUE[code];
       style[CODE_TO_STYLE_NAME[code]] = typeof decode === 'string' ? decode : decode ? decode(value[++idx]) : value[++idx];
     }
     this.toChildren(state);
@@ -802,12 +787,12 @@ define(function(require, exports, module) {
   } toMultiInline.inline = true; toMultiInline.muInc = 5;
 
   function toFont(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('FONT'));
-    var code = this.offset(-1);
+    const code = this.offset(-1);
     if (! Array.isArray(code))
       code = [code];
-    util.forEach(code, function (attr) {
+    util.forEach(code, attr =>{
       if (typeof attr === 'string') {
         switch(attr[0]) {
         case '#': case 'r':
@@ -828,31 +813,31 @@ define(function(require, exports, module) {
   } toFont.inline = true; toFont.muInc = 5;
 
   function toBgColor(state) {
-    var oldResult = state.result;
+    const oldResult = state.result;
     oldResult.appendChild(state.result = document.createElement('SPAN'));
-    var code = this.offset(-1);
+    const code = this.offset(-1);
     state.result.style.backgroundColor = code;
     this.toChildren(state);
     state.result = oldResult;
   } toBgColor.inline = true; toBgColor.muInc = 5;
 
   function toLink(state) {
-    var oldResult = state.result;
-    var link = state.result = document.createElement('A');
+    const oldResult = state.result;
+    const link = state.result = document.createElement('A');
     oldResult.appendChild(link);
-    var code = LINK_TO_HTML[this.offset(-2)];
+    const code = LINK_TO_HTML[this.offset(-2)];
     code.class && (link.className = code.class);
-    var lineEnd = state.inlineEnd;
+    const lineEnd = state.inlineEnd;
     state.inlineEnd = this.offset(-1);
-    var ref = this.line.slice(state.inlineEnd + 2, lineEnd - 1);
+    const ref = this.line.slice(state.inlineEnd + 2, lineEnd - 1);
     this.toChildren(state);
     state.inlineEnd = lineEnd;
-    var tnode = state.result.lastChild;
+    const tnode = state.result.lastChild;
     code.toHtml(state.result, ref);
     state.result = oldResult;
   } toLink.inline = true; toLink.muInc = 6;
 
-  var TO_RULES = [];
+  const TO_RULES = [];
   TO_RULES[0] = toDiv;
   TO_RULES[OL] = toNested('OL', toDiv);
   TO_RULES[UL] = toNested('UL', toDiv);
@@ -876,74 +861,70 @@ define(function(require, exports, module) {
   TO_RULES[COLOR] = toInlineValue;
   TO_RULES[SIZE] = toInlineValue;
 
-  function isInlineNode(item) {
-    return item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
-  }
-
   return {
     standardFonts: FONT_ID_TO_STD,
     fontIdToFace: FONT_ID_TO_FACE,
 
     toHtml,
 
-    fromHtml (html, options) {
-      var rt = fromHtml(html, options);
+    fromHtml(html, options) {
+      const rt = fromHtml(html, options);
       rt[0] = rt[0].join("\n");
       return rt;
     },
 
-    fromToHtml (html) {
-      var rt = fromHtml(Dom.h({div: html}));
+    fromToHtml(html) {
+      const rt = fromHtml(Dom.h({div: html}));
       return toHtml(rt[0], rt[1], document.createElement('div'));
     },
 
-    isValid (text, markup) {
+    isValid(text, markup) {
       if (text == null && markup == null) return true;
       if (typeof text !== 'string' || ! (markup == null || Array.isArray(markup)))
         return false;
 
-      var html = toHtml(text, markup, document.createElement('div'));
-      var rt = fromHtml(html);
+      const html = toHtml(text, markup, document.createElement('div'));
+      const rt = fromHtml(html);
 
-      var result = text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
-
-      return result;
+      return text === rt[0].join('\n') && util.deepEqual(rt[1], markup);
     },
 
-    linkType (id) {
-      return LINK_TO_HTML[id];
-    },
+    linkType: id => LINK_TO_HTML[id],
 
-    registerLinkType (data) {
+    registerLinkType(data) {
       LINK_TO_HTML[data.id] = data;
       LINK_FROM_HTML[data.class] = data;
     },
-    deregisterLinkType (id) {
-      var data = LINK_TO_HTML[id];
-      if (data) {
+    deregisterLinkType(id) {
+      const data = LINK_TO_HTML[id];
+      if (data !== undefined) {
         delete LINK_TO_HTML[id];
         delete LINK_FROM_HTML[data.class];
       }
     },
 
-    fontType (face) {
-      var id = +face;
-      if (id !== id) {
+    fontType(face) {
+      const idn = +face;
+      if (idn !== idn) {
         if (! face) return 'sans-serif';
         face = face.replace(/['"]/g,'');
-        var id = FONT_FACE_TO_ID[face];
-        if (id === undefined) return face;
+        const id = FONT_FACE_TO_ID[face];
+        return id === undefined ? face : FONT_ID_TO_STD[+id];
       }
-      return FONT_ID_TO_STD[id];
+      return FONT_ID_TO_STD[idn];
     },
 
-    mapFontNames (faces) {
-      for(var std in faces) {
-        var code = FONT_FACE_TO_ID[std];
+    mapFontNames(faces) {
+      for(const std in faces) {
+        const code = FONT_FACE_TO_ID[std];
         if (code === undefined) throw new Error("face not found: " + std);
-        var face = faces[std];
+        const face = faces[std];
         FONT_FACE_TO_ID[face] = code;
         FONT_ID_TO_FACE[code] = face;
+        if (face.indexOf(" ") !== -1) {
+          const f2 = face.replace(/ /g, '\\ ');
+          FONT_FACE_TO_ID[f2] = code;
+        }
       }
     },
 
