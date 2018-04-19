@@ -200,8 +200,13 @@ ${ex.message}`});
       eventTypes = events[eventType] = {};
       switch(eventType) {
       case 'focus':
-      case 'blur':
         parent.addEventListener(eventType, onEvent, true);
+        break;
+      case 'blur':
+        parent.addEventListener(eventType, onBlur, true);
+        break;
+      case 'focusout':
+        parent.addEventListener(eventType, onBlur);
         break;
       case 'dragstart':
         parent.addEventListener(eventType, onEvent);
@@ -292,6 +297,12 @@ ${ex.message}`});
     };
   }
 
+  const onBlur = (event)=>{
+    if (document.activeElement === event.target) return;
+    onEvent(event);
+  };
+
+
   function onEvent(event, type=event.type) {
     const prevEvent = currentEvent;
     const prevCtx = Ctx._currentCtx;
@@ -352,6 +363,7 @@ ${ex.message}`});
       event.stopImmediatePropagation();
       return true;
     }
+    return false;
   }
 
   function nativeOff(parent, eventType, selector, func) {
@@ -362,8 +374,13 @@ ${ex.message}`});
       events[eventType] = null;
       switch (eventType) {
       case 'focus':
-      case 'blur':
         parent.removeEventListener(eventType, onEvent, true);
+        break;
+      case 'blur':
+        parent.removeEventListener(eventType, onBlur, true);
+        break;
+      case 'focusout':
+        parent.removeEventListener(eventType, onBlur);
         break;
       case 'dragstart':
         parent.removeEventListener(eventType, onEvent);

@@ -126,7 +126,7 @@ define(function(require, exports, module) {
       asJson=/\bjson\b/.test(req.headers['content-type']),
     }={}) {
       const future = new util.Future;
-      rawBody(req, {length, length, encoding}, (err, string) => {
+      rawBody(req, {length, encoding}, (err, string) => {
         if (err) {
           future.throw(new Error(err.toString()));
         } else

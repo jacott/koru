@@ -165,6 +165,7 @@ isClient && define(function (require, exports, module) {
 
     "test focusout"() {
       v.open(new Date(2013-01-02));
+      document.activeElement.blur();
       TH.trigger('[name=testField]', 'focusout');
 
       refute.dom('.Calendar');

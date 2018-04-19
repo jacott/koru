@@ -10,7 +10,7 @@ isClient && define(function (require, exports, module) {
   const api  = require('koru/test/api');
   const util = require('koru/util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match} = TH;
 
   const {ctx$} = require('koru/symbols');
 
@@ -251,7 +251,7 @@ isClient && define(function (require, exports, module) {
         const data = {arg: 'me'};
         Dom.Foo.$render(data);
 
-        assert.calledWith(Dom.Bar.$created, TH.match(function (ctx) {
+        assert.calledWith(Dom.Bar.$created, match(function (ctx) {
           assert.same(ctx.data, data);
           return true;
         }));
@@ -290,7 +290,12 @@ isClient && define(function (require, exports, module) {
       assert.calledWithExactly(v.one, event);
     },
 
-    "test focus,blur are capture events"() {
+    "test focus events"() {
+      /**
+       * ensure focus and blur are capture events.
+
+       * blur and focusout should not fire if document.activeElement === event.target
+       **/
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'button'},
@@ -299,6 +304,7 @@ isClient && define(function (require, exports, module) {
       Dom.Foo.$events({
         'focus button': v.focus = stub(),
         'blur button': v.blur = stub(),
+        'focusout button': v.focusout = stub(),
       });
 
       const foo = Dom.Foo.$render({});
@@ -306,21 +312,31 @@ isClient && define(function (require, exports, module) {
       stub(foo, 'addEventListener');
       Dom.Foo.$attachEvents(foo);
 
-      assert.calledWith(foo.addEventListener, 'focus', TH.match(f => v.f = f), true);
-      assert.calledWith(foo.addEventListener, 'blur', v.f, true);
+      assert.calledWith(foo.addEventListener, 'focus', match(f => v.f = f), true);
+      assert.calledWith(foo.addEventListener, 'blur', match(f => v.b = f), true);
+      assert.calledWithExactly(foo.addEventListener, 'focusout', v.b);
 
       v.f(v.ev = {type: 'focus', currentTarget: foo, target: foo.querySelector('button')});
-
       assert.calledWith(v.focus, v.ev);
-      v.f(v.ev = {type: 'blur', currentTarget: foo, target: foo.querySelector('button')});
 
+      v.b(v.ev = {type: 'blur', currentTarget: foo, target: document.activeElement});
+      refute.called(v.blur);
+      v.b(v.ev = {type: 'blur', currentTarget: foo, target: foo.querySelector('button')});
       assert.calledWith(v.blur, v.ev);
+
+
+      v.b(v.ev = {type: 'focusout', currentTarget: foo, target: document.activeElement});
+      refute.called(v.focusout);
+      v.b(v.ev = {type: 'focusout', currentTarget: foo, target: foo.querySelector('button')});
+      assert.calledWith(v.focusout, v.ev);
+
 
       stub(foo, 'removeEventListener');
       Dom.Foo.$detachEvents(foo);
 
       assert.calledWith(foo.removeEventListener, 'focus', v.f, true);
-      assert.calledWith(foo.removeEventListener, 'blur', v.f, true);
+      assert.calledWith(foo.removeEventListener, 'blur', v.b, true);
+      assert.calledWithExactly(foo.removeEventListener, 'focusout', v.b);
     },
 
     "menustart": {
@@ -348,7 +364,7 @@ isClient && define(function (require, exports, module) {
 
       "test non touch pointerdown"() {
         Dom.triggerEvent(v.target, 'pointerdown');
-        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'pointerdown'));
+        assert.calledWith(v.menustart, match(ev => ev.type === 'pointerdown'));
       },
 
       "test touch click"() {
@@ -357,11 +373,11 @@ isClient && define(function (require, exports, module) {
         refute.called(v.menustart);
         Dom.triggerEvent(v.target, 'click');
 
-        assert.calledWith(v.menustart, TH.match(ev => ev.type === 'click'));
+        assert.calledWith(v.menustart, match(ev => ev.type === 'click'));
       },
 
       "test $detachEvents"() {
-        assert.calledWithExactly(v.foo.addEventListener, 'pointerdown', TH.match(
+        assert.calledWithExactly(v.foo.addEventListener, 'pointerdown', match(
           f => v.pointerdown = f));
         spy(v.foo, 'removeEventListener');
         Dom.Foo.$detachEvents(v.foo);
@@ -386,8 +402,8 @@ isClient && define(function (require, exports, module) {
 
         stub(v.foo, 'addEventListener');
         Dom.Foo.$attachEvents(v.foo);
-        assert.calledWithExactly(v.foo.addEventListener, 'dragstart', TH.match.func);
-        assert.calledWithExactly(v.foo.addEventListener, 'touchstart', TH.match(
+        assert.calledWithExactly(v.foo.addEventListener, 'dragstart', match.func);
+        assert.calledWithExactly(v.foo.addEventListener, 'touchstart', match(
           f => v.touchstart = f));
 
         stub(koru, 'setTimeout').returns(321);
@@ -402,10 +418,10 @@ isClient && define(function (require, exports, module) {
         v.start = function () {
           v.touchstart(v.touchstartEvent);
 
-          assert.calledWith(document.addEventListener, 'touchend', TH.match(f => v.touchend = f),
+          assert.calledWith(document.addEventListener, 'touchend', match(f => v.touchend = f),
                             Dom.captureEventOption);
 
-          assert.calledWith(document.addEventListener, 'touchmove', TH.match(f => v.touchmove = f),
+          assert.calledWith(document.addEventListener, 'touchmove', match(f => v.touchmove = f),
                             Dom.captureEventOption);
         };
       },
@@ -413,7 +429,7 @@ isClient && define(function (require, exports, module) {
       "test touch and hold"() {
         v.start();
 
-        assert.calledWith(koru.setTimeout, TH.match.func, 300);
+        assert.calledWith(koru.setTimeout, match.func, 300);
 
         koru.setTimeout.reset();
         stub(document, 'removeEventListener');
@@ -433,7 +449,7 @@ isClient && define(function (require, exports, module) {
 
         v.touchstart(v.touchstartEvent);
 
-        assert.calledWith(koru.setTimeout, TH.match(to => v.to = to), 300);
+        assert.calledWith(koru.setTimeout, match(to => v.to = to), 300);
         refute.called(v.dragStart);
         stub(Dom, 'triggerEvent');
         v.to();
@@ -442,7 +458,7 @@ isClient && define(function (require, exports, module) {
         stub(v.foo, 'removeEventListener');
         Dom.Foo.$detachEvents(v.foo);
 
-        assert.calledWithExactly(v.foo.removeEventListener, 'dragstart', TH.match.func);
+        assert.calledWithExactly(v.foo.removeEventListener, 'dragstart', match.func);
         assert.calledWithExactly(v.foo.removeEventListener, 'touchstart', v.touchstart);
       },
 
@@ -978,7 +994,7 @@ isClient && define(function (require, exports, module) {
         }
         assert.equals(v.ex.toString(), 'while rendering: Foo\nbang');
 
-        assert.calledWith(Dom.destroyData, TH.match(elm => elm.tagName === 'DIV'));
+        assert.calledWith(Dom.destroyData, match(elm => elm.tagName === 'DIV'));
       },
 
       "test no frag if only one child node"() {
