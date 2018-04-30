@@ -28,6 +28,27 @@ define(function(require, exports, module) {
 
   const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
+  const noop = ()=>{};
+
+  const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
+
+  const commandify = (func, cmd)=>{
+    switch(typeof func) {
+    case 'function':
+      return event => func.call(null, event, cmd);
+    case 'boolean':
+      return func ? event =>{
+        execCommand(cmd);
+        const ctx = Tpl.$ctx(event.target);
+        notify(ctx, 'force', {});
+      } : noop;
+    }
+    for (const id in func) {
+      func[id] = commandify(func[id], id);
+    }
+    return func;
+  };
+
   const FONT_LIST = RichText.standardFonts.map(
     (name, id) => [
       id, Dom.h({font: util.capitalize(util.humanize(name)), $face: RichText.fontIdToFace[id]})]);
@@ -181,6 +202,13 @@ define(function(require, exports, module) {
     },
   });
 
+  for(let i = 0; i < 7; ++i) {
+    const cmd = i == 0 ? 'div' : 'H'+i;
+    actions['heading'+i] = () => {
+      execCommand('formatBlock', cmd);
+    };
+  }
+
   const mapActions = (keys, actions)=>{
     for (const name in keys) {
       keys[name] = [keys[name], actions[name]];
@@ -207,6 +235,12 @@ define(function(require, exports, module) {
     fontColor: ctrl+shift+'H',
     fontName: ctrl+shift+'O',
   }, actions), {mapCtrlToMeta: true});
+
+  for(let i = 0; i < 7; ++i) {
+    const name = 'heading'+i;
+    keyMap.addKeys({[name]: [alt+ctrl+i, actions[name]]}, {mapCtrlToMeta: true});
+  }
+
 
   function chooseFromMenu(event, options, onSelect) {
     const ctx = Tpl.$ctx(event.target);
@@ -328,27 +362,6 @@ define(function(require, exports, module) {
     syntaxHighlight: ctrl+shift+'H',
     newline: "\x0d",
   }, codeActions), {mapCtrlToMeta: true});
-
-  function noop() {}
-
-  function commandify(func, cmd) {
-    switch(typeof func) {
-    case 'function':
-      return function (event) {
-        return func.call(null, event, cmd);
-      };
-    case 'boolean':
-      return func ? function (event) {
-        execCommand(cmd);
-        const ctx = Tpl.$ctx(event.target);
-        notify(ctx, 'force', {});
-      } : noop;
-    }
-    for (cmd in func) {
-      func[cmd] = commandify(func[cmd], cmd);
-    }
-    return func;
-  }
 
   const optionKeys = {
     type: true,
@@ -767,10 +780,6 @@ define(function(require, exports, module) {
     if (range === null) return null;
     const start = range.endContainer;
     return Dom.searchUpFor(start, elm => elm.tagName === tag, 'richTextEditor');
-  }
-
-  function execCommand (cmd, value) {
-    return document.execCommand(cmd, false, value);
   }
 
   function move(editor, type, amount) {

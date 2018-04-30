@@ -155,20 +155,35 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
-      assert.dom('.input', function () {
-        TH.keydown(this, 'B', {ctrlKey: true});
-        TH.keydown(this, 'B', {ctrlKey: false});
+      assert.dom('.input', input =>{
+        TH.keydown(input, 'B', {ctrlKey: true});
+        TH.keydown(input, 'B', {ctrlKey: false});
         assert.calledOnceWith(v.ec, 'bold');
 
-        TH.keydown(this, 'I', {ctrlKey: true});
+        TH.keydown(input, 'I', {ctrlKey: true});
         assert.calledWith(v.ec, 'italic');
 
-        TH.keydown(this, 'U', {ctrlKey: true});
+        TH.keydown(input, 'U', {ctrlKey: true});
         assert.calledWith(v.ec, 'underline');
 
-        TH.keydown(this, '5', {altKey: true, shiftKey: true});
+        TH.keydown(input, '5', {altKey: true, shiftKey: true});
         assert.calledWith(v.ec, 'strikeThrough');
       });
+    },
+
+    "test heading"() {
+      v.ec = test.stub(document, 'execCommand');
+
+      const assertKey = (key)=>{
+        TH.keydown(input, key, {altKey: true, ctrlKey: true});
+        assert.calledWith(v.ec, 'formatBlock', false, 'H'+key);
+      };
+      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+
+      const input = Dom('.input');
+
+      TH.keydown(input, '0', {altKey: true, ctrlKey: true});
+      assert.calledWith(v.ec, 'formatBlock', false, 'div');
     },
 
     "pre": {
