@@ -24,7 +24,7 @@ define(function(require, exports, module) {
 
   const {INLINE_TAGS, FONT_SIZE_TO_EM} = RichText;
 
-  const {shift, ctrl, meta} = KeyMap;
+  const {shift, ctrl, meta, alt} = KeyMap;
 
   const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
@@ -52,6 +52,7 @@ define(function(require, exports, module) {
     bold: true,
     italic: true,
     underline: true,
+    strikeThrough: true,
     insertOrderedList: true,
     insertUnorderedList: true,
     outdent: true,
@@ -191,6 +192,7 @@ define(function(require, exports, module) {
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
+    strikeThrough: alt+shift+'5',
     insertOrderedList: ctrl+shift+'7',
     insertUnorderedList: ctrl+shift+'8',
     outdent: ctrl+'Û',
@@ -452,7 +454,7 @@ define(function(require, exports, module) {
     },
 
     keydown(event) {
-      if (event.ctrlKey || event.metaKey) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
         keyMap.exec(event, 'ignoreFocus');
         return;
       }

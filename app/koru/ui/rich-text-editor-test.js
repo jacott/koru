@@ -150,7 +150,7 @@ isClient && define(function (require, exports, module) {
       });
     },
 
-    "test bold, italic, underline"() {
+    "test bold, italic, underline, strikeThrough"() {
       v.ec = test.stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
@@ -165,6 +165,9 @@ isClient && define(function (require, exports, module) {
 
         TH.keydown(this, 'U', {ctrlKey: true});
         assert.calledWith(v.ec, 'underline');
+
+        TH.keydown(this, '5', {altKey: true, shiftKey: true});
+        assert.calledWith(v.ec, 'strikeThrough');
       });
     },
 
