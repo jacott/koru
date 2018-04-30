@@ -7,10 +7,10 @@ define(function(require, exports, module) {
   const TEXT_NODE = document.TEXT_NODE;
 
   const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
-      LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
-      MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
-      FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
-      LI = 20;
+        LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
+        MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
+        FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
+        LI = 20, H1 = 21;
 
 
   const FONT_FACE_TO_ID = {
@@ -523,6 +523,10 @@ define(function(require, exports, module) {
     },
   };
 
+  for(let i = 0; i < 6; ++i) {
+    FROM_RULE['H'+(i+1)] = fromBlock(H1+i);
+  }
+
   function fromBlockRule(node) {
     return FROM_RULE[node.tagName] || fromDiv;
   }
@@ -617,16 +621,47 @@ define(function(require, exports, module) {
     }
   };
 
+  const toBlock = tag =>{
+    function block(state) {
+      if (! state.begun) {
+        this.nextRule(3);
+        return state.begun = true;
+      }
+      const oldResult = state.result;
+      oldResult.appendChild(state.result = document.createElement(tag));
+      if (this.align)
+        state.result.style.textAlign = this.align;
+      this.toChildren(state);
+      state.result = oldResult;
+    };
+
+    block.tag = tag;
+    return block;
+  };
+
   const toDiv = toBlock('DIV');
 
-  function toNested(blockTag, innerFunc) {
-    return function toNested(state) {
-      state.begun = true;
-      state.result.appendChild(state.result = document.createElement(blockTag));
-      state.rule = innerFunc;
-      this.nextRule(3);
-    };
+  const toNested = (blockTag, innerFunc)=> function (state) {
+    state.begun = true;
+    state.result.appendChild(state.result = document.createElement(blockTag));
+    state.rule = innerFunc;
+    this.nextRule(3);
+  };
+
+  function innerH(state) {
+    const oldResult = state.result;
+    if (this.align)
+      state.result.style.textAlign = this.align;
+    this.toChildren(state);
+    state.result = oldResult;
   }
+
+  const toHeading = blockTag => function (state) {
+    state.begun = true;
+    state.result.appendChild(state.result = document.createElement(blockTag));
+    state.rule = innerH;
+    this.nextRule(3);
+  };
 
   function toLi(state) {
     state.begun = true;
@@ -657,23 +692,6 @@ define(function(require, exports, module) {
       };
       return state.begun = true;
     }
-  }
-
-  function toBlock(tag) {
-    block.tag = tag;
-    return block;
-    function block(state) {
-      if (! state.begun) {
-        this.nextRule(3);
-        return state.begun = true;
-      }
-      const oldResult = state.result;
-      oldResult.appendChild(state.result = document.createElement(tag));
-      if (this.align)
-        state.result.style.textAlign = this.align;
-      this.toChildren(state);
-      state.result = oldResult;
-    };
   }
 
   function toCode(state) {
@@ -860,6 +878,11 @@ define(function(require, exports, module) {
   TO_RULES[BGCOLOR] = toInlineValue;
   TO_RULES[COLOR] = toInlineValue;
   TO_RULES[SIZE] = toInlineValue;
+
+  for(let i = 0; i < 6; ++i) {
+    const code = H1+i;
+    TO_RULES[H1+i] = toHeading('H'+(i+1));
+  }
 
   return {
     standardFonts: FONT_ID_TO_STD,

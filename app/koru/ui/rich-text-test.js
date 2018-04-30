@@ -111,6 +111,23 @@ define(function (require, exports, module) {
                   '<blockquote><div>now</div></blockquote></p>');
     },
 
+    "test headers"() {
+      const json = {
+        ol: {
+          li: [
+            {h1: 'heading 1'},
+            {h5: ['heading ', {style: 'font-style: italic;', span: '2'}]},
+            {div: [
+              {style: 'font-weight: bold;', span: 'the'},
+              ' para']}]}};
+
+      const mu = sut.fromHtml(Dom.h(json));
+
+      const html = sut.toHtml(...mu);
+
+      assert.equals({ol: Dom.htmlToJson(html)[0]}, json);
+    },
+
     "test inline styles" () {
       var doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, UNDERLINE, 1, 3, 4];
       var html = sut.toHtml(doc, markup, v.p);
