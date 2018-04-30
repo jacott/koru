@@ -10,6 +10,7 @@ define(function(require, exports, module) {
         LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
         MULTILINE = 10, BOLD = 11, ITALIC = 12, UNDERLINE = 13,
         FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
+        STRIKE = 18,
         LI = 20, H1 = 21;
 
 
@@ -65,7 +66,7 @@ define(function(require, exports, module) {
     '': LINK_TO_HTML[0]
   };
 
-  const INLINE_TAGS = util.toMap('B U I A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
+  const INLINE_TAGS = util.toMap('B U I S A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
   const fromHtml = (html, options)=>{
     const builder = new MarkupBuilder(options);
@@ -403,8 +404,8 @@ define(function(require, exports, module) {
     'font-size': [SIZE, fromSize],
     'font-weight': [BOLD, fromSimple, /bold/i],
     'font-style': [ITALIC, fromSimple, /italic/i],
-    'text-decoration': [UNDERLINE, fromSimple, /underline/i],
-    'text-decoration-line': [UNDERLINE, fromSimple, /underline/i],
+    'text-decoration': [null, fromTextDecoration],
+    'text-decoration-line': [null, fromTextDecoration],
   };
 
   function fromColor(muIndex, code, name, value, index) {
@@ -439,6 +440,13 @@ define(function(require, exports, module) {
       return;
 
     this.addInline(muIndex, code, index, size || value);
+  }
+
+  function fromTextDecoration(muIndex, code, name, value, index) {
+    if (/underline/i.test(value))
+      this.addInline(muIndex, UNDERLINE, index);
+    if (/line-through/i.test(value))
+      this.addInline(muIndex, STRIKE, index);
   }
 
   function fromSimple(muIndex, code, name, value, index, expect) {
@@ -479,8 +487,9 @@ define(function(require, exports, module) {
     BLOCKQUOTE: fromBlock(NEST),
     P: fromDiv,
     B: fromInline(BOLD),
-    U: fromInline(UNDERLINE),
     I: fromInline(ITALIC),
+    U: fromInline(UNDERLINE),
+    S: fromInline(STRIKE),
     SPAN: fromSpan,
     CODE: fromFont,
     FONT: fromFont,
@@ -762,6 +771,7 @@ define(function(require, exports, module) {
   CODE_TO_STYLE_NAME[BOLD] = 'font-weight'; CODE_TO_STYLE_VALUE[BOLD] = 'bold';
   CODE_TO_STYLE_NAME[ITALIC] = 'font-style'; CODE_TO_STYLE_VALUE[ITALIC] = 'italic';
   CODE_TO_STYLE_NAME[UNDERLINE] = 'text-decoration'; CODE_TO_STYLE_VALUE[UNDERLINE] = 'underline';
+  CODE_TO_STYLE_NAME[STRIKE] = 'text-decoration'; CODE_TO_STYLE_VALUE[STRIKE] = 'line-through';
   CODE_TO_STYLE_NAME[BGCOLOR] = 'background-color';
   CODE_TO_STYLE_NAME[COLOR] = 'color';
   CODE_TO_STYLE_NAME[FONT] = 'font-family';
@@ -785,7 +795,8 @@ define(function(require, exports, module) {
     const code = this.markup[state.index];
     const value = this.markup[state.index+4];
     const decode = CODE_TO_STYLE_VALUE[code];
-    state.result.style[CODE_TO_STYLE_NAME[code]] = decode ? decode(value) : value;
+    state.result.style.setProperty(
+      CODE_TO_STYLE_NAME[code], decode === undefined ? value : decode(value));
     this.toChildren(state);
     state.result = oldResult;
   } toInlineValue.inline = true; toInlineValue.muInc = 5;
@@ -798,7 +809,11 @@ define(function(require, exports, module) {
     for(let idx = 0; idx < value.length; ++idx) {
       const code = value[idx];
       const decode = CODE_TO_STYLE_VALUE[code];
-      style[CODE_TO_STYLE_NAME[code]] = typeof decode === 'string' ? decode : decode ? decode(value[++idx]) : value[++idx];
+      const sn = CODE_TO_STYLE_NAME[code];
+      const sv = typeof decode === 'string' ? decode
+            : decode === undefined ? value[++idx] : decode(value[++idx]);
+      const ov = style.getPropertyValue(sn);
+      style.setProperty(sn, ov ? ov + ' ' + sv : sv);
     }
     this.toChildren(state);
     state.result = oldResult;
@@ -874,6 +889,7 @@ define(function(require, exports, module) {
   TO_RULES[BOLD] = toInline;
   TO_RULES[ITALIC] = toInline;
   TO_RULES[UNDERLINE] = toInline;
+  TO_RULES[STRIKE] = toInline;
   TO_RULES[FONT] = toInlineValue;
   TO_RULES[BGCOLOR] = toInlineValue;
   TO_RULES[COLOR] = toInlineValue;

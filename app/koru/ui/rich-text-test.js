@@ -128,6 +128,23 @@ define(function (require, exports, module) {
       assert.equals({ol: Dom.htmlToJson(html)[0]}, json);
     },
 
+    "test strike-through"() {
+      const json = {
+        div: ['a', {s: 'b'}, 'c', {style: 'text-decoration: underline line-through;', span: 'd'}]};
+
+      const mu = sut.fromHtml(Dom.h(json));
+
+      const html = sut.toHtml(...mu);
+
+      assert.equals(Dom.htmlToJson(html), [{
+        div: [
+          'a',
+          {style: 'text-decoration: line-through;', span: 'b'},
+          'c',
+          {style: 'text-decoration: underline line-through;', span: 'd'},
+        ]}]);
+    },
+
     "test inline styles" () {
       var doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, UNDERLINE, 1, 3, 4];
       var html = sut.toHtml(doc, markup, v.p);
@@ -305,7 +322,7 @@ define(function (require, exports, module) {
       sut.mapFontNames({poster: 'foo font'});
 
       assertConvert('<div><span style="font-weight:normal;font-style:normal;text-decoration:line-through;">text</span></div>',
-                    '<div>text</div>');
+                    '<div><span style=\"text-decoration: line-through;\">text</span></div>');
 
       assertBothConvert(
         '<div style="text-align: right;">Hello<span style="line-height: 1.2em;">&nbsp;</span>'+
