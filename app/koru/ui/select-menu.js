@@ -89,11 +89,11 @@ define(function(require, exports, module) {
     },
 
     $destroyed(ctx) {
+      ctx.data.onClose && ctx.data.onClose(ctx);
       const elm = ctx.focusElm;
       Dom.dontFocus || (elm && elm.focus());
       const range = ctx.focusRange;
       range && Dom.setRange(range);
-      ctx.data.onClose && ctx.data.onClose();
     },
 
     searchRegExp: searchRegExp,

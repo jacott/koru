@@ -134,17 +134,24 @@ isClient && define(function (require, exports, module) {
       test.stub(document, 'execCommand');
       document.body.appendChild(sut.$autoRender({
         content: '', options: {focusout: v.focusout = test.stub()}}));
+
       assert.dom('.richTextEditor:not([focusout])>.input', function () {
         this.focus();
         TH.trigger(this, 'focusin');
         assert.calledWith(document.execCommand, 'styleWithCSS', false, true);
         assert.className(this.parentNode, 'focus');
         TH.keydown(this, 'O', {ctrlKey: true, shiftKey: true});
-        TH.trigger(this, 'focusout');
+
+        TH.trigger(this, 'focusout', {relatedTarget: document.body});
         assert.className(this.parentNode, 'focus');
         Dom.remove(Dom('.glassPane'));
         refute.called(v.focusout);
-        TH.trigger(this, 'focusout');
+
+
+        TH.trigger(this, 'focusout', {relatedTarget: null});
+        refute.called(v.focusout);
+
+        TH.trigger(this, 'focusout', {relatedTarget: document.body});
         refute.className(this.parentNode, 'focus');
         assert.called(v.focusout);
       });
@@ -189,7 +196,7 @@ isClient && define(function (require, exports, module) {
     "pre": {
       setUp() {
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
-        v.selectCode = function () {
+        v.selectCode = ()=>{
           const node = Dom('.input pre>div').firstChild;
           const range = TH.setRange(node, 2);
           TH.keyup(node, 39);

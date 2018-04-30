@@ -356,6 +356,23 @@ isClient && define(function (require, exports, module) {
           });
         });
       },
+
+      "test format misc"() {
+        TH.pointerDownUp('.rtToolbar [name=formatText]', 'Normal text');
+
+        assert.dom('.glassPane .rtFormatText', ()=>{
+          assert.dom('li>[title="Strike-through [alt-shift-5]"]', 'Strike-through');
+
+          assert.dom('li>[title="Normal [alt-ctrl-0]"]');
+          assert.dom('li>[title="Heading 1 [alt-ctrl-1]"]');
+          assert.dom('li>[title="Heading 2 [alt-ctrl-2]"]');
+          TH.click('li>[title="Heading 6 [alt-ctrl-6]"]');
+        });
+
+        refute.dom('.glassPane');
+
+        assert.dom('.rtToolbar [name=formatText]', 'Heading 6');
+      },
     },
 
     "test more"() {

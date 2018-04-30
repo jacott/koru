@@ -3,8 +3,10 @@ isClient && define(function (require, exports, module) {
   const Each = require('./each');
   const TH   = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const sut  = require('./select-menu');
-  var v;
+  let v = null;
   const $ = Dom.current;
 
   TH.testCase(module, {
@@ -40,14 +42,23 @@ isClient && define(function (require, exports, module) {
 
     "closing": {
       setUp() {
+        v.onClose = stub();
         assert.dom('#TestSelectMenu [name=select]', function () {
           sut.popup(this, {
-            onClose: v.onClose = TH.test.stub(),
+            onClose(ctx) {v.onClose(ctx)},
             onSelect() {return true},
           });
         });
 
 
+      },
+
+      "test direct focus"() {
+        const button = Dom.h({button: 'test'});
+        document.body.appendChild(button);
+        v.onClose = ctx => {ctx.focusElm = button};
+        Dom.remove(Dom('.glassPane'));
+        assert.same(document.activeElement, button);
       },
 
       "test onClose"() {
@@ -111,7 +122,7 @@ isClient && define(function (require, exports, module) {
       });
       sut.popup(v.button, {
         list: v.list = [[1, 'One'], [2, 'Two']],
-        decorator: v.decorator = this.stub(),
+        decorator: v.decorator = stub(),
       });
 
       assert.calledWith(v.decorator, TH.match(arg => arg._id === 1),
@@ -196,7 +207,7 @@ isClient && define(function (require, exports, module) {
 
     "test noFocus"() {
       assert.dom('#TestSelectMenu [name=select]', function () {
-        v.searchStub = TH.test.stub();
+        v.searchStub = stub();
         this.focus();
         sut.popup(this, {
           noFocus: true,
@@ -401,7 +412,7 @@ isClient && define(function (require, exports, module) {
       "test select by pointer"() {
         assert.dom('#SelectMenu>ul', ul=>{
           assert.dom('li:first-child', li =>{
-            TH.test.spy(Dom, 'stopEvent');
+            spy(Dom, 'stopEvent');
             TH.click(li);
             assert.called(Dom.stopEvent);
             assert.same(v.elm, li);

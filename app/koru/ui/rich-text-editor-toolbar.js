@@ -8,11 +8,11 @@ define(function(require, exports, module) {
   const RichTextMention = require('./rich-text-mention');
   const SelectMenu      = require('./select-menu');
 
-  const Tpl = module.exports = Dom.newTemplate(module, require(
+  const Tpl = Dom.newTemplate(module, require(
     'koru/html!./rich-text-editor-toolbar'));
   const $ = Dom.current;
 
-  const {execCommand, getTag} = RichTextEditor;
+  const {execCommand, getTag, chooseFromMenu} = RichTextEditor;
   const {selectElm} = Dom;
 
   Tpl.$extend({
@@ -32,13 +32,23 @@ define(function(require, exports, module) {
     },
   });
 
-  function getFont() {
+  const getFont = ()=>{
     const {override} = $.ctx;
     if (override && override.font !== undefined)
       return RichText.fontType(override.font);
 
     const code = getTag('SPAN');
     return RichText.fontType(code && code.style.fontFamily);
+  };
+
+  const matchHeader = elm=>{
+    const {tagName} = elm;
+    return tagName !== undefined && tagName.length === 2 && /^H\d$/.test(tagName);
+  };
+
+  const HEADER_NAME = {};
+  for(let i = 1; i < 7; ++i) {
+    HEADER_NAME['H'+i] = 'Heading '+i;
   }
 
   Tpl.$helpers({
@@ -65,6 +75,11 @@ define(function(require, exports, module) {
       $.element.textContent = util.capitalize(util.humanize(code));
     },
 
+    format() {
+      const elm = getTag(matchHeader);
+      return elm === null ? 'Normal text' : HEADER_NAME[elm.tagName];
+    },
+
     title(title) {
       const elm = $.element;
       if (elm.getAttribute('title')) return;
@@ -83,6 +98,7 @@ define(function(require, exports, module) {
       Object.keys(mentions).sort().forEach(function (id) {
         frag.appendChild(Dom.h({
           button: [id], class: mentions[id].buttonClass, $name: 'mention',
+          tabindex: -1,
           'data-type': id, title: mentions[id].title}));
       });
       return frag;
@@ -106,10 +122,26 @@ define(function(require, exports, module) {
     ['justifyFull', 'Justify'],
   ];
 
-  TEXT_ALIGN_LIST.forEach(function (row) {
-    row[1] = Dom.h({button: '', $name: row[0],
-                    $title: RichTextEditor.title(row[1], row[0], 'standard')});
-  });
+  const FORMAT_TEXT_LIST = [
+    ['strikeThrough', 'Strike-through'],
+    ['heading0', 'Normal'],
+  ];
+
+  {
+    for(let i = 1; i < 7; ++i) {
+      FORMAT_TEXT_LIST.push(['heading'+i, 'Heading '+i]);
+    }
+
+    TEXT_ALIGN_LIST.forEach(row =>{
+      row[1] = Dom.h({button: [], $name: row[0],
+                      title: RichTextEditor.title(row[1], row[0], 'standard')});
+    });
+
+    FORMAT_TEXT_LIST.forEach(row =>{
+      row[1] = Dom.h({button: [row[1]],
+                      title: RichTextEditor.title(row[1], row[0], 'standard')});
+    });
+  }
 
   Tpl.$events({
     'click button'(event) {Dom.stopEvent()},
@@ -125,7 +157,7 @@ define(function(require, exports, module) {
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm)
         pCtx.inputElm.focus();
-      Dom.onPointerUp(function (event) {
+      Dom.onPointerUp(event =>{
         if (! Dom.contains(button, event.target)) return;
 
 
@@ -137,14 +169,16 @@ define(function(require, exports, module) {
           Dom.toggleClass(toolbar, 'more');
           return;
         case 'textAlign':
-          SelectMenu.popup(event.target, {
+          chooseFromMenu(event, {
             classes: 'rtTextAlign',
             list: TEXT_ALIGN_LIST,
-            onSelect(elm) {
-              actions[$.data(elm)._id](event);
-              return true;
-            },
-          });
+          }, (ctx, id)=>{actions[id](event)});
+          return;
+        case 'formatText':
+          chooseFromMenu(event, {
+            classes: 'rtFormatText',
+            list: FORMAT_TEXT_LIST,
+          }, (ctx, id)=>{actions[id](event)});
           return;
         default:
           actions[name](event);
@@ -153,4 +187,8 @@ define(function(require, exports, module) {
       });
     },
   });
+
+  module.onUnload(()=>{koru.unload(koru.absId(require, './rich-text'))});
+
+  return Tpl;
 });

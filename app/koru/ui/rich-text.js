@@ -542,10 +542,10 @@ define(function(require, exports, module) {
 
   // TO HTML
 
-  const toHtml = (lines, markup, result)=> new HtmlBuilder(lines, markup, result);
+  const toHtml = (lines, markup, result)=> new HtmlBuilder().toHtml(lines, markup, result);
 
   class HtmlBuilder {
-    constructor (lines, markup, html=document.createDocumentFragment()) {
+    toHtml(lines, markup, html=document.createDocumentFragment()) {
       lines = typeof lines === 'string' ? lines.split("\n") : lines;
       this.markup = markup || [];
       this.lidx = this.midx = 0;

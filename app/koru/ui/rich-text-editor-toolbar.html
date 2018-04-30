@@ -1,6 +1,6 @@
 <template name="RichTextEditorToolbar">
   <div class="rtToolbar" data-mode="{{mode}}">
-    <button name="more"></button>
+    <button tabindex="-1" name="more"></button>
     <div class="standard">
       <button name="bold" tabindex="-1" {{state}} {{title "Bold"}}>B</button>
       <button name="italic" tabindex="-1" {{state}} {{title "Italic"}}>I</button>
@@ -21,8 +21,9 @@
       <button name="fontName" tabindex="-1" {{title "Font"}} class="select"><font {{font}}></font></button>
       <button name="fontColor" tabindex="-1" {{title "Text color"}}></button>
 
-      <button name="removeFormat" tabindex="-1" {{title "Clear formatting"}}></button>
+      <button name="formatText" tabindex="-1" class="select" {{title "format text"}}>{{format}}</button>
 
+      <button name="removeFormat" tabindex="-1" {{title "Clear formatting"}}></button>
     </div>
     <div class="code">
       <button name="language" class="select" tabindex="-1" {{title "Set the language for the data"}}>{{language}}</button>

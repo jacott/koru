@@ -32,6 +32,19 @@ define(function(require, exports, module) {
 
   const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
 
+  const elmMatch = tag=> elm => elm.tagName === tag;
+
+  const getTag = tagOrFunc =>{
+    const range = Dom.getRange();
+    if (range === null) return null;
+    const start = range.endContainer;
+    return Dom.searchUpFor(
+      start,
+      typeof tagOrFunc === 'string'
+        ? elmMatch(tagOrFunc) : tagOrFunc,
+      'richTextEditor');
+  };
+
   const commandify = (func, cmd)=>{
     switch(typeof func) {
     case 'function':
@@ -84,7 +97,7 @@ define(function(require, exports, module) {
     justifyFull: true,
     removeFormat: true,
     fontName(event) {
-      chooseFromMenu(event, {list: FONT_LIST}, function (ctx, id) {
+      chooseFromMenu(event, {list: FONT_LIST}, (ctx, id)=>{
         execCommand('fontName', RichText.fontIdToFace[id]);
         if (Dom.getRange().collapsed)
           return {font: id};
@@ -148,7 +161,7 @@ define(function(require, exports, module) {
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
         const font = _code ? 'initial': 'monospace';
         execCommand('fontName', font);
-        notify(ctx, 'force', collapsed && {font: font});
+        notify(ctx, 'force', collapsed && {font});
       } else {
         Tpl.insert(
           collapsed ? EMPTY_PRE.cloneNode(true) :
@@ -242,7 +255,7 @@ define(function(require, exports, module) {
   }
 
 
-  function chooseFromMenu(event, options, onSelect) {
+  const chooseFromMenu = (event, options, onSelect)=>{
     const ctx = Tpl.$ctx(event.target);
     const origin = event.target;
 
@@ -265,14 +278,14 @@ define(function(require, exports, module) {
 
     ctx.openDialog = true;
     SelectMenu.popup(event.target, options);
-  }
+  };
 
   const codeActions = commandify({
     language(event) {
       chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
-      }, function (ctx, id) {
+      }, (ctx, id)=>{
         const pre = Dom.getClosest(ctx.lastElm, 'pre');
         pre && pre.setAttribute('data-lang', id);
         codeMode.language = id;
@@ -393,14 +406,18 @@ define(function(require, exports, module) {
   }
 
   function focusInput(event) {
-    const focusout = event.type === 'focusout';
 
     const elm = event.currentTarget;
+    const parent = elm.parentNode;
+
+    const focusout = event.type === 'focusout' && ! parent.contains(event.relatedTarget);
 
     if (focusout) {
+      if (event.relatedTarget === null)
+        return void elm.focus();
       if (currentDialog(elm))
         return;
-      const pCtx = Dom.myCtx(elm.parentNode);
+      const pCtx = Dom.myCtx(parent);
       if (! pCtx) return;
       const data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
@@ -419,7 +436,7 @@ define(function(require, exports, module) {
         setMode(ctx, Dom.getRange());
       execCommand('styleWithCSS', true);
     }
-    Dom.setClass('focus', ! focusout, elm.parentNode);
+    Dom.setClass('focus', ! focusout, parent);
   }
 
   function currentDialog(me) {
@@ -544,12 +561,13 @@ define(function(require, exports, module) {
       Dom.setRange(range);
     },
 
-    select: select,
-    execCommand: execCommand,
-    getTag: getTag,
-    findContainingBlock: findContainingBlock,
-    firstInnerMostNode: firstInnerMostNode,
-    lastInnerMostNode: lastInnerMostNode,
+    select,
+    execCommand,
+    getTag,
+    findContainingBlock,
+    firstInnerMostNode,
+    lastInnerMostNode,
+    chooseFromMenu,
 
     insert(arg, inner) {
       const range = Dom.getRange();
@@ -773,13 +791,6 @@ define(function(require, exports, module) {
     const id = String.fromCharCode(code);
     if (mentions[id])
       return id;
-  }
-
-  function getTag(tag) {
-    const range = Dom.getRange();
-    if (range === null) return null;
-    const start = range.endContainer;
-    return Dom.searchUpFor(start, elm => elm.tagName === tag, 'richTextEditor');
   }
 
   function move(editor, type, amount) {
