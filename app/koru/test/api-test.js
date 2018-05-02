@@ -550,7 +550,7 @@ define(function (require, exports, module) {
         test,
         sig: TH.match(/(function )?fnord\(a\)/),
         intro: 'Document `methodName` for the current subject',
-        subject: ['O', fooBar, '{fnord: => fnord}'],
+        subject: ['O', fooBar, '{fnord(){}}'],
         calls: [[
           [5], 10
         ],[

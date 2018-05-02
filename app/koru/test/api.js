@@ -851,8 +851,12 @@ define(function(require, exports, module) {
       if (/[^$\w]/.test(key))
         key = JSON.stringify(key);
       const resolveFunc = item && API._resolveFuncs.get(item.constructor);
-      return `${key}: ${resolveFunc ? resolveFunc('Oi', item)[1]
-: util.inspect(item, 3, 150)}`;});
+      if (typeof resolveFunc === 'function')
+        return `${key}: ${resolveFunc('Oi', item)[1]}`;
+      if (typeof item === 'function' && item.name === key)
+        return `${key}(){}`;
+
+      return `${key}: ${util.inspect(item, 3, 150)}`;});
     return `{${display.join(", ").slice(0, 150)}}`;
   }
 

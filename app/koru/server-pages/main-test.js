@@ -9,6 +9,7 @@ isServer && define(function (require, exports, module) {
   const fst             = require('koru/fs-tools');
   const TH              = require('koru/test');
   const api             = require('koru/test/api');
+  const WebServer       = require('koru/web-server');
 
   const path            = requirejs.nodeRequire('path');
 
@@ -54,9 +55,7 @@ isServer && define(function (require, exports, module) {
        * @param pathRoot handle pages starting with this path root.
        **/
       const newServerPages = api.new();
-      const WebServer = {
-        registerHandler: stub(),
-      };
+      stub(WebServer, 'registerHandler');
 
       const sp = newServerPages(WebServer);
       assert.isFunction(sp._handleRequest);

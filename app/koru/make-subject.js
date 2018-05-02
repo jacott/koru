@@ -1,10 +1,10 @@
 define(function(require, exports, module) {
   const util  = require('koru/util');
 
-  return (
+  function makeSubject (
     subject={}, observeName='onChange', notifyName='notify',
     {allStopped, init, stopAllName}={}
-  )=>{
+  ) {
     let firstOb = true;
     let globalId = 0;
     const observers = util.createDictionary();
@@ -56,5 +56,7 @@ define(function(require, exports, module) {
     };
 
     return subject;
-  };
+  }
+
+  return makeSubject;
 });

@@ -19,9 +19,10 @@ define(function(require, exports, module) {
       switch(typeof o) {
       case 'undefined':
         return 'undefined';
-      case 'function':
-        return '=> ' + o.name;
-      case 'object':
+      case 'function': {
+        const name = o.name || '';
+        return `function ${name !== qlabel(name) ? '' : name}(){}`;
+      } case 'object':
         if (o === null) return 'null';
         if (o.constructor === RegExp) return o.toString();
         if ('outerHTML' in o)
@@ -47,7 +48,13 @@ define(function(require, exports, module) {
             r.push(o.toString());
           }
           for (const p in o) {
-            r.push(qlabel(p) + ": " + inspect1(o[p], i-1));
+            const v = o[p];
+
+            if (typeof v === 'function' && v.name === p && qlabel(p) === p) {
+              r.push(p+'(){}');
+            } else {
+              r.push(qlabel(p) + ": " + inspect1(v, i-1));
+            }
           }
           return "{" + r.join(", ") +"}";
         }

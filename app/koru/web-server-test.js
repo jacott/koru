@@ -171,7 +171,7 @@ isServer && define(function (require, exports, module) {
     },
 
     "test usage"() {
-      api.module(module.get('./web-server'));
+      api.module();
       api.method('start');
 
       const webServerModule = module.ctx.modules['koru/web-server'];

@@ -570,7 +570,7 @@ define(function (require, exports, module) {
 
     "test createDictionary"() {
       /**
-       * Create an object that's hints to VM that it will be used in dictionary mode rahter than
+       * Create an object that hints to VM that it will be used in dictionary mode rather than
        * class mode.
 
        * @return a new object with no prototype

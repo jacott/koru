@@ -444,7 +444,7 @@ define(function(require, exports, module) {
     if (args.length === 0 && ! ret)
       return;
 
-    const retTypes = ret && (ret.types['<>'] !== undefined ? undefined : extractTypes(ret));
+    const retTypes = ret && ret.types && ret.types['<>'] && extractTypes(ret);
     return {class: "jsdoc-args", div: [
       {h6: "Parameters"},
       {table: {

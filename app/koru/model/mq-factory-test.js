@@ -46,7 +46,7 @@ isServer && define(function (require, exports, module) {
 
        * @param action the action to run when a queued message is ready
        **/
-      api.method('registerQueue');
+      api.protoMethod('registerQueue');
 
       const doSomethingWith = stub();
 
@@ -169,7 +169,7 @@ isServer && define(function (require, exports, module) {
         /**
          * Start timers on all queues within current database with existing messages
          **/
-        api.method('start');
+        api.protoMethod('start');
 
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
@@ -238,7 +238,7 @@ isServer && define(function (require, exports, module) {
         sut.registerQueue({module, name: 'foo', action: stub()});
         const queue = sut.getQueue('foo');
 
-        api.method('getQueue');
+        api.protoMethod('getQueue');
 
         assert(queue);
         assert.same(sut.getQueue('foo'), queue);
@@ -265,7 +265,8 @@ isServer && define(function (require, exports, module) {
           .onCall(2).returns(123)
         ;
 
-        sut.registerQueue({module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
+        sut.registerQueue({
+          module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
       },
 
       "test creates table"() {
@@ -308,13 +309,13 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
          * @param message the message to action
 
          **/
-        api.protoMethod('add');
-
         v.action = (...args)=>{v.args = args};
 
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = sut.getQueue('foo');
+
+        api.innerSubject(queue, 'MQ').method('add');
 
         queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
         assert.calledWith(koru.setTimeout, TH.match.func, 30);
@@ -380,11 +381,11 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
          * @returns an array of messages in queue order
          **/
-        api.protoMethod('peek');
-
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = sut.getQueue('foo');
+
+        api.innerSubject(queue, 'MQ').method('peek');
 
         queue.add({dueAt: new Date(now+30), message: {my: 'message'}});
         queue.add({dueAt: new Date(now+10), message: {another: 'message'}});

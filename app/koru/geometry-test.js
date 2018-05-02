@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 
   TH.testCase(module, {
     setUp() {
-      api.module(module);
+      api.module();
     },
 
     "test rotatePoints"() {
