@@ -464,6 +464,8 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
       },
 
       "test retryAfter"() {
+        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+
         const queue = sut.getQueue('foo');
         v.action = (args)=>{
           throw {retryAfter: 12345};

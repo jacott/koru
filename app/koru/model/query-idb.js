@@ -8,8 +8,8 @@ define(function(require, exports, module) {
   const {stopGap$} = require('koru/symbols');
   const util       = require('koru/util');
 
-  const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol();
-  const busyQueue$ = Symbol();
+  const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol(),
+        busyQueue$ = Symbol();
 
   let notMe;
 
@@ -203,7 +203,7 @@ define(function(require, exports, module) {
     get isReady() {return this[ready$]}
 
     whenReady(onFulfilled) {
-      if (this[busyQueue$] === undefined) return;
+      if (this.isClosed) return Promise.reject(new Error('DB closed'));
       if (this[busyQueue$] === null) {
         if (onFulfilled === undefined)
           return Promise.resolve();
@@ -222,7 +222,7 @@ define(function(require, exports, module) {
         throw ex;
       });
 
-      return this[busyQueue$];
+      return oldPromise;
     }
 
     createObjectStore(name) {
@@ -266,7 +266,7 @@ define(function(require, exports, module) {
     if (pu !== null) return pu;
     db[ready$] = false;
     TransQueue.onAbort(() => {db[pendingUpdates$] = null; db[ready$] = true});
-    TransQueue.onSuccess(() => {db.whenReady(() => flushPending(db))});
+    TransQueue.onSuccess(() => {db.isClosed || db.whenReady(() => flushPending(db))});
     return db[pendingUpdates$] = {};
   };
 

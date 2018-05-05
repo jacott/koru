@@ -36,11 +36,12 @@ define(function (require, exports, module) {
     },
 
     "test passing start and end to utf8to16"() {
-      const buf = new (isServer ? Buffer : Uint8Array)([
+      const data = [
         11, 12, 13, 10, 97, 32, 98, 105, 116, 32, 109, 111, 114, 101, 32,
         225, 178, 190, 232, 160, 135, 32, 116, 101, 120, 116,
         10, 1, 195, 183, 0, 10, 10, 10,
-        10, 1, 2, 3]);
+        10, 1, 2, 3];
+      const buf = isServer ? Buffer.from(data) : new Uint8Array(data);
 
       const [out, i] = sut.utf8to16(buf, 3, 27);
       assert.equals(out, '\na bit more Ჾ蠇 text\n');

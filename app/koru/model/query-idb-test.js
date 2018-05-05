@@ -473,11 +473,12 @@ isClient && define(function (require, exports, module) {
       v.db.close();
       v.db.put('TestModel', v.rec = {_id: 'foo123', name: 'foo', age: 5, gender: 'm'});
       const ready = stub();
-      v.db.whenReady(ready);
+      v.db.whenReady(ready).catch(ex => v.ex = ex);
       flush();
       v.foo = v.idb._dbs.foo;
       assert.equals(v.foo._store.TestModel.docs, {});
       refute.called(ready);
+      assert.equals(v.ex.message, 'DB closed');
     },
 
     "test put"() {

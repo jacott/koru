@@ -24,7 +24,7 @@ define(function(require, exports, module) {
       if (! this._input)
         this.push(null);
       else {
-        var buf = new Buffer(this._input, 'utf8');
+        var buf = Buffer.from(this._input, 'utf8');
         this._input = null;
         this.push(buf);
       }
