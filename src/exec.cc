@@ -40,7 +40,7 @@ static char** newUtf8StringArray(Handle<Array> list) {
 }
 
 static void clear_cloexec (int fd) {
-    int flags = fcntl (fd, F_GETFD, 0);
+    int flags = fcntl(fd, F_GETFD, 0);
     if (flags != -1) {
       flags &= ~FD_CLOEXEC;     // clear FD_CLOEXEC bit
       fcntl (fd, F_SETFD, flags);
