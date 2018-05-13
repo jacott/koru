@@ -109,6 +109,17 @@ isServer && define(function (require, exports, module) {
         assert.equals(sut.request({method: 'HEAD'}), {statusCode: 200, response, body});
       },
 
+      "test callback"() {
+        const response = {headers: 'foo', statusCode: 200}, body = 'the body';
+        const callback = stub();
+
+        assert.equals(sut.request({method: 'HEAD'}, callback), undefined);
+
+        assert.calledWith(v.req, {method: 'HEAD', timeout: 20000}, callback);
+
+        refute.called(callback);
+      },
+
       "test return 404, else throw"() {
         const response = {headers: 'foo', statusCode: 404}, body = 'the body';
         v.req.yields(null, response, body);
