@@ -49,9 +49,8 @@ CREATE UNIQUE INDEX "_message_queue_name_dueAt__id" ON "_message_queue"
     try {
       const rec = mq.peek(1, util.newDate())[0];
       if (rec !== undefined) {
-        const {table} = mq.mqdb;
         actions[name]({_id: rec._id, dueAt: rec.dueAt, message: rec.message}, mq);
-        table._client.query(`delete from "${table._name}" where _id = $1`, [rec._id]);
+        mq.remove(rec._id);
       }
 
       queueNext(mq);
@@ -150,6 +149,11 @@ select _id,"dueAt",message from "${table._name}"
   where name = $1 ${extra}
   order by "dueAt",_id limit ${maxResults};
 `, [this.name]);
+    }
+
+    remove(_id) {
+      const {table} = this.mqdb;
+      table._client.query(`delete from "${table._name}" where _id = $1`, [_id]);
     }
   }
 

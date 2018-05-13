@@ -413,6 +413,26 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         }]);
       },
 
+      "test remove"() {
+        /**
+         * Remove a message.
+
+         * @param _id the id of the message to remove.
+         **/
+        let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
+
+        const queue = sut.getQueue('foo');
+
+        api.innerSubject(queue, 'MQ').method('peek');
+
+        queue.add({dueAt: new Date(now+10), message: {my: 'message'}});
+        queue.add({dueAt: new Date(now+20), message: {another: 'message'}});
+
+        queue.remove('2');
+
+        assert.equals(queue.peek(5), [TH.match.field('_id', '1')]);
+      },
+
       "test bad queue Time"() {
         assert.exception(()=>{
           sut.getQueue('foo').add({dueAt: new Date(-4)});
