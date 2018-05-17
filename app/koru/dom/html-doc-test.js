@@ -123,6 +123,11 @@ define(function (require, exports, module) {
       refute.same(df1.firstChild, df3.firstChild);
     },
 
+    "test textNode is text"() {
+      const node = document.createTextNode(5);
+      assert.same(node.textContent, '5');
+    },
+
     "test construction"() {
       var df = document.createDocumentFragment();
 

@@ -424,16 +424,16 @@ define(function(require, exports, module) {
   class TextNode extends Element {
     constructor(value) {
       super(TEXT_NODE);
-      this.wholeText = value;
+      this.data = ''+value;
     }
 
     cloneNode(deep) {
-      return new TextNode(this.wholeText);
+      return new TextNode(this.data);
     }
-    get textContent() {return this.wholeText}
-    set textContent(value) {this.wholeText = value}
-    get innerHTML() {return escapeHTML(this.wholeText)}
-    set innerHTML(value) {this.wholeText = unescapeHTML(value)}
+    get textContent() {return this.data}
+    set textContent(value) {this.data = ''+value}
+    get innerHTML() {return escapeHTML(this.data)}
+    set innerHTML(value) {this.data = unescapeHTML(value)}
   }
 
   class CommentNode extends Element {
