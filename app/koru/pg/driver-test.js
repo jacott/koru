@@ -126,6 +126,16 @@ isServer && define(function (require, exports, module) {
       assert.equals(pg.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
     },
 
+    "test bytea"() {
+      const db = pg.defaultDb;
+      db.query('CREATE TABLE "Foo" (_id text PRIMARY KEY, "foo" bytea)');
+      db.query('INSERT INTO "Foo" ("_id","foo") values ($1::text,$2::bytea)',
+               ['123', Buffer.from([0, 1, 2, 3, 4, 5, 6, 7, 8, 254, 255])]);
+
+      const results = db.query('select * from "Foo"');
+      assert.equals(results[0].foo.toString('hex'), '000102030405060708feff');
+    },
+
     "test insert suffix"() {
       v.foo = pg.defaultDb.table('Foo', {
         _id: 'integer',
@@ -338,7 +348,7 @@ isServer && define(function (require, exports, module) {
           client.query(
             'select count(*) from "Foo" where name like {$likeE} OR name = {$four}',
             {likeE: '%e', four: 'Four'}),
-          [{count: '4'}]);
+          [{count: 4}]);
       },
 
       "test $sql"() {

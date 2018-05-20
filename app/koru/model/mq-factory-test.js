@@ -204,7 +204,7 @@ isServer && define(function (require, exports, module) {
 
         koru.setTimeout.yield();
 
-        assert.equals(v.foo, [v.altDb, {_id: '1', dueAt: util.newDate(), message: 'altfoo1'}]);
+        assert.equals(v.foo, [v.altDb, {_id: 1, dueAt: util.newDate(), message: 'altfoo1'}]);
 
         koru.setTimeout.reset();
         dbBroker.db = v.defDb;
@@ -218,12 +218,12 @@ isServer && define(function (require, exports, module) {
         koru.setTimeout.lastCall.yield();
         koru.setTimeout.firstCall.yield();
 
-        assert.equals(v.foo, [v.defDb, {_id: '1', dueAt: util.newDate(), message: 'foo1'}]);
-        assert.equals(v.bar, [v.defDb, {_id: '3', dueAt: util.newDate(), message: 'bar1'}]);
+        assert.equals(v.foo, [v.defDb, {_id: 1, dueAt: util.newDate(), message: 'foo1'}]);
+        assert.equals(v.bar, [v.defDb, {_id: 3, dueAt: util.newDate(), message: 'bar1'}]);
 
         koru.setTimeout.lastCall.yield();
 
-        assert.equals(v.foo, [v.defDb, {_id: '2', dueAt: util.newDate(), message: 'foo2'}]);
+        assert.equals(v.foo, [v.defDb, {_id: 2, dueAt: util.newDate(), message: 'foo2'}]);
       },
 
       "test getQueue"() {
@@ -324,12 +324,12 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         assert.calledWith(koru.setTimeout, TH.match.func, 10);
 
         assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
-          _id: '2',
+          _id: 2,
           name: 'foo',
           dueAt: new Date(now+10),
           message: {another: 'message'},
         }, {
-          _id: '1',
+          _id: 1,
           name: 'foo',
           dueAt: new Date(now+30),
           message: {my: 'message'},
@@ -343,7 +343,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         call.yield();
 
         assert.equals(v.args, [{
-          _id: '2',
+          _id: 2,
           dueAt: new Date(now),
           message: {another: 'message'},
         }, queue]);
@@ -351,7 +351,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         assert.calledOnceWith(koru.setTimeout, TH.match.func, 20);
 
         assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), [{
-          _id: '1',
+          _id: 1,
           name: 'foo',
           dueAt: new Date(now+20),
           message: {my: 'message'},
@@ -363,7 +363,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         refute.called(koru.setTimeout);
 
         assert.equals(v.args, [{
-          _id: '1',
+          _id: 1,
           dueAt: new Date(now-10),
           message: {my: 'message'},
         }, queue]);
@@ -391,23 +391,23 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         queue.add({dueAt: new Date(now+10), message: {another: 'message'}});
 
         assert.equals(queue.peek(), [{
-          _id: '2',
+          _id: 2,
           dueAt: new Date(now+10),
           message: {another: 'message'},
         }]);
 
         assert.equals(queue.peek(3), [{
-          _id: '2',
+          _id: 2,
           dueAt: new Date(now+10),
           message: {another: 'message'},
         }, {
-          _id: '1',
+          _id: 1,
           dueAt: new Date(now+30),
           message: {my: 'message'},
         }]);
 
         assert.equals(queue.peek(5, new Date(now+10)), [{
-          _id: '2',
+          _id: 2,
           dueAt: new Date(now+10),
           message: {another: 'message'},
         }]);
@@ -430,7 +430,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         queue.remove('2');
 
-        assert.equals(queue.peek(5), [TH.match.field('_id', '1')]);
+        assert.equals(queue.peek(5), [TH.match.field('_id', 1)]);
       },
 
       "test bad queue Time"() {

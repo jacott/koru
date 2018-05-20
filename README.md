@@ -8,7 +8,7 @@ It is however a comprehensive framework and is focused on fast test-driven-devel
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Geoff Jacobsen <geoffjacobsen@gmail.com>
+Copyright (c) 2016-2018 Geoff Jacobsen <geoffjacobsen@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
