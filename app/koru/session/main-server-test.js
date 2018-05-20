@@ -6,6 +6,8 @@ isServer && define(function (require, exports, module) {
   const message = require('./message');
   const TH      = require('./test-helper');
 
+  const {test$} = require('koru/symbols');
+
   const {stub, spy, onEnd} = TH;
 
   const serverSession = require('./main-server');
@@ -45,7 +47,7 @@ isServer && define(function (require, exports, module) {
       v.sess.versionHash = 'h1';
 
       TH.noInfo();
-      v.func(v.ws, v.ws._upgradeReq);
+      v.func(v.ws, v.ws[test$].request);
 
       assert.calledWith(v.ws.send, TH.match(arg => {
         v.msg = message.decodeMessage(arg.subarray(1), session.globalDict);

@@ -20,7 +20,7 @@
   "bin": "./bin/koru",
   "gypfile": true,
   "dependencies": {
-    "autoprefixer": "^7.2.2",
+    "autoprefixer": "^8.5.0",
     "babel-generator": "^6.26.0",
     "babel-types": "^6.26.0",
     "babylon": "^6.18",
@@ -41,7 +41,7 @@
     "raw-body": "^2.3.2",
     "request": "^2.86.0",
     "send": "^0.16.1",
-    "ws": "^3.3.2",
+    "ws": "^5.1.1",
     "yaajs": "^3.0.0"
   },
   "devDependencies": {

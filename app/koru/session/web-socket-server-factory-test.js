@@ -8,6 +8,8 @@ define(function (require, exports, module) {
   const ConnectionBase = require('./server-connection-factory').Base;
   const TH             = require('./test-helper');
 
+  const {test$} = require('koru/symbols');
+
   const sut = require('./web-socket-server-factory');
   var v;
 
@@ -184,9 +186,9 @@ define(function (require, exports, module) {
       },
 
       "test wrong protocol received"() {
-        v.ws._upgradeReq.url = '/4/dev/';
+        v.ws[test$].request.url = '/4/dev/';
 
-        v.sess.onConnection(v.ws, v.ws._upgradeReq);
+        v.sess.onConnection(v.ws, v.ws[test$].request);
 
         assert.calledOnceWith(v.ws.send, 'Lforce-reload');
       },
@@ -195,15 +197,15 @@ define(function (require, exports, module) {
         setUp() {
           v.sess.addToDict('Helium');
           v.sess.addToDict('Tungsten');
-          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.ws[test$].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h123';
           v.sess.version = 'v1.2.2';
           TH.noInfo();
         },
 
         "test wrong dictHash received"() {
-          v.ws._upgradeReq.url += '?dict=abcdf23';
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.ws[test$].request.url += '?dict=abcdf23';
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent([
             '', 'h123',
             TH.match(dict=>v.dict=dict),
@@ -215,16 +217,16 @@ define(function (require, exports, module) {
         },
 
         "test correct dictHash received"() {
-          v.ws._upgradeReq.url +=
+          v.ws[test$].request.url +=
             '?dict=0e91d53512b2d4fd787d74afc8b21253efc1ea6eb52a3a88a694b0cc6ae716b0';
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent(['', 'h123', null, undefined]);
         },
       },
 
       "compareVersion": {
         setUp() {
-          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
+          v.ws[test$].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/h123`;
           v.sess.versionHash = 'h456';
           v.sess.version = 'v1.2.3';
           TH.noInfo();
@@ -233,14 +235,14 @@ define(function (require, exports, module) {
         "test info"() {
           koru.info.restore();
           this.stub(koru, 'info');
-          v.ws._upgradeReq.connection = {remoteAddress: '127.0.0.1', remotePort: '12345'};
-          v.ws._upgradeReq.headers = {
+          v.ws[test$].request.connection = {remoteAddress: '127.0.0.1', remotePort: '12345'};
+          v.ws[test$].request.headers = {
             'user-agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "+
               "(KHTML, like Gecko) Chrome/59.0.3071.104 Safari/537.36",
             'x-real-ip': '11.22.33.44',
           };
 
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
 
           assert.calledWith(
             koru.info,
@@ -251,7 +253,7 @@ define(function (require, exports, module) {
           this.stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = this.stub().returns(1);
 
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
 
           refute.called(util.compareVersion);
           assert.calledWith(compareVersion, 'v1.2.2', 'h123');
@@ -264,7 +266,7 @@ define(function (require, exports, module) {
           this.stub(util, 'compareVersion');
           const compareVersion = v.sess.compareVersion = this.stub().returns(-1);
 
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
 
           refute.called(util.compareVersion);
           assert.called(compareVersion);
@@ -274,29 +276,29 @@ define(function (require, exports, module) {
 
         "test compareVersion"() {
           /** client < server **/
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent(['v1.2.3', 'h456', TH.match.any, TH.match.string]);
 
           /** client > server **/
           v.sess.version = 'v1.2.1';
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           refute.called(v.ws.send);
 
           /** client == server **/
           v.sess.version = 'v1.2.2';
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test no version,hash"() {
-          v.ws._upgradeReq.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.ws[test$].request.url = `/ws/${koru.PROTOCOL_VERSION}/v1.2.2/`;
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent(['', 'h456', TH.match.any, TH.match.string]);
         },
 
         "test old version but good hash"() {
           v.sess.versionHash = 'h123';
-          v.sess.onConnection(v.ws, v.ws._upgradeReq);
+          v.sess.onConnection(v.ws, v.ws[test$].request);
           v.assertSent(['', 'h123', TH.match.any, TH.match.string]);
         },
       },    },
