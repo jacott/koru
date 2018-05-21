@@ -123,7 +123,8 @@ isServer && define(function (require, exports, module) {
       v.foo = pg.defaultDb.table('Foo');
       assert.same(v.foo.aryToSqlStr, pg.aryToSqlStr);
 
-      assert.equals(pg.aryToSqlStr([1,2,"three",null]), '{1,2,"three",null}');
+      assert.equals(pg.aryToSqlStr([1,2,"three",null]), '{1,2,three,NULL}');
+      assert.equals(pg.aryToSqlStr([[1,'"',"three",null]]), '{{1,"\\"",three,NULL}}');
     },
 
     "test bytea"() {

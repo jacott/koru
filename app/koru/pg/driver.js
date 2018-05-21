@@ -25,14 +25,7 @@ define(function(require, exports, module) {
     defaultDb = null;
   };
 
-  const aryToSqlStr = value =>{
-    if (! value) return value;
-
-    if (! Array.isArray(value))
-      throw new Error('Value is not an array: '+util.inspect(value));
-
-    return '{'+value.map(v => JSON.stringify(v)).join(',')+'}';
-  };
+  const aryToSqlStr = Libpq.sqlArray;
 
   const getConn = client =>{
     const {thread} = util, sym = client[tx$];
