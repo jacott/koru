@@ -21,17 +21,18 @@ define(function(require, exports, module) {
   let selectNode = null;
 
   Core.assert.benchMark = ({subject, duration=1000, control=empty})=>{
-    control();
     subject();
+    control();
 
-    let count = 0, st = 0;
+    let _count = 0, st = 0;
     let result;
     let endAt = Date.now()+Math.floor(duration/6);
     st = performance.now();
     while(endAt > Date.now()) {
-      result = subject(count, result);
-      ++count;
+      result = subject(_count, result);
+      ++_count;
     }
+    const count = _count;
     for(let i = 0; i < count; ++i) {
       result = control(i, result);
     }
@@ -61,9 +62,10 @@ define(function(require, exports, module) {
     }
     const subject2 = (performance.now()-st)/count;
 
-    let error = Math.abs(control1 - control2) + Math.abs(subject1 - subject2);
+    const error = Math.abs(control1 - control2) + Math.abs(subject1 - subject2);
 
-    const rounding = 10**(Math.floor(Math.log(error)/Math.log(10)));
+    let rounding = 10**(Math.floor(Math.log(error)/Math.log(10)));
+    if (rounding == 0) rounding = 0.00000001;
 
     const ns = Math.round(1000000 * Math.round(
       (subject1 + subject2 - control1 - control2)*0.5/rounding)*rounding);
