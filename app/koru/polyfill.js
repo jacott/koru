@@ -1,8 +1,9 @@
 /**
- * Load client or server related file.
+ * Load polyfill if needed.
+
+ * A polyfill is needed if `requirejs['polyfill_'+name]` is defined
  */
 (()=>{
-  const suffix = (typeof global !== 'undefined') &&  this === global ? '-server' : '-client';
   define({
     /**
      * Load a module for the current koru -- client or server -- and
@@ -12,12 +13,12 @@
      * format: `koru/env!name` as `name-client.js`
      */
     load(name, req, onload, config) {
-      const provider = name + suffix;
-      const pMod = req.module.dependOn(provider);
-      req.module.body = () => pMod.exports;
+      const provider = requirejs['polyfill_'+name];
+      if (provider !== undefined) {
+        const pMod = req.module.dependOn(provider);
+        req.module.body = () => pMod.exports;
+      }
       onload();
     },
-
-    pluginBuilder: './env-builder',
   });
 })();

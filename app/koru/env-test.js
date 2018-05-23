@@ -1,11 +1,11 @@
 define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test');
-  var koru = require('./main');
+  const TH = require('./test');
+  const koru = require('./main');
+
+  let v = null;
 
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 
