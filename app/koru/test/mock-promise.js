@@ -37,23 +37,24 @@ define(function(require, exports, module) {
       const ans = new MockPromise((r, e) => {resolve = r; reject = e;});
       promises = Array.from(promises);
       let count = promises.length;
-      for(let i = 0; i < count; ++i) {
+
+      const oneResolved = i => ans => {
+        promises[i] = ans;
+        --count < 0 && resolve(promises);
+      };
+
+      for(let i = 0; i < promises.length; ++i) {
         const p = promises[i];
+
         if (p && typeof p.then === 'function')
           p.then(oneResolved(i), reject);
         else
           --count;
       }
+
       if (count === 0) resolve(promises);
       --count;
       return ans;
-
-      function oneResolved(i) {
-        return ans => {
-          promises[i] = ans;
-          --count < 0 && resolve(promises);
-        };
-      }
     }
 
     static _resolveOrReject() {
