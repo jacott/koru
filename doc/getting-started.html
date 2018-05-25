@@ -2,28 +2,27 @@
   <h1>Getting started</h1>
 
   <abstract>
-    This guide describes how to build a koru one page application. We
-    will be building a simple home library application
-    called <b>my-library</b>.
+    This guide describes how to build a koru single-page application (SPA). We will be building a
+    simple home library application called <b>my-library</b>.
   </abstract>
 
-  <h2>Create initial System</h2>
+  <h2>Create database</h2>
 
   Ensure you have admin access to postgresql
-  <tt>sudo -u postgres createuser -drs $USER</tt>
 
-  <h3>Method one</h3>
   <ul>
-    <li><code>npm install --global koru</code></li>
-    <li><code>koru new my-library</code></li>
-    <li><code>cd my-library</code></li>
+    <li><tt>pg_config --version</tt></li>
+    <li><tt>sudo -u postgres createuser -drs $USER</tt></li>
+    <li><tt>createdb my-librarydemo</tt></li>
   </ul>
 
-  <h3>Method two</h3>
+  <h2>Create initial project</h2>
+
   <ul>
     <li><code>mkdir my-library && cd my-library && npm init -y</code></li>
-    <li><code>npm install --save koru</code></li>
-    <li><code>node_modules/.bin/koru new</code></li>
+    <li><code>npm install --save koru pg-libpq</code></li>
+    <li><code>`npm bin`/koru new</code></li>
+    <li><code>git init . && git add . && git commit -m 'initial'</code></li>
   </ul>
 
   <h2>Generate a new Model</h2>
@@ -32,7 +31,6 @@
 
   <ul>
     <li><code>./scripts/koru g model Book title author published:date pages:integer</code></li>
-    <li><nosel>Create the database if needed: </nosel><code>createdb my-librarydemo</code></li>
     <li><nosel>Migrate the database: </nosel><code>./scripts/koru db-migrate</code></li>
     <li><nosel>Dump datgabase schema to disk: </nosel><code>./scripts/koru db-schema-dump</code></li>
   </ul>
