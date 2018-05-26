@@ -46,8 +46,6 @@ default:
     .description('run tests.')
     .action(load('test'));
 
-  load('db-commands')(program);
-
   program.parse(process.argv);
 
   if (program) {
@@ -55,12 +53,10 @@ default:
       console.error("Unexpected command: ", program.rawArgs[2]);
       process.exit(1);
     }
-    program.help();
+    load('db-commands')(program);
   }
 
   function load(command) {
-    if (loadded) return ()=>{};
-    loadded = true;
     return function () {
       this.koruVersion = koruPackage.version;
       this.koruPackage = koruPackage;
