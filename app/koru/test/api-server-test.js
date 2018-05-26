@@ -58,7 +58,6 @@ define(function (require, exports, module) {
             requires: ['koru/session/main', 'koru/util'],
             subject: {
               name: 'fooBar',
-              abstract: TH.match.any,
             },
             methods: {
               fnord: {

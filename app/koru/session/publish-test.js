@@ -1,6 +1,9 @@
 define(function (require, exports, module) {
   /**
-   * Publish a set of records from the server to the client
+   * Publish a set of records from the server to the client.
+   *
+   * The function is called when {#koru/session/subscribe} is invoked and is responsible for setting
+   * up matches which filter valid documents.
    **/
   const api = require('koru/test/api');
   const TH  = require('./test-helper');
@@ -31,19 +34,19 @@ define(function (require, exports, module) {
        *
        * @param [module] register this module (and auto de-register if
        * unloaded)
-
+       *
        * @param {string} [name] The name to register; derives from
        * `module.id` by default
-
+       *
        * @param {function} init The function to invoke when subscribe
        * is called. It is called with `this` set to the subscription
        * instance: {#koru/session/publish-server::sub} for server and
        * {#koru/session/client-sub} for client
-
+       *
        * @param {function} [preload] A preload function to call on
        * client; see {#.preload}
        **/
-      const publish = api.custom(sut);
+      const publish = api.custom(sut, 'publish');
 
 
       this.onEnd(() => {
@@ -57,7 +60,8 @@ define(function (require, exports, module) {
         }, args);
       }
 
-      api.example(() => {
+      //[
+      {
         const module = new TH.MockModule("id/for/publish-library-books-client");
 
         publish({
@@ -73,11 +77,13 @@ define(function (require, exports, module) {
 
         // Another example of id is:
         // id: id/for/product-catalog-server => ProductCatalog
-      });
+      }
+      //]
       assert.calledWith(v.exp.match.register, "Book");
 
       v.sub = null;
-      api.example(() => {
+      //[
+      {
         const module = new TH.MockModule("id/with/funny-name");
 
         publish({
@@ -88,7 +94,8 @@ define(function (require, exports, module) {
           name: "TestPublish",
         });
         subscribe("TestPublish"); // overrides module.id
-      });
+      }
+      //]
       assert.calledWith(v.exp.match.register, "Foo");
     },
   });

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=> JsPaser => {
   const koru           = require('koru');
   const htmlDoc        = require('koru/dom/html-doc');
   const util           = require('koru/util');
@@ -6,18 +6,20 @@ define(function(require, exports, module) {
   const {VISITOR_KEYS} = requirejs.nodeRequire('babel-types/lib/definitions');
   const {parse}        = requirejs.nodeRequire('babylon');
 
-  const HL_MAP = {
+  const {extractCallSignature, findMatch} = JsPaser;
+
+  JsPaser.HL_MAP = {
     string: 's',
     number: 'm',
     boolean: 'kc',
   };
 
-  function funcBody(func) {
+  JsPaser.funcBody = func =>{
     const code = func.toString();
     return code.slice(code.indexOf('\n')+1, code.lastIndexOf('\n'));
-  }
+  };
 
-  function highlight(codeIn, tag='div') {
+  JsPaser.highlight = (codeIn, tag='div')=>{
     if (! codeIn) return;
 
     let srcPos = 0;
@@ -42,11 +44,11 @@ define(function(require, exports, module) {
     const div = document.createElement(tag);
     div.className = 'highlight';
 
-    function binaryExpr(node) {
+    const binaryExpr = (node)=>{
       expr(node.left);
       addHlString(node.operator, node.left.end, 'o');
       expr(node.right);
-    }
+    };
 
     function FunctionExpression(node) {
       addHlString('function', node.start, 'kd');
@@ -135,7 +137,7 @@ define(function(require, exports, module) {
       },
     };
 
-    function expr(node, idkw) {
+    const expr = (node, idkw)=>{
       if (! node) return;
       if (Array.isArray(node)) {
         node.forEach(n => expr(n, idkw));
@@ -153,7 +155,7 @@ define(function(require, exports, module) {
         });
       }
       trailingComments(node);
-    }
+    };
 
     function addHlString(text, start, hl) {
       const node = {start: codeIn.indexOf(text, start), end: 0};
@@ -203,7 +205,7 @@ define(function(require, exports, module) {
     function nodeCode(node) {
       return codeIn.slice(node.start, node.end);
     }
-  }
+  };
 
   function nodeKeys(node) {
     return util.diff(Object.keys(node), ['type', 'start', 'end', 'loc', 'sourceType']);
@@ -246,7 +248,7 @@ define(function(require, exports, module) {
     throw ex1;
   }
 
-  function extractParams(code, entryTypes) {
+  JsPaser.extractParams = (code, entryTypes)=>{
     entryTypes = entryTypes || {
       ObjectMethod: true,
       ArrowFunctionExpression: true,
@@ -317,28 +319,6 @@ define(function(require, exports, module) {
     }
   }
 
-  function extractCallSignature(func) {
-    let m, code = func.toString();
-
-
-    if (m = /^(?:class[^{]*\{[\s\S]*(?=constructor\b)|function\s*(?=\w))/.exec(code))
-      code = code.slice(m[0].length);
-    else if (m = /^(\w+)\s*=>/.exec(code))
-      return m[1] += ' => {/*...*/}';
-
-    if (code.startsWith('class'))
-      return "constructor()";
-
-    m = /^[^(]*\(/.exec(code);
-
-    let pos = m ? findMatch(code, m[0].length, '(') : -1;
-
-    if (pos === -1)
-      throw new Error("Can't find signature of "+code);
-
-    return code.slice(0, pos);
-  }
-
   const NEST_RE = {};
   const PAIR = {};
   '[] {} ()'.split(' ').forEach(pair => {
@@ -348,46 +328,6 @@ define(function(require, exports, module) {
 
   const SKIP_EOL = /[^\n]*/g;
   const SKIP_MLC = /[\s\S]*\*\//g;
-
-  function findMatch(code, idx, lookFor) {
-    const endChar = PAIR[lookFor];
-    let m, re = NEST_RE[lookFor];
-    re.lastIndex = idx;
-
-
-    while (m = re.exec(code)) {
-      let pos, found = code.charAt(re.lastIndex-1);
-
-      switch (found) {
-      case endChar:
-        return re.lastIndex;
-      case '`': case "'": case '"':
-        pos = findStringEnd(code, re.lastIndex, found);
-        break;
-      case '/':
-        switch (code.charAt(re.lastIndex)) {
-        case '/':
-          SKIP_EOL.lastIndex = re.lastIndex;
-          if (! SKIP_EOL.exec(code))
-            return -1;
-          re.lastIndex = SKIP_EOL.lastIndex;
-          continue;
-        case '*':
-          SKIP_MLC.lastIndex = re.lastIndex;
-          if (! SKIP_MLC.exec(code))
-            return -1;
-          re.lastIndex = SKIP_MLC.lastIndex;
-          continue;
-        }
-        return -1;
-      default:
-        pos = findMatch(code, re.lastIndex, found);
-      }
-      if (pos === -1) return -1;
-
-      re.lastIndex=pos;
-    }
-  }
 
   const STRING = {};
   ['`', '"', "'"].forEach(q => {
@@ -409,7 +349,5 @@ define(function(require, exports, module) {
     return -1;
   }
 
-
-
-  module.exports = {highlight, funcBody, HL_MAP, extractParams};
+  return JsPaser;
 });

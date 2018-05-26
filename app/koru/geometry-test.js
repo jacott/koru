@@ -137,7 +137,7 @@ define(function (require, exports, module) {
 
        * @param ps start point
 
-       * @param curve bezier curve (See {##bezierBox}) or end point for line
+       * @param curve bezier curve (See {#.bezierBox}) or end point for line
 
        * @returns the midpoint in form `[x, y]`
        **/
@@ -168,7 +168,7 @@ define(function (require, exports, module) {
 
        * @param ps start point
 
-       * @param curve bezier curve (See {##bezierBox}) or end point for line
+       * @param curve bezier curve (See {#.bezierBox}) or end point for line
 
        * @returns the tangent normalized vector in form `[xd, yd]`
        **/
@@ -205,7 +205,7 @@ define(function (require, exports, module) {
 
        * @param ps start point
 
-       * @param curve bezier curve (See {##bezierBox}) or end point for line
+       * @param curve bezier curve (See {#.bezierBox}) or end point for line
 
        * @returns t along the curve
        **/
@@ -269,7 +269,7 @@ define(function (require, exports, module) {
 
        * @param ps start point
 
-       * @param curve bezier curve (See {##bezierBox})
+       * @param curve bezier curve (See {#.bezierBox})
 
        * @returns the second curves in form `[cs, ce, pe]`
        **/

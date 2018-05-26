@@ -232,9 +232,9 @@ define(function(require, exports, module) {
           properties, buildProperties(api, subject, api.protoProperties, 'proto')));
 
       pages.appendChild(Dom.h({
-        id: id,
+        id,
         '$data-env': env(api),
-        class: "jsdoc-module",
+        class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
         section: [
           {class: 'jsdoc-module-path', a: id, $href: '#'+id},
           {class: 'jsdoc-module-title', h2: subject.name},
@@ -341,10 +341,12 @@ define(function(require, exports, module) {
 
   function buildMethods(api, subject, methods, requireLine, type) {
     return Object.keys(methods).sort().map(name => {
+      const method = methods[name];
+      const {sig, intro, calls} = method;
       let initInst, needInit = false;
       if (type === 'proto') {
-        needInit = true;
-        initInst = function () {
+        needInit = calls.reduce((s, i)=> s || i.body === undefined, false);
+        initInst = ()=>{
           if (! needInit) return [];
           needInit = false;
           const mu = codeToHtml(
@@ -371,10 +373,8 @@ define(function(require, exports, module) {
         var inst = subject.name;
         var sigJoin = type !== 'custom' && '.';
       }
-      const method = methods[name];
-      const {sig, intro, calls} = method;
       const {args, argMap} = mapArgs(sig, calls);
-      const ret = argProfile(calls, function (call) {return call[1]});
+      const ret = argProfile(calls, call => call[1]);
       if (! util.isObjEmpty(ret.types))
         argMap[':return:'] = ret;
 
@@ -441,10 +441,10 @@ define(function(require, exports, module) {
   function buildParams(api, args, argMap) {
     const ret = argMap[':return:'];
 
-    if (args.length === 0 && ! ret)
+    if (args.length === 0 && ret === undefined)
       return;
 
-    const retTypes = ret && ret.types && ret.types['<>'] && extractTypes(ret);
+    const retTypes = ret && ret.types && extractTypes(ret);
     return {class: "jsdoc-args", div: [
       {h6: "Parameters"},
       {table: {
@@ -478,8 +478,8 @@ define(function(require, exports, module) {
     for (let type in types) {
       if (typeMap[types[type]]) continue;
       typeMap[types[type]] = true;
-      if (ans.length)
-        ans.push('\u00a0or', {br: ''});
+      if (ans.length != 0)
+        ans.push('\u200a/\u200a');
       ans.push({a: idToText(types[type]), $href: href(type)});
     }
     return ans;
@@ -628,7 +628,7 @@ define(function(require, exports, module) {
   function buildLinks(parent, list) {
     let prevId = '', nodeModule;
     list.forEach(([id, linkNav]) => {
-      const link = idToLink(id, prevId);
+      const link = idToLink(id);
       (link.nodeType ? parent : nodeModule)
         .appendChild(nodeModule = Dom.h({class: 'jsdoc-nav-module', div: [
           link,

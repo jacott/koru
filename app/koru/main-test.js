@@ -46,12 +46,12 @@ define(function (require, exports, module) {
        **/
       api.method('onunload');
 
-      api.example(() => {
-        const myModule = {id: 'myModule', onUnload: test.stub()};
-        const callback = {stop() {}};
-        koru.onunload(myModule, callback);
-        assert.calledWith(myModule.onUnload, callback.stop);
-      });
+      //[
+      const myModule = {id: 'myModule', onUnload: test.stub()};
+      const callback = {stop() {}};
+      koru.onunload(myModule, callback);
+      assert.calledWith(myModule.onUnload, callback.stop);
+      //]
       const onUnload = test.stub(module.constructor.prototype, 'onUnload');
       koru.onunload('koru/main-test', v.stub = test.stub());
       assert.calledWith(onUnload, v.stub);

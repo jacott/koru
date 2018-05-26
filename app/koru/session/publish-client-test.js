@@ -1,10 +1,4 @@
 isClient && define(function (require, exports, module) {
-  /**
-   * Register the client side of a publish function. The function is
-   * called when {#koru/session/subscribe} is invoked and is
-   * responsible for setting up matches which filter valid documents
-   * sent from the server.
-   **/
   const ClientSub    = require('koru/session/client-sub');
   const api          = require('koru/test/api');
   const Model        = require('../model/main');
@@ -70,19 +64,19 @@ isClient && define(function (require, exports, module) {
 
       this.onEnd(() => {publish._destroy("Books")});
 
-      api.example(() => {
-        publish({
-          name: "Books",
-          init() {v.args = this.args},
-          preload(sub) {
-            return loadBooksFromIndexedDB(this.args).then(() => {
-              sub.args = [6, 7];
-            });
-          },
-        });
-        subscribe('Books', 5);
-        assert.equals(v.args, [6, 7]);
+      //[
+      publish({
+        name: "Books",
+        init() {v.args = this.args},
+        preload(sub) {
+          return loadBooksFromIndexedDB(this.args).then(() => {
+            sub.args = [6, 7];
+          });
+        },
       });
+      subscribe('Books', 5);
+      assert.equals(v.args, [6, 7]);
+      //]
     },
 
     "test filter Models"() {

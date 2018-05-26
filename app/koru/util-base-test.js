@@ -1,7 +1,8 @@
 define((require, exports, module)=>{
   const api = require('koru/test/api');
   const TH  = require('./test');
-  const sut = require('./util');
+
+  const util = require('./util');
 
   let v = {};
 
@@ -18,13 +19,13 @@ define((require, exports, module)=>{
     "test inspect"() {
       const obj = {"": 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, "\\a": 5};
       assert.equals(
-        sut.inspect(obj),
+        util.inspect(obj),
         `{123: 1, "": 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, "\\\\a": 5}`);
     },
 
     "test qlabel"() {
-      assert.equals(sut.qlabel("1234"), '1234');
-      assert.equals(sut.qlabel("1'234"), `"1'234"`);
+      assert.equals(util.qlabel("1234"), '1234');
+      assert.equals(util.qlabel("1'234"), `"1'234"`);
 
     },
 
@@ -35,19 +36,21 @@ define((require, exports, module)=>{
        *
        **/
       api.method('mergeNoEnum');
-      api.example(() => {
-        const foo = {bar: 1};
+      //[
+      const book = {author: 'Austen'};
+      let pages = 0;
 
-        sut.mergeNoEnum(foo, {
-          baz: 2,
+      util.mergeNoEnum(book, {
+        published: 1813,
 
-          get fnord() {return 3},
-        });
-
-        assert.equals(Object.keys(foo), ['bar']);
-        assert.same(foo.baz, 2);
-        assert.same(foo.fnord, 3);
+        get pages() {return pages},
       });
+
+      pages = 432;
+      assert.equals(Object.keys(book), ['author']);
+      assert.same(book.published, 1813);
+      assert.same(book.pages, 432);
+      //]
     },
 
     "test merge"() {
@@ -59,21 +62,21 @@ define((require, exports, module)=>{
       api.method('merge');
       var orig = {a: 1, b: 2};
       var result = {};
-      assert.same(sut.merge(result, orig), result);
+      assert.same(util.merge(result, orig), result);
 
       refute.same(result, orig);
 
       assert.equals(result, orig);
 
-      assert.equals(sut.merge({a: 1}), {a: 1});
-      assert.equals(sut.merge({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4});
+      assert.equals(util.merge({a: 1}), {a: 1});
+      assert.equals(util.merge({a: 1, b: 2}, {b: 3, c: 4}), {a: 1, b: 3, c: 4});
 
       const a = {a: 1, b: 2};
-      const b = sut.merge(Object.create(a), {b: 3, c: 4});
+      const b = util.merge(Object.create(a), {b: 3, c: 4});
 
       const c = {d: 5};
 
-      const ans = sut.merge(c, b);
+      const ans = util.merge(c, b);
 
       assert.same(ans, c);
       assert.equals(ans, {d: 5, b: 3, c: 4});
@@ -81,7 +84,7 @@ define((require, exports, module)=>{
     },
 
     "test last"() {
-      assert.same(sut.last([1, 4]), 4);
+      assert.same(util.last([1, 4]), 4);
     },
   });
 });

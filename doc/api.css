@@ -1,3 +1,56 @@
+html, body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  position: fixed;
+  top: 0; bottom: 0;
+  left: 0; right: 0;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-flow: column nowrap;
+  flex-flow: column nowrap;
+}
+
+body>section {
+  height: auto;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-flow: row nowrap;
+  flex-flow: row nowrap;
+  -webkit-box-flex: 1;
+  -ms-flex: 1 1 100%;
+  flex: 1 1 100%;
+}
+
+body>section>.menu {
+  height: 100%;
+  flex-basis: auto;
+  padding: 5px 40px 5px 5px;
+  height: auto;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  border-right: 1px solid #ddd;
+}
+
+body>section>main {
+  height: 100%;
+  -webkit-box-flex: 1;
+  -ms-flex: 1 1 100%;
+  flex: 1 1 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
 pre {
   margin: 0;
   white-space: pre-wrap;
@@ -9,6 +62,10 @@ pre {
 
 .page-header {
   font-size: 2em;
+  padding: 10px;
+
+  background-color: rgb(96, 125, 139);
+  color: #fff;
 }
 
 .jsdoc-info, abstract>div {
@@ -18,22 +75,6 @@ pre {
 .jsdoc-info>div>p:last-child {
   margin-bottom: 0;
 }
-
-/* .mdl-layout__drawer { */
-/*   overflow-x: auto; */
-/*   width: 300px; */
-/*   transform: translateX(-300px); */
-/* } */
-
-/* .mdl-layout--fixed-drawer>.mdl-layout__content { */
-/*   margin-left: 300px; */
-/* } */
-
-/* @media screen and (max-width: 1024px) { */
-/*   .mdl-layout--fixed-drawer>.mdl-layout__content { */
-/*     margin-left: 0 !important; */
-/*   } */
-/* } */
 
 #jsdoc-index {
   margin: 0 10px;
@@ -107,9 +148,15 @@ pre {
   margin: 0 !important;
   padding: 0 20px 20px;
   border-left: solid 5px transparent;
-  border-top: 1px solid rgba(0,0,0,0.12);
 }
 
+.jsdoc-module:not(.jsdoc-active-page) {
+  display: none;
+}
+
+.jsdoc-module.jsdoc-active-page+.jsdoc-innerSubject {
+  display: block !important;
+}
 
 
 .jsdoc-module[data-env="server"]:before,
@@ -126,6 +173,7 @@ pre {
 
 .jsdoc-module-path {
   color: rgb(96, 125, 139);
+  float: right;
 }
 
 .jsdoc-module-title {
@@ -134,7 +182,7 @@ pre {
   line-height: 32px;
   margin-top: 0;
   margin-bottom: 30px;
-  padding-top: 50px;
+  padding-top: 20px;
 }
 
 .jsdoc-module-section {
@@ -145,6 +193,12 @@ pre {
 
 .jsdoc-module-section>:first-child {
   margin-top: 0 !important;
+  width: 100%;
+  background: #f9f9f9;
+  padding: 10px;
+  margin-left: -10px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
 }
 
 .jsdoc-module-section[name=constructor]>h4:first-child {

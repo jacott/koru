@@ -12,7 +12,6 @@ define(function (require, exports, module) {
   const TH       = require('./test-helper');
 
   const sut = require('./match');
-  var test, v;
 
   let myMatch;
 
@@ -35,17 +34,18 @@ define(function (require, exports, module) {
     );
   }
 
+  let v = null;
+
   TH.testCase(module, {
     setUp () {
-      test = this;
       v = {};
       v.handles = [];
-      v.doc = {constructor: {modelName: 'Foo'}};
+      v.doc = {constructor: {modelName: 'Book'}};
       api.module();
     },
 
     tearDown () {
-      v.handles.forEach(function (h) {h.stop()});
+      v.handles.forEach(h =>{h.stop()});
       dbBroker.clearDbId();
       v = null;
     },
@@ -60,47 +60,56 @@ define(function (require, exports, module) {
        **/
       const iapi = buildRegistry();
       iapi.method('register');
-      v.handles.push(iapi.example(() => myMatch.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return doc !== v.doc;
-      })));
 
-      iapi.exampleCont(";\n");
-      v.handles.push(iapi.exampleCont(() => myMatch.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return doc !== v.doc;
-      })));
+      //[// no matchers match the document
+      {
+        const m1 = myMatch.register('Book', doc => {
+          assert.same(doc, v.doc);
+          return doc !== v.doc;
+        });
 
-      iapi.exampleCont(";\n");
-      iapi.exampleCont(() => {
+
+        const m2 = myMatch.register('Book', doc => {
+          assert.same(doc, v.doc);
+          return doc !== v.doc;
+        });
+
+        //]
+        v.handles.push(m1, m2);
+        //[
+
         assert.isFalse(myMatch.has(v.doc));
-      });
+
+        m1.stop(); m2.stop();
+      }
+      //]
     },
 
 
     "test true matches"() {
       const iapi = buildRegistry();
       iapi.method('register');
-      v.handles.push(iapi.example(() => v.f = myMatch.register('Foo', doc => {
+      //[{
+      // at least one matcher matches the document
+
+      const mfalse = myMatch.register('Book', doc => {
         assert.same(doc, v.doc);
         return false;
-      })));
-
-      iapi.exampleCont(";\n");
-      v.handles.push(iapi.exampleCont(() => v.t = myMatch.register('Foo', doc => {
-        assert.same(doc, v.doc);
-        return doc === v.doc;
-      })));
-
-      iapi.example(() => {
-        assert.isTrue(myMatch.has(v.doc));
       });
 
-      iapi.done();
-      api.done();
+      const mtrue = myMatch.register('Book', doc => {
+        assert.same(doc, v.doc);
+        return doc === v.doc;
+      });
+      //]
+      v.handles.push(mfalse, mtrue);
 
-      assert(v.t.id);
-      refute.same(v.t.id, v.f.id);
+      //[
+      assert.isTrue(myMatch.has(v.doc));
+      //]
+
+      assert(mtrue.id);
+      refute.same(mtrue.id, mfalse.id);
 
       if (isClient) {
         dbBroker.pushDbId('foo');
@@ -116,11 +125,14 @@ define(function (require, exports, module) {
         }
       }
       assert.isTrue(myMatch.has(v.doc));
-      v.t.stop();
 
-      assert.isNull(v.t.id);
-
+      //[
+      mtrue.stop();
+      assert.isNull(mtrue.id);
       assert.isFalse(myMatch.has(v.doc));
+
+      mfalse.stop();
+      //]//[}//]
     },
   });
 });

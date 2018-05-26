@@ -1,5 +1,4 @@
 isServer && define(function (require, exports, module) {
-  var test, v;
   const Dom       = require('koru/dom');
   const api       = require('koru/test/api');
   const apiToHtml = require('./api-to-html');
@@ -9,9 +8,9 @@ isServer && define(function (require, exports, module) {
                                   {'$data-api': 'links'},
                                   {'$data-api': 'pages'}]}).outerHTML;
 
+  let v = {};
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
     },
 

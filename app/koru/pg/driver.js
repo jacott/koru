@@ -121,7 +121,7 @@ define(function(require, exports, module) {
     }
 
     [inspect$]() {
-      return "Pg:" + this._url;
+      return "Pg:" + this.name;
     }
 
     jsFieldToPg(col, type) {
@@ -270,22 +270,23 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
   class Table {
     constructor(name, schema, client) {
-      const table = this;
-      table._name = name;
-      table._client = client;
-      table.ready = undefined;
-      Object.defineProperty(table, 'schema', {
+      this._name = name;
+      this._client = client;
+      this.ready = undefined;
+      Object.defineProperty(this, 'schema', {
         configurable: true,
-        get() {return schema},
-        set(value) {
-          table._ensureTable();
+        get: ()=> schema,
+        set: (value)=>{
+          this._ensureTable();
           schema = value;
-          if (table._ready) {
-            updateSchema(table, schema);
+          if (this._ready) {
+            updateSchema(this, schema);
           }
         },
       });
     }
+
+    [inspect$]() {return "PgTable:"+this._name}
 
     _resetTable() {
       this._ready = undefined;

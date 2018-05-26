@@ -57,7 +57,8 @@ define(function (require, exports, module) {
       });
 
       iapi.protoMethod('match');
-      iapi.example(() => {
+      //[
+      {
         const sub = publishTH.mockSubscribe("books");
 
         class Book {
@@ -70,7 +71,7 @@ define(function (require, exports, module) {
         });
         assert.isTrue(sub._mockMatches.get(Book)({name: 'Les Misérables'}));
         assert.isFalse(sub._mockMatches.get(Book)({name: 'The Bluest Eye'}));
-      });
+      }//]
     },
   });
 });

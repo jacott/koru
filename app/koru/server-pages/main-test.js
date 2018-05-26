@@ -54,10 +54,15 @@ isServer && define(function (require, exports, module) {
 
        * @param pathRoot handle pages starting with this path root.
        **/
-      const newServerPages = api.new();
-      stub(WebServer, 'registerHandler');
+      const new_ServerPages = api.new();
 
-      const sp = newServerPages(WebServer);
+      //[
+      const WebServer = require('koru/web-server');
+      //]
+      stub(WebServer, 'registerHandler');
+      //[
+      const sp = new_ServerPages(WebServer);
+      //]
       assert.isFunction(sp._handleRequest);
 
       assert.calledWith(WebServer.registerHandler, module.get('./main'), 'DEFAULT', sp._handleRequest);

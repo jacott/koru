@@ -2,6 +2,14 @@ define(function (require, exports, module) {
   /**
    * API is a semi-automatic API document generator. It uses
    * unit-tests to determine types and values at test time.
+
+   *
+   * Method document comments need to be inside the test method; not in the production code and not
+   * outside the test method.
+
+   *
+   * Examples can be verbatim from the test method by surrounding the example between `//[` and
+   * `//]` comments.
    **/
   var test, v;
   const TH      = require('koru/test');
@@ -443,10 +451,14 @@ define(function (require, exports, module) {
 
     "test new"() {
       /**
-       * Document `constructor` for the current subject
-       *
+       * Document `constructor` for the current subject. It
+
+
+
        * @param [sig] override the call signature
+
        * @returns a ProxyClass which is to be used instead of `new Class`
+
        **/
       MainAPI.method('new');
 
@@ -458,13 +470,22 @@ define(function (require, exports, module) {
       }
 
       API.module({id: 'myMod', exports: Hobbit});
-      const newHobbit = API.new();
+
+
+      const newHobbit = API.new(Hobbit);
 
       const bilbo = newHobbit('Bilbo');
 
       assert.same(bilbo.name, 'Bilbo');
 
-      API.done();
+      /*//[ // new//]//[_Book is converted to new Book when the example is rendered
+        const new//]//[_Book = api.new(Book);
+
+////]//[[
+        const book = new//]//[_Book({name: 'There and back again'});
+
+        assert(book instanceof Book);
+////]//[]//]*/
 
       assert.equals(API.instance.newInstance, {
         test,
@@ -474,6 +495,9 @@ define(function (require, exports, module) {
           ['Bilbo'], ['O', bilbo, '{Hobbit:Bilbo}']
         ]],
       });
+
+      API.new();
+      API.new('function Hobbit({name}) {}');
     },
 
     "test custom"() {

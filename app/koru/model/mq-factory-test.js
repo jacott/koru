@@ -1,4 +1,7 @@
 isServer && define(function (require, exports, module) {
+  /**
+   * Manage durable Message queues.
+   **/
   const koru            = require('koru');
   const Model           = require('koru/model');
   const dbBroker        = require('koru/model/db-broker');
@@ -11,7 +14,7 @@ isServer && define(function (require, exports, module) {
   const MQFactory = require('./mq-factory');
   let v = null;
 
-  let sut;
+  let mqFactory;
 
   TH.testCase(module, {
     setUp() {
@@ -19,15 +22,15 @@ isServer && define(function (require, exports, module) {
       v = {};
       v.defDb = Driver.defaultDb;
       TH.coreStartTransaction(v.defDb);
-      sut = new MQFactory('_test_MQ');
+      mqFactory = new MQFactory('_test_MQ');
     },
 
     tearDown() {
-      sut.deregisterQueue('foo');
-      sut.stopAll();
+      mqFactory.deregisterQueue('foo');
+      mqFactory.stopAll();
       v.defDb.query(`drop table  if exists "_test_MQ"; drop sequence if exists "_test_MQ__id_seq";`);
       TH.coreRollbackTransaction(v.defDb);
-      v = sut = null;
+      v = mqFactory = null;
     },
 
     "test global registerQueue"() {
@@ -50,16 +53,16 @@ isServer && define(function (require, exports, module) {
 
       const doSomethingWith = stub();
 
-      onEnd(()=>{sut.deregisterQueue('bar')});
+      onEnd(()=>{mqFactory.deregisterQueue('bar')});
 
-      api.example(()=>{
-        sut.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}});
-        sut.registerQueue({
-          module, name: 'bar', retryInterval: -1, action(msg) {doSomethingWith(msg)}});
-      });
-      assert.exception(()=>{sut.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
-      sut.deregisterQueue('foo');
-      refute.exception(()=>{sut.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      //[
+      mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}});
+      mqFactory.registerQueue({
+        module, name: 'bar', retryInterval: -1, action(msg) {doSomethingWith(msg)}});
+      //]
+      assert.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
+      mqFactory.deregisterQueue('foo');
+      refute.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
     },
 
     "with multi-db": {
@@ -71,7 +74,7 @@ isServer && define(function (require, exports, module) {
       },
 
       tearDown() {
-        sut.deregisterQueue('foo');
+        mqFactory.deregisterQueue('foo');
         if (v.altDb) {
           TH.coreRollbackTransaction(v.altDb);
           v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
@@ -80,28 +83,28 @@ isServer && define(function (require, exports, module) {
       },
 
       "test local registerQueue"() {
-        sut.registerQueue({name: 'bar', local: true, action(...args) {
+        mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
           v.args = args;
           v.db = dbBroker.db;
         }});
 
-        sut.registerQueue({name: 'panda', local: true, action(...args) {
+        mqFactory.registerQueue({name: 'panda', local: true, action(...args) {
         }});
 
         stub(koru, 'setTimeout').onCall(0).returns(123).onCall(1).returns(456);
         stub(koru, 'clearTimeout');
 
-        sut.getQueue('bar').add({message: 'hello'});
-        sut.getQueue('panda').add({message: 'p1'});
+        mqFactory.getQueue('bar').add({message: 'hello'});
+        mqFactory.getQueue('panda').add({message: 'p1'});
 
-        assert.equals(sut.getQueue('bar').peek()[0].message, 'hello');
+        assert.equals(mqFactory.getQueue('bar').peek()[0].message, 'hello');
 
         /** with alt db **/
         dbBroker.db = v.altDb;
 
-        assert.same(sut.getQueue('bar'), undefined);
+        assert.same(mqFactory.getQueue('bar'), undefined);
 
-        sut.registerQueue({name: 'bar', local: true, action(...args) {
+        mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
           v.altArgs = args;
         }});
 
@@ -112,7 +115,7 @@ isServer && define(function (require, exports, module) {
         assert.same(v.db, v.defDb);
 
         /** queue to other bar **/
-        sut.getQueue('bar').add({message: 'alt hello'});
+        mqFactory.getQueue('bar').add({message: 'alt hello'});
         koru.setTimeout.yieldAndReset();
 
         assert.equals(v.altArgs[0].message, 'alt hello');
@@ -121,40 +124,40 @@ isServer && define(function (require, exports, module) {
         /** back to orig db **/
         dbBroker.db = v.defDb;
 
-        assert.same(v.args[1], sut.getQueue('bar'));
+        assert.same(v.args[1], mqFactory.getQueue('bar'));
 
-        sut.getQueue('bar').add({message: 'middle'});
+        mqFactory.getQueue('bar').add({message: 'middle'});
         koru.setTimeout.yieldAndReset();
         assert.equals(v.args[0].message, 'middle');
-        sut.getQueue('bar').add({message: 'goodbye'});
+        mqFactory.getQueue('bar').add({message: 'goodbye'});
 
-        const {table} = sut.getQueue('bar').mqdb;
+        const {table} = mqFactory.getQueue('bar').mqdb;
 
         /** purge, deregister **/
         koru.clearTimeout.reset();
-        sut.getQueue('bar').purge();
-        sut.getQueue('panda').deregister();
+        mqFactory.getQueue('bar').purge();
+        mqFactory.getQueue('panda').deregister();
 
         assert.same(table.count({name: 'bar'}), 0);
         assert.calledWith(koru.clearTimeout, 123);
         assert.same(table.count({name: 'panda'}), 1);
         assert.calledWith(koru.clearTimeout, 456);
 
-        assert.same(sut.getQueue('bar'), undefined);
-        assert.same(sut.getQueue('panda'), undefined);
+        assert.same(mqFactory.getQueue('bar'), undefined);
+        assert.same(mqFactory.getQueue('panda'), undefined);
 
         /** can restart deregisterd queue **/
 
         koru.setTimeout.reset();
         koru.clearTimeout.reset();
 
-        sut.registerQueue({name: 'panda', local: true, retryInterval: 30*1000, action(msg) {
+        mqFactory.registerQueue({name: 'panda', local: true, retryInterval: 30*1000, action(msg) {
           v.msg = msg;
         }});
 
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        assert(sut.getQueue('panda'));
+        assert(mqFactory.getQueue('panda'));
 
         assert.calledWith(koru.setTimeout, TH.match.func, 30*1000);
 
@@ -173,22 +176,22 @@ isServer && define(function (require, exports, module) {
 
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        sut.registerQueue({module, name: 'foo', action(args) {v.foo = [dbBroker.db, args]}});
-        sut.registerQueue({module, name: 'bar', action(args) {v.bar = [dbBroker.db, args]}});
-        onEnd(()=>{sut.deregisterQueue('bar')});
+        mqFactory.registerQueue({module, name: 'foo', action(args) {v.foo = [dbBroker.db, args]}});
+        mqFactory.registerQueue({module, name: 'bar', action(args) {v.bar = [dbBroker.db, args]}});
+        onEnd(()=>{mqFactory.deregisterQueue('bar')});
 
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout').returns(123);
 
-        sut.getQueue('foo').add({message: 'foo1'});
-        sut.getQueue('foo').add({message: 'foo2'});
-        sut.getQueue('bar').add({message: 'bar1'});
+        mqFactory.getQueue('foo').add({message: 'foo1'});
+        mqFactory.getQueue('foo').add({message: 'foo2'});
+        mqFactory.getQueue('bar').add({message: 'bar1'});
 
         dbBroker.db = v.altDb;
 
-        sut.getQueue('foo').add({message: 'altfoo1'});
+        mqFactory.getQueue('foo').add({message: 'altfoo1'});
 
-        sut.stopAll();
+        mqFactory.stopAll();
 
         assert.equals(koru.clearTimeout.firstCall.args, [123]);
         assert.same(koru.clearTimeout.callCount, 3);
@@ -196,7 +199,7 @@ isServer && define(function (require, exports, module) {
         koru.setTimeout.reset();
         koru.clearTimeout.reset();
 
-        sut.start();
+        mqFactory.start();
 
         const foodb = dbBroker.db = {name: "foo"};
 
@@ -209,7 +212,9 @@ isServer && define(function (require, exports, module) {
         koru.setTimeout.reset();
         dbBroker.db = v.defDb;
 
-        sut.start();
+        api.done();
+
+        mqFactory.start();
 
         assert.same(koru.setTimeout.callCount, 2);
 
@@ -235,23 +240,25 @@ isServer && define(function (require, exports, module) {
          * @return the message queue
 
          **/
-        sut.registerQueue({module, name: 'foo', action: stub()});
-        const queue = sut.getQueue('foo');
-
         api.protoMethod('getQueue');
 
+        //[
+        mqFactory.registerQueue({module, name: 'foo', action: stub()});
+
+        const queue = mqFactory.getQueue('foo');
         assert(queue);
-        assert.same(sut.getQueue('foo'), queue);
-        assert.same(sut.getQueue('bar'), undefined);
+        assert.same(mqFactory.getQueue('foo'), queue);
+        assert.same(mqFactory.getQueue('bar'), undefined);
 
         dbBroker.db = v.altDb;
 
-        const altQ = sut.getQueue('foo');
+        const altQ = mqFactory.getQueue('foo');
         refute.same(altQ, queue);
 
         dbBroker.db = v.defDb;
 
-        assert.same(sut.getQueue('foo'), queue);
+        assert.same(mqFactory.getQueue('foo'), queue);
+        //]
       },
     },
 
@@ -265,13 +272,13 @@ isServer && define(function (require, exports, module) {
           .onCall(2).returns(123)
         ;
 
-        sut.registerQueue({
+        mqFactory.registerQueue({
           module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
       },
 
       "test creates table"() {
         const query = stub(dbBroker.db, 'query').returns([]);
-        sut.getQueue('foo');
+        mqFactory.getQueue('foo');
 
         assert.same(query.callCount, 5);
 
@@ -313,7 +320,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
 
         api.innerSubject(queue, 'MQ').method('add');
 
@@ -383,7 +390,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
          **/
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
 
         api.innerSubject(queue, 'MQ').method('peek');
 
@@ -421,7 +428,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
          **/
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
 
         api.innerSubject(queue, 'MQ').method('peek');
 
@@ -435,14 +442,14 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
       "test bad queue Time"() {
         assert.exception(()=>{
-          sut.getQueue('foo').add({dueAt: new Date(-4)});
+          mqFactory.getQueue('foo').add({dueAt: new Date(-4)});
         }, {message: 'Invalid dueAt'});
       },
 
       "test error in action"() {
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
         v.action = (args)=>{
           throw v.error = new Error('test error');
         };
@@ -460,10 +467,10 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         assert.calledOnce(koru.setTimeout);
 
-        onEnd(()=>{sut.deregisterQueue('bar')});
-        sut.registerQueue({name: 'bar', action: v.action, retryInterval: -1});
+        onEnd(()=>{mqFactory.deregisterQueue('bar')});
+        mqFactory.registerQueue({name: 'bar', action: v.action, retryInterval: -1});
 
-        sut.getQueue('bar').add({message: [4,5,6]});
+        mqFactory.getQueue('bar').add({message: [4,5,6]});
 
         koru.setTimeout.lastCall.yield();
 
@@ -486,7 +493,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
       "test retryAfter"() {
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
         v.action = (args)=>{
           throw {retryAfter: 12345};
         };
@@ -499,7 +506,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
       "test delay more than one day"() {
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
         queue.add({dueAt: new Date(now+5*util.DAY), message: [1]});
 
         assert.calledWith(koru.setTimeout, TH.match.func, util.DAY);
@@ -524,7 +531,7 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
       "test queue from within action"() {
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
-        const queue = sut.getQueue('foo');
+        const queue = mqFactory.getQueue('foo');
         v.action = (args)=>{
           v.action = args => {v.args = args};
           queue.add({dueAt: new Date(now+50), message: {last: 'msg'}});

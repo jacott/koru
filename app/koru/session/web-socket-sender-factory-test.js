@@ -33,17 +33,17 @@ define(function (require, exports, module) {
       /**
        *
        **/
-      const webSocketSenderFactory = api.new(sut);
-      api.example(() => {
-        const mySession = webSocketSenderFactory(new SessionBase('foo'), stateFactory());
-        const wsConnection = {};
-        mySession.newWs = test.stub().returns(wsConnection);
+      const new_webSocketSenderFactory = api.new(sut);
+      //[
+      const mySession = new_webSocketSenderFactory(new SessionBase('foo'), stateFactory());
+      const wsConnection = {};
+      mySession.newWs = test.stub().returns(wsConnection);
 
-        mySession.connect();
+      mySession.connect();
 
-        assert.called(mySession.newWs);
-        assert.same(wsConnection.binaryType, 'arraybuffer');
-      });
+      assert.called(mySession.newWs);
+      assert.same(wsConnection.binaryType, 'arraybuffer');
+      //]
     },
 
     "test onerror"() {

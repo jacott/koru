@@ -3,7 +3,6 @@ define(function(require, exports, module) {
   const htmlDoc        = require('koru/dom/html-doc');
   const util           = require('koru/util');
 
-
   const NEST_RE = {};
   const PAIR = {};
   '[] {} ()'.split(' ').forEach(pair => {
@@ -21,7 +20,6 @@ define(function(require, exports, module) {
 
   function extractCallSignature(func) {
     let code = func.toString();
-
     let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function\s*(?=\w))/.exec(code);
 
     if (m)
@@ -98,8 +96,8 @@ define(function(require, exports, module) {
     return -1;
   }
 
-  module.exports = util.merge({
+  module.exports = require('koru/env!./js-parser')({
     extractCallSignature,
     findMatch,
-  }, require('koru/env!./js-parser'));;
+  });
 });

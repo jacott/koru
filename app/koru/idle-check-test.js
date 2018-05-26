@@ -90,11 +90,11 @@ isServer && define(function (require, exports, module) {
          * waitIdle waits until `this.count` drops to zero.
          **/
         api.protoMethod('waitIdle');
-        api.example(() => {
-          const check = new IdleCheck();
-          check.waitIdle(v.stub = test.stub());
-          assert.called(v.stub);
-        });
+        //[
+        const check = new IdleCheck();
+        check.waitIdle(v.stub = test.stub());
+        assert.called(v.stub);
+        //]
       },
 
       "test multiple listeners"() {

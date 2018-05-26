@@ -17,7 +17,7 @@ isClient && define(function (require, exports, module) {
   let v = null;
 
   const createBook = (i, opts)=>v[`b${i}`] =
-          v.Book.create(Object.assign({title: `b${i}`, pageCount: i*100}, opts));
+        v.Book.create(Object.assign({title: `b${i}`, pageCount: i*100}, opts));
 
   TH.testCase(module, {
     setUp() {
@@ -84,23 +84,22 @@ isClient && define(function (require, exports, module) {
        * * `action` is `added`, `changed` or `removed`
 
        **/
-
       const new_AutoList = api.new(AutoList);
 
       const {Book, row} = v;
 
+      //[
       const book1 = Book.create({title: "The Eye of the World"});
       const book2 = Book.create({title: "The Great Hunt"});
 
-      api.example(_=>{
-        const container = Dom.h({});
-        const list = new_AutoList({query: Book.query.sort('title'), template: row, container});
+      const container = Dom.h({});
+      const list = new_AutoList({query: Book.query.sort('title'), template: row, container});
 
-        assert.dom(container, ()=>{
-          assert.dom(':first-child', 'The Eye of the World');
-          assert.dom(':last-child', 'The Great Hunt');
-        });
+      assert.dom(container, ()=>{
+        assert.dom(':first-child', 'The Eye of the World');
+        assert.dom(':last-child', 'The Great Hunt');
       });
+      //]
     },
 
     "test no query and addOrder"() {
@@ -184,9 +183,11 @@ isClient && define(function (require, exports, module) {
        * @param updateAllTags call updateAllTags on each element that is already rendered. Defaults
        * to `false`
        **/
+      api.protoMethod('changeOptions');
 
       const {Book, row} = v;
 
+      //[
       const book1 = Book.create({title: "The Eye of the World", pageCount: 782});
       const book2 = Book.create({title: "The Great Hunt", pageCount: 681});
 
@@ -194,29 +195,27 @@ isClient && define(function (require, exports, module) {
       let query = Book.query.sort('title');
       const list = new AutoList({query, template: row, container});
 
-      api.protoMethod('changeOptions');
       assert.equals(list.query, query);
 
-      api.example(_=>{
-        assert.dom(container, ()=>{
-          assert.dom(':first-child', {data: TH.matchModel(book1)}, elm =>{
-            v.book1Elm = elm;
-          });
-
-          list.changeOptions({query: Book.where(d=> ! /Shadow/.test(d.title)).sort('pageCount')});
-
-          assert.dom(':first-child', 'The Great Hunt');
-          assert.dom(':last-child', 'The Eye of the World', elm =>{
-            assert.same(elm, v.book1Elm);
-          });
-
-          Book.create({title: "The Fires of Heaven", pageCount: 963});
-          assert.dom(':last-child', 'The Fires of Heaven'); // reverse sort
-
-          const b4 = Book.create({title: "The Shadow Rising", pageCount: 1001});
-          refute(list.elm(b4)); // filtered out
+      assert.dom(container, ()=>{
+        assert.dom(':first-child', {data: TH.matchModel(book1)}, elm =>{
+          v.book1Elm = elm;
         });
+
+        list.changeOptions({query: Book.where(d=> ! /Shadow/.test(d.title)).sort('pageCount')});
+
+        assert.dom(':first-child', 'The Great Hunt');
+        assert.dom(':last-child', 'The Eye of the World', elm =>{
+          assert.same(elm, v.book1Elm);
+        });
+
+        Book.create({title: "The Fires of Heaven", pageCount: 963});
+        assert.dom(':last-child', 'The Fires of Heaven'); // reverse sort
+
+        const b4 = Book.create({title: "The Shadow Rising", pageCount: 1001});
+        refute(list.elm(b4)); // filtered out
       });
+      //]
     },
 
     "test updateEntry"() {
@@ -235,36 +234,36 @@ isClient && define(function (require, exports, module) {
 
       const {row} = v;
 
+      //[
       const container = Dom.h({});
 
-      api.example(_=>{
-        const observeUpdates = stub();
-        const list = new AutoList({
-          template: row, container,
-          query: {
-            forEach() {},
-          },
-          compare: util.compareByField('title'),
-          observeUpdates,
-        });
-        assert.dom(container, ()=>{
-          const b1 = {_id: 'b1', title: 'Book 1'}, b2 = {_id: 'b1', title: 'Book 2'};
-          list.updateEntry(b1);
-          list.updateEntry(b2);
-          assert.dom('div:last-child', 'Book 2');
-          b2.title = 'A book 2';
-          list.updateEntry(b2);
-          assert.dom('div:first-child', 'A book 2');
-
-          assert.calledWith(observeUpdates, list, b1, 'added');
-          assert.calledWith(observeUpdates, list, b2, 'added');
-          assert.calledWith(observeUpdates, list, b2, 'changed');
-
-          list.updateEntry(b1, 'remove');
-          assert.dom('div', {count: 1});
-          assert.calledWith(observeUpdates, list, b1, 'removed');
-        });
+      const observeUpdates = stub();
+      const list = new AutoList({
+        template: row, container,
+        query: {
+          forEach() {},
+        },
+        compare: util.compareByField('title'),
+        observeUpdates,
       });
+      assert.dom(container, ()=>{
+        const b1 = {_id: 'b1', title: 'Book 1'}, b2 = {_id: 'b1', title: 'Book 2'};
+        list.updateEntry(b1);
+        list.updateEntry(b2);
+        assert.dom('div:last-child', 'Book 2');
+        b2.title = 'A book 2';
+        list.updateEntry(b2);
+        assert.dom('div:first-child', 'A book 2');
+
+        assert.calledWith(observeUpdates, list, b1, 'added');
+        assert.calledWith(observeUpdates, list, b2, 'added');
+        assert.calledWith(observeUpdates, list, b2, 'changed');
+
+        list.updateEntry(b1, 'remove');
+        assert.dom('div', {count: 1});
+        assert.calledWith(observeUpdates, list, b1, 'removed');
+      });
+      //]
     },
 
     "test elm"() {
@@ -599,29 +598,30 @@ isClient && define(function (require, exports, module) {
 
       const {Book, row} = v;
 
-      api.example(_=>{
-        // Using comment delimeters
+      //[
 
-        const container = Dom.h({div: [
-          'before', {$comment$: 'start'}, {$comment$: 'end'}, 'after',
-        ]});
+      /** Using comment delimeters */
 
-        const startComment = container.childNodes[1];
-        startComment[endMarker$] = container.childNodes[2];
+      const container = Dom.h({div: [
+        'before', {$comment$: 'start'}, {$comment$: 'end'}, 'after',
+      ]});
 
-        const list = new_AutoList({
-          query: Book.query.sort('title'), template: row, container: startComment});
+      const startComment = container.childNodes[1];
+      startComment[endMarker$] = container.childNodes[2];
 
-        assert.dom(container, pn =>{
-          createBook(4);
-          createBook(1);
-          createBook(5);
+      const list = new_AutoList({
+        query: Book.query.sort('title'), template: row, container: startComment});
 
-          assert.equals(util.map(
-            pn.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
-                        ['3:before', '8:start', '1:b1', '1:b4', '1:b5', '8:end', '3:after']);
-        });
+      assert.dom(container, pn =>{
+        createBook(4);
+        createBook(1);
+        createBook(5);
+
+        assert.equals(util.map(
+          pn.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
+                      ['3:before', '8:start', '1:b1', '1:b4', '1:b5', '8:end', '3:after']);
       });
+      //]
     },
 
     "test observing"() {

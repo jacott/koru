@@ -33,15 +33,15 @@ define(function (require, exports, module) {
        *
        **/
       api.method('_poll');
-      api.example(() => {
-        // How to stub a Promise
-        TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
-        let done = false;
-        Promise.resolve(true).then(v => done = v);
-        assert.isFalse(done);
-        Promise._poll();
-        assert.isTrue(done);
-      });
+
+      //[// How to stub a Promise
+      TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
+      let done = false;
+      Promise.resolve(true).then(v => done = v);
+      assert.isFalse(done);
+      Promise._poll();
+      assert.isTrue(done);
+      //]
     },
 
     "test uncaught reject"() {

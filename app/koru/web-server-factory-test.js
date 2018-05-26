@@ -68,15 +68,15 @@ isServer && define(function (require, exports, module) {
        **/
       const WebServerFactory = api.new();
 
-      api.example(() => {
-        const http = requirejs.nodeRequire('http');
-        stub(http, 'createServer');
-        v.webServer = WebServerFactory(
-          '0.0.0.0', '80', '/rootDir/',
-          '/index2.html',
-          {gem(match) {return [match[0], '/path-to-gems']}});
-        assert.calledWith(http.createServer, v.webServer.requestListener);
-      });
+      //[
+      const http = requirejs.nodeRequire('http');
+      stub(http, 'createServer');
+      v.webServer = WebServerFactory(
+        '0.0.0.0', '80', '/rootDir/',
+        '/index2.html',
+        {gem(match) {return [match[0], '/path-to-gems']}});
+      assert.calledWith(http.createServer, v.webServer.requestListener);
+      //]
       v.webServer = WebServerFactory('localhost', '9876', '/');
     },
 
@@ -84,13 +84,13 @@ isServer && define(function (require, exports, module) {
       v.webServer = WebServerFactory('localhost', '9876', '/');
       api.protoMethod('start', v.webServer);
 
-      api.example(() => {
-        const {Server} = requirejs.nodeRequire('http');
-        const listen = stub(Server.prototype, 'listen').yields();
+      //[
+      const {Server} = requirejs.nodeRequire('http');
+      const listen = stub(Server.prototype, 'listen').yields();
 
-        v.webServer.start();
-        assert.calledWith(listen, '9876', 'localhost');
-      });
+      v.webServer.start();
+      assert.calledWith(listen, '9876', 'localhost');
+      //]
     },
 
     "test stop"() {

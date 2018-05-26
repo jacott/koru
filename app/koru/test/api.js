@@ -6,6 +6,8 @@ define(function(require, exports, module) {
   const util            = require('koru/util');
   const TH              = require('./main');
 
+  const onEnd$ = Symbol(), tcInfo$ = Symbol();
+
   const {inspect$} = require('koru/symbols');
 
   const ctx = module.ctx;
@@ -22,9 +24,7 @@ define(function(require, exports, module) {
       }
       this.subjectName = subjectName;
       this.testModule = testModule || (this.parent && this.parent.testModule);
-      this.abstract = docComment(
-        (this.testModule && this.testModule.body) || ''
-      );
+      this.abstract = docComment(this.testModule && this.testModule.body);
 
       this.newInstance =
         this.properties = this.protoProperties =
@@ -58,26 +58,34 @@ define(function(require, exports, module) {
       }
 
       this._instance = this._moduleMap.get(subjectModule);
-      if (this._instance) return this._instance;
+      if (this._instance == null) {
+        const afterTestCase = this.__afterTestCase;
+        afterTestCase.has(tc) || tc.after(testCaseFinished.bind(this));
+        afterTestCase.add(tc);
 
-      const afterTestCase = this.__afterTestCase;
-      afterTestCase.has(tc) || tc.after(testCaseFinished.bind(this));
-      afterTestCase.add(tc);
+        this._mapSubject(subject, subjectModule);
+        this._moduleMap.set(
+          subjectModule, this._instance = new this(
+            null, subjectModule,
+            subjectName || createSubjectName(subject, tc),
+            ctx.modules[tc.moduleId]
+          )
+        );
+        if (options) {
+          if (options.initExample)
+            this._instance.initExample = options.initExample;
 
-      this._mapSubject(subject, subjectModule);
-      this._moduleMap.set(
-        subjectModule, this._instance = new this(
-          null, subjectModule,
-          subjectName || createSubjectName(subject, tc),
-          ctx.modules[tc.moduleId]
-        )
-      );
-      if (options) {
-        if (options.initExample)
-          this._instance.initExample = options.initExample;
-
-        if (options.initInstExample)
-          this._instance.initInstExample = options.initInstExample;
+          if (options.initInstExample)
+            this._instance.initInstExample = options.initInstExample;
+        }
+      }
+      if (tc[tcInfo$] === undefined) {
+        tc[tcInfo$] = true;
+        if (this._instance.abstract === undefined) {
+          const module = ctx.modules[tc.moduleId];
+          if (module !== undefined)
+            this._instance.abstract = docComment(module.body);
+        }
       }
 
       return this._instance;
@@ -243,9 +251,9 @@ define(function(require, exports, module) {
 
       api.target = api.newInstance;
 
-      return newProxy;
+      onTestEnd(api);
 
-      function newProxy(...args) {
+      return (...args)=>{
         const entry = [
           args.map(obj => api.valueTag(obj)),
           undefined,
@@ -276,6 +284,8 @@ define(function(require, exports, module) {
         calls
       };
       api.target = details;
+
+      onTestEnd(api);
 
       return proxy;
 
@@ -320,7 +330,7 @@ define(function(require, exports, module) {
     }
 
     done() {
-      TH.test._apiOnEnd && TH.test._apiOnEnd();
+      TH.test[onEnd$] && TH.test[onEnd$]();
     }
 
     [inspect$]() {
@@ -606,14 +616,14 @@ define(function(require, exports, module) {
   }
 
   function docComment(func) {
+    if (func == null) return;
     const code = func.toString();
-    let m = /\)\s*{\s*/.exec(code);
-    if (! m)
-      return;
+    let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
+    if (m == null) return;
     let re = /\/\*\*\s*([\s\S]*?)\s*\*\*\//y;
     re.lastIndex = m.index+m[0].length;
-    m = re.exec(func.toString());
-    return m && m[1].slice(2).replace(/^\s*\* ?/mg, '');
+    m = re.exec(code);
+    return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
   }
 
   function testCaseFinished() {
@@ -817,21 +827,37 @@ define(function(require, exports, module) {
 
   function onTestEnd(api, func) {
     const {test} = TH;
-    let onEnd = test._apiOnEnd;
-    if (! onEnd) {
-      onEnd = test._apiOnEnd = function run() {
-        const callbacks = run.callbacks;
-        if (callbacks.length === 0)
-          return;
-
-        run.callbacks = [];
+    if (test[onEnd$] === undefined) {
+      const onEnd = test[onEnd$] = ()=>{
+        test[onEnd$] = undefined;
+        const {callbacks} = onEnd;
+        onEnd.callbacks = [];
         callbacks.forEach(cb => cb());
+        const raw = test.func.toString();
+        const re = /\/\/\[([\s\S]+?)\/\/\]/g;
+        let m = re.exec(raw);
+        if (m == null) return;
+        let body = '';
+        while (m !== null) {
+          body += m[1].replace(/\bnew_/g, 'new ');
+          m = re.exec(raw);
+        }
+        if (body !== '') {
+          const {calls} = api.target;
+          if (calls.length > 0 && calls[0].body !== undefined) {
+            calls[0].calls.push(...calls.slice(1));
+            calls[0].body += body;
+          } else {
+            body = body.replace(/^\s*\n/, '');
+            api.target.calls = [{body, calls}];
+          }
+        }
       };
       onEnd.callbacks = [];
       test.onEnd(onEnd);
     }
 
-    onEnd.callbacks.push(func);
+    func === undefined || test[onEnd$].callbacks.push(func);
   }
 
   function inspect(obj) {
