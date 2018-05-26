@@ -66,14 +66,6 @@ define((require, exports, module)=>{
       assert.same(util.pc(1.2345678), '123.45678%');
     },
 
-    "test px"() {
-      /**
-       * Convert a `fraction` into css % string
-       **/
-      api.method('px');
-      assert.same(util.px(123.2345678), '123px');
-    },
-
     "test sansPx"() {
       api.method('sansPx');
       assert.same(util.sansPx('123.23px'), 123.23);

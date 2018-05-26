@@ -806,10 +806,6 @@ define((require, exports, module)=>{
       return util.map(Object.keys(hash), key => `${key}:${hash[key]}`).join(";");
     },
 
-    px(value) {
-      return Math.round(value)+'px';
-    },
-
     pc(fraction) {
       return fraction*100 + '%';
     },
