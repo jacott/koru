@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const {hasOwnProperty} = Object.prototype;
   const qstr = s => JSON.stringify(s).slice(1, -1);
   const LABEL_RE = /^[a-z_$0-9]+$/i;

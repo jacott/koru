@@ -1,5 +1,5 @@
 /* global Intl */
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const match      = require('./match');
   const stacktrace = require('./stacktrace');
   const util       = require('./util-base');
@@ -63,10 +63,8 @@ define(function(require, exports, module) {
     } else return  ao < bo ? -1 : 1;
   }; compareByOrder.compareKeys = ['order', '_id'];
 
-  function sansSuffix(value) {
-      return value ? typeof value === 'string' ?
-      +value.substring(0, value.length - this) : +value : 0;
-  }
+  const sansSuffix = (value, len)=> value ? typeof value === 'string' ?
+        +value.slice(0, -len) : +value : 0;
 
   const colorToArray = (color) => {
     if (! color) return color;
@@ -833,8 +831,8 @@ define(function(require, exports, module) {
       return Math.floor(number) + "." + decs;
     },
 
-    sansPx: sansSuffix.bind(2),
-    sansPc: sansSuffix.bind(1),
+    sansPx(value) {return sansSuffix(value, 2)},
+    sansPc(value) {return sansSuffix(value, 1)},
 
     compare,
     compareByName,
@@ -1022,31 +1020,6 @@ define(function(require, exports, module) {
       );
 
       return addresses.length > 0 ? {addresses: addresses, remainder: remainder} : null;
-    },
-
-    asyncToGenerator(fn) {
-      return function () {
-        const gen = fn.apply(this, arguments);
-        return new Promise((resolve, reject) => {
-          const step = (key, arg) => {
-            try {
-              var info = gen[key](arg);
-              var value = info.value;
-            } catch (error) {
-              reject(error); return;
-            }
-            if (info.done) {
-              resolve(value);
-            } else {
-              return Promise.resolve(value).then(
-                value => {step("next", value)},
-                err => {step("throw", err)}
-              );
-            }
-          };
-          return step("next");
-        });
-      };
     },
 
     withId(object, _id, key=withId$) {

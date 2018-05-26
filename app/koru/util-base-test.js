@@ -1,12 +1,12 @@
-define(function (require, exports, module) {
-  var test, v;
+define((require, exports, module)=>{
   const api = require('koru/test/api');
   const TH  = require('./test');
   const sut = require('./util');
 
+  let v = {};
+
   TH.testCase(module, {
     setUp() {
-      test = this;
       v = {};
       api.module(module.get('./util'), 'util');
     },

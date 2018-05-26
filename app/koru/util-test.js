@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * The util module provides commonly performed utility functions.
    **/
@@ -8,7 +8,7 @@ define(function (require, exports, module) {
   const TH     = require('./test');
 
   const util  = require('./util');
-  var v;
+  let v = null;
 
   TH.testCase(module, {
     setUp () {
@@ -75,9 +75,17 @@ define(function (require, exports, module) {
     },
 
     "test sansPx"() {
+      api.method('sansPx');
       assert.same(util.sansPx('123.23px'), 123.23);
       assert.same(util.sansPx(), 0);
       assert.same(util.sansPx(234), 234);
+    },
+
+    "test sansPc"() {
+      api.method('sansPc');
+      assert.same(util.sansPc('123.23%'), 123.23);
+      assert.same(util.sansPc(), 0);
+      assert.same(util.sansPc(234), 234);
     },
 
     "test indexOfRegex"() {
@@ -309,7 +317,7 @@ define(function (require, exports, module) {
       assert.isFalse(util.deepEqual({a: 0}, {a: -0}));
       assert.isFalse(util.deepEqual({a: null}, {b: null}));
 
-      const matcher = match(function (v) {return v % 2 === 0});
+      const matcher = match(v => v % 2 === 0);
       assert.isTrue(util.deepEqual([1, 2, null], [1, matcher, match.any]));
       assert.isFalse(util.deepEqual([1, 1], [1, matcher]));
       assert.isFalse(util.deepEqual([2, 2], [1, matcher]));
@@ -416,9 +424,7 @@ define(function (require, exports, module) {
       util.forEach(null, v.stub = this.stub());
       refute.called(v.stub);
       const results = [];
-      util.forEach(v.list = [1,2,3], function (val, index) {
-        results.push(val+"."+index);
-      });
+      util.forEach(v.list = [1,2,3], (val, index)=>{results.push(val+"."+index)});
 
       assert.equals(results, ['1.0', '2.1', '3.2']);
     },
@@ -430,17 +436,17 @@ define(function (require, exports, module) {
        * @param visitor - called with the list `item` and `index`
        **/
       api.method('reverseForEach');
-      api.example(() => {
-        const results = [];
-        util.reverseForEach(v.list = [1,2,3], (val, index) => {
-          results.push(val+"."+index);
-        });
-        assert.equals(results, ['3.2', '2.1', '1.0']);
-
-        // ignores null list
-        util.reverseForEach(null, v.stub = this.stub());
-        refute.called(v.stub);
+      //[
+      const results = [];
+      util.reverseForEach(v.list = [1,2,3], (val, index) => {
+        results.push(val+"."+index);
       });
+      assert.equals(results, ['3.2', '2.1', '1.0']);
+
+      // ignores null list
+      util.reverseForEach(null, v.stub = this.stub());
+      refute.called(v.stub);
+      //]
     },
 
 
@@ -456,9 +462,7 @@ define(function (require, exports, module) {
 
       assert.same(args[3], 5);
 
-      function testArgs() {
-        return arguments;
-      }
+      function testArgs() {return arguments}
     },
 
     "test toMap"() {
@@ -499,13 +503,9 @@ define(function (require, exports, module) {
     },
 
     "test find "() {
-      assert.same(util.find([1,8,7,3], function (value, idx) {
-        return value > 5 && idx === 2;
-      }), 7);
+      assert.same(util.find([1,8,7,3], (value, idx)=> value > 5 && idx === 2), 7);
 
-      assert.same(util.find([1,8,7,3], function (value, idx) {
-        return false;
-      }), undefined);
+      assert.same(util.find([1,8,7,3], (value, idx)=> false), undefined);
     },
 
     "test binarySearch"() {
@@ -594,7 +594,7 @@ define(function (require, exports, module) {
       const ans = util.shallowCopy([1,2,,,3]);
       assert.equals(ans.map((d, i) => `${d}:${i}`), ['1:0', '2:1', , , '3:4']);
 
-      function func() {}
+      const func = ()=>{};
       assert.same(util.shallowCopy(func), func);
 
       /** Complex object */
@@ -645,7 +645,7 @@ define(function (require, exports, module) {
       assert.equals(ans.map((d, i) => `${util.inspect(d)}:${i}`),
                     ['1:0', '2:1', , , `['a', 'b']:4`]);
 
-      function func() {}
+      const func = ()=>{};
       assert.same(util.deepCopy(func), func);
 
       let orig = new Date(123);
@@ -974,10 +974,10 @@ define(function (require, exports, module) {
 
     "test withDateNow"() {
       const date = new Date("2013-06-09T23:10:36.855Z");
-      const result = util.withDateNow(date, function () {
+      const result = util.withDateNow(date, ()=>{
         assert.equals(util.newDate(), date);
         assert.equals(util.dateNow(), +date);
-        assert.same(util.withDateNow(+date + 123, function () {
+        assert.same(util.withDateNow(+date + 123, ()=>{
           assert.equals(util.newDate(), new Date(+date + 123));
           assert.equals(util.dateNow(), +date + 123);
 
@@ -1081,45 +1081,6 @@ define(function (require, exports, module) {
         {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
     },
 
-    "test asyncToGenerator"(done) {
-      const foo = function (val) {
-        return new Promise(r => setTimeout(() => {r(val+30)}, 0));
-      };
-      const bar = util.asyncToGenerator(function*(val) {
-        const ans = (yield foo(val+5)) + (yield foo(13));
-        try {
-          assert.same(ans, 83);
-          done();
-        } catch(ex) {
-          done(ex);
-        }
-      });
-
-      bar(5);
-    },
-
-    "test error asyncToGenerator"(done) {
-      const foo = function (val) {
-        return new Promise((r, e) => setTimeout(() => {
-          val === 13 ? e(new Error("13")) : r(val+30);
-        }, 0));
-      };
-      const bar = util.asyncToGenerator(function*(val) {
-        try {
-          const ans = (yield foo(10)) + (yield foo(13));
-          assert(false, "should throw error 13");
-        } catch(ex) {
-          if (ex.message === '13') {
-            assert(true);
-            done();
-          } else
-            done(ex);
-        }
-      });
-
-      bar(12);
-    },
-
     "test withId"() {
       /**
        * Associate an _id with an object.
@@ -1136,22 +1097,21 @@ define(function (require, exports, module) {
        **/
       api.method('withId');
 
-      api.example(_=>{
-        const jane = {name: 'Jane', likes: ['Books']};
-        const myKey$ = Symbol();
-        const assoc = util.withId(jane, 123, myKey$);
-        assert.same(assoc.likes, jane.likes);
-        assert.same(Object.getPrototypeOf(assoc), jane);
+      //[
+      const jane = {name: 'Jane', likes: ['Books']};
+      const myKey$ = Symbol();
+      const assoc = util.withId(jane, 123, myKey$);
+      assert.same(assoc.likes, jane.likes);
+      assert.same(Object.getPrototypeOf(assoc), jane);
 
-        assert.same(assoc._id, 123);
+      assert.same(assoc._id, 123);
 
-        assert.same(util.withId(jane, 456, myKey$), assoc);
-        assert.same(assoc._id, 456);
+      assert.same(util.withId(jane, 456, myKey$), assoc);
+      assert.same(assoc._id, 456);
 
-        refute.same(util.withId(jane, 456), assoc);
-        assert.same(util.withId(jane, 456).likes, jane.likes);
-      });
-
+      refute.same(util.withId(jane, 456), assoc);
+      assert.same(util.withId(jane, 456).likes, jane.likes);
+      //]
     },
   });
 });

@@ -42,7 +42,7 @@
     "request": "^2.87.0",
     "send": "^0.16.1",
     "ws": "^5.2.0",
-    "yaajs": "^3.0.0"
+    "yaajs": "^3.0.1"
   },
   "devDependencies": {
     "pg-libpq": "^2.1.0"
