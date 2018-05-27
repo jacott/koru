@@ -1,0 +1,8 @@
+@cPrimary: #4d90f3;
+@cPrimaryText: darken(@cPrimary, 20%);
+@cText: #666;
+@cUnfocused: #aaa;
+
+@cMenubackground: #6a6f78;
+
+@smallDeviceWidth: 800px;

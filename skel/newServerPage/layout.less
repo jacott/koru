@@ -1,0 +1,115 @@
+@import '../global.lessimport';
+
+*, :after, :before {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-size: 16px;
+}
+
+body, input, textarea {
+  font-family: -apple-system,BlinkMacSystemFont,Roboto,Ubuntu,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+
+a, a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+@pageHeaderHeight: 54px;
+
+#pageHeader {
+  background-color: @cPrimary;
+  height: @pageHeaderHeight;
+  color: #fff;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  a:focus, a:hover, #mainMenu:focus, #mainMenu:hover {
+    outline: none;
+    background-color: lighten(@cPrimary, 10%);
+  }
+
+  >a {
+    font-family: 'Overlock', sans-serif;
+    font-weight: 900;
+    font-size: 2em;
+    padding: 5px 20px;
+  }
+  >nav {
+    display: flex;
+    flex: 1;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    >a {
+      display: flex;
+      flex-flow: row nowrap;
+      align-items: stretch;
+      &.sign-in {
+        border: 1px solid white;
+        border-radius: 4px;
+      }
+      >span {
+        margin: auto;
+      }
+    }
+    >a>span {
+      padding: 0 2em;
+    }
+    >.split {
+      flex: 1;
+    }
+  }
+
+  @media all and (min-width: @smallDeviceWidth) {
+    & {
+      padding: 5px 20px;
+    }
+    #mainMenu {
+      display: none;
+    }
+  }
+
+  @media all and (max-width: @smallDeviceWidth) {
+    & {
+      padding: 5px;
+    }
+    &:not(.menu-open)>nav:first-of-type {
+      display: none;
+    }
+    &.menu-open>nav:first-of-type {
+      position: fixed;
+      top: @pageHeaderHeight;
+      left: 0;
+      flex-flow: column nowrap;
+      background-color: @cMenubackground;
+      width: 100%;
+      padding-bottom: 2em;
+      &:before {
+        position: fixed;
+        top: @pageHeaderHeight;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background-color: transparent;
+        z-index: -1;
+        content: " "
+      }
+      >*>span {
+        margin: 0;
+        padding: 1em 2em;
+      }
+    }
+    #mainMenu {
+      background-color: transparent;
+      color: #fff;
+      outline: none;
+      border: none;
+      padding: 0 15px;
+      font-size: 24px;
+      font-family: 'Material Icons';
+    }
+  }
+}

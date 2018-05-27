@@ -155,6 +155,7 @@ define((require, exports, module)=> JsPaser => {
         });
       }
       trailingComments(node);
+
     };
 
     function addHlString(text, start, hl) {
@@ -317,7 +318,7 @@ define((require, exports, module)=> JsPaser => {
         });
       }
     }
-  }
+  };
 
   const NEST_RE = {};
   const PAIR = {};

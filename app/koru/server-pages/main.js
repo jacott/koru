@@ -130,6 +130,7 @@ define(function(require, exports, module) {
         }
       };
       WebServer.registerHandler(module, pathRoot, this._handleRequest);
+      module.onUnload(()=>{this.stop()});
     }
 
     get BaseController() {return BaseController}

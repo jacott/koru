@@ -1,0 +1,39 @@
+<template name="LayoutsDefault">
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>{{title}}</title>
+
+      <link rel="manifest" href="/public/manifest.json">
+      <link rel="icon" type="image/png" href="/public/icon.png" sizes="512x512">
+      <style>
+        {{less "layouts/default"}}
+        {{less controllerId}}
+      </style>
+    </head>
+    <body>
+      <header id="pageHeader">
+        <a href="/">{{title}}</a>
+        <nav>
+          {{menuPages}}
+        </nav>
+        <nav>
+          <div class="split"></div>
+          <button id="mainMenu" type="button" tabindex="0">menu</button>
+        </nav>
+      </header>
+
+      <main>
+        {{content}}
+      </main>
+
+      <script data-main="/client" src="/index.js?{{versionHash}}" charset="utf-8"></script>
+      {{clientSuffix}}
+      <script>
+        {{toggleMenu}}
+      </script>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" charset="utf-8">
+    </body>
+  </html>
+</template>

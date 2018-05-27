@@ -74,7 +74,6 @@ isServer && define(function (require, exports, module) {
 ~m#1# ~o#|# ~kd#function# (~nx#a#) {
   ~k#return# ~o#typeof# ~nx#a#;
 };`);
-
     },
 
     "test ArrowFunctionExpression"() {
