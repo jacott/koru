@@ -6,7 +6,7 @@ define(function (require, exports, module) {
 
   const {stub, spy, onEnd} = TH;
 
-  const sut  = require('./base-controller');
+  const BaseController  = require('./base-controller');
   let v = null;
 
   const genericApp = ()=>{
@@ -37,16 +37,16 @@ define(function (require, exports, module) {
     },
 
     "test defaultETag"() {
-      assert.match(sut.defaultETag, /^h[0-9]+$/);
+      assert.match(BaseController.defaultETag, /^h[0-9]+$/);
     },
 
-    "test body"() {
+    "test json body"() {
       const {request} = v.opts;
       request._setBody({sample: 'json'});
 
       request.headers['content-type'] = 'application/json';
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {}
       }
       const ctl = new MyController(v.opts);
@@ -57,10 +57,47 @@ define(function (require, exports, module) {
       assert.same(ans, ctl.body);
     },
 
+    "test form body"() {
+      const {request} = v.opts;
+      request._setBody("a%20%2Bb=q%5Ba%5D&foo=bar");
+
+      request.headers['content-type'] = 'application/x-www-form-urlencoded';
+
+      class MyController extends BaseController {
+        $parser() {}
+      }
+      const ctl = new MyController(v.opts);
+
+      const ans = ctl.body;
+
+      assert.equals(ans, {'a +b': 'q[a]', foo: 'bar'});
+      assert.same(ans, ctl.body);
+    },
+
+    "test redirect"() {
+      const {opts} = v;
+
+      class MyController extends BaseController {
+        $parser() {
+          return 'foo';
+        }
+
+        foo() {
+          this.redirect('/1234');
+        }
+      }
+
+      const ctl = new MyController(opts);
+
+
+      assert.calledWith(opts.response.writeHead, 302, {Location: '/1234'});
+      assert.calledWithExactly(opts.response.end);
+    },
+
     "test error"() {
       const {response} = v.opts;
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {
           this.error(407, 'foo');
           return 'foo';
@@ -80,9 +117,9 @@ define(function (require, exports, module) {
         return Dom.h({div: ctl.params.id});
       }};
       opts.pathParts = [];
-      opts.request.headers['if-none-match'] = '  W/"'+sut.defaultETag + '"\n\n';
+      opts.request.headers['if-none-match'] = '  W/"'+BaseController.defaultETag + '"\n\n';
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         get App() {return genericApp()}
       }
       new MyController(opts);
@@ -93,7 +130,7 @@ define(function (require, exports, module) {
     "test No Content"() {
       const {response} = v.opts;
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {return 'foo'}
         foo() {}
       }
@@ -107,7 +144,7 @@ define(function (require, exports, module) {
     "test html response"() {
       const {response} = v.opts;
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {return 'foo'}
         foo() {return Dom.h({html: {body: 'foo'}})}
       }
@@ -126,7 +163,7 @@ define(function (require, exports, module) {
     "test json response"() {
       const {response} = v.opts;
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {return 'foo'}
         foo() {return {html: {body: 'foo'}}}
       }
@@ -147,7 +184,7 @@ define(function (require, exports, module) {
 
       const foo = stub();
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         foo() {foo(this)}
       }
 
@@ -162,7 +199,7 @@ define(function (require, exports, module) {
       const {opts} = v;
       opts.pathParts = ['123'];
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         get eTag() {return "x123"}
       }
 
@@ -192,11 +229,45 @@ define(function (require, exports, module) {
       assert.calledWith(opts.response.end, '<main><div>456</div></main>');
     },
 
+    "test default new"() {
+      const {opts} = v;
+      opts.pathParts = ['new'];
+
+      class MyController extends BaseController {
+        get eTag() {return "x123"}
+      }
+
+      opts.view = {New: {$render(ctl) {
+        return Dom.h({div: ctl.data || 'new page'});
+      }}};
+
+      MyController.App = genericApp();
+
+      new MyController(opts);
+
+      assert.calledWith(opts.response.writeHead, 200, {
+        'Content-Length': 48, 'Content-Type': 'text/html; charset=utf-8',
+        ETag: 'W/\"x123\"',
+      });
+      assert.calledWith(opts.response.end, '<main><div>new page</div></main>');
+
+      /** implement show **/
+
+      opts.response.end.reset();
+      MyController.prototype.new = function () {
+        this.data = 'my message';
+      };
+
+      new MyController(opts);
+
+      assert.calledWith(opts.response.end, '<main><div>my message</div></main>');
+    },
+
     "test $parser, render"() {
       const {opts} = v;
       opts.pathParts = ['foo', '123'];
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         $parser() {
           return "foo";
         }
@@ -228,7 +299,7 @@ define(function (require, exports, module) {
       const {opts} = v;
       opts.pathParts = [];
 
-      class MyController extends sut {
+      class MyController extends BaseController {
         index() {
           this.render(Dom.h({body: ['x']}), {layout: {$render({content}) {
             return {outerHTML: '<!CUSTOM>'+content.outerHTML};

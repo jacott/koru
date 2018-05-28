@@ -30,14 +30,18 @@ define(function(require, exports, module) {
       ctl.error(405, 'Method Not Allowed');
   };
 
+  const renderDef = (ctl, name)=>{
+    const {view} = ctl;
+    ctl.checkETag() || ctl.render((view[name]||view).$render(ctl));
+  };
+
+
   const defaultActions = {
     index: ctl =>{
       ctl.checkETag() || ctl.render(ctl.view.$render(ctl));
     },
-    show: ctl =>{
-      const {view} = ctl;
-      ctl.checkETag() || ctl.render((view.Show||view).$render(ctl));
-    },
+    show: ctl =>{renderDef(ctl, 'Show')},
+    new: ctl =>{renderDef(ctl, 'New')},
   };
 
   const HEADER = '<!DOCTYPE html>\n';
@@ -50,6 +54,7 @@ define(function(require, exports, module) {
       this.pathParts = pathParts;
       this.params = params;
       this.layoutData = {};
+      this.method = request.method.toLowerCase();
       const action = this.$parser();
       if (action !== undefined && this[rendered$] === undefined) {
         render(this, action);
@@ -83,7 +88,11 @@ define(function(require, exports, module) {
     get body() {
       const body = this[body$];
       if (body !== undefined) return body;
-      return this[body$] = HttpUtil.readBody(this.request);
+      const raw = HttpUtil.readBody(this.request);
+      if (this.request.headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
+        return this[body$] = util.searchStrToMap(raw);
+      } else
+        return this[body$] = raw;
     }
 
     render(content, {layout=this.App.defaultLayout}={}) {
@@ -98,6 +107,14 @@ define(function(require, exports, module) {
         eTag: this.eTag});
     }
 
+    redirect(url, code=302) {
+      this[rendered$] = true;
+      this.response.writeHead(code, {
+        'Location': url
+      });
+      this.response.end();
+    }
+
     renderJSON(json) {this.renderContent({data: JSON.stringify(json), contentType: 'application/json'})}
 
     renderContent(opts) {
@@ -108,16 +125,23 @@ define(function(require, exports, module) {
     index() {return defaultActions.index(this)}
 
     show() {return defaultActions.show(this)}
+    new() {return defaultActions.new(this)}
 
     $parser() {
-      const method = this.request.method.toLowerCase();
+      const {method} = this;
 
       if (method === 'get') {
         const {pathParts} = this;
         let action = 'index';
-        if (pathParts[0] !== undefined) {
-          this.params.id = pathParts[0];
-          action = 'show';
+        switch (pathParts[0]) {
+        case 'new':
+          action = pathParts[0];
+          break;
+        default:
+          if (pathParts[0] !== undefined) {
+            this.params.id = pathParts[0];
+            action = 'show';
+          }
         }
         render(this, action);
         return;
