@@ -46,15 +46,12 @@ define(function (require, exports, module) {
        * @param [subjectModule] defaults to the module corresponding
        * to the current test module.
 
-       * @param [subjectName] defaults to a hopefully reasonable name
+       * @param {string} [subjectName] defaults to a hopefully reasonable name
 
-       * @param [options] adornments to the documentation:
-       *
-       * * `initExample` - code that can be used to initialize
+       * @param {string} [initExample] code that can be used to initialize `subject`
+
+       * @param {string} [initInstExample] code that can be used to initialize an instance of
        * `subject`
-
-       * * `initInstExample` - code that can be used to initialize
-       * an instance of `subject`
        **/
       MainAPI.method('module');
 
@@ -75,7 +72,9 @@ define(function (require, exports, module) {
         clean() {}
       };
 
-      API.module({id: 'myMod1', exports: myHelper}, 'myHelper', {
+      API.module({
+        subjectModule: {id: 'myMod1', exports: myHelper},
+        subjectName: 'myHelper',
         initExample: 'Init example',
         initInstExample: 'Init inst example',
       });
@@ -88,7 +87,7 @@ define(function (require, exports, module) {
       class Book {
       }
 
-      API.module({id: 'myMod2', exports: Book});
+      API.module({subjectModule: {id: 'myMod2', exports: Book}});
 
       assert.same(API.instance.subjectName, 'Book');
     },
@@ -153,7 +152,9 @@ define(function (require, exports, module) {
           goto() {return this.page;}
         };;
 
-        API.module({id: 'myMod1', exports: Book}, 'myHelper');
+        API.module({
+          subjectModule: {id: 'myMod1', exports: Book},
+          subjectName: 'myHelper'});
         API.innerSubject('Chapter', null, {
           info: 'Chapter info',
         })
@@ -212,7 +213,7 @@ define(function (require, exports, module) {
         }
         Color.colors = {};
 
-        API.module({id: 'myMod', exports: Color});
+        API.module({subjectModule: {id: 'myMod', exports: Color}});
         API.method('define');
 
         API.example('const foo = "can put any valid code here";');
@@ -257,7 +258,7 @@ define(function (require, exports, module) {
     "test strange example"() {
       const foo = {bar() {}};
 
-      API.module({id: 'myMod', exports: foo});
+      API.module({subjectModule: {id: 'myMod', exports: foo}});
       API.method('bar');
       API.example(() => foo.bar(1, doc => {
         return false;
@@ -282,7 +283,7 @@ define(function (require, exports, module) {
           begin() {}
         }
 
-        API.module({id: 'myMod', exports: Excercise});
+        API.module({subjectModule: {id: 'myMod', exports: Excercise}});
         API.method('register');
 
         API.comment('Optionally set the default duration');
@@ -319,7 +320,9 @@ define(function (require, exports, module) {
          *
          * When `object` can contain the following:
          *
-         * * `info` (or `intro`): description of property
+         * * `info` (or `intro`): description of property. Defaults to the current test's doc
+         * comment.
+
          * * `properties`: document child properties
          *
          * When `function` should return an info `string`. The info
@@ -337,7 +340,7 @@ define(function (require, exports, module) {
             }
           };
 
-          API.module({id: 'myMod', exports: v.defaults}, 'defaults');
+          API.module({subjectModule: {id: 'myMod', exports: v.defaults}, subjectName: 'defaults'});
           API.property('theme', {
             info: 'The default theme',
             properties: {
@@ -396,7 +399,9 @@ define(function (require, exports, module) {
             set title(value) {this._title = value;},
           };
 
-          API.module({id: 'myMod', exports: book}, 'Room');
+          API.module({
+            subjectModule: {id: 'myMod', exports: book},
+            subjectName: 'Book'});
           API.property('title', {
             info: 'Get/set the book title',
           });
@@ -416,6 +421,29 @@ define(function (require, exports, module) {
           },
         });
       },
+
+      "test doc comment"() {
+        /**
+         * The number of pages in the book
+         **/
+        //[testCase({"test pageCount"() {
+        /**
+         * The number of pages in the book
+         **/
+        const book = {pageCount: 400};
+        API.module({
+          subjectModule: {id: 'myMod', exports: book},
+          subjectName: 'Book'});
+        API.property('pageCount'); // extracts the comment above
+        assert.equals(book.pageCount, 400);
+        //]//[}});//]
+        assert.equals(API.instance.properties, {
+          pageCount: {
+            info: 'The number of pages in the book',
+            value: 400,
+          },
+        });
+      },
     },
 
     "test protoProperty"() {
@@ -424,6 +452,10 @@ define(function (require, exports, module) {
        * property can be either plain value or a get/set function.
        *
        * See {#.property}
+
+       * @param name the property to document
+
+       * @param [options] see {#.property}
 
        * @param [subject] defaults to subject.prototype
        **/
@@ -437,7 +469,7 @@ define(function (require, exports, module) {
           get title() {return this._title}
         }
 
-        API.module({id: 'myMod', exports: Book});
+        API.module({subjectModule: {id: 'myMod', exports: Book}});
         const book = new Book("Jungle Book", 504);
         API.protoProperty('title', {info: 'The title'});
         book.bookMark = 100;
@@ -469,7 +501,7 @@ define(function (require, exports, module) {
         [inspect$]() {return `{Hobbit:${this.name}}`;}
       }
 
-      API.module({id: 'myMod', exports: Hobbit});
+      API.module({subjectModule: {id: 'myMod', exports: Hobbit}});
 
 
       const newHobbit = API.new(Hobbit);
@@ -516,7 +548,7 @@ define(function (require, exports, module) {
         this.ans = arg;
         return 'success';
       }
-      API.module({id: 'myMod', exports: {}});
+      API.module({subjectModule: {id: 'myMod', exports: {}}});
       const thisValue = {};
 
       let proxy = API.custom(myCustomFunction);
@@ -562,7 +594,8 @@ define(function (require, exports, module) {
       };
 
 
-      API.module({id: 'myMod', exports: fooBar}, 'fooBar');
+      API.module({subjectModule: {id: 'myMod', exports: fooBar},
+                  subjectName: 'fooBar'});
       API.method('fnord');
 
       assert.same(fooBar.fnord(5), 10);
@@ -607,7 +640,7 @@ define(function (require, exports, module) {
           }
         };
 
-        API.module({id: 'myMod', exports: Tree});
+        API.module({subjectModule: {id: 'myMod', exports: Tree}});
         API.protoMethod('prune');
 
         const plum = new Tree('Plum');

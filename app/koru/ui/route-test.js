@@ -31,7 +31,6 @@ isClient && define(function (require, exports, module) {
       test.stub(Route.history, 'pushState');
       test.stub(Route.history, 'replaceState');
       test.stub(koru, 'userId').returns("123");
-      api.module();
     },
 
     tearDown() {

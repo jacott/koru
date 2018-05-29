@@ -20,7 +20,7 @@ define(function (require, exports, module) {
   TH.testCase(module, {
     setUp() {
       v = {};
-      api.module(null, 'publishTH');
+      api.module({subjectName: 'publishTH'});
     },
 
     tearDown() {

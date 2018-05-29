@@ -26,7 +26,7 @@ define(function (require, exports, module) {
       const fooBar = {
         fnord(a, b) {return API}
       };
-      const api = v.api.module(null, 'fooBar', [{id: 'koru/test/api'}]);
+      const api = v.api.module({subjectName: 'fooBar'});
 
       const Special = {};
 

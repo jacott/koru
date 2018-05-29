@@ -40,7 +40,7 @@ isServer && define(function (require, exports, module) {
         {table: {tbody: [
           {tr: [
             {td: '_id'},
-            {td: {a: ['string'], href: TH.match(/mozilla.*String/)}},
+            {td: {a: ['string'], href: TH.match(/mozilla.*String/), target: '_blank'}},
             {class: 'jsdoc-info', 'data-env': 'server',
              td: {class: 'jsdoc-value', code: '"id-value"'}},
           ]},

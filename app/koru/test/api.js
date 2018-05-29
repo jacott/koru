@@ -8,9 +8,13 @@ define(function(require, exports, module) {
 
   const onEnd$ = Symbol(), tcInfo$ = Symbol();
 
+  const {hasOwn} = util;
+
   const {inspect$} = require('koru/symbols');
 
   const ctx = module.ctx;
+
+  const Element = (isClient ? window : global).Element || {};
 
   class API {
     constructor(parent, moduleOrSubject, subjectName, testModule) {
@@ -46,16 +50,15 @@ define(function(require, exports, module) {
       this._objCache = new Map;
     }
 
-    static module(subjectModule, subjectName, options) {
+    static module({subjectModule, subjectName, initExample, initInstExample}={}) {
       const tc = TH.test._currentTestCase;
-      if (subjectModule == null) {
-        subjectModule = ctx.modules[toId(tc)];
-      }
+      subjectModule = subjectModule || ctx.modules[toId(tc)];
       const subject = subjectModule.exports;
       if (! this.isRecord) {
         this._instance.subject = subject;
         return this._instance;
       }
+      subjectName = subjectName || createSubjectName(subject, tc);
 
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
@@ -67,17 +70,15 @@ define(function(require, exports, module) {
         this._moduleMap.set(
           subjectModule, this._instance = new this(
             null, subjectModule,
-            subjectName || createSubjectName(subject, tc),
+            subjectName,
             ctx.modules[tc.moduleId]
           )
         );
-        if (options) {
-          if (options.initExample)
-            this._instance.initExample = options.initExample;
+        if (initExample)
+          this._instance.initExample = initExample;
 
-          if (options.initInstExample)
-            this._instance.initInstExample = options.initInstExample;
-        }
+        if (initInstExample)
+          this._instance.initInstExample = initInstExample;
       }
       if (tc[tcInfo$] === undefined) {
         tc[tcInfo$] = true;
@@ -480,6 +481,7 @@ define(function(require, exports, module) {
     ArrayBuffer,
     Boolean,
     Date,
+    Element,
     Error,
     EvalError,
     Float32Array,
@@ -735,10 +737,12 @@ define(function(require, exports, module) {
           break;
         }
       case 'undefined':
-        property.info = docComment(TH.test.func);
         break;
       default:
         throw new Error("invalid options supplied for property "+name);
+      }
+      if (property.info === undefined) {
+        property.info = docComment(TH.test.func);
       }
     }
   }
@@ -828,6 +832,7 @@ define(function(require, exports, module) {
   function onTestEnd(api, func) {
     const {test} = TH;
     if (test[onEnd$] === undefined) {
+      const callLength = api.target === undefined ? 0 : api.target.calls.length;
       const onEnd = test[onEnd$] = ()=>{
         test[onEnd$] = undefined;
         const {callbacks} = onEnd;
@@ -843,14 +848,10 @@ define(function(require, exports, module) {
           m = re.exec(raw);
         }
         if (body !== '') {
-          const {calls} = api.target;
-          if (calls.length > 0 && calls[0].body !== undefined) {
-            calls[0].calls.push(...calls.slice(1));
-            calls[0].body += body;
-          } else {
-            body = body.replace(/^\s*\n/, '');
-            api.target.calls = [{body, calls}];
-          }
+          const calls = api.target.calls.slice(callLength);
+          api.target.calls.length = callLength;
+          body = body.replace(/^\s*\n/, '');
+          api.target.calls.push({body, calls});
         }
       };
       onEnd.callbacks = [];

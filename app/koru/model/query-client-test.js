@@ -22,7 +22,7 @@ define(function (require, exports, module) {
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
-      api.module(module.get('./query'));
+      api.module({subjectModule: module.get('./query')});
     },
 
     tearDown() {

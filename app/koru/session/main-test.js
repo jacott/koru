@@ -12,7 +12,7 @@ define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      api.module(null, 'session');
+      api.module({subjectName: 'session'});
     },
 
     tearDown() {

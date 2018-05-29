@@ -50,6 +50,40 @@ body>section>main {
   overflow-x: hidden;
 }
 
+table {
+  margin: 0 0 1.5em;
+  border: 2px solid #CCC;
+  background: #FFF;
+  border-collapse: collapse;
+}
+
+table th, table td {
+  padding: 0.25em 1em;
+  border: 1px solid #CCC;
+  border-collapse: collapse;
+}
+
+table th {
+  border-bottom: 2px solid #CCC;
+  background: #EEE;
+  font-weight: bold;
+  padding: 0.5em 1em;
+}
+
+a[href*="//"] {
+  position: relative;
+  padding-right: 12px;
+}
+
+a[href*="//"]:after {
+  position: absolute;
+  content: " ";
+  width: 12px;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='#36b' d='M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'/%3E%3C/svg%3E");
+
+  text-decoration: none;
+}
 
 pre {
   margin: 0;
@@ -264,12 +298,17 @@ code {
   flex-shrink: 1;
 }
 
-.jsdoc-code-block {
-  border-top: 1px dashed rgba(0, 0, 0, 0.4);
+.jsdoc-require {
+  padding: 10px;
+  margin: -10px;
+  background-color: #f9f9f9;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.4);
 }
 
-.jsdoc-require+.jsdoc-code-block {
-  border-top: none;
+.jsdoc-code-block+.jsdoc-example-call,
+.jsdoc-example-call+.jsdoc-code-block
+{
+  border-top: 1px dashed rgba(0, 0, 0, 0.4);
 }
 
 td {

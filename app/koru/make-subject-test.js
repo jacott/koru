@@ -11,7 +11,6 @@ define(function (require, exports, module) {
   Core.testCase(module, {
     setUp() {
       v = {};
-      api.module();
     },
 
     tearDown() {

@@ -7,7 +7,6 @@
     "url": "git://github.com/jacott/koru.git"
   },
   "scripts": {
-    "prepare": "scripts/build-api-doc",
     "test": "scripts/build-api-doc"
   },
   "bugs": {

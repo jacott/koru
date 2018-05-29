@@ -2,9 +2,11 @@ node_modules
 *~
 *#
 TAG*
+*-test.js
 /tmp
 .build
 /build
+/doc
 /app/cmd-client.js
 /app/test/server-ready.js
 /app/koru/polyfill/pep.js

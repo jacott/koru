@@ -19,6 +19,7 @@ define(function(require, exports, module) {
     ArrayBuffer: true,
     Boolean: true,
     Date: true,
+    Element: 'Web/API',
     Error: true,
     EvalError: true,
     Float32Array: true,
@@ -480,7 +481,7 @@ define(function(require, exports, module) {
       typeMap[types[type]] = true;
       if (ans.length != 0)
         ans.push('\u200a/\u200a');
-      ans.push({a: idToText(types[type]), $href: href(type)});
+      ans.push(targetExternal({a: idToText(types[type]), $href: href(type)}));
     }
     return ans;
   }
@@ -582,6 +583,8 @@ define(function(require, exports, module) {
     return valueToText(arg);
   }
 
+  const targetExternal = (a)=> a.$href.indexOf("http") == 0 ? (a.$target="_blank", a) : a;
+
   function jsdocToHtml(api, text, argMap) {
     const div = document.createElement('div');
     const [info, ...blockTags] = (text||'').split(/[\n\r]\s*@(?=\w+)/);
@@ -603,7 +606,7 @@ define(function(require, exports, module) {
       default:
         const a = {a: text, $href: href};
         if (title) a.$title = title;
-        return Dom.h(a).outerHTML;
+        return Dom.h(targetExternal(a)).outerHTML;
       }
     };
 

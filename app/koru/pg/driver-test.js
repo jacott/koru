@@ -22,7 +22,7 @@ isServer && define(function (require, exports, module) {
     setUp() {
       test = this;
       v = {};
-      api.module(null, 'pg');
+      api.module({subjectName: 'pg'});
     },
 
     tearDown() {

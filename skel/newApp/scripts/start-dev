@@ -4,21 +4,23 @@ set -e
 branch=${1-demo}
 . `dirname "$0"`/../config/environ.sh
 
-# uncomment this to auto rebuild if node version or packges changed
+# Uncomment this to auto rebuild if node version changed or packges changed
 # if [[ -e package-lock.json ]];then
 #     PKG_LOCK=package-lock.json
 # else
 #     PKG_LOCK=npm-shrinkwrap.json
 # fi
-
-# if [[ -e tmp/${PKG_LOCK} && -e node_modules ]] && ${NODE} -v | cat - ${PKG_LOCK} | diff -q - tmp/${PKG_LOCK} >/dev/null;then
+#
+# if [[ -e tmp/${PKG_LOCK} && -e node_modules ]] && ${NODE} -v |
+#            cat - ${PKG_LOCK} package.json|
+#            diff -q - tmp/${PKG_LOCK} >/dev/null;then
 #     echo 'node_modules okay'
 # else
 #     echo 'npm install...'
 #     rm -rf node_modules
 #     mkdir -p tmp
 #     npm i
-#     ${NODE} -v | cat - ${PKG_LOCK} >tmp/${PKG_LOCK}
+#     ${NODE} -v | cat - ${PKG_LOCK} package.json >tmp/${PKG_LOCK}
 # fi
 
 cd app

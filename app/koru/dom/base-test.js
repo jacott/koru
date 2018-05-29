@@ -14,7 +14,7 @@ define(function (require, exports, module) {
   TH.testCase(module, {
     setUp() {
       v = {};
-      api.module(module.get('koru/dom'));
+      api.module({subjectModule: module.get('koru/dom')});
     },
 
     tearDown() {

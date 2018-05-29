@@ -30,7 +30,7 @@ isClient && define(function (require, exports, module) {
         subs: {},
       };
       const subscribe = function () {};
-      api.module(null, null, {
+      api.module({
         initInstExample: `
           const subscribe = ${'require'}('koru/session/subscribe');
           const clientSub = subscribe("Library");`

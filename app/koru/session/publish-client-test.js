@@ -16,7 +16,7 @@ isClient && define(function (require, exports, module) {
       v = {};
       v.handles = [];
       v.doc = {constructor: {modelName: 'Foo'}};
-      api.module(module.get('./publish'));
+      api.module({subjectModule: module.get('./publish')});
       v.sess = {
         provide: test.stub(),
         state: v.sessState = stateFactory(),

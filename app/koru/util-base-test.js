@@ -9,7 +9,7 @@ define((require, exports, module)=>{
   TH.testCase(module, {
     setUp() {
       v = {};
-      api.module(module.get('./util'), 'util');
+      api.module({subjectModule: module.get('./util'), subjectName: 'util'});
     },
 
     tearDown() {
