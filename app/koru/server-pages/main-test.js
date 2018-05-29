@@ -1,6 +1,36 @@
 isServer && define(function (require, exports, module) {
   /**
    * Server side page rendering coordinator.
+   *
+   * ServerPages enables apps to serve dynamically created server-side web pages. By convention
+   * ServerPages follow the
+   * [CRUD, Verbs, and Actions](http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions)
+   * rules defined in Rails namely:
+   *
+   * |HTTP Verb |Path             |Controller#Action|Used for                                     |
+   * |----------|----             |-----------------|--------                                     |
+   * |GET       |/books           |Books#index      |display a list of all books                  |
+   * |GET       |/books/new       |Books#new        |return an HTML form for creating a new book  |
+   * |POST      |/books           |Books#create     |create a new book                            |
+   * |GET       |/books/:id       |Books#show       |display a specific book                      |
+   * |GET       |/books/:id/edit  |Books#edit       |return an HTML form for editing a book       |
+   * |PATCH/PUT |/books/:id       |Books#update     |update a specific book                       |
+   * |DELETE    |/books/:id       |Books#destroy    |delete a specific book                       |
+   *
+   * The simplest way to create a new server-page is to run `./scripts/koru g server-page book` (or
+   * select from emacs koru menu). This will create the following files under `app/server-pages`:
+   *
+   * * `book.html` - The view as an html template file. book.md may be used instead for a markdown
+   * templet file.
+
+   * * `book.js` - The [controller](#koru/server-pages/base-controller) corresponding to the
+   * `book.html` view used for updates and to control rendering the view.
+
+   * * `book.less` - A lessjs (or css) file that is included in the rendered page (if using default
+   * layout).
+   *
+   * If a default layout does not exist then one will be created in `app/server-pages/layouts` with the files: `default.html`, `default.js` and `default.less`
+   *
    **/
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
@@ -36,7 +66,8 @@ isServer && define(function (require, exports, module) {
         writeHead: stub(),
         end: stub(),
       };
-      api.module();
+      api.module({
+        initInstExample: 'const serverPages = new ServerPages(WebServer);'});
     },
 
     tearDown() {
@@ -45,7 +76,7 @@ isServer && define(function (require, exports, module) {
 
     "test new"() {
       /**
-       * Construct a page server registered with a webServer.
+       * Register a page server with a webServer.
        *
        * @param WebServer the web-server to handler pages for.
 
@@ -119,6 +150,10 @@ isServer && define(function (require, exports, module) {
       },
 
       "test stop"() {
+        /**
+         * Deregister this page server from {#koru/web-server}
+         **/
+        api.protoMethod('stop');
         const {sp} = v;
         v.webServer.deregisterHandler = stub();
         sp.stop();

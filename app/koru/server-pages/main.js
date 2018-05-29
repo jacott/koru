@@ -130,7 +130,6 @@ define(function(require, exports, module) {
         }
       };
       WebServer.registerHandler(module, pathRoot, this._handleRequest);
-      module.onUnload(()=>{this.stop()});
     }
 
     get BaseController() {return BaseController}
@@ -146,6 +145,8 @@ define(function(require, exports, module) {
       this.WebServer.deregisterHandler(this._pathRoot);
     }
   }
+
+  koru.onunload(module, 'reload');
 
   return ServerPages;
 });

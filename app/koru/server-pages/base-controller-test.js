@@ -1,10 +1,19 @@
 define(function (require, exports, module) {
+  /**
+   * BaseController provides the default actions for page requests. Action controllers extend
+   * BaseController to intercept actions. See {#koru/server-pages/main}
+   *
+   * Controllers are not constructed directly; rather {#koru/server-pages/main} will invoke the
+   * constructor when the user requests a page associated with the controller.
+   *
+   **/
   const Dom             = require('koru/dom');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, stubProperty} = TH;
 
   const BaseController  = require('./base-controller');
   let v = null;
@@ -29,7 +38,6 @@ define(function (require, exports, module) {
         params: {},
         pathParts: [],
       };
-
     },
 
     tearDown() {
@@ -41,6 +49,12 @@ define(function (require, exports, module) {
     },
 
     "test json body"() {
+      /**
+       * The body of the request. If the content type is: `application/json` or
+       * `application/x-www-form-urlencoded` then the body is converted to an object map otherwise
+       * the raw string is returned.
+       **/
+      api.protoProperty('body');
       const {request} = v.opts;
       request._setBody({sample: 'json'});
 
@@ -58,6 +72,7 @@ define(function (require, exports, module) {
     },
 
     "test form body"() {
+      api.protoProperty('body');
       const {request} = v.opts;
       request._setBody("a%20%2Bb=q%5Ba%5D&foo=bar");
 
@@ -74,7 +89,33 @@ define(function (require, exports, module) {
       assert.same(ans, ctl.body);
     },
 
+    "test other body"() {
+      api.protoProperty('body');
+      const {request} = v.opts;
+      request._setBody(v.exp = "a%20%2Bb=q%5Ba%5D&foo=bar");
+
+      request.headers['content-type'] = 'application/data';
+
+      class MyController extends BaseController {
+        $parser() {}
+      }
+      const ctl = new MyController(v.opts);
+
+      const ans = ctl.body;
+
+      assert.equals(ans, v.exp);
+      assert.same(ans, ctl.body);
+    },
+
     "test redirect"() {
+      /**
+       * Send a redirect response to the client.
+
+       * @param url the location to redirect to.
+       *
+       * @param {number} code the statusCode to send.
+       **/
+      api.protoMethod('redirect');
       const {opts} = v;
 
       class MyController extends BaseController {
@@ -83,32 +124,40 @@ define(function (require, exports, module) {
         }
 
         foo() {
-          this.redirect('/1234');
+          this.redirect('/foo/1234');
         }
       }
 
       const ctl = new MyController(opts);
 
 
-      assert.calledWith(opts.response.writeHead, 302, {Location: '/1234'});
+      assert.calledWith(opts.response.writeHead, 302, {Location: '/foo/1234'});
       assert.calledWithExactly(opts.response.end);
     },
 
     "test error"() {
+      /**
+       * Send an error response to the client;
+       *
+       * @param code the statusCode to send.
+       *
+       * @param message the response body to send.
+       **/
+      api.protoMethod('error');
       const {response} = v.opts;
 
       class MyController extends BaseController {
         $parser() {
-          this.error(407, 'foo');
-          return 'foo';
+          this.error(418, 'Short and stout');
+          return 'new';
         }
       }
       const ctl = new MyController(v.opts);
 
 
       refute.called(response.writeHead);
-      assert.calledOnceWith(response.end, 'foo');
-      assert.equals(response.statusCode, 407);
+      assert.calledOnceWith(response.end, 'Short and stout');
+      assert.equals(response.statusCode, 418);
     },
 
     "test not modified"() {
@@ -216,17 +265,40 @@ define(function (require, exports, module) {
         ETag: 'W/\"x123\"',
       });
       assert.calledWith(opts.response.end, '<main><div>123</div></main>');
+    },
 
-      /** implement show **/
+    "test override show"() {
+      /**
+       * The default show action controller. Override this method to control the show action.
+       **/
+      api.protoMethod('show');
+      stubProperty(BaseController, 'App', {value: genericApp()});
 
-      opts.response.end.reset();
-      MyController.prototype.show = function () {
-        this.params.id = '456';
+      const {opts} = v;
+      opts.view = {Show: {$render(ctl) {
+        return Dom.h({div: ctl.params.book.title});
+      }}};
+      opts.pathParts = ['123'];
+
+      class Book {
+        static findById(id) {
+          assert.same(id, '123');
+          return {title: 'Leviathan Wakes'};
+        }
+      }
+
+      //[
+      class BookController extends BaseController {
+        show() {
+          this.params.book = Book.findById(this.params.id);
+          super.show();
+        }
       };
+      //]
 
-      new MyController(opts);
+      new BookController(opts);
 
-      assert.calledWith(opts.response.end, '<main><div>456</div></main>');
+      assert.calledWith(opts.response.end, '<main><div>Leviathan Wakes</div></main>');
     },
 
     "test default new"() {
@@ -250,17 +322,123 @@ define(function (require, exports, module) {
         ETag: 'W/\"x123\"',
       });
       assert.calledWith(opts.response.end, '<main><div>new page</div></main>');
+    },
 
-      /** implement show **/
+    "test override new"() {
+      /**
+       * The default new action controller. Override this method to control the new action.
+       **/
+      api.protoMethod('new');
+      stubProperty(BaseController, 'App', {value: genericApp()});
 
-      opts.response.end.reset();
-      MyController.prototype.new = function () {
-        this.data = 'my message';
+      const {opts} = v;
+      opts.view = {New: {$render(ctl) {
+        return Dom.h({div: ctl.params.book.author});
+      }}};
+      opts.pathParts = ['new'];
+
+      class Book {
+        static build({author}) {
+          return {author};
+        }
+      }
+
+      const lastAuthor = 'James S. A. Corey';
+
+      //[
+      class BookController extends BaseController {
+        new() {
+          this.params.book = Book.build({author: lastAuthor});
+          super.new();
+        }
       };
+      //]
 
-      new MyController(opts);
+      new BookController(opts);
 
-      assert.calledWith(opts.response.end, '<main><div>my message</div></main>');
+      assert.calledWith(opts.response.end, `<main><div>${lastAuthor}</div></main>`);
+    },
+
+    "test override $parser"() {
+      /**
+       * The default request parser. Override this method for full control of the request.
+       **/
+      api.protoMethod('$parser');
+      stubProperty(BaseController, 'App', {value: genericApp()});
+      const {opts} = v;
+      opts.request.method = 'DELETE';
+
+      const Auth = {canDelete() {return false}};
+
+      //[
+      class BookController extends BaseController {
+        $parser() {
+          if (this.method === 'DELETE' && ! Auth.canDelete(this)) {
+            this.error(403, "You do not have delete access");
+            return;
+          }
+
+          super.$parser();
+        }
+      };
+      //]
+
+      new BookController(opts);
+
+      assert.calledWith(opts.response.end, 'You do not have delete access');
+    },
+
+    "test render"() {
+      /**
+       * Respond to the client with the rendered content wrapped in the specified layoyut.
+       *
+       * @param content usually rendered html but can be whatever the layout requires.
+       *
+       * @param [layout] The layout View to wrap the content. defaults to
+       * `ServerPages.defaultLayout` or a very basic html page.
+       **/
+      api.protoMethod('render');
+      const {opts} = v;
+
+      //[
+      class HelloController extends BaseController {
+        $parser() {
+          this.render(Dom.h({div: 'Hello world'}), {layout: {$render({content}) {
+            return Dom.h({html: [{head: {title: 'My First App'}}, {body: content}]});
+          }}});
+        }
+      };
+      //]
+
+      new HelloController(opts);
+
+      assert.calledWith(
+        opts.response.end,
+        '<html><head><title>My First App</title></head><body><div>Hello world</div></body></html>');
+    },
+
+    "test renderHTML"() {
+      /**
+       * Respond to the client with the rendered HTML content.
+       *
+       * @param html the html element to render.
+       **/
+      api.protoMethod('renderHTML');
+      const {opts} = v;
+
+      //[
+      class HelloController extends BaseController {
+        $parser() {
+          this.renderHTML(Dom.h({div: 'Hello world'}));
+        }
+      };
+      //]
+
+      new HelloController(opts);
+
+      assert.calledWith(
+        opts.response.end,
+        '<div>Hello world</div>');
     },
 
     "test $parser, render"() {

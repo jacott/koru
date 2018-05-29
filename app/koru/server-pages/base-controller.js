@@ -54,7 +54,7 @@ define(function(require, exports, module) {
       this.pathParts = pathParts;
       this.params = params;
       this.layoutData = {};
-      this.method = request.method.toLowerCase();
+      this.method = request.method;
       const action = this.$parser();
       if (action !== undefined && this[rendered$] === undefined) {
         render(this, action);
@@ -130,7 +130,7 @@ define(function(require, exports, module) {
     $parser() {
       const {method} = this;
 
-      if (method === 'get') {
+      if (method === 'GET') {
         const {pathParts} = this;
         let action = 'index';
         switch (pathParts[0]) {
@@ -147,7 +147,7 @@ define(function(require, exports, module) {
         return;
       }
 
-      render(this, method);
+      render(this, method.toLowerCase());
     }
   }
 
