@@ -11,10 +11,11 @@ define(function (require, exports, module) {
    * Examples can be verbatim from the test method by surrounding the example between `//[` and
    * `//]` comments.
    **/
-  var test, v;
   const TH      = require('koru/test');
   const util    = require('koru/util');
   const MainAPI = require('./api');
+
+  const {stub, spy, onEnd} = TH;
 
   const {inspect$} = require('koru/symbols');
 
@@ -23,6 +24,8 @@ define(function (require, exports, module) {
   const APIModule = ctx.modules['koru/test/api'];
   const TestModule = ctx.modules['koru/test/api-test'];
 
+  let test, v = null;
+
   TH.testCase(module, {
     setUp() {
       test = this;
@@ -30,7 +33,7 @@ define(function (require, exports, module) {
       API = class extends MainAPI {};
       API.isRecord = true;
       API.reset();
-      test.stub(ctx, 'exportsModule').withArgs(MainAPI).returns([APIModule]);
+      stub(ctx, 'exportsModule').withArgs(MainAPI).returns([APIModule]);
       MainAPI.module();
     },
 
@@ -275,7 +278,7 @@ define(function (require, exports, module) {
        **/
       MainAPI.method('comment');
 
-      test.onEnd(() => {});
+      onEnd(() => {});
 
       MainAPI.example(() => {
         class Excercise {
@@ -532,13 +535,15 @@ define(function (require, exports, module) {
       API.new('function Hobbit({name}) {}');
     },
 
-    "test custom"() {
+    "test custom."() {
       /**
        * Document a custom function in the current module
        *
        * @param func the function to document
        * @param [name] override the name of func
-       * @param [sig] override the func signature
+       * @param [sig] replace of prefix the function signature. If it ends with a ".", "#" or a ":"
+       * then it will prefix otherwise it will replace.
+
        * @returns a ProxyClass which is to be used instead of `func`
        **/
 
@@ -559,6 +564,7 @@ define(function (require, exports, module) {
 
       assert.equals(API.instance.customMethods.myCustomFunction, {
         test,
+        sigPrefix: undefined,
         sig: 'myCustomFunction(arg)',
         intro: TH.match(/Document a custom function/),
         calls: [[
@@ -566,7 +572,7 @@ define(function (require, exports, module) {
         ]],
       });
 
-      proxy = API.custom(myCustomFunction, 'example2', 'foo.bar = function example2(arg)');
+      proxy = API.custom(myCustomFunction, 'example2', 'foobar = function example2(arg)');
 
       proxy.call(thisValue, 4);
 
@@ -574,10 +580,76 @@ define(function (require, exports, module) {
 
       assert.equals(API.instance.customMethods.example2, {
         test,
-        sig: 'foo.bar = function example2(arg)',
+        sigPrefix: undefined,
+        sig: 'foobar = function example2(arg)',
         intro: TH.match(/Document a custom function/),
         calls: [[
           [4], 'success'
+        ]],
+      });
+
+      proxy = API.custom(myCustomFunction, 'example3');
+      proxy.call(thisValue, 4);
+      assert.equals(API.instance.customMethods.example3.sig, 'example3(arg)');
+
+      proxy = API.custom(myCustomFunction, 'example4', 'Container#');
+      proxy.call(thisValue, 4);
+      assert.equals(API.instance.customMethods.example4.sigPrefix, 'Container#');
+      assert.equals(API.instance.customMethods.example4.sig, 'example4(arg)');
+
+      proxy = API.custom(myCustomFunction, 'example5', 'Container.');
+      proxy.call(thisValue, 4);
+      assert.equals(API.instance.customMethods.example5.sigPrefix, 'Container.');
+      assert.equals(API.instance.customMethods.example5.sig, 'example5(arg)');
+
+      proxy = API.custom(myCustomFunction, 'example6', 'Container.foo()');
+      proxy.call(thisValue, 4);
+      assert.equals(API.instance.customMethods.example6.sigPrefix, 'Container.');
+      assert.equals(API.instance.customMethods.example6.sig, 'foo()');
+
+      API.done();
+    },
+
+    "test customIntercept"() {
+      /**
+       * Intercept a function and document it like {#.custom}.
+       *
+       * @param object the container of the function to document
+       * @param name the name of function to intercept
+       * @param [sig] replace of prefix the function signature. If it ends with a ".", "#" or a ":"
+       * then it will prefix otherwise it will replace.
+
+       * @returns the original function
+       **/
+
+      MainAPI.method('customIntercept');
+
+      const printer = {print: stub().returns('success')};
+
+      //[
+      class Book {
+        print(copies) {
+          return printer.print(this, copies);
+        }
+      }
+      API.module({subjectModule: {id: 'myMod', exports: {}}});
+      const thisValue = {};
+
+      let orig = API.customIntercept(Book.prototype, 'print', 'Book#');
+
+      const book = new Book();
+      assert.same('success', book.print(2));
+      //]
+
+      assert.calledWith(printer.print, book, 2);
+
+      assert.equals(API.instance.customMethods.print, {
+        test,
+        sigPrefix: 'Book#',
+        sig: 'print(copies)',
+        intro: TH.match(/Intercept a function/),
+        calls: [[
+          [2], 'success'
         ]],
       });
 
@@ -671,7 +743,7 @@ define(function (require, exports, module) {
     },
 
     "test auto subject"() {
-      TH.stubProperty(test.tc, "moduleId", {get() {
+      TH.stubProperty(this.tc, "moduleId", {get() {
         return "foo-bar-test";
       }});
       TH.stubProperty(ctx.modules, 'foo-bar', {value: v.subject = {
@@ -710,7 +782,7 @@ define(function (require, exports, module) {
     "test resolveObject"() {
       assert.equals(MainAPI.resolveObject(ctx.modules['koru/util-base']), ['Oi', '{Module:koru/util-base}', 'Module']);
 
-      assert.equals(API.resolveObject(test.stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
+      assert.equals(API.resolveObject(stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
 
       const foo = {foo: 123};
 
@@ -754,7 +826,8 @@ define(function (require, exports, module) {
 
     },
 
-    "test serialize"() {
+      "test serialize"() {
+
       const myCtx = {modules: {}};
       const fooBar = {
         defaults: {
@@ -836,7 +909,7 @@ define(function (require, exports, module) {
         intro: 'Fnord ignores args; returns MainAPI',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [2, ['F', test.stub, 'stub'], ['O', Date, '{special}']], ['M', MainAPI], 'my comment'
+          [2, ['F', stub, 'stub'], ['O', Date, '{special}']], ['M', MainAPI], 'my comment'
         ], {
           intro: 'example intro',
           body: 'example source code here',
@@ -862,6 +935,7 @@ define(function (require, exports, module) {
 
       api.customMethods.sentai = {
         test,
+        sigPrefix: 'Ranger#',
         sig: 'sentai(a)',
         intro: 'introducing sentai',
         calls: [[
@@ -920,6 +994,7 @@ define(function (require, exports, module) {
         methods: {
           fnord: {
             test: 'koru/test/api test serialize',
+            sigPrefix: undefined,
             sig: 'fnord(a, b)',
             intro: 'Fnord ignores args; returns MainAPI',
             calls: [[
@@ -939,6 +1014,7 @@ define(function (require, exports, module) {
         protoMethods: {
           zord: {
             test: 'koru/test/api test serialize',
+            sigPrefix: undefined,
             sig: 'zord(a)',
             intro: 'introducing zord',
             calls: [[
@@ -949,6 +1025,7 @@ define(function (require, exports, module) {
         customMethods: {
           sentai: {
             test: 'koru/test/api test serialize',
+            sigPrefix: 'Ranger#',
             sig: 'sentai(a)',
             intro: 'introducing sentai',
             calls: [[

@@ -30,6 +30,9 @@ define(function (require, exports, module) {
        * @param [notifyName] method name to tell observers of a change
        * (defaults to notify)
 
+       * @param {function} [allStopped] method will be called with subject when all observers have
+       * stopped.
+
        * @returns {object} adorned {#koru/make-subject::subject} parameter
        **/
       const sut = makeSubject;
@@ -104,7 +107,6 @@ created by calling {#koru/make-subject}.
     },
 
     "test allStopped"() {
-      api.custom(makeSubject);
       const subject = makeSubject(
         {eg: 1}, 'onChange', 'notify', {allStopped: v.allStopped = this.stub()});
 

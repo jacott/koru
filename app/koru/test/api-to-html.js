@@ -237,8 +237,7 @@ define(function(require, exports, module) {
             buildProperties(api, subject, api.properties);
 
       util.isObjEmpty(api.protoProperties) ||
-        (properties = properties.concat(
-          properties, buildProperties(api, subject, api.protoProperties, 'proto')));
+        (properties = properties.concat(buildProperties(api, subject, api.protoProperties, 'proto')));
 
       pages.appendChild(Dom.h({
         id,
@@ -351,7 +350,7 @@ define(function(require, exports, module) {
   function buildMethods(api, subject, methods, requireLine, type) {
     return Object.keys(methods).sort().map(name => {
       const method = methods[name];
-      const {sig, intro, calls} = method;
+      const {sigPrefix, sig, intro, calls} = method;
       let initInst, needInit = false;
       if (type === 'proto') {
         needInit = calls.reduce((s, i)=> s || i.body === undefined, false);
@@ -411,7 +410,8 @@ define(function(require, exports, module) {
       return section(api, {
         '$data-env': env(method),
         $name: (type === 'proto' ? '#'+name : name), section: [
-          {h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : defToHtml(sig)},
+          {h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : (
+            sigPrefix ? [sigPrefix, defToHtml(sig)] : defToHtml(sig))},
           {abstract},
           params,
           examples,
@@ -427,12 +427,16 @@ define(function(require, exports, module) {
   }
 
   const defToHtml = (sig)=>{
-    const elm = jsParser.highlight(`function _${sig} {}`, 'span');
-    elm.removeChild(elm.firstChild);
-    elm.removeChild(elm.firstChild);
-    elm.firstChild.textContent = elm.firstChild.textContent.slice(1);
-    elm.lastChild.textContent = elm.lastChild.textContent.slice(0, -3);
-    return elm;
+    try {
+      const elm = jsParser.highlight(`function _${sig} {}`, 'span');
+      elm.removeChild(elm.firstChild);
+      elm.removeChild(elm.firstChild);
+      elm.firstChild.textContent = elm.firstChild.textContent.slice(1);
+      elm.lastChild.textContent = elm.lastChild.textContent.slice(0, -3);
+      return elm;
+    } catch (ex) {
+      return document.createTextNode(sig);
+    }
   };
 
 
@@ -441,7 +445,12 @@ define(function(require, exports, module) {
   }
 
   function mapArgs(sig, calls) {
-    const args = jsParser.extractParams(sig);
+    let args;
+    try {
+      args = jsParser.extractParams(sig);
+    } catch(ex) {
+      args = [];
+    }
     const argMap = {};
     args.forEach((arg, i) => argMap[arg] = argProfile(calls, call => call[0][i]));
     return {args, argMap};

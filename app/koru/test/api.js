@@ -94,9 +94,8 @@ define(function(require, exports, module) {
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
     static new(sig) {return this.instance.new(sig)}
-    static custom(func, name=func.name, sig=funcToSig(func)) {
-      return this.instance.custom(func, name, sig);
-    }
+    static custom(func, name, sig) {return this.instance.custom(func, name, sig)}
+    static customIntercept(object, name, sig) {return this.instance.customIntercept(object, name, sig)}
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options, subject) {this.instance.protoProperty(name, options, subject)}
     static comment(comment) {this.instance.comment(comment)}
@@ -266,7 +265,20 @@ define(function(require, exports, module) {
       };
     }
 
-    custom(func, name=func.name, sig=funcToSig(func)) {
+    custom(func, name=func.name, sig) {
+      let sigPrefix;
+      if (sig === undefined) {
+        sig = funcToSig(func, name);
+      } else {
+        const m = /^([^=(]*?[.#:])/.exec(sig);
+        if (m != null) {
+          sigPrefix = m[1];
+          if (sigPrefix === sig)
+            sig = funcToSig(func, name);
+          else
+            sig = sig.slice(m[1].length);
+        }
+      }
       const api = this;
       if (typeof func !== 'function')
         throw new Error("api.custom called with non function");
@@ -280,6 +292,7 @@ define(function(require, exports, module) {
       let details = api.customMethods[name];
       if (! details) details = api.customMethods[name] = {
         test,
+        sigPrefix,
         sig,
         intro: docComment(test.func),
         calls
@@ -300,6 +313,12 @@ define(function(require, exports, module) {
         entry[1] = api.valueTag(ans);
         return ans;
       };
+    }
+
+    customIntercept(func, name, sig) {
+      const orig = func[name];
+      TH.intercept(func, name, this.custom(orig, name, sig));
+      return orig;
     }
 
     protoProperty(name, options, subject=this.subject.prototype) {
@@ -346,6 +365,7 @@ define(function(require, exports, module) {
           const row = list[methodName];
           list[methodName] = {
             test: row.test.name,
+            sigPrefix: row.sigPrefix,
             sig: row.sig,
             intro: row.intro,
             calls: serializeCalls(this, row.calls),
@@ -608,9 +628,11 @@ define(function(require, exports, module) {
     return body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, '');
   }
 
-  function funcToSig(func) {
-    return jsParser.extractCallSignature(func);
-  }
+  const funcToSig = (func, name)=>{
+    const sig = jsParser.extractCallSignature(func);
+    return (name === undefined || name === func.name)
+      ? sig : name+sig.slice(func.name.length);
+  };
 
   function fileToCamel(fn) {
     return fn.replace(/-(\w)/g, (m, l) => l.toUpperCase())
@@ -676,15 +698,22 @@ define(function(require, exports, module) {
 
   function property(api, field, subject, name, options) {
     inner(subject, name, options,
-          Object.getOwnPropertyDescriptor(subject, name),
           api[field] || (api[field] = {}));
 
-    function inner(subject, name, options, desc, properties) {
+    function inner(subject, name, options, properties) {
       const property = properties[name] || (properties[name] = {});
+
+      const hasValueOpt =
+            typeof options === 'object' && options !== null && hasOwn(options, 'value');
+
+      const desc = subject && ! hasValueOpt
+            ? Object.getOwnPropertyDescriptor(subject, name) : undefined;
 
       let savedValue = desc == null || desc.get == null ? subject[name] : undefined;
 
-      if (! desc || desc.get || desc.set) {
+      if (hasValueOpt) {
+        property.value = api.valueTag(options.value);
+      } else if (desc == null || desc.get || desc.set) {
         const calls = property.calls || (property.calls = []);
         koru.replaceProperty(subject, name, {
           get() {
@@ -729,9 +758,7 @@ define(function(require, exports, module) {
             const properties = property.properties ||
                     (property.properties = {});
             for (let name in options.properties) {
-              inner(savedValue, name, options.properties[name],
-                    savedValue && Object.getOwnPropertyDescriptor(savedValue, name),
-                    properties);
+              inner(savedValue, name, options.properties[name], properties);
             }
           }
           break;
