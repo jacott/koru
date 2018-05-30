@@ -8,22 +8,24 @@ define(function (require, exports, module) {
    *
    **/
   const Dom             = require('koru/dom');
+  const Template        = require('koru/dom/template');
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  const {stub, spy, onEnd, stubProperty} = TH;
+  const {stub, spy, onEnd, stubProperty, intercept} = TH;
 
   const BaseController  = require('./base-controller');
   let v = null;
 
+  class Book {}
+
   const genericApp = ()=>{
     return {defaultLayout: {$render({content}) {
-      return Dom.h({main: content});
+      return Dom.h({body: content});
     }}};
   };
-
 
   TH.testCase(module, {
     setUp() {
@@ -38,6 +40,7 @@ define(function (require, exports, module) {
         params: {},
         pathParts: [],
       };
+      stubProperty(BaseController, 'App', {get: genericApp});
     },
 
     tearDown() {
@@ -141,7 +144,7 @@ define(function (require, exports, module) {
        *
        * @param code the statusCode to send.
        *
-       * @param message the response body to send.
+       * @param [message] the response body to send.
        **/
       api.protoMethod('error');
       const {response} = v.opts;
@@ -169,7 +172,6 @@ define(function (require, exports, module) {
       opts.request.headers['if-none-match'] = '  W/"'+BaseController.defaultETag + '"\n\n';
 
       class MyController extends BaseController {
-        get App() {return genericApp()}
       }
       new MyController(opts);
 
@@ -181,7 +183,7 @@ define(function (require, exports, module) {
 
       class MyController extends BaseController {
         $parser() {return 'foo'}
-        foo() {}
+        foo() {return null}
       }
 
       new MyController(v.opts);
@@ -227,7 +229,7 @@ define(function (require, exports, module) {
       assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
     },
 
-    "test method"() {
+    "test unknown method"() {
       const {opts} = v;
       opts.request.method = 'FOO';
 
@@ -237,126 +239,284 @@ define(function (require, exports, module) {
         foo() {foo(this)}
       }
 
-      MyController.App = genericApp();
+      const controller = new MyController(opts);
+
+      refute.called(foo);
+      assert.equals(opts.response.statusCode, 404);
+      assert.calledWith(opts.response.end, undefined);
+    },
+
+    "test custom method"() {
+      const {opts} = v;
+      opts.request.method = 'FOO';
+
+      const foo = stub().invokes(call => {call.args[0].rendered = true});
+
+      class MyController extends BaseController {
+        $parser() {
+          if (this.method === 'FOO') return 'foo';
+          super.$parser();
+        }
+
+        foo() {foo(this)}
+      }
 
       const controller = new MyController(opts);
 
       assert.calledWith(foo, controller);
     },
 
-    "test default show"() {
-      const {opts} = v;
-      opts.pathParts = ['123'];
+    "CRUD templates": {
+      setUp() {
+        const {opts} = v;
+        const tpl = opts.view = {$render: ctl => Dom.h({class: 'index', div: [ctl.method]})};
+        tpl.Show = {$render: ctl => Dom.h({class: 'show', div: [ctl.params.id]})};
+        tpl.New = {$render: ctl => Dom.h({class: 'new', div: ctl.pathParts})};
+        tpl.Edit = {$render: ctl => Dom.h({class: 'edit', div: [ctl.params.id]})};
+        tpl.Create = {$render: ctl => Dom.h({class: 'create', div: [ctl.method]})};
+        tpl.Update = {$render: ctl => Dom.h({class: 'update', div: [ctl.params.id]})};
+        tpl.Destroy = {$render: ctl => Dom.h({class: 'destroy', div: [ctl.params.id]})};
+        v.run = (method, url, action, body)=>{
+          const Foo = class extends BaseController {
+          };
 
-      class MyController extends BaseController {
-        get eTag() {return "x123"}
-      }
+          v.opts.pathParts = url.split('/').slice(2);
+          opts.request.method = method;
 
-      opts.view = {Show: {$render(ctl) {
-        return Dom.h({div: ctl.params.id});
-      }}};
+          method === 'GET' && api.property(action === 'index'
+                                           ? 'view' : 'view.'+util.capitalize(action),
+                                           {value: Template});
 
-      MyController.App = genericApp();
+          new Foo(opts);
 
-      new MyController(opts);
+          assert.calledWith(opts.response.end, `<body><div class="${action}">${body}</div></body>`);
+        };
+      },
 
-      assert.calledWith(opts.response.writeHead, 200, {
-        'Content-Length': 43, 'Content-Type': 'text/html; charset=utf-8',
-        ETag: 'W/\"x123\"',
-      });
-      assert.calledWith(opts.response.end, '<main><div>123</div></main>');
+      "test view"() {
+        /**
+         * Templete for index action. All other action templates are children of this template.
+         *
+         * # Example request
+         * ```
+         * GET /foo
+         * ```
+         **/
+        v.run('GET', '/foo', 'index', 'GET');
+      },
+      "test new"() {
+        /**
+         * Templete for new action.
+         *
+         * # Example request
+         * ```
+         * GET /foo/new
+         * ```
+         **/
+        v.run('GET', '/foo/new', 'new', 'new');
+      },
+      "test create"() {
+        v.run('POST', '/foo/new', 'create', 'POST');
+      },
+      "test show"() {
+        /**
+         * Templete for show action.
+         *
+         * # Example request
+         * ```
+         * GET /foo/:id
+         * ```
+         **/
+        v.run('GET', '/foo/1234', 'show', '1234');
+      },
+      "test edit"() {
+        /**
+         * Templete for edit action.
+         *
+         * # Example request
+         * ```
+         * GET /foo/:id/edit
+         * ```
+         **/
+        v.run('GET', '/foo/1234/edit', 'edit', '1234');
+      },
+      "test update;patch"() {
+        v.run('PATCH', '/foo/1234', 'update', '1234');
+      },
+      "test update;put"() {
+        v.run('PUT', '/foo/1234', 'update', '1234');
+      },
+      "test destroy"() {
+        v.run('DELETE', '/foo/1234', 'destroy', '1234');
+      },
     },
 
-    "test override show"() {
-      /**
-       * The default show action controller. Override this method to control the show action.
-       **/
-      api.protoMethod('show');
-      stubProperty(BaseController, 'App', {value: genericApp()});
+    "CRUD actions": {
+      setUp() {
+        const {opts} = v;
+        spy(BaseController.prototype, 'error');
+        v.run = (action, url, method='GET')=>{
+          const Foo = class extends BaseController {
+            [action]() {this.error(418, 'teapot')};
+          };
 
-      const {opts} = v;
-      opts.view = {Show: {$render(ctl) {
-        return Dom.h({div: ctl.params.book.title});
-      }}};
-      opts.pathParts = ['123'];
+          api.customIntercept(Foo.prototype, action, `<class extends BaseController>#${action}()`);
 
-      class Book {
-        static findById(id) {
-          assert.same(id, '123');
-          return {title: 'Leviathan Wakes'};
+          opts.pathParts = url.split('/').slice(2);
+          opts.request.method = method;
+          new Foo(opts);
+
+          assert.calledWith(opts.response.end, 'teapot');
+        };
+      },
+
+      "test index"() {
+        /**
+         * Implement this action to control index requests:
+         *
+         * `GET /books`
+         **/
+        //[
+        class Books extends BaseController {
+          index() {
+            this.params.books = Book.query;
+          }
         }
-      }
+        //]
+        v.run('index', '/foo');
+      },
+      "test new"() {
+        /**
+         * Implement this action to control new requests:
+         *
+         * `GET /books/new`
+         **/
+        //[
+        class Books extends BaseController {
+          new() {
+            this.params.book = Book.build();
+          }
+        }
+        //]
+        v.run('new', '/foo/new');
+      },
+      "test create"() {
+        /**
+         * Implement this action to process create requests.
+         *
+         * `POST /books`
+         **/
+        //[
+        class Books extends BaseController {
+          create() {
+            const book = Book.create(this.body);
+            this.redirect('/books/'+book._id);
+          }
+        }
+        //]
+        v.run('create', '/foo', 'POST');
+      },
+      "test show"() {
+        /**
+         * Implement this action to control show requests:
+         *
+         * `GET /books/:id`
+         **/
+        //[
+        class Books extends BaseController {
+          show() {
+            this.params.book = Book.findById(this.params.id);
+          }
+        }
+        //]
+        v.run('show', '/foo/1234');
+      },
+      "test edit"() {
+        /**
+         * Implement this action to control show requests:
+         *
+         * `GET /books/:id/edit`
+         **/
+        //[
+        class Books extends BaseController {
+          edit() {
+            this.params.book = Book.findById(this.params.id);
+          }
+        }
+        //]
+        v.run('edit', '/foo/1234/edit');
+      },
+      "test update"() {
+        /**
+         * Implement this action to process update requests.
+         *
+         * `PUT /books/:id` or `PATCH /books/:id`
+         **/
+        //[
+        class Books extends BaseController {
+          update() {
+            const book = Book.findById(this.params.id);
+            book.changes = this.body;
+            book.$$save();
+            this.redirect('/books/'+book._id);
+          }
+        }
+        //]
+        v.run('update', '/foo/1234', 'PUT');
+      },
+      "test delete"() {
+        /**
+         * Implement this action to process destroy requests.
+         *
+         * `DELETE /books/:id`
+         **/
+        //[
+        class Books extends BaseController {
+          destroy() {
+            const book = Book.findById(this.params.id);
+            book.$remove();
+            this.redirect('/books');
+          }
+        }
+        //]
+        v.run('destroy', '/foo/1234', 'DELETE');
+      },
+    },
 
+    "test aroundFilter"() {
+      /**
+       * An aroundFiler runs "around" an action controller. It is called are the {##$parser} has
+       * run. You can control which action is called by changing the the value of `this.action`.
+       *
+       * @param callback call this function to run the `this.action`
+       *
+       **/
+      const {opts} = v;
+      let testDone = false;
       //[
-      class BookController extends BaseController {
-        show() {
-          this.params.book = Book.findById(this.params.id);
-          super.show();
+      class Foo extends BaseController {
+        aroundFilter(callback) {
+          this.params.userId = 'uid123';
+          if (this.action == 'edit' && this.pathParts[0] == '1234') {
+            this.action = 'specialEdit';
+          }
+          callback();
+          testDone = this.rendered;
+        }
+
+        specialEdit() {
+          this.renderHTML(Dom.h({div: this.params.userId}));
         }
       };
       //]
 
-      new BookController(opts);
+      api.customIntercept(Foo.prototype, 'aroundFilter', '<class extends BaseController>#');
 
-      assert.calledWith(opts.response.end, '<main><div>Leviathan Wakes</div></main>');
-    },
+      opts.pathParts = ['1234', 'edit'];
+      new Foo(opts);
 
-    "test default new"() {
-      const {opts} = v;
-      opts.pathParts = ['new'];
-
-      class MyController extends BaseController {
-        get eTag() {return "x123"}
-      }
-
-      opts.view = {New: {$render(ctl) {
-        return Dom.h({div: ctl.data || 'new page'});
-      }}};
-
-      MyController.App = genericApp();
-
-      new MyController(opts);
-
-      assert.calledWith(opts.response.writeHead, 200, {
-        'Content-Length': 48, 'Content-Type': 'text/html; charset=utf-8',
-        ETag: 'W/\"x123\"',
-      });
-      assert.calledWith(opts.response.end, '<main><div>new page</div></main>');
-    },
-
-    "test override new"() {
-      /**
-       * The default new action controller. Override this method to control the new action.
-       **/
-      api.protoMethod('new');
-      stubProperty(BaseController, 'App', {value: genericApp()});
-
-      const {opts} = v;
-      opts.view = {New: {$render(ctl) {
-        return Dom.h({div: ctl.params.book.author});
-      }}};
-      opts.pathParts = ['new'];
-
-      class Book {
-        static build({author}) {
-          return {author};
-        }
-      }
-
-      const lastAuthor = 'James S. A. Corey';
-
-      //[
-      class BookController extends BaseController {
-        new() {
-          this.params.book = Book.build({author: lastAuthor});
-          super.new();
-        }
-      };
-      //]
-
-      new BookController(opts);
-
-      assert.calledWith(opts.response.end, `<main><div>${lastAuthor}</div></main>`);
+      assert.calledWith(opts.response.end, '<div>uid123</div>');
+      assert.isTrue(testDone);
     },
 
     "test override $parser"() {
@@ -364,14 +524,13 @@ define(function (require, exports, module) {
        * The default request parser. Override this method for full control of the request.
        **/
       api.protoMethod('$parser');
-      stubProperty(BaseController, 'App', {value: genericApp()});
       const {opts} = v;
       opts.request.method = 'DELETE';
 
       const Auth = {canDelete() {return false}};
 
       //[
-      class BookController extends BaseController {
+      class Books extends BaseController {
         $parser() {
           if (this.method === 'DELETE' && ! Auth.canDelete(this)) {
             this.error(403, "You do not have delete access");
@@ -383,7 +542,7 @@ define(function (require, exports, module) {
       };
       //]
 
-      new BookController(opts);
+      new Books(opts);
 
       assert.calledWith(opts.response.end, 'You do not have delete access');
     },
@@ -471,6 +630,20 @@ define(function (require, exports, module) {
       });
       assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
       assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
+    },
+
+    "test Index template"() {
+      const {opts} = v;
+      opts.view = {$render(ctl) {
+        return Dom.h({div: 'index'});
+      }};
+
+      class Root extends BaseController {
+      };
+
+      new Root(opts);
+
+      assert.calledWith(opts.response.end, '<body><div>index</div></body>');
     },
 
     "test DOCTYPE supplied"() {

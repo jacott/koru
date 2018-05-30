@@ -33,7 +33,7 @@ define(function(require, exports, module) {
 
     controllerId() {return this.controller.constructor.modId},
 
-    page() {return this.controller.pathParts[0] || "index"},
+    page() {return this.controller.pathParts[0] || "root"},
   });
 
   const addViewController = (sp, name, View, Controller)=>{

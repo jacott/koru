@@ -7,30 +7,55 @@ isServer && define(function (require, exports, module) {
    * [CRUD, Verbs, and Actions](http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions)
    * rules defined in Rails namely:
    *
-   * |HTTP Verb |Path             |Controller#Action|Used for                                     |
-   * |----------|----             |-----------------|--------                                     |
-   * |GET       |/books           |Books#index      |display a list of all books                  |
-   * |GET       |/books/new       |Books#new        |return an HTML form for creating a new book  |
-   * |POST      |/books           |Books#create     |create a new book                            |
-   * |GET       |/books/:id       |Books#show       |display a specific book                      |
-   * |GET       |/books/:id/edit  |Books#edit       |return an HTML form for editing a book       |
-   * |PATCH/PUT |/books/:id       |Books#update     |update a specific book                       |
-   * |DELETE    |/books/:id       |Books#destroy    |delete a specific book                       |
+   * |HTTP Verb|Path           |Controller#Action|Used for                                   |
+   * |---------|----           |-----------------|--------                                   |
+   * |GET      |/books         |Books#index      |display a list of all books                |
+   * |GET      |/books/new     |Books#new        |return an HTML form for creating a new book|
+   * |POST     |/books         |Books#create     |create a new book                          |
+   * |GET      |/books/:id     |Books#show       |display a specific book                    |
+   * |GET      |/books/:id/edit|Books#edit       |return an HTML form for editing a book     |
+   * |PATCH/PUT|/books/:id     |Books#update     |update a specific book                     |
+   * |DELETE   |/books/:id     |Books#destroy    |delete a specific book                     |
    *
-   * The simplest way to create a new server-page is to run `./scripts/koru g server-page book` (or
-   * select from emacs koru menu). This will create the following files under `app/server-pages`:
+   * To implement index, new, show and edit actions all that is needed is a corresponding
+   * {#koru/dom/template} like `Book.Show`. The create, update and destroy actions need the action
+   * method implemented in the [controller](#koru/server-pages/base-controller) like
+   * `BooksController`.
+   *
+   * For the show, edit, update and destroy actions the id can be accessed from `{{params.id}}` in
+   * the template or `this.params.id` in the controller.
+   *
+   * Alternatively Controller actions matching the HTTP verb can be used and these take precedence
+   * over other actions; so if the controller has index, show, new, edit *and get* action methods
+   * then the get method will override the other four action methods. See
+   * {#koru/server-pages/base-controller} for more ways to override the default actions.
+   *
+   * # Creating a server page
+   *
+   * The simplest way to create a new server-page is to run `./scripts/koru generate server-page
+   * book` (or select from emacs koru menu). This will create the following files under
+   * `app/server-pages`:
    *
    * * `book.html` - The view as an html template file. book.md may be used instead for a markdown
    * templet file.
 
-   * * `book.js` - The [controller](#koru/server-pages/base-controller) corresponding to the
+   * * `book.js`   - The [controller](#koru/server-pages/base-controller) corresponding to the
    * `book.html` view used for updates and to control rendering the view.
 
-   * * `book.less` - A lessjs (or css) file that is included in the rendered page (if using default
-   * layout).
+   * * `book.less` - A [lessjs](http://lesscss.org/) (or css) file that is included in the rendered
+   * page (if using default layout).
    *
-   * If a default layout does not exist then one will be created in `app/server-pages/layouts` with the files: `default.html`, `default.js` and `default.less`
+   * If a default layout does not exist then one will be created in `app/server-pages/layouts` with
+   * the files: `default.html`, `default.js` and `default.less`
    *
+   * # Configuration
+   *
+   * No configuration is needed for server-pages; they are automatically added when the first call
+   * to `koru generate server-page` is made. This will register a page server for the
+   * {#koru/web-server} in the `app/startup-server.js` file.
+   *
+   * Any pages under `app/server-pages` will be automatically loaded when am HTTP request is made
+   * that corresponds to the page.
    **/
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
@@ -43,7 +68,7 @@ isServer && define(function (require, exports, module) {
 
   const path            = requirejs.nodeRequire('path');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, util, intercept} = TH;
 
   const sut  = require('./main');
   let v = null;
@@ -140,7 +165,7 @@ isServer && define(function (require, exports, module) {
       },
 
       "test page helper"() {
-        assert.equals(Dom._helpers.page.call({controller: {pathParts: []}}), 'index');
+        assert.equals(Dom._helpers.page.call({controller: {pathParts: []}}), 'root');
         assert.equals(Dom._helpers.page.call({controller: {pathParts: ['show']}}), 'show');
       },
 
@@ -217,7 +242,7 @@ isServer && define(function (require, exports, module) {
         sp._handleRequest(v.req, v.res, '/foo/?abc=123');
 
         assert.calledWith(tpl.$render, TH.match(ctl => {
-          assert.equals(ctl.params, {abc: '123', id: ''});
+          assert.equals(ctl.params, {abc: '123'});
           return true;
         }));
 
@@ -243,25 +268,6 @@ isServer && define(function (require, exports, module) {
         sp._handleRequest(v.req, v.res, '/foo/1234', error);
 
         assert.calledWith(error, 400, {name: [['invalid']]});
-      },
-
-      "test CRUD"() {
-        const {sp, tpl} = v;
-        sp.defaultLayout = {$render(data) {return Dom.h({body: data.content})}};
-        stub(tpl, '$render').returns(Dom.h({}));
-
-        sp.addViewController('foo', tpl, class extends sp.BaseController {
-          show() {
-            assert.equals(this.params, {id: '1234'});
-            this.render(Dom.h({id: 'show'}));
-            v.showCalled = true;
-          }
-        });
-
-        sp._handleRequest(v.req, v.res, '/foo/1234');
-
-        assert(v.showCalled);
-        assert.calledWith(v.res.end, '<body><div id="show"></div></body>');
       },
     },
   });

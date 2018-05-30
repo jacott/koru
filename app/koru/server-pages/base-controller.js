@@ -6,28 +6,46 @@ define(function(require, exports, module) {
 
   const rendered$ = Symbol(), body$ = Symbol();
 
+  const METHODS = {
+    get: 'new',
+    post: 'create',
+    put: 'update',
+    patch: 'update',
+    delete: 'destroy',
+  };
+
+  const toTpl = (ctl, action)=> action === 'index'
+        ? ctl.view : (ctl.view[action[0].toUpperCase()+action.slice(1)] || ctl.view);
+
   const render = (ctl, action)=>{
     if (action in ctl) {
       const result = ctl[action]();
 
-      if (ctl[rendered$] === undefined) {
-        const da = defaultActions[action];
-        if (da === undefined) {
-          if (result === undefined) {
-            const {response} = ctl;
-            response.statusCode = 204;
-            response.end();
-          } else if ('outerHTML' in result) {
-            ctl.renderHTML(result);
-          } else {
-            ctl.renderJSON(result);
-          }
+      if (ctl[rendered$])  return;
+
+      if (result === null) {
+        ctl[rendered$] = true;
+        const {response} = ctl;
+        response.statusCode = 204;
+        response.end();
+        return;
+      } else if (typeof result == 'object') {
+        if ('outerHTML' in result) {
+          ctl.renderHTML(result);
         } else {
-          da(ctl);
+          ctl.renderJSON(result);
         }
+        return;
       }
-    } else
-      ctl.error(405, 'Method Not Allowed');
+    }
+
+    const tpl = toTpl(ctl, action);
+    if (tpl !== undefined) {
+      ctl.checkETag() || ctl.render(tpl.$render(ctl));
+      return;
+    }
+
+    ctl.error(405, 'Method Not Allowed');
   };
 
   const renderDef = (ctl, name)=>{
@@ -46,6 +64,14 @@ define(function(require, exports, module) {
 
   const HEADER = '<!DOCTYPE html>\n';
 
+  const runParser = (ctl)=>{
+    const {action} = ctl;
+    if (action !== undefined && ! ctl[rendered$]) {
+      render(ctl, action);
+    }
+  };
+
+
   class BaseController {
     constructor({view, request, response, pathParts, params}) {
       this.view = view;
@@ -55,10 +81,12 @@ define(function(require, exports, module) {
       this.params = params;
       this.layoutData = {};
       this.method = request.method;
-      const action = this.$parser();
-      if (action !== undefined && this[rendered$] === undefined) {
-        render(this, action);
-      }
+      this[rendered$] = false;
+      this.action = this.$parser();
+      if (this.aroundFilter !== undefined) {
+        this.aroundFilter(()=>{runParser(this)});
+      } else
+        runParser(this);
     }
 
     get App() {return this.constructor.App}
@@ -84,6 +112,9 @@ define(function(require, exports, module) {
       res.statusCode = code;
       res.end(message);
     }
+
+    get rendered() {return this[rendered$]}
+    set rendered(v) {this[rendered$] = !! v}
 
     get body() {
       const body = this[body$];
@@ -122,32 +153,35 @@ define(function(require, exports, module) {
       HttpUtil.renderContent(this.response, opts);
     }
 
-    index() {return defaultActions.index(this)}
 
-    show() {return defaultActions.show(this)}
-    new() {return defaultActions.new(this)}
 
     $parser() {
-      const {method} = this;
+      const method = this.method.toLowerCase();
+      const allowed =METHODS[method];
+      if (allowed === undefined)
+        return void this.error(404);
 
-      if (method === 'GET') {
-        const {pathParts} = this;
-        let action = 'index';
-        switch (pathParts[0]) {
-        case 'new':
-          action = pathParts[0];
-          break;
-        default:
-          if (pathParts[0] !== undefined) {
-            this.params.id = pathParts[0];
-            action = 'show';
-          }
-        }
-        render(this, action);
-        return;
+      if (method in this) {
+        return method;
       }
-
-      render(this, method.toLowerCase());
+      const {pathParts} = this;
+      const action = pathParts.length == 0 ? undefined : pathParts[0];
+      switch(method) {
+      case 'get':
+        if (action === 'new') return action;
+        if (action === '' || action === undefined)
+          return 'index';
+        this.params.id = action;
+        if (pathParts.length > 1 && pathParts[1] === 'edit')
+          return 'edit';
+        else
+          return 'show';
+      case 'post':
+        return allowed;
+      default:
+        this.params.id = action;
+        return allowed;
+      }
     }
   }
 
