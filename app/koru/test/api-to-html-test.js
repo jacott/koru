@@ -36,7 +36,7 @@ isServer && define(function (require, exports, module) {
       const properties = Dom.textToHtml(html).getElementsByClassName('jsdoc-properties');
 
       assert.equals(Dom.htmlToJson(properties[0]).div, [
-        {h5: 'Properties'},
+        {h1: 'Properties'},
         {table: {tbody: [
           {tr: [
             {td: '_id'},

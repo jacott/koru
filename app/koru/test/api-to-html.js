@@ -12,7 +12,15 @@ define(function(require, exports, module) {
   const async = 'async';
 
   const mdRenderer = new marked.Renderer();
-  const mdOptions = {renderer: mdRenderer};
+  const mdOptions = {
+    renderer: mdRenderer,
+    highlight(code, lang) {
+      switch(lang) {
+      case 'js': case 'javascript':
+        return jsParser.highlight(code).outerHTML;
+      }
+    },
+  };
 
   const CORE_TYPES = {
     Array: true,
@@ -157,7 +165,7 @@ define(function(require, exports, module) {
       function addModuleList(heading, list) {
         if (list) {
           aside.push({div: [
-            {h5: heading},
+            {h1: heading},
 
             {class: 'jsdoc-list', div: list.map(id => {
               const m = id.split('!');
@@ -217,7 +225,7 @@ define(function(require, exports, module) {
       const configMap = abstractMap[':config:'];
       if (configMap) {
         var config = {class: 'jsdoc-config', table: [
-          {tr: {$colspan: 2, td: {h5: 'Config'}}},
+          {tr: {$colspan: 2, td: {h1: 'Config'}}},
           ...Object.keys(configMap).sort().map(key => Dom.h({
             class: 'jsdoc-config-item',
             tr: [{td: key}, {td: configMap[key]}]
@@ -238,17 +246,17 @@ define(function(require, exports, module) {
         class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
         section: [
           {class: 'jsdoc-module-path', a: id, $href: '#'+id},
-          {class: 'jsdoc-module-title', h2: subject.name},
+          {class: 'jsdoc-module-title', h1: subject.name},
           {abstract},
           {class: 'jsdoc-module-sidebar', aside},
           {div: [
             config,
             properties.length && {class: 'jsdoc-properties', div: [
-              {h5: 'Properties'},
+              {h1: 'Properties'},
               {table: {tbody: properties}}
             ]},
             functions.length && {class: 'jsdoc-methods', div: [
-              {h4: "Methods"},
+              {h1: "Methods"},
               {div: functions},
             ]},
             innerSubjects && buildInnerSubjects(api, innerSubjects, linkNav),
@@ -318,7 +326,7 @@ define(function(require, exports, module) {
   function buildConstructor(api, subject, {sig, intro, calls}, requireLine) {
     const {args, argMap} = mapArgs(sig, calls);
     const examples = calls.length && {div: [
-      {h6: "Example"},
+      {h1: "Example"},
       {class: 'jsdoc-example highlight', pre: [
         requireLine.cloneNode(true),
         ...calls.map(call => Dom.h({
@@ -328,8 +336,8 @@ define(function(require, exports, module) {
         }))
       ]},
     ]};
-    return section(api, {$name: 'constructor', div: [
-      {h4: defToHtml(sig)},
+    return section(api, {$name: 'constructor', section: [
+      {h1: defToHtml(sig)},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
       examples,
@@ -380,7 +388,7 @@ define(function(require, exports, module) {
         argMap[':return:'] = ret;
 
       const examples = calls.length && {div: [
-        {h6: "Example"},
+        {h1: "Example"},
         {class: 'jsdoc-example', pre: [
           requireLine.cloneNode(true),
           ...initInst(),
@@ -402,8 +410,8 @@ define(function(require, exports, module) {
 
       return section(api, {
         '$data-env': env(method),
-        $name: (type === 'proto' ? '#'+name : name), div: [
-          {h5: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : defToHtml(sig)},
+        $name: (type === 'proto' ? '#'+name : name), section: [
+          {h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : defToHtml(sig)},
           {abstract},
           params,
           examples,
@@ -447,7 +455,7 @@ define(function(require, exports, module) {
 
     const retTypes = ret && ret.types && extractTypes(ret);
     return {class: "jsdoc-args", div: [
-      {h6: "Parameters"},
+      {h1: "Parameters"},
       {table: {
         tbody: [
           ...args.map(arg => {
@@ -463,7 +471,7 @@ define(function(require, exports, module) {
           }),
           ret && retTypes && {
             class: "jsdoc-method-returns", tr: [
-              {td: {h6: 'Returns'}},
+              {td: {h1: 'Returns'}},
               {td: retTypes},
               {class: 'jsdoc-info', td: jsdocToHtml(api, ret.info)}
             ]

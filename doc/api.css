@@ -15,6 +15,11 @@ body {
   -webkit-box-direction: normal;
   -ms-flex-flow: column nowrap;
   flex-flow: column nowrap;
+  color: #111;
+}
+
+h1 {
+  color: #666;
 }
 
 body>section {
@@ -52,20 +57,18 @@ body>section>main {
 
 table {
   margin: 0 0 1.5em;
-  border: 2px solid #CCC;
   background: #FFF;
   border-collapse: collapse;
 }
 
 table th, table td {
   padding: 0.25em 1em;
-  border: 1px solid #CCC;
+  border: 1px solid #ccc;
   border-collapse: collapse;
 }
 
 table th {
-  border-bottom: 2px solid #CCC;
-  background: #EEE;
+  background: #eee;
   font-weight: bold;
   padding: 0.5em 1em;
 }
@@ -108,6 +111,9 @@ pre {
 
 .jsdoc-info>div>p:last-child {
   margin-bottom: 0;
+}
+.jsdoc-info>div>p:first-child {
+  margin-top: 0;
 }
 
 #jsdoc-index {
@@ -212,7 +218,7 @@ pre {
 
 .jsdoc-module-title {
   color: rgb(96, 125, 139);
-  font-weight: 400;
+  font-weight: bold;
   line-height: 32px;
   margin-top: 0;
   margin-bottom: 30px;
@@ -235,12 +241,12 @@ pre {
   border-radius: 3px;
 }
 
-.jsdoc-module-section[name=constructor]>h4:first-child {
+.jsdoc-module-section[name=constructor]>h1:first-child {
   position: relative;
   left: -20px;
 }
 
-.jsdoc-methods>h4:first-child {
+.jsdoc-methods>h1:first-child {
   margin-bottom: 0;
 }
 
