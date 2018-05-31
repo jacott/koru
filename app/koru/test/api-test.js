@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * API is a semi-automatic API document generator. It uses
    * unit-tests to determine types and values at test time.
@@ -11,37 +11,35 @@ define(function (require, exports, module) {
    * Examples can be verbatim from the test method by surrounding the example between `//[` and
    * `//]` comments.
    **/
-  const TH      = require('koru/test');
-  const util    = require('koru/util');
-  const MainAPI = require('./api');
+  const TH              = require('koru/test');
+  const util            = require('koru/util');
+  const MainAPI         = require('./api');
 
   const {stub, spy, onEnd} = TH;
 
   const {inspect$} = require('koru/symbols');
 
   const ctx = module.ctx;
-  let API;
   const APIModule = ctx.modules['koru/test/api'];
   const TestModule = ctx.modules['koru/test/api-test'];
 
-  let test, v = null;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let API, v = {};
+    beforeEach(()=>{
+      test = TH.test;
       API = class extends MainAPI {};
       API.isRecord = true;
       API.reset();
       stub(ctx, 'exportsModule').withArgs(MainAPI).returns([APIModule]);
       MainAPI.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test module"() {
+    test("module", ()=>{
       /**
        * Initiate documentation of the module. Subsequent calls to API
        * methods will act of the given `module`.
@@ -93,9 +91,9 @@ define(function (require, exports, module) {
       API.module({subjectModule: {id: 'myMod2', exports: Book}});
 
       assert.same(API.instance.subjectName, 'Book');
-    },
+    });
 
-    "test innerSubject"() {
+    test("innerSubject", ()=>{
       /**
        * Document a subject within a module.
        *
@@ -126,12 +124,13 @@ define(function (require, exports, module) {
          * An example abstract
          **/
       }
-      const anythingApi = API.innerSubject(v.anything = {anything: 'is allowed'},
-                       'Anything can be documented', {
-                         initExample: `const init = {sample: 'code'};`,
-                         initInstExample: `const inst = initCode();`,
-                         abstract,
-                       });
+      const anythingApi = API.innerSubject(
+        v.anything = {anything: 'is allowed'},
+        'Anything can be documented', {
+          initExample: `const init = {sample: 'code'};`,
+          initInstExample: `const inst = initCode();`,
+          abstract,
+        });
       assert.same(anythingApi.propertyName, undefined);
 
       assert.same(anythingApi, API.valueToApi(v.anything));
@@ -145,7 +144,7 @@ define(function (require, exports, module) {
           constructor() {this._chapters = [];}
           newChapter() {
             const chapter = new this.constructor
-                    .Chapter(10);
+                  .Chapter(10);
             this._chapters.push(chapter);
             return chapter;
           }
@@ -195,9 +194,9 @@ define(function (require, exports, module) {
         test: TH.test,
         calls: [[[], 10]],
       });
-    },
+    });
 
-    "test example"() {
+    test("example", ()=>{
       /**
        * Run a section of as an example of a method call.
        *
@@ -233,7 +232,7 @@ define(function (require, exports, module) {
       MainAPI.done();
 
       assert.equals(API.instance.methods.define, {
-        test,
+        test: TH.test,
         sig: TH.match.any,
         intro: TH.match.any,
         subject: TH.match.any,
@@ -242,7 +241,7 @@ define(function (require, exports, module) {
           calls: [],
         }, {
           body:
-`          // this body of code is executed
+          `          // this body of code is executed
           Color.define('red', '#f00');
           Color.define('blue', '#00f');
         // comment
@@ -256,9 +255,9 @@ define(function (require, exports, module) {
           body: `return Color.define('green', '#0f0')`, calls: [[['green', '#0f0'], '#0f0']]
         }]
       });
-    },
+    });
 
-    "test strange example"() {
+    test("strange example", ()=>{
       const foo = {bar() {}};
 
       API.module({subjectModule: {id: 'myMod', exports: foo}});
@@ -270,9 +269,9 @@ define(function (require, exports, module) {
       assert.equals(API.instance.methods.bar.calls[0].body, `foo.bar(1, doc => {
         return false;
       })`);
-    },
+    });
 
-    "test comment"() {
+    test("comment", ()=>{
       /**
        * Add a comment before the next example
        **/
@@ -307,14 +306,14 @@ define(function (require, exports, module) {
           ['Skipping'], undefined
         ]]
       });
-    },
+    });
 
-    "property": {
-      setUp() {
+    group("property", ()=>{
+      beforeEach(()=>{
         MainAPI.method('property');
-      },
+      });
 
-      "test value property"() {
+      test("value property", ()=>{
         /**
          * Document a property of the current subject. The property
          * can be either plain value or a get/set function.
@@ -393,9 +392,9 @@ define(function (require, exports, module) {
             value: 800,
           }
         });
-      },
+      });
 
-      "test get/set property"() {
+      test("get/set property", ()=>{
         MainAPI.example(() => {
           const book = {
             get title() {return this._title;},
@@ -423,9 +422,9 @@ define(function (require, exports, module) {
             ],
           },
         });
-      },
+      });
 
-      "test doc comment"() {
+      test("doc comment", ()=>{
         /**
          * The number of pages in the book
          **/
@@ -446,10 +445,10 @@ define(function (require, exports, module) {
             value: 400,
           },
         });
-      },
-    },
+      });
+    });
 
-    "test protoProperty"() {
+    test("protoProperty", ()=>{
       /**
        * Document a property of the current subject's prototype. The
        * property can be either plain value or a get/set function.
@@ -481,10 +480,10 @@ define(function (require, exports, module) {
       });
 
       API.done();
-    },
+    });
 
 
-    "test new"() {
+    test("new", ()=>{
       /**
        * Document `constructor` for the current subject. It
 
@@ -516,11 +515,11 @@ define(function (require, exports, module) {
       /*//[ // new//]//[_Book is converted to new Book when the example is rendered
         const new//]//[_Book = api.new(Book);
 
-////]//[[
+        ////]//[[
         const book = new//]//[_Book({name: 'There and back again'});
 
         assert(book instanceof Book);
-////]//[]//]*/
+        ////]//[]//]*/
 
       assert.equals(API.instance.newInstance, {
         test,
@@ -533,9 +532,9 @@ define(function (require, exports, module) {
 
       API.new();
       API.new('function Hobbit({name}) {}');
-    },
+    });
 
-    "test custom."() {
+    test("custom.", ()=>{
       /**
        * Document a custom function in the current module
        *
@@ -608,9 +607,9 @@ define(function (require, exports, module) {
       assert.equals(API.instance.customMethods.example6.sig, 'foo()');
 
       API.done();
-    },
+    });
 
-    "test customIntercept"() {
+    test("customIntercept", ()=>{
       /**
        * Intercept a function and document it like {#.custom}.
        *
@@ -654,9 +653,9 @@ define(function (require, exports, module) {
       });
 
       API.done();
-    },
+    });
 
-    "test method"() {
+    test("method", ()=>{
       /**
        * Document `methodName` for the current subject
        **/
@@ -686,9 +685,9 @@ define(function (require, exports, module) {
           [-1], -2
         ]]
       });
-    },
+    });
 
-    "test protoMethod"() {
+    test("protoMethod", ()=>{
       /**
        * Document prototype `methodName` for the current subject
 
@@ -740,10 +739,10 @@ define(function (require, exports, module) {
           [2], 5
         ]]
       });
-    },
+    });
 
-    "test auto subject"() {
-      TH.stubProperty(this.tc, "moduleId", {get() {
+    test("auto subject", ()=>{
+      TH.stubProperty(test.tc, "moduleId", {get() {
         return "foo-bar-test";
       }});
       TH.stubProperty(ctx.modules, 'foo-bar', {value: v.subject = {
@@ -761,9 +760,9 @@ define(function (require, exports, module) {
       assert(api);
       assert.same(api.subject, v.subject.exports);
       assert.same(api.subjectName, 'fooBar');
-    },
+    });
 
-    "test serializeValue"() {
+    test("serializeValue", ()=>{
       const api = MainAPI._instance;
       assert.equals(api.serializeValue(undefined), ['U', 'undefined']);
       assert.equals(api.serializeValue(null), null);
@@ -777,9 +776,9 @@ define(function (require, exports, module) {
       assert.equals(api.serializeValue(["O", api, 'my api']),
                     ["Oi", 'my api', 'koru/test/api']);
       assert.equals(api.serializeValue(["O", MainAPI]), ["M", 'koru/test/api']);
-    },
+    });
 
-    "test resolveObject"() {
+    test("resolveObject", ()=>{
       assert.equals(MainAPI.resolveObject(ctx.modules['koru/util-base']), ['Oi', '{Module:koru/util-base}', 'Module']);
 
       assert.equals(API.resolveObject(stub(), 'my stub'), ['Oi', 'my stub', 'Function']);
@@ -824,9 +823,9 @@ define(function (require, exports, module) {
       assert.equals(API.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'),
                     ['Oi', 'ext s2()', 'koru/test/api']);
 
-    },
+    });
 
-      "test serialize"() {
+    test("serialize", ()=>{
 
       const myCtx = {modules: {}};
       const fooBar = {
@@ -1034,9 +1033,9 @@ define(function (require, exports, module) {
           }
         },
       });
-    },
+    });
 
-    "test #moduleName"() {
+    test("#moduleName", ()=>{
       class Foo {}
       class Bar {}
       class Qux {}
@@ -1049,6 +1048,6 @@ define(function (require, exports, module) {
       assert.same(api.moduleName, 'my/mod/foo');
       assert.same(subApi.moduleName, 'my/mod/foo::Bar');
       assert.same(sub2Api.moduleName, 'my/mod/foo::Bar.qux');
-    },
+    });
   });
 });

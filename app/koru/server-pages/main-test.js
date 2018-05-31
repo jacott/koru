@@ -73,9 +73,8 @@ isServer && define(function (require, exports, module) {
   const sut  = require('./main');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    let v = null;
+    let v = {};
     beforeEach(()=>{
-      v = {};
       v.req = {
         method: 'GET',
         headers: {},
@@ -96,7 +95,7 @@ isServer && define(function (require, exports, module) {
     });
 
     afterEach(()=>{
-      v = null;
+      v = {};
     });
 
     test("new", ()=>{

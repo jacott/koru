@@ -17,7 +17,6 @@ define(function (require, exports, module) {
   const {stub, spy, onEnd, stubProperty, intercept} = TH;
 
   const BaseController  = require('./base-controller');
-  let v = null;
 
   class Book {}
 
@@ -27,9 +26,9 @@ define(function (require, exports, module) {
     }}};
   };
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let v = {};
+    beforeEach(()=>{
       v.opts = {
         request: new HttpHelper.RequestStub({method: 'GET'}),
         response: {
@@ -41,17 +40,17 @@ define(function (require, exports, module) {
         pathParts: [],
       };
       stubProperty(BaseController, 'App', {get: genericApp});
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test defaultETag"() {
+    test("defaultETag", ()=>{
       assert.match(BaseController.defaultETag, /^h[0-9]+$/);
-    },
+    });
 
-    "test json body"() {
+    test("json body", ()=>{
       /**
        * The body of the request. If the content type is: `application/json` or
        * `application/x-www-form-urlencoded` then the body is converted to an object map otherwise
@@ -72,9 +71,9 @@ define(function (require, exports, module) {
 
       assert.equals(ans, {sample: 'json'});
       assert.same(ans, ctl.body);
-    },
+    });
 
-    "test form body"() {
+    test("form body", ()=>{
       api.protoProperty('body');
       const {request} = v.opts;
       request._setBody("a%20%2Bb=q%5Ba%5D&foo=bar");
@@ -90,9 +89,9 @@ define(function (require, exports, module) {
 
       assert.equals(ans, {'a +b': 'q[a]', foo: 'bar'});
       assert.same(ans, ctl.body);
-    },
+    });
 
-    "test other body"() {
+    test("other body", ()=>{
       api.protoProperty('body');
       const {request} = v.opts;
       request._setBody(v.exp = "a%20%2Bb=q%5Ba%5D&foo=bar");
@@ -108,9 +107,9 @@ define(function (require, exports, module) {
 
       assert.equals(ans, v.exp);
       assert.same(ans, ctl.body);
-    },
+    });
 
-    "test redirect"() {
+    test("redirect", ()=>{
       /**
        * Send a redirect response to the client.
 
@@ -136,9 +135,9 @@ define(function (require, exports, module) {
 
       assert.calledWith(opts.response.writeHead, 302, {Location: '/foo/1234'});
       assert.calledWithExactly(opts.response.end);
-    },
+    });
 
-    "test error"() {
+    test("error", ()=>{
       /**
        * Send an error response to the client;
        *
@@ -161,9 +160,9 @@ define(function (require, exports, module) {
       refute.called(response.writeHead);
       assert.calledOnceWith(response.end, 'Short and stout');
       assert.equals(response.statusCode, 418);
-    },
+    });
 
-    "test not modified"() {
+    test("not modified", ()=>{
       const {opts} = v;
       opts.view = {$render(ctl) {
         return Dom.h({div: ctl.params.id});
@@ -176,9 +175,9 @@ define(function (require, exports, module) {
       new MyController(opts);
 
       assert.same(opts.response.statusCode, 304);
-    },
+    });
 
-    "test No Content"() {
+    test("No Content", ()=>{
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -190,9 +189,9 @@ define(function (require, exports, module) {
 
       assert.same(response.statusCode, 204);
       assert.calledWithExactly(response.end);
-    },
+    });
 
-    "test html response"() {
+    test("html response", ()=>{
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -209,9 +208,9 @@ define(function (require, exports, module) {
       });
 
       assert.calledWithExactly(response.end, '<html><body>foo</body></html>');
-    },
+    });
 
-    "test json response"() {
+    test("json response", ()=>{
       const {response} = v.opts;
 
       class MyController extends BaseController {
@@ -227,9 +226,9 @@ define(function (require, exports, module) {
       });
       refute.called(response.write);
       assert.calledWithExactly(response.end, '{"html":{"body":"foo"}}');
-    },
+    });
 
-    "test unknown method"() {
+    test("unknown method", ()=>{
       const {opts} = v;
       opts.request.method = 'FOO';
 
@@ -244,9 +243,9 @@ define(function (require, exports, module) {
       refute.called(foo);
       assert.equals(opts.response.statusCode, 404);
       assert.calledWith(opts.response.end, undefined);
-    },
+    });
 
-    "test custom method"() {
+    test("custom method", ()=>{
       const {opts} = v;
       opts.request.method = 'FOO';
 
@@ -264,10 +263,10 @@ define(function (require, exports, module) {
       const controller = new MyController(opts);
 
       assert.calledWith(foo, controller);
-    },
+    });
 
-    "CRUD templates": {
-      setUp() {
+    group("CRUD templates", ()=>{
+      beforeEach(()=>{
         const {opts} = v;
         const tpl = opts.view = {$render: ctl => Dom.h({class: 'index', div: [ctl.method]})};
         tpl.Show = {$render: ctl => Dom.h({class: 'show', div: [ctl.params.id]})};
@@ -291,9 +290,9 @@ define(function (require, exports, module) {
 
           assert.calledWith(opts.response.end, `<body><div class="${action}">${body}</div></body>`);
         };
-      },
+      });
 
-      "test view"() {
+      test("view", ()=>{
         /**
          * Templete for index action. All other action templates are children of this template.
          *
@@ -303,8 +302,8 @@ define(function (require, exports, module) {
          * ```
          **/
         v.run('GET', '/foo', 'index', 'GET');
-      },
-      "test new"() {
+      });
+      test("new", ()=>{
         /**
          * Templete for new action.
          *
@@ -314,11 +313,11 @@ define(function (require, exports, module) {
          * ```
          **/
         v.run('GET', '/foo/new', 'new', 'new');
-      },
-      "test create"() {
+      });
+      test("create", ()=>{
         v.run('POST', '/foo/new', 'create', 'POST');
-      },
-      "test show"() {
+      });
+      test("show", ()=>{
         /**
          * Templete for show action.
          *
@@ -328,8 +327,8 @@ define(function (require, exports, module) {
          * ```
          **/
         v.run('GET', '/foo/1234', 'show', '1234');
-      },
-      "test edit"() {
+      });
+      test("edit", ()=>{
         /**
          * Templete for edit action.
          *
@@ -339,20 +338,20 @@ define(function (require, exports, module) {
          * ```
          **/
         v.run('GET', '/foo/1234/edit', 'edit', '1234');
-      },
-      "test update;patch"() {
+      });
+      test("update;patch", ()=>{
         v.run('PATCH', '/foo/1234', 'update', '1234');
-      },
-      "test update;put"() {
+      });
+      test("update;put", ()=>{
         v.run('PUT', '/foo/1234', 'update', '1234');
-      },
-      "test destroy"() {
+      });
+      test("destroy", ()=>{
         v.run('DELETE', '/foo/1234', 'destroy', '1234');
-      },
-    },
+      });
+    });
 
-    "CRUD actions": {
-      setUp() {
+    group("CRUD actions", ()=>{
+      beforeEach(()=>{
         const {opts} = v;
         spy(BaseController.prototype, 'error');
         v.run = (action, url, method='GET')=>{
@@ -368,9 +367,9 @@ define(function (require, exports, module) {
 
           assert.calledWith(opts.response.end, 'teapot');
         };
-      },
+      });
 
-      "test index"() {
+      test("index", ()=>{
         /**
          * Implement this action to control index requests:
          *
@@ -384,8 +383,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('index', '/foo');
-      },
-      "test new"() {
+      });
+      test("new", ()=>{
         /**
          * Implement this action to control new requests:
          *
@@ -399,8 +398,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('new', '/foo/new');
-      },
-      "test create"() {
+      });
+      test("create", ()=>{
         /**
          * Implement this action to process create requests.
          *
@@ -415,8 +414,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('create', '/foo', 'POST');
-      },
-      "test show"() {
+      });
+      test("show", ()=>{
         /**
          * Implement this action to control show requests:
          *
@@ -430,8 +429,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('show', '/foo/1234');
-      },
-      "test edit"() {
+      });
+      test("edit", ()=>{
         /**
          * Implement this action to control show requests:
          *
@@ -445,8 +444,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('edit', '/foo/1234/edit');
-      },
-      "test update"() {
+      });
+      test("update", ()=>{
         /**
          * Implement this action to process update requests.
          *
@@ -463,8 +462,8 @@ define(function (require, exports, module) {
         }
         //]
         v.run('update', '/foo/1234', 'PUT');
-      },
-      "test delete"() {
+      });
+      test("delete", ()=>{
         /**
          * Implement this action to process destroy requests.
          *
@@ -480,10 +479,10 @@ define(function (require, exports, module) {
         }
         //]
         v.run('destroy', '/foo/1234', 'DELETE');
-      },
-    },
+      });
+    });
 
-    "test aroundFilter"() {
+    test("aroundFilter", ()=>{
       /**
        * An aroundFiler runs "around" an action controller. It is called are the {##$parser} has
        * run. You can control which action is called by changing the the value of `this.action`.
@@ -517,9 +516,9 @@ define(function (require, exports, module) {
 
       assert.calledWith(opts.response.end, '<div>uid123</div>');
       assert.isTrue(testDone);
-    },
+    });
 
-    "test override $parser"() {
+    test("override $parser", ()=>{
       /**
        * The default request parser. Override this method for full control of the request.
        **/
@@ -545,9 +544,9 @@ define(function (require, exports, module) {
       new Books(opts);
 
       assert.calledWith(opts.response.end, 'You do not have delete access');
-    },
+    });
 
-    "test render"() {
+    test("render", ()=>{
       /**
        * Respond to the client with the rendered content wrapped in the specified layoyut.
        *
@@ -574,9 +573,9 @@ define(function (require, exports, module) {
       assert.calledWith(
         opts.response.end,
         '<html><head><title>My First App</title></head><body><div>Hello world</div></body></html>');
-    },
+    });
 
-    "test renderHTML"() {
+    test("renderHTML", ()=>{
       /**
        * Respond to the client with the rendered HTML content.
        *
@@ -598,9 +597,9 @@ define(function (require, exports, module) {
       assert.calledWith(
         opts.response.end,
         '<div>Hello world</div>');
-    },
+    });
 
-    "test $parser, render"() {
+    test("$parser, render", ()=>{
       const {opts} = v;
       opts.pathParts = ['foo', '123'];
 
@@ -630,9 +629,9 @@ define(function (require, exports, module) {
       });
       assert.calledWith(opts.response.write, '<!DOCTYPE html>\n');
       assert.calledWith(opts.response.end, '<main><div>foo€</div></main>');
-    },
+    });
 
-    "test Index template"() {
+    test("Index template", ()=>{
       const {opts} = v;
       opts.view = {$render(ctl) {
         return Dom.h({div: 'index'});
@@ -644,9 +643,9 @@ define(function (require, exports, module) {
       new Root(opts);
 
       assert.calledWith(opts.response.end, '<body><div>index</div></body>');
-    },
+    });
 
-    "test DOCTYPE supplied"() {
+    test("DOCTYPE supplied", ()=>{
       const {opts} = v;
       opts.pathParts = [];
 
@@ -672,6 +671,6 @@ define(function (require, exports, module) {
       });
       refute.called(opts.response.write);
       assert.calledWith(opts.response.end, '<!CUSTOM><body>x</body>');
-    },
+    });
   });
 });

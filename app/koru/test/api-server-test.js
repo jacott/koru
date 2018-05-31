@@ -1,28 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 
-define(function (require, exports, module) {
-  var test, v;
+define((require, exports, module)=>{
   const TH   = require('./main');
   const API  = require('./api');
 
+  const {stub, spy, onEnd} = TH;
+
   const ctx = module.ctx;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let v = {};
+    beforeEach(()=>{
+      test = TH.test;
       v.api = class extends API {};
       v.api.isRecord = true;
       v.api.reset();
-      test.stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
-    },
+      stub(ctx, 'exportsModule').withArgs(API).returns([ctx.modules['koru/test/api']]);
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test _record"() {
+    test("_record", ()=>{
       const fooBar = {
         fnord(a, b) {return API}
       };
@@ -36,7 +37,7 @@ define(function (require, exports, module) {
         intro: 'Fnord ignores args; returns API',
         subject: ['O', 'fooBar', fooBar],
         calls: [[
-          [2, ['F', test.stub, 'stub'], ['O', Special, '{special}']], ['M', API]
+          [2, ['F', stub, 'stub'], ['O', Special, '{special}']], ['M', API]
         ]]
       };
 
@@ -44,8 +45,8 @@ define(function (require, exports, module) {
 
       v.api.OUT_DIR = 'out_dir';
 
-      test.stub(fs, 'readFileSync').throws(new Error("not found"));
-      test.stub(fs, 'writeFileSync');
+      stub(fs, 'readFileSync').throws(new Error("not found"));
+      stub(fs, 'writeFileSync');
 
       v.api._record();
 
@@ -75,6 +76,6 @@ define(function (require, exports, module) {
         });
         return true;
       }));
-    },
+    });
   });
 });
