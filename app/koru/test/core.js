@@ -14,6 +14,10 @@ define(function(require, exports, module) {
     extractError,
     util,
 
+    __elidePoint: undefined,
+    lastText: undefined,
+    test: undefined,
+
     abort(ex) {throw ex}
   };
 

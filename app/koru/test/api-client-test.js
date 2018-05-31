@@ -71,7 +71,7 @@ define(function (require, exports, module) {
             },
             methods: {
               fnord: {
-                test: 'koru/test/api-client test _record',
+                test: 'koru/test/api-client test _record.',
                 sigPrefix: undefined,
                 sig: 'fnord(a, b)',
                 intro: 'Fnord ignores args; returns API',
@@ -82,7 +82,7 @@ define(function (require, exports, module) {
             },
             protoMethods: {
               zord: {
-                test: 'koru/test/api-client test _record',
+                test: 'koru/test/api-client test _record.',
                 sigPrefix: undefined,
                 sig: 'zord(a)',
                 intro: 'introducing zord',
@@ -93,7 +93,7 @@ define(function (require, exports, module) {
             },
             customMethods: {
               sentai: {
-                test: 'koru/test/api-client test _record',
+                test: 'koru/test/api-client test _record.',
                 sigPrefix: undefined,
                 sig: 'sentai(a)',
                 intro: 'introducing sentai',

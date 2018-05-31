@@ -1,7 +1,35 @@
 define(function(require, exports, module) {
-  const koru = require('koru');
-  const Core = require('./core');
+  const koru            = require('koru');
+  const TestCase        = require('koru/test/test-case');
+  const Core            = require('./core');
+
   const asyncNext = func => {koru.runFiber(func)};
+
+  let currentTc;
+
+  const builder = {
+    beforeEach: func => currentTc.add('setUp', func),
+    afterEach: func => currentTc.add('tearDown', func),
+    before: func => currentTc.add('setUpOnce', func),
+    after: func => currentTc.add('tearDownOnce', func),
+
+    test: (name, func)=> currentTc.add("test "+name, func),
+
+    group: (name, func)=>{
+      const otc = currentTc;
+      const ntc = new TestCase(name, otc);
+      try {
+        currentTc = ntc;
+        func(ntc);
+      } finally {
+        currentTc = otc;
+        return ntc;
+      }
+    }
+  };
+
+  builder.it = builder.test;
+  builder.describe = builder.group;
 
   Core.start = function (testCases, runNextWrapper) {
     let tests = Core._tests = [],
@@ -12,8 +40,11 @@ define(function(require, exports, module) {
     for(let i = 0; i < testCases.length; ++i) {
       const tc = testCases[i];
       if (! tc) continue;
+
+      currentTc = tc;
+
       if (typeof tc.option === 'function')
-        tc.option(tc);
+        tc.option(builder);
       else
         tc.add(tc.option);
     }

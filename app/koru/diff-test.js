@@ -3,11 +3,11 @@ define(function (require, exports, module) {
   const util   = require('koru/util');
   const TH     = require('./test');
 
-  const sut  = require('./diff');
+  const Diff  = require('./diff');
 
-  TH.testCase(module, {
-    "test diff"() {
-      const diff = new sut();
+  TH.testCase(module, ({test, group})=>{
+    test("diff", ()=>{
+      const diff = new Diff();
 
       const ans = [[0, 'te'], [1, 'a'], [0, 's'], [-1, 't'], [0, 'ing']];
 
@@ -19,6 +19,6 @@ define(function (require, exports, module) {
 
       assert.equals(diff.diff_text1(ans), "testing");
       assert.equals(diff.diff_text2(ans), "teasing");
-    },
+    });
   });
 });

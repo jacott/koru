@@ -71,10 +71,10 @@ isServer && define(function (require, exports, module) {
   const {stub, spy, onEnd, util, intercept} = TH;
 
   const sut  = require('./main');
-  let v = null;
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let v = null;
+    beforeEach(()=>{
       v = {};
       v.req = {
         method: 'GET',
@@ -93,13 +93,13 @@ isServer && define(function (require, exports, module) {
       };
       api.module({
         initInstExample: 'const serverPages = new ServerPages(WebServer);'});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       v = null;
-    },
+    });
 
-    "test new"() {
+    test("new", ()=>{
       /**
        * Register a page server with a webServer.
        *
@@ -124,10 +124,10 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(WebServer.registerHandler, module.get('./main'), 'DEFAULT', sp._handleRequest);
 
       assert.same(sp._pageDirPath, path.resolve(module.toUrl('.'), '../../server-pages'));
-    },
+    });
 
-    "with instance": {
-      setUp() {
+    group("with instance", ()=>{
+      beforeEach(()=>{
         v.webServer = {registerHandler() {}};
         v.sp = new sut(v.webServer, 'koru/server-pages/test-pages');
         v.tpl = DomTemplate.newTemplate({
@@ -140,41 +140,41 @@ isServer && define(function (require, exports, module) {
             children:[],
           }],
         });
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         delete Dom.Foo;
         delete Dom.TestPage1;
-      },
+      });
 
-      "test less helper"() {
+      test("less helper", ()=>{
         spy(Compilers, 'read');
         assert.match(Dom._helpers.less.call({controller: {App: v.sp}}, "layouts/default"),
                      /background-color:\s*#112233;[\s\S]*sourceMappingURL/);
 
         assert.calledWith(Compilers.read, 'less', TH.match(/layouts\/default\.less/),
                           TH.match(/layouts\/\.build\/default\.less\.css/));
-      },
+      });
 
-      "test css helper"() {
+      test("css helper", ()=>{
         stub(fst, 'readFile').returns({toString() {return "css-output"}});
         assert.equals(Dom._helpers.css.call({controller: {App: v.sp}}, "my-css-page"),
                       'css-output');
 
         assert.calledWith(fst.readFile, v.sp._pageDirPath+'/my-css-page.css');
-      },
+      });
 
-      "test page helper"() {
+      test("page helper", ()=>{
         assert.equals(Dom._helpers.page.call({controller: {pathParts: []}}), 'root');
         assert.equals(Dom._helpers.page.call({controller: {pathParts: ['show']}}), 'show');
-      },
+      });
 
-      "test controllerId helper"() {
+      test("controllerId helper", ()=>{
         assert.equals(Dom._helpers.controllerId.call({
           controller: {constructor: {modId: 'foo'}}}), 'foo');
-      },
+      });
 
-      "test stop"() {
+      test("stop", ()=>{
         /**
          * Deregister this page server from {#koru/web-server}
          **/
@@ -183,9 +183,9 @@ isServer && define(function (require, exports, module) {
         v.webServer.deregisterHandler = stub();
         sp.stop();
         assert.calledWith(v.webServer.deregisterHandler, 'DEFAULT');
-      },
+      });
 
-      "test auto load html"() {
+      test("auto load html", ()=>{
         removeTestBuild();
 
         const {sp} = v;
@@ -201,9 +201,9 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
                           '<div> Test page 1 message-1 </div> </body></html>');
-      },
+      });
 
-      "test auto load markdown"() {
+      test("auto load markdown", ()=>{
         removeTestBuild();
         const {sp} = v;
 
@@ -212,9 +212,9 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.res.write, '<!DOCTYPE html>\n');
         assert.calledWith(v.res.end, '<html><body id="defLayout"> '+
                           '<h2 id="test-foo-">test Markdown</h2> </body></html>');
-      },
+      });
 
-      "test $parser"() {
+      test("$parser", ()=>{
         const {sp, tpl} = v;
         stub(tpl, '$render').returns(Dom.h({}));
 
@@ -228,9 +228,9 @@ isServer && define(function (require, exports, module) {
           assert.equals(ctl.params, {a: 'x', pp: '1:2 1:3'});
           return true;
         }));
-      },
+      });
 
-      "test trailing slash"() {
+      test("trailing slash", ()=>{
         const {sp, tpl} = v;
 
         stub(tpl, '$render').returns(Dom.h({}));
@@ -250,9 +250,9 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(Dom.htmlToJson(Dom.textToHtml(
           v.res.end.firstCall.args[0])).html.id, 'defLayout');
-      },
+      });
 
-      "test exception"() {
+      test("exception", ()=>{
         const {sp, tpl} = v;
 
 
@@ -268,12 +268,11 @@ isServer && define(function (require, exports, module) {
         sp._handleRequest(v.req, v.res, '/foo/1234', error);
 
         assert.calledWith(error, 400, {name: [['invalid']]});
-      },
-    },
+      });
+    });
+
+    const removeTestBuild = ()=>{
+      fst.rm_r(path.join(v.sp._pageDirPath, '.build'));
+    };
   });
-
-  const removeTestBuild = ()=>{
-    fst.rm_r(path.join(v.sp._pageDirPath, '.build'));
-  };
-
 });

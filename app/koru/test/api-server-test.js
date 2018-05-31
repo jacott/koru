@@ -61,7 +61,7 @@ define(function (require, exports, module) {
             },
             methods: {
               fnord: {
-                test: 'koru/test/api-server test _record',
+                test: 'koru/test/api-server test _record.',
                 sig: 'fnord(a, b)',
                 intro: 'Fnord ignores args; returns API',
                 calls: [[

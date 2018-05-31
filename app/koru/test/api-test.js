@@ -964,7 +964,7 @@ define(function (require, exports, module) {
           abstract: 'foo bar comment',
         },
         newInstance: {
-          test: 'koru/test/api test serialize',
+          test: 'koru/test/api test serialize.',
           sig: 'new fooBar(foo)',
           intro: 'intro for foobar newInstance',
           calls: [[
@@ -993,7 +993,7 @@ define(function (require, exports, module) {
         },
         methods: {
           fnord: {
-            test: 'koru/test/api test serialize',
+            test: 'koru/test/api test serialize.',
             sigPrefix: undefined,
             sig: 'fnord(a, b)',
             intro: 'Fnord ignores args; returns MainAPI',
@@ -1013,7 +1013,7 @@ define(function (require, exports, module) {
         },
         protoMethods: {
           zord: {
-            test: 'koru/test/api test serialize',
+            test: 'koru/test/api test serialize.',
             sigPrefix: undefined,
             sig: 'zord(a)',
             intro: 'introducing zord',
@@ -1024,7 +1024,7 @@ define(function (require, exports, module) {
         },
         customMethods: {
           sentai: {
-            test: 'koru/test/api test serialize',
+            test: 'koru/test/api test serialize.',
             sigPrefix: 'Ranger#',
             sig: 'sentai(a)',
             intro: 'introducing sentai',

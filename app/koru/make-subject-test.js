@@ -2,22 +2,21 @@ define(function (require, exports, module) {
   /**
    * Make a subject that can be observered.
    **/
-  const api    = require('koru/test/api');
-  const Core = require('./test');
+  const api             = require('koru/test/api');
+  const TH              = require('./test');
+
+  const {stub, spy, onEnd} = TH;
 
   const makeSubject = require('./make-subject');
-  var v;
 
-  Core.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
+    let v = {};
+
+    afterEach(()=>{
       v = {};
-    },
+    }),
 
-    tearDown() {
-      v = null;
-    },
-
-    "test makeSubject"() {
+    test("makeSubject", ()=>{
       /**
        * Make an object observable by adding observe and notify
        * methods to it.
@@ -58,9 +57,9 @@ created by calling {#koru/make-subject}.
 `});
 
       }
-    },
+    });
 
-    "test onChange"() {
+    test("onChange", ()=>{
       /**
        * OnChange starts observing a subject
        *
@@ -70,15 +69,15 @@ created by calling {#koru/make-subject}.
 
       const iapi = api.innerSubject(subject, 'subject', );
       iapi.method("onChange");
-      subject.onChange(v.stub1 = this.stub("{observer 1}"));
+      subject.onChange(v.stub1 = stub("{observer 1}"));
       subject.notify(123, 'foo');
 
       assert.calledWith(v.stub1, 123, 'foo');
 
       //[// see notify for more examples//]
-    },
+    });
 
-    "test notify"() {
+    test("notify", ()=>{
       /**
        * notify all observers
        *
@@ -91,9 +90,9 @@ created by calling {#koru/make-subject}.
       iapi.method("notify");
 
       //[
-      subject.onChange(v.stub1 = this.stub("{observer 1}"));
-      const handle = subject.onChange(v.stub2 = this.stub("{observer 2}"));
-      const h2 = subject.onChange(v.stub3 = this.stub("{observer 3}"));
+      subject.onChange(v.stub1 = stub("{observer 1}"));
+      const handle = subject.onChange(v.stub2 = stub("{observer 2}"));
+      const h2 = subject.onChange(v.stub3 = stub("{observer 3}"));
       handle.stop();
 
       subject.notify(123, 'foo');
@@ -104,19 +103,19 @@ created by calling {#koru/make-subject}.
 
       assert.same(v.stub3.firstCall.thisValue, h2);
       //]
-    },
+    });
 
-    "test allStopped"() {
+    test("allStopped", ()=>{
       const subject = makeSubject(
-        {eg: 1}, 'onChange', 'notify', {allStopped: v.allStopped = this.stub()});
+        {eg: 1}, 'onChange', 'notify', {allStopped: v.allStopped = stub()});
 
-      const oc1 = subject.onChange(this.stub());
-      const oc2 = subject.onChange(this.stub());
+      const oc1 = subject.onChange(stub());
+      const oc2 = subject.onChange(stub());
       oc1.stop();
 
       refute.called(v.allStopped);
       oc2.stop();
       assert.calledWith(v.allStopped, subject);
-    },
+    });
   });
 });

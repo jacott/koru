@@ -160,6 +160,7 @@ define(['./core', './stubber'], function (Core, stubber) {
           skipped || (this[name] = func);
           break;
         default:
+          name = name+".";
           if (! Core.runArg || this.fullName(name).indexOf(Core.runArg) !== -1) {
 
             ++Core.testCount;
@@ -231,4 +232,6 @@ define(['./core', './stubber'], function (Core, stubber) {
 
     get moduleId() {return this.tc.moduleId;}
   };
+
+  return TestCase;
 });
