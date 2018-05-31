@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
 
   module.exports = mig =>{
     mig.createTable({

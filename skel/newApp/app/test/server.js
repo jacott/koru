@@ -1,6 +1,6 @@
 const path = require('path');
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const fileWatch       = require('koru/file-watch');
   const Model           = require('koru/model');

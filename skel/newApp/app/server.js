@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const IdleCheck       = require('koru/idle-check').singleton;
   const session         = require('koru/session');

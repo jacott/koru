@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Model   = require('koru/model');
   const Factory = require('koru/model/test-factory');
 

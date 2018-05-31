@@ -1,29 +1,28 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH              = require('koru/model/test-db-helper');
   const Factory         = require('test/factory');
 
   const {stub, spy, onEnd, util} = TH;
 
   const $$reqModel$$;
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       TH.startTransaction();
-      v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
+    afterEach(()=>{
       TH.rollbackTransaction();
-    },
+      v = {};
+    });
 
-    "test persistence"() {
+    test("persistence", ()=>{
       const doc = Factory.create$$modelName$$();
 
       const loaded = doc.$reload(true); // true avoids cache
       assert.same($$modelName$$.query.count(), 1);
       $$persistenceTest$$
-    },
+    });
   });
 });
