@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const bootstrap       = require('koru/migrate/bootstrap');
 
   const restart = (mod, error)=>{
     if (error) return;
@@ -8,6 +9,8 @@ define((require, exports, module)=>{
 
   koru.onunload(module, restart);
 
+
   return ()=>{
+    bootstrap();
   };
 });
