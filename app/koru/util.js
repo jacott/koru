@@ -521,7 +521,8 @@ define((require, exports, module)=>{
 
     decodeURIComponent(value) {
       if (! value) return null;
-      return decodeURIComponent(value.replace(/\+/g, " "));
+      return decodeURIComponent(value.replace(
+          /(\+|%(?![a-f0-9]{2}))/ig, m=> m === '+' ? ' ' : '%25'));
     },
 
     toMap (keyName, valueName/*, lists */) {

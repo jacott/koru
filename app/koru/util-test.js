@@ -404,6 +404,9 @@ define((require, exports, module)=>{
       assert.same(util.decodeURIComponent(''), null);
       assert.same(util.decodeURIComponent(
         '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
+      assert.same(util.decodeURIComponent(
+        '<%= foo._id %>'), "<%= foo._id %>");
+
     },
 
     "test searchStrToMap"() {
