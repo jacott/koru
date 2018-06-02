@@ -147,7 +147,7 @@ define(['./core', './stubber'], function (Core, stubber) {
     }
 
     add(name, func, skipped) {
-      if (typeof name === 'string' && name.match(/^\/\//)) {
+      if (typeof name === 'string' && name[0] === '/' && name[1] === '/') {
         skipped = true;
         name = name.slice(2);
       }

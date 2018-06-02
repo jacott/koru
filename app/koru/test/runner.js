@@ -5,7 +5,21 @@ define(function(require, exports, module) {
 
   const asyncNext = func => {koru.runFiber(func)};
 
-  let currentTc;
+  let currentTc, skipped = false;
+
+  const skipAdd = (name, func)=>{
+    name = "test " + name.slice(2);
+    if (skipped)
+      return currentTc.add("test "+name.slice(2), func, true);
+    else {
+      try {
+        return currentTc.add("test "+name.slice(2), func, skipped = true);
+      } finally {
+        skipped = false;
+      }
+    }
+  };
+
 
   const builder = {
     beforeEach: func => currentTc.add('setUp', func),
@@ -13,15 +27,22 @@ define(function(require, exports, module) {
     before: func => currentTc.add('setUpOnce', func),
     after: func => currentTc.add('tearDownOnce', func),
 
-    test: (name, func)=> currentTc.add("test "+name, func),
+    test: (name, func)=> name[0] === '/' && name[1] === '/'
+      ? skipAdd(name, func) : currentTc.add("test "+name, func, skipped),
 
     group: (name, func)=>{
       const otc = currentTc;
+      const os = skipped;
+      if (name[0] === '/' && name[1] === '/') {
+        skipped = true;
+        name = name.slice(2);
+      }
       const ntc = new TestCase(name, otc);
       try {
         currentTc = ntc;
         func(ntc);
       } finally {
+        skipped = os;
         currentTc = otc;
         return ntc;
       }
