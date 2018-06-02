@@ -37,7 +37,7 @@ define(['./core', './stubber'], function (Core, stubber) {
         this._setUpOnce = undefined;
         if (this.tearDownOnce)
           this.tearDownOnce.call(Core.test);
-        this.runOnEnds(Core.test, onSetUpOnceEnd);
+        this.runOnEnds(null, onSetUpOnceEnd);
         onSetUpOnceEnd = undefined;
         this.tc && this.tc.runTearDown();
       }
@@ -53,13 +53,13 @@ define(['./core', './stubber'], function (Core, stubber) {
         if (this.tc && ! this.tc.runSetUp(test))
           return false;
         test._currentTestCase = this;
-        if (this.setUpOnce) {
+        if (this.setUpOnce !== undefined) {
           this._setUpOnce = true;
           const testEnd = test.__testEnd;
           onSetUpOnceEnd = test.__testEnd = [];
           this.setUpOnce.call(test);
           test.__testEnd = testEnd;
-        } else if (this.tearDownOnce) {
+        } else if (this.tearDownOnce !== undefined) {
           this._setUpOnce = true;
         }
       }
@@ -70,13 +70,12 @@ define(['./core', './stubber'], function (Core, stubber) {
 
     runTest(test, func, around, done) {
       if (! around) {
-        func.call(test, done);
-        return;
+        return func.call(test, done);
       }
 
       for(let tc = this; tc; tc = tc.tc) {
         if (tc.tc)
-          tc.tc.runTest(test, function () {
+          tc.tc.runTest(test, ()=>{
             tc.runSetUpArround(test, func);
           }, true);
         else
@@ -209,7 +208,7 @@ define(['./core', './stubber'], function (Core, stubber) {
     }
 
     onEnd(func) {
-      (this.__testEnd|| (this.__testEnd = [])).push(func);
+      (this.__testEnd || (this.__testEnd = [])).push(func);
     }
 
     spy(...args) {

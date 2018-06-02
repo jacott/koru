@@ -8,18 +8,18 @@ isClient && define(function (require, exports, module) {
   const sut  = require('./eyedropper');
   let v = null;
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       sut.options = null;
       TH.domTearDown();
       v = null;
-    },
+    });
 
-    "test pick one option"() {
+    test("pick one option", ()=>{
       const div = Dom.h({style: "background-color:rgba(255, 0, 255, 0.5);width:300px;height:200px"});
 
       document.body.appendChild(div);
@@ -34,9 +34,9 @@ isClient && define(function (require, exports, module) {
       refute.dom('#SelectMenu');
 
       assert.calledWith(callback, null, 'rgba(255, 0, 255, 0.5)');
-    },
+    });
 
-    "test pick no duplicates"() {
+    test("pick no duplicates", ()=>{
       const div = Dom.h({style: "background-color:rgba(255, 0, 255, 0.5);width:300px;height:200px"});
 
       document.body.appendChild(div);
@@ -62,9 +62,9 @@ isClient && define(function (require, exports, module) {
       refute.dom('#SelectMenu');
 
       assert.calledWith(callback, null, 'rgb(10, 20, 30)');
-    },
+    });
 
-    "test image overrides"() {
+    test("image overrides", ()=>{
       const callback = stub();
       stub(sut, 'getPointColors');
       sut.pick(callback);
@@ -82,9 +82,9 @@ isClient && define(function (require, exports, module) {
       refute.dom('#SelectMenu');
 
       assert.calledWith(callback, null, 'rgb(123, 213, 132)');
-    },
+    });
 
-    "test pick multi options"() {
+    test("pick multi options", ()=>{
       const div = Dom.h({style: "background-color:#ffee33;", div: {style: 'border: 1px solid #556644;color:rgba(255, 0, 0, .8);', span: ["foo bar"]}});
       document.body.appendChild(div);
       document.body.appendChild(Dom.h({
@@ -146,9 +146,9 @@ isClient && define(function (require, exports, module) {
 
       assert.calledOnceWith(callback, null, 'rgb(255, 238, 51)');
       refute.called(divCalled);
-    },
+    });
 
-    "test getPointColors async html"() {
+    test("getPointColors async html", ()=>{
       const div = Dom.h({style: "margin:20px;background-color:rgba(1, 2, 1, 0.9);", div: {
         style: "width:20px;height:30px;background-image:url('/foo.png')"
       }});
@@ -170,9 +170,9 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(callback, null, {
         textColor: null,
         backgroundColor: null, imageColor: 'imageColor'});
-    },
+    });
 
-    "test getPointColors svg"() {
+    test("getPointColors svg", ()=>{
       const div = Dom.h({style: "margin:20px;background-color:rgba(1, 2, 1, 0.9);", svg: {
         rect: [], x: 5, width: 100, y: 5, height: 100,
         fill: 'rgba(51, 102, 153, 0.5)', style: 'stroke:#f4a3c2;stroke-width:5;'
@@ -188,9 +188,9 @@ isClient && define(function (require, exports, module) {
       assert.equals(sut.getPointColors(bbox.left + 1, bbox.top + 1), {
         textColor: {r: 244, g: 163, b: 194, a: 1},
         backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: undefined});
-    },
+    });
 
-    "test getPointColors async svg"() {
+    test("getPointColors async svg", ()=>{
       const div = Dom.h({style: "margin:20px;background-color:rgba(1, 2, 1, 0.9);", svg: {
         rect: [], x: 5, width: 100, y: 5, height: 100,
         fill: 'rgba(51, 102, 153, 0.5)', style: 'stroke:#f4a3c2;stroke-width:5;'
@@ -213,9 +213,9 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(callback, null, {
         textColor: {r: 244, g: 163, b: 194, a: 1},
         backgroundColor: {r: 51, g: 102, b: 153, a: 0.5}, imageColor: 'imageColor'});
-    },
+    });
 
-    "test svg getColorFromImage"(done) {
+    test("svg getColorFromImage", (done)=>{
       const div = Dom.h({
         viewBox: "0 0 300 150", width: 300, height: 150,
         style: "margin:20px;background-color:rgba(1, 2, 1, 0.9);",
@@ -238,9 +238,9 @@ isClient && define(function (require, exports, module) {
           done(ex);
         }
       });
-    },
+    });
 
-    "test transformed svg getColorFromImage"(done) {
+    test("transformed svg getColorFromImage", (done)=>{
       const div = Dom.h({
         viewBox: "0 0 300 150", width: 300, height: 150,
         style: "position:absolute;left:50px;top:400px;background-color:rgb(160, 160, 160);"
@@ -301,9 +301,9 @@ isClient && define(function (require, exports, module) {
           done(ex);
         }
       });
-    },
+    });
 
-    "test png getColorFromImage"(done) {
+    test("png getColorFromImage", (done)=>{
       const div = Dom.h({
         style: `border: 1px solid black;margin:150px;background: url(/koru/ui/test-box.png) no-repeat 0 0/100%;width:200px;height:200px;`
           + 'transform-origin: 50%  100%;'
@@ -328,6 +328,6 @@ isClient && define(function (require, exports, module) {
           done(ex);
         }
       });
-    },
+    });
   });
 });

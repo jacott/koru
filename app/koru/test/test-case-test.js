@@ -1,82 +1,76 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH   = require('./main');
 
-  const TestCase = require('./test-case');
-  var v;
+  const {stub, spy, onEnd, util} = TH;
 
-  TH.testCase(module, {
-    setUp() {
+  const sut  = require('./test-case');
+
+  let v = {};
+
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+    });
+
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "testCase with body": {testCase(tc) {
-      var xv;
-      tc.add({
-        setUp() {
-          xv = "setup";
-        },
-
-        "test "() {
-          assert.same(xv, 'setup');
-        },
+    test("async", async ()=>{
+      let later = 4;
+      const p = new Promise((resolve)=>{
+        setTimeout(()=>{resolve(later)}, 0);
       });
-    }},
+      later = 5;
 
-    "test setupOnce": {
-      setUp() {
-        v.count = 0;
-      },
+      assert.equals(await p, 5);
+    });
 
-      tearDown() {
-        assert.same(v.state, 'success onEnd');
-        assert.same(v.count, 1);
-        assert.same(v.eachCount, 2);
-      },
+    const Foo = {
+      f1() {},
+      f2() {},
+    };
 
-      "Inner tc": {
-        setUpOnce() {
-          this.onEnd(() => {
-            v.state += ' onEnd';
-          });
-          v.state = 'setup';
-          ++v.count;
-          v.eachCount = 0;
-          v.tdState = null;
-        },
+    group("before,after,once,onEnd", ()=>{
+      const {f1, f2} = Foo;
+      before(()=>{
+        stub(Foo, 'f1');
+        onEnd(()=>{
+          assert.same(Foo.f1, f1);
+          refute.same(Foo.f2, f2);
+          assert.equals(v.order, [
+            'before', 'beforeEach',
+            'one', 'onEnd-beforeEach', 'onEnd-1',
+            'afterEach', 'beforeEach',
+            'two', 'onEnd-beforeEach',
+            'afterEach', 'after']);
+        });
+        stub(Foo, 'f2');
+        v.order = ['before'];
+      });
 
-        tearDownOnce() {
-          v.tdState = 'done';
-          assert.same(v.state, 'setup');
-          assert.same(v.count, 1);
+      after(()=>{
+        v.order.push('after');
+      });
 
+      beforeEach(()=>{
+        onEnd(()=>{v.order.push('onEnd-beforeEach')});
+        v.order.push('beforeEach');
+      });
 
-          v.state = 'success';
-        },
+      afterEach(()=>{
+        v.order.push('afterEach');
+      });
 
-        setUp() {
-          v.eachSetup = true;
-          v.eachCount += 2;
-          this.onEnd(() => v.eachCount--);
-        },
+      test("one", ()=>{
+        onEnd(()=>{v.order.push('onEnd-1')});
+        v.order.push("one");
+        assert.equals(v.order.length, 3);
+      });
 
-        "test one"() {
-          assert.same(v.eachSetup, true);
-          v.eachSetup = false;
-          assert.same(v.state, 'setup');
-          assert.same(v.tdState, null);
-        },
-
-        "test two"() {
-          assert.same(v.eachSetup, true);
-          v.eachSetup = false;
-          assert.same(v.state, 'setup');
-        },
-
-      },
-    },
+      test("two", ()=>{
+        v.order.push("two");
+        assert.equals(v.order.length, 8);
+      });
+    });
   });
 });

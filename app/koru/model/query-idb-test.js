@@ -23,31 +23,31 @@ isClient && define(function (require, exports, module) {
   let v = null;
 
   if (!QueryIDB.canIUse()) {
-    TH.testCase(module, {
-      "test not supported"() {
+    TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+      test("not supported", ()=>{
         koru.info("Browser not supported");
         refute(QueryIDB.canIUse());
-      },
+      });
     });
     return;
   }
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v = {};
       v.idb = new mockIndexedDB(1);
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'text', age: 'number', gender: 'text'});
       api.module();
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
       MockPromise._stop();
       v = null;
-    },
+    });
 
-    "test new"(done) {
+    test("new", (done)=>{
       /**
        * Open a indexedDB database
        *
@@ -62,22 +62,22 @@ isClient && define(function (require, exports, module) {
       v.error = ex => done(ex);
 
       const new_QueryIDB = api.new(QueryIDB);
-      api.example(() => {
-        v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
-          assert.same(oldVersion, 1);
-          db.createObjectStore("TestModel");
-        }});
+      //[
+      v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
+        assert.same(oldVersion, 1);
+        db.createObjectStore("TestModel");
+      }});
 
-        v.db.whenReady(() => {
-          done();
-        });
+      v.db.whenReady(() => {
+        done();
       });
+      //]
       v.idb.yield(0);
 
       assert.same(v.db.name, 'foo');
-    },
+    });
 
-    "test promisify"() {
+    test("promisify", ()=>{
       /**
        * perform a database action returning a promise
        *
@@ -101,10 +101,10 @@ isClient && define(function (require, exports, module) {
         flush();
         assert.equals(id, "id1");
       });
-    },
+    });
 
-    "queueChange": {
-      setUp() {
+    group("queueChange", ()=>{
+      beforeEach(()=>{
         /**
          * Queue a model change to update indexedDB when the current
          * {#trans-queue} successfully completes. Changes to model
@@ -119,9 +119,9 @@ isClient && define(function (require, exports, module) {
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
           db.createObjectStore("TestModel");
         }});
-      },
+      });
 
-      "test simulated add, update"() {
+      test("simulated add, update", ()=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
@@ -157,9 +157,9 @@ isClient && define(function (require, exports, module) {
         });
 
         flush();
-      },
+      });
 
-      "test simulated remove"() {
+      test("simulated remove", ()=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
@@ -186,9 +186,9 @@ isClient && define(function (require, exports, module) {
         });
 
         flush();
-      },
+      });
 
-      "test non simulated"() {
+      test("non simulated", ()=>{
         api.example(() => {
           flush(); {
             v.foo = v.idb._dbs.foo;
@@ -221,11 +221,11 @@ isClient && define(function (require, exports, module) {
         });
 
         flush();
-      },
-    },
+      });
+    });
 
-    "loadDoc": {
-      setUp() {
+    group("loadDoc", ()=>{
+      beforeEach(()=>{
         /**
          * Insert a record into a model but ignore #queueChange for same record and do nothing if
          * record already in model unless model[stopGap$] symbol is true;
@@ -242,9 +242,9 @@ isClient && define(function (require, exports, module) {
         v.simDocs = _=> Model._getProp(v.TestModel.dbId, 'TestModel', 'simDocs');
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
-      },
+      });
 
-      "test simulated insert"() {
+      test("simulated insert", ()=>{
         v.db.loadDoc('TestModel', v.rec = {
           _id: 'foo123', name: 'foo', age: 5, gender: 'm', $sim: 'new'});
 
@@ -258,9 +258,9 @@ isClient && define(function (require, exports, module) {
         assert(v.called);
 
         assert.equals(v.simDocs(), {foo123: 'new'});
-      },
+      });
 
-      "test non simulated insert"() {
+      test("non simulated insert", ()=>{
         v.TestModel.onChange(v.oc = stub());
         assert.equals(v.simDocs(), undefined);
         v.db.loadDoc('TestModel', v.rec = {
@@ -277,9 +277,9 @@ isClient && define(function (require, exports, module) {
         assert.equals(v.simDocs(), undefined);
 
         assert.calledWith(v.oc, foo123, null, true);
-      },
+      });
 
-      "test simulated update"() {
+      test("simulated update", ()=>{
         v.db.loadDoc('TestModel', {
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
         flush();
@@ -289,9 +289,9 @@ isClient && define(function (require, exports, module) {
 
         assert.equals(v.simDocs(), {
           foo123: {name: 'foo'}});
-      },
+      });
 
-      "test simulated remove"() {
+      test("simulated remove", ()=>{
         v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
           _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
         flush();
@@ -300,17 +300,17 @@ isClient && define(function (require, exports, module) {
 
         assert.equals(v.simDocs(), {
           foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
-      },
+      });
 
-      "with stopGap$": {
-        setUp() {
+      group("with stopGap$", ()=>{
+        beforeEach(()=>{
           Query.insertFromServer(v.TestModel, 'foo123', {
             _id: 'foo123', name: 'stopGap', age: 5, gender: 'm'});
           v.foo123 = v.TestModel.docs.foo123;
           v.foo123[stopGap$] = true;
-        },
+        });
 
-        "test simulated update"() {
+        test("simulated update", ()=>{
           v.db.loadDoc('TestModel', {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f', $sim: {name: 'foo'}});
           flush();
@@ -320,9 +320,9 @@ isClient && define(function (require, exports, module) {
           assert.equals(v.simDocs(), {
             foo123: {name: 'foo'}});
           assert.equals(v.foo123[stopGap$], undefined);
-        },
+        });
 
-        "test non simulated update"() {
+        test("non simulated update", ()=>{
           v.TestModel.onChange(v.oc = stub());
 
           v.db.loadDoc('TestModel', {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'});
@@ -335,9 +335,9 @@ isClient && define(function (require, exports, module) {
 
           assert.calledWith(v.oc, v.foo123, {name: 'stopGap', gender: 'm'}, true);
           assert.equals(v.foo123[stopGap$], undefined);
-        },
+        });
 
-        "test simulated remove"() {
+        test("simulated remove", ()=>{
           v.db.loadDoc('TestModel', {_id: 'foo123', $sim: {
             _id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
           flush();
@@ -347,11 +347,11 @@ isClient && define(function (require, exports, module) {
           assert.equals(v.simDocs(), {
             foo123: {_id: 'foo123', name: 'foo2', age: 5, gender: 'f'}});
           assert.equals(v.foo123[stopGap$], undefined);
-        },
-      },
+        });
+      });
 
 
-      "test stopGap$"() {
+      test("stopGap$", ()=>{
         session.state.incPending();
         onEnd(_=> {session.state.decPending()});
 
@@ -383,10 +383,10 @@ isClient && define(function (require, exports, module) {
         assert.equals(foo123[stopGap$], undefined);
 
         assert(v.called);
-      },
-    },
+      });
+    });
 
-    "test catchAll on open"() {
+    test("catchAll on open", ()=>{
       /**
        * Catch all errors from database actions
        **/
@@ -401,9 +401,9 @@ isClient && define(function (require, exports, module) {
       req.onerror('my error');
 
       assert.calledWith(catchAll, 'my error');
-    },
+    });
 
-    "test catchAll on put"() {
+    test("catchAll on put", ()=>{
       TH.stubProperty(window, 'Promise', {value: MockPromise});
       const catchAll = stub();
       v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
@@ -434,9 +434,9 @@ isClient && define(function (require, exports, module) {
 
       assert.calledWith(catchAll, error);
       assert.calledWith(v.catch, error);
-    },
+    });
 
-    "test loadDocs"() {
+    test("loadDocs", ()=>{
       /**
        * Insert a list of records into a model. See {##loadDoc}
        **/
@@ -458,9 +458,9 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.TestModel.docs.foo456.attributes, v.recs[1]);
       assert.equals(v.foo._store.TestModel.docs, {});
       assert(v.called);
-    },
+    });
 
-    "test close"() {
+    test("close", ()=>{
       /**
        * Close a database. Once closed it may not be used anymore.
        **/
@@ -479,9 +479,9 @@ isClient && define(function (require, exports, module) {
       assert.equals(v.foo._store.TestModel.docs, {});
       refute.called(ready);
       assert.equals(v.ex.message, 'DB closed');
-    },
+    });
 
-    "test put"() {
+    test("put", ()=>{
       /**
        * Insert or update a record in indexedDB
        **/
@@ -501,9 +501,9 @@ isClient && define(function (require, exports, module) {
       refute(v.success);
       flush();
       assert(v.success);
-    },
+    });
 
-    "test delete"() {
+    test("delete", ()=>{
       /**
        * Insert or update a record in indexedDB
        **/
@@ -525,9 +525,9 @@ isClient && define(function (require, exports, module) {
       flush();
       assert.equals(v.foo._store.TestModel.docs, {
         foo456: {_id: 'foo456', name: 'foo 2', age: 10, gender: 'f'}});
-    },
+    });
 
-    "test get."(done) {
+    test("get", (done)=>{
       /**
        * Find a record in a {#koru/model/main} by its `_id`
        *
@@ -554,9 +554,9 @@ isClient && define(function (require, exports, module) {
         }).catch(v.error));
         v.idb.yield(0);
       }).catch(v.error);
-    },
+    });
 
-    "test getAll"(done) {
+    test("getAll", (done)=>{
       /**
        * Find all records in a {#koru/model/main}
        *
@@ -586,10 +586,10 @@ isClient && define(function (require, exports, module) {
         })).catch(v.error);
         v.idb.yield(0);
       }).catch(v.error);
-    },
+    });
 
-    "with data": {
-      setUp() {
+    group("with data", ()=>{
+      beforeEach(()=>{
         TH.stubProperty(window, 'Promise', {value: MockPromise});
 
         v.db = new QueryIDB({name: 'foo', version: 2, upgrade({db}) {
@@ -606,9 +606,9 @@ isClient && define(function (require, exports, module) {
           r3: v.r3 = {_id: 'r3', name: 'Allan', age: 3},
           r4: v.r4 = {_id: 'r4', name: 'Lucy', age: 7},
         };
-      },
+      });
 
-      "test transaction"() {
+      test("transaction", ()=>{
         /**
          * Access to indexeddb transaction
          **/
@@ -626,9 +626,9 @@ isClient && define(function (require, exports, module) {
         refute.called(v.opts.oncomplete);
         flush();
         assert.called(v.opts.oncomplete);
-      },
+      });
 
-      "test count"() {
+      test("count", ()=>{
         /**
          * count records in a {#koru/model/main}
          *
@@ -641,9 +641,9 @@ isClient && define(function (require, exports, module) {
         flush();
 
         assert.same(v.ans, 3);
-      },
+      });
 
-      "test cursor"() {
+      test("cursor", ()=>{
         /**
          * Open cursor on an ObjectStore
          **/
@@ -658,9 +658,9 @@ isClient && define(function (require, exports, module) {
         });
         flush();
         assert.equals(v.ans, [v.r1, v.r2, v.r3]);
-      },
+      });
 
-      "test Index"() {
+      test("Index", ()=>{
         /**
          * Retreive a named index for an objectStore
          **/
@@ -697,9 +697,9 @@ isClient && define(function (require, exports, module) {
 
         flush();
         assert.equals(v.ans, v.r1);
-      },
+      });
 
-      "test index cursor"() {
+      test("index cursor", ()=>{
         /**
          * Open a cursor on an index
          **/
@@ -713,9 +713,9 @@ isClient && define(function (require, exports, module) {
 
         flush();
         assert.equals(v.ans, [v.r2, v.r1, v.r4, v.r3]);
-      },
+      });
 
-      "test index keyCursor"() {
+      test("index keyCursor", ()=>{
         /**
          * Open a keyCursor on an index
          **/
@@ -729,10 +729,10 @@ isClient && define(function (require, exports, module) {
 
         flush();
         assert.equals(v.ans, ['r2', 'r1', 'r4', 'r3']);
-      },
-    },
+      });
+    });
 
-    "test deleteObjectStore"() {
+    test("deleteObjectStore", ()=>{
       /**
        * Drop an objectStore and its indexes
        **/
@@ -747,9 +747,9 @@ isClient && define(function (require, exports, module) {
 
       v.db.deleteObjectStore('TestModel');
       refute(v.foo._store.TestModel);
-    },
+    });
 
-    "test deleteDatabase"() {
+    test("deleteDatabase", ()=>{
        /**
        * delete an entire database
        **/
@@ -766,7 +766,7 @@ isClient && define(function (require, exports, module) {
       flush();
       assert(v.done);
       refute(v.idb._dbs.foo);
-    },
+    });
   });
 
   function then(queue, idx=0) {

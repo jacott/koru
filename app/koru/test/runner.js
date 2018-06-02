@@ -1,9 +1,15 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const TestCase        = require('koru/test/test-case');
   const Core            = require('./core');
 
+  const isDone$ = Symbol(), timeout$ = Symbol();
+
+  const MAX_TIME = 2000;
+
   const asyncNext = func => {koru.runFiber(func)};
+
+  const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
   let currentTc, skipped = false;
 
@@ -19,7 +25,6 @@ define(function(require, exports, module) {
       }
     }
   };
-
 
   const builder = {
     beforeEach: func => currentTc.add('setUp', func),
@@ -41,10 +46,10 @@ define(function(require, exports, module) {
       try {
         currentTc = ntc;
         func(ntc);
+        return ntc;
       } finally {
         skipped = os;
         currentTc = otc;
-        return ntc;
       }
     }
   };
@@ -52,49 +57,11 @@ define(function(require, exports, module) {
   builder.it = builder.test;
   builder.describe = builder.group;
 
-  Core.start = function (testCases, runNextWrapper) {
+  Core.start = (testCases, runNextWrapper)=>{
     let tests = Core._tests = [],
-        promise, _runNext,
-        next = 0;
+        _runNext, next = 0;
 
-
-    for(let i = 0; i < testCases.length; ++i) {
-      const tc = testCases[i];
-      if (! tc) continue;
-
-      currentTc = tc;
-
-      if (typeof tc.option === 'function')
-        tc.option(builder);
-      else
-        tc.add(tc.option);
-    }
-
-    const tcs = [];
-
-    Core.abnormalEnd = false;
-
-    if (runNextWrapper) {
-      runNextWrapper(function () {
-        Core.runCallBacks('start');
-        _runNext = function () {runNextWrapper(runNext)};
-        _runNext();
-      });
-    } else {
-      Core.runCallBacks('start');
-      _runNext = function () {
-        try {
-          runNext();
-        } catch(ex) {
-          Core.abort(ex);
-        }
-      };
-      _runNext();
-      if (Core.abnormalEnd)
-        Core.runCallBacks('end');;
-    }
-
-    function runNext(abort) {
+    const runNext = (abort)=>{
       let around;
       while(! abort) {
         const test = tests[next++];
@@ -124,30 +91,35 @@ define(function(require, exports, module) {
           if (test.func.length === 1) {
             if (around)
               throw new Error("setUpAround not supported on async tests");
-            const promise = promiseFunc(test, _runNext);
-            ex = runPromise(test, promise);
-            if (! ex) {
-              if (promise.done) continue;
-              promise.timeout = setTimeout(function () {
-                promise(new Error("Timed out!"));
-              }, promise.maxTime || 2000);
+            const done = doneFunc(test, _runNext);
+            ex = runDone(test, done);
+            if (ex === undefined) {
+              if (done[isDone$]) continue;
+              setDoneTimeout(done);
               return;
             }
           } else {
             const {assertCount} = Core;
-            ex = runSync(test, around);
-            ex || checkAssertionCount(test, assertCount);
+            const ans = runSync(test, around);
+            if (ans !== undefined) {
+              if (typeof ans.then === 'function') {
+                const done = doneFunc(test, _runNext);
+                setDoneTimeout(done);
+                ans.then(()=>{done()}, done);
+                return;
+              }
+              ex = ans;
+            } else {
+              checkAssertionCount(test, assertCount);
+            }
           }
-          if (ex) {
-            failed(test, ex);
-          }
+          if (ex !== undefined) failed(test, ex);
         }
-        promise = null;
         abort = runTearDowns(test, around);
       }
-    }
+    };
 
-    function newTestCase(tc) {
+    const newTestCase = (tc)=>{
       const i = tc.tc ? newTestCase(tc.tc) : 0;
       if (tcs[i] !== tc) {
         for(let j = tcs.length -1; j >= i; --j) {
@@ -158,29 +130,71 @@ define(function(require, exports, module) {
         tc.startTestCase();
       }
       return i+1;
+    };
+
+    for(let i = 0; i < testCases.length; ++i) {
+      const tc = testCases[i];
+      if (! tc) continue;
+
+      currentTc = tc;
+
+      try {
+        if (typeof tc.option === 'function')
+          tc.option(builder);
+        else
+          tc.add(tc.option);
+      } catch (ex) {
+        failed(tc, ex);
+        throw ex;
+      }
+    }
+
+    const tcs = [];
+
+    Core.abnormalEnd = false;
+
+    if (runNextWrapper) {
+      runNextWrapper(()=>{
+        Core.runCallBacks('start');
+        _runNext = ()=>{runNextWrapper(runNext)};
+        _runNext();
+      });
+    } else {
+      Core.runCallBacks('start');
+      _runNext = ()=>{
+        try {
+          runNext();
+        } catch(ex) {
+          Core.abort(ex);
+        }
+      };
+      _runNext();
+      if (Core.abnormalEnd)
+        Core.runCallBacks('end');;
+    }
+
+  };
+
+  const runSync = (test, around)=>{
+    try {
+      return test.tc.runTest(test, test.func, around);
+    } catch(ex) {
+      return ex;
     }
   };
 
-  function runSync(test, around) {
+  const runDone = (test, done)=>{
     try {
-      test.tc.runTest(test, test.func, around);
+      test.tc.runTest(test, test.func, false, done);
     } catch(ex) {
       return ex;
     }
-  }
+  };
 
-  function runPromise(test, promise) {
-    try {
-      test.tc.runTest(test, test.func, false, promise);
-    } catch(ex) {
-      return ex;
-    }
-  }
-
-  function promiseFunc(test, runNext) {
+  const doneFunc = (test, runNext)=>{
     const {assertCount} = Core;
-    function promise(ex) {
-      promise.done = true;
+    const done = ex =>{
+      done[isDone$] = true;
 
       if (ex)
         failed(test, ex);
@@ -188,47 +202,40 @@ define(function(require, exports, module) {
         checkAssertionCount(test, assertCount);
       const abort = runTearDowns(test);
 
-      if (promise.timeout) {
-        clearTimeout(promise.timeout);
+      if (done[timeout$] !== undefined) {
+        clearTimeout(done[timeout$]);
 
         if (abort) runNext(abort);
         else asyncNext(runNext);
       }
     };
+    done.maxTime = MAX_TIME;
 
-    promise.wrap = wrapPromise;
-    return promise;
-  }
+    return done;
+  };
 
-  function wrapPromise(func, _this) {
-    const promise = this;
-    return (...args) => {
-      try {
-        return func.apply(_this, args);
-      }
-      catch(ex) {
-        promise(ex);
-      }
-    };
-  }
+  const setDoneTimeout = (done)=>{
+    done[timeout$] = setTimeout(
+      ()=>{done(new Error("Timed out!"))}, done.maxTime);
+  };
 
-  function failed(test, ex) {
-    if (ex === 'abortTests')
-      throw ex;
+
+  const failed = (test, ex)=>{
+    if (ex === 'abortTests') throw ex;
     test.success = false;
     test.errors = [Core.extractError(ex)];
-  }
+  };
 
-  function checkAssertionCount(test, assertCount) {
+  const checkAssertionCount = (test, assertCount)=>{
     if (assertCount === Core.assertCount) {
       test.success = false;
       test.errors = ["No assertions!"];
     } else {
       test.success = true;
     }
-  }
+  };
 
-  function runTearDowns(test, around) {
+  const runTearDowns = (test, around)=>{
     try {
       if (! around) {
         test.tc.runOnEnds(test);
@@ -244,6 +251,5 @@ define(function(require, exports, module) {
     } finally {
       Core.runCallBacks('testEnd', test);
     }
-
-  }
+  };
 });
