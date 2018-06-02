@@ -15,6 +15,12 @@ define(['./core', './stubber'], function (Core, stubber) {
       return name ? ret + ' ' + name : ret;
     }
 
+    topTestCase() {
+      let top = this;
+      while(top.tc != null) top = top.tc;
+      return top;
+    }
+
     before(func) {
       (this._before = this._before || []).push(func);
       return this;

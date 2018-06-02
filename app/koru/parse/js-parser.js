@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   const koru           = require('koru');
-  const htmlDoc        = require('koru/dom/html-doc');
   const util           = require('koru/util');
 
   const NEST_RE = {};

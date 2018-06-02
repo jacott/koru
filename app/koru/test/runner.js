@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const TestCase        = require('koru/test/test-case');
+  const util            = require('koru/util');
   const Core            = require('./core');
 
   const isDone$ = Symbol(), timeout$ = Symbol();
@@ -223,13 +224,35 @@ define((require, exports, module)=>{
   const failed = (test, ex)=>{
     if (ex === 'abortTests') throw ex;
     test.success = false;
-    test.errors = [Core.extractError(ex)];
+    test.errors = [
+      (ex instanceof Error) ? Core.extractError(ex) : 'Unexpected return value: '+util.inspect(ex)];
   };
 
   const checkAssertionCount = (test, assertCount)=>{
     if (assertCount === Core.assertCount) {
       test.success = false;
-      test.errors = ["No assertions!"];
+      let line = 1;
+      const name = test._currentTestCase.topTestCase().name+'-test';
+      const mod = module.get(name);
+      if (mod != null) {
+        const tcbody = mod.body.toString();
+        const testName = test.name.replace(/^.*?\btest /, '').slice(0, -1);
+        const testbody = `test("${testName}", ${test.func.toString()}`;
+
+        let idx = tcbody.indexOf(testbody);
+
+        if (idx !== -1) {
+          for (let ni = tcbody.indexOf("\n"); ni !== -1 && ni < idx;
+               ni = tcbody.indexOf("\n", ni+1)) {
+            ++line;
+          }
+        }
+      }
+
+      test.errors = [
+        "Failure: No assertions\n    at - "+
+          `test.func (${name}.js:${line}:1)`
+      ];
     } else {
       test.success = true;
     }
