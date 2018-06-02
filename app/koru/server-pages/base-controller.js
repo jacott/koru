@@ -48,20 +48,6 @@ define(function(require, exports, module) {
     ctl.error(405, 'Method Not Allowed');
   };
 
-  const renderDef = (ctl, name)=>{
-    const {view} = ctl;
-    ctl.checkETag() || ctl.render((view[name]||view).$render(ctl));
-  };
-
-
-  const defaultActions = {
-    index: ctl =>{
-      ctl.checkETag() || ctl.render(ctl.view.$render(ctl));
-    },
-    show: ctl =>{renderDef(ctl, 'Show')},
-    new: ctl =>{renderDef(ctl, 'New')},
-  };
-
   const HEADER = '<!DOCTYPE html>\n';
 
   const runParser = (ctl)=>{

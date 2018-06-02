@@ -229,6 +229,21 @@ isServer && define(function (require, exports, module) {
         }));
       });
 
+      test("funny pathParts", ()=>{
+        const {sp, tpl} = v;
+
+        sp.addViewController('foo', tpl, class extends sp.BaseController {
+          constructor(opts) {
+            super(opts);
+            v.ctl = this;
+          }
+        });
+
+        sp._handleRequest(v.req, v.res, '/foo/1/<%= 2%201 %>/3?a=x');
+
+        assert.equals(v.ctl.pathParts, ['1', '<%= 2 1 %>', '3']);
+      });
+
       test("trailing slash", ()=>{
         const {sp, tpl} = v;
 

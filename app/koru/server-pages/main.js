@@ -80,7 +80,7 @@ define(function(require, exports, module) {
     while (pos < parts.length && ! parts[pos]) ++pos;
     const key = parts[pos] || '';
     let view = views[key];
-    if (view === undefined) {
+    if (view === undefined && key.indexOf(".") === -1) {
       const fn = path.resolve(root, key) + ".js";
       const stfn = fst.stat(fn);
       if (stfn != null) {
@@ -91,6 +91,14 @@ define(function(require, exports, module) {
       }
     }
     return {view, pathParts: parts.slice(pos+1)};
+  };
+
+  const decodePathPart = (i)=>{
+    try {
+      return util.decodeURIComponent(i) || '';
+    } catch(ex) {
+      return i;
+    }
   };
 
   class ServerPages {
@@ -107,7 +115,7 @@ define(function(require, exports, module) {
       this._handleRequest = (request, response, urlPath, error)=>{
         const searchIdx = urlPath.indexOf('?');
         const parts = (searchIdx == -1 ? urlPath : urlPath.slice(0, searchIdx))
-              .split('/').map(i => util.decodeURIComponent(i) || ''), plen = parts.length;
+              .split('/').map(i => decodePathPart(i)), plen = parts.length;
         const suffixIdx = plen == 0 ? '' : parts[plen-1].search(/\.[^.]+$/);
         if (suffixIdx == -1) {
           this.suffix = 'html';
