@@ -1,20 +1,16 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   const TH       = require('koru/test');
 
   const jsParser = require('./js-parser');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test extractParams"() {
+    test("extractParams", ()=>{
       assert.equals(jsParser.extractParams('x() {}'),
                     []);
 
@@ -39,9 +35,9 @@ isServer && define(function (require, exports, module) {
 
       assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'),
                     ['d', 'b', 'c', 'rest']);
-    },
+    });
 
-    "test comments"() {
+    test("comments", ()=>{
       assert.equals(markupBody(() => {
         v.example(() => {
           // start-com
@@ -54,18 +50,18 @@ isServer && define(function (require, exports, module) {
   ~nx#v#.~na#define#( ~cm#/*in-com*/#~s#'red'#, ~s#'#f00'#); ~cs#// end-and-start-com#
   ~nx#v#.~na#define#(~s#'blue'#, ~s#'#00f'#);
 }); ~cs#//last#`);
-    },
+    });
 
-    "test AssignmentPattern"() {
+    test("AssignmentPattern", ()=>{
       const code = () => {
         var a = '1' + 2;
       };
 
       assert.equals(markupBody(code), `
 ~kd#var# ~nx#a# = ~s#'1'# ~o#+# ~m#2#;`);
-    },
+    });
 
-    "test ExpressionStatement"() {
+    test("ExpressionStatement", ()=>{
       const anon = function (a) {
         return typeof a;
       };
@@ -74,16 +70,16 @@ isServer && define(function (require, exports, module) {
 ~m#1# ~o#|# ~kd#function# (~nx#a#) {
   ~k#return# ~o#typeof# ~nx#a#;
 };`);
-    },
+    });
 
-    "test ArrowFunctionExpression"() {
+    test("ArrowFunctionExpression", ()=>{
       assert.equals(markupBody(() => {
         var a = (z) => z[1].d;
       }), `
 ~kd#var# ~nx#a# = ~nx#z# ~o#=&gt;# ~nx#z#[~m#1#].~na#d#;`);
-    },
+    });
 
-    "test ClassDeclaration"() {
+    test("ClassDeclaration", ()=>{
       assert.equals(markupBody(() => {
         class A extends v(5) {
           constructor(a) {
@@ -114,9 +110,9 @@ isServer && define(function (require, exports, module) {
 
 ~k#class# ~nx#B# {}`);
 
-    },
+    });
 
-    "test ClassExpression"() {
+    test("ClassExpression", ()=>{
       assert.equals(markupBody(() => {
         const A = class extends v(5) {
           static cm() {}
@@ -126,23 +122,23 @@ isServer && define(function (require, exports, module) {
   ~k#static# ~nf#cm#() {}
 };`);
 
-    },
+    });
 
-    "test CallExpression, MemberExpression"() {
+    test("CallExpression, MemberExpression", ()=>{
       assert.equals(markupBody(() => {
         v.foo();
       }), `
 ~nx#v#.~na#foo#();`);
-    },
+    });
 
-    "test Destructuring"() {
+    test("Destructuring", ()=>{
       assert.equals(markupBody(() => {
         var { sh, lhs: { op: b }, rhs: c } = v;
       }), `
 ~kd#var# { ~nx#sh#, ~na#lhs#: { ~na#op#: ~nx#b# }, ~na#rhs#: ~nx#c# } = ~nx#v#;`);
-    },
+    });
 
-    "test ObjectExpression"() {
+    test("ObjectExpression", ()=>{
       assert.equals(markupBody(() => {
         v = {
           a: 1,
@@ -169,16 +165,16 @@ isServer && define(function (require, exports, module) {
   },
   ~na#foo#: ~kd#function# () {}
 };`);
-    },
+    });
 
-    "test AssignmentExpression"() {
+    test("AssignmentExpression", ()=>{
       assert.equals(markupBody(() => {
         v.a += 4;
       }), `
 ~nx#v#.~na#a# ~o#+=# ~m#4#;`);
-    },
+    });
 
-    "test FunctionDeclaration NewExpression"() {
+    test("FunctionDeclaration NewExpression", ()=>{
       const code = () => {
         function Foo(a) {
           return typeof a;
@@ -192,7 +188,7 @@ isServer && define(function (require, exports, module) {
   ~k#return# ~o#typeof# ~nx#a#;
 };
 ~k#new# ~nx#Foo#(~k#...#[~m#1#, ~m#2#]);`);
-    },
+    });
   });
 
   function markupBody(func) {

@@ -202,10 +202,6 @@ define((require, exports, module)=> JsPaser => {
     addWhitespace({start: ast.program.end});
 
     return div;
-
-    function nodeCode(node) {
-      return codeIn.slice(node.start, node.end);
-    }
   };
 
   function nodeKeys(node) {
