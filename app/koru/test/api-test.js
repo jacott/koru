@@ -241,11 +241,11 @@ define((require, exports, module)=>{
           calls: [],
         }, {
           body:
-          `          // this body of code is executed
-          Color.define('red', '#f00');
-          Color.define('blue', '#00f');
-        // comment
-  assert.same(Color.colors.red, '#f00');`,
+          `// this body of code is executed
+Color.define('red', '#f00');
+Color.define('blue', '#00f');
+// comment
+assert.same(Color.colors.red, '#f00');`,
           calls: [[
             ['red', '#f00'], '#f00'
           ],[
@@ -267,8 +267,8 @@ define((require, exports, module)=>{
       }));
 
       assert.equals(API.instance.methods.bar.calls[0].body, `foo.bar(1, doc => {
-        return false;
-      })`);
+  return false;
+})`);
     });
 
     test("comment", ()=>{

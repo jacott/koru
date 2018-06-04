@@ -24,11 +24,7 @@
   "gypfile": true,
   "dependencies": {
     "autoprefixer": "^8.5.0",
-    "babel-generator": "^6.26.0",
-    "babel-types": "^6.26.0",
-    "babylon": "^6.18",
     "bindings": "^1.3.0",
-    "clean-css": "^4.1.9",
     "commander": "^2.12.2",
     "css-selector-parser": "^1.3.0",
     "fibers": "^2.0.0",
@@ -44,8 +40,9 @@
     "raw-body": "^2.3.2",
     "request": "^2.87.0",
     "send": "^0.16.1",
+    "terser": "^3.7.6",
     "ws": "^5.2.0",
-    "yaajs": "^3.0.1"
+    "yaajs": "^3.1.0"
   },
   "devDependencies": {
     "pg-libpq": "^2.1.0"

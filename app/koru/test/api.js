@@ -617,15 +617,15 @@ define(function(require, exports, module) {
 
   function extractFnBody(body) {
     if (typeof body === 'string')
-      return body;
+      return jsParser.indent(body);
 
     body = body.toString();
 
     const m = /^\([^)]*\)\s*=>\s*(?=[^{\s])/.exec(body);
 
-    if (m) return  body.slice(m[0].length);
+    if (m) return  jsParser.indent(body.slice(m[0].length));
 
-    return body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, '');
+    return jsParser.indent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
   }
 
   const funcToSig = (func, name)=>{
@@ -787,7 +787,7 @@ define(function(require, exports, module) {
       let sig = funcToSig(func).replace(/^function\s*(?=\()/, methodName);
       if (! sig.startsWith(methodName)) {
         if (sig.startsWith('('))
-          sig = methodName+sig.slice(0, jsParser.findMatch(sig, 0, '('));
+          sig = methodName+sig.slice(0, jsParser.findMatch(sig, '('));
         else {
           if (sig.endsWith(' => {/*...*/}'))
             sig = sig.slice(0, -13);
@@ -877,7 +877,7 @@ define(function(require, exports, module) {
         if (body !== '') {
           const calls = api.target.calls.slice(callLength);
           api.target.calls.length = callLength;
-          body = body.replace(/^\s*\n/, '');
+          body = jsParser.indent(body.replace(/^\s*\n/, ''));
           api.target.calls.push({body, calls});
         }
       };

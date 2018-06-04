@@ -17,6 +17,9 @@ isServer && define((require, exports, module)=>{
       assert.equals(jsParser.extractParams('(...args)'),
                     ['args']);
 
+      assert.equals(jsParser.extractParams('({a: {b: c}}, ...args)'),
+                    ['c', 'args']);
+
       assert.equals(jsParser.extractParams('(a, b) => {/*...*/}'),
                     ['a', 'b']);
 
@@ -24,6 +27,12 @@ isServer && define((require, exports, module)=>{
                     ['a', 'b']);
 
       assert.equals(jsParser.extractParams('x(a, b) {return {a: (a + b)}}'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('const x = (a, b) => ({c(d, e) {}})'),
+                    ['a', 'b']);
+
+      assert.equals(jsParser.extractParams('const x = function(a, b) {return {c(d, e) {}}}'),
                     ['a', 'b']);
 
       assert.equals(jsParser.extractParams('function x(a, b)'),
@@ -37,28 +46,247 @@ isServer && define((require, exports, module)=>{
                     ['d', 'b', 'c', 'rest']);
     });
 
+
+
+    test("nested template string", ()=>{
+      const ans = markupBody(()=>{
+        v.example({
+          b(a=`one ${v.inspect({
+c(d=`two ${"`${2}`"+3} four`) {/* `not here` */}
+})}`) {return v.foo`bar` || String.foo`1${2}3`}
+        });
+      });
+      assert.equals(ans, `
+~nx#v#.~na#example#({
+  ~nf#b#(~nv#a#~o#=#~s#\`one $\{#~nx#v#.~na#inspect#({
+    ~nf#c#(~nv#d#~o#=#~s#\`two $\{#~s#"\`$\{2}\`"#~o#+#~m#3#~s#} four\`#) {/* \`not here\` */}
+  })~s#}\`#) {~k#return# ~nx#v#.~na#foo#~s#\`bar\`# ~o#||# ~nx#String#.~na#foo#~s#\`1$\{#~m#2#~s#}3\`#}
+});`);
+    });
+
+    test("AST_Conditional", ()=>{
+      // AST_Conditional (condition consequent alternative)
+      //   "Conditional expression using the ternary operator, i.e. `a ? b : c`"
+      assertMarkup(()=>{
+        let x = (a,b,c)=> a ? b : c;
+      }, `
+~kd#let# ~nv#x# = (~nv#a#,~nv#b#,~nv#c#)~o#=&gt;# ~nx#a# ~o#?# ~nx#b# ~o#:# ~nx#c#;`);
+    });
+
+    test("async await", ()=>{
+      assertMarkup(()=>{
+        let x = async (a)=> await a();
+        let y = async function(a) {};
+      }, `
+~kd#let# ~nv#x# = ~k#async# (~nv#a#)~o#=&gt;# await ~nx#a#();
+~kd#let# ~nv#y# = ~k#async# ~kd#function#(~nv#a#) {};`);
+    });
+
+    test("switch", ()=>{
+      /**
+       *
+AST_Switch (expression) "A `switch` statement"
+            AST_SwitchBranch "Base class for `switch` branches" {
+                AST_Default "A `default` switch branch"
+                AST_Case (expression) "A `case` switch branch"
+            }
+
+      **/
+      let key;
+      assertMarkup(()=>{
+        switch(key) {
+        case 1:
+          key++;
+          break;
+        case "2": {
+          --key;
+        } default:
+          --key;
+        }
+      }, `
+~k#switch#(~nx#key#) {
+  ~k#case# ~m#1#:
+  ~nx#key#~o#++#;
+  ~k#break#;
+  ~k#case# ~s#"2"#: {
+    ~o#--#~nx#key#;
+  } ~k#default#:
+  ~o#--#~nx#key#;
+}`);
+    });
+
+    test("try-catch", ()=>{
+      /**
+         AST_Try (bcatch bfinally) "A `try` statement"
+            AST_Catch (argname) "A `catch` node; only makes sense as part of a `try` statement"
+            AST_Finally "A `finally` node; only makes sense as part of a `try` statement"
+
+          AST_Throw "A `throw` statement"
+      **/
+      let state;
+      assertMarkup(()=>{
+        try {
+          state = 1;
+          throw new Error;
+        } catch(ex) {
+          throw new Error(ex.message);
+        } finally {
+          state = 0;
+        }
+      }, `
+~k#try# {
+  ~nx#state# ~o#=# ~m#1#;
+  ~k#throw# ~k#new# ~nx#Error#;
+  } ~k#catch#(~nv#ex#) {
+  ~k#throw# ~k#new# ~nx#Error#(~nx#ex#.~na#message#);
+  } ~k#finally# {
+  ~nx#state# ~o#=# ~m#0#;
+}`);
+    });
+
+    test("loops", ()=>{
+      /**
+       AST_StatementWithBody (body) "Base class for all statements that contain one nested body: `For`, `ForIn`, `Do`, `While`, `With`" {
+            AST_LabeledStatement (label) "Statement with a label"
+            AST_IterationStatement (block_scope) "Internal class.  All loops inherit from it." {
+                AST_DWLoop (condition) "Base class for do/while statements" {
+                    AST_Do "A `do` statement"
+                    AST_While "A `while` statement"
+                }
+                AST_For (init condition step) "A `for` statement"
+                AST_ForIn (init object) "A `for ... in` statement" {
+                    AST_ForOf "A `for ... of` statement"
+                }
+            }
+            AST_If (condition alternative) "A `if` statement"
+        }
+
+        AST_LoopControl (label) "Base class for loop control statements (`break` and `continue`)" {
+                AST_Break "A `break` statement"
+                AST_Continue "A `continue` statement"
+            }
+
+       **/
+      assertMarkup(()=>{
+        let a = 0;
+        do {
+          ++a;
+        } while(a < 10)
+        label1:
+        while(a > 0) {
+          a--;
+          for(let i = 0; i < 10; ++i) {
+            if (i == 4)
+              break label1;
+          }
+
+          for (const i of a) {
+            for (const key in i) {
+              if (key == '') continue label1;
+              else ++a;
+            }
+          }
+        }
+      }, `
+~kd#let# ~nv#a# = ~m#0#;
+~k#do# {
+  ~o#++#~nx#a#;
+} ~k#while#(~nx#a# ~o#&lt;# ~m#10#)
+~nl#label1#:
+~k#while#(~nx#a# ~o#&gt;# ~m#0#) {
+  ~nx#a#~o#--#;
+  ~k#for#(~kd#let# ~nv#i# = ~m#0#; ~nx#i# ~o#&lt;# ~m#10#; ~o#++#~nx#i#) {
+    ~k#if# (~nx#i# ~o#==# ~m#4#)
+    ~k#break# ~nl#label1#;
+  }
+
+  ~k#for# (~kd#const# ~no#i# ~k#of# ~nx#a#) {
+    ~k#for# (~kd#const# ~no#key# ~k#in# ~nx#i#) {
+      ~k#if# (~nx#key# ~o#==# ~s#''#) ~k#continue# ~nl#label1#;
+      ~k#else# ~o#++#~nx#a#;
+    }
+  }
+}`);
+    });
+
+
+
+
+    test("AST_Constant", ()=>{
+      /*
+ AST_Constant "Base class for all constants" {
+        AST_String (value quote) "A string literal"
+        AST_Number (value literal) "A number literal"
+        AST_RegExp (value raw) "A regexp literal"
+        AST_Atom "Base class for atoms" {
+            AST_Null "The `null` atom"
+            AST_NaN "The impossible value"
+            AST_Undefined "The `undefined` value"
+            AST_Hole "A hole in an array"
+            AST_Infinity "The `Infinity` value"
+            AST_Boolean "Base class for booleans" {
+                AST_False "The `false` atom"
+                AST_True "The `true` atom"
+            }
+        }
+    }
+
+      */
+      assertMarkup(()=>{
+        const FOO=123;
+        let bar=true;
+        bar = false;
+        var num = Infinity;
+        num = NaN;
+        num = null;
+        num = undefined;
+        const re = /a[3-6]{1,3}/gi;
+      }, `
+~kd#const# ~no#FOO#=~m#123#;
+~kd#let# ~nv#bar#=~kc#true#;
+~nx#bar# ~o#=# ~kc#false#;
+~kd#var# ~nv#num# = ~m#Infinity#;
+~nx#num# ~o#=# ~m#NaN#;
+~nx#num# ~o#=# ~kc#null#;
+~nx#num# ~o#=# ~kc#undefined#;
+~kd#const# ~no#re# = ~sr#/a[3-6]{1,3}/gi#;`);
+    });
+
+
     test("comments", ()=>{
-      assert.equals(markupBody(() => {
+      const ans = markupBody(() => {
         v.example(() => {
           // start-com
           v.define(/*in-com*/'red', '#f00'); // end-and-start-com
+
+          /* middle */
           v.define('blue', '#00f');
+          /* end c1
+             here */
+          // end c2
         }); //last
-      }), `
+      });
+
+      assert.equals(ans, `
 ~nx#v#.~na#example#(() ~o#=&gt;# {
   ~cs#// start-com#
-  ~nx#v#.~na#define#( ~cm#/*in-com*/#~s#'red'#, ~s#'#f00'#); ~cs#// end-and-start-com#
+  ~nx#v#.~na#define#(~cm#/*in-com*/#~s#'red'#, ~s#'#f00'#); ~cs#// end-and-start-com#
+
+  ~cm#/* middle */#
   ~nx#v#.~na#define#(~s#'blue'#, ~s#'#00f'#);
+  ~cm#/* end c1
+  here */#
+  ~cs#// end c2#
 }); ~cs#//last#`);
     });
 
     test("AssignmentPattern", ()=>{
       const code = () => {
-        var a = '1' + 2;
+        var a = '1' + 2; a = 3;
       };
 
       assert.equals(markupBody(code), `
-~kd#var# ~nx#a# = ~s#'1'# ~o#+# ~m#2#;`);
+~kd#var# ~nv#a# = ~s#'1'# ~o#+# ~m#2#; ~nx#a# ~o#=# ~m#3#;`);
     });
 
     test("ExpressionStatement", ()=>{
@@ -66,28 +294,26 @@ isServer && define((require, exports, module)=>{
         return typeof a;
       };
 
-      assert.equals(markup(jsParser.highlight('1|'+anon.toString())), `
-~m#1# ~o#|# ~kd#function# (~nx#a#) {
+      assert.equals(markup(jsParser.highlight('1|'+jsParser.indent(anon.toString()))), `
+~m#1#~o#|#~kd#function# (~nv#a#) {
   ~k#return# ~o#typeof# ~nx#a#;
-};`);
+}`);
     });
 
     test("ArrowFunctionExpression", ()=>{
       assert.equals(markupBody(() => {
         var a = (z) => z[1].d;
       }), `
-~kd#var# ~nx#a# = ~nx#z# ~o#=&gt;# ~nx#z#[~m#1#].~na#d#;`);
+~kd#var# ~nv#a# = (~nv#z#) ~o#=&gt;# ~nx#z#[~m#1#].~na#d#;`);
     });
 
     test("ClassDeclaration", ()=>{
-      assert.equals(markupBody(() => {
+      assertMarkup(() => {
         class A extends v(5) {
           constructor(a) {
             super(a);
           }
-
           static cm() {}
-
           meth(b) {
             super.meth(b);
           }
@@ -95,20 +321,19 @@ isServer && define((require, exports, module)=>{
 
         class B {
         }
-      }), `
-~k#class# ~nx#A# ~k#extends# ~nx#v#(~m#5#) {
-  ~k#constructor#(~nx#a#) {
+      }, `
+~k#class# ~nc#A# ~k#extends# ~nx#v#(~m#5#) {
+  ~k#constructor#(~nv#a#) {
     ~k#super#(~nx#a#);
   }
-
-  ~k#static# ~nf#cm#() {}
-
-  ~nf#meth#(~nx#b#) {
+  ~kt#static# ~nf#cm#() {}
+  ~nf#meth#(~nv#b#) {
     ~k#super#.~na#meth#(~nx#b#);
   }
 }
 
-~k#class# ~nx#B# {}`);
+~k#class# ~nc#B# {
+}`);
 
     });
 
@@ -118,8 +343,8 @@ isServer && define((require, exports, module)=>{
           static cm() {}
         };
       }), `
-~kd#const# ~nx#A# = ~k#class# ~k#extends# ~nx#v#(~m#5#) {
-  ~k#static# ~nf#cm#() {}
+~kd#const# ~no#A# = ~k#class# ~k#extends# ~nx#v#(~m#5#) {
+  ~kt#static# ~nf#cm#() {}
 };`);
 
     });
@@ -131,11 +356,32 @@ isServer && define((require, exports, module)=>{
 ~nx#v#.~na#foo#();`);
     });
 
+    test("sig", ()=>{
+      const ex = ()=>{
+        function foo({
+          query,
+          foo: bar=123,
+          compare=query ? query.compare : bar,
+        }) {
+        }
+      };
+
+      const ans = markupBody(ex);
+
+      assert.equals(ans, `
+~kd#function# ~nf#foo#({
+  ~nv#query#,
+  ~na#foo#: ~nv#bar#~o#=#~m#123#,
+  ~nv#compare#~o#=#~nx#query# ~o#?# ~nx#query#.~na#compare# ~o#:# ~nx#bar#,
+}) {
+}`);
+    });
+
     test("Destructuring", ()=>{
       assert.equals(markupBody(() => {
-        var { sh, lhs: { op: b }, rhs: c } = v;
+        var { sh, lhs: { op: b=123 }, rhs: c } = v;
       }), `
-~kd#var# { ~nx#sh#, ~na#lhs#: { ~na#op#: ~nx#b# }, ~na#rhs#: ~nx#c# } = ~nx#v#;`);
+~kd#var# { ~nv#sh#, ~na#lhs#: { ~na#op#: ~nv#b#~o#=#~m#123# }, ~na#rhs#: ~nv#c# } = ~nx#v#;`);
     });
 
     test("ObjectExpression", ()=>{
@@ -143,9 +389,9 @@ isServer && define((require, exports, module)=>{
         v = {
           a: 1,
           v,
-          'string': null,
+          'str ing': null,
           ['a'+v.x]: "z",
-          'meth'([a, b]) {},
+          'me th'([a, b]) {},
           get v() {return this._v},
           set v(value) {this._v =  value},
           foo: function() {}
@@ -153,17 +399,13 @@ isServer && define((require, exports, module)=>{
       }), `
 ~nx#v# ~o#=# {
   ~na#a#: ~m#1#,
-  ~nx#v#,
-  ~na#'string'#: ~kc#null#,
-  [~s#'a'# ~o#+# ~nx#v#.~na#x#]: ~s#\"z\"#,
-  ~nf#'meth'#([~nx#a#, ~nx#b#]) {},
-  ~k#get# ~nf#v#() {
-    ~k#return# ~k#this#.~na#_v#;
-  },
-  ~k#set# ~nf#v#(~nx#value#) {
-    ~k#this#.~na#_v# ~o#=# ~nx#value#;
-  },
-  ~na#foo#: ~kd#function# () {}
+  ~na#v#,
+  ~na#'str ing'#: ~kc#null#,
+  [~s#'a'#~o#+#~nx#v#.~na#x#]: ~s#\"z\"#,
+  ~nf#'me th'#([~nv#a#, ~nv#b#]) {},
+  ~k#get# ~nf#v#() {~k#return# ~k#this#.~na#_v#},
+  ~k#set# ~nf#v#(~nv#value#) {~k#this#.~na#_v# ~o#=#  ~nx#value#},
+  ~na#foo#: ~kd#function#() {}
 };`);
     });
 
@@ -184,23 +426,28 @@ isServer && define((require, exports, module)=>{
 
       assert.equals(markupBody(code),
                     `
-~kd#function# ~nx#Foo#(~nx#a#) {
+~kd#function# ~nf#Foo#(~nv#a#) {
   ~k#return# ~o#typeof# ~nx#a#;
 };
-~k#new# ~nx#Foo#(~k#...#[~m#1#, ~m#2#]);`);
+~k#new# ~nx#Foo#(~k#...#[~m#1#,~m#2#]);`);
     });
   });
 
-  function markupBody(func) {
-    return markup(jsParser.highlight(jsParser.funcBody(func)));
-  }
+  const assertMarkup = (func, exp)=>{
+    const ans = markupBody(func);
+    assert.msg(ans).equals(ans, exp);
 
-  function markup(node) {
-    return '\n'+norm(node.outerHTML).replace(/^<div[^>]*>/, '').slice(0, -6);
-  }
+  };
 
-  function norm(text) {
-    return text.replace(/<span class="(..?)">/g, '~$1#')
+  const markupBody = func => {
+    const code = func.toString();
+    return markup(jsParser.highlight(jsParser.indent(
+      code.slice(code.indexOf('\n')+1, code.lastIndexOf('\n'))
+    )));
+  };
+
+  const markup = node => '\n'+norm(node.outerHTML).replace(/^<div.*?>/, '').slice(0, -6);
+
+  const norm = text => text.replace(/<span class="(..?)">/g, '~$1#')
       .replace(/<\/span>/g, '#');
-  }
 });

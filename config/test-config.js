@@ -13,7 +13,7 @@ exports.server = cfg => {
     },
 
     "koru/web-server": {
-      port: 3000,
+      port: process.env.KORU_PORT || 3000,
       defaultPage: 'test/index.html',
     },
   });

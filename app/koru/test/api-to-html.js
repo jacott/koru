@@ -189,7 +189,7 @@ define(function(require, exports, module) {
 
       const idParts = /^([^:.]+)([.:]*)(.*)$/.exec(id);
       const reqParts = [
-        hl('const', 'kd'), ' ', hl(subject.name, 'nx'), ' ', hl('=', 'o'), ' ',
+        hl('const', 'kd'), ' ', hl(subject.name, 'no'), ' ', hl('=', 'o'), ' ',
         hl('require', 'k'), '(', hl(`"${idParts[1]}"`, 's'), ')'
       ];
       switch (idParts[2]) {

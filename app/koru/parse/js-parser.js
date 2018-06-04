@@ -2,22 +2,23 @@ define(function(require, exports, module) {
   const koru           = require('koru');
   const util           = require('koru/util');
 
+  const nestRe = (c)=> new RegExp(`[/[\`"'{(\\${c}]`, 'g');
   const NEST_RE = {};
   const PAIR = {};
   '[] {} ()'.split(' ').forEach(pair => {
     PAIR[pair[0]] = pair[1];
-    NEST_RE[pair[0]] = new RegExp(`[^/[\`"'{(\\${pair[1]}]*.`, 'g');
+    NEST_RE[pair[0]] = nestRe(pair[1]);
   });
 
   const SKIP_EOL = /[^\n]*/g;
   const SKIP_MLC = /[\s\S]*\*\//g;
 
   const STRING = {};
-  ['`', '"', "'"].forEach(q => {
-    STRING[q] = new RegExp(`[^\\\\${q}]*.`, 'g');
+  ['"', "'"].forEach(q => {
+    STRING[q] = new RegExp(`[\\\\${q}\\n]`, 'g');
   });
 
-  function extractCallSignature(func) {
+  const extractCallSignature = func =>{
     let code = func.toString();
     let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function\s*(?=\w))/.exec(code);
 
@@ -29,41 +30,139 @@ define(function(require, exports, module) {
     if (code.startsWith('class'))
       return "constructor()";
 
-    m = /^[^(]*\(/.exec(code);
+    const re = /\(/g;
+    m = re.exec(code);
 
-    let pos = m ? findMatch(code, m[0].length, '(') : -1;
+    let pos = m ? JsParser.findMatch(code, '(') : -1;
 
     if (pos === -1)
       throw new Error("Can't find signature of "+code);
 
     return code.slice(0, pos);
-  }
+  };
 
-  function findMatch(code, idx, lookFor) {
-    const endChar = PAIR[lookFor];
-    let m, re = NEST_RE[lookFor];
+  const indent = (code, width=2)=>{
+    const spacer = '            '.slice(0, width);
+    let out = '', prev= 0;
+    let cl = 0, tab = '';
+    const stack = [];
+    const cb = (level, idx)=>{
+
+      if (cl > level) {
+        level = cl = stack.pop();
+
+        tab = tab.slice(0, -width);
+      }
+      const line = code.slice(prev, idx).replace(/^[ \t\r]+/,'');
+      if (line === '\n')
+        out+=line;
+      else
+        out+=tab+line;
+
+      if (cl != level) {
+        stack.push(cl);
+        cl = level;
+        tab += spacer;
+      }
+      prev = idx;
+    };
+    lineNestLevel(code, cb);
+
+    cb(0);
+    return out;
+  };
+
+
+  const lineNestLevel = (code, callback, idx=0)=>{
+    let indentLevel = 0;
+    const findMatch = (code, lookFor, idx)=>{
+      ++indentLevel;
+      const re = /[\]\[`"'}{)(\n]/g;
+      re.lastIndex = idx;
+      let m;
+      const endChar = PAIR[lookFor] || lookFor;
+
+      while (m = re.exec(code)) {
+        const idx = re.lastIndex;
+        let pos, found = code.charAt(idx-1);
+
+        switch (found) {
+        case endChar:
+          --indentLevel;
+          return idx;
+        case '`':
+          pos = findTemplateEnd(code, idx, findMatch);
+          break;
+        case "'": case '"':
+          pos = findStringEnd(code, idx, found);
+          break;
+        case '/':
+          switch (code.charAt(idx)) {
+          case '/':
+            SKIP_EOL.lastIndex = idx;
+            if (! SKIP_EOL.exec(code))
+              return -1;
+            re.lastIndex = SKIP_EOL.lastIndex;
+            continue;
+          case '*':
+            SKIP_MLC.lastIndex = idx;
+            if (! SKIP_MLC.exec(code))
+              return -1;
+            re.lastIndex = SKIP_MLC.lastIndex;
+            continue;
+          }
+          return -1;
+        case '\n':
+          callback(indentLevel-1, idx);
+          continue;
+        default:
+          pos = findMatch(code, found, idx);
+        }
+        if (pos === -1) return -1;
+
+        re.lastIndex = pos;
+      }
+      return -1;
+    };
+
+    findMatch(code, undefined, idx);
+  };
+
+  const findMatch = (code, lookFor, idx)=>{
+    if (STRING[lookFor] !== undefined)
+      return findStringEnd(code, idx, lookFor);
+
+    const _endChar = PAIR[lookFor];
+    if (_endChar === undefined && lookFor === '`')
+      return findTemplateEnd(code, idx, findMatch);
+    const re = _endChar === undefined ? nestRe(lookFor) : NEST_RE[lookFor];
     re.lastIndex = idx;
-
+    let m;
+    const endChar = _endChar === undefined ? lookFor : _endChar;
 
     while (m = re.exec(code)) {
-      let pos, found = code.charAt(re.lastIndex-1);
+      const idx = re.lastIndex;
+      let pos, found = code.charAt(idx-1);
 
       switch (found) {
       case endChar:
-        return re.lastIndex;
-      case '`': case "'": case '"':
-        pos = findStringEnd(code, re.lastIndex, found);
+        return idx;
+      case '`':
+        pos = findTemplateEnd(code, idx, findMatch);
+        break;
+      case "'": case '"':
+        pos = findStringEnd(code, idx, found);
         break;
       case '/':
-        switch (code.charAt(re.lastIndex)) {
+        switch (code.charAt(idx)) {
         case '/':
-          SKIP_EOL.lastIndex = re.lastIndex;
+          SKIP_EOL.lastIndex = idx;
           if (! SKIP_EOL.exec(code))
             return -1;
           re.lastIndex = SKIP_EOL.lastIndex;
           continue;
         case '*':
-          SKIP_MLC.lastIndex = re.lastIndex;
+          SKIP_MLC.lastIndex = idx;
           if (! SKIP_MLC.exec(code))
             return -1;
           re.lastIndex = SKIP_MLC.lastIndex;
@@ -71,32 +170,65 @@ define(function(require, exports, module) {
         }
         return -1;
       default:
-        pos = findMatch(code, re.lastIndex, found);
+        pos = findMatch(code, found, idx);
       }
       if (pos === -1) return -1;
 
-      re.lastIndex=pos;
+      re.lastIndex = pos;
     }
-  }
+    return -1;
+  };
 
-
-  function findStringEnd(code, idx, lookFor) {
-    let m, re = STRING[lookFor];
+  const findTemplateEnd = (code, idx, findMatch)=>{
+    const len = code.length;
+    let m, re = /[\\$`]/g;
     re.lastIndex = idx;
 
     while (m = re.exec(code)) {
-      let pos, found = code.charAt(re.lastIndex-1);
+      const idx = re.lastIndex-1;
+      let found = code.charAt(idx);
+
+      if (found === '`') return idx+1;
+      if (idx+1 === len) return -1;
+
+      if (found === '$' && code.charAt(idx+1) === '{') {
+        const pos = findMatch(code, '{', idx+2);
+        if (pos === -1) return pos;
+        re.lastIndex = pos;
+      } else re.lastIndex++;
+    }
+
+    return -1;
+  };
+
+  const findStringEnd = (code, idx, lookFor)=>{
+    let m, re = STRING[lookFor];
+    re.lastIndex = idx;
+
+
+    while (m = re.exec(code)) {
+      let found = code.charAt(re.lastIndex-1);
       if (found === lookFor)
         return re.lastIndex;
+
+      if (found === '\n')
+        return -1;
 
       re.lastIndex++;
     }
 
     return -1;
-  }
+  };
 
-  module.exports = require('koru/env!./js-parser')({
+  const JsParser = require('koru/env!./js-parser')({
     extractCallSignature,
-    findMatch,
+    findMatch: (code, lookFor, idx=0)=> {
+      idx = code.indexOf(lookFor, idx);
+      return idx == -1 ? -1 : findMatch(code, lookFor, idx+1);
+    },
+    lineNestLevel,
+    indent,
   });
+
+  return JsParser;
 });

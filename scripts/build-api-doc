@@ -1,17 +1,20 @@
 #!/bin/bash
 set -e
 
+echo xxxxx "$@"
+
 branch=test
 . `dirname "$0"`/../config/environ.sh
 
 rm -f doc/api-*.json
 
 export KORUAPI=1
+export KORU_PORT=3001
 
-$NODE ./lib/build-api.js
+$NODE ./lib/build-api.js "$@"
 
 name=$(pwd -P)/doc/api.html
 cd app
 echo "building html..."
-${NODE} --es_staging ../lib/api-to-html.js $branch "$@"
+${NODE} --es_staging ../lib/api-to-html.js $branch
 echo "ready - file://$name"

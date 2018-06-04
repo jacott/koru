@@ -1,6 +1,8 @@
 define((require, exports, module)=>{
   const TH       = require('koru/test');
 
+  const {stub, spy, onEnd} = TH;
+
   const jsParser = require('./js-parser');
   var test, v;
 
@@ -12,6 +14,78 @@ define((require, exports, module)=>{
 
     afterEach(()=>{
       v = null;
+    });
+
+    group("findMatch", ()=>{
+      test("simple string", ()=>{
+        const ex = ((b)=>{return '`a"${`${b}`+c}d`e\'f'+'3'+b}).toString();
+        assert.equals(jsParser.findMatch(ex, "'"), 35);
+        assert.equals(jsParser.findMatch(`"a\\"'bc"def`, '"'), 8);
+      });
+
+      test("nested template string", ()=>{
+        let ex = ((b)=>{return `a${`${b}`+'c'}d$\{b`+`123`}).toString();
+        assert.equals(jsParser.findMatch(ex, '`'), 34);
+      });
+    });
+
+    test("lineNestLevel", ()=>{
+      const ex = ((b)=>{
+        while(v.a == v.b) {v.c({foo: {
+          bar(a, b) {
+            if (a == b) {
+              a(b.foo(
+                1,
+                2
+              ));
+            }
+          }
+        }});}
+      }).toString();
+
+      const cb = stub();
+
+      jsParser.lineNestLevel(ex, cb);
+      assert.equals(cb.calls.map(c => c.args), [
+        [1, 7], [5, 46], [6, 68], [7, 94], [9, 117],
+        [9, 136], [9, 154], [7, 172], [6, 186], [5, 198], [1, 212]]);
+
+      cb.reset();
+      jsParser.lineNestLevel(ex.slice(0, -25), cb);
+      assert.equals(cb.calls.map(c => c.args), [
+        [1, 7], [5, 46], [6, 68], [7, 94], [9, 117],
+        [9, 136], [9, 154], [7, 172], [6, 186]]);
+    });
+
+    test("indent", ()=>{
+      const ex = `((b)=>{
+while(v.a == v.b) {v.c({foo: {
+bar(a, b) {
+
+                                 if (a == b) {
+a(b.foo(
+1,
+2
+));
+}
+}
+}});}
+})`;
+
+      assert.equals(jsParser.indent(ex), `((b)=>{
+  while(v.a == v.b) {v.c({foo: {
+    bar(a, b) {
+
+      if (a == b) {
+        a(b.foo(
+          1,
+          2
+        ));
+      }
+    }
+  }});}
+})`);
+
     });
 
     group("extractCallSignature", ()=>{
