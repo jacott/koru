@@ -1,17 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 
-function polyfill(mod) {
-  const srcPath = require.resolve(mod);
-  const destPath = path.resolve(__dirname, 'polyfill', path.basename(srcPath));
+const polyfill = (modName, destname)=>{
+  const srcPath = require.resolve(modName);
+  const destPath = path.resolve(__dirname, 'polyfill', destname || path.basename(srcPath));
 
   if (! stat(destPath)) {
     try {fs.unlinkSync(destPath);} catch(ex) {}
     fs.symlinkSync(srcPath, destPath);
   }
-}
+};
 
-function stat(file) {
+const stat = file =>{
   try {
     return fs.statSync(file);
   }
@@ -19,19 +19,19 @@ function stat(file) {
     if (ex.code !== 'ENOENT')
       throw ex;
   }
-}
+};
 
 polyfill('pepjs/dist/pep');
 
 exports.polyfill = polyfill;
 
-exports.common = function (cfg) {
+exports.common = cfg =>{
   cfg.set('requirejs.packages', [
     "koru", "koru/session",
   ]);
 };
 
-exports.server = function (cfg) {
+exports.server = cfg =>{
   cfg.merge('requirejs', {
     paths: {
       koru: __dirname
@@ -44,6 +44,6 @@ exports.server = function (cfg) {
   cfg.set('clientjs', 'client');
 };
 
-exports.client = function (cfg) {
+exports.client = cfg =>{
 
 };
