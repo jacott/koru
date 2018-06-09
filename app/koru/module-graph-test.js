@@ -6,19 +6,9 @@ define(function (require, exports, module) {
   const {stub, spy, onEnd, util} = TH;
 
   const sut  = require('./module-graph');
-  let v = null;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-      api.module();
-    },
-
-    tearDown() {
-      v = null;
-    },
-
-    "test findPath"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("findPath", ()=>{
       /**
        * Finds shortest dependency path from one module to another
        * module that it (indirectly) requires.
@@ -32,9 +22,9 @@ define(function (require, exports, module) {
       assert.equals(sut.findPath(module, modules['koru/util-base']).map(m => m.id),
                     ['koru/module-graph-test', 'koru/main', 'koru/util', 'koru/util-base']);
 
-    },
+    });
 
-    "test isRequiredBy"() {
+    test("isRequiredBy", ()=>{
       /**
        * Test if `supplier` is required by `user`.
        *
@@ -47,7 +37,7 @@ define(function (require, exports, module) {
       const {modules} = module.ctx;
       assert.isTrue(sut.isRequiredBy(modules['koru/util-base'], module));
       assert.isFalse(sut.isRequiredBy(module, modules['koru/util-base']));
-    },
+    });
 
   });
 });

@@ -1,5 +1,5 @@
-define(function(require, exports, module) {
-  exports.findPath = function (start, goal) {
+define((require, exports, module)=>{
+  exports.findPath = (start, goal)=>{
     const goalId = goal.id;
 
     if (! start._requires)
@@ -12,7 +12,7 @@ define(function(require, exports, module) {
     const visited = new Map;
     visited.set(start, null);
 
-    function buildRow(prev, row=[]) {
+    const buildRow = (prev, row=[])=>{
       const reqs = prev._requires;
       if (! reqs) return row;
       for (let i in reqs)  {
@@ -24,7 +24,7 @@ define(function(require, exports, module) {
         }
       }
       return row;
-    }
+    };
 
     let currentRow = buildRow(start);
     while(currentRow.length) {
@@ -47,7 +47,7 @@ define(function(require, exports, module) {
     }
   };
 
-  exports.isRequiredBy =  function (supplier, user) {
+  exports.isRequiredBy =  (supplier, user)=>{
     const goalId = supplier.id;
 
     if (! user._requires)

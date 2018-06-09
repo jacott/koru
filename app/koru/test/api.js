@@ -16,6 +16,32 @@ define(function(require, exports, module) {
 
   const Element = (isClient ? window : global).Element || {};
 
+  const inspect = (obj)=>{
+    if (typeof obj !== 'object' || obj === null ||
+        obj[inspect$] || ('outerHTML' in obj) || obj.nodeType === 3)
+      return util.inspect(obj, 4, 150);
+
+    const coreDisplay = obj && API._coreDisplay.get(obj.constructor);
+    if (coreDisplay) return coreDisplay;
+
+    let keys = Object.keys(obj).sort();
+    if (keys.length > 20)
+      keys = keys.slice(0, 20);
+
+    const display = keys.map(key => {
+      const item = obj[key];
+      if (/[^$\w]/.test(key))
+        key = JSON.stringify(key);
+      const resolveFunc = item && API._resolveFuncs.get(item.constructor);
+      if (typeof resolveFunc === 'function')
+        return `${key}: ${resolveFunc('Oi', item)[1]}`;
+      if (typeof item === 'function' && item.name === key)
+        return `${key}(){}`;
+
+      return `${key}: ${util.inspect(item, 3, 150)}`;});
+    return `{${display.join(", ").slice(0, 150)}}`;
+  };
+
   class API {
     constructor(parent, moduleOrSubject, subjectName, testModule) {
       this.parent = parent;
@@ -646,7 +672,7 @@ define(function(require, exports, module) {
     const code = func.toString();
     let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
     if (m == null) return;
-    let re = /\/\*\*\s*([\s\S]*?)\s*\*\*\//y;
+    let re = /\/\*\*\s*([\s\S]*?)\s*\*?\*\//y;
     re.lastIndex = m.index+m[0].length;
     m = re.exec(code);
     return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
@@ -890,33 +916,8 @@ define(function(require, exports, module) {
     func === undefined || test[onEnd$].callbacks.push(func);
   }
 
-  function inspect(obj) {
-    if (typeof obj !== 'object' || obj === null ||
-        obj[inspect$] || ('outerHTML' in obj) || obj.nodeType === 3)
-      return util.inspect(obj, 4, 150);
-
-    const coreDisplay = obj && API._coreDisplay.get(obj.constructor);
-    if (coreDisplay) return coreDisplay;
-
-    let keys = Object.keys(obj).sort();
-    if (keys.length > 20)
-      keys = keys.slice(0, 20);
-
-    const display = keys.map(key => {
-      const item = obj[key];
-      if (/[^$\w]/.test(key))
-        key = JSON.stringify(key);
-      const resolveFunc = item && API._resolveFuncs.get(item.constructor);
-      if (typeof resolveFunc === 'function')
-        return `${key}: ${resolveFunc('Oi', item)[1]}`;
-      if (typeof item === 'function' && item.name === key)
-        return `${key}(){}`;
-
-      return `${key}: ${util.inspect(item, 3, 150)}`;});
-    return `{${display.join(", ").slice(0, 150)}}`;
-  }
-
   API._docComment = docComment;
-  module.exports = API;
   require('koru/env!./api')(API);
+
+  return API;
 });

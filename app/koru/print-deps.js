@@ -1,82 +1,60 @@
-define(function(require, exports, module) {
-  var koru = require('./main');
+define((require, exports, module)=>{
+  const koru = require('./main');
 
-  exports.both = function (name) {
-    return exports.requiredBy(name) + exports.requires(name) +
-      '\n"' + name + '" [shape=polygon,sides=4,peripheries=2];';
-  },
+  const traceDep = (name, dir, done)=>{
+    const result = [];
+    const map = module.ctx.modules;
 
-  exports.all = function () {
-    var result = [];
-    var map = koru.providerMap;
-    for(var curr in map) {
-      for (var key in map[curr]) {
-        result.push('"'+key+'" -> "'+curr+'";');
-      }
-    }
-
-    result.push('');
-    return result.join("\n");
-  },
-
-  exports.requiredBy = function (name) {
-    var result = [];
-    var map = koru.providerMap;
-    var done = {};
-    var curr = map[name];
-
-    addDep(curr, name);
-
-    function addDep(curr, name) {
+    const addDep = (name)=>{
       if (done[name]) return;
       done[name] = true;
 
-      for (var key in curr) {
+      const curr = map[name];
+      if (curr === undefined)
+        throw new Error("can't find "+name);
+
+      const reqs = curr[dir];
+      for (const key in reqs) {
+        if (key === '') continue;
         result.push('"'+key+'" -> "'+name+'";');
-        addDep(map[key], key);
+        addDep(key);
       }
-    }
+    };
+
+    addDep(name);
 
     result.push('');
 
     return result.join("\n");
   };
 
-  exports.requires = function (name) {
-    var exclude = {
-      "koru/main": true,
-      "koru/util": true,
-      "koru/util-base": true,
-      "koru/test/main": true,
-    };
-    var result = [];
-    var map = koru.providerMap;
-    var inv = {};
-    for (var sup in map) {
-      var deps = map[sup];
-      for (var dep in deps) {
-        var curr = inv[dep] || (inv[dep] = {});
-        curr[sup] = true;
-      }
-    }
-    var done = {};
-    var curr = inv[name];
+  exports.both = name => exports.requiredBy(name) + exports.requires(name) +
+    '\n"' + name + '" [shape=polygon,sides=4,peripheries=2];';
 
-    addDep(curr, name);
-
-    function addDep(curr, name) {
-      if (done[name]) return;
-      done[name] = true;
-
-      for (var key in curr) {
-        if (exclude[key]) continue;
-        result.push('"'+name+'" -> "'+key+'";');
-        addDep(inv[key], key);
+  exports.all = ()=>{
+    const result = [];
+    const map = module.ctx.modules;
+    for(const id in map) {
+      const reqs = map[id]._requiredBy;
+      for (const rb in reqs) {
+        result.push('"'+rb+'" -> "'+id+'";');
       }
     }
 
     result.push('');
-
     return result.join("\n");
+  };
+
+  exports.whatRequires = name =>{
+    return traceDep(name, '_requiredBy', {});
+  };
+
+  exports.requiredBy = (name, excludeCommon) =>{
+    return traceDep(name, '_requires', excludeCommon ? {
+      "koru/main": true,
+      "koru/util": true,
+      "koru/util-base": true,
+      "koru/test/main": true,
+    } : {});
   };
 });
