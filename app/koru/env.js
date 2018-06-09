@@ -14,8 +14,12 @@
     load(name, req, onload, config) {
       const provider = name + suffix;
       const pMod = req.module.dependOn(provider);
-      req.module.body = () => pMod.exports;
-      onload();
+      if (pMod === undefined || pMod.isUnloaded()) {
+        onload.error("Can't load "+provider);
+      } else {
+        req.module.body = () => pMod.exports;
+        onload();
+      }
     },
 
     pluginBuilder: './env-builder',
