@@ -12,25 +12,15 @@ define((require, exports, module)=> JsPaser => {
     boolean: 'kc',
   };
 
-  JsPaser.parse = terser.minify;
+  JsPaser.parse = terser.parse;
 
   JsPaser.highlight = (codeIn, tag='div')=>{
     if (! codeIn) return;
 
     let srcPos = 0;
 
-    const {ast, error} = terser.minify(codeIn, {
-      parse: {},
-      compress: false,
-      mangle: false,
-      output: {
-        comments: 'all',
-        ecma: 6,
-        ast: true,
-      }
-    });
-    if (error !== undefined)
-      throw error;
+    const parseOpts = {module: true};
+    const ast = JsPaser.parse(codeIn, parseOpts);
 
     const div = document.createElement(tag);
     div.className = 'highlight';
@@ -388,16 +378,7 @@ define((require, exports, module)=> JsPaser => {
       let ex1;
       for (let code of iter) {
         try {
-          const {ast, error} =terser.minify(code, {
-            compress: false,
-            mangle: false,
-            output: {
-              ast: true,
-              code: false,
-            }
-          });
-          if (ast !== undefined) return ast;
-          ex1 = error;
+          return JsPaser.parse(code, {});
         } catch(ex) {
           if (ex.name !== 'SyntaxError')
             throw ex;
