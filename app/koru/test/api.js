@@ -587,14 +587,16 @@ define(function(require, exports, module) {
 
   if (! API.isRecord) {
     API._instance = new APIOff();
-  }
+  } else {
+    TH.Core.onEnd(module, function () {
+      if (API.isRecord) {
+        API._record();
+        API.reset();
+      }
+    });
 
-  TH.Core.onEnd(module, function () {
-    if (API.isRecord) {
-      API._record();
-      API.reset();
-    }
-  });
+    TH.Core.onTestEnd(test=>{API._instance = null});
+  }
 
   function relType(orig, value) {
     return orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
@@ -777,10 +779,10 @@ define(function(require, exports, module) {
   function method(api, methodKey, obj, methods) {
     const {test} = TH;
     const func = obj[methodKey];
-    const methodName = methodKey.toString();
-    if (! func)
+    if (func == undefined)
       throw new Error(`method "${methodName}" not found`);
 
+    const methodName = methodKey.toString();
     let details = methods[methodName];
     const calls = details ? details.calls : [];
     if (! details) {
