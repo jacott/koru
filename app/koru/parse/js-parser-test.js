@@ -99,7 +99,34 @@ a(b.foo(
         const sig = foo => foo*2;
 
         assert.equals(jsParser.extractCallSignature(sig),
-                      'foo => {/*...*/}');
+                      'sig(foo)');
+
+        const sig2 = (foo, bar)=>{
+          return (bar, foo)=>{};
+        };
+        assert.equals(jsParser.extractCallSignature(sig2),
+                      'sig2(foo, bar)');
+      });
+
+      test("nameless arrow function", ()=>{
+        assert.equals(jsParser.extractCallSignature(foo => foo*2),
+                      '(foo)');
+      });
+
+      test("function expression", ()=>{
+        assert.equals(jsParser.extractCallSignature(function (foo) {}),
+                      '(foo)');
+        assert.equals(jsParser.extractCallSignature(function read(foo) {}),
+                      'read(foo)');
+
+        assert.equals(jsParser.extractCallSignature({
+          a: {
+            read: (foo)=>{}
+          }}.a.read), 'read(foo)');
+
+        const named = function (a,b) {};
+         assert.equals(jsParser.extractCallSignature(named),
+                      'named(a,b)');
       });
 
       test("class", ()=>{

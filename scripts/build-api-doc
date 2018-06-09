@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-echo xxxxx "$@"
-
 branch=test
 . `dirname "$0"`/../config/environ.sh
 

@@ -20,12 +20,14 @@ define(function(require, exports, module) {
 
   const extractCallSignature = func =>{
     let code = func.toString();
-    let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function\s*(?=\w))/.exec(code);
+    const name = func.name || '';
 
-    if (m)
+    let m = /^(?:class[^{]*\{[^{]*(?=\bconstructor\b)|function[\s\r\n]*(?=\w)?)/.exec(code);
+
+    if (m != null)
       code = code.slice(m[0].length);
-    else if (m = /^(\w+)\s*=>/.exec(code))
-      return m[1] += ' => {/*...*/}';
+    else if (m = /^(\w+)\s*?=>/.exec(code))
+      return `${name}(${m[1]})`;
 
     if (code.startsWith('class'))
       return "constructor()";
@@ -38,7 +40,9 @@ define(function(require, exports, module) {
     if (pos === -1)
       throw new Error("Can't find signature of "+code);
 
-    return code.slice(0, pos);
+    code =  code.slice(0, pos);
+
+    return code[0] === '(' ? name+code : code;
   };
 
   const indent = (code, width=2)=>{
