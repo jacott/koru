@@ -3,13 +3,13 @@ set -e
 
 . `dirname "$0"`/../config/environ.sh
 
-if test -e tmp/package-lock.json && ${NODE} -v | cat - package-lock.json | diff -q - tmp/package-lock.json >/dev/null;then
+if test -e tmp/package-lock.json && ${NODE} -v | cat - package-lock.json package.json| diff -q - tmp/package-lock.json >/dev/null;then
     echo 'node_modules okay'
 else
     echo 'npm install...'
     rm -rf node_modules build
     npm i
-    ${NODE} -v | cat - package-lock.json >tmp/package-lock.json
+    ${NODE} -v | cat - package-lock.json package.json >tmp/package-lock.json
 fi
 
 cd app
