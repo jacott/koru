@@ -97,6 +97,7 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=underline]', 'U');
           assert.dom('button[name=link]', '', function () {v.link = this});
           assert.dom('button[name=code]', '');
+          assert.dom('button[name=strikeThrough]', '');
 
           assert.dom('button[name=removeFormat]', function () {
             // I think the backslash upsets assert.dom
@@ -361,8 +362,6 @@ isClient && define(function (require, exports, module) {
         TH.pointerDownUp('.rtToolbar [name=formatText]', 'Normal text');
 
         assert.dom('.glassPane .rtFormatText', ()=>{
-          assert.dom('li>[title="Strike-through [alt-shift-5]"]', 'Strike-through');
-
           assert.dom('li>[title="Normal [alt-ctrl-0]"]');
           assert.dom('li>[title="Heading 1 [alt-ctrl-1]"]');
           assert.dom('li>[title="Heading 2 [alt-ctrl-2]"]');

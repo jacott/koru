@@ -123,7 +123,6 @@ define(function(require, exports, module) {
   ];
 
   const FORMAT_TEXT_LIST = [
-    ['strikeThrough', 'Strike-through'],
     ['heading0', 'Normal'],
   ];
 
