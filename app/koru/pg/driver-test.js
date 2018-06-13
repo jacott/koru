@@ -490,22 +490,44 @@ isServer && define((require, exports, module)=>{
         }, {sqlState: '42703'});
       });
 
+      test("onCommit outside transaction", ()=>{
+        const action = stub();
+        const action2 = stub();
+        v.foo._client.onCommit(action);
+        assert.called(action);
+        v.foo.transaction(tran =>{
+          tran.onAbort(()=>{
+            try {
+              v.foo._client.onCommit(action2);
+            } catch(ex) {
+              v.ex = ex;
+            }
+          });
+        });
+        refute.called(action2);
+      });
+
       test("nested transactions", ()=>{
         try {
           v.foo.transaction(tran =>{
+            v.foo._client.onCommit(v.onCommit = stub());
             v.foo.updateById('123', {name: 'eee'});
             tran.onAbort(v.onAbort = stub());
             tran.onAbort(v.onAbort2 = stub());
             try {
               v.foo.transaction(tran =>{
                 tran.onAbort(v.onAbort3 = stub());
-                v.foo.updateById('123', {name: 'fff'});
+                v.foo.transaction(tran =>{
+                  v.foo.updateById('123', {name: 'fff'});
+                  tran.onAbort(v.onAbort4 = stub());
+                });
                 throw 'abort';
               });
             } catch(ex) {
               refute.same(ex, 'abort');
               throw ex;
             }
+            refute.called(v.onAbort4);
             assert.called(v.onAbort3);
             refute.called(v.onAbort);
             assert.equals(v.foo.findOne({_id: '123'}).name, 'eee');
@@ -515,6 +537,7 @@ isServer && define((require, exports, module)=>{
           refute.same(ex, 'abort');
           throw ex;
         }
+        refute.called(v.onCommit);
         assert.called(v.onAbort);
         assert.called(v.onAbort2);
         assert.calledOnce(v.onAbort3);
@@ -537,10 +560,16 @@ isServer && define((require, exports, module)=>{
 
         v.foo.transaction(tran =>{
           tran.onAbort(v.onAbort = stub());
+          v.foo._client.onCommit(v.onCommit1 = stub());
           v.foo.transaction(tran =>{
+            v.foo._client.onCommit(v.onCommit2 = stub());
             v.foo.updateById('123', {name: 'fff'});
           });
+          refute.called(v.onCommit1);
+          refute.called(v.onCommit2);
         });
+        assert.called(v.onCommit1);
+        assert.called(v.onCommit2);
         assert.equals(v.foo.findOne({_id: '123'}).name, 'fff');
         refute.called(v.onAbort);
       });

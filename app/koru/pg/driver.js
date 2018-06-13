@@ -9,14 +9,14 @@ define((require, exports, module)=>{
 
   const {private$, inspect$} = require('koru/symbols');
 
-  const id$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
+  const id$ = Symbol(), onCommit$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
   const pools = Object.create(null);
   let clientCount = 0;
   let cursorCount = 0;
   let conns = 0;
 
-  const autoSchema = module.config().autoSchema || false;
+  const autoSchema = !! module.config().autoSchema;
 
   let defaultDb = null;
 
@@ -131,6 +131,15 @@ define((require, exports, module)=>{
     return result.join(',');
   };
 
+  const runOnCommit = (onCommit)=>{
+    while (onCommit !== undefined) {
+      const {action} = onCommit;
+      onCommit = onCommit.next;
+      action();
+    }
+  };
+
+
   class Client {
     constructor(url, name) {
       this[id$] = (++clientCount).toString(36);
@@ -160,6 +169,15 @@ define((require, exports, module)=>{
         pool.drain();
       }
       delete pools[this[id$]];
+    }
+
+    onCommit(action) {
+      const tx = util.thread[this[tx$]];
+      if (tx === undefined || tx.transaction === undefined) {
+        action();
+      } else if (tx.transaction === 'COMMIT') {
+        tx[onCommit$] = {action, next: tx[onCommit$]};
+      }
     }
 
     _getConn() {
@@ -256,10 +274,19 @@ define((require, exports, module)=>{
           if (ex !== 'abort')
             throw ex;
         } finally {
+          const onCommits = tx[onCommit$];
+
+          tx[onCommit$] = undefined;
           const command = tx.transaction;
           tx.transaction = null;
-          tx.conn.isClosed() || query(tx.conn, command);
-          runOnAborts(tx, command);
+          if (! tx.conn.isClosed()) {
+            query(tx.conn, command);
+            runOnAborts(tx, command);
+            if (command === 'COMMIT') {
+              runOnCommit(onCommits);
+            }
+          } else
+            runOnAborts(tx, command);
         }
       } finally {
         releaseConn(this);
