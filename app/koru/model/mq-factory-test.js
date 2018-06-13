@@ -23,6 +23,7 @@ isServer && define(function (require, exports, module) {
       v.defDb = Driver.defaultDb;
       TH.coreStartTransaction(v.defDb);
       mqFactory = new MQFactory('_test_MQ');
+      intercept(Object.getPrototypeOf(v.defDb), 'onCommit', f => f());
     },
 
     tearDown() {
@@ -529,16 +530,23 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
       },
 
       "test queue from within action"() {
+        v.defDb.onCommit.restore();
+        const onCommit = stub(v.defDb, 'onCommit');
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = mqFactory.getQueue('foo');
         v.action = (args)=>{
           v.action = args => {v.args = args};
           queue.add({dueAt: new Date(now+50), message: {last: 'msg'}});
+          onCommit.yieldAndReset();
           queue.add({dueAt: new Date(now-20), message: [1,2,3]});
+          onCommit.yieldAndReset();
         };
 
         queue.add({message: [4,5,6]});
+        refute.called(koru.setTimeout);
+        assert.called(onCommit);
+        onCommit.yieldAndReset();
 
         koru.setTimeout.yieldAndReset();
         assert.calledOnce(koru.setTimeout);

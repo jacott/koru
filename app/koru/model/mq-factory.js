@@ -138,7 +138,7 @@ select "dueAt" from "${table._name}" where name = $1
       const {mqdb, name} = this;
       const now = util.dateNow();
       mqdb.table.insert({name, dueAt, message});
-      queueFor(this, dueAt);
+      mqdb.table._client.onCommit(()=>{queueFor(this, dueAt)});
     }
 
     peek(maxResults=1, dueBefore) {
