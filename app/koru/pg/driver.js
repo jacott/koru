@@ -1,6 +1,6 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Future = requirejs.nodeRequire('fibers/future');
-  const Libpq = requirejs.nodeRequire('pg-libpq'); // app installs this
+  const Libpq = requirejs.nodeRequire('pg-libpq');
   const koru            = require('../main');
   const makeSubject     = require('../make-subject');
   const match           = require('../match');
@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   const {private$, inspect$} = require('koru/symbols');
 
-  const id$ = Symbol(), tx$ = Symbol();
+  const id$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
   const pools = Object.create(null);
   let clientCount = 0;
@@ -72,9 +72,9 @@ define(function(require, exports, module) {
   };
 
   const runOnAborts = (tx, command)=>{
-    let onAborts = tx._onAborts;
+    let onAborts = tx[onAbort$];
     if (onAborts) {
-      tx._onAborts = null;
+      tx[onAbort$] = null;
       if (command === 'ROLLBACK')
         for (; onAborts; onAborts = onAborts.next)
           onAborts.func();
@@ -111,6 +111,25 @@ define(function(require, exports, module) {
     };
   };
 
+  const selectFields = (table, fields)=>{
+    if (! fields) return '*';
+    let add, col;
+    const result = ['_id'];
+    for (col in fields) {
+      if (add === undefined) {
+        add = !! fields[col];
+      } else if (add !== !! fields[col])
+        throw new Error('fields must be all true or all false');
+      if (col !== '_id' && add) {
+        result.push('"'+col+'"');
+      }
+    }
+    if (! add) for(col in table._colMap) {
+      if (col === '_id') continue;
+      hasOwn(fields, col) || result.push('"'+col+'"');
+    }
+    return result.join(',');
+  };
 
   class Client {
     constructor(url, name) {
@@ -207,13 +226,10 @@ define(function(require, exports, module) {
       getConn(this); // ensure connection
       const tx = util.thread[this[tx$]];
       try {
-        if (tx.transaction) {
-          const onAborts = tx._onAborts;
-          tx._onAborts = null;
-          if(tx.savepoint)
-            ++tx.savepoint;
-          else
-            tx.savepoint = 1;
+        if (tx.transaction !== null) {
+          const onAborts = tx[onAbort$];
+          tx[onAbort$] = null;
+          ++tx.savepoint;
           let ex;
           try {
             query(tx.conn, "SAVEPOINT s"+tx.savepoint);
@@ -228,7 +244,7 @@ define(function(require, exports, module) {
               ex = null;
           } finally {
             --tx.savepoint;
-            tx._onAborts = onAborts;
+            tx[onAbort$] = onAborts;
             if (ex) throw ex;
           }
         } else try {
@@ -261,10 +277,12 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
     constructor(client, callback) {
       this.conn = new Libpq(client._url, err => callback(err, this));
       this.count = 0;
+      this.savepoint = 0;
+      this.transaction = null;
     }
 
     onAbort(func) {
-      this._onAborts = {func: func, next: this._onAborts};
+      this[onAbort$] = {func: func, next: this[onAbort$]};
     }
   }
 
@@ -408,47 +426,12 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     where(query, whereValues) {
       if (query == null) return;
-      const table = this;
+      const colMap = this._colMap;
+      const whereSql = [];
       let count = whereValues.length;
-      const colMap = table._colMap;
       let fields;
 
-      const whereSql = [];
-      if (query.constructor === Object) {
-        foundIn(query, whereSql);
-      } else {
-        if (query.singleId) {
-          whereSql.push('"_id"=$'+ ++count);
-          whereValues.push(query.singleId);
-        }
-
-        query._wheres !== undefined && foundIn(query._wheres, whereSql);
-        query._whereSqls !== undefined && query._whereSqls.forEach(n => {
-          foundInSql(n, whereSql);
-        });
-        if (fields = query._whereNots) {
-          const subSql = [];
-          foundIn(fields, subSql);
-          whereSql.push(`(${subSql.join(" OR ")}) IS NOT TRUE`);
-        }
-
-        if (fields = query._whereSomes) {
-          query._whereSomes.forEach(ors => {
-            whereSql.push("("+ors.map(q => {
-              const subSql = [];
-              foundIn(q, subSql);
-              return subSql.join(" AND ");
-            }).join(' OR ')+") IS TRUE");
-          });
-        }
-      }
-
-      if (whereSql.length === 0)
-        return;
-
-      return whereSql.join(' AND ');
-
-      function inArray(qkey, result, value, isIn) {
+      const inArray = (qkey, result, value, isIn)=>{
         let where;
         switch (value ? value.length : 0) {
         case 0:
@@ -463,9 +446,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
           where = qkey+" = ANY($"+ ++count + ")";
         }
         result.push(isIn ? where : 'NOT ('+where+')');
-      }
+      };
 
-      function foundInSql(value, result) {
+      const foundInSql = (value, result)=>{
         if (typeof value === 'string')
           result.push(value);
         else {
@@ -486,9 +469,9 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
             }));
           }
         }
-      }
+      };
 
-      function foundIn(fields, result) {
+      const foundIn = (fields, result)=>{
         let qkey;
         for(let key in fields) {
           const value = fields[key];
@@ -505,12 +488,12 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
             }
           } else {
             if (key[0] === '$') switch(key) {
-            case '$sql':
+              case '$sql':
               foundInSql(value, result);
               continue;
-            case '$or':
-            case '$and':
-            case '$nor':
+              case '$or':
+              case '$and':
+              case '$nor':
               const parts = [];
               util.forEach(value, w => {
                 const q = [];
@@ -530,7 +513,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
           const colSpec = colMap[key];
 
           if (value != null) switch(colSpec && colSpec.data_type) {
-          case 'ARRAY':
+            case 'ARRAY':
             if (typeof value === 'object') {
               if (Array.isArray(value)) {
                 result.push(qkey+' && $'+ ++count);
@@ -554,7 +537,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
             whereValues.push(value);
             break;
 
-          case 'jsonb':
+            case 'jsonb':
             if (typeof value === 'object') {
               if (value.$elemMatch) {
                 const subvalue = value.$elemMatch;
@@ -586,7 +569,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
             }
             break;
 
-          default:
+            default:
             if (typeof value === 'object') {
               if (Array.isArray(value)) {
                 inArray(qkey, result, value, true);
@@ -642,7 +625,41 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
             whereValues.push(value);
           }
         }
+      };
+
+      if (query.constructor === Object) {
+        foundIn(query, whereSql);
+      } else {
+        if (query.singleId) {
+          whereSql.push('"_id"=$'+ ++count);
+          whereValues.push(query.singleId);
+        }
+
+        query._wheres !== undefined && foundIn(query._wheres, whereSql);
+        query._whereSqls !== undefined && query._whereSqls.forEach(n => {
+          foundInSql(n, whereSql);
+        });
+        if (fields = query._whereNots) {
+          const subSql = [];
+          foundIn(fields, subSql);
+          whereSql.push(`(${subSql.join(" OR ")}) IS NOT TRUE`);
+        }
+
+        if (fields = query._whereSomes) {
+          query._whereSomes.forEach(ors => {
+            whereSql.push("("+ors.map(q => {
+              const subSql = [];
+              foundIn(q, subSql);
+              return subSql.join(" AND ");
+            }).join(' OR ')+") IS TRUE");
+          });
+        }
       }
+
+      if (whereSql.length === 0)
+        return;
+
+      return whereSql.join(' AND ');
     }
 
     query(where) {
@@ -701,27 +718,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
   Table.prototype.aryToSqlStr = aryToSqlStr;
 
-  function selectFields(table, fields) {
-    if (! fields) return '*';
-    let add, col;
-    const result = ['_id'];
-    for (col in fields) {
-      if (add === undefined) {
-        add = !! fields[col];
-      } else if (add !== !! fields[col])
-        throw new Error('fields must be all true or all false');
-      if (col !== '_id' && add) {
-        result.push('"'+col+'"');
-      }
-    }
-    if (! add) for(col in table._colMap) {
-      if (col === '_id') continue;
-      hasOwn(fields, col) || result.push('"'+col+'"');
-    }
-    return result.join(',');
-  }
-
-  function initCursor(cursor) {
+  const initCursor = cursor =>{
     if (cursor._name != null) return;
     const client = cursor.table._client;
     const tx =util.thread[client[tx$]];
@@ -746,10 +743,10 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
 
     if (cursor._batchSize) {
       const cname = 'c'+(++cursorCount).toString(36);
-      if (tx !== undefined && tx.transaction) {
+      if (tx !== undefined && tx.transaction !== null) {
         cursor._inTran = true;
         client.query('DECLARE '+cname+' CURSOR FOR '+sql, cursor._values);
-      } else client.transaction(function () {
+      } else client.transaction(()=>{
         getConn(client); // so cursor is valid outside transaction
         client.query('DECLARE '+cname+' CURSOR WITH HOLD FOR '+sql, cursor._values);
       });
@@ -760,7 +757,7 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       cursor._name = 'all';
     }
 
-  }
+  };
 
   class Cursor {
     constructor(table, sql, values, options) {
@@ -984,8 +981,8 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
   function jsFieldToPg(col, colSchema, client) {
     let defaultVal = '';
 
-    const richType = (typeof colSchema === 'string') ?
-            colSchema : colSchema ? colSchema.type : 'text';
+    const richType = (typeof colSchema === 'string')
+          ? colSchema : colSchema ? colSchema.type : 'text';
 
     const type = pgFieldType(richType);
 
@@ -994,23 +991,25 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
       client.withConn(function (conn) {
         if (type === 'jsonb')
           literal = conn.escapeLiteral(JSON.stringify(literal))+'::jsonb';
-        else switch (typeof literal) {
-        case 'number':
-        case 'boolean':
-          break;
-        case 'object':
-          if (Array.isArray(literal)) {
-            literal = conn.escapeLiteral(aryToSqlStr(literal))+'::'+type;
+        else {
+          switch (typeof literal) {
+          case 'number':
+          case 'boolean':
             break;
+          case 'object':
+            if (Array.isArray(literal)) {
+              literal = conn.escapeLiteral(aryToSqlStr(literal))+'::'+type;
+              break;
+            }
+          default:
+            literal = conn.escapeLiteral(literal)+'::'+type;
           }
-        default:
-          literal = conn.escapeLiteral(literal)+'::'+type;
         }
       });
       defaultVal = ` DEFAULT ${literal}`;
     }
     const collate = (type === 'text' && richType !== 'text' || richType === 'has_many')
-            ? ' collate "C"' : '';
+          ? ' collate "C"' : '';
     return `"${col}" ${type}${collate}${defaultVal}`;
   }
 

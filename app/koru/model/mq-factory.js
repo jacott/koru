@@ -74,10 +74,10 @@ select "dueAt" from "${table._name}" where name = $1
   order by "dueAt",_id limit 1;
 `, [name])[0];
 
-      timer.handle = 0;
-      if (nrec !== undefined) {
-        queueFor(mq, minStart === undefined ? nrec.dueAt : Math.max(+minStart, +nrec.dueAt));
-      }
+    timer.handle = 0;
+    if (nrec !== undefined) {
+      queueFor(mq, minStart === undefined ? nrec.dueAt : Math.max(+minStart, +nrec.dueAt));
+    }
   };
 
   const queueFor = (mq, dueAt)=>{

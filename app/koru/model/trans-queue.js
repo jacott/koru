@@ -1,4 +1,4 @@
-define(function(require) {
+define(require =>{
   const util  = require('koru/util');
 
   const success$ = Symbol(), abort$ = Symbol();
@@ -19,7 +19,7 @@ define(function(require) {
       }
       try {
         const result = body === undefined ?
-                db() : db.transaction(tx => body.call(db, tx));
+              db() : db.transaction(tx => body.call(db, tx));
         if (firstLevel) {
           util.thread[success$] = undefined;
           for(let i = 0; i < list.length; ++i) {
