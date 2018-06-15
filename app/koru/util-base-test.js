@@ -2,6 +2,8 @@ define((require, exports, module)=>{
   const api = require('koru/test/api');
   const TH  = require('./test');
 
+  const {inspect$} = require('koru/symbols');
+
   const util = require('./util');
 
   let v = {};
@@ -17,10 +19,28 @@ define((require, exports, module)=>{
     },
 
     "test inspect"() {
+      /**
+       * Convert any type to a displayable string. The symbol `inspect$` can be used to override
+       * the value returned.
+       *
+       **/
+      api.method('inspect');
+      //[
       const obj = {"": 0, 123: 1, 'a"b"`': 2, "a`'": 3, "a\"'`": 4, "\\a": 5};
       assert.equals(
         util.inspect(obj),
         `{123: 1, "": 0, 'a"b"\`': 2, "a\`'": 3, "a\\"'\`": 4, "\\\\a": 5}`);
+
+      const array = [1,2,3];
+      assert.equals(
+        util.inspect(array),
+        "[1, 2, 3]"
+      );
+
+      array[inspect$] = ()=>"overridden";
+
+      assert.equals(util.inspect(array), "overridden");
+      //]
     },
 
     "test qlabel"() {

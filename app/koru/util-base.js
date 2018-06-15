@@ -24,16 +24,12 @@ define((require, exports, module)=>{
         return `function ${name !== qlabel(name) ? '' : name}(){}`;
       } case 'object':
         if (o === null) return 'null';
-        if (o.constructor === RegExp) return o.toString();
-        if ('outerHTML' in o)
-          return o.outerHTML;
-        if (o.nodeType === 3)
-          return "$TextNode:"+o.textContent;
-        if (o.nodeType === 11)
-          return "$docFrag:"+inspect1(o.firstChild, i-1);
-        if (o[inspect$])
-          return o[inspect$]();
+        if (o[inspect$] !== undefined) return o[inspect$]();
         if (o.constructor === Date) return "<"+o.toISOString()+">";
+        if (o.constructor === RegExp) return o.toString();
+        if ('outerHTML' in o) return o.outerHTML;
+        if (o.nodeType === 3) return "$TextNode:"+o.textContent;
+        if (o.nodeType === 11) return "$docFrag:"+inspect1(o.firstChild, i-1);
         if (Array.isArray(o)) {
           if (i)
             return "[" + o.map(o2 => inspect1(o2, i-1)).join(", ") + "]";
@@ -42,7 +38,7 @@ define((require, exports, module)=>{
         if (typeof o.test === 'function' && typeof o.or === 'function')
           return ''+o;
 
-        if (i) {
+        if (i != 0) {
           const r=[];
           if (o instanceof Error) {
             r.push(o.toString());
@@ -114,7 +110,7 @@ define((require, exports, module)=>{
 
     newEscRegex: s => new RegExp(regexEscape(s)),
 
-    inspect: (o, count, len)=> inspect1(o, count || 4).toString().slice(0, len || 1000),
+    inspect: (o, count=4, len=1000)=> inspect1(o, count).toString().slice(0, len),
 
     qstr, qlabel,
   };
