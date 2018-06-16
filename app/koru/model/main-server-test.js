@@ -111,12 +111,13 @@ define(function (require, exports, module) {
 
       TestModel.remote({foo: v.foo = stub().returns('result')});
 
-      spy(TestModel.db, 'transaction');
+      const transaction = spy(TestModel.db, 'transaction');
 
       assert.accessDenied(()=>{
         session._rpcs['TestModel.foo'].call({userId: null});
       });
 
+      refute.called(transaction);
       refute.called(v.foo);
 
       assert.same(session._rpcs['TestModel.foo'].call(v.conn = {userId: "uid"}, 1, 2),
@@ -126,7 +127,7 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.foo, 1, 2);
       assert.same(v.foo.firstCall.thisValue, v.conn);
 
-      assert.called(TestModel.db.transaction);
+      assert.called(transaction);
     },
 
     "test when no changes in save"() {

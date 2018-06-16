@@ -235,8 +235,8 @@ define(function(require, exports, module) {
 
         remote(model, name, func) {
           return function (...args) {
-            return model.db.transaction(
-              () => (Val.allowAccessIf(this.userId), func.apply(this, args)));
+            Val.allowAccessIf(this.userId);
+            return model.db.transaction(() => (func.apply(this, args)));
           };
         },
       });
