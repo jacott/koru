@@ -487,11 +487,9 @@ assert.same(Color.colors.red, '#f00');`,
     test("new", ()=>{
       /**
        * Document `constructor` for the current subject. It
-
-
-
-       * @param [sig] override the call signature
-
+       *
+       * @param [sig] override the call signature. Sig is used as the subject if it is a function.
+       *
        * @returns a ProxyClass which is to be used instead of `new Class`
 
        **/
@@ -505,7 +503,6 @@ assert.same(Color.colors.red, '#f00');`,
       }
 
       API.module({subjectModule: {id: 'myMod', exports: Hobbit}});
-
 
       const newHobbit = API.new(Hobbit);
 

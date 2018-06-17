@@ -1,5 +1,5 @@
-define(function(require, exports, module) {
-  const koru = require('../main');
+define((require, exports, module)=>{
+  const koru            = require('../main');
 
   class CssLoader {
     constructor(session) {
@@ -48,5 +48,5 @@ define(function(require, exports, module) {
 
   koru.onunload(module, CssLoader.removeAllCss);
 
-  module.exports = CssLoader;
+  return CssLoader;
 });

@@ -1,45 +1,52 @@
 define(function(require) {
   const dbBroker = require('koru/model/db-broker');
 
-  function match() {
-    const dbs = {};
-    let key = 0;
+  const dbs$ = Symbol(), key$ = Symbol();
 
-    class StopFunc {
-      constructor(id, dbId, modelName) {
-        this.id = id;
-        this.dbId = dbId;
-        this.modelName = modelName;
-      }
+  class StopFunc {
+    constructor(dbs, dbId, modelName, id) {
+      this.dbs = dbs;
+      this.dbId = dbId;
+      this.modelName = modelName;
+      this.id = id;
+    }
 
-      stop() {
-        if (this.id === null) return;
-        const matchFuncs = dbs[this.dbId][this.modelName];
-        delete matchFuncs[this.id];
-        this.id = null;
-      }
-    };
+    stop() {
+      if (this.id === null) return;
+      const matchFuncs = this.dbs[this.dbId][this.modelName];
+      delete matchFuncs[this.id];
+      this.id = null;
+    }
+  }
 
-    return {
-      get _models() {return dbs[dbBroker.dbId]},
+  class Match {
+    constructor() {
+      this[dbs$] = {};
+      this[key$] = 0;
+    }
 
-      has(doc) {
-        const models = dbs[dbBroker.dbId];
-        const mm = models === undefined ? undefined : models[doc.constructor.modelName];
-        for (const key in mm) if (mm[key](doc)) return true;
-        return false;
-      },
+    get _models() {return this[dbs$][dbBroker.dbId]}
 
-      register(modelName, comparator) {
-        const {dbId} = dbBroker;
-        modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
-        const id = (++key).toString(36);
-        const models = dbs[dbId] === undefined ? (dbs[dbId] = {}) : dbs[dbId];
-        (models[modelName] || (models[modelName] = Object.create(null)))[id] = comparator;
-        return new StopFunc(id, dbId, modelName);
-      },
-    };
-  };
+    has(doc) {
+      const models = this[dbs$][dbBroker.dbId];
+      const mm = models === undefined ? undefined : models[doc.constructor.modelName];
+      for (const key in mm) if (mm[key](doc)) return true;
+      return false;
+    }
 
-  return match;
+    register(modelName, comparator) {
+      const dbs = this[dbs$];
+      const {dbId} = dbBroker;
+      modelName = typeof modelName === 'string' ? modelName : modelName.modelName;
+      const id = (++this[key$]).toString(36);
+
+      const models = dbs[dbId] || (dbs[dbId] = {});
+      const matchFuncs = models[modelName] || (models[modelName] = Object.create(null));
+      matchFuncs[id] = comparator;
+
+      return new StopFunc(dbs, dbId, modelName, id);
+    }
+  }
+
+  return Match;
 });

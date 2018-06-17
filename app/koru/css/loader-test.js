@@ -16,7 +16,6 @@ isClient && define((require, exports, module)=>{
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
       v.session = new SessionBase('loader');
-      api.module();
     });
 
     afterEach(()=>{

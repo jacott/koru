@@ -212,8 +212,8 @@ isClient && define((require, exports, module)=>{
       setUp() {
         stub(publish, '_filterModels');
         publish({name: "foo2", init() {
-          this.match('F1', TH.test.stub());
-          this.match('F2', TH.test.stub());
+          this.match('F1', stub());
+          this.match('F2', stub());
           v.sub2isResub = this.isResubscribe;
         }});
       },
@@ -426,8 +426,8 @@ isClient && define((require, exports, module)=>{
         stub(v.sessState, 'isReady').returns(true);
         v.pubFunc = function () {
           this.lastSubscribed = 12345678;
-          this.match(v.Foo, TH.test.stub());
-          this.match("Bar", TH.test.stub());
+          this.match(v.Foo, stub());
+          this.match("Bar", stub());
         };
 
         v.sub = subscribe('foo');
@@ -438,8 +438,8 @@ isClient && define((require, exports, module)=>{
         v.sub.onStop(v.onstop = stub());
 
         v.pubFunc = function () {
-          this.match("Baz", v.match);
-          this.match("Bar", TH.test.stub());
+          this.match("Baz", v.match = stub());
+          this.match("Bar", stub());
         };
 
         {

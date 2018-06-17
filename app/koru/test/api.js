@@ -81,6 +81,7 @@ define(function(require, exports, module) {
       subjectModule = subjectModule || ctx.modules[toId(tc)];
       const subject = subjectModule.exports;
       if (! this.isRecord) {
+        this._instance.tc = tc;
         this._instance.subject = subject;
         return this._instance;
       }
@@ -89,7 +90,7 @@ define(function(require, exports, module) {
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
         const afterTestCase = this.__afterTestCase;
-        afterTestCase.has(tc) || tc.after(testCaseFinished.bind(this));
+        afterTestCase.has(tc) || tc.after(()=>{this._instance = null});
         afterTestCase.add(tc);
 
         this._mapSubject(subject, subjectModule);
@@ -249,25 +250,23 @@ define(function(require, exports, module) {
     }
 
     new(sig) {
-      const api = this;
-
-      if (typeof api.subject !== 'function')
-        throw new Error("api.new called on non function");
-
       const {test} = TH;
       const calls = [];
 
       switch(typeof sig) {
       case 'function':
-        sig = funcToSig(api.subject);
-        break;
+        this.subject = sig;
       case 'undefined':
-        sig = funcToSig(api.subject).replace(/^[^(]*/, 'constructor');
+        if (typeof this.subject !== 'function' || Object.getPrototypeOf(this.subject) == null)
+          throw new Error("this.new called on non function");
+
+        sig = funcToSig(this.subject).replace(/^[^(]*/, 'constructor');
         break;
       }
 
-      if (! api.newInstance) {
-        api.newInstance = {
+
+      if (! this.newInstance) {
+        this.newInstance = {
           test,
           sig,
           intro: docComment(test.func),
@@ -275,18 +274,18 @@ define(function(require, exports, module) {
         };
       }
 
-      api.target = api.newInstance;
+      this.target = this.newInstance;
 
-      onTestEnd(api);
+      onTestEnd(this);
 
       return (...args)=>{
         const entry = [
-          args.map(obj => api.valueTag(obj)),
+          args.map(obj => this.valueTag(obj)),
           undefined,
         ];
         calls.push(entry);
-        const ans = new api.subject(...args);
-        entry[1] = api.valueTag(ans);
+        const ans = new this.subject(...args);
+        entry[1] = this.valueTag(ans);
         return ans;
       };
     }
@@ -595,9 +594,12 @@ define(function(require, exports, module) {
   API.isRecord = module.config().record;
 
   class APIOff extends API {
-    new() {
+    new(sig) {
+      const func = typeof sig === 'function'
+            ? sig
+            : (this.tc === TH.test._currentTestCase || API.module(), this.subject);
       return (...args) => {
-        return new this.subject(...args);
+        return new func(...args);
       };
     }
     property() {}
@@ -676,12 +678,6 @@ define(function(require, exports, module) {
     re.lastIndex = m.index+m[0].length;
     m = re.exec(code);
     return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
-  }
-
-  function testCaseFinished() {
-    if (this._instance) {
-      this._instance = null;
-    }
   }
 
   function cache(API, value, orig, result) {

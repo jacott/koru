@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const makeSubject  = require('koru/make-subject');
   const BatchMessage = require('koru/session/batch-message');
   const util         = require('koru/util');
-  const match        = require('./match');
+  const Match        = require('./match');
   const message      = require('./message');
   const crypto       = requirejs.nodeRequire('crypto');
 
@@ -32,7 +32,7 @@ define(function(require, exports, module) {
         close();
       };
       this._last = null;
-      this.match = match();
+      this.match = new Match();
       this.sessAuth = null;
 
       ws.on('error', err => koru.fiberConnWrapper(()=>{

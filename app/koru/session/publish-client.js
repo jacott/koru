@@ -3,11 +3,11 @@ define(function(require, exports, module) {
   const Query           = require('koru/model/query');
   const TransQueue      = require('koru/model/trans-queue');
   const util            = require('koru/util');
-  const match           = require('./match');
+  const Match           = require('./match');
   const publish         = require('./publish-base');
 
   util.merge(publish, {
-    match: match(),
+    match: new Match(),
     _filterModels(models, reason="noMatch") {
       TransQueue.transaction(() => {
         for(const name in models) {

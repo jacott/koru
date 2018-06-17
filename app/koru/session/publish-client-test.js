@@ -135,7 +135,7 @@ isClient && define(function (require, exports, module) {
         /**
          * Register functions to test if record is expected to be published
          *
-         * See {#koru/session/match::match()}
+         * See {#koru/session/match}
          **/
         api.property("match");
 
