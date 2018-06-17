@@ -6,7 +6,7 @@ define(function(require, exports, module) {
   const {hasOwn} = util;
 
   function Constructor() {
-    const match = (test, message) => new Match(test, message);
+    const match = (test, name) => new Match(test, name);
 
     class Match {
       constructor(test, message=`match(${test.name||test})`) {

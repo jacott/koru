@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   require('./assertions');
   const deepEqual       = require('./core')._u.deepEqual;
 
-  const Stubber = exports;
+  const stubber = exports;
 
   const {AssertionError} = this;
 
@@ -84,6 +84,34 @@ define(function(require, exports, module) {
       return invokeReturn(this, call);
     }
 
+    yield(...args) {
+      const {firstCall} = this;
+      const callArgs = this.firstCall === undefined ? undefined : firstCall.args;
+      if (callArgs === undefined)
+        throw new AssertionError("Can't yield; stub with callback has not been called");
+
+      return yieldCall(callArgs, args);
+    }
+
+    yieldAndReset(...args) {
+      const callArgs = this.firstCall === undefined ? undefined : this.firstCall.args;
+      if (callArgs === undefined)
+        throw new AssertionError("Can't yield; stub has not been called");
+      this.reset();
+      return yieldCall(callArgs, args);
+    }
+
+    yieldAll(...args) {
+      const {calls} = this;
+      if (calls === undefined)
+        throw new AssertionError("Can't yield; stub has not been called");
+      const {length} = calls;
+      for(let i = 0; i < length; ++i) {
+        calls[i].yield(...args);
+      }
+      return this;
+    }
+
     reset() {this.calls = undefined}
 
     getCall(index) {
@@ -120,34 +148,6 @@ define(function(require, exports, module) {
     calledAfter(before) {
       return this.called && before.called &&
         this.calls[0].globalCount > before.calls[0].globalCount;
-    }
-
-    yield(...params) {
-      const {firstCall} = this;
-      const args = this.firstCall === undefined ? undefined : firstCall.args;
-      if (args === undefined)
-        throw new AssertionError("Can't yield; stub has not been called");
-
-      return yieldCall(args, params);
-    }
-
-    yieldAndReset(...params) {
-      const args = this.firstCall === undefined ? undefined : this.firstCall.args;
-      if (args === undefined)
-        throw new AssertionError("Can't yield; stub has not been called");
-      this.reset();
-      return yieldCall(args, params);
-    }
-
-    yieldAll(...params) {
-      const {calls} = this;
-      if (calls === undefined)
-        throw new AssertionError("Can't yield; stub has not been called");
-      const {length} = calls;
-      for(let i = 0; i < length; ++i) {
-        calls[i].yield(...params);
-      }
-      return this;
     }
 
     calledWith(...args) {
@@ -252,17 +252,20 @@ define(function(require, exports, module) {
     };
 
     calledWith(...args) {
-      return deepEqual(this.args, args);
+      let list = this.args;
+      if (list.length > args.length)
+        list = list.slice(0, args.length);
+      return deepEqual(list, args);
     }
 
-    yield(...params) {yieldCall(this.args, params)}
+    yield(...args) {yieldCall(this.args, args)}
   }
 
-  const yieldCall = (args, callParams) => {
+  const yieldCall = (args, callArgs) => {
     for(let i = 0; i < args.length; ++i) {
       const arg = args[i];
       if (typeof arg === 'function') {
-        return arg.apply(null, callParams);
+        return arg.apply(null, callArgs);
       }
     }
     throw new AssertionError("Can't yield; no function in arguments");
@@ -291,7 +294,7 @@ define(function(require, exports, module) {
     }
   };
 
-  Stubber.stub = (object, property, repFunc) => {
+  stubber.stub = (object, property, repFunc) => {
     let func, desc, orig;
     if (repFunc !== undefined && typeof repFunc !== 'function')
       throw new AssertionError("Third argument to stub must be a function if supplied");
@@ -336,14 +339,12 @@ define(function(require, exports, module) {
     return func;
   };
 
-  Stubber.spy = (object, property, func) => {
-    if (func !== undefined && typeof func !== 'function')
-      throw new AssertionError("third argument to spy must be a function or null");
+  stubber.spy = (object, property) => {
     if (object != null && typeof property === 'string') {
       const desc = Object.getOwnPropertyDescriptor(object, property);
       const orig = desc === undefined ? object[property] : desc.value;
       if (typeof orig === 'function') {
-        if (func === undefined) func = stubFunction(orig, Spy.prototype);
+        const func = stubFunction(orig, Spy.prototype);
         func.original = orig;
 
         Object.defineProperty(object, property, {value: func, configurable: true});
@@ -355,7 +356,7 @@ define(function(require, exports, module) {
     throw new AssertionError("Attempt to spy on non function");
   };
 
-  Stubber.intercept = (object, prop, replacement, restore) => {
+  stubber.intercept = (object, prop, replacement, restore) => {
     const orig = Object.getOwnPropertyDescriptor(object, prop);
     if (orig !== undefined && orig.value !== undefined && typeof orig.value.restore === 'function')
       throw new Error(`Already stubbed ${prop}`);
@@ -378,12 +379,12 @@ define(function(require, exports, module) {
     func.restore = () => {
       if (orig !== undefined) Object.defineProperty(object, prop, orig);
       else delete object[prop];
-      restore && restore();
+      restore === undefined || restore();
     };
     return func;
   };
 
-  Stubber.isStubbed = func => func != null && func[id$] !== undefined;
+  stubber.isStubbed = func => func != null && func[id$] !== undefined;
 
   const restore = (object, property, desc, orig, func) => {
     if (object != null) {

@@ -804,9 +804,12 @@ define(function(require, exports, module) {
 
   function method(api, methodKey, obj, methods) {
     const {test} = TH;
+    if (methodKey == null) {
+      methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
+    }
     const func = obj[methodKey];
     if (func == undefined)
-      throw new Error(`method "${methodName}" not found`);
+      throw new Error(`method "${methodKey}" not found`);
 
     const methodName = methodKey.toString();
     let details = methods[methodName];

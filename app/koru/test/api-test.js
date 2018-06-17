@@ -320,7 +320,7 @@ assert.same(Color.colors.red, '#f00');`,
 
          * @param [options] details about the property.
          *
-         * When `object` can contain the following:
+         * Where `object` can contain the following:
          *
          * * `info` (or `intro`): description of property. Defaults to the current test's doc
          * comment.
@@ -331,37 +331,38 @@ assert.same(Color.colors.red, '#f00');`,
          * `string` can contain `${value}` which will be substituted
          * with a description of the properties value.
          **/
-        MainAPI.example(() => {
-          v.defaults = {
-            logger() {},
-            width: 800,
-            height: 600,
-            theme: {
-              name: 'light',
-              primaryColor: '#aaf'
-            }
-          };
+        //[
+        const defaults = {
+          logger() {},
+          width: 800,
+          height: 600,
+          theme: {
+            name: 'light',
+            primaryColor: '#aaf'
+          }
+        };
+        let name, logger;
 
-          API.module({subjectModule: {id: 'myMod', exports: v.defaults}, subjectName: 'defaults'});
-          API.property('theme', {
-            info: 'The default theme',
-            properties: {
+        API.module({subjectModule: {id: 'myMod', exports: defaults}, subjectName: 'defaults'});
+        API.property('theme', {
+          info: 'The default theme',
+          properties: {
               name: value => {
-                v.name = value;
+                name = value;
                 return 'The theme name is ${value}';
               },
-              primaryColor: 'The primary color is ${value}'
-            },
-          });
-          assert.same(v.name, 'light');
-
-          API.property('logger', value => {
-            v.logger = value;
-            return 'The default logger is ${value}';
-          });
-
-          assert.same(v.logger, v.defaults.logger);
+            primaryColor: 'The primary color is ${value}'
+          },
         });
+        assert.same(name, 'light');
+
+        API.property('logger', value => {
+          logger = value;
+            return 'The default logger is ${value}';
+        });
+
+        assert.same(logger, defaults.logger);
+        //]
 
         MainAPI.comment("If no info supplied then the test description is used");
         API.property('width');
@@ -371,11 +372,11 @@ assert.same(Color.colors.red, '#f00');`,
         assert.equals(API.instance.properties, {
           theme: {
             info: 'The default theme',
-            value: ['O', v.defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
+            value: ['O', defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
             properties: {
               name: {
                 info: 'The theme name is ${value}',
-                value: v.name,
+                value: name,
               },
               primaryColor: {
                 info: 'The primary color is ${value}',
@@ -385,7 +386,7 @@ assert.same(Color.colors.red, '#f00');`,
           },
           logger: {
             info: 'The default logger is ${value}',
-            value: ['F', v.logger, TH.match(/(logger|function)/)]
+            value: ['F', logger, TH.match(/(logger|function)/)]
           },
           width: {
             info: TH.match(/Document a property/),

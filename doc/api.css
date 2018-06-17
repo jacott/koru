@@ -288,7 +288,7 @@ pre {
   font-family: monospace;
 }
 
-code {
+:not(pre)>code {
   padding: .2em;
   border: 1px solid #ddd;
   background-color: #f8f8f8;

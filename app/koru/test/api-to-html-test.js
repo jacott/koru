@@ -198,10 +198,10 @@ isServer && define(function (require, exports, module) {
               '\n', {a: ['mod#protoMethod'], class: 'jsdoc-link',
                      href: '#my/mod#protoMethod'}
               , ' ',
-              {a: ['.thisModMethod'], class: 'jsdoc-link',
+              {a: ['thisModMethod'], class: 'jsdoc-link',
                href: '#this/module.thisModMethod'},
               '\n',
-              {a: ['#thisModeProtoMethod'], class: 'jsdoc-link',
+              {a: ['thisModeProtoMethod'], class: 'jsdoc-link',
                href: '#this/module#thisModeProtoMethod'}]},
             '\n'
           ]});

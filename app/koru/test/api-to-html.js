@@ -106,7 +106,7 @@ define(function(require, exports, module) {
 
 
   function execInlineTag(api, text) {
-    let [mod, type, method] = text.split(/([.#])/);
+    let [mod, type, method] = text.split(/([.#:]+)/);
     let href = text;
     if (mod) {
       const destMod = mod && api.parent && api.parent[mod];
@@ -115,6 +115,7 @@ define(function(require, exports, module) {
       text = `${mod}${type||''}${method||''}`;
     } else {
       href = api.id+href;
+      text = method;
     }
 
     return Dom.h({class: 'jsdoc-link', a: idToText(text), $href: '#'+href});

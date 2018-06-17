@@ -1,13 +1,18 @@
-define(['./core', './stubber'], function (Core, stubber) {
-  let onSetUpOnceEnd;
+define((require, exports, module)=>{
+  const Core            = require('koru/test/core');
+  const stubber         = require('koru/test/stubber');
+
+  const onSetUpOnceEnd$ = Symbol(),
+        after$ = Symbol(), before$ = Symbol(),
+        testEnd$ = Symbol(), setUpOnce$ = Symbol();
 
   class TestCase {
     constructor(name, tc, option) {
       this.name = name;
       this.tc = tc;
       this.option = option;
-      this._before = null;
-      this._after = null;
+      this[before$] = null;
+      this[after$] = null;
     }
 
     fullName(name) {
@@ -22,32 +27,32 @@ define(['./core', './stubber'], function (Core, stubber) {
     }
 
     before(func) {
-      (this._before = this._before || []).push(func);
+      (this[before$] = this[before$] || []).push(func);
       return this;
     }
 
     after(func) {
-      (this._after = this._after || []).push(func);
+      (this[after$] = this[after$] || []).push(func);
       return this;
     }
 
     startTestCase() {
-      const before = this._before;
+      const before = this[before$];
       if (before) for(let i = 0; i < before.length; ++i) {
         before[i].call(this);
       }
     }
 
     endTestCase() {
-      if (this._setUpOnce !== undefined) {
-        this._setUpOnce = undefined;
+      if (this[setUpOnce$] !== undefined) {
+        this[setUpOnce$] = undefined;
         if (this.tearDownOnce)
           this.tearDownOnce.call(Core.test);
-        this.runOnEnds(null, onSetUpOnceEnd);
-        onSetUpOnceEnd = undefined;
+        this.runOnEnds(null, this[onSetUpOnceEnd$]);
+        this[onSetUpOnceEnd$] = undefined;
         this.tc && this.tc.runTearDown();
       }
-      const after = this._after;
+      const after = this[after$];
       if (after) for(let i = 0; i < after.length; ++i) {
         after[i].call(this);
       }
@@ -55,18 +60,18 @@ define(['./core', './stubber'], function (Core, stubber) {
 
     runSetUp(test) {
       if (this.setUpAround !== undefined) return false;
-      if (this._setUpOnce === undefined) {
+      if (this[setUpOnce$] === undefined) {
         if (this.tc && ! this.tc.runSetUp(test))
           return false;
         test._currentTestCase = this;
         if (this.setUpOnce !== undefined) {
-          this._setUpOnce = true;
-          const testEnd = test.__testEnd;
-          onSetUpOnceEnd = test.__testEnd = [];
+          this[setUpOnce$] = true;
+          const testEnd = test[testEnd$];
+          this[onSetUpOnceEnd$] = test[testEnd$] = [];
           this.setUpOnce.call(test);
-          test.__testEnd = testEnd;
+          test[testEnd$] = testEnd;
         } else if (this.tearDownOnce !== undefined) {
-          this._setUpOnce = true;
+          this[setUpOnce$] = true;
         }
       }
       test._currentTestCase = this;
@@ -102,8 +107,8 @@ define(['./core', './stubber'], function (Core, stubber) {
       if (tex) throw tex;
 
       function doit() {
-        const onEnds = test.__testEnd;
-        test.__testEnd = null;
+        const onEnds = test[testEnd$];
+        test[testEnd$] = null;
         try {
           if (tc.setUp) {
             test._currentTestCase = tc;
@@ -123,12 +128,12 @@ define(['./core', './stubber'], function (Core, stubber) {
         } catch(ex) {
           tex = ex;
         } finally {
-          test.__testEnd = onEnds;
+          test[testEnd$] = onEnds;
         }
       }
     }
 
-    runOnEnds(test, cbs = test.__testEnd) {
+    runOnEnds(test, cbs = test[testEnd$]) {
       if (cbs) for(let i=0;i < cbs.length;++i) {
         const func = cbs[i];
         if (typeof func === 'function')
@@ -145,7 +150,7 @@ define(['./core', './stubber'], function (Core, stubber) {
 
     runTearDown(test) {
       this.tearDown && this.tearDown.call(test);
-      if (this._setUpOnce) {
+      if (this[setUpOnce$]) {
         return;
       }
       this.tc && this.tc.runTearDown(test);
@@ -206,7 +211,7 @@ define(['./core', './stubber'], function (Core, stubber) {
       this.name = name;
       this.tc = tc;
       this.func = func;
-      this._currentTestCase = this.__testEnd = null;
+      this._currentTestCase = this[testEnd$] = null;
     }
 
     get skipped() {
@@ -214,7 +219,7 @@ define(['./core', './stubber'], function (Core, stubber) {
     }
 
     onEnd(func) {
-      (this.__testEnd || (this.__testEnd = [])).push(func);
+      (this[testEnd$] || (this[testEnd$] = [])).push(func);
     }
 
     spy(...args) {

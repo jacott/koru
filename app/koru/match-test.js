@@ -1,111 +1,153 @@
-define(function (require, exports, module) {
-  const sut = require('./match');
-  const TH  = require('./test-helper');
+define((require, exports, module)=>{
+  /**
+   * Match allows objects to be tested for equality against a range of pre-built or custom matchers.
+   * The {#koru/util.deepEqual} function will honour any matchers found in the `exprected` (second)
+   * argument.
+   **/
+  const api             = require('koru/test/api');
+  const TH              = require('./test-helper');
 
-  let v = null;
+  const {inspect$} = require('koru/symbols');
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-      v.assertThrows =  (m, v, msg)=>{
-        let aMsg;
-        try {
-          m.$throwTest(v);
-          assert.msg("failed")(false);
-        }
-        catch(ex) {aMsg = ex;}
-        assert.elideFromStack.same(aMsg, msg);
-      };
-    },
+  const match = require('./match');
 
-    tearDown() {
-      v = null;
-    },
+  const assertThrows = (m, v, msg)=>{
+    let aMsg;
+    try {
+      m.$throwTest(v);
+      assert.msg("failed")(false);
+    }
+    catch(ex) {aMsg = ex;}
+    assert.elideFromStack.same(aMsg, msg);
+  };
 
-    "test match.optional"() {
-      assert.isTrue(sut.optional.id.$test(null));
-      assert.isTrue(sut.optional.id.$test(undefined));
-      assert.isTrue(sut.optional.id.$test("aAgGzZqQ8901234567890123"));
-      assert.isFalse(sut.optional.id.$test("0123456789012345678901234"));
+  const docProp = (name, info=`match any ${name}`)=>{
+    api.property(name, {info});
+  };
 
-      assert.isTrue(sut.optional.date.$test(null));
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("custom matchers", ()=>{
+      /**
+       * Build a custom matcher.
+       *
+       * @param {Function|RegExp|Array} test used to test for truthfulness
 
-      assert.isTrue(sut.optional.string.$test(null));
-      assert.isTrue(sut.optional.string.$test('0'));
-      assert.isFalse(sut.optional.string.$test(0));
+       * @param [name] override the default name for the matcher.
+       **/
+      const sut = match;
+      {
+        let match = api.custom(sut);
+        //[
+        const match5 = match(arg => arg == 5);
+        assert.isTrue(match5.$test(5));
+        assert.isTrue(match5.$test("5"));
+        assert.isFalse(match5.$test(4));
+        assert.same(''+match(()=>true, 'my message'), 'my message');
+        //]
 
-      assert.isTrue(sut.optional(sut.string).$test(null));
-      assert.isFalse(sut.optional(sut.string).$test(0));
-    },
+        api.done();
+      }
 
-    "test match.id"() {
-      assert.isTrue(sut.id.$test("123"));
-      assert.isTrue(sut.id.$test("aAgGzZqQ8901234567890123"));
-      assert.isFalse(sut.id.$test("0123456789012345678901234"));
-      assert.isFalse(sut.id.$test("12"));
-      assert.isFalse(sut.id.$test("undefined"));
-    },
+      //[
+      assert(match(/abc/).$test('aabcc'));
+      refute(match(/abc/).$test('aabbcc'));
+      assert(match([1, match.any]).$test([1, 'foo']));
+      refute(match([2, match.any]).$test([1, 'foo']));
+      //]
+    });
 
-    "test non function construction"() {
-      assert(sut(/abc/).$test('aabcc'));
-      refute(sut(/abc/).$test('aabbcc'));
-      assert(sut([1, sut.any]).$test([1, 'foo']));
-      refute(sut([2, sut.any]).$test([1, 'foo']));
-    },
+    test("match.optional", ()=>{
+      docProp('optional', 'match a standard matcher or null or undefined; `match.optional.date`');
+      assert.isTrue(match.optional.id.$test(null));
+      assert.isTrue(match.optional.id.$test(undefined));
+      assert.isTrue(match.optional.id.$test("aAgGzZqQ8901234567890123"));
+      assert.isFalse(match.optional.id.$test("0123456789012345678901234"));
 
-    "test match naming"() {
-      assert.same(''+sut(arg => true), "match(arg => true)");
-      assert.same(''+sut(function (arg) {return true}), "match(function (arg) {return true})");
-      assert.same(''+sut(function fooMatch(arg) {return true}), 'match(fooMatch)');
-      assert.same(''+sut(function (arg) {return true}, 'my message'), 'my message');
+      assert.isTrue(match.optional.date.$test(null));
 
-      assert.same(''+sut.optional.string, 'match.string[opt]');
-      assert.same(''+sut.string, 'match.string');
-      assert.same(''+sut.boolean, 'match.boolean');
-      assert.same(''+sut.number, 'match.number');
-      assert.same(''+sut.undefined, 'match.undefined');
-      assert.same(''+sut.null, 'match.null');
-      assert.same(''+sut.nil, 'match.nil');
-      assert.same(''+sut.date, 'match.date');
-      assert.same(''+sut.function, 'match.function');
-      assert.same(''+sut.func, 'match.func');
-      assert.same(''+sut.object, 'match.object');
-      assert.same(''+sut.baseObject, 'match.baseObject');
-      assert.same(''+sut.any, 'match.any');
-      assert.same(''+sut.match, 'match.match');
-    },
+      assert.isTrue(match.optional.string.$test(null));
+      assert.isTrue(match.optional.string.$test('0'));
+      assert.isFalse(match.optional.string.$test(0));
 
-    "test match.equal"() {
-      const me = sut.equal([1,sut.any]);
+      assert.isTrue(match.optional(match.string).$test(null));
+      assert.isFalse(match.optional(match.string).$test(0));
+    });
+
+    test("match.id", ()=>{
+      docProp('id', 'match a valid model `_id`');
+      assert.isTrue(match.id.$test("123"));
+      assert.isTrue(match.id.$test("aAgGzZqQ8901234567890123"));
+      assert.isFalse(match.id.$test("0123456789012345678901234"));
+      assert.isFalse(match.id.$test("12"));
+      assert.isFalse(match.id.$test("undefined"));
+    });
+
+    test("match naming", ()=>{
+      assert.same(''+match(arg => true), "match(arg => true)");
+      assert.same(''+match(function (arg) {return true}), "match(function (arg) {return true})");
+      assert.same(''+match(function fooMatch(arg) {return true}), 'match(fooMatch)');
+      assert.same(''+match(function (arg) {return true}, 'my message'), 'my message');
+
+      assert.same(''+match.optional.string, 'match.string[opt]');
+      assert.same(''+match.string, 'match.string');
+      assert.same(''+match.boolean, 'match.boolean');
+      assert.same(''+match.number, 'match.number');
+      assert.same(''+match.undefined, 'match.undefined');
+      assert.same(''+match.null, 'match.null');
+      assert.same(''+match.nil, 'match.nil');
+      assert.same(''+match.date, 'match.date');
+      assert.same(''+match.function, 'match.function');
+      assert.same(''+match.func, 'match.func');
+      assert.same(''+match.object, 'match.object');
+      assert.same(''+match.baseObject, 'match.baseObject');
+      assert.same(''+match.any, 'match.any');
+      assert.same(''+match.match, 'match.match');
+    });
+
+    test("match.equal", ()=>{
+      /**
+       * Match `expected` using {#koru/util.deepEqual}
+       **/
+      api.customIntercept(match, 'equal', 'match.');
+      //[
+      const me = match.equal([1,match.any]);
+
       assert.isTrue(me.$test([1,'x']));
       assert.isTrue(me.$test([1, null]));
       assert.isFalse(me.$test([1]));
       assert.isFalse(me.$test([1, 1, null]));
       assert.isFalse(me.$test([2, 1]));
-      v.assertThrows(me, [3], 'match.equal');
+      //]
+      assertThrows(me, [3], 'match.equal');
       assert.isTrue(me.$throwTest([1, null]));
-    },
+    });
 
-    "test match.symbol"() {
-      assert.isTrue(sut.symbol.$test(Symbol()));
-      assert.isFalse(sut.symbol.$test({}));
-    },
+    test("match.symbol", ()=>{
+      docProp('symbol');
+      assert.isTrue(match.symbol.$test(Symbol()));
+      assert.isFalse(match.symbol.$test({}));
+    });
 
-    "test match.is"() {
-      const me = sut.is(v.foo = {foo: 123});
-      assert.isTrue(me.$test(v.foo));
+    test("match.is", ()=>{
+      /**
+       * Match exactly; like `Object.is`
+       **/
+      api.customIntercept(match, 'is', 'match.');
+      const foo = {foo: 123};
+      const me = match.is(foo);
+      assert.isTrue(me.$test(foo));
       assert.isFalse(me.$test({foo: 123}));
-    },
+    });
 
-    "test match.regExp"() {
-      const mr = sut.regExp(/^ab*c$/i);
+    test("match.regExp", ()=>{
+      const mr = match.regExp(/^ab*c$/i);
 
       assert.isTrue(mr.$test("abbbc"));
       assert.isFalse(mr.$test("abbbcd"));
-    },
+    });
 
-    "test match.between"() {
-      const mb = sut.between(6, 9);
+    test("match.between", ()=>{
+      const mb = match.between(6, 9);
       assert.isTrue(mb.$test(6));
       assert.isTrue(mb.$test(7.5));
       assert.isTrue(mb.$test(9));
@@ -113,27 +155,27 @@ define(function (require, exports, module) {
       assert.isFalse(mb.$test(5.9));
 
 
-      const mbe = sut.between(6, 9, false, true);
+      const mbe = match.between(6, 9, false, true);
       assert.isFalse(mbe.$test(6));
       assert.isTrue(mbe.$test(7.5));
       assert.isTrue(mbe.$test(9));
       assert.isTrue(mb.$test(6.1));
       assert.isFalse(mb.$test(5.9));
 
-      const mbtf = sut.between(6, 9, true, false);
+      const mbtf = match.between(6, 9, true, false);
       assert.isTrue(mbtf.$test(6));
-    },
+    });
 
-    "test match.has"() {
-      const mi = sut.has({a: 0, b: 2});
+    test("match.has", ()=>{
+      const mi = match.has({a: 0, b: 2});
 
       assert.isTrue(mi.$test('a'));
       assert.isTrue(mi.$test('b'));
       assert.isFalse(mi.$test('c'));
-    },
+    });
 
-    "test match.or"() {
-      let mor = sut.or(sut.number, sut.string, sut.boolean, 'mymatch');
+    test("match.or", ()=>{
+      let mor = match.or(match.number, match.string, match.boolean, 'mymatch');
 
       assert.same(mor.message, 'mymatch');
 
@@ -144,16 +186,16 @@ define(function (require, exports, module) {
       assert.isFalse(mor.$test([]));
       assert.isFalse(mor.$test({}));
       assert.isFalse(mor.$test(null));
-      v.assertThrows(mor, new Date(), 'mymatch');
+      assertThrows(mor, new Date(), 'mymatch');
 
-      mor = sut.or(sut.number, sut.string);
+      mor = match.or(match.number, match.string);
       assert.isTrue(mor.$test(1));
       assert.isTrue(mor.$test("a"));
       assert.isFalse(mor.$test(false));
-    },
+    });
 
-    "test match.and"() {
-      const mand = sut.and(sut.object, sut.baseObject, sut.equal({a: sut.number}), 'mymatch');
+    test("match.and", ()=>{
+      const mand = match.and(match.object, match.baseObject, match.equal({a: match.number}), 'mymatch');
 
       assert.same(mand.message, 'mymatch');
 
@@ -162,14 +204,14 @@ define(function (require, exports, module) {
       assert.isFalse(mand.$test(new Date()));
       assert.isFalse(mand.$test({a: 'x'}));
       assert.isFalse(mand.$test(null));
-      v.assertThrows(mand, new Date(), 'match.baseObject');
-      v.assertThrows(mand, 1, 'match.object');
-      v.assertThrows(mand, {b: 'x'}, 'match.equal');
-      v.assertThrows(mand, {a: 'x'}, 'match.equal');
-    },
+      assertThrows(mand, new Date(), 'match.baseObject');
+      assertThrows(mand, 1, 'match.object');
+      assertThrows(mand, {b: 'x'}, 'match.equal');
+      assertThrows(mand, {a: 'x'}, 'match.equal');
+    });
 
-    "test match.tuple"() {
-      const mtup = sut.tuple([sut.object, sut.number, sut.equal({a: sut.number})]);
+    test("match.tuple", ()=>{
+      const mtup = match.tuple([match.object, match.number, match.equal({a: match.number})]);
 
       assert.same(mtup.message, 'match.tuple');
 
@@ -177,74 +219,88 @@ define(function (require, exports, module) {
       assert.isTrue(mtup.$test([{}, 0, {a: 0}]));
       assert.isFalse(mtup.$test(new Date()));
       assert.isFalse(mtup.$test([{}, 1, {a: 'x'}]));
-      v.assertThrows(mtup, [new Date(), 'a', 1], 'match.number');
-      v.assertThrows(mtup, [1, 2, 3], 'match.object');
-      v.assertThrows(mtup, [{}, 1, {b: 'x'}], 'match.equal');
-      v.assertThrows(mtup, [1, {a: 'x'}], 'match.tuple');
-      v.assertThrows(mtup, {}, 'match.tuple');
+      assertThrows(mtup, [new Date(), 'a', 1], 'match.number');
+      assertThrows(mtup, [1, 2, 3], 'match.object');
+      assertThrows(mtup, [{}, 1, {b: 'x'}], 'match.equal');
+      assertThrows(mtup, [1, {a: 'x'}], 'match.tuple');
+      assertThrows(mtup, {}, 'match.tuple');
 
-      const opt = sut.optional(sut.tuple([sut.number, sut.string]));
+      const opt = match.optional(match.tuple([match.number, match.string]));
 
       assert.isTrue(opt.$test(null));
       assert.isTrue(opt.$test([1, '2']));
       assert.isFalse(opt.$test(['1', 2]));
 
-      v.assertThrows(opt, ['1', 2], 'match.number');
-    },
+      assertThrows(opt, ['1', 2], 'match.number');
+    });
 
-    "test matching"() {
-      assert.isTrue(sut.string.$test(''));
-      assert.isFalse(sut.string.$test(1));
+    test("matching", ()=>{
+      docProp('string');
+      assert.isTrue(match.string.$test(''));
+      assert.isFalse(match.string.$test(1));
+      assert.equals(match.string[inspect$](), 'match.string');
 
-      assert.isTrue(sut.undefined.$test());
-      assert.isFalse(sut.undefined.$test(''));
-      assert.isFalse(sut.undefined.$test(null));
 
-      assert.isTrue(sut.null.$test(null));
-      assert.isFalse(sut.null.$test(''));
-      assert.isFalse(sut.null.$test(undefined));
+      docProp('undefined', 'match undefined');
+      assert.isTrue(match.undefined.$test());
+      assert.isFalse(match.undefined.$test(''));
+      assert.isFalse(match.undefined.$test(null));
 
-      assert.isTrue(sut.nil.$test(null));
-      assert.isFalse(sut.nil.$test(''));
-      assert.isTrue(sut.nil.$test(undefined));
+      docProp('undefined', 'match null');
+      assert.isTrue(match.null.$test(null));
+      assert.isFalse(match.null.$test(''));
+      assert.isFalse(match.null.$test(undefined));
 
-      assert.isTrue(sut.date.$test(new Date));
-      assert.isFalse(sut.date.$test(''));
-      assert.isFalse(sut.date.$test({}));
-      assert.isFalse(sut.date.$test(new Date('invalid')));
+      docProp('nil', 'match undefined or null');
+      assert.isTrue(match.nil.$test(null));
+      assert.isFalse(match.nil.$test(''));
+      assert.isTrue(match.nil.$test(undefined));
 
-      assert.isTrue(sut.integer.$test(1234));
-      assert.isFalse(sut.integer.$test('1234'));
-      assert.isFalse(sut.integer.$test(1.1));
+      docProp('date');
+      assert.isTrue(match.date.$test(new Date));
+      assert.isFalse(match.date.$test(''));
+      assert.isFalse(match.date.$test({}));
+      assert.isFalse(match.date.$test(new Date('invalid')));
 
-      assert.isTrue(sut.any.$test());
-      assert.isTrue(sut.any.$test({}));
-      assert.isTrue(sut.any.$test('hello'));
+      docProp('integer');
+      assert.isTrue(match.integer.$test(1234));
+      assert.isFalse(match.integer.$test('1234'));
+      assert.isFalse(match.integer.$test(1.1));
 
-      assert.isTrue(sut.func.$test(function () {}));
-      assert.isFalse(sut.func.$test({}));
-      assert.isFalse(sut.func.$test('hello'));
+      docProp('any', 'match anything (or nothing)');
+      assert.isTrue(match.any.$test());
+      assert.isTrue(match.any.$test({}));
+      assert.isTrue(match.any.$test('hello'));
 
-      assert.same(sut.func.$test, sut.function.$test);
+      docProp('func', 'match any function');
+      assert.isTrue(match.func.$test(function () {}));
+      assert.isTrue(match.func.$test(()=>{}));
+      assert.isFalse(match.func.$test({}));
+      assert.isFalse(match.func.$test('hello'));
 
-      assert.isTrue(sut.object.$test({}));
-      assert.isTrue(sut.object.$test(sut.string));
-      assert.isFalse(sut.object.$test(null));
-      assert.isFalse(sut.object.$test(function () {}));
-      assert.isTrue(sut.object.$test(new Date));
-      assert.isFalse(sut.object.$test('hello'));
+      assert.same(match.func.$test, match.function.$test);
 
-      assert.isTrue(sut.baseObject.$test({}));
-      assert.isFalse(sut.baseObject.$test(sut.string));
-      assert.isFalse(sut.baseObject.$test(null));
-      assert.isFalse(sut.baseObject.$test(function () {}));
-      assert.isFalse(sut.baseObject.$test(new Date));
-      assert.isFalse(sut.baseObject.$test('hello'));
+      docProp('object', 'match anything of type `object` except null');
+      assert.isTrue(match.object.$test({}));
+      assert.isTrue(match.object.$test(match.string));
+      assert.isFalse(match.object.$test(null));
+      assert.isFalse(match.object.$test(function () {}));
+      assert.isTrue(match.object.$test(new Date));
+      assert.isFalse(match.object.$test('hello'));
 
-      assert.isTrue(sut.match.$test(sut.string));
-      assert.isTrue(sut.match.$test(sut(function () {})));
-      assert.isFalse(sut.match.$test(null));
-      assert.isFalse(sut.match.$test({}));
-    },
+      docProp('baseObject', 'match any object where constructor is Object');
+      assert.isTrue(match.baseObject.$test({}));
+      assert.isFalse(match.baseObject.$test(match.string));
+      assert.isFalse(match.baseObject.$test(null));
+      assert.isFalse(match.baseObject.$test(function () {}));
+      assert.isFalse(match.baseObject.$test(new Date));
+      assert.isFalse(match.baseObject.$test('hello'));
+
+      docProp('match', 'match any matcher');
+      assert.isTrue(match.match.$test(match.string));
+      assert.isTrue(match.match.$test(match(function () {})));
+      assert.isFalse(match.match.$test(null));
+      assert.isFalse(match.match.$test({}));
+    });
   });
 });
