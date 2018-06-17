@@ -1,9 +1,11 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const localStorage    = require('../local-storage');
   const koru            = require('../main');
   const session         = require('../session/client-rpc');
   const SRP             = require('../srp/srp');
   const login           = require('./client-login');
+
+  const {test$} = require('koru/symbols');
 
   let storage = localStorage;
 
@@ -23,8 +25,6 @@ define(function(require, exports, module) {
       return value ? storage.setItem('koru.loginToken', value) :
         storage.removeItem('koru.loginToken');
     },
-    get storage() {return storage},
-    set storage(value) {storage=value},
     init() {
       session.provide('V', function (data) {
         switch(data[0]) {
@@ -54,7 +54,6 @@ define(function(require, exports, module) {
     },
 
     state: null,
-    _onConnect: onConnect,
 
     loginWithPassword(email, password, callback) {
       SRPCall(
@@ -92,6 +91,12 @@ define(function(require, exports, module) {
     secureCall(method, email, password, payload, callback) {
       SRPCall(method, email, password, callback, response =>{response.payload = payload});
     },
+
+    [test$]: {
+      get storage() {return storage},
+      set storage(value) {storage=value},
+      onConnect,
+    }
   };
 
   session.defineRpcGet('resetPassword', ()=>{});

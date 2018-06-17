@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const Email           = require('koru/email');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');
@@ -8,17 +8,16 @@ define(function (require, exports, module) {
   const TH              = require('koru/session/test-helper');
   const SRP             = require('koru/srp/srp');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const crypto          = requirejs.nodeRequire('crypto');
 
   const userAccount = require('./main');
 
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.ws = TH.mockWs();
       TH.noInfo();
       v.conn = TH.sessionConnect(v.ws);
@@ -34,17 +33,17 @@ define(function (require, exports, module) {
         } else
           return new Uint8Array(num);
       });
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       userAccount.model.docs.remove({});
       intercept(koru, 'logger');
       v.conn.close();
       koru.logger.restore();
-      v = null;
-    },
+      v = {};
+    });
 
-    "test makeResetPasswordKey"() {
+    test("makeResetPasswordKey", ()=>{
       stub(Random, 'id')
         .onCall(0).returns('randid=')
         .onCall(1).returns('r2');
@@ -54,10 +53,10 @@ define(function (require, exports, module) {
 
       assert.between(ans.resetTokenExpire, Date.now() + 23*60*60*1000 , Date.now() + 25*60*60*1000);
       assert.equals(ans.resetToken, 'randid=r2');
-    },
+    });
 
-    "sendResetPasswordEmail": {
-      setUp() {
+    group("sendResetPasswordEmail", ()=>{
+      beforeEach(()=>{
         stub(Email, 'send');
         v.userAccountConfig = koru.config.userAccount;
         koru.config.userAccount = {
@@ -70,13 +69,13 @@ define(function (require, exports, module) {
             siteName: 'Koru',
           },
         };
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         koru.config.userAccount = v.userAccountConfig;
-      },
+      });
 
-      "test send"() {
+      test("send", ()=>{
         userAccount.sendResetPasswordEmail({_id: 'uid111'});
 
         const tokenExp =  v.lu.$reload().resetTokenExpire;
@@ -89,14 +88,14 @@ define(function (require, exports, module) {
           subject: 'How to reset your password on Koru',
           text: 'userid: uid111 token: ' + v.lu._id+'-'+v.lu.resetToken,
         });
-      },
-    },
+      });
+    });
 
-    "test UserLogin"() {
+    test("UserLogin", ()=>{
       assert.same(Model.UserLogin.modelName, "UserLogin");
-    },
+    });
 
-    "test createUserLogin"() {
+    test("createUserLogin", ()=>{
       const generateVerifier = spy(SRP, 'generateVerifier');
       const lu = userAccount.createUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", password: 'test pw'});
@@ -107,9 +106,9 @@ define(function (require, exports, module) {
       assert.same(lu.email, 'alice@vimaly.com');
       assert.same(lu.userId, 'uid1');
       assert.equals(lu.tokens, {});
-    },
+    });
 
-    "test updateOrCreateUserLogin"() {
+    test("updateOrCreateUserLogin", ()=>{
       let lu = userAccount.updateOrCreateUserLogin({
         email: 'alice@vimaly.com', userId: "uid1", srp: 'test srp'});
 
@@ -130,18 +129,18 @@ define(function (require, exports, module) {
       assert.equals(lu.$reload().srp, 'new srp');
       assert.same(lu.email, 'bob@vimaly.comm');
       assert.same(lu.userId, 'uid1');
-    },
+    });
 
-    "test too many unexpiredTokens"() {
+    test("too many unexpiredTokens", ()=>{
       const tokens = v.lu.tokens = {};
       for(let i = 0; i < 15; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
       }
       assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '),
                   't0 t1 t2 t3 t4 t5 t6 t7 t8 t9');
-    },
+    });
 
-    "test expired tokens"() {
+    test("expired tokens", ()=>{
       const tokens = v.lu.tokens = {};
       for(let i = 0; i < 5; ++i) {
         tokens['t'+i] = Date.now()+ (20-i)*24*1000*60*60;
@@ -153,47 +152,47 @@ define(function (require, exports, module) {
 
       assert.same(Object.keys(v.lu.unexpiredTokens()).sort().join(' '),
                   't0 t1 t2 t3 t4');
-    },
+    });
 
-    "test verifyClearPassword"() {
+    test("verifyClearPassword", ()=>{
       v.lu.$update('srp', SRP.generateVerifier('secret'));
       let docToken = userAccount.verifyClearPassword('foo@bar.co', 'secret');
       assert.equals(docToken && docToken[0]._id, v.lu._id);
       assert(userAccount.verifyToken('foo@bar.co', docToken[1]));
       docToken = userAccount.verifyClearPassword('foo@bar.co', 'secretx');
       assert.same(docToken, undefined);
-    },
+    });
 
-    "test verifyToken"() {
+    test("verifyToken", ()=>{
       let doc = userAccount.verifyToken('foo@bar.co', 'abc'); // by email and good token
       assert.equals(doc && doc._id, v.lu._id);
       doc = userAccount.verifyToken('foo@bar.co', 'exp'); // bad token
       assert.same(doc, undefined);
       doc = userAccount.verifyToken(v.lu._id, 'abc'); // by id and good token
       assert.equals(doc && doc._id, v.lu._id);
-    },
+    });
 
-    "loginWithPassword": {
-      setUp() {
+    group("loginWithPassword", ()=>{
+      beforeEach(()=>{
         v.srp = new SRP.Client('secret');
         v.request = v.srp.startExchange();
         v.request.email = 'foo@bar.co';
-      },
+      });
 
-      "test direct calling"() {
+      test("direct calling", ()=>{
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         const storage = {};
         let result = userAccount.SRPBegin(storage, v.request);
 
         assert.equals(storage, {
-          $srp: TH.match.any, $srpUserAccount: TH.match.field('_id', v.lu._id)});
+          $srp: m.any, $srpUserAccount: m.field('_id', v.lu._id)});
         const response = v.srp.respondToChallenge(result);
         result = userAccount.SRPLogin(storage, response);
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
         assert.same(result.userId, 'uid111');
-      },
+      });
 
-      "test success"() {
+      test("success", ()=>{
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
@@ -211,59 +210,59 @@ define(function (require, exports, module) {
         assert(v.ts = v.lu.tokens[tparts[1]]);
         assert.between(v.ts, Date.now()+179*24*1000*60*60, Date.now()+181*24*1000*60*60);
         assert.same(v.conn.userId, 'uid111');
-      },
+      });
 
-      "test wrong password"() {
+      test("wrong password", ()=>{
         const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
 
-        assert.exception(function () {
+        assert.exception(()=>{
           session._rpcs.SRPLogin.call(v.conn, response);
         }, {error: 403, reason: 'Invalid password'});
 
         assert.same(v.conn.userId, undefined);
-      },
+      });
 
-      "test wrong email"() {
+      test("wrong email", ()=>{
         v.lu.$update({email: 'bad@bar.co'});
         assert.exception(()=>{
           session._rpcs.SRPBegin.call(v.conn, v.request);
         }, {error: 403, reason: 'failure'});
-      },
+      });
 
-      "test null srp"() {
+      test("null srp", ()=>{
         v.lu.$update('srp', null);
         assert.exception(()=>{
           session._rpcs.SRPBegin.call(v.conn, v.request);
         }, {error: 403, reason: 'failure'});
-      },
-    },
+      });
+    });
 
-    "resetPassword": {
-      "test invalid resetToken"() {
-        assert.exception(function () {
+    group("resetPassword", ()=>{
+      test("invalid resetToken", ()=>{
+        assert.exception(()=>{
           session._rpcs.resetPassword.call(v.conn, 'token', {identity: 'abc123'});
         }, {error: 404, reason: 'Expired or invalid reset request'});
 
-        assert.exception(function () {
+        assert.exception(()=>{
           session._rpcs.resetPassword.call(v.conn, v.lu._id+'_badtoken', {identity: 'abc123'});
         }, {error: 404, reason: 'Expired or invalid reset request'});
-      },
+      });
 
-      "test expired token"() {
+      test("expired token", ()=>{
         assert.equals(userAccount.model.$fields.resetTokenExpire, {type: 'bigint'});
 
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() -5;
         v.lu.$$save();
 
-        assert.exception(function () {
+        assert.exception(()=>{
           session._rpcs.resetPassword.call(v.conn, v.lu._id+'_secretToken', {identity: 'abc123'});
         }, {error: 404, reason: 'Expired or invalid reset request'});
-      },
+      });
 
-      "test success"() {
+      test("success", ()=>{
         spy(userAccount, 'resetPassword');
         v.lu.resetToken = 'secretToken';
         v.lu.resetTokenExpire = Date.now() + 2000;
@@ -278,7 +277,7 @@ define(function (require, exports, module) {
         assert.same(v.conn.loginToken, '11111111111111111');
         v.lu.$reload();
         assert.equals(v.lu.srp, {identity: 'abc123'});
-        assert.calledWith(v.ws.send, TH.match(function (data) {
+        assert.calledWith(v.ws.send, m(data =>{
           if (typeof data !== 'string') return false;
 
           const m = data.match(/^VT(.*)\|(.*)$/);
@@ -288,7 +287,7 @@ define(function (require, exports, module) {
         }));
         assert.same(v.lu._id, v.docId);
         assert.equals(userAccount.resetPassword.firstCall.returnValue, [
-          TH.match.field('_id', v.lu._id), v.token]);
+          m.field('_id', v.lu._id), v.token]);
         assert.between(v.lu.tokens[v.token],
                        Date.now()+180*24*1000*60*60-1000, Date.now()+180*24*1000*60*60+1000);
         assert.equals(v.lu.resetToken, null);
@@ -296,17 +295,17 @@ define(function (require, exports, module) {
 
 
         assert.calledWith(v.ws.send, matchStart('VS' + v.lu.userId));
-      },
-    },
+      });
+    });
 
-    "changePassword": {
-      setUp() {
+    group("changePassword", ()=>{
+      beforeEach(()=>{
         v.srp = new SRP.Client('secret');
         v.request = v.srp.startExchange();
         v.request.email = 'foo@bar.co';
-      },
+      });
 
-      "test intercept"() {
+      test("intercept", ()=>{
         onEnd(() => userAccount.interceptChangePassword = null);
         userAccount.interceptChangePassword = stub();
 
@@ -321,14 +320,14 @@ define(function (require, exports, module) {
 
         assert(v.srp.verifyConfirmation({HAMK: result.HAMK}));
 
-        assert.calledWith(userAccount.interceptChangePassword, TH.match.field('_id', v.lu._id),
+        assert.calledWith(userAccount.interceptChangePassword, m.field('_id', v.lu._id),
                           response.newPassword);
 
         v.lu.$reload();
         refute.equals(response.newPassword, v.lu.srp);
-      },
+      });
 
-      "test success"() {
+      test("success", ()=>{
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         let result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
@@ -343,22 +342,22 @@ define(function (require, exports, module) {
 
         v.lu.$reload();
         assert.equals(response.newPassword, v.lu.srp);
-      },
+      });
 
-      "test wrong password"() {
+      test("wrong password", ()=>{
         const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
         const response = v.srp.respondToChallenge(result);
         response.newPassword = SRP.generateVerifier('new pw');
 
-        assert.exception(function () {
+        assert.exception(()=>{
           session._rpcs.SRPChangePassword.call(v.conn, response);
         });
 
         assert.same('wrong', v.lu.$reload().srp);
-      },
+      });
 
-      "test bad newPassword"() {
+      test("bad newPassword", ()=>{
         v.lu.$update('srp', SRP.generateVerifier('secret'));
         const result = session._rpcs.SRPBegin.call(v.conn, v.request);
 
@@ -366,29 +365,29 @@ define(function (require, exports, module) {
         response.newPassword = SRP.generateVerifier('new pw');
         response.newPassword.bad = true;
 
-        assert.exception(function () {
+        assert.exception(()=>{
           session._rpcs.SRPChangePassword.call(v.conn, response);
         }, {error: 400});
 
         assert(SRP.checkPassword('secret', v.lu.$reload().srp));
-      },
-    },
+      });
+    });
 
-    "login with token": {
-      setUp() {
+    group("login with token", ()=>{
+      beforeEach(()=>{
         userAccount.init();
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         userAccount.stop();
         intercept(koru, 'logger');
         v.conn2 && v.conn2.close();
         v.conn3 && v.conn3.close();
         v.connOther && v.connOther.close();
         koru.logger.restore();
-      },
+      });
 
-      "test logout with token"() {
+      test("logout with token", ()=>{
         spy(userAccount, 'logout');
         v.conn.userId = 'uid111';
         v.conn.sessAuth = 'sessauth';
@@ -401,9 +400,9 @@ define(function (require, exports, module) {
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
         assert.calledWith(userAccount.logout, v.lu._id, 'abc');
-      },
+      });
 
-      "test logout without token"() {
+      test("logout without token", ()=>{
         v.conn.userId = 'uid111';
 
         session._commands.V.call(v.conn, 'X');
@@ -411,9 +410,9 @@ define(function (require, exports, module) {
         assert.same(v.conn.userId, null);
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc', 'def', 'exp']);
         assert.calledWith(v.ws.send, 'VS');
-      },
+      });
 
-      "test logoutOtherClients"() {
+      test("logoutOtherClients", ()=>{
         spy(userAccount, 'logoutOtherClients');
         v.ws2 = TH.mockWs();
         v.ws3 = TH.mockWs();
@@ -442,9 +441,9 @@ define(function (require, exports, module) {
         assert.equals(Object.keys(v.lu.$reload().tokens).sort(), ['abc']);
 
         assert.calledWith(userAccount.logoutOtherClients, v.lu._id, 'abc');
-      },
+      });
 
-      "test when not logged in logoutOtherClients does nothing"() {
+      test("when not logged in logoutOtherClients does nothing", ()=>{
         v.ws2 = TH.mockWs();
         v.conn2 = TH.sessionConnect(v.ws2);
         v.conn2.userId = 'uid111';
@@ -454,36 +453,34 @@ define(function (require, exports, module) {
         assert.same(v.conn2.userId, 'uid111');
 
         refute.calledWith(v.ws2.send, 'VS');
-      },
+      });
 
-      "test valid session login"() {
+      test("valid session login", ()=>{
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abc');
 
         assert.same(v.conn.userId, 'uid111');
         assert.same(v.conn.loginToken, 'abc');
 
         assert.calledWith(v.ws.send, matchStart('VSuid111:'));
-      },
+      });
 
-      "test invalid session login"() {
+      test("invalid session login", ()=>{
         session._commands.V.call(v.conn, 'L'+v.lu._id+'|abcd');
 
         assert.same(v.conn.userId, undefined);
 
         assert.calledWith(v.ws.send, 'VF');
-      },
+      });
 
-      "test invalid userId"() {
+      test("invalid userId", ()=>{
         session._commands.V.call(v.conn, 'L1122|abc');
 
         assert.same(v.conn.userId, undefined);
 
         assert.calledWith(v.ws.send, 'VF');
-      },
-    },
+      });
+    });
   });
 
-  function matchStart(exp) {
-    return TH.match(s => typeof s === 'string' && s.startsWith(exp));
-  }
+  const matchStart = exp => m(s => typeof s === 'string' && s.startsWith(exp));
 });

@@ -1,8 +1,9 @@
-define(function(require, exports, module) {
-  const AccSha256 = require('koru/srp/acc-sha256');
-  const util      = require('koru/util');
+define((require, exports, module)=>{
+  const AccSha256       = require('koru/srp/acc-sha256');
+  const util            = require('koru/util');
 
   const nodeCrypto = isServer ? requirejs.nodeRequire('crypto') : undefined;
+
   const {idLen} = util;
   const idBytes = ((2*idLen-1)>>2)<<2;
 
@@ -31,10 +32,7 @@ define(function(require, exports, module) {
             return bytes;
           };
 
-  const prng = (seedArray)=> AccSha256.add(seedArray.join(''), [
-    0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
-    0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19 ]);
-
+  const prng = (seedArray)=> AccSha256.add(seedArray.join(''));
 
   const prngGetBytes = (h, numBytes)=>{
     const size = ((numBytes+3)>>2)<<2;
@@ -78,7 +76,7 @@ define(function(require, exports, module) {
 
     id() {
       if (this.words !== undefined) {
-        u32Id.set(AccSha256.add(shaStr, this.words).slice(0, idBytes));
+        u32Id.set(AccSha256.add(shaStr, this.words));
       } else if (nodeCrypto === undefined)
         crypto.getRandomValues(u32Id);
       else
@@ -98,11 +96,8 @@ define(function(require, exports, module) {
 
 
   const random = new RandomGenerator(seed);
+  const create = (...args)=> new RandomGenerator(args.length ? args : undefined);
   random.create = create;
-
-  function create(...args) {
-    return new RandomGenerator(args.length ? args : undefined);
-  }
 
   return {
     create,
