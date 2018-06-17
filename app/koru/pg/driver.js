@@ -1071,8 +1071,9 @@ WHERE table_name = '${table._name}' AND table_schema = '${table._client.schemaNa
   }
 
   const wait = future => (err, result)=>{
-    if (err) {
-      err.message = err.message.replace(/^ERROR:\s*/, '');
+    if (err != null && typeof err === 'object') {
+      if (typeof err.message === 'string')
+        err.message = err.message.replace(/^ERROR:\s*/, '');
       future.throw(err);
     }
     else future.return(result);
