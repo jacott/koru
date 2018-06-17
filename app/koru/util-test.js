@@ -1,11 +1,13 @@
 define((require, exports, module)=>{
   /**
-   * The util module provides commonly performed utility functions.
+   * The `util` module provides commonly performed utility functions.
    **/
   const Random = require('koru/random');
   const api    = require('koru/test/api');
   const match  = require('./match');
   const TH     = require('./test');
+
+  const {stub, spy, onEnd} = TH;
 
   const util  = require('./util');
   let v = null;
@@ -34,10 +36,13 @@ define((require, exports, module)=>{
 
     "test toDp"() {
       /**
-       * Return a floating point `number` as a string to
-       * `dp` decimal places.
+       * Convert `number` to `dp` decimal places to a string.
+       * @param number a number to be converted
+       * @param dp the number of decimal places to display `number` to
+       * @param zeroFill pad with zeros; `false` by default
        *
-       * @param {boolean} zeroFill - pad with zeros.
+       * @returns `number` to `dp` decimal places converted to a string, padded with
+       * zeros if `zeroFill` is `true`
        **/
       api.method('toDp');
       assert.same(util.toDp(10.7, 0), "11");
@@ -60,13 +65,23 @@ define((require, exports, module)=>{
 
     "test pc"() {
       /**
-       * Convert a `fraction` into css % string
+       * Convert `fraction` to a string of its percent form, with the percent symbol, %,
+       * at the end of the string.
+       * @param fraction a fraction
+       *
+       * @returns a string comprised of the percent form of `fraction` followed by the percent symbol, %
        **/
       api.method('pc');
       assert.same(util.pc(1.2345678), '123.45678%');
     },
 
     "test sansPx"() {
+      /**
+       * Convert `value` from a string to a number, removing 'px' from the end.
+       * @param value a value to be converted
+       *
+       * @returns `value` converted to a number, with 'px' removed
+       **/
       api.method('sansPx');
       assert.same(util.sansPx('123.23px'), 123.23);
       assert.same(util.sansPx(), 0);
@@ -74,6 +89,12 @@ define((require, exports, module)=>{
     },
 
     "test sansPc"() {
+      /**
+       * Convert `value` from a string to a number, removing the percent symbol, %, from the end
+       * @param value a value to be converted
+       *
+       * @returns `value` converted to a number, with the percent symbol, %, removed
+       **/
       api.method('sansPc');
       assert.same(util.sansPc('123.23%'), 123.23);
       assert.same(util.sansPc(), 0);
@@ -102,6 +123,15 @@ define((require, exports, module)=>{
     },
 
     "test keyStartsWith"() {
+      /**
+       * Determine whether `obj` has a key that starts with `str`. Case sensitive.
+       * @param obj the object to search
+       * @param str the string to search for
+       *
+       * @returns `true` if a key is found that starts with `str`, otherwise `false`
+       **/
+      api.method('keyStartsWith');
+
       assert.isFalse(util.keyStartsWith(null, 'foo'));
       assert.isFalse(util.keyStartsWith({foz: 1, fizz: 2}, 'foo'));
       assert.isTrue(util.keyStartsWith({faz: true, fooz: undefined, fizz: 2}, 'foo'));
@@ -136,18 +166,43 @@ define((require, exports, module)=>{
       assert.equals(list, ['a', 'b', {aa: 123}]);
     },
 
+    "test itemIndex"() {
+      /**
+       * `itemIndex` returns the index of the first element in `list` that matches
+       * `item`. If `item` is an object, `itemIndex` returns the index of the first object in
+       * `list` that contains all the key-value pairs that `item` contains.
+       * @param list the list to search
+       * @param {any-type} item the item to search `list` for
+       *
+       * @returns the index of `item` if `item` is in `list`, otherwise -1
+       **/
+      api.method('itemIndex');
+      const list = ['a', 'b', {one: 'c', two: 'd'}];
+
+      assert.same(util.itemIndex(list, 'b'), 1);
+      assert.same(util.itemIndex(list, 'd'), -1);
+      assert.same(util.itemIndex(list, {one: 'c', two: 'd'}), 2);
+      assert.same(util.itemIndex(list, {two: 'd'}), 2);
+      assert.same(util.itemIndex(list, {one: 'e', two: 'd'}), -1);
+    },
+
     "test removeItem"() {
       /**
-       * remove an `item` from a `list`. `list` is modified.
+       * Remove `item` from `list`. `list` is modified. If `item` is an object,
+       * `removeItem` removes the first object in `list` that contains all the key-value pairs that
+       * `item` contains.
+       * @param list the list from which to remove `item`
+       * @param {any-type} item the item to remove from `list`
        *
-       *
-       * @param item - can be a key-value object to compare the given keys.
-       * @returns {object|primitive} the removed item.
+       * @returns {any-type} the removed item; `undefined` if `list` does not contain `item`
        **/
       api.method('removeItem');
-      const foo = [1,2,3];
 
+      //[
+      const foo = [1,2,3];
       assert.same(util.removeItem(foo, 2), 2); assert.equals(foo, [1, 3]);
+
+      util.removeItem(foo); assert.equals(foo, [1, 3]);
 
       assert.same(util.removeItem(foo, 4), undefined); assert.equals(foo, [1, 3]);
 
@@ -155,19 +210,16 @@ define((require, exports, module)=>{
 
       util.removeItem(foo, 3); assert.equals(foo, []);
 
-      util.removeItem(foo); assert.equals(foo, []);
-
       const bar = [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}];
-
       assert.same(util.removeItem(bar, {name: 'bar', x: 1}), undefined);
       assert.equals(bar, [{id: 4, name: "foo"}, {id: 5, name: "bar"}, {x: 1}]);
-
 
       assert.equals(util.removeItem(bar, {name: 'bar'}), {id: 5, name: "bar"});
       assert.equals(bar, [{id: 4, name: "foo"}, {x: 1}]);
 
       assert.equals(util.removeItem(bar, {id: 4, name: 'foo'}), {id: 4, name: 'foo'});
       assert.equals(bar, [{x: 1}]);
+      //]
     },
 
     "test values"() {
@@ -176,7 +228,11 @@ define((require, exports, module)=>{
 
     'test intersectp'() {
       /**
-       * Determine if `list1` and `list2` intersect
+       * Determine if two lists intersect.
+       * @param list1 a list
+       * @param list2 a second list
+       *
+       * @returns `true` if `list1` and `list2` have any element in common, otherwise `false`
        **/
       api.method('intersectp');
       assert(util.intersectp([1,4],[4,5]));
@@ -416,19 +472,32 @@ define((require, exports, module)=>{
     },
 
     "test forEach"() {
-      util.forEach(null, v.stub = this.stub());
-      refute.called(v.stub);
-      const results = [];
-      util.forEach(v.list = [1,2,3], (val, index)=>{results.push(val+"."+index)});
+      /**
+       * Execute `visitor` once for each element in `list`.
+       * @param list a list
+       * @param visitor a function taking two arguments: the value of the current element in `list`
+       * being processed, and the index of that current element
+       **/
+      api.method('forEach');
 
+      //[
+      const results = [];
+      util.forEach([1,2,3], (val, index) => {results.push(val+"."+index)});
       assert.equals(results, ['1.0', '2.1', '3.2']);
+
+      // ignores null list
+      const callback = stub();
+      util.forEach(null, callback);
+      refute.called(callback);
+      //]
     },
 
     "test reverseForEach"() {
       /**
-       * Visit `list` in reverse order.
-       *
-       * @param visitor - called with the list `item` and `index`
+       * Visit `list` in reverse order, executing `visitor` once for each list element.
+       * @param list a list
+       * @param visitor a function taking two arguments: the value of the current element in `list`
+       * being processed, and the index of that current element
        **/
       api.method('reverseForEach');
       //[
@@ -439,8 +508,9 @@ define((require, exports, module)=>{
       assert.equals(results, ['3.2', '2.1', '1.0']);
 
       // ignores null list
-      util.reverseForEach(null, v.stub = this.stub());
-      refute.called(v.stub);
+      const callback = stub();
+      util.reverseForEach(null, callback);
+      refute.called(callback);
       //]
     },
 
@@ -565,9 +635,8 @@ define((require, exports, module)=>{
 
     "test createDictionary"() {
       /**
-       * Create an object that hints to VM that it will be used in dictionary mode rather than
-       * class mode.
-
+       * Create an object that hints to the VM that it will be used as a dynamic dictionary
+       * rather than as a class.
        * @return a new object with no prototype
        **/
       api.method('createDictionary');
@@ -1078,17 +1147,14 @@ define((require, exports, module)=>{
 
     "test withId"() {
       /**
-       * Associate an _id with an object.
-
-       * @param object to associate with the `_id`
-
-       * @param _id to associate with the `object`
-
+       * Associate `object` with `_id`.
+       * @param _id an id to associate with `object`
+       * @param object an object to associate with `_id`
        * @param key defaults to {#Symbol.withId$}
-
+       *
        * @returns an associated object which has the given `_id` and a prototype of the given
        * `object`. If an association for `key` is already attached to the `object` then it is used
-       * otherwise a new one will be greated.
+       * otherwise a new one will be created.
        **/
       api.method('withId');
 

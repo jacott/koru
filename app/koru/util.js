@@ -240,11 +240,11 @@ define((require, exports, module)=>{
       return {include, exclude};
     },
 
-    forEach(list, func) {
+    forEach(list, visitor) {
       if (! list) return;
       const len = list.length;
       for(let i = 0; i < len; ++i) {
-        func(list[i], i);
+        visitor(list[i], i);
       }
     },
 
@@ -411,8 +411,8 @@ define((require, exports, module)=>{
       return true;
     },
 
-    keyStartsWith(obj, key) {
-      for (const id in obj) if (id.startsWith(key)) return true;
+    keyStartsWith(obj, str) {
+      for (const id in obj) if (id.startsWith(str)) return true;
       return false;
     },
 
