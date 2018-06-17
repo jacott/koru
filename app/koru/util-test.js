@@ -12,16 +12,16 @@ define((require, exports, module)=>{
   const util  = require('./util');
   let v = null;
 
-  TH.testCase(module, {
-    setUp () {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach( ()=>{
       v = {};
-    },
+    });
 
-    tearDown () {
+    afterEach( ()=>{
       v = null;
-    },
+    });
 
-    "test mergeOwnDescriptors"() {
+    test("mergeOwnDescriptors", ()=>{
       const a = {a: 1, b: 2};
       const b = util.mergeNoEnum(util.protoCopy(a, {b: 3, c: 4}), {e: 6});
 
@@ -32,9 +32,9 @@ define((require, exports, module)=>{
       assert.same(ans, c);
       assert.equals(ans, {d: 5, b: 3, c: 4});
       assert.same(ans.e, 6);
-    },
+    });
 
-    "test toDp"() {
+    test("toDp", ()=>{
       /**
        * Convert `number` to `dp` decimal places to a string.
        * @param number a number to be converted
@@ -55,15 +55,15 @@ define((require, exports, module)=>{
 
       assert.same(util.toDp(10.2, 3), "10.2");
       assert.same(util.toDp(1.0021, 3, true), "1.002");
-    },
+    });
 
-    "test DAY"() {
+    test("DAY", ()=>{
       const d1 = new Date(2015, 1, 1);
       const d2 = new Date(2015, 1, 2);
       assert.same(util.DAY, +d2 - d1);
-    },
+    });
 
-    "test pc"() {
+    test("pc", ()=>{
       /**
        * Convert `fraction` to a string of its percent form, with the percent symbol, %,
        * at the end of the string.
@@ -73,9 +73,9 @@ define((require, exports, module)=>{
        **/
       api.method('pc');
       assert.same(util.pc(1.2345678), '123.45678%');
-    },
+    });
 
-    "test sansPx"() {
+    test("sansPx", ()=>{
       /**
        * Convert `value` from a string to a number, removing 'px' from the end.
        * @param value a value to be converted
@@ -86,9 +86,9 @@ define((require, exports, module)=>{
       assert.same(util.sansPx('123.23px'), 123.23);
       assert.same(util.sansPx(), 0);
       assert.same(util.sansPx(234), 234);
-    },
+    });
 
-    "test sansPc"() {
+    test("sansPc", ()=>{
       /**
        * Convert `value` from a string to a number, removing the percent symbol, %, from the end
        * @param value a value to be converted
@@ -99,30 +99,30 @@ define((require, exports, module)=>{
       assert.same(util.sansPc('123.23%'), 123.23);
       assert.same(util.sansPc(), 0);
       assert.same(util.sansPc(234), 234);
-    },
+    });
 
-    "test indexOfRegex"() {
+    test("indexOfRegex", ()=>{
       const list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);
       assert.same(util.indexOfRegex(list, /ab/, 'foo'), -1);
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
-    },
+    });
 
-    "test isObjEmpty"() {
+    test("isObjEmpty", ()=>{
       assert.isTrue(util.isObjEmpty());
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));
-    },
+    });
 
-    "test hasOnly"() {
+    test("hasOnly", ()=>{
       assert.isFalse(util.hasOnly({a: 1}, {b: true}));
       assert.isFalse(util.hasOnly({a: 1, b: 1}, {b: true}));
       assert.isTrue(util.hasOnly({b: 1}, {b: true}));
       assert.isTrue(util.hasOnly({}, {b: true}));
       assert.isTrue(util.hasOnly({b: 1, c: 2}, {b: true, c: false}));
-    },
+    });
 
-    "test keyStartsWith"() {
+    test("keyStartsWith", ()=>{
       /**
        * Determine whether `obj` has a key that starts with `str`. Case sensitive.
        * @param obj the object to search
@@ -136,20 +136,20 @@ define((require, exports, module)=>{
       assert.isFalse(util.keyStartsWith({foz: 1, fizz: 2}, 'foo'));
       assert.isTrue(util.keyStartsWith({faz: true, fooz: undefined, fizz: 2}, 'foo'));
       assert.isTrue(util.keyStartsWith({foo: 1, fizz: 2}, 'foo'));
-    },
+    });
 
-    "test firstParam"() {
+    test("firstParam", ()=>{
       assert.same(util.firstParam({a: 1, b: 2}), 1);
       assert.same(util.firstParam({}), undefined);
       assert.same(util.firstParam(), undefined);
-    },
+    });
 
-    "test keyMatches"() {
+    test("keyMatches", ()=>{
       assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(c)/)[1], 'c');
       assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
-    },
+    });
 
-    "test addItem"() {
+    test("addItem", ()=>{
       const list = ['a', 'b'];
 
       assert.same(util.addItem(list, 'b'), 1);
@@ -164,9 +164,9 @@ define((require, exports, module)=>{
       assert.same(util.addItem(list, {aa: 123}), 2);
 
       assert.equals(list, ['a', 'b', {aa: 123}]);
-    },
+    });
 
-    "test itemIndex"() {
+    test("itemIndex", ()=>{
       /**
        * `itemIndex` returns the index of the first element in `list` that matches
        * `item`. If `item` is an object, `itemIndex` returns the index of the first object in
@@ -184,9 +184,9 @@ define((require, exports, module)=>{
       assert.same(util.itemIndex(list, {one: 'c', two: 'd'}), 2);
       assert.same(util.itemIndex(list, {two: 'd'}), 2);
       assert.same(util.itemIndex(list, {one: 'e', two: 'd'}), -1);
-    },
+    });
 
-    "test removeItem"() {
+    test("removeItem", ()=>{
       /**
        * Remove `item` from `list`. `list` is modified. If `item` is an object,
        * `removeItem` removes the first object in `list` that contains all the key-value pairs that
@@ -220,13 +220,13 @@ define((require, exports, module)=>{
       assert.equals(util.removeItem(bar, {id: 4, name: 'foo'}), {id: 4, name: 'foo'});
       assert.equals(bar, [{x: 1}]);
       //]
-    },
+    });
 
-    "test values"() {
+    test("values", ()=>{
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
-    },
+    });
 
-    'test intersectp'() {
+    test("intersectp", ()=>{
       /**
        * Determine if two lists intersect.
        * @param list1 a list
@@ -237,32 +237,32 @@ define((require, exports, module)=>{
       api.method('intersectp');
       assert(util.intersectp([1,4],[4,5]));
       refute(util.intersectp([1,2],['a']));
-    },
+    });
 
-    "test union"() {
+    test("union", ()=>{
       assert.equals(util.union([1,2,3], [3, 4, 5], [3, 6]).sort(), [1, 2, 3, 4, 5, 6]);
       assert.equals(util.union([1,2]), [1, 2]);
       assert.equals(util.union([1,2], null), [1, 2]);
       assert.equals(util.union(null, [1,2]), [1, 2]);
       assert.equals(util.union(null, null), []);
-    },
+    });
 
-    "test diff"() {
+    test("diff", ()=>{
       assert.equals(util.diff(), []);
       assert.equals(util.diff([1, 2]), [1, 2]);
 
       assert.equals(util.diff([1,"2",3, null], ["2",4]), [1, 3, null]);
-    },
+    });
 
-    "test symDiff"() {
+    test("symDiff", ()=>{
       assert.equals(util.symDiff(), []);
       assert.equals(util.symDiff([1, 2]), [1, 2]);
 
       assert.equals(util.symDiff([1,2,3], [2,4]).sort(), [1, 3, 4]);
       assert.equals(util.symDiff([2,4], [1,2,3]).sort(), [1, 3, 4]);
-    },
+    });
 
-    'test extend'() {
+    test("extend", ()=>{
       let item = 5;
       const sub={a: 1, b: 2};
       const sup = {b: 3, get c() {return item;}};
@@ -274,9 +274,9 @@ define((require, exports, module)=>{
       assert.same(sub.a,1);
       assert.same(sub.b,3);
       assert.same(sub.c,6);
-    },
+    });
 
-    'test mergeExclude'() {
+    test("mergeExclude", ()=>{
       let item = 5,
           sub={a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
@@ -288,16 +288,16 @@ define((require, exports, module)=>{
       assert.same(sub.a,1);
       assert.same(sub.b,3);
       assert.same(sub.c,6);
-    },
+    });
 
-    "test mergeInclude"() {
+    test("mergeInclude", ()=>{
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true}),
                     {a: 1, c: 3, d: 4});
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
                     {a: 1, c: 3, d: 4});
-    },
+    });
 
-    "test extractKeys"() {
+    test("extractKeys", ()=>{
       assert.equals(
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, ['a', 'c', 'e']),
         {a: 4, c: {value: true}}
@@ -306,25 +306,25 @@ define((require, exports, module)=>{
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, c: false, e: null}),
         {a: 4, c: {value: true}}
       );
-    },
+    });
 
-    "test extractNotKeys"() {
+    test("extractNotKeys", ()=>{
       assert.equals(
         util.extractNotKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true}),
         {b: "abc", c: {value: true}}
       );
-    },
+    });
 
-    "test splitKeys"() {
+    test("splitKeys", ()=>{
       const {include, exclude} = util.splitKeys(
         {a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true});
 
       assert.equals(include, {a: 4});
       assert.equals(exclude, {b: "abc", c: {value: true}});
-    },
+    });
 
 
-    "test egal"() {
+    test("egal", ()=>{
       assert.same(util.egal, util.is);
       assert.isTrue(util.egal(null, null));
       assert.isTrue(util.egal(NaN, NaN));
@@ -344,18 +344,18 @@ define((require, exports, module)=>{
       assert.isFalse(util.egal(NaN, 1));
       assert.isFalse(util.egal(1, 2));
       assert.isFalse(util.egal("a", "b"));
-    },
+    });
 
-    "test shallowEqual arrays"() {
+    test("shallowEqual arrays", ()=>{
       assert.isTrue(util.shallowEqual([1, 2, 3], [1, 2, 3]));
       assert.isFalse(util.shallowEqual([1, {}, 3], [1, {}, 3]));
       assert.isFalse(util.shallowEqual([1, 2], [1, 2, 3]));
       assert.isFalse(util.shallowEqual([1, 2], [1]));
       assert.isFalse(util.shallowEqual([1, 2], null));
       assert.isFalse(util.shallowEqual('a', [1, 2]));
-    },
+    });
 
-    "test deepEqual"() {
+    test("deepEqual", ()=>{
       assert.isTrue(util.deepEqual(null, null));
       assert.isTrue(util.deepEqual(null, undefined));
       assert.isFalse(util.deepEqual(null, ""));
@@ -390,9 +390,9 @@ define((require, exports, module)=>{
         a.a = a; b.a = b;
         assert.isFalse(util.deepEqual(a, b));
       }, {message: 'deepEqual maxLevel exceeded'});
-    },
+    });
 
-    "test elemMatch"() {
+    test("elemMatch", ()=>{
       /**
        * true if all keys in a are deepEqual to the corresponding keys in b
        **/
@@ -406,21 +406,21 @@ define((require, exports, module)=>{
       assert.isTrue(util.elemMatch({a: {b: 1}}, {a: {b: 1}, c: 3}));
 
       assert.isFalse(util.elemMatch({a: {b: 1}}, {a: {b: 1, c: 3}}));
-    },
+    });
 
-    "test invert"() {
+    test("invert", ()=>{
       assert.equals(util.invert({a: 1, b: 2}), {'1': "a", '2': "b"});
       assert.equals(util.invert({a: 1, b: 2}, x => x+x), {'1': "aa", '2': "bb"});
-    },
+    });
 
-    "test lookupDottedValue"() {
+    test("lookupDottedValue", ()=>{
       assert.same(util.lookupDottedValue("foo.1.bar.baz", {
         a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
       assert.same(util.lookupDottedValue(['foo', 1, 'bar', 'baz'], {
         a: 1, foo: [{}, {bar: {baz: "fnord"}}]}), "fnord");
-    },
+    });
 
-    "test includesAttributes"() {
+    test("includesAttributes", ()=>{
       const changes = {b: '2'};
       const doc = {a: '1', b: '3'};
 
@@ -428,50 +428,50 @@ define((require, exports, module)=>{
       assert.isTrue(util.includesAttributes({a: 1, b: '2'}, changes, doc, null));
       assert.isFalse(util.includesAttributes({a: 1, b: '3'}, changes, doc, null));
       assert.isFalse(util.includesAttributes({a: 2, b: '2'}, changes, doc, null));
-    },
+    });
 
-    "test regexEscape"() {
+    test("regexEscape", ()=>{
       assert.same(util.regexEscape('ab[12]\\w.*?\\b()'), 'ab\\[12\\]\\\\w\\.\\*\\?\\\\b\\(\\)');
-    },
+    });
 
-    "test newEscRegex"() {
+    test("newEscRegex", ()=>{
       assert.match('ab[12]\\w.*?\\b()', util.newEscRegex('ab[12]\\w.*?\\b()'));
-    },
+    });
 
-    "test pick"() {
+    test("pick", ()=>{
       assert.equals(util.pick(), {});
       assert.equals(util.pick({a: 1, b: 2, c: 3}, 'a', 'c'), {a:1, c: 3});
-    },
+    });
 
-    "test mapToSearchStr"() {
+    test("mapToSearchStr", ()=>{
       assert.same(util.mapToSearchStr({'a +b': 'q[a]', foo: 'bar'}), "a%20%2Bb=q%5Ba%5D&foo=bar");
-    },
+    });
 
-    "test encodeURIComponent"() {
+    test("encodeURIComponent", ()=>{
       assert.same(util.encodeURIComponent(0), '0');
       assert.same(util.encodeURIComponent(), '');
       assert.same(util.encodeURIComponent(null), '');
 
       assert.same(util.encodeURIComponent("'!@#$%^&*()_hello world"),
                   '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world');
-    },
+    });
 
-    "test decodeURIComponent"() {
+    test("decodeURIComponent", ()=>{
       assert.same(util.decodeURIComponent(''), null);
       assert.same(util.decodeURIComponent(
         '%27%21%40%23%24%25%5E%26%2A%28%29_hello%20world+again'), "'!@#$%^&*()_hello world again");
       assert.same(util.decodeURIComponent(
         '<%= foo._id %>'), "<%= foo._id %>");
 
-    },
+    });
 
-    "test searchStrToMap"() {
+    test("searchStrToMap", ()=>{
       assert.equals(util.searchStrToMap("a%20%2Bb=q%5Ba%5D&foo=bar"), {'a +b': 'q[a]', foo: 'bar'});
       assert.equals(util.searchStrToMap(null), {});
 
-    },
+    });
 
-    "test forEach"() {
+    test("forEach", ()=>{
       /**
        * Execute `visitor` once for each element in `list`.
        * @param list a list
@@ -490,9 +490,9 @@ define((require, exports, module)=>{
       util.forEach(null, callback);
       refute.called(callback);
       //]
-    },
+    });
 
-    "test reverseForEach"() {
+    test("reverseForEach", ()=>{
       /**
        * Visit `list` in reverse order, executing `visitor` once for each list element.
        * @param list a list
@@ -512,10 +512,10 @@ define((require, exports, module)=>{
       util.reverseForEach(null, callback);
       refute.called(callback);
       //]
-    },
+    });
 
 
-    "test append"() {
+    test("append", ()=>{
       const list1 = [1, 2, 3];
 
       assert.same(util.append(list1, [4, 3]), list1);
@@ -528,9 +528,9 @@ define((require, exports, module)=>{
       assert.same(args[3], 5);
 
       function testArgs() {return arguments}
-    },
+    });
 
-    "test toMap"() {
+    test("toMap", ()=>{
       assert.equals(util.toMap(), {});
       assert.equals(util.toMap(null), {});
       assert.equals(util.toMap(['a', 'b']), {a: true, b: true});
@@ -548,32 +548,32 @@ define((require, exports, module)=>{
                     {1: "a", bar: "foo"});
       assert.equals(util.toMap('foo', (c, i) => c.foo+i, [{foo: 'a'}, {foo: 'b'}]),
                     {a: "a0", b: "b1"});
-    },
+    });
 
-    "test mapLinkedList"() {
+    test("mapLinkedList", ()=>{
       const a = {foo: 1, next: {foo: 2, next: null}};
       assert.equals(util.mapLinkedList(a, n => n.foo), [1, 2]);
-    },
+    });
 
-    "test mapField"() {
+    test("mapField", ()=>{
       assert.same(util.mapField(null), null);
 
       assert.equals(util.mapField([]), []);
       assert.equals(util.mapField([{_id: 1}, {_id: 2}]), [1, 2]);
       assert.equals(util.mapField([{foo: 2, bar: 4}, {foo: "ab"}], 'foo'), [2, "ab"]);
-    },
+    });
 
-    "test idNameListToMap"() {
+    test("idNameListToMap", ()=>{
       assert.equals(util.idNameListToMap([['a', 'a a'], ['b', 'b b']]), {a: "a a", b: "b b"});
-    },
+    });
 
-    "test find "() {
+    test("find ", ()=>{
       assert.same(util.find([1,8,7,3], (value, idx)=> value > 5 && idx === 2), 7);
 
       assert.same(util.find([1,8,7,3], (value, idx)=> false), undefined);
-    },
+    });
 
-    "test binarySearch"() {
+    test("binarySearch", ()=>{
 
       assert.same(util.binarySearch([], row => assert(false)), -1);
 
@@ -588,22 +588,22 @@ define((require, exports, module)=>{
 
       assert.same(util.binarySearch(list, row => 8 - row, -1), 3);
       assert.same(util.binarySearch(list, row => 8 - row, 7), 3);
-    },
+    });
 
-    "test flatten"() {
+    test("flatten", ()=>{
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8]), [1, 2, 6, 4, 7, 8]);
       assert.equals(util.flatten([1, [2, 6, [4]], [], 7, 8], true), [1, 2, 6, [4], 7, 8]);
-    },
+    });
 
-    "test findBy"() {
+    test("findBy", ()=>{
       const list = [{foo: 'a', _id: 2}, {foo: 'b', _id: 1}];
       assert.same(util.findBy(list, 1), list[1]);
       assert.same(util.findBy(list, 2), list[0]);
       assert.same(util.findBy(list, 'a', 'foo'), list[0]);
       assert.same(util.findBy(list, 'b', 'foo'), list[1]);
-    },
+    });
 
-    "test indexOf "() {
+    test("indexOf ", ()=>{
       const data = [{_id: 1, age: 20}, {_id: 2, age: 30}];
 
       // default field (_id)
@@ -615,9 +615,9 @@ define((require, exports, module)=>{
       assert.same(util.indexOf(data, 30, 'age'), 1);
       assert.same(util.indexOf(data, 20, 'age'), 0);
       assert.same(util.indexOf(data, 3, 'age'), -1);
-    },
+    });
 
-    "test protoCopy"() {
+    test("protoCopy", ()=>{
       const source = {a: new Date(), b: "two"};
 
       const dest = util.protoCopy(source, {get c() {return "cc"}});
@@ -631,9 +631,9 @@ define((require, exports, module)=>{
 
       source.a = 'aa';
       assert.same(dest.a, 'aa');
-    },
+    });
 
-    "test createDictionary"() {
+    test("createDictionary", ()=>{
       /**
        * Create an object that hints to the VM that it will be used as a dynamic dictionary
        * rather than as a class.
@@ -645,9 +645,9 @@ define((require, exports, module)=>{
       assert.same(Object.getPrototypeOf(dict), null);
       assert(util.isObjEmpty(dict));
       assert(dict && typeof dict === 'object');
-    },
+    });
 
-    "test shallowCopy"() {
+    test("shallowCopy", ()=>{
       assert.same(util.shallowCopy(1), 1);
       assert.same(util.shallowCopy(true), true);
       assert.same(util.shallowCopy(null), null);
@@ -685,9 +685,9 @@ define((require, exports, module)=>{
       result[2].three = 'changed';
 
       assert.equals(orig, [1, "2", {three: 'changed'}]);
-    },
+    });
 
-    "test deepCopy"() {
+    test("deepCopy", ()=>{
       assert.same(util.deepCopy(1), 1);
       assert.same(util.deepCopy(true), true);
       assert.same(util.deepCopy(null), null);
@@ -735,50 +735,50 @@ define((require, exports, module)=>{
         util.deepCopy(a);
       }, {message: 'deepCopy maxLevel exceeded'});
 
-    },
+    });
 
-    "test camelize"() {
+    test("camelize", ()=>{
       assert.same(util.camelize(""), "");
       assert.same(util.camelize("abc"), "abc");
       assert.same(util.camelize("abc-def_xyz.qqq+foo%bar"), "abcDefXyzQqqFooBar");
       assert.same(util.camelize("CarlySimon"), "CarlySimon");
-    },
+    });
 
-    "test niceFilename"() {
+    test("niceFilename", ()=>{
       assert.same(util.niceFilename("a1!@#$%/sdffsdDDfdsf/fds.txt"), 'a1-sdffsdddfdsf-fds-txt');
-    },
+    });
 
-    "test titleize"() {
+    test("titleize", ()=>{
       assert.same(util.titleize(""), "");
       assert.same(util.titleize("abc"), "Abc");
       assert.same(util.titleize("abc-def_xyz.qqq+foo%bar"), "Abc Def Xyz Qqq Foo Bar");
       assert.same(util.titleize("CarlySimon"), "Carly Simon");
-    },
+    });
 
-    "test humanize"() {
+    test("humanize", ()=>{
       assert.same(util.humanize('camelCaseCamel_id'), "camel case camel");
       assert.same(util.humanize('Hyphens-and_underscores'), "hyphens and underscores");
-    },
+    });
 
-    "test pluralize"() {
+    test("pluralize", ()=>{
       assert.same(util.pluralize('day', 1), 'day');
       assert.same(util.pluralize('day', 2), 'days');
-    },
+    });
 
-    "test initials"() {
+    test("initials", ()=>{
       assert.same(util.initials(null, 2), "");
       assert.same(util.initials("Sam THE BIG Man", 2), "SM");
       assert.same(util.initials("Sam the BIG man"), "STM");
       assert.same(util.initials("Prince"), "P");
       assert.same(util.initials("Princetui", 3, 'abrv'), "PRN");
-    },
+    });
 
-    "test hashToCss"() {
+    test("hashToCss", ()=>{
       assert.same(util.hashToCss({foo: 1, bar: "two"}), "foo:1;bar:two");
 
-    },
+    });
 
-    "test compare"() {
+    test("compare", ()=>{
       /**
        * uses en-US collating
        **/
@@ -786,9 +786,9 @@ define((require, exports, module)=>{
       assert.isTrue(util.compare("Albert", "beatrix") < 0);
       assert.isTrue(util.compare("Albert", "albert") > 0);
       assert.isTrue(util.compare("Albert", "Albert") == 0);
-    },
+    });
 
-    "test compareByName"() {
+    test("compareByName", ()=>{
       assert.equals(util.compareByName.compareKeys, ['name', '_id']);
 
       const a = {name: "Bob"};
@@ -815,9 +815,9 @@ define((require, exports, module)=>{
       assert.same(util.compareByName(b, null), 1);
       assert.same(util.compareByName(undefined, null), 0);
 
-    },
+    });
 
-    "test compareByOrder"() {
+    test("compareByOrder", ()=>{
       assert.equals(util.compareByOrder.compareKeys, ['order', '_id']);
       const a = {order: 300};
       const b = {order: 300};
@@ -839,9 +839,9 @@ define((require, exports, module)=>{
       assert.same(util.compareByOrder(null, b), -1);
       assert.same(util.compareByOrder(b, null), 1);
       assert.same(util.compareByOrder(undefined, null), 0);
-    },
+    });
 
-    "test compareByField"() {
+    test("compareByField", ()=>{
       const a = {f1: "Bob", f2: 1, foo_id: 'Xbc'};
       const b = {f1: "Bob", f2: 2, foo_id: 'cbc'};
 
@@ -887,9 +887,9 @@ define((require, exports, module)=>{
       assert.same(compare(b,a), 1);
       assert.same(compare(b,{[sym]: 'c'}), 0);
       assert.equals(compare.compareKeys, [sym]);
-    },
+    });
 
-    "test compareByFields"() {
+    test("compareByFields", ()=>{
       const a = {f1: "bob", f2: 1, foo_id: 'Xbc'};
       const b = {f1: "bob", f2: 2, foo_id: 'cbc'};
 
@@ -931,9 +931,9 @@ define((require, exports, module)=>{
       assert.same(compare(b,a), -2);
       assert.same(compare(b,{f1: b.f1, [sym]: 'c'}), 0);
       assert.equals(compare.compareKeys, ['f1', sym]);
-    },
+    });
 
-    "test hasOwn"() {
+    test("hasOwn", ()=>{
       const a = {
         y: null,
         z: undefined,
@@ -948,9 +948,9 @@ define((require, exports, module)=>{
       assert.isTrue(hasOwn(a, 'y'));
       assert.isFalse(hasOwn(b, 'z'));
       assert.isTrue(hasOwn(b, 'y'));
-    },
+    });
 
-    "test colorToArray"() {
+    test("colorToArray", ()=>{
       assert.equals(util.colorToArray(''), '');
       assert.equals(util.colorToArray([1,2,3,0.5]), [1,2,3,0.5]);
       assert.equals(util.colorToArray("#ac3d4f"), [172, 61, 79, 1]);
@@ -960,28 +960,28 @@ define((require, exports, module)=>{
       assert.equals(util.colorToArray("rgba(212, 150,244, 0.8)"), [212, 150, 244, 0.8]);
 
       assert.equals(util.colorToArray("#ac3"), [170, 204, 51, 1]);
-    },
+    });
 
-    "nestedHash": {
-      "test setNestedHash"() {
+    group("nestedHash", ()=>{
+      test("setNestedHash", ()=>{
         const hash = {};
 
         util.setNestedHash(123, hash, 'a', 'b');
         assert.same(util.setNestedHash(456, hash, 'a', 'c'), 456);
 
         assert.equals(hash, {a: {b: 123, c: 456}});
-      },
+      });
 
-      "test getNestedHash"() {
+      test("getNestedHash", ()=>{
         const hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.getNestedHash(hash, 'a', 'b'), 123);
         assert.equals(util.getNestedHash(hash, 'a'), {b: 123, c: 456});
         assert.equals(util.getNestedHash(hash, 'b'), undefined);
         assert.equals(util.getNestedHash(hash, 'a', 'd'), undefined);
-      },
+      });
 
-      "test deleteNestedHash"() {
+      test("deleteNestedHash", ()=>{
         let hash = {a: {b: 123, c: 456}};
 
         assert.equals(util.deleteNestedHash(hash, 'a', 'b'), 123);
@@ -999,10 +999,10 @@ define((require, exports, module)=>{
         assert.equals(util.deleteNestedHash(hash, 'a', 'c', 'd'), 456);
 
         assert.equals(hash, {a: {b: 123}});
-      },
-    },
+      });
+    });
 
-    'test reverseMerge'() {
+    test("reverseMerge", ()=>{
       let item = 5;
       const sub={a: 1, b: 2};
       const sup = {d: 'd', b: 3, get c() {return item;}};
@@ -1015,11 +1015,11 @@ define((require, exports, module)=>{
       assert.same(sub.b,2);
       assert.same(sub.c,6);
       refute('d' in sub);
-    },
+    });
 
-    "test adjustTime"() {
-      this.stub(Date, 'now').returns(12345);
-      this.onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+    test("adjustTime", ()=>{
+      stub(Date, 'now').returns(12345);
+      onEnd(_=>{util.adjustTime(-util.timeAdjust)});
       assert.same(util.timeAdjust, 0);
       assert.same(util.timeUncertainty, 0);
 
@@ -1034,9 +1034,9 @@ define((require, exports, module)=>{
 
       assert.same(util.timeUncertainty, 0);
       assert.same(util.dateNow(), 12348);
-    },
+    });
 
-    "test withDateNow"() {
+    test("withDateNow", ()=>{
       const date = new Date("2013-06-09T23:10:36.855Z");
       const result = util.withDateNow(date, ()=>{
         assert.equals(util.newDate(), date);
@@ -1065,13 +1065,13 @@ define((require, exports, module)=>{
       assert.between(now, before, after);
 
       assert.isTrue(result);
-    },
+    });
 
-    "test dateInputFormat"() {
+    test("dateInputFormat", ()=>{
       assert.same(util.dateInputFormat(new Date(2015, 0, 15)), "2015-01-15");
-    },
+    });
 
-    "test yyyymmddToDate"() {
+    test("yyyymmddToDate", ()=>{
       assert.equals(util.yyyymmddToDate(' 2015-5-04  '), new Date(2015, 4, 4));
       assert.equals(util.yyyymmddToDate('1969 04 09'), new Date(1969, 3, 9));
       assert.equals(util.yyyymmddToDate('1999-12-31'), new Date(1999, 11, 31));
@@ -1079,18 +1079,18 @@ define((require, exports, module)=>{
       assert.equals(util.yyyymmddToDate('2011-02/6'), undefined);
       assert.equals(util.yyyymmddToDate('2011/11/32'), undefined);
       assert.equals(util.yyyymmddToDate('2011/13/3'), undefined);
-    },
+    });
 
-    "test twoDigits"() {
+    test("twoDigits", ()=>{
       assert.same(util.twoDigits(9), '09');
       assert.same(util.twoDigits(10), '10');
-    },
+    });
 
-    "test emailAddress"() {
+    test("emailAddress", ()=>{
       assert.same(util.emailAddress('a@xyz.co', 'f<o>o <b<a>r>'), 'foo bar <a@xyz.co>');
-    },
+    });
 
-    "test extractFromEmail"() {
+    test("extractFromEmail", ()=>{
       assert.equals(util.extractFromEmail("abc@Def.Co"), {
         email: "abc@def.co",
         name: "Abc",
@@ -1110,9 +1110,9 @@ define((require, exports, module)=>{
         email: "helenreddy@delta.dawn.co",
         name: "Nick Nolte",
       });
-    },
+    });
 
-    "test compareVersion"() {
+    test("compareVersion", ()=>{
       assert.same(util.compareVersion('v1.0.0', 'v1.0.0'), 0);
 
       // simple string compare
@@ -1129,10 +1129,10 @@ define((require, exports, module)=>{
       assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-4'), 1);
       assert.same(util.compareVersion('v1.0.0-36', 'v1.0.0-40'), -1);
       assert.same(util.compareVersion('v1.0.0-36-2', 'v1.0.0-36-12'), 1);
-    },
+    });
 
 
-    "test parseEmailAddresses"() {
+    test("parseEmailAddresses", ()=>{
       assert.isNull(util.parseEmailAddresses("foo@bar baz"));
       assert.isNull(util.parseEmailAddresses("foo@ba_r.com"));
 
@@ -1143,9 +1143,9 @@ define((require, exports, module)=>{
       assert.equals(
         util.parseEmailAddresses("a b c <abc@def.com> foo-_+%bar@vimaly-test.com, "),
         {addresses: ["a b c <abc@def.com>", "foo-_+%bar@vimaly-test.com"], remainder: "" });
-    },
+    });
 
-    "test withId"() {
+    test("withId", ()=>{
       /**
        * Associate `object` with `_id`.
        * @param _id an id to associate with `object`
@@ -1173,6 +1173,6 @@ define((require, exports, module)=>{
       refute.same(util.withId(jane, 456), assoc);
       assert.same(util.withId(jane, 456).likes, jane.likes);
       //]
-    },
+    });
   });
 });
