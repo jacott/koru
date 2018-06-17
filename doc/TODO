@@ -1,5 +1,4 @@
 * Bugs
-** Fix api constructorconstructor syntax highlighting
 ** Lock doc by id before update
    Do in query-server.js. lock waits if already locked.
 
