@@ -11,7 +11,7 @@ isClient && define(function (require, exports, module) {
   const koru          = require('koru');
   const MockIndexedDB = require('koru/model/mock-indexed-db');
   const QueryIDB      = require('koru/model/query-idb');
-  const TH            = require('koru/test');
+  const TH            = require('koru/test-helper');
   const api           = require('koru/test/api');
   const MockPromise   = require('koru/test/mock-promise');
 

@@ -1,9 +1,9 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util     = require('./util-server');
 
-  return function (koru) {
+  return koru =>{
     global['_koru'+'_'] = koru; // avoid search for de-bug statements
 
     koru.onunload(module, 'reload');
@@ -84,7 +84,7 @@ define(function(require, exports, module) {
     koru._afTimeout = koru.afTimeout;
 
 
-    module.ctx.onError = function (error, mod) {
+    module.ctx.onError = (error, mod)=>{
       koru.error(util.extractError(error) + "\nerror loading: " + mod.id +
                  '\nwith dependancies:\n' + Object.keys(koru.fetchDependants(mod)).join('\n'));
       throw error;

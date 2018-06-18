@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
   const api  = require('koru/test/api');
-  const TH   = require('koru/test');
+  const TH   = require('koru/test-helper');
   const sut  = require('./dom');
   const base = require('./dom/base');
 

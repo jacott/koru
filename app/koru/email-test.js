@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  var TH = require('./test');
+  var TH = require('koru/test-helper');
   var Email = require('./email');
   var util = require('koru/util');
 

@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const pep = require('koru/polyfill/maybe-pep');
   const util = require('./util-client');
 
-  return function (koru) {
+  return koru =>{
     window['_koru'+'_'] = koru; // avoid search for de-bug statements
 
     koru.onunload(module, 'reload');
@@ -50,12 +50,7 @@ define(function(require, exports, module) {
       afTimeout(func, duration) {
         let af = null;
         let timeout;
-        if (duration && duration > 0)
-          timeout = setTimeout(inner, duration);
-        else
-          inner();
-
-        function inner() {
+        const inner = ()=>{
           timeout = null;
           af = window.requestAnimationFrame(() => {
             af = null;
@@ -65,9 +60,14 @@ define(function(require, exports, module) {
               koru.unhandledException(ex);
             }
           });
-        }
+        };
 
-        return function () {
+        if (duration && duration > 0)
+          timeout = setTimeout(inner, duration);
+        else
+          inner();
+
+        return ()=>{
           if (timeout) window.clearTimeout(timeout);
           if (af) window.cancelAnimationFrame(af);
           af = timeout = null;

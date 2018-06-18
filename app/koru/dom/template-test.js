@@ -6,7 +6,7 @@ isClient && define(function (require, exports, module) {
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const Ctx             = require('koru/dom/ctx');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 

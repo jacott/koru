@@ -1,5 +1,5 @@
 define(function (require, exports, module) {
-  const TH = require('./test');
+  const TH = require('koru/test-helper');
   const koru = require('./main');
 
   let v = null;

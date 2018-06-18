@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   var test, v;
   const sUtil = require('./server-util');
-  const TH    = require('./test');
+  const TH    = require('koru/test-helper');
 
   TH.testCase(module, {
     setUp() {

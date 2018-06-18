@@ -1,11 +1,11 @@
-define(function(require, exports, module) {
-  const stubber = require('koru/test/stubber');
-  const koru    = require('../main');
-  const util    = require('../util');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const stubber         = require('koru/test/stubber');
+  const util            = require('koru/util');
   require('./assertions-methods');
   require('./callbacks');
-  const Core  = require('./core');
-  const match   = require('./match');
+  const Core            = require('./core');
+  const match           = require('./match');
 
   const {inspect$} = require('koru/symbols');
 
@@ -17,7 +17,7 @@ define(function(require, exports, module) {
 
   const topDoc = isClient && (window.top ? window.top.document : document);
 
-  const onEnd = func=>Core.test.onEnd(func);
+  const onEnd = callback => Core.test.onEnd(callback);
   const stub = (...args)=>Core.test.stub(...args);
   const spy = (...args)=>Core.test.spy(...args);
 
@@ -31,17 +31,18 @@ define(function(require, exports, module) {
     if (typeof newValue !== 'object')
       newValue = {value: newValue};
     const oldValue = koru.replaceProperty(object, prop, newValue);
-    Core.test.onEnd(restore);
 
-    function restore() {
+    const restore = ()=>{
       if (oldValue)
         Object.defineProperty(object, prop, oldValue);
       else
         delete object[prop];
-    }
+    };
+
+    Core.test.onEnd(restore);
 
     return restore;
-};
+  };
 
   Error.stackTraceLimit = 100;
 
@@ -110,9 +111,27 @@ define(function(require, exports, module) {
     Main.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   };
 
+  const endRun = ()=>{
+    if (Core.testCount === 0) {
+      errorCount = 1;
+      Main.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
+    }
+
+    if (isClient) {
+      topDoc.title = topDoc.title.replace(/Running:\s*/, '');
+      window.onbeforeunload === warnFullPageReload && window.setTimeout(()=>{
+        window.onbeforeunload = null;
+      }, 1);
+    }
+
+    Main.testHandle('F', errorCount);
+    Core._init();
+  };
+
   const Main = {
     get test() {return Core.test},
     Core,
+    util,
     match,
     MockModule,
     stubProperty,
@@ -152,8 +171,8 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       });
     },
 
-    testCase(module, option) {
-      return module.exports = Core.testCase(module.id.replace(/-test$/, ''), option);
+    testCase(module, body) {
+      return module.exports = Core.testCase(module.id.replace(/-test$/, ''), body);
     },
 
     normHTMLStr(html) {
@@ -198,23 +217,6 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     Main.testHandle('R', `${test.name}\x00` + [
       count,Core.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
   });
-
-  function endRun() {
-    if (Core.testCount === 0) {
-      errorCount = 1;
-      Main.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
-    }
-
-    if (isClient) {
-      topDoc.title = topDoc.title.replace(/Running:\s*/, '');
-      window.onbeforeunload === warnFullPageReload && window.setTimeout(()=>{
-        window.onbeforeunload = null;
-      }, 1);
-    }
-
-    Main.testHandle('F', errorCount);
-    Core._init();
-  }
 
   return Main;
 });

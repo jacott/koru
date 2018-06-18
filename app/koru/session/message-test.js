@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   const Random          = require('koru/random');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const session         = require('./main');
 
   const message = require('./message');

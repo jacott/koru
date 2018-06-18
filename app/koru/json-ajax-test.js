@@ -1,6 +1,6 @@
 isClient && define(function (require, exports, module) {
   const koru            = require('koru');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
 
   const sut = require('./json-ajax');
   var test, v;

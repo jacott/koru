@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  const TH           = require('../test');
+  const TH           = require('koru/test-helper');
   const stateFactory = require('./state').constructor;
 
   var sessState;

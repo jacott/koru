@@ -1,7 +1,7 @@
 isServer && define(function (require, exports, module) {
   const koru      = require('koru/main');
   const session   = require('koru/session');
-  const TH        = require('koru/test');
+  const TH        = require('koru/test-helper');
   const util      = require('koru/util');
   const message   = require('./message');
   const publishTH = require('./publish-test-helper-server');

@@ -1,11 +1,12 @@
 define(function(require, exports, module) {
-  const koru    = require('../main');
-  const session = require('../session/base');
-  const TH      = require('../test-helper');
+  const util            = require('koru/util');
+  const koru            = require('../main');
+  const session         = require('../session/base');
+  const TH              = require('../test-helper');
 
   const {test$} = require('koru/symbols');
 
-  const {Core, stub, util} = TH;
+  const {Core, stub} = TH;
 
   return util.protoCopy(TH, {
     sessionConnect(ws) {

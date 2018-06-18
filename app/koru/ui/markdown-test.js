@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   var test, v;
-  var TH = require('../test');
+  var TH = require('koru/test-helper');
   var Markdown = require('./markdown');
   var Dom = require('../dom');
   var koru = require('../main');

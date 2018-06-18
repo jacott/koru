@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   const koru            = require('koru');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
   const {stub, spy, onEnd, util} = TH;

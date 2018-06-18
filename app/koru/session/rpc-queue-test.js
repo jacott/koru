@@ -5,7 +5,7 @@ isClient && define(function (require, exports, module) {
    * offline-mode.
    **/
   const Random = require('koru/random');
-  const TH     = require('koru/test');
+  const TH     = require('koru/test-helper');
   const api    = require('koru/test/api');
 
   const sut  = require('./rpc-queue');

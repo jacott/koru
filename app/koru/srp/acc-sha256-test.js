@@ -3,7 +3,7 @@ define(function (require, exports, module) {
    * This is useful for building a hash in small increments; it is not the same as hashing the
    * entire string in one go.
    **/
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
   const sut  = require('./acc-sha256');

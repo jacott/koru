@@ -2,7 +2,7 @@ isServer && define(function (require, exports, module) {
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const ServerPages     = require('koru/server-pages/main');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd, util} = TH;
 

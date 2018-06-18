@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   const Dom             = require('koru/dom');
   const api             = require('koru/test/api');
-  const TH              = require('./test');
+  const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd, util} = TH;
   const {SVGNS} = Dom;

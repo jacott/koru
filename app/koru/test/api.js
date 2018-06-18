@@ -723,10 +723,8 @@ define(function(require, exports, module) {
   const property = (api, field, subject, name, options)=>{
     const {test} = TH;
     if (name == null) name = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
-    inner(subject, name, options,
-          api[field] || (api[field] = {}));
 
-    function inner(subject, name, options, properties) {
+    const inner = (subject, name, options, properties)=>{
       const property = properties[name] || (properties[name] = {});
 
       const hasValueOpt =
@@ -797,7 +795,9 @@ define(function(require, exports, module) {
       if (property.info === undefined) {
         property.info = docComment(TH.test.func);
       }
-    }
+    };
+
+    inner(subject, name, options, api[field] || (api[field] = {}));
   };
 
   function method(api, methodKey, obj, methods) {

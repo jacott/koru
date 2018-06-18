@@ -5,7 +5,7 @@ define(function (require, exports, module) {
   var test, v;
   const publish   = require('koru/session/publish');
   const api       = require('koru/test/api');
-  const TH        = require('koru/test/main');
+  const TH        = require('koru/test-helper');
   const publishTH = require('./publish-test-helper-client');
 
   const {stubProperty} = TH;

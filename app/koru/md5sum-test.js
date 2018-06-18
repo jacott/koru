@@ -2,7 +2,7 @@ define(function (require, exports, module) {
   var test, v;
   const Random = require('koru/random');
   const md5sum = require('./md5sum');
-  const TH     = require('./test');
+  const TH     = require('koru/test-helper');
 
   TH.testCase(module, {
     setUp() {

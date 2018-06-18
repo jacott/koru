@@ -1,5 +1,5 @@
 define((require, exports, module)=>{
-  const TH       = require('koru/test');
+  const TH       = require('koru/test-helper');
 
   const {stub, spy, onEnd} = TH;
 

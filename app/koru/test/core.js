@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util                    = require('koru/util');
 
   const {inspect, extractError} = util;
@@ -8,11 +8,9 @@ define(function(require, exports, module) {
       this.testCount = this.skipCount = this.assertCount = 0;
     },
 
-    _u: {
-    },
+    util: {},
     inspect,
     extractError,
-    util,
 
     __elidePoint: undefined,
     lastText: undefined,

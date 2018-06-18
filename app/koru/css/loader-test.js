@@ -5,7 +5,7 @@ isClient && define((require, exports, module)=>{
    **/
   const koru        = require('koru/main');
   const SessionBase = require('koru/session/base').constructor;
-  const TH          = require('koru/test');
+  const TH          = require('koru/test-helper');
   const api         = require('koru/test/api');
 
   const {stub, spy, onEnd, intercept} = TH;

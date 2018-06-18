@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const {stubName$}     = require('koru/symbols');
   const {merge, inspect, hasOwn} = require('koru/util');
   require('./assertions');
-  const deepEqual       = require('./core')._u.deepEqual;
+  const {deepEqual}     = require('./core').util;
 
   const stubber = exports;
 
@@ -79,7 +79,7 @@ define(function(require, exports, module) {
       const call = new Call(this, thisValue, args);
       call.returnValue = this[replacement$] ?
         this[replacement$].apply(thisValue, args) : this[returns$];
-      notifyListeners(this, call, thisValue, args);
+      notifyListeners(this, call, args);
 
       return invokeReturn(this, call);
     }
@@ -198,7 +198,7 @@ define(function(require, exports, module) {
     invoke(thisValue, args) {
       const call = new Call(this, thisValue, args);
       call.returnValue = this.original.apply(thisValue, args);
-      notifyListeners(this, call, thisValue, args);
+      notifyListeners(this, call, args);
 
       return invokeReturn(this, call);
     }
@@ -271,7 +271,7 @@ define(function(require, exports, module) {
     throw new AssertionError("Can't yield; no function in arguments");
   };
 
-  const notifyListeners = (proxy, call, thisValue, args) => {
+  const notifyListeners = (proxy, call, args) => {
     const listeners = allListeners[proxy[id$]];
     if (listeners !== undefined) for(let i = 0; i < listeners.length; ++i) {
       const listener = listeners[i];
@@ -280,7 +280,7 @@ define(function(require, exports, module) {
         spyCount + 1 === proxy.calls.length && listener.invoke(call);
       } else {
         let j;
-        if (arguments.length !== 2) {
+        if (args !== undefined) {
           const spyArgs = listener.spyArgs;
           for(j = 0; j < spyArgs.length; ++j) {
             if (! deepEqual(args[j], spyArgs[j])) {

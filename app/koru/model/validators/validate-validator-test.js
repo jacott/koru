@@ -1,26 +1,20 @@
 define(function (require, exports, module) {
-  var test, doc;
-  var Core = require('../../test');
-  var validation = require('../validation');
-  var sut = require('./validate-validator').bind(validation);
+  const TH              = require('koru/test-helper');
+  const validation      = require('../validation');
 
-  Core.testCase(module, {
-    setUp() {
-      test = this;
-      doc = {};
-    },
+  const {stub, spy, onEnd} = TH;
 
-    tearDown() {
-      doc = null;
-    },
+  const sut             = require('./validate-validator').bind(validation);
 
-    "test calls"() {
-      var func = test.stub();
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("calls", ()=>{
+      const func = stub();
+      const doc = {};
 
       sut(doc,'foo', func);
 
       assert.calledOnceWith(func, 'foo');
       assert.same(func.firstCall.thisValue, doc);
-    },
+    });
   });
 });

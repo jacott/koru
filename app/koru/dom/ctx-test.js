@@ -4,7 +4,7 @@ isClient && define(function (require, exports, module) {
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  const TH   = require('koru/test');
+  const TH   = require('koru/test-helper');
   const api  = require('koru/test/api');
   const util = require('koru/util');
   const Dom  = require('../dom');

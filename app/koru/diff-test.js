@@ -1,7 +1,7 @@
 define(function (require, exports, module) {
   const Random = require('koru/random');
   const util   = require('koru/util');
-  const TH     = require('./test');
+  const TH     = require('koru/test-helper');
 
   const Diff  = require('./diff');
 

@@ -1,11 +1,11 @@
 define(function (require, exports, module) {
-  const Core            = require('../../test');
+  const TH            = require('koru/test-helper');
   const validation      = require('../validation');
   const sut             = require('./length-validator');
 
   const {error$} = require('koru/symbols');
 
-  Core.testCase(module, {
+  TH.testCase(module, {
     setUp() {
     },
 

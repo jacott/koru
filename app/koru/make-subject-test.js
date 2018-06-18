@@ -3,7 +3,7 @@ define(function (require, exports, module) {
    * Make a subject that can be observered.
    **/
   const api             = require('koru/test/api');
-  const TH              = require('./test');
+  const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd} = TH;
 

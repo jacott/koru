@@ -4,7 +4,7 @@ isServer && define(function (require, exports, module) {
   const fst     = require('koru/fs-tools');
   const koru    = require('koru/main');
   const session = require('koru/session/main');
-  const TH      = require('koru/test');
+  const TH      = require('koru/test-helper');
   const sut     = require('./less-watcher');
   const Future  = requirejs.nodeRequire('fibers/future');
   const fs      = requirejs.nodeRequire('fs');

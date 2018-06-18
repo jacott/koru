@@ -12,7 +12,7 @@ define((require, exports, module)=>{
     },
 
     field: (name, value)=>{
-      return match(actual => actual && Core._u.deepEqual(actual[name], value),
+      return match(actual => actual && Core.util.deepEqual(actual[name], value),
                    "match.field(" + name + ", " + value + ")");
     },
   });

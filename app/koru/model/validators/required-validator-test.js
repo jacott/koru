@@ -1,12 +1,13 @@
 define(function (require, exports, module) {
-  var test, doc;
-  var Core = require('../../test');
-  var validation = require('../validation');
-  var sut = require('./required-validator').bind(validation);
+  const TH              = require('koru/test-helper');
+  const validation      = require('../validation');
+  const sut             = require('./required-validator').bind(validation);
 
   const {error$} = require('koru/symbols');
 
-  Core.testCase(module, {
+  let doc;
+
+  TH.testCase(module, {
     setUp() {
       doc = {exists: 'a', empty: ''};
     },

@@ -2,19 +2,19 @@ define(function (require, exports, module) {
   /**
    * The base class for all models
    **/
-  const koru     = require('koru');
-  const Changes  = require('koru/changes');
-  const Model    = require('koru/model');
-  const dbBroker = require('koru/model/db-broker');
-  const session  = require('koru/session');
-  const api      = require('koru/test/api');
-  const TH       = require('./test-helper');
+  const koru            = require('koru');
+  const Changes         = require('koru/changes');
+  const Model           = require('koru/model');
+  const dbBroker        = require('koru/model/db-broker');
+  const session         = require('koru/session');
+  const api             = require('koru/test/api');
+  const TH              = require('./test-helper');
 
   const {inspect$, error$} = require('koru/symbols');
 
   const val       = require('./validation');
 
-  const {stub, spy, onEnd, intercept, util} = TH;
+  const {stub, spy, onEnd, util, intercept} = TH;
 
   const BaseModel = require('./base-model');
   let v = null;
@@ -87,7 +87,6 @@ define(function (require, exports, module) {
           const ondra = Book.create({_id: 'm123', name: 'Ondra', age: 21});
           const matchOndra = TH.match.field('_id', ondra._id);
           assert.calledWith(v.oc, ondra, null);
-
 
           ondra.$update('age', 22);
           assert.calledWith(v.oc, matchOndra, {age: 21});

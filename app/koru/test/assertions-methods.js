@@ -1,15 +1,15 @@
 define(function(require, exports, module) {
-  const format     = require('koru/format');
-  const assertions = require('koru/test/assertions');
-  const Stubber    = require('koru/test/stubber');
-  const Core     = require('./core');
+  const format          = require('koru/format');
+  const assertions      = require('koru/test/assertions');
+  const Stubber         = require('koru/test/stubber');
+  const util            = require('koru/util');
+  const Core            = require('./core');
 
-  const util = Core.util;
   const {hasOwn} = util;
   const {ctx$} = require('koru/symbols');
   const empty = ()=>{};
 
-  const gu = Core._u;
+  const {deepEqual} = Core.util;
   const ga = Core.assertions;
 
   const performance = isClient ? window.performance : {now() {
@@ -93,9 +93,9 @@ define(function(require, exports, module) {
 
   ga.add('equals', {
     assert (actual, expected) {
-      const equal = gu.deepEqual(actual, expected);
+      const equal = deepEqual(actual, expected);
       if (! equal === this._asserting) {
-        gu.deepEqual(actual, expected, this, 'diff');
+        deepEqual(actual, expected, this, 'diff');
       }
       return equal;
     },
@@ -256,7 +256,7 @@ define(function(require, exports, module) {
           this.message = {};
           for(let key in name) {
             if (! (key in ex)) throw ex;
-            if (! gu.deepEqual(ex[key], name[key])) {
+            if (! deepEqual(ex[key], name[key])) {
               this.message[key] = ex[key];
               result = false;
             }
@@ -330,7 +330,7 @@ define(function(require, exports, module) {
         const blen = bnodes.length;
         if (alen !== blen) return false;
 
-        if (! gu.deepEqual(attrsToList(aElm), attrsToList(bElm)))
+        if (! deepEqual(attrsToList(aElm), attrsToList(bElm)))
           return false;
 
         for(let i = 0; i < alen; ++i) {
@@ -364,7 +364,7 @@ define(function(require, exports, module) {
       }
       const alphaGood = (this.expected.length === 3 && this.actual[3] === 1) ||
               withinDelta(this.actual[3], this.expected[3], delta);
-      return gu.deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
+      return deepEqual(this.actual.slice(0,3), this.expected.slice(0,3)) &&
         alphaGood;
     },
 
@@ -514,7 +514,7 @@ define(function(require, exports, module) {
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
-              const ef = filter(elm, i => gu.deepEqual(i.value, options.value));
+              const ef = filter(elm, i => deepEqual(i.value, options.value));
               if (ef.length === 0) {
                 setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;
@@ -542,12 +542,12 @@ define(function(require, exports, module) {
             }
             if(hasOwn(options, 'data')) {
               const hint = {};
-              const ef = filter(elm, i => i[ctx$] !== undefined && gu.deepEqual(i[ctx$].data, options.data));
+              const ef = filter(elm, i => i[ctx$] !== undefined && deepEqual(i[ctx$].data, options.data));
               if (ef.length === 0) {
                 if (this._asserting !== false) {
                   Array.prototype.find.call(elm, i => {
                     if (i[ctx$]) {
-                      gu.deepEqual(i[ctx$].data, options.data, hint, 'i');
+                      deepEqual(i[ctx$].data, options.data, hint, 'i');
                     }
                     return true;
                   });
@@ -650,7 +650,7 @@ define(function(require, exports, module) {
       }
       this.expected = expected;
 
-      if (! gu.deepEqual(actual, expected, this, 'diff')) {
+      if (! deepEqual(actual, expected, this, 'diff')) {
         return false;
       }
 
@@ -673,7 +673,7 @@ define(function(require, exports, module) {
             if (spy.callCount === 0) {
               this.calls = "but was not called.";
             } else
-              gu.deepEqual(spy.firstCall.args, args, this, 'calls');
+              deepEqual(spy.firstCall.args, args, this, 'calls');
           } else
             this.calls = spy.printf("%C");
         }

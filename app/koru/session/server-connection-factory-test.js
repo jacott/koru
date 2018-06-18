@@ -2,7 +2,7 @@ isServer && define(function (require, exports, module) {
   const koru        = require('koru');
   const IdleCheck   = require('koru/idle-check').singleton;
   const baseSession = require('koru/session');
-  const TH          = require('koru/test');
+  const TH          = require('koru/test-helper');
   const util        = require('koru/util');
   const match       = require('./match');
   const message     = require('./message');

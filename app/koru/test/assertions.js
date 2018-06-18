@@ -6,7 +6,6 @@ define(function(require, exports, module) {
 
   const {hasOwn} = util;
 
-  const gu = Core._u;
   const {egal} = util;
 
   let __elidePoint;
@@ -113,13 +112,7 @@ define(function(require, exports, module) {
     };
   }
 
-  util.merge(gu, {
-    format,
-    egal: Object.is || egal,
-    deepEqual,
-  });
-
-  function deepEqual(actual, expected, hint, hintField) {
+  const deepEqual = (actual, expected, hint, hintField)=>{
     if (egal(actual, expected)) {
       return true;
     }
@@ -207,5 +200,13 @@ define(function(require, exports, module) {
         (prev ? "\n" + prev : '');
       return false;
     }
-  }
+  };
+
+  util.merge(Core.util, {
+    format,
+    egal: Object.is || egal,
+    deepEqual,
+  });
+
+  return Core;
 });

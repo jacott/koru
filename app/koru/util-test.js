@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const Random = require('koru/random');
   const api    = require('koru/test/api');
   const match  = require('./match');
-  const TH     = require('./test');
+  const TH     = require('koru/test-helper');
 
   const {stub, spy, onEnd} = TH;
 

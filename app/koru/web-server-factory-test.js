@@ -10,7 +10,7 @@ isServer && define(function (require, exports, module) {
   const api              = require('koru/test/api');
   const fst              = require('./fs-tools');
   const IdleCheck        = require('./idle-check').singleton;
-  const TH               = require('./test');
+  const TH               = require('koru/test-helper');
 
   const {stub, spy, onEnd, intercept} = TH;
 

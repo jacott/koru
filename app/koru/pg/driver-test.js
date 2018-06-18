@@ -8,7 +8,7 @@ isServer && define((require, exports, module)=>{
    *
    **/
   const api             = require('koru/test/api');
-  const TH              = require('../test');
+  const TH              = require('koru/test-helper');
   const util            = require('../util');
 
   const {stub, spy, onEnd} = TH;

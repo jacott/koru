@@ -1,67 +1,65 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH   = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const koru = require('./main');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test getHashOrigin"() {
-      test.stub(koru, 'getLocation').returns({protocol: 'p', host: 'h', pathname: 'n'});
+    test("getHashOrigin", ()=>{
+      stub(koru, 'getLocation').returns({protocol: 'p', host: 'h', pathname: 'n'});
 
       assert.same(koru.getHashOrigin(), 'p//hn');
-    },
+    });
 
-    "test koru.global"() {
+    test("koru.global", ()=>{
       assert.same(koru.global, window);
-    },
+    });
 
-    "test runFiber"() {
+    test("runFiber", ()=>{
       koru.runFiber(() => {v.success = true});
       assert(v.success);
 
-      test.stub(koru, 'error');
+      stub(koru, 'error');
       koru.runFiber(()=>{throw new Error("Foo")});
       assert.calledWith(koru.error, TH.match(/Foo/));
-    },
+    });
 
-    "afTimeout": {
-      setUp() {
+    group("afTimeout", ()=>{
+      beforeEach(()=>{
         assert.same(TH.Core._origAfTimeout, koru._afTimeout);
-        test.stub(window, 'setTimeout').returns(7766);
-        test.stub(window, 'clearTimeout');
+        stub(window, 'setTimeout').returns(7766);
+        stub(window, 'clearTimeout');
 
-        test.stub(window, 'requestAnimationFrame').returns(123);
-        test.stub(window, 'cancelAnimationFrame');
-      },
+        stub(window, 'requestAnimationFrame').returns(123);
+        stub(window, 'cancelAnimationFrame');
+      });
 
-      "test zero timeout"() {
-        koru._afTimeout(v.stub = test.stub());
+      test("zero timeout", ()=>{
+        koru._afTimeout(v.stub = stub());
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame, TH.match.func);
 
         window.requestAnimationFrame.yield();
         assert.called(v.stub);
-      },
+      });
 
-      "test -ve timeout"() {
-        koru._afTimeout(v.stub = test.stub(), -3);
+      test("-ve timeout", ()=>{
+        koru._afTimeout(v.stub = stub(), -3);
 
         refute.called(setTimeout);
         assert.calledWith(window.requestAnimationFrame);
-      },
+      });
 
-      "test running"() {
-        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
+      test("running", ()=>{
+        const stop = koru._afTimeout(v.stub = stub(), 1234);
 
         assert.calledWith(setTimeout, TH.match.func, 1234);
 
@@ -79,10 +77,10 @@ define(function (require, exports, module) {
 
         refute.called(window.clearTimeout);
         refute.called(window.cancelAnimationFrame);
-      },
+      });
 
-      "test canceling before timeout"() {
-        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
+      test("canceling before timeout", ()=>{
+        const stop = koru._afTimeout(v.stub = stub(), 1234);
 
         stop();
 
@@ -93,10 +91,10 @@ define(function (require, exports, module) {
 
         assert.calledOnce(window.clearTimeout);
         refute.called(window.cancelAnimationFrame);
-      },
+      });
 
-      "test canceling after timeout"() {
-        const stop = koru._afTimeout(v.stub = test.stub(), 1234);
+      test("canceling after timeout", ()=>{
+        const stop = koru._afTimeout(v.stub = stub(), 1234);
 
         setTimeout.yield();
 
@@ -109,7 +107,7 @@ define(function (require, exports, module) {
 
         refute.called(window.clearTimeout);
         assert.calledOnce(window.cancelAnimationFrame);
-      },
-    },
+      });
+    });
   });
 });

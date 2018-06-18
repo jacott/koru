@@ -17,7 +17,7 @@ define(function(require, exports, module) {
     highlight(code, lang) {
       switch(lang) {
       case 'js': case 'javascript':
-        return jsParser.highlight(code).outerHTML;
+        return jsParser.highlight(jsParser.indent(code)).outerHTML;
       }
     },
   };

@@ -1,10 +1,11 @@
-define(function(require, exports, module) {
-  const Dom   = require('../dom');
-  const koru  = require('../main');
-  const TH    = Object.create(require('../test-helper'));
-  const Route = require('./route');
+define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const koru            = require('../main');
+  const Route           = require('./route');
 
-  const {stub, spy, onEnd, util} = TH;
+  const TH = Object.create(require('../test-helper'));
+
+  const {stub, spy, util, onEnd, Core} = TH;
 
   koru.onunload(module, ()=>{Route.history = TH._orig_history});
 
@@ -15,7 +16,6 @@ define(function(require, exports, module) {
     back() {},
   };
 
-  const Core = TH.Core;
   const ga = Core.assertions;
 
   ga.add('rangeEquals', {
@@ -40,7 +40,7 @@ define(function(require, exports, module) {
         endOffset: endOffset,
       };
 
-      return Core._u.deepEqual(this.actual, expected, this, 'diff');
+      return Core.util.deepEqual(this.actual, expected, this, 'diff');
     },
 
     assertMessage: "range to be equal{$diff}",

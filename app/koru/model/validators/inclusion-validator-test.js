@@ -1,13 +1,13 @@
 define(function (require, exports, module) {
-  const Core     = require('../../test');
-  const validation = require('../validation');
+  const TH              = require('koru/test-helper');
+  const validation      = require('../validation');
 
   const {error$} = require('koru/symbols');
 
   const sut = require('./inclusion-validator').bind(validation);
 
-  Core.testCase(module, {
-    "test allow null"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("allow null", ()=>{
       var doc = {state: null};
       sut(doc,'state', {allowBlank: true, matches: /foo/});
       refute(doc[error$]);
@@ -24,9 +24,9 @@ define(function (require, exports, module) {
       sut(doc,'state', {allowBlank: null, matches: /foo/});
       assert(doc[error$]);
       assert.equals(doc[error$]['state'],[['invalid_format']]);
-    },
+    });
 
-    "test matches"() {
+    test("matches", ()=>{
       var doc = {state: 'open'};
       sut(doc,'state', {matches: /^ope/});
       refute(doc[error$]);
@@ -34,9 +34,9 @@ define(function (require, exports, module) {
       sut(doc,'state', {matches: /^ope$/});
       assert(doc[error$]);
       assert.equals(doc[error$]['state'],[['invalid_format']]);
-    },
+    });
 
-    "test in list"() {
+    test("in list", ()=>{
       var doc = {state: 'open'};
       sut(doc,'state', {in: ['open', 'closed']});
       refute(doc[error$]);
@@ -44,9 +44,9 @@ define(function (require, exports, module) {
       sut(doc,'state', {in: ['OPEN', 'closed']});
       assert(doc[error$]);
       assert.equals(doc[error$]['state'],[['not_in_list']]);
-    },
+    });
 
-    "test in set"() {
+    test("in set", ()=>{
       var doc = {state: 'open'};
       sut(doc,'state', {in: {open: '', closed: 'anything'}});
       refute(doc[error$]);
@@ -59,6 +59,6 @@ define(function (require, exports, module) {
       sut(doc,'state', {in: {123: 1, closed: 1}});
       assert(doc[error$]);
       assert.equals(doc[error$]['state'],[['not_in_list']]);
-    },
+    });
   });
 });

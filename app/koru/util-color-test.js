@@ -1,6 +1,6 @@
 define(function (require, exports, module) {
   const HtmlDoc         = require('koru/dom/html-doc');
-  const TH              = require('./test');
+  const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd} = TH;
 

@@ -65,7 +65,7 @@ define(function(require, exports, module) {
 
     Object.assign(match, {
       equal(expected, name='match.equal') {
-        return match(value => util.deepEqual(value, expected), name);
+        return match(value => {return util.deepEqual(value, expected)}, name);
       },
       is(expected, name='match.is') {
         return match(value => util.is(value, expected), name);

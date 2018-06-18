@@ -4,7 +4,7 @@ define(function(require, exports, module) {
   const message   = require('koru/session/message');
   const publish   = require('koru/session/publish');
   const SCFactory = require('koru/session/server-connection-factory');
-  const TH        = require('koru/test/main');
+  const TH        = require('koru/test-helper');
   const util      = require('koru/util');
 
   const {stub, spy, onEnd} = TH;

@@ -1,16 +1,14 @@
-define(function(require, exports, module) {
-  const koru = require('./main');
-  const main   = require('./test/main');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const Test            = require('koru/test');
 
   const {error$} = require('koru/symbols');
 
   const {util} = koru;
-  const {Core} = main;
-  const gu = Core._u;
+  const {Core} = Test;
+  const {deepEqual} = Core.util;
 
   const TH = koru.util.reverseMerge({
-    util: koru.util,
-
     login (id, func) {
       const oldId = util.thread.userId;
       try {
@@ -25,7 +23,7 @@ define(function(require, exports, module) {
       if (! koru.info.restore)
         Core.test.intercept(koru, 'info');
     },
-  }, main);
+  }, Test);
 
   const ga = Core.assertions;
 
@@ -98,7 +96,7 @@ define(function(require, exports, module) {
       }
 
       this.result = result;
-      return gu.deepEqual(result, expected);
+      return deepEqual(result, expected);
     },
 
     message: "{i$result} to be {i1}",
@@ -121,7 +119,7 @@ define(function(require, exports, module) {
         this.actual = val && val.slice(1,2);
         this.expected = expected[key];
 
-        if (! (val && gu.deepEqual(val.slice(1,2), expected[key]))) return false;
+        if (! (val && deepEqual(val.slice(1,2), expected[key]))) return false;
       }
       return true;
     },
@@ -151,7 +149,7 @@ define(function(require, exports, module) {
       this.actual = actual;
       this.expected = expected;
 
-      return gu.deepEqual(actual, expected, this, 'diff');
+      return deepEqual(actual, expected, this, 'diff');
     },
 
     message: "attributes to be equal{$diff}",

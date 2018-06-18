@@ -2,11 +2,11 @@ define(function (require, exports, module) {
   /**
    * Object persistence manager. Defines application models.
    **/
-  const koru      = require('koru');
-  const ModelEnv  = require('koru/env!./main');
-  const BaseModel = require('koru/model/base-model');
-  const api       = require('koru/test/api');
-  const TH        = require('./test-helper');
+  const koru            = require('koru');
+  const ModelEnv        = require('koru/env!./main');
+  const BaseModel       = require('koru/model/base-model');
+  const api             = require('koru/test/api');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, util} = TH;
 

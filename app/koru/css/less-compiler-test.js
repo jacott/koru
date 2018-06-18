@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   const fst      = require('../fs-tools');
-  const TH       = require('../test');
+  const TH       = require('koru/test-helper');
 
   const compiler = require('./less-compiler');
   var v;

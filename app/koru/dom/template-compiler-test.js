@@ -1,6 +1,6 @@
 isServer && define(function (require, exports, module) {
   var test, v;
-  const TH   = require('koru/test');
+  const TH   = require('koru/test-helper');
   const util = require('koru/util');
   const sut  = require('./template-compiler');
   const fs   = requirejs.nodeRequire('fs');

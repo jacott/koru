@@ -1,16 +1,18 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const TH              = require('./test');
 
   const sut = require('./changes');
 
   const {deepCopy} = util;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     test("has", ()=>{
       /**
        * test if undo has changed field
        **/
+      api.method();
       assert.isTrue(sut.has({foo: undefined}, 'foo'));
       assert.isTrue(sut.has({foo: false}, 'foo'));
       assert.isFalse(sut.has({foo: undefined}, 'bar'));
@@ -116,7 +118,7 @@ define(function (require, exports, module) {
 
     group("$partial", ()=>{
       group("$match", ()=>{
-        beforeEach(()=>{
+        before(()=>{
           /**
            * Match commands ensure we only update if the current value matches. The whole
            * transaction is aborted if the match is not satisfied.
@@ -187,7 +189,7 @@ define(function (require, exports, module) {
       });
 
       group("$replace", ()=>{
-        beforeEach(()=>{
+        before(()=>{
           /**
            * Replace the content of the field. Add the field is does not exists. Delete the field if
            * value is null.
@@ -232,7 +234,7 @@ define(function (require, exports, module) {
       });
 
       group("$prepend, $append", ()=>{
-        beforeEach(()=>{
+        before(()=>{
           /**
            * Add contents to the start or end of a field. Fields can be of type string or array.
            **/
@@ -293,7 +295,7 @@ define(function (require, exports, module) {
       });
 
       group("$patch", ()=>{
-        beforeEach(()=>{
+        before(()=>{
           /**
            * Patch the field using an array of 3-tuples. A 3-tuple consists of:
 
@@ -396,7 +398,7 @@ define(function (require, exports, module) {
       });
 
       group("$add, $remove", ()=>{
-        beforeEach(()=>{
+        before(()=>{
           /**
            * Add items unless already exists and remove items if they exist.
 
@@ -841,7 +843,7 @@ define(function (require, exports, module) {
     });
 
     group("diffSeq", ()=>{
-      beforeEach(()=>{
+      before(()=>{
         /**
          * build an instruction to convert oldSeq to newSeq
          **/
@@ -917,7 +919,7 @@ define(function (require, exports, module) {
     });
 
     group("fieldDiff", ()=>{
-      beforeEach(()=>{
+      before(()=>{
         /**
          * determine which sub-fields have changed
 
@@ -929,11 +931,13 @@ define(function (require, exports, module) {
       });
 
       test("not in change", ()=>{
+        api.method('fieldDiff');
         const attrs = {_id: 't123'};
         assert.equals(sut.fieldDiff('foo', attrs, {fuz: '123'}), undefined);
       });
 
       test("no change", ()=>{
+        api.method('fieldDiff');
         const attrs = {_id: 't123', foo: {one: 123, two: 'a string', three: true}};
         const changes = {foo: {one: 123, two: 'a string', three: true}};
 

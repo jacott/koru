@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const KoruError       = require('koru/koru-error');
   const util            = require('./util');
 
@@ -62,15 +62,15 @@ define(function (require, exports, module) {
       throw new Error(module.id + ' config for ' + name + ' is mis-configured: ' + reason);
     },
 
-    replaceProperty: (object, prop, newValue)=>{
-      const oldValue = Object.getOwnPropertyDescriptor(object, prop);
-      if (! oldValue) {
-        newValue.writeable === undefined && (newValue.writeable = true);
-        newValue.enumerable === undefined && (newValue.enumerable = true);
-        newValue.configurable === undefined && (newValue.configurable = true);
+    replaceProperty: (object, name, descriptor)=>{
+      const oldDesc = Object.getOwnPropertyDescriptor(object, name);
+      if (oldDesc === undefined) {
+        descriptor.writeable === undefined && (descriptor.writeable = true);
+        descriptor.enumerable === undefined && (descriptor.enumerable = true);
+        descriptor.configurable === undefined && (descriptor.configurable = true);
       }
-      Object.defineProperty(object, prop, newValue);
-      return oldValue;
+      Object.defineProperty(object, name, descriptor);
+      return oldDesc;
     },
 
     Error: KoruError,

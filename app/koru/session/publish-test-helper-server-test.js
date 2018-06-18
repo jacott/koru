@@ -8,7 +8,7 @@ define(function (require, exports, module) {
   const publish   = require('koru/session/publish');
   const scFactory = require('koru/session/server-connection-factory');
   const api       = require('koru/test/api');
-  const TH        = require('koru/test/main');
+  const TH        = require('koru/test-helper');
   const Stubber   = require('koru/test/stubber');
   const publishTH = require('./publish-test-helper-server');
 

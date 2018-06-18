@@ -1,16 +1,17 @@
 define((require, exports, module)=>{
   const Core            = require('koru/test/core');
   const stubber         = require('koru/test/stubber');
+  const util            = require('koru/util');
 
   const onSetUpOnceEnd$ = Symbol(),
         after$ = Symbol(), before$ = Symbol(),
         testEnd$ = Symbol(), setUpOnce$ = Symbol();
 
   class TestCase {
-    constructor(name, tc, option) {
+    constructor(name, tc, body) {
       this.name = name;
       this.tc = tc;
-      this.option = option;
+      this.body = body;
       this[before$] = null;
       this[after$] = null;
     }
@@ -142,7 +143,7 @@ define((require, exports, module)=>{
           func.forEach(f => (f.stop || f).call(test));
         else if (! func || typeof func.stop !== 'function')
           throw new Error("test.onEnd called with non function or object.stop function"
-                          +Core.util.inspect(func));
+                          +util.inspect(func));
         else
           func.stop();
       }
@@ -204,7 +205,7 @@ define((require, exports, module)=>{
 
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
 
-  Core.testCase = (name, option)=> new TestCase(name, null, option);
+  Core.testCase = (name, body)=> new TestCase(name, null, body);
 
   class Test {
     constructor(name, tc, func) {

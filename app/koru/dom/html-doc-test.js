@@ -3,7 +3,7 @@ define(function (require, exports, module) {
    * Server side implementation of the DOM tree.
    **/
   const Dom             = require('koru/dom');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
   const sut  = require('./html-doc');

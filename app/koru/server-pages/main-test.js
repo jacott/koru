@@ -62,7 +62,7 @@ isServer && define(function (require, exports, module) {
   const Dom             = require('koru/dom');
   const DomTemplate     = require('koru/dom/template');
   const fst             = require('koru/fs-tools');
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const WebServer       = require('koru/web-server');
 

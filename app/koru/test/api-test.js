@@ -11,7 +11,7 @@ define((require, exports, module)=>{
    * Examples can be verbatim from the test method by surrounding the example between `//[` and
    * `//]` comments.
    **/
-  const TH              = require('koru/test');
+  const TH              = require('koru/test-helper');
   const util            = require('koru/util');
   const MainAPI         = require('./api');
 

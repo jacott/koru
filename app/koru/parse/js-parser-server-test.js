@@ -1,5 +1,5 @@
 isServer && define((require, exports, module)=>{
-  const TH       = require('koru/test');
+  const TH       = require('koru/test-helper');
 
   const jsParser = require('./js-parser');
 

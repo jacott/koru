@@ -1,29 +1,31 @@
-define(function (require, exports, module) {
-  const Core     = require('../../test');
-  const Query      = require('../query');
-  const validation = require('../validation');
+define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const Query           = require('../query');
+  const validation      = require('../validation');
+
+  const {stub, spy, onEnd} = TH;
 
   const {error$} = require('koru/symbols');
 
   const sut        = require('./unique-validator').bind(validation);
-  var v;
 
-  Core.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.query = new Query({});
       v.model = {query: v.query};
       v.doc = {constructor: v.model, name: 'foo', _id: "idid", $isNewRecord() {
         return false;
       }};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test scope"() {
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("scope", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.org = 'abc';
       sut(v.doc,'name', {scope: 'org'});
 
@@ -32,10 +34,10 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test query scope"() {
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("query scope", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(1);
 
       v.doc.org = 'abc';
       v.doc.foo = ['bar'];
@@ -46,10 +48,10 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo', org: 'abc', fuz: {$ne: ['bar']}});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test function scope"() {
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("function scope", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(1);
 
       v.doc.org = 'abc';
       v.doc.foo = ['bar'];
@@ -67,10 +69,10 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo', namex: 123});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test multi scope"() {
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("multi scope", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(1);
       v.doc.bar = 'baz';
       v.doc.org = 'abc';
       sut(v.doc,'name', {scope: ['bar', 'org']});
@@ -80,20 +82,20 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo', bar: 'baz', org: 'abc'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test no duplicate"() {
-      this.stub(v.query, 'count').withArgs(1).returns(0);
+    test("no duplicate", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(0);
       sut(v.doc,'name');
 
       refute(v.doc[error$]);
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test duplicate"() {
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("duplicate", ()=>{
+      stub(v.query, 'count').withArgs(1).returns(1);
       sut(v.doc,'name');
 
       assert(v.doc[error$]);
@@ -101,13 +103,11 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.equals(v.query._whereNots, {_id: 'idid'});
-    },
+    });
 
-    "test new record"() {
-      v.doc.$isNewRecord = function () {
-        return true;
-      };
-      this.stub(v.query, 'count').withArgs(1).returns(1);
+    test("new record", ()=>{
+      v.doc.$isNewRecord = () => true;
+      stub(v.query, 'count').withArgs(1).returns(1);
       sut(v.doc,'name');
 
       assert(v.doc[error$]);
@@ -115,7 +115,7 @@ define(function (require, exports, module) {
 
       assert.equals(v.query._wheres, {name: 'foo'});
       assert.same(v.query._whereNots, undefined);
-    },
+    });
 
   });
 });

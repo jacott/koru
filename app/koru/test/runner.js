@@ -28,15 +28,15 @@ define((require, exports, module)=>{
   };
 
   const builder = {
-    beforeEach: func => currentTc.add('setUp', func),
-    afterEach: func => currentTc.add('tearDown', func),
-    before: func => currentTc.add('setUpOnce', func),
-    after: func => currentTc.add('tearDownOnce', func),
+    beforeEach: body => currentTc.add('setUp', body),
+    afterEach: body => currentTc.add('tearDown', body),
+    before: body => currentTc.add('setUpOnce', body),
+    after: body => currentTc.add('tearDownOnce', body),
 
-    test: (name, func)=> name[0] === '/' && name[1] === '/'
-      ? skipAdd(name, func) : currentTc.add("test "+name, func, skipped),
+    test: (name, body)=> name[0] === '/' && name[1] === '/'
+      ? skipAdd(name, body) : currentTc.add("test "+name, body, skipped),
 
-    group: (name, func)=>{
+    group: (name, body)=>{
       const otc = currentTc;
       const os = skipped;
       if (name[0] === '/' && name[1] === '/') {
@@ -46,7 +46,7 @@ define((require, exports, module)=>{
       const ntc = new TestCase(name, otc);
       try {
         currentTc = ntc;
-        func(ntc);
+        body(ntc);
         return ntc;
       } finally {
         skipped = os;
@@ -140,10 +140,10 @@ define((require, exports, module)=>{
       currentTc = tc;
 
       try {
-        if (typeof tc.option === 'function')
-          tc.option(builder);
+        if (typeof tc.body === 'function')
+          tc.body(builder);
         else
-          tc.add(tc.option);
+          tc.add(tc.body);
       } catch (ex) {
         failed(tc, ex);
         throw ex;

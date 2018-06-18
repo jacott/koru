@@ -1,6 +1,6 @@
 isClient && define(function(require, exports, module) {
   const testTpl = require('koru/html!./template-compiler-test');
-  const TH      = require('koru/test');
+  const TH      = require('koru/test-helper');
   const Dom     = require('./dom-client');
 
   const $ = Dom.current;

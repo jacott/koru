@@ -1,7 +1,13 @@
 define((require, exports, module)=>{
-  const TH   = require('./main');
+  /**
+   * A suite of tests. Most methods are for internal purposes and are not document here.
+   *
+   * See {#koru/test-helper}
+   **/
+  const api             = require('koru/test/api');
+  const TH              = require('./main');
 
-  const {stub, spy, onEnd, util} = TH;
+  const {stub, spy, onEnd, util, stubProperty} = TH;
 
   const sut  = require('./test-case');
 
@@ -13,6 +19,59 @@ define((require, exports, module)=>{
 
     afterEach(()=>{
       v = {};
+    });
+
+    group("sub-test-case", ()=>{
+      test("moduleId", ()=>{
+        api.protoProperty('moduleId', {info: 'the id of the module this test-case is defined in'});
+        assert.same(TH.test.tc.moduleId, 'koru/test/test-case-test');
+      });
+
+      test("fullName", ()=>{
+        /**
+         * Get the name of the test-case prefixed by the parent test-cases (if any).
+         **/
+        api.protoMethod();
+        assert.same(TH.test.tc.fullName(), 'koru/test/test-case sub-test-case');
+      });
+
+      test("topTestCase", ()=>{
+        /**
+         * Retrieve the top most `TestCase`
+         **/
+        api.protoMethod();
+        assert.same(TH.test.tc.topTestCase().fullName(), 'koru/test/test-case');
+
+      });
+    });
+
+    group("Test", ()=>{
+      let tapi;
+
+      before(()=>{
+        tapi = api.innerSubject(TH.test.constructor, 'Test', {
+          abstract() {
+            /**
+             * The Test facilitator responsible for running an individual test. Most methods are for
+             * internal purposes and are not document here.
+             **/
+          }
+        });
+      });
+
+      test("properties", ()=>{
+        tapi.protoProperty('moduleId', {info: 'the id of the module this test is defined in'});
+        assert.same(TH.test.moduleId, 'koru/test/test-case-test');
+
+        const {name, tc} = TH.test;
+        stubProperty(TH.test.constructor.prototype, 'name', {value: name});
+        stubProperty(TH.test.constructor.prototype, 'tc', {value: tc});
+        tapi.protoProperty('name', {info: 'the full name of the test'});
+        assert.equals(TH.test.name, 'koru/test/test-case Test test properties.');
+
+        tapi.protoProperty('tc', {info: 'the test-case containing this test'});
+        assert.same(TH.test.tc.fullName(), 'koru/test/test-case Test');
+      });
     });
 
     test("async", async ()=>{

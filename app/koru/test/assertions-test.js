@@ -1,36 +1,13 @@
-define(function (require, exports, module) {
-  var test, v;
-  const TH   = require('./main');
+define((require, exports, module)=>{
+  const TH   = require('koru/test-helper');
 
-  const {match} = TH;
+  const {stub, spy, onEnd, util} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+  const sut  = require('./assertions');
 
-    tearDown() {
-      v = null;
-    },
-
-    "test benchmark"() {
-      const ans = assert.benchMark({
-        duration: 100,
-        subject() {
-          return 'abc' + 'def';
-        },
-        control() {
-          return 'abcdef';
-        },
-      });
-
-      assert.equals(ans, {
-        ns: match.number, error: match.number, controllNs: match.number, subjectlNs: match.number});
-    },
-
-    "test _u.deepEqual"() {
-      const {deepEqual} = TH.Core._u;
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("deepEqual", ()=>{
+      const {deepEqual} = TH.Core.util;
       const hint = {};
 
       assert.isTrue(deepEqual(null, null));
@@ -56,6 +33,6 @@ define(function (require, exports, module) {
       assert.isFalse(deepEqual({a: 1, b: {c: 1, d: [1, {e: [false]}]}}, {a: 1, b: {c: 1, d: [1, {e: [false], f: undefined}]}}));
 
       assert.isFalse(deepEqual({a: 1}, {a: "1"}));
-    },
+    });
   });
 });

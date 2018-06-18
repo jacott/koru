@@ -1,5 +1,5 @@
 isClient && define(function (require, exports, module) {
-  const TH        = require('koru/test');
+  const TH        = require('koru/test-helper');
 
   const nextFrame = require('./next-frame');
   var v;
