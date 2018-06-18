@@ -172,7 +172,7 @@ define(function (require, exports, module) {
 
         util.thread.msgId = msgId;
         if (msgId.length > 17)
-          util.thread.random = Random.create(msgId);
+          util.thread.random = new Random(msgId);
         const result = func.apply(this, data.slice(2));
         this.sendBinary('M', [msgId, 'r', result]);
         this.releaseMessages();

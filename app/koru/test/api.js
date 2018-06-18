@@ -720,7 +720,9 @@ define(function(require, exports, module) {
     }
   }
 
-  function property(api, field, subject, name, options) {
+  const property = (api, field, subject, name, options)=>{
+    const {test} = TH;
+    if (name == null) name = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
     inner(subject, name, options,
           api[field] || (api[field] = {}));
 
@@ -796,7 +798,7 @@ define(function(require, exports, module) {
         property.info = docComment(TH.test.func);
       }
     }
-  }
+  };
 
   function method(api, methodKey, obj, methods) {
     const {test} = TH;

@@ -1,24 +1,23 @@
 define((require, exports, module)=>{
-  const api = require('koru/test/api');
-  const TH  = require('./test');
+  const api             = require('koru/test/api');
+  const TH              = require('./test');
 
   const {inspect$} = require('koru/symbols');
 
   const util = require('./util');
 
-  let v = {};
-
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       api.module({subjectModule: module.get('./util'), subjectName: 'util'});
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    test("properties", ()=>{
+      api.property('idLen', v => `The length of an \`_id\` is ${v} characters`);
+      assert.same(util.idLen, 17);
 
-    "test inspect"() {
+    });
+
+    test("inspect", ()=>{
       /**
        * Convert any type to a displayable string. The symbol `inspect$` can be used to override
        * the value returned.
@@ -41,15 +40,15 @@ define((require, exports, module)=>{
 
       assert.equals(util.inspect(array), "overridden");
       //]
-    },
+    });
 
-    "test qlabel"() {
+    test("qlabel", ()=>{
       assert.equals(util.qlabel("1234"), '1234');
       assert.equals(util.qlabel("1'234"), `"1'234"`);
 
-    },
+    });
 
-    "test mergeNoEnum"() {
+    test("mergeNoEnum", ()=>{
       /**
        * Merge `source` into `dest` but do not set `enumerable` on the
        * descriptor.
@@ -71,9 +70,9 @@ define((require, exports, module)=>{
       assert.same(book.published, 1813);
       assert.same(book.pages, 432);
       //]
-    },
+    });
 
-    "test merge"() {
+    test("merge", ()=>{
       /**
        * Merge `source` into `dest`.
        *
@@ -101,10 +100,10 @@ define((require, exports, module)=>{
       assert.same(ans, c);
       assert.equals(ans, {d: 5, b: 3, c: 4});
 
-    },
+    });
 
-    "test last"() {
+    test("last", ()=>{
       assert.same(util.last([1, 4]), 4);
-    },
+    });
   });
 });

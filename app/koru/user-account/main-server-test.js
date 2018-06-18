@@ -1,4 +1,7 @@
 define((require, exports, module)=>{
+  /**
+   * Authenticate Users.
+   **/
   const Email           = require('koru/email');
   const koru            = require('koru/main');
   const Model           = require('koru/model/main');
@@ -7,26 +10,27 @@ define((require, exports, module)=>{
   const session         = require('koru/session');
   const TH              = require('koru/session/test-helper');
   const SRP             = require('koru/srp/srp');
+  const crypto          = requirejs.nodeRequire('crypto');
 
   const {stub, spy, onEnd, intercept, match: m} = TH;
-
-  const crypto          = requirejs.nodeRequire('crypto');
 
   const userAccount = require('./main');
 
   let v = {};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      TH.noInfo();
+      spy(Val, 'assertCheck');
+      spy(Val, 'ensureString');
+    });
     beforeEach(()=>{
       v.ws = TH.mockWs();
-      TH.noInfo();
       v.conn = TH.sessionConnect(v.ws);
       v.lu = userAccount.model.create({
         userId: 'uid111', srp: 'wrong', email: 'foo@bar.co',
         tokens: {abc: Date.now()+24*1000*60*60, exp: Date.now(), def: Date.now()+48*1000*60*60}});
 
-      spy(Val, 'assertCheck');
-      spy(Val, 'ensureString');
       stub(crypto, 'randomBytes', (num, cb) => {
         if (cb) {
           cb(null, {toString: stub().withArgs('base64').returns('crypto64Id')});
@@ -36,6 +40,8 @@ define((require, exports, module)=>{
     });
 
     afterEach(()=>{
+      Val.assertCheck.reset();
+      Val.ensureString.reset();
       userAccount.model.docs.remove({});
       intercept(koru, 'logger');
       v.conn.close();

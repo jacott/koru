@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const KoruError       = require('koru/koru-error');
   const util            = require('./util');
 

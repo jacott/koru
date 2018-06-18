@@ -1,34 +1,44 @@
-define(function (require, exports, module) {
-  const TH   = require('./test');
+define((require, exports, module)=>{
+  const api             = require('koru/test/api');
+  const TH              = require('./test');
 
   const {stub, spy, onEnd, intercept} = TH;
 
   const util  = require('./util');
 
-  let v = null;
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      api.module({subjectModule: module.get('./util'), subjectName: 'util'});
+    });
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
+    test("thread", ()=>{
+      /**
+       * An object associated with the current [Fiber](https://www.npmjs.com/package/fibers)
+       **/
+      api.property();
+      assert.same(util.thread, util.thread);
+      let other;
+      util.Fiber(()=>{other = util.thread}).run();
+      refute.same(util.thread, other);
+      assert.equals(util.thread, TH.match.baseObject);
+      assert.equals(other, TH.match.baseObject);
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "waitCallback": {
-      setUp() {
+    group("waitCallback", ()=>{
+      let origCallTimeout;
+      beforeEach(()=>{
         stub(global, 'setTimeout').returns(123);
         stub(global, 'clearTimeout');
-        v.origCallTimeout = util.thread.callTimeout;
+        origCallTimeout = util.thread.callTimeout;
         util.thread.callTimeout = undefined;
-      },
+      });
 
-      tearDown() {
-        util.thread.callTimeout = v.origCallTimeout;
-      },
+      afterEach(()=>{
+        util.thread.callTimeout = origCallTimeout;
+        origCallTimeout = null;
+      });
 
-      "test callback"() {
+      test("callback", ()=>{
         let resolved = false;
         const future = {throw: stub(), return: stub(), isResolved: ()=> resolved};
 
@@ -37,9 +47,10 @@ define(function (require, exports, module) {
         assert.calledWith(setTimeout, TH.match.func, 20*1000);
         refute.called(clearTimeout);
 
-        func(v.foo = new Error("foo"));
+        const err = new Error("foo");
+        func(err);
 
-        assert.calledWith(future.throw, v.foo);
+        assert.calledWith(future.throw, err);
         refute.called(future.return);
 
         func(null, "message");
@@ -53,9 +64,9 @@ define(function (require, exports, module) {
         func(123);
         refute.called(future.throw);
         refute.called(future.return);
-      },
+      });
 
-      "test timeout"() {
+      test("timeout", ()=>{
         util.thread.callTimeout = 10*1000;
         setTimeout.restore();
         const origSetTimeout = setTimeout;
@@ -74,10 +85,10 @@ define(function (require, exports, module) {
         refute.called(clearTimeout);
 
         func(123); // no exception
-      },
-    },
+      });
+    });
 
-    "test callWait"() {
+    test("callWait", ()=>{
       const wait = stub().returns("success");
       const future = {wait};
       function myFuture() {return future}
@@ -95,10 +106,10 @@ define(function (require, exports, module) {
       assert.calledWith(util.waitCallback, future);
       assert.called(wait);
       assert(method.calledBefore(wait));
-    },
+    });
 
-    "test engine"() {
+    test("engine", ()=>{
       assert.same(util.engine, 'Server');
-    },
+    });
   });
 });

@@ -35,18 +35,27 @@ define((require, exports, module)=>{
   const prng = (seedArray)=> AccSha256.add(seedArray.join(''));
 
   const prngGetBytes = (h, numBytes)=>{
-    const size = ((numBytes+3)>>2)<<2;
-    const ab = new ArrayBuffer(size);
+    const size = ((numBytes+3)>>2)<<3;
+    const ab = new ArrayBuffer(Math.max(32, size));
     const u32 = new Uint32Array(ab);
-    for(let i = 0; i < numBytes; i += 64) {
+    for(let i = 0; i < numBytes; i += 32) {
       AccSha256.add(shaStr, h);
-      u32.set(h, i>>4);
+      u32.set(h, i>>2);
     }
+
+    const ui8 = new Uint8Array(ab);
+
+    return ui8;
   };
 
-  class RandomGenerator {
-    constructor(seedArray) {
-      this.words = seedArray === undefined ? undefined : prng(seedArray);
+  class Random {
+    constructor(...tokens) {
+      this.words = tokens.length == 0
+        ? (nodeCrypto || crypto
+           ? undefined
+           : prng([Date.now(), window.innerHeight, window.innerWidth,
+                   navigator.userAgent, Math.random()]))
+      : prng(tokens);
     }
 
     fraction() {
@@ -91,22 +100,10 @@ define((require, exports, module)=>{
     }
   };
 
-  let seed = nodeCrypto || crypto ? undefined
-        : [Date.now(), window.innerHeight, window.innerWidth, navigator.userAgent, Math.random()];
+  const random = new Random();
+  Random.global = random;
+  Random.id = ()=> (util.thread.random || random).id();
+  Random.hexString = value =>  (util.thread.random || random).hexString(value);
 
-
-  const random = new RandomGenerator(seed);
-  const create = (...args)=> new RandomGenerator(args.length ? args : undefined);
-  random.create = create;
-
-  return {
-    create,
-    id() {
-      return (util.thread.random || random).id();
-    },
-    hexString(value) {
-      return (util.thread.random || random).hexString(value);
-    },
-    global: random,
-  };
+  return Random;
 });
