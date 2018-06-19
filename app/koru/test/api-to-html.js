@@ -246,7 +246,7 @@ define(function(require, exports, module) {
         class: /::/.test(id) ? "jsdoc-module jsdoc-innerSubject" : "jsdoc-module",
         section: [
           {class: 'jsdoc-module-path', a: id, $href: '#'+id},
-          {class: 'jsdoc-module-title', h1: subject.name},
+          {class: 'jsdoc-module-title searchable', h1: subject.name},
           {abstract},
           {class: 'jsdoc-module-sidebar', aside},
           {div: [
@@ -307,7 +307,7 @@ define(function(require, exports, module) {
         );
 
         rows.push({tr: [
-          {td: proto ? '#'+name : name},
+          {class: "searchable", td: proto ? '#'+name : name},
           {td: ap},
           {class: 'jsdoc-info', '$data-env': env(property),
            td: info
@@ -337,7 +337,7 @@ define(function(require, exports, module) {
       ]},
     ]};
     return section(api, {$name: 'constructor', section: [
-      {h1: defToHtml(sig)},
+      {class: "searchable", h1: defToHtml(sig)},
       {abstract: jsdocToHtml(api, intro, argMap)},
       buildParams(api, args, argMap),
       examples,
@@ -411,7 +411,7 @@ define(function(require, exports, module) {
       return section(api, {
         '$data-env': env(method),
         $name: (type === 'proto' ? '#'+name : name), section: [
-          {h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : (
+          {class: "searchable", h1: sigJoin ? [`${subject.name}${sigJoin}`, defToHtml(sig)] : (
             sigPrefix ? [sigPrefix, defToHtml(sig)] : defToHtml(sig))},
           {abstract},
           params,

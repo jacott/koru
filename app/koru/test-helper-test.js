@@ -53,13 +53,13 @@ define((require, exports, module)=>{
        *
        * @param module the module for the test file.
        *
-       * @param body A method that will [add tests](#koru/test-case#add). It is passed an object
+       * @param body A function that will [add tests](#koru/test-case#add). It is passed an object
        * with the following properties:
 
-       * * `before(body)` - a method to run before all tests in the test case.
-       * * `after(body)` - a method to run after all tests in the test case.
-       * * `beforeEach(body)` - a method to run before each test in the test case.
-       * * `afterEach(body)` - a method to run after each test in the test case.
+       * * `before(body)` - a function to run before all tests in the test case.
+       * * `after(body)` - a function to run after all tests in the test case.
+       * * `beforeEach(body)` - a function to run before each test in the test case.
+       * * `afterEach(body)` - a function to run after each test in the test case.
 
        * * `group(name, body)` - adds a sub `TestCase` named `name`. `body` is again called with
        * this list of properties: (before, after, beforeEach, afterEach, group, test).
@@ -74,11 +74,10 @@ define((require, exports, module)=>{
        * @return a {#koru/test-case} instance.
        **/
       api.method();
-      const body = stub();
+      const body = ()=>{};
       const myMod = {id: 'my-module-test'};
       const testCase = TH.testCase(myMod, body);
 
-      refute.called(body);
       assert.same(testCase, myMod.exports);
       assert.equals(testCase, TH.match.field('name', 'my-module'));
       assert.same(testCase.tc, null);

@@ -39,13 +39,13 @@ isServer && define(function (require, exports, module) {
         {h1: 'Properties'},
         {table: {tbody: [
           {tr: [
-            {td: '_id'},
+            {class: "searchable", td: '_id'},
             {td: {a: ['string'], href: TH.match(/mozilla.*String/), target: '_blank'}},
             {class: 'jsdoc-info', 'data-env': 'server',
              td: {class: 'jsdoc-value', code: '"id-value"'}},
           ]},
           {tr: [
-            {td: 'singleton'},
+            {class: "searchable", td: 'singleton'},
             {td: {a: ['mod'], href: '#my/mod'}},
             {class: 'jsdoc-info', 'data-env': 'server', td: {div: [
               {p: [
