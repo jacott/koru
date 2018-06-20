@@ -22,8 +22,15 @@ define((require, exports, module)=>{
     });
 
     test("mergeOwnDescriptors", ()=>{
+      /**
+       * @param dest
+       * @param src
+       *
+       * @returns
+       **/
+      api.method('mergeOwnDescriptors');
       const a = {a: 1, b: 2};
-      const b = util.mergeNoEnum(util.protoCopy(a, {b: 3, c: 4}), {e: 6});
+      const b = util.mergeNoEnum({__proto__:a, b: 3, c: 4}, {e: 6});
 
       const c = {d: 5};
 
@@ -615,22 +622,6 @@ define((require, exports, module)=>{
       assert.same(util.indexOf(data, 30, 'age'), 1);
       assert.same(util.indexOf(data, 20, 'age'), 0);
       assert.same(util.indexOf(data, 3, 'age'), -1);
-    });
-
-    test("protoCopy", ()=>{
-      const source = {a: new Date(), b: "two"};
-
-      const dest = util.protoCopy(source, {get c() {return "cc"}});
-      assert.same(dest.a, source.a);
-      assert.same(dest.b, "two");
-      assert.same(dest.c, "cc");
-      assert.same(source.c, undefined);
-
-      dest.b = 'bb';
-      assert.same(source.b, "two");
-
-      source.a = 'aa';
-      assert.same(dest.a, 'aa');
     });
 
     test("createDictionary", ()=>{
