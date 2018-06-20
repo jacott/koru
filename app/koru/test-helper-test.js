@@ -7,7 +7,7 @@ define((require, exports, module)=>{
    *
    * ```js
    * define((require, exports, module)=>{
-   *   const TH = require('test-helper');
+   *   const TH = require('test-helper'); // prefix test-helper with path to helper
    *
    *   const {stub, spy, onEnd, util} = TH;
    *
