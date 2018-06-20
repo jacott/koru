@@ -1,6 +1,5 @@
 define(function(require, exports, module) {
   const format          = require('koru/format');
-  const assertions      = require('koru/test/assertions');
   const Stubber         = require('koru/test/stubber');
   const util            = require('koru/util');
   const Core            = require('./core');
@@ -9,7 +8,7 @@ define(function(require, exports, module) {
   const {ctx$} = require('koru/symbols');
   const empty = ()=>{};
 
-  const {deepEqual} = Core.util;
+  const {deepEqual} = Core;
   const ga = Core.assertions;
 
   const performance = isClient ? window.performance : {now() {
@@ -118,6 +117,14 @@ define(function(require, exports, module) {
     },
 
     message: "{i0} to be true"
+  });
+
+  ga.add('instanceof', {
+    assert (object, type) {
+      return object instanceof type;;
+    },
+
+    message: "{i0} to be instance of {i1}",
   });
 
   ga.add('isFunction', {

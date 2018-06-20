@@ -6,7 +6,7 @@ define((require, exports, module)=>{
 
   const {util} = koru;
   const {Core} = Test;
-  const {deepEqual} = Core.util;
+  const {deepEqual} = Core;
 
   const TH = koru.util.reverseMerge({
     login (id, func) {

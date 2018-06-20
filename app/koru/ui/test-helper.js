@@ -40,7 +40,7 @@ define((require, exports, module)=>{
         endOffset: endOffset,
       };
 
-      return Core.util.deepEqual(this.actual, expected, this, 'diff');
+      return Core.deepEqual(this.actual, expected, this, 'diff');
     },
 
     assertMessage: "range to be equal{$diff}",

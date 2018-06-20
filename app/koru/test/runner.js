@@ -225,7 +225,7 @@ define((require, exports, module)=>{
     if (ex === 'abortTests') throw ex;
     test.success = false;
     test.errors = [
-      (ex instanceof Error) ? Core.extractError(ex) : 'Unexpected return value: '+util.inspect(ex)];
+      (ex instanceof Error) ? util.extractError(ex) : 'Unexpected return value: '+util.inspect(ex)];
   };
 
   const checkAssertionCount = (test, assertCount)=>{
@@ -268,7 +268,7 @@ define((require, exports, module)=>{
       if (test.success)
         failed(test, ex);
       else
-        test.errors.push(Core.extractError(ex));
+        test.errors.push(util.extractError(ex));
       Core.abnormalEnd = true;
       return 'abort';
     } finally {

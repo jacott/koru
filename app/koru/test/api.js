@@ -577,8 +577,10 @@ define(function(require, exports, module) {
         if (value.length > 20)
           value = value.slice(0, 20);
         const display = value.map(item => {
-          let resolveFunc = API._resolveFuncs.get(item.constructor);
-          if (resolveFunc)
+
+          const resolveFunc = item != null && typeof item === 'object'
+                ? API._resolveFuncs.get(item.constructor) : undefined;
+          if (resolveFunc !== undefined)
             return resolveFunc('Oi', item)[1];
           else
             return inspect(item);

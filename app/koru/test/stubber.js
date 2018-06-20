@@ -1,12 +1,9 @@
 define((require, exports, module)=>{
   const {stubName$}     = require('koru/symbols');
   const {merge, inspect, hasOwn} = require('koru/util');
-  require('./assertions');
-  const {deepEqual}     = require('./core').util;
+  const {deepEqual, AssertionError}     = require('./core');
 
   const stubber = exports;
-
-  const {AssertionError} = this;
 
   const yields$ = Symbol(), throws$ = Symbol(), invokes$ = Symbol(),
         returns$ = Symbol(), id$ = Symbol(),

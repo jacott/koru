@@ -1,22 +1,18 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
+  const {inspect$}      = require('koru/symbols');
   const stubber         = require('koru/test/stubber');
   const util            = require('koru/util');
   require('./assertions-methods');
   require('./callbacks');
   const Core            = require('./core');
-  const match           = require('./match');
-
-  const {inspect$} = require('koru/symbols');
-
   require('./runner');
   require('./test-case');
 
+
   const Module = module.constructor;
+
   const restorSpy = spy => ()=>{spy.restore && spy.restore()};
-
-  const topDoc = isClient && (window.top ? window.top.document : document);
-
   const onEnd = callback => Core.test.onEnd(callback);
   const stub = (...args)=>Core.test.stub(...args);
   const spy = (...args)=>Core.test.spy(...args);
@@ -43,6 +39,21 @@ define((require, exports, module)=>{
 
     return restore;
   };
+
+  const topDoc = isClient && (window.top ? window.top.document : document);
+
+  const {match} = Core;
+
+  match.near = (expected, delta)=>{
+    delta = delta  || 1;
+    return match(
+      actual => actual > expected-delta && actual < expected+delta,
+      "match.near(" + expected + ", delta=" + delta + ")");
+  };
+
+  match.field= (name, value)=> match(
+    actual => actual && Core.deepEqual(actual[name], value),
+    "match.field(" + name + ", " + value + ")");
 
   Error.stackTraceLimit = 100;
 
@@ -189,7 +200,7 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
 
   koru.logger = (type, ...args)=>{
     console.log.apply(console, args);
-    Main.logHandle(type, (type === '\x44EBUG' ? Core.inspect(args, 7) : args.join(' ')));
+    Main.logHandle(type, (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
   };
 
   Core.onEnd(endRun);

@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const TH              = require('../test-helper');
   const Query           = require('./query');
 
-  const {deepEqual} = TH.Core.util;
+  const {deepEqual} = TH.Core;
 
   const {testCase, util} = TH;
   let _sendM;
