@@ -2,13 +2,14 @@ define(function(require, exports, module) {
   const util            = require('koru/util');
   const koru            = require('../main');
   const session         = require('../session/base');
-  const TH              = require('../test-helper');
+  const BaseTH          = require('../test-helper');
 
   const {test$} = require('koru/symbols');
 
-  const {Core, stub} = TH;
+  const {Core, stub} = BaseTH;
 
-  return util.protoCopy(TH, {
+  return {
+    __proto__: BaseTH,
     sessionConnect(ws) {
       session.onConnection(ws, ws[test$].request);
       return session.conns[session._sessCounter.toString(36)];
@@ -33,5 +34,5 @@ define(function(require, exports, module) {
       stub(state, 'retry');
       stub(state, 'isReady', () => v.ready);
     },
-  });
+  };
 });

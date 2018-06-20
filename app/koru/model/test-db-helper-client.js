@@ -7,7 +7,8 @@ define(function(require, exports, module) {
 
   let inTran=false;
 
-  const TH = util.protoCopy(BaseTH, {
+  return {
+    __proto__: BaseTH,
     startTransaction() {
       if (inTran)
         throw new Error("Transaction still in progress!");
@@ -26,7 +27,5 @@ define(function(require, exports, module) {
       }
       inTran=false;
     },
-  });
-
-  module.exports = TH;
+  };
 });

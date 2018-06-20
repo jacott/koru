@@ -25,7 +25,9 @@ define((require, exports, module)=>{
     }
   };
 
-  return util.protoCopy(TH, {
+  return {
+    __proto__: TH,
+
     testCase: (...args)=>{
       const tc = testCase.apply(TH, args);
       tc.before(stubSendM);
@@ -40,5 +42,5 @@ define((require, exports, module)=>{
         return deepEqual(actual.attributes, expect.attributes);
       }
     }, {toString() {return util.inspect(expect)}}),
-  });
+  };
 });

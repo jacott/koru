@@ -10,7 +10,8 @@ define(function(require, exports, module) {
 
   const {private$} = require('koru/symbols');
 
-  const TH = util.protoCopy(BaseTH, {
+  const TH = {
+    __proto__: BaseTH,
     startTransaction(txClient=Driver.defaultDb) {
       dbBroker.db = txClient;
       const txSave = txClient[txSave$];
@@ -60,8 +61,7 @@ define(function(require, exports, module) {
         txClient._releaseConn();
       }
     },
-  });
-
+  };
 
   return TH;
 });

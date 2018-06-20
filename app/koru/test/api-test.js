@@ -784,7 +784,7 @@ assert.same(Color.colors.red, '#f00');`,
       const foo = {foo: 123};
 
       assert.equals(v.ans = API.resolveObject(foo, 'foo'), ['O', 'foo']);
-      assert.equals(v.ans = API.resolveObject(util.protoCopy(foo), 'ext foo'),
+      assert.equals(v.ans = API.resolveObject(Object.create(foo), 'ext foo'),
                     ['O', 'ext foo']);
 
       assert.equals(API.resolveObject([2], '[2]'), ['Oi', '[2]', 'Array']);
@@ -818,7 +818,7 @@ assert.same(Color.colors.red, '#f00');`,
       assert.equals(API.resolveObject(new S2ubApi(), 's2()'),
                     ['Oi', 's2()', 'koru/test/api']);
 
-      assert.equals(API.resolveObject(util.protoCopy(new S2ubApi()), 'ext s2()'),
+      assert.equals(API.resolveObject(Object.create(new S2ubApi()), 'ext s2()'),
                     ['Oi', 'ext s2()', 'koru/test/api']);
 
     });
