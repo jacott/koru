@@ -50,9 +50,16 @@ define((require, exports, module)=>{
 
     test("mergeNoEnum", ()=>{
       /**
-       * Merge `source` into `dest` but do not set `enumerable` on the
-       * descriptor.
+       * Merge `source` into `dest` and set `enumerable` to `false` for each added or modified
+       * property. That is, add each enumerable property in `source` to `dest`, or where a
+       * property of that name already exists in `dest`, replace the property in `dest` with the
+       * property from `source`, and set `enumerable` to `false` for each. Return the modified `dest`.
+       * @param dest an object to modify
+       * @param source the properties to be added or modified
        *
+       * @returns `dest` modified: each enumerable property in `source` has been added to `dest`, or where
+       * a property of that name already existed in `dest`, the property in `dest` has been
+       * replaced with the property from `source`, in each case with `enumerable` set to `false`
        **/
       api.method('mergeNoEnum');
       //[
@@ -74,11 +81,19 @@ define((require, exports, module)=>{
 
     test("merge", ()=>{
       /**
-       * Merge `source` into `dest`.
+       * Merge `source` into `dest`. That is, add each enumerable property in `source` to `dest`, or where a
+       * property of that name already exists in `dest`, replace the property in `dest` with the
+       * property from `source`. Return the modified `dest`.
+       * @param dest an object to modify
+       * @param source the properties to be added or modified
+       *
+       * @returns `dest` modified: each enumerable property in `source` has been added to `dest`, or where
+       * a property of that name already existed in `dest`, the property in `dest` has been
+       * replaced with the property from `source`
        *
        * @alias extend deprecated
        **/
-      api.method('merge');
+      api.method();
       const orig = {a: 1, b: 2};
       const result = {};
       assert.same(util.merge(result, orig), result);

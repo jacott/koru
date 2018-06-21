@@ -110,10 +110,16 @@ define((require, exports, module)=>{
 
     test("mergeOwnDescriptors", ()=>{
       /**
-       * @param dest
-       * @param src
+       * Merge `source` into `dest`, including non-enumerable properties from `source`. That is, add
+       * each property in `source`, including non-enumerable properties, to `dest`, or where a property
+       * of that name already exists in `dest`, replace the property in `dest` with the property from
+       * `source`. Return the modified `dest`.
+       * @param dest an object to modify
+       * @param source the properties to be added or modified
        *
-       * @returns
+       * @returns `dest` modified: each property in `source`, including non-enumerable properties,
+       * has been added to `dest`, or where a property of that name already existed in `dest`, the
+       * property in `dest` has been replaced with the property from `source`
        **/
       api.method('mergeOwnDescriptors');
       const a = {a: 1, b: 2};
@@ -152,6 +158,7 @@ define((require, exports, module)=>{
     });
 
     test("DAY", ()=>{
+      api.property('DAY', {info: 'the number of milliseconds in a day'});
       const d1 = new Date(2015, 1, 1);
       const d2 = new Date(2015, 1, 2);
       assert.same(util.DAY, +d2 - d1);
@@ -196,6 +203,19 @@ define((require, exports, module)=>{
     });
 
     test("diffString", ()=>{
+      /**
+       * Find the difference between `oldstr` and `newstr`.
+       * @param oldstr a string
+       * @param newstr another string
+       *
+       * @returns {undefined|Array} `undefined` if `oldstr` and `newstr` are the same, otherwise an array
+       * of three numbers:
+       * the index of the first non-matching character in oldstr and newstr,
+       * the length of the segment of `oldstr` that doesn't match `newstr`,
+       * the length of the segment of `newstr` that doesn't match `oldstr`
+       **/
+      api.method('diffString');
+      //[
       assert.equals(util.diffString("it1", "it21"), [2, 0, 1]);
       assert.equals(util.diffString("it1", "zit21z"), [0, 3, 6]);
       assert.equals(util.diffString("it21", "it1"), [2, 1, 0]);
@@ -204,30 +224,69 @@ define((require, exports, module)=>{
       assert.equals(util.diffString("h💣el💣 world", "h💣el💤 wor💣ld"), [5, 6, 8]);
       assert.equals(util.diffString("helo worlld", "hello world"), [3, 6, 6]);
       assert.equals(util.diffString("hello world", "helo worlld"), [3, 6, 6]);
-      assert.equals(util.diffString("hello world", "helo worlld"), [3, 6, 6]);
       assert.equals(util.diffString("hello world", "hello world"), undefined);
+      //]
     });
 
     test("diffStringLength", ()=>{
+      /**
+       * In the longer of `oldstr` and `newstr`, find the length of the segment that doesn't
+       * match the other string.
+       * @param oldstr a string
+       * @param newstr another string
+       *
+       * @returns `0` if `oldstr` and `newstr` are the same, otherwise the length of the segment,
+       * in the longer of `oldstr` and `newstr`, that doesn't match the other string
+       **/
+      api.method('diffStringLength');
       assert.equals(util.diffStringLength("h💣elo wor💣ld", "h💣el💣 world"), 7);
       assert.equals(util.diffStringLength("h💣el💣 world", "h💣elo wor💣ld"), 7);
       assert.equals(util.diffStringLength("hello world", "hello world"), 0);
     });
 
     test("indexOfRegex", ()=>{
-      const list = [{foo: 'a'}, {foo: 'b'}];
+      /**
+       * Determine the index of the first item in `list` that has a property `fieldName`
+       * that contains a match for the regular expression `value`
+       * @param list the list to search
+       * @param value the regular expression to search `fieldName` for a match
+       * @param fieldName the property name to search for in each item in `list`
+       *
+       * @returns the index of the first item in `list` that has a property `fieldName` that
+       * contains a match for the regular expression `value`, or -1 if `list` does not
+       * contain such an item
+       **/
+      api.method('indexOfRegex');
+      //[
+      const list = [{foo: 'a'}, {foo: 'cbc'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);
       assert.same(util.indexOfRegex(list, /ab/, 'foo'), -1);
       assert.same(util.indexOfRegex(list, /b/, 'foo'), 1);
+      //]
     });
 
     test("isObjEmpty", ()=>{
+      /**
+       * Determine whether `obj` is empty.
+       * @param obj an object
+       *
+       * @returns `true` if `obj` is empty, otherwise `false`
+       **/
+      api.method('isObjEmpty');
       assert.isTrue(util.isObjEmpty());
       assert.isTrue(util.isObjEmpty({}));
       assert.isFalse(util.isObjEmpty({a: 1}));
     });
 
     test("hasOnly", ()=>{
+      /**
+       * Determine if `obj` has only keys in `keyMap`.
+       * @param obj an object
+       * @param keyMap a set of key-value pairs
+       *
+       * @returns `true` if `obj` has only keys also in `keyMap`, otherwise `false`
+       **/
+      api.method('hasOnly');
       assert.isFalse(util.hasOnly({a: 1}, {b: true}));
       assert.isFalse(util.hasOnly({a: 1, b: 1}, {b: true}));
       assert.isTrue(util.hasOnly({b: 1}, {b: true}));
@@ -252,17 +311,50 @@ define((require, exports, module)=>{
     });
 
     test("firstParam", ()=>{
+      /**
+       * Return the value of the first property in `obj`.
+       * @param obj an object
+       *
+       * @returns {any-type} the value of the first property in `obj`, or `undefined` if
+       * `obj` is empty
+       **/
+      api.method('firstParam');
+      //[
       assert.same(util.firstParam({a: 1, b: 2}), 1);
       assert.same(util.firstParam({}), undefined);
       assert.same(util.firstParam(), undefined);
+      //]
     });
 
     test("keyMatches", ()=>{
+      /**
+       * Search for a property in `obj` whose name contains a match for `regex`.
+       * @param obj the object whose property names to search for a match with `regex`
+       * @param regex the regular expression to match
+       *
+       * @returns If the match succeeds, returns an array whose element at index 0 is the full string
+       * of characters matched, and whose subsequent elements are the parenthesized substring matches
+       * if any, and whose `index` property is the index of the match in the `obj` property name, and whose
+       * `input` property is the string that is the `obj` property name. If the match fails, returns `false`.
+       **/
+      api.method('keyMatches');
+      //[
       assert.same(util.keyMatches({ab: 0, bc: 0, de: 0}, /^b(c)/)[1], 'c');
       assert.isFalse(util.keyMatches({ab: 0, bc: 0, de: 0}, /^dee/));
+      //]
     });
 
     test("addItem", ()=>{
+      /**
+       * Add `item` to `list` if `list` does not already contain `item`.
+       * @param list the list to add `item` to
+       * @param {any-type} item the item to add to `list`
+       *
+       * @returns {undefined|number} Returns `undefined` if `item` is added to `list`. Returns -1 if
+       * `list` already contains `item`.
+       **/
+      api.method('addItem');
+      //[
       const list = ['a', 'b'];
 
       assert.same(util.addItem(list, 'b'), 1);
@@ -277,6 +369,7 @@ define((require, exports, module)=>{
       assert.same(util.addItem(list, {aa: 123}), 2);
 
       assert.equals(list, ['a', 'b', {aa: 123}]);
+      //]
     });
 
     test("itemIndex", ()=>{
@@ -336,6 +429,13 @@ define((require, exports, module)=>{
     });
 
     test("values", ()=>{
+      /**
+       * Create a list of the names of the enumerable properties that `obj` contains.
+       * @param map the object whose property names to create a list of
+       *
+       * @returns a list of the names of the enumerable properties of `obj`
+       **/
+      api.method('values');
       assert.equals(util.values({a: 1, b: 2}), [1,2]);
     });
 
@@ -353,7 +453,18 @@ define((require, exports, module)=>{
     });
 
     test("union", ()=>{
-      assert.equals(util.union([1,2,3], [3, 4, 5], [3, 6]).sort(), [1, 2, 3, 4, 5, 6]);
+      /**
+       * Create a shallow copy of `first` and add items to the new list, in each case only if the
+       * item does not already exist in the new list.
+       * @param first a list to be copied
+       * @param rest one or more lists of elements to be added to the new list created by copying
+       * `first` if they do not already exist in the new list
+       *
+       * @returns a list containing all the elements in `first` and one instance of each of the
+       * unique elements in `rest` that are not also in `first`
+       **/
+      api.method('union');
+      assert.equals(util.union([1,2,2,3], [3, 4, 4, 5], [3, 6]), [1, 2, 2, 3, 4, 5, 6]);
       assert.equals(util.union([1,2]), [1, 2]);
       assert.equals(util.union([1,2], null), [1, 2]);
       assert.equals(util.union(null, [1,2]), [1, 2]);
@@ -361,6 +472,14 @@ define((require, exports, module)=>{
     });
 
     test("diff", ()=>{
+      /**
+       * Create a list of all the elements of `list1` that are not also elements of `list2`.
+       * @param list1 a list
+       * @param list2 another list
+       *
+       * @returns a list of all the elements of `list1` that are not also elements of `list2`
+       **/
+      api.method('diff');
       assert.equals(util.diff(), []);
       assert.equals(util.diff([1, 2]), [1, 2]);
 
@@ -368,16 +487,28 @@ define((require, exports, module)=>{
     });
 
     test("symDiff", ()=>{
+      /**
+       * Create a list of all the elements of `list1` and `list2` that belong only to `list1`
+       * or `list2`, not to both lists.
+       * @param list1 a list
+       * @param list2 a second list
+       *
+       * @returns a list of all the elements of `list1` and `list2` that belong only to `list1`
+       * or `list2`, not to both lists
+       **/
+      api.method('symDiff');
+      //[
       assert.equals(util.symDiff(), []);
       assert.equals(util.symDiff([1, 2]), [1, 2]);
 
       assert.equals(util.symDiff([1,2,3], [2,4]).sort(), [1, 3, 4]);
       assert.equals(util.symDiff([2,4], [1,2,3]).sort(), [1, 3, 4]);
+      //]
     });
 
     test("extend", ()=>{
       let item = 5;
-      const sub={a: 1, b: 2};
+      const sub = {a: 1, b: 2};
       const sup = {b: 3, get c() {return item;}};
 
       util.merge(sub,sup);
@@ -390,8 +521,25 @@ define((require, exports, module)=>{
     });
 
     test("mergeExclude", ()=>{
+      /**
+       * Merge `properties` into `obj`, excluding properties in `exclude` that have truthy values.
+       * That is, add each property in `properties`, excluding those that have truthy values in
+       * `exclude`, to `obj`, or where a property of that name already exists in `obj`, replace
+       * the property in `obj` with the property from `properties`. Return the modified `obj`.
+       * @param obj an object to modify
+       * @param properties properties to be added to or modified in `obj`, unless they are in `exclude`
+       * (with truthy values)
+       * @param exclude properties which (if they have truthy values) are excluded from being added to or
+       * modified in `obj`
+       *
+       * @returns `obj` modified: each property in `properties`, excluding properties in `exclude`with
+       * truthy values, has been added to `obj`, or where a property of that name already existed in `obj`,
+       * the property in `obj` has been replaced with the property from `properties`
+       **/
+      api.method('mergeExclude');
+      //[
       let item = 5,
-          sub={a: 1, b: 2},
+          sub = {a: 1, b: 2},
           sup = {b: 3, get c() {return item;}, d: 4, e: 5};
 
       util.mergeExclude(sub,sup, {d: true, e: true});
@@ -401,9 +549,25 @@ define((require, exports, module)=>{
       assert.same(sub.a,1);
       assert.same(sub.b,3);
       assert.same(sub.c,6);
+      refute(sub.hasOwnProperty('d'));
+      //]
     });
 
     test("mergeInclude", ()=>{
+      /**
+       * Merge the properties from `properties` that are named in `include` into `obj`. That is, add each
+       * property in `properties` that is named in `include` to `obj`, or where a property of that name
+       * already exists in `obj`, replace the property in `obj` with the property from `properties`.
+       * @param obj an object to modify
+       * @param properties properties to be added to or modified in `obj` if they are named in `include`
+       * @param include properties, or a list of property names, whose names identify which properties
+       * from `properties` are to be added to or modified in `obj`
+       *
+       * @returns `obj` modified: each property in `properties` that is named in `include` has been added
+       * to `obj`, or where a property of that name already existed in `obj`, the property in `obj`
+       * has been replaced with the property from `properties`
+       **/
+      api.method('mergeInclude');
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, {c: true, d: true, z: true}),
                     {a: 1, c: 3, d: 4});
       assert.equals(util.mergeInclude({a: 1, c: 2}, {b: 2, c: 3, d: 4}, ['c', 'd', 'z']),
@@ -411,6 +575,15 @@ define((require, exports, module)=>{
     });
 
     test("extractKeys", ()=>{
+      /**
+       * Create and return an object made up of the properties in `obj` whose keys are named in `keys`.
+       * @param obj the object from which to collect properties
+       * @param keys a collection of properties or keys whose names identify which properties to collect
+       * from `obj`
+       *
+       * @returns an object made up of the properties in `obj` whose keys are named in `keys`
+       **/
+      api.method('extractKeys');
       assert.equals(
         util.extractKeys({a: 4, b: "abc", get c() {return {value: true}}}, ['a', 'c', 'e']),
         {a: 4, c: {value: true}}
@@ -422,6 +595,16 @@ define((require, exports, module)=>{
     });
 
     test("extractNotKeys", ()=>{
+      /**
+       * Create and return an object made up of the properties in `obj` whose keys are not named in
+       * `keys`.
+       * @param obj the object from which to collect properties
+       * @param keys a collection of properties whose names identify which properties not to
+       * collect from `obj`
+       *
+       * @returns an object made up of the properties in `obj` whose keys are not named in `keys`
+       **/
+      api.method('extractNotKeys');
       assert.equals(
         util.extractNotKeys({a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true}),
         {b: "abc", c: {value: true}}
@@ -429,11 +612,24 @@ define((require, exports, module)=>{
     });
 
     test("splitKeys", ()=>{
+      /**
+       * Create and return an object containing two objects: the first made up of the properties in `obj`
+       * whose keys are named in `includeKeys`, and the second made up of the other properties in `obj`.
+       * @param obj the object from which to collect properties
+       * @param includeKeys a collection of properties whose names identify which objects to
+       * include in the first object returned
+       *
+       * @returns an object containing two objects: the first is made up of the properties in `obj`
+       * whose keys are named in `includeKeys`; the second is made up of the other properties in `obj`
+       **/
+      api.method('splitKeys');
+      //[
       const {include, exclude} = util.splitKeys(
         {a: 4, b: "abc", get c() {return {value: true}}}, {a: true, e: true});
 
       assert.equals(include, {a: 4});
       assert.equals(exclude, {b: "abc", c: {value: true}});
+      //]
     });
 
     test("shallowEqual arrays", ()=>{
@@ -1230,7 +1426,7 @@ define((require, exports, module)=>{
        * Associate `object` with `_id`.
        * @param _id an id to associate with `object`
        * @param object an object to associate with `_id`
-       * @param key defaults to {#Symbol.withId$}
+       * @param key defaults to [Symbol.withId$](#koru/Symbol)
        *
        * @returns an associated object which has the given `_id` and a prototype of the given
        * `object`. If an association for `key` is already attached to the `object` then it is used

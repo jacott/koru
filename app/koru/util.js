@@ -149,21 +149,30 @@ define((require)=>{
 
   const identity = value => value;
 
-  const diffString = (os, ns)=>{
-    const lo = os.length-1, ln = ns.length-1;
-    const minLast = Math.min(lo, ln);
-    let s = 0, e = 0, oc = 0;
-    while(s <= minLast && (oc=os.charCodeAt(s)) === ns.charCodeAt(s)) {
-      if (oc >= 0xd800 && oc <= 0xdbff && s < minLast) {
-        if (os.charCodeAt(s+1) !== ns.charCodeAt(s+1)) break;
+  const diffString = (oldstr, newstr)=>{
+    const lastold = oldstr.length-1, lastnew = newstr.length-1;
+    const minLast = Math.min(lastold, lastnew);
+    let s = 0, e = 0, oldchar = 0;
+    // while the characters in oldstr and newstr are the same, increment s once for each character
+    // designated by a single code point, twice for each character designated by a code point pair
+    while(s <= minLast && (oldchar=oldstr.charCodeAt(s)) === newstr.charCodeAt(s)) {
+      if (oldchar >= 0xd800 && oldchar <= 0xdbff && s < minLast) {
+        if (oldstr.charCodeAt(s+1) !== newstr.charCodeAt(s+1)) break;
         ++s;
       }
       ++s;
     }
-    if (lo == ln && s == minLast+1) return;
-    while(s <= minLast - e && os.charCodeAt(lo-e) === ns.charCodeAt(ln-e)) ++e;
+    // s is now the index of the first non-matching chararacter in oldstr and newstr
 
-    return [s, 1+lo-(e+s), ns.length-s-e];
+    // return undefined if oldstr and newstr are the same
+    if (lastold == lastnew && s == minLast+1) return;
+
+    // starting at the end of oldstr and newstr, while the characters in oldstr
+    // and newstr are the same, increment e
+    while(s <= minLast - e && oldstr.charCodeAt(lastold-e) === newstr.charCodeAt(lastnew-e)) ++e;
+    // e is now the number of matching characters at the end of oldstr and newstr
+
+    return [s, oldstr.length-s-e, newstr.length-s-e];
   };
 
   const LOCAL_COMPARE_OPTS = {numeric: true};
@@ -183,8 +192,8 @@ define((require)=>{
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     diffString,
-    diffStringLength: (os, ns)=>{
-      const ans = diffString(os, ns);
+    diffStringLength: (oldstr, newstr)=>{
+      const ans = diffString(oldstr, newstr);
       return ans === undefined ? 0 : Math.max(ans[1], ans[2]);
     },
 
@@ -240,11 +249,11 @@ define((require)=>{
       return obj;
     },
 
-    mergeOwnDescriptors(dest, src) {
-      const names = Object.getOwnPropertyNames(src);
+    mergeOwnDescriptors(dest, source) {
+      const names = Object.getOwnPropertyNames(source);
       for(let i = names.length - 1; i >= 0 ; --i) {
         const name = names[i];
-        Object.defineProperty(dest, name, Object.getOwnPropertyDescriptor(src, name));
+        Object.defineProperty(dest, name, Object.getOwnPropertyDescriptor(source, name));
       }
       return dest;
     },
@@ -722,31 +731,31 @@ define((require)=>{
       return list2.some(item => set.has(item));
     },
 
-    diff(a, b) {
-      if (! b) return a ? a.slice() : [];
+    diff(list1, list2) {
+      if (! list2) return list1 ? list1.slice() : [];
       const result = [];
-      if (! a) return result;
-      const bMap = new Set(b);
-      for (let i = 0; i < a.length; ++i) {
-        const val = a[i];
-        bMap.has(val) || result.push(val);
+      if (! list1) return result;
+      const map2 = new Set(list2);
+      for (let i = 0; i < list1.length; ++i) {
+        const val = list1[i];
+        map2.has(val) || result.push(val);
       }
       return result;
     },
 
-    symDiff(a, b) {
+    symDiff(list1, list2) {
       const ans = [];
-      const bMap = new Set(b);
+      const map2 = new Set(list2);
 
-      if (a) for(let i = 0; i < a.length; ++i) {
-        const val = a[i];
-        if (bMap.has(val))
-          bMap.delete(val);
+      if (list1) for(let i = 0; i < list1.length; ++i) {
+        const val = list1[i];
+        if (map2.has(val))
+          map2.delete(val);
         else
           ans.push(val);
       }
 
-      for (const val of bMap.values()) {
+      for (const val of map2.values()) {
         ans.push(val);
       }
       return ans;
