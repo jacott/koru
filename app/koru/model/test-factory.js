@@ -1,7 +1,7 @@
 define((require, exports, module)=>{
-  const Core            = require('koru/test/core');
   const util            = require('../util');
   const Model           = require('./main');
+  const TH              = require('koru/test-helper');
 
   const {hasOwn} = util;
 
@@ -223,7 +223,7 @@ define((require, exports, module)=>{
     Builder,
   };
 
-  Core.onTestStart(()=>{
+  TH.Core.onTestStart(()=>{
     nameGen = {};
     last = {};
     lastNow = null;
