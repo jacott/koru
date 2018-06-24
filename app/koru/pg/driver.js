@@ -95,8 +95,11 @@ define((require, exports, module)=>{
         conn.finish();
       }
 
-      const err = new Error(ex.message);
+      const err = new Error(
+        ex.message.indexOf('syntax')!=-1 ?
+          `${ex.message}\nquery: ${text}\nparams: ${util.inspect(params)}\n` : ex.message);
       err.sqlState = ex.sqlState;
+
       throw err;
     }
   };
