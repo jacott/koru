@@ -310,7 +310,7 @@ isClient && define(function (require, exports, module) {
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
-        pointerId: 1, clientX: 123+17, clientY: 45+51
+        pointerId: 0, clientX: 123+17, clientY: 45+51
       });
       const onComplete = stub();
 
@@ -321,12 +321,12 @@ isClient && define(function (require, exports, module) {
         onComplete,
       });
       TH.trigger(target, 'pointerdown', {pointerId: 2, clientX: 100+17, clientY: 155+51});
-      TH.trigger(target, 'pointermove', {pointerId: 1, clientX: 150+17, clientY: 55+51});
+      TH.trigger(target, 'pointermove', {pointerId: 0, clientX: 150+17, clientY: 55+51});
 
-      assert.calledWith(target.setPointerCapture, 1);
+      assert.calledWith(target.setPointerCapture, 0);
       assert.calledWith(target.setPointerCapture, 2);
 
-      TH.trigger(target, 'lostpointercapture', {pointerId: 1});
+      TH.trigger(target, 'lostpointercapture', {pointerId: 0});
 
       assert.calledWith(onComplete, TH.match.object, {click: false, cancelled: true});
     },

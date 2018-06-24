@@ -220,7 +220,7 @@ define(function(require, exports, module) {
 
     const {left, top} = targetGeometry;
 
-    const pri = {id: 0, x: 0, y: 0}, sec = {id: 0, x: 0, y: 0};
+    const pri = {id: undefined, x: 0, y: 0}, sec = {id: undefined, x: 0, y: 0};
     const findPointer = id=> id == pri.id ? pri : id == sec.id ? sec: undefined;
 
     let moved = false, count = 0, pendingMove = 0, sMag = 1;
@@ -228,10 +228,11 @@ define(function(require, exports, module) {
     const pointerdown = event =>{
       if (count == 2) return;
       const id = event.pointerId;
+
       if (findPointer(id) !== undefined) return;
       target.setPointerCapture(id);
       ++count;
-      const pointer = pri.id == 0 ? pri : sec;
+      const pointer = pri.id == undefined ? pri : sec;
       pointer.id = id;
       pointer.x = event.clientX - left;
       pointer.y = event.clientY - top;
@@ -269,7 +270,7 @@ define(function(require, exports, module) {
     const reportMove = ()=>{
       pendingMove = 0;
       if (count == 1) {
-        const pointer = sec.id == 0 ? pri : sec;
+        const pointer = sec.id == undefined ? pri : sec;
         dim.adjustX = pointer.x - dim.midX;
         dim.adjustY = pointer.y - dim.midY;
       } else {
@@ -297,7 +298,7 @@ define(function(require, exports, module) {
       const pointer = findPointer(event.pointerId);
       if (pointer === undefined) return;
       target.releasePointerCapture(pointer.id);
-      pointer.id = 0;
+      pointer.id = undefined;
       if (--count == 1 && event.type !== 'lostpointercapture') return;
       stop();
       onComplete(dim, {click: ! moved, cancelled: event.type === 'lostpointercapture'});
@@ -308,10 +309,10 @@ define(function(require, exports, module) {
         window.cancelAnimationFrame(pendingMove);
         pendingMove = 0;
       }
-      pri.id == 0 || target.releasePointerCapture(pri.id);
-      sec.id == 0 || target.releasePointerCapture(sec.id);
+      pri.id == undefined || target.releasePointerCapture(pri.id);
+      sec.id == undefined || target.releasePointerCapture(sec.id);
 
-      pri.id = sec.id = 0;
+      pri.id = sec.id = undefined;
 
       target.removeEventListener('pointerdown', pointerdown, true);
       target.removeEventListener('pointermove', pointermove, true);
