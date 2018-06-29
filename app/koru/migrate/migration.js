@@ -4,7 +4,7 @@ const Path = require('path');
 const readdir = Future.wrap(fs.readdir);
 const stat = Future.wrap(fs.stat);
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const ModelMap = require('koru/model/map');
   const koru     = require('../main');
   const util     = require('../util');
@@ -125,6 +125,19 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 
   const onlyMigrateFiles = fn => /\d.*.js$/.test(fn);
 
+  const readMigration = mig =>{
+    const future = new Future;
+    const id = mig+'.js';
+    try {
+      require([id], mig =>{
+        future.return(mig);
+      });
+      return future.wait();
+    } finally {
+      koru.unload(id);
+    }
+  };
+
   class Migration {
     constructor(client) {
       this._client = client;
@@ -143,8 +156,8 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 
       const migrations = this._getMigrations();
 
-      for(var i = 0; i < filenames.length; ++i) {
-        var row = filenames[i].replace(/\.js$/,'');
+      for(let i = 0; i < filenames.length; ++i) {
+        const row = filenames[i].replace(/\.js$/,'');
         if (! migrations[row]) {
           this._client.query('INSERT INTO "Migration" VALUES ($1)', [row]);
           this._migrations[row] = true;
@@ -158,8 +171,8 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
 
       const migrations = this._getMigrations();
 
-      for(var i = 0; i < filenames.length; ++i) {
-        var row = filenames[i].replace(/\.js$/,'');
+      for(let i = 0; i < filenames.length; ++i) {
+        const row = filenames[i].replace(/\.js$/,'');
         if (row > pos)
           break;
         if (! migrations[row]) {
@@ -205,19 +218,6 @@ Object.keys(fields).map(col => `DROP column "${col}"`).join(",")
           delete this._migrations[name];
         }
       });
-    }
-  }
-
-  function readMigration(mig) {
-    var future = new Future;
-    var id = mig+'.js';
-    try {
-      require([id], function (mig) {
-        future.return(mig);
-      });
-      return future.wait();
-    } finally {
-      koru.unload(id);
     }
   }
 

@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   const ModelMap        = require('koru/model/map');
   const DBDriver        = require('koru/pg/driver');
   const TH              = require('koru/test-helper');
@@ -7,24 +7,23 @@ isServer && define(function (require, exports, module) {
 
   const Migration = require('./migration');
 
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUpAround(run) {
-      v = {};
+  TH.testCase(module, ({aroundEach, beforeEach, afterEach, group, test})=>{
+    aroundEach((run)=>{
       v.client = DBDriver.defaultDb;
       v.sut = new Migration(v.client);
-      v.client.transaction(function (tx) {
+      v.client.transaction(tx =>{
         run();
         tx.transaction = 'ROLLBACK';
       });
-      v = null;
-    },
+      v = {};
+    });
 
-    "test create"() {
+    test("create", ()=>{
       onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
-      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = mig =>{
         mig.createTable('TestTable', {
           myName: {type: 'text', default: 'George'},
           color: 'color',
@@ -46,27 +45,27 @@ isServer && define(function (require, exports, module) {
 
       v.client.query('INSERT INTO "TestTable" (_id, "myName") values ($1,$2)', [
         "12345670123456789", "foo"]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      const doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc._id, "12345670123456789");
       assert.same(doc.myName, "foo");
-      var row = v.client.query(
+      let row = v.client.query(
         "SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
         ['TestTable', '_id'])[0];
       assert.equals(row.data_type, "text");
 
-      var row = v.client.query(
+      row = v.client.query(
         "SELECT * FROM information_schema.columns WHERE table_name = $1 and column_name = $2",
         ['TestTable', 'myName'])[0];
       assert.equals(row.column_default, "'George'::text");
       assert.equals(row.data_type, "text");
 
 
-      var migs = v.client.query('SELECT * FROM "Migration"');
+      let migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 1);
 
       assert.equals(migs[0].name, '20151003T20-30-20-create-TestModel');
 
-      var indexes = v.client.query(
+      const indexes = v.client.query(
         'select * from pg_indexes where tablename = $1 ORDER BY indexname', ['TestTable']);
       assert.same(indexes.length, 3);
       assert.equals(indexes[0].indexname, 'TestTable_myName');
@@ -77,7 +76,7 @@ isServer && define(function (require, exports, module) {
       assert.same(indexes[1].indexdef.replace(/public\./g, ''),
                   'CREATE UNIQUE INDEX "TestTable_myName__id" ON "TestTable" USING btree ("myName" DESC, _id)');
 
-      v.sut.addMigration('20151003T20-30-20-create-TestModel', function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', mig =>{
         assert(false, "should not run twice");
       });
 
@@ -85,14 +84,14 @@ isServer && define(function (require, exports, module) {
 
       v.sut.revertMigration('20151003T20-30-20-create-TestModel', v.migBody);
 
-      var migs = v.client.query('SELECT * FROM "Migration"');
+      migs = v.client.query('SELECT * FROM "Migration"');
       assert.same(migs.length, 0);
 
       assert.same(v.client.query('select exists(select 1 from pg_catalog.pg_class where relname = $1)',
                                  ["TestTable"])[0].exists, false);
-    },
+    });
 
-    "test field strings for create"() {
+    test("field strings for create", ()=>{
       onEnd(() => delete ModelMap.TestTable);
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig =>{
         spy(v.sut._client, 'query');
@@ -101,26 +100,26 @@ isServer && define(function (require, exports, module) {
           fields: ["myName", "age:jsonb default '7'::jsonb"]});
       });
       assert.calledWith(v.sut._client.query, `CREATE TABLE "TestTable" (_id text collate "C" PRIMARY KEY,"myName" text,"age" jsonb default '7'::jsonb)`);
-    },
+    });
 
-    "test explict primary key in create"() {
-      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+    test("explict primary key in create", ()=>{
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = mig =>{
         mig.createTable('TestTable', {
           name: 'text',
           foo: {type: 'integer primary KEY'},
         });
       });
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      const doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
       refute.hasOwn(doc, '_id');
       assert.exception(()=>{
         v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
       }, {sqlState: '23505'});
-   },
+   });
 
-    "test no primary key"() {
-       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+    test("no primary key", ()=>{
+       v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = mig =>{
          mig.createTable({
            name: 'TestTable',
            primaryKey: false,
@@ -132,14 +131,14 @@ isServer && define(function (require, exports, module) {
       });
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      const doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
       refute.hasOwn(doc, '_id');
-    },
+    });
 
-    "test unlogged create"() {
+    test("unlogged create", ()=>{
       spy(v.client, 'query');
-      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = function (mig) {
+      v.sut.addMigration('20151003T20-30-20-create-TestModel', v.migBody = mig =>{
         mig.createTable({name: 'TestTable', unlogged: true, fields: {
           name: 'text',
           foo: {type: 'integer primary KEY'},
@@ -148,12 +147,12 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(v.client.query,
                         `CREATE UNLOGGED TABLE "TestTable" ("foo" integer primary KEY,"name" text)`);
       v.client.query('INSERT INTO "TestTable" (foo, name) values ($1,$2)', [2, "foo"]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      const doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.foo, 2);
       refute.hasOwn(doc, '_id');
-    },
+    });
 
-    "test addIndex"() {
+    test("addIndex", ()=>{
       onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
 
@@ -197,9 +196,9 @@ isServer && define(function (require, exports, module) {
       assert.equals(v.client.query(
         'select indexname from pg_indexes where tablename = $1', ['TestTable'])
                     .map(r=>r.indexname), ['TestTable_pkey']);
-    },
+    });
 
-    "test addColumns by object"() {
+    test("addColumns by object", ()=>{
       onEnd(() => delete ModelMap.TestTable);
       ModelMap.TestTable = {docs: {_resetTable: v.resetTable = stub()}};
 
@@ -212,18 +211,18 @@ isServer && define(function (require, exports, module) {
 
       v.client.query('INSERT INTO "TestTable" (_id, "myAge", dob) values ($1,$2,$3)',
                      ['foo', 12, new Date(1970, 1, 1)]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      let doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, 12);
       assert.equals(doc.dob, new Date(1970, 1, 1));
 
       v.sut.revertMigration('20151004T20-30-20-add-column', v.migBody);
 
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, undefined);
       assert.same(doc.dob, undefined);
-    },
+    });
 
-    "test addColumns by arguments"() {
+    test("addColumns by arguments", ()=>{
       onEnd(() => delete ModelMap.TestTable);
       v.sut.addMigration('20151003T20-30-20-create-TestModel', mig => mig.createTable('TestTable'));
 
@@ -235,18 +234,18 @@ isServer && define(function (require, exports, module) {
 
       v.client.query('INSERT INTO "TestTable" (_id, "myAge", dob) values ($1,$2,$3)',
                      ['foo', 12, new Date(1970, 1, 1)]);
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      let doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, 12);
       assert.equals(doc.dob, new Date(1970, 1, 1));
 
       v.sut.revertMigration('20151004T20-30-20-add-column', v.migBody);
 
-      var doc = v.client.query('SELECT * from "TestTable"')[0];
+      doc = v.client.query('SELECT * from "TestTable"')[0];
       assert.same(doc.myAge, undefined);
       assert.same(doc.dob, undefined);
-    },
+    });
 
-    "test reversible"() {
+    test("reversible", ()=>{
       onEnd(() => {
         delete ModelMap.Foo;
         delete ModelMap.Bar;
@@ -254,7 +253,7 @@ isServer && define(function (require, exports, module) {
       ModelMap.Foo = {docs: {_resetTable: v.resetFoo = stub()}};
       ModelMap.Bar = {docs: {_resetTable: v.resetBar = stub()}};
 
-      v.sut.addMigration('20151004T20-30-20-reversible', v.migBody = function (mig) {
+      v.sut.addMigration('20151004T20-30-20-reversible', v.migBody = mig =>{
         mig.reversible({
           add: v.add = stub(),
           revert: v.revert = stub(),
@@ -275,10 +274,10 @@ isServer && define(function (require, exports, module) {
 
       assert.calledTwice(v.resetFoo);
       assert.calledTwice(v.resetBar);
-    },
+    });
 
-    "test migrateTo"() {
-      var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
+    test("migrateTo", ()=>{
+      const dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
       v.sut.migrateTo(dir, "2015-06-19T17-57-32");
 
@@ -293,10 +292,10 @@ isServer && define(function (require, exports, module) {
 
       assert.same(v.client.query('select exists(select 1 from pg_catalog.pg_class where relname = $1)',
                                  ["TestTable"])[0].exists, false);
-    },
+    });
 
-    "test recordAllMigrations"() {
-      var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
+    test("recordAllMigrations", ()=>{
+      const dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
       v.sut.recordAllMigrations(dir);
 
@@ -316,18 +315,18 @@ isServer && define(function (require, exports, module) {
       refute.exception(() => {
         v.sut.recordAllMigrations(dir);
       });
-    },
+    });
 
-    "test rollback on error"() {
-      var dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
+    test("rollback on error", ()=>{
+      const dir = module.id.replace(/\/[^/]*$/,"/test-migrations");
 
-      assert.exception(function () {
+      assert.exception(()=>{
         v.sut.migrateTo(dir, "zz");
       }, {sqlState: "42703"});
 
-      refute.exception(function () {
+      refute.exception(()=>{
         v.client.query('SELECT baz from "TestTable"');
       });
-    },
+    });
   });
 });

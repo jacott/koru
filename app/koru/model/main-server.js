@@ -28,6 +28,14 @@ define(function(require, exports, module) {
 
   Changes.KEYWORDS.forEach(word=>{session.addToDict(word)});
 
+  {
+    const dbBrokerDesc = Object.getOwnPropertyDescriptor(dbBroker, 'db');
+
+    Object.defineProperty(ModelMap, 'db', {
+      enumerable: false, configurable: true,
+      get: dbBrokerDesc.get, set: dbBrokerDesc.set});
+  }
+
   const ModelEnv = {
     destroyModel(model, drop) {
       if (! model) return;
@@ -257,10 +265,10 @@ define(function(require, exports, module) {
         }
       };
 
-      function getDc() {
+      const getDc = ()=>{
         const dc = util.thread[docCache$];
         return dc && model.db === dc.$db && dc;
-      }
+      };
 
       util.merge(model, {
         notify(...args) {

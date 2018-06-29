@@ -17,23 +17,87 @@ define(function(require, exports, module) {
 
   const dbs = util.createDictionary();
 
-  function getProp(dbId, modelName, prop) {
+  const newDB = (name)=>{
+    const db = dbs[name] = {};
+    Object.defineProperty(db, 'name', {
+      enumerable: false, configurable: true, value: name
+    });
+
+    return db;
+  };
+
+
+  Object.defineProperty(ModelMap, 'db', {
+    enumerable: false, configurable: true,
+    get: () => dbs[dbBroker.dbId] || newDB(dbBroker.dbId),
+    set: (db) => dbBroker.dbId = db.name
+  });
+
+  const getProp = (dbId, modelName, prop)=>{
     const obj = dbs[dbId];
     if (obj === undefined) return undefined;
     const map = obj[modelName];
     return map === undefined ? undefined : map[prop];
-  }
+  };
 
-  function getSetProp(dbId, modelName, prop, setter) {
-    const obj = dbs[dbId] === undefined ? (dbs[dbId] = {}) : dbs[dbId];
+  const getSetProp = (dbId, modelName, prop, setter)=>{
+    const obj = dbs[dbId] === undefined ? newDB(dbId) : dbs[dbId];
     const map = obj[modelName] ? obj[modelName] : (obj[modelName] = {});
     const ans = map[prop];
     return ans !== undefined ? ans : (map[prop] = setter());
-  }
+  };
+
+  function findById(id) {return this.docs[id]}
+
+  const localInsert = (doc, userId)=>{
+    const model = doc.constructor;
+    const changes = doc.attributes;
+    const now = util.newDate();
+    _support._updateTimestamps(changes, model.updateTimestamps, now);
+
+    _support._addUserIds(doc.attributes, model.userIds, userId);
+    _support._updateTimestamps(changes, model.createTimestamps, now);
+    _support.performInsert(doc);
+  };
+
+  const localUpdate = (doc, changes, userId)=>{
+    const model = doc.constructor;
+    const now = util.newDate();
+    _support.performUpdate(doc, changes);
+  };
+
+  const save = (doc, callback=koru.globalCallback)=>{
+    let _id = doc.attributes._id;
+    const model = doc.constructor;
+
+    if(_id == null) {
+      if (! doc.changes._id) doc.changes._id = Random.id();
+      _id = doc.changes._id;
+      if (model.docs[_id] !== undefined) throw new koru.Error(400, {_id: [['not_unique']]});
+      if (doc[stopGap$] !== undefined) {
+        doc.attributes = doc.changes;
+        doc.changes = {};
+        localInsert(doc, koru.userId());
+      } else {
+        model.docs[_id] = doc;
+        session.rpc("save", model.modelName, null, doc.changes, callback);
+      }
+    } else for(let noop in doc.changes) {
+      // only call if at least one change
+      const changes = doc.changes;
+      doc.changes = {}; // reset changes here for callbacks
+      if (doc[stopGap$])
+        localUpdate(doc, changes, koru.userId());
+      else
+        session.rpc("save", model.modelName, _id, changes, callback);
+      break;
+    }
+    doc.$reload();
+  };
 
 
   const ModelEnv = {
-    save: save,
+    save,
 
     destroyModel(model, drop) {
       if (! model) return;
@@ -108,11 +172,11 @@ define(function(require, exports, module) {
         }
       });
 
-      session.defineRpc("remove", function (modelName, id) {
+      session.defineRpc("remove", (modelName, id)=>{
         return new Query(ModelMap[modelName]).onId(id).remove();
       });
 
-      session.defineRpc("bumpVersion", function(modelName, id, version) {
+      session.defineRpc("bumpVersion", (modelName, id, version)=>{
         _support.performBumpVersion(ModelMap[modelName], id, version);
       });
 
@@ -136,23 +200,23 @@ define(function(require, exports, module) {
       const modelName = model.modelName;
       let dbId, docs;
 
-      function chkdb() {
+      const chkdb = ()=>{
         const tdbId = dbBroker.dbId;
         if (tdbId !== dbId) {
           docs = null;
           dbId = tdbId;
         }
         return dbId;
-      }
+      };
 
       Object.defineProperty(model, 'dbId', {configurable: true, get: chkdb});
 
-      function setDocs() {
+      const setDocs = ()=>{
         const obj = Object.create(null);
         obj.x = 1;
         delete obj.x; // try to make JSVM use dictionary mode
         return obj;
-      }
+      };
       const anyChange = makeSubject({});
 
       util.merge(model, {
@@ -189,54 +253,6 @@ define(function(require, exports, module) {
       clientIndex(model);
     },
   };
-
-  function findById(id) {return this.docs[id]}
-
-  function localInsert(doc, userId) {
-    const model = doc.constructor;
-    const changes = doc.attributes;
-    const now = util.newDate();
-    _support._updateTimestamps(changes, model.updateTimestamps, now);
-
-    _support._addUserIds(doc.attributes, model.userIds, userId);
-    _support._updateTimestamps(changes, model.createTimestamps, now);
-    _support.performInsert(doc);
-  }
-
-  function localUpdate(doc, changes, userId) {
-    const model = doc.constructor;
-    const now = util.newDate();
-    _support.performUpdate(doc, changes);
-  }
-
-  function save(doc, callback=koru.globalCallback) {
-    let _id = doc.attributes._id;
-    const model = doc.constructor;
-
-    if(_id == null) {
-      if (! doc.changes._id) doc.changes._id = Random.id();
-      _id = doc.changes._id;
-      if (model.docs[_id] !== undefined) throw new koru.Error(400, {_id: [['not_unique']]});
-      if (doc[stopGap$] !== undefined) {
-        doc.attributes = doc.changes;
-        doc.changes = {};
-        localInsert(doc, koru.userId());
-      } else {
-        model.docs[_id] = doc;
-        session.rpc("save", model.modelName, null, doc.changes, callback);
-      }
-    } else for(let noop in doc.changes) {
-      // only call if at least one change
-      const changes = doc.changes;
-      doc.changes = {}; // reset changes here for callbacks
-      if (doc[stopGap$])
-        localUpdate(doc, changes, koru.userId());
-      else
-        session.rpc("save", model.modelName, _id, changes, callback);
-      break;
-    }
-    doc.$reload();
-  }
 
   return ModelEnv;
 });

@@ -9,39 +9,37 @@ define(function (require, exports, module) {
   const Val        = require('./validation');
 
   const {stub, spy, onEnd} = TH;
+  const {Future}   = util;
 
   const Model = require('./main');
 
-  let v = null;
+  let v = {};
 
-  const Future   = util.Future;
-
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       TH.noInfo();
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
-      v = null;
-    },
+      v = {};
+    });
 
-    "$docCache": {
-      setUp() {
+    group("$docCache", ()=>{
+      beforeEach(()=>{
         v.defDb = Driver.defaultDb;
         v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
         v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         if (v.altDb) {
           v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
           dbBroker.clearDbId();
         }
-      },
+      });
 
-      "test switching db"() {
+      test("switching db", ()=>{
         const TestModel = Model.define('TestModel').defineFields({
           name: 'text',
         });
@@ -49,6 +47,8 @@ define(function (require, exports, module) {
         TestModel.create({_id: 'fooId', name: 'foo'});
         assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
         dbBroker.db = v.altDb;
+        assert.same(Model.db, v.altDb);
+
         assert.same(TestModel._$docCacheGet('fooId'), undefined);
         dbBroker.db = v.defDb;
         assert.same(TestModel._$docCacheGet('fooId').name, 'foo');
@@ -64,10 +64,10 @@ define(function (require, exports, module) {
         assert.same(future.wait(), 'success');
         assert.same(v.ans, undefined);
 
-      },
-    },
+      });
+    });
 
-    "test auto Id"() {
+    test("auto Id", ()=>{
       const TestModel = Model.define('TestModel');
       TestModel.defineFields({
         _id: {type: 'serial', auto: true},
@@ -81,9 +81,9 @@ define(function (require, exports, module) {
       const doc = TestModel.findBy('name', 'bar');
       assert(doc);
       assert.same(doc._id, 2);
-    },
+    });
 
-    "test invalid findById"() {
+    test("invalid findById", ()=>{
       const TestModel = Model.define('TestModel');
 
       assert.same(TestModel.findById(null), undefined);
@@ -91,9 +91,9 @@ define(function (require, exports, module) {
       assert.exception(()=>{
         TestModel.findById({});
       }, 'Error', 'invalid id: [object Object]');
-    },
+    });
 
-    "test globalDictAdders"() {
+    test("globalDictAdders", ()=>{
       const adder = session._globalDictAdders[koru.absId(require, './main-server')];
       assert.isFunction(adder);
 
@@ -104,9 +104,9 @@ define(function (require, exports, module) {
       assert.calledWith(v.stub, '_id');
       assert.calledWith(v.stub, 'name');
       assert.calledWith(v.stub, 'age');
-    },
+    });
 
-    "test remote"() {
+    test("remote", ()=>{
       const TestModel = Model.define('TestModel');
 
       TestModel.remote({foo: v.foo = stub().returns('result')});
@@ -128,9 +128,9 @@ define(function (require, exports, module) {
       assert.same(v.foo.firstCall.thisValue, v.conn);
 
       assert.called(transaction);
-    },
+    });
 
-    "test when no changes in save"() {
+    test("when no changes in save", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
@@ -143,9 +143,9 @@ define(function (require, exports, module) {
       assert.same(v.doc.$reload().name, 'foo');
       refute.called (v.onChange);
       refute.called (v.beforeSave);
-    },
+    });
 
-    "test reload and caching"() {
+    test("reload and caching", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       v.doc = TestModel.create({name: 'foo'});
@@ -192,9 +192,9 @@ define(function (require, exports, module) {
 
       TestModel.docs.updateById(v.doc._id, {name: 'doz'});
       assert.same(v.doc.$reload().name, 'fuz');
-    },
+    });
 
-    "test overrideSave"() {
+    test("overrideSave", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       TestModel.overrideSave = stub();
 
@@ -205,9 +205,9 @@ define(function (require, exports, module) {
       assert.calledWith(TestModel.overrideSave, "fooid", {name: 'bar'}, 'u123');
 
       refute.called(saveSpy);
-    },
+    });
 
-    "test overrideRemove"() {
+    test("overrideRemove", ()=>{
       const TestModel = Model.define('TestModel', {
         overrideRemove: v.overrideRemove = stub()
       }).defineFields({name: 'text'});
@@ -223,17 +223,17 @@ define(function (require, exports, module) {
       assert.same(model.name, 'remove me');
 
       refute.called(removeSpy);
-    },
+    });
 
-    "test $save with callback"() {
+    test("$save with callback", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       const doc = TestModel.build({name: 'foo'});
-      doc.$save({callback: v.callback = this.stub()});
+      doc.$save({callback: v.callback = stub()});
 
       assert.calledWith(v.callback, doc);
-    },
+    });
 
-    "test defaults for saveRpc new"() {
+    test("defaults for saveRpc new", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text', language: {type: 'text', default: 'en'}});
@@ -251,9 +251,9 @@ define(function (require, exports, module) {
       const jen = TestModel.findById('barid');
 
       assert.same(jen.language, 'no');
-    },
+    });
 
-    "test saveRpc new"() {
+    test("saveRpc new", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text'});
@@ -301,9 +301,9 @@ define(function (require, exports, module) {
       session._rpcs.save.call({userId: 'u123'}, "TestModel", null, {_id: "fooid", name: 'bar2'});
 
       refute.called(v.auth);
-    },
+    });
 
-    "test saveRpc existing"() {
+    test("saveRpc existing", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text'});
@@ -334,9 +334,9 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
-    },
+    });
 
-    "test saveRpc partial no modification"() {
+    test("saveRpc partial no modification", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text', html: 'object'});
@@ -366,9 +366,9 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
-    },
+    });
 
-    "test saveRpc partial validate modifies"() {
+    test("saveRpc partial validate modifies", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text', html: 'object'});
@@ -404,9 +404,9 @@ define(function (require, exports, module) {
       assert.calledWithExactly(v.auth, "u123");
 
       assert.equals(v.auth.firstCall.thisValue.attributes, v.doc.attributes);
-    },
+    });
 
-    'test removeRpc'() {
+    test("removeRpc", ()=>{
       const TestModel = Model.define('TestModel', {
         authorize: v.auth = stub()
       }).defineFields({name: 'text'});
@@ -437,9 +437,9 @@ define(function (require, exports, module) {
       assert.calledWith(v.auth, "u123", {remove: true});
 
       assert.calledThrice(TestModel.db.transaction);
-    },
+    });
 
-    "test addUniqueIndex"() {
+    test("addUniqueIndex", ()=>{
       const TestModel = Model.define('TestModel');
 
       const ensureIndex = stub(TestModel.docs, 'ensureIndex');
@@ -451,9 +451,9 @@ define(function (require, exports, module) {
       Model.ensureIndexes();
 
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1}, {sparse: true, unique: true});
-    },
+    });
 
-    "test addIndex"() {
+    test("addIndex", ()=>{
       const TestModel = Model.define('TestModel');
 
       const ensureIndex = stub(TestModel.docs, 'ensureIndex');
@@ -465,9 +465,9 @@ define(function (require, exports, module) {
       Model.ensureIndexes();
 
       assert.calledWith(ensureIndex, {a: 1, b: -1, c: 1, d: 1});
-    },
+    });
 
-    "test transaction"() {
+    test("transaction", ()=>{
       const TestModel = Model.define('TestModel');
       const body = stub().returns('result');
       const tx = spy(TestModel.db, 'transaction');
@@ -475,6 +475,6 @@ define(function (require, exports, module) {
 
       assert.called(body);
       assert.calledWith(tx, body);
-    },
+    });
   });
 });

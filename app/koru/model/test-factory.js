@@ -1,7 +1,8 @@
 define((require, exports, module)=>{
+  const dbBroker        = require('koru/model/db-broker');
+  const TH              = require('koru/test-helper');
   const util            = require('../util');
   const Model           = require('./main');
-  const TH              = require('koru/test-helper');
 
   const {hasOwn} = util;
 
@@ -9,9 +10,25 @@ define((require, exports, module)=>{
   const postCreate = {};
   const defines = {};
 
-  let nameGen, last, lastNow;
+  let nameGen, last, lastNow, tx, dbId, dbVars;
+  const dbs = {};
+
+  const switchDb = ()=> {
+    dbId = dbBroker.dbId;
+    if (dbs[dbId] === undefined) {
+      dbs[dbId] = {tx: [], nameGen: {}, last: {}, lastNow};
+    }
+    dbVars = dbs[dbId];
+    nameGen = dbVars.nameGen;
+    last = dbVars.last;
+    lastNow = dbVars.lastNow;
+    tx = dbVars.tx;
+  };
+
+  const checkDb = ()=>{dbBroker.dbId === dbId || switchDb()};
 
   const getUniqueNow = ()=>{
+    checkDb();
     let now = util.dateNow();
 
     if(lastNow && now <= lastNow) {
@@ -24,6 +41,7 @@ define((require, exports, module)=>{
   };
 
   const generateName = (prefix, space)=>{
+    checkDb();
     if (typeof(nameGen[prefix]) != 'number') (nameGen[prefix] = 0);
     return `${prefix}${space == null ? ' ' : space}${++nameGen[prefix]}`;
   };
@@ -148,29 +166,40 @@ define((require, exports, module)=>{
     }
   }
 
-  const tx = [];
-
   const Factory = module.exports = {
     startTransaction() {
+      checkDb();
       tx.push([last, nameGen]);
       last = Object.assign({}, last);
-      nameGen = Object.assign({}, nameGen);
+      dbVars.nameGen = nameGen = Object.assign({}, nameGen);
     },
 
     endTransaction() {
-      if (tx.length === 0)
+      checkDb();
+      if (tx.length === 0) {
         throw new Error("No transaction in progress!");
+      }
       [last, nameGen] = tx.pop();
+      dbVars.nameGen = nameGen;
+      dbVars.last = last;
     },
 
     clear() {
-      if (tx.length !== 0)
+      checkDb();
+      if (tx.length !== 0) {
         throw new Error("Transaction in progress!");
-      last = {};
-      nameGen = {};
+      }
+      dbVars.last = last = {};
+      dbVars.nameGen = nameGen = {};
+    },
+
+    get inTransaction() {
+      checkDb();
+      return tx.length != 0;
     },
 
     createList(number, creator, ...args) {
+      checkDb();
       const list = [];
 
       const func = typeof args[0] === 'function' ? args.shift() : null;
@@ -186,14 +215,17 @@ define((require, exports, module)=>{
     },
 
     get last () {
+      checkDb();
       return last;
     },
 
     setLastNow(now) {
+      checkDb();
       lastNow = now;
     },
 
     lastOrCreate(name) {
+      checkDb();
       return last[name] || Factory['create'+util.capitalize(name)]();
     },
 
@@ -223,16 +255,14 @@ define((require, exports, module)=>{
     Builder,
   };
 
-  TH.Core.onTestStart(()=>{
-    nameGen = {};
-    last = {};
-    lastNow = null;
-  });
-
-  const buildFunc = (key, def)=> (...traitsAndOptions)=> def.call(
-    Factory, buildOptions(key, traitsAndOptions)).build();
+  const buildFunc = (key, def)=> (...traitsAndOptions)=>{
+    checkDb();
+    return def.call(
+      Factory, buildOptions(key, traitsAndOptions)).build();
+  };
 
   const createFunc = (key, def)=> (...traitsAndOptions)=>{
+    checkDb();
     const result =
             def.call(Factory, buildOptions(key, traitsAndOptions)).create();
 

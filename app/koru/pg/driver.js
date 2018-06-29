@@ -243,6 +243,55 @@ define((require, exports, module)=>{
       this.query(`DROP TABLE IF EXISTS "${name}"`);
     }
 
+    startTransaction() {
+      getConn(this); // ensure connection
+      const tx = util.thread[this[tx$]];
+      if (tx.transaction !== null) {
+        const onAborts = tx[onAbort$];
+        tx[onAbort$] = null;
+        ++tx.savepoint;
+        let ex;
+        query(tx.conn, "SAVEPOINT s"+tx.savepoint);
+      } else {
+        tx.transaction = 'COMMIT';
+        query(tx.conn, 'BEGIN');
+      }
+      return tx;
+    }
+
+    endTransaction(abort) {
+      const tx = util.thread[this[tx$]];
+      if (tx == null || tx.transaction === null)
+        throw new Error("No transaction in progress!");
+      const {savepoint} = tx;
+      try {
+        const isAbort = tx.transaction !== 'COMMIT' || abort === 'abort';
+        if (savepoint != 0) {
+          --tx.savepoint;
+          if (isAbort) {
+            tx.conn.isClosed() || query(tx.conn, "ROLLBACK TO SAVEPOINT s"+savepoint);
+          } else {
+            query(tx.conn, "RELEASE SAVEPOINT s"+savepoint);
+          }
+        } else {
+          const onCommits = tx[onCommit$];
+          tx[onCommit$] = undefined;
+          const command = isAbort ? 'ROLLBACK' : 'COMMIT';
+          tx.transaction = null;
+          if (! tx.conn.isClosed()) {
+            query(tx.conn, command);
+            runOnAborts(tx, command);
+            if (! isAbort)
+              runOnCommit(onCommits);
+          } else
+            runOnAborts(tx, command);
+        }
+      } finally {
+        releaseConn(this);
+      }
+      return savepoint;
+    }
+
     transaction(func) {
       getConn(this); // ensure connection
       const tx = util.thread[this[tx$]];

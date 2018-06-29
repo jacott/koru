@@ -8,31 +8,32 @@ define(function (require, exports, module) {
   const dbBroker   = require('./db-broker');
   const TH         = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const Model    = require('./main');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module({subjectName: 'Model'});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
       dbBroker.clearDbId();
       delete Model._databases.foo1;
-      v = null;
-    },
+      v = {};
+    });
 
-    "test createStopGap"() {
+    test("createStopGap", ()=>{
       /**
        * Create a stopGap version of a model record. StopGap records
        * are not persisted. See {#/koru/model/query-idb#queueChange}.
        * stopGap records are created even if the have validation
        * errors.
        **/
-      this.stub(session, 'rpc');
+      stub(session, 'rpc');
       const TestModel = Model.define('TestModel').defineFields({
         name: 'text'});
 
@@ -46,52 +47,79 @@ define(function (require, exports, module) {
       assert.same(TestModel.findById('foo123'), v.foo);
       assert.same(v.foo.name, 'testing');
       refute(v.foo.$isValid());
-    },
+    });
 
-    "test $remove"() {
+    test("$remove", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
-      TestModel.onChange(v.afterRemove = test.stub());
+      TestModel.onChange(v.afterRemove = stub());
 
       const doc = TestModel.create({name: 'foo'});
-      const spy = test.spy(session, "rpc");
+      const rpc = spy(session, "rpc");
 
       doc.$remove();
 
-      assert.calledWith(spy, 'remove', 'TestModel', doc._id);
+      assert.calledWith(rpc, 'remove', 'TestModel', doc._id);
 
       refute(TestModel.findById(doc._id));
 
       assert.called(v.afterRemove);
-    },
+    });
 
-    "test create returns same as findById"() {
+    test("create returns same as findById", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
 
       const doc = TestModel.create({name: 'foo'});
       assert.same(doc, TestModel.findById(doc._id));
 
-    },
+    });
 
-    "test $save with callback"() {
+    test("$save with callback", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
-      const save = this.stub(session, 'rpc').withArgs('save');
+      const save = stub(session, 'rpc').withArgs('save');
       const doc = TestModel.build({name: 'foo'});
-      doc.$save({callback: v.callback = this.stub()});
+      doc.$save({callback: v.callback = stub()});
 
       assert.calledWith(save, 'save', 'TestModel', TH.match.id,
                         {_id: TH.match.id, name: 'foo'}, v.callback);
-    },
+    });
 
-    "test transaction"() {
+    test("transaction", ()=>{
       const TestModel = Model.define('TestModel');
-      const stub = test.stub().returns('result');
-      assert.same(TestModel.transaction(stub), 'result');
+      const body = stub().returns('result');
+      assert.same(TestModel.transaction(body), 'result');
 
-      assert.called(stub);
-    },
+      assert.called(body);
+    });
 
-    "test setting docs"() {
+    test("switch db", ()=>{
+      const TestModel = Model.define('TestModel').defineFields({name: 'text'});
+
+      const def = Model.db;
+
+      assert.same(def.name, 'default');
+
+      TestModel.create({name: 'def name'});
+
+      dbBroker.dbId = 'db2';
+      const db2 = Model.db;
+
+      assert.same(Model.db.name, 'db2');
+
+      TestModel.create({name: 'db2 name'});
+
+      assert.equals(TestModel.query.fetchField('name'), ['db2 name']);
+
+      Model.db = def;
+
+      assert.equals(TestModel.query.fetchField('name'), ['def name']);
+
+      Model.db = db2;
+
+      assert.equals(TestModel.query.fetchField('name'), ['db2 name']);
+    });
+
+    test("setting docs", ()=>{
       const TestModel = Model.define('TestModel').defineFields({name: 'text'});
       v.idx = TestModel.addUniqueIndex('name');
 
@@ -102,6 +130,6 @@ define(function (require, exports, module) {
       const res = TestModel.query.withIndex(v.idx, 'Foo').fetch();
 
       assert.equals(res, [foo1]);
-    },
+    });
   });
 });

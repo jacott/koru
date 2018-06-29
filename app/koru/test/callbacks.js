@@ -1,21 +1,14 @@
-define(['./core', '../main'], function (Core, koru) {
+define(['./core', '../main'], (Core, koru)=>{
   const callbacks = {};
 
-  registerCallBack('start');
-  registerCallBack('end');
-  registerCallBack('testStart');
-  registerCallBack('testEnd');
-
-
-  function registerCallBack(name) {
+  const registerCallBack = name =>{
     const capped = name[0].toUpperCase()+name.slice(1);
-    Core['cancel'+capped] = deregister;
-    function deregister(func) {
+    const deregister = func =>{
       callbacks[name] = callbacks[name].filter(i => {
         return i !== func;
       });
-    }
-    Core['on'+capped] = function(module, func) {
+    };
+    Core['on'+capped] = (module, func)=>{
       if (func) {
         koru.onunload(module, () => deregister(func));
       } else {
@@ -23,10 +16,15 @@ define(['./core', '../main'], function (Core, koru) {
       }
       (callbacks[name] = callbacks[name] || []).push(func);
     };
-  }
+    Core['cancel'+capped] = deregister;
+  };
 
+  registerCallBack('start');
+  registerCallBack('end');
+  registerCallBack('testStart');
+  registerCallBack('testEnd');
 
-  Core.runCallBacks = function(name, test) {
+  Core.runCallBacks = (name, test)=>{
     const cbs = callbacks[name];
 
     let firstEx;
@@ -35,11 +33,11 @@ define(['./core', '../main'], function (Core, koru) {
       try {
         cbs[i](test);
       } catch(ex) {
-        firstEx = firstEx || ex;
+        if (firstEx === undefined) firstEx = ex;
         koru.unhandledException(ex);
       }
     }
 
-    if (firstEx) throw firstEx;
+    if (firstEx !== undefined) throw firstEx;
   };
 });

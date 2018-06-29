@@ -1,4 +1,4 @@
-define(function(require) {
+define(() =>{
   let defaultDbId = 'default', threadDbId = 'default', mainDbId = 'default';
   const dbIdStack = [];
 

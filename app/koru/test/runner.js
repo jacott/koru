@@ -28,6 +28,7 @@ define((require, exports, module)=>{
   };
 
   const builder = {
+    aroundEach: body => currentTc.add('setUpAround', body),
     beforeEach: body => currentTc.add('setUp', body),
     afterEach: body => currentTc.add('tearDown', body),
     before: body => currentTc.add('setUpOnce', body),

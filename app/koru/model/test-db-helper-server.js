@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const dbBroker        = require('koru/model/db-broker');
   const Driver          = require('koru/pg/driver');
   const util            = require('koru/util');
@@ -6,30 +6,21 @@ define(function(require, exports, module) {
   const Factory         = require('./test-factory');
   const BaseTH          = require('./test-helper');
 
-  const inTran$ = Symbol(), txSave$ = Symbol();
-
-  const {private$} = require('koru/symbols');
-
-  const TH = {
+  return {
     __proto__: BaseTH,
-    startTransaction(txClient=Driver.defaultDb) {
-      dbBroker.db = txClient;
-      const txSave = txClient[txSave$];
-      const inTran = ++txClient[inTran$];
-
-      if (inTran === 1) {
-        txSave && txClient.query('BEGIN');
+    startTransaction(txClient=Model.db) {
+      Model.db = txClient;
+      const tx = txClient.startTransaction();
+      if (tx.savepoint == 0) {
+        tx.transaction = 'ROLLBACK';
       } else {
         Factory.startTransaction();
-        txSave && txClient.query("SAVEPOINT s"+inTran);
       }
     },
 
-    rollbackTransaction(txClient=Driver.defaultDb) {
-      const txSave = util.thread[txClient[txClient[private$].tx$]];
-      const inTran = --txClient[inTran$];
-      if (inTran < 0)
-        throw new Error("NO Transaction is in progress!");
+    rollbackTransaction(txClient=Model.db) {
+      Model.db = txClient;
+      const level = txClient.endTransaction('abort');
 
       for(const name in Model) {
         const model = Model[name];
@@ -37,31 +28,12 @@ define(function(require, exports, module) {
           model._$docCacheClear();
         }
       }
-      if (inTran === 0) {
-        Factory.clear();
-        txSave && txClient.query('ROLLBACK');
+
+      if (level === 0) {
+        Factory.inTransaction || Factory.clear();
       } else {
         Factory.endTransaction();
-        txSave && txClient.query("ROLLBACK TO SAVEPOINT s"+(inTran+1));
-      }
-    },
-
-    coreStartTransaction(txClient=Driver.defaultDb) {
-    txClient[inTran$] = 0;
-      txClient._getConn();
-      const txSave = txClient[txSave$] = util.thread[txClient[txClient[private$].tx$]];
-      txSave.transaction = 'ROLLBACK';
-    },
-
-    coreRollbackTransaction(txClient=Driver.defaultDb) {
-      const txSave = txClient[txSave$];
-      if (txSave !== undefined) {
-        txSave.transaction = null;
-        txClient[txSave$] = undefined;
-        txClient._releaseConn();
       }
     },
   };
-
-  return TH;
 });

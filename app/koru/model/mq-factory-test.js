@@ -12,29 +12,30 @@ isServer && define(function (require, exports, module) {
   const {stub, spy, onEnd, util, intercept} = TH;
 
   const MQFactory = require('./mq-factory');
-  let v = null;
 
-  let mqFactory;
 
-  TH.testCase(module, {
-    setUp() {
+  let v = {};
+
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    let mqFactory;
+    beforeEach(()=>{
       api.module();
-      v = {};
       v.defDb = Driver.defaultDb;
-      TH.coreStartTransaction(v.defDb);
+      TH.startTransaction(v.defDb);
       mqFactory = new MQFactory('_test_MQ');
       intercept(Object.getPrototypeOf(v.defDb), 'onCommit', f => f());
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       mqFactory.deregisterQueue('foo');
       mqFactory.stopAll();
       v.defDb.query(`drop table  if exists "_test_MQ"; drop sequence if exists "_test_MQ__id_seq";`);
-      TH.coreRollbackTransaction(v.defDb);
-      v = mqFactory = null;
-    },
+      TH.rollbackTransaction(v.defDb);
+      mqFactory = null;
+      v = {};
+    });
 
-    "test global registerQueue"() {
+    test("global registerQueue", ()=>{
       /**
        * Register an action with a queue
 
@@ -64,26 +65,27 @@ isServer && define(function (require, exports, module) {
       assert.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
       mqFactory.deregisterQueue('foo');
       refute.exception(()=>{mqFactory.registerQueue({name: 'foo', action(msg) {doSomethingWith(msg)}})});
-    },
+    });
 
-    "with multi-db": {
-      setUp() {
-        dbBroker.db = v.defDb;
+    group("with multi-db", ()=>{
+      beforeEach(()=>{
         v.altDb = Driver.connect(v.defDb._url + " options='-c search_path=alt'", 'alt');
         v.altDb.query('CREATE SCHEMA IF NOT EXISTS alt');
-        TH.coreStartTransaction(v.altDb);
-      },
+        TH.startTransaction(v.altDb);
+        dbBroker.db = v.defDb;
+      });
 
-      tearDown() {
-        mqFactory.deregisterQueue('foo');
+
+      afterEach(()=>{
         if (v.altDb) {
-          TH.coreRollbackTransaction(v.altDb);
-          v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
+          TH.rollbackTransaction(v.altDb);
           dbBroker.clearDbId();
+          v.altDb.query("DROP SCHEMA IF EXISTS alt CASCADE");
         }
-      },
+        mqFactory.deregisterQueue('foo');
+      });
 
-      "test local registerQueue"() {
+      test("local registerQueue", ()=>{
         mqFactory.registerQueue({name: 'bar', local: true, action(...args) {
           v.args = args;
           v.db = dbBroker.db;
@@ -167,9 +169,9 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.msg.message, 'p1');
 
 
-      },
+      });
 
-      "test start"() {
+      test("start", ()=>{
         /**
          * Start timers on all queues within current database with existing messages
          **/
@@ -230,9 +232,9 @@ isServer && define(function (require, exports, module) {
         koru.setTimeout.lastCall.yield();
 
         assert.equals(v.foo, [v.defDb, {_id: 2, dueAt: util.newDate(), message: 'foo2'}]);
-      },
+      });
 
-      "test getQueue"() {
+      test("getQueue", ()=>{
         /**
          * Get a message queue for current database
 
@@ -260,11 +262,11 @@ isServer && define(function (require, exports, module) {
 
         assert.same(mqFactory.getQueue('foo'), queue);
         //]
-      },
-    },
+      });
+    });
 
-    "with queue": {
-      setUp() {
+    group("with queue", ()=>{
+      beforeEach(()=>{
         stub(koru, 'clearTimeout');
         stub(koru, 'setTimeout');
         koru.setTimeout
@@ -275,9 +277,9 @@ isServer && define(function (require, exports, module) {
 
         mqFactory.registerQueue({
           module, name: 'foo', action(...args) {v.action(...args)}, retryInterval: 300});
-      },
+      });
 
-      "test creates table"() {
+      test("creates table", ()=>{
         const query = stub(dbBroker.db, 'query').returns([]);
         mqFactory.getQueue('foo');
 
@@ -306,9 +308,9 @@ ALTER TABLE ONLY "_test_MQ" ALTER COLUMN _id
 CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
   USING btree (name, "dueAt", _id);
 `);
-      },
+      });
 
-      "test add message"() {
+      test("add message", ()=>{
         /**
          * Add a message to the queue. The message is persisted.
 
@@ -377,9 +379,9 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         }, queue]);
 
         assert.equals(v.defDb.query('select * from "_test_MQ" order by "dueAt"'), []);
-      },
+      });
 
-      "test peek"() {
+      test("peek", ()=>{
         /**
          * Look at messages at the front of the queue without removing them
 
@@ -419,9 +421,9 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
           dueAt: new Date(now+10),
           message: {another: 'message'},
         }]);
-      },
+      });
 
-      "test remove"() {
+      test("remove", ()=>{
         /**
          * Remove a message.
 
@@ -439,15 +441,15 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         queue.remove('2');
 
         assert.equals(queue.peek(5), [TH.match.field('_id', 1)]);
-      },
+      });
 
-      "test bad queue Time"() {
+      test("bad queue Time", ()=>{
         assert.exception(()=>{
           mqFactory.getQueue('foo').add({dueAt: new Date(-4)});
         }, {message: 'Invalid dueAt'});
-      },
+      });
 
-      "test error in action"() {
+      test("error in action", ()=>{
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = mqFactory.getQueue('foo');
@@ -489,9 +491,9 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
 
         koru.setTimeout.lastCall.yield();
         assert.equals(v.args.message, [1,2,3]);
-      },
+      });
 
-      "test retryAfter"() {
+      test("retryAfter", ()=>{
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = mqFactory.getQueue('foo');
@@ -502,9 +504,9 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         queue.add({message: [1,2]});
         koru.setTimeout.yieldAndReset();
         assert.calledWith(koru.setTimeout, TH.match.func, 12345);
-      },
+      });
 
-      "test delay more than one day"() {
+      test("delay more than one day", ()=>{
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
 
         const queue = mqFactory.getQueue('foo');
@@ -527,9 +529,9 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         assert.called(v.action);
 
         refute.called(koru.setTimeout);
-      },
+      });
 
-      "test queue from within action"() {
+      test("queue from within action", ()=>{
         v.defDb.onCommit.restore();
         const onCommit = stub(v.defDb, 'onCommit');
         let now = util.dateNow(); intercept(util, 'dateNow', ()=>now);
@@ -558,8 +560,8 @@ CREATE UNIQUE INDEX "_test_MQ_name_dueAt__id" ON "_test_MQ"
         koru.setTimeout.yieldAndReset();
 
         assert.equals(v.args.message, {last: 'msg'});
-      },
-    },
+      });
+    });
 
   });
 });

@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     },
 
 
-    'with Book example': {
+    "with Model": {
       setUp() {
         class Book extends BaseModel {
           authorize() {}

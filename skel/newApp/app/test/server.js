@@ -9,8 +9,8 @@ define((require, exports, module)=>{
   const stubber         = require('koru/test/stubber');
   const webServer       = require('koru/web-server');
 
-  TH.Core.onStart(()=>{TH.coreStartTransaction()});
-  TH.Core.onEnd(()=>{TH.coreRollbackTransaction()});
+  TH.Core.onStart(()=>{TH.startTransaction()});
+  TH.Core.onEnd(()=>{TH.rollbackTransaction()});
 
   require('koru/server');
   require('koru/server-rc');

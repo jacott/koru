@@ -9,33 +9,31 @@ define(function (require, exports, module) {
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, util} = TH;
-
-  const Model    = require('./main');
-  let v = null;
-
   const Module = module.constructor;
 
+  const Model    = require('./main');
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module({subjectName: 'Model'});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('Book', 'drop');
       Model._destroyModel('TestModel', 'drop');
-      v = null;
-    },
+      v = {};
+    });
 
-    "test only models enumerable"() {
+    test("only models enumerable", ()=>{
       for (const key in Model) {
         assert.same(Object.getPrototypeOf(Model[key]), BaseModel);
       }
       assert(true);
-    },
+    });
 
-    "test auto define"() {
+    test("auto define", ()=>{
       stub(koru, 'onunload');
 
       const TestModel = Model.define({
@@ -61,14 +59,14 @@ define(function (require, exports, module) {
 
       ModelEnv.destroyModel(TestModel, 'drop');
 
-    },
+    });
 
-    'with model lock': {
-      setUp() {
+    group("model lock", ()=>{
+      beforeEach(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
-      },
+      });
 
-      "test nesting"() {
+      test("nesting", ()=>{
         try {
           v.Book.lock("a", function () {
             try {
@@ -88,9 +86,9 @@ define(function (require, exports, module) {
         }
 
         assert.isFalse(v.Book.isLocked("a"));
-      },
+      });
 
-      "test Exception unlocks"() {
+      test("Exception unlocks", ()=>{
         try {
           v.Book.lock("a", function () {
             assert.isTrue(v.Book.isLocked("a"));
@@ -102,9 +100,9 @@ define(function (require, exports, module) {
         }
 
         assert.isFalse(v.Book.isLocked("a"));
-      },
+      });
 
-      "test isLocked"() {
+      test("isLocked", ()=>{
         v.Book.lock("a", function () {
           v.isLocked_a = v.Book.isLocked("a");
           v.isLocked_b = v.Book.isLocked("b");
@@ -113,11 +111,11 @@ define(function (require, exports, module) {
         assert.isTrue(v.isLocked_a);
         assert.isFalse(v.isLocked_b);
         assert.isFalse(v.Book.isLocked("a"));
-      },
-    },
+      });
+    });
 
-    'with observering': {
-      setUp() {
+    group("observering", ()=>{
+      beforeEach(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
         v.tc = v.Book.create({name: 'foo'});
 
@@ -140,9 +138,9 @@ define(function (require, exports, module) {
             args.push(util.merge({}, partials));
           (v.obs[type] = v.obs[type] || []).push(args);
         }
-      },
+      });
 
-      "test remove on destroy for another subject"() {
+      test("remove on destroy for another subject", ()=>{
         v.Book2 = Model.define('Book2').defineFields({age: 'number'});
         onEnd(() =>  Model._destroyModel('Book2', 'drop'));
 
@@ -155,10 +153,10 @@ define(function (require, exports, module) {
 
         v.Book.create({name: 'bar'});
         refute.called(v.cb);
-      },
+      });
 
 
-      "test remove calls"() {
+      test("remove calls", ()=>{
         onEnd(v.Book.onChange(v.onChange = stub()));
         v.Book.afterLocalChange(v.Book, v.afterLocalChange = stub());
 
@@ -169,9 +167,9 @@ define(function (require, exports, module) {
         assert(v.afterLocalChange.calledBefore(v.onChange));
 
         assert.equals(v.obs.afterLocalChange, [[null, {name: 'foo', _id: v.tc._id}]]);
-      },
+      });
 
-      "test update calls"() {
+      test("update calls", ()=>{
         onEnd(v.Book.onChange(function (doc, was) {
           refute(v.docAttrs);
           v.docAttrs = util.merge({}, doc.attributes);
@@ -191,9 +189,9 @@ define(function (require, exports, module) {
 
 
         refute(v.obs.beforeCreate);
-      },
+      });
 
-      "test create calls"() {
+      test("create calls", ()=>{
         onEnd(v.Book.onChange(v.onChange = stub()).stop);
 
         v.tc = v.Book.create({name: 'foo'});
@@ -207,9 +205,9 @@ define(function (require, exports, module) {
         assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), undefined]]);
 
         refute(v.obs.beforeUpdate);
-      },
+      });
 
-      "test create exception"() {
+      test("create exception", ()=>{
         v.Book.beforeCreate(v.Book, function () {throw v.ex = new Error("tex")});
 
         assert.exception(function () {
@@ -218,9 +216,9 @@ define(function (require, exports, module) {
 
         assert.equals(v.obs.whenFinally, [[TH.match(function (x) {return x.name === 'foo'}),
                                            v.ex]]);
-      },
+      });
 
-      "test update exception"() {
+      test("update exception", ()=>{
         v.Book.beforeUpdate(v.Book, function () {throw v.ex = new Error("tex")});
 
         assert.exception(function () {
@@ -229,21 +227,21 @@ define(function (require, exports, module) {
         }, 'Error', 'tex');
 
         assert.equals(v.obs.whenFinally, [[TH.matchModel(v.tc), v.ex]]);
-      },
-    },
+      });
+    });
 
-    'with versioning': {
-      setUp() {
+    group("versioning", ()=>{
+      beforeEach(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
-      },
+      });
 
-      "test no _version"() {
+      test("no _version", ()=>{
         const tc = v.Book.create({name: 'foo'});
 
         assert.same(tc._version, undefined);
-      },
+      });
 
-      "test updating"() {
+      test("updating", ()=>{
         v.Book.addVersioning();
 
         const tc = v.Book.create({name: 'foo'});
@@ -254,9 +252,9 @@ define(function (require, exports, module) {
         tc.$save();
 
         assert.same(tc.$reload()._version, 2);
-      },
+      });
 
-      "test bumping"() {
+      test("bumping", ()=>{
         v.Book.addVersioning();
 
         const tc = v.Book.create({name: 'foo'});
@@ -267,10 +265,10 @@ define(function (require, exports, module) {
 
         tc.$bumpVersion();
         assert.same(tc.$reload()._version, 3);
-      },
-    },
+      });
+    });
 
-    "test ref cache"() {
+    test("ref cache", ()=>{
       const Book = Model.define('Book').defineFields({name: 'text'});
       const foo = Book.create();
 
@@ -286,9 +284,9 @@ define(function (require, exports, module) {
       foo.$clearCache();
 
       assert.same(foo.$reload().$cacheRef('bin')["123"], undefined);
-    },
+    });
 
-    "test cache"() {
+    test("cache", ()=>{
       const Book = Model.define('Book').defineFields({name: 'text'});
       const foo = Book.create();
 
@@ -299,9 +297,9 @@ define(function (require, exports, module) {
       assert.same(foo.$cache.boo, 5);
 
       assert.same(foo.$reload().$cache.boo, undefined);
-    },
+    });
 
-    'test change recording'() {
+    test("change recording", ()=>{
       const Book = Model.define('Book').
               defineFields({
                 name: 'text',
@@ -332,9 +330,9 @@ define(function (require, exports, module) {
 
       assert.same(tsc.name, undefined);
 
-    },
+    });
 
-    'test remove'() {
+    test("remove", ()=>{
       const Book = Model.define('Book');
       Book.defineFields({name: 'text'});
       const doc = Book.build({name: 'foo'}).$$save();
@@ -344,9 +342,9 @@ define(function (require, exports, module) {
       doc.$remove();
 
       assert.same(Book.findById(doc._id), undefined);
-    },
+    });
 
-    "test define via module"() {
+    test("define via module", ()=>{
       stub(koru, 'onunload');
       const TestModel = Model.define({id: '/foo/test-model'}, {t1: 123});
       assert.same(Model.TestModel, TestModel);
@@ -356,9 +354,9 @@ define(function (require, exports, module) {
       koru.onunload.yield();
 
       refute(Model.Book);
-    },
+    });
 
-    'test define with name'() {
+    test("define with name", ()=>{
       const Book = Model.define('Book', {t1: 123});
 
       const testAttrs = {_id: 123, name: 'orig name'};
@@ -395,6 +393,6 @@ define(function (require, exports, module) {
 
       tsc = new Book({name: 'foo', withDef: 1});
       assert.same(tsc.withDef, 1);
-    },
+    });
   });
 });

@@ -507,6 +507,46 @@ isServer && define((require, exports, module)=>{
         refute.called(action2);
       });
 
+      test("abort startTransaction, endTransaction", ()=>{
+        const tx = v.foo._client.startTransaction(); {
+          v.foo.updateById('123', {name: 'a1'});
+
+          assert.same(v.foo._client.startTransaction(), tx);
+          {
+            assert.equals(tx.savepoint, 1);
+
+            v.foo.updateById('123', {name: 'a2'});
+            assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
+
+          }
+          assert.same(v.foo._client.endTransaction('abort'), 1);
+
+          assert.equals(v.foo.findOne({_id: '123'}).name, 'a1');
+
+        }
+        assert.same(v.foo._client.endTransaction('abort'), 0);
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'abc');
+        assert.exception(()=>{
+          v.foo._client.endTransaction('abort');
+        }, {message: 'No transaction in progress!'});
+
+      });
+
+      test("commit startTransaction, endTransaction", ()=>{
+        v.foo._client.startTransaction(); {
+          v.foo.updateById('123', {name: 'a1'});
+
+          v.foo._client.startTransaction(); {
+            v.foo.updateById('123', {name: 'a2'});
+            assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
+
+          } v.foo._client.endTransaction();
+          assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
+
+        } v.foo._client.endTransaction();
+        assert.equals(v.foo.findOne({_id: '123'}).name, 'a2');
+      });
+
       test("nested transactions", ()=>{
         try {
           v.foo.transaction(tran =>{
