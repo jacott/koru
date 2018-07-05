@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * The base class for all models
    **/
@@ -9,32 +9,32 @@ define(function (require, exports, module) {
   const session         = require('koru/session');
   const api             = require('koru/test/api');
   const TH              = require('./test-helper');
+  const val             = require('./validation');
 
   const {inspect$, error$} = require('koru/symbols');
 
-  const val       = require('./validation');
 
   const {stub, spy, onEnd, util, intercept} = TH;
 
   const BaseModel = require('./base-model');
-  let v = null;
 
   val.register(module, {required: require('./validators/required-validator')});
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module();
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('Book', 'drop');
-      v = null;
-    },
+      v = {};
+    });
 
 
-    "with Model": {
-      setUp() {
+    group("with Model", ()=>{
+      beforeEach(()=>{
         class Book extends BaseModel {
           authorize() {}
         }
@@ -47,9 +47,9 @@ define(function (require, exports, module) {
           api.example("class Book extends BaseModel {}\n\n");
           api.exampleCont(func);
         };
-      },
+      });
 
-      "test nullToUndef"() {
+      test("nullToUndef", ()=>{
         const book = new v.Book();
         book.name = null;
         assert.same(book.name, undefined);
@@ -57,9 +57,9 @@ define(function (require, exports, module) {
 
         book.changes.name = null;
         assert.same(book.name, undefined);
-      },
+      });
 
-      "test onChange"() {
+      test("onChange", ()=>{
         /**
          * Observe changes to model records.
          *
@@ -94,9 +94,9 @@ define(function (require, exports, module) {
           ondra.$remove();
           assert.calledWith(v.oc, null, matchOndra);
         });
-      },
+      });
 
-      "test remote."() {
+      test("remote.", ()=>{
         /**
          * Define multiple Remote updating Procedure calls prefixed by model's
          * name.
@@ -114,9 +114,9 @@ define(function (require, exports, module) {
         refute(session.isRpcGet('Book.move'));
 
         assert(session.isRpc('Book.expire'));
-      },
+      });
 
-      "test remoteGet"() {
+      test("remoteGet", ()=>{
         /**
          * Define multiple Remote inquiry Procedure calls prefixed by
          * model's name.
@@ -134,9 +134,9 @@ define(function (require, exports, module) {
         assert(session.isRpcGet('Book.list'));
 
         assert(session.isRpcGet('Book.show'));
-      },
+      });
 
-      "test accessor"() {
+      test("accessor", ()=>{
         const {Book} = v;
         Book.defineFields({
           starSign: {type: 'text', accessor: {get() {
@@ -162,15 +162,15 @@ define(function (require, exports, module) {
         Book.setField(sut, 'luckyNumber', 42);
         assert.same(sut.changes.luckyNumber, 42);
         assert.same(Book.getField(sut, 'luckyNumber'), 42);
-      },
+      });
 
-      "test classMethods"() {
+      test("classMethods", ()=>{
         const {Book} = v;
         const doc = Book.build();
         assert.same(doc.constructor, doc.classMethods);
-      },
+      });
 
-      "test _id"() {
+      test("_id", ()=>{
         const {Book} = v;
         assert.equals(Book.$fields._id, {type: 'id'});
 
@@ -184,25 +184,25 @@ define(function (require, exports, module) {
 
         doc.attributes._id = null;
         assert.same(doc._id, "chgId");
-      },
+      });
 
-      "test exists"() {
+      test("exists", ()=>{
         const {Book} = v;
         const doc = Book.create({name: 'foo'});
 
         assert.isTrue(Book.exists(doc._id));
 
         assert.isFalse(Book.exists('bad'));
-      },
+      });
 
-      "test query"() {
+      test("query", ()=>{
         const {Book} = v;
         const query = Book.query;
 
         assert.same(query.model, Book);
-      },
+      });
 
-      "test $onThis"() {
+      test("$onThis", ()=>{
         const {Book} = v;
         const sut = Book.create();
 
@@ -210,32 +210,32 @@ define(function (require, exports, module) {
 
         assert.same(query.model, Book);
         assert.same(query.singleId, sut._id);
-      },
+      });
 
-      "test where"() {
+      test("where", ()=>{
         const {Book} = v;
         const query = Book.where('t1', 123);
 
         assert.same(query.model, Book);
         assert.equals(query._wheres, {t1: 123});
-      },
+      });
 
-      "test findById"() {
+      test("findById", ()=>{
         const {Book} = v;
         const doc = Book.create({foo: {bar: {baz: 'orig'}}});
 
         assert[isClient ? 'same' : 'equals'](Book.findById(doc._id).attributes, doc.attributes);
-      },
+      });
 
-      "test findBy."() {
+      test("findBy.", ()=>{
         const {Book} = v;
         const doc = Book.create({name: 'Sam', foo: 'bar'});
 
         assert[isClient ? 'same' : 'equals'](Book.findBy('foo', 'bar')
                                              .attributes, doc.attributes);
-      },
+      });
 
-      "test validator passing function"() {
+      test("validator passing function", ()=>{
         const {Book} = v;
         Book.defineFields({baz: {type: 'text', required(field, options) {
           assert.same(this, doc);
@@ -251,9 +251,9 @@ define(function (require, exports, module) {
 
         v.answer = true;
         refute(doc.$isValid());
-      },
+      });
 
-      "test withChanges on objects"() {
+      test("withChanges on objects", ()=>{
         /**
          * Return a doc representing this doc with the supplied changes
          * staged against it such that calling doc.$save will apply the changes.
@@ -303,10 +303,10 @@ define(function (require, exports, module) {
         assert.same(old.foo.bar.baz, undefined);
         assert.same(old.foo.bar.buzz, 2);
         assert.same(old.queen, undefined);
-      },
+      });
 
 
-      "test $asChanges"() {
+      test("$asChanges", ()=>{
         /**
          * Use the {beforeChange} keys to extract the new values.
          *
@@ -323,9 +323,9 @@ define(function (require, exports, module) {
         // should not alter passed in arguments
         assert.equals(beforeChange, {a: 1, b: 2, c: 3, $partial: {e: ["1.f", 42]}});
         assert.equals(doc.attributes, {_id: "1", a: 2, b: undefined, d: 4, e: [1, {f: 69}]});
-      },
+      });
 
-      "test change"() {
+      test("change", ()=>{
         const {Book} = v;
         const doc = Book.create({foo: {bar: {baz: 'orig'}}});
 
@@ -344,9 +344,9 @@ define(function (require, exports, module) {
 
         assert.equals(doc.changes, {foo: {bar: {baz: 'new', boo: "me too"}, fnord: 123}});
         assert.equals(doc.attributes.foo, {bar: {baz: 'orig'}});
-      },
+      });
 
-      "test can override and save invalid doc"() {
+      test("can override and save invalid doc", ()=>{
         const {Book} = v;
         Book.defineFields({bar: {type: 'text', required: true}});
         const foo = Book.build({bar: null});
@@ -358,9 +358,9 @@ define(function (require, exports, module) {
         assert.called(foo.$isValid); // insure validation methods were run
 
         assert(Book.findById(foo._id));
-      },
+      });
 
-      "test must be valid save "() {
+      test("must be valid save ", ()=>{
         TH.noInfo();
         const {Book} = v;
         Book.defineFields({bar: {type: 'text', required: true}});
@@ -374,9 +374,9 @@ define(function (require, exports, module) {
         foo.$$save();
 
         assert.same(foo.$reload().bar, 'okay');
-      },
+      });
 
-      'test timestamps'() {
+      test("timestamps", ()=>{
         const {Book} = v;
         Book.defineFields({createdAt: 'auto_timestamp', updatedAt: 'auto_timestamp',});
 
@@ -384,7 +384,7 @@ define(function (require, exports, module) {
         assert.equals(Book.updateTimestamps, {updatedAt: true});
 
         v.now = Date.now()+1234;
-        this.intercept(util, 'dateNow', ()=>v.now);
+        intercept(util, 'dateNow', ()=>v.now);
 
         const doc = Book.create({name: 'testing'});
 
@@ -415,20 +415,20 @@ define(function (require, exports, module) {
 
         assert.same(+doc.createdAt, +oldCreatedAt);
         assert.same(+doc.updatedAt, v.now);
-      },
+      });
 
-      "belongs_to": {
-        setUp() {
+      group("belongs_to", ()=>{
+        beforeEach(()=>{
           v.Qux = Model.define('Qux').defineFields({name: 'text'});
           onEnd(function () {Model._destroyModel('Qux', 'drop')});
           v.qux = v.Qux.create({name: "qux"});
-        },
+        });
 
-        tearDown() {
+        afterEach(()=>{
           Model._destroyModel('Qux', 'drop');
-        },
+        });
 
-        "test belongs_to_dbId"() {
+        test("belongs_to_dbId", ()=>{
           const {Book} = v;
           Book.defineFields({
             qux_id: {type: 'belongs_to_dbId'},
@@ -442,18 +442,18 @@ define(function (require, exports, module) {
           v.Qux.create({name: 'dbQux', _id: 'default'});
 
           assert.same(sut.qux.name, "dbQux");
-        },
+        });
 
-        "test accessor"() {
+        test("accessor", ()=>{
           const {Book} = v;
           Book.defineFields({qux_id: {type: 'belongs_to'}});
 
           const sut = Book.build();
           sut.qux_id = '';
           assert.same(sut.changes.qux_id, undefined);
-        },
+        });
 
-        "test belongs_to auto"() {
+        test("belongs_to auto", ()=>{
           const {Book} = v;
           Book.defineFields({qux_id: {type: 'belongs_to'}});
 
@@ -466,28 +466,28 @@ define(function (require, exports, module) {
           assert.same(Book.$fields.qux_id.model, v.Qux);
 
           assert.calledOnce(quxFind);
-        },
+        });
 
-        "test belongs_to manual name"() {
+        test("belongs_to manual name", ()=>{
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', modelName: 'Qux'}});
 
           const sut = Book.build({baz_id: v.qux._id});
 
           assert.same(sut.baz.name, "qux");
-        },
+        });
 
-        "test belongs_to manual model"() {
+        test("belongs_to manual model", ()=>{
           const {Book} = v;
           Book.defineFields({baz_id: {type: 'belongs_to', model: v.Qux}});
 
           const sut = Book.build({baz_id: v.qux._id});
 
           assert.same(sut.baz.name, "qux");
-        },
-      },
+        });
+      });
 
-      "test hasMany"() {
+      test("hasMany", ()=>{
         function fooFinder(query) {
           v.doc = this;
           v.query = query;
@@ -503,9 +503,9 @@ define(function (require, exports, module) {
         assert.same(v.query, v.expectQuery);
         assert.same(v.doc, sut);
 
-      },
+      });
 
-      'test user_id_on_create'() {
+      test("user_id_on_create", ()=>{
         const {Book} = v;
         v.User = Model.define('User');
         onEnd(function () {
@@ -528,9 +528,9 @@ define(function (require, exports, module) {
 
           assert.same(Book.create({user_id: 'override'}).$reload().user_id, 'override');
         });
-      },
+      });
 
-      "test field accessor false"() {
+      test("field accessor false", ()=>{
         const {Book} = v;
         Book.defineFields({fuzz: {type: 'text', accessor: false}});
         const doc = Book.build({fuzz: 'bar'});
@@ -538,9 +538,9 @@ define(function (require, exports, module) {
         assert.same(doc.fuzz, undefined);
         assert.same(doc.changes.fuzz, 'bar');
         assert.same(Book.$fields.fuzz.accessor, false);
-      },
+      });
 
-      'test equality'() {
+      test("equality", ()=>{
         const {Book} = v;
         const OtherClass = Model.define('OtherClass'),
               a = new Book(),
@@ -561,9 +561,9 @@ define(function (require, exports, module) {
         assert.isTrue(a.$equals(b));
         refute.isTrue(a.$equals(c));
         refute.isTrue(a.$equals(null));
-      },
+      });
 
-      'test create'() {
+      test("create", ()=>{
         const {Book} = v;
         const attrs = {name: 'testing'};
 
@@ -580,9 +580,9 @@ define(function (require, exports, module) {
         if(isClient)
           assert.calledOnceWith(session.rpc, 'save', 'Book', null, {
             _id: doc._id, name: "testing"});
-      },
+      });
 
-      "test $partial in $isValid"() {
+      test("$partial in $isValid", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
         doc.validate = function () {
@@ -606,9 +606,9 @@ define(function (require, exports, module) {
         assert.isFalse(doc.$isValid());
 
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
-      },
+      });
 
-      "test $save with partial"() {
+      test("$save with partial", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
 
@@ -617,9 +617,9 @@ define(function (require, exports, module) {
 
         assert.equals(doc.name, 'testing 123');
         assert.equals(doc.$reload(true).name, 'testing 123');
-      },
+      });
 
-      "test $savePartial calls save"() {
+      test("$savePartial calls save", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
         stub(doc, '$save').returns('answer');
@@ -627,9 +627,9 @@ define(function (require, exports, module) {
         assert.equals(ans, 'answer');
 
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
-      },
+      });
 
-      "test $$savePartial calls save"() {
+      test("$$savePartial calls save", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
         stub(doc, '$save').returns('answer');;
@@ -639,9 +639,9 @@ define(function (require, exports, module) {
         assert.equals(doc.changes, {$partial: {name: ['$append', '.sfx'], foo: ['bar', 'abc']}});
 
         assert.calledWith(doc.$save, 'assert');
-      },
+      });
 
-      "test $fieldDiffs"() {
+      test("$fieldDiffs", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 't123', foo: {one: 123, two: 'a string', three: true}});
         doc.changes = {$partial: {foo: [
@@ -661,26 +661,26 @@ define(function (require, exports, module) {
 
         };
         doc.$isValid();
-      },
+      });
 
-      "test $fieldDiffsFrom"() {
+      test("$fieldDiffsFrom", ()=>{
         const {Book} = v;
         stub(Changes, 'fieldDiff').returns('success');
         const doc = new Book({_id: 't123', foo: 456});
         assert.equals(doc.$fieldDiffsFrom('foo', {undo: 123}), 'success');
         assert.calledWith(Changes.fieldDiff, 'foo', {undo: 123}, {_id: 't123', foo: 456});
-      },
+      });
 
-      "test duplicate id"() {
+      test("duplicate id", ()=>{
         const {Book} = v;
         const doc = Book.create({_id: '123', name: 'testing'});
 
         assert.exception(() => {
           Book.create({_id: '123', name: 'testing2'});
         });
-      },
+      });
 
-      "test $reload on removed doc"() {
+      test("$reload on removed doc", ()=>{
         const {Book} = v;
         const doc = Book.create({name: 'old'});
 
@@ -689,9 +689,9 @@ define(function (require, exports, module) {
         assert.same(doc.$reload(true), doc);
 
         assert.equals(doc.attributes, {});
-      },
+      });
 
-      "test $clearChanges"() {
+      test("$clearChanges", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 't1', name: 'foo'});
 
@@ -707,9 +707,9 @@ define(function (require, exports, module) {
         refute.same(doc.changes, changes);
 
         assert(util.isObjEmpty(doc.changes));
-      },
+      });
 
-      'test update'() {
+      test("update", ()=>{
         const {Book} = v;
         const doc = Book.create({name: 'old'});
 
@@ -728,9 +728,9 @@ define(function (require, exports, module) {
 
         if(isClient)
           assert.calledOnceWith(session.rpc,'save', 'Book', doc._id, {name: "new"});
-      },
+      });
 
-      'test build'() {
+      test("build", ()=>{
         const {Book} = v;
         const doc = Book.create();
         const copy = Book.build(doc.attributes);
@@ -740,9 +740,9 @@ define(function (require, exports, module) {
 
         assert.equals(copy._id, null);
         assert.equals(copy.changes._id, null);
-      },
+      });
 
-      'test setFields'() {
+      test("setFields", ()=>{
         const {Book} = v;
         Book.defineFields({a: 'text', d: 'text', notme: 'text', _version: 'number'});
         const sut = new Book();
@@ -758,23 +758,23 @@ define(function (require, exports, module) {
 
         assert.same(sut.notdefined,'set');
 
-      },
+      });
 
-      "test inspect$"() {
+      test("inspect$", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 'id123', name: 'bar'});
         assert.equals(doc[inspect$](), '{Model: Book_id123 bar}');
-      },
+      });
 
-      "test toId"() {
+      test("toId", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 'theId'});
 
         assert.same(Book.toId(doc), 'theId');
         assert.same(Book.toId('astring'), 'astring');
-      },
+      });
 
-      "test toDoc"() {
+      test("toDoc", ()=>{
         const {Book} = v;
         const doc = new Book({_id: 'theId'});
 
@@ -786,10 +786,10 @@ define(function (require, exports, module) {
 
         assert.same(Book.toDoc(doc)._id, 'theId');
         assert.same(Book.toDoc('astring'), 'found astring');
-      },
-    },
+      });
+    });
 
-    "test using a class"() {
+    test("using a class", ()=>{
       /**
        * Define and register a model.
        *
@@ -832,9 +832,6 @@ define(function (require, exports, module) {
       koru.onunload.yield();
 
       refute(Model.Book);
-    },
-
-
-
+    });
   });
 });

@@ -1,32 +1,31 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Build WebSocket clients (senders).
    **/
-  const koru         = require('koru');
-  const message      = require('koru/session/message');
-  const {private$}   = require('koru/symbols');
-  const api          = require('koru/test/api');
-  const util         = require('koru/util');
-  const SessionBase  = require('./base').constructor;
-  const stateFactory = require('./state').constructor;
-  const TH           = require('./test-helper');
+  const koru            = require('koru');
+  const message         = require('koru/session/message');
+  const {private$}      = require('koru/symbols');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const SessionBase     = require('./base').constructor;
+  const stateFactory    = require('./state').constructor;
+  const TH              = require('./test-helper');
+
+  const {stub, spy, onEnd, intercept} = TH;
 
   const sut = require('./web-socket-sender-factory');
-  var test, v;
 
+  let v = {};
   TH.testCase(module, {
     setUp () {
-      test = this;
-      v = {};
       const base = new SessionBase('foo');
-      test.stub(base, 'provide');
+      stub(base, 'provide');
       v.sess = sut(base, v.state = stateFactory());
       v.sess.newWs = ()=> v.ws = {};
-      api.module();
     },
 
     tearDown () {
-      v = null;
+      v = {};
     },
 
     "test initialization"() {
@@ -37,7 +36,7 @@ define(function (require, exports, module) {
       //[
       const mySession = new_webSocketSenderFactory(new SessionBase('foo'), stateFactory());
       const wsConnection = {};
-      mySession.newWs = test.stub().returns(wsConnection);
+      mySession.newWs = stub().returns(wsConnection);
 
       mySession.connect();
 
@@ -52,8 +51,8 @@ define(function (require, exports, module) {
     },
 
     "test onStop callbacks"() {
-      v.sess.onStop(v.c1 = test.stub());
-      v.sess.onStop(v.c2 = test.stub());
+      v.sess.onStop(v.c1 = stub());
+      v.sess.onStop(v.c2 = stub());
 
       v.sess.stop();
       assert.called(v.c1);
@@ -62,11 +61,11 @@ define(function (require, exports, module) {
 
     "test pause"() {
       v.sess.connect();
-      v.ws.close = this.stub();
+      v.ws.close = stub();
 
-      v.sess.onStop(v.c1 = test.stub());
+      v.sess.onStop(v.c1 = stub());
 
-      this.spy(v.sess.state, 'retry');
+      spy(v.sess.state, 'retry');
 
       v.sess.pause();
       assert.called(v.ws.close);
@@ -82,18 +81,18 @@ define(function (require, exports, module) {
     },
 
     "test heartbeat adjust time"() {
-      this.onEnd(_=>{util.adjustTime(-util.timeAdjust)});
+      onEnd(_=>{util.adjustTime(-util.timeAdjust)});
 
       let kFunc;
       assert.calledWith(v.sess.provide, 'K', TH.match(f => kFunc = f));
 
       let now = Date.now();
-      this.intercept(util, 'dateNow', ()=>now);
+      intercept(util, 'dateNow', ()=>now);
 
       v.sess.connect();
-      this.onEnd(v.ws.onclose);
+      onEnd(v.ws.onclose);
 
-      v.ws.send = this.stub();
+      v.ws.send = stub();
 
       now += 120000;
       v.sess[private$].queueHeatBeat();
@@ -131,7 +130,7 @@ define(function (require, exports, module) {
         return typeof arg === 'function';
       }));
 
-      this.stub(koru, 'unload');
+      stub(koru, 'unload');
 
       v.func.call(v.sess, "hhh123:koru/foo");
 
@@ -140,8 +139,8 @@ define(function (require, exports, module) {
     },
 
     "test batched messages"() {
-      v.sess._commands.f = v.f = test.stub();
-      v.sess._commands.g = v.g = test.stub();
+      v.sess._commands.f = v.f = stub();
+      v.sess._commands.g = v.g = stub();
 
       assert.calledWith(v.sess.provide, 'W', TH.match(arg => {
         v.func = arg;
@@ -162,9 +161,9 @@ define(function (require, exports, module) {
       var sess1 = new SessionBase('foo1');
       var sess2 = new SessionBase('foo2');
       var base = new SessionBase('foo3');
-      webSocketSenderFactory(sess1, v.state = stateFactory(), v.wrapper1 = test.stub(), base);
+      webSocketSenderFactory(sess1, v.state = stateFactory(), v.wrapper1 = stub(), base);
       var bfunc = base._commands.B;
-      webSocketSenderFactory(sess2, v.state = stateFactory(), v.wrapper2 = test.stub(), base);
+      webSocketSenderFactory(sess2, v.state = stateFactory(), v.wrapper2 = stub(), base);
 
       assert.equals(sess1._rpcs, {});
       assert.equals(sess1._commands, {});
@@ -175,7 +174,7 @@ define(function (require, exports, module) {
 
     "test newVersion"() {
       TH.noInfo();
-      this.stub(koru, 'reload');
+      stub(koru, 'reload');
       assert.calledWith(v.sess.provide, 'X', TH.match(arg => v.func = arg));
 
       v.func.call(v.sess, ['v1.2.3', 'h123', {0: 0}]);
@@ -184,7 +183,7 @@ define(function (require, exports, module) {
 
       koru.reload.reset();
 
-      v.sess.newVersion = this.stub();
+      v.sess.newVersion = stub();
 
       v.func.call(v.sess, ['v1.2.3', 'h123', {0: 0}]);
       refute.called(koru.reload);
@@ -193,13 +192,13 @@ define(function (require, exports, module) {
     },
 
     "test server-to-client broadcast messages"() {
-      v.sess.registerBroadcast("foo", v.foo = test.stub());
-      test.spy(koru, 'onunload');
-      v.sess.registerBroadcast(module, "bar", v.bar = test.stub());
+      v.sess.registerBroadcast("foo", v.foo = stub());
+      spy(koru, 'onunload');
+      v.sess.registerBroadcast(module, "bar", v.bar = stub());
 
       assert.equals(v.sess._broadcastFuncs, {foo: TH.match.func, bar: TH.match.func});
 
-      test.onEnd(function () {
+      onEnd(function () {
         v.sess.deregisterBroadcast("foo");
         v.sess.deregisterBroadcast("bar");
       });
@@ -231,8 +230,8 @@ define(function (require, exports, module) {
     "open connection": {
       setUp() {
         v.sess.connect();
-        v.sess.ws.close = this.stub();
-        v.sendBinary = this.stub(v.sess, 'sendBinary');
+        v.sess.ws.close = stub();
+        v.sendBinary = stub(v.sess, 'sendBinary');
       },
 
       "test stop"() {
@@ -243,8 +242,8 @@ define(function (require, exports, module) {
 
       "test sendBinary"() {
         v.sendBinary.restore();
-        v.sess.state.isReady = this.stub().returns(true);
-        const send = v.sess.ws.send = this.stub();
+        v.sess.state.isReady = stub().returns(true);
+        const send = v.sess.ws.send = stub();
         v.sess.sendBinary('M', [1,2,3,4]);
 
         assert.calledWith(send, TH.match(data  => {

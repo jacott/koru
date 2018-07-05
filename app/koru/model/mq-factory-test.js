@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   /**
    * Manage durable Message queues.
    **/
@@ -12,7 +12,6 @@ isServer && define(function (require, exports, module) {
   const {stub, spy, onEnd, util, intercept} = TH;
 
   const MQFactory = require('./mq-factory');
-
 
   let v = {};
 

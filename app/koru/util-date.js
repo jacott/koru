@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const MIN = 60*1000;
   const HOUR = MIN*60;
   const DAY = 24*HOUR;
@@ -44,7 +44,7 @@ define(function(require, exports, module) {
     MIN, HOUR, DAY,
     AVG_MONTH, AVG_YEAR,
 
-    parse(dateStr) {
+    parse: dateStr =>{
       const ts = Date.parse(dateStr);
       const utc = Date.parse(dateStr+'Z') || Date.parse(dateStr+'T00:00:00Z');
       if (ts !== utc)
@@ -55,13 +55,11 @@ define(function(require, exports, module) {
       return uDate.shiftToLocale(tmpDate);
     },
 
-    shiftToLocale(dt) {
-      return new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(),
-                      dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(),
-                      dt.getUTCMilliseconds());
-    },
+    shiftToLocale: dt => new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(),
+                                  dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(),
+                                  dt.getUTCMilliseconds()),
 
-    atUTCHour(date, hour) {
+    atUTCHour: (date, hour)=>{
       const orig = +date;
       const ans = new Date(orig);
 
@@ -73,7 +71,7 @@ define(function(require, exports, module) {
       return ans;
     },
 
-    atUTCDowHour(date, dow, hour) {
+    atUTCDowHour: (date, dow, hour)=>{
       const orig = +date;
       tmpDate.setTime(orig);
 
@@ -85,7 +83,7 @@ define(function(require, exports, module) {
       return new Date( (orig > ans ? 7*DAY : 0) + ans);
     },
 
-    toDiscrete(date, mod) {
+    toDiscrete: (date, mod)=>{
       const ans = new Date(date);
       switch(mod) {
       case DAY:
@@ -102,21 +100,20 @@ define(function(require, exports, module) {
       }
     },
 
-    toDiscreteDay(date) {
+    toDiscreteDay: (date)=>{
       tmpDate.setTime(date);
       return new Date(tmpDate.getFullYear(), tmpDate.getMonth(), tmpDate.getDate());
     },
 
-    toSunday(date) {
+    toSunday: (date)=>{
       const orig = +date;
       const ans = uDate.toDiscreteDay(orig);
       return new Date(+ans - ans.getDay()*DAY);
     },
 
-    format(d, format) {
-      return uDate.compileFormat(format)(d);
-    },
-    relative(delta) {
+    format: (d, format) => uDate.compileFormat(format)(d),
+
+    relative: (delta)=>{
       if (delta < 0) delta = -delta;
       if (delta < 45000) return 'a few seconds';
 
@@ -135,7 +132,7 @@ define(function(require, exports, module) {
       if (delta < 548*DAY) return 'a year';
       return `${Math.round(delta/AVG_YEAR)} years`;
     },
-    compileFormat(format) {
+    compileFormat: (format)=>{
       const parts = format.split(SPLITTER);
       const len = parts.length;
       for(let i = 0; i < len; ++i) {

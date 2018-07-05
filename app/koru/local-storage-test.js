@@ -1,18 +1,20 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   /**
    * local-storage allows for easy stubbing on window.localStorage so
    * that real localStorage isn't changed in tests
    **/
   const TH   = require('koru/ui/test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const sut  = require('./local-storage');
-  var v;
 
   const {setItem, getItem, removeItem, clear} = sut;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       // restore
       v.setItem = sut.setItem;
       v.getItem = sut.getItem;
@@ -23,9 +25,9 @@ isClient && define(function (require, exports, module) {
       sut.getItem = getItem;
       sut.removeItem = removeItem;
       sut.clear = clear;
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       sut.clearAllOnChange();
       sut.removeItem('test-foo');
       sut.removeItem('test-bar');
@@ -34,21 +36,21 @@ isClient && define(function (require, exports, module) {
       sut.getItem = v.getItem;
       sut.removeItem = v.removeItem;
       sut.clear = v.clear;
-      v = null;
-    },
+      v = {};
+    });
 
-    "test setItem"() {
+    test("setItem", ()=>{
       sut.setItem('test-foo', 5);
       assert.same(sut.getItem('test-foo'), '5');
-    },
+    });
 
-    "test clear"() {
+    test("clear", ()=>{
       sut.setItem('test-foo', 5);
       sut.clear();
       assert.same(sut.getItem('test-foo'), null);
-    },
+    });
 
-    "test onChange"() {
+    test("onChange", ()=>{
       /**
        * listen for a change on a key
        **/
@@ -56,11 +58,11 @@ isClient && define(function (require, exports, module) {
       // ensure works without any listeners
       sut._storageChanged({key: 'test-foo'});
 
-      this.spy(window, 'addEventListener');
-      const stopFoo1 = sut.onChange('test-foo', v.fooChanged1 = this.stub());
-      const stopFoo2 = sut.onChange('test-foo', v.fooChanged2 = this.stub());
+      spy(window, 'addEventListener');
+      const stopFoo1 = sut.onChange('test-foo', v.fooChanged1 = stub());
+      const stopFoo2 = sut.onChange('test-foo', v.fooChanged2 = stub());
       assert.called(window.addEventListener, 'storage');
-      sut.onChange('test-bar', v.barChanged = this.stub());
+      sut.onChange('test-bar', v.barChanged = stub());
       assert.calledOnce(window.addEventListener);
 
       TH.trigger(window, 'storage', v.ev = {
@@ -69,6 +71,6 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.fooChanged1, TH.match(ev => ev.key === 'test-foo'));
       assert.called(v.fooChanged2);
       refute.called(v.barChanged);
-    },
+    });
   });
 });

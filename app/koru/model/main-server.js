@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Changes         = require('koru/changes');
   const ModelMap        = require('koru/model/map');
   const Query           = require('koru/model/query');

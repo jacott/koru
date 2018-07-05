@@ -3,27 +3,24 @@ isServer && define(function (require, exports, module) {
    * IdleCheck keeps count of usage and notifies when idle.
    *
    **/
-  var test, v;
-  const koru      = require('koru');
-  const api       = require('koru/test/api');
-  const util      = require('koru/util');
-  const IdleCheck = require('./idle-check');
-  const TH        = require('./test-helper');
+  const koru            = require('koru');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const IdleCheck       = require('./idle-check');
+  const TH              = require('./test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const {Fiber} = util;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-      api.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test singleton"() {
+    test("singleton", ()=>{
       /**
        * The default `IdleCheck`. It is used by
        * {#koru/web-server-factory} and
@@ -32,19 +29,19 @@ isServer && define(function (require, exports, module) {
       api.property('singleton');
       assert.same(IdleCheck.singleton, IdleCheck.singleton);
       assert(IdleCheck.singleton instanceof IdleCheck);
-    },
+    });
 
-    "test constructor"() {
+    test("constructor", ()=>{
       const newIdleCheck = api.new();
       assert(newIdleCheck() instanceof IdleCheck);
-    },
+    });
 
-    "test fiber timeout": {
-      setUp() {
+    group("fiber timeout", ()=>{
+      beforeEach(()=>{
         v.idleCheck = new IdleCheck();
         v.idleCheck.maxTime = 1*60*1000;
-        this.stub(global, 'setTimeout').returns(112233);
-        this.stub(global, 'clearTimeout');
+        stub(global, 'setTimeout').returns(112233);
+        stub(global, 'clearTimeout');
         v.f2 = Fiber(() => {
           v.idleCheck.inc();
           try {
@@ -58,10 +55,10 @@ isServer && define(function (require, exports, module) {
         v.f2.appThread = {dbId: 'foo1', userId: 'u123'};
 
         v.f2.run();
-      },
+      });
 
-      "test running too long"() {
-        this.stub(koru, 'error');
+      test("running too long", ()=>{
+        stub(koru, 'error');
 
         assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
@@ -69,9 +66,9 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(v.ex.message, 'Thread timeout [504]');
         assert.calledWith(koru.error, 'aborted; timed out. dbId: foo1, userId: u123');
-      },
+      });
 
-      "test finish in time"() {
+      test("finish in time", ()=>{
         assert.calledWith(global.setTimeout, TH.match(f => v.func = f), 1*60*1000);
 
         refute.called(global.clearTimeout);
@@ -81,26 +78,26 @@ isServer && define(function (require, exports, module) {
         refute(v.ex);
 
         assert.calledWith(global.clearTimeout, 112233);
-      },
-    },
+      });
+    });
 
-    "waitIdle": {
-      "test already Idle"() {
+    group("waitIdle", ()=>{
+      test("already Idle", ()=>{
         /**
          * waitIdle waits until `this.count` drops to zero.
          **/
         api.protoMethod('waitIdle');
         //[
         const check = new IdleCheck();
-        check.waitIdle(v.stub = test.stub());
+        check.waitIdle(v.stub = stub());
         assert.called(v.stub);
         //]
-      },
+      });
 
-      "test multiple listeners"() {
+      test("multiple listeners", ()=>{
         const start = Date.now();
         v.idleCheck = new IdleCheck();
-        v.idleCheck.onDec = this.stub();
+        v.idleCheck.onDec = stub();
         v.idleCheck.inc();
         const f2 = Fiber(() => {
           v.idleCheck.inc();
@@ -116,8 +113,8 @@ isServer && define(function (require, exports, module) {
         assert.between(cStart, start, Date.now());
         assert.between(f2Start, start, Date.now());
 
-        v.idleCheck.waitIdle(v.stub1 = test.stub());
-        v.idleCheck.waitIdle(v.stub2 = test.stub());
+        v.idleCheck.waitIdle(v.stub1 = stub());
+        v.idleCheck.waitIdle(v.stub2 = stub());
 
         v.idleCheck.dec();
 
@@ -134,7 +131,7 @@ isServer && define(function (require, exports, module) {
 
         v.idleCheck.inc();
 
-        v.idleCheck.waitIdle(v.stub3 = test.stub());
+        v.idleCheck.waitIdle(v.stub3 = stub());
         v.idleCheck.dec();
 
         assert.calledOnce(v.stub1);
@@ -142,13 +139,13 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.idleCheck.onDec, Fiber.current, cStart);
         assert.calledWith(v.idleCheck.onDec, f2, f2Start);
-      },
-    },
+      });
+    });
 
-    "exitProcessWhenIdle": {
-      setUp() {
-        this.stub(process, 'exit');
-        this.stub(global, 'setTimeout');
+    group("exitProcessWhenIdle", ()=>{
+      beforeEach(()=>{
+        stub(process, 'exit');
+        stub(global, 'setTimeout');
         v.idleCheck = new IdleCheck();
         v.f2 = Fiber(() => {
           if (! (v && v.idleCheck)) return;
@@ -160,22 +157,22 @@ isServer && define(function (require, exports, module) {
           }
           v.idleCheck && v.idleCheck.dec();
         });
-        this.stub(console, 'log');
-      },
+        stub(console, 'log');
+      });
 
-      tearDown() {
+      afterEach(()=>{
         v.idleCheck = null;
         v.f2.run();
-      },
+      });
 
 
-      "test idle"() {
+      test("idle", ()=>{
         v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000, abortTxAfter: 10*1000});
         assert.called(process.exit);
         assert.calledWith(console.log, '=> Shutdown');
-      },
+      });
 
-      "test forceAfter"() {
+      test("forceAfter", ()=>{
         v.f2.run();
         v.idleCheck.exitProcessWhenIdle({forceAfter: 20*1000});
 
@@ -185,9 +182,9 @@ isServer && define(function (require, exports, module) {
         refute.called(process.exit);
         v.force();
         assert.called(process.exit);
-      },
+      });
 
-      "test abortTxAfter"() {
+      test("abortTxAfter", ()=>{
         v.f2.run();
         v.idleCheck.exitProcessWhenIdle({abortTxAfter: 10*1000});
 
@@ -201,7 +198,7 @@ isServer && define(function (require, exports, module) {
         assert.equals(v.ex.message, 'This Fiber is a zombie');
 
         assert.called(process.exit);
-      },
-    },
+      });
+    });
   });
 });

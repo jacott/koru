@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const {private$}      = require('koru/symbols');
   const koru            = require('../main');
   const util            = require('../util');
@@ -10,11 +10,10 @@ define(function (require, exports, module) {
 
   const {stub, spy, onEnd, intercept} = TH;
 
-  let v = null, sessState;
+  let v = {}, sessState = null;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       sessState = stateFactory();
       v.sess = sessionClientFactory({
         provide: stub(),
@@ -28,14 +27,15 @@ define(function (require, exports, module) {
       });
       v.ready = false;
       TH.mockConnectState(v);
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       sessState._resetPendingCount();
-      sessState = v = null;
-    },
+      sessState = null;
+      v = {};
+    });
 
-    "test initial KORU_APP_VERSION"() {
+    test("initial KORU_APP_VERSION", ()=>{
       onEnd(() => delete window.KORU_APP_VERSION);
 
       window.KORU_APP_VERSION = "v1,hash";
@@ -47,9 +47,9 @@ define(function (require, exports, module) {
 
       assert.same(v.sess.version, "v1");
       assert.same(v.sess.hash, "hash");
-    },
+    });
 
-    "test version reconciliation"() {
+    test("version reconciliation", ()=>{
       TH.noInfo();
       assert.same(v.sess.version, undefined);
       assert.same(v.sess.hash, undefined);
@@ -80,9 +80,9 @@ define(function (require, exports, module) {
       v.X.call(v.sess, ['v10', 'h123', dict, 'dhash2']);
 
       assert.called(koru.reload);
-    },
+    });
 
-    "test existing dict"() {
+    test("existing dict", ()=>{
       assert.calledWith(v.sess.provide, 'X', TH.match(f=>v.X=f));
       message.addToDict(v.sess.globalDict, 'hello');
       v.sess.dictHash = 'orig';
@@ -91,10 +91,10 @@ define(function (require, exports, module) {
 
       assert.same(v.sess.dictHash, 'orig');
       assert.same(v.sess.globalDict.k2c.hello, 256);
-    },
+    });
 
-    "onmessage": {
-      setUp() {
+    group("onmessage", ()=>{
+      beforeEach(()=>{
         v.ws = {send: stub()};
         v.sess = {
           provide: stub(),
@@ -121,13 +121,13 @@ define(function (require, exports, module) {
             return util.thread.date;
           });
         };
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         util.adjustTime(-util.timeAdjust);
-      },
+      });
 
-      "test setup"() {
+      test("setup", ()=>{
         assert.same(v.sess.ws, v.ws);
 
         assert(v.ws.onmessage);
@@ -137,9 +137,9 @@ define(function (require, exports, module) {
 
         assert(v.actualConn);
         assert.same(v.actualConn.ws, v.ws);
-      },
+      });
 
-      "test heartbeat when idle"() {
+      test("heartbeat when idle", ()=>{
         let now = Date.now();
         intercept(util, 'dateNow', ()=>now);
 
@@ -177,9 +177,9 @@ define(function (require, exports, module) {
 
         v.actualConn[private$].queueHeatBeat();
         assert.calledWith(koru._afTimeout, TH.match.func, 20000);
-      },
+      });
 
-      "test no response close fails"() {
+      test("no response close fails", ()=>{
         TH.noInfo();
         v.time = v.readyHeatbeat();
 
@@ -190,9 +190,9 @@ define(function (require, exports, module) {
         }, "Error", "close fail");
 
         refute.called(onclose);
-      },
+      });
 
-      "test no response close succeeds"() {
+      test("no response close succeeds", ()=>{
         TH.noInfo();
         v.time = v.readyHeatbeat();
 
@@ -200,10 +200,10 @@ define(function (require, exports, module) {
         v.actualConn[private$].queueHeatBeat();
 
         assert.calledOnce(close);
-      },
-    },
+      });
+    });
 
-    "test connection cycle"() {
+    test("connection cycle", ()=>{
       spy(sessState, 'connected');
       spy(sessState, 'retry');
       spy(sessState, 'close');
@@ -263,9 +263,9 @@ define(function (require, exports, module) {
 
       v.sess.connect();         // reconnect
       assert.called(v.afTimeoutStop);
-    },
+    });
 
-    "test before connected"() {
+    test("before connected", ()=>{
       stub(message, 'encodeMessage', (type, msg) => ['x', type, msg]);
       v.sess.sendBinary('P', [null]);
       v.sess.sendBinary('M', [1]);
@@ -280,6 +280,6 @@ define(function (require, exports, module) {
       assert.calledWith(v.ws.send, ["x", "P", [null]]);
       assert.calledWith(v.ws.send, ["x", "M", [1]]);
       assert.calledWith(v.ws.send, 'SLabc');
-    },
+    });
   });
 });

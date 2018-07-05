@@ -1,6 +1,6 @@
-define(function(require) {
-  const util   = require('koru/util');
-  const driver = require('koru/config!DBDriver');
+define((require)=>{
+  const driver          = require('koru/config!DBDriver');
+  const util            = require('koru/util');
 
   const initArgs$ = Symbol();
 

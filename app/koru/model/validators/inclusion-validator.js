@@ -1,11 +1,12 @@
-define(function(require, exports, module) {
-  const util  = require('koru/util');
+define((require, exports, module)=>{
+  const util            = require('koru/util');
+
   const {hasOwn} = util;
 
   return function (doc, field, options) {
     const value = doc[field];
     if (! value) {
-      var allowBlank = options.allowBlank;
+      const {allowBlank} = options;
       if (allowBlank || value == null && allowBlank === null) return;
     }
 

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const dbBroker        = require('koru/model/db-broker');
   const util            = require('koru/util');

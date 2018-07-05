@@ -1,3 +1,1 @@
-define(function(require) {
-  return require('koru/env!./sha256');
-});
+define(require => require('koru/env!./sha256'));

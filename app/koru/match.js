@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util = require('./util-base');
 
   const {inspect$} = require('koru/symbols');

@@ -1,5 +1,15 @@
-define(function(require, exports, module) {
+define((require)=>{
   const util  = require('koru/util');
+
+  const insertData = (doc, scope)=>{
+    for (let arg in scope) {
+      const value = scope[arg];
+      if (typeof value === 'string')
+        scope[arg] = doc[value];
+      else
+        insertData(doc, value);
+    }
+  };
 
   return function (doc,field, options={}) {
     const val = doc[field];
@@ -28,14 +38,4 @@ define(function(require, exports, module) {
     if (query.count(1) !== 0)
       this.addError(doc,field,'not_unique');
   };
-
-  function insertData(doc, scope) {
-    for (let arg in scope) {
-      const value = scope[arg];
-      if (typeof value === 'string')
-        scope[arg] = doc[value];
-      else
-        insertData(doc, value);
-    }
-  }
 });

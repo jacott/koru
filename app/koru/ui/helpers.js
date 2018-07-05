@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   require('./page-link');
   require('./in-place-form');
   require('./each');

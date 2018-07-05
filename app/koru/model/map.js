@@ -1,5 +1,7 @@
-define(function(require, exports, module) {
+define((require)=>{
   const {private$} = require('koru/symbols');
 
-  exports[private$] = {makeDoc$: Symbol()};
+  return {
+    [private$]: {makeDoc$: Symbol()}
+  };
 });

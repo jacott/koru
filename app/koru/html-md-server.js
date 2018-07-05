@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const markdownTemplateCompiler = require('koru/dom/markdown-template-compiler');
@@ -21,9 +21,7 @@ define(function(require, exports, module) {
       try {
         Compilers.compile('html-md', filename, outPath);
         const pMod = mod.dependOn(provider);
-        mod.body = function () {
-          return pMod.exports;
-        };
+        mod.body = ()=> pMod.exports;
         onload();
       } catch(err) {
         onload.error(err);

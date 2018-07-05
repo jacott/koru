@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   'use strict';
   const Val        = require('koru/model/validation');
   const session    = require('koru/session');

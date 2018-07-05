@@ -1,22 +1,23 @@
-isServer && define(function (require, exports, module) {
-  const util    = require('koru/util');
-  const fw      = require('koru/file-watch');
-  const fst     = require('koru/fs-tools');
-  const koru    = require('koru/main');
-  const session = require('koru/session/main');
-  const TH      = require('koru/test-helper');
-  const sut     = require('./less-watcher');
-  const Future  = requirejs.nodeRequire('fibers/future');
-  const fs      = requirejs.nodeRequire('fs');
-  const Path    = requirejs.nodeRequire('path');
+isServer && define((require, exports, module)=>{
+  const fw              = require('koru/file-watch');
+  const fst             = require('koru/fs-tools');
+  const koru            = require('koru/main');
+  const session         = require('koru/session/main');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
+  const sut             = require('./less-watcher');
 
-  var test, v;
+  const {stub, spy, onEnd} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-      v.conn = {send: test.stub()};
+  const Future          = requirejs.nodeRequire('fibers/future');
+  const fs              = requirejs.nodeRequire('fs');
+  const Path            = requirejs.nodeRequire('path');
+
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      v.conn = {send: stub()};
 
       v.expectedLoads = {
         "koru/css/loader-test.css": true,
@@ -44,11 +45,11 @@ isServer && define(function (require, exports, module) {
         },
       };
 
-      v.addTimestamps = function(map) {
-        var time = Date.now()+20*1000;
+      v.addTimestamps = map =>{
+        let time = Date.now()+20*1000;
 
-        for(var key in map) {
-          var val = map[key];
+        for(const key in map) {
+          const val = map[key];
           if (typeof val === 'object') {
             val.mtime = time-=2000;
           }
@@ -56,22 +57,22 @@ isServer && define(function (require, exports, module) {
         return map;
       };
 
-      test.stub(fst, 'rm_f');
+      stub(fst, 'rm_f');
       sut.clearGraph(); // loader-test calls server which sets the graph
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       sut.clearGraph();
-      v = null;
-    },
+      v = {};
+    });
 
-    "loadRequest": {
-      setUp() {
+    group("loadRequest", ()=>{
+      beforeEach(()=>{
         v.topDirLen = koru.appDir.length + 1;
 
         v.addTimestamps(v.expectedSources);
         var orig = fst.stat;
-        test.stub(fst, 'stat', function (fn) {
+        stub(fst, 'stat', fn =>{
           fn = fn.slice(v.topDirLen);
           if (fn === 'koru/css/.build/less-compiler-test.less.css')
             fn = 'koru/css/less-compiler-test.less';
@@ -83,9 +84,9 @@ isServer && define(function (require, exports, module) {
             return orig.call(fst, fn);
         });
 
-      },
+      });
 
-      "test imports changed while system down"() {
+      test("imports changed while system down", ()=>{
         v.expectedSources['koru/css/less-compiler-test-imp2.lessimport'].mtime = Date.now()+40*1000;
 
         session._commands.S.call(v.conn, 'LAkoru/css');
@@ -96,10 +97,10 @@ isServer && define(function (require, exports, module) {
           .same(sut.sources['koru/css/less-compiler-test-imp.lessimport'].mtime,
                 v.expectedSources['koru/css/less-compiler-test-imp2.lessimport'].mtime);
 
-      },
+      });
 
 
-      "test build graph"() {
+      test("build graph", ()=>{
         session._commands.S.call(v.conn, 'LAkoru/css');
 
         assert.calledWith(v.conn.send, 'SL', "koru/css/less-compiler-test.less " +
@@ -122,21 +123,21 @@ isServer && define(function (require, exports, module) {
         assert.calledWith(v.conn.send, 'SL', "koru/css/less-compiler-test.less " +
                           "koru/css/loader-test.css");
 
-      },
+      });
 
-      "test bad names"() {
+      test("bad names", ()=>{
         'koru/.. koru/css/.build ../koru /koru koru/.dir'
-          .split(' ').forEach(function (dir) {
-            assert.exception(function () {
+          .split(' ').forEach(dir =>{
+            assert.exception(()=>{
               session._commands.S.call(v.conn, 'LA'+dir);
             }, {error: 500, reason: 'Illegal directory name'});
           });
-      },
-    },
+      });
+    });
 
-    "watching": {
-      setUp() {
-        v.session = {sendAll: test.stub()};
+    group("watching", ()=>{
+      beforeEach(()=>{
+        v.session = {sendAll: stub()};
 
         v.watcher = fw.listeners.less;
         assert(v.watcher, "Should be registered with file-watch");
@@ -147,10 +148,10 @@ isServer && define(function (require, exports, module) {
           util.merge(sut.imports, util.deepCopy(v.expectedImports));
           util.merge(sut.sources, util.deepCopy(v.expectedSources));
         };
-      },
+      });
 
-      "test lessimport change"() {
-        test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-imp.lessimport')
+      test("lessimport change", ()=>{
+        stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-imp.lessimport')
           .returns('@import "imp3.lessimport";\n\n@import "imp4.lessimport";');
 
         v.loadDefaults();
@@ -169,10 +170,10 @@ isServer && define(function (require, exports, module) {
         refute('koru/css/imp3.lessimport' in sut.sources);
 
         refute.called(v.session.sendAll);
-      },
+      });
 
-      "test sends dependents"() {
-        test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/less-compiler-test-imp2.lessimport')
+      test("sends dependents", ()=>{
+        stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/less-compiler-test-imp2.lessimport')
           .returns({toString() {return ''}});
 
         v.expectedImports['koru/css/less-compiler-test-imp2.lessimport']['foo/bar.less'] = true;
@@ -185,10 +186,10 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(fst.rm_f, koru.appDir+'/koru/css/.build/less-compiler-test.less.css');
         assert.calledWith(fst.rm_f, koru.appDir+'/foo/.build/bar.less.css');
-      },
+      });
 
-      "test less change"() {
-        test.stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-test.less')
+      test("less change", ()=>{
+        stub(fst, 'readFile').withArgs( koru.appDir+'/koru/css/my-test.less')
           .returns('@import "imp3.lessimport"');
 
         v.watcher('less', "koru/css/compiler-test.less", koru.appDir, v.session);
@@ -208,10 +209,10 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(sut.sources['koru/css/my-test.less'], {mtime: undefined, "koru/css/imp3.lessimport": true});
         refute('koru/css/imp3.lessimport' in sut.sources);
-      },
+      });
 
-      "test remove"() {
-        test.stub(fst, 'readFile');
+      test("remove", ()=>{
+        stub(fst, 'readFile');
         v.loadDefaults();
 
         v.watcher('less', "koru/css/less-compiler-test.less", koru.appDir, v.session);
@@ -222,7 +223,7 @@ isServer && define(function (require, exports, module) {
         refute('koru/css/less-compiler-test.less' in sut.loads);
 
         assert.equals(sut.imports['koru/css/less-compiler-test-imp.lessimport'], {});
-      },
-    },
+      });
+    });
   });
 });

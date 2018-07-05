@@ -1,32 +1,32 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   const koru   = require('./main');
   const TH     = require('./test-helper');
   const util   = require('./util');
+
+  const {stub, spy, onEnd} = TH;
+
   const Future = requirejs.nodeRequire('fibers/future');
 
   const sut = require('./pool-server');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-
+  let v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.create = cb=>{
         cb(null, v.conn);
       };
 
-      v.destroy = test.stub();
+      v.destroy = stub();
 
-      test.stub(global, 'setTimeout').returns(123);
-      test.stub(global, 'clearTimeout');
-    },
+      stub(global, 'setTimeout').returns(123);
+      stub(global, 'clearTimeout');
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test acquire, release"() {
+    test("acquire, release", ()=>{
       v.conn = [1];
       var pool = new sut({
         create: v.create,
@@ -34,7 +34,7 @@ isServer && define(function (require, exports, module) {
         max: 2,
       });
 
-      util.withDateNow(util.dateNow(), function () {
+      util.withDateNow(util.dateNow(), ()=>{
         var conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
@@ -49,16 +49,16 @@ isServer && define(function (require, exports, module) {
         assert.same(pool.acquire(), conn1);
 
         var future = new Future;
-        util.Fiber(function () {
+        util.Fiber(()=>{
           future.return(pool.acquire());
         }).run();
 
         pool.release(conn2);
         assert.same(future.wait(), conn2);
       });
-    },
+    });
 
-    "test destroy"() {
+    test("destroy", ()=>{
       v.conn = [1];
       var pool = new sut({
         create: v.create,
@@ -66,7 +66,7 @@ isServer && define(function (require, exports, module) {
         max: 2,
       });
 
-      util.withDateNow(util.dateNow(), function () {
+      util.withDateNow(util.dateNow(), ()=>{
         var conn1 = pool.acquire();
         assert.same(conn1, v.conn);
 
@@ -97,6 +97,6 @@ isServer && define(function (require, exports, module) {
 
         assert.calledWith(v.destroy, conn1);
       });
-    },
+    });
   });
 });

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const UtilDate        = require('koru/util-date');
 
   const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;

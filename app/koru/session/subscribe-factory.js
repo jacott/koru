@@ -1,14 +1,14 @@
-define(function(require, exports, module) {
-  const koru      = require('koru/main');
-  const ClientSub = require('koru/session/client-sub');
-  const login     = require('koru/user-account/client-login');
-  const util      = require('koru/util');
-  const message   = require('./message');
-  const publish   = require('./publish');
+define((require, exports, module)=>{
+  const koru            = require('koru/main');
+  const ClientSub       = require('koru/session/client-sub');
+  const login           = require('koru/user-account/client-login');
+  const util            = require('koru/util');
+  const message         = require('./message');
+  const publish         = require('./publish');
 
   koru.onunload(module, 'reload');
 
-  function subscribeFactory(session) {
+  return function subscribeFactory(session) {
     let nextId = 0;
     const subs = session.subs = Object.create(null);
 
@@ -23,6 +23,28 @@ define(function(require, exports, module) {
     });
 
     let userId = null, loginOb = null;
+
+    const subcribe = (name, ...args)=>{
+      if (! publish._pubs[name]) throw new Error("No client publish of " + name);
+
+      loginOb === null && observeLogin();
+
+      const sub = new ClientSub(session, (++nextId).toString(36), name, args);
+      if (session.interceptSubscribe && session.interceptSubscribe(name, sub))
+        return sub;
+      sub._wait();
+      publish.preload(sub, err => {
+        if (! sub._id) return; // too late
+        if (err) {
+          sub._received(err);
+          return;
+        }
+        subs[sub._id] = sub;
+        sub.resubscribe();
+        session.sendP(sub._id, name, sub.args, sub.lastSubscribed);
+      });
+      return sub;
+    };
 
     session.state.onConnect('10-subscribe', subcribe._onConnect = session => {
       for(const id in subs) {
@@ -47,29 +69,6 @@ define(function(require, exports, module) {
       });
     };
 
-
-    function subcribe(name, ...args) {
-      if (! publish._pubs[name]) throw new Error("No client publish of " + name);
-
-      loginOb === null && observeLogin();
-
-      const sub = new ClientSub(session, (++nextId).toString(36), name, args);
-      if (session.interceptSubscribe && session.interceptSubscribe(name, sub))
-        return sub;
-      sub._wait();
-      publish.preload(sub, err => {
-        if (! sub._id) return; // too late
-        if (err) {
-          sub._received(err);
-          return;
-        }
-        subs[sub._id] = sub;
-        sub.resubscribe();
-        session.sendP(sub._id, name, sub.args, sub.lastSubscribed);
-      });
-      return sub;
-    };
-
     util.merge(subcribe, {
       unload() {
         session.state.stopOnConnect('10-subscribe');
@@ -90,6 +89,4 @@ define(function(require, exports, module) {
 
     return subcribe;
   };
-
-  module.exports = subscribeFactory;
 });

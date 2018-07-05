@@ -20,13 +20,10 @@ isClient && define((require, exports, module)=>{
 
   const subscribeFactory = require('./subscribe-factory');
 
-  let v= null;
+  let v = {}, subscribe = null;
 
-  let subscribe = null;
-
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.gDict = message.newGlobalDict();
 
       TH.mockConnectState(v);
@@ -56,16 +53,17 @@ isClient && define((require, exports, module)=>{
         v.pubFunc.apply(this, args);
       }});
       api.module();
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       subscribe.unload();
       publish._destroy('foo');
       publish._destroy('foo2');
-      v = subscribe = null;
-    },
+      v = {};
+      subscribe = null;
+    });
 
-    "test sendP"() {
+    test("sendP", ()=>{
       v.sessState.connected(v.sess);
       v.sess.sendP('id', 'foo', [1, 2, 'bar']);
 
@@ -74,18 +72,18 @@ isClient && define((require, exports, module)=>{
       v.sess.sendP('12');
 
       assert.calledWith(v.sendBinary, 'P', ['12']);
-    },
+    });
 
-    "test _wait called before preload"() {
+    test("_wait called before preload", ()=>{
       const preload = stub(publish, 'preload');
       const _wait = spy(ClientSub.prototype, '_wait');
 
       const sub1 = subscribe("foo", 1 ,2);
 
       assert(_wait.calledBefore(preload));
-    },
+    });
 
-    "test preload error"() {
+    test("preload error", ()=>{
       const preload = stub(publish, 'preload');
 
       const sub1 = subscribe("foo", 1 ,2);
@@ -98,9 +96,9 @@ isClient && define((require, exports, module)=>{
       v.cb(v.err = {error: 'error'});
       assert.calledWith(sub1._received, v.err);
       refute.called(sub1.resubscribe);
-    },
+    });
 
-    "test preload calls after sub closed"() {
+    test("preload calls after sub closed", ()=>{
       const preload = stub(publish, 'preload');
       const sub1 = subscribe("foo", 1 ,2);
       sub1.stop();
@@ -108,18 +106,18 @@ isClient && define((require, exports, module)=>{
       refute(sub1._id);
       assert.equals(v.sess.subs, {});
 
-    },
+    });
 
-    "test wait for onConnect"() {
+    test("wait for onConnect", ()=>{
       const sub1 = subscribe("foo", 1 ,2);
       refute.called(v.sendBinary);
 
       v.sessState.connected(v.sess);
 
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2], 0]);
-    },
+    });
 
-    "test not Ready"() {
+    test("not Ready", ()=>{
       v.sessState.connected(v.sess);
       v.sessState.close(false);
 
@@ -130,9 +128,9 @@ isClient && define((require, exports, module)=>{
 
       v.sessState.connected(v.sess);
       assert.calledWith(v.sendBinary, 'P', [sub1._id, 'foo', [1, 2], 5432]);
-    },
+    });
 
-    "test build subscribe"() {
+    test("build subscribe", ()=>{
       const sut = subscribeFactory;
       {
         const subscribeFactory = api.custom(sut);
@@ -146,9 +144,9 @@ isClient && define((require, exports, module)=>{
         assert(sub instanceof ClientSub);
         //]
       }
-    },
+    });
 
-    "test resubscribe onConnect"() {
+    test("resubscribe onConnect", ()=>{
       stub(v.sessState, 'onConnect');
       subscribe = subscribeFactory(v.sess);
       stub(v.sess, 'sendP');
@@ -174,9 +172,9 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(v.sess.sendP, sub1._id, 'foo', [1, 2]);
       assert.calledWith(v.sess.sendP, sub2._id, 'foo2', [3, 4]);
       assert.calledWith(v.sess.sendP, sub3._id, 'foo2', [5, 6]);
-    },
+    });
 
-    "test onChange rpc"() {
+    test("onChange rpc", ()=>{
       onEnd(v.sessState.pending.onChange(v.ob = stub()));
 
       assert.same(v.sessState.pendingCount(), 0);
@@ -206,23 +204,23 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(v.ob, false);
 
       assert.same(v.sessState.pendingCount(), 0);
-    },
+    });
 
-    "filtering":{
-      setUp() {
+    group("filtering", ()=>{
+      beforeEach(()=>{
         stub(publish, '_filterModels');
         publish({name: "foo2", init() {
           this.match('F1', stub());
           this.match('F2', stub());
           v.sub2isResub = this.isResubscribe;
         }});
-      },
+      });
 
       /**
        * Ensure when we stop that all docs in models (matching matches)
        * are removed if not matched
        */
-      "test remove unwanted docs"() {
+      test("remove unwanted docs", ()=>{
         v.sub = subscribe('foo2');
 
         refute.called(publish._filterModels);
@@ -230,12 +228,12 @@ isClient && define((require, exports, module)=>{
         v.sub.stop.call({}); // ensure binding
 
         assert.calledWith(publish._filterModels, {F1: true, F2: true}, "stopped");
-      },
+      });
 
       /**
        * All subscriptions should be resubscribed
        */
-      "test change userId"() {
+      test("change userId", ()=>{
         v.sub = subscribe('foo', 123, 456);
         const sub2 = subscribe('foo2', 2);
 
@@ -258,10 +256,10 @@ isClient && define((require, exports, module)=>{
         assert.isTrue(v.sub2isResub);
 
         assert.calledWith(publish._filterModels, {F1: true, F2: true}, 'userIdChanged');
-      },
-    },
+      });
+    });
 
-    "test resubscribe"() {
+    test("resubscribe", ()=>{
       v.sub = subscribe('foo', 'x');
       v.pubFunc = function (...args) {
         assert.same(this, v.sub);
@@ -272,9 +270,9 @@ isClient && define((require, exports, module)=>{
       v.sub.resubscribe();
 
       refute(v.sub.isResubscribe);
-    },
+    });
 
-    "test error on resubscribe"() {
+    test("error on resubscribe", ()=>{
       v.sub = subscribe('foo', 'x');
       stub(koru, 'error');
       v.pubFunc = () => {throw new Error('foo error')};
@@ -283,32 +281,32 @@ isClient && define((require, exports, module)=>{
 
       refute(v.sub.isResubscribe);
       assert.calledWith(koru.error, TH.match(/foo error/));
-    },
+    });
 
 
 
     /**
      * sub.userId should mirror koru.userId
      */
-    "test userId"() {
+    test("userId", ()=>{
       v.sub = subscribe('foo', 123, 456, v.stub = stub());
       const origId = koru.util.thread.userId;
-      this.onEnd(() => {koru.util.thread.userId = origId});
+      onEnd(() => {koru.util.thread.userId = origId});
       koru.util.thread.userId = 'test123';
 
       assert.same(v.sub.userId, 'test123');
-    },
+    });
 
-    "test stop before result"() {
+    test("stop before result", ()=>{
       v.sub = subscribe('foo', 123, 456, v.stub = stub());
       spy(v.sessState, "decPending");
       v.sub.stop();
       assert.called(v.sessState.decPending);
       v.sub.stop();
       assert.calledOnce(v.sessState.decPending);
-    },
+    });
 
-    "test subscribe"() {
+    test("subscribe", ()=>{
       v.sub = subscribe('foo', 123, 456, v.stub = stub());
 
       assert.calledOnce(v.pubFunc);
@@ -341,17 +339,17 @@ isClient && define((require, exports, module)=>{
       refute.called(v.sess.sendP);
 
       v.sub = null;
-    },
+    });
 
-    "test callback on error" () {
+    test("callback on error",  ()=>{
       v.sub = subscribe('foo', 123, 456, v.stub = stub());
       refute.called(v.stub);
       v.recvP(v.sub._id, 304, "error msg");
       v.recvP(v.sub._id, 304, "error msg");
       assert.calledOnceWith(v.stub, [304, "error msg"]);
-    },
+    });
 
-    "test remote stop while waiting"() {
+    test("remote stop while waiting", ()=>{
       v.sub = subscribe('foo', 123, 456, v.stub = stub());
 
       assert(v.sub.waiting);
@@ -363,14 +361,14 @@ isClient && define((require, exports, module)=>{
       assert.isNull(v.sub._id);
 
       refute.called(v.sess.sendP);
-    },
+    });
 
-    "test remove stop": {
-      setUp() {
+    group("remove stop", ()=>{
+      beforeEach(()=>{
         v.sub = subscribe('foo', 123, 456, v.stub = stub());
-      },
+      });
 
-      "while waiting"() {
+      test("while waiting", ()=>{
         assert(v.sub.waiting);
 
         v.sess.sendP.reset();
@@ -378,9 +376,9 @@ isClient && define((require, exports, module)=>{
 
         assert.isNull(v.sub._id);
         refute.called(v.sess.sendP);
-      },
+      });
 
-      "while not waiting"() {
+      test("while not waiting", ()=>{
         v.recvP(v.sub._id);
         refute(v.sub.waiting);
 
@@ -389,16 +387,16 @@ isClient && define((require, exports, module)=>{
 
         assert.isNull(v.sub._id);
         refute.called(v.sess.sendP);
-      },
-    },
+      });
+    });
 
-    "match": {
-      setUp() {
+    group("match", ()=>{
+      beforeEach(()=>{
         v.Foo = Model.define('Foo').defineFields({name: 'text', age: 'number'});
         onEnd(() => {Model._destroyModel('Foo', 'drop')});
-      },
+      });
 
-      "test onStop"() {
+      test("onStop", ()=>{
         v.sub = subscribe('foo');
 
         v.sub.onStop(v.onstop = stub());
@@ -410,9 +408,9 @@ isClient && define((require, exports, module)=>{
         v.sub.stop();
 
         assert.calledOnce(v.onstop);
-      },
+      });
 
-      "test called on message"() {
+      test("called on message", ()=>{
         v.sub = subscribe('foo');
 
         v.sub.match(v.Foo, v.match = stub());
@@ -420,9 +418,9 @@ isClient && define((require, exports, module)=>{
         v.recvA('Foo', 'f123', v.attrs = {name: 'bob', age: 5});
 
         assert.calledWith(v.match, TH.match(doc => doc._id === 'f123'));
-      },
+      });
 
-      "test resubscribe"() {
+      test("resubscribe", ()=>{
         stub(v.sessState, 'isReady').returns(true);
         v.pubFunc = function () {
           this.lastSubscribed = 12345678;
@@ -457,7 +455,7 @@ isClient && define((require, exports, module)=>{
 
           assert.equals(Object.keys(models).sort(), ["Bar", "Baz"]);
         }
-      },
-    },
+      });
+    });
   });
 });

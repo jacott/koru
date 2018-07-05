@@ -1,4 +1,4 @@
-define(function(require) {
+define((require)=>{
   const {utf8to16, utf16to8} = require('koru/text-encoder');
 
   const pushEach = (buffer, args) => {
@@ -319,7 +319,7 @@ define(function(require) {
   };
 
   return {
-    encodeMessage(type, args, globalDict) {
+    encodeMessage: (type, args, globalDict)=>{
       const buffer = [];
       let dict = newLocalDict();
 
@@ -336,7 +336,7 @@ define(function(require) {
       return result;
     },
 
-    decodeMessage(u8, globalDict) {
+    decodeMessage: (u8, globalDict)=>{
       const dict = newLocalDict();
       let index = decodeDict(u8, 0, dict);
 
@@ -358,13 +358,13 @@ define(function(require) {
     _utf8to16: utf8to16,
     _utf16to8: utf16to8,
 
-    newGlobalDict() {
+    newGlobalDict: ()=>{
       const dict = newLocalDict();
       dict.limit = 0xfff0;
       return dict;
     },
 
-    finalizeGlobalDict(dict) {
+    finalizeGlobalDict: (dict)=>{
       if (dict.index === null) return;
       const {c2k, k2c} = dict;
       const delta = dict.limit = 0xffff - c2k.length;
@@ -376,7 +376,7 @@ define(function(require) {
       return dict;
     },
 
-    toHex(data) {
+    toHex: (data)=>{
       const result = [];
       for(let i = 0; i < data.length; ++i) {
         let ltr = data[i].toString(16);

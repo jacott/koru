@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   const Conn    = require('koru/session/server-connection-factory').Base;
   const koru    = require('../main');
   const util    = require('../util');
@@ -8,14 +8,13 @@ isServer && define(function (require, exports, module) {
 
   const {test$} = require('koru/symbols');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const serverSession = require('./main-server');
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.ws = TH.mockWs();
       v.mockSess = {
         _wssOverride: function() {
@@ -24,21 +23,19 @@ isServer && define(function (require, exports, module) {
         provide: stub(),
         _rpcs: {},
       };
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test versionHash"() {
+    test("versionHash", ()=>{
       v.sess = serverSession(v.mockSess);
-      assert.calledWith(v.ws.on, 'connection', TH.match(function (func) {
-        return v.func = func;
-      }));
+      assert.calledWith(v.ws.on, 'connection', m(func => v.func = func));
 
       v.sess.addToDict('foo');
 
-      v.sess.registerGlobalDictionaryAdder({id: 'test'}, function (adder) {
+      v.sess.registerGlobalDictionaryAdder({id: 'test'}, adder =>{
         adder('g1'); adder('g2');
       });
 
@@ -74,9 +71,9 @@ isServer && define(function (require, exports, module) {
       v.sess.addToDict('fuz');
 
       assert.same(v.sess.globalDict.k2c['fuz'], undefined);
-    },
+    });
 
-    "test client errors"() {
+    test("client errors", ()=>{
        v.sess = serverSession(v.mockSess);
 
       assert.calledWith(v.sess.provide, 'E', TH.match(function (func) {
@@ -87,9 +84,9 @@ isServer && define(function (require, exports, module) {
       v.sess.sessId = 's123';
       v.func.call({send: v.send = stub(), sessId: 's123', engine: 'test engine'}, 'hello world');
       assert.calledWith(koru.logger, 'INFO', 's123', 'test engine', 'hello world');
-    },
+    });
 
-    "test onerror"() {
+    test("onerror", ()=>{
       stub(koru, 'info');
       const conn = TH.sessionConnect(v.ws);
 
@@ -110,9 +107,9 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(koru.info, 'web socket error', 'my error');
       assert.called(conn.close);
       refute(conn.sessId in session.conns);
-    },
+    });
 
-    "test onclose"() {
+    test("onclose", ()=>{
       TH.noInfo();
       const conn = TH.sessionConnect(v.ws);
 
@@ -131,6 +128,6 @@ isServer && define(function (require, exports, module) {
 
       assert.called(conn.close);
       refute(conn.sessId in session.conns);
-    },
+    });
   });
 });

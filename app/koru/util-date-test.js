@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH    = require('koru/test-helper');
 
   const uDate = require('./util-date');
@@ -7,30 +7,30 @@ define(function (require, exports, module) {
   const HOUR = MIN*60;
   const DAY = 24*HOUR;
 
-  TH.testCase(module, {
-    "test parse"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("parse", ()=>{
       assert.equals(uDate.parse('2017-12-26'), new Date(2017, 11, 26));
       assert.equals(uDate.parse('2017-12-26T00:00:00Z'), new Date("2017-12-26T00:00:00Z"));
-    },
+    });
 
-    "test shiftToLocale"() {
+    test("shiftToLocale", ()=>{
       assert.equals(uDate.shiftToLocale(new Date('2017-12-26T14:00Z')), new Date(2017, 11, 26, 14));
-    },
+    });
 
-    "test atUTCHour"() {
+    test("atUTCHour", ()=>{
       const date = uDate.atUTCHour(Date.UTC(2014,4,5), 6);
       assert.same(date.toISOString(), '2014-05-05T06:00:00.000Z');
 
       assert.same(uDate.atUTCHour(5 + +date, 5).toISOString(), '2014-05-06T05:00:00.005Z');
-    },
+    });
 
-    "test toDiscreteDay"() {
+    test("toDiscreteDay", ()=>{
       const dt = uDate.toDiscreteDay(123456789 + +new Date(2017, 2, 5, 15));
 
       assert.equals(dt, new Date(2017, 2, 7));
-    },
+    });
 
-    "test toDiscrete"() {
+    test("toDiscrete", ()=>{
       const dt = new Date(2017, 2, 6, 13, 17, 36, 123);
 
       assert.equals(new Date(dt), new Date(2017, 2, 6, 13, 17, 36, 123));
@@ -38,16 +38,16 @@ define(function (require, exports, module) {
       assert.equals(uDate.toDiscrete(dt, HOUR), new Date(2017, 2, 6, 13));
       assert.equals(uDate.toDiscrete(dt, MIN), new Date(2017, 2, 6, 13, 17));
       assert.equals(uDate.toDiscrete(dt, 1000), new Date(2017, 2, 6, 13, 17, 36));
-    },
+    });
 
-    "test toSunday"() {
+    test("toSunday", ()=>{
       const dt = uDate.toSunday(new Date(2017, 5, 2, 15));
 
       assert.equals(dt, new Date(2017, 4, 28));
       assert.equals(uDate.toSunday(new Date(2017, 4, 28)), new Date(2017, 4, 28));
-    },
+    });
 
-    "test atUTCDowHour (at day of week, hour)"() {
+    test("atUTCDowHour (at day of week, hour)", ()=>{
       const thu = 4;
 
       let date = uDate.atUTCDowHour(Date.UTC(2014,4,5), thu, 9);
@@ -57,9 +57,9 @@ define(function (require, exports, module) {
 
       date = uDate.atUTCDowHour(Date.UTC(2014,4,10), thu, 9);
       assert.same(date.toISOString(), '2014-05-15T09:00:00.000Z');
-    },
+    });
 
-    "test format"() {
+    test("format", ()=>{
       const d = new Date(2017, 0, 4, 14, 3, 12);
       const format = uDate.compileFormat('D MMM YYYY h:mma');
       assert.same(format(d), '4 Jan 2017 2:03pm');
@@ -73,9 +73,9 @@ define(function (require, exports, module) {
       d.setSeconds(9);
       assert.same( uDate.format(d, `ss`), `09`);
       assert.same( uDate.format(d, `s`), `9`);
-    },
+    });
 
-    "test from"() {
+    test("from", ()=>{
       assert.same(uDate.relative(0), 'a few seconds');
       assert.same(uDate.relative(44999), 'a few seconds');
       assert.same(uDate.relative(45000), 'a minute');
@@ -98,6 +98,6 @@ define(function (require, exports, module) {
       assert.same(uDate.relative(548*DAY-1), 'a year');
       assert.same(uDate.relative(548*DAY), '2 years');
       assert.same(uDate.relative(5000*DAY), '14 years');
-    },
+    });
   });
 });

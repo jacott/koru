@@ -1,37 +1,38 @@
-isClient && define(function (require, exports, module) {
-  const ClientSub    = require('koru/session/client-sub');
-  const api          = require('koru/test/api');
-  const Model        = require('../model/main');
-  const util         = require('../util');
-  const session      = require('./main');
-  const stateFactory = require('./state').constructor;
-  const TH           = require('./test-helper');
+define((require, exports, module)=>{
+  const ClientSub       = require('koru/session/client-sub');
+  const api             = require('koru/test/api');
+  const Model           = require('../model/main');
+  const util            = require('../util');
+  const session         = require('./main');
+  const stateFactory    = require('./state').constructor;
+  const TH              = require('./test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const publish = require('./publish');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.handles = [];
       v.doc = {constructor: {modelName: 'Foo'}};
       api.module({subjectModule: module.get('./publish')});
       v.sess = {
-        provide: test.stub(),
+        provide: stub(),
         state: v.sessState = stateFactory(),
         _rpcs: {},
         _commands: {},
-        sendBinary: v.sendBinary = test.stub(),
+        sendBinary: v.sendBinary = stub(),
       };
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       v.handles.forEach(h => {h.stop()});
-      v = null;
-    },
+      v = {};
+    });
 
-    "test preload"() {
+    test("preload", ()=>{
       /**
        * If a publish has a preload function it will be called before
        * any subscription requests are sent to the server. If that
@@ -62,7 +63,7 @@ isClient && define(function (require, exports, module) {
         return {then(f) {f("ignore_this"); return this}};
       }
 
-      this.onEnd(() => {publish._destroy("Books")});
+      onEnd(() => {publish._destroy("Books")});
 
       //[
       publish({
@@ -77,10 +78,10 @@ isClient && define(function (require, exports, module) {
       subscribe('Books', 5);
       assert.equals(v.args, [6, 7]);
       //]
-    },
+    });
 
-    "test filter Models"() {
-      test.stub(session, '_sendM');
+    test("filter Models", ()=>{
+      stub(session, '_sendM');
       v.F1 = Model.define('F1').defineFields({name: 'text'});
       v.F2 = Model.define('F2').defineFields({name: 'text'});
 
@@ -92,7 +93,7 @@ isClient && define(function (require, exports, module) {
       v.F2.create({name: 'X2'});
       v.F2.create({name: 'X2'});
 
-      v.handles.push(v.F1.onChange(v.f1del = test.stub()));
+      v.handles.push(v.F1.onChange(v.f1del = stub()));
 
       v.handles.push(publish.match.register('F1', (doc, reason) => {
         v.reason = reason;
@@ -102,7 +103,7 @@ isClient && define(function (require, exports, module) {
 
       v.handles.push(publish.match.register('F2', doc => doc.name === 'A2'));
 
-      v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = this.stub()));
+      v.handles.push(v.F1._indexUpdate.onChange(v.f1idxOC = stub()));
 
       try {
         publish._filterModels({F1: true});
@@ -128,10 +129,10 @@ isClient && define(function (require, exports, module) {
         Model._destroyModel('F1', 'drop');
         Model._destroyModel('F2', 'drop');
       };
-    },
+    });
 
-    "match register": {
-      "test false"() {
+    group("match register", ()=>{
+      test("false", ()=>{
         /**
          * Register functions to test if record is expected to be published
          *
@@ -151,10 +152,10 @@ isClient && define(function (require, exports, module) {
 
 
         assert.isFalse(publish.match.has(v.doc));
-      },
+      });
 
 
-      "test true"() {
+      test("true", ()=>{
         v.handles.push(publish.match.register('Foo', doc => {
           assert.same(doc, v.doc);
           return false;
@@ -170,7 +171,7 @@ isClient && define(function (require, exports, module) {
         v.t.stop();
 
         assert.isFalse(publish.match.has(v.doc));
-      },
-    },
+      });
+    });
   });
 });

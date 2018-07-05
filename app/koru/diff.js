@@ -26,7 +26,7 @@
  * Date modified: 10-Jul-2017
  */
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util = require('koru/util');
   const {hasOwn} = util;
 

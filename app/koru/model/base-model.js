@@ -1,19 +1,20 @@
-define(function(require, exports, module) {
-  const koru                 = require('koru');
-  const Changes              = require('koru/changes');
-  const ModelEnv             = require('koru/env!./main');
-  const dbBroker             = require('koru/model/db-broker');
-  const ModelMap             = require('koru/model/map');
-  const Query                = require('koru/model/query');
-  const Val                  = require('koru/model/validation');
-  const session              = require('koru/session');
-  const util                 = require('koru/util');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const Changes         = require('koru/changes');
+  const ModelEnv        = require('koru/env!./main');
+  const dbBroker        = require('koru/model/db-broker');
+  const ModelMap        = require('koru/model/map');
+  const Query           = require('koru/model/query');
+  const Val             = require('koru/model/validation');
+  const session         = require('koru/session');
+  const util            = require('koru/util');
   const registerObserveField = require('./register-observe-field');
-  const registerObserveId    = require('./register-observe-id');
+  const registerObserveId = require('./register-observe-id');
 
   const {private$, inspect$, error$} = require('koru/symbols');
   const allObservers$ = Symbol(), allObserverHandles$ = Symbol();
-  const {hasOwn} = util;
+
+  const {hasOwn, deepCopy} = util;
 
   const changes$ = Symbol();
 
@@ -105,7 +106,7 @@ define(function(require, exports, module) {
 
     static create(attributes) {
       const doc = new this({});
-      attributes != null && Object.assign(doc.changes, util.deepCopy(attributes));
+      attributes != null && Object.assign(doc.changes, deepCopy(attributes));
       doc.$save();
       return doc;
     }
@@ -120,11 +121,11 @@ define(function(require, exports, module) {
      */
     static build(attributes, allow_id) {
       const doc = new this({});
-      attributes = attributes == null ? {} : util.deepCopy(attributes);
+      attributes = attributes == null ? {} : deepCopy(attributes);
 
       if (attributes._id && ! allow_id)
         attributes._id = null;
-      attributes == null || Object.assign(doc.changes, util.deepCopy(attributes));
+      attributes == null || Object.assign(doc.changes, deepCopy(attributes));
       return doc;
     }
 
@@ -335,7 +336,7 @@ define(function(require, exports, module) {
       const topLevel = origChanges.$partial &&
               Changes.topLevelChanges(this.attributes, origChanges);
       if (topLevel) {
-        this.changes = util.deepCopy(topLevel);
+        this.changes = deepCopy(topLevel);
         Changes.setOriginal(this.changes, origChanges);
       }
 
@@ -383,7 +384,7 @@ define(function(require, exports, module) {
     $change(field) {
       if (field in this.changes)
         return this.changes[field];
-      return this.changes[field] = util.deepCopy(this[field]);
+      return this.changes[field] = deepCopy(this[field]);
     }
 
     $hasChanged(field, changes=this.changes) {return Changes.has(changes, field)}
@@ -537,7 +538,7 @@ define(function(require, exports, module) {
     if (value === doc.attributes[field]) {
       if (hasOwn(changes, field)) {
         if (value === undefined && doc.constructor._defaults[field] !== undefined)
-          changes[field] = util.deepCopy(doc.constructor._defaults[field]);
+          changes[field] = deepCopy(doc.constructor._defaults[field]);
         else
           delete doc.changes[field];
 
@@ -561,34 +562,30 @@ define(function(require, exports, module) {
      };
    });
 
-  function mapFieldType(model, field, bt, name) {
+  const mapFieldType = (model, field, bt, name)=>{
     if (! bt) throw Error(name + ' is not defined for field: ' + field);
     model.fieldTypeMap[field] = bt;
-  }
+  };
 
-
-
-  function defineField(proto, field, accessor) {
+  const defineField = (proto, field, accessor)=>{
     Object.defineProperty(proto, field, {
       configurable: true,
       get: (accessor && accessor.get) || getValue(field),
 
       set: (accessor && accessor.set) || setValue(field),
     });
-  }
+  };
 
-  function belongsTo(model, name, field) {
-    return function () {
-      const value = this[field];
-      return value && this.$cacheRef(name)[value] ||
-        (this.$cacheRef(name)[value] = model.findById(value));
-    };
-  }
+  const belongsTo = (model, name, field) => function () {
+    const value = this[field];
+    return value && this.$cacheRef(name)[value] ||
+      (this.$cacheRef(name)[value] = model.findById(value));
+  };
 
   const getValue = field => function () {return getField(this, field)};
   const setValue = field => function (value) {return setField(this, field, value)};
 
-  function setUpValidators(model, field, options) {
+  const setUpValidators = (model, field, options)=>{
     const validators = getValidators(model, field);
 
     if (typeof options === 'object') {
@@ -600,13 +597,10 @@ define(function(require, exports, module) {
         }
       }
     }
-  }
+  };
 
-  function getValidators(model, field) {
-    return model._fieldValidators[field] || (model._fieldValidators[field] = {});
-  }
-
-
+  const getValidators =
+        (model, field)=> model._fieldValidators[field] || (model._fieldValidators[field] = {});
 
   const typeMap = {
     belongs_to_dbId(model, field, options) {

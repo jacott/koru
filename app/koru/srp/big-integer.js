@@ -32,7 +32,7 @@
  * and disclaimer.
  **/
 
-define(function() {
+define(()=>{
   // Bits per digit
 
   // (public) Constructor
@@ -44,7 +44,7 @@ define(function() {
   }
 
   // return new, unset BigInteger
-  function nbi() { return new BigInteger(null); }
+  const nbi = ()=> new BigInteger(null);
 
   // am: Compute w_j += (x*this_i), propagate carries,
   // c is initial carry, returns final carry.
@@ -138,7 +138,7 @@ define(function() {
   }
 
   // return bigint initialized to value
-  function nbv(i) { const r = nbi(); r.fromInt(i); return r; }
+  const nbv = i =>{ const r = nbi(); r.fromInt(i); return r};
 
   // (protected) set from string and radix
   function bnpFromString(s,b) {
@@ -234,7 +234,7 @@ define(function() {
   }
 
   // returns bit length of the integer x
-  function nbits(x) {
+  const nbits = x =>{
     let r = 1, t;
     if((t=x>>>16) != 0) { x = t; r += 16; }
     if((t=x>>8) != 0) { x = t; r += 8; }
@@ -242,7 +242,7 @@ define(function() {
     if((t=x>>2) != 0) { x = t; r += 2; }
     if((t=x>>1) != 0) { x = t; r += 1; }
     return r;
-  }
+  };
 
   // (public) return the number of bits in "this"
   function bnBitLength() {

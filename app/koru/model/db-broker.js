@@ -1,3 +1,3 @@
-define(function(require) {
+define((require)=>{
   return require('koru/env!./db-broker');
 });

@@ -1,8 +1,8 @@
 define({
   getMentionIds(md) {
-    var hyperlinks = this.findHyperLinks(md, '@');
+    const hyperlinks = this.findHyperLinks(md, '@');
 
-    for(var i = 0; i < hyperlinks.length; ++i) {
+    for(let i = 0; i < hyperlinks.length; ++i) {
       hyperlinks[i] = hyperlinks[i][2];
     }
 
@@ -10,10 +10,11 @@ define({
   },
 
   findHyperLinks(md, prefix) {
-    var m, re = /\[([\s\S]*?)\]\(([^)]*)\)/g;
-    var m2, re2 = /[\[\]]/g;
-    var result = [];
-    var pLen = prefix && prefix.length;
+    const re = /\[([\s\S]*?)\]\(([^)]*)\)/g;
+    const re2 = /[\[\]]/g;
+    const result = [];
+    const pLen = prefix ? prefix.length : 0;
+    let m, m2;
     while ((m = re.exec(md)) !== null) {
       if (m.index > 0 && md[m.index - 1] === '\\') {
         re.lastIndex = m.index + m[0].indexOf(']');
@@ -24,7 +25,7 @@ define({
       }
       re2.lastIndex = 0;
 
-      if (pLen && md.slice(m.index - pLen, m.index) !== prefix) continue;
+      if (pLen != 0 && md.slice(m.index - pLen, m.index) !== prefix) continue;
 
       var nest = 1;
       var lstart = m.index;

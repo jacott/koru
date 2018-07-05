@@ -14,19 +14,8 @@ isClient && define((require, exports, module)=>{
 
   const subscribe = require('./subscribe');
 
-  let v = null;
-
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-      api.module();
-    },
-
-    tearDown() {
-      v = null;
-    },
-
-    "test wired correctly"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("wired correctly", ()=>{
       /**
        * Subscribe to a publication (see {#koru/session/publish}).
        *
@@ -52,6 +41,6 @@ isClient && define((require, exports, module)=>{
         assert.same(sub.constructor, ClientSub);
         //]
       }
-    },
+    });
   });
 });

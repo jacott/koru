@@ -1,11 +1,12 @@
 define((require, exports, module)=>{
-  const Future = requirejs.nodeRequire('fibers/future');
   const Libpq = requirejs.nodeRequire('pg-libpq');
   const koru            = require('../main');
   const makeSubject     = require('../make-subject');
   const match           = require('../match');
   const Pool            = require('../pool-server');
   const util            = require('../util');
+
+  const {Future} = util;
 
   const {private$, inspect$} = require('koru/symbols');
 
@@ -145,7 +146,7 @@ define((require, exports, module)=>{
 
   class Client {
     constructor(url, name) {
-      this[id$] = (++clientCount).toString(36);
+      this[id$] = Symbol();
       this[tx$] = Symbol();
       this._url = url;
       this.name = name || this.schemaName;

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const makeSubject = require('koru/make-subject');
   const koru        = require('../main');
   const util        = require('../util');
@@ -6,8 +6,6 @@ define(function(require, exports, module) {
   const {inspect$} = require('koru/symbols');
 
   const {compare} = util;
-
-  koru.onunload(module, ()=>{exports._unload && exports._unload()});
 
   const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol(),
         compare$ = Symbol(), compareKeys$ = Symbol(),
@@ -144,7 +142,7 @@ define(function(require, exports, module) {
     }
   };
 
-  function buildList(query, listName, field, values) {
+  const buildList = (query, listName, field, values)=>{
     const items = query[listName] || (query[listName] = {});
     const list = items[field] || (items[field] = []);
 
@@ -152,10 +150,10 @@ define(function(require, exports, module) {
     else list.push(values);
 
     return query;
-  }
+  };
 
 
-  function Constructor(QueryEnv) {
+  const __init__ = QueryEnv =>{
     class Query {
       constructor(model) {
         this.model = model;
@@ -340,14 +338,15 @@ define(function(require, exports, module) {
 
     makeSubject(Query, 'onAnyChange', notifyAC$);
 
-
     QueryEnv(Query, condition, notifyAC$);
 
     return Query;
-  }
+  };
 
-  exports = Constructor(require('../env!./query'));
-  exports.__init__ = Constructor;
+  exports = __init__(require('../env!./query'));
+  exports.__init__ = __init__;
+
+  module.onUnload(()=>{exports._unload && exports._unload()});
 
   return exports;
 });

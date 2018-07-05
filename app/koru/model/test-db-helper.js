@@ -1,3 +1,3 @@
 define((require, exports, module)=>{
-  module.exports = require('koru/env!./test-db-helper');
+  return require('koru/env!./test-db-helper');
 });

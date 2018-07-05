@@ -1,11 +1,11 @@
-define(function(require, exports, module) {
-  const koru      = require('koru');
-  const session   = require('koru/session');
-  const message   = require('koru/session/message');
-  const publish   = require('koru/session/publish');
-  const SCFactory = require('koru/session/server-connection-factory');
-  const TH        = require('koru/test-helper');
-  const util      = require('koru/util');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const session         = require('koru/session');
+  const message         = require('koru/session/message');
+  const publish         = require('koru/session/publish');
+  const SCFactory       = require('koru/session/server-connection-factory');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
 
   const {stub, spy, onEnd} = TH;
 
@@ -21,7 +21,7 @@ define(function(require, exports, module) {
   const publishTH = {
     mockConnection (sessId, session=this.mockSession()) {
       const conn = new (SCFactory(session))(
-        {send: stub(), on: stub()}, {}, sessId || 's123', function () {}
+        {send: stub(), on: stub()}, {}, sessId || 's123', ()=>{}
       );
       spy(conn, 'batchMessages');
       spy(conn, 'releaseMessages');
@@ -52,5 +52,5 @@ define(function(require, exports, module) {
     },
   };
 
-  module.exports = publishTH;
+  return publishTH;
 });

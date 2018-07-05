@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   /**
    * IndexedDB queue for RPC messages to be sent. This queue is for a
    * persistent indexedDB queue which is suitable for offline support.
@@ -15,21 +15,24 @@ isClient && define(function (require, exports, module) {
   const api           = require('koru/test/api');
   const MockPromise   = require('koru/test/mock-promise');
 
+  const {stub, spy, onEnd} = TH;
+
   const sut  = require('./rpc-idb-queue');
-  var v;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  const poll = ()=>{v.mdb.yield(); Promise._poll();};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
-      api.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test new"() {
+    test("new", ()=>{
       /**
        * Build a new queue
        **/
@@ -39,10 +42,10 @@ isClient && define(function (require, exports, module) {
       const queue = new_RPCIDBQueue(db);
 
       assert.isFalse(queue.isRpcPending());
-    },
+    });
 
-    "with rpcQueue": {
-      setUp() {
+    group("with rpcQueue", ()=>{
+      beforeEach(()=>{
         v.mdb = new MockIndexedDB(0);
         v.db = new QueryIDB({name: 'foo', versoion: 0});
         poll();
@@ -50,9 +53,9 @@ isClient && define(function (require, exports, module) {
         v.fooDb = v.mdb._dbs.foo;
         v.os_rpcQueue = v.fooDb._store.rpcQueue;
         poll();
-      },
+      });
 
-      "test works if db closed"() {
+      test("works if db closed", ()=>{
         const queue = new sut(v.db);
 
         const session = {isRpcGet() {return false}, checkMsgId() {}};
@@ -64,9 +67,9 @@ isClient && define(function (require, exports, module) {
         poll();
         assert.equals(v.os_rpcQueue.docs, {});
         assert.equals(queue.get('a12'), [v.data, func]);
-      },
+      });
 
-      "test persistence"() {
+      test("persistence", ()=>{
         const queue = new sut(v.db);
 
         const session = {isRpcGet() {return false}, checkMsgId() {}};
@@ -78,9 +81,9 @@ isClient && define(function (require, exports, module) {
           a12: {_id: 'a12', data: ['a12', 'foo', 1]}
         });
         assert.equals(queue.get('a12'), [v.data, func]);
-      },
+      });
 
-      "test get not persisted"() {
+      test("get not persisted", ()=>{
         const queue = new sut(v.db);
 
         const session = {isRpcGet(arg) {return arg === 'foo'}, checkMsgId() {}};
@@ -92,9 +95,9 @@ isClient && define(function (require, exports, module) {
         assert.equals(v.os_rpcQueue.docs, {});
         assert.equals(queue.get('a12'), [v.data, func]);
 
-      },
+      });
 
-      "test reload"() {
+      test("reload", ()=>{
         /**
          * reload all waiting messages into memory for resend
          **/
@@ -107,7 +110,7 @@ isClient && define(function (require, exports, module) {
 
         const ans = [];
         const queue = new sut(v.db);
-        const state = {incPending: this.stub()};
+        const state = {incPending: stub()};
         const sess = {
           _msgId: 0, state,
           sendBinary(type, data) {
@@ -131,16 +134,14 @@ isClient && define(function (require, exports, module) {
 
         const callback = queue.get('a212345670123456789')[1];
 
-        TH.stubProperty(koru, 'globalErrorCatch', {value: this.stub()});
+        TH.stubProperty(koru, 'globalErrorCatch', {value: stub()});
 
         callback({error: 409, message: 'dupe'});
 
         refute.called(koru.globalErrorCatch);
         callback({message: 'invalid'});
         assert.calledWith(koru.globalErrorCatch, {message: 'invalid'});
-      },
-    },
+      });
+    });
   });
-
-  function poll() {v.mdb.yield(); Promise._poll();}
 });

@@ -1,10 +1,10 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
 
   const {stub, spy, onEnd} = TH;
 
-  const sut             = require('./validate-validator').bind(validation);
+  const sut = require('./validate-validator').bind(validation);
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("calls", ()=>{

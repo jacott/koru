@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const koru       = require('koru/main');
   const dbBroker   = require('koru/model/db-broker');
   const Driver     = require('koru/pg/driver');

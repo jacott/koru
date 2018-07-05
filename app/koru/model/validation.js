@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const format         = require('../format');
   const koru           = require('../main');
   const match          = require('../match');
@@ -44,16 +44,7 @@ define(function(require, exports, module) {
 
     check(obj, spec, options={}) {
       const {onError, altSpec, baseName: name, filter} = options;
-      try {
-        check1(obj, spec, name);
-        return true;
-      } catch(ex) {
-        if (ex === false) {
-          return false;
-        }
-        throw ex;
-      }
-      function check1(obj, subSpec, name) {
+      const check1 = (obj, subSpec, name)=>{
         if (typeof subSpec === 'string') {
           if (obj == null) return;
           if (match[subSpec] && match[subSpec].$test(obj))
@@ -87,48 +78,61 @@ define(function(require, exports, module) {
         } else if (! (match.match.$test(subSpec) && subSpec.$test(obj))) {
           bad(name, obj, subSpec);
         }
-      }
+      };
 
-      function bad(...args) {
-        if (typeof onError === 'function' && onError.apply(this, args))
+      const bad = (...args)=>{
+        if (typeof onError === 'function' && onError(...args))
           return;
         throw false;
+      };
+
+      try {
+        check1(obj, spec, name);
+        return true;
+      } catch(ex) {
+        if (ex === false) {
+          return false;
+        }
+        throw ex;
       }
     },
 
-    nestedFieldValidator(func) {
-      return function (field) {
-        const doc = this;
-        const value = doc.changes[field];
-        if (value !== undefined) {
-          func(doc, field, value, {
-            onError(name, obj) {
-              if (name)
-                Val.addError(doc, field, 'is_invalid',
-                             name, typeof obj === 'string' ? obj : obj && obj[error$]);
-              else
-                Val.addError(doc, field, 'is_invalid');
+    nestedFieldValidator: func => function (field) {
+      const doc = this;
+      const value = doc.changes[field];
+      if (value !== undefined) {
+        func(doc, field, value, {
+          onError(name, obj) {
+            if (name)
+              Val.addError(doc, field, 'is_invalid',
+                           name, typeof obj === 'string' ? obj : obj && obj[error$]);
+            else
+              Val.addError(doc, field, 'is_invalid');
 
-            },
-          });
-        }
-      };
+          },
+        });
+      }
+
     },
 
     assertCheck(obj, spec, options) {
       let error, reason;
-      if (options == null || ! hasOwn(options, 'onError'))
-        options = Object.assign({onError(name, obj) {
-          if (obj && obj[error$] !== undefined) {
-            reason = obj[error$];
-          } else if (name) {
-            reason = {}; reason[name] = [['is_invalid']];
-          } else {
-            reason = 'is_invalid';
+      if (! this.check(
+        obj, spec, options == null || options.onError === undefined
+          ? {
+          __proto__: options,
+          onError(name, obj) {
+            if (obj && obj[error$] !== undefined) {
+              reason = obj[error$];
+            } else if (name) {
+              reason = {}; reason[name] = [['is_invalid']];
+            } else {
+              reason = 'is_invalid';
+            }
+            if (error === undefined)
+              error = new koru.Error(400, reason);
           }
-          error = new koru.Error(400, reason);
-        }}, options);
-      if (! this.check.call(this, obj, spec, options))
+          } : options))
         throw error;
     },
 
@@ -329,16 +333,16 @@ define(function(require, exports, module) {
     },
   };
 
-  function accessDenied(details, nolog) {
+  const accessDenied = (details, nolog)=>{
     const error = new koru.Error(403, "Access denied", details);
 
     if (! nolog && ! util.thread.suppressAccessDenied)
       koru.info(`Access denied: user ${koru.userId()}: ${details}`,
                 koru.util.extractError(error));
     throw error;
-  }
+  };
 
-  function convertPermitSpec(input) {
+  const convertPermitSpec = (input)=>{
     const output = {};
 
     for(let i=0,item;item=input[i];++i) {
@@ -368,13 +372,13 @@ define(function(require, exports, module) {
     }
 
     return output;
-  }
+  };
 
-  function ensure(type, args) {
+  const ensure = (type, args)=>{
     if (typeof type === 'string')
       type = match[type];
     for(let i = 0; i < args.length; ++i) {
       type.$test(args[i])  || accessDenied(`expected ${type}`);
     }
-  }
+  };
 });

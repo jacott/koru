@@ -1,46 +1,51 @@
-isServer && define(function (require, exports, module) {
-  var test, v;
-  const koru   = require('./main');
-  const Queue  = require('./queue');
-  const TH     = require('koru/test-helper');
-  const Future = requirejs.nodeRequire('fibers/future');
+isServer && define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const koru            = require('./main');
+  const Future          = requirejs.nodeRequire('fibers/future');
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
+  const {stub, spy, onEnd} = TH;
+
+  const Queue           = require('./queue');
+
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test single"() {
+    test("single", ()=>{
       var single = Queue('single');
-      single.add(v.func = test.stub());
+      single.add(v.func = stub());
       assert.called(v.func);
-      single.add(v.func = test.stub());
+      single.add(v.func = stub());
       assert.called(v.func);
-    },
+    });
 
-    "test queing"() {
-      var q2 = new Future;
-      var q3 = new Future;
-      var fooFin = new Future;
-      var results = [];
-      var queue = Queue();
-      queue('foo', function (fooQueue) {
+    test("queing", ()=>{
+      const q2 = new Future;
+      const q3 = new Future;
+      const fooFin = new Future;
+      const results = [];
+      const queue = Queue();
+
+      const letRun = func =>{
+        koru.Fiber(func).run();
+        var f = new Future();
+        setTimeout(()=>{f.return(v.q1)}, 1);
+        f.wait();
+      };
+
+      queue('foo', fooQueue =>{
         assert.isFalse(fooQueue.isPending);
-        letRun(function () {
-          queue('foo', function () {
-            letRun(function () {
+        letRun(()=>{
+          queue('foo', ()=>{
+            letRun(()=>{
 
               try {
-                queue('foo', function () {
+                queue('foo', ()=>{
                   results.push(3);
-                  queue('bar', function () {
-                    throw 'ex bar';
-                  });
+                  queue('bar', ()=>{throw 'ex bar'});
 
                   results.push('not me');
                 });
@@ -50,9 +55,7 @@ isServer && define(function (require, exports, module) {
               }
 
             });
-            results.push(queue('bar', function () {
-              return 'bar';
-            }));
+            results.push(queue('bar', ()=> 'bar'));
             results.push(2);
             q2.return();
           });
@@ -64,20 +67,9 @@ isServer && define(function (require, exports, module) {
       q3.wait();
       assert.equals(results, [1, 'bar', 2, 3, 'ex bar']);
 
-      queue('foo', function () {
-        v.fooNew = true;
-      });
+      queue('foo', ()=>{v.fooNew = true});
 
       assert.isTrue(v.fooNew);
-
-      function letRun(func) {
-        koru.Fiber(func).run();
-        var f = new Future();
-        setTimeout(function () {
-          f.return(v.q1);
-        }, 1);
-        f.wait();
-      }
-    },
+    });
   });
 });

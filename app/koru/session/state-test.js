@@ -1,24 +1,25 @@
-define(function (require, exports, module) {
-  var test, v;
-  const TH           = require('koru/test-helper');
-  const stateFactory = require('./state').constructor;
+define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const stateFactory    = require('./state').constructor;
 
-  var sessState;
+  const {stub, spy, onEnd} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let sessState;
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       sessState = new stateFactory();
-    },
+    });
 
-    tearDown() {
-      v = sessState = null;
-    },
+    afterEach(()=>{
+      v = {};
+      sessState = null;
+    });
 
-    "test pending"() {
+    test("pending", ()=>{
       assert.same(sessState.pendingCount(), 0);
-      test.onEnd(sessState.pending.onChange(v.change = test.stub()));
+      onEnd(sessState.pending.onChange(v.change = stub()));
 
       sessState.incPending();
       assert.calledOnce(v.change);
@@ -52,17 +53,17 @@ define(function (require, exports, module) {
       assert.same(sessState.pendingCount(), 1);
       assert.same(sessState.pendingUpdateCount(), 1);
       assert.calledWith(v.change, true);
-    },
+    });
 
-    "test onConnect"() {
-      sessState.onConnect('22', v.conn22_1 = test.stub());
+    test("onConnect", ()=>{
+      sessState.onConnect('22', v.conn22_1 = stub());
       assert.exception(function () {
-        sessState.onConnect('22', v.conn22_2 = test.stub());
+        sessState.onConnect('22', v.conn22_2 = stub());
       });
 
-      sessState.onConnect('10', v.conn10_1 = test.stub());
+      sessState.onConnect('10', v.conn10_1 = stub());
 
-      test.onEnd(sessState.onChange(v.onChange = test.stub()));
+      onEnd(sessState.onChange(v.onChange = stub()));
 
       sessState.connected(v.conn = {});
 
@@ -80,10 +81,10 @@ define(function (require, exports, module) {
       sessState.stopOnConnect('22');
 
       assert.equals(sessState._onConnect['22'], undefined);
-    },
+    });
 
-    "test pause"() {
-      test.onEnd(sessState.onChange(v.onChange = test.stub()));
+    test("pause", ()=>{
+      onEnd(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
 
@@ -93,10 +94,10 @@ define(function (require, exports, module) {
 
       assert.isTrue(sessState.isPaused());
 
-    },
+    });
 
-    "test retry startup"() {
-      test.onEnd(sessState.onChange(v.onChange = test.stub()));
+    test("retry startup", ()=>{
+      onEnd(sessState.onChange(v.onChange = stub()));
 
       sessState.retry(4404, 'not found');
       sessState.retry(4403, 'forbidden');
@@ -104,11 +105,11 @@ define(function (require, exports, module) {
       assert.same(sessState._state, 'retry');
 
       assert.calledOnceWith(v.onChange, false, 4404, 'not found');
-    },
+    });
 
 
-    "test retry ready"() {
-      test.onEnd(sessState.onChange(v.onChange = test.stub()));
+    test("retry ready", ()=>{
+      onEnd(sessState.onChange(v.onChange = stub()));
 
       sessState._state = 'ready';
 
@@ -118,6 +119,6 @@ define(function (require, exports, module) {
       assert.same(sessState._state, 'closed');
 
       assert.calledOnceWith(v.onChange, false);
-    },
+    });
   });
 });

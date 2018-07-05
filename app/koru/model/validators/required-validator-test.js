@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
   const sut             = require('./required-validator').bind(validation);
@@ -7,16 +7,16 @@ define(function (require, exports, module) {
 
   let doc;
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       doc = {exists: 'a', empty: ''};
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       doc = null;
-    },
+    });
 
-    "test 1"() {
+    test("1", ()=>{
       doc = {};
       sut(doc,'foo', 1);
       assert(doc[error$]);
@@ -34,45 +34,45 @@ define(function (require, exports, module) {
       doc = {foo: ['baz', 'bar']};
       sut(doc,'foo', 1);
       refute(doc[error$]);
-    },
+    });
 
-    "test required false"() {
+    test("required false", ()=>{
       sut(doc, 'empty', false);
       refute(doc[error$]);
-    },
+    });
 
-    'test false with not_null'() {
+    test("false with not_null", ()=>{
       doc = {foo: false};
       sut(doc,'foo', 'not_null');
       refute(doc[error$]);
-    },
+    });
 
-    'test missing'() {
+    test("missing", ()=>{
       sut(doc,'name');
 
       assert(doc[error$]);
       assert.equals(doc[error$]['name'],[['is_required']]);
-    },
+    });
 
-    'test not_null'() {
+    test("not_null", ()=>{
       sut(doc,'empty','not_null');
       refute(doc[error$]);
 
       sut(doc,'undef','not_null');
       assert(doc[error$]);
-    },
+    });
 
-    'test exists'() {
+    test("exists", ()=>{
       sut(doc,'exists');
 
       refute(doc[error$]);
-    },
+    });
 
-    'test empty'() {
+    test("empty", ()=>{
       sut(doc,'empty');
 
       assert(doc[error$]);
       assert.equals(doc[error$]['empty'],[['is_required']]);
-    },
+    });
   });
 });

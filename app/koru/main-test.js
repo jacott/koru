@@ -20,6 +20,18 @@ define((require, exports, module)=>{
       api.module({subjectName: 'koru'});
     });
 
+    test("getLocation", ()=>{
+      if (isClient)
+        assert.same(koru.getLocation(), window.location);
+      else
+        assert(isServer);
+    });
+
+    test("isServer, isClient", ()=>{
+      assert.same(isClient, typeof process === 'undefined');
+      assert.same(isServer, typeof process !== 'undefined');
+    });
+
     test("KoruError", ()=>{
       const error = new koru.Error(500, 'the reason', 'the detail');
       assert.same(error.name, 'KoruError');

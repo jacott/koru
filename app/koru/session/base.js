@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const {private$} = require('koru/symbols');
-  const Trace      = require('koru/trace');
-  const koru       = require('../main');
-  const message    = require('./message');
+define((require)=>{
+  const {private$}      = require('koru/symbols');
+  const Trace           = require('koru/trace');
+  const koru            = require('../main');
+  const message         = require('./message');
 
   const rpcType$ = Symbol();
 

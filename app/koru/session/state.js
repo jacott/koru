@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const koru        = require('koru');
-  const makeSubject = require('koru/make-subject');
-  const Trace       = require('koru/trace');
-  const util        = require('koru/util');
+define((require)=>{
+  const koru            = require('koru');
+  const makeSubject     = require('koru/make-subject');
+  const Trace           = require('koru/trace');
+  const util            = require('koru/util');
 
   function stateFactory() {
     let state = 'startup';
@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
     let debug_pending = false;
 
-    Trace.debug_pending = function (value) {
+    Trace.debug_pending = (value)=>{
       if (value) {
         koru._incPendingStack = [];
         koru._decPendingStack = [];
@@ -23,12 +23,12 @@ define(function(require, exports, module) {
       }
     };
 
-    function setState(self, value) {
+    const setState = (self, value)=>{
       const was = state;
       state = value;
       if (was === 'ready')
         self.notify(false);
-    }
+    };
 
     const sessionState = {
       constructor: stateFactory,
@@ -48,9 +48,7 @@ define(function(require, exports, module) {
         this.session = session;
         state = 'ready';
         const onConnect = this._onConnect;
-        util.forEach(Object.keys(onConnect).sort(), function (priority) {
-          onConnect[priority](session);
-        });
+        util.forEach(Object.keys(onConnect).sort(), priority =>{onConnect[priority](session)});
         this.notify(true);
       },
 
@@ -108,7 +106,5 @@ define(function(require, exports, module) {
     return makeSubject(sessionState);
   }
 
-  exports = stateFactory();
-
-  return exports;
+  return  stateFactory();
 });

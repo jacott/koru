@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * The main or active session for client server communication.
    * See {#koru/session/web-socket-sender-factory}
@@ -9,8 +9,8 @@ define(function (require, exports, module) {
 
   const {stub, spy, onEnd} = TH;
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module({subjectName: 'session'});
     });
 

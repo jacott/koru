@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util  = require('koru/util');
 
   const {inspect$, test$} = require('koru/symbols');
@@ -384,7 +384,7 @@ define(function(require, exports, module) {
   BTree.prototype.nextNode = nextNode;
   BTree.prototype.previousNode = previousNode;
 
-  function dc1(n) {
+  const dc1 = n =>{
     let p = null;
     while ((p = n[up$]) !== null) {
       if (p === null) return;
@@ -443,9 +443,9 @@ define(function(require, exports, module) {
         return;
       }
     }
-  }
+  };
 
-  function insert(parent, compare, value, node) {
+  const insert = (parent, compare, value, node)=>{
     while (parent !== null) {
       const field = compare(value, parent.value) < 0 ? left$ : right$;
       const fv = parent[field];
@@ -456,18 +456,18 @@ define(function(require, exports, module) {
       }
       parent = fv;
     }
-  }
+  };
 
-  function find(n, compare, value) {
+  const find = (n, compare, value)=>{
     while (n !== null) {
       const cmp = compare(value, n.value);
       if (cmp === 0) return n;
       n = cmp < 0 ? n[left$] : n[right$];
     }
     return null;
-  }
+  };
 
-  function ic1(n) {
+  const ic1 = n =>{
     while (n[up$] !== null) {
       // ic2
       if (! n[up$][red$]) return;
@@ -505,9 +505,9 @@ define(function(require, exports, module) {
       }
     }
     n[red$] = false;
-  }
+  };
 
-  function rotateLeft(n) {
+  const rotateLeft = n =>{
     const p = n[up$];
     const r = n[right$];
     const rl = r[left$];
@@ -520,9 +520,9 @@ define(function(require, exports, module) {
     }
     r[up$] = p;
     r[left$] = n; n[up$] = r;
-  }
+  };
 
-  function rotateRight(n) {
+  const rotateRight = n =>{
     const p = n[up$];
     const l = n[left$];
     const lr = l[right$];
@@ -535,35 +535,35 @@ define(function(require, exports, module) {
     }
     l[up$] = p;
     l[right$] = n; n[up$] = l;
-  }
+  };
 
-  function pad(level, pad) {
+  const pad = (level, pad)=>{
     for(let i = 0; i < level; ++i) pad+= '  ';
     return pad;
-  }
+  };
 
-  function display(formatter, node, level=0, prefix='') {
+  const display = (formatter, node, level=0, prefix='')=>{
     if (node === null || level > 10) return '';
     return `
 ${pad(level, prefix)}${formatter(node.value)}${node[red$] ? ' *' : ''}${display(
 formatter, node[left$], level+1, 'l')}${display(
 formatter, node[right$], level+1, 'r')}`;
-  }
+  };
 
-  function dsp(node, dv, l=2) {
+  const dsp = (node, dv, l=2)=>{
     if (! node) return 'null';
     return --l == 0 ? `${dv(node.value)}` :
       `{value: ${dv(node.value)}, up: ${dsp(node[up$], dv, l)}, `+
       `l: ${dsp(node[left$], dv, l)}, r: ${dsp(node[right$], dv, l)}}`;
-  }
+  };
 
-  function assertTrue(truthy, displayError) {
+  const assertTrue = (truthy, displayError)=>{
     if (truthy) return;
     const err = new Error('tree invalid');
     err.displayError = displayError;
     err.name = 'TreeError';
     throw err;
-  }
+  };
 
   BTree[test$] = {left$, right$, up$, red$};
 

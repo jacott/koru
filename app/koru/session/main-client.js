@@ -1,13 +1,14 @@
 /*global WebSocket */
 
-define(function (require, exports, module) {
-  const util                   = require('koru/util');
-  const koru                   = require('../main');
-  const webSocketSenderFactory = require('./web-socket-sender-factory');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const State           = require('koru/session/state');
+  const webSocketSenderFactory = require('koru/session/web-socket-sender-factory');
+  const util            = require('koru/util');
 
   koru.onunload(module, 'reload');
 
-  const sessionClientFactory = (session, state=require('./state')) => {
+  return (session, state=State)=>{
     session._url = function () {
       const location = koru.getLocation();
 
@@ -30,6 +31,4 @@ define(function (require, exports, module) {
     session.newWs = function () {return new WebSocket(this._url())};
     return webSocketSenderFactory(session, state);
   };
-
-  module.exports = sessionClientFactory;
 });

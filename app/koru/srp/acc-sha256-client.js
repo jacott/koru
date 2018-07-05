@@ -1,4 +1,4 @@
-define(function() {
+define(()=>{
   if (window.TextDecoder !== undefined) {
     const encoder = new window.TextEncoder();
     return {

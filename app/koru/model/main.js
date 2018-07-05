@@ -1,9 +1,9 @@
-define(function(require, exports, module) {
-  const ModelEnv  = require('koru/env!./main');
-  const BaseModel = require('koru/model/base-model');
-  const koru      = require('../main');
-  const util      = require('../util');
-  const ModelMap  = require('./map');
+define((require, exports, module)=>{
+  const ModelEnv        = require('koru/env!./main');
+  const BaseModel       = require('koru/model/base-model');
+  const koru            = require('../main');
+  const util            = require('../util');
+  const ModelMap        = require('./map');
 
   const {private$} = require('koru/symbols');
 

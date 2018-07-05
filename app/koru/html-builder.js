@@ -2,7 +2,7 @@
  Load compiled template from .build directory.
  The template-compiler will convert the html to js.
  */
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const util             = require('koru/util');
   const templateCompiler = require('./dom/template-compiler');
   const fs = requirejs.nodeRequire('fs');

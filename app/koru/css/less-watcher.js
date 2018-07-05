@@ -1,16 +1,17 @@
-const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
 const fs = require('fs');
 const Path = require('path');
-const readdir = Future.wrap(fs.readdir);
-const stat = Future.wrap(fs.stat);
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru    = require('koru');
   const fw      = require('koru/file-watch');
   const fst     = require('koru/fs-tools');
   const queue   = require('koru/queue')();
   const session = require('koru/session');
   const util    = require('koru/util');
+  const {Future} = util, wait = Future.wait;
+
+  const readdir = Future.wrap(fs.readdir);
+  const stat = Future.wrap(fs.stat);
 
   const topDir = koru.appDir;
   const topDirLen = koru.appDir.length + 1;
@@ -20,42 +21,27 @@ define(function(require, exports, module) {
   let sources = Object.create(null);
   let loadDirs = Object.create(null);
 
-  koru.onunload(module, 'reload');
-
-  fw.listeners['less'] = watchLess;
-  fw.listeners['lessimport'] = watchLess;
-
-  session.provide('S', loadRequest);
-
-  function loadRequest(data) {
+  session.provide('S', function loadRequest(data) {
     if (data.slice(0,2).toString() === 'LA')
       this.send('SL', findAll(data.slice(2).toString()).join(' '));
-  }
+  });
 
-  function findAll(dir) {
+  const findAll = dir =>{
     if (dir.match(/(^[./]|[./]\.)/)) throw new koru.Error(500, 'Illegal directory name');
 
-    loadDirs[dir] || queue(dir, function (isNew, result) {
+    loadDirs[dir] || queue(dir, (isNew, result)=>{
       if (loadDirs[dir]) return;
 
-      const prefixLen = dir.length + 1;
-      findAll1(dir);
-
-      loadDirs[dir] = true;
-
-      function findAll1(dir) {
-        var m;
+      const findAll1 = dir =>{
+        let m;
         const dirPath = Path.join(topDir, dir);
-        const filenames = readdir(dirPath).wait().filter(function (fn) {
-          return /^[\w-]*(?:\.(css|less)$|$)/.test(fn);
-        });
-        const stats = filenames.map(function (filename) {
-          return stat(Path.join(dirPath, filename));
-        });
+        const filenames = readdir(dirPath).wait()
+              .filter(fn => /^[\w-]*(?:\.(css|less)$|$)/.test(fn));
+        const stats = filenames.map(filename => stat(Path.join(dirPath, filename)));
 
         wait(stats);
 
-        for(var i = 0; i < filenames.length; ++i) {
+        for(let i = 0; i < filenames.length; ++i) {
           var fn = Path.join(dir, filenames[i]);
           if (fn in loads) continue;
 
@@ -68,7 +54,12 @@ define(function(require, exports, module) {
             findAll1(fn);
           }
         }
-      }
+      };
+
+      const prefixLen = dir.length + 1;
+      findAll1(dir);
+
+      loadDirs[dir] = true;
     });
 
     const re = new RegExp("^"+util.regexEscape(dir));
@@ -80,9 +71,9 @@ define(function(require, exports, module) {
     }
 
     return results;
-  }
+  };
 
-  function extractInfo(srcName, fromName) {
+  const extractInfo = (srcName, fromName)=>{
     if (srcName[0] !== '.') {
       var fullname = Path.join(topDir, srcName);
       try {
@@ -169,22 +160,22 @@ define(function(require, exports, module) {
 
 
     return st;
-  }
+  };
 
-  function buildName(fullname) {
+  const buildName = fullname =>{
     return Path.join(Path.dirname(fullname),
                      ".build", Path.basename(fullname)+".css");
-  }
+  };
 
-  function watchLess(type, path, top, session) {
-    var prefix = Path.dirname(path);
+  const watchLess = (type, path, top, session)=>{
+    let prefix = Path.dirname(path);
     while(prefix.length > 1 && ! loadDirs[prefix]) {
       prefix = Path.dirname(prefix);
     }
 
     if (! loadDirs[prefix]) return;
 
-    queue(path, function (queue) {
+    queue(path, queue =>{
       extractInfo(path, type === 'less' ? null : path);
       if (queue.isPending) return;
       if (type === 'less')
@@ -212,7 +203,12 @@ define(function(require, exports, module) {
         session.sendAll('SL', list.join(' '));
       }
     });
-  }
+  };
+
+  koru.onunload(module, 'reload');
+
+  fw.listeners['less'] = watchLess;
+  fw.listeners['lessimport'] = watchLess;
 
   return {
     get loads() {return loads},

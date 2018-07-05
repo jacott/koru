@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const BTree       = require('koru/btree');
   const util        = require('koru/util');
   const makeSubject = require('../make-subject');

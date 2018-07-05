@@ -1,13 +1,10 @@
 define((require, exports, module)=>{
   const Dom             = require('../dom');
   const koru            = require('../main');
+  const BaseTH          = require('../test-helper');
   const Route           = require('./route');
 
-  const TH = Object.create(require('../test-helper'));
-
-  const {stub, spy, util, onEnd, Core} = TH;
-
-  koru.onunload(module, ()=>{Route.history = TH._orig_history});
+  const {stub, spy, util, onEnd, Core} = BaseTH;
 
   Route._orig_history = Route.history;
   Route.history = {
@@ -15,6 +12,36 @@ define((require, exports, module)=>{
     replaceState() {},
     back() {},
   };
+
+  koru.onunload(module, ()=>{Route.history = BaseTH._orig_history});
+
+  const keyseq = (event, node, key, args)=>{
+    if (args === undefined && typeof key === 'object') {
+      args = key;
+      key = node;
+      node = document.body;
+    } else if (key === undefined) {
+      key = node;
+      node = document.body;
+    }
+    args = args || {};
+    switch (typeof key) {
+    case 'string':
+      for(let i = 0; i < key.length; ++i) {
+        args.which = key.charCodeAt(i);
+        TH.trigger(node, event, args);
+      }
+      break;
+    case 'number':
+      args.which = key;
+      TH.trigger(node, event, args);
+      break;
+    default:
+      throw new Error("invalid key");
+    }
+  };
+
+  const dispatchEvent = (elm, event)=>{elm.dispatchEvent(event)};
 
   const ga = Core.assertions;
 
@@ -66,7 +93,9 @@ define((require, exports, module)=>{
     }
   };
 
-  module.exports = util.merge(TH, {
+  const TH = {
+    __proto__: BaseTH,
+
     domTearDown() {
       Dom.flushNextFrame();
       Route._reset();
@@ -79,14 +108,11 @@ define((require, exports, module)=>{
     stubAfTimeout() {
       if (koru.afTimeout.restore)
         koru.afTimeout.restore();
-      else
-        stub(koru, 'afTimeout').returns(koru.nullFunc);
+
+      stub(koru, 'afTimeout').returns(koru.nullFunc);
     },
 
-    yieldAfTimeout() {
-      koru.afTimeout.yield();
-      koru.afTimeout.reset();
-    },
+    yieldAfTimeout: ()=>{koru.afTimeout.yieldAndReset()},
 
     createMockEvent(currentTarget, options={}) {
       return Object.assign({}, {
@@ -257,35 +283,7 @@ define((require, exports, module)=>{
       });
       return this;
     },
-  });
+  };
 
-  function keyseq(event, node, key, args) {
-    if (args === undefined && typeof key === 'object') {
-      args = key;
-      key = node;
-      node = document.body;
-    } else if (key === undefined) {
-      key = node;
-      node = document.body;
-    }
-    args = args || {};
-    switch (typeof key) {
-    case 'string':
-      for(let i = 0; i < key.length; ++i) {
-        args.which = key.charCodeAt(i);
-        TH.trigger(node, event, args);
-      }
-      break;
-    case 'number':
-      args.which = key;
-      TH.trigger(node, event, args);
-      break;
-    default:
-      throw new Error("invalid key");
-    }
-  }
-
-  function dispatchEvent(elm, event) {
-    elm.dispatchEvent(event);
-  }
+  return TH;
 });

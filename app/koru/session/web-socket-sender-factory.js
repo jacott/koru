@@ -1,6 +1,6 @@
 /*global WebSocket, KORU_APP_VERSION */
 
-define(function(require, exports, module) {
+define((require)=>{
   const {private$} = require('koru/symbols');
   const koru       = require('../main');
   const util       = require('../util');
@@ -108,8 +108,8 @@ define(function(require, exports, module) {
   };
 
 
-  function webSocketSenderFactory(_session, sessState, execWrapper=koru.fiberConnWrapper,
-                                  base=_session) {
+  return function webSocketSenderFactory(
+    _session, sessState, execWrapper=koru.fiberConnWrapper, base=_session) {
     const session = _session;
     const waitSends = session[waitSends$] = [];
     session[retryCount$] = 0;
@@ -265,6 +265,4 @@ define(function(require, exports, module) {
 
     return session;
   };
-
-  module.exports = webSocketSenderFactory;
 });

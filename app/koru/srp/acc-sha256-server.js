@@ -1,4 +1,4 @@
-define(function() {
+define(()=>{
   return {
     utf8Encode: s =>  Buffer.from(s),
 

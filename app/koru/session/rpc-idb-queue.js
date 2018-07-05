@@ -1,7 +1,7 @@
-define(function(require, exports, module) {
-  const koru     = require('koru');
-  const RPCQueue = require('koru/session/rpc-queue');
-  const util     = require('koru/util');
+define((require)=>{
+  const koru            = require('koru');
+  const RPCQueue        = require('koru/session/rpc-queue');
+  const util            = require('koru/util');
 
   class RPCIDBQueue extends RPCQueue {
     constructor(qdb) {

@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Publish a set of records from the server to the client.
    *
@@ -8,20 +8,18 @@ define(function (require, exports, module) {
   const api = require('koru/test/api');
   const TH  = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const sut  = require('./publish');
-  var v;
 
-  TH.testCase(module, {
-    setUp() {
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-      api.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test publish"() {
+    test("publish", ()=>{
       /**
        * Register a publish function. The publish function has
        * different roles on the client and server
@@ -48,8 +46,7 @@ define(function (require, exports, module) {
        **/
       const publish = api.custom(sut, 'publish');
 
-
-      this.onEnd(() => {
+      onEnd(() => {
         sut._destroy("TestPublish");
         sut._destroy("LibraryBooks");
       });
@@ -97,6 +94,6 @@ define(function (require, exports, module) {
       }
       //]
       assert.calledWith(v.exp.match.register, "Foo");
-    },
+    });
   });
 });

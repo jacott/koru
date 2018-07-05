@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const koru = require('koru');
   const TH   = require('koru/test-helper');
 
@@ -7,19 +7,15 @@ define(function (require, exports, module) {
   const BTree = require('koru/btree');
   const {left$, right$, up$, red$} = BTree[test$];
 
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "traverse by nodes": {
-      setUp() {
+    group("traverse by nodes", ()=>{
+      beforeEach(()=>{
         v.tree = new BTree();
         insertNodes(v.tree, [100, 50, 20, 110, 120, 130, 95]);
         assertTree(v.tree, `
@@ -31,9 +27,9 @@ l      95 *
 r    120
 r      130 *
 `);
-      },
+      });
 
-      "test nodeFrom"() {
+      test("nodeFrom", ()=>{
         const {tree} = v;
         const n50 = tree.nodeFrom(35);
         assert.same(n50.value, 50);
@@ -42,9 +38,9 @@ r      130 *
         assert.same(tree.nodeFrom(5).value, 20);
 
         assert.same(tree.nodeFrom(200), null);
-      },
+      });
 
-      "test no right nodeFrom"() {
+      test("no right nodeFrom", ()=>{
         const tree = new BTree();
         insertNodes(tree, [10, 0]);
         assertTree(tree, `
@@ -52,9 +48,9 @@ r      130 *
 l  0 *
 `);
         assert.same(tree.nodeFrom(20), null);
-      },
+      });
 
-      "test nodeTo"() {
+      test("nodeTo", ()=>{
         const {tree} = v;
         const n130 = tree.lastNode;
         assert.same(n130.value, 130);
@@ -63,9 +59,9 @@ l  0 *
         assert.same(tree.nodeTo(10), null);
         assert.same(tree.nodeTo(95).value, 95);
         assert.same(tree.nodeTo(105).value, 100);
-      },
+      });
 
-      "test no left nodeFrom"() {
+      test("no left nodeFrom", ()=>{
         const tree = new BTree();
         insertNodes(tree, [10, 20]);
         assertTree(tree, `
@@ -73,25 +69,25 @@ l  0 *
 r  20 *
 `);
         assert.same(tree.nodeTo(0), null);
-      },
+      });
 
-      "test first, last on empty tree"() {
+      test("first, last on empty tree", ()=>{
         const tree = new BTree();
         assert.same(tree.firstNode, null);
         assert.same(tree.lastNode, null);
-      },
+      });
 
 
-      "test firstNode, nextNode"() {
+      test("firstNode, nextNode", ()=>{
         const {tree} = v;
         const ans = [];
         for (let n = tree.firstNode; n !== null; n = tree.nextNode(n))
           ans.push(n.value);
 
         assert.equals(ans, [20, 50, 95, 100, 110, 120, 130]);
-      },
+      });
 
-      "test t-l-r"() {
+      test("t-l-r", ()=>{
         const tree = new BTree();
         insertNodes(tree, [0, 100, 200, -100]);
         tree.delete(100);
@@ -107,9 +103,9 @@ r  200 *
           ans.push(n.value);
 
         assert.equals(ans, [0, 50, 200]);
-      },
+      });
 
-      "test lastNode, previousNode"() {
+      test("lastNode, previousNode", ()=>{
         const tree = new BTree();
         buildTree(tree, `
 1
@@ -149,10 +145,10 @@ r            1000
           ans.push(n.value);
 
         assert.equals(ans, Array.from(tree).reverse());
-      },
-    },
+      });
+    });
 
-    "test compare"() {
+    test("compare", ()=>{
       function myCompare(a, b) {
         a = a.key; b = b.key;
         return a == b ? 0 : a < b ? 1 : -1;
@@ -167,9 +163,9 @@ r            1000
         {key: 150, value: 'v150'},
         {key: 100, value: 'v100'},
         {key: 50, value: 'v50'}]);
-    },
+    });
 
-    "test find, findNode"() {
+    test("find, findNode", ()=>{
       const tree = new BTree();
       const list = [100, 200, 50, 150, 250];
       insertNodes(tree, list);
@@ -181,9 +177,9 @@ r            1000
       assert.same(tree.find(49), undefined);
       assert.same(tree.findNode(120), null);
       assert.same(tree.findNode(300), null);
-    },
+    });
 
-    "test insert balancing case 1,2,3"() {
+    test("insert balancing case 1,2,3", ()=>{
       /**
        * ensure correct coloring of tree
        **/
@@ -216,9 +212,9 @@ l  13
 l    10 *
 r  456
 `);
-    },
+    });
 
-    "test case 4 left"() {
+    test("case 4 left", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 50, 20, 110, 120, 130, 95]);
       assertTree(tree, `
@@ -241,9 +237,9 @@ r      100 *
 r    120
 r      130 *
 `);
-    },
+    });
 
-    "test case 4 right"() {
+    test("case 4 right", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 150, 200, 20, 10, 5, 105]);
       assertTree(tree, `
@@ -266,9 +262,9 @@ l      100 *
 r      105 *
 r  200
 `);
-    },
+    });
 
-    "test rotate sub left"() {
+    test("rotate sub left", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 150, 50, 200]);
       assertTree(tree, `
@@ -286,9 +282,9 @@ r  200
 l    150 *
 r    300 *
 `);
-    },
+    });
 
-    "test rotate sub right"() {
+    test("rotate sub right", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 50, 150, 20]);
       assertTree(tree, `
@@ -306,9 +302,9 @@ l    10 *
 r    50 *
 r  150
 `);
-    },
+    });
 
-    "test rotate root right"() {
+    test("rotate root right", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 50, 20]);
       assertTree(tree, `
@@ -316,9 +312,9 @@ r  150
 l  20 *
 r  100 *
 `);
-    },
+    });
 
-    "test rotate root left"() {
+    test("rotate root left", ()=>{
       const tree = new BTree();
       insertNodes(tree, [100, 150, 170]);
       assertTree(tree, `
@@ -326,9 +322,9 @@ r  100 *
 l  100 *
 r  170 *
 `);
-    },
+    });
 
-    "test iterator"() {
+    test("iterator", ()=>{
       /**
        * iterator tree in order
        **/
@@ -338,9 +334,9 @@ r  170 *
       assert.equals(Array.from(tree), [123, 456]);
       tree.add(53);
       assert.equals(Array.from(tree), [53, 123, 456]);
-    },
+    });
 
-    "test forEach"() {
+    test("forEach", ()=>{
       /**
        * call body for each iteration in order
        **/
@@ -353,9 +349,9 @@ r  170 *
       tree.forEach(v => ans.push(v));
       assert.equals(ans, [53, 123, 456]);
 
-    },
+    });
 
-    "test cursor from to"() {
+    test("cursor from to", ()=>{
       const tree = new BTree();
       insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
       assertTree(tree, `
@@ -380,9 +376,9 @@ r    63
       assert.equals(Array.from(tree.cursor({
         from: 7, to: 45, excludeFrom: true, excludeTo: true,
       })), [8, 42]);
-    },
+    });
 
-    "test direction -1 cursor from to"() {
+    test("direction -1 cursor from to", ()=>{
       const tree = new BTree();
       insertNodes(tree, [1, 3, 6, 7, 8, 45, 63, 42]);
 
@@ -393,10 +389,10 @@ r    63
       assert.equals(Array.from(tree.cursor({
         from: 45, to: 7, direction: -1, excludeFrom: true, excludeTo: true,
       })), [42, 8]);
-    },
+    });
 
-    "trivial delete": {
-      "test delete node with two-non-leaf children"() {
+    group("trivial delete", ()=>{
+      test("delete node with two-non-leaf children", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 200, 50, 150, 250]);
         assertTree(tree, `
@@ -422,9 +418,9 @@ l    150 *
 l  50
 r  250
 `);
-      },
+      });
 
-      "test deleteNode, addNode"() {
+      test("deleteNode, addNode", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 200, 50, 150, 250]);
         const n = tree.deleteNode(tree.root);
@@ -447,9 +443,9 @@ r  200
 r    250 *
 `);
         assert.same(n[up$].value, 50);
-      },
+      });
 
-      "test deleteNode with two-children and right has left child"() {
+      test("deleteNode with two-children and right has left child", ()=>{
         const tree = new BTree();
         buildTree(tree, `
 1703
@@ -469,9 +465,9 @@ l      404
 r    546 *
 l      545
 `);
-      },
+      });
 
-      "test delete root with no children"() {
+      test("delete root with no children", ()=>{
         const tree = new BTree();
         assert.same(tree.size, 0);
         insertNodes(tree, [100]);
@@ -480,9 +476,9 @@ l      545
         assertTree(tree, '');
         assert.same(tree.size, 0);
 
-      },
+      });
 
-      "test delete red with no children"() {
+      test("delete red with no children", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 200, 150, 250]);
         assertTree(tree, `
@@ -497,9 +493,9 @@ r    250 *
 l  100
 r  200
 `);
-      },
+      });
 
-      "test delete black with one red child"() {
+      test("delete black with one red child", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 200, 150, 250]);
         assertTree(tree, `
@@ -514,9 +510,9 @@ r    250 *
 l  100
 r  250
 `);
-      },
+      });
 
-      "test root with one red child"() {
+      test("root with one red child", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 200]);
         assertTree(tree, `
@@ -527,18 +523,18 @@ r  200 *
         assertTree(tree, `
 200
 `);
-      },
-    },
+      });
+    });
 
-    "complex delete black with no children": {
-      "test dc1: root with no children"() {
+    group("complex delete black with no children", ()=>{
+      test("dc1: root with no children", ()=>{
         const tree = new BTree();
         tree.add(100);
         assert.same(tree.delete(100).value, 100);
         assertTree(tree, ``);
-      },
+      });
 
-      "test dc1: N is the new root"() {
+      test("dc1: N is the new root", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200]);
         const p = tree.root;
@@ -554,9 +550,9 @@ r  200
 150
 r  200 *
 `);
-      },
+      });
 
-      "test dc2.l: sibling is red and N left of P -> dc4: P red but S, Sl and Sr are black"() {
+      test("dc2.l: sibling is red and N left of P -> dc4: P red but S, Sl and Sr are black", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 220, 210, 230]);
         assertTree(tree, `
@@ -575,9 +571,9 @@ r    200 *
 r  220
 r    230 *
 `);
-      },
+      });
 
-      "test dc2.r: sibling is red and N right of P"() {
+      test("dc2.r: sibling is red and N right of P", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 90, 80, 60, 70, 30]);
         assertTree(tree, `
@@ -596,9 +592,9 @@ l    30 *
 r  90
 l    80 *
 `);
-      },
+      });
 
-      "test dc4 with no sibling"() {
+      test("dc4 with no sibling", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 210]);
         const p = tree.root[right$];
@@ -616,10 +612,10 @@ r    210
 l  100
 r  200
 `);
-      },
+      });
 
 
-      "test dc3: P, S, Sl and Sr are black"() {
+      test("dc3: P, S, Sl and Sr are black", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 220, 210]);
         const p = tree.root[right$];
@@ -639,9 +635,9 @@ l  100 *
 r  210
 r    220 *
 `);
-      },
+      });
 
-      "test dc5.l: Sl is red but S and Sr are black and N left of P"() {
+      test("dc5.l: Sl is red but S and Sr are black and N left of P", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 150, 200, 220, 210, 215]);
         assertTree(tree, `
@@ -660,9 +656,9 @@ r  215 *
 l    210
 r    220
 `);
-      },
+      });
 
-      "test dc5.r: Sr is red but S and Sl are black and N right of P"() {
+      test("dc5.r: Sr is red but S and Sl are black and N right of P", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 90, 80, 10, 70, 30]);
         assertTree(tree, `
@@ -683,9 +679,9 @@ r  100
 `);
         assert.same(tree.delete(80), null);
         assert.same(tree.size, 5);
-      },
+      });
 
-      "test no S"() {
+      test("no S", ()=>{
         const tree = new BTree();
         insertNodes(tree, [100, 110]);
         const n = tree.root[right$];
@@ -698,8 +694,8 @@ r  110
         assertTree(tree, `
 100
 `);
-      },
-    },
+      });
+    });
 
     // "test random"() {
     //   const tree = new BTree();

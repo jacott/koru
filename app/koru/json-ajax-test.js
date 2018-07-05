@@ -1,38 +1,39 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const sut = require('./json-ajax');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-      test.intercept(window, 'XMLHttpRequest', function () {
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      intercept(window, 'XMLHttpRequest', function () {
         v.req = this;
-        this.addEventListener = test.stub();
-        this.open = test.stub();
-        this.setRequestHeader = test.stub();
-        this.send = test.stub();
+        this.addEventListener = stub();
+        this.open = stub();
+        this.setRequestHeader = stub();
+        this.send = stub();
       });
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test null response"() {
-      sut.get("/url", v.callback = test.stub());
+    test("null response", ()=>{
+      sut.get("/url", v.callback = stub());
       assert.calledWith(v.req.addEventListener, "load", TH.match(f => v.load = f));
       v.req.status = 200;
       v.req.responseText = "";
       v.load();
       assert.calledWith(v.callback, null, null);
-    },
+    });
 
-    "test callback exception"() {
-      sut.get("/url", v.callback = test.stub().withArgs(TH.match(ex => {
+    test("callback exception", ()=>{
+      sut.get("/url", v.callback = stub().withArgs(TH.match(ex => {
         assert.match(ex.message, /JSON/);
         return true;
       })).throws(new koru.Error(400, 'testing')));
@@ -43,10 +44,10 @@ isClient && define(function (require, exports, module) {
       assert.exception(()=>{
         v.load();
       }, {error: 400});
-    },
+    });
 
-    "test get"() {
-      sut.get("/url", v.callback = test.stub());
+    test("get", ()=>{
+      sut.get("/url", v.callback = stub());
       assert.calledWithExactly(v.req.open, 'GET', "/url", true);
       refute.calledWith(v.req.setRequestHeader, 'Authorization');
       assert.calledWithExactly(v.req.send);
@@ -57,18 +58,18 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.callback, TH.match(err => {
         return err && err.error === 402 && err.reason === "Foo";
       }));
-    },
+    });
 
-    "test user and password"() {
-      sut.post("/url", {body: true}, 'foo', 'secret', v.callback = test.stub());
+    test("user and password", ()=>{
+      sut.post("/url", {body: true}, 'foo', 'secret', v.callback = stub());
       assert.calledWithExactly(v.req.open, 'POST', "/url", true);
       assert.calledWith(v.req.setRequestHeader, 'Authorization', 'Basic Zm9vOnNlY3JldA==');
-      sut.get("/url", 'foo', 'secret', v.callback = test.stub());
+      sut.get("/url", 'foo', 'secret', v.callback = stub());
       assert.calledWithExactly(v.req.open, 'GET', "/url", true);
-    },
+    });
 
-    "test post"() {
-      sut.post("/url", {body: true}, v.callback = test.stub());
+    test("post", ()=>{
+      sut.post("/url", {body: true}, v.callback = stub());
 
       assert.calledWith(v.req.addEventListener, "load", TH.match(f => v.load = f));
       assert.calledWith(v.req.addEventListener, "error", TH.match(f => v.error = f));
@@ -95,6 +96,6 @@ isClient && define(function (require, exports, module) {
       assert.calledWith(v.callback, TH.match(function (err) {
         return err && err.message === "Foo [403]";
       }));
-    },
+    });
   });
 });

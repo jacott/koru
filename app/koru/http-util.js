@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const koru            = require('koru');
   const util            = require('koru/util');
 
@@ -18,7 +18,6 @@ define(function(require, exports, module) {
       this.body = body;
     }
   }
-
 
   const THROW_NONE = {};
 

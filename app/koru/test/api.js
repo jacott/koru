@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const moduleGraph     = require('koru/module-graph');
   const jsParser        = require('koru/parse/js-parser');

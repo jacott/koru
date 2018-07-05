@@ -1,17 +1,17 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Make a subject that can be observered.
    **/
-  const api             = require('koru/test/api');
   const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy, onEnd} = TH;
 
   const makeSubject = require('./make-subject');
 
-  TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
-    let v = {};
+  let v = {};
 
+  TH.testCase(module, ({beforeEach, afterEach, test, group})=>{
     afterEach(()=>{
       v = {};
     }),

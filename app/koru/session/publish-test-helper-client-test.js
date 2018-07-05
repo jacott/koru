@@ -1,41 +1,36 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Utilities to help test client publish/subscribe
    **/
-  var test, v;
-  const publish   = require('koru/session/publish');
-  const api       = require('koru/test/api');
-  const TH        = require('koru/test-helper');
-  const publishTH = require('./publish-test-helper-client');
 
-  const {stubProperty} = TH;
+  const publish         = require('koru/session/publish');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const publishTH       = require('./publish-test-helper-client');
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  const {stubProperty, stub} = TH;
+
+  let v = {};
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module({subjectName: 'publishTH'});
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test mockSubscribe"() {
+    test("mockSubscribe", ()=>{
       /**
        * Subscribe to a publication but do not call server.
        **/
       api.method('mockSubscribe');
-      const FooStub = test.stub();
+      const FooStub = stub();
       stubProperty(publish._pubs, "Foo", FooStub);
       const sub = publishTH.mockSubscribe("Foo", 1, 2);
       assert(sub);
       assert(sub._mockMatches);
       assert.calledWith(FooStub, 1, 2);
       assert.same(FooStub.firstCall.thisValue, sub);
-    },
+    });
 
-    "test MockClientSub#match"() {
+    test("MockClientSub#match", ()=>{
       /**
        * Record the match calls in a client publish function in
        * `#_mockMatches`.
@@ -72,6 +67,6 @@ define(function (require, exports, module) {
         assert.isTrue(sub._mockMatches.get(Book)({name: 'Les Misérables'}));
         assert.isFalse(sub._mockMatches.get(Book)({name: 'The Bluest Eye'}));
       }//]
-    },
+    });
   });
 });

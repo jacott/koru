@@ -21,7 +21,7 @@ isServer && define((require, exports, module)=>{
   let v = {};
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
+    before(()=>{
       api.module({subjectName: 'pg'});
     });
 
@@ -55,8 +55,6 @@ isServer && define((require, exports, module)=>{
       assert.same(client._url, 'host=/var/run/postgresql dbname=korutest');
       assert.same(client.name, 'public');
       assert.same(client2.name, 'my name');
-
-      assert(client[id$] < client2[id$] );
     });
 
     test("jsFieldToPg", ()=>{

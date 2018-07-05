@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   'use strict';
   const koru            = require('koru');
   const makeSubject     = require('koru/make-subject');

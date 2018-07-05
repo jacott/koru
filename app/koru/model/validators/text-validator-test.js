@@ -10,7 +10,7 @@ define((require, exports, module)=>{
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     group("normalize", ()=>{
       test("downcase", ()=>{
-        var doc = {name: 'mixedCase'};
+        const doc = {name: 'mixedCase'};
 
         sut.validators('normalize')(doc,'name', 'downcase');
 
@@ -26,7 +26,7 @@ define((require, exports, module)=>{
       });
 
       test("upcase", ()=>{
-        var doc = {name: 'mixedCase'};
+        const doc = {name: 'mixedCase'};
 
         sut.validators('normalize')(doc,'name', 'upcase');
 
@@ -44,7 +44,7 @@ define((require, exports, module)=>{
 
     group("boolean", ()=>{
       test("trueOnly", ()=>{
-        var doc = {isSet: false};
+        let doc = {isSet: false};
 
         sut.validators('boolean')(doc,'isSet', 'trueOnly');
         refute(doc[error$]);
@@ -60,8 +60,8 @@ define((require, exports, module)=>{
       });
 
       test("set true", ()=>{
-        ['trUe  ', 'T', ' 1', 'on'].forEach(function (val) {
-          var doc = {isSet: val};
+        ['trUe  ', 'T', ' 1', 'on'].forEach(val =>{
+          const doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
           refute(doc[error$]);
 
@@ -70,8 +70,8 @@ define((require, exports, module)=>{
       });
 
       test("set false", ()=>{
-        [' FALSE  ', 'f', ' 0', 'off'].forEach(function (val) {
-          var doc = {isSet: val};
+        [' FALSE  ', 'f', ' 0', 'off'].forEach(val =>{
+          const doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
           refute(doc[error$]);
 
@@ -80,17 +80,15 @@ define((require, exports, module)=>{
       });
 
       test("if null", ()=>{
-        var doc = {};
+        const doc = {};
 
         sut.validators('boolean')(doc,'isSet');
         refute(doc[error$]);
       });
 
       test("set invalid", ()=>{
-        var doc;
-
-        [' FALS  ', 'tru', '  '].forEach(function (val) {
-          doc = {isSet: val};
+        [' FALS  ', 'tru', '  '].forEach(val =>{
+          const doc = {isSet: val};
           sut.validators('boolean')(doc,'isSet');
           assert(doc[error$]);
           assert.equals(doc[error$]['isSet'],[['not_a_boolean']]);
@@ -124,7 +122,7 @@ define((require, exports, module)=>{
       });
 
       test("invalid", ()=>{
-        var doc = {startDate: 'abc'};
+        const doc = {startDate: 'abc'};
 
         sut.validators('date')(doc, 'startDate');
         assert(doc[error$]);
@@ -134,7 +132,7 @@ define((require, exports, module)=>{
 
     group("number", ()=>{
       test("min value", ()=>{
-        var doc = {order: 123};
+        let doc = {order: 123};
 
         sut.validators('number')(doc,'order', {$gte: 123});
         refute(doc[error$]);
@@ -154,14 +152,14 @@ define((require, exports, module)=>{
       });
 
       test("negative", ()=>{
-        var doc = {order: -4};
+        const doc = {order: -4};
         sut.validators('number')(doc,'order', {integer: true, $gte: 0, $lt: 999});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_less_than', 0]]);
       });
 
       test("max value", ()=>{
-        var doc = {order: 123};
+        let doc = {order: 123};
 
         sut.validators('number')(doc,'order', {$lte: 123});
         refute(doc[error$]);
@@ -181,7 +179,7 @@ define((require, exports, module)=>{
       });
 
       test("integer", ()=>{
-        var doc = {order: 123};
+        const doc = {order: 123};
 
         sut.validators('number')(doc,'order', {integer: true});
         refute(doc[error$]);
@@ -194,7 +192,7 @@ define((require, exports, module)=>{
       });
 
       test("valid", ()=>{
-        var doc = {order: 123};
+        const doc = {order: 123};
 
         sut.validators('number')(doc,'order');
         refute(doc[error$]);
@@ -205,7 +203,7 @@ define((require, exports, module)=>{
       });
 
       test("string as number", ()=>{
-         var doc = {order: '0xabc'};
+         const doc = {order: '0xabc'};
 
         sut.validators('number')(doc,'order');
         refute(doc[error$]);
@@ -214,7 +212,7 @@ define((require, exports, module)=>{
       });
 
       test("empty", ()=>{
-         var doc = {order: ''};
+         const doc = {order: ''};
 
         sut.validators('number')(doc,'order');
         refute(doc[error$]);
@@ -223,7 +221,7 @@ define((require, exports, module)=>{
       });
 
       test("invalid", ()=>{
-        var doc = {order: 'abc'};
+        const doc = {order: 'abc'};
 
         sut.validators('number')(doc,'order');
         assert(doc[error$]);
@@ -233,7 +231,7 @@ define((require, exports, module)=>{
 
     group("trim", ()=>{
       test("invalid", ()=>{
-        var doc = {name: 123};
+        const doc = {name: 123};
 
         sut.validators('trim')(doc,'name');
         assert(doc[error$]);
@@ -242,7 +240,7 @@ define((require, exports, module)=>{
 
       test("toNull", ()=>{
 
-        var doc = {name: '  '};
+        const doc = {name: '  '};
 
         sut.validators('trim')(doc,'name', 'toNull');
 
@@ -253,7 +251,7 @@ define((require, exports, module)=>{
 
       test("toUndefined", ()=>{
 
-        var doc = {name: '  '};
+        const doc = {name: '  '};
 
         sut.validators('trim')(doc,'name', 'toUndefined');
 
@@ -263,7 +261,7 @@ define((require, exports, module)=>{
       });
 
       test("trims", ()=>{
-        var doc = {name: '  in  the middle  '};
+        const doc = {name: '  in  the middle  '};
 
         sut.validators('trim')(doc,'name');
         refute(doc[error$]);
@@ -273,10 +271,10 @@ define((require, exports, module)=>{
 
     group("color", ()=>{
       test("valid alpha", ()=>{
-        var colors = ['#000000', '#12ab3487', '#123456', '#ffffff'],
-            doc = {color: ''};
+        const colors = ['#000000', '#12ab3487', '#123456', '#ffffff'],
+              doc = {color: ''};
 
-        for(var i=0,item;item=colors[i];++i) {
+        for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           sut.validators('color')(doc,'color', 'alpha');
           refute.msg('should be valid: '+item)(doc[error$]);
@@ -297,10 +295,10 @@ define((require, exports, module)=>{
       });
 
       test("invalid alpha", ()=>{
-        var colors = ['#ac', '#0000', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
+        const colors = ['#ac', '#0000', '123456', '#0000001', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
-        for(var i=0,item;item=colors[i];++i) {
+        for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           doc[error$] = {};
           sut.validators('color')(doc,'color');
@@ -310,10 +308,10 @@ define((require, exports, module)=>{
       });
 
       test("invalid nonalpha", ()=>{
-        var colors = ['#ac', '#0000', '#123456zz', '123456', '#12ab3g', '#fff', '#Ffffff'],
+        const colors = ['#ac', '#0000', '#123456zz', '123456', '#12ab3g', '#fff', '#Ffffff'],
             doc = {color: ''};
 
-        for(var i=0,item;item=colors[i];++i) {
+        for(let i=0,item;item=colors[i];++i) {
           doc.color = item;
           doc[error$] = {};
           sut.validators('color')(doc,'color');

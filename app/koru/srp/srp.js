@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const BigInteger = require('./big-integer');
-  const Random = require('../random').global;
-  const SHA256 = require('./sha256');
-  const util = require('../util');
+define((require, exports, module)=>{
+  const Random          = require('../random').global;
+  const util            = require('../util');
+  const BigInteger      = require('./big-integer');
+  const SHA256          = require('./sha256');
 
   /**
    * srp.js
@@ -27,7 +27,7 @@ define(function(require, exports, module) {
    *   testing.  Random UUID if not provided.
    * - SRP parameters (see _defaults and paramsFromOptions below)
    */
-  SRP.generateVerifier = function (password, options) {
+  SRP.generateVerifier = (password, options)=>{
     const params = paramsFromOptions(options);
 
     const identity = (options && options.identity) || Random.id();
@@ -283,7 +283,7 @@ define(function(require, exports, module) {
   /**
    * Assert that password matches verifier.
    */
-  SRP.checkPassword = function (password, verifier) {
+  SRP.checkPassword = (password, verifier)=>{
     // Client -> Server
     const csrp = new SRP.Client(password);
     const request = csrp.startExchange();
@@ -323,7 +323,7 @@ define(function(require, exports, module) {
    * - g: String or BigInteger. Defaults to 2.
    * - k: String or BigInteger. Defaults to hash(N, g)
    */
-  function paramsFromOptions(options) {
+  const paramsFromOptions = options =>{
     if (options === undefined) // fast path
       return _defaults;
 
@@ -351,8 +351,5 @@ define(function(require, exports, module) {
   };
 
 
-  function randInt () {
-    return new BigInteger(Random.hexString(36), 16);
-  };
-
+  const randInt = ()=> new BigInteger(Random.hexString(36), 16);
 });

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Changes    = require('koru/changes');
   const Model      = require('koru/model/map');
   const Random     = require('koru/random');
@@ -9,12 +9,12 @@ define(function(require, exports, module) {
   const {private$} = require('koru/symbols');
   const {makeDoc$} = Model[private$];
 
-  return function (Query, condition, notifyAC$) {
+  return (Query, condition, notifyAC$)=>{
 
-    function notify(model, now, was) {
+    const notify = (model, now, was)=>{
       Query[notifyAC$](now, was);
       model.notify(now, was);
-    }
+    };
 
     util.merge(Query, {
       insert(doc) {
@@ -34,6 +34,13 @@ define(function(require, exports, module) {
         model.docs.insert(attrs);
       },
     });
+
+    const applyCursorOptions = (query, cursor)=>{
+      query._batchSize && cursor.batchSize(query._batchSize);
+      query._limit && cursor.limit(query._limit);
+      query._offset && cursor.offset(query._offset);
+      query._sort && cursor.sort(query._sort);
+    };
 
     util.merge(Query.prototype, {
       whereSql(...args) {
@@ -297,11 +304,4 @@ define(function(require, exports, module) {
       }
     };
   };
-
-  function applyCursorOptions(query, cursor) {
-    query._batchSize && cursor.batchSize(query._batchSize);
-    query._limit && cursor.limit(query._limit);
-    query._offset && cursor.offset(query._offset);
-    query._sort && cursor.sort(query._sort);
-  }
 });

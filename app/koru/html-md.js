@@ -3,7 +3,7 @@
  The template-compiler will convert the html to js.
  */
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru = require('./main');
 
   koru.onunload(module, 'reload');
@@ -20,9 +20,7 @@ define(function(require, exports, module) {
 
       const provider = koru.buildPath(name)+'.md';
       const pMod = mod.dependOn(provider);
-      mod.body = function () {
-        return pMod.exports;
-      };
+      mod.body = ()=> pMod.exports;
       onload();
     },
 

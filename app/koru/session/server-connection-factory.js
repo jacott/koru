@@ -1,12 +1,12 @@
-define(function(require, exports, module) {
-  const koru         = require('koru');
-  const IdleCheck    = require('koru/idle-check').singleton;
-  const makeSubject  = require('koru/make-subject');
-  const BatchMessage = require('koru/session/batch-message');
-  const util         = require('koru/util');
-  const Match        = require('./match');
-  const message      = require('./message');
-  const crypto       = requirejs.nodeRequire('crypto');
+define((require)=>{
+  const koru            = require('koru');
+  const IdleCheck       = require('koru/idle-check').singleton;
+  const makeSubject     = require('koru/make-subject');
+  const BatchMessage    = require('koru/session/batch-message');
+  const util            = require('koru/util');
+  const Match           = require('./match');
+  const message         = require('./message');
+  const crypto          = requirejs.nodeRequire('crypto');
 
   const sideQueue$ = Symbol();
 
@@ -193,7 +193,7 @@ define(function(require, exports, module) {
     get userId() {return this._userId}
   }
 
-  function serverConnectionFactory (session) {
+  const serverConnectionFactory = session =>{
     class ServerConnection extends Base {
       constructor (ws, request, sessId, close) {
         super(ws, request, sessId, close);
@@ -204,7 +204,7 @@ define(function(require, exports, module) {
     return ServerConnection;
   };
 
-  function filterAttrs(attrs, filter) {
+  const filterAttrs = (attrs, filter)=>{
     if (! filter) return attrs;
 
     const result = {};
@@ -214,10 +214,10 @@ define(function(require, exports, module) {
         result[key] = attrs[key];
     }
     return result;
-  }
+  };
 
   serverConnectionFactory.Base = Base;
   serverConnectionFactory.filterAttrs = filterAttrs;
 
-  module.exports = serverConnectionFactory;
+  return serverConnectionFactory;
 });

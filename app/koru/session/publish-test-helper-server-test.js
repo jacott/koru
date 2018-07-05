@@ -1,33 +1,32 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Utilities to help test server publish/subscribe
    **/
-  const koru      = require('koru');
-  const session   = require('koru/session');
-  const message   = require('koru/session/message');
-  const publish   = require('koru/session/publish');
-  const scFactory = require('koru/session/server-connection-factory');
-  const api       = require('koru/test/api');
-  const TH        = require('koru/test-helper');
-  const Stubber   = require('koru/test/stubber');
-  const publishTH = require('./publish-test-helper-server');
+  const koru            = require('koru');
+  const session         = require('koru/session');
+  const message         = require('koru/session/message');
+  const publish         = require('koru/session/publish');
+  const scFactory       = require('koru/session/server-connection-factory');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const Stubber         = require('koru/test/stubber');
+  const publishTH       = require('./publish-test-helper-server');
 
   const {stub, spy, onEnd} = TH;
 
   const SessionBase = session.constructor;
 
-  let v = null;
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    before(()=>{
       api.module({subjectName: 'publishTH'});
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test mockSession"() {
+    test("mockSession", ()=>{
       /**
        * Create mock [Session](#koru/session/main)
        **/
@@ -43,9 +42,9 @@ define(function (require, exports, module) {
 
       mockSession = publishTH.mockSession();
       assert.same(mockSession._id, "mock");
-    },
+    });
 
-    "test mockConnection"() {
+    test("mockConnection", ()=>{
       /**
        * Create mock
        * [SeverConnection](#koru/session/server-connection-factory::ServerConnection)
@@ -72,9 +71,9 @@ define(function (require, exports, module) {
       assert.called(publishTH.mockSession);
       assert.same(mockConnection._session, v.sess);
       assert.same(mockConnection.sessId, "s123");
-    },
+    });
 
-    "test mockSubscribe"() {
+    test("mockSubscribe", ()=>{
       /**
        * Simulate a client subscribing to a publication
        *
@@ -102,6 +101,6 @@ define(function (require, exports, module) {
 
       assert.calledWith(bookPub, v.args);
       assert.same(bookPub.firstCall.thisValue, sub);
-    },
+    });
   });
 });

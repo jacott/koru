@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru = require('koru');
 
   const request = (method, url, body, user, password, callback)=>{
@@ -8,7 +8,7 @@ define(function(require, exports, module) {
     }
     const req = new XMLHttpRequest();
 
-    req.addEventListener("load", function () {
+    req.addEventListener("load", ()=>{
       if (! callback) return;
       if (Math.floor(req.status/100) === 2) {
         let resp = null;
@@ -27,7 +27,7 @@ define(function(require, exports, module) {
 
     });
 
-    req.addEventListener("error", function () {
+    req.addEventListener("error", ()=>{
       callback && callback(Error("Network Error"));
     });
 

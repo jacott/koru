@@ -36,8 +36,8 @@ define((require, exports, module)=>{
       afTimeout(func, duration) {
         let cancel = koru.setTimeout(func, duration);
         return () => {
-          cancel && clearTimeout(cancel);
-          cancel = null;
+          cancel != 0 && clearTimeout(cancel);
+          cancel = 0;
         };
       },
 

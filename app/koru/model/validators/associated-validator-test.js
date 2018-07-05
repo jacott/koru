@@ -4,33 +4,34 @@ define(function (require, exports, module) {
   const Query      = require('../query');
   const validation = require('../validation');
 
+  const {stub, spy, onEnd, intercept} = TH;
+
   const {error$, original$} = require('koru/symbols');
 
   const sut        = require('./associated-validator').bind(validation);
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       Model.Foo = {modelName: 'Foo'};
-      v = {};
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       delete Model.Foo;
-      v = null;
-    },
+      v = {};
+    });
 
-    "test filter"() {
+    test("filter", ()=>{
       const foo_ids = ["xyz", "def", "abc"],
             doc = {foo_ids: foo_ids, attributes: {}};
 
-      const forEach = test.stub(Query.prototype, 'forEach', function (func) {
+      const forEach = stub(Query.prototype, 'forEach', function (func) {
         func({_id: "abc"});
         func({_id: "xyz"});
       });
       const where = stubWhere();
-      const fields = this.spy(Query.prototype, 'fields');
+      const fields = spy(Query.prototype, 'fields');
 
       sut(doc,'foo_ids', {filter: true});
       refute(doc[error$]);
@@ -43,29 +44,29 @@ define(function (require, exports, module) {
       assert.calledWithExactly(where, '_id', ["xyz", "def", "abc"]);
       assert.calledWithExactly(fields, '_id');
       assert.same(fields.firstCall.thisValue, v.query);
-    },
+    });
 
-    "test empty filter"() {
+    test("empty filter", ()=>{
       const foo_ids = ["abc", "def", "xyz"],
             doc = {foo_ids: foo_ids, attributes: {}};
 
-      const forEach = test.intercept(Query.prototype, 'forEach');
+      const forEach = intercept(Query.prototype, 'forEach');
 
       sut(doc,'foo_ids', {filter: true});
       refute(doc[error$]);
       assert.same(doc.foo_ids, foo_ids);
       assert.equals(doc.foo_ids, []);
-    },
+    });
 
-    "test none"() {
+    test("none", ()=>{
       const doc = {};
       sut(doc,'foo_ids', true);
 
       refute(doc[error$]);
-    },
+    });
 
-    'test not found'() {
-      test.stub(Query.prototype, 'count', function () {
+    test("not found", ()=>{
+      stub(Query.prototype, 'count', function () {
         assert.equals(this.wheres, undefined);
         assert.same(this.model, Model.Foo);
         return 0;
@@ -75,9 +76,9 @@ define(function (require, exports, module) {
 
       assert(doc[error$]);
       assert.equals(doc[error$]['foo_ids'],[["not_found"]]);
-    },
+    });
 
-    "test changes only"() {
+    test("changes only", ()=>{
       const doc = {
         get foo_ids() {return this.changes.foo_ids},
         changes: {},
@@ -90,8 +91,8 @@ define(function (require, exports, module) {
 
       let count = 2;
 
-      test.intercept(Query.prototype, 'count', ()=>count);
-      test.intercept(Query.prototype, 'forEach', func=>{
+      intercept(Query.prototype, 'count', ()=>count);
+      intercept(Query.prototype, 'forEach', func=>{
         func({_id: "abc"});
         func({_id: "can"});
       });
@@ -128,17 +129,17 @@ define(function (require, exports, module) {
       sut(doc,'foo_ids', {changesOnly: true});
       refute(doc[error$]);
       assert.equals(doc.changes.foo_ids, ['A', 'B', 'ra', 'rq']);
-    },
+    });
 
-    "duplicates are not allowed": {
-      setUp() {
+    group("duplicates are not allowed", ()=>{
+      beforeEach(()=>{
         /**
          * Duplicates are not allowed. ids are in ascending order
          **/
-      },
+      });
 
-      "test unfiltered"() {
-        test.intercept(Query.prototype, 'count', ()=>4);
+      test("unfiltered", ()=>{
+        intercept(Query.prototype, 'count', ()=>4);
 
         const doc = {
           attributes: {foo_ids: ["b", "d", "a", "c"]},
@@ -151,10 +152,10 @@ define(function (require, exports, module) {
 
         assert.equals(doc.changes.foo_ids, ["a", "a", "b", "e", "e", "f"]);
         assert.equals(doc[error$], {foo_ids: [['duplicates']]});
-      },
+      });
 
-      "test filtered"() {
-        test.intercept(Query.prototype, 'forEach', func=>{
+      test("filtered", ()=>{
+        intercept(Query.prototype, 'forEach', func=>{
           func({_id: 'f'});
           func({_id: 'e'});
         });
@@ -177,37 +178,37 @@ define(function (require, exports, module) {
 
         // filter out old ids
         assert.equals(doc.changes.foo_ids, ["e", "f"]);
-      },
-    },
+      });
+    });
 
-    "test wrong type"() {
+    test("wrong type", ()=>{
       const doc = {foo_ids: "abc", attributes: {}};
       sut(doc,'foo_ids', true);
 
       assert(doc[error$]);
       assert.equals(doc[error$]['foo_ids'],[["is_invalid"]]);
-    },
+    });
 
-    "test using scoped finder"() {
+    test("using scoped finder", ()=>{
       const doc = {foo_ids: v.foo_ids = ['x', 'y'], attributes: {}};
 
       function fooFinder(values) {
         v.values = values;
-        return {count: test.stub().returns(2)};
+        return {count: stub().returns(2)};
       };
 
       sut(doc,'foo_ids', {finder: fooFinder});
 
       assert.equals(v.values, v.foo_ids);
       refute(doc[error$]);
-    },
+    });
 
-    "test using scoped default"() {
+    test("using scoped default", ()=>{
       var doc = {
         foo_ids: v.foo_ids = ['x', 'y'],
         fooFind(values) {
           v.values = values;
-          return {count: test.stub().returns(2)};
+          return {count: stub().returns(2)};
         },
         attributes: {},
       };
@@ -216,12 +217,12 @@ define(function (require, exports, module) {
 
       assert.equals(v.values, v.foo_ids);
       refute(doc[error$]);
-    },
+    });
 
-    "test overriding model name"() {
+    test("overriding model name", ()=>{
       const bar_ids = ['x', 'y'];
 
-      const count = test.stub(Query.prototype, 'count').returns(2);
+      const count = stub(Query.prototype, 'count').returns(2);
       const doc = {bar_ids: bar_ids, attributes: {}};
       const where = stubWhere();
 
@@ -237,10 +238,10 @@ define(function (require, exports, module) {
       query = count.getCall(1).thisValue;
       assert.same(query.model, Model.Foo);
       assert.calledTwice(count);
-    },
+    });
 
-    "test belongs_to"() {
-      const count = test.stub(Query.prototype, 'count').returns(1);
+    test("belongs_to", ()=>{
+      const count = stub(Query.prototype, 'count').returns(1);
       const doc = {
         foo_id: "x", constructor: {
           $fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}},
@@ -256,10 +257,10 @@ define(function (require, exports, module) {
       assert.same(query, v.query);
       assert.calledWithExactly(where, '_id', ["x"]);
       assert.same(query.model, Model.Foo);
-    },
+    });
 
-    "test changes_only belongs_to"() {
-      let count = test.stub(Query.prototype, 'count').returns(0);
+    test("changes_only belongs_to", ()=>{
+      let count = stub(Query.prototype, 'count').returns(0);
       const doc = {
         foo_id: "y", constructor: {
           $fields: {foo_id: {type: 'belongs_to', model: Model.Foo}}},
@@ -284,12 +285,12 @@ define(function (require, exports, module) {
       assert.same(query, v.query);
       assert.calledWithExactly(where, '_id', ["x"]);
       assert.same(query.model, Model.Foo);
-    },
+    });
 
-    'test using model default'() {
+    test("using model default", ()=>{
       const foo_ids = ['x', 'y'];
 
-      const count = test.stub(Query.prototype, 'count').returns(2);
+      const count = stub(Query.prototype, 'count').returns(2);
       const doc = {foo_ids: foo_ids};
 
       const where = stubWhere();
@@ -301,32 +302,32 @@ define(function (require, exports, module) {
       assert.same(query, v.query);
       assert.calledWithExactly(where, '_id', ["x", "y"]);
       assert.same(query.model, Model.Foo);
-    },
+    });
 
-    "using original$": {
-      "test is undefined"() {
+    group("using original$", ()=>{
+      test("is undefined", ()=>{
         const foos = ['x', 'y'];
 
-        const count = test.stub(Query.prototype, 'count').returns(1);
+        const count = stub(Query.prototype, 'count').returns(1);
         const doc = {foos, [original$]: undefined};
 
         sut(doc,'foos', {model: Model.Foo, changesOnly: true});
         assert.equals(doc[error$], {foos: [['not_found']]});
-      },
+      });
 
-      "test no changes"() {
+      test("no changes", ()=>{
         const foos = ['x', 'y'];
 
         const doc = {foos, [original$]: {foos}};
 
         sut(doc,'foos', {model: Model.Foo, changesOnly: true});
         refute(doc[error$]);
-      },
+      });
 
-      "test changes"() {
+      test("changes", ()=>{
         const foos = ['x', 'y'];
 
-        const count = test.stub(Query.prototype, 'count').returns(1);
+        const count = stub(Query.prototype, 'count').returns(1);
         const doc = {foos, [original$]: {foos: ['y']}};
 
         const where = stubWhere();
@@ -338,11 +339,11 @@ define(function (require, exports, module) {
         assert.same(query, v.query);
         assert.calledWithExactly(where, '_id', ["x"]);
         assert.same(query.model, Model.Foo);
-      },
-    },
+      });
+    });
   });
 
   function stubWhere() {
-    return TH.test.stub(Query.prototype, 'where', function () {return v.query = this});
+    return stub(Query.prototype, 'where', function () {return v.query = this});
   }
 });

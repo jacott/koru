@@ -1,14 +1,14 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const makeSubject = require('koru/make-subject');
 
   let observers;
-  function storageChanged(event) {
+  const storageChanged = event =>{
     if (observers === undefined) return;
     const keyOb = observers[event.key];
     if (keyOb === undefined) return;
 
     keyOb.notify(event);
-  }
+  };
 
   return {
     setItem(key, value) {

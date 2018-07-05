@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const ClientSub = require('koru/session/client-sub');
-  const publish   = require('koru/session/publish');
-  const TH        = require('koru/test-helper');
-  const util      = require('koru/util');
+define((require, exports, module)=>{
+  const ClientSub       = require('koru/session/client-sub');
+  const publish         = require('koru/session/publish');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
 
   const {inspect$} = require('koru/symbols');
 
@@ -38,5 +38,5 @@ define(function(require, exports, module) {
     },
   };
 
-  module.exports = publishTH;
+  return publishTH;
 });

@@ -1,3 +1,1 @@
-define(function(require) {
-  return require('koru/env!./publish');
-});
+define((require)=> require('koru/env!./publish'));

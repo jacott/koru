@@ -4,23 +4,17 @@ const Future = requirejs.nodeRequire('fibers/future');
 const autoprefixer = requirejs.nodeRequire("autoprefixer")({browsers: ['> 5%', 'last 2 versions']});
 const postcss = requirejs.nodeRequire("postcss")([autoprefixer]);
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const fst             = require('koru/fs-tools');
 
-  koru.onunload(module, 'reload');
-
-  Compilers.set('less',compile);
 
   const topLen = Path.resolve(koru.appDir).length + 1;
 
   const sendPaths = {};
 
-  exports._less = less;
-  exports.compile = compile;
-
-  function compile(type, path, outPath) {
+  const compile = (type, path, outPath)=>{
     const dir = Path.dirname(path);
 
     const src = fst.readFile(path).toString();
@@ -35,13 +29,13 @@ define(function(require, exports, module) {
       sourceMap: {
         sourceMapFileInline: true,
       },
-    }, function (error, output) {
+    }, (error, output)=>{
       if (error) {
         let fn = error.filename || path;
         if (fn === 'input') fn = path;
         if (fn[0] === '/') fn = fn.slice(1);
         koru.error(koru.util.extractError({
-          toString() {return "Less compiler error: " + error.message},
+          toString: ()=> "Less compiler error: " + error.message,
           stack: "\tat "+ fn + ':' + error.line + ':' + (error.column + 1),
         })+"\n");
         future.return(null);
@@ -58,5 +52,12 @@ define(function(require, exports, module) {
     const css = future.wait();
 
     css && fst.writeFile(outPath, css);
-  }
+  };
+
+  koru.onunload(module, 'reload');
+
+  Compilers.set('less',compile);
+
+  exports._less = less;
+  exports.compile = compile;
 });

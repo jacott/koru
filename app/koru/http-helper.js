@@ -1,6 +1,6 @@
-define(function(require, exports, module) {
-  const koru     = require('koru');
-  const util     = require('koru/util');
+define((require)=>{
+  const koru            = require('koru');
+  const util            = require('koru/util');
 
   const {inspect$} = require('koru/symbols');
 
