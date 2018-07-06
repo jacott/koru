@@ -2,25 +2,30 @@ define((require, exports, module)=>{
   const koru            = require('../main');
   const Model           = require('./main');
   const Query           = require('./query');
-  const TH              = require('./test-helper');
+  const TH              = require('./test-db-helper');
 
   const {stub, spy, onEnd} = TH;
 
   let v = {};
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v.TestModel = Model.define('TestModel').defineFields({name: 'text', age: 'number', nested: 'object'});
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+    before(()=>{
+      v.TestModel = Model.define('TestModel').defineFields({
+        name: 'text', age: 'number', nested: 'object'});
       v.foo = v.TestModel.create({_id: 'foo123', name: 'foo', age: 5, nested: [{ary: ['m']}]});
     });
 
-    afterEach(()=>{
+    after(()=>{
       Model._destroyModel('TestModel', 'drop');
       v = {};
     });
 
+    beforeEach(()=>{TH.startTransaction()});
+    afterEach(()=>{TH.rollbackTransaction()});
+
     test("fields", ()=>{
       assert.equals(v.TestModel.query.fields('age').fetchOne(), {_id: 'foo123', age: 5});
-      assert.equals(v.TestModel.query.fields('age', 'name').fetch()[0], {_id: 'foo123', name: 'foo', age: 5});
+      assert.equals(v.TestModel.query.fields('age', 'name').fetch()[0], {
+        _id: 'foo123', name: 'foo', age: 5});
     });
 
     test("offset", ()=>{
@@ -34,7 +39,8 @@ define((require, exports, module)=>{
       v.TestModel.create({name: 'foo2'});
       v.TestModel.create({name: 'foo3'});
 
-      assert.equals(v.TestModel.query.sort('name').batchSize(2).fetchField('name'), ['foo', 'foo2', 'foo3']);
+      assert.equals(v.TestModel.query.sort('name').batchSize(2).fetchField('name'),
+                    ['foo', 'foo2', 'foo3']);
     });
 
     test("$or", ()=>{

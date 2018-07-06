@@ -14,20 +14,19 @@ define((require, exports, module)=>{
   const fail = (message, elidePoint=null) =>{
     message = message ? message.toString() : 'no message';
     let ex;
-    if (elidePoint !== null && typeof elidePoint.stack === 'string') {
+    if (elidePoint !== null) {
+      const {stack} = elidePoint;
+      if (typeof stack != 'string') throw new AssertionError(message);
+
       ex = elidePoint;
       ex.message = message;
 
-      // FIXME optimise
-      let lines = elidePoint.stack.split(/\n\s+at\s/);
-      if (lines.length > 2) {
-        lines = lines.slice(2);
-        lines[0] = message;
-
-        ex.stack = lines.join("\n    at ");
-      } else {
-        ex.stack = elidePoint.stack.split("\n").slice(2).join("\n");
+      let idx = 0;
+      for(let i = 0; idx != -1 && i < 3; ++i) {
+        idx = stack.indexOf("\n", idx+1);
       }
+      if (idx != -1)
+        ex.stack = message+stack.slice(idx);
       throw ex;
     } else {
       throw new AssertionError(message);

@@ -77,7 +77,7 @@ define((require, exports, module)=>{
     }
 
     static module({subjectModule, subjectName, initExample, initInstExample}={}) {
-      const tc = TH.test._currentTestCase;
+      const tc = TH.Core.currentTestCase;
       subjectModule = subjectModule || ctx.modules[toId(tc)];
       const subject = subjectModule.exports;
       if (! this.isRecord) {
@@ -90,7 +90,7 @@ define((require, exports, module)=>{
       this._instance = this._moduleMap.get(subjectModule);
       if (this._instance == null) {
         const afterTestCase = this.__afterTestCase;
-        afterTestCase.has(tc) || tc.after(()=>{this._instance = null});
+        afterTestCase.has(tc) || tc.topTestCase().after(()=>{this._instance = null});
         afterTestCase.add(tc);
 
         this._mapSubject(subject, subjectModule);
@@ -599,7 +599,7 @@ define((require, exports, module)=>{
     new(sig) {
       const func = typeof sig === 'function'
             ? sig
-            : (this.tc === TH.test._currentTestCase || API.module(), this.subject);
+            : (this.tc === TH.Core.currentTestCase || API.module(), this.subject);
       return (...args) => {
         return new func(...args);
       };

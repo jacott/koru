@@ -62,7 +62,7 @@ define((require, exports, module)=>{
     });
 
     group("model lock", ()=>{
-      beforeEach(()=>{
+      before(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
       });
 
@@ -231,7 +231,7 @@ define((require, exports, module)=>{
     });
 
     group("versioning", ()=>{
-      beforeEach(()=>{
+      before(()=>{
         v.Book = Model.define('Book').defineFields({name: 'text'});
       });
 

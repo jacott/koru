@@ -13,26 +13,13 @@ define(function (require, exports, module) {
       v = null;
     },
 
-    "testCase with body": {testCase(tc) {
-      var xv;
-      tc.add({
-        setUp() {
-          xv = "setup";
-        },
-
-        "test "() {
-          assert.same(xv, 'setup');
-        },
-      });
-    }},
-
     "test setupOnce": {
       setUp() {
         v.count = 0;
       },
 
       tearDown() {
-        assert.same(v.state, 'success onEnd');
+        assert.same(v.state, 'success');
         assert.same(v.count, 1);
         assert.same(v.eachCount, 2);
       },
@@ -50,7 +37,7 @@ define(function (require, exports, module) {
 
         tearDownOnce() {
           v.tdState = 'done';
-          assert.same(v.state, 'setup');
+          assert.same(v.state, 'setup onEnd');
           assert.same(v.count, 1);
 
 

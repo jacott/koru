@@ -7,13 +7,110 @@ define((require, exports, module)=>{
   const api             = require('koru/test/api');
   const TH              = require('./main');
 
-  const {stub, spy, onEnd, util, stubProperty} = TH;
+  const {stub, spy, onEnd, util, stubProperty, match: m} = TH;
 
   const sut  = require('./test-case');
 
   let v = {};
 
-  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
+
+  TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=> {
+    let groupDone;
+
+    group("nested groups", ()=>{
+      let text = '\n';
+      let level = '';
+      groupDone = false;
+
+      const msg = (msg, ind=0)=>{
+        assert.same(typeof ind, 'number');
+        if (ind < 0) level = level.slice(0, -2);
+        text += level+msg+'\n';
+        if (ind > 0) level+= '  ';
+      };
+
+      before(()=>{
+        msg('before');
+      });
+
+      before(()=>{msg('b2', 1); onEnd(()=>{msg('b2-oe-'+TH.Core.currentTestCase.name)})});
+
+      after(()=>{
+        msg('after');
+        assert.equals(text, `
+before
+b2
+  beforeEach
+    one
+    beforeEach-oe-nested groups
+  afterEach
+  beforeEach
+    g2-before
+    g2-be1
+    g2-be2
+      g2-1
+      g2-be2-oe-g2
+    g2-ae2
+    g2-ae1
+    g2-be1
+    g2-be2
+      g2-2
+      g2-be2-oe-g2
+    g2-ae2
+    g2-ae1
+    g2-after
+    beforeEach-oe-nested groups
+  afterEach
+  beforeEach
+    two
+    beforeEach-oe-nested groups
+  afterEach
+  b2-oe-nested groups
+a2
+after
+`);
+
+        text = '\n';
+        groupDone = true;
+      });
+
+      after(()=>{msg('a2', -1)});
+
+      beforeEach(()=>{
+        assert.equals(TH.Core.currentTestCase.name, 'nested groups');
+        onEnd(()=>{msg('beforeEach-oe-'+TH.Core.currentTestCase.name)});
+        msg('beforeEach', 1);});
+
+      afterEach(()=>{msg('afterEach', -1)});
+
+      test("one", ()=>{msg('one')});
+
+      group("g2", ()=>{
+        before(()=>{msg('g2-before')});
+        beforeEach(()=>{msg('g2-be1')});
+        beforeEach(()=>{
+          assert.equals(TH.Core.currentTestCase.name, 'g2');
+
+          msg('g2-be2', 1);
+          onEnd(()=>{msg('g2-be2-oe-'+TH.Core.currentTestCase.name)});
+        });
+
+        after(()=>{msg('g2-after')});
+        afterEach(()=>{msg('g2-ae1')});
+        afterEach(()=>{msg('g2-ae2', -1)});
+
+        test("g2-1", ()=>{msg("g2-1")});
+
+        test("g2-2", ()=>{msg("g2-2")});
+      });
+
+      test("two", ()=>{msg('two')});
+    });
+
+    test("nested-group finished", ()=>{
+      assert.isTrue(groupDone);
+    });
+
     beforeEach(()=>{
     });
 
@@ -78,61 +175,70 @@ define((require, exports, module)=>{
       });
     });
 
-    test("async", async ()=>{
-      let later = 4;
-      const p = new Promise((resolve)=>{
-        setTimeout(()=>{resolve(later)}, 0);
+    group("onEnd", ()=>{
+      let onEndFinish;
+      test("stop func", ()=>{
+        onEndFinish = undefined;
+        onEnd({stop() {--onEndFinish}});
+        onEnd([()=>{--onEndFinish}, {stop: ()=>{--onEndFinish}}]);
+        onEndFinish = 3;
+        assert(true);
       });
-      later = 5;
 
-      assert.equals(await p, 5);
+      test("stop finished", ()=>{
+        assert.same(onEndFinish, 0);
+      });
     });
 
-    const Foo = {
-      f1() {},
-      f2() {},
-    };
-
-    group("before,after,once,onEnd", ()=>{
-      const {f1, f2} = Foo;
-      before(()=>{
-        stub(Foo, 'f1');
-        onEnd(()=>{
-          assert.same(Foo.f1, f1);
-          refute.same(Foo.f2, f2);
-          assert.equals(v.order, [
-            'before', 'beforeEach',
-            'one', 'onEnd-beforeEach', 'onEnd-1',
-            'afterEach', 'beforeEach',
-            'two', 'onEnd-beforeEach',
-            'afterEach', 'after']);
-        });
-        stub(Foo, 'f2');
-        v.order = ['before'];
-      });
-
+    group("empty test", ()=>{
+      let emptyTest;
       after(()=>{
-        v.order.push('after');
+        assert.equals(emptyTest.errors, [m(/Failure: No assertions/)]);
+        emptyTest.errors = undefined;
+        emptyTest.success = true;
       });
 
-      beforeEach(()=>{
-        onEnd(()=>{v.order.push('onEnd-beforeEach')});
-        v.order.push('beforeEach');
+      test("empty", ()=>{
+        emptyTest = TH.test;
       });
+    });
+
+    group("done", ()=>{
+      let doneFinish;
+      let count = 2;
 
       afterEach(()=>{
-        v.order.push('afterEach');
+        assert(--count >= 0);
       });
 
-      test("one", ()=>{
-        onEnd(()=>{v.order.push('onEnd-1')});
-        v.order.push("one");
-        assert.equals(v.order.length, 3);
+      test("done start", done =>{
+        doneFinish = false;
+        assert(true);
+        setTimeout(()=>{doneFinish=true; done()}, 0);
       });
 
-      test("two", ()=>{
-        v.order.push("two");
-        assert.equals(v.order.length, 8);
+      test("done finished", ()=>{
+        assert.isTrue(doneFinish);
+      });
+    });
+
+    group("async", ()=>{
+      let asyncFinish;
+
+      test("async start", async ()=>{
+        asyncFinish = false;
+        let later = 4;
+        const p = new Promise((resolve)=>{
+          setTimeout(()=>{resolve(later)}, 0);
+        });
+        later = 5;
+
+        assert.equals(await p, 5);
+        asyncFinish = true;
+      });
+
+      test("async finished", ()=>{
+        assert.isTrue(asyncFinish);
       });
     });
   });

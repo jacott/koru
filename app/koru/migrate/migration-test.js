@@ -9,14 +9,15 @@ isServer && define((require, exports, module)=>{
 
   let v = {};
 
-  TH.testCase(module, ({aroundEach, beforeEach, afterEach, group, test})=>{
-    aroundEach((run)=>{
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.client = DBDriver.defaultDb;
       v.sut = new Migration(v.client);
-      v.client.transaction(tx =>{
-        run();
-        tx.transaction = 'ROLLBACK';
-      });
+      v.client.startTransaction().transaction = 'ROLLBACK';
+    });
+
+    afterEach(()=>{
+      v.client.endTransaction('abort');
       v = {};
     });
 

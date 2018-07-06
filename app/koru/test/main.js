@@ -6,9 +6,7 @@ define((require, exports, module)=>{
   require('./assertions-methods');
   require('./callbacks');
   const Core            = require('./core');
-  require('./runner');
   require('./test-case');
-
 
   const Module = module.constructor;
 
@@ -167,7 +165,7 @@ define((require, exports, module)=>{
       }
       console.log('*** test-start ' + ++testRunCount);
 
-      Core.runArg = pattern;
+      Core.runArg = pattern || undefined;
       count = skipCount = errorCount = 0;
 
       require(tests, (...args)=>{

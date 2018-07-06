@@ -28,10 +28,12 @@ define((require, exports, module)=>{
   return {
     __proto__: TH,
 
-    testCase: (...args)=>{
-      const tc = testCase.apply(TH, args);
-      tc.before(stubSendM);
-      tc.after(unstubSendM);
+    testCase: (name, body)=>{
+      const tc = TH.testCase(name, builder =>{
+        builder.before(stubSendM);
+        builder.after(unstubSendM);
+        builder.exec(body);
+      });
       return tc;
     },
 

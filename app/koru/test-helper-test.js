@@ -80,7 +80,7 @@ define((require, exports, module)=>{
 
       assert.same(testCase, myMod.exports);
       assert.equals(testCase, TH.match.field('name', 'my-module'));
-      assert.same(testCase.tc, null);
+      assert.same(testCase.tc, undefined);
       assert.same(testCase.body, body);
     });
 

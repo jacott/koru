@@ -1,37 +1,45 @@
-define(['./core', '../main'], (Core, koru)=>{
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const LinkedList      = require('koru/linked-list');
+  const Core            = require('koru/test/core');
+
   const callbacks = {};
 
-  const registerCallBack = name =>{
+  const sameValue = (node, value)=> node.value === value;
+
+  const registerCallBack = (name, forward=false) =>{
     const capped = name[0].toUpperCase()+name.slice(1);
     const deregister = func =>{
-      callbacks[name] = callbacks[name].filter(i => {
-        return i !== func;
-      });
+      let prev = undefined;
+      const list = callbacks[name];
+      if (list === undefined) return;
+      list.remove(sameValue, func);
     };
     Core['on'+capped] = (module, func)=>{
       if (func) {
-        koru.onunload(module, () => deregister(func));
+        module.onUnload(() => deregister(func));
       } else {
         func = module;
       }
-      (callbacks[name] = callbacks[name] || []).push(func);
+      const list = callbacks[name] || (callbacks[name] = new LinkedList);
+      forward ? list.addBack(func) : list.addFront(func);
     };
     Core['cancel'+capped] = deregister;
   };
 
-  registerCallBack('start');
+  registerCallBack('start', true);
   registerCallBack('end');
-  registerCallBack('testStart');
+  registerCallBack('testStart', true);
   registerCallBack('testEnd');
 
   Core.runCallBacks = (name, test)=>{
     const cbs = callbacks[name];
+    if (cbs === undefined) return;
 
     let firstEx;
-
-    if (cbs) for(let i = cbs.length - 1; i >= 0; --i) {
+    for (let node = cbs.head; node !== undefined; node = node.next) {
       try {
-        cbs[i](test);
+        node.value(test);
       } catch(ex) {
         if (firstEx === undefined) firstEx = ex;
         koru.unhandledException(ex);

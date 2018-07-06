@@ -5,7 +5,7 @@ define((require, exports, module)=>{
 
   const {inspect$} = require('koru/symbols');
 
-  const {compare} = util;
+  const {compare, deepEqual} = util;
 
   const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol(),
         compare$ = Symbol(), compareKeys$ = Symbol(),
@@ -31,21 +31,21 @@ define((require, exports, module)=>{
         for(let i = 0; i < expected.length; ++i) {
           const exv = expected[i];
           if (av) {
-            if (value.some(item => util.deepEqual(item, exv)))
+            if (value.some(item => deepEqual(item, exv)))
               return true;
-          } else if (util.deepEqual(exv, value))
+          } else if (deepEqual(exv, value))
             return true;
         }
         return false;
       }
       if (Array.isArray(value))
-        return value.some(item => util.deepEqual(item, expected));
+        return value.some(item => deepEqual(item, expected));
 
     } else if (Array.isArray(value)) {
-      return ! value.every(item => ! util.deepEqual(item, expected));
+      return ! value.every(item => ! deepEqual(item, expected));
     }
 
-    return util.deepEqual(expected, value);
+    return deepEqual(expected, value);
   };
 
   const EXPRS = {
