@@ -49,8 +49,8 @@ define((require, exports, module)=>{
   };
 
   const EXPRS = {
-    $ne(param, obj) {
-      const expected = obj.$ne;
+    $ne(param, obj, key) {
+      const expected = obj[key];
       return doc => ! foundItem(doc[param], expected);
     },
     $nin(param, obj) {
@@ -61,31 +61,37 @@ define((require, exports, module)=>{
       return insertectFunc(param, obj.$in);
     },
 
-    $gt(param, obj, {model: {$fields: {[param]: {type}}}}) {
-      const expected = obj.$gt;
+    $gt(param, obj, key, type) {
+      const expected = obj[key];
       if (type === 'text')
         return doc => compare(doc[param], expected) > 0;
       return doc => doc[param] > expected;
     },
-    $gte(param, obj, {model: {$fields: {[param]: {type}}}}) {
-      const expected = obj.$gte;
+    $gte(param, obj, key, type) {
+      const expected = obj[key];
       if (type === 'text')
         return doc => compare(doc[param], expected) >= 0;
       return doc => doc[param] >= expected;
     },
-    $lt(param, obj, {model: {$fields: {[param]: {type}}}}) {
-      const expected = obj.$lt;
+    $lt(param, obj, key, type) {
+      const expected = obj[key];
       if (type === 'text')
         return doc => compare(doc[param], expected) < 0;
       return doc => doc[param] < expected;
     },
-    $lte(param, obj, {model: {$fields: {[param]: {type}}}}) {
-      const expected = obj.$lte;
+    $lte(param, obj, key, type) {
+      const expected = obj[key];
       if (type === 'text')
         return doc => compare(doc[param], expected) <= 0;
       return doc => doc[param] <= expected;
     }
   };
+
+  EXPRS['!='] = EXPRS.$ne;
+  EXPRS['>'] = EXPRS.$gt;
+  EXPRS['>='] = EXPRS.$gte;
+  EXPRS['<'] = EXPRS.$lt;
+  EXPRS['<='] = EXPRS.$lte;
 
   const insertectFunc = (param, list)=>{
     const expected = new Set(list);
@@ -101,9 +107,11 @@ define((require, exports, module)=>{
       if (Array.isArray(value)) {
         return insertectFunc(param, value);
       }
-      for (var key in value) break;
+      let key;
+      const fields = query.model.$fields;
+      for (key in value) break;
       const expr = EXPRS[key];
-      if (typeof expr === 'function') return expr(param, value, query);
+      if (expr !== undefined) return expr(param, value, key, fields[param].type);
     }
     return value;
   };

@@ -457,10 +457,11 @@ define((require, exports, module)=>{
         assert.same(query.matches({age: 4}, {age: 5}), false);
       });
 
-      test("$gt.", ()=>{
-        const query = new Query(v.TestModel).where({age: {$gt: 50}});
+      test("$gt", ()=>{
+        const query = new Query(v.TestModel).where({age: {'>': 50}});
 
         assert.same(query.matches({age: 54}), true);
+        return;
         assert.same(query.matches({age: 50.1}), true);
         assert.same(query.matches({age: 50}), false);
         assert.same(query.matches({age: 49.9}), false);
@@ -475,7 +476,7 @@ define((require, exports, module)=>{
       });
 
       test("$gte", ()=>{
-        const query = new Query(v.TestModel).where({age: {$gte: 50}});
+        const query = new Query(v.TestModel).where({age: {'>=': 50}});
 
         assert.same(query.matches({age: 54}), true);
         assert.same(query.matches({age: 50.1}), true);
@@ -501,7 +502,7 @@ define((require, exports, module)=>{
         }
 
         /** whereSome **/ {
-          const query = new Query(v.TestModel).whereSome({age: {$lte: 50}}, {age: {$gte: 100}});
+          const query = new Query(v.TestModel).whereSome({age: {$lte: 50}}, {age: {'>=': 100}});
 
           assert.same(query.matches({age: 40}), true);
           assert.same(query.matches({age: 50}), true);
@@ -513,7 +514,7 @@ define((require, exports, module)=>{
       });
 
       test("$lt.", ()=>{
-        const query = new Query(v.TestModel).where({age: {$lt: 50}});
+        const query = new Query(v.TestModel).where({age: {'<': 50}});
 
         assert.same(query.matches({age: 54}), false);
         assert.same(query.matches({age: 50.1}), false);
@@ -530,7 +531,7 @@ define((require, exports, module)=>{
       });
 
       test("$lte", ()=>{
-        const query = new Query(v.TestModel).where({age: {$lte: 50}});
+        const query = new Query(v.TestModel).where({age: {'<=': 50}});
 
         assert.same(query.matches({age: 54}), false);
         assert.same(query.matches({age: 50.1}), false);
@@ -565,7 +566,7 @@ define((require, exports, module)=>{
       });
 
       test("$ne", ()=>{
-        const query = new Query(v.TestModel).where({age: {$ne: 42}});
+        const query = new Query(v.TestModel).where({age: {'!=': 42}});
 
         assert.same(query.matches({age: 40}), true);
         assert.same(query.matches({age: "x"}), true);

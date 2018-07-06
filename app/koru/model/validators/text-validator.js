@@ -1,6 +1,8 @@
 define((require)=>{
   const UtilDate        = require('koru/util-date');
 
+  const compiled$ = Symbol();
+
   const alphaColorRe = /^#([0-9a-f]{2}){3,4}?$/;
 
   return {
@@ -61,8 +63,6 @@ define((require)=>{
 
       if (val == null) return;
 
-      if (options === true || options == null) options = {};
-
       if (typeof val !== 'number') {
         if (typeof val === 'string' && +val === +val)
           val = +val;
@@ -70,21 +70,52 @@ define((require)=>{
           return this.addError(doc,field,'not_a_number');
       }
 
-      if (options.integer && val !== Math.floor(val))
-        return this.addError(doc,field,'not_an_integer');
+      if (options != null) {
+        if ((options === 'integer' || options.integer) && val !== Math.floor(val))
+          return void this.addError(doc, field, 'not_an_integer');
+        if (typeof options === 'object') {
+          if (options[compiled$] === undefined) {
+            const tests = options[compiled$] = [];
+            if (options['<='] !== undefined) {
+              const exp = options['<='];
+              tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
+            } else if (options.$lte !== undefined) {
+              const exp = options.$lte;
+              tests.push({test: val => val <= exp, args: ['cant_be_greater_than', exp]});
+            }
 
-      if (options.$lte != null && val > options.$lte)
-        return this.addError(doc,field,'cant_be_greater_than', options.$lte);
+            if (options['>='] !== undefined) {
+              const exp = options['>='];
+              tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
+            } else if (options.$gte !== undefined) {
+              const exp = options.$gte;
+              tests.push({test: val => val >= exp, args: ['cant_be_less_than', exp]});
+            }
 
-      if (options.$lt != null && val >= options.$lt)
-        return this.addError(doc,field,'must_be_less_than', options.$lt);
+            if (options['<'] !== undefined) {
+              const exp = options['<'];
+              tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
+            } else if (options.$lt !== undefined) {
+              const exp = options.$lt;
+              tests.push({test: val => val < exp, args: ['must_be_less_than', exp]});
+            }
 
-      if (options.$gte != null && val < options.$gte)
-        return this.addError(doc,field,'cant_be_less_than', options.$gte);
-
-      if (options.$gt != null && val <= options.$gt)
-        return this.addError(doc,field,'must_be_greater_than', options.$gt);
-
+            if (options['>'] !== undefined) {
+              const exp = options['>'];
+              tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
+            } else if (options.$gt !== undefined) {
+              const exp = options.$gt;
+              tests.push({test: val => val > exp, args: ['must_be_greater_than', exp]});
+            }
+          }
+          const tests = options[compiled$];
+          for(let i = tests.length-1; i >= 0; --i) {
+            const row = tests[i];
+            if (! row.test(val))
+              return void this.addError(doc, field, ...row.args);
+          }
+        }
+      }
       doc[field] = val;
     },
 

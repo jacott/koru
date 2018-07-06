@@ -10,6 +10,17 @@ define((require, exports, module)=>{
 
   const {private$, inspect$} = require('koru/symbols');
 
+  const OPS = {
+    $gt: '>',
+    '>': '>',
+    $gte: '>=',
+    '>=': '>=',
+    $lt: '<',
+    '<': '<',
+    $lte: '<=',
+    '<=': '<=',
+  };
+
   const id$ = Symbol(), onCommit$ = Symbol(), onAbort$ = Symbol(), tx$ = Symbol();
   const {hasOwn} = util;
   const pools = Object.create(null);
@@ -656,45 +667,40 @@ values (${columns.map(k=>`{$${k}}`).join(",")})`;
                 break;
 
               } else if (value.constructor === Object) {
-                let op, regex;
-                for(let vk in value) {
-                  switch(vk) {
-                  case '$regex':
-                  case '$options':
-                    if (regex) break;
-                    regex = value.$regex;
-                    const options = value.$options;
-                    result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
-                    whereValues.push(regex);
-                    continue;
-                  case '$ne': {
-                    const sv = value[vk];
-                    if (sv == null) {
-                      result.push(qkey+' IS NOT NULL');
-                    } else {
-                      result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
-                      whereValues.push(sv);
-                    }
-                  } continue;
-                  case '$gt':
-                    op = '>';
-                  case '$gte':
-                    op = op || '>=';
-                  case '$lt':
-                    op = op || '<';
-                  case '$lte':
-                    op = op || '<=';
+                let regex;
+                for(const vk in value) {
+                  const op = OPS[vk];
+                  if (op !== undefined) {
                     result.push(qkey+op+'$'+ ++count);
                     whereValues.push(value[vk]);
-                    op = null;
                     continue;
-                  case '$in':
-                  case '$nin':
-                    inArray(qkey, result, value[vk], vk === '$in');
-                    continue;
-                  default:
-                    result.push(qkey+'=$'+ ++count);
-                    whereValues.push(value);
+                  } else {
+                    switch(vk) {
+                    case '$regex':
+                    case '$options':
+                      if (regex) break;
+                      regex = value.$regex;
+                      const options = value.$options;
+                      result.push(qkey+(options && options.indexOf('i') !== -1 ? '~*$': '~$')+ ++count);
+                      whereValues.push(regex);
+                      continue;
+                    case '$ne': case '!=': {
+                      const sv = value[vk];
+                      if (sv == null) {
+                        result.push(qkey+' IS NOT NULL');
+                      } else {
+                        result.push('('+qkey+' <> $'+ ++count+' OR '+qkey+' IS NULL)');
+                        whereValues.push(sv);
+                      }
+                    } continue;
+                    case '$in':
+                    case '$nin':
+                      inArray(qkey, result, value[vk], vk === '$in');
+                      continue;
+                    default:
+                      result.push(qkey+'=$'+ ++count);
+                      whereValues.push(value);
+                    }
                   }
                   break;
                 }

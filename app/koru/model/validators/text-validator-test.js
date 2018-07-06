@@ -140,13 +140,13 @@ define((require, exports, module)=>{
         sut.validators('number')(doc,'order', {$gt: 122});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {$gte: 124});
+        sut.validators('number')(doc,'order', {'>=': 124});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_less_than', 124]]);
 
         doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {$gt: 123});
+        sut.validators('number')(doc,'order', {'>': 123});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['must_be_greater_than', 123]]);
       });
@@ -167,13 +167,13 @@ define((require, exports, module)=>{
         sut.validators('number')(doc,'order', {$lt: 124});
         refute(doc[error$]);
 
-        sut.validators('number')(doc,'order', {$lte: 122});
+        sut.validators('number')(doc,'order', {'<=': 122});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['cant_be_greater_than', 122]]);
 
         doc = {order: 123};
 
-        sut.validators('number')(doc,'order', {$lt: 123});
+        sut.validators('number')(doc,'order', {'<': 123});
         assert(doc[error$]);
         assert.equals(doc[error$]['order'],[['must_be_less_than', 123]]);
       });
@@ -182,6 +182,9 @@ define((require, exports, module)=>{
         const doc = {order: 123};
 
         sut.validators('number')(doc,'order', {integer: true});
+        refute(doc[error$]);
+
+        sut.validators('number')(doc,'order', 'integer');
         refute(doc[error$]);
 
         doc.order = 123.45;
