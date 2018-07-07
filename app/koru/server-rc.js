@@ -1,11 +1,11 @@
 const fs = require('fs');
 const vm = require('vm');
 
-define(function(require, exports, module) {
-  const util     = require('koru/util');
-  const koru     = require('./main');
-  const session  = require('./session');
-  const buildCmd = require('./test/build-cmd');
+define((require, exports, module)=>{
+  const util            = require('koru/util');
+  const koru            = require('./main');
+  const session         = require('./session');
+  const buildCmd        = require('./test/build-cmd');
 
   koru.onunload(module, 'reload');
 
@@ -16,11 +16,37 @@ define(function(require, exports, module) {
 
   function remoteControl(ws) {
     const session = this;
-    const oldLogHandle = session.provide('L', logHandle);
-    const oldTestHandle = session.provide('T', testHandle);
+
     let testMode = 'none', testExec = {};
     let testClientCount = 0, pendingClientTests = [];
     let future, interceptObj;
+    let clientCount = 0;
+
+    function logHandle(msg) {
+      const key = channelKey(this);
+      key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
+      try {
+        ws.send('L' + channelKey(this) + '\x00' + msg);
+      } catch(ex) {
+        // ignore since it will just come back to us
+      }
+    }
+
+    const intercept = (obj)=>{
+      interceptObj = obj;
+      ws.send('I' + util.extractError(new Error("interrupt")));
+      future = new util.Future;
+      try {
+        return future.wait();
+      } finally {
+        future = null;
+      }
+    };
+
+    const continueIntercept = (arg)=>{if (future) future.return(arg)};
+
+    const oldLogHandle = session.provide('L', logHandle);
+    const oldTestHandle = session.provide('T', testHandle);
 
     koru._INTERCEPT = intercept;
 
@@ -28,7 +54,21 @@ define(function(require, exports, module) {
     remoteControl.testHandle = testHandle;
     remoteControl.logHandle = logHandle;
 
-    let clientCount = 0;
+    const channelKey = (conn)=>{
+      const {engine} = conn;
+      if (engine === 'Server')
+        return engine;
+      else
+        return engine+' '+conn.sessId;
+    };
+
+    const newConn = (conn)=>{
+      const key = channelKey(conn);
+      ws.send('A'+key);
+      ++clientCount;
+      return {conn, key};
+    };
+
     const clients = {};
     for (let key in session.conns) {
       const conn = session.conns[key];
@@ -39,22 +79,7 @@ define(function(require, exports, module) {
 
     ws.send('AServer');
 
-    function channelKey(conn) {
-      const {engine} = conn;
-      if (engine === 'Server')
-        return engine;
-      else
-        return engine+' '+conn.sessId;
-    }
-
-    function newConn(conn) {
-      const key = channelKey(conn);
-      ws.send('A'+key);
-      ++clientCount;
-      return {conn, key};
-    }
-
-    session.countNotify.onChange(function (conn, isOpen) {
+    session.countNotify.onChange((conn, isOpen)=>{
       if (! conn.engine) return;
       const cs = clients[conn.engine];
       let channel;
@@ -67,7 +92,7 @@ define(function(require, exports, module) {
       }
     });
 
-    function testWhenReady() {
+    const testWhenReady = ()=>{
       if (testMode !== 'none') {
         if (testMode !== 'server' &&
             testExec.client && clientCount) {
@@ -88,7 +113,7 @@ define(function(require, exports, module) {
           server();
         }
       }
-    }
+    };
 
     ws.on('close', ()=>{
       session.provide('L', oldLogHandle);
@@ -151,13 +176,13 @@ define(function(require, exports, module) {
       }
     });
 
-    function readyForTests(channel) {
+    const readyForTests = (channel)=>{
       if (pendingClientTests.length === 0) return false;
       channel.tests = pendingClientTests.pop();
       testExec.client(channel.conn, channel.tests);
       ws.send('X'+channel.key);
       return true;
-    }
+    };
 
     function testHandle(msg) {
       try {
@@ -167,7 +192,7 @@ define(function(require, exports, module) {
       }
     }
 
-    function _testHandle(conn, msg) {
+    const _testHandle = (conn, msg)=>{
       if (msg[0] === 'A') {
         const cs = clients[conn.engine] = {};
         let channel = cs[conn.sessId];
@@ -200,31 +225,6 @@ define(function(require, exports, module) {
         if (testClientCount || testExec.server) return;
         ws.send('Z');
       }
-    }
-
-    function logHandle(msg) {
-      const key = channelKey(this);
-      key !== 'Server' && console.log('INFO ' + key + ' ' + msg);
-      try {
-        ws.send('L' + channelKey(this) + '\x00' + msg);
-      } catch(ex) {
-        // ignore since it will just come back to us
-      }
-    }
-
-    function intercept(obj) {
-      interceptObj = obj;
-      ws.send('I' + util.extractError(new Error("interrupt")));
-      future = new util.Future;
-      try {
-        return future.wait();
-      } finally {
-        future = null;
-      }
-    }
-
-    function continueIntercept(arg) {
-      if (future) future.return(arg);
-    }
+    };
   }
 });
