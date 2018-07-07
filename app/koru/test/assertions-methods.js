@@ -19,29 +19,35 @@ define(function(require, exports, module) {
   // assert.dom
   let selectNode = null;
 
-  Core.assert.benchMark = ({subject, duration=1000, control=empty})=>{
+  Core.assert.benchMark = ({subject, duration=1000, control=empty, setup=empty})=>{
+    setup();
     subject();
+    setup();
     control();
 
     let _count = 0, st = 0;
     let result;
+    setup();
     let endAt = Date.now()+Math.floor(duration/6);
     st = performance.now();
     while(endAt > Date.now()) {
       result = subject(_count, result);
       ++_count;
     }
+    setup();
     const count = _count;
     for(let i = 0; i < count; ++i) {
       result = control(i, result);
     }
 
+    setup();
     st = performance.now();
     for(let i = 0; i < count; ++i) {
       result = control(i, result);
     }
     let control1 = (performance.now()-st)/count;
 
+    setup();
     st = performance.now();
     for(let i = 0; i < count; ++i) {
       result = subject(i, result);
@@ -49,12 +55,14 @@ define(function(require, exports, module) {
 
     let subject1 = (performance.now()-st)/count;
 
+    setup();
     st = performance.now();
     for(let i = 0; i < count; ++i) {
       result = control(i, result);
     }
     const control2 = (performance.now()-st)/count;
 
+    setup();
     st = performance.now();
     for(let i = 0; i < count; ++i) {
       result = subject(i, result);

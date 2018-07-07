@@ -1,5 +1,6 @@
 define((require, exports, module)=>{
-  const TH   = require('koru/test-helper');
+  const koru            = require('koru');
+  const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd, util, match: m} = TH;
 
@@ -19,6 +20,30 @@ define((require, exports, module)=>{
 
       assert.equals(ans, {
         ns: m.number, error: m.number, controllNs: m.number, subjectlNs: m.number});
+    });
+
+    false &&
+    test("try", ()=>{
+      const plain = {};
+      const map = koru.util.createDictionary();
+      let counter;
+      const ans = assert.benchMark({
+        duration: 10000,
+        setup() {counter=0},
+        subject: ()=>{
+          delete plain['x'+ counter];
+          plain['x'+ ++counter] = counter;
+        },
+        control: ()=>{
+          delete plain['x'+ counter];
+          map['x'+ ++counter] = counter;
+        },
+      });
+
+      koru.debug(ans);
+
+      assert(true);
+
     });
   });
 });
