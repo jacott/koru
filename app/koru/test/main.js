@@ -64,7 +64,7 @@ define((require, exports, module)=>{
   top.assert = Core.assert;
   top.refute = Core.refute;
 
-  let count, skipCount, errorCount, timer;
+  let count, skipCount, errorCount, timer, lastTest;
 
   let testRunCount = 0;
 
@@ -120,7 +120,17 @@ define((require, exports, module)=>{
     Main.logHandle("\n\n*** ERROR: Some tests did a Full Page Reload ***\n");
   };
 
+  const recordTCTime = ()=>{
+    if (lastTest !== undefined) {
+      const {topTC} = lastTest;
+      topTC.duration += timer;
+    }
+  };
+
   const endRun = ()=>{
+    recordTCTime();
+    koru.afTimeout = Core._origAfTimeout;
+    timer = lastTest = undefined;
     if (Core.testCount === 0) {
       errorCount = 1;
       Main.testHandle('R', "No Tests!\x00" + [0,0,0,0,Date.now() - timer].join(' '));
@@ -148,6 +158,7 @@ define((require, exports, module)=>{
     spy,
     stub,
     intercept,
+    testCases: [],
 
     logHandle(type, msg) {
       console.error(type, msg);
@@ -169,7 +180,7 @@ define((require, exports, module)=>{
       count = skipCount = errorCount = 0;
 
       require(tests, (...args)=>{
-        koru.runFiber(() => {Core.start(args)});
+        koru.runFiber(() => {Core.start(Core.testCases=args)});
       }, err => {
         ++errorCount;
         if (err.module) {
@@ -204,12 +215,20 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
   Core.onEnd(endRun);
 
   Core.onTestStart(test=>{
-    timer = Date.now();
-    isClient && (Core._origAfTimeout = koru.afTimeout, koru.afTimeout = koru.nullFunc);
+    if (timer === undefined) {
+      timer = Date.now();
+      if (isClient) Core._origAfTimeout = koru.afTimeout;
+    }
+
+    if (lastTest === undefined || test.topTC !== lastTest.topTC) {
+      test.topTC.duration = -timer;
+      recordTCTime();
+    }
+    lastTest = test;
+    if (isClient) koru.afTimeout = koru.nullFunc;
   });
 
   Core.onTestEnd(test=>{
-    koru.afTimeout = Core._origAfTimeout;
     if (test.errors) {
       ++errorCount;
 
@@ -222,9 +241,12 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
     }
 
     test.skipped ? ++skipCount : ++count;
+    const now = Date.now();
 
     Main.testHandle('R', `${test.name}\x00` + [
-      count,Core.testCount,errorCount,skipCount,Date.now() - timer].join(' '));
+      count,Core.testCount,errorCount,skipCount,now - timer].join(' '));
+
+    timer = now;
   });
 
   return Main;

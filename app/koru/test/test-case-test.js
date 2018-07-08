@@ -13,7 +13,6 @@ define((require, exports, module)=>{
 
   let v = {};
 
-
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=> {
     let groupDone;
 

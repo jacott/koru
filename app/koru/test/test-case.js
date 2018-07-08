@@ -218,6 +218,7 @@ define((require, exports, module)=>{
     constructor(name, tc, func) {
       this.name = name;
       this.tc = tc;
+      this.topTC = tc.topTestCase();
       this.func = func;
     }
 
