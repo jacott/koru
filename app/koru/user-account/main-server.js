@@ -43,7 +43,7 @@ define((require, exports, module)=>{
     makeToken() {
       const token = Random.id();
       const tokens = this.unexpiredTokens();
-      tokens[token] = Date.now()+180*24*1000*60*60;
+      tokens[token] = util.dateNow()+180*24*1000*60*60;
       this.tokens = tokens;
       return token;
     }
@@ -83,7 +83,7 @@ define((require, exports, module)=>{
       const parts = token.split('-');
       const lu = UserLogin.findById(parts[0]);
 
-      if (lu && lu.resetToken === parts[1] && Date.now() < lu.resetTokenExpire) {
+      if (lu && lu.resetToken === parts[1] && util.dateNow() < lu.resetTokenExpire) {
         lu.srp = passwordHash;
         lu.resetToken = lu.resetTokenExpire = undefined;
         const loginToken = lu.makeToken();
@@ -131,7 +131,7 @@ define((require, exports, module)=>{
       const lu = UserLogin.findBy('userId', user._id);
 
       lu.resetToken = Random.id()+Random.id();
-      lu.resetTokenExpire = Date.now() + 24*60*60*1000;
+      lu.resetTokenExpire = util.dateNow() + 24*60*60*1000;
       lu.$$save();
 
       return lu;

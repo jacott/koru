@@ -267,7 +267,7 @@ define((require, exports, module)=>{
 
       const getDc = ()=>{
         const dc = util.thread[docCache$];
-        return dc && model.db === dc.$db && dc;
+        return dc && model.db === dc.$db ? dc : undefined;
       };
 
       util.merge(model, {
@@ -302,15 +302,15 @@ define((require, exports, module)=>{
 
         _$docCacheGet(id) {
           const dc = getDc();
-          if (dc)
+          if (dc !== undefined)
             return dc[id];
         },
 
         _$docCacheSet(doc) {
           const thread = util.thread;
           let dc = getDc();
-          if (! dc || dc.$db !== model.db) {
-            dc = Object.create(null); dc.$db = null; delete dc.$db; // de-op object
+          if (dc === undefined || dc.$db !== model.db) {
+            dc = util.createDictionary();
             dc.$db = model.db;
             thread[docCache$] = dc;
           }
@@ -320,7 +320,7 @@ define((require, exports, module)=>{
         _$docCacheDelete(doc) {
           if (doc._id) {
             const dc = getDc();
-            if (dc)
+            if (dc !== undefined)
               delete dc[doc._id];
           }
         },
