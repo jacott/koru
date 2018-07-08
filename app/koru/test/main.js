@@ -64,7 +64,7 @@ define((require, exports, module)=>{
   top.assert = Core.assert;
   top.refute = Core.refute;
 
-  let count, skipCount, errorCount, timer, lastTest;
+  let count, errorCount, timer, lastTest;
 
   let testRunCount = 0;
 
@@ -158,7 +158,6 @@ define((require, exports, module)=>{
     spy,
     stub,
     intercept,
-    testCases: [],
 
     logHandle(type, msg) {
       console.error(type, msg);
@@ -177,7 +176,7 @@ define((require, exports, module)=>{
       console.log('*** test-start ' + ++testRunCount);
 
       Core.runArg = pattern || undefined;
-      count = skipCount = errorCount = 0;
+      count = errorCount = 0;
 
       require(tests, (...args)=>{
         koru.runFiber(() => {Core.start(Core.testCases=args)});
@@ -206,6 +205,10 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       });
     }
   };
+
+  Core.worstTCS = ()=> Core.testCases
+    .sort((a,b) => b.duration - a.duration)
+    .map(a => a && a.name+': '+a.duration);
 
   koru.logger = (type, ...args)=>{
     console.log.apply(console, args);
@@ -240,11 +243,11 @@ ${Object.keys(koru.fetchDependants(err.module)).join(' <- ')}`);
       Main.testHandle('E', result);
     }
 
-    test.skipped ? ++skipCount : ++count;
+    ++count;
     const now = Date.now();
 
     Main.testHandle('R', `${test.name}\x00` + [
-      count,Core.testCount,errorCount,skipCount,now - timer].join(' '));
+      count,Core.testCount,errorCount,Core.skipCount,now - timer].join(' '));
 
     timer = now;
   });

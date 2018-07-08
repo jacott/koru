@@ -9,8 +9,6 @@ define((require, exports, module)=>{
 
   const {stub, spy, onEnd, util, stubProperty, match: m} = TH;
 
-  const sut  = require('./test-case');
-
   let v = {};
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=> {

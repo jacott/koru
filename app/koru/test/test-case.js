@@ -196,7 +196,6 @@ define((require, exports, module)=>{
         ++Core.testCount;
         if (skipped) {
           ++Core.skipCount;
-          tests.push(new Test(fn, this));
         } else {
           tests.push(new Test(fn, this, body));
         }
@@ -220,10 +219,6 @@ define((require, exports, module)=>{
       this.tc = tc;
       this.topTC = tc.topTestCase();
       this.func = func;
-    }
-
-    get skipped() {
-      return this.func === undefined;
     }
 
     onEnd(func) {
@@ -364,7 +359,7 @@ define((require, exports, module)=>{
     const runTest = (oldTest, newTest)=>{
       const common = commonTC(oldTest, newTest);
       if (oldTest !== undefined) {
-        oldTest.skipped || runTearDowns(oldTest.tc, common);
+        runTearDowns(oldTest.tc, common);
         Core.runCallBacks('testEnd', oldTest);
       }
       if (newTest === undefined) {
@@ -372,8 +367,6 @@ define((require, exports, module)=>{
         Core.runCallBacks('end');
       } else {
         Core.runCallBacks('testStart', newTest);
-        if (newTest.skipped)
-          return;
         runSetups(newTest.tc, common);
         try {
           if (newTest.func.length === 1) {
