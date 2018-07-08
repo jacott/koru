@@ -82,7 +82,7 @@ define((require, exports, module)=>{
       m[1] = m[1] ? m[1].replace(/\s.*/, '') : 'Unknown';
       const tmp = ua.match(/version\/([\.\d]+)/i);
       if(tmp != null) m[2]= tmp[1];
-      return (isMobile ? 'Mobile ' : '') + m.slice(1).join(' ');
+      return (isMobile ? 'Mobile ' : '') + m.slice(1).join('-');
     },
 
     merge(dest, source) {

@@ -246,7 +246,7 @@ define(function (require, exports, module) {
 
           assert.calledWith(
             koru.info,
-            "New conn id:1, tot:1, ver:v1.2.2, Chrome 59.0.3071.104, 11.22.33.44:12345");
+            "New conn id:1, tot:1, ver:v1.2.2, Chrome-59.0.3071.104, 11.22.33.44:12345");
         },
 
         "test override halts response"() {

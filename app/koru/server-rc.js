@@ -59,7 +59,7 @@ define((require, exports, module)=>{
       if (engine === 'Server')
         return engine;
       else
-        return engine+' '+conn.sessId;
+        return engine+'-'+conn.sessId;
     };
 
     const newConn = (conn)=>{
