@@ -1,14 +1,29 @@
 define(()=>{
   class LinkedList {
     constructor() {
-      this.head = this.tail = undefined;
+      this.front = this.back = undefined;
     }
 
-    addFront(value) {
-      if (this.head === undefined)
-        return this.head = this.tail = {value, next: undefined};
+    push(value) {
+      if (this.front === undefined)
+        return this.front = this.back = {value, next: undefined};
       else
-        return this.head = {value, next: this.head};
+        return this.front = {value, next: this.front};
+    }
+
+    popNode() {
+      const node = this.front;
+      if (node !== undefined) {
+        if (this.back === this.front)
+          this.back = this.front.next;
+        this.front = this.front.next;
+      };
+      return node;
+    }
+
+    pop() {
+      const node = this.popNode();
+      return node && node.value;
     }
 
     addAfter(prev, value) {
@@ -19,53 +34,30 @@ define(()=>{
     }
 
     addBack(value) {
-      if (this.head === undefined)
-        return this.head = this.tail = {value, next: undefined};
+      if (this.front === undefined)
+        return this.front = this.back = {value, next: undefined};
       else
-        return this.tail.next = this.tail = {value, next: undefined};
-    }
-
-    find(comp, prev) {
-      for (let node = prev === undefined ? this.head : prev.next;
-           node !== undefined; node = node.next ) {
-        if (comp(node)) {
-          return {prev, node};
-        }
-      }
+        return this.back.next = this.back = {value, next: undefined};
     }
 
     removeNode(node, prev) {
-      for (let curr = prev === undefined ? this.head : prev.next;
-           curr !== undefined; curr = curr.next ) {
+      for (let curr = prev === undefined ? this.front : prev.next;
+           curr !== undefined; prev = curr, curr = curr.next ) {
         if (curr === node) {
           if (prev === undefined)
-            this.head = curr.next;
+            this.front = curr.next;
           else
             prev.next = curr.next;
 
-          if (this.tail === curr)
-            this.tail = prev;
-          return curr;
-        }
-      }
-    }
-
-    remove(comp, arg) {
-      let prev;
-      for (let curr = this.head; curr !== undefined; curr = curr.next ) {
-        if (comp(curr, arg)) {
-          if (prev === undefined)
-            this.head = curr.next;
-          else
-            prev.next = curr.next;
-
-          if (this.tail === curr)
-            this.tail = prev;
+          if (this.back === curr)
+            this.back = prev;
           return curr;
         }
       }
     }
   }
+
+  LinkedList.prototype.addFront = LinkedList.prototype.push;
 
   return LinkedList;
 });

@@ -1,6 +1,12 @@
 define((require, exports, module)=>{
-  const koru = require('koru');
-  const TH   = require('koru/test-helper');
+  /**
+   * A Balanced Tree. Implemented using a
+
+   * [Red-black tree](https://en.wikipedia.org/wiki/Red%E2%80%93black_tree).
+   **/
+  const koru            = require('koru');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {test$} = require('koru/symbols');
 
@@ -149,10 +155,10 @@ r            1000
     });
 
     test("compare", ()=>{
-      function myCompare(a, b) {
+      const myCompare = (a, b)=>{
         a = a.key; b = b.key;
         return a == b ? 0 : a < b ? 1 : -1;
-      }
+      };
       const tree = new BTree(myCompare);
       tree.add({key: 100, value: "v100"});
 
@@ -166,6 +172,11 @@ r            1000
     });
 
     test("find, findNode", ()=>{
+      /**
+       * Find a value in the tree.
+       **/
+      api.protoMethod("find");
+      api.protoMethod("findNode", {intro: 'Find a node in the tree.'});
       const tree = new BTree();
       const list = [100, 200, 50, 150, 250];
       insertNodes(tree, list);
@@ -723,7 +734,7 @@ r  110
     // },
   });
 
-  function assertTree(tree, exp='') {
+  const assertTree = (tree, exp='')=>{
     try {
       tree._assertValid();
     } catch(ex) {
@@ -740,13 +751,11 @@ ${act}
 but expected
 ${exp}
 `);
-  }
+  };
 
-  function insertNodes(tree, list) {
-    list.forEach(k => tree.add(k));
-  }
+  const insertNodes = (tree, list)=>{list.forEach(k => tree.add(k))};
 
-  function buildTree(tree, graph) {
+  const buildTree = (tree, graph)=>{
     let curr, cl = 0;
     graph.trim().split('\n').forEach(line => {
       if (! curr) curr = tree.add(+line);
@@ -764,9 +773,9 @@ ${exp}
       }
     });
     tree._recalcSize();
-  }
+  };
 
-  function run(list) {
+  const run = list =>{
     const tree = new BTree();
     for (const i of list) {
       const value = +i.slice(1);
@@ -777,5 +786,5 @@ ${exp}
       }
     }
     return tree;
-  }
+  };
 });
