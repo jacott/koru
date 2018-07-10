@@ -193,7 +193,8 @@ const {stub, spy, intercept} = TH;
         const obj = {foo() {args = 'aStub'}};
         stubber.stub(obj, 'foo', (a,b,c)=>{args = [a,b,c]});
         //]
-        sApi.customIntercept(obj.foo, 'restore', 'Stub#');
+        _koru_.util.FULL_STACK = true;
+        sApi.customIntercept(obj.foo, {name: 'restore', sig: 'Stub#'});
         //[
         obj.foo(1,2,3);
         assert.equals(args, [1,2,3]);

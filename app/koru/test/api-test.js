@@ -15,7 +15,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const MainAPI         = require('./api');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const {inspect$} = require('koru/symbols');
 
@@ -100,18 +100,12 @@ define((require, exports, module)=>{
        * @param subject either the actual subject or the property name
        * of the subject if accessible from the current subject
        * @param [subjectName] override the subject name
-       * @param [options] adornments to the documentation:
-       *
-       * * `intro|info` - property info line (if subject is a `string`)
-
-       * * `abstract` - introduction to the subject. If abstract is a
-       * `function` then the initial doc comment is used.
-
-       * * `initExample` - code that can be used to initialize
+       * @param [options.info] property info line (if subject is a `string`). Alias 'intro'
+       * @param [options.abstract] introduction to the subject. If abstract is a `function` then the
+       * initial doc comment is used.
+       * @param [options.initExample] code that can be used to initialize `subject`
+       * @param [options.initInstExample] code that can be used to initialize an instance of
        * `subject`
-
-       * * `initInstExample` - code that can be used to initialize
-       * an instance of `subject`
 
        * @returns an API instance for the given `subject`. Subsequent
        * API calls should be made directly on this API instance and
@@ -318,18 +312,12 @@ assert.same(Color.colors.red, '#f00');`,
          * Document a property of the current subject. The property
          * can be either plain value or a get/set function.
 
-         * @param [options] details about the property.
+         * @param [options.info] description of property. Defaults to the current test's doc
+         * comment.  When `function` should return an info `string`. The info `string` can contain
+         * `${value}` which will be substituted with a description of the properties value. Alias
+         * `intro`
+         * @param [options.properties] document child properties
          *
-         * Where `object` can contain the following:
-         *
-         * * `info` (or `intro`): description of property. Defaults to the current test's doc
-         * comment.
-
-         * * `properties`: document child properties
-         *
-         * When `function` should return an info `string`. The info
-         * `string` can contain `${value}` which will be substituted
-         * with a description of the properties value.
          **/
         //[
         const defaults = {
@@ -488,7 +476,10 @@ assert.same(Color.colors.red, '#f00');`,
       /**
        * Document `constructor` for the current subject. It
        *
-       * @param [sig] override the call signature. Sig is used as the subject if it is a function.
+       * @param {string} [options.sig] override the call signature. Sig is used as the subject if it
+       * is a function.
+       * @param {function|string} [options.intro] the abstract for the method being
+       * documented. Defaults to test comment.
        *
        * @returns a ProxyClass which is to be used instead of `new Class`
 
@@ -504,14 +495,14 @@ assert.same(Color.colors.red, '#f00');`,
 
       API.module({subjectModule: {id: 'myMod', exports: Hobbit}});
 
-      const newHobbit = API.new(Hobbit);
+      const newHobbit = API.new();
 
       const bilbo = newHobbit('Bilbo');
 
       assert.same(bilbo.name, 'Bilbo');
 
       /*//[ // new//]//[_Book is converted to new Book when the example is rendered
-        const new//]//[_Book = api.new(Book);
+        const new//]//[_Book = api.new({intro: 'It is a dangerous thing Frodo'});
 
         ////]//[[
         const book = new//]//[_Book({name: 'There and back again'});
@@ -529,7 +520,7 @@ assert.same(Color.colors.red, '#f00');`,
       });
 
       API.new();
-      API.new('function Hobbit({name}) {}');
+      API.new({sig: 'function Hobbit({name}) {}', intro: 'It is a dangerous thing Frodo'});
     });
 
     test("custom.", ()=>{
@@ -537,9 +528,11 @@ assert.same(Color.colors.red, '#f00');`,
        * Document a custom function in the current module
        *
        * @param func the function to document
-       * @param [name] override the name of func
-       * @param [sig] replace of prefix the function signature. If it ends with a ".", "#" or a ":"
-       * then it will prefix otherwise it will replace.
+       * @param [options.name] override the name of func
+       * @param [options.sig] replace of prefix the function signature. If it ends with a ".", "#"
+       * or a ":" then it will prefix otherwise it will replace.
+       * @param {function|string} [options.intro] the abstract for the method being documented. Defaults to
+       * test comment.
 
        * @returns a ProxyClass which is to be used instead of `func`
        **/
@@ -569,7 +562,7 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
-      proxy = API.custom(myCustomFunction, 'example2', 'foobar = function example2(arg)');
+      proxy = API.custom(myCustomFunction, {name: 'example2', sig: 'foobar = function example2(arg)'});
 
       proxy.call(thisValue, 4);
 
@@ -585,21 +578,21 @@ assert.same(Color.colors.red, '#f00');`,
         ]],
       });
 
-      proxy = API.custom(myCustomFunction, 'example3');
+      proxy = API.custom(myCustomFunction, {name: 'example3'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example3.sig, 'example3(arg)');
 
-      proxy = API.custom(myCustomFunction, 'example4', 'Container#');
+      proxy = API.custom(myCustomFunction, {name: 'example4', sig: 'Container#'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example4.sigPrefix, 'Container#');
       assert.equals(API.instance.customMethods.example4.sig, 'example4(arg)');
 
-      proxy = API.custom(myCustomFunction, 'example5', 'Container.');
+      proxy = API.custom(myCustomFunction, {name: 'example5', sig: 'Container.'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example5.sigPrefix, 'Container.');
       assert.equals(API.instance.customMethods.example5.sig, 'example5(arg)');
 
-      proxy = API.custom(myCustomFunction, 'example6', 'Container.foo()');
+      proxy = API.custom(myCustomFunction, {name: 'example6', sig: 'Container.foo()'});
       proxy.call(thisValue, 4);
       assert.equals(API.instance.customMethods.example6.sigPrefix, 'Container.');
       assert.equals(API.instance.customMethods.example6.sig, 'foo()');
@@ -612,9 +605,11 @@ assert.same(Color.colors.red, '#f00');`,
        * Intercept a function and document it like {#.custom}.
        *
        * @param object the container of the function to document
-       * @param name the name of function to intercept
-       * @param [sig] replace of prefix the function signature. If it ends with a ".", "#" or a ":"
-       * then it will prefix otherwise it will replace.
+       * @param [options.name] the name of function to intercept defaults to test name
+       * @param [options.sig] replace of prefix the function signature. If it ends with a ".", "#"
+       * or a ":" then it will prefix otherwise it will replace.
+       * @param {function|string} [options.intro] the abstract for the method being
+       * documented. Defaults to test comment.
 
        * @returns the original function
        **/
@@ -632,7 +627,7 @@ assert.same(Color.colors.red, '#f00');`,
       API.module({subjectModule: {id: 'myMod', exports: {}}});
       const thisValue = {};
 
-      let orig = API.customIntercept(Book.prototype, 'print', 'Book#');
+      let orig = API.customIntercept(Book.prototype, {name: 'print', sig: 'Book#'});
 
       const book = new Book();
       assert.same('success', book.print(2));
@@ -656,6 +651,9 @@ assert.same(Color.colors.red, '#f00');`,
     test("method", ()=>{
       /**
        * Document `methodName` for the current subject
+       *
+       * @param {function|string} [intro] the abstract for the method being documented. Defaults to
+       * test comment.
        **/
       MainAPI.method('method');
       const fooBar = {
@@ -675,7 +673,7 @@ assert.same(Color.colors.red, '#f00');`,
       assert.equals(API.instance.methods.fnord, {
         test,
         sig: TH.match(/(function )?fnord\(a\)/),
-        intro: 'Document `methodName` for the current subject',
+        intro: m(str => str.startsWith('Document `methodName` for the current subject')),
         subject: ['O', fooBar, '{fnord(){}}'],
         calls: [[
           [5], 10
@@ -694,35 +692,41 @@ assert.same(Color.colors.red, '#f00');`,
 
        * @param [subject] override the instance to document. This
        * defaults to `module.exports.prototype`
+       * @param {function|string} [intro] the abstract for the method being documented. Defaults to
+       * test comment.
        **/
       MainAPI.method('protoMethod');
 
-      MainAPI.example(() => {
-        class Tree {
-          constructor(name) {
-            this.name = name;
-            this.branches = 10;
-          }
+      //[
+      class Tree {
+        constructor(name) {
+          this.name = name;
+          this.branches = 10;
+        }
 
-          prune(branchCount) {
-            return this.branches -= branchCount;
-          }
-        };
+        prune(branchCount) {
+          return this.branches -= branchCount;
+        }
 
-        API.module({subjectModule: {id: 'myMod', exports: Tree}});
-        API.protoMethod('prune');
+        graft(branchCount) {
+          return this.branches += branchCount;
+        }
+      };
 
-        const plum = new Tree('Plum');
-        assert.same(plum.prune(3), 7);
-        assert.same(plum.prune(2), 5);
+      API.module({subjectModule: {id: 'myMod', exports: Tree}});
+      API.protoMethod('prune');
+
+      const plum = new Tree('Plum');
+      assert.same(plum.prune(3), 7);
+      assert.same(plum.prune(2), 5);
 
 
-        /** Overriding subject.prototype **/
-        const subject = {anything() {return "I could be anything"}};
-        API.protoMethod('anything', subject);
+      /** Overriding subject.prototype **/
+      const subject = {anything() {return "I could be anything"}};
+      API.protoMethod('anything', {subject});
 
-        assert.same(subject.anything(), "I could be anything");
-      });
+      assert.same(subject.anything(), "I could be anything");
+      //]
 
       API.done();
 
@@ -737,6 +741,8 @@ assert.same(Color.colors.red, '#f00');`,
           [2], 5
         ]]
       });
+
+      API.protoMethod('graft', {intro: "an intro"});
     });
 
     test("auto subject", ()=>{

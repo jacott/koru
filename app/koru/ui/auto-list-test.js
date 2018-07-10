@@ -84,7 +84,7 @@ isClient && define(function (require, exports, module) {
        * * `action` is `added`, `changed` or `removed`
 
        **/
-      const new_AutoList = api.new(AutoList);
+      const new_AutoList = api.new();
 
       const {Book, row} = v;
 
@@ -594,7 +594,7 @@ isClient && define(function (require, exports, module) {
     },
 
     "test start, end comment"() {
-      const new_AutoList = api.new(AutoList);
+      const new_AutoList = api.new();
 
       const {Book, row} = v;
 

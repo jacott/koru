@@ -359,7 +359,8 @@ define(function (require, exports, module) {
             [action]() {this.error(418, 'teapot')};
           };
 
-          api.customIntercept(Foo.prototype, action, `<class extends BaseController>#${action}()`);
+          api.customIntercept(Foo.prototype, {
+            name: action, sig: `<class extends BaseController>#${action}()`});
 
           opts.pathParts = url.split('/').slice(2);
           opts.request.method = method;
@@ -509,7 +510,8 @@ define(function (require, exports, module) {
       };
       //]
 
-      api.customIntercept(Foo.prototype, 'aroundFilter', '<class extends BaseController>#');
+      api.customIntercept(Foo.prototype, {
+        name: 'aroundFilter', sig: '<class extends BaseController>#'});
 
       opts.pathParts = ['1234', 'edit'];
       new Foo(opts);

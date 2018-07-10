@@ -66,7 +66,7 @@ define(function (require, exports, module) {
        **/
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      api.protoMethod('replaceRpcQueue', v.sess);
+      api.protoMethod('replaceRpcQueue', {subject: v.sess});
 
       const cb = stub();
       v.sess.rpc('foo.rpc', 1, 2, 3, cb);
@@ -88,7 +88,7 @@ define(function (require, exports, module) {
        **/
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      api.protoMethod('checkMsgId', v.sess);
+      api.protoMethod('checkMsgId', {subject: v.sess});
 
       const id = 40+Random.id();
       assert.equals(v.sess._sendM('foo'), '1rid1');
@@ -113,7 +113,7 @@ define(function (require, exports, module) {
        **/
       const rpcQueue = new RPCQueue();
       sut(v.sess, {rpcQueue});
-      api.protoMethod('cancelRpc', v.sess);
+      api.protoMethod('cancelRpc', {subject: v.sess});
 
       v.sess.rpc('foo.rpc', 1, 2, 3);
       const msgId = v.sess.lastMsgId;

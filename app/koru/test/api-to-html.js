@@ -63,10 +63,17 @@ define(function(require, exports, module) {
 
   const BLOCK_TAGS = {
     param(api, row, argMap) {
-      const m = /^\w+\s*({[^}]+})?\s*(\[)?(\w+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
+      const m = /^\w+\s*({[^}]+})?\s*(\[)?([\w.]+)\]?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid param for api: ${api.id} line @${row}`);
-      const profile = argMap[m[3]] || (argMap[m[3]] = {});
+      const name = m[3], dotIdx = name.indexOf(".");
+      let profile = argMap[name] || (argMap[name] = {});
+      if (dotIdx != -1) {
+        const pName = name.slice(0, dotIdx);
+        const opts = argMap[pName] || (argMap[pName] = {});
+        const optNames = opts.optNames || (opts.optNames = {});
+        optNames[name] = true;
+      }
       if (m[4]) profile.info = m[4];
       if (m[2]) profile.optional = true;
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
@@ -464,21 +471,28 @@ define(function(require, exports, module) {
       return;
 
     const retTypes = ret && ret.types && extractTypes(ret);
+
+    const eachParam = arg => {
+      const am = argMap[arg];
+      if (am.optNames === undefined) {
+        const types = extractTypes(am);
+        return {
+          class: "jsdoc-arg", tr: [
+            {td: am.optional ? `[${arg}]` : arg},
+            {td: types},
+            {class: 'jsdoc-info', td: jsdocToHtml(api, am.info)}
+          ]
+        };
+      } else {
+        return Dom.h(Object.keys(am.optNames).map(eachParam));
+      }
+    };
+
     return {class: "jsdoc-args", div: [
       {h1: "Parameters"},
       {table: {
         tbody: [
-          ...args.map(arg => {
-            const am = argMap[arg];
-            const types = extractTypes(am);
-            return {
-              class: "jsdoc-arg", tr: [
-                {td: am.optional ? `[${arg}]` : arg},
-                {td: types},
-                {class: 'jsdoc-info', td: jsdocToHtml(api, am.info)}
-              ]
-            };
-          }),
+          ...args.map(eachParam),
           ret && retTypes && {
             class: "jsdoc-method-returns", tr: [
               {td: {h1: 'Returns'}},
@@ -499,7 +513,7 @@ define(function(require, exports, module) {
       typeMap[types[type]] = true;
       if (ans.length != 0)
         ans.push('\u200a/\u200a');
-      ans.push(targetExternal({a: idToText(types[type]), $href: href(type)}));
+      ans.push(targetExternal({a: idToText(types[type]), $href: (href || typeHRef)(type)}));
     }
     return ans;
   }
@@ -546,7 +560,7 @@ define(function(require, exports, module) {
 
     iterCalls(calls);
 
-    return {optional, types, type: null, href: typeHRef};
+    return {optional, types, type: undefined, href: typeHRef};
   }
 
   function typeHRef(type) {

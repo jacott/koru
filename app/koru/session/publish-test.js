@@ -44,7 +44,7 @@ define((require, exports, module)=>{
        * @param {function} [preload] A preload function to call on
        * client; see {#.preload}
        **/
-      const publish = api.custom(sut, 'publish');
+      const publish = api.custom(sut, {sig: 'publish'});
 
       onEnd(() => {
         sut._destroy("TestPublish");

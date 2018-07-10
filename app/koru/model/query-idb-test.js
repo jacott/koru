@@ -61,7 +61,7 @@ isClient && define(function (require, exports, module) {
        **/
       v.error = ex => done(ex);
 
-      const new_QueryIDB = api.new(QueryIDB);
+      const new_QueryIDB = api.new();
       //[
       v.db = new_QueryIDB({name: 'foo', version: 2, upgrade({db, oldVersion}) {
         assert.same(oldVersion, 1);

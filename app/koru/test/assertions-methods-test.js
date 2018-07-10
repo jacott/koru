@@ -40,7 +40,7 @@ define((require, exports, module)=>{
         },
       });
 
-      koru.debug(ans);
+      koru.info(util.inspect(ans));
 
       assert(true);
 

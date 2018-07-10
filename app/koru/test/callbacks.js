@@ -37,7 +37,7 @@ define((require, exports, module)=>{
     if (cbs === undefined) return;
 
     let firstEx;
-    for (let node = cbs.head; node !== undefined; node = node.next) {
+    for (let node = cbs.front; node !== undefined; node = node.next) {
       try {
         node.value(test);
       } catch(ex) {

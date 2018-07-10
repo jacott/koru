@@ -108,7 +108,7 @@ define((require, exports, module)=>{
       /**
        * Match `expected` using {#koru/util.deepEqual}
        **/
-      api.customIntercept(match, 'equal', 'match.');
+      api.customIntercept(match, {name: 'equal', sig: 'match.'});
       //[
       const me = match.equal([1,match.any]);
 
@@ -132,7 +132,7 @@ define((require, exports, module)=>{
       /**
        * Match exactly; like `Object.is`
        **/
-      api.customIntercept(match, 'is', 'match.');
+      api.customIntercept(match, {name: 'is', sig: 'match.'});
       const foo = {foo: 123};
       const me = match.is(foo);
       assert.isTrue(me.$test(foo));

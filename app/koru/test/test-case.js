@@ -55,7 +55,7 @@ define((require, exports, module)=>{
     const {test} = Core;
     if (list === undefined) return;
     let prev;
-    for (let node = list.head; node !== undefined; node = node.next) {
+    for (let node = list.front; node !== undefined; node = node.next) {
       if (node[temp$] === true)
         list.removeNode(node, prev);
       else

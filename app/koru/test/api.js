@@ -120,16 +120,16 @@ define((require, exports, module)=>{
     }
 
     static innerSubject(subject, subjectName, options) {return this.instance.innerSubject(subject, subjectName, options)}
-    static new(sig) {return this.instance.new(sig)}
-    static custom(func, name, sig) {return this.instance.custom(func, name, sig)}
-    static customIntercept(object, name, sig) {return this.instance.customIntercept(object, name, sig)}
+    static new(options) {return this.instance.new(options)}
+    static custom(func, options) {return this.instance.custom(func, options)}
+    static customIntercept(object, options) {return this.instance.customIntercept(object, options)}
     static property(name, options) {this.instance.property(name, options)}
     static protoProperty(name, options, subject) {this.instance.protoProperty(name, options, subject)}
     static comment(comment) {this.instance.comment(comment)}
     static example(body) {return this.instance.example(body)}
     static exampleCont(body) {return this.instance.exampleCont(body)}
-    static method(methodName) {this.instance.method(methodName)}
-    static protoMethod(methodName, subject) {this.instance.protoMethod(methodName, subject)}
+    static method(methodName, options) {this.instance.method(methodName, options)}
+    static protoMethod(methodName, options) {this.instance.protoMethod(methodName, options)}
     static done() {this.instance.done()}
 
     static get instance() {return this._instance || this.module()}
@@ -249,7 +249,7 @@ define((require, exports, module)=>{
       return ans;
     }
 
-    new(sig) {
+    new({sig, intro}={}) {
       const {test} = TH;
       const calls = [];
 
@@ -269,7 +269,7 @@ define((require, exports, module)=>{
         this.newInstance = {
           test,
           sig,
-          intro: docComment(test.func),
+          intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
           calls
         };
       }
@@ -290,7 +290,7 @@ define((require, exports, module)=>{
       };
     }
 
-    custom(func, name=func.name, sig) {
+    custom(func, {name=func.name, sig, intro}={}) {
       let sigPrefix;
       if (sig === undefined) {
         sig = funcToSig(func, name);
@@ -319,7 +319,7 @@ define((require, exports, module)=>{
         test,
         sigPrefix,
         sig,
-        intro: docComment(test.func),
+        intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
         calls
       };
       api.target = details;
@@ -340,9 +340,9 @@ define((require, exports, module)=>{
       };
     }
 
-    customIntercept(func, name, sig) {
+    customIntercept(func, {name=func.name, sig, intro}={}) {
       const orig = func[name];
-      TH.intercept(func, name, this.custom(orig, name, sig));
+      TH.intercept(func, name, this.custom(orig, {name, sig, intro}));
       return orig;
     }
 
@@ -366,12 +366,12 @@ define((require, exports, module)=>{
       return example(this, body, 'cont');
     }
 
-    method(methodName) {
-      method(this, methodName, this.subject, this.methods);
+    method(methodName, {subject, intro}={}) {
+      method(this, methodName, subject || this.subject, intro, this.methods);
     }
 
-    protoMethod(methodName, subject=this.subject.prototype) {
-      method(this, methodName, subject, this.protoMethods);
+    protoMethod(methodName, {subject, intro}={}) {
+      method(this, methodName, subject || this.subject.prototype, intro, this.protoMethods);
     }
 
     done() {
@@ -802,7 +802,7 @@ define((require, exports, module)=>{
     inner(subject, name, options, api[field] || (api[field] = {}));
   };
 
-  function method(api, methodKey, obj, methods) {
+  function method(api, methodKey, obj, intro, methods) {
     const {test} = TH;
     if (methodKey == null) {
       methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
@@ -829,7 +829,7 @@ define((require, exports, module)=>{
       details = methods[methodName] = {
         test,
         sig,
-        intro: docComment(test.func),
+        intro: typeof intro === 'string' ? intro : docComment(intro || test.func),
         subject: api.valueTag(api.subject),
         calls
       };

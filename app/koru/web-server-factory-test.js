@@ -82,7 +82,7 @@ isServer && define(function (require, exports, module) {
 
     "test start"() {
       v.webServer = WebServerFactory('localhost', '9876', '/');
-      api.protoMethod('start', v.webServer);
+      api.protoMethod('start', {subject: v.webServer});
 
       //[
       const {Server} = requirejs.nodeRequire('http');
@@ -95,7 +95,7 @@ isServer && define(function (require, exports, module) {
 
     "test stop"() {
       v.webServer = WebServerFactory('localhost', '9876', '/');
-      api.protoMethod('stop', v.webServer);
+      api.protoMethod('stop', {subject: v.webServer});
 
       api.example(() => {
         const {Server} = requirejs.nodeRequire('http');
