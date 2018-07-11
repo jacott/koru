@@ -1,24 +1,48 @@
-isServer && define(function (require, exports, module) {
-  const Dom       = require('koru/dom');
-  const api       = require('koru/test/api');
-  const apiToHtml = require('./api-to-html');
-  const TH        = require('./main');
+isServer && define((require, exports, module)=>{
+  const Dom             = require('koru/dom');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const apiToHtml       = require('./api-to-html');
+  const TH              = require('./main');
+
+  const {stub, spy, onEnd, match: m} = TH;
 
   const sourceHtml = Dom.h({div: [{'$data-api': 'header'},
                                   {'$data-api': 'links'},
                                   {'$data-api': 'pages'}]}).outerHTML;
 
-  let v = {};
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("P Value", ()=>{
+      const json = {
+        'my/mod': {
+          subject: {name: 'MyMod', ids: [], abstracts: [],},
+          methods: {
+            m1: {
+              sig: 'm1(options)',
+              intro: `
+m1 intro
+@param options.a opta doc,
+`,
+              calls: [[[["P", {b: 123}]
+                       ]],
+                      [[["P", {a: ["M", 'koru/test/api'], b: ['U', 'undefined']}]
+                       ]]],
+            }
+          }
+        }
+      };
 
-    tearDown() {
-      v = null;
-    },
+      const html = apiToHtml('Foo', json, sourceHtml);
+      const result = Dom.htmlToJson(Dom.textToHtml(html).getElementsByClassName('jsdoc-arg')[0]).tr;
 
-    "test properties"() {
+      assert.equals(result, [
+        {td: 'options.a'},
+        {td: {href: '#koru/test/api', a: ['api']}},
+        {class: 'jsdoc-info', td: m(o => /opta doc/.test(util.inspect(o)))}
+      ]);
+
+    });
+    test("properties", ()=>{
       const json = {
         'my/mod': {
           subject: {name: 'MyMod', ids: [], abstracts: [],},
@@ -57,10 +81,10 @@ isServer && define(function (require, exports, module) {
           ]},
         ]}},
       ]);
-    },
+    });
 
-    "requireLine": {
-      "test simple"() {
+    group("requireLine", ()=>{
+      test("simple", ()=>{
         const json = {
           'my/mod': {
             subject: {name: 'MyMod', ids: [], abstracts: [],},
@@ -73,9 +97,9 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(result, 'const MyMod = require('+
                       '"my/mod");'); // stop yaajs thinking it's a require
-      },
+      });
 
-      "test property subject"() {
+      test("property subject", ()=>{
         const json = {
           'my/mod.m1': {
             subject: {name: 'MyMod', ids: [], abstracts: [],},
@@ -90,9 +114,9 @@ isServer && define(function (require, exports, module) {
                       '"my/mod").m1;');
 
         assert.equals(Dom.htmlToJson(result).div.length, 12);
-      },
+      });
 
-      "test :: subject no initExample"() {
+      test(":: subject no initExample", ()=>{
         const json = {
           'my/mod': {
             subject: {name: 'MyMod', ids: [], abstracts: [],},
@@ -119,9 +143,9 @@ isServer && define(function (require, exports, module) {
 
         assert.equals(req.textContent, 'const MyMod = req'+'uire("my/mod");');
         assert.equals(Dom.htmlToJson(req).div.length, 10);
-      },
+      });
 
-      "test :: subject with initExample"() {
+      test(":: subject with initExample", ()=>{
         const json = {
           'my/mod': {
             subject: {name: 'MyMod', ids: [], abstracts: [],},
@@ -150,11 +174,11 @@ isServer && define(function (require, exports, module) {
         let pmeth = Dom.textToHtml(html).getElementsByClassName('jsdoc-inst-init')[0];
         assert.equals(pmeth.textContent, 'const m1Inst = myM1.instance();');
 
-      },
-    },
+      });
+    });
 
-    "jsdocToHtml": {
-      "test list"() {
+    group("jsdocToHtml", ()=>{
+      test("list", ()=>{
         const div = apiToHtml.jsdocToHtml(
           {id: 'this/module'},
           ' before\n\n* one\n* two',
@@ -166,9 +190,9 @@ isServer && define(function (require, exports, module) {
             {ul: ['\n', {li: 'one'}, '\n', {li: 'two'}, '\n']},
             '\n'
           ]});
-      },
+      });
 
-      "test {#module/link}"() {
+      test("{#module/link}", ()=>{
         function abstract() {
           /**
            * Abstract
@@ -205,9 +229,9 @@ isServer && define(function (require, exports, module) {
                href: '#this/module#thisModeProtoMethod'}]},
             '\n'
           ]});
-      },
+      });
 
-      "test config"() {
+      test("config", ()=>{
         function abstract() {
           /**
            * Abstract
@@ -242,9 +266,9 @@ isServer && define(function (require, exports, module) {
           })}
         });
 
-      },
+      });
 
-      "test normal link"() {
+      test("normal link", ()=>{
         function abstract() {
           /**
            * A [normal](#link) link
@@ -261,7 +285,7 @@ isServer && define(function (require, exports, module) {
             {p: ['A ', {a: ['normal'], href: '#link'}, ' link']},
             '\n'
           ]});
-      },
-    },
+      });
+    });
   });
 });

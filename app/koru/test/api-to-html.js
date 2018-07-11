@@ -1,10 +1,12 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const marked = requirejs.nodeRequire('marked');
   const koru     = require('koru');
   const Dom      = require('koru/dom');
   const htmlDoc  = require('koru/dom/html-doc');
   const jsParser = require('koru/parse/js-parser');
   const util     = require('koru/util');
+
+  const return$ = Symbol();
 
   const meta = noContent('meta');
   const link = noContent('link');
@@ -73,6 +75,9 @@ define(function(require, exports, module) {
         const opts = argMap[pName] || (argMap[pName] = {});
         const optNames = opts.optNames || (opts.optNames = {});
         optNames[name] = true;
+        if (opts.subArgs !== undefined) {
+          profile.types = opts.subArgs[name.slice(dotIdx+1)];
+        }
       }
       if (m[4]) profile.info = m[4];
       if (m[2]) profile.optional = true;
@@ -89,7 +94,7 @@ define(function(require, exports, module) {
       const m = /^\w+\s*({[^}]+})?(?:\s*-)?\s*([\s\S]*)$/.exec(row);
       if (! m)
         koru.error(`Invalid returns for api: ${api.id} line @${row}`);
-      const profile = argMap[':return:'] || (argMap[':return:'] = {});
+      const profile = argMap[return$] || (argMap[return$] = {});
       if (m[2]) profile.info = m[2];
       if (m[1]) overrideTypes(profile, m[1].slice(1,-1));
     },
@@ -103,14 +108,13 @@ define(function(require, exports, module) {
     Module: 'https://www.npmjs.com/package/yaajs#api_Module',
   };
 
-  function overrideTypes(profile, typeArg) {
+  const overrideTypes = (profile, typeArg)=>{
     const oldTypes = profile.types;
     const types = profile.types = {};
     typeArg.split('|').forEach(type => {
       types[type] = (oldTypes && oldTypes[type]) || type;
     });
-  }
-
+  };
 
   function execInlineTag(api, text) {
     let [mod, type, method] = text.split(/([.#:]+)/);
@@ -137,7 +141,7 @@ define(function(require, exports, module) {
     };
   }
 
-  function apiToHtml(title, json, sourceHtml) {
+  const apiToHtml = (title, json, sourceHtml)=>{
     const index = document.createElement('div');
 
     index.innerHTML = sourceHtml;
@@ -337,9 +341,9 @@ define(function(require, exports, module) {
       {class: 'jsdoc-example highlight', pre: [
         requireLine.cloneNode(true),
         ...calls.map(call => Dom.h({
-          div: codeToHtml(Array.isArray(call) ?
+          div: (codeToHtml(Array.isArray(call) ?
                           newSig(subject.name, call[0]) :
-                          call.body)
+                          call.body))
         }))
       ]},
     ]};
@@ -392,7 +396,7 @@ define(function(require, exports, module) {
       const {args, argMap} = mapArgs(sig, calls);
       const ret = argProfile(calls, call => call[1]);
       if (! util.isObjEmpty(ret.types))
-        argMap[':return:'] = ret;
+        argMap[return$] = ret;
 
       const examples = calls.length && {div: [
         {h1: "Example"},
@@ -448,9 +452,7 @@ define(function(require, exports, module) {
   };
 
 
-  function codeToHtml(codeIn) {
-    return jsParser.highlight(codeIn);
-  }
+  const codeToHtml = codeIn => jsParser.highlight(codeIn);
 
   function mapArgs(sig, calls) {
     let args;
@@ -460,12 +462,32 @@ define(function(require, exports, module) {
       args = [];
     }
     const argMap = {};
-    args.forEach((arg, i) => argMap[arg] = argProfile(calls, call => call[0][i]));
+    let i = 0;
+    let nested = 0;
+    args = args.filter(arg => {
+      if (arg === '{') {
+        ++nested;
+      } else if (arg === '}') {
+        --nested;
+      } else if (nested != 0) {
+        argMap[arg] = argProfile(calls, call => {
+          const p = call[0][i];
+          if (Array.isArray(p) && p[0] === 'P') {
+            return p[1][arg];
+          }
+        });
+        return true;
+      } else {
+        argMap[arg] = argProfile(calls, call => call[0][i]);
+        return true;
+      }
+
+    });
     return {args, argMap};
   }
 
   function buildParams(api, args, argMap) {
-    const ret = argMap[':return:'];
+    const ret = argMap[return$];
 
     if (args.length === 0 && ret === undefined)
       return;
@@ -523,21 +545,32 @@ define(function(require, exports, module) {
   }
 
   function argProfile(calls, extract) {
-    let optional = false;
+    let optional = false, ignoreP = false;
     let types = {};
+    let subArgs;
 
-    function iterCalls(calls) {
+    const iterCalls = calls =>{
       calls.forEach(call => {
         if (Array.isArray(call)) {
           const entry = extract(call);
           if (entry === undefined) {
             optional = true;
           } else {
+            ignoreP = false;
             if (Array.isArray(entry)) {
               let value;
               switch (entry[0]) {
               case 'O':
                 value = entry[1] === 'null' ? 'null' : 'object';
+                break;
+              case 'P':
+                value = 'object';
+                const args = entry[1];
+                for (const id in args) {
+                  if (subArgs === undefined) subArgs  = {};
+                  const sc = subArgs[id] || (subArgs[id] = {});
+                  Object.assign(sc, argProfile([[]], () => args[id]).types);
+                }
                 break;
               case 'F': value = 'function'; break;
               case 'U': value = 'undefined'; break;
@@ -556,11 +589,16 @@ define(function(require, exports, module) {
         } else
           iterCalls(call.calls);
       });
-    }
+    };
 
     iterCalls(calls);
 
-    return {optional, types, type: undefined, href: typeHRef};
+    if (ignoreP) return;
+
+    const ans = {optional, types, type: undefined, href: typeHRef};
+    if (subArgs !== undefined)
+      ans.subArgs = subArgs;
+    return ans;
   }
 
   function typeHRef(type) {
@@ -604,12 +642,22 @@ define(function(require, exports, module) {
     return ans;
   }
 
-  function valueToText(arg) {
-    if (Array.isArray(arg))
-      return arg[1];
-    else
-      return JSON.stringify(arg);
-  }
+  const valueToText = arg =>{
+    if (Array.isArray(arg)) {
+      if (arg[0] !== 'P') return arg[1];
+      else {
+        let ans = '{';
+        const parts = arg[1];
+        for (const name in parts) {
+          if (ans !== '{')
+            ans += ", ";
+          ans += util.qlabel(name) + ": "+valueToText(parts[name]);
+        }
+        return ans+"}";
+      }
+    }
+    else return JSON.stringify(arg);
+  };
 
   function valueToLink(arg) {
     return valueToText(arg);
@@ -719,5 +767,6 @@ define(function(require, exports, module) {
   }
 
   apiToHtml.jsdocToHtml = jsdocToHtml;
-  module.exports = apiToHtml;
+
+  return apiToHtml;
 });

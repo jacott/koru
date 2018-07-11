@@ -360,7 +360,7 @@ assert.same(Color.colors.red, '#f00');`,
         assert.equals(API.instance.properties, {
           theme: {
             info: 'The default theme',
-            value: ['O', defaults.theme, "{name: 'light', primaryColor: '#aaf'}"],
+            value: ['P', defaults.theme],
             properties: {
               name: {
                 info: 'The theme name is ${value}',
@@ -674,7 +674,7 @@ assert.same(Color.colors.red, '#f00');`,
         test,
         sig: TH.match(/(function )?fnord\(a\)/),
         intro: m(str => str.startsWith('Document `methodName` for the current subject')),
-        subject: ['O', fooBar, '{fnord(){}}'],
+        subject: ['P', {fnord: ['F', fooBar.fnord, 'fnord']}],
         calls: [[
           [5], 10
         ],[
@@ -690,10 +690,10 @@ assert.same(Color.colors.red, '#f00');`,
        * @param methodName the name of the prototype method to
        * document
 
-       * @param [subject] override the instance to document. This
+       * @param [options.subject] override the instance to document. This
        * defaults to `module.exports.prototype`
-       * @param {function|string} [intro] the abstract for the method being documented. Defaults to
-       * test comment.
+       * @param {function|string} [options.intro] the abstract for the method being
+       * documented. Defaults to test comment.
        **/
       MainAPI.method('protoMethod');
 
@@ -773,6 +773,9 @@ assert.same(Color.colors.red, '#f00');`,
       assert.equals(api.serializeValue("number"), 'number');
       assert.equals(api.serializeValue(["M", MainAPI]), ["M", 'koru/test/api']);
       assert.equals(api.serializeValue(["x", MainAPI, 'arg 2']), ["x", 'arg 2']);
+      assert.equals(api.serializeValue(
+        ["P", {a: ["M", MainAPI], b: undefined}]
+      ), ["P", {a: ["M", 'koru/test/api'], b: ['U', 'undefined']}]);
 
       if (! MainAPI.isRecord)
         return;

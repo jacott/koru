@@ -467,7 +467,7 @@ define((require, exports, module)=>{
       return ans;
     }
 
-    valueTag(obj) {
+    valueTag(obj, recurse=true) {
       const mods = ctx.exportsModule(obj);
       if (mods)
         return ['M', obj];
@@ -477,6 +477,13 @@ define((require, exports, module)=>{
       case 'object':
         if (obj === null)
           return obj;
+        if (recurse && obj.constructor === Object) {
+          const parts = {};
+          for (const id in obj) {
+            parts[id] = this.valueTag(obj[id], false);
+          }
+          return ['P', parts];
+        }
         let resolveFunc = this.constructor._resolveFuncs.get(obj) ||
               this.constructor._resolveFuncs.get(obj.constructor);
 
@@ -489,20 +496,26 @@ define((require, exports, module)=>{
     serializeValue(value) {
       if (Array.isArray(value)) {
         let api;
+        const v1 = value[1];
         switch(value[0]) {
         case 'M':
-          return ['M', this.bestId(value[1])];
+          return ['M', this.bestId(v1)];
         case 'F':
-          if (Object.getPrototypeOf(value[1]) === Function.prototype)
+          if (Object.getPrototypeOf(v1) === Function.prototype)
             return ['F', value[2]];
         case 'O':
-          api =  this.constructor.valueToApi(value[1]);
+          api =  this.constructor.valueToApi(v1);
           if (api)
             return ['M', api.moduleName];
 
-
-          return this.constructor.resolveObject(value[1], value[2]);
-        default:
+          return this.constructor.resolveObject(v1, value[2]);
+        case 'P': {
+          const ans = {};
+          for (const id in v1) {
+            ans[id] = this.serializeValue(v1[id]);
+          }
+          return ['P', ans];
+        } default:
           return [value[0], value[2]];
         }
       }

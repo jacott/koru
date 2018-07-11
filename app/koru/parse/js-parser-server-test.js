@@ -18,7 +18,7 @@ isServer && define((require, exports, module)=>{
                     ['args']);
 
       assert.equals(jsParser.extractParams('({a: {b: c}}, ...args)'),
-                    ['c', 'args']);
+                    ['{', '{', 'c', '}', '}', 'args']);
 
       assert.equals(jsParser.extractParams('(a, b) => {/*...*/}'),
                     ['a', 'b']);
@@ -43,7 +43,7 @@ isServer && define((require, exports, module)=>{
 
 
       assert.equals(jsParser.extractParams('x({a: {aa: d=123}}, [b, c=d*2], ...rest)'),
-                    ['d', 'b', 'c', 'rest']);
+                    ['{', '{', 'd', '}', '}', '{', 'b', 'c', '}', 'rest']);
     });
 
 

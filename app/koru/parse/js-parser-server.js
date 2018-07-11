@@ -12,7 +12,13 @@ define((require, exports, module)=> JsPaser => {
     boolean: 'kc',
   };
 
-  JsPaser.parse = terser.parse;
+  JsPaser.parse = (codeIn, opts={})=> {
+    try {
+      return terser.parse(codeIn, opts);
+    } catch(ex) {
+      throw new ex.constructor(ex.message+"\n"+codeIn);
+    }
+  };
 
   JsPaser.highlight = (codeIn, tag='div')=>{
     if (! codeIn) return;
@@ -421,8 +427,14 @@ define((require, exports, module)=> JsPaser => {
           node.argnames.forEach(n => args.push(n.name));
           return true;
         case 'Accessor':
-          node.walk(new terser.TreeWalker(node =>{
-            if (node.TYPE === 'SymbolFunarg') {
+          node.walk(new terser.TreeWalker((node, descend) =>{
+            switch(node.TYPE) {
+            case 'Destructuring':
+              args.push('{');
+              descend();
+              args.push('}');
+              return true;
+            case 'SymbolFunarg':
               args.push(node.name);
               return true;
             }

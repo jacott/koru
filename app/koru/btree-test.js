@@ -171,21 +171,40 @@ r            1000
         {key: 50, value: 'v50'}]);
     });
 
-    test("find, findNode", ()=>{
+    test("find", ()=>{
       /**
        * Find a value in the tree.
        **/
-      api.protoMethod("find");
-      api.protoMethod("findNode", {intro: 'Find a node in the tree.'});
+      api.protoMethod();
+
+      //[
       const tree = new BTree();
-      const list = [100, 200, 50, 150, 250];
-      insertNodes(tree, list);
-      list.forEach(v => {
-        assert.same(tree.findNode(v).value, v);
-        assert.same(tree.find(v), v);
-      });
-      assert.same(tree.findNode(49), null);
+      insertNodes(tree, [100, 200, 50, 150, 250]);
+
+      assert.same(tree.find(50), 50);
       assert.same(tree.find(49), undefined);
+      assert.same(tree.find(150), 150);
+      //]
+
+      assert.same(tree.find(120), undefined);
+      assert.same(tree.find(300), undefined);
+    });
+
+    test("findNode", ()=>{
+      /**
+       * Find a `node` in the tree.
+       **/
+      api.protoMethod();
+
+      //[
+      const tree = new BTree();
+      insertNodes(tree, [100, 200, 50, 150, 250]);
+
+      assert.same(tree.findNode(50).value, 50);
+      assert.same(tree.findNode(49), null);
+      assert.same(tree.findNode(150).value, 150);
+      //]
+
       assert.same(tree.findNode(120), null);
       assert.same(tree.findNode(300), null);
     });
