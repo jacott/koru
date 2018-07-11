@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const format          = require('koru/format');
   const Stubber         = require('koru/test/stubber');
   const util            = require('koru/util');
@@ -18,6 +18,79 @@ define(function(require, exports, module) {
 
   // assert.dom
   let selectNode = null;
+
+
+  const delegate = meth =>{
+    ga.add(meth, {
+      assert(spy, ...args) {
+        checkSpy(spy);
+        this.args = args;
+        const result = spy[meth].apply(spy, args);
+        if (this._asserting === ! result) {
+          this.spy = spy.printf("%n");
+          if (this._asserting && spy.callCount < 2) {
+            if (spy.callCount === 0) {
+              this.calls = "but was not called.";
+            } else
+              deepEqual(spy.firstCall.args, args, this, 'calls');
+          } else
+            this.calls = spy.printf("%C");
+        }
+        return result;
+      },
+
+      message: "{$spy} to be " + meth + " {i$args}\n{$calls}"
+    });
+  };
+
+  const called = nth =>{
+    const meth = 'called' + nth;
+    ga.add(meth, {
+      assert(spy) {
+        checkSpy(spy);
+        const result = spy[meth];
+        if (this._asserting === ! result) {
+          this.calls = spy.printf("%C");
+        }
+        return result;
+      },
+
+      message: "{0} to be called " + nth + ".\n{$calls}"
+    });
+  };
+
+  const formatHTML = html =>{
+    const re = /([^<]*)(<([^\s>]+)[^>]*>)/g;
+    let m, result = '', indent = '';
+
+    const add = str =>{result += "\n" + indent + str};
+
+    while(m = re.exec(html)) {
+      if (/\S/.test(m[1])) add(m[1]);
+      switch(m[2][1]) {
+      case '!':
+        add(m[2]); break;
+      case '/':
+        indent = indent.slice(0, -2);
+        add(m[2]); break;
+      default:
+        add(m[2]);
+        if (! /(input|br|hr|img)/.test(m[3]))
+          indent += '  ';
+      }
+    }
+
+    return result;
+  };
+
+  const withinDelta = (actual, expected, delta)=>{
+    return actual > expected-delta && actual < expected+delta;
+  };
+
+  const checkSpy = spy =>{
+    Stubber.isStubbed(spy) ||
+      Core.fail("Argument is not a spy/stub");
+  };
 
   Core.assert.benchMark = ({subject, duration=1000, control=empty, setup=empty})=>{
     setup();
@@ -89,7 +162,7 @@ define(function(require, exports, module) {
   };
 
   ga.add('same', {
-    assert (actual, expected) {
+    assert(actual, expected) {
       const result = actual === expected;
       this.eql = result ? '==' : '!=';
       return result;
@@ -99,7 +172,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('equals', {
-    assert (actual, expected) {
+    assert(actual, expected) {
       const equal = deepEqual(actual, expected);
       if (! equal === this._asserting) {
         deepEqual(actual, expected, this, 'diff');
@@ -111,7 +184,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('hasOwn', {
-    assert (object, property) {
+    assert(object, property) {
       return typeof object === 'object' && object !== null &&
         hasOwn(object, property);
     },
@@ -120,7 +193,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('isTrue', {
-    assert (actual) {
+    assert(actual) {
       return actual === true;
     },
 
@@ -128,7 +201,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('instanceof', {
-    assert (object, type) {
+    assert(object, type) {
       return object instanceof type;;
     },
 
@@ -136,7 +209,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('isFunction', {
-    assert (actual) {
+    assert(actual) {
       return typeof actual === 'function';
     },
 
@@ -144,7 +217,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('isFalse', {
-    assert (actual) {
+    assert(actual) {
       return actual === false;
     },
 
@@ -152,7 +225,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('isNull', {
-    assert (actual) {
+    assert(actual) {
       return actual == null;
     },
 
@@ -160,7 +233,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('near', {
-    assert (actual, expected, delta) {
+    assert(actual, expected, delta) {
       if (delta !== undefined) this.delta = delta;
       switch(typeof expected) {
       case 'string':
@@ -207,7 +280,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('between', {
-    assert (sut, from, to) {
+    assert(sut, from, to) {
       return sut >= from && sut <= to;
     },
 
@@ -252,7 +325,7 @@ define(function(require, exports, module) {
   ga.match = match;
 
   ga.add("match", {
-    assert (actual, matcher) {
+    assert(actual, matcher) {
       return match(actual, matcher);
     },
 
@@ -260,7 +333,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('exception', {
-    assert (func, name, message) {
+    assert(func, name, message) {
       try {
         this.message = (func() || '').toString();
         this.name = 'none was thrown';
@@ -296,7 +369,7 @@ define(function(require, exports, module) {
   });
 
   ga.add("className", {
-    assert (element, className) {
+    assert(element, className) {
       if (typeof element === 'string' && arguments.length == 1 && selectNode != null) {
         className = element;
         element = selectNode[0];
@@ -322,14 +395,23 @@ define(function(require, exports, module) {
   });
 
   ga.add('sameHtml', {
-    assert (actual, expected) {
+    assert(actual, expected) {
       const aElm = document.createElement('div');
       const bElm = document.createElement('div');
       aElm.innerHTML = actual;
       bElm.innerHTML = expected;
-      return compare(aElm, bElm);
 
-      function compare(aElm, bElm) {
+      const attrsToList = node =>{
+        const result = [];
+        util.forEach(node.attributes, a =>{result.push([a.name, a.value])});
+        result.sort((a, b)=>{
+          a = a[0]; b=b[0];
+          return a === b ? 0 : a < b ? -1 : 1;
+        });
+        return result;
+      };
+
+      const compare = (aElm, bElm)=>{
         if (aElm.nodeType === document.TEXT_NODE || bElm.nodeType === document.TEXT_NODE) {
           if (aElm.nodeType !== bElm.nodeType)
             return false;
@@ -353,24 +435,16 @@ define(function(require, exports, module) {
             return false;
         }
         return true;
-      }
+      };
 
-      function attrsToList(node) {
-        const result = [];
-        util.forEach(node.attributes, a =>{result.push([a.name, a.value])});
-        result.sort((a, b)=>{
-          a = a[0]; b=b[0];
-          return a === b ? 0 : a < b ? -1 : 1;
-        });
-        return result;
-      }
+      return compare(aElm, bElm);
     },
     message: "{i0} to be the same as {i1}",
   });
 
 
   ga.add('colorEqual', {
-    assert (actual, expected, delta) {
+    assert(actual, expected, delta) {
       this.delta = delta = delta || 0.0001;
       this.actual = util.colorToArray(actual);
       this.expected = util.colorToArray(expected);
@@ -388,7 +462,7 @@ define(function(require, exports, module) {
 
   // assert.cssNear
   ga.add('cssNear', {
-    assert (elm, styleAttr, expected, delta, unit) {
+    assert(elm, styleAttr, expected, delta, unit) {
       let actual;
       if (typeof elm === 'string') {
         actual = elm;
@@ -418,37 +492,11 @@ define(function(require, exports, module) {
 
 
   {
-    ga.add('domParent', {
-      assert (elm, options, body /* arguments */) {
-        if (! selectNode)
-          throw new Error('must be inside a dom assertion');
-        const old = selectNode;
-        try {
-          selectNode = [selectNode[0].parentNode];
-          return select.apply(this, arguments);
-        } finally {
-          selectNode = old;
-        }
-      },
-
-      assertMessage: "Expected {$htmlClue}",
-      refuteMessage: "Did not Expect {$htmlClue}",
-    });
-
-    ga.add('dom', {
-      assert:  select,
-
-      assertMessage: "Expected {$htmlClue}",
-      refuteMessage: "Did not Expect {$htmlClue}",
-    });
-
-    const filter = (elms, func)=> Array.prototype.filter.call(elms, func);
-
-    function findAll(elms, query) {
+    const findAll = (elms, query)=>{
       const directChild = query[0] === '>';
 
       const result = [];
-      for(var i = 0; i < elms.length; ++i) {
+      for(let i = 0; i < elms.length; ++i) {
         const elm = elms[i];
         let se;
         if (directChild) {
@@ -466,24 +514,15 @@ define(function(require, exports, module) {
         result.push.apply(result, se);
       }
       return result;
-    }
+    };
 
-    function text(elm) {
-      return elm.length ? elm[0].textContent.trim() : '';
-    }
+    const text = elm => elm.length ? elm[0].textContent.trim() : '';
 
     function select(elm, options, body) {
       const old = selectNode;
-      function setClue(self, msg) {
-        self.htmlClue = msg + ' for ' + self.htmlClue;
-      }
-      try {
-        return inner.call(this, this);
-      } finally {
-        selectNode = old;
-      }
+      const setClue = (self, msg)=>{self.htmlClue = msg + ' for ' + self.htmlClue};
 
-      function inner() {
+      const inner = (self)=>{
         let msg;
         if (typeof elm === "string") {
           msg = elm;
@@ -493,13 +532,13 @@ define(function(require, exports, module) {
             elm = document.querySelectorAll(elm);
           }
         } else if (elm == null) {
-          this.htmlClue = `an Element; got: ${elm}`;
+          self.htmlClue = `an Element; got: ${elm}`;
           return false;
         } else {
-          msg = {elm, toString() {return this.elm.innerHTML}};
+          msg = {elm, toString() {return self.elm.innerHTML}};
           if (elm.nodeType != null) elm = [elm];
         }
-        this.htmlClue = {toString() {
+        self.htmlClue = {toString() {
           if (old != null) {
             let html;
             try {
@@ -524,14 +563,14 @@ define(function(require, exports, module) {
               options = {text: options};
             }
             if (options.count != null && options.count !== elm.length) {
-              setClue(this, "count: " +  elm.length + " to be " + options.count);
+              setClue(self, "count: " +  elm.length + " to be " + options.count);
               return false;
             }
             if (elm.length === 0) return false;
             if (options.value != null) {
               const ef = filter(elm, i => deepEqual(i.value, options.value));
               if (ef.length === 0) {
-                setClue(this, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
+                setClue(self, 'value="' + (elm.length ? elm[0].value : '') + '" to be "' + options.value + '"');
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -540,7 +579,7 @@ define(function(require, exports, module) {
             if(typeof options.text === 'string') {
               const ef = filter(elm, i => options.text === i.textContent.trim());
               if (ef.length === 0) {
-                setClue(this, 'text "' + text(elm) + '" to be "' + options.text + '"');
+                setClue(self, 'text "' + text(elm) + '" to be "' + options.text + '"');
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -549,7 +588,7 @@ define(function(require, exports, module) {
             if(typeof options.text === 'object') {
               const ef = filter(elm, i => options.text.test(i.textContent.trim()));
               if (ef.length === 0) {
-                setClue(this, 'text "' + text(elm) + '" to match ' + options.text);
+                setClue(self, 'text "' + text(elm) + '" to match ' + options.text);
                 return false;
               } else {
                 selectNode = elm = ef;
@@ -559,14 +598,14 @@ define(function(require, exports, module) {
               const hint = {};
               const ef = filter(elm, i => i[ctx$] !== undefined && deepEqual(i[ctx$].data, options.data));
               if (ef.length === 0) {
-                if (this._asserting !== false) {
+                if (self._asserting !== false) {
                   Array.prototype.find.call(elm, i => {
                     if (i[ctx$]) {
                       deepEqual(i[ctx$].data, options.data, hint, 'i');
                     }
                     return true;
                   });
-                  setClue(this, "data equality; got " + hint.i);
+                  setClue(self, "data equality; got " + hint.i);
                 }
                 return false;
               } else {
@@ -596,7 +635,7 @@ define(function(require, exports, module) {
             if (elm.length === 0) return false;
             const ef = filter(elm, i => options === i.textContent.trim());
             if (ef.length === 0) {
-              setClue(this, '"' + options + '"; found "' + text(elm) + '"');
+              setClue(self, '"' + options + '"; found "' + text(elm) + '"');
               return false;
             } else {
               selectNode = elm = ef;
@@ -609,8 +648,40 @@ define(function(require, exports, module) {
           body.call(elm[0], elm[0]);
         }
         return !!(elm && elm.length != 0);
+      };
+
+      try {
+        return inner(this);
+      } finally {
+        selectNode = old;
       }
-    }
+    };
+
+    ga.add('domParent', {
+      assert(elm, options, body /* arguments */) {
+        if (! selectNode)
+          throw new Error('must be inside a dom assertion');
+        const old = selectNode;
+        try {
+          selectNode = [selectNode[0].parentNode];
+          return select.apply(this, arguments);
+        } finally {
+          selectNode = old;
+        }
+      },
+
+      assertMessage: "Expected {$htmlClue}",
+      refuteMessage: "Did not Expect {$htmlClue}",
+    });
+
+    ga.add('dom', {
+      assert:  select,
+
+      assertMessage: "Expected {$htmlClue}",
+      refuteMessage: "Did not Expect {$htmlClue}",
+    });
+
+    const filter = (elms, func)=> Array.prototype.filter.call(elms, func);
   };
 
   called('');
@@ -623,7 +694,7 @@ define(function(require, exports, module) {
   delegate('calledWithExactly');
 
   ga.add('calledOnceWith', {
-    assert (spy, ...args) {
+    assert(spy, ...args) {
       checkSpy(spy);
       this.args = args;
       const result = spy.calledOnce && spy.calledWith.apply(spy, args);
@@ -638,7 +709,7 @@ define(function(require, exports, module) {
   });
 
   ga.add('threw', {
-    assert (spy, something) {
+    assert(spy, something) {
       checkSpy(spy);
       return spy.threw(something);
     },
@@ -675,78 +746,4 @@ define(function(require, exports, module) {
     assertMessage: "attributes to be equal but {$diff}",
     refuteMessage: "attributes to be equal",
   });
-
-  function delegate(meth) {
-    ga.add(meth, {
-      assert (spy, ...args) {
-        checkSpy(spy);
-        this.args = args;
-        const result = spy[meth].apply(spy, args);
-        if (this._asserting === ! result) {
-          this.spy = spy.printf("%n");
-          if (this._asserting && spy.callCount < 2) {
-            if (spy.callCount === 0) {
-              this.calls = "but was not called.";
-            } else
-              deepEqual(spy.firstCall.args, args, this, 'calls');
-          } else
-            this.calls = spy.printf("%C");
-        }
-        return result;
-      },
-
-      message: "{$spy} to be " + meth + " {i$args}\n{$calls}"
-    });
-  }
-
-  function called(nth) {
-    const meth = 'called' + nth;
-    ga.add(meth, {
-      assert (spy) {
-        checkSpy(spy);
-        const result = spy[meth];
-        if (this._asserting === ! result) {
-          this.calls = spy.printf("%C");
-        }
-        return result;
-      },
-
-      message: "{0} to be called " + nth + ".\n{$calls}"
-    });
-  }
-
-  function formatHTML(html) {
-    const re = /([^<]*)(<([^\s>]+)[^>]*>)/g;
-    let m, result = '', indent = '';
-
-    function add(str) {
-      result += "\n" + indent + str;
-    }
-
-    while(m = re.exec(html)) {
-      if (/\S/.test(m[1])) add(m[1]);
-      switch(m[2][1]) {
-      case '!':
-        add(m[2]); break;
-      case '/':
-        indent = indent.slice(0, -2);
-        add(m[2]); break;
-      default:
-        add(m[2]);
-        if (! /(input|br|hr|img)/.test(m[3]))
-          indent += '  ';
-      }
-    }
-
-    return result;
-  }
-
-  function withinDelta(actual, expected, delta) {
-    return actual > expected-delta && actual < expected+delta;
-  }
-
-  function checkSpy(spy) {
-    Stubber.isStubbed(spy) ||
-      Core.fail("Argument is not a spy/stub");
-  }
 });

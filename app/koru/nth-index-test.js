@@ -1,20 +1,10 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH       = require('./test-helper');
 
   const NthIndex = require('./nth-index');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
-
-    tearDown() {
-      v = null;
-    },
-
-    "test use"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("use", ()=>{
       const sut = new NthIndex(2);
 
       assert.same(sut.add(1, 2, '12'), sut);
@@ -54,6 +44,5 @@ define(function (require, exports, module) {
       sut.remove(1, 2);
 
       assert.isFalse(sut.has(1));
-    }
-  });
+    });  });
 });

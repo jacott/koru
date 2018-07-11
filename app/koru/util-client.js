@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const util = require('./util');
 
   util.engine = util.browserVersion(navigator.userAgent);

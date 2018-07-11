@@ -1,4 +1,4 @@
-define(function(require) {
+define((require)=>{
   const util = require('koru/util');
 
   class NthIndex {

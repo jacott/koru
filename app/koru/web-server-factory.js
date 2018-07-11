@@ -1,10 +1,9 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const Compilers       = require('koru/compilers');
   const fst             = require('./fs-tools');
   const IdleCheck       = require('./idle-check').singleton;
   const koru            = require('./main');
   const util            = require('./util');
-
   const http            = requirejs.nodeRequire('http');
   const parseurl        = requirejs.nodeRequire('parseurl');
   const Path            = requirejs.nodeRequire('path');
@@ -15,6 +14,11 @@ define(function (require, exports, module) {
     const koruParent = Path.join(koru.libDir, 'app');
 
     const handlers = {};
+
+    const notFound = res =>{
+      res.statusCode = 404;
+      res.end('NOT FOUND');
+    };
 
     const sendError = (res, err, msg='')=>{
       if (err == null) {
@@ -41,6 +45,22 @@ define(function (require, exports, module) {
       }
     };
 
+    const compileTemplate = (res, type, path, suffix)=>{
+      if (! Compilers.has(type)) return;
+
+      const paths = path.split('.build/');
+      const outPath = path+suffix;
+      try {
+        return Compilers.compile(type, paths.join(''), outPath);
+      } catch (err) {
+        if (err.error === 404)
+          notFound(res);
+        else
+          sendError(res, err);
+        return true;
+      }
+    };
+
     const requestListener = (req, res)=>{
       koru.runFiber(()=>{
         const error = (err, msg)=>{sendError(res, err, msg)};
@@ -53,7 +73,7 @@ define(function (require, exports, module) {
             path = DEFAULT_PAGE;
 
           let m = /^\/([^/]+)(.*)$/.exec(path);
-          if (m) {
+          if (m !== null) {
             const handler = handlers[m[1]];
             if (handler !== undefined) {
               handler(req, res, m[2], error, m[1]);
@@ -132,27 +152,6 @@ define(function (require, exports, module) {
         return handlers[key];
       },
     };
-
-    function compileTemplate(res, type, path, suffix) {
-      if (! Compilers.has(type)) return;
-
-      const paths = path.split('.build/');
-      const outPath = path+suffix;
-      try {
-        return Compilers.compile(type, paths.join(''), outPath);
-      } catch (err) {
-        if (err.error === 404)
-          notFound(res);
-        else
-          sendError(res, err);
-        return true;
-      }
-    }
-
-    function notFound(res) {
-      res.statusCode = 404;
-      res.end('NOT FOUND');
-    }
 
     return webServer;
   };

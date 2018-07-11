@@ -1,11 +1,12 @@
 const fs = require('fs');
 const Path = require('path');
 
-define(function(require, exports, module) {
-  const koru   = require('../main');
-  const util   = require('../util');
-  const Future = requirejs.nodeRequire('fibers/future'), wait = Future.wait;
-  const fst = require('koru/fs-tools');
+define((require, exports, module)=>{
+  const fst             = require('koru/fs-tools');
+  const koru            = require('../main');
+  const util            = require('../util');
+
+  const {Future} = util, wait = Future.wait;
 
   const topDir = koru.appDir;
   const readdir = Future.wrap(fs.readdir);

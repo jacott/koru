@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 define((require, exports, module)=>{
-  const TH   = require('./main');
-  const API  = require('./api');
+  const API             = require('./api');
+  const TH              = require('./main');
 
   const {stub, spy, onEnd} = TH;
 

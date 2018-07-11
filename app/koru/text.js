@@ -1,6 +1,5 @@
-define(function(require, exports, module) {
-  const loader = require('koru/env!./text');
-  const util   = require('koru/util');
+define((require, exports, module)=>{
+  const loader          = require('koru/env!./text');
 
   const Module = module.constructor;
 

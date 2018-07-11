@@ -1,6 +1,6 @@
 define((require, exports, module)=>{
-  const API  = require('./api');
-  const TH = require('koru/test-helper');
+  const TH              = require('koru/test-helper');
+  const API             = require('./api');
 
   const {stub, spy, onEnd} = TH;
 

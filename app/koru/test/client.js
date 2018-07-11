@@ -1,10 +1,10 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const SessionBase  = new (require('koru/session/base').constructor)('test');
-  const koru         = require('koru/client'); // load client so we can override koru.logger
-  const localStorage = require('koru/local-storage');
-  const sessState    = require('koru/session/state').constructor();
-  const util         = require('koru/util');
-  const test         = require('./main');
+  const koru            = require('koru/client'); // load client so we can override koru.logger
+  const localStorage    = require('koru/local-storage');
+  const sessState       = require('koru/session/state').constructor();
+  const util            = require('koru/util');
+  const test            = require('./main');
 
   const Module = module.constructor;
   const session = require('koru/session/main-client')(SessionBase, sessState);
@@ -25,7 +25,9 @@ define(function(require, exports, module) {
     if (type === 'ERROR')
       session.send('E', args.join(' '));
     else
-      session.send("L", type+ ": " + (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
+      session.send("L", type+ ": " + (
+        type === '\x44EBUG' ? util.inspect(args, 7) :
+          args.join(' ')));
   };
 
   let ls;

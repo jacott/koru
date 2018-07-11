@@ -1,8 +1,5 @@
-define(function(require, exports, module) {
+define((require)=>{
   const util = require('./util');
-
-  format.compile = compile;
-  format.escape = escape;
 
   function format(fmt, ...args) {
     if (typeof fmt === 'string')
@@ -55,7 +52,7 @@ define(function(require, exports, module) {
 
   const zeros = '00000000000000000000';
 
-  function precision(format, value) {
+  const precision = (format, value)=>{
     if (! value && value !== 0) return '';
     const [padding, dpfmt] = format.split('.');
 
@@ -76,18 +73,18 @@ define(function(require, exports, module) {
       return `${sig*Math.sign(value)}.${dp}${zeros.slice(0,dpLen-dp.length)}`;
 
     return `${sig*Math.sign(value)}.${dp}`.replace(/\.?0*$/, '');
-  }
+  };
 
-  function nested(key, values) {
+  const nested = (key, values)=>{
     key = key.split('.');
     for(let i=0;values && i < key.length;++i) {
       values = values[key[i]];
     }
 
     return values;
-  }
+  };
 
-  function compile(fmt) {
+  const compile = fmt =>{
     const parts = fmt.split('{'),
           len = parts.length,
           result = [parts[0]],
@@ -111,9 +108,7 @@ define(function(require, exports, module) {
   };
 
 
-  function escape(str) {
-    return str != null ? str.toString().replace(/[<>"'`&]/g, escaped) : '';
-  }
+  const escape = str => str != null ? str.toString().replace(/[<>"'`&]/g, escaped) : '';
 
   const escapes = {
     "<": "&lt;",
@@ -124,9 +119,10 @@ define(function(require, exports, module) {
     "&": "&amp;"
   };
 
-  function escaped(chr) {
-    return escapes[chr];
-  };
+  const escaped = chr => escapes[chr];
+
+  format.compile = compile;
+  format.escape = escape;
 
   return format;
 });

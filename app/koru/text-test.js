@@ -1,20 +1,10 @@
-define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+define((require, exports, module)=>{
+  const TH = require('./test-helper');
 
-    tearDown() {
-      v = null;
-    },
-
-    "test require"() {
-      var text = require('./text!./test-data/example.sql');
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("require", ()=>{
+      const text = require('./text!./test-data/example.sql');
       assert.same(text, 'select * from foo\n');
-    },
-
+    });
   });
 });

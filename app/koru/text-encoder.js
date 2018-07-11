@@ -1,3 +1,1 @@
-define(function(require, exports, module) {
-  return require('koru/env!./text-encoder');
-});
+define((require)=> require('koru/env!./text-encoder'));

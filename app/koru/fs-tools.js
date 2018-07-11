@@ -8,7 +8,7 @@ const stat_w = Future.wrap(fs.stat);
 const unlink_w = Future.wrap(fs.unlink);
 const utimes_w = Future.wrap(fs.utimes);
 
-function waitMethod(method, ...args) {
+const waitMethod = (method, ...args)=>{
   try {
     return futureWrap(fs, method, args);
   } catch (ex) {
@@ -17,15 +17,10 @@ function waitMethod(method, ...args) {
 
     throw ex;
   }
-}
+};
 
-function stat(path) {
-  return waitMethod(fs.stat, path);
-}
-
-function lstat(path) {
-  return waitMethod(fs.lstat, path);
-}
+const stat = path => waitMethod(fs.stat, path);
+const lstat = path => waitMethod(fs.lstat, path);
 
 const rm_rf_w = Future.wrap((dir, callback) => {
   let restart = false;
@@ -58,48 +53,32 @@ const rm_rf_w = Future.wrap((dir, callback) => {
 });
 
 
-function appendData(path, data) {
-  var fd = futureWrap(fs, fs.open, [path, 'a', {mode: 0644}]);
+const appendData = (path, data)=>{
+  const fd = futureWrap(fs, fs.open, [path, 'a', {mode: 0644}]);
   try {
     return futureWrap(fs, fs.write, [fd, data, 0, data.length, null]);
   } finally {
     futureWrap(fs, fs.close, [fd]);
   }
-}
+};
 
-function rename(from, to) {
-  return futureWrap(fs, fs.rename, [from, to]);
-}
+const rename = (from, to)=> futureWrap(fs, fs.rename, [from, to]);
 
-function truncate(path, len) {
-  return futureWrap(fs, fs.truncate, [path, len || 0]);
-}
+const truncate = (path, len)=> futureWrap(fs, fs.truncate, [path, len || 0]);
 
-function unlink(path) {
-  return futureWrap(fs, fs.unlink, [path]);
-}
+const unlink = (path)=> futureWrap(fs, fs.unlink, [path]);
 
-function link(from, to) {
-  return futureWrap(fs, fs.link, [from, to]);
-}
+const link = (from, to)=> futureWrap(fs, fs.link, [from, to]);
 
-function rmdir(path) {
-  return futureWrap(fs, fs.rmdir, [path]);
-}
+const rmdir = (path)=> futureWrap(fs, fs.rmdir, [path]);
 
-function readdir(path) {
-  return futureWrap(fs, fs.readdir, [path]);
-}
+const readdir = (path)=> futureWrap(fs, fs.readdir, [path]);
 
-function readFile(path, options) {
-  return futureWrap(fs, fs.readFile, [path, options]);
-}
+const readFile = (path, options)=> futureWrap(fs, fs.readFile, [path, options]);
 
-function writeFile(path, options) {
-  return futureWrap(fs, fs.writeFile, [path, options]);
-}
+const writeFile = (path, options)=> futureWrap(fs, fs.writeFile, [path, options]);
 
-function mkdir(dir) {
+const mkdir = (dir)=>{
   try {
     return futureWrap(fs, fs.mkdir, [dir, 0755]);
   } catch (ex) {
@@ -108,9 +87,9 @@ function mkdir(dir) {
 
     throw ex;
   }
-}
+};
 
-function mkdir_p(path) {
+const mkdir_p = (path)=>{
   path = Path.resolve(path);
   var idx = 0;
   while((idx = path.indexOf('/', idx+1)) !== -1) {
@@ -124,7 +103,7 @@ function mkdir_p(path) {
     if (! st) mkdir(tpath);
   }
   mkdir(path);
-}
+};
 
 const futureWrap = (obj, func, args)=>{
   const future = new Future;

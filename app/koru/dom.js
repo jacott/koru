@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const htmlDoc         = require('koru/dom/html-doc');
   const DomTemplate     = require('koru/dom/template');
   const Dom             = require('koru/env!koru/dom/dom');

@@ -1,25 +1,24 @@
-const Future = requirejs.nodeRequire('fibers/future');
-const fs = require('fs');
-
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   /**
    * Factory for creating web-servers.
    *
    **/
-  const koru             = require('koru/main');
-  const api              = require('koru/test/api');
-  const fst              = require('./fs-tools');
-  const IdleCheck        = require('./idle-check').singleton;
-  const TH               = require('koru/test-helper');
+  const koru            = require('koru/main');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const fst             = require('./fs-tools');
+  const IdleCheck       = require('./idle-check').singleton;
+
+  const {Future} = util;
 
   const {stub, spy, onEnd, intercept} = TH;
 
   const WebServerFactory = require('./web-server-factory');
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.future = new Future();
       v.req = {
         headers: {},
@@ -37,7 +36,7 @@ isServer && define(function (require, exports, module) {
           v.future.return(data);
         },
       };
-      v.replaceSend = function (func) {
+      v.replaceSend = func =>{
         v.sendRet = {
           pipe(res) {
             v.future.return(res);
@@ -52,13 +51,13 @@ isServer && define(function (require, exports, module) {
         });
       };
       api.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test construction"() {
+    test("construction", ()=>{
       /**
        * Create a new web server. The npm package
        * [send](https://www.npmjs.com/package/send) is used to serve
@@ -78,9 +77,9 @@ isServer && define(function (require, exports, module) {
       assert.calledWith(http.createServer, v.webServer.requestListener);
       //]
       v.webServer = WebServerFactory('localhost', '9876', '/');
-    },
+    });
 
-    "test start"() {
+    test("start", ()=>{
       v.webServer = WebServerFactory('localhost', '9876', '/');
       api.protoMethod('start', {subject: v.webServer});
 
@@ -91,9 +90,9 @@ isServer && define(function (require, exports, module) {
       v.webServer.start();
       assert.calledWith(listen, '9876', 'localhost');
       //]
-    },
+    });
 
-    "test stop"() {
+    test("stop", ()=>{
       v.webServer = WebServerFactory('localhost', '9876', '/');
       api.protoMethod('stop', {subject: v.webServer});
 
@@ -104,17 +103,19 @@ isServer && define(function (require, exports, module) {
         v.webServer.stop();
         assert.called(close);
       });
-    },
+    });
 
-    "test parseUrlParams"() {
+    test("parseUrlParams", ()=>{
       v.webServer = WebServerFactory('localhost', '9876', '/foo');
 
 
-      assert.equals(v.webServer.parseUrlParams('stuff?foo=bar&name=bob'), {foo: 'bar', name: 'bob'});
-      assert.equals(v.webServer.parseUrlParams({url: 'stuff?foo=bar'}), {foo: 'bar'});
-    },
+      assert.equals(v.webServer.parseUrlParams('stuff?foo=bar&name=bob'),
+                    {foo: 'bar', name: 'bob'});
+      assert.equals(v.webServer.parseUrlParams({url: 'stuff?foo=bar'}),
+                    {foo: 'bar'});
+    });
 
-    "test handlers override specials"() {
+    test("handlers override specials", ()=>{
       intercept(koru, 'runFiber', func => func());
       const req = {url: '/bar/baz'}, res = {end: stub(), writeHead: stub()};
       stub(koru, 'unhandledException');
@@ -132,6 +133,6 @@ isServer && define(function (require, exports, module) {
       v.webServer.requestListener(req, res);
 
       assert.called(bar);
-    },
+    });
   });
 });

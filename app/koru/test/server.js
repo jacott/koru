@@ -1,12 +1,10 @@
-define(function(require, exports, module) {
-  const session = require('../session/base');
-  const test    = require('./main');
+define((require)=>{
+  const session         = require('../session/base');
+  const test            = require('./main');
 
-  test.testHandle = function (cmd, msg) {
-    session.remoteControl.testHandle(cmd+msg);
-  };
+  test.testHandle = (cmd, msg)=>{session.remoteControl.testHandle(cmd+msg)};
 
-  test.logHandle = function (type, msg) {
+  test.logHandle = (type, msg)=>{
     if (session.remoteControl.logHandle)
       session.remoteControl.logHandle(msg);
     else

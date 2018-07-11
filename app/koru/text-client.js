@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define(()=>{
   return {
     load: (name, onload)=>{
       const req = new XMLHttpRequest();

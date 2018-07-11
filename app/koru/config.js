@@ -1,7 +1,7 @@
 /**
  * Load file based on config setting.
  */
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   return {
     /**
      * Load a module cooresponding to the config setting of name.
@@ -10,15 +10,13 @@ define(function(require, exports, module) {
      * format: `koru/config!name` as `nameValue.js`
      */
     load(name, req, onload, config) {
-      var provider = module.config()[name];
+      const provider = module.config()[name];
       if (! provider)
         throw new Error('No config setting: ' + name + " for " + module.id);
 
       req.module.dependOn(provider);
-      var pMod = req.module.dependOn(provider);
-      req.module.body = function () {
-        return pMod.exports;
-      };
+      const pMod = req.module.dependOn(provider);
+      req.module.body = ()=> pMod.exports;
       onload();
     },
 

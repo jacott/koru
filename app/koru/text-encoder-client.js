@@ -1,5 +1,4 @@
-define(function(require, exports, module) {
-
+define(()=>{
   if (window.TextDecoder !== undefined) {
     const encoder = new window.TextEncoder();
     const decoder = new window.TextDecoder();
@@ -22,9 +21,7 @@ define(function(require, exports, module) {
         for(let i = 0; i < len; ++i) out[i+start] = ab[i];
       }
     };
-  }
-
-  return {
+  } else return {
     utf8to16(buffer, i=0, end=buffer.length) {
       let out = "";
       --i;
@@ -62,7 +59,8 @@ define(function(require, exports, module) {
         if ((c >= 0x0000) && (c <= 0x007F))
 	  out.push(str.charCodeAt(i));
         else if (c > 0x07FF)
-	  out.push(0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >>  6) & 0x3F), 0x80 | ((c >>  0) & 0x3F));
+	  out.push(0xE0 | ((c >> 12) & 0x0F), 0x80 |
+                   ((c >>  6) & 0x3F), 0x80 | ((c >>  0) & 0x3F));
         else
 	  out.push(0xC0 | ((c >>  6) & 0x1F), 0x80 | ((c >>  0) & 0x3F));
       }

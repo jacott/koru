@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru   = require('koru');
   const md5sum = require('koru/md5sum');
   const sha256 = require('koru/srp/sha256');

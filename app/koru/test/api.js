@@ -42,6 +42,17 @@ define((require, exports, module)=>{
     return `{${display.join(", ").slice(0, 150)}}`;
   };
 
+  const docComment = func =>{
+    if (func == null) return;
+    const code = func.toString();
+    let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
+    if (m == null) return;
+    let re = /\/\*\*\s*([\s\S]*?)\s*\*?\*\//y;
+    re.lastIndex = m.index+m[0].length;
+    m = re.exec(code);
+    return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
+  };
+
   class API {
     constructor(parent, moduleOrSubject, subjectName, testModule) {
       this.parent = parent;
@@ -574,11 +585,11 @@ define((require, exports, module)=>{
     [Promise, '{a promise}'],
   ]);
 
-  function resolveModule(type, value) {
+  const resolveModule = (type, value)=>{
     if (type === 'Oi')
       return [type, `{Module:${value.id}}`, 'Module'];
     return [type, value.name, 'Module'];
-  }
+  };
 
   API._resolveFuncs = new Map([
     [TH.MockModule, resolveModule],
@@ -631,7 +642,7 @@ define((require, exports, module)=>{
   if (! API.isRecord) {
     API._instance = new APIOff();
   } else {
-    TH.Core.onEnd(module, function () {
+    TH.Core.onEnd(module, ()=>{
       if (API.isRecord) {
         API._record();
         API.reset();
@@ -641,11 +652,9 @@ define((require, exports, module)=>{
     TH.Core.onTestEnd(test=>{API._instance = null});
   }
 
-  function relType(orig, value) {
-    return orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
-  }
+  const relType = (orig, value)=> orig === value ? 'O' : orig instanceof value ? 'Oi' : 'Os';
 
-  function createSubjectName(subject, tc) {
+  const createSubjectName = (subject, tc)=>{
     switch (typeof subject) {
     case 'function': return subject.name;
     case 'string': return subject;
@@ -656,11 +665,11 @@ define((require, exports, module)=>{
       const mod = mods.find(mod => id === mod.id) || mods[0];
       return fileToCamel(mod.id);
     }
-  }
+  };
 
-  function toId(tc) {return tc.moduleId.replace(/-test$/, '');}
+  const toId = tc => tc.moduleId.replace(/-test$/, '');
 
-  function extractFnBody(body) {
+  const extractFnBody = body =>{
     if (typeof body === 'string')
       return jsParser.indent(body);
 
@@ -671,7 +680,7 @@ define((require, exports, module)=>{
     if (m) return  jsParser.indent(body.slice(m[0].length));
 
     return jsParser.indent(body.replace(/^.*{(\s*\n)?/, '').replace(/}\s*$/, ''));
-  }
+  };
 
   const funcToSig = (func, name)=>{
     const sig = jsParser.extractCallSignature(func);
@@ -679,40 +688,24 @@ define((require, exports, module)=>{
       ? sig : name+sig.slice(func.name.length);
   };
 
-  function fileToCamel(fn) {
-    return fn.replace(/-(\w)/g, (m, l) => l.toUpperCase())
-      .replace(/^.*\//, '');
-  }
+  const fileToCamel = fn => fn.replace(/-(\w)/g, (m, l)=> l.toUpperCase()).replace(/^.*\//, '');
 
-  function docComment(func) {
-    if (func == null) return;
-    const code = func.toString();
-    let m = /\)\s*(?:=>)?\s*{\s*/.exec(code);
-    if (m == null) return;
-    let re = /\/\*\*\s*([\s\S]*?)\s*\*?\*\//y;
-    re.lastIndex = m.index+m[0].length;
-    m = re.exec(code);
-    return m == null ? undefined : m[1].slice(2).replace(/^\s*\* ?/mg, '');
-  }
-
-  function cache(API, value, orig, result) {
+  const cache = (API, value, orig, result)=>{
     if (value !== orig)
       API._objCache.set(value, ['C', result[1], result[2]]);
     API._objCache.set(orig, result);
     return result;
-  }
+  };
 
-  function serializeCalls(api, calls) {
-    return calls.map(row => {
-      if (Array.isArray(row))
-        return serializeCall(api, row);
+  const serializeCalls = (api, calls)=> calls.map(row => {
+    if (Array.isArray(row))
+      return serializeCall(api, row);
 
-      row.calls = serializeCalls(api, row.calls);
-      return row;
-    });
-  }
+    row.calls = serializeCalls(api, row.calls);
+    return row;
+  });
 
-  function serializeCall(api, [args, ans, comment]) {
+  const serializeCall = (api, [args, ans, comment])=>{
     args = args.map(arg => api.serializeValue(arg));
     if (comment)
       return [args, ans === undefined ? [''] : api.serializeValue(ans), comment];
@@ -721,9 +714,9 @@ define((require, exports, module)=>{
       return [args];
     else
       return [args, api.serializeValue(ans)];
-  }
+  };
 
-  function serializeProperties(api, properties) {
+  const serializeProperties = (api, properties)=>{
     for (let name in properties) {
       const property = properties[name];
       if (property.value !== undefined)
@@ -733,7 +726,7 @@ define((require, exports, module)=>{
       property.properties &&
         serializeProperties(api, property.properties);
     }
-  }
+  };
 
   const property = (api, field, subject, name, options)=>{
     const {test} = TH;
@@ -815,7 +808,7 @@ define((require, exports, module)=>{
     inner(subject, name, options, api[field] || (api[field] = {}));
   };
 
-  function method(api, methodKey, obj, intro, methods) {
+  const method = (api, methodKey, obj, intro, methods)=>{
     const {test} = TH;
     if (methodKey == null) {
       methodKey = test.name.replace(/^.*test ([^\s.]+).*$/, '$1');
@@ -870,9 +863,9 @@ define((require, exports, module)=>{
         delete obj[methodKey];
       }
     });
-  }
+  };
 
-  function example(api, body, cont) {
+  const example = (api, body, cont)=>{
     if (! api.target)
       throw new Error("API target not set!");
     const callLength = api.target.calls.length;
@@ -890,17 +883,17 @@ define((require, exports, module)=>{
         calls,
       });
     }
-  }
+  };
 
-  function addComment(api, entry) {
+  const addComment = (api, entry)=>{
     const {currentComment} = api;
     if (currentComment) {
       entry.push(currentComment);
       api.currentComment = null;
     }
-  }
+  };
 
-  function onTestEnd(api, func) {
+  const onTestEnd = (api, func)=>{
     const {test} = TH;
     if (test[onEnd$] === undefined) {
       const callLength = api.target === undefined ? 0 : api.target.calls.length;
@@ -930,7 +923,7 @@ define((require, exports, module)=>{
     }
 
     func === undefined || test[onEnd$].callbacks.push(func);
-  }
+  };
 
   API._docComment = docComment;
   require('koru/env!./api')(API);

@@ -1,24 +1,17 @@
-define(function (require, exports, module) {
-  'use strict';
-  const util    = require('koru/util');
-  const koru    = require('./main');
-  const session = require('./session/main');
+define((require, exports, module)=>{
+  const {extractError, inspect} = require('koru/util');
+  const koru            = require('./main');
+  const session         = require('./session/main');
 
-  koru.onunload(module, 'reload');
-
-  window.yaajs.module.ctx.onError = logError;
-
-  function logError(err) {
-    err = koru.util.extractError(err);
+  const logError = err =>{
+    err = extractError(err);
     session.send('E', err);
     koru.error(err);
-  }
+  };
 
-  window.addEventListener('error', errorListener);
-
-  function errorListener(ev) {
+  const errorListener = ev =>{
     if (ev.filename) {
-      koru.logger('ERROR', koru.util.extractError({
+      koru.logger('ERROR', extractError({
         toString() {
           return ev.error;
         },
@@ -28,16 +21,22 @@ define(function (require, exports, module) {
         return;
     }
     if (ev.error)
-      koru.logger('ERROR', koru.util.extractError(ev.error));
-  }
+      koru.logger('ERROR', extractError(ev.error));
+  };
 
-  koru.logger = function (type, ...args) {
+  koru.logger = (type, ...args)=>{
     console.log(...args);
     if (type === 'ERROR')
       session.send('E', args.join(' '));
     else
-      session.send("L", type+ ": " + (type === '\x44EBUG' ? util.inspect(args, 7) : args.join(' ')));
+      session.send("L", type+ ": " +
+                   (type === '\x44EBUG' ? inspect(args, 7) : args.join(' ')));
   };
+
+  module.ctx.onError = logError;
+  window.addEventListener('error', errorListener);
+
+  koru.onunload(module, 'reload');
 
   return koru;
 });

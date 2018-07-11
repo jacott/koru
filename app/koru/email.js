@@ -14,18 +14,16 @@ function DebugStream() {
 
 nodeUtil.inherits(DebugStream, stream.Writable);
 
-DebugStream.prototype._write = function(data, encoding, callback) {
-  callback();
-};
+DebugStream.prototype._write = (data, encoding, callback)=>{callback()};
 
 
-define(function(require, exports, module) {
-  const util = require('koru/util');
+define((require)=>{
+  const util            = require('koru/util');
 
-  util.merge(exports, {
+  const Email = {
     send(options) {
       const future = new Future();
-      exports._transport.sendMail(options, future.resolver());
+      Email._transport.sendMail(options, future.resolver());
 
       future.wait();
     },
@@ -44,7 +42,7 @@ define(function(require, exports, module) {
                   pass: parts[1] && decodeURIComponent(parts[1])};
         }
 
-        exports._transport = NodeMailer.createTransport(SmtpPool({
+        Email._transport = NodeMailer.createTransport(SmtpPool({
           port: port || 25,
           host: mailUrl.hostname || 'localhost',
           secure: false,
@@ -68,7 +66,7 @@ define(function(require, exports, module) {
             }
           });
         }
-        exports._transport = NodeMailer.createTransport(urlOrTransport);
+        Email._transport = NodeMailer.createTransport(urlOrTransport);
       }
     },
 
@@ -83,5 +81,7 @@ define(function(require, exports, module) {
 
     set SmtpPool(value) {SmtpPool = value},
     get SmtpPool() {return SmtpPool},
-  });
+  };
+
+  return Email;
 });

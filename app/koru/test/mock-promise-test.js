@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Synchronous replacement for native promises. Delays running
    * promises until {#._poll} called rather than waiting for native

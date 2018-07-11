@@ -1,5 +1,5 @@
-define(function(require, exports, module) {
-  const util  = require('koru/util');
+define((require)=>{
+  const util            = require('koru/util');
 
   let execute = new Set();
 
@@ -151,7 +151,7 @@ define(function(require, exports, module) {
     }
   }
 
-  function __resolve(entry, ans, method='resolve') {
+  const __resolve = (entry, ans, method='resolve')=>{
     if (entry.p === ans) throw new TypeError("MockPromise cycle detected");
     const then = ans && ans.then;
 
@@ -171,16 +171,16 @@ define(function(require, exports, module) {
       then.call(ans, resP, rejP);
     } else
       entry[method](ans);
-  }
+  };
 
-  function _action(p, arg, state) {
+  const _action = (p, arg, state)=>{
     if (p._state)
       throw new Error("MockPromise already "+state);
     p._arg = arg;
 
     p._state = state;
     execute.add(p);
-  }
+  };
 
   return MockPromise;
 });

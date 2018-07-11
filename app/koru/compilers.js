@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const koru            = require('koru');
   const fst             = require('koru/fs-tools');
   const util            = require('koru/util');

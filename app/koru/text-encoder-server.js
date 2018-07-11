@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define(()=>{
   return {
     utf8to16(buffer, i=0, end) {
       if (end === undefined) {

@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const Compilers       = require('koru/compilers');
   const templateCompiler = require('koru/dom/template-compiler');
@@ -9,7 +9,7 @@ define(function(require, exports, module) {
   koru.onunload(module, 'reload');
 
   return {
-    load(name, req, onload, config) {
+    load: (name, req, onload, config)=>{
       const mod = req.module;
 
       const provider = koru.buildPath(name)+'.html';
@@ -21,9 +21,7 @@ define(function(require, exports, module) {
       try {
         Compilers.compile('html', filename, outPath);
         const pMod = mod.dependOn(provider);
-        mod.body = function () {
-          return pMod.exports;
-        };
+        mod.body = ()=> pMod.exports;
         onload();
       } catch(err) {
         onload.error(err);

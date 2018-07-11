@@ -2,44 +2,38 @@ const fs = require('fs');
 const Future = requirejs.nodeRequire('fibers/future');
 const Path = require('path');
 
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const fst     = require('./fs-tools');
   const koru    = require('./main');
   const session = require('./session/base');
 
   const {runFiber, appDir: top} = koru;
 
-  koru.onunload(module, 'reload');
-
   exports.listeners = {
-    js(type, path, top) {
+    js: (type, path, top)=>{
       if (path.slice(-8) !== '.html.js')
         session.unload(path.slice(0, - 3));
     },
 
-    html(type, path) {
+    html: (type, path)=>{
       session.unload(koru.buildPath(path));
     },
   };
 
-  function defaultUnloader(path) {
-    session.unload(path);
-  }
+  const defaultUnloader = (path)=>{session.unload(path)};
 
-  exports.watch = function (dir, top) {
+  exports.watch = (dir, top)=>{
     watch(Path.resolve(dir), Path.resolve(top)+'/');
   };
 
-  runFiber(()=>{watch(top, top+'/')});
-
-  function watch(dir, top) {
+  const watch = (dir, top)=>{
     const dirs = Object.create(null);
 
     const watcher = fs.watch(dir, (event, filename)=>{
       runFiber(() => {
-        if (! filename.match(/^\w/)) return;
+        if (! /^\w/.test(filename)) return;
         let path = manage(dirs, dir, filename, top);
-        if (! path) return;
+        if (path === undefined) return;
 
         const m = /\.(\w+)$/.exec(path);
         const handler = m && exports.listeners[m[1]];
@@ -56,12 +50,12 @@ define(function(require, exports, module) {
     });
 
     return watcher;
-  }
+  };
 
-  function manage(dirs, dir, filename, top) {
+  const manage = (dirs, dir, filename, top)=>{
     const path = dir+'/'+filename;
     const st = fst.stat(path);
-    if (st) {
+    if (st !== undefined) {
       if (st.isDirectory()) {
         dirs[filename] = watch(path, top);
         return;
@@ -74,5 +68,9 @@ define(function(require, exports, module) {
       }
     }
     return path;
-  }
+  };
+
+  koru.onunload(module, 'reload');
+
+  runFiber(()=>{watch(top, top+'/')});
 });
