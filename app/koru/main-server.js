@@ -42,6 +42,7 @@ define((require, exports, module)=>{
       },
 
       setTimeout(func, duration) {
+        if (duration > 2147483640) throw new Error('duration too big');
         return setTimeout(() => koru.runFiber(func), duration);
       },
 

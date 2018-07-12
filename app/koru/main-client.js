@@ -18,6 +18,7 @@ define((require, exports, module)=>{
       appDir: module.toUrl('').slice(0,-1),
 
       setTimeout(func, duration) {
+        if (duration > 2147483640) throw new Error('duration too big');
         return setTimeout(()=> {
           try {
             func();
