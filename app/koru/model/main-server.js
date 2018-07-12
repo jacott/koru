@@ -135,7 +135,6 @@ define((require, exports, module)=>{
         if (full) {
           const rec = model.docs.findOne({_id: this._id});
           if (rec === undefined) {
-            model._$docCacheDelete(this);
             this.attributes = {};
           } else {
             this.attributes = rec;
@@ -145,6 +144,8 @@ define((require, exports, module)=>{
         this.changes = {};
         if (this[error$] !== undefined) this[error$] = undefined;
         this.$clearCache();
+        if (model._$docCacheGet(this._id) === undefined)
+          model._$docCacheSet(this);
 
         return this;
       };
