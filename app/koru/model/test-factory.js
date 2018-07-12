@@ -1,10 +1,10 @@
-define((require, exports, module)=>{
+define((require)=>{
   const dbBroker        = require('koru/model/db-broker');
   const TH              = require('koru/test-helper');
   const util            = require('../util');
   const Model           = require('./main');
 
-  const {hasOwn} = util;
+  const {hasOwn, deepCopy} = util;
 
   const traits = {};
   const postCreate = {};
@@ -166,7 +166,7 @@ define((require, exports, module)=>{
     }
   }
 
-  const Factory = module.exports = {
+  const Factory = {
     startTransaction() {
       checkDb();
       tx.push([last, nameGen]);
@@ -182,6 +182,27 @@ define((require, exports, module)=>{
       [last, nameGen] = tx.pop();
       dbVars.nameGen = nameGen;
       dbVars.last = last;
+    },
+
+    preserve(sym, docs) {
+      for(let i = docs.length-1; i >= 0; --i) {
+        const doc = docs[i];
+        doc[sym] = deepCopy(doc.attributes);
+      }
+    },
+
+    restore(sym, docs) {
+      for(let i = docs.length-1; i >= 0; --i) {
+        const doc = docs[i];
+        doc.$reload();
+        doc.attributes = doc[sym];
+      }
+    },
+
+    clearSym(sym, docs) {
+      for(let i = docs.length-1; i >= 0; --i) {
+        delete docs[i][sym];
+      }
     },
 
     clear() {
@@ -286,4 +307,6 @@ define((require, exports, module)=>{
     }
     return options;
   };
+
+  return Factory;
 });
