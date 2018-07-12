@@ -1,3 +1,9 @@
-define((require, exports, module)=>{
-  return require('koru/env!./test-db-helper');
+define((require)=>{
+  const TH              = require('koru/env!./test-db-helper');
+
+  TH.fullReload = (...args)=>{
+    args.forEach(d => d.$reload(true));
+  };
+
+  return TH;
 });
