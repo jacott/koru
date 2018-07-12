@@ -56,7 +56,7 @@ define(function(require, exports, module) {
     if (Dom.getClosest(event.target, '.anyModal')) return;
     if (event.type === 'keydown') {
       if (event.which === 27) {
-        if (! Dom.contains(elm, event.target))
+        if (Dom.contains(elm, event.target) === null)
           return modalize.func.call(this, event);
 
         switch (event.target.tagName) {

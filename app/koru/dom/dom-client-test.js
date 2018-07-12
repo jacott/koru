@@ -1,42 +1,42 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   // Adorn koru/dom/base with extra client only utilities
-  const Ctx = require('koru/dom/ctx');
-  const TH  = require('koru/test-helper');
-  const api = require('koru/test/api');
+  const Ctx             = require('koru/dom/ctx');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
 
   const {stub, spy} = TH;
 
   const {ctx$, private$, globalId$, endMarker$} = require('koru/symbols');
 
   const Dom = require('koru/dom');
-  let v;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       api.module({subjectModule: module.get('koru/dom')});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Dom.flushNextFrame();
       document.body.removeAttribute('class');
       Dom.removeChildren(document.body);
       delete Dom.Foo;
-      v = null;
-    },
+      v = {};
+    });
 
-    "test supports passive"() {
+    test("supports passive", ()=>{
       assert.isTrue(Dom.supportsPassiveEvents === true || Dom.supportsPassiveEvents === false);
-    },
+    });
 
-    "test captureEventOption"() {
+    test("captureEventOption", ()=>{
       if (Dom.supportsPassiveEvents)
         assert.equals(Dom.captureEventOption, {capture: true, passive: false});
       else
         assert.same(Dom.captureEventOption, true);
-    },
+    });
 
-    "test isAboveBottom"() {
+    test("isAboveBottom", ()=>{
       /**
        * Determine if an element is above the bottom of a region.
 
@@ -64,9 +64,9 @@ define(function (require, exports, module) {
       assert(Dom.isAboveBottom(x, rect));
 
       api.done();
-    },
+    });
 
-    "test isInView"() {
+    test("isInView", ()=>{
       /**
        * Determine if an element is within the viewable area of a
        * `region`.
@@ -106,9 +106,9 @@ define(function (require, exports, module) {
       x.style.top = '';
       x.style.bottom = '-14px';
       assert(Dom.isInView(x, document.body));
-    },
+    });
 
-    "test wheelDelta"() {
+    test("wheelDelta", ()=>{
       assert.same(Dom.wheelDelta({wheelDelta: 50}), 1);
       assert.same(Dom.wheelDelta({deltaY: -50}), 1);
       assert.same(Dom.wheelDelta({deltaX: -50}), 1);
@@ -116,18 +116,18 @@ define(function (require, exports, module) {
       assert.same(Dom.wheelDelta({wheelDelta: -50}), -1);
       assert.same(Dom.wheelDelta({deltaY: 50}), -1);
       assert.same(Dom.wheelDelta({deltaX: 50}), -1);
-    },
+    });
 
-    "test getClosest"() {
+    test("getClosest", ()=>{
       document.body.appendChild(Dom.h({class: 'foo', div: {span: 'hello'}}));
 
       assert.dom('span', function () {
         assert.same(Dom.getClosest(this.firstChild, '.foo>span'), this);
         assert.same(Dom.getClosest(this.firstChild, '.foo'), this.parentNode);
       });
-    },
+    });
 
-    "test html string"() {
+    test("html string", ()=>{
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
@@ -146,9 +146,9 @@ define(function (require, exports, module) {
       const nested = Dom.h({div: [Dom.textToHtml('<div>hello</div>'), elm]});
       assert.same(nested.firstChild.nextSibling, elm);
       assert.same(nested.firstChild.textContent, 'hello');
-    },
+    });
 
-    "test childElementIndex"() {
+    test("childElementIndex", ()=>{
       const elm = Dom.h({});
       let child;
       elm.appendChild(child = document.createElement('b'));
@@ -161,9 +161,9 @@ define(function (require, exports, module) {
 
       elm.appendChild(child = document.createElement('b'));
       assert.same(Dom.childElementIndex(child), 2);
-    },
+    });
 
-    "test mapToData"() {
+    test("mapToData", ()=>{
       const elm = Dom.h({});
 
       'one two three'.split(' ').forEach(function (data) {
@@ -175,9 +175,9 @@ define(function (require, exports, module) {
       });
 
       assert.equals(Dom.mapToData(elm.children), ['one', 'two', 'three']);
-    },
+    });
 
-    "test setClassBySuffix"() {
+    test("setClassBySuffix", ()=>{
       const elm = {className: ''};
 
       Dom.setClassBySuffix('use', 'Mode', elm);
@@ -203,9 +203,9 @@ define(function (require, exports, module) {
 
       Dom.setClassBySuffix('', 'Mode', elm);
       assert.same(elm.className, '');
-    },
+    });
 
-    "test setClassByPrefix"() {
+    test("setClassByPrefix", ()=>{
       const elm = {className: ''};
 
       Dom.setClassByPrefix('use', 'mode-', elm);
@@ -229,9 +229,9 @@ define(function (require, exports, module) {
 
       Dom.setClassByPrefix('', 'mode-', elm);
       assert.same(elm.className, '');
-    },
+    });
 
-    "test getUpDownByClass"() {
+    test("getUpDownByClass", ()=>{
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div>'+
                            '<div class="dest"></div></div></div>');
@@ -241,9 +241,9 @@ define(function (require, exports, module) {
           assert.className(Dom.getUpDownByClass(this, 'foo', 'dest'), 'dest');
         });
       });
-    },
+    });
 
-    "test searchUpFor"() {
+    test("searchUpFor", ()=>{
       const top = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
@@ -257,16 +257,16 @@ define(function (require, exports, module) {
       assert.same(Dom.searchUpFor(top.querySelector('button').firstChild, function (elm) {
         return Dom.hasClass(elm, 'bar');
       }), top.firstChild.firstChild);
-    },
+    });
 
 
-    "test INPUT_SELECTOR, WIDGET_SELECTOR"() {
+    test("INPUT_SELECTOR, WIDGET_SELECTOR", ()=>{
       assert.same(Dom.INPUT_SELECTOR, 'input,textarea,select,select>option,[contenteditable="true"]');
       assert.same(Dom.WIDGET_SELECTOR, 'input,textarea,select,select>option,'+
                   '[contenteditable="true"],button,a');
-    },
+    });
 
-    "test $getClosest"() {
+    test("$getClosest", ()=>{
       document.body.appendChild(Dom.textToHtml('<div><div class="foo"><div class="bar">'+
                                          '<button type="button" id="sp"></button>'+
                                          '</div></div></div>'));
@@ -279,20 +279,20 @@ define(function (require, exports, module) {
 
       assert.same(Dom.getClosest(button, '.foo>.bar'), foobar);
       assert.same(Dom.getClosestCtx(button, '.foo>.bar'), 'the ctx');
-    },
+    });
 
-    "hideAndRemove": {
-      setUp() {
+    group("hideAndRemove", ()=>{
+      beforeEach(()=>{
         v.onAnimationEnd = stub(Dom.Ctx.prototype, 'onAnimationEnd');
-      },
+      });
 
-      "test non existent"() {
+      test("non existent", ()=>{
         Dom.hideAndRemove('Foo');
 
         refute.called(v.onAnimationEnd);
-      },
+      });
 
-      "test remove by id"() {
+      test("remove by id", ()=>{
         document.body.appendChild(Dom.h({id: 'Foo'}));
 
         assert.dom('#Foo', function () {
@@ -307,9 +307,9 @@ define(function (require, exports, module) {
         v.onAnimationEnd.yield(v.ctx, v.elm);
 
         refute.dom('#Foo');
-      },
+      });
 
-      "test remove by elm"() {
+      test("remove by elm", ()=>{
         document.body.appendChild(v.elm = Dom.h({id: 'Foo'}));
 
         Dom.setCtx(v.elm, v.ctx = new Dom.Ctx);
@@ -325,10 +325,10 @@ define(function (require, exports, module) {
         v.onAnimationEnd.yield(v.ctx, v.elm);
 
         refute.dom('#Foo');
-      },
-    },
+      });
+    });
 
-    "test forEach"() {
+    test("forEach", ()=>{
       const elm = Dom.textToHtml('<div></div>');
       document.body.appendChild(elm);
       for(let i = 0; i < 5; ++i) {
@@ -348,9 +348,9 @@ define(function (require, exports, module) {
       });
 
       assert.same(results, 6);
-    },
+    });
 
-    "test remove"() {
+    test("remove", ()=>{
       /**
        * Remove element and descontruct its {#koru/dom/ctx}
        **/
@@ -367,9 +367,9 @@ define(function (require, exports, module) {
         assert.same(Dom.remove(elm), false);
         assert.same(Dom.remove(null), undefined);
       });
-    },
+    });
 
-    "test removeAll"() {
+    test("removeAll", ()=>{
       stub(Dom, 'remove');
 
       const r1 = Dom.remove.withArgs(1);
@@ -379,18 +379,18 @@ define(function (require, exports, module) {
 
       assert.called(r2);
       assert(r2.calledBefore(r1));
-    },
+    });
 
-    "test contains"() {
+    test("contains", ()=>{
       const elm = Dom.textToHtml('<div id="top"><div class="foo"><div class="bar">'+
                            '<button type="button" id="sp">Hello</button></div></div></div>');
 
       assert.same(Dom.contains(elm, elm), elm);
       assert.same(Dom.contains(elm, elm.querySelector('.bar')), elm);
       assert.same(Dom.contains(elm.querySelector('.bar'), elm), null);
-    },
+    });
 
-    "test removeInserts"() {
+    test("removeInserts", ()=>{
       const parent = document.createElement('div');
       const elm = document.createComment('start');
       elm[endMarker$] = document.createComment('end');
@@ -415,10 +415,10 @@ define(function (require, exports, module) {
 
       assert.same(elm.parentNode, parent);
       assert.same(elm[endMarker$].parentNode, parent);
-    },
+    });
 
 
-    "test onPointerUp"() {
+    test("onPointerUp", ()=>{
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           {name: 'span'},
@@ -448,17 +448,17 @@ define(function (require, exports, module) {
 
         assert.same(v.ctx, null);
       });
-    },
+    });
 
-    "test modifierKey"() {
+    test("modifierKey", ()=>{
       refute(Dom.modifierKey({}));
       assert(Dom.modifierKey({ctrlKey: true}));
       assert(Dom.modifierKey({shiftKey: true}));
       assert(Dom.modifierKey({metaKey: true}));
       assert(Dom.modifierKey({altKey: true}));
-    },
+    });
 
-    "test decimal helper"() {
+    test("decimal helper", ()=>{
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           ["","decimal","foo",["=","format","\"3"]]
@@ -472,9 +472,9 @@ define(function (require, exports, module) {
         Dom.ctx(elm).updateAllTags({foo: null});
         assert.same(elm.textContent, "");
       });
-    },
+    });
 
-    "test comment helper"() {
+    test("comment helper", ()=>{
       Dom.newTemplate({name: 'Foo', nodes: [{
         name: 'div', children: [
           ["","comment","\"foo"]
@@ -486,10 +486,10 @@ define(function (require, exports, module) {
         assert.equals(comment.nodeType, document.COMMENT_NODE);
         assert.equals(comment.data, 'foo');
       });
-    },
+    });
 
-    "inputValue helper": {
-      "test restore"() {
+    group("inputValue helper", ()=>{
+      test("restore", ()=>{
         const elm = Ctx[private$].currentElement = {};
         TH.stubProperty(elm, 'value', {get() {return '34'}, set: v.stub = stub()});
         Dom.restoreOriginalValue(elm);
@@ -518,11 +518,11 @@ define(function (require, exports, module) {
         Dom.restoreOriginalValue(elm);
         assert.calledWith(v.stub, 'bar');
 
-      },
-    },
+      });
+    });
 
-    "destroyMeWith": {
-      setUp () {
+    group("destroyMeWith", ()=>{
+      beforeEach( ()=>{
         v.elm = Dom.h({div: "subject"});
         v.elmCtx = Dom.setCtx(v.elm);
 
@@ -538,18 +538,18 @@ define(function (require, exports, module) {
 
         document.body.appendChild(v.dep2);
         Dom.destroyMeWith(v.dep2, v.elm);
-      },
+      });
 
-      "test removes with"() {
+      test("removes with", ()=>{
         Dom.remove(v.elm);
         assert.same(v.elm[ctx$], null);
         assert.same(v.dep[ctx$], null);
         assert.same(v.dep.parentNode, null);
         assert.same(v.dep2[ctx$], null);
         assert.same(v.dep2.parentNode, null);
-      },
+      });
 
-      "test detaches if removed"() {
+      test("detaches if removed", ()=>{
         const {destoryObservers$} = Ctx[private$];
         Dom.remove(v.dep);
         const obs = {};
@@ -559,10 +559,10 @@ define(function (require, exports, module) {
 
         Dom.remove(v.dep2);
         assert.same(v.elm[ctx$][destoryObservers$], undefined);
-      },
-    },
+      });
+    });
 
-    "test onDestroy"() {
+    test("onDestroy", ()=>{
       v.elm = Dom.h({div: "subject"});
       v.elmCtx = Dom.setCtx(v.elm);
       v.elmCtx.onDestroy(v.st1 = stub());
@@ -573,10 +573,10 @@ define(function (require, exports, module) {
       assert.same(v.st1.firstCall.thisValue, v.elmCtx);
       assert.calledWith(v.st2.stop, v.elmCtx, v.elm);
       assert.same(v.st2.stop.firstCall.thisValue, v.st2);
-    },
+    });
 
-    "destroyMeWith": {
-      setUp () {
+    group("destroyMeWith", ()=>{
+      beforeEach( ()=>{
         v.elm = Dom.h({div: "subject"});
         v.elmCtx = Dom.setCtx(v.elm);
 
@@ -592,18 +592,18 @@ define(function (require, exports, module) {
 
         document.body.appendChild(v.dep2);
         Dom.destroyMeWith(v.dep2, v.elm);
-      },
+      });
 
-      "test removes with"() {
+      test("removes with", ()=>{
         Dom.remove(v.elm);
         assert.same(v.elm[ctx$], null);
         assert.same(v.dep[ctx$], null);
         assert.same(v.dep.parentNode, null);
         assert.same(v.dep2[ctx$], null);
         assert.same(v.dep2.parentNode, null);
-      },
+      });
 
-      "test detaches if removed"() {
+      test("detaches if removed", ()=>{
         const {destoryObservers$} = Ctx[private$];
         Dom.remove(v.dep);
         const obs = {};
@@ -613,7 +613,7 @@ define(function (require, exports, module) {
 
         Dom.remove(v.dep2);
         assert.same(v.elm[ctx$][destoryObservers$], undefined);
-      },
-    },
+      });
+    });
   });
 });

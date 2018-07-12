@@ -1,11 +1,11 @@
-define(function(require, exports, module) {
-  const koru        = require('koru');
-  const Ctx         = require('koru/dom/ctx');
-  const DomTemplate = require('koru/dom/template');
-  const util        = require('koru/util');
-  const Dom         = require('./base');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const Ctx             = require('koru/dom/ctx');
+  const DomTemplate     = require('koru/dom/template');
+  const util            = require('koru/util');
+  const Dom             = require('./base');
 
-  const {hasOwn} = util;
+  const {hasOwn, isObjEmpty} = util;
   const {globalId$, ctx$, endMarker$, private$, original$} = require('koru/symbols');
   const destoryObservers$ = Ctx[private$].destoryObservers$ = Symbol();
   const destoryWith$ = Symbol();
@@ -31,16 +31,6 @@ define(function(require, exports, module) {
 
   const {DOCUMENT_NODE} = document;
 
-  if (document.documentElement.closest === undefined) {
-    Element.prototype.closest = function (selector) {
-      let elm = this;
-      while(elm != null && elm.nodeType !== DOCUMENT_NODE) {
-        if (matches.call(elm, selector))
-          return elm;
-        elm = elm.parentNode;
-      }
-    };
-  }
   require('./next-frame')(Dom);
 
   Dom.INPUT_SELECTOR = 'input,textarea,select,select>option,[contenteditable="true"]';
@@ -53,6 +43,28 @@ define(function(require, exports, module) {
   }));
 
   const captureEventOption = supportsPassiveEvents ? {capture: true, passive: false} : true;
+
+  const addElm = (ctx, elm)=>{elm == null || elm.classList.remove('addElm')};
+  const remElm = (ctx, elm)=>{Dom.remove(elm)};
+
+  const convertToData = elm => {
+    const ctx = elm == null ? null : Dom.ctx(elm);
+    return ctx === null ? null : ctx.data;
+  };
+
+  let globalIds = 0;
+  const getId = ctx => {
+    const id = ctx[globalId$];
+    return id === undefined ? (ctx[globalId$] = (++globalIds).toString(36)) : id;
+  };
+
+  const DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
+
+  const buildEvent = (event, args)=>{
+    const e = new Event(event, DEFAULT_EVENT_ARGS);
+    Object.assign(e, args);
+    return e;
+  };
 
   util.merge(Dom, {
     Ctx,
@@ -359,7 +371,7 @@ define(function(require, exports, module) {
           const observers = dw[destoryObservers$];
           if (observers !== undefined) {
             delete observers[ctx[globalId$]];
-            if (util.isObjEmpty(observers))
+            if (isObjEmpty(observers))
               dw[destoryObservers$] = undefined;
           }
         }
@@ -491,15 +503,7 @@ define(function(require, exports, module) {
       return fragStart[endMarker$];
     },
 
-    contains: Element.prototype.contains && Dom.vendorPrefix !== 'ms' ? function (parent, elm) {
-      return parent && parent.contains(elm) ? parent : null;
-    } : (parent, elm) => {
-      while(elm && elm.nodeType !== DOCUMENT_NODE) {
-        if (parent === elm) return parent;
-        elm = elm.parentNode;
-      }
-      return null;
-    },
+    contains: (parent, elm)=> (parent != null && parent.contains(elm)) ? parent : null,
 
     updateInput(input, value) {
       if (value !== input.value) {
@@ -513,12 +517,10 @@ define(function(require, exports, module) {
     },
 
     onPointerUp(func, elm) {
-      document.addEventListener('pointerup', opu, true);
-
       const $ = Dom.current;
       const ctx = $.ctx;
 
-      function opu(event) {
+      const opu = event =>{
         document.removeEventListener('pointerup', opu, true);
 
         const orig = $.ctx;
@@ -530,7 +532,9 @@ define(function(require, exports, module) {
         } finally {
           $._ctx = orig;
         }
-      }
+      };
+
+      document.addEventListener('pointerup', opu, true);
     },
 
     /**
@@ -549,87 +553,6 @@ define(function(require, exports, module) {
       };
     },
   });
-
-  function addElm(ctx, elm) {
-    Dom.removeClass(elm, 'addElm');
-  }
-
-  function remElm(ctx, elm) {
-    Dom.remove(elm);
-  }
-
-  const DEFAULT_EVENT_ARGS = {cancelable: true, bubbles: true, cancelBubble: true};
-
-  function buildEvent(event, args) {
-    if (Event) {
-      var e = new Event(event, DEFAULT_EVENT_ARGS);
-    } if (document.createEvent) {
-      var e = document.createEvent("Event");
-      e.initEvent(event, true, true);
-    } else {
-      var e = document.createEventObject();
-    }
-    Object.assign(e, args);
-    return e;
-  }
-
-  switch(vendorFuncPrefix) {
-  case 'ms':
-    (function () {
-      var m = /\bMSIE (\d+)/.exec(navigator.userAgent);
-      if (m) {
-        if (+m[1] < 11) {
-          Dom.hasPointerEvents = false;
-        }
-      }
-    })();
-    break;
-  case 'moz':
-    (function(){
-      // polyfill for focusin, focusout
-      // firefox >= 52 now has proper support for focusin/out
-      var w = window,
-          d = w.document;
-
-      if( w.onfocusin === undefined ){
-        d.addEventListener('focus'    ,addPolyfill    ,true);
-        d.addEventListener('blur'     ,addPolyfill    ,true);
-        d.addEventListener('focusin'  ,removePolyfill ,true);
-        d.addEventListener('focusout' ,removePolyfill ,true);
-      }
-      function addPolyfill(e){
-        var type = e.type === 'focus' ? 'focusin' : 'focusout';
-        var event = new w.CustomEvent(type, { bubbles:true, cancelable:false });
-        event.c1Generated = true;
-        e.target.dispatchEvent( event );
-      }
-      function removePolyfill(e){
-        if(!e.c1Generated){
-          // focus after focusin, so chrome will the first time trigger tow times focusin
-          d.removeEventListener('focus'    ,addPolyfill    ,true);
-          d.removeEventListener('blur'     ,addPolyfill    ,true);
-          d.removeEventListener('focusin'  ,removePolyfill ,true);
-          d.removeEventListener('focusout' ,removePolyfill ,true);
-        }
-        setTimeout(function(){
-          d.removeEventListener('focusin'  ,removePolyfill ,true);
-          d.removeEventListener('focusout' ,removePolyfill ,true);
-        });
-      }
-    })();
-    break;
-  }
-
-  const convertToData = elm => {
-    const ctx = elm == null ? null : Dom.ctx(elm);
-    return ctx === null ? null : ctx.data;
-  };
-
-  let globalIds = 0;
-  const getId = ctx => {
-    const id = ctx[globalId$];
-    return id === undefined ? (ctx[globalId$] = (++globalIds).toString(36)) : id;
-  };
 
   return Dom;
 });
