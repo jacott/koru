@@ -144,7 +144,7 @@ define((require, exports, module)=>{
 
         this.changes = {};
         if (this[error$] !== undefined) this[error$] = undefined;
-        if (this._cache !== undefined) this._cache = undefined;
+        this.$clearCache();
 
         return this;
       };

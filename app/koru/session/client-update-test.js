@@ -97,7 +97,7 @@ isClient && define(function (require, exports, module) {
       v.recvC('Foo', 'f222', v.attrs = {age: 7});
       v.recvC('Foo', 'f333', v.attrs = {age: 7});
 
-      assert.same(bob._cache, null);
+      assert.equals(bob.$cache, {});
 
       assert.equals(bob.attributes, {_id: 'f222', name: 'bob', age: 7});
       assert.same(v.Foo.query.onId('f333').count(1), 0);

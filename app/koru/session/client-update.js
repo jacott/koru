@@ -41,7 +41,7 @@ define(function(require, exports, module) {
     var query = model.serverQuery.onId(id);
     var doc = model.findById(id);
     if (doc && publish.match.has(doc)) {
-      doc._cache = null;
+      doc.$clearCache();
       query.update(attrs);
     } else
       query.remove();

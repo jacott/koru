@@ -12,7 +12,7 @@ define((require, exports, module)=>{
   const registerObserveId = require('./register-observe-id');
 
   const {private$, inspect$, error$} = require('koru/symbols');
-  const allObservers$ = Symbol(), allObserverHandles$ = Symbol();
+  const allObservers$ = Symbol(), cache$ = Symbol(), allObserverHandles$ = Symbol();
 
   const {hasOwn, deepCopy} = util;
 
@@ -442,10 +442,11 @@ define((require, exports, module)=>{
       return this;
     }
 
-    get $cache() {return this._cache || (this._cache = {})}
+    get $cache() {return this[cache$] || (this[cache$] = {})}
 
     $clearCache() {
-      this._cache = null;
+      if (this[cache$] !== undefined)
+      this[cache$] = undefined;
       return this;
     }
 

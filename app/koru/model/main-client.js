@@ -148,7 +148,7 @@ define((require, exports, module)=>{
           this.attributes = doc ? doc.attributes : {};
           this.changes = {};
           if (this[error$] !== undefined) this[error$] = undefined;
-          if (this._cache !== undefined) this._cache = undefined;
+          this.$clearCache();
           return this;
         }
       });
