@@ -177,7 +177,7 @@ define((require, exports, module)=>{
 
   const invokeReturn = (stub, call) => {
     if (call.throws !== undefined) throw call.throws;
-    if (call.invokes !== undefined) return call.invokes(call);
+    if (call.invokes !== undefined) return call.returnValue = call.invokes(call);
     if (call.yields !== undefined) {
       const {args} = call;
       for(let i = 0; i < args.length; ++i) {

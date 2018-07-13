@@ -368,6 +368,9 @@ const {stub, spy, intercept} = TH;
 
         assert.isFalse(aStub(2));
         assert.isTrue(aStub(1));
+
+        assert.same(aStub.firstCall.returnValue, false);
+        assert.same(aStub.lastCall.returnValue, true);
         //]
       });
 
