@@ -1,13 +1,25 @@
-define(function(require, exports, module) {
-  const Dom   = require('../dom');
-  const util  = require('../util');
+define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const util            = require('../util');
   require('./each');
-  const Modal = require('./modal');
+  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./select-menu'));
   const $ = Dom.current;
 
-  function keydownHandler(event, details) {
+  const select = (ctx, elm, event)=>{
+    const data = ctx.data;
+    const activeElement = document.activeElement;
+    if (data.onSelect(elm, event)) {
+      if (activeElement !== document.activeElement) {
+        ctx.focusRange = ctx.focusElm = null;
+      }
+
+      Dom.remove(ctx.element());
+    }
+  };
+
+  const keydownHandler = (event, details)=>{
     let nextElm, firstElm, curr, nSel;
     switch(event.which) {
     case 13: // enter
@@ -15,8 +27,8 @@ define(function(require, exports, module) {
       if (sel && ! Dom.hasClass(sel, 'hide')) select(details.ctx, sel, event);
       break;
     case 38: // up
-      nextElm = function () {nSel = nSel.previousElementSibling};
-      firstElm = function () {
+      nextElm = ()=>{nSel = nSel.previousElementSibling};
+      firstElm = ()=>{
         if (curr)
           return curr.previousElementSibling;
         const lis = mElm.getElementsByTagName('li');
@@ -24,9 +36,9 @@ define(function(require, exports, module) {
       };
       // fall through
     case 40: // down
-      nextElm = nextElm || function () {nSel = nSel.nextElementSibling};
-      firstElm = firstElm ||
-        (() => curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0]);
+      if (nextElm === undefined) nextElm = ()=>{nSel = nSel.nextElementSibling};
+      if (firstElm === undefined)
+        firstElm = () => curr ? curr.nextElementSibling : mElm.getElementsByTagName('li')[0];
       const mElm = details.container.firstChild;
       curr = mElm.getElementsByClassName('selected')[0];
       for (nSel = firstElm(); nSel; nextElm()) {
@@ -43,7 +55,10 @@ define(function(require, exports, module) {
     }
 
     Dom.stopEvent(event);
-  }
+  };
+
+  const searchRegExp = value => new RegExp(
+    ".*"+util.regexEscape(value||"").replace(/\s+/g, '.*') + ".*", "i");
 
   Tpl.$extend({
     popup(elm, options, pos) {
@@ -96,14 +111,8 @@ define(function(require, exports, module) {
       range && Dom.setRange(range);
     },
 
-    searchRegExp: searchRegExp,
+    searchRegExp,
   });
-
-  function searchRegExp(value) {
-    return new RegExp(".*"+
-                      util.regexEscape(value||"").replace(/\s+/g, '.*') +
-                      ".*", "i");
-  }
 
 
   Tpl.$helpers({
@@ -225,18 +234,6 @@ define(function(require, exports, module) {
       options.searchDone && options.searchDone(this, event.currentTarget.parentNode);
     },
   });
-
-  function select(ctx, elm, event) {
-    const data = ctx.data;
-    const activeElement = document.activeElement;
-    if (data.onSelect(elm, event)) {
-      if (activeElement !== document.activeElement) {
-        ctx.focusRange = ctx.focusElm = null;
-      }
-
-      Dom.remove(ctx.element());
-    }
-  }
 
   return Tpl;
 });

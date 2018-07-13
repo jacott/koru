@@ -1,7 +1,7 @@
-define(function(require, exports, module) {
-  const Dom = require('../dom');
+define((require)=>{
+  const Dom             = require('../dom');
 
-  Dom.autoUpdate = function (ctx, options) {
+  Dom.autoUpdate = (ctx, options)=>{
     options = options || {};
     const subject = options.subject || ctx.data;
     if (! subject || ! subject._id) return;
@@ -15,5 +15,5 @@ define(function(require, exports, module) {
     }));
   };
 
-  module.exports = Dom;
+  return Dom;
 });

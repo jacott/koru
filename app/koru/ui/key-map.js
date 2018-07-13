@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const Dom             = require('../dom');
   const util            = require('../util');
 
@@ -6,13 +6,74 @@ define(function(require, exports, module) {
   const MOD_NAMES = {};
   const SYM_NAMES = {};
 
-  exports = module.exports = (funcs, options) =>{
-    const keyMap = new KeyMap();
-    keyMap.exec = exec.bind(keyMap);
+  function exec(event, ignoreFocus) {
+    if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR))
+      return;
 
-    keyMap.addKeys(funcs, options);
+    const keyMap = this;
+    const code = String.fromCharCode(event.which);
+    if (MODIFIERS[code]) return;
 
-    return keyMap;
+    let map, mod = eventMod(event);
+
+    if (mod != 0) {
+      map = keyMap.map['*'+String.fromCharCode(mod)];
+      if (map === undefined) return;
+    } else {
+      map = keyMap.map;
+    }
+
+    map = map[code];
+    if (map === undefined) return;
+    Dom.stopEvent(event);
+
+    if (Array.isArray(map)) {
+      map[1](event, map[0]);
+    } else {
+      const cancel = ()=>{
+        window.removeEventListener('keydown', nextKey, true);
+        document.body.removeEventListener('pointerleave', cancel, true);
+      };
+      const nextKey = event =>{
+        const code = String.fromCharCode(event.which);
+        if (MODIFIERS[code] !== undefined) return;
+
+        mod = eventMod(event);
+
+        if (mod != 0) {
+          map = map['*'+String.fromCharCode(mod)];
+          if (map === undefined) {
+            cancel();
+            return;
+          }
+        }
+
+        map = map[code];
+        if (map && ! Array.isArray(map)) {
+          Dom.stopEvent(event);
+          return;
+        }
+        cancel();
+        if (map === undefined) return;
+        Dom.stopEvent(event);
+        map[1](event, map[0]);
+      };
+      window.addEventListener('keydown', nextKey, true);
+      document.body.addEventListener('pointerleave', cancel, true);
+    }
+  }
+
+  const makeTitle = (name, keySeq)=>{
+    keySeq = keySeq.replace(/[\u0010-\u002B,\u0080-\u00DE]/g, function (m) {
+      const mc = MOD_NAMES[m];
+      if (mc)
+        return mc+'-';
+      else {
+        const name = SYM_NAMES[m];
+        return name.length == 1 ? name : "<"+name+">";
+      }
+    });
+    return keySeq ? name + ' ['+keySeq+']' : name;
   };
 
   class KeyMap {
@@ -80,41 +141,39 @@ define(function(require, exports, module) {
     }
   };
 
-  function makeTitle(name, keySeq) {
-    keySeq = keySeq.replace(/[\u0010-\u002B,\u0080-\u00DE]/g, function (m) {
-      const mc = MOD_NAMES[m];
-      if (mc)
-        return mc+'-';
-      else {
-        const name = SYM_NAMES[m];
-        return name.length == 1 ? name : "<"+name+">";
-      }
-    });
-    return keySeq ? name + ' ['+keySeq+']' : name;
-  }
+  const KMFactory = (funcs, options) =>{
+    const keyMap = new KeyMap();
+    keyMap.exec = exec.bind(keyMap);
 
-  addModifiers(
-    '\u0010shift',
-    '\u0011ctrl',
-    '\u0012alt',
-    '\u005Bmeta',
-  );
+    keyMap.addKeys(funcs, options);
 
-  function addModifiers(...args) {
-    args.forEach((code, i) => {
-      const name = code.slice(1);
-      exports[name] = code = code[0];
-      MODIFIERS[code] = 1 << i;
-      SYM_NAMES[code] = name;
-      MOD_NAMES[code] = name;
-    });
+    return keyMap;
+  };
+
+  {
+    const addModifiers = (...args)=>{
+      args.forEach((code, i) => {
+        const name = code.slice(1);
+        KMFactory[name] = code = code[0];
+        MODIFIERS[code] = 1 << i;
+        SYM_NAMES[code] = name;
+        MOD_NAMES[code] = name;
+      });
+    };
+
+    addModifiers(
+      '\u0010shift',
+      '\u0011ctrl',
+      '\u0012alt',
+      '\u005Bmeta',
+    );
   }
 
   {
     const addCodes = (...args)=>{
       util.forEach(args, (code, i) => {
         const name = code.slice(1);
-        exports[name] = code = code[0];
+        KMFactory[name] = code = code[0];
         SYM_NAMES[code] = name;
       });
     };
@@ -136,8 +195,7 @@ define(function(require, exports, module) {
     );
   }
 
-
-  exports.modCodeToName = code => MOD_NAMES[code];
+  KMFactory.modCodeToName = code => MOD_NAMES[code];
 
   const eventMod = event=>{
     let mod = 0;
@@ -149,60 +207,5 @@ define(function(require, exports, module) {
     return mod;
   };
 
-  function exec(event, ignoreFocus) {
-    if (ignoreFocus !== 'ignoreFocus' && Dom.matches(document.activeElement, Dom.INPUT_SELECTOR))
-      return;
-
-    const keyMap = this;
-    const code = String.fromCharCode(event.which);
-    if (MODIFIERS[code]) return;
-
-    let map, mod = eventMod(event);
-
-    if (mod != 0) {
-      map = keyMap.map['*'+String.fromCharCode(mod)];
-      if (map === undefined) return;
-    } else {
-      map = keyMap.map;
-    }
-
-    map = map[code];
-    if (map === undefined) return;
-    Dom.stopEvent(event);
-
-    if (Array.isArray(map)) {
-      map[1](event, map[0]);
-    } else {
-      const cancel = ()=>{
-        window.removeEventListener('keydown', nextKey, true);
-        document.body.removeEventListener('pointerleave', cancel, true);
-      };
-      const nextKey = event =>{
-        const code = String.fromCharCode(event.which);
-        if (MODIFIERS[code] !== undefined) return;
-
-        mod = eventMod(event);
-
-        if (mod != 0) {
-          map = map['*'+String.fromCharCode(mod)];
-          if (map === undefined) {
-            cancel();
-            return;
-          }
-        }
-
-        map = map[code];
-        if (map && ! Array.isArray(map)) {
-          Dom.stopEvent(event);
-          return;
-        }
-        cancel();
-        if (map === undefined) return;
-        Dom.stopEvent(event);
-        map[1](event, map[0]);
-      };
-      window.addEventListener('keydown', nextKey, true);
-      document.body.addEventListener('pointerleave', cancel, true);
-    }
-  }
+  return KMFactory;
 });

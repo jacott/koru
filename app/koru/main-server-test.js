@@ -135,6 +135,7 @@ define((require, exports, module)=>{
   });
 
   const cleanup = ()=>{
-    dbBroker.db = util.thread.connection = util.thread.userId = null;
+    dbBroker.db = util.thread.connection = null;
+    util.thread.userId = undefined;
   };
 });

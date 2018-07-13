@@ -1,10 +1,10 @@
-define(function(require, exports, module) {
-  const Dom         = require('koru/dom');
-  const koru        = require('koru/main');
-  const makeSubject = require('koru/make-subject');
-  const Trace       = require('koru/trace');
+define((require, exports, module)=>{
+  const Dom             = require('koru/dom');
+  const koru            = require('koru/main');
+  const makeSubject     = require('koru/make-subject');
+  const Trace           = require('koru/trace');
   require('koru/ui/dom-ext');
-  const util        = require('koru/util');
+  const util            = require('koru/util');
 
   const {hasOwn} = util;
 
@@ -19,9 +19,156 @@ define(function(require, exports, module) {
   let runInstance; // used with async callbacks
 
   let debug_page = false;
-  Trace.debug_page = function (value) {
-    debug_page = value;
+  Trace.debug_page = value => {debug_page = value};
+
+  const exitEntry = (exit, oldSymbols, entry, pageRoute, page, then)=>{
+    const entryLen = entry.length;
+    let exitLen = exit.length;
+    const diff = exitLen - entryLen;
+    let index, sym, item;
+
+    for(--exitLen; exitLen >= 0; --exitLen) {
+      item = exit[exitLen];
+      if (item !== entry[exitLen - diff] ||
+          ((sym = item.routeVar) && oldSymbols[sym] !== pageRoute[sym]))
+        break;
+    }
+
+    for(index = 0;index < diff; ++index) {
+      const tpl = exit[index];
+      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
+    }
+
+    for(;index <= exitLen; ++index) {
+      const tpl = exit[index];
+      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
+    }
+
+    currentPage = exit[index];
+
+    index = index - diff - 1 ;
+    let runInstanceCopy = runInstance = {};
+    const callback = ()=>{
+      if (runInstanceCopy !== runInstance)
+        return; // route call overridden
+      if (index < 0) {
+        runInstanceCopy = null; // stop multi calling
+        then();
+        return true;
+      }
+      item = entry[index--];
+      currentPage = item;
+      if (item.async)
+        item.onBaseEntry(page, pageRoute, callback);
+      else {
+        item.onBaseEntry && item.onBaseEntry(page, pageRoute);
+        callback();
+      }
+    };
+    callback();
   };
+
+  const pathname = (template, pageRoute)=>{
+    let path = '';
+    if (template && template.route) {
+      path = routePath(template.route, pageRoute);
+      if (template.subPath)
+        path += '/'+template.subPath;
+    }
+
+    if (pageRoute.append)
+      return path + '/' + pageRoute.append;
+
+    return path;
+  };
+
+  const routePath = (route, pageRoute)=>{
+    if (! route) return '';
+
+    let {path} = route;
+    const routeVar = route.routeVar && pageRoute[route.routeVar];
+    if (routeVar)
+      path += '/' + routeVar;
+
+    if (! route.parent) return path;
+    return routePath(route.parent, pageRoute)+'/'+path;
+  };
+
+  const toPath = (page)=>{
+    let route;
+    if (page) {
+      if (page.noParentRoute)
+        return [];
+      route = page.$autoRender ? page.route : page;
+    }
+    const path = [];
+    while(route) {
+      path.push(route);
+      route = route.parent;
+    }
+    return path;
+  };
+
+  const templatePath = (template)=>{
+    return util.dasherize(template.name);
+  };
+
+  const onEntryFunc = (options)=> {
+    const autoOnEntry = (page, pageRoute)=>{
+      let parent, data;
+
+      if (options) {
+        if (typeof options.data ==='function') {
+          data = options.data.call(page, page, pageRoute);
+        } else {
+          data = options.data;
+        }
+      }
+      page._renderedPage = page.$autoRender(data||{});
+      if (options.insertPage) {
+        options.insertPage(page._renderedPage);
+      } else {
+        const {route} = page;
+
+        if (route && route.template) {
+          parent = document.getElementById(route.template.name);
+          if (parent)
+            parent = parent.getElementsByClassName('body')[0] || parent;
+        }
+        (parent || Route.pageParent || (Route.pageParent = document.body))
+          .appendChild(page._renderedPage);
+      }
+      if (options.focus) {
+        Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
+      }
+      options.afterRendered && options.afterRendered.call(page, page._renderedPage, pageRoute);
+    };
+    autoOnEntry.isAuto = true;
+    return autoOnEntry;
+  };
+
+  function autoOnExit() {
+    Dom.remove(this._renderedPage || document.getElementById(this.name));
+  }
+  autoOnExit.isAuto = true;
+
+  function addCommon(route, module, template, options) {
+    if (module) koru.onunload(module, ()=>{route.removeTemplate(template, options)});
+    options = options || {};
+    let {path} = options;
+    if (path == null) path = templatePath(template);
+    if (route.routes.path)
+      throw new Error(`Path already exists! ${path} for template ${this.path}`);
+    route.routes[path] = template;
+    template.route = route;
+    template.subPath = path;
+    template.routeOptions = options;
+
+    if (options.defaultPage)
+      route.defaultPage = template;
+
+    return options;
+  }
 
   class Route {
     constructor(path, template, parent, options) {
@@ -335,8 +482,6 @@ define(function(require, exports, module) {
     }
 
 
-
-
     addTemplate(module, template, options) {
       if (module && ! ('exports' in module)) {
         options = template;
@@ -356,9 +501,9 @@ define(function(require, exports, module) {
       let path = options && options.path;
       if (path == null) path = templatePath(template);
       this.routes[path] = null;
-      if (template.onEntry && template.onEntry.name === 'autoOnEntry')
+      if (template.onEntry != null && template.onEntry.isAuto)
         template.onEntry = null;
-      if (template.onExit && template.onExit.name === 'autoOnExit')
+      if (template.onExit != null && template.onExit.isAuto)
         template.onExit = null;
     }
 
@@ -426,158 +571,10 @@ define(function(require, exports, module) {
 
   Route.history = window.history;
 
-  function addCommon(route, module, template, options) {
-    if (module) koru.onunload(module, function () {
-      route.removeTemplate(template, options);
-    });
-    options = options || {};
-    let {path} = options;
-    if (path == null) path = templatePath(template);
-    if (route.routes.path)
-      throw new Error(`Path already exists! ${path} for template ${this.path}`);
-    route.routes[path] = template;
-    template.route = route;
-    template.subPath = path;
-    template.routeOptions = options;
-
-    if (options.defaultPage)
-      route.defaultPage = template;
-
-    return options;
-  }
-
   Object.assign(Route, {
     root: new Route(),
     pathname,
   });
-
-  function exitEntry(exit, oldSymbols, entry, pageRoute, page, then) {
-    const entryLen = entry.length;
-    let exitLen = exit.length;
-    const diff = exitLen - entryLen;
-    let index, sym, item;
-
-    for(--exitLen; exitLen >= 0; --exitLen) {
-      item = exit[exitLen];
-      if (item !== entry[exitLen - diff] ||
-          ((sym = item.routeVar) && oldSymbols[sym] !== pageRoute[sym]))
-        break;
-    }
-
-    for(index = 0;index < diff; ++index) {
-      const tpl = exit[index];
-      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
-    }
-
-    for(;index <= exitLen; ++index) {
-      const tpl = exit[index];
-      tpl.onBaseExit && tpl.onBaseExit(page, pageRoute);
-    }
-
-    currentPage = exit[index];
-
-    index = index - diff - 1 ;
-    let runInstanceCopy = runInstance = {};
-    function callback() {
-      if (runInstanceCopy !== runInstance)
-        return; // route call overridden
-      if (index < 0) {
-        runInstanceCopy = null; // stop multi calling
-        then();
-        return true;
-      }
-      item = entry[index--];
-      currentPage = item;
-      if (item.async)
-        item.onBaseEntry(page, pageRoute, callback);
-      else {
-        item.onBaseEntry && item.onBaseEntry(page, pageRoute);
-        callback();
-      }
-    }
-    callback();
-  }
-
-  function pathname(template, pageRoute) {
-    let path = '';
-    if (template && template.route) {
-      path = routePath(template.route, pageRoute);
-      if (template.subPath)
-        path += '/'+template.subPath;
-    }
-
-    if (pageRoute.append)
-      return path + '/' + pageRoute.append;
-
-    return path;
-  }
-
-  function routePath(route, pageRoute) {
-    if (! route) return '';
-
-    let {path} = route;
-    const routeVar = route.routeVar && pageRoute[route.routeVar];
-    if (routeVar)
-      path += '/' + routeVar;
-
-    if (! route.parent) return path;
-    return routePath(route.parent, pageRoute)+'/'+path;
-  }
-
-  function toPath(page) {
-    let route;
-    if (page) {
-      if (page.noParentRoute)
-        return [];
-      route = page.$autoRender ? page.route : page;
-    }
-    const path = [];
-    while(route) {
-      path.push(route);
-      route = route.parent;
-    }
-    return path;
-  }
-
-  function templatePath(template) {
-    return util.dasherize(template.name);
-  }
-
-  function onEntryFunc(options) {
-    return function autoOnEntry(page, pageRoute) {
-      let parent, data;
-
-      if (options) {
-        if (typeof options.data ==='function') {
-          data = options.data.call(page, page, pageRoute);
-        } else {
-          data = options.data;
-        }
-      }
-      page._renderedPage = page.$autoRender(data||{});
-      if (options.insertPage) {
-        options.insertPage(page._renderedPage);
-      } else {
-        const {route} = page;
-
-        if (route && route.template) {
-          parent = document.getElementById(route.template.name);
-          if (parent)
-            parent = parent.getElementsByClassName('body')[0] || parent;
-        }
-        (parent || Route.pageParent || (Route.pageParent = document.body))
-          .appendChild(page._renderedPage);
-      }
-      if (options.focus) {
-        Dom.dontFocus || Dom.focus(page._renderedPage, options.focus);
-      }
-      options.afterRendered && options.afterRendered.call(page, page._renderedPage, pageRoute);
-    };
-  }
-
-  function autoOnExit() {
-    Dom.remove(this._renderedPage || document.getElementById(this.name));
-  }
 
   return Route;
 });

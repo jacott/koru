@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const Geometry        = require('koru/geometry');
   const TH              = require('./test-helper');
@@ -6,17 +6,11 @@ isClient && define(function (require, exports, module) {
   const {stub, spy, onEnd, util} = TH;
 
   const sut  = require('./eyedropper');
-  let v = null;
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v = {};
-    });
-
     afterEach(()=>{
       sut.options = null;
       TH.domTearDown();
-      v = null;
     });
 
     test("pick one option", ()=>{
@@ -162,10 +156,11 @@ isClient && define(function (require, exports, module) {
 
       sut.getPointColors(bbox.left + 1, bbox.top + 1, callback);
 
+      let func;
       assert.calledWith(
-        sut.getColorFromImage, dd, bbox.left + 1, bbox.top + 1, TH.match(f => v.f =f));
+        sut.getColorFromImage, dd, bbox.left + 1, bbox.top + 1, TH.match(f => func =f));
 
-      v.f(null, 'imageColor');
+      func(null, 'imageColor');
 
       assert.calledWith(callback, null, {
         textColor: null,
@@ -205,10 +200,11 @@ isClient && define(function (require, exports, module) {
 
       sut.getPointColors(bbox.left + 1, bbox.top + 1, callback);
 
+      let func;
       assert.calledWith(
-        sut.getColorFromImage, Dom('svg'), bbox.left + 1, bbox.top + 1, TH.match(f => v.f =f));
+        sut.getColorFromImage, Dom('svg'), bbox.left + 1, bbox.top + 1, TH.match(f => func = f));
 
-      v.f(null, 'imageColor');
+      func(null, 'imageColor');
 
       assert.calledWith(callback, null, {
         textColor: {r: 244, g: 163, b: 194, a: 1},

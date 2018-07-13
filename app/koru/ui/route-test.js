@@ -3,10 +3,10 @@ isClient && define((require, exports, module)=>{
    * Route is a paginging system within a one page app. It manages
    * creating and destroying pages and recording history.
    **/
-  const api   = require('koru/test/api');
-  const Dom   = require('../dom');
-  const koru  = require('../main');
-  const TH    = require('./test-helper');
+  const api             = require('koru/test/api');
+  const Dom             = require('../dom');
+  const koru            = require('../main');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, intercept} = TH;
 

@@ -1,16 +1,15 @@
-isClient && define(function (require, exports, module) {
-  const Dom  = require('../dom');
-  const util = require('../util');
-  const sut  = require('./key-map');
-  const TH   = require('./test-helper');
+isClient && define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const util            = require('../util');
+  const sut             = require('./key-map');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
 
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp () {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach( ()=>{
       v.km = sut({
         foo: ["X", v.foo = stub()],
         bar: ["QX1", v.bar = stub()],
@@ -19,22 +18,21 @@ isClient && define(function (require, exports, module) {
         foo2: [sut.ctrl+'A', v.foo2 = stub()],
         foo3: [sut.meta+'A', sut.alt+'B', sut.meta+'B', v.foo3 = stub()],
       });
-    },
+    });
 
-    tearDown () {
+    afterEach( ()=>{
       TH.domTearDown();
-      v = null;
-    },
+    });
 
-    "test key codes" () {
+    test("key codes",  ()=>{
       assert.same(sut.left, '%');
       assert.same(sut.up, '&');
       assert.same(sut.down, '(');
       assert.same(sut.right, '\'');
       assert.same(sut.del, '.');
-    },
+    });
 
-    "test config" () {
+    test("config",  ()=>{
       assert.equals(v.km.map, {
         X: ['foo', v.foo],
         Q: {
@@ -45,9 +43,9 @@ isClient && define(function (require, exports, module) {
         '*\u0004': {B: ['foo3', v.foo3]},
         '*\u0008': {A: ['foo3', v.foo3], B: ['foo3', v.foo3]}
       });
-    },
+    });
 
-    "test getTitle" () {
+    test("getTitle",  ()=>{
       assert.same(v.km.getTitle('foo desc', 'foo'), "foo desc [X]");
       assert.same(v.km.getTitle('no key desc', 'nk'), "no key desc");
 
@@ -85,9 +83,9 @@ isClient && define(function (require, exports, module) {
       assert.same(v.km.getTitle('rbkt', 'rbkt'), "rbkt []]");
       assert.same(v.km.getTitle('bslash', 'bslash'), "bslash [\\]");
       assert.same(v.km.getTitle('grave', 'grave'), "grave [`]");
-    },
+    });
 
-    "test mapCtrlToMeta"() {
+    test("mapCtrlToMeta", ()=>{
       const f = ()=>{};
       const km = sut({
         f1: [sut.ctrl+"A", f],
@@ -110,30 +108,30 @@ isClient && define(function (require, exports, module) {
         '*\u0008': {A: ['f1', f], X: ['f3', f]},
         '*\u0009': {C: ['f3', f]},
         '*\u000a': {D: ['f4', f]}});
-    },
+    });
 
-    "test single key" () {
+    test("single key",  ()=>{
       const event = TH.buildEvent('keydown', {which: 88});
       v.km.exec(event);
       assert.calledOnceWith(v.foo, TH.match(ev => ev.which === 88), 'foo');
       refute.called(v.bar);
-    },
+    });
 
-    "test multi key" () {
+    test("multi key",  ()=>{
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown("X1");
       assert.calledOnceWith(v.bar, TH.match(ev => ev.type === 'keydown' && ev.which === 49), 'bar');
       refute.called(v.bar2);
-    },
+    });
 
-    "test modifier keys" () {
+    test("modifier keys",  ()=>{
       v.km.exec(TH.buildEvent('keydown', {which: 81}));
       TH.keydown('2', {shiftKey: true, ctrlKey: true});
       assert.calledOnce(v.mbar2);
       refute.called(v.bar2);
-    },
+    });
 
-    "test secondary keys"() {
+    test("secondary keys", ()=>{
       v.km.exec(TH.buildEvent('keydown', {which: 'B'.charCodeAt(0), metaKey: true}));
       assert.calledOnce(v.foo3);
       v.km.exec(TH.buildEvent('keydown', {which: 'A'.charCodeAt(0), metaKey: true}));
@@ -141,14 +139,14 @@ isClient && define(function (require, exports, module) {
       v.km.exec(TH.buildEvent('keydown', {which: 'B'.charCodeAt(0), altKey: true}));
       v.km.exec(TH.buildEvent('keydown', {which: 'A'.charCodeAt(0), altKey: true}));
       assert.calledThrice(v.foo3);
-    },
+    });
 
-    "test modifier first key" () {
+    test("modifier first key",  ()=>{
       v.km.exec(TH.buildEvent('keydown', {ctrlKey: true, which: 'A'.charCodeAt(0)}));
       assert.calledOnce(v.foo2);
-    },
+    });
 
-    "test invalid modifier key" () {
+    test("invalid modifier key",  ()=>{
       const elm = Dom.h({button: ''});
       document.body.appendChild(elm);
       elm.addEventListener('keydown', v.stub = stub());
@@ -160,9 +158,9 @@ isClient && define(function (require, exports, module) {
       TH.keydown(elm, 'X');
       assert.calledTwice(v.stub);
       refute.called(v.foo);
-    },
+    });
 
-    "test input focused" () {
+    test("input focused",  ()=>{
       spy(Dom, 'matches');
       document.body.appendChild(Dom.h({input: '', $type: 'text'}));
       assert.dom('input', function () {
@@ -175,6 +173,6 @@ isClient && define(function (require, exports, module) {
         v.km.exec(event, 'ignoreFocus');
         assert.called(v.foo);
       });
-    },
+    });
   });
 });

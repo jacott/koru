@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   /**
    * Automatically manage a list of Elements matching a {#koru/model/query}.
 
@@ -14,15 +14,14 @@ isClient && define(function (require, exports, module) {
   const {endMarker$, private$} = require('koru/symbols');
 
   const AutoList = require('./auto-list');
-  let v = null;
+
+  let v = {};
 
   const createBook = (i, opts)=>v[`b${i}`] =
         v.Book.create(Object.assign({title: `b${i}`, pageCount: i*100}, opts));
 
-  TH.testCase(module, {
-    setUp() {
-      api.module();
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       class Book extends Model.BaseModel {
       }
       v.Book = Book;
@@ -37,16 +36,16 @@ isClient && define(function (require, exports, module) {
           children: [["", "title"]]
         }]
       });
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Dom.removeChildren(document.body);
       Dom.Test = undefined;
       Model._destroyModel('Book', 'drop');
-      v = null;
-    },
+      v = {};
+    });
 
-    "test new"() {
+    test("new", ()=>{
       /**
        * Build a new AutoList
        *
@@ -100,9 +99,9 @@ isClient && define(function (require, exports, module) {
         assert.dom(':last-child', 'The Great Hunt');
       });
       //]
-    },
+    });
 
-    "test no query and addOrder"() {
+    test("no query and addOrder", ()=>{
       const container = Dom.h({});
       const list = new AutoList({
         template: {$autoRender(data) {return Dom.h({div: ''+data.n})}},
@@ -128,9 +127,9 @@ isClient && define(function (require, exports, module) {
         assert.dom(':last-child', 'doc2');
         assert.same(list.thisNode(doc2).value, 3);
       });
-    },
+    });
 
-    "test basic arguments"() {
+    test("basic arguments", ()=>{
       const container = Dom.h({});
       new AutoList({
         query: {forEach(func) {func({n: 2}), func({n: 1})}},
@@ -144,9 +143,9 @@ isClient && define(function (require, exports, module) {
         assert.dom(':first-child', '1');
         assert.dom(':last-child', '2');
       });
-    },
+    });
 
-    "test observeUpdates"() {
+    test("observeUpdates", ()=>{
       const {Book, row} = v;
 
       const container = Dom.h({});
@@ -173,10 +172,10 @@ isClient && define(function (require, exports, module) {
       v.b1.$update('title', 'b9');
 
       assert.calledWith(observeUpdates, list, TH.matchModel(v.b1), 'removed');
-    },
+    });
 
 
-    "test changeOptions"() {
+    test("changeOptions", ()=>{
       /**
        * Rebuild list based on a different options. It trys to preserve DOM elements where possible.
 
@@ -216,9 +215,9 @@ isClient && define(function (require, exports, module) {
         refute(list.elm(b4)); // filtered out
       });
       //]
-    },
+    });
 
-    "test updateEntry"() {
+    test("updateEntry", ()=>{
       /**
        * Explicitly update an entry in the list. This method is called automatically when the
        * query.onChange callback is is used; i.e. when an entry is changed.
@@ -264,9 +263,9 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(observeUpdates, list, b1, 'removed');
       });
       //]
-    },
+    });
 
-    "test elm"() {
+    test("elm", ()=>{
       /**
        * Return the elm for a document.
 
@@ -305,9 +304,9 @@ isClient && define(function (require, exports, module) {
       assert.same(list.elm(v.b5), null);
       assert.same(list.elm(v.b5, 'render'), container.lastChild);
       assert.same(list.limit, 3);
-    },
+    });
 
-    "test limit"() {
+    test("limit", ()=>{
       /**
        * A limit of `n` can be given to only display the first (ordered) `n` entries.
        *
@@ -333,10 +332,10 @@ isClient && define(function (require, exports, module) {
       list.limit = 2;
       assert.equals(list.limit, 2);
       assert.same(container.children.length, 2);
-    },
+    });
 
-    "limits": {
-      setUp() {
+    group("limits", ()=>{
+      beforeEach(()=>{
         for(let i = 1; i < 6; ++i) {
           createBook(i);
         }
@@ -348,9 +347,9 @@ isClient && define(function (require, exports, module) {
             overLimit: v.overLimit = stub(),
           });
         };
-      },
+      });
 
-      "test elm not rendered"() {
+      test("elm not rendered", ()=>{
         const list = v.newList(2);
 
         assert.same(list.elm(v.b4), null);
@@ -361,9 +360,9 @@ isClient && define(function (require, exports, module) {
         assertVisible(list, [1,2,3,4], [5]);
 
         assert.same(list.limit, 4);
-      },
+      });
 
-      "test increase limit"() {
+      test("increase limit", ()=>{
         createBook(6);
         const list = v.newList(3);
         list.limit = 5;
@@ -371,9 +370,9 @@ isClient && define(function (require, exports, module) {
 
         list.limit = 10;
         assertVisible(list, [1,2,3,4,5,6]);
-      },
+      });
 
-      "test decrease limit"() {
+      test("decrease limit", ()=>{
         const list = v.newList(3);
         assert.same(list.limit, 3);
 
@@ -394,22 +393,22 @@ isClient && define(function (require, exports, module) {
         v.b1.$remove();
         assertVisible(list, [6,2,3], [4,5]);
         assert.calledOnce(v.overLimit);
-      },
+      });
 
-      "test remove last visible"() {
+      test("remove last visible", ()=>{
         const list = v.newList(3);
         v.b3.$remove();
         assertVisible(list, [1,2,4], [5]);
-      },
+      });
 
-      "test remove all visible"() {
+      test("remove all visible", ()=>{
         const list = v.newList(4);
         v.b3.$remove();
         v.b1.$remove();
         assertVisible(list, [2,4,5]);
-      },
+      });
 
-      "test remove invisible"() {
+      test("remove invisible", ()=>{
         const list = v.newList(3);
         createBook(6);
         createBook(7);
@@ -420,27 +419,27 @@ isClient && define(function (require, exports, module) {
         createBook(2.5);
 
         assertVisible(list, [1,2,2.5], [3,4,5]);
-      },
+      });
 
-      "test last visible ticket value not important"() {
+      test("last visible ticket value not important", ()=>{
         const list = v.newList(3);
         v.b3.pageCount = 50;
         createBook(6, {pageCount: v.b1.pageCount+5});
 
         v.b3.$reload();
         assertVisible(list, [1,6,2], [3,4,5]);
-      },
+      });
 
-      "test move up"() {
+      test("move up", ()=>{
         const list = v.newList(3);
         v.b5.$update('pageCount', v.b1.pageCount+5);
         assertVisible(list, [1,5,2], [3,4]);
 
         v.b2.$remove(); // check lastVis
         assertVisible(list, [1,5,3], [4]);
-      },
+      });
 
-      "test move down"() {
+      test("move down", ()=>{
         const list = v.newList(3);
         v.b2.$update('pageCount', v.b4.pageCount+7);
         assertVisible(list, [1,3,4], [2,5]);
@@ -450,9 +449,9 @@ isClient && define(function (require, exports, module) {
 
         v.b3.$remove(); // check lastVis
         assertVisible(list, [1,4,2], [5]);
-      },
+      });
 
-      "test move within visible to visible"() {
+      test("move within visible to visible", ()=>{
         const list = v.newList(3);
         v.b1.$update('pageCount', v.b2.pageCount+5);
         v.b2.$update('pageCount', v.b3.pageCount+5);
@@ -460,15 +459,15 @@ isClient && define(function (require, exports, module) {
 
         v.b2.$remove(); // check lastVis
         assertVisible(list, [1,3,4], [5]);
-      },
+      });
 
-      "test move lastVis to lastVis"() {
+      test("move lastVis to lastVis", ()=>{
         const list = v.newList(3);
         v.b3.$update('pageCount', v.b3.pageCount+.5);
         assertVisible(list, [1,2,3], [4,5]);
-      },
+      });
 
-      "test move within hidden to hidden"() {
+      test("move within hidden to hidden", ()=>{
         const list = v.newList(2);
         assertVisible(list, [1,2], [3,4,5]);
         v.b4.$update('pageCount', v.b5.pageCount+10);
@@ -477,58 +476,58 @@ isClient && define(function (require, exports, module) {
 
         v.b2.$remove(); // check lastVis
         assertVisible(list, [1,5], [3,4]);
-      },
+      });
 
-      "test move last visible up"() {
+      test("move last visible up", ()=>{
         const list = v.newList(3);
         v.b3.$update('pageCount', v.b1.pageCount-5); // move away from t2
         assertVisible(list, [3,1,2], [4,5]);
 
         v.b2.$remove(); // check lastVis
         assertVisible(list, [3,1,4], [5]);
-      },
+      });
 
-      "test move last visible, last node up"() {
+      test("move last visible, last node up", ()=>{
         const list = v.newList(5);
         v.b5.$update('pageCount', v.b3.pageCount-5); // move away from t2
         assertVisible(list, [1,2,5,3,4]);
 
         createBook(6, {pageCount: v.b1.pageCount+5});
         assertVisible(list, [1,6,2,5,3], [4]);
-      },
+      });
 
-      "test move last visible to last"() {
+      test("move last visible to last", ()=>{
         const list = v.newList(3);
         v.b3.$update('pageCount', v.b5.pageCount+5);
         assertVisible(list, [1,2,4], [5,3]);
 
         v.b4.$remove(); // check lastVis
         assertVisible(list, [1,2,5], [3]);
-      },
+      });
 
-      "test move last visible down"() {
+      test("move last visible down", ()=>{
         const list = v.newList(3);
         v.b3.$update('pageCount', v.b4.pageCount+5);
         assertVisible(list, [1,2,4], [3,5]);
 
         v.b4.$remove(); // check lastVis
         assertVisible(list, [1,2,3], [5]);
-      },
+      });
 
-      "test append"() {
+      test("append", ()=>{
         const list = v.newList(3);
         createBook(6);
         assertVisible(list, [1,2,3], [4,5,6]);
-      },
+      });
 
-      "test delete last visible"() {
+      test("delete last visible", ()=>{
         const list = v.newList(5);
         v.b5.$remove();
         assertVisible(list, [1,2,3,4]);
-      },
-    },
+      });
+    });
 
-    "test comment with changeOptions"() {
+    test("comment with changeOptions", ()=>{
       const container = Dom.h({div: [
         'before', {$comment$: 'start'}, {$comment$: 'end'}, 'after',
       ]});
@@ -552,9 +551,9 @@ isClient && define(function (require, exports, module) {
       assert.equals(util.map(
         container.childNodes, n => `${n.nodeType}:${n.data || n.textContent}`),
                     ['3:before', '8:start', '1:b2', '8:end', '3:after']);
-    },
+    });
 
-    "test updateAllTags with changeOptions"() {
+    test("updateAllTags with changeOptions", ()=>{
       api.protoMethod('changeOptions');
 
       const {row} = v;
@@ -591,9 +590,9 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('div+div', 'b4');
       });
-    },
+    });
 
-    "test start, end comment"() {
+    test("start, end comment", ()=>{
       const new_AutoList = api.new();
 
       const {Book, row} = v;
@@ -622,9 +621,9 @@ isClient && define(function (require, exports, module) {
                       ['3:before', '8:start', '1:b1', '1:b4', '1:b5', '8:end', '3:after']);
       });
       //]
-    },
+    });
 
-    "test observing"() {
+    test("observing", ()=>{
       const {Book, row} = v;
 
       [1,2,3].forEach(i => {createBook(i)});
@@ -669,9 +668,9 @@ isClient && define(function (require, exports, module) {
         v.b3.$update('title', 'b300');
         assert.dom(':first-child', 'b300');
       });
-    },
+    });
 
-    "test stop"() {
+    test("stop", ()=>{
       /**
        * Stop observing model changes.
 
@@ -705,7 +704,7 @@ isClient && define(function (require, exports, module) {
       assert.called(v.stop);
       assert.called(list.stop);
       list.stop(); // should be harmless to call again
-    },
+    });
   });
 
   const assertVisible = (list, shown, hidden=[]) => {

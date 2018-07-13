@@ -1,32 +1,32 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const koru = require('koru');
   const Dom  = require('koru/dom');
   const TH   = require('koru/ui/test-helper');
   const util = require('koru/util');
 
-  const {stub, spy, onEnd, intercept} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const sut  = require('./zoom-drag');
-  var v;
 
-  const {near} = TH.match;
+  const {near} = m;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.target = Dom.h({
         $style: 'position:absolute;top:51px;left:17px;width:400px;height:100px;'});
       document.body.appendChild(v.target);
       stub(v.target, 'setPointerCapture');
       stub(v.target, 'releasePointerCapture');
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+      v = {};
+    });
 
-    "test click"() {
+    test("click", ()=>{
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123+17, clientY: 45+51});
@@ -47,9 +47,9 @@ isClient && define(function (require, exports, module) {
 
       assert.equals(v.geom, {
         scale: 1, midX: 123, midY: 45, adjustX: 0, adjustY: 0});
-    },
+    });
 
-    "test two pointerdown same id"() {
+    test("two pointerdown same id", ()=>{
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
         pointerId: 1, clientX: 123, clientY: 45});
@@ -64,9 +64,9 @@ isClient && define(function (require, exports, module) {
       TH.trigger(target, 'pointerup', {pointerId: 1});
 
       assert.isTrue(v.click);
-    },
+    });
 
-    "test drag"() {
+    test("drag", ()=>{
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = new window.PointerEvent('pointerdown', {
@@ -109,10 +109,10 @@ isClient && define(function (require, exports, module) {
         scale: 1, midX: 123-17, midY: 145-51, adjustX: -23, adjustY: -90});
 
       assert.isFalse(v.click);
-    },
+    });
 
-    "wheelZoom": {
-      setUp() {
+    group("wheelZoom", ()=>{
+      beforeEach(()=>{
         v.now = Date.now();
         intercept(util, 'dateNow', ()=>v.now);
         stub(koru, 'afTimeout').returns(stub());
@@ -129,9 +129,9 @@ isClient && define(function (require, exports, module) {
             }
           }, opts)));
         };
-      },
+      });
 
-      "test modifier prevents timeout"() {
+      test("modifier prevents timeout", ()=>{
         const {raf} = v;
         const isFinished = stub(ev => ev.foo == 2);
         v.start({isFinished});
@@ -154,15 +154,15 @@ isClient && define(function (require, exports, module) {
         assert.equals(v.geom, {
           scale: near(1.22), midX: 84, midY: 104, adjustX: 0, adjustY: 0});
 
-        assert.calledWith(isFinished, TH.match(ev => ev.which = 16));
+        assert.calledWith(isFinished, m(ev => ev.which = 16));
 
-        assert.calledWith(isFinished, TH.match(ev => ev.clientX == 101));
-      },
+        assert.calledWith(isFinished, m(ev => ev.clientX == 101));
+      });
 
-      "test timeout"() {
+      test("timeout", ()=>{
         v.start();
         const {target, onChange, raf} = v;
-        assert.calledWith(koru.afTimeout, TH.match.func, 200);
+        assert.calledWith(koru.afTimeout, m.func, 200);
         TH.trigger(target, 'wheel', {
           deltaMode: 0, deltaY: -79.5, clientX: 117, clientY: 155});
 
@@ -189,7 +189,7 @@ isClient && define(function (require, exports, module) {
 
         koru.afTimeout.yield();
 
-        assert.calledWith(koru.afTimeout, TH.match.func, 193);
+        assert.calledWith(koru.afTimeout, m.func, 193);
 
         assert.same(v.geom, undefined);
 
@@ -198,9 +198,9 @@ isClient && define(function (require, exports, module) {
 
         assert.equals(v.geom, {
           scale: near(0.903, 0.001), midX: 100, midY: 104, adjustX: 0, adjustY: 0});
-      },
+      });
 
-      "test mouseMove when wheelZoom"() {
+      test("mouseMove when wheelZoom", ()=>{
         v.start();
         stub(window, 'cancelAnimationFrame');
         TH.trigger(v.target, 'wheel', {deltaMode: 1, deltaY: 2, clientX: 117, clientY: 155});
@@ -214,10 +214,10 @@ isClient && define(function (require, exports, module) {
 
         TH.trigger(v.target, 'wheel', {deltaY: 10.5, clientX: 100, clientY: 104});
         refute.called(v.raf);
-      },
-    },
+      });
+    });
 
-    "test touch pinchZoom"() {
+    test("touch pinchZoom", ()=>{
       spy(Dom, 'stopEvent');
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
@@ -241,7 +241,7 @@ isClient && define(function (require, exports, module) {
       TH.trigger(target, 'touchmove', {test: 1, touches: [
         {clientX: 123+17, clientY: 45+51}, {clientX: 115+17, clientY: 85+51}
       ]});
-      assert.calledWith(Dom.stopEvent, TH.match(e => e.test === 1));
+      assert.calledWith(Dom.stopEvent, m(e => e.test === 1));
 
       raf.yieldAll().reset();
       assert.calledWith(onChange, {
@@ -261,9 +261,9 @@ isClient && define(function (require, exports, module) {
         scale: near(0.298, 0.001), midX: 111.5, midY: 100, adjustX: -4, adjustY: -30});
 
       assert.isFalse(v.click);
-    },
+    });
 
-    "test pinchZoom"() {
+    test("pinchZoom", ()=>{
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
@@ -304,9 +304,9 @@ isClient && define(function (require, exports, module) {
         scale: near(0.298, 0.001), midX: 111.5, midY: 100, adjustX: -4, adjustY: -30});
 
       assert.isFalse(v.click);
-    },
+    });
 
-    "test lostpointercapture"() {
+    test("lostpointercapture", ()=>{
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
@@ -328,11 +328,11 @@ isClient && define(function (require, exports, module) {
 
       TH.trigger(target, 'lostpointercapture', {pointerId: 0});
 
-      assert.calledWith(onComplete, TH.match.object, {click: false, cancelled: true});
-    },
+      assert.calledWith(onComplete, m.object, {click: false, cancelled: true});
+    });
 
 
-    "test constrainZoom"() {
+    test("constrainZoom", ()=>{
       const raf = stub(window, 'requestAnimationFrame').returns(123);
       const {target} = v;
       const event = Dom.buildEvent('pointerdown', {
@@ -358,6 +358,6 @@ isClient && define(function (require, exports, module) {
       handle.stop();
 
       assert.calledWith(target.releasePointerCapture, 1);
-    },
+    });
   });
 });

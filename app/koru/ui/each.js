@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const AutoList = require('koru/ui/auto-list');
-  const Dom      = require('../dom');
-  const Query    = require('../model/query');
-  const util     = require('../util');
+define((require, exports, module)=>{
+  const AutoList        = require('koru/ui/auto-list');
+  const Dom             = require('../dom');
+  const Query           = require('../model/query');
+  const util            = require('../util');
 
   const {private$, endMarker$} = require('koru/symbols');
   const $ = Dom.current;
