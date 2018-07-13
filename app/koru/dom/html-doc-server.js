@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom/base');
   const htmlEncode      = require('koru/dom/html-encode');
@@ -22,9 +22,6 @@ define(function(require, exports, module) {
   cssParser.registerNestingOperators('>', '+', '~');
   cssParser.registerAttrEqualityMods('^', '$', '*', '~');
   cssParser.enableSubstitutes();
-
-  koru.onunload(module, () => global.document = null);
-
 
   Object.defineProperty(global, 'document', {configurable: true, get() {
     const key = util.Fiber.current || global;
@@ -265,12 +262,6 @@ define(function(require, exports, module) {
     COMMENT_NODE,
     DOCUMENT_FRAGMENT_NODE,
   });
-
-  function parseCss(css) {
-    return [{
-      tag: css.split.toUpperCase(),
-    }];
-  }
 
   class DocumentFragment extends Element {
     constructor() {
@@ -554,6 +545,7 @@ define(function(require, exports, module) {
       });
     });
 
+  koru.onunload(module, () => global.document = null);
 
   return Document;
 });

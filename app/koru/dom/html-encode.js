@@ -1,6 +1,4 @@
-define(function(require, exports, module) {
-  const util  = require('koru/util');
-
+define(()=>{
   const NAME_TO_CHAR = {
     nbsp: "\xa0",
     iexcl: "¡",

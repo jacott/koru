@@ -1,1 +1,1 @@
-define(function() {return window.document.constructor});
+define(()=> window.document.constructor);

@@ -1,28 +1,28 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Utilities for interacting with the
    * [Document Object Model](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model)
    *
    **/
-  const Dom             = require('koru/dom');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
 
-  var v;
+  const Dom = require('koru/dom');
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       api.module({subjectModule: module.get('koru/dom')});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       document.body.textContent = '';
-      v = null;
-    },
+      v = {};
+    });
 
-    "test Dom cssQuery"() {
+    test("Dom cssQuery", ()=>{
       document.body.appendChild(v.result = Dom.h({"class": 'foo',
                                                   section: {span: "Hello"}}));
 
@@ -36,22 +36,22 @@ define(function (require, exports, module) {
         assert.same(Dom('span', Dom('.bar')).textContent, "Goodbye");
       } else
         assert("no server css query yet");
-    },
+    });
 
-    "test nodeIndex"() {
+    test("nodeIndex", ()=>{
       const node = Dom.h({div: ['one', 'two',  'three']});
 
       assert.same(Dom.nodeIndex(node.firstChild), 0);
       assert.same(Dom.nodeIndex(node.childNodes[1]), 1);
       assert.same(Dom.nodeIndex(node.childNodes[2]), 2);
-    },
+    });
 
-    "test walkNode"() {
+    test("walkNode", ()=>{
       var node = Dom.h({div: ['one', {span: ['two', '2.5']}, 'three', {B: [{I: 'i'}, {U: 'not me'}, {div: 'not here'}]}, 'nor me']});
 
       let ans = "";
 
-      Dom.walkNode(node, function (node, i) {
+      Dom.walkNode(node, (node, i)=>{
         ans += node.nodeType === document.TEXT_NODE ? node.textContent : node.tagName;
         switch (node.tagName ) {
         case 'I': return false; // don't visit
@@ -62,9 +62,9 @@ define(function (require, exports, module) {
       });
 
       assert.same(ans, "oneSPANtwo2.5threeBIU1");
-    },
+    });
 
-    "test htmlToJson"() {
+    test("htmlToJson", ()=>{
       /**
        * Convert an `Element` to a plain `object`
        **/
@@ -87,9 +87,9 @@ define(function (require, exports, module) {
       assertConvert(['one', 'two', 'three']);
       assertConvert({input: [], name: 'email'});
       assertConvert({input: ''});
-    },
+    });
 
-    "test more Dom.h"() {
+    test("more Dom.h", ()=>{
       assert.sameHtml(
         Dom.h({name: 'bar', id: "s123", section: {span: "Goodbye"}}).outerHTML,
         '<section name="bar" id="s123"><span>Goodbye</span></section>');
@@ -117,9 +117,9 @@ define(function (require, exports, module) {
       assert.exception(_=>{
         Dom.h({div: 'bar', ul: 'fuz'});
       }, {message: 'Ambiguous markup'});
-    },
+    });
 
-    "test svg Dom.h"() {
+    test("svg Dom.h", ()=>{
       const elm = Dom.h({div: {class: "foo bar", svg: [{
         path: [], d: 'M0,0 10,10Z'
       }, {
@@ -149,13 +149,13 @@ define(function (require, exports, module) {
       }, {
         foreignObject: {xmlns: 'http://www.w3.org/1999/xhtml', div: 'hello'}
       }]}});
-    },
+    });
 
-    "test escapeHTML"() {
+    test("escapeHTML", ()=>{
       assert.same(Dom.escapeHTML('<Testing>&nbsp;'), '&lt;Testing&gt;&amp;nbsp;');
-    },
+    });
 
-    "test Dom.h"() {
+    test("Dom.h", ()=>{
       /**
        * Convert an `object` into a html node.
        *
@@ -188,9 +188,9 @@ define(function (require, exports, module) {
       if (isClient) {
         assert(Dom.h({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS) instanceof window.SVGPathElement);
       }
-    },
+    });
 
-    "test classList"() {
+    test("classList", ()=>{
       var elm = document.createElement('div');
 
       refute(Dom.hasClass(null, 'foo'));
@@ -217,6 +217,6 @@ define(function (require, exports, module) {
 
       refute(Dom.toggleClass(elm, 'bar'));
       refute(Dom.hasClass(elm, 'bar'));
-    },
+    });
   });
 });

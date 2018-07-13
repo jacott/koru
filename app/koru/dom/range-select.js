@@ -1,10 +1,10 @@
-define(function(require, exports, module) {
-  const util = require('koru/util');
-  const Dom  = require('./dom-client');
+define((require)=>{
+  const util            = require('koru/util');
+  const Dom             = require('./dom-client');
 
   const empty = {};
 
-  Dom.selectRange = function (row, event, selectClass) {
+  Dom.selectRange = (row, event, selectClass)=>{
     selectClass = selectClass || 'selected';
     event = event || empty;
     const parent = row.parentNode;

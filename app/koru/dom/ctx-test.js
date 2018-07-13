@@ -1,39 +1,42 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   'use strict';
   /**
    * Ctx (Context) is used to track
    * [DOM elements](https://developer.mozilla.org/en-US/docs/Web/API/Node)
    **/
-  const TH   = require('koru/test-helper');
-  const api  = require('koru/test/api');
-  const util = require('koru/util');
-  const Dom  = require('../dom');
+  const TH              = require('koru/test-helper');
+  const api             = require('koru/test/api');
+  const util            = require('koru/util');
+  const Dom             = require('../dom');
+
+  const {stub, spy, onEnd} = TH;
 
   const {private$, ctx$} = require('koru/symbols');
 
   const Ctx  = require('./ctx');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       api.module();
-    },
+    });
 
-    tearDown() {
-      v = null;
+    afterEach(()=>{
       delete Dom.Foo;
       Dom.removeChildren(document.body);
-    },
+      v = {};
+    });
 
-    "evalArgs": {
-      "test constant"() {
-        assert.equals(Ctx[private$].evalArgs({}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]), ['name', {type: 'text', count: '5'}]);
-      },
-    },
+    group("evalArgs", ()=>{
+      test("constant", ()=>{
+        assert.equals(Ctx[private$].evalArgs(
+          {}, ['"name', ['=', 'type', '"text'], ['=', 'count', '"5']]
+        ), ['name', {type: 'text', count: '5'}]);
+      });
+    });
 
-    "test data"() {
+    test("data", ()=>{
       /**
        * The data associated with an element via this context
        **/
@@ -41,9 +44,9 @@ isClient && define(function (require, exports, module) {
       const ctx = new Ctx(null, null, v.data = {});
 
       assert.same(ctx.data, v.data);
-    },
+    });
 
-    "test parentCtx"() {
+    test("parentCtx", ()=>{
       /**
        * The associated parent Ctx
        **/
@@ -52,18 +55,18 @@ isClient && define(function (require, exports, module) {
       const ctx = new Ctx(null, pCtx);
 
       assert.same(ctx.parentCtx, pCtx);
-    },
+    });
 
-    "Ctx.current": {
+    group("Ctx.current", ()=>{
       /**
        * Hello world
        **/
-      "test no currentCtx data"() {
+      test("no currentCtx data", ()=>{
         Ctx._currentCtx = undefined;
         assert.equals(Ctx.current.data(null), undefined);
-      },
+      });
 
-      "test data"() {
+      test("data", ()=>{
         Dom.newTemplate({
           name: "Foo",
           nodes:[{
@@ -118,10 +121,10 @@ isClient && define(function (require, exports, module) {
         assert.same(v.data, data);
         assert.same(Dom.myCtx(foo).data, v.x);
         assert.same(v.dataValue, null);
-      },
-    },
+      });
+    });
 
-    "test onAnimationEnd"() {
+    test("onAnimationEnd", ()=>{
       var Tpl = Dom.newTemplate({
         name: "Foo",
         nodes:[{
@@ -138,31 +141,31 @@ isClient && define(function (require, exports, module) {
 
       document.body.appendChild(v.elm = Dom.Foo.$render({}));
 
-      test.stub(document.body, 'addEventListener');
-      test.stub(document.body, 'removeEventListener');
+      stub(document.body, 'addEventListener');
+      stub(document.body, 'removeEventListener');
 
       // Repeatable
-      Dom.myCtx(v.elm).onAnimationEnd(v.stub = test.stub(), 'repeat');
+      Dom.myCtx(v.elm).onAnimationEnd(v.stub = stub(), 'repeat');
       assert.calledWith(document.body.addEventListener, 'animationend', TH.match(
         arg => v.animationEndFunc = arg), true);
 
       // Element removed
       document.body.appendChild(v.elm2 = Dom.Foo.$render({}));
-      Dom.myCtx(v.elm2).onAnimationEnd(v.stub2 = test.stub());
+      Dom.myCtx(v.elm2).onAnimationEnd(v.stub2 = stub());
 
       // Set twice
       document.body.appendChild(v.elm3 = Dom.Foo.$render({name: 'bar'}));
 
       var ctx = Dom.myCtx(v.elm3);
-      ctx.onAnimationEnd(v.stub3old = test.stub());
-      ctx.onAnimationEnd(v.stub3 = test.stub());
+      ctx.onAnimationEnd(v.stub3old = stub());
+      ctx.onAnimationEnd(v.stub3 = stub());
 
       assert.calledWith(v.stub3old, ctx, v.elm3);
 
 
       // Cancelled before called
       document.body.appendChild(v.elm4 = Dom.Foo.$render({}));
-      Dom.myCtx(v.elm4).onAnimationEnd(v.stub4 = test.stub());
+      Dom.myCtx(v.elm4).onAnimationEnd(v.stub4 = stub());
       Dom.myCtx(v.elm4).onAnimationEnd('cancel');
 
       // Body listener only set once
@@ -190,6 +193,6 @@ isClient && define(function (require, exports, module) {
       Dom.remove(v.elm2);
       assert.calledWith(document.body.removeEventListener,
                         'animationend', v.animationEndFunc, true);
-    },
+    });
  });
 });

@@ -1,21 +1,12 @@
-isServer && define(function (require, exports, module) {
-  var test, v;
-  const TH   = require('koru/test-helper');
-  const util = require('koru/util');
+isServer && define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
+  const fs              = requirejs.nodeRequire('fs');
+
   const sut  = require('./template-compiler');
-  const fs   = requirejs.nodeRequire('fs');
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
-
-    tearDown() {
-      v = null;
-    },
-
-    "test extends"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("extends", ()=>{
       const fn = module.toUrl('./template-compiler-test.html');
       const code = fs.readFileSync(fn).toString();
 
@@ -68,6 +59,6 @@ isServer && define(function (require, exports, module) {
             }]
         }],
       });
-    },
+    });
   });
 });

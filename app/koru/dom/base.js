@@ -1,12 +1,10 @@
-define(function(require, exports, module) {
+define((require)=>{
   const koru = require('koru');
   const util = require('koru/util');
 
   const ATTRS = {id: true, class: true, style: true, xmlns: true};
 
-  function Dom(cssQuery, parent=document.body) {
-    return parent.querySelector(cssQuery);
-  }
+  const Dom = (cssQuery, parent=document.body)=> parent.querySelector(cssQuery);
 
   const CANONICAL_TAG_NAMES = Dom.CANONICAL_TAG_NAMES = {
     div: 'div', DIV: 'div',
@@ -45,7 +43,7 @@ define(function(require, exports, module) {
     if (typeof body === "string") {
       if (body.indexOf("\n") !== -1) {
         content = document.createDocumentFragment();
-        body.split('\n').forEach(function (line, index) {
+        body.split('\n').forEach((line, index)=>{
           index && content.appendChild(document.createElement('br'));
           line && content.appendChild(document.createTextNode(line));
         });

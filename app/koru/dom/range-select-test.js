@@ -1,30 +1,27 @@
-isClient && define(function (require, exports, module) {
-  const TH  = require('koru/test-helper');
-  const Dom = require('./dom-client');
+isClient && define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const Dom             = require('./dom-client');
 
   require('./range-select');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-      document.body.appendChild(v.list = Dom.h({
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let list;
+    beforeEach(()=>{
+      document.body.appendChild(list = Dom.h({
         div: [0,1,2,3,4,5].map(i => Dom.h({div: "row "+i}))
       }));
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Dom.removeChildren(document.body);
-      v = null;
-    },
+    });
 
-    "test toggle"() {
-      assert.dom(v.list, self => {
+    test("toggle", ()=>{
+      assert.dom(list, self => {
         assert.dom('div', 'row 2', self => {
-          var selected = Dom.selectRange(self, {});
+          const selected = Dom.selectRange(self, {});
           assert.className(self, 'selected');
-          var foo = Dom.selectRange(self, {}, 'foo');
+          const foo = Dom.selectRange(self, {}, 'foo');
           assert.className(self, 'foo');
 
           refute.same(selected, foo);
@@ -39,45 +36,46 @@ isClient && define(function (require, exports, module) {
 
         });
       });
-    },
+    });
 
-    "test shift range"() {
-      assert.dom(v.list, function () {
-        assert.dom('div', 'row 2', function () {
-          Dom.selectRange(this, {});
+    test("shift range", ()=>{
+      assert.dom(list, ()=>{
+        assert.dom('div', 'row 2', elm =>{
+          Dom.selectRange(elm, {});
         });
 
-        assert.dom('div', 'row 4', function () {
-          Dom.selectRange(this, {shiftKey: true});
-          assert.className(this, 'selected');
+        assert.dom('div', 'row 4', elm =>{
+          Dom.selectRange(elm, {shiftKey: true});
+          assert.className(elm, 'selected');
         });
 
         assert.dom('div.selected', {count: 3});
       });
-    },
+    });
 
-    "test control toggle"() {
-      assert.dom(v.list, function () {
-        assert.dom('div', 'row 2', function () {
-          Dom.selectRange(this, {ctrlKey: true});
+    test("control toggle", ()=>{
+      assert.dom(list, ()=>{
+        assert.dom('div', 'row 2', elm =>{
+          Dom.selectRange(elm, {ctrlKey: true});
         });
 
-        assert.dom('div', 'row 4', function () {
-          v.selected = Dom.selectRange(this, {shiftKey: true});
+        let selected;
+        assert.dom('div', 'row 4', elm=>{
+          selected = Dom.selectRange(elm, {shiftKey: true});
         });
 
-        assert.dom('div', 'row 3', function () {
-          assert.className(this, 'selected');
-          Dom.selectRange(this, {ctrlKey: true});
-          assert.same(v.selected.length, 2);
+        assert.dom('div', 'row 3', elm=>{
+          assert.className(elm, 'selected');
+          Dom.selectRange(elm, {ctrlKey: true});
+          assert.same(selected.length, 2);
 
-          Dom.selectRange(this);
-          assert.same(v.selected.length, 1);
-          assert.same(v.selected[0], this);
+          Dom.selectRange(elm);
+          assert.same(selected.length, 1);
+          assert.same(selected[0], elm);
         });
 
         assert.dom('div.selected', {count: 1});
       });
-    },
+    });
   });
 });

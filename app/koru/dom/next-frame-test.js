@@ -1,29 +1,28 @@
-isClient && define(function (require, exports, module) {
-  const TH        = require('koru/test-helper');
+isClient && define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const nextFrame = require('./next-frame');
-  var v;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-      v.rafStub = this.stub(window, 'requestAnimationFrame').returns(123);
-      v.cafStub = this.stub(window, 'cancelAnimationFrame');
-    },
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let rafStub, cafStub;
+    beforeEach(()=>{
+      rafStub = stub(window, 'requestAnimationFrame').returns(123);
+      cafStub = stub(window, 'cancelAnimationFrame');
+    });
 
-    tearDown() {
-      v = null;
-    },
+    test("nextFrame init", ()=>{
+      const exp = {};
+      const nf = nextFrame(exp);
 
-    "test nextFrame init"() {
-      const nf = nextFrame(v.nf = {});
-
-      assert.same(nf, v.nf);
+      assert.same(nf, exp);
 
       assert.isFalse(nf.isPendingNextFrame());
 
+      const func = stub();
 
-      nf.nextFrame(v.stub = this.stub());
+      nf.nextFrame();
 
       assert.isTrue(nf.isPendingNextFrame());
 
@@ -31,40 +30,42 @@ isClient && define(function (require, exports, module) {
 
       assert.isFalse(nf.isPendingNextFrame());
 
-      refute.called(v.stub);
+      refute.called(func);
 
-      assert.calledWith(v.cafStub, 123);
-    },
+      assert.calledWith(cafStub, 123);
+    });
 
-    "test queing"() {
+    test("queing", ()=>{
       const nf = nextFrame();
+      const s1 = stub(), s2 = stub();
 
-      nf.nextFrame(v.s1 = this.stub());
-      nf.nextFrame(v.s2 = this.stub());
+      nf.nextFrame(s1);
+      nf.nextFrame(s2);
 
-      v.rafStub.yield();
+      rafStub.yield();
 
-      assert.called(v.s1);
-      assert.called(v.s2);
+      assert.called(s1);
+      assert.called(s2);
 
       assert.isFalse(nf.isPendingNextFrame());
 
-      refute.called(v.cafStub);
-    },
+      refute.called(cafStub);
+    });
 
-    "test flush"() {
+    test("flush", ()=>{
       const nf = nextFrame();
+      const s1 = stub(), s2 = stub();
 
-      nf.nextFrame(v.s1 = this.stub());
-      nf.nextFrame(v.s2 = this.stub());
+      nf.nextFrame(s1);
+      nf.nextFrame(s2);
 
       nf.flushNextFrame();
 
-      assert.called(v.s1);
-      assert.called(v.s2);
+      assert.called(s1);
+      assert.called(s2);
 
       assert.isFalse(nf.isPendingNextFrame());
-      assert.calledWith(v.cafStub, 123);
-    },
+      assert.calledWith(cafStub, 123);
+    });
   });
 });

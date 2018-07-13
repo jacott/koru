@@ -1,17 +1,17 @@
-isClient && define(function(require, exports, module) {
-  const testTpl = require('koru/html!./template-compiler-test');
-  const TH      = require('koru/test-helper');
-  const Dom     = require('./dom-client');
+isClient && define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const Dom             = require('./dom-client');
 
+  const testTpl = require('koru/html!./template-compiler-test');
   const $ = Dom.current;
 
-  TH.testCase(module, {
-    tearDown() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       Dom.removeChildren(document.body);
       Dom.Test = undefined;
-    },
+    });
 
-    "test rendering html template"() {
+    test("rendering html template", ()=>{
       refute(Dom.Test);
 
       Dom.newTemplate(testTpl);
@@ -45,15 +45,15 @@ isClient && define(function(require, exports, module) {
 
       document.body.appendChild(elm);
 
-      assert.dom('div#Foo', function () {
-        assert.same(this.className, 'e1 e2');
+      assert.dom('div#Foo', elm =>{
+        assert.same(elm.className, 'e1 e2');
         assert.dom('span[data-foo]', 'a\nb\nc\nAdam some & <other>\u00a0text', span =>{
           assert.equals(span.id, 'barId\n           ');
           assert.equals(span.getAttribute('data-foo'), 'theQUICKbrownFOX');
         });
-        assert.same(this.getAttribute('data-x'), 'x123');
-        assert.same(this.getAttribute('data-dotted'), 'success');
+        assert.same(elm.getAttribute('data-x'), 'x123');
+        assert.same(elm.getAttribute('data-dotted'), 'success');
       });
-    },
+    });
   });
 });

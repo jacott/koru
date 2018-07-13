@@ -1,7 +1,7 @@
-define(function(require, exports, module) {
+define((require)=>{
   const util = require('koru/util');
 
-  function nextFrame (obj={}) {
+  return (obj={})=>{
     let queue = null;
     let afHandle = 0;
 
@@ -44,6 +44,4 @@ define(function(require, exports, module) {
 
     return obj;
   };
-
-  return nextFrame;
 });
