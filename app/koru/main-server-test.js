@@ -3,7 +3,7 @@ define((require, exports, module)=>{
   const util     = require('koru/util');
   const TH       = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m, intercept} = TH;
 
   const koru     = require('./main');
   let v = {};
@@ -18,17 +18,72 @@ define((require, exports, module)=>{
       assert.same(koru.global, global);
     });
 
-    test("afTimeout", ()=>{
-      stub(koru, 'setTimeout').returns(123);
-      var stop = koru._afTimeout(v.stub = stub(), 1000);
+    group("afTimeout", ()=>{
+      test("lt 24 DAYS", ()=>{
+        const cb = stub();
+        stub(koru, 'setTimeout').returns(123);
+        const stop = koru._afTimeout(cb, 1000);
 
-      assert.calledWith(koru.setTimeout, v.stub, 1000);
+        assert.calledWith(koru.setTimeout, cb, 1000);
 
-      spy(global, 'clearTimeout');
-      stop();
-      assert.calledWith(global.clearTimeout, 123);
+        spy(global, 'clearTimeout');
+        stop();
+        assert.calledWith(global.clearTimeout, 123);
+      });
+
+      test("cancel gt 24 days", ()=>{
+        const cb = stub();
+        let handle = 100;
+        const incCounter = ()=> ++handle;
+        stub(koru, 'setTimeout').invokes(incCounter);
+        stub(global, 'setTimeout').invokes(incCounter);
+        stub(global, 'clearTimeout');
+        let now = Date.now(); intercept(Date, 'now', ()=>now);
+
+        const stop = koru._afTimeout(cb, 45*util.DAY);
+
+        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
+        global.setTimeout.yieldAndReset();
+
+        stop();
+
+        assert.calledWith(global.clearTimeout, 102);
+      });
+
+      test("gt 24 days", ()=>{
+        const cb = stub();
+        let handle = 100;
+        const incCounter = ()=> ++handle;
+        stub(koru, 'setTimeout').invokes(incCounter);
+        stub(global, 'setTimeout').invokes(incCounter);
+        stub(global, 'clearTimeout');
+        let now = Date.now(); intercept(Date, 'now', ()=>now);
+
+        const stop = koru._afTimeout(cb, 45*util.DAY);
+
+        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
+        now+=20*util.DAY;
+        global.setTimeout.yieldAndReset();
+
+        assert.calledWith(global.setTimeout, m.func, 20*util.DAY);
+        now+=21*util.DAY;
+        refute.called(koru.setTimeout);
+        global.setTimeout.yieldAndReset();
+
+        assert.calledOnceWith(koru.setTimeout, m.func, 4*util.DAY);
+        assert.same(koru.setTimeout.firstCall.returnValue, 103);
+
+        stop();
+
+        assert.calledOnceWith(global.clearTimeout, 103);
+        refute.called(cb);
+        koru.setTimeout.yieldAndReset();
+        assert.called(cb);
+
+        stop(); // stop is idempotent
+        assert.calledOnce(global.clearTimeout);
+      });
     });
-
 
     test("runFiber", ()=>{
       stub(util, 'Fiber').returns({run: v.run = stub()});

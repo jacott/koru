@@ -2,6 +2,8 @@ define((require, exports, module)=>{
   const pep = require('koru/polyfill/maybe-pep');
   const util = require('./util-client');
 
+  const TWENTY_DAYS = 20*util.DAY;
+
   return koru =>{
     window['_koru'+'_'] = koru; // avoid search for de-bug statements
 
@@ -50,9 +52,18 @@ define((require, exports, module)=>{
 
       afTimeout(func, duration) {
         let af = null;
-        let timeout;
+        let cancel;
+        const endTime = duration > TWENTY_DAYS ?
+              Date.now() + duration : 0;
         const inner = ()=>{
-          timeout = null;
+          if (endTime !== 0) {
+            const now = Date.now();
+            if (endTime > now) {
+              cancel = setTimeout(inner, Math.min(endTime - now, TWENTY_DAYS));
+              return;
+            }
+          }
+          cancel = 0;
           af = window.requestAnimationFrame(() => {
             af = null;
             try {
@@ -63,15 +74,20 @@ define((require, exports, module)=>{
           });
         };
 
-        if (duration && duration > 0)
-          timeout = setTimeout(inner, duration);
+        if (duration !== undefined && duration > 0)
+          cancel = setTimeout(inner, endTime === 0 ? duration : TWENTY_DAYS);
         else
           inner();
 
         return ()=>{
-          if (timeout) window.clearTimeout(timeout);
-          if (af) window.cancelAnimationFrame(af);
-          af = timeout = null;
+          if (cancel !== 0) {
+            window.clearTimeout(cancel);
+            cancel = 0;
+          }
+          if (af !== null) {
+            window.cancelAnimationFrame(af);
+            af = null;
+          }
         };
       },
     });

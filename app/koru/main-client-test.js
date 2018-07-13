@@ -1,7 +1,8 @@
 define((require, exports, module)=>{
-  const TH   = require('./test-helper');
+  const util            = require('koru/util');
+  const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, intercept, match: m} = TH;
 
   const koru = require('./main');
 
@@ -108,6 +109,53 @@ define((require, exports, module)=>{
         refute.called(window.clearTimeout);
         assert.calledOnce(window.cancelAnimationFrame);
       });
+
+      test("cancel gt 24 days", ()=>{
+        const cb = stub();
+        let handle = 100;
+        const incCounter = ()=> ++handle;
+        window.setTimeout.invokes(incCounter);
+        let now = Date.now(); intercept(Date, 'now', ()=>now);
+
+        const stop = koru._afTimeout(cb, 45*util.DAY);
+
+        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
+        window.setTimeout.yieldAndReset();
+
+        stop();
+
+        assert.calledWith(window.clearTimeout, 102);
+      });
+
+      test("gt 24 days", ()=>{
+        const cb = stub();
+        let handle = 100;
+        const incCounter = ()=> ++handle;
+        window.setTimeout.invokes(incCounter);
+        let now = Date.now(); intercept(Date, 'now', ()=>now);
+
+        const stop = koru._afTimeout(cb, 45*util.DAY);
+
+        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
+        now+=20*util.DAY;
+        window.setTimeout.yieldAndReset();
+
+        assert.calledWith(window.setTimeout, m.func, 20*util.DAY);
+        now+=21*util.DAY;
+        refute.called(window.requestAnimationFrame);
+        window.setTimeout.yieldAndReset();
+
+        assert.calledWith(window.setTimeout, m.func, 4*util.DAY);
+        now+=4*util.DAY;
+        refute.called(window.requestAnimationFrame);
+        window.setTimeout.yieldAndReset();
+
+        assert.calledOnceWith(window.requestAnimationFrame, m.func);
+        refute.called(cb);
+        window.requestAnimationFrame.yieldAndReset();
+        assert.called(cb);
+      });
+
     });
   });
 });

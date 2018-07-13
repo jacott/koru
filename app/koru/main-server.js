@@ -1,7 +1,9 @@
 /*global WebSocket, KORU_APP_VERSION */
 
 define((require, exports, module)=>{
-  const util     = require('./util-server');
+  const util            = require('./util-server');
+
+  const TWENTY_DAYS = 20*util.DAY;
 
   return koru =>{
     global['_koru'+'_'] = koru; // avoid search for de-bug statements
@@ -34,7 +36,21 @@ define((require, exports, module)=>{
 
 
       afTimeout(func, duration) {
-        let cancel = koru.setTimeout(func, duration);
+        let cancel = 0;
+        if (duration > TWENTY_DAYS) {
+          const endTime = Date.now() + duration;
+          const loop = ()=>{
+            const now = Date.now();
+            if (endTime - now > TWENTY_DAYS)
+              cancel = setTimeout(loop, TWENTY_DAYS);
+            else
+              cancel = koru.setTimeout(func, Math.max(endTime - now, 0));
+          };
+
+          cancel = setTimeout(loop, TWENTY_DAYS);
+        } else {
+          cancel = koru.setTimeout(func, duration);
+        }
         return () => {
           cancel != 0 && clearTimeout(cancel);
           cancel = 0;

@@ -2,11 +2,13 @@ define((require)=>{
   const koru            = require('koru');
   const util            = require('koru/util');
 
+  let request = requirejs.nodeRequire('request');
+
   const {test$} = require('koru/symbols');
 
   const rawBody         = requirejs.nodeRequire('raw-body');
 
-  let request = requirejs.nodeRequire('request');
+  const DAY24 = 24*util.DAY;
 
   class HttpError extends Error {
     constructor({message='Bad Request', statusCode, response, body}={}) {
@@ -93,7 +95,10 @@ define((require)=>{
     expBackoff(func, config={}) {
       config.retryCount = 0;
       if (config.minDelay == null) config.minDelay = 30*1000;
-      if (config.maxDelay == null) config.maxDelay = 90*60*1000;
+      if (config.maxDelay == null)
+        config.maxDelay = 90*60*1000;
+      else if (config.maxDelay > DAY24)
+        throw new Error('config.maxDelay to big');
       if (config.variance == null) config.variance = 10*1000;
       const wrapper = ()=>{
         config.timer = 0;
