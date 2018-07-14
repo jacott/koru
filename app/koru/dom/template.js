@@ -5,7 +5,7 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const Dom             = require('./base');
 
-  const {hasOwn, mergeNoEnum, forEach} = util;
+  const {hasOwn, mergeNoEnum, forEach, createDictionary} = util;
   const {SVGNS, XHTMLNS} = Dom;
 
   const {ctx$, inspect$} = require('koru/symbols');
@@ -85,8 +85,7 @@ define((require, exports, module)=>{
     const eventTypes = Ctx._currentCtx.__events[type];
     const matches = Dom._matchesFunc;
 
-    const later = Object.create(null);
-    later.x = true; delete later.x; // force dictionary
+    const later = createDictionary();
     let elm = event.target;
 
     try {
@@ -271,14 +270,12 @@ define((require, exports, module)=>{
   };
 
   const initBlueprint = (tpl, blueprint)=>{
-    let helpers;
     if (blueprint.extends) {
       const sup = lookupTemplate(tpl.parent, blueprint.extends);
       if (! sup)
         throw new Error(`Invalid extends '${blueprint.extends}' in Template ${tpl.name}`);
-      helpers = sup._helpers && Object.create(sup._helpers);
       Object.setPrototypeOf(tpl, sup);
-      tpl._helpers = helpers;
+      tpl._helpers = sup._helpers && Object.create(sup._helpers);
     }
     tpl.ns = blueprint.ns;
     tpl.nodes = blueprint.nodes;

@@ -635,9 +635,9 @@ define((require, exports, module)=>{
       return -1;
     },
 
-    createDictionary() {
+    createDictionary: ()=>{
       const dict = Object.create(null);
-      dict[';123abc'] = undefined; delete dict[';123abc'];
+      dict['.;\x00'] = undefined; delete dict['.;\x00'];
       return dict;
     },
 
