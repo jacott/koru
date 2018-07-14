@@ -6,9 +6,13 @@ define((require, exports, module)=>{
   const Factory         = require('./test-factory');
   const BaseTH          = require('./test-helper');
 
-  return {
+  const TestDBHelper = {
     __proto__: BaseTH,
+
+    DBTranCounter: 0,
+
     startTransaction(txClient=Model.db) {
+      ++TestDBHelper.DBTranCounter;
       Model.db = txClient;
       const tx = txClient.startTransaction();
       if (tx.savepoint == 0) {
@@ -19,6 +23,7 @@ define((require, exports, module)=>{
     },
 
     rollbackTransaction(txClient=Model.db) {
+      --TestDBHelper.DBTranCounter;
       Model.db = txClient;
       const level = txClient.endTransaction('abort');
 
@@ -36,4 +41,6 @@ define((require, exports, module)=>{
       }
     },
   };
+
+  return TestDBHelper;
 });
