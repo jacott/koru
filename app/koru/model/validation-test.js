@@ -48,6 +48,23 @@ define((require, exports, module)=>{
       assert.equals(doc[error$], {foo: [['is_too_big', 400], ['is_wrong_color', 'red']]});
     });
 
+    test("transferErrors", ()=>{
+      const doc = {};
+      Val.addError(doc, 'foo', 'is_too_big', 400);
+      Val.addError(doc, 'foo', 'is_wrong_color', 'red');
+
+      const doc2 = {};
+      Val.transferErrors('foo', doc2, doc2);
+      assert.same(doc2[error$], undefined);
+
+      Val.transferErrors('foo', doc, doc2);
+      assert.equals(doc2[error$], {foo: [['is_too_big', 400], ['is_wrong_color', 'red']]});
+      Val.transferErrors('foo', doc, doc2);
+      assert.equals(doc2[error$], {foo: [
+        ['is_too_big', 400], ['is_wrong_color', 'red'],
+        ['is_too_big', 400], ['is_wrong_color', 'red']]});
+    });
+
     test("addSubErrors", ()=>{
       const doc = {};
       Val.addSubErrors(doc, 'foo', {

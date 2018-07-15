@@ -304,15 +304,20 @@ define((require, exports, module)=>{
       });
     },
 
-    deregister(key) {
-      delete validators[key];
-    },
+    deregister: key =>{delete validators[key]},
 
-    addError(doc, field, ...args) {
+    addError: (doc, field, ...args)=>{
       const errors = doc[error$] === undefined ? (doc[error$] = {}) : doc[error$],
             fieldErrors = errors[field] || (errors[field] = []);
 
       fieldErrors.push(args);
+    },
+
+    transferErrors: (field, from, to)=>{
+      const errors = from[error$] && from[error$][field];
+      if (errors === undefined) return;
+
+      errors.forEach(err => {Val.addError(to, field, ...err)});
     },
 
     addSubErrors(doc, field, subErrors) {
