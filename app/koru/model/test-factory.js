@@ -194,8 +194,8 @@ define((require)=>{
     restore(sym, docs) {
       for(let i = docs.length-1; i >= 0; --i) {
         const doc = docs[i];
+        doc.attributes = deepCopy(doc[sym]);
         doc.$reload();
-        doc.attributes = doc[sym];
       }
     },
 
