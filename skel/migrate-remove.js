@@ -1,14 +1,11 @@
-define((require, exports, module)=>{
+define(()=> mig =>{
+  mig.reversible({
+    add() {
+      mig.removeColumns($$tableName$$, $$removeColumns$$);
+    },
 
-  module.exports = mig =>{
-    mig.reversible({
-      add() {
-        mig.removeColumns($$tableName$$, $$removeColumns$$);
-      },
-
-      remove() {
-        mig.addColumns($$tableName$$, $$addColumns$$);
-      },
-    });
-  };
+    remove() {
+      mig.addColumns($$tableName$$, $$addColumns$$);
+    },
+  });
 });

@@ -807,7 +807,7 @@ define((require, exports, module)=>{
       return fraction*100 + '%';
     },
 
-    toDp(number, dp, zeroFill) {
+    toDp(number, dp, zeroFill=false) {
       const scalar = Math.pow(10, dp);
       let decs = ''+(Math.round(number * scalar) % scalar);
 

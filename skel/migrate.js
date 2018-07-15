@@ -1,12 +1,9 @@
-define((require, exports, module)=>{
+define(()=> mig =>{
+  mig.reversible({
+    add() {
+    },
 
-  module.exports = mig =>{
-    mig.reversible({
-      add() {
-      },
-
-      revert() {
-      },
-    });
-  };
+    revert() {
+    },
+  });
 });

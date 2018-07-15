@@ -1,11 +1,8 @@
-define((require, exports, module)=>{
-
-  module.exports = mig =>{
-    mig.createTable({
-      name: '$$modelName$$',
-      fields: {
-        $$modelFields$$
-      }
-    });
-  };
+define(()=> mig =>{
+  mig.createTable({
+    name: '$$modelName$$',
+    fields: {
+      $$modelFields$$
+    }
+  });
 });

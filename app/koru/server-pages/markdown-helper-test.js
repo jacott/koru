@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   const Compilers       = require('koru/compilers');
   const Dom             = require('koru/dom');
   const ServerPages     = require('koru/server-pages/main');
@@ -6,7 +6,7 @@ isServer && define(function (require, exports, module) {
 
   const {stub, spy, onEnd, util} = TH;
 
-  const sut  = require('./markdown-helper');
+  const sut = require('./markdown-helper');
   let v = null;
 
   TH.testCase(module, {

@@ -1,6 +1,6 @@
 define((require, exports, module)=>{
-  const Model   = require('koru/model');
-  const Factory = require('koru/model/test-factory');
+  const Model           = require('koru/model');
+  const Factory         = require('koru/model/test-factory');
 
   Factory.defines({
 

@@ -13,6 +13,14 @@ const match = process.argv[2] && /^(db-)/.exec(process.argv[2]);
 
 let loadded = false;
 
+
+const load = (command)=> function () {
+  this.koruVersion = koruPackage.version;
+  this.koruPackage = koruPackage;
+  program = null;
+  require('../lib/'+command).apply(this, arguments);
+};
+
 switch (match ? match[1] : process.argv[2]) {
 
 case 'generate': case 'g':
@@ -54,14 +62,5 @@ default:
       process.exit(1);
     }
     load('db-commands')(program);
-  }
-
-  function load(command) {
-    return function () {
-      this.koruVersion = koruPackage.version;
-      this.koruPackage = koruPackage;
-      program = null;
-      require('../lib/'+command).apply(this, arguments);
-    };
   }
 }

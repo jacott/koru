@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   /**
    * IdleCheck keeps count of usage and notifies when idle.
    *
@@ -6,12 +6,12 @@ isServer && define(function (require, exports, module) {
   const koru            = require('koru');
   const api             = require('koru/test/api');
   const util            = require('koru/util');
-  const IdleCheck       = require('./idle-check');
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
-
   const {Fiber} = util;
+
+  const IdleCheck = require('./idle-check');
 
   let v = {};
 

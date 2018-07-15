@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * BaseController provides the default actions for page requests. Action controllers extend
    * BaseController to intercept actions. See {#koru/server-pages/main}
@@ -16,7 +16,7 @@ define(function (require, exports, module) {
 
   const {stub, spy, onEnd, stubProperty, intercept} = TH;
 
-  const BaseController  = require('./base-controller');
+  const BaseController = require('./base-controller');
 
   class Book {}
 

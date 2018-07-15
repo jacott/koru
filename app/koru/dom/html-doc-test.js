@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Server side implementation of the DOM tree.
    **/
@@ -6,7 +6,7 @@ define(function (require, exports, module) {
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
-  const sut  = require('./html-doc');
+  const sut = require('./html-doc');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{

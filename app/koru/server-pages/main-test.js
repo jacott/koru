@@ -1,4 +1,4 @@
-isServer && define(function (require, exports, module) {
+isServer && define((require, exports, module)=>{
   /**
    * Server side page rendering coordinator.
    *
@@ -70,7 +70,7 @@ isServer && define(function (require, exports, module) {
 
   const {stub, spy, onEnd, util, intercept} = TH;
 
-  const sut  = require('./main');
+  const sut = require('./main');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     let v = {};
