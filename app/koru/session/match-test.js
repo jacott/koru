@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * A Factory method to create a match registry that compares a
    * {#koru/model/main} record to a set of match functions.
@@ -14,7 +14,7 @@ define(function (require, exports, module) {
 
   const Match = require('./match');
 
-  let v = null;
+  let v = {};
 
   TH.testCase(module, ({before, after, beforeEach, afterEach, group, test})=>{
     class Book {
@@ -25,14 +25,13 @@ define(function (require, exports, module) {
     }
 
     beforeEach( ()=>{
-      v = {};
       v.handles = [];
     });
 
     afterEach( ()=>{
       v.handles.forEach(h =>{h.stop()});
       dbBroker.clearDbId();
-      v = null;
+      v = {};
     });
 
     test("new", ()=>{

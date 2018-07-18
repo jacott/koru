@@ -1,27 +1,28 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const Dom = require('koru/dom');
   const TH  = require('./test-helper');
 
-  const sut = require('./resize-event');
-  var test, v;
+  const {stub, spy, onEnd} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-      v.raf = test.stub(window, 'requestAnimationFrame').returns(123);
+  const sut = require('./resize-event');
+
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      v.raf = stub(window, 'requestAnimationFrame').returns(123);
       v.html = Dom.h({div: 'foo', $style: "width:100px;height:150px"});
       document.body.appendChild(v.html);
-      v.resizer = sut.onWidthResize(v.html, v.resized = test.stub());
-    },
+      v.resizer = sut.onWidthResize(v.html, v.resized = stub());
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Dom.remove(v.html);
-      v = null;
-    },
+      v = {};
+    });
 
-    "test detach"() {
-      this.stub(window, 'cancelAnimationFrame');
+    test("detach", ()=>{
+      stub(window, 'cancelAnimationFrame');
 
       assert.dom('div', elm =>{
         assert.same(elm.childNodes.length, 2);
@@ -32,9 +33,9 @@ isClient && define(function (require, exports, module) {
 
         assert.same(elm.childNodes.length, 1);
       });
-    },
+    });
 
-    "test resize width"() {
+    test("resize width", ()=>{
       assert.calledWith(v.raf, TH.match.func);
       v.raf.yield();
       v.raf.reset();
@@ -65,6 +66,6 @@ isClient && define(function (require, exports, module) {
         v.raf.yield();
         refute.called(v.resized);
       });
-    },
+    });
   });
 });

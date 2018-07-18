@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const koru           = require('koru');
   const Dom            = require('koru/dom');
   const util           = require('koru/util');
@@ -7,13 +7,14 @@ isClient && define(function (require, exports, module) {
   const RichTextEditor = require('./rich-text-editor');
   const TH             = require('./test-helper');
 
-  const sut            = require('./rich-text-editor-toolbar');
-  var test, v;
+  const {stub, spy, onEnd} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  const sut            = require('./rich-text-editor-toolbar');
+
+  let v= {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.editor = sut.$autoRender({content: Dom.h([
         {b: "Hello"}, ' ', {i: "world"}, ' ', {a: "the link", $href: "/link.html"}
       ]), options: {id: "Foo"}, extend: {
@@ -26,15 +27,15 @@ isClient && define(function (require, exports, module) {
       v.origText = v.editor.value;
       document.body.appendChild(v.editor);
 
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+      v = {};
+    });
 
-    "with code": {
-      setUp() {
+    group("with code", ()=>{
+      beforeEach(()=>{
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
@@ -45,15 +46,15 @@ isClient && define(function (require, exports, module) {
             TH.keyup(node, 39);
           };
         });
-      },
+      });
 
-      "test data-mode"() {
+      test("data-mode", ()=>{
         assert.dom('.rtToolbar[data-mode=standard]');
         v.selectCode();
         assert.dom('.rtToolbar[data-mode=code]');
-      },
+      });
 
-      "test set language"() {
+      test("set language", ()=>{
         RichTextEditor.languageList = [['c', 'C'], ['lisp', 'Common Lisp, elisp']];
 
         v.selectCode();
@@ -74,22 +75,22 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('[name=language]', 'Common Lisp');
-      },
+      });
 
-      "test syntax highlight"() {
+      test("syntax highlight", ()=>{
         v.selectCode();
 
-        const syntaxHighlight = test.stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
+        const syntaxHighlight = stub(RichTextEditor.$ctx(Dom('.richTextEditor'))
                                           .mode.actions, 'syntaxHighlight');
         assert.dom('[name=syntaxHighlight]', '', function () {
           TH.pointerDownUp(this);
         });
 
         assert.called(syntaxHighlight);
-      },
-    },
+      });
+    });
 
-    "test rendering"() {
+    test("rendering", ()=>{
       assert.dom('#Foo.richTextEditor', function () {
         assert.dom('>.rtToolbar:first-child>div', function () {
           assert.dom('button[name=bold]', 'B', function () {v.bold = this});
@@ -165,9 +166,9 @@ isClient && define(function (require, exports, module) {
         assert.className(v.italic, 'on');
         refute.className(v.link, 'on');
       });
-    },
+    });
 
-    "test changeing href"() {
+    test("changeing href", ()=>{
       assert.dom('a', 'the link', function () {
         TH.setRange(this.firstChild, 1);
         TH.trigger(this, 'keyup');
@@ -185,9 +186,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('a[href="http://new/value"]', 'the link');
         assert.same(document.activeElement, this);
       });
-    },
+    });
 
-    "test un/making bold"() {
+    test("un/making bold", ()=>{
       assert.dom('.richTextEditor>.input', function () {
         this.focus();
         assert.dom('b', 'Hello', function () {
@@ -208,9 +209,9 @@ isClient && define(function (require, exports, module) {
       assert.dom('.richTextEditor>.input', function () {
         assert.same(this.innerHTML, 'Hello <i>world</i> <a href=\"/link.html\">the link</a>');
       });
-    },
+    });
 
-    "test un/making code"() {
+    test("un/making code", ()=>{
       assert.dom('.richTextEditor>.input', function () {
         this.focus();
         assert.dom('b', 'Hello', function () {
@@ -228,9 +229,9 @@ isClient && define(function (require, exports, module) {
       assert.dom('[name=code].on');
       TH.pointerDownUp('[name=code]');
       assert.dom('[name=code]:not(.on)');
-    },
+    });
 
-    "test mention button"() {
+    test("mention button", ()=>{
       assert.dom('b', 'Hello', function () {
         TH.setRange(this.firstChild, 0);
         TH.trigger(this, 'keyup');
@@ -253,20 +254,20 @@ isClient && define(function (require, exports, module) {
       assert.dom('.rtMention:not(.inline)', function () {
         assert.dom('input', {value: 'Hello'});
       });
-    },
+    });
 
-    "font attributes": {
-      setUp() {
+    group("font attributes", ()=>{
+      beforeEach(()=>{
         assert.dom('b', 'Hello', function () {
           this.focus();
           TH.setRange(this.firstChild, 0, this.firstChild, 3);
           TH.trigger(this, 'keyup');
           document.execCommand('styleWithCSS', false, true);
         });
-      },
+      });
 
 
-      "test set fontName"() {
+      test("set fontName", ()=>{
         RichText.mapFontNames({poster: 'foo font'});
         TH.pointerDownUp('.rtToolbar [name=fontName]');
 
@@ -306,9 +307,9 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('[name=fontName]', 'Sans serif');
-      },
+      });
 
-      "test set fontSize"() {
+      test("set fontSize", ()=>{
         TH.pointerDownUp('.rtToolbar [name=fontSize]');
 
         assert.dom('.glassPane', function () {
@@ -322,9 +323,9 @@ isClient && define(function (require, exports, module) {
             assert.same(this.style.fontSize, '1.2em');
           });
         });
-      },
+      });
 
-      "test set textAlign"() {
+      test("set textAlign", ()=>{
         TH.pointerDownUp('.rtToolbar [name=textAlign]');
 
         assert.dom('.glassPane .rtTextAlign', function () {
@@ -341,9 +342,9 @@ isClient && define(function (require, exports, module) {
             assert.same(this.parentNode.style.textAlign, 'justify');
           });
         });
-      },
+      });
 
-      "test set fontColor"() {
+      test("set fontColor", ()=>{
         TH.pointerDownUp('.rtToolbar [name=fontColor]');
 
         assert.dom('#ColorPicker', function () {
@@ -356,9 +357,9 @@ isClient && define(function (require, exports, module) {
             assert.colorEqual(this.style.color, "#00ff00");
           });
         });
-      },
+      });
 
-      "test format misc"() {
+      test("format misc", ()=>{
         TH.pointerDownUp('.rtToolbar [name=formatText]', 'Normal text');
 
         assert.dom('.glassPane .rtFormatText', ()=>{
@@ -371,16 +372,16 @@ isClient && define(function (require, exports, module) {
         refute.dom('.glassPane');
 
         assert.dom('.rtToolbar [name=formatText]', 'Heading 6');
-      },
-    },
+      });
+    });
 
-    "test more"() {
+    test("more", ()=>{
       assert.dom('.rtToolbar:not(.more)', function () {
         TH.pointerDownUp("[name=more]");
         assert.className(this, 'more');
         TH.pointerDownUp("[name=more]");
         refute.className(this, 'more');
       });
-    },
+    });
   });
 });

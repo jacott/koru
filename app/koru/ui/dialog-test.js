@@ -1,22 +1,18 @@
-isClient && define(function (require, exports, module) {
-  const Dom    = require('../dom');
-  const TH     = require('./test-helper');
+isClient && define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const TH              = require('./test-helper');
 
   const Dialog = require('./dialog');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+  let v = {};
 
-    tearDown() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       Dom.removeChildren(document.body);
-      v = null;
-    },
+      v = {};
+    });
 
-    "test open / close"() {
+    test("open / close", ()=>{
       Dialog.open(Dom.textToHtml('<form id="Foo"><input type="text"></form>'));
       assert.dom('.Dialog', function () {
         assert.dom('form#Foo', function () {
@@ -54,25 +50,25 @@ isClient && define(function (require, exports, module) {
       refute.dom('.Dialog');
 
       assert.isFalse(Dialog.isOpen());
-    },
+    });
 
-    "test full wrapping"() {
+    test("full wrapping", ()=>{
       Dialog.open(Dom.textToHtml('<div id="foo">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
         assert.dom('>.dialogContainer>.ui-dialog>#foo', 'Foo!!');
       });
-    },
+    });
 
-    "test partial wrapping"() {
+    test("partial wrapping", ()=>{
       Dialog.open(Dom.textToHtml('<div id="foo" class="ui-dialog">Foo!!</div>'));
 
       assert.dom('.Dialog', function () {
         assert.dom('>.dialogContainer>#foo.ui-dialog', 'Foo!!');
       });
-    },
+    });
 
-    "test onConfirm confirmDialog"() {
+    test("onConfirm confirmDialog", ()=>{
       const data = {
         content: Dom.h({h1: 'This is the message'}),
         onConfirm(arg) {
@@ -90,9 +86,9 @@ isClient && define(function (require, exports, module) {
       TH.click('.Dialog.Confirm [name=okay]');
       refute.dom('.Dialog');
       assert.isTrue(v.called);
-    },
+    });
 
-    'test confirmDialog'() {
+    test("confirmDialog", ()=>{
       const data = {
         classes: 'small',
         content: {
@@ -125,9 +121,9 @@ isClient && define(function (require, exports, module) {
       });
       refute.dom('.Dialog');
       assert.isTrue(v.result);
-    },
+    });
 
-    "test modalize"() {
+    test("modalize", ()=>{
       Dialog.open(Dom.textToHtml('<form id="Foo"></form>'));
 
       assert.dom('.Dialog', function () {
@@ -135,9 +131,9 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.Dialog');
-    },
+    });
 
-    'test cancel confirmDialog with defaults '() {
+    test("cancel confirmDialog with defaults ", ()=>{
       const data = {
         content: 'bla',
         callback(value) {
@@ -163,6 +159,6 @@ isClient && define(function (require, exports, module) {
       });
       refute.dom('.Dialog');
       assert.isFalse(v.result);
-    },
+    });
   });
 });

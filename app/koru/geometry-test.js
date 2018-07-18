@@ -8,12 +8,8 @@ define((require, exports, module)=>{
 
   const sut = require('./geometry');
 
-  TH.testCase(module, {
-    setUp() {
-      api.module();
-    },
-
-    "test rotatePoints"() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("rotatePoints", ()=>{
       const p = [0,0, -10, -20, 30, 40];
       assert.equals(sut.rotatePoints(p, 180), [0,0, 10, 20, -30, -40]);
       assert.equals(sut.rotatePoints(p, -180), [0,0, 10, 20, -30, -40]);
@@ -22,9 +18,9 @@ define((require, exports, module)=>{
 
       assert.near(sut.rotatePoints(p, 45), [
         0, 0, 7.071, -21.213, -7.071, 49.497], 0.001);
-    },
+    });
 
-    "test topLeftTransformOffset"() {
+    test("topLeftTransformOffset", ()=>{
       const rect = {left: -30, top: 40, width: 107, height: 213};
 
       assert.equals(sut.topLeftTransformOffset(rect, [1, 0, 0, 1, 0, 0]), {left: 0, top: 0});
@@ -33,9 +29,9 @@ define((require, exports, module)=>{
 
       assert.near(sut.topLeftTransformOffset(rect, [1, 0.5, -0.6, 1, 10, 20], 35, -80), {
         left: 189.8, top: 12.5}, 0.1);
-    },
+    });
 
-    "test transformPoints"() {
+    test("transformPoints", ()=>{
       const p = [0, 0, -10, -20, 30, 40];
 
       assert.equals(sut.transformPoints(p, [1, 0, 0, 1, 0, 0]), p);
@@ -80,9 +76,9 @@ define((require, exports, module)=>{
       //   //   ip = sut.closestT(point, ps, curve);
       //   //   drawt(t += ev.which == 66 ? -.01 : 0.01);
       // });
-    },
+    });
 
-    "test combineBox"() {
+    test("combineBox", ()=>{
       /**
        * Combine two boundry boxes
        *
@@ -103,9 +99,9 @@ define((require, exports, module)=>{
 
       assert.equals(sut.combineBox(a, {left: -40, top: -55, right: 60, bottom: 95}),
                     {left: -40, top: -55, right: 60, bottom: 95});
-    },
+    });
 
-    "test combineBoxPoint"() {
+    test("combineBoxPoint", ()=>{
       /**
        * Combine a point into a boundy box
        *
@@ -127,9 +123,9 @@ define((require, exports, module)=>{
 
       assert.equals(sut.combineBoxPoint(box, 100, 150),
                     {left: -20, top: -25, right: 100, bottom: 150});
-    },
+    });
 
-    "test tPoint"() {
+    test("tPoint", ()=>{
       /**
        * Calculate the point at t along a line or a bezier curve
 
@@ -158,9 +154,9 @@ define((require, exports, module)=>{
 
       assert.near(sut.tPoint(.5, [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
                   [25938, 28750]);
-    },
+    });
 
-    "test tTangent"() {
+    test("tTangent", ()=>{
       /**
        * Calculate the point at t along a line or a bezier curve
 
@@ -195,9 +191,9 @@ define((require, exports, module)=>{
       assert.equals(sut.tTangent(1, [0,0], [0,0, 20,25, 20,25]),
                     sut.tTangent(1, [0,0], [20,25]));
 
-    },
+    });
 
-    "test closestT"() {
+    test("closestT", ()=>{
       /**
        * Calculate t along a line or a bezier curve closes to point
 
@@ -258,9 +254,9 @@ define((require, exports, module)=>{
       assert.near(sut.closestT(
         [25978, 28790], [10000,20000], [-5000,-10000, 57500,70000, 40000,30000]),
                   .50059, 0.00001);
-    },
+    });
 
-    "test splitBezier"() {
+    test("splitBezier", ()=>{
       /**
        * Split a bezier curve into two at point t. The passed curve is modified and the second curve
        * is returned.
@@ -280,9 +276,9 @@ define((require, exports, module)=>{
 
       assert.equals(curve1, [2500, 5000, 14375, 17500, 25937.5, 28750]);
       assert.equals(curve2, [37500, 40000, 48750, 50000, 40000, 30000]);
-    },
+    });
 
-    "test bezierBox"() {
+    test("bezierBox", ()=>{
       /**
        * Calculate the boundry box for a cubic bezier curve
        *
@@ -351,9 +347,9 @@ define((require, exports, module)=>{
       //     }],
       //   }
       // }));
-    },
+    });
 
-    // "test draw"() {
+    // test("draw", ()=>{
     //   //const ps = [400, 330], curve = [-200, 100, 700, 100, 400, 330];
     //   const ps = [300, 130], curve = [-400, -200, 1140, 500, 200, 100];
 
@@ -391,7 +387,7 @@ define((require, exports, module)=>{
     //     //   ip = sut.closestT(point, ps, curve);
     //     //   drawt(t += ev.which == 66 ? -.01 : 0.01);
     //   });
-    // },
+    // });
   });
 
   const test$ = Symbol();

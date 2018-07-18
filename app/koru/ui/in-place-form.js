@@ -1,12 +1,12 @@
-define(function(require, exports, module) {
-  const Dom    = require('../dom');
-  const util   = require('../util');
-  const Dialog = require('./dialog');
-  const Form   = require('./form');
+define((require)=>{
+  const Dom             = require('../dom');
+  const util            = require('../util');
+  const Dialog          = require('./dialog');
+  const Form            = require('./form');
 
   const {error$} = require('koru/symbols');
 
-  const Tpl = module.exports = Dom.newTemplate(require('../html!./in-place-form'));
+  const Tpl = Dom.newTemplate(require('../html!./in-place-form'));
   const $ = Dom.current;
 
   class Widget {
@@ -119,6 +119,13 @@ define(function(require, exports, module) {
 
     widget._onSubmit && widget._onSubmit(value, this);
   }
+
+  const cancel = (elm)=>{
+    var ctx = Dom.ctx(elm);
+    var data = ctx.data;
+    data && data.doc && data.doc.$reload();
+    ctx._widget.close();
+  };
 
   Tpl.$events({
     'submit': submit,
@@ -247,10 +254,5 @@ define(function(require, exports, module) {
     },
   });
 
-  function cancel(elm) {
-    var ctx = Dom.ctx(elm);
-    var data = ctx.data;
-    data && data.doc && data.doc.$reload();
-    ctx._widget.close();
-  }
+  return Tpl;
 });

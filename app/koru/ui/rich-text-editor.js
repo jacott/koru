@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const makeSubject     = require('koru/make-subject');
@@ -12,7 +12,7 @@ define(function(require, exports, module) {
   const RichTextMention = require('./rich-text-mention');
   const SelectMenu      = require('./select-menu');
 
-  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
+  const Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-editor'));
   const $ = Dom.current;
   const {Link} = Tpl;
 
@@ -1107,4 +1107,6 @@ define(function(require, exports, module) {
       ColorPicker.setColor($.ctx.parentCtx, $.ctx.data[type]);
     },
   });
+
+  return Tpl;
 });

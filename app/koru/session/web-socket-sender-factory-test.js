@@ -16,19 +16,19 @@ define((require, exports, module)=>{
   const sut = require('./web-socket-sender-factory');
 
   let v = {};
-  TH.testCase(module, {
-    setUp () {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach( ()=>{
       const base = new SessionBase('foo');
       stub(base, 'provide');
       v.sess = sut(base, v.state = stateFactory());
       v.sess.newWs = ()=> v.ws = {};
-    },
+    });
 
-    tearDown () {
+    afterEach( ()=>{
       v = {};
-    },
+    });
 
-    "test initialization"() {
+    test("initialization", ()=>{
       /**
        *
        **/
@@ -43,23 +43,23 @@ define((require, exports, module)=>{
       assert.called(mySession.newWs);
       assert.same(wsConnection.binaryType, 'arraybuffer');
       //]
-    },
+    });
 
-    "test onerror"() {
+    test("onerror", ()=>{
       v.sess.connect();
       assert.same(v.ws.onerror, v.ws.onclose);
-    },
+    });
 
-    "test onStop callbacks"() {
+    test("onStop callbacks", ()=>{
       v.sess.onStop(v.c1 = stub());
       v.sess.onStop(v.c2 = stub());
 
       v.sess.stop();
       assert.called(v.c1);
       assert.called(v.c2);
-    },
+    });
 
-    "test pause"() {
+    test("pause", ()=>{
       v.sess.connect();
       v.ws.close = stub();
 
@@ -78,9 +78,9 @@ define((require, exports, module)=>{
       v.sess.connect();
 
       assert.same(v.sess.state._state, 'startup');
-    },
+    });
 
-    "test heartbeat adjust time"() {
+    test("heartbeat adjust time", ()=>{
       onEnd(_=>{util.adjustTime(-util.timeAdjust)});
 
       let kFunc;
@@ -118,13 +118,13 @@ define((require, exports, module)=>{
       kFunc.call(v.sess, ''+(now));
       assert.equals(util.timeAdjust, 586);
       assert.near(util.timeUncertainty, 66);
-    },
+    });
 
-    "test state"() {
+    test("state", ()=>{
       assert.same(v.state, v.sess.state);
-    },
+    });
 
-    "test unload"() {
+    test("unload", ()=>{
       assert.calledWith(v.sess.provide, 'U', TH.match(arg => {
         v.func = arg;
         return typeof arg === 'function';
@@ -136,9 +136,9 @@ define((require, exports, module)=>{
 
       assert.same(v.sess.hash, 'hhh123');
       assert.calledWith(koru.unload, 'koru/foo');
-    },
+    });
 
-    "test batched messages"() {
+    test("batched messages", ()=>{
       v.sess._commands.f = v.f = stub();
       v.sess._commands.g = v.g = stub();
 
@@ -154,9 +154,9 @@ define((require, exports, module)=>{
       assert.calledWith(v.g, ['gee', 'waz']);
       assert.same(v.f.firstCall.thisValue, v.sess);
       assert.same(v.g.firstCall.thisValue, v.sess);
-    },
+    });
 
-    "test using separate base"() {
+    test("using separate base", ()=>{
       const webSocketSenderFactory = api.new();
       var sess1 = new SessionBase('foo1');
       var sess2 = new SessionBase('foo2');
@@ -170,9 +170,9 @@ define((require, exports, module)=>{
       assert.equals(sess2._commands, {});
       assert.equals(Object.keys(base._commands).sort().join(''), 'BKLUWX');
       assert.same(base._commands.B, bfunc);
-    },
+    });
 
-    "test newVersion"() {
+    test("newVersion", ()=>{
       TH.noInfo();
       stub(koru, 'reload');
       assert.calledWith(v.sess.provide, 'X', TH.match(arg => v.func = arg));
@@ -189,9 +189,9 @@ define((require, exports, module)=>{
       refute.called(koru.reload);
       assert.calledWith(v.sess.newVersion, {newVersion: 'v1.2.3', hash: 'h123'});
       assert.same(v.sess.newVersion.lastCall.thisValue, v.sess);
-    },
+    });
 
-    "test server-to-client broadcast messages"() {
+    test("server-to-client broadcast messages", ()=>{
       v.sess.registerBroadcast("foo", v.foo = stub());
       spy(koru, 'onunload');
       v.sess.registerBroadcast(module, "bar", v.bar = stub());
@@ -225,22 +225,22 @@ define((require, exports, module)=>{
       assert.calledWith(koru.onunload, module);
       koru.onunload.yield();
       assert.equals(v.sess._broadcastFuncs, {foo: null, bar: null});
-    },
+    });
 
-    "open connection": {
-      setUp() {
+    group("open connection", ()=>{
+      beforeEach(()=>{
         v.sess.connect();
         v.sess.ws.close = stub();
         v.sendBinary = stub(v.sess, 'sendBinary');
-      },
+      });
 
-      "test stop"() {
+      test("stop", ()=>{
         v.sess.stop();
 
         assert.calledOnce(v.ws.close);
-      },
+      });
 
-      "test sendBinary"() {
+      test("sendBinary", ()=>{
         v.sendBinary.restore();
         v.sess.state.isReady = stub().returns(true);
         const send = v.sess.ws.send = stub();
@@ -252,7 +252,7 @@ define((require, exports, module)=>{
             return true;
           }
         }));
-      },
-    },
+      });
+    });
   });
 });

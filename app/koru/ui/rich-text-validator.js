@@ -1,7 +1,18 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Changes  = require('koru/changes');
   const util     = require('koru/util');
   const RichText = require('./rich-text');
+
+
+  const filter = (val)=>{
+    if (val[0] == null && val[1] == null) return;
+
+    const html = RichText.toHtml(val[0], val[1], document.createElement('div'));
+    const rt = RichText.fromHtml(html);
+
+    val[0] = rt[0];
+    val[1] = rt[1];
+  };
 
   return {
     richText(doc, field, options) {
@@ -60,14 +71,4 @@ define(function(require, exports, module) {
       return this.addError(doc,field+'HTML','invalid_html');
     },
   };
-
-  function filter(val) {
-    if (val[0] == null && val[1] == null) return;
-
-    const html = RichText.toHtml(val[0], val[1], document.createElement('div'));
-    const rt = RichText.fromHtml(html);
-
-    val[0] = rt[0];
-    val[1] = rt[1];
-  }
 });

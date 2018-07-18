@@ -1,13 +1,14 @@
-define(function(require, exports, module) {
-  const Dom   = require('../dom');
-  const util  = require('../util');
-  const Modal = require('./modal');
+define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const util            = require('../util');
+  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./calendar'));
   const $ = Dom.current;
 
   const MONTH_NAMES = [
-    'January','February','March','April','May','June','July','August','September','October','November','December'
+    'January','February','March','April','May','June','July',
+    'August','September','October','November','December'
   ];
   const DAY = 24*60*60*1000;
   const TR = Dom.h({tr: ''});

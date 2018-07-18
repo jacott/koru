@@ -1,11 +1,11 @@
-define(function(require, exports, module) {
+define((require)=>{
   require('koru/dom/html-doc');
-  const koru = require('koru/main');
-  const util = require('koru/util');
+  const koru            = require('koru/main');
+  const util            = require('koru/util');
 
   let output, needspace;
 
-  function findHyperLinks(md, prefix) {
+  const findHyperLinks = (md, prefix)=>{
     var m, re = /\[([\s\S]*?)\]\(([^)]*)\)/g;
     var m2, re2 = /[\[\]]/g;
     var result = [];
@@ -35,7 +35,37 @@ define(function(require, exports, module) {
       result.push([lstart, mi ? m[1].slice(mi) : m[1], m[2]]);
     }
     return result;
-  }
+  };
+
+  const spaceIfNeeded = (text)=>{
+    needspace && text.match(/^\S/) && output.push(' ');
+    needspace = false;
+  };
+
+  const stressText = (html, flags)=>{
+    if (output.length && output[output.length -1].match(/\S$/))
+      output.push(' ');
+
+    needspace = false;
+    var flag = flags[0];
+    output.push(flags);
+    outputChildNodes(html, flipFlag(flag));
+    output.push(flags);
+    needspace = true;
+  };
+
+  const outputChildNodes = (html, flag)=>{
+    var children = html.childNodes;
+
+    for(var i = 0; i < children.length; ++i) {
+      var row = children[i];
+      fromHtml(row, flag);
+    }
+  };
+
+  const flipFlag = (flag)=>{
+    return flag === '*' ? '_' : '*';
+  };
 
   return {
     fromHtml(html) {
@@ -232,35 +262,5 @@ define(function(require, exports, module) {
         break;
       }
     }
-  }
-
-  function spaceIfNeeded(text) {
-    needspace && text.match(/^\S/) && output.push(' ');
-    needspace = false;
-  }
-
-  function stressText(html, flags) {
-    if (output.length && output[output.length -1].match(/\S$/))
-      output.push(' ');
-
-    needspace = false;
-    var flag = flags[0];
-    output.push(flags);
-    outputChildNodes(html, flipFlag(flag));
-    output.push(flags);
-    needspace = true;
-  }
-
-  function outputChildNodes(html, flag) {
-    var children = html.childNodes;
-
-    for(var i = 0; i < children.length; ++i) {
-      var row = children[i];
-      fromHtml(row, flag);
-    }
-  }
-
-  function flipFlag(flag) {
-    return flag === '*' ? '_' : '*';
   }
 });

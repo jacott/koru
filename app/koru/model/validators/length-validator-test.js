@@ -1,9 +1,10 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const validation      = require('../validation');
-  const sut             = require('./length-validator');
 
   const {error$} = require('koru/symbols');
+
+  const sut = require('./length-validator');
 
   TH.testCase(module, ({test})=>{
     test("too long", ()=>{

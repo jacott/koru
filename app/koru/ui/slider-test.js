@@ -1,23 +1,18 @@
-isClient && define(function (require, exports, module) {
-  const sut             = require('./slider');
+isClient && define((require, exports, module)=>{
   const TH              = require('./test-helper');
+
+  const sut = require('./slider');
 
   const {stub, onEnd} = TH;
 
-  let v= null;
-
-  TH.testCase(module, {
-    setUp() {
-      v = {};
-    },
-
-    tearDown() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+    });
 
-    "test pointerdown on slider"() {
-      const slider = sut.$autoRender({pos: .25, callback: v.callback = stub()});
+    test("pointerdown on slider", ()=>{
+      const callback = stub();
+      const slider = sut.$autoRender({pos: .25, callback});
       document.body.appendChild(slider);
 
       slider.style.width = '256px';
@@ -52,18 +47,18 @@ isClient && define(function (require, exports, module) {
           refute.called(window.requestAnimationFrame);
         });
 
-        assert.calledWith(v.callback, .5);
-        assert.calledWith(v.callback, .75, TH.match(ctx => ctx.data.pos === 0.75), this);
+        assert.calledWith(callback, .5);
+        assert.calledWith(callback, .75, TH.match(ctx => ctx.data.pos === 0.75), this);
 
-        assert.same(v.callback.callCount, 3);
+        assert.same(callback.callCount, 3);
 
-        v.callback.reset();
+        callback.reset();
 
         sut.move(this, 1);
-        assert.calledWith(v.callback, 1, TH.match(ctx => ctx.data.pos === 1), this);
+        assert.calledWith(callback, 1, TH.match(ctx => ctx.data.pos === 1), this);
 
       });
-    },
+    });
 
   });
 });

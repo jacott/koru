@@ -1,6 +1,5 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const Dom             = require('../dom');
-  const util            = require('../util');
 
   const Tpl = Dom.newTemplate(module, require('../html!./slider'));
   const $ = Dom.current;
@@ -15,17 +14,11 @@ define(function(require, exports, module) {
     'pointerdown .slider'(event) {
       Dom.stopEvent();
 
-      document.addEventListener('pointermove', adjust, true);
-      document.addEventListener('pointerup', cancel, true);
-
       const {ctx} = $;
       const {data} = ctx;
-      ctx.cancel = cancel;
-
-      let x = event.clientX;
-
       const sliderElm = this;
       const width = sliderElm.clientWidth;
+      let x = event.clientX;
 
       let handle = event.target;
 
@@ -42,18 +35,14 @@ define(function(require, exports, module) {
       const xMin = x - (width * data.pos);
       let af = null;
 
-      Dom.addClass(sliderElm, 'ui-dragging');
-
-      draw();
-
-      function adjust(event) {
+      const adjust = (event)=>{
         x = event.clientX;
 
         if (! af)
           af = window.requestAnimationFrame(draw);
-      }
+      };
 
-      function cancel() {
+      const cancel = ()=>{
         ctx.cancel = null;
         if (af) {
           window.cancelAnimationFrame(af);
@@ -65,16 +54,25 @@ define(function(require, exports, module) {
         handleStyle.willChange = '';
         const {data} = ctx;
         data.callback && data.callback(data.pos, ctx, sliderElm);
-      }
+      };
+      ctx.cancel = cancel;
 
-      function draw() {
+      const draw = ()=>{
         af = null;
         data.pos = Math.max(Math.min(width, x - xMin), 0) / width;
 
         handleStyle.left = data.pos*100+'%';
 
         data.callback && data.callback(data.pos, ctx, sliderElm);
-      }
+      };
+
+      document.addEventListener('pointermove', adjust, true);
+      document.addEventListener('pointerup', cancel, true);
+
+
+      Dom.addClass(sliderElm, 'ui-dragging');
+
+      draw();
     },
   });
 

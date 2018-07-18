@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const Random   = require('koru/random');
-  const RPCQueue = require('koru/session/rpc-queue');
-  const util     = require('koru/util');
-  const koru     = require('../main');
+define((require)=>{
+  const Random          = require('koru/random');
+  const RPCQueue        = require('koru/session/rpc-queue');
+  const util            = require('koru/util');
+  const koru            = require('../main');
 
   const rpcQueue$ = Symbol(), baseId$ = Symbol(),
         lastMsgId$ = Symbol(), nextMsgId$ = Symbol();
@@ -58,7 +58,7 @@ define(function(require, exports, module) {
   };
 
   function rpc(name, ...args) {
-    var func = args[args.length - 1];
+    let func = args[args.length - 1];
     if (typeof func !== 'function') func = null;
     else
       args.length = args.length - 1;
@@ -77,7 +77,7 @@ define(function(require, exports, module) {
 
   function _sendM(name, args, func) {
     const msgId = this[lastMsgId$] = (this[nextMsgId$]++).toString(36)+this[baseId$];
-    var data = [msgId, name];
+    const data = [msgId, name];
     args && util.forEach(args, arg => data.push(util.deepCopy(arg)));
     this[rpcQueue$].push(this, data, func);
     this.state.incPending(! this.isRpcGet(name));
@@ -86,14 +86,14 @@ define(function(require, exports, module) {
   }
 
   function recvM(data) {
-    var session = this;
-    var msgId = data[0];
-    var args = session[rpcQueue$].get(msgId);
+    const session = this;
+    const msgId = data[0];
+    const args = session[rpcQueue$].get(msgId);
     if (! args) return;
     session.cancelRpc(msgId);
-    var type = data[1];
+    const type = data[1];
     if (type === 'e') {
-      var callback = args[1] || koru.globalCallback;
+      const callback = args[1] || koru.globalCallback;
       if (data.length === 3)
         callback(new Error(data[2]));
       else

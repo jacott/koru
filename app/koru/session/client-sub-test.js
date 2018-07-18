@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   /**
    * A subscription to a publication
    *
@@ -6,27 +6,26 @@ isClient && define(function (require, exports, module) {
    *
    * See {#koru/session/subscribe}
    **/
-  const Model        = require('koru/model');
-  const publish      = require('koru/session/publish');
-  const api          = require('koru/test/api');
-  const stateFactory = require('./state').constructor;
-  const TH           = require('./test-helper');
+  const Model           = require('koru/model');
+  const publish         = require('koru/session/publish');
+  const api             = require('koru/test/api');
+  const stateFactory    = require('./state').constructor;
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, intercept} = TH;
 
   const ClientSub    = require('./client-sub');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.sess = {
-        provide: test.stub(),
+        provide: stub(),
         state: v.sessState = stateFactory(),
         _rpcs: {},
         _commands: {},
-        sendBinary: v.sendBinary = test.stub(),
+        sendBinary: v.sendBinary = stub(),
         subs: {},
       };
       const subscribe = function () {};
@@ -35,13 +34,13 @@ isClient && define(function (require, exports, module) {
           const subscribe = ${'require'}('koru/session/subscribe');
           const clientSub = subscribe("Library");`
       });
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test no longer waiting when decPending"() {
+    test("no longer waiting when decPending", ()=>{
       const sub = new ClientSub(v.sess, "1", "Library", []);
       let incCount = 0, decCount = 0;
       intercept(v.sess.state, 'incPending', ()=>{
@@ -58,9 +57,9 @@ isClient && define(function (require, exports, module) {
 
       assert.same(incCount, 1);
       assert.same(decCount, 1);
-    },
+    });
 
-    "test onResponse"() {
+    test("onResponse", ()=>{
       /**
        * Use this instead of passing a callback to subscribe to be notified each time the server
        * responds to a connection request.
@@ -91,9 +90,9 @@ isClient && define(function (require, exports, module) {
       sub._wait();
       sub._received('error');
       assert.calledThrice(v.cb);
-    },
+    });
 
-    "test onFirstResponse"() {
+    test("onFirstResponse", ()=>{
       /**
        * Same as passing a callback to subscribe to be notified the first time the server responds
        * to a connection request.
@@ -117,9 +116,9 @@ isClient && define(function (require, exports, module) {
       sub._wait();
       sub._received(200);
       assert.calledOnce(v.cb);
-    },
+    });
 
-    "test #match"() {
+    test("#match", ()=>{
       /**
        * Register a match function used to check if a document should
        * be in the database.
@@ -129,7 +128,7 @@ isClient && define(function (require, exports, module) {
       class Book extends Model.BaseModel {
       }
 
-      const regBook = test.stub(publish.match, "register").withArgs(Book, TH.match.func)
+      const regBook = stub(publish.match, "register").withArgs(Book, TH.match.func)
               .returns("registered Book");
       const sub1 = new ClientSub(v.sess, "1", "Library", []);
 
@@ -138,20 +137,20 @@ isClient && define(function (require, exports, module) {
 
       assert.equals(sub1._matches, ['registered Book']);
       assert.isTrue(regBook.args(0, 1)({name: "Lord of the Flies"}));
-    },
+    });
 
-    "test filterModels"() {
+    test("filterModels", ()=>{
       /**
        * Remove model documents that do not match this subscription
        **/
       api.protoMethod('filterModels');
 
-      test.stub(publish, '_filterModels');
-      var sub1 = new ClientSub(v.sess, "1", "Library", []);
+      stub(publish, '_filterModels');
+      const sub1 = new ClientSub(v.sess, "1", "Library", []);
 
       sub1.filterModels('Book', 'Catalog');
 
       assert.calledWithExactly(publish._filterModels, {Book: true, Catalog: true});
-    },
+    });
   });
 });

@@ -1,10 +1,9 @@
-define(function (require, exports, module) {
-  const Dom  = require('koru/dom/base');
-  const util = require('koru/util');
-  const TH   = require('koru/test-helper');
+define((require, exports, module)=>{
+  const Dom             = require('koru/dom/base');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
 
   const sut  = require('./rich-text');
-  let v = null;
 
   const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
         LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
@@ -12,19 +11,14 @@ define(function (require, exports, module) {
         FONT = 14, BGCOLOR = 15, COLOR = 16, SIZE = 17,
         LI = 20;
 
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    let para;
+    beforeEach( ()=>{
+      para = document.createElement('p');
+    });
 
-  TH.testCase(module, {
-    setUp () {
-      v = {};
-      v.p = document.createElement('p');
-    },
-
-    tearDown () {
-      v = null;
-    },
-
-    "validation": {
-      "test simple" () {
+    group("validation", ()=>{
+      test("simple",  ()=>{
         assert(sut.isValid("some\nlines", [BOLD, 0, 2, 3]));
         assert(sut.isValid(""));
         assert(sut.isValid());
@@ -38,10 +32,10 @@ define(function (require, exports, module) {
         refute(sut.isValid("345", NaN));
         refute(sut.isValid([1,2]));
         assert(sut.isValid('code:rb\n"a"\ncode:rb\nb', [CODE, 0, 1, 48, OL, 0, 3, CODE, 1, 1]));
-      },
-    },
+      });
+    });
 
-    "test fontType" () {
+    test("fontType",  ()=>{
       sut.mapFontNames({cursive: 'foo-face'});
       assert.same(sut.fontType(0), 'sans-serif');
       assert.same(sut.fontType("5"), 'cursive');
@@ -50,46 +44,47 @@ define(function (require, exports, module) {
       assert.same(sut.fontType("foo-face"), 'cursive');
       assert.same(sut.fontType("serif"), 'serif');
       assert.same(sut.fontType(""), 'sans-serif');
-    },
+    });
 
-    "test just text" () {
+    test("just text",  ()=>{
       var doc = "Hello world";
 
-      var html = sut.toHtml(doc, null, v.p);
+      var html = sut.toHtml(doc, null, para);
 
       assert.same(html.outerHTML, "<p><div>Hello world</div></p>");
 
       assert.equals(sut.fromHtml(html), [doc, null]);
-    },
+    });
 
-    "test fragment" () {
+    test("fragment",  ()=>{
       var rt = sut.fromHtml(Dom.h([{b: 'foo'}, ' bar']));
       assert.equals(rt, ['foo bar', [11, 0, 0, 3]]);
-    },
+    });
 
-    "test div with multi-line text" () {
+    test("div with multi-line text",  ()=>{
       var doc = "Hello world\n\nline 2\n";
 
       var html = sut.toHtml(doc);
 
-      assert.equals(inspectFrag(html), ["<div>Hello world</div>", "<div><br></div>", "<div>line 2</div>", "<div><br></div>"]);
+      assert.equals(inspectFrag(html), [
+        "<div>Hello world</div>", "<div><br></div>", "<div>line 2</div>", "<div><br></div>"]);
 
       var arround = document.createElement('div');
       arround.appendChild(html);
 
       assert.equals(sut.fromHtml(arround), [doc, null]);
-    },
+    });
 
-    "test empty li" () {
+    test("empty li",  ()=>{
       var doc = "\n\n", markup = [OL, 0, 1, LI, 0, 0, LI, 1, 0];
 
-      var html = sut.toHtml(doc, markup, v.p);
+      var html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML, "<p><ol><li><br></li><li><br></li></ol><div><br></div></p>");
 
-      assert.equals(sut.fromHtml(v.p), [doc, markup]);
-    },
+      assert.equals(sut.fromHtml(para), [doc, markup]);
+    });
 
-    "test simple" () {
+    test("simple",  ()=>{
       var doc = "a\nb";
       var html = document.createElement('p');
       html.appendChild(sut.toHtml(doc));
@@ -97,11 +92,11 @@ define(function (require, exports, module) {
       assert.same(html.outerHTML, "<p><div>a</div><div>b</div></p>");
 
       assert.equals(sut.fromHtml(html), ['a\nb', null]);
-    },
+    });
 
-    "test nested" () {
+    test("nested",  ()=>{
       var doc = "brave\nnew\nworld\nnow", markup = [NEST, 0, 2, NEST, 0, 0, NEST, 2, 0, NEST, 1, 0];
-      var html = sut.toHtml(doc, markup, v.p);
+      var html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML,
                   '<p><blockquote>' +
                     '<blockquote><div>brave</div></blockquote>' +
@@ -109,9 +104,9 @@ define(function (require, exports, module) {
                     '<blockquote><div>world</div></blockquote>' +
                   '</blockquote>' +
                   '<blockquote><div>now</div></blockquote></p>');
-    },
+    });
 
-    "test headers"() {
+    test("headers", ()=>{
       const json = {
         ol: {
           li: [
@@ -126,9 +121,9 @@ define(function (require, exports, module) {
       const html = sut.toHtml(...mu);
 
       assert.equals({ol: Dom.htmlToJson(html)[0]}, json);
-    },
+    });
 
-    "test strike-through"() {
+    test("strike-through", ()=>{
       const json = {
         div: ['a', {s: 'b'}, 'c', {style: 'text-decoration: underline line-through;', span: 'd'}]};
 
@@ -143,27 +138,27 @@ define(function (require, exports, module) {
           'c',
           {style: 'text-decoration: underline line-through;', span: 'd'},
         ]}]);
-    },
+    });
 
-    "test inline styles" () {
+    test("inline styles",  ()=>{
       var doc = "brave\nnew\nworld", markup = [BOLD, 0, 0, 5, ITALIC, 1, 0, 2, BOLD, 0, 2, 3, UNDERLINE, 1, 3, 4];
-      var html = sut.toHtml(doc, markup, v.p);
+      var html = sut.toHtml(doc, markup, para);
       assert.same(html.outerHTML, '<p><div><span style="font-weight: bold;">brave</span></div><div>'+
                   '<span style="font-style: italic;">ne</span><span style="font-weight: bold;">w</span></div>'+
                   '<div>wor<span style="text-decoration: underline;">l</span>d</div></p>');
-    },
+    });
 
-    "test list and nesting" () {
+    test("list and nesting",  ()=>{
       var doc = "It´s a\nbrave\n new world now", markup = [NEST, 1, 1, BOLD, 0, 0, 5, ITALIC, 1, 5, 10];
 
-      var html = sut.toHtml(doc, markup, v.p);
+      var html = sut.toHtml(doc, markup, para);
 
       assert.same(html.outerHTML, '<p><div>It´s a</div><blockquote><div><span style="font-weight: bold;">brave</span></div><div> new <span style="font-style: italic;">world</span> now</div></blockquote></p>');
 
       assert.equals(sut.fromHtml(html), [doc, markup]);
-    },
+    });
 
-    "test complex" () {
+    test("complex",  ()=>{
       var complex = '<div>he</div><div>-llo world<span style="font-weight: bold;">in <span style="font-style: italic;">here</span>'+
             ' out</span></div><div><br></div><div>line 2</div>';
       var doc = "he\n-llo worldin here out\n\nline 2";
@@ -172,9 +167,9 @@ define(function (require, exports, module) {
       html.innerHTML = complex;
       assert.equals(sut.toHtml(doc, markup, document.createElement('div')).innerHTML, complex);
       assert.equals(sut.fromHtml(html), [doc, markup]);
-    },
+    });
 
-    "test special" () {
+    test("special",  ()=>{
       sut.registerLinkType({
         id: 1,
         class: "foo",
@@ -187,25 +182,25 @@ define(function (require, exports, module) {
       const html = Dom.h({div: {a: "a foo", class: "foo", $href: 'link_to_foo'}});
       assert.equals(sut.fromHtml(html), ['a foo (link_to)', [LINK, 0, 0, 15, 1, 5]]);
       assertConvert(TH.normHTMLStr(html.outerHTML));
-    },
+    });
 
-    "test linkType" () {
+    test("linkType",  ()=>{
       assert.equals(sut.linkType(0), {id: 0, class: '', fromHtml: TH.match.func, toHtml: TH.match.func});
-    },
+    });
 
-    "test no javascript in link" () {
+    test("no javascript in link",  ()=>{
       assertConvert(
         '<a href="javascript:alert(123)">abc</a>',
         '<div><a draggable="false" href="alert(123)" rel="noopener" target="_blank">abc</a></div>');
-    },
+    });
 
-    "test skips empty text" () {
+    test("skips empty text",  ()=>{
       var html = Dom.h({p: {ol: [{li: "one"}, {li: ["two", {br: ''}, document.createTextNode('')]}]}});
       var rt = sut.fromHtml(html);
       assert.equals(rt, ['one\ntwo', [OL, 0, 1, LI, 0, 0, LI, 1, 0]]);
-    },
+    });
 
-    "test font" () {
+    test("font",  ()=>{
       sut.mapFontNames({cursive: 'foo-face'});
 
       assertBothConvert('<div>one<font color="#ff0000" face="foo-face" size="4">two</font>three</div>',
@@ -226,9 +221,9 @@ define(function (require, exports, module) {
                         '<div>one<span style="font-family: sans-serif;">two</span>three</div>');
       assertBothConvert('<div><font face="foo-face">two</font></div>',
                         '<div><span style="font-family: foo-face;">two</span></div>');
-    },
+    });
 
-    "test alignment" () {
+    test("alignment",  ()=>{
       assertConvert('<div align="right">foo</div>',
                     '<div style="text-align: right;">foo</div>');
       assertBothConvert('<div style="text-align: right;"><ol><li>a</li><li>b</li></ol></div>',
@@ -243,19 +238,19 @@ define(function (require, exports, module) {
       assertConvert('<blockquote><div style="text-align: right;">one</div></blockquote>');
       assertBothConvert('<blockquote><div style="text-align:center;">one<br>two</div></blockquote>',
                         '<blockquote><div style="text-align: center;">one</div><div style="text-align: center;">two</div></blockquote>');
-    },
+    });
 
-    "test hiliteColor" () {
+    test("hiliteColor",  ()=>{
       assertConvert('<div>one<span style="background-color:#ffff00">two</span>three</div>',
                     '<div>one<span style="background-color: rgb(255, 255, 0);">two</span>three</div>');
-    },
+    });
 
-    "test includeTop" () {
+    test("includeTop",  ()=>{
       var rt = sut.fromHtml(Dom.h({ol: {li: 'line'}}), {includeTop: true});
       assert.equals(rt, ['line', [OL, 0, 0, LI, 0, 0]]);
-    },
+    });
 
-    "test code" () {
+    test("code",  ()=>{
       assertBothConvert('<ol><li><div>one</div><pre data-lang="text"><div>foo</div></pre></li></ol>',
                         '<ol><li>one<pre data-lang=\"text\"><div>foo</div></pre></li></ol>');
       assertConvert('<pre data-lang="text"><div><br></div></pre>');
@@ -292,21 +287,21 @@ define(function (require, exports, module) {
       assertBothConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>',
                         '<div>Some <span style="font-family: monospace;">code in</span> here</div>'+
                         '<pre data-lang="javascript"><div>one\ntwo\nthree</div></pre>');
-    },
+    });
 
-    "test nested links" () {
+    test("nested links",  ()=>{
       var html = Dom.h({div: {a: {a: 'text', $href: "/2"}, $href: "/1"}});
 
       var rt = sut.fromHtml(html);
       assert.equals(rt, ['text (/1)', [5, 0, 0, 9, 0, 4]]);
-    },
+    });
 
-    "test paste from other editors" () {
+    test("paste from other editors",  ()=>{
       assertConvert('<div><meta http-equiv="content-type" content="text/html; charset=utf-8"><ul style="color: rgb(0, 0, 0); font-family: \'Times New Roman\'; font-size: medium; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: normal; orphans: auto; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 1; word-spacing: 0px; -webkit-text-stroke-width: 0px;"><li><script>bad.code</script><p style="margin-bottom: 0cm; line-height: 16px;">Item 1</p></li><li>  \n\n\r\t   </li></ul><br class="Apple-interchange-newline"></div>',
                     '<ul><li><div style=\"text-align: left;\">Item 1</div></li></ul><li><br></li>');
-    },
+    });
 
-    "test decorations on link"() {
+    test("decorations on link", ()=>{
       // assertConvert('<div><a draggable="false" href="/123"><span style=\"font-weight: bold;\">hello</span></a></div>', 'x');
       assertConvert(
         '<div><a style="font-weight:bold" draggable="false" href="/123">hello</a></div>',
@@ -316,9 +311,9 @@ define(function (require, exports, module) {
         '<div><a style="font-weight: bold;font-family: monospace;" draggable="false" href="/123">hello</a></div>',
         '<div><a draggable="false" href="/123"><span style=\"font-weight: bold; font-family: monospace;\">hello</span></a></div>',
       );
-    },
+    });
 
-    "test multiple" () {
+    test("multiple",  ()=>{
       sut.mapFontNames({poster: 'foo font'});
 
       assertConvert('<div><span style="font-weight:normal;font-style:normal;text-decoration:line-through;">text</span></div>',
@@ -381,7 +376,7 @@ define(function (require, exports, module) {
         '<div>hello <a draggable="false" href="#/foo1">Foo link</a> end</div>');
       assertConvert("<ul><li>test ONE</li></ul><div><br></div>");
       assertConvert("<ol><li><br></li><li><br></li></ol>");
-    },
+    });
   });
 
   const assertConvert = (text, expect)=>{

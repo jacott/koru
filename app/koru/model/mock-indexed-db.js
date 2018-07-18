@@ -1,6 +1,6 @@
-define(function(require, exports, module) {
-  const TH   = require('koru/test/main');
-  const util = require('koru/util');
+define((require)=>{
+  const TH              = require('koru/test/main');
+  const util            = require('koru/util');
 
   const idField$ = Symbol();
 

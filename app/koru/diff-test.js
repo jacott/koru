@@ -1,9 +1,9 @@
-define(function (require, exports, module) {
-  const Random = require('koru/random');
-  const util   = require('koru/util');
-  const TH     = require('koru/test-helper');
+define((require, exports, module)=>{
+  const Random          = require('koru/random');
+  const TH              = require('koru/test-helper');
+  const util            = require('koru/util');
 
-  const Diff  = require('./diff');
+  const Diff = require('./diff');
 
   TH.testCase(module, ({test, group})=>{
     test("diff", ()=>{

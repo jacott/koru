@@ -1,7 +1,7 @@
-define(function(require, exports, module) {
-  const Dom    = require('koru/dom');
-  const util   = require('koru/util');
-  const uColor = require('koru/util-color');
+define((require, exports, module)=>{
+  const Dom             = require('koru/dom');
+  const util            = require('koru/util');
+  const uColor          = require('koru/util-color');
 
   const ELEMENT_NODE = document.ELEMENT_NODE;
   const TEXT_NODE = document.TEXT_NODE;

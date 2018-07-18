@@ -1,12 +1,12 @@
-define(function(require, exports, module) {
-  const koru       = require('koru');
-  const Changes    = require('koru/changes');
-  const dbBroker   = require('koru/model/db-broker');
-  const ModelMap   = require('koru/model/map');
-  const Query      = require('koru/model/query');
-  const TransQueue = require('koru/model/trans-queue');
-  const {stopGap$} = require('koru/symbols');
-  const util       = require('koru/util');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const Changes         = require('koru/changes');
+  const dbBroker        = require('koru/model/db-broker');
+  const ModelMap        = require('koru/model/map');
+  const Query           = require('koru/model/query');
+  const TransQueue      = require('koru/model/trans-queue');
+  const {stopGap$}      = require('koru/symbols');
+  const util            = require('koru/util');
 
   const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol(),
         busyQueue$ = Symbol();

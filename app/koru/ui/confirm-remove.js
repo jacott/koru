@@ -1,9 +1,8 @@
-define(function(require, exports, module) {
-  const Dom    = require('../dom');
-  const util   = require('../util');
-  const Dialog = require('./dialog');
+define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const Dialog          = require('./dialog');
 
-  const Tpl = module.exports = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
+  const Tpl = Dom.newTemplate(module, require('koru/html!./confirm-remove'));
 
   Tpl.$extend({
     show({
@@ -24,4 +23,6 @@ define(function(require, exports, module) {
       });
     },
   });
+
+  return Tpl;
 });

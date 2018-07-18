@@ -1,13 +1,13 @@
-define(function(require, exports, module) {
-  const dbBroker = require('koru/model/db-broker');
-  const koru     = require('../main');
-  const Model    = require('../model/main');
-  const ModelEnv = require('../model/main-client');
-  const Query    = require('../model/query');
-  const Trace    = require('../trace');
-  const util     = require('../util');
-  const message  = require('./message');
-  const publish  = require('./publish');
+define((require)=>{
+  const dbBroker        = require('koru/model/db-broker');
+  const koru            = require('../main');
+  const Model           = require('../model/main');
+  const ModelEnv        = require('../model/main-client');
+  const Query           = require('../model/query');
+  const Trace           = require('../trace');
+  const util            = require('../util');
+  const message         = require('./message');
+  const publish         = require('./publish');
 
   let debug_clientUpdate = false;
   Trace.debug_clientUpdate = value => {debug_clientUpdate = value};

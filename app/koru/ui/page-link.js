@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const Dom    = require('../dom');
   const util   = require('../util');
   const Dialog = require('./dialog');
@@ -54,8 +54,8 @@ define(function(require, exports, module) {
   });
 
   Dom.registerHelpers({
-    pageLink: Dom.Form.pageLink = function (options) {
-      return Tpl.$autoRender(options);
-    },
+    pageLink: Dom.Form.pageLink = options => Tpl.$autoRender(options),
   });
+
+  return Tpl;
 });

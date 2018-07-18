@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   /**
    * Attach rpc to a session
    **/
@@ -15,11 +15,11 @@ define(function (require, exports, module) {
   const {stub, spy, onEnd} = TH;
 
   const sut = require('./client-rpc-base');
-  let v = null;
 
-  TH.testCase(module, {
-    setUp () {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach( ()=>{
       v.state = stateFactory();
       TH.mockConnectState(v, v.state);
 
@@ -34,14 +34,13 @@ define(function (require, exports, module) {
       v.sess = sut(new MySession());
 
       v.recvM = (...args)=>{v.sess._commands.M.call(v.sess, args)};
-      api.module();
-    },
+    });
 
-    tearDown () {
-      v = null;
-    },
+    afterEach( ()=>{
+      v = {};
+    });
 
-    "test setup"() {
+    test("setup", ()=>{
       /**
        * Wire up rpc to a session
        *
@@ -58,9 +57,9 @@ define(function (require, exports, module) {
       sut(v.sess, {rpcQueue});
       v.sess.rpc('foo.rpc', 1, 2);
       assert.equals(rpcQueue.get('1rid1'), [['1rid1', 'foo.rpc', 1, 2], null]);
-    },
+    });
 
-    "test replaceRpcQueue"() {
+    test("replaceRpcQueue", ()=>{
       /**
        * Replace the rpc queue with a different one.
        **/
@@ -80,9 +79,9 @@ define(function (require, exports, module) {
 
       assert.calledWith(myQueue.push, v.sess, ['1rid1', 'foo.rpc', 1, 2, 3], cb);
       assert.calledWith(myQueue.push, v.sess, ['2rid1', 'bar.rpc', 'x'], null);
-    },
+    });
 
-    "test checkMsgId"() {
+    test("checkMsgId", ()=>{
       /**
        * Ensure than next msgId will be greater than this one
        **/
@@ -96,18 +95,18 @@ define(function (require, exports, module) {
       assert.equals(v.sess._sendM('foo'), '15rid1');
       v.sess.checkMsgId(id);
       assert.equals(v.sess._sendM('foo'), '16rid1');
-    },
+    });
 
-    "test lastRpc"() {
+    test("lastRpc", ()=>{
       /**
        * Return lastRpc msgId to use with {##cancelRpc}
        **/
       api.protoProperty('lastMsgId');
       v.sess.rpc('foo.rpc', 1, 2, 3);
       assert.same(v.sess.lastMsgId, '1rid1');
-    },
+    });
 
-    "test cancelRpc"() {
+    test("cancelRpc", ()=>{
       /**
        * Return lastRpc msgId to use with {##cancelRpc}
        **/
@@ -137,14 +136,14 @@ define(function (require, exports, module) {
       v.sess.cancelRpc(msgId2);
       assert.same(v.sess.state.pendingCount(), 0);
       assert.same(v.sess.state.pendingUpdateCount(), 0);
-    },
+    });
 
-    "reconnect": {
+    group("reconnect", ()=>{
       /**
        * Ensure docs are tested against matches after subscriptions have returned.
        * Any unwanted docs should be removed.
        **/
-      "test replay messages" () {
+      test("replay messages",  ()=>{
         assert.calledWith(v.state.onConnect, "20-rpc", TH.match(func => v.onConnect = func));
         v.sess.rpc("foo.bar", 1, 2);
         v.sess.rpc("foo.baz", 1, 2);
@@ -156,16 +155,10 @@ define(function (require, exports, module) {
 
         assert.calledWith(v.sendBinary, 'M', ["2rid1", "foo.baz", 1, 2]);
         assert.calledOnce(v.sendBinary); // foo.bar replied so not resent
-      },
-    },
+      });
+    });
 
-    "test server only rpc" () {
-      v.sess.rpc('foo.rpc', 1, 2, 3);
-
-      assert.calledWith(v.sendBinary, 'M', [v.sess._msgId.toString(36), "foo.rpc", 1, 2, 3]);
-    },
-
-    "test callback rpc" () {
+    test("callback rpc",  ()=>{
       stub(koru, 'globalCallback');
 
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
@@ -212,9 +205,9 @@ define(function (require, exports, module) {
       function rpcSimMethod(...args) {
         v.args = args.slice();
       }
-    },
+    });
 
-    "test rpc" () {
+    test("rpc",  ()=>{
       v.ready = true;
       let _msgId = 0, fooId;
       v.sess.defineRpc('foo.rpc', rpcSimMethod);
@@ -269,9 +262,9 @@ define(function (require, exports, module) {
         assert.isTrue(v.sess.isSimulation);
         refute.exception(()=>{v.sess.rpc('foo.remote')});
       }
-    },
+    });
 
-    "test server only rpc" () {
+    test("server only rpc",  ()=>{
       v.ready = true;
       refute.exception(()=>{v.sess.rpc('foo.rpc', 1, 2, 3)});
 
@@ -281,9 +274,9 @@ define(function (require, exports, module) {
 
       assert.calledWith(v.sendBinary, 'M', [
         v.sess.lastMsgId, "foo.rpc", 1, 2, 3]);
-    },
+    });
 
-    "test onChange rpc" () {
+    test("onChange rpc",  ()=>{
       onEnd(v.state.pending.onChange(v.ob = stub()));
 
       assert.same(v.state.pendingCount(), 0);
@@ -314,6 +307,5 @@ define(function (require, exports, module) {
 
       assert.same(v.state.pendingCount(), 0);
       assert.same(v.state.pendingUpdateCount(), 0);
-    }
-  });
+    });  });
 });

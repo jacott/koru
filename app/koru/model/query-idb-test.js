@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   /**
    * Support client side persistence using indexedDB
    *
@@ -769,7 +769,7 @@ isClient && define(function (require, exports, module) {
     });
   });
 
-  function then(queue, idx=0) {
+  const then = (queue, idx=0)=>{
     v.db.whenReady(() => {
       if (! (v && queue[idx])) return;
       queue[idx]();
@@ -777,7 +777,7 @@ isClient && define(function (require, exports, module) {
       v.idb.yield(0);
       then(queue, idx+1);
     }).catch(v.error);
-  }
+  };
 
   const flush = (max=10)=>{
     v.idb.yield();

@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const koru              = require('koru');
   const Dom               = require('koru/dom');
   const RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
@@ -9,24 +9,25 @@ isClient && define(function (require, exports, module) {
   const RichText          = require('./rich-text');
   const TH                = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   const sut               = require('./rich-text-editor');
-  var test, v;
 
   const {ctrl} = KeyMap;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v ={};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.tpl = Dom.newTemplate(util.deepCopy(RichTextEditorTpl));
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+      v = {};
+    });
 
-    "test attrs helper"() {
+    test("attrs helper", ()=>{
       const elm = sut.$autoRender({
         content: '', options: {
           class: 'foo bar', id: 'FOO', type: 'RichTextEditor',
@@ -42,9 +43,9 @@ isClient && define(function (require, exports, module) {
         assert.same(this.id, 'FOO');
         assert.dom('.input[placeholder="place holder text"]');
       });
-    },
+    });
 
-    "test get/set value"() {
+    test("get/set value", ()=>{
       document.body.appendChild(v.tpl.$autoRender({content: null}));
 
       assert.dom('.input', function () {
@@ -54,9 +55,9 @@ isClient && define(function (require, exports, module) {
         this.parentNode.value = null;
         assert.same(this.firstChild, null);
       });
-    },
+    });
 
-    "test forward/back char"() {
+    test("forward/back char", ()=>{
       runSubTests({
         "within text node "() {
           this.appendChild(RichText.toHtml("hello world"));
@@ -128,12 +129,12 @@ isClient && define(function (require, exports, module) {
                              sut.firstInnerMostNode(this.querySelector('b')), 0);
         },
       });
-    },
+    });
 
-    "test focus"() {
-      test.stub(document, 'execCommand');
+    test("focus", ()=>{
+      stub(document, 'execCommand');
       document.body.appendChild(sut.$autoRender({
-        content: '', options: {focusout: v.focusout = test.stub()}}));
+        content: '', options: {focusout: v.focusout = stub()}}));
 
       assert.dom('.richTextEditor:not([focusout])>.input', function () {
         this.focus();
@@ -155,10 +156,10 @@ isClient && define(function (require, exports, module) {
         refute.className(this.parentNode, 'focus');
         assert.called(v.focusout);
       });
-    },
+    });
 
-    "test bold, italic, underline, strikeThrough"() {
-      v.ec = test.stub(document, 'execCommand');
+    test("bold, italic, underline, strikeThrough", ()=>{
+      v.ec = stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -176,10 +177,10 @@ isClient && define(function (require, exports, module) {
         TH.keydown(input, '5', {altKey: true, shiftKey: true});
         assert.calledWith(v.ec, 'strikeThrough');
       });
-    },
+    });
 
-    "test heading"() {
-      v.ec = test.stub(document, 'execCommand');
+    test("heading", ()=>{
+      v.ec = stub(document, 'execCommand');
 
       const assertKey = (key)=>{
         TH.keydown(input, key, {altKey: true, ctrlKey: true});
@@ -191,10 +192,10 @@ isClient && define(function (require, exports, module) {
 
       TH.keydown(input, '0', {altKey: true, ctrlKey: true});
       assert.calledWith(v.ec, 'formatBlock', false, 'div');
-    },
+    });
 
-    "pre": {
-      setUp() {
+    group("pre", ()=>{
+      beforeEach(()=>{
         document.body.appendChild(v.tpl.$autoRender({content: ''}));
         v.selectCode = ()=>{
           const node = Dom('.input pre>div').firstChild;
@@ -202,15 +203,15 @@ isClient && define(function (require, exports, module) {
           TH.keyup(node, 39);
           return range;
         };
-      },
+      });
 
-      "test load languages"() {
-        const langs = test.stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
+      test("load languages", ()=>{
+        const langs = stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
         assert.dom('.input', function () {
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
           sut.languageList = null;
           const elm = v.selectCode().startContainer;
-          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         assert.called(langs);
@@ -220,16 +221,16 @@ isClient && define(function (require, exports, module) {
         assert.equals(sut.languageList, [['c', 'C'], ['ruby', 'Ruby']]);
         assert.equals(sut.languageMap, {c: 'C', ruby: 'Ruby'});
 
-      },
+      });
 
-      "test set language"() {
+      test("set language", ()=>{
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
           sut.languageList = [['c', 'C'], ['ruby', 'Ruby']];
           const elm = v.selectCode().startContainer;
           TH.keydown(elm, 'L', {ctrlKey: true});
-          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         assert.dom('.glassPane', function () {
@@ -238,10 +239,10 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('pre[data-lang="ruby"]');
-      },
+      });
 
-      "test syntax highlight"() {
-        const highlight = test.stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
+      test("syntax highlight", ()=>{
+        const highlight = stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({pre: {div: "if a:\n  (b)\n"}, '$data-lang': 'python'}));
@@ -249,7 +250,7 @@ isClient && define(function (require, exports, module) {
           this.appendChild(Dom.h({div: "after"}));
           assert.dom('pre+div', 'after');
           TH.keydown(elm, 'H', {ctrlKey: true, shiftKey: true});
-          test.onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = test.stub()).stop);
+          onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
@@ -279,7 +280,7 @@ isClient && define(function (require, exports, module) {
 
 
         highlight.reset();
-        test.stub(koru, 'globalCallback');
+        stub(koru, 'globalCallback');
         assert.dom('.input>pre>div', function () {
           TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
         });
@@ -288,9 +289,9 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('pre div>span.k', 'if');
         assert.calledWith(koru.globalCallback, 'error');
-      },
+      });
 
-      "test on selection"() {
+      test("on selection", ()=>{
         assert.dom('.input', function () {
           this.focus();
           this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
@@ -314,9 +315,9 @@ isClient && define(function (require, exports, module) {
           TH.keydown(this, 13);
           assert.same(this.firstChild.firstChild.textContent, 'outside');
         });
-      },
+      });
 
-      "test pointerup on/off"() {
+      test("pointerup on/off", ()=>{
         assert.dom('.input', function () {
           this.focus();
           assert.same(sut.$ctx(this).mode.type, 'standard');
@@ -328,9 +329,9 @@ isClient && define(function (require, exports, module) {
           TH.pointerDownUp(this);
           assert.same(sut.$ctx(this).mode.type, 'standard');
         });
-      },
+      });
 
-      "test on empty"() {
+      test("on empty", ()=>{
         assert.dom('.input', function () {
           this.focus();
           TH.setRange(this);
@@ -341,10 +342,10 @@ isClient && define(function (require, exports, module) {
           sut.insert(' foo');
           assert.dom('pre[data-lang="text"]', 'foo');
         });
-      },
-    },
+      });
+    });
 
-    "test fontSize"() {
+    test("fontSize", ()=>{
       document.body.appendChild(v.tpl.$autoRender({
         content: Dom.h([{font: 'bold', $size: "1"},
                         {span: 'big', $style: "font-size: xx-large"}])}));
@@ -374,9 +375,9 @@ isClient && define(function (require, exports, module) {
           assert.same(this.style.lineHeight, '1em');
         });
       });
-    },
+    });
 
-    "test fontColor"() {
+    test("fontColor", ()=>{
       document.body.appendChild(v.tpl.$autoRender({
         content: Dom.h({font: {
           span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
@@ -463,9 +464,9 @@ isClient && define(function (require, exports, module) {
           assert.colorEqual(window.getComputedStyle(this).backgroundColor, 'rgba(0,0,0,0)');
         });
       });
-    },
+    });
 
-    "test inline code on selection"() {
+    test("inline code on selection", ()=>{
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {
@@ -528,20 +529,20 @@ isClient && define(function (require, exports, module) {
           });
         });
       });
-    },
+    });
 
-    "test title"() {
-      let keyMap = test.stub(sut.modes.standard.keyMap, 'getTitle');
+    test("title", ()=>{
+      let keyMap = stub(sut.modes.standard.keyMap, 'getTitle');
       sut.title('foo', 'insertOrderedList', 'standard');
       assert.calledWith(keyMap, 'foo', 'insertOrderedList');
 
-      keyMap = test.stub(sut.modes.code.keyMap, 'getTitle');
+      keyMap = stub(sut.modes.code.keyMap, 'getTitle');
       sut.title('foo', 'bar', 'code');
       assert.calledWith(keyMap, 'foo', 'bar');
-    },
+    });
 
-    "test lists"() {
-      v.ec = test.stub(document, 'execCommand');
+    test("lists", ()=>{
+      v.ec = stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -552,10 +553,10 @@ isClient && define(function (require, exports, module) {
         TH.keydown(this, '8', {ctrlKey: true, shiftKey: true});
         assert.calledWith(v.ec, 'insertUnorderedList');
       });
-    },
+    });
 
-    "test textAlign"() {
-      v.ec = test.stub(document, 'execCommand');
+    test("textAlign", ()=>{
+      v.ec = stub(document, 'execCommand');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -575,9 +576,9 @@ isClient && define(function (require, exports, module) {
         TH.keydown(this, 'J', {ctrlKey: true, shiftKey: true});
         assert.calledOnceWith(v.ec, 'justifyFull');
       });
-    },
+    });
 
-    "test removeFormat"() {
+    test("removeFormat", ()=>{
       document.body.appendChild(v.tpl.$autoRender({content: Dom.h({b: 'foo'})}));
 
       assert.dom('.input', function () {
@@ -589,11 +590,11 @@ isClient && define(function (require, exports, module) {
 
         refute.dom('b');
       });
-    },
+    });
 
-    "test indent, outdent"() {
-      v.ec = test.stub(document, 'execCommand');
-      const keyMap = test.spy(sut.modes.standard.keyMap, 'exec');
+    test("indent, outdent", ()=>{
+      v.ec = stub(document, 'execCommand');
+      const keyMap = spy(sut.modes.standard.keyMap, 'exec');
 
       document.body.appendChild(v.tpl.$autoRender({content: ''}));
 
@@ -606,12 +607,12 @@ isClient && define(function (require, exports, module) {
       });
 
       assert.calledWith(keyMap, TH.match.any, 'ignoreFocus');
-    },
+    });
 
-    "paste": {
-      setUp() {
-        v.ec = test.stub(document, 'execCommand');
-        const getData = this.stub();
+    group("paste", ()=>{
+      beforeEach(()=>{
+        v.ec = stub(document, 'execCommand');
+        const getData = stub();
         getData.withArgs('text/html').returns('<b>bold</b> world');
         getData.withArgs('text/plain').returns('bold world');
         v.event = {
@@ -636,22 +637,22 @@ isClient && define(function (require, exports, module) {
             Dom.current._ctx = origCtx;
           }
         };
-        test.stub(Dom, 'stopEvent');
+        stub(Dom, 'stopEvent');
 
 
         v.insertHTML = v.ec.withArgs('insertHTML');
         v.insertText = v.ec.withArgs('insertText').returns(true);
-      },
+      });
 
-      tearDown() {
-      },
+      afterEach(()=>{
+      });
 
-      "test wiried"() {
+      test("wiried", ()=>{
         assert.equals(v.slot, ['paste', '', v.origPaste]);
-      },
+      });
 
-      "test safari public.rtf"() {
-        const getData = test.stub();
+      test("safari public.rtf", ()=>{
+        const getData = stub();
         getData.withArgs('text/plain').returns(
           'should not need this');
         getData.withArgs('public.rtf').returns('whatever');
@@ -664,12 +665,12 @@ isClient && define(function (require, exports, module) {
 
         refute.called(v.insertText);
         refute.called(Dom.stopEvent);
-      },
+      });
 
-      "test plain text"() {
+      test("plain text", ()=>{
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: test.stub().withArgs('text/plain').returns(
+          getData: stub().withArgs('text/plain').returns(
             'containshttps://nolink https:/a/link'),
         };
 
@@ -677,17 +678,17 @@ isClient && define(function (require, exports, module) {
 
         assert.calledWith(v.insertText, 'insertText', false,
                           'containshttps://nolink https:/a/link');
-      },
+      });
 
-      "test text hyperlinks"() {
+      test("text hyperlinks", ()=>{
         sut.handleHyperLink = function (text) {
           if (text === 'https://real/link')
             return Dom.h({a: 'my link', $href: 'http://foo'});
         };
-        test.onEnd(function () {sut.handleHyperLink = null});
+        onEnd(function () {sut.handleHyperLink = null});
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: test.stub().withArgs('text/plain').returns(
+          getData: stub().withArgs('text/plain').returns(
             'contains\n ahttps://false/link and a https://real/link as\nwell'),
         };
 
@@ -698,26 +699,26 @@ isClient && define(function (require, exports, module) {
         assert.match(v.html, />contains<.*<a.*href="http:\/\/foo"/);
         assert.match(v.html, /<a [^>]*target="_blank"/);
 
-      },
+      });
 
-      "test no clipboard"() {
+      test("no clipboard", ()=>{
         delete v.event.clipboardData;
 
         v.paste(v.event);
 
         refute.called(Dom.stopEvent);
-      },
+      });
 
-      "test no insertHTML"() {
+      test("no insertHTML", ()=>{
         v.insertHTML.returns(false);
 
         v.paste(v.event);
 
         assert.calledWith(v.insertText, 'insertText', false, 'bold world');
         assert.called(Dom.stopEvent);
-      },
+      });
 
-      "test insertHTML"() {
+      test("insertHTML", ()=>{
         v.insertHTML.returns(true);
 
         v.paste(v.event);
@@ -726,9 +727,9 @@ isClient && define(function (require, exports, module) {
         refute.called(v.insertText);
         assert.calledWith(v.insertHTML, 'insertHTML', false,
                           '<div><span style=\"font-weight: bold;\">bold</span> world</div>');
-      },
+      });
 
-      "test pre"() {
+      test("pre", ()=>{
         v.insertHTML.returns(true);
         v.input.parentNode.value = Dom.h({pre: {div: 'paste before'}});
         assert.dom('.input', function () {
@@ -742,10 +743,10 @@ isClient && define(function (require, exports, module) {
           sut.$ctx(this).mode.paste('<b>bold</b>\nplain<br>newline');
           assert.calledWith(v.insertHTML, 'insertHTML', false, 'bold\nplain\nnewline');
         });
-      },
-    },
+      });
+    });
 
-    "test empty"() {
+    test("empty", ()=>{
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
       Dom.flushNextFrame();
 
@@ -755,9 +756,9 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'input');
         assert.same(this.firstChild, null);
       });
-    },
+    });
 
-    "test blockquote"() {
+    test("blockquote", ()=>{
       document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
       Dom.flushNextFrame();
@@ -770,17 +771,17 @@ isClient && define(function (require, exports, module) {
           assert.same(this.getAttribute('style'), null);
         });
       });
-    },
+    });
 
-    "links": {
-      setUp() {
+    group("links", ()=>{
+      beforeEach(()=>{
         document.body.appendChild(v.tpl.$autoRender({
           content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
 
         Dom.flushNextFrame();
-      },
+      });
 
-      "test changing a link"() {
+      test("changing a link", ()=>{
         assert.dom('a', 'world', function () {
           TH.setRange(this.firstChild, 3);
           v.pos = this.getBoundingClientRect();
@@ -813,9 +814,9 @@ isClient && define(function (require, exports, module) {
           assert.same(document.activeElement, this);
           assert.dom('a', {count: 1});
         });
-      },
+      });
 
-      "test adding link with selection"() {
+      test("adding link with selection", ()=>{
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 0, this.firstChild, 4);
           v.pos = Dom.getRange().getBoundingClientRect();
@@ -844,9 +845,9 @@ isClient && define(function (require, exports, module) {
           assert.same(document.activeElement, this);
           assert.dom('a', {count: 2});
         });
-      },
+      });
 
-      "test adding link no selection"() {
+      test("adding link no selection", ()=>{
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 2);
         });
@@ -868,17 +869,17 @@ isClient && define(function (require, exports, module) {
 
           assert.isFalse(Dom.ctx(this).openDialog);
         });
-      },
+      });
 
-      "test adding link no caret"() {
+      test("adding link no caret", ()=>{
         window.getSelection().removeAllRanges();
 
         TH.keydown('.input', "K", {ctrlKey: true});
 
         refute.dom('.rtLink');
-      },
+      });
 
-      "test canceling link"() {
+      test("canceling link", ()=>{
         assert.dom('.richTextEditor>.input', function () {
           v.orig = this.outerHTML;
           assert.dom('b', 'Hello', function () {
@@ -901,9 +902,9 @@ isClient && define(function (require, exports, module) {
           assert.same(this.outerHTML, v.orig);
           assert.same(document.activeElement, this);
         });
-      },
+      });
 
-    },
+    });
   });
 
   function collapse(start) {

@@ -1,26 +1,22 @@
-define(function (require, exports, module) {
-  var test, v;
-  var TH = require('./test-helper');
-  const util = require('koru/util');
-  const sut  = require('./db-broker');
-  const Model = require('./main');
+define((require, exports, module)=>{
+  const util            = require('koru/util');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+  const {stub, spy, onEnd} = TH;
 
-    tearDown() {
+  const sut = require('./db-broker');
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
       sut.clearDbId();
       delete Model._databases.foo1;
       delete Model._databases.foo2;
-      v = null;
-    },
+    });
 
-    "test changing defaultDbId, mainDbId"() {
-      test.onEnd(() => sut.setDefaultDbId('default'));
+    test("changing defaultDbId, mainDbId", ()=>{
+      onEnd(() => sut.setDefaultDbId('default'));
       assert.same(sut.dbId, 'default');
       sut.setMainDbId('bar');
       assert.same(sut.dbId, 'bar');
@@ -37,27 +33,31 @@ define(function (require, exports, module) {
       assert.same(sut.dbId, 'bar');
       sut.clearDbId();
       assert.same(sut.dbId, 'foo');
-    },
+    });
 
-    "test changing dbId"() {
+    test("changing dbId", ()=>{
       var TestModel = Model.define('TestModel').defineFields({name: 'text'});
       var docGlobal = TestModel.create({_id: 'glo1', name: 'global'});
 
       sut.dbId = 'foo1';
 
-      var obAny = TestModel.onAnyChange(v.anyChanged = test.stub());
-      var obFoo1 = TestModel.onChange(v.foo1Changed = test.stub());
+      const anyChanged = stub(), foo1Changed = stub();
+
+      var obAny = TestModel.onAnyChange(anyChanged);
+      var obFoo1 = TestModel.onChange(foo1Changed);
 
       var doc = TestModel.create({_id: 'tmf1', name: 'foo1'});
 
       sut.dbId = 'foo2';
 
-      var obFoo2 = TestModel.onChange(v.foo2Changed = test.stub());
+      const foo2Changed = stub();
+
+      var obFoo2 = TestModel.onChange(foo2Changed);
       var doc2 = TestModel.create({_id: 'tmf1', name: 'foo2'});
 
-      assert.calledOnce(v.foo1Changed);
-      assert.calledOnce(v.foo2Changed);
-      assert.calledTwice(v.anyChanged);
+      assert.calledOnce(foo1Changed);
+      assert.calledOnce(foo2Changed);
+      assert.calledTwice(anyChanged);
 
       assert.equals(Model._databases.default, {
         TestModel: {
@@ -90,7 +90,7 @@ define(function (require, exports, module) {
       sut.dbId = 'foo2';
 
 
-      test.stub(TestModel._indexUpdate, 'reloadAll');
+      stub(TestModel._indexUpdate, 'reloadAll');
 
       TestModel.docs = {tmf1: doc};
 
@@ -111,6 +111,6 @@ define(function (require, exports, module) {
       assert.equals(Model._databases.foo2, {
         FooModel: {docs: {foo: 123}}
       });
-    },
+    });
   });
 });

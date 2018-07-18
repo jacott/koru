@@ -1,32 +1,32 @@
-define(function (require, exports, module) {
-  const dbBroker = require('./db-broker');
-  const Model    = require('./main');
-  const TH       = require('./test-helper');
+define((require, exports, module)=>{
+  const dbBroker        = require('./db-broker');
+  const TH              = require('./test-helper');
 
-  var test, v;
+  const {stub, spy, onEnd, intercept} = TH;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  const Model = require('./main');
+  let v= {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.obs = [];
       v.TestModel = Model.define('TestModel').defineFields({
         name: 'string', age: 'number', toys: 'object'});
       v.doc = v.TestModel.create({name: 'Fred', age: 5, toys: ['robot']});
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       v.obs.forEach(row => row.stop());
       Model._destroyModel('TestModel', 'drop');
-      v = null;
       dbBroker.clearDbId();
-    },
+      v = {};
+    });
 
-    "test observeIds"() {
-      var doc2 =  v.TestModel.create({name: 'Bob', age: 35});
-      v.obs.push(v.ids = v.TestModel.observeIds([v.doc._id, doc2._id], v.ob = test.stub()));
+    test("observeIds", ()=>{
+      const doc2 =  v.TestModel.create({name: 'Bob', age: 35});
+      v.obs.push(v.ids = v.TestModel.observeIds([v.doc._id, doc2._id], v.ob = stub()));
 
-      var doc3 = v.TestModel.create({name: 'Helen', age: 25});
+      const doc3 = v.TestModel.create({name: 'Helen', age: 25});
       v.ids.replaceIds([v.doc._id, doc3._id]);
 
       doc3.age = 10;
@@ -38,21 +38,21 @@ define(function (require, exports, module) {
       doc2.$$save();
 
       refute.calledWith(v.ob, TH.matchModel(doc2.$reload()));
-    },
+    });
 
-    "test multi dbs"() {
-      var origId = v.dbId = dbBroker.dbId;
-      test.intercept(dbBroker, 'dbId');
+    test("multi dbs", ()=>{
+      const origId = v.dbId = dbBroker.dbId;
+      intercept(dbBroker, 'dbId');
       Object.defineProperty(dbBroker, 'dbId', {configurable: true, get() {return v.dbId}});
-      var oc = test.spy(v.TestModel, 'onChange');
+      const oc = spy(v.TestModel, 'onChange');
 
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.origOb = test.stub()));
+      v.obs.push(v.TestModel.observeIds([v.doc._id], v.origOb = stub()));
       v.dbId = 'alt';
       assert.same(dbBroker.dbId, 'alt');
 
       assert.calledWith(oc, TH.match(func => v.oFunc = func));
       oc.reset();
-      v.obs.push(v.altHandle = v.TestModel.observeIds([v.doc._id], v.altOb = test.stub()));
+      v.obs.push(v.altHandle = v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
       assert.calledWith(oc, TH.match(func => v.altFunc = func));
       v.oFunc(v.doc, {name: 'old'});
       assert.calledWith(v.origOb, v.doc);
@@ -72,28 +72,28 @@ define(function (require, exports, module) {
       refute.called(v.altOb);
 
       oc.reset();
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = test.stub()));
-      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = test.stub()));
+      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
+      v.obs.push(v.TestModel.observeIds([v.doc._id], v.altOb = stub()));
       assert.calledOnce(oc);
-    },
+    });
 
-    "test observeId changed"() {
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob1 = test.stub()));
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob2 = test.stub()));
+    test("observeId changed", ()=>{
+      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob1 = stub()));
+      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob2 = stub()));
 
       v.doc.age = 17;
       v.doc.$$save();
 
       assert.calledWith(v.ob1, TH.matchModel(v.doc.$reload()), {age: 5});
       assert.calledWith(v.ob2, TH.matchModel(v.doc.$reload()), {age: 5});
-    },
+    });
 
-    "test observeId removed"() {
-      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob = test.stub()));
+    test("observeId removed", ()=>{
+      v.obs.push(v.TestModel.observeId(v.doc._id, v.ob = stub()));
 
       v.doc.$remove();
 
       assert.calledWith(v.ob, null, TH.matchModel(v.doc));
-    },
+    });
   });
 });

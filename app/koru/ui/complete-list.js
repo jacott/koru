@@ -1,26 +1,65 @@
-define(function(require, exports, module) {
-  const Dom   = require('../dom');
-  const util  = require('../util');
-  const Form  = require('./form');
-  const Modal = require('./modal');
+define((require)=>{
+  const Dom             = require('../dom');
+  const util            = require('../util');
+  const Form            = require('./form');
+  const Modal           = require('./modal');
 
-  const Tpl = module.exports = Dom.newTemplate(require('../html!./complete-list'));
+  const Tpl = Dom.newTemplate(require('../html!./complete-list'));
   const $ = Dom.current;
 
   const {Row} = Tpl;
   let v;
 
+  const keydown = (event)=>{
+    const cur = v.completeList.querySelector('.complete>.selected');
+
+    switch (event.which) {
+    case 13: // enter
+      select(cur);
+      break;
+    case 38: // up
+      highlight(cur, cur.previousSibling || v.completeList.firstChild);
+      break;
+    case 40: // down
+      highlight(cur, cur.nextSibling || v.completeList.lastChild);
+      break;
+    default:
+      return;
+    }
+
+    Dom.stopEvent(event);
+  };
+
+  const select = (li)=>{
+    if (li) {
+      const data = $.data(li);
+      if (v.callback)
+        v.callback(data);
+      else
+        v.input.value = data.name;
+      close();
+    }
+  };
+
+  const highlight = (curElm, newElm)=>{
+    Dom.removeClass(curElm, 'selected');
+    Dom.addClass(newElm, 'selected');
+
+  };
+
+  const close = ()=>{
+    Dom.remove(v && v.completeList);
+  };
+
   Tpl.$extend({
     $created(ctx, elm) {
-      util.forEach(ctx.data, function (row) {
-        elm.appendChild(Row.$render(row));
-      });
+      util.forEach(ctx.data, row =>{elm.appendChild(Row.$render(row))});
       Dom.addClass(elm.firstChild, 'selected');
     },
     $destroyed() {
       v.input.removeEventListener('blur', close);
       v.input.removeEventListener('keydown', keydown, true);
-      v = null;
+      v = undefined;
     },
   });
 
@@ -44,44 +83,5 @@ define(function(require, exports, module) {
     'pointerdown li'(event) {select(this)},
   });
 
-  function keydown(event) {
-    const cur = v.completeList.querySelector('.complete>.selected');
-
-    switch (event.which) {
-    case 13: // enter
-      select(cur);
-      break;
-    case 38: // up
-      highlight(cur, cur.previousSibling || v.completeList.firstChild);
-      break;
-    case 40: // down
-      highlight(cur, cur.nextSibling || v.completeList.lastChild);
-      break;
-    default:
-      return;
-    }
-
-    Dom.stopEvent(event);
-  }
-
-  function select(li) {
-    if (li) {
-      const data = $.data(li);
-      if (v.callback)
-        v.callback(data);
-      else
-        v.input.value = data.name;
-      close();
-    }
-  }
-
-  function highlight(curElm, newElm) {
-    Dom.removeClass(curElm, 'selected');
-    Dom.addClass(newElm, 'selected');
-
-  }
-
-  function close() {
-    Dom.remove(v && v.completeList);
-  }
+  return Tpl;
 });

@@ -1,10 +1,9 @@
-define(function(require, exports, module) {
-  const Dom  = require('../dom');
-  const util = require('../util');
+define((require)=>{
+  const Dom             = require('../dom');
 
   let topModal = null;
 
-  function keydownCallback(event) {
+  const keydownCallback = (event)=>{
     switch(event.which) {
     case 9:
       if (topModal.handleTab) {
@@ -37,15 +36,15 @@ define(function(require, exports, module) {
     else if (! Dom.contains(topModal.container, event.target)) {
       Dom.stopEvent(event);
     }
-  }
+  };
 
-  function retKeydownCallback(event) {
+  const retKeydownCallback = (event)=>{
     if (event.which !==9) {
       event.stopImmediatePropagation();
     }
-  }
+  };
 
-  return exports = {
+  const Modal = {
     init(options) {
       if (topModal == null) {
         document.addEventListener('keydown', keydownCallback, true);
@@ -152,7 +151,7 @@ define(function(require, exports, module) {
       if (options.popup) {
         options = Object.assign({container: options.popup}, options);
       } else {
-        options = exports.init(options);
+        options = Modal.init(options);
       }
 
       const destroyMeWith = options.destroyMeWith;
@@ -167,4 +166,6 @@ define(function(require, exports, module) {
 
     get topModal() {return topModal},
   };
+
+  return Modal;
 });

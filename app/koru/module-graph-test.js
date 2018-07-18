@@ -1,11 +1,11 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
 
   const {stub, spy, onEnd, util} = TH;
 
-  const sut  = require('./module-graph');
+  const sut = require('./module-graph');
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     test("findPath", ()=>{

@@ -1,7 +1,7 @@
-define(function(require, exports, module) {
-  const makeSubject = require('../make-subject');
-  const util        = require('../util');
-  const dbBroker    = require('./db-broker');
+define((require)=>{
+  const makeSubject     = require('../make-subject');
+  const util            = require('../util');
+  const dbBroker        = require('./db-broker');
 
   return model => {
     const {modelName} = model;
@@ -56,22 +56,7 @@ define(function(require, exports, module) {
         fields[field] = 1;
       const findFieldOpts = {transform: null, fields};
 
-
-      model['observe'+ util.capitalize(field)] = (values, callback) => {
-        const obsSet = Object.create(null);
-        const options = [++key, callback];
-        if (values.constructor !== Array)
-          throw new Error('values must be an array');
-
-        for(let i = 0;i < values.length;++i) {
-          const ob = observeValue(values[i], options);
-          obsSet[ob.value]=ob;
-        }
-
-        return stopObservers(obsSet, options);
-      };
-
-      function observeValue(value, options) {
+      const observeValue = (value, options)=>{
         const observers = dbObservers[dbBroker.dbId] || (dbObservers[dbBroker.dbId] = {});
         const obs = observers[value] || (observers[value] = Object.create(null));
         obs[options[0]] = options;
@@ -79,7 +64,7 @@ define(function(require, exports, module) {
         return stopObserver(value, obs, options, observers);
       };
 
-      function stopObserver(value, obs, options, observers) {
+      const stopObserver = (value, obs, options, observers)=>{
         return {
           stop() {
             delete obs[options[0]];
@@ -95,9 +80,9 @@ define(function(require, exports, module) {
 
           value: value
         };
-      }
+      };
 
-      function stopObservers(obsSet, options) {
+      const stopObservers = (obsSet, options)=>{
         return {
           stop() {
             for(const key in obsSet) obsSet[key].stop();
@@ -136,7 +121,21 @@ define(function(require, exports, module) {
             for(const value in delObs) delObs[value].stop();
           },
         };
-      }
+      };
+
+      model['observe'+ util.capitalize(field)] = (values, callback) => {
+        const obsSet = Object.create(null);
+        const options = [++key, callback];
+        if (values.constructor !== Array)
+          throw new Error('values must be an array');
+
+        for(let i = 0;i < values.length;++i) {
+          const ob = observeValue(values[i], options);
+          obsSet[ob.value]=ob;
+        }
+
+        return stopObservers(obsSet, options);
+      };
     };
   };
 });

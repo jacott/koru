@@ -1,28 +1,30 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const Dom             = require('../dom');
   const completeListTpl = require('../html!./complete-list-test');
   const util            = require('../util');
   const TH              = require('./test-helper');
 
+  const {stub, spy, onEnd} = TH;
+
   require('./complete-list');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.CompleteList = Dom.newTemplate(util.deepCopy(completeListTpl));
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+      v = {};
+    });
 
-    "test rendering"() {
+    test("rendering", ()=>{
       assert.dom(v.CompleteList.$autoRender({}), function () {
         assert.dom('[name=name]', function () {
-          Dom.Form.completeList({input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
+          Dom.Form.completeList({
+            input: v.input = this, completeList: [{name: 'abc'}, {name: 'def'}]});
         });
       });
       assert.dom('body>ul.ui-ul.complete', function () {
@@ -41,19 +43,21 @@ isClient && define(function (require, exports, module) {
         Dom.Form.completeList({input: this});
       });
       refute.dom('.complete');
-    },
+    });
 
-    "callback": {
-      setUp() {
+    group("callback", ()=>{
+      beforeEach(()=>{
         document.body.appendChild(v.CompleteList.$autoRender({}));
         assert.dom('[name=name]', function () {
-          Dom.Form.completeList({input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}], callback: v.callback = test.stub()});
+          Dom.Form.completeList({
+            input: this,  completeList: v.list = [{name: 'abc'}, {name: 'def'}],
+            callback: v.callback = stub()});
         });
 
         v.inp = document.querySelector('[name=name]');
-      },
+      });
 
-      "test clicking"() {
+      test("clicking", ()=>{
         assert.dom('li', 'abc', function () {
           TH.trigger(this, 'pointerdown');
         });
@@ -69,17 +73,15 @@ isClient && define(function (require, exports, module) {
           TH.trigger(this, 'pointerdown');
         });
         assert.dom('[name=name]', {value: 'abc'});
-      },
+      });
 
-      "test enter no select"() {
+      test("enter no select", ()=>{
         TH.trigger(v.inp, 'keydown', {which: 65});
         assert.dom('.complete');
 
-        var inpCallback = test.stub();
+        var inpCallback = stub();
         v.inp.addEventListener('keydown', inpCallback);
-        test.onEnd(function () {
-          v.inp.removeEventListener('keydown', inpCallback);
-        });
+        onEnd(()=>{v.inp.removeEventListener('keydown', inpCallback)});
 
         TH.trigger(v.inp, 'keydown', {which: 13});
 
@@ -88,18 +90,18 @@ isClient && define(function (require, exports, module) {
         assert.calledWith(v.callback, v.list[0]);
 
         refute.called(inpCallback);
-      },
+      });
 
-      "test enter after select"() {
+      test("enter after select", ()=>{
         TH.trigger(v.inp, 'keydown', {which: 40}); // down
         TH.trigger(v.inp, 'keydown', {which: 13});
 
         refute.dom('.complete');
 
         assert.calledWith(v.callback, v.list[1]);
-      },
+      });
 
-      "test up/down arrow"() {
+      test("up/down arrow", ()=>{
         assert.dom('.complete', function () {
           assert.dom('li.selected', 'abc');
           TH.trigger(v.inp, 'keydown', {which: 40}); // down
@@ -109,10 +111,10 @@ isClient && define(function (require, exports, module) {
           assert.dom('li.selected', 'abc');
         });
 
-      },
-    },
+      });
+    });
 
-    "test blur"() {
+    test("blur", ()=>{
       document.body.appendChild(v.CompleteList.$autoRender({}));
       assert.dom('[name=name]', function () {
         Dom.Form.completeList({input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
@@ -121,10 +123,11 @@ isClient && define(function (require, exports, module) {
       refute.dom('ul');
 
       assert.dom('[name=name]', function () {
-        Dom.Form.completeList({noBlur: true, input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
+        Dom.Form.completeList({
+          noBlur: true, input: this,  completeList: [{name: 'abc'}, {name: 'def'}]});
         TH.trigger(this, 'blur');
       });
       assert.dom('ul');
-    },
+    });
   });
 });

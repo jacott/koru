@@ -1,28 +1,26 @@
-isClient && define(function (require, exports, module) {
-  const Dom  = require('../dom');
-  const koru = require('../main');
-  const TH   = require('../ui/test-helper');
+isClient && define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const koru            = require('../main');
+  const TH              = require('../ui/test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const sut = require('./plain-text');
-  var test, v;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+  let v = {};
 
-    tearDown() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       Dom.removeChildren(document.body);
-      v = null;
-    },
+      v = {};
+    });
 
-    "test buildKeydownEvent"() {
+    test("buildKeydownEvent", ()=>{
       const elm = document.createElement('div');
-      const cb = {cancel: this.stub(), okay: this.stub()};
+      const cb = {cancel: stub(), okay: stub()};
       const keydown = sut.buildKeydownEvent(cb);
 
-      this.stub(Dom, 'stopEvent');
+      stub(Dom, 'stopEvent');
 
       keydown.call(elm, {which: 27});
       assert.calledWith(cb.cancel, elm);
@@ -46,14 +44,14 @@ isClient && define(function (require, exports, module) {
       keydown.call(elm, {which: 13});
       assert.calledWith(cb.okay, elm);
       assert.calledOnce(Dom.stopEvent);
-    },
+    });
 
-    "test editor"() {
+    test("editor", ()=>{
       document.body.appendChild(sut.Editor.$autoRender({content: "foo", options: {
         placeholder: "hello"}}));
       assert.dom('.input.plainText[contenteditable=true][placeholder=hello]', function () {
         assert.same(this.textContent, "foo");
-        test.spy(Dom, 'stopEvent');
+        spy(Dom, 'stopEvent');
         TH.trigger(this, 'keydown', {which: 66});
         TH.trigger(this, 'keydown', {which: 85});
         TH.trigger(this, 'keydown', {which: 73});
@@ -63,11 +61,11 @@ isClient && define(function (require, exports, module) {
         TH.trigger(this, 'keydown', {which: 73, ctrlKey: true});
         assert.calledThrice(Dom.stopEvent);
       });
-    },
+    });
 
-    "paste": {
-      setUp() {
-        v.ec = test.stub(document, 'execCommand');
+    group("paste", ()=>{
+      beforeEach(()=>{
+        v.ec = stub(document, 'execCommand');
         document.body.appendChild(sut.Editor.$autoRender({content: ""}));
 
         v.event = {};
@@ -79,20 +77,20 @@ isClient && define(function (require, exports, module) {
         v.paste = function (event) {
           return v.origPaste.call(v.input.parentNode, event);
         };
-        test.stub(Dom, 'stopEvent');
-        v.insert = this.stub(sut.Editor, 'insert').returns(true);
-      },
+        stub(Dom, 'stopEvent');
+        v.insert = stub(sut.Editor, 'insert').returns(true);
+      });
 
-      tearDown() {
-      },
+      afterEach(()=>{
+      });
 
-      "test wiried"() {
+      test("wiried", ()=>{
         assert.equals(v.slot, ['paste', '', v.origPaste]);
         assert.same(sut.pasteFilter, v.origPaste);
-      },
+      });
 
-      "test text/html"() {
-        const getData = this.stub();
+      test("text/html", ()=>{
+        const getData = stub();
         getData.withArgs('text/html').returns('<b>bold</b>\nworld');
         getData.withArgs('text/plain').returns('bold\nworld');
         v.event.clipboardData = {
@@ -108,10 +106,10 @@ isClient && define(function (require, exports, module) {
           elm.appendChild(h),
           assert.equals(elm.innerHTML, 'bold<br>world'),
           true)));
-      },
+      });
 
-      "test safari public.rtf"() {
-        const getData = test.stub();
+      test("safari public.rtf", ()=>{
+        const getData = stub();
         getData.withArgs('text/plain').returns(
           'should not need this');
         getData.withArgs('public.rtf').returns('whatever');
@@ -124,12 +122,12 @@ isClient && define(function (require, exports, module) {
 
         refute.called(Dom.stopEvent);
         refute.called(v.insert);
-      },
+      });
 
-      "test text/plain"() {
+      test("text/plain", ()=>{
         v.event.clipboardData = {
           types: ['text/plain'],
-          getData: test.stub().withArgs('text/plain').returns(
+          getData: stub().withArgs('text/plain').returns(
             'containshttps://nolink https:/a/link'),
         };
 
@@ -137,48 +135,48 @@ isClient && define(function (require, exports, module) {
 
         refute.called(Dom.stopEvent);
         refute.called(v.insert);
-      },
+      });
 
-      "test no clipboard"() {
+      test("no clipboard", ()=>{
         delete v.event.clipboardData;
 
         v.paste(v.event);
 
         refute.called(Dom.stopEvent);
-      },
-    },
+      });
+    });
 
-    "fromHtml": {
-      setUp() {
+    group("fromHtml", ()=>{
+      beforeEach(()=>{
         v.c = function (html) {
           return sut.fromHtml(Dom.textToHtml(html));
         };
-      },
+      });
 
-      "test null"() {
+      test("null", ()=>{
         assert.same(sut.fromHtml(null), '');
-      },
+      });
 
-      "test complex"() {
+      test("complex", ()=>{
         assert.same(v.c(
           "<div><b>So <i>m</i> e</b> Text<div><br></div><div>As <i>html</i>  Test</div>" +
             "<div>ing with<br></div><div><br></div><div> spaces</div></div>"),
                     'So m e Text\n\nAs html  Test\ning with\n\n spaces');
-      },
+      });
 
-      "test buttons"() {
+      test("buttons", ()=>{
         assert.same(v.c(
           '<div>Hello <span data-a="j2">Josiah&lt;JG&gt;</span></div>'), 'Hello Josiah<JG>');
         assert.same(v.c(
           '<div>Hello <span data-h="s1">Foo <b>bar</b></span></div>'), 'Hello Foo bar');
-      },
-    },
+      });
+    });
 
-    "test toHtml"() {
+    test("toHtml", ()=>{
       const elm = document.createElement('div');
       elm.appendChild(sut.toHtml("  hello world\n\nhow now\nbrown cow"));
       elm.appendChild(sut.toHtml());
       assert.same(elm.innerHTML, '  hello world<br><br>how now<br>brown cow');
-    },
+    });
   });
 });

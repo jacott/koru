@@ -1,9 +1,11 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const Dom     = require('../dom');
   const formTpl = require('../html!./form-test');
   const util    = require('../util');
   const Route   = require('./route');
   const TH      = require('./test-helper');
+
+  const {stub, spy, onEnd} = TH;
 
   const {error$} = require('koru/symbols');
 
@@ -11,21 +13,20 @@ isClient && define(function (require, exports, module) {
 
   const $ = Dom.current;
 
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.Form = Dom.newTemplate(util.deepCopy(formTpl));
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Dom.removeChildren(document.body);
       Dom.Test = undefined;
-      v = null;
-    },
+      v = {};
+    });
 
-    "test labelField"() {
+    test("labelField", ()=>{
       const label = Form.LabelField.$autoRender({
         name: 'foo',
         value: Dom.h({button: 'val'}),
@@ -36,10 +37,10 @@ isClient && define(function (require, exports, module) {
         assert.dom('span.name', 'my foo');
         assert.dom('button', 'val');
       });
-    },
+    });
 
-    "selectList": {
-      "test Select."() {
+    group("selectList", ()=>{
+      test("Select.", ()=>{
         const selectList = v.Form.TestSelect;
         selectList.$helpers({
           fooList() {
@@ -51,9 +52,9 @@ isClient && define(function (require, exports, module) {
           assert.dom('option:not([selected])', {value: 'a', text: 'A'});
           assert.dom('option[selected=selected]', {value: 'b', text: 'B'});
         });
-      },
+      });
 
-      "test lazy list, popupClass"() {
+      test("lazy list, popupClass", ()=>{
         function selectList() {return v.list};
 
         const elm = Form.field({foo_id: 'b'}, 'foo_id', {
@@ -72,10 +73,10 @@ isClient && define(function (require, exports, module) {
         });
 
         assert.dom('.select', 'A');
-      },
+      });
 
 
-      "test inclusionIn"() {
+      test("inclusionIn", ()=>{
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({
           fooList() {
@@ -105,10 +106,10 @@ isClient && define(function (require, exports, module) {
           assert.dom('.select', 'a');
           assert.dom('[type=hidden]', {value: 'a'});
         });
-      },
+      });
 
 
-      "test SelectMenu"() {
+      test("SelectMenu", ()=>{
         const selectList = v.Form.TestSelectMenu;
         selectList.$helpers({
           fooList() {
@@ -137,7 +138,7 @@ isClient && define(function (require, exports, module) {
         });
 
         selectList.$events({
-          'change input[name=foo_id]': v.onchange = this.stub(),
+          'change input[name=foo_id]': v.onchange = stub(),
         });
         Dom.removeChildren(document.body);
 
@@ -149,19 +150,19 @@ isClient && define(function (require, exports, module) {
           assert.dom('[type=hidden]', {value: '0'});
         });
         assert.called(v.onchange);
-      },
-    },
+      });
+    });
 
-    "test genderList"() {
+    test("genderList", ()=>{
       assert.equals(Dom._helpers.genderList(), [
         ['', TH.match(elm => elm.outerHTML === '<i class="blank"></i>')],
         ['f', 'Female'],
         ['m', 'Male'],
       ]);
 
-    },
+    });
 
-    "test fillDoc"() {
+    test("fillDoc", ()=>{
       let form = Dom.h({form: [
         {button: 'hello', $name: 'foo_id'},
         {input: '', $name: 'bar', $value: 'barVal'},
@@ -180,16 +181,16 @@ isClient && define(function (require, exports, module) {
       assert.equals(doc.other, undefined);
 
       assert.equals(Form.fillDoc({}, form), {bar: 'barVal', other: 'otherV'});
-    },
+    });
 
-    "test helper elmId"() {
+    test("helper elmId", ()=>{
       const elmId = Dom._helpers.elmId;
       assert.same(elmId.call({_id: 'fooId'}, "bar"), 'bar_fooId');
 
       assert.same(elmId.call({_id: 'fooId', constructor: {modelName: 'Baz'}}), 'Baz_fooId');
-    },
+    });
 
-    "test submitFunc"() {
+    test("submitFunc", ()=>{
       const top = Dom.h({
         id: "top",
         div: {
@@ -214,10 +215,10 @@ isClient && define(function (require, exports, module) {
         },
       };
 
-      this.stub(Dom, 'stopEvent');
+      stub(Dom, 'stopEvent');
 
       const sf = Form.submitFunc('top', v.opts = {
-        success: v.success = this.stub(),
+        success: v.success = stub(),
       });
 
       sf();
@@ -245,10 +246,10 @@ isClient && define(function (require, exports, module) {
 
       assert.called(v.success);
 
-      v.opts.save = this.stub().returns(true);
+      v.opts.save = stub().returns(true);
       v.opts.success = 'back';
 
-      this.stub(Route.history, 'back');
+      stub(Route.history, 'back');
 
       sf();
 
@@ -256,17 +257,17 @@ isClient && define(function (require, exports, module) {
       assert.called(Route.history.back);
 
       v.opts.success = {};
-      this.stub(Route, 'replacePath');
+      stub(Route, 'replacePath');
 
       sf();
 
       assert.calledWith(Route.replacePath, v.opts.success);
-    },
+    });
 
-    "test helper checked"() {
+    test("helper checked", ()=>{
       const elmStub = {tagName: 'INPUT'};
-      this.stub(Dom, 'setClass');
-      this.stub(Dom, 'setBoolean');
+      stub(Dom, 'setClass');
+      stub(Dom, 'setBoolean');
       TH.stubProperty(Dom.current, 'element', {get() {return elmStub}});
       Dom._helpers.checked(true);
       refute.called(Dom.setClass);
@@ -281,10 +282,10 @@ isClient && define(function (require, exports, module) {
       Dom.setClass.reset();
       Dom._helpers.checked(true, 'foo');
       assert.calledOnceWith(Dom.setClass, 'foo', true);
-    },
+    });
 
-    "modalize": {
-      setUp() {
+    group("modalize", ()=>{
+      beforeEach(()=>{
         document.body.appendChild(Dom.textToHtml(
           '<div id="top">' +
             '<div class="ta"><input type="text" id="os" value="outside txt"></div>' +
@@ -296,16 +297,16 @@ isClient && define(function (require, exports, module) {
             '<input type="text" id="st" value="txt">' +
             '</div></div></div>'
         ));
-        v.func = this.stub();
+        v.func = stub();
         Dom.Form.modalize(document.querySelector('.bar'), v.func);
-      },
+      });
 
-      tearDown() {
+      afterEach(()=>{
         Dom.Form.cancelModalize('all');
-      },
+      });
 
-      "addChangeFields":{
-        setUp() {
+      group("addChangeFields", ()=>{
+        beforeEach(()=>{
           Dom.TestData = v.Form.TestData;
           v.doc = {
             myData: {
@@ -316,51 +317,51 @@ isClient && define(function (require, exports, module) {
               return {asChanges: changes};
             },
 
-            $save: v.save = this.stub(),
+            $save: v.save = stub(),
 
           };
-        },
+        });
 
-        tearDown() {
+        afterEach(()=>{
           delete Dom.TestData;
-        },
+        });
 
-        "test defaults"() {
+        test("defaults", ()=>{
           v.save.onCall(0).returns(false).onCall(1).returns(true);
           Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
-                                undo: v.onChange = this.stub()});
+                                undo: v.onChange = stub()});
           document.body.appendChild(Dom.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           refute.called(v.onChange);
           TH.change('[name=fooField]', 'nv');
           assert.calledWith(v.onChange, v.doc, {changes: 1}, {asChanges: {changes: 1}});
-        },
+        });
 
-        "test string update"() {
-          v.doc.myUpdate = this.stub().returns({fooField: [['is_invalid']]});
+        test("string update", ()=>{
+          v.doc.myUpdate = stub().returns({fooField: [['is_invalid']]});
           Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
                                 update: 'myUpdate',
-                                undo: v.onChange = this.stub()});
+                                undo: v.onChange = stub()});
           document.body.appendChild(Dom.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(v.doc.myUpdate, 'fooField', 'bad', v.onChange);
           assert.dom('[name=fooField].error+.errorMsg', 'is not valid');
-        },
+        });
 
-        "test function update"() {
-          const myUpdate = this.stub().returns({fooField: [['is_invalid']]});
+        test("function update", ()=>{
+          const myUpdate = stub().returns({fooField: [['is_invalid']]});
           Form.addChangeFields({template: Dom.TestData, fields: ['fooField'],
                                 update: myUpdate,
-                                undo: v.onChange = this.stub()});
+                                undo: v.onChange = stub()});
           document.body.appendChild(Dom.TestData.$autoRender(v.doc));
           TH.change('[name=fooField]', 'bad');
           assert.calledWith(myUpdate, v.doc, 'fooField', 'bad', v.onChange);
-        },
-      },
+        });
+      });
 
 
-      "test pointerdown and nesting"() {
-        const removeEventListener = this.spy(document, 'removeEventListener');
+      test("pointerdown and nesting", ()=>{
+        const removeEventListener = spy(document, 'removeEventListener');
         TH.trigger('#sp', 'pointerdown');
 
         refute.called(v.func);
@@ -375,7 +376,7 @@ isClient && define(function (require, exports, module) {
 
         // testing replacement
 
-        Dom.Form.modalize('.foo', v.func2 = this.stub());
+        Dom.Form.modalize('.foo', v.func2 = stub());
 
         v.func.reset();
 
@@ -398,9 +399,9 @@ isClient && define(function (require, exports, module) {
         assert.same(Dom.Form.cancelModalize(), null);
 
         assert.called(removeEventListener);
-      },
+      });
 
-      "test keydown"() {
+      test("keydown", ()=>{
         TH.trigger('#sp', 'keydown', {which: 26});
         TH.trigger('.foo', 'keydown', {which: 26});
         TH.trigger('#st', 'keydown', {which: 27});
@@ -420,10 +421,10 @@ isClient && define(function (require, exports, module) {
         }));
 
         assert.same(v.func.callCount, 3);
-      },
-    },
+      });
+    });
 
-    "test PlainTextEditor"() {
+    test("PlainTextEditor", ()=>{
       document.body.appendChild(Dom.Test.Form.TestPlainTextEditor.$autoRender({name: 'foo\nbar'}));
 
       assert.dom('#TestPlainTextEditor>label', function () {
@@ -436,9 +437,9 @@ isClient && define(function (require, exports, module) {
           assert.same(this.value, 'how now');
         });
       });
-    },
+    });
 
-    "test RichTextEditor"() {
+    test("RichTextEditor", ()=>{
       Dom.Test.Form.TestRichTextEditor.$helpers({
         testFormMentions() {
           return {
@@ -466,17 +467,17 @@ isClient && define(function (require, exports, module) {
           });
         });
       });
-    },
+    });
 
-    "test format"() {
+    test("format", ()=>{
       document.body.appendChild(Dom.Test.Form.TestFormat.$autoRender({foo: 'fuz'}));
 
       assert.dom('body>div', function () {
         assert.same(this.id, 'FOO_fuz_bar');
       });
-    },
+    });
 
-    "test passing data arg"() {
+    test("passing data arg", ()=>{
       const TestData = v.Form.TestData;
 
       TestData.$helpers({
@@ -493,9 +494,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('#fieldId', {value: 'the field'});
         assert.dom('.value', 'hello foo');
       });
-    },
+    });
 
-    "test renderError"() {
+    test("renderError", ()=>{
       const form = Dom.h({div: [{$name: 'foo'}, {$name: 'bar'}]});
 
       Form.renderError(form, 'foo', ['is_required']);
@@ -509,9 +510,9 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[name=bar]:not(.error)+.errorMsg', '');
       });
-    },
+    });
 
-    "test errorTop renderError"() {
+    test("errorTop renderError", ()=>{
       const form = Dom.h({
         $style: 'width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
@@ -536,25 +537,25 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[name=bar]:not(.error)+.errorMsg', '');
       });
-    },
+    });
 
-    "displayField": {
-      "test defaults"() {
+    group("displayField", ()=>{
+      test("defaults", ()=>{
         assert.dom(Dom._helpers.displayField.call({foo: 'bar'}, 'foo'), elm => {
           assert.dom('span.name', 'Foo');
           assert.dom('span.value', 'bar');
         });
-      },
+      });
 
-      "test options"() {
+      test("options", ()=>{
         assert.dom(Dom._helpers.displayField('foo', {data: {foo: {name: 'foo obj'}}}), elm => {
           assert.dom('span.name', 'Foo');
           assert.dom('span.value', 'foo obj');
         });
-      },
-    },
+      });
+    });
 
-    "test errorRight renderError"() {
+    test("errorRight renderError", ()=>{
       const form = Dom.h({
         $style: 'width: 300px;height:100px',
         div: ['hello world', {br: ''}, {$name: 'foo'},
@@ -578,6 +579,6 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('[name=bar]:not(.error)+.errorMsg', '');
       });
-    },
+    });
   });
 });

@@ -1,3 +1,1 @@
-define(function(require, exports, module) {
-  return require('../env!./main');
-});
+define((require) => require('../env!./main'));

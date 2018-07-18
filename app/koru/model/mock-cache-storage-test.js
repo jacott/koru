@@ -1,4 +1,4 @@
-isClient && define(function (require, exports, module) {
+isClient && define((require, exports, module)=>{
   const MockPromise     = require('koru/test/mock-promise');
   const TH              = require('./test-helper');
 
@@ -9,19 +9,18 @@ isClient && define(function (require, exports, module) {
 
   const poll = ()=>{MockPromise._poll()};
 
-  let v = null;
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       v.caches = new sut();
       TH.stubProperty((isServer ? global : self), 'Promise', {value: MockPromise});
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
+    afterEach(()=>{
+      v = {};
+    });
 
-    "test open"() {
+    test("open", ()=>{
       const p = v.caches.open('foo');
       assert(p instanceof MockPromise);
       p.then(c => v.cache = c);
@@ -38,16 +37,16 @@ isClient && define(function (require, exports, module) {
 
       assert.same(v.same, v.cache);
       refute.same(v.notsame, v.cache);
-    },
+    });
 
-    "with cache": {
-      setUp() {
+    group("with cache", ()=>{
+      beforeEach(()=>{
         v.caches.open('foo').then(c => v.cache = c); poll();
         v.req = new Request('/foo.js'); v.resp = {status: 200, myrep: 'foo'};
         v.cache.put(v.req, v.resp); poll();
-      },
+      });
 
-      "test put, match"() {
+      test("put, match", ()=>{
         const {cache} = v;
 
         const req = new Request('/index.js'), resp = {status: 200, myrep: 'index'};
@@ -70,9 +69,9 @@ isClient && define(function (require, exports, module) {
         poll();
 
         assert.same(v.cachesMatch, resp);
-      },
+      });
 
-      "test delete"() {
+      test("delete", ()=>{
         const {cache, req, resp} = v;
 
         cache.delete(req).then(r => v.del = r);
@@ -86,9 +85,9 @@ isClient && define(function (require, exports, module) {
         cache.delete(req).then(r => v.del = r);
         poll();
         assert.isFalse(v.del);
-      },
+      });
 
-      "test caches.keys"() {
+      test("caches.keys", ()=>{
         const {caches, cache: foo} = v;
         let bar;
 
@@ -99,9 +98,9 @@ isClient && define(function (require, exports, module) {
         poll();
 
         assert.equals(v.ans.sort(), ['bar', 'foo']);
-      },
+      });
 
-      "test caches.delete"() {
+      test("caches.delete", ()=>{
         v.caches.delete('foo').then(r => v.del = r);
         poll();
         assert.isTrue(v.del);
@@ -112,7 +111,7 @@ isClient && define(function (require, exports, module) {
         poll();
         assert.isFalse(v.del);
 
-      },
-    },
+      });
+    });
   });
 });

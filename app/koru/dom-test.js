@@ -1,23 +1,12 @@
-define(function (require, exports, module) {
-  var test, v;
-  const api  = require('koru/test/api');
-  const TH   = require('koru/test-helper');
-  const sut  = require('./dom');
-  const base = require('./dom/base');
+define((require, exports, module)=>{
+  const TH              = require('koru/test-helper');
+  const base            = require('./dom/base');
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
-    },
+  const sut = require('./dom');
 
-    tearDown() {
-      v = null;
-    },
-
-    "test "() {
-      api.module();
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    test("wired", ()=>{
       assert.same(base, sut);
-    },
+    });
   });
 });

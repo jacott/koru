@@ -1,11 +1,11 @@
-define(function (require, exports, module) {
-  const koru    = require('koru/main');
-  const Driver  = require('koru/pg/driver');
-  const session = require('koru/session');
-  const util    = require('koru/util');
-  const Model   = require('./main');
-  const TH      = require('./test-helper');
-  const Val     = require('./validation');
+define((require, exports, module)=>{
+  const koru            = require('koru/main');
+  const Driver          = require('koru/pg/driver');
+  const session         = require('koru/session');
+  const util            = require('koru/util');
+  const Model           = require('./main');
+  const TH              = require('./test-helper');
+  const Val             = require('./validation');
 
   const {stub, spy, onEnd} = TH;
 
@@ -13,7 +13,7 @@ define(function (require, exports, module) {
 
   const Future   = util.Future;
 
-  let v = null;
+  let v = {};
 
   const revertTodefault = ()=>{
     v.obAny && v.obAny.stop();
@@ -28,9 +28,8 @@ define(function (require, exports, module) {
   };
 
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       TH.noInfo();
       v.TestModel = Model.define('TestModel');
       v.TestModel.defineFields({name: 'text'});
@@ -41,14 +40,14 @@ define(function (require, exports, module) {
 
       v.obAny = v.TestModel.onAnyChange(v.anyChanged = stub());
       v.obDef = v.TestModel.onChange(v.defChanged = stub());
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       Model._destroyModel('TestModel', 'drop');
-      v = null;
-    },
+      v = {};
+    });
 
-    "test dbBroker.db"() {
+    test("dbBroker.db", ()=>{
       const {TestModel, altDb, defDb} = v;
       v.doc = TestModel.create({name: 'bar1'});
       v.doc = TestModel.create({name: 'bar2'});
@@ -79,9 +78,9 @@ define(function (require, exports, module) {
 
       revertTodefault();
       assert.same(TestModel.query.count(), 2);
-    },
+    });
 
-    "test makeFactory"() {
+    test("makeFactory", ()=>{
       class DBRunner {
         constructor(a, b) {this.db=sut.db; this.a = a; this.b = b}
 
@@ -122,6 +121,6 @@ define(function (require, exports, module) {
 
 
 
-    },
+    });
   });
 });

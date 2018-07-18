@@ -1,13 +1,13 @@
-define(function(require, exports, module) {
-  const SelectMenu            = require('koru/ui/select-menu');
-  const Dom                   = require('../dom');
-  const format                = require('../format');
-  const koru                  = require('../main');
-  const Val                   = require('../model/validation');
-  const util                  = require('../util');
-  const PlainText             = require('./plain-text');
+define((require)=>{
+  const SelectMenu      = require('koru/ui/select-menu');
+  const Dom             = require('../dom');
+  const format          = require('../format');
+  const koru            = require('../main');
+  const Val             = require('../model/validation');
+  const util            = require('../util');
+  const PlainText       = require('./plain-text');
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
-  const Route                 = require('./route');
+  const Route           = require('./route');
 
   const {error$} = require('koru/symbols');
 
@@ -69,6 +69,85 @@ define(function(require, exports, module) {
       }
     } else if (! Dom.contains(elm, event.target))
       return modalize.func.call(this, event);
+  };
+
+  const helpers = (name, funcs)=>{
+    Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
+  };
+
+  const field = (doc, name, options, extend)=>{
+    options = options || {};
+    const data = {name, doc, options};
+    if ('selectList' in options) {
+      return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
+    }
+
+    switch(options.type || 'text') {
+    case 'onOff':
+      return OnOff.$autoRender(data);
+    default:
+      const editor = EDITORS[options.type];
+      if (editor) {
+        if (extend) data.extend = extend;
+        data.content = doc[name];
+        data.options = Object.assign({"data-errorField": name}, options);
+        return editor.$autoRender(data);
+      }
+
+      data.type = options.type || 'text';
+      return Tpl.TextInput.$autoRender(data);
+    }
+
+  };
+
+  const changeColorEvent = (field, options)=> event =>{
+    Dom.stopEvent();
+    const doc = $.data();
+
+    const fieldSpec = doc.classMethods.$fields[field];
+    const alpha = (fieldSpec && fieldSpec.color === 'alpha');
+
+    Dom.ColorPicker.choose(doc[field], alpha, result => {
+      if (result) {
+        saveChange(doc, field, result, options);
+      }
+    });
+  };
+
+  const changeFieldEvent = (field, options)=>  function (event) {
+    Dom.stopEvent();
+    const doc = $.data();
+
+    let value;
+    switch (this.type) {
+    case 'checkbox':
+      value = this.checked;
+      break;
+    default:
+      value = this.value;
+    }
+
+    saveChange(doc, field, value, options);
+  };
+
+  const saveChange = (doc, field, value, options)=>{
+    const form = document.getElementById(options.template.name);
+    Tpl.clearErrors(form);
+    let errors;
+    switch (typeof options.update) {
+    case 'string':
+      errors = doc[options.update](field, value, options.undo);
+      break;
+    case 'function':
+      errors = options.update(doc, field, value, options.undo);
+
+      break;
+    default:
+      doc[field] = value;
+      Tpl.saveChanges(doc, form, options.undo);
+      return;
+    }
+    errors === undefined || Tpl.renderErrors({[error$]: errors}, form);
   };
 
   Tpl.$extend({
@@ -347,6 +426,11 @@ define(function(require, exports, module) {
     },
   });
 
+  const selectMenuList = (list, includeBlank)=> includeBlank ? [
+    ['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
+    ...list
+  ] : list;
+
   Tpl.SelectMenu.$extend({
     $created(ctx, elm) {
       const data = ctx.data;
@@ -376,13 +460,6 @@ define(function(require, exports, module) {
     },
   });
 
-  function selectMenuList(list, includeBlank) {
-    return includeBlank ? [
-      ['', Dom.h({i:typeof includeBlank === 'string' ? includeBlank : '', class: 'blank'})],
-      ...list
-    ] : list;
-  }
-
   Tpl.SelectMenu.$events({
     'pointerdown'(event) {
       Dom.stopEvent();
@@ -410,8 +487,37 @@ define(function(require, exports, module) {
     },
   });
 
+  const buildSelectList = (ctx, elm, optionFunc)=>{
+    const data = ctx.data;
+    const value = data.doc[data.name];
+    const options = data.options;
+    let sl = options.selectList;
+    if (! sl) throw new Error('invalid selectList for ' + data.name);
+    if ('fetch' in sl)
+      sl = sl.fetch();
+    if (sl.length === 0) return;
+    if (typeof sl[0] === 'string') {
+      var getValue = row => row;
+      var getContent = getValue;
+    } else if ('_id' in sl[0]) {
+      var getValue = row => row._id;
+      var getContent = row => row.name;
+    } else {
+      var getValue = row => row[0];
+      var getContent = row => row[1];
+    }
+    let includeBlank = options.includeBlank;
+    if (('includeBlank' in options) && includeBlank !== 'false') {
+      if (typeof includeBlank !== 'string' || includeBlank === 'true')
+        includeBlank = '';
+      elm.appendChild(optionFunc('', includeBlank));
+    }
+    util.forEach(sl, row => {
+      const rowValue = getValue(row);
+      elm.appendChild(optionFunc(rowValue, getContent(row), rowValue == value));
+    });
+  };
 
-  helpers('Select', {});
   Tpl.Select.$extend({
     $created(ctx, elm) {
       buildSelectList(ctx, elm, (value, content, selected) => {
@@ -446,38 +552,6 @@ define(function(require, exports, module) {
       Dom.addClass(elm, 'label_'+ctx.data.name);
     },
   });
-
-
-  function buildSelectList(ctx, elm, optionFunc) {
-    const data = ctx.data;
-    const value = data.doc[data.name];
-    const options = data.options;
-    let sl = options.selectList;
-    if (! sl) throw new Error('invalid selectList for ' + data.name);
-    if ('fetch' in sl)
-      sl = sl.fetch();
-    if (sl.length === 0) return;
-    if (typeof sl[0] === 'string') {
-      var getValue = row => row;
-      var getContent = getValue;
-    } else if ('_id' in sl[0]) {
-      var getValue = row => row._id;
-      var getContent = row => row.name;
-    } else {
-      var getValue = row => row[0];
-      var getContent = row => row[1];
-    }
-    let includeBlank = options.includeBlank;
-    if (('includeBlank' in options) && includeBlank !== 'false') {
-      if (typeof includeBlank !== 'string' || includeBlank === 'true')
-        includeBlank = '';
-      elm.appendChild(optionFunc('', includeBlank));
-    }
-    util.forEach(sl, row => {
-      const rowValue = getValue(row);
-      elm.appendChild(optionFunc(rowValue, getContent(row), rowValue == value));
-    });
-  }
 
   const errorMsg = document.createElement('span');
   errorMsg.className = 'errorMsg';
@@ -579,89 +653,6 @@ define(function(require, exports, module) {
       data.doc[data.name] = on;
     },
   });
-
-  function helpers(name, funcs) {
-    Tpl[name].$helpers(util.reverseMerge(funcs, DEFAULT_HELPERS));
-  }
-
-  function field(doc, name, options, extend) {
-    options = options || {};
-    const data = {name, doc, options};
-    if ('selectList' in options) {
-      return ((options.type && Tpl[util.capitalize(options.type)]) || Tpl.Select).$autoRender(data);
-    }
-
-    switch(options.type || 'text') {
-    case 'onOff':
-      return OnOff.$autoRender(data);
-    default:
-      const editor = EDITORS[options.type];
-      if (editor) {
-        if (extend) data.extend = extend;
-        data.content = doc[name];
-        data.options = Object.assign({"data-errorField": name}, options);
-        return editor.$autoRender(data);
-      }
-
-      data.type = options.type || 'text';
-      return Tpl.TextInput.$autoRender(data);
-    }
-
-  }
-
-  function changeColorEvent(field, options) {
-    return function (event) {
-      Dom.stopEvent();
-      const doc = $.data();
-
-      const fieldSpec = doc.classMethods.$fields[field];
-      const alpha = (fieldSpec && fieldSpec.color === 'alpha');
-
-      Dom.ColorPicker.choose(doc[field], alpha, result => {
-        if (result) {
-          saveChange(doc, field, result, options);
-        }
-      });
-    };
-  }
-
-  function changeFieldEvent(field, options) {
-    return function (event) {
-      Dom.stopEvent();
-      const doc = $.data();
-
-      let value;
-      switch (this.type) {
-      case 'checkbox':
-        value = this.checked;
-        break;
-      default:
-        value = this.value;
-      }
-
-      saveChange(doc, field, value, options);
-    };
-  }
-
-  function saveChange(doc, field, value, options) {
-    const form = document.getElementById(options.template.name);
-    Tpl.clearErrors(form);
-    let errors;
-    switch (typeof options.update) {
-    case 'string':
-      errors = doc[options.update](field, value, options.undo);
-      break;
-    case 'function':
-      errors = options.update(doc, field, value, options.undo);
-
-      break;
-    default:
-      doc[field] = value;
-      Tpl.saveChanges(doc, form, options.undo);
-      return;
-    }
-    errors === undefined || Tpl.renderErrors({[error$]: errors}, form);
-  }
 
   return Tpl;
 });

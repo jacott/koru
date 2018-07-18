@@ -1,23 +1,22 @@
-isClient && define(function (require, exports, module) {
-  const Dom                   = require('../dom');
-  const Modal                 = require('./modal');
-  const RichText              = require('./rich-text');
-  const RichTextEditor        = require('./rich-text-editor');
+isClient && define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const Modal           = require('./modal');
+  const RichText        = require('./rich-text');
+  const RichTextEditor  = require('./rich-text-editor');
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
-  const TH                    = require('./test-helper');
+  const TH              = require('./test-helper');
 
-  var test, v;
+  const {stub, spy, onEnd} = TH;
 
   const {insert} = RichTextEditor;
 
-  TH.testCase(module, {
-    setUp() {
-      test = this;
-      v = {};
+  let v= {};
 
-      test.spy(Dom, 'stopEvent');
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
+      spy(Dom, 'stopEvent');
 
-      v.fooFunc = test.stub();
+      v.fooFunc = stub();
       document.body.appendChild(RichTextEditorToolbar.$autoRender({
         content: document.createTextNode('hello\xa0'), options: {
         id: 'TestRichTextEditor'}, extend: {
@@ -38,15 +37,15 @@ isClient && define(function (require, exports, module) {
       TH.setRange(v.input.firstChild, v.input.firstChild.textContent.length);
       v.input.focus();
       TH.trigger(v.input, 'focusin');
-    },
+    });
 
-    tearDown() {
-      v = null;
+    afterEach(()=>{
       TH.domTearDown();
-    },
+      v = {};
+    });
 
-    "toolbar": {
-      setUp() {
+    group("toolbar", ()=>{
+      beforeEach(()=>{
         v.input.appendChild(Dom.h(["one", {div: ["two ", "three"]}]));
 
         v.range = TH.setRange(v.input.lastChild.lastChild, 2);
@@ -61,9 +60,9 @@ isClient && define(function (require, exports, module) {
         v.fooHtmlFunc = function (elm) {
           return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
         };
-      },
+      });
 
-      "test accept"() {
+      test("accept", ()=>{
         assert(Modal.topModal.handleTab);
 
         assert.dom('.rtMention:not(.inline)[touch-action=none] input', function () {
@@ -83,9 +82,9 @@ isClient && define(function (require, exports, module) {
                       'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
 
         });
-      },
+      });
 
-      "test cancel"() {
+      test("cancel", ()=>{
         assert.dom('.rtMention:not(.inline) input', function () {
           TH.input(this, 'g');
         });
@@ -96,10 +95,10 @@ isClient && define(function (require, exports, module) {
           assert.same(range.startContainer, v.range.startContainer);
           assert.same(range.startOffset, v.range.startOffset);
         });
-      },
-    },
+      });
+    });
 
-    "test typing @g"() {
+    test("typing @g", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         refute.called(Dom.stopEvent);
@@ -120,9 +119,9 @@ isClient && define(function (require, exports, module) {
           assert.same(document.activeElement, this);
         });
       });
-    },
+    });
 
-    "test @ followed by -> ->"() {
+    test("@ followed by -> ->", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         assert.same(this.innerHTML, 'hello @');
@@ -135,9 +134,9 @@ isClient && define(function (require, exports, module) {
 
         assert.same(this.innerHTML, 'hello @');
       });
-    },
+    });
 
-    "test @ after div"() {
+    test("@ after div", ()=>{
       assert.dom(v.input, function () {
         insert("\n");
         pressAt(this);
@@ -145,9 +144,9 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('span.ln');
       });
-    },
+    });
 
-    "test ctx"() {
+    test("ctx", ()=>{
       v.fooFunc = function (frag, text, ctx) {
         if (ctx.foo) {
           frag.appendChild(Dom.h({div: 'yes foo', "$data-id": "yesfoo"}));
@@ -175,9 +174,9 @@ isClient && define(function (require, exports, module) {
       assert.dom('.rtMention.inline', function () {
         assert.dom('div:first-child', 'yes foo');
       });
-    },
+    });
 
-    "test needMore"() {
+    test("needMore", ()=>{
       v.fooFunc = function (frag, text) {
         return true;
       };
@@ -188,10 +187,10 @@ isClient && define(function (require, exports, module) {
       assert.dom('.rtMention' , function () {
         assert.dom('div.empty.needMore');
       });
-    },
+    });
 
-    "at list menu": {
-      setUp() {
+    group("at list menu", ()=>{
+      beforeEach(()=>{
         v.fooFunc = function (frag, text) {
           if (text === 'g') {
             frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
@@ -210,17 +209,17 @@ isClient && define(function (require, exports, module) {
 
         pressAt(v.input);
         TH.keypress(v.input, 'g');
-      },
+      });
 
-      "test empty"() {
+      test("empty", ()=>{
         TH.input('input', 'jjg');
         assert.dom('.rtMention.inline>div:not(.empty)');
         TH.input('input', 'jjgx');
         assert.dom('.rtMention.inline>div.empty');
 
         assert.dom('input', function () {
-          var updspy = test.spy(Dom.ctx(this), 'updateAllTags');
-          var mdlspy = test.spy(Modal, 'reposition');
+          var updspy = spy(Dom.ctx(this), 'updateAllTags');
+          var mdlspy = spy(Modal, 'reposition');
 
           var input = this;
           TH.input(this, 'jjg');
@@ -230,9 +229,9 @@ isClient && define(function (require, exports, module) {
           }));
         });
         assert.dom('.rtMention.inline>div:not(.empty)');
-      },
+      });
 
-      "test override"() {
+      test("override", ()=>{
         v.fooHtmlFunc = function (elm, ctx) {
           v.fooHtmlFuncCtx = ctx;
           return;
@@ -266,9 +265,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('.rtMention div', 'James J Gooding', function () {
           assert.same(v.fooHtmlFuncCtx, Dom.ctx(this));
         });
-      },
+      });
 
-      "test input and click"() {
+      test("input and click", ()=>{
         assert.dom('.rtMention', function () {
           assert.dom('>div>div', {count: 3});
           assert.dom('>div>div:first-child.selected', function () {
@@ -299,9 +298,9 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
           assert.dom('a[href="/#j3"]', 'Josiah<JG>');
         });
-      },
+      });
 
-      "test click out aborts list"() {
+      test("click out aborts list", ()=>{
         assert.dom('.rtMention input', function () {
           TH.keydown(40);
         });
@@ -315,9 +314,9 @@ isClient && define(function (require, exports, module) {
         assert.dom('.input', function () {
           assert.same(this.innerHTML, 'hello @g');
         });
-      },
+      });
 
-      "test tab"() {
+      test("tab", ()=>{
         TH.trigger('input', 'keydown', {which: 9});
 
         assert.dom('.input', function () {
@@ -325,9 +324,9 @@ isClient && define(function (require, exports, module) {
           assert.same(this.innerHTML.replace(/&nbsp;/g, ' ').replace(/<a[^>]*>/, '<a>'),
                       'hello <a>Geoff Jacobsen</a> ');
         });
-      },
+      });
 
-      "test shift tab"() {
+      test("shift tab", ()=>{
         TH.trigger('input', 'keydown', {which: 9, shiftKey: true});
 
         refute.dom('.rtMention');
@@ -340,9 +339,9 @@ isClient && define(function (require, exports, module) {
           insert('w');
           assert.same(this.innerHTML, 'hello @wg');
         });
-      },
+      });
 
-      "test pointerover"() {
+      test("pointerover", ()=>{
         TH.trigger(v.div3, 'pointerover');
         assert.same(document.getElementsByClassName('selected').length, 1);
         assert.className(v.div3, 'selected');
@@ -350,9 +349,9 @@ isClient && define(function (require, exports, module) {
         TH.trigger(v.div1, 'pointerover');
         assert.same(document.getElementsByClassName('selected').length, 1);
         assert.className(v.div1, 'selected');
-      },
+      });
 
-      "test disabled"() {
+      test("disabled", ()=>{
         v.div2.classList.add('disabled');
         TH.trigger(v.div2, 'pointerover');
 
@@ -360,9 +359,9 @@ isClient && define(function (require, exports, module) {
         TH.pointerDownUp(v.div2);
 
         assert.dom('.rtMention');
-      },
+      });
 
-      "test key down, up, enter "() {
+      test("key down, up, enter ", ()=>{
         assert.dom('.rtMention', function () {
           assert.dom('input', function () {
             TH.trigger(this, 'keydown', {which: 40});
@@ -408,11 +407,11 @@ isClient && define(function (require, exports, module) {
           refute.dom('.ln');
           assert.dom('a[href="/#g3"]', 'Gayle Gunter');
         });
-      },
-    },
+      });
+    });
 
-    "test input box uses modal"() {
-      test.spy(Modal, 'reposition');
+    test("input box uses modal", ()=>{
+      spy(Modal, 'reposition');
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -431,17 +430,17 @@ isClient && define(function (require, exports, module) {
           assert.calledWith(Modal.reposition, 'below', {popup: this, origin: minp});
         });
       });
-    },
+    });
 
-    "keydown": {
-      setUp() {
+    group("keydown", ()=>{
+      beforeEach(()=>{
         assert.dom(v.input, function () {
           pressAt(this);
           TH.keypress(this, 'h');
         });
-      },
+      });
 
-      "test deleting @"() {
+      test("deleting @", ()=>{
         assert.dom('.rtMention>input', function () {
           TH.input(this, '');
           TH.trigger(this, 'keydown', {which: 8});
@@ -455,9 +454,9 @@ isClient && define(function (require, exports, module) {
           assert.same(this.innerHTML, 'hello w');
         });
         refute.dom('.rtMention');
-      },
+      });
 
-      "test arrow left"() {
+      test("arrow left", ()=>{
         assert.dom('.rtMention>input', function () {
           TH.input(this, '');
           TH.trigger(this, 'keydown', {which: 37});
@@ -473,9 +472,9 @@ isClient && define(function (require, exports, module) {
           insert('w');
           assert.same(this.innerHTML, 'hello w@');
         });
-      },
+      });
 
-      "test escape pressed"() {
+      test("escape pressed", ()=>{
         TH.trigger('.rtMention>input', 'keydown', {which: 27});
 
         assert.dom(v.input, function () {
@@ -486,10 +485,10 @@ isClient && define(function (require, exports, module) {
           insert('w');
           assert.same(this.innerHTML, 'hello @hw');
         });
-      },
-    },
+      });
+    });
 
-    "test @ not last keypress"() {
+    test("@ not last keypress", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         TH.trigger(this, 'keydown', {which: 40});
@@ -498,9 +497,9 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test @ not after space"() {
+    test("@ not after space", ()=>{
       insert('.');
       assert.dom(v.input, function () {
         pressAt(this);
@@ -508,9 +507,9 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test arrow right"() {
+    test("arrow right", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -535,9 +534,9 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test .ln removed removes rtMention"() {
+    test(".ln removed removes rtMention", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -548,10 +547,11 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test clear"() {
-      document.body.appendChild(RichTextEditorToolbar.$autoRender({content: document.createTextNode('hello')}));
+    test("clear", ()=>{
+      document.body.appendChild(RichTextEditorToolbar.$autoRender({
+        content: document.createTextNode('hello')}));
 
       assert.dom('.richTextEditor', function () {
         assert.dom(v.input, function () {
@@ -564,9 +564,9 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test removing editor removes rtMention"() {
+    test("removing editor removes rtMention", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -577,29 +577,29 @@ isClient && define(function (require, exports, module) {
       });
 
       refute.dom('.rtMention');
-    },
+    });
 
-    "test a events don't propagate"() {
+    test("a events don't propagate", ()=>{
       assert.dom(v.input, function () {
         this.appendChild(v.href = Dom.h({a: 'link'}));
         var event = TH.buildEvent('click');
-        test.stub(event, 'preventDefault');
+        stub(event, 'preventDefault');
         TH.trigger(v.href, event);
         assert.called(event.preventDefault);
       });
-    },
+    });
 
-    "test button events don't propagate"() {
+    test("button events don't propagate", ()=>{
       assert.dom(v.input, function () {
         this.appendChild(v.button = Dom.h({button: 'bang'}));
         var event = TH.buildEvent('click');
-        test.stub(event, 'preventDefault');
+        stub(event, 'preventDefault');
         TH.trigger(v.button, event);
         assert.called(event.preventDefault);
       });
-    },
+    });
 
-    "test removing rtMention"() {
+    test("removing rtMention", ()=>{
       assert.dom(v.input, function () {
         pressAt(this);
         TH.keypress(this, 'h');
@@ -616,7 +616,7 @@ isClient && define(function (require, exports, module) {
       var ctx = Dom.ctx(v.input);
       assert.same(ctx.selectItem, null);
       assert.same(ctx.mentionState, null);
-    },
+    });
   });
 
   function pressAt(elm) {

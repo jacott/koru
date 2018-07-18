@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const Random          = require('koru/random');
   const accSha256       = require('koru/srp/acc-sha256');
   const koru            = require('../main');

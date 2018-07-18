@@ -1,9 +1,30 @@
-define(function(require) {
-  const koru    = require('koru');
-  const util    = require('koru/util');
-  const message = require('./message');
+define((require)=>{
+  const koru            = require('koru');
+  const util            = require('koru/util');
+  const message         = require('./message');
 
   const BINARY = {binary: true};
+
+  const send = (conn, msg)=>{
+    if (! conn.ws) return;
+    try {
+      conn.ws.send(msg, BINARY);
+    } catch(ex) {
+      conn.close();
+      koru.info('batch send exception', ex);
+    }
+  };
+
+  const addConn = (msg, conn)=>{
+    msg.conns = {conn: conn, next: msg.conns.sessId ? {conn: msg.conns} : msg.conns};
+  };
+
+  const addMessage = (bm, conn, msg)=>{
+    msg.conns = conn;
+    if (bm.last) bm.last.next = msg;
+    bm.last = msg;
+    if (! bm.first) bm.first = msg;
+  };
 
   class BatchMessage {
     constructor (conn) {
@@ -62,28 +83,6 @@ define(function(require) {
       }
     }
   };
-
-  function send(conn, msg) {
-    if (! conn.ws) return;
-    try {
-      conn.ws.send(msg, BINARY);
-    } catch(ex) {
-      conn.close();
-      koru.info('batch send exception', ex);
-    }
-  }
-
-
-  function addConn(msg, conn) {
-    msg.conns = {conn: conn, next: msg.conns.sessId ? {conn: msg.conns} : msg.conns};
-  }
-
-  function addMessage(bm, conn, msg) {
-    msg.conns = conn;
-    if (bm.last) bm.last.next = msg;
-    bm.last = msg;
-    if (! bm.first) bm.first = msg;
-  }
 
   return BatchMessage;
 });

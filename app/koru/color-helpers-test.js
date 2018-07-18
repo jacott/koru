@@ -1,22 +1,18 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const Dom             = require('koru/dom');
   const TH              = require('koru/test-helper');
 
   const {stub, spy, onEnd, util} = TH;
 
   const sut  = require('./color-helpers');
-  let v = null;
+  let v = {};
 
-  TH.testCase(module, {
-    setUp() {
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    afterEach(()=>{
       v = {};
-    },
+    });
 
-    tearDown() {
-      v = null;
-    },
-
-    "test setBackgroundColor w. alpha"() {
+    test("setBackgroundColor w. alpha", ()=>{
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -28,9 +24,9 @@ define(function (require, exports, module) {
       assert.equals(style.borderColor, '');
 
       assert.same(element.className, 'verylight');
-    },
+    });
 
-    "test setBackgroundAndBorderColor w. alpha"() {
+    test("setBackgroundAndBorderColor w. alpha", ()=>{
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -42,9 +38,9 @@ define(function (require, exports, module) {
       assert.colorEqual(style.borderColor, [77, 77, 77, 0.3], 0.1);
 
       assert.same(element.className, 'verylight');
-    },
+    });
 
-    "test setBackgroundColor no alpha"() {
+    test("setBackgroundColor no alpha", ()=>{
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -56,9 +52,9 @@ define(function (require, exports, module) {
       assert.equals(style.borderColor, '');
 
       assert.same(element.className, 'verylight');
-    },
+    });
 
-    "test setBackgroundAndBorderColor no alpha"() {
+    test("setBackgroundAndBorderColor no alpha", ()=>{
       const element = Dom.h({});
       TH.stubProperty(Dom, 'current', {value: {element}});
 
@@ -70,6 +66,6 @@ define(function (require, exports, module) {
       assert.colorEqual(style.borderColor, [77, 77, 77, 0.3], 0.1);
 
       assert.same(element.className, 'verylight');
-    },
+    });
   });
 });

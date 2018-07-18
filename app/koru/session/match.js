@@ -1,4 +1,4 @@
-define(function(require) {
+define((require)=>{
   const dbBroker = require('koru/model/db-broker');
 
   const dbs$ = Symbol(), key$ = Symbol();

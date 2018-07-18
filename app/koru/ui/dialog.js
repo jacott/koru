@@ -1,10 +1,17 @@
-define(function(require, exports, module) {
-  const Dom   = require('../dom');
-  const Form  = require('./form');
-  const Modal = require('./modal');
+define((require)=>{
+  const Dom             = require('../dom');
+  const Form            = require('./form');
+  const Modal           = require('./modal');
 
-  const Tpl = module.exports = Dom.newTemplate(require('../html!./dialog'));
+  const Tpl = Dom.newTemplate(require('../html!./dialog'));
   const $ = Dom.current;
+
+  const modalize = (ctx, elm)=>{
+    Modal.init({ctx: ctx, container: elm,
+                popup: elm.firstElementChild.firstElementChild,
+                handleTab: true,
+    });
+  };
 
   Tpl.$extend({
     isOpen() {
@@ -112,10 +119,5 @@ define(function(require, exports, module) {
     $created: modalize,
   });
 
-  function modalize(ctx, elm) {
-    Modal.init({ctx: ctx, container: elm,
-                popup: elm.firstElementChild.firstElementChild,
-                handleTab: true,
-    });
-  }
+  return Tpl;
 });

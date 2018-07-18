@@ -1,11 +1,18 @@
-define(function(require, exports, module) {
-  const koru        = require('../main');
-  const makeSubject = require('../make-subject');
-  const util        = require('../util');
+define((require, exports, module)=>{
+  const koru            = require('../main');
+  const makeSubject     = require('../make-subject');
+  const util            = require('../util');
 
   const sessMap = {};
 
-  util.merge(exports, {
+  const setState = (session, state)=>{
+    const subject = sessMap[session._id];
+    if (! subject) return;
+    subject.state = state;
+    subject.notify(state);
+  };
+
+  return {
     onChange(session, func) {
       const subject = sessMap[session._id] || (sessMap[session._id] = makeSubject({}));
       return subject.onChange(func);
@@ -31,12 +38,5 @@ define(function(require, exports, module) {
       const subject = sessMap[session._id];
       return subject && subject.state;
     }
-  });
-
-  function setState(session, state) {
-    const subject = sessMap[session._id];
-    if (! subject) return;
-    subject.state = state;
-    subject.notify(state);
-  }
+  };
 });

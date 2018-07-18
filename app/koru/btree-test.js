@@ -727,7 +727,7 @@ r  110
       });
     });
 
-    // "test random"() {
+    // test("random", ()=>{
     //   const tree = new BTree();
     //   const list = [];
     //   const cl = [];
@@ -750,7 +750,7 @@ r  110
     //     throw ex;
     //   }
     //   assertCheck(tree);
-    // },
+    // });
   });
 
   const assertTree = (tree, exp='')=>{

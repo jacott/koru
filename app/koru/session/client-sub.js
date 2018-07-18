@@ -1,13 +1,11 @@
-define(function(require, exports, module) {
-  const koru    = require('koru');
-  const util    = require('koru/util');
-  const Trace   = require('../trace');
-  const publish = require('./publish');
+define((require)=>{
+  const koru            = require('koru');
+  const util            = require('koru/util');
+  const Trace           = require('../trace');
+  const publish         = require('./publish');
 
   let debug_subscribe = false;
-  Trace.debug_subscribe = function (value) {
-    debug_subscribe = value;
-  };
+  Trace.debug_subscribe = value =>{debug_subscribe = value};
 
   function stopSub() {
     const {_id} = this;
@@ -23,7 +21,7 @@ define(function(require, exports, module) {
     session.state.decPending();
   }
 
-  function stopped(sub) {
+  const stopped = (sub)=>{
     if (sub._id === null) return;
 
     delete sub.session.subs[sub._id];
@@ -33,14 +31,14 @@ define(function(require, exports, module) {
     killMatches(sub._matches, models);
     sub._stop = sub._matches = sub.callback = null;
     publish._filterModels(models, 'stopped');
-  }
+  };
 
-  function killMatches(matches, models) {
+  const killMatches = (matches, models)=>{
     matches.forEach(m => {
       if (models) models[m.modelName] = true;
       m.stop();
     });
-  }
+  };
 
   class ClientSub {
     constructor(session, subId, name, args) {

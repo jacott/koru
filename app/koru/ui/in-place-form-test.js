@@ -1,29 +1,29 @@
-isClient && define(function (require, exports, module) {
-  const Dom    = require('../dom');
-  const ipfTpl = require('../html!./in-place-form-test');
-  const util   = require('../util');
-  const TH     = require('./test-helper');
+isClient && define((require, exports, module)=>{
+  const Dom             = require('../dom');
+  const ipfTpl          = require('../html!./in-place-form-test');
+  const util            = require('../util');
+  const TH              = require('./test-helper');
 
   const {error$} = require('koru/symbols');
 
   const {stub, spy, onEnd} = TH;
 
   const sut = require('./in-place-form');
-  let v = null;
 
-  TH.testCase(module, {
-    setUp() {
-      v = {};
+  let v = {};
+
+  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
+    beforeEach(()=>{
       document.body.appendChild(v.parent = document.createElement('div'));
       v.Ipf = Dom.newTemplate(util.deepCopy(ipfTpl));
-    },
+    });
 
-    tearDown() {
+    afterEach(()=>{
       TH.domTearDown();
-      v = null;
-    },
+      v = {};
+    });
 
-    "test defaults"() {
+    test("defaults", ()=>{
       var sut = Dom.InPlaceForm.$render({doc: {}});
 
       assert.dom(sut, function () {
@@ -34,18 +34,20 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
-    },
+    });
 
-    "test options"() {
+    test("options", ()=>{
       stub(Dom.Form, 'field');
-      sut._helpers.field.call(v.opts = {'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
-                               name: 'theName', type: 'foo',
-                               notthis: 'not this'});
+      sut._helpers.field.call(v.opts = {
+        'html-form-notme': 'notme', 'html-me': 'html me', ext1: 'extend 1', value: '123',
+        name: 'theName', type: 'foo',
+        notthis: 'not this'});
 
-      assert.calledWith(Dom.Form.field, {theName: '123'}, 'theName', {type: 'foo', me: 'html me'}, v.opts);
-    },
+      assert.calledWith(Dom.Form.field, {theName: '123'}, 'theName',
+                        {type: 'foo', me: 'html me'}, v.opts);
+    });
 
-    "test no doc"() {
+    test("no doc", ()=>{
       var sut = Dom.InPlaceForm.$render({value: "foo"});
 
       assert.dom(sut, function () {
@@ -56,9 +58,9 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=apply]', 'Apply');
         });
       });
-    },
+    });
 
-    "test render"() {
+    test("render", ()=>{
       var sut = Dom.InPlaceForm.$render({
         doc: {foo: 'abc'}, applyName: 'Save', type: 'text',
         name: 'foo',  "html-id": 'My_foo', "html-form-id": "MyFormId", 'html-maxLength': 4});
@@ -73,9 +75,9 @@ isClient && define(function (require, exports, module) {
           assert.dom('button[name=apply]', 'Save');
         });
       });
-    },
+    });
 
-    "test custom Show/Edit templates"() {
+    test("custom Show/Edit templates", ()=>{
       sut.autoRegister(v.Ipf);
       var doc = {autoShowEdit: 'bar'};
       document.body.appendChild(v.Ipf.$autoRender(doc));
@@ -92,11 +94,11 @@ isClient && define(function (require, exports, module) {
 
         assert.dom('input.editTpl', {value: 'foo'});
       });
-    },
+    });
 
-    "test click with selection does nothing"() {
+    test("click with selection does nothing", ()=>{
       sut.autoRegister(v.Ipf);
-      var doc = {autoShowEdit: 'bar', $reload: this.stub()};
+      var doc = {autoShowEdit: 'bar', $reload: stub()};
       document.body.appendChild(v.Ipf.$autoRender(doc));
 
       assert.dom('#InPlaceFormTest', function () {
@@ -109,9 +111,9 @@ isClient && define(function (require, exports, module) {
         TH.click(editable);
         refute.dom('form');
       });
-    },
+    });
 
-    "test saveField"() {
+    test("saveField", ()=>{
       const form = Dom.h({form: [{input: [], name: 'name'}], class: 'submitting'});
       let doc = {$save: stub()};
       const widget = {close: stub()};
@@ -134,9 +136,9 @@ isClient && define(function (require, exports, module) {
       sut.saveField(doc, form, widget);
 
       assert.called(widget.close);
-    },
+    });
 
-    "test apply event"() {
+    test("apply event", ()=>{
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(v.clickStub = function (arg) {
         assert.same(this, widget);
@@ -157,9 +159,9 @@ isClient && define(function (require, exports, module) {
       Dom.remove(widget.element);
 
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
-    },
+    });
 
-    "test ctrl+enter event"() {
+    test("ctrl+enter event", ()=>{
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
       widget.onSubmit(v.clickStub = function (arg) {
         assert.same(this, widget);
@@ -182,9 +184,9 @@ isClient && define(function (require, exports, module) {
       Dom.remove(widget.element);
 
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
-    },
+    });
 
-    "test enterSubmits"() {
+    test("enterSubmits", ()=>{
       var widget = Dom.InPlaceForm.newWidget({
         doc: {name: 'abc'},
         enterSubmits: true,
@@ -203,10 +205,11 @@ isClient && define(function (require, exports, module) {
         TH.trigger('input', 'keydown', {which: 13}); });
 
       assert.same(v.arg, 'new text');
-    },
+    });
 
-    "test delete event"() {
-      var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
+    test("delete event", ()=>{
+      var widget = Dom.InPlaceForm.newWidget({
+        doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
       widget.onDelete(v.clickStub = function () {
         assert.same(this, widget);
         v.arg = true;
@@ -232,9 +235,9 @@ isClient && define(function (require, exports, module) {
       assert.same(v.arg, true);
 
       spy(Dom.InPlaceForm, '$detachEvents');
-    },
+    });
 
-    "test swap cancel"() {
+    test("swap cancel", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm);
@@ -253,9 +256,9 @@ isClient && define(function (require, exports, module) {
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
 
-    },
+    });
 
-    "test swap escape"() {
+    test("swap escape", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm, {doc: {name: 'foo', $reload: v.reload = stub()}});
@@ -277,9 +280,9 @@ isClient && define(function (require, exports, module) {
       assert.isNull(widget.element._bart);
 
       assert.called(v.reload);
-    },
+    });
 
-    "test swap close"() {
+    test("swap close", ()=>{
       v.parent.appendChild(v.elm = document.createElement('span'));
 
       var widget = Dom.InPlaceForm.swapFor(v.elm);
@@ -291,6 +294,6 @@ isClient && define(function (require, exports, module) {
 
       assert.isNull(widget.swap);
       assert.isNull(widget.element._bart);
-    },
+    });
   });
 });

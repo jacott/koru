@@ -1,8 +1,8 @@
-define(function(require, exports, module) {
-  const koru  = require('koru');
-  const Dom   = require('koru/dom');
-  const util  = require('koru/util');
-  const Modal = require('./modal');
+define((require, exports, module)=>{
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const util            = require('koru/util');
+  const Modal           = require('./modal');
 
   const Tpl = Dom.newTemplate(module, require('koru/html!./rich-text-mention'));
   const $ = Dom.current;
@@ -10,6 +10,110 @@ define(function(require, exports, module) {
   const {setRange, getRange} = Dom;
 
   let execCommand, RichTextEditor;
+
+  const acceptItem = (event, item)=>{
+    Dom.stopEvent();
+
+    const {data} = $.ctx;
+
+    const link = data.mentions[data.type].html(item, $.ctx);
+    if (! link)
+      return;
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(link);
+    frag.appendChild(document.createTextNode('\xa0'));
+
+    if (data.span) {
+      revertMention(data.inputElm, frag);
+    } else {
+      setRange(data.range);
+      data.range = null;
+      data.inputElm.focus();
+      RichTextEditor.insert(frag);
+    }
+
+    collapseRange(false);
+    data.inputElm = null;
+    Dom.remove(event.currentTarget);
+  };
+
+  const cancelList = (elm, collapseStart)=>{
+    Dom.stopEvent();
+    if (collapseStart !== undefined) {
+      revertMention($.data(elm).inputElm, null, collapseStart);
+    }
+    Dom.remove(elm);
+  };
+
+  const revertMention = (editorELm, frag, collapseStart)=>{
+    if (! editorELm) return;
+
+    const ln = editorELm.getElementsByClassName('ln')[0];
+    if (ln) {
+      const dest = ln.previousSibling;
+      ln.remove();
+      if (dest) {
+        const destOffset = dest.length;
+
+        editorELm.focus();
+        const range = document.createRange();
+        range.setStart(dest, destOffset);
+        range.collapse(collapseStart);
+        setRange(range);
+        if (! frag) {
+          ln.textContent && RichTextEditor.insert(ln.textContent);
+          const range = getRange();
+          if (range) { // maybe missing on destroy
+            range.setStart(dest, destOffset);
+            range.collapse(collapseStart);
+            setRange(range);
+          }
+        } else {
+          RichTextEditor.moveLeft(editorELm, 'select');
+          RichTextEditor.insert(frag);
+        }
+      }
+    } else {
+      editorELm.focus();
+    }
+
+    const rtCtx = Dom.ctx(editorELm);
+    if (rtCtx) {
+      rtCtx.selectItem = null;
+      rtCtx.mentionState = null;
+    }
+  };
+
+  const collapseRange = (start)=>{
+    const range = Dom.getRange();
+    range.collapse(start);
+    Dom.setRange(range);
+  };
+
+  const selectItem = (data)=>{
+    data.value = data.span.textContent;
+    const al = Tpl.$autoRender(data);
+
+    Modal.append('on', {container: al, origin: data.span, handleTab: true});
+    transformList(data, al);
+
+    const input = al.firstChild.firstChild;
+    input.value = data.value;
+    data.span.style.opacity = "0";
+
+    input.selectionStart = input.selectionEnd = 1;
+    input.focus();
+    return al;
+  };
+
+  const transformList = (data, al)=>{
+    // noAppend needed to stop firefox loosing focus
+    const rtMention = al.firstElementChild;
+    Modal.reposition('on', {popup: rtMention, origin: data.span});
+    const list = rtMention.lastElementChild;
+    Modal.reposition('below', {popup: list, origin: rtMention.firstElementChild});
+  };
 
   Tpl.$extend({
     $created(ctx, elm) {
@@ -141,110 +245,6 @@ define(function(require, exports, module) {
       }
     },
   });
-
-  function acceptItem(event, item) {
-    Dom.stopEvent();
-
-    const {data} = $.ctx;
-
-    const link = data.mentions[data.type].html(item, $.ctx);
-    if (! link)
-      return;
-
-    const frag = document.createDocumentFragment();
-    frag.appendChild(link);
-    frag.appendChild(document.createTextNode('\xa0'));
-
-    if (data.span) {
-      revertMention(data.inputElm, frag);
-    } else {
-      setRange(data.range);
-      data.range = null;
-      data.inputElm.focus();
-      RichTextEditor.insert(frag);
-    }
-
-    collapseRange(false);
-    data.inputElm = null;
-    Dom.remove(event.currentTarget);
-  }
-
-  function cancelList(elm, collapseStart) {
-    Dom.stopEvent();
-    if (collapseStart !== undefined) {
-      revertMention($.data(elm).inputElm, null, collapseStart);
-    }
-    Dom.remove(elm);
-  }
-
-  function revertMention(editorELm, frag, collapseStart) {
-    if (! editorELm) return;
-
-    const ln = editorELm.getElementsByClassName('ln')[0];
-    if (ln) {
-      const dest = ln.previousSibling;
-      ln.remove();
-      if (dest) {
-        const destOffset = dest.length;
-
-        editorELm.focus();
-        const range = document.createRange();
-        range.setStart(dest, destOffset);
-        range.collapse(collapseStart);
-        setRange(range);
-        if (! frag) {
-          ln.textContent && RichTextEditor.insert(ln.textContent);
-          const range = getRange();
-          if (range) { // maybe missing on destroy
-            range.setStart(dest, destOffset);
-            range.collapse(collapseStart);
-            setRange(range);
-          }
-        } else {
-          RichTextEditor.moveLeft(editorELm, 'select');
-          RichTextEditor.insert(frag);
-        }
-      }
-    } else {
-      editorELm.focus();
-    }
-
-    const rtCtx = Dom.ctx(editorELm);
-    if (rtCtx) {
-      rtCtx.selectItem = null;
-      rtCtx.mentionState = null;
-    }
-  }
-
-  function collapseRange(start) {
-    const range = Dom.getRange();
-    range.collapse(start);
-    Dom.setRange(range);
-  }
-
-  function selectItem(data) {
-    data.value = data.span.textContent;
-    const al = Tpl.$autoRender(data);
-
-    Modal.append('on', {container: al, origin: data.span, handleTab: true});
-    transformList(data, al);
-
-    const input = al.firstChild.firstChild;
-    input.value = data.value;
-    data.span.style.opacity = "0";
-
-    input.selectionStart = input.selectionEnd = 1;
-    input.focus();
-    return al;
-  }
-
-  function transformList(data, al) {
-    // noAppend needed to stop firefox loosing focus
-    const rtMention = al.firstElementChild;
-    Modal.reposition('on', {popup: rtMention, origin: data.span});
-    const list = rtMention.lastElementChild;
-    Modal.reposition('below', {popup: list, origin: rtMention.firstElementChild});
-  }
 
   return Tpl;
 });

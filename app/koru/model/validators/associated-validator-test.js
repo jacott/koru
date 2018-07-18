@@ -1,4 +1,4 @@
-define(function (require, exports, module) {
+define((require, exports, module)=>{
   const TH         = require('koru/test-helper');
   const Model      = require('../main');
   const Query      = require('../query');
@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 
   const sut        = require('./associated-validator').bind(validation);
 
-  let v = {};
+  let v = {};
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{

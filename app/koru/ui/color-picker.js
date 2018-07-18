@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require, exports, module)=>{
   const ColorHelpers    = require('koru/color-helpers');
   const Eyedropper      = require('koru/ui/eyedropper');
   const Dom             = require('../dom');

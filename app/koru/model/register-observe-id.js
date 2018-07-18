@@ -1,4 +1,4 @@
-define(function(require, exports, module) {
+define((require)=>{
   const makeSubject = require('koru/make-subject');
   const dbBroker    = require('./db-broker');
 
@@ -8,11 +8,7 @@ define(function(require, exports, module) {
     const modelName = model.modelName;
     let key = 0;
 
-    model.observeId = observeId;
-
-    model.observeIds = observeIds;
-
-    function observeId(id, callback) {
+    const observeId = (id, callback)=>{
       const {dbId} = dbBroker;
       const observers = dbObservers[dbId] || (dbObservers[dbId] = {});
 
@@ -22,8 +18,9 @@ define(function(require, exports, module) {
       observeModel(observers);
       return stopObserver(id, obs, key, dbId, observers);
     };
+    model.observeId = observeId;
 
-    function stopObserver(id, obs, key, dbId, observers) {
+    const stopObserver = (id, obs, key, dbId, observers)=>{
       return {
         stop() {
           delete obs[key];
@@ -39,13 +36,13 @@ define(function(require, exports, module) {
 
         id,
       };
-    }
+    };
 
-    function observeIds(ids, callback) {
-      return stopObservers(ids.map(id => observeId(id, callback)), callback);
-    }
+    const observeIds = (ids, callback)=> stopObservers(
+      ids.map(id => observeId(id, callback)), callback);
+    model.observeIds = observeIds;
 
-    function stopObservers(obs, callback) {
+    const stopObservers = (obs, callback)=>{
       return {
         stop() {for(let i = 0; i < obs.length; ++i) obs[i].stop()},
 
@@ -69,9 +66,9 @@ define(function(require, exports, module) {
           for(const key in set) set[key].stop();
         },
       };
-    }
+    };
 
-    function observeModel(observers) {
+    const observeModel = (observers)=>{
       if (modelObMap[dbBroker.dbId]) return;
 
       modelObMap[dbBroker.dbId] = model.onChange((doc, undo) => {
@@ -81,6 +78,6 @@ define(function(require, exports, module) {
           cb(doc, undo);
         }
       });
-    }
+    };
   };
 });
