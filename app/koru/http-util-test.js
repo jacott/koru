@@ -4,6 +4,7 @@ isServer && define((require, exports, module)=>{
   const HttpHelper      = require('koru/http-helper');
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
+  const zlib            = requirejs.nodeRequire('zlib');
 
   const {test$} = require('koru/symbols');
 
@@ -233,34 +234,91 @@ isServer && define((require, exports, module)=>{
       });
     });
 
-    test("readBody", ()=>{
-      const rawBody = {myBody: 'json'};
+    group("body", ()=>{
+      test("getBody json", ()=>{
+        const rawBody = {myBody: 'json🐧'}; // 🐧 to test default encoding
 
-      assert.equals(sut.readBody(new HttpHelper.RequestStub({
-        url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
-        method: "GET",
-        headers: {
-          'content-type': "application/json;charset=UTF-8"
-        },
-      }, rawBody)), rawBody);
-
-      assert.equals(sut.readBody(new HttpHelper.RequestStub({
-        url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
-        method: "GET",
-        headers: {
-          'content-type': "text;charset=UTF-8"
-        },
-      }, rawBody)), JSON.stringify(rawBody));
-
-      assert.exception(()=>{
-        sut.readBody(new HttpHelper.RequestStub({
+        assert.equals(sut.readBody(new HttpHelper.RequestStub({
           url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
           method: "GET",
           headers: {
             'content-type': "application/json;charset=UTF-8"
           },
-        }, "junk"));
-      }, {error: 400, reason: 'request body must be valid JSON'});
+        }, rawBody)), rawBody);
+
+        assert.equals(sut.readBody(new HttpHelper.RequestStub({
+          url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+          method: "GET",
+          headers: {
+            'content-type': "text/html;charset=UTF-8"
+          },
+        }, rawBody), {asJson: true}), rawBody);
+
+        refute.equals(sut.readBody(new HttpHelper.RequestStub({
+          url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+          method: "GET",
+          headers: {
+            'content-type': "application/json;charset=UTF-8"
+          },
+        }, rawBody), {encoding: 'binary'}), rawBody);
+
+        assert.equals(sut.readBody(new HttpHelper.RequestStub({
+          url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+          method: "GET",
+          headers: {
+            'content-type': "text;charset=UTF-8"
+          },
+        }, rawBody)), JSON.stringify(rawBody));
+
+        assert.exception(()=>{
+          sut.readBody(new HttpHelper.RequestStub({
+            url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+            method: "GET",
+            headers: {
+              'content-type': "application/json;charset=UTF-8"
+            },
+          }, "junk"));
+        }, {error: 400, reason: 'request body must be valid JSON'});
+      });
+
+      test("getBody limit", ()=>{
+        const rawBody = {myBody: 'json'};
+
+        assert.exception(()=>{
+          sut.readBody(new HttpHelper.RequestStub({
+            url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+            method: "GET",
+            headers: {
+              'content-type': "application/json;charset=UTF-8"
+            },
+          }, rawBody), {limit: 4});
+        }, {error: 413, reason: 'request body too large'});
+      });
+
+      class MyReq extends HttpHelper.RequestStub {
+        _read() {
+          if (this._input === '')
+            this.push(null);
+          else {
+            const buf = this._input;
+            this._input = '';
+            this.push(buf);
+          }
+        }
+      }
+
+      test("gzip", ()=>{
+        const exp = {myBody: 'json'};
+        const req = new MyReq({
+          url: '/rest/2/sch00/foo/123/456?bar=abc&baz=123',
+          method: "GET",
+          headers: {
+            'content-type': "application/json;charset=UTF-8",
+            'content-encoding': "gzip",
+          },
+        }, zlib.gzipSync(JSON.stringify(exp)));
+        assert.equals(sut.readBody(req), exp);
+      });
     });
 
     group("renderContent", ()=>{

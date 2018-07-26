@@ -1,12 +1,12 @@
 define((require)=>{
   const koru            = require('koru');
   const util            = require('koru/util');
-
-  let request = requirejs.nodeRequire('request');
+  const stream          = requirejs.nodeRequire('stream');
+  const zlib            = requirejs.nodeRequire('zlib');
 
   const {test$} = require('koru/symbols');
 
-  const rawBody         = requirejs.nodeRequire('raw-body');
+  let request = requirejs.nodeRequire('request');
 
   const DAY24 = 24*util.DAY;
 
@@ -35,7 +35,7 @@ define((require)=>{
   const THROW_ERROR_NOT_404 = Object.assign({404: 'return'}, THROW_ERROR);
 
 
-  return {
+  const HttpUtil = {
     HttpError,
 
     THROW_NONE,
@@ -123,22 +123,53 @@ define((require)=>{
       config.timer = koru.setTimeout(wrapper, 0);
     },
 
-    readBody(req, {
-      encoding="utf8",
-      length=req.headers['content-length'],
-      limit="1mb",
-      asJson=/\bjson\b/.test(req.headers['content-type']),
-    }={}) {
-      const future = new util.Future;
-      rawBody(req, {length, encoding}, (err, string) => {
-        if (err) {
-          future.throw(new Error(err.toString()));
-        } else
-          future.return(string);
-      });
+    pipeBody: (req, {limit=1000*1000})=>{
+      const input = /gzip|deflate/i.test(req.headers['content-encoding']||'')
+            ? req.pipe(zlib.createUnzip())
+            : req;
 
+      let size = 0;
+
+      return input.pipe(new stream.Transform({
+        transform(chunk, encoding, callback) {
+          if (size += chunk.length > limit)
+            callback(new koru.Error(413, 'request body too large'));
+          else
+            callback(null, chunk);
+        }
+      }));
+    },
+
+    readBody: (req, {
+      encoding="utf8",
+      limit,
+      asJson=/\bjson\b/.test(req.headers['content-type']),
+    }={})=>{
+      const future = new util.Future;
+      {
+        let string = '';
+        const output = HttpUtil.pipeBody(req, {limit});
+
+        output.on('data', data =>{
+          string += data.toString(encoding);
+        });
+        output.on('error', err => {
+          if (err instanceof koru.Error)
+            future.throw([err.error, err.reason]);
+          else
+            future.throw([400, err+' '+util.inspect({code: err.code, errno: err.errno})]);
+        });
+        output.on('end', data =>{
+          future.return(string);
+        });
+      }
       let data;
-      const body = future.wait() || "{}";
+      let body;
+      try {
+        body = future.wait() || "{}";
+      } catch(ex) {
+        throw new koru.Error(...ex);
+      }
       if (asJson) {
         try {
           data = JSON.parse(body);
@@ -181,4 +212,6 @@ define((require)=>{
       set request(v) {request = v},
     },
   };
+
+  return HttpUtil;
 });
