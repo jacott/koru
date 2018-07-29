@@ -148,10 +148,7 @@ isClient && define((require, exports, module)=>{
         Dom.remove(Dom('.glassPane'));
         refute.called(v.focusout);
 
-
-        TH.trigger(this, 'focusout', {relatedTarget: null});
-        refute.called(v.focusout);
-
+        document.activeElement.blur();
         TH.trigger(this, 'focusout', {relatedTarget: document.body});
         refute.className(this.parentNode, 'focus');
         assert.called(v.focusout);
@@ -418,6 +415,7 @@ isClient && define((require, exports, module)=>{
 
 
       assert.dom('.input', function () {
+        document.activeElement.blur();
         TH.trigger(this, 'focusout');
         refute.className(Dom('.richTextEditor'), 'focus');
 

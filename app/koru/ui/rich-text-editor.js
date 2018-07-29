@@ -410,11 +410,9 @@ define((require, exports, module)=>{
     const elm = event.currentTarget;
     const parent = elm.parentNode;
 
-    const focusout = event.type === 'focusout' && ! parent.contains(event.relatedTarget);
+    const focusout = event.type === 'focusout' && ! parent.contains(document.activeElement);
 
     if (focusout) {
-      if (event.relatedTarget === null)
-        return void elm.focus();
       if (currentDialog(elm))
         return;
       const pCtx = Dom.myCtx(parent);
