@@ -7,18 +7,19 @@ define((require, exports, module)=>{
 
   const {compare, deepEqual} = util;
 
-  const notifyAC$ = Symbol(), func$ = Symbol(), counter$ = Symbol(),
+  const notifyAC$ = Symbol(), matches$ = Symbol(), func$ = Symbol(),
         compare$ = Symbol(), compareKeys$ = Symbol(),
         onChange$ = Symbol();
 
   const foundIn = (doc, attrs, fields, affirm=true)=>{
     const funcs = fields[func$];
-    for(const key in funcs) {
-      const func = funcs[key];
-      if (func === undefined) {
-        if (foundItem(attrs[key], fields[key]) !== affirm)
-          return ! affirm;
-      } else if (! func(doc) === affirm)
+    for(const func of funcs) {
+      if (! func(doc) === affirm)
+        return ! affirm;
+    }
+    const matches = fields[matches$];
+    for (const key in matches) {
+      if (foundItem(attrs[key], fields[key]) !== affirm)
         return ! affirm;
     }
     return affirm;
@@ -113,34 +114,34 @@ define((require, exports, module)=>{
       const expr = EXPRS[key];
       if (expr !== undefined) return expr(param, value, key, fields[param].type);
     }
-    return value;
+    return undefined;
+  };
+
+  const copyConditions = (type, from, to)=>{
+    const f = from[type];
+    if (f === undefined) return;
+    const t = to[type] || (to[type] = {[func$]: []});
+    for (const field in f) {
+      t[field] = f[field];
+    }
+    t[func$].push(...f[func$]);
   };
 
   const assignCondition = (query, conditions, field, value)=>{
     conditions[field] = value;
     const func = exprToFunc(query, field, value);
-    conditions[func$][field] = func === value ? undefined : func;
+    if (func === undefined)
+      (conditions[matches$] || (conditions[matches$] = {}))[field] = value;
+    else
+      conditions[func$].push(func);
   };
 
   const condition = (query, map, params, value)=>{
-    if (Array.isArray(params)) {
-      let conditions = query[map];
-      if (conditions === undefined) conditions = query[map] = [];
-      conditions.push(params.map(o => {
-        const term = {[func$]: {}};
-        for (const field in o)
-          assignCondition(query, term, field, o[field]);
-        return term;
-      }));
-      return;
-    }
-
     let conditions = query[map];
-    if (conditions === undefined) conditions = query[map] = {[func$]: {}};
+    if (conditions === undefined) conditions = query[map] = {[func$]: []};
     const type = typeof params;
     if (type === 'function') {
-      const count = conditions[counter$] = (conditions[counter$] || 0) + 1;
-      conditions[func$][count] = params;
+      conditions[func$].push(params);
 
     } else if (type === 'string') {
       assignCondition(query, conditions, params, value);
@@ -203,12 +204,26 @@ define((require, exports, module)=>{
       }
 
       where(params, value) {
-        condition(this, '_wheres', params, value);
+        if (typeof params === 'object' && params !== null && params.constructor === Query) {
+          copyConditions('_wheres', params, this);
+          copyConditions('_whereNots', params, this);
+          const {_whereSomes} = params;
+          _whereSomes === undefined ||
+            (this._whereSomes || (this._whereSomes = [])).push(..._whereSomes);
+        } else
+          condition(this, '_wheres', params, value);
         return this;
       }
 
       whereSome(...args) {
-        condition(this, '_whereSomes', args);
+        let conditions = this._whereSomes;
+        if (conditions === undefined) conditions = this._whereSomes = [];
+        conditions.push(args.map(o => {
+          const term = {[func$]: []};
+          for (const field in o)
+            assignCondition(this, term, field, o[field]);
+          return term;
+        }));
         return this;
       }
 

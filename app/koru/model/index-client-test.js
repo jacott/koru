@@ -291,7 +291,7 @@ define((require, exports, module)=>{
       v.test = doc => {
         return doc.id2 === '4';
       };
-      const id1Idx = v.TestModel.addIndex('id1', doc => v.test(doc));
+      const id1Idx = v.TestModel.addIndex('id1', q => q.where(v.test));
 
       const tm1 = v.TestModel.create({_id: 'tm1', id1: '2', id2: '6'});
       const tm2 = v.TestModel.create({_id: 'tm2', id1: '1', id2: '4'});

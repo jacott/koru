@@ -87,14 +87,17 @@ define((require, exports, module)=>{
 
     group("query unsorted withIndex", ()=>{
       before(()=>{
-        v.idx = TestModel.addUniqueIndex('gender', 'age', 'name');
+        v.idx = TestModel.addUniqueIndex('gender', 'age', 'name', q => {
+          q.whereNot('hobby', 'climbing');
+        });
 
         TestModel.query.remove();
 
         TestModel.create({_id: '1', name: 'n1', age: 1, gender: 'm'});
         TestModel.create({_id: '2', name: 'n2', age: 1, gender: 'm'});
-        TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm'});
+        TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm', hobby: 'skiing'});
         TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f'});
+        TestModel.create({_id: '5', name: 'n11', age: 1, gender: 'm', hobby: 'climbing'});
       });
 
       test("matches", ()=>{
@@ -136,7 +139,11 @@ define((require, exports, module)=>{
       before(()=>{
         v.idx = TestModel.addIndex(
           'gender', 'age', -1, 'name', 'hobby', 1, '_id',
-          ({hobby})=> hobby != null && hobby[0] === 'h'
+          q => {
+            q.where(doc =>{
+              return doc.hobby != null && doc.hobby[0] === 'h';
+            });
+          }
         );
 
         TestModel.query.remove();
@@ -146,6 +153,11 @@ define((require, exports, module)=>{
         TestModel.create({_id: '3', name: 'n2', age: 2, gender: 'm', hobby: 'h2'});
         TestModel.create({_id: '4', name: 'n1', age: 1, gender: 'f', hobby: 'h3'});
         TestModel.create({_id: '5', name: 'n5', age: 2, gender: 'm', hobby: 'h4'});
+      });
+
+      after(()=>{
+        v.idx.stop();
+        v.idx = null;
       });
 
       test("matches", ()=>{

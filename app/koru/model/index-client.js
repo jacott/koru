@@ -41,7 +41,13 @@ define((require, exports, module)=>{
     };
 
     const buildIndex = (_fields, _filterTest) => {
-      const fields = _fields, filterTest = _filterTest;
+      const fields = _fields;
+      let query = null;
+      if (_filterTest !== null) {
+        query = model.query;
+        _filterTest(query);
+      }
+      const filterTest = query;
       let i = 0, comp = null;
       const compKeys = [], compMethod = [];
       let dbId = "", idx = null;
@@ -140,8 +146,8 @@ define((require, exports, module)=>{
         const idx = getIdx();
         let old = doc == null ? undo : undo == null ? null : doc.$withChanges(undo);
         if (filterTest !== null) {
-          if (doc != null && ! filterTest(doc)) doc = null;
-          if (old != null && ! filterTest(old)) old = null;
+          if (doc != null && ! filterTest.matches(doc)) doc = null;
+          if (old != null && ! filterTest.matches(old)) old = null;
         }
 
         if (doc != null) {

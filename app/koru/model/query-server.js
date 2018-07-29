@@ -79,7 +79,7 @@ define((require, exports, module)=>{
       withIndex(idx, params, options) {
         if (this._sort) throw new Error('withIndex may not be used with sort');
         this.where(params).sort(...idx.sort);
-        if (idx.filterTest) this.where(idx.filterTest);
+        if (idx.filterTest !== null) this.where(idx.filterTest);
         this._index = idx;
         if (options !== undefined) {
           const {direction=1, from, to, excludeFrom=false, excludeTo=false} = options;
@@ -156,7 +156,6 @@ define((require, exports, module)=>{
       },
 
       forEach(func) {
-        const where = this._wheres;
         if (this.singleId) {
           const doc = this.fetchOne();
           doc && func(doc);

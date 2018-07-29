@@ -9,7 +9,7 @@ isClient && define((require, exports, module)=>{
   const RichText          = require('./rich-text');
   const TH                = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const sut               = require('./rich-text-editor');
 
@@ -604,7 +604,7 @@ isClient && define((require, exports, module)=>{
         assert.calledWith(v.ec, 'outdent');
       });
 
-      assert.calledWith(keyMap, TH.match.any, 'ignoreFocus');
+      assert.calledWith(keyMap, m.any, 'ignoreFocus');
     });
 
     group("paste", ()=>{
@@ -679,11 +679,11 @@ isClient && define((require, exports, module)=>{
       });
 
       test("text hyperlinks", ()=>{
-        sut.handleHyperLink = function (text) {
+        sut.handleHyperLink = (text)=>{
           if (text === 'https://real/link')
             return Dom.h({a: 'my link', $href: 'http://foo'});
         };
-        onEnd(function () {sut.handleHyperLink = null});
+        onEnd(()=>{sut.handleHyperLink = null});
         v.event.clipboardData = {
           types: ['text/plain'],
           getData: stub().withArgs('text/plain').returns(
@@ -692,11 +692,10 @@ isClient && define((require, exports, module)=>{
 
         v.paste(v.event);
 
-        assert.calledWith(v.insertHTML, 'insertHTML', false, TH.match(html => v.html = html));
+        assert.calledWith(v.insertHTML, 'insertHTML', false, m(html => v.html = html));
 
         assert.match(v.html, />contains<.*<a.*href="http:\/\/foo"/);
         assert.match(v.html, /<a [^>]*target="_blank"/);
-
       });
 
       test("no clipboard", ()=>{

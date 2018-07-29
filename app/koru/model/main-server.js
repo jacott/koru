@@ -74,7 +74,8 @@ define((require, exports, module)=>{
       function prepareIndex(type, model, args) {
         let filterTest = null;
         if (typeof args[args.length-1] === 'function') {
-          filterTest = args[args.length-1];
+          filterTest = model.query;
+          args[args.length-1](filterTest);
           --args.length;
         }
         const name = model.modelName;
@@ -94,7 +95,7 @@ define((require, exports, module)=>{
           }
           if (from == -1) from = i;
         }
-        return {model, sort, from: args.slice(from), filterTest};
+        return {model, sort, from: args.slice(from), filterTest, stop: koru.nullFunc};
       }
 
       function _ensureIndexes(type, options) {

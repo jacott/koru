@@ -170,7 +170,8 @@ define((require, exports, module)=>{
         const orig = dbBroker.dbId;
         dbBroker.dbId = this._dbId || orig;
         this.where(params);
-        if (idx.filterTest) this.where(idx.filterTest);
+        const {filterTest} = idx;
+        if (filterTest !== null) this.where(doc => filterTest.matches(doc));
         this._index = {idx: idx.lookup(params, options) || {}, options};
 
         dbBroker.dbId = orig;
