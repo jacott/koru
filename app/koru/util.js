@@ -1,8 +1,8 @@
 /* global Intl */
-define((require, exports, module)=>{
-  const match      = require('./match');
-  const stacktrace = require('./stacktrace');
-  const util       = require('./util-base');
+define((require)=>{
+  const match           = require('./match');
+  const stacktrace      = require('./stacktrace');
+  const util            = require('./util-base');
 
   const {withId$} = require('koru/symbols');
 

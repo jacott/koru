@@ -82,6 +82,322 @@ define((require, exports, module)=>{
 
   execCommand('styleWithCSS', true);
 
+  const getModeNode = (ctx, elm)=>{
+    for(const editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
+      switch (elm.tagName) {
+      case 'PRE':
+        return elm;
+      }
+    }
+  };
+
+  const setMode = (ctx, range)=>{
+    let elm = range.endContainer;
+    if (elm === ctx.lastElm) {
+      if (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))
+      return;
+    }
+    elm = getModeNode(ctx, elm);
+    switch (elm && elm.tagName) {
+    case 'PRE':
+      ctx.mode = codeMode;
+      codeMode.language = elm.getAttribute('data-lang') || 'text';
+      ensureLangues(ctx);
+      break;
+    default:
+      ctx.mode = standardMode;
+    }
+    notify(ctx);
+  };
+
+  const ensureLangues = (ctx)=>{
+    if (languageList) return;
+    session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
+      Tpl.languageList = result;
+      notify(ctx, 'force');
+    });
+  };
+
+  const notify = (ctx, force, override)=>{
+    const range = Dom.getRange();
+    const elm = range.endContainer.nodeType !== TEXT_NODE ?
+            range.endContainer.childNodes[range.endContainer.offset] || range.endContainer
+            : range.endContainer;
+
+    if (! force && ctx.lastElm === elm &&
+        (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset)))
+      return;
+
+    ctx.override = override;
+    ctx.lastElm = elm;
+    ctx.lastOffset = range.endOffset;
+
+    ctx.caretMoved.notify(override);
+  };
+
+  const mentionKey = (ctx, code)=>{
+    let mentions = ctx.data.extend;
+    mentions = mentions && mentions.mentions;
+    if (! mentions) return;
+    const id = String.fromCharCode(code);
+    if (mentions[id])
+      return id;
+  };
+
+  const move = (editor, type, amount)=>{
+    const range = select(editor, type, amount);
+    range.collapse(amount < 0);
+    Dom.setRange();
+    return range;
+  };
+
+  const select = (editor, type, amount)=>{
+    const range = Dom.getRange();
+    const obj = {node: range.startContainer, offset: range.startOffset};
+
+    if (! Dom.contains(editor, obj.node)) return;
+
+    if (amount >= 0) {
+      while (amount-- && forwardOneChar(editor, obj))
+        ;
+      range.setEnd(obj.node, obj.offset);
+    } else {
+      while (amount++ && backOneChar(editor, obj))
+        ;
+      range.setStart(obj.node, obj.offset);
+    }
+
+    return range;
+  };
+
+  const backOneChar = (editor, obj)=>{
+    let other, {node, offset} = obj;
+
+    if (node.nodeType === TEXT_NODE) {
+      --offset;
+      if (offset >= 0) {
+        obj.offset = offset;
+        return true;
+      }
+    } else {
+      node = node.childNodes[offset];
+    }
+    if (! node)
+      return;
+
+    offset = -1;
+
+    while ( node !== editor) {
+      other = node.previousSibling;
+      if (other) {
+        node = lastInnerMostNode(other);
+        obj.node = node;
+        if (node.nodeType === TEXT_NODE) {
+          offset = offset + node.textContent.length;
+        } else {
+          offset = 0;
+        }
+        obj.offset = offset;
+        return true;
+      } else {
+        node = node.parentNode;
+        if (! INLINE_TAGS[node.tagName])
+          offset = 0;
+      }
+    }
+
+    return;
+  };
+
+  const lastInnerMostNode = (node)=>{
+    let other;
+    if (node.nodeType === TEXT_NODE) {
+      if (node.textContent.length) {
+        return node;
+      }
+      other = node.previousSibling;
+      return other && lastInnerMostNode(other);
+    }
+    if (other = node.lastChild) {
+      return lastInnerMostNode(other) || other;
+    }
+  };
+
+  const firstInnerMostNode = (node)=>{
+    let other;
+    if (node.nodeType === TEXT_NODE) {
+      if (node.textContent.length) {
+        return node;
+      }
+      other = node.nextSibling;
+      return other && firstInnerMostNode(other);
+    }
+    if (other = node.firstChild) {
+      return firstInnerMostNode(other) || other;
+    }
+  };
+
+  const forwardOneChar = (editor, obj)=>{
+    let other, {node, offset} = obj;
+
+    if (node.nodeType === TEXT_NODE) {
+      ++offset;
+      if (offset <= node.textContent.length) {
+        obj.offset = offset;
+        return true;
+      }
+    } else {
+      node = node.childNodes[offset];
+    }
+    if (! node)
+      return;
+
+    offset = 1;
+
+    while ( node !== editor) {
+      other = node.nextSibling;
+      if (other) {
+        node = firstInnerMostNode(other);
+        obj.node = node;
+        obj.offset = offset;
+        return true;
+      } else {
+        node = node.parentNode;
+        if (! INLINE_TAGS[node.tagName])
+          offset = 0;
+      }
+    }
+
+    return;
+  };
+
+  const isPrevChar = (char)=>{
+    const range = Dom.getRange();
+    if (range.startContainer.nodeType !== TEXT_NODE)
+      return;
+    const offset = range.startOffset;
+    if (offset && range.startContainer.textContent[offset - 1] === char)
+      return range;
+  };
+
+  const normRange = (editor, range)=>{
+    normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
+    normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
+    return range;
+  };
+
+  const normPos = (editor, range, node, offset, setter)=>{
+    if (node.nodeType !== TEXT_NODE) {
+      if (node.tagName === 'BR') {
+        if (offset !== 0) range[setter](node, 0);
+        return;
+      }
+      const children = node.childNodes;
+      if (! children.length) return;
+      let curr = node.childNodes[offset];
+      if (curr && curr.tagName === 'BR') {
+        range[setter](curr, 0);
+        return;
+      }
+      curr = (curr && firstInnerMostNode(curr)) || lastInnerMostNode(node.childNodes[offset - 1]);
+      if (curr.nodeType !== TEXT_NODE && curr.tagName !== 'BR') {
+        const obj = {node: node, offset: offset};
+        forwardOneChar(editor, obj);
+        range[setter](obj.node, obj.offset);
+      } else if (curr !== node) {
+        range[setter](curr, 0);
+      }
+    }
+  };
+
+  const isBlockNode = (node)=>{
+    return node.nodeType === 1 && ! INLINE_TAGS[node.tagName];
+  };
+
+  const traceContainingBlock = (editor, node, wrt)=>{
+    const trace = [];
+    while (node !== editor) {
+      trace.push(node);
+      node = node.parentNode;
+    }
+    if (! wrt) return trace;
+    let wrtIdx = wrt.length - 1;
+    let traceIdx = trace.length - 1;
+    while(wrt[wrtIdx] === trace[traceIdx]) {
+      --wrtIdx; -- traceIdx;
+    }
+    wrt.length = wrtIdx + 1;
+    trace.length = traceIdx + 1;
+    return trace;
+  };
+
+  const findContainingBlock = (editor, node)=>{
+    if (isBlockNode(node)) return node;
+    node = findBeforeBlock(editor, node);
+    if (node.nodeType === TEXT_NODE || INLINE_TAGS[node.tagName])
+      return node.parentNode;
+
+    return node;
+  };
+
+  const findBeforeBlock = (editor, node)=>{
+    let last = node;
+    node = node.parentNode;
+    while (node && node !== editor && INLINE_TAGS[node.tagName]) {
+      last = node;
+      node = node.parentNode;
+    }
+
+    return last;
+  };
+
+  const fixSpaces = (data)=>{
+    data = data.replace(/[ \u00a0]{2}/g, ' \u00a0');
+    if (data.slice(-1) === ' ') data = data.slice(0, -1) + '\xa0';
+    return data;
+  };
+
+  const deleteEmpty = (range)=>{
+    const node = range.startContainer;
+    if (node.nodeType !== TEXT_NODE) return;
+    let offset = range.startOffset;
+    let other, parent = other.parentNode;
+    while ((other = node.previousSibling) && other.nodeType === TEXT_NODE) {
+      node.textContent = other.textContent + node.textContent;
+      offset += other.textContent.length;
+      other.remove();
+    }
+    while ((other = node.nextSibling) && other.nodeType === TEXT_NODE) {
+      node.textContent = node.textContent + other.textContent;
+      other.remove();
+    }
+    node.textContent = fixSpaces(node.textContent);
+    node.textContent.length || killNode();
+    range.setStart(node, offset);
+    range.collapse(true);
+
+    function killNode() {
+      const other = node.nextSibling;
+      offset = 0;
+      if (! other) {
+        other = node.previousSibling;
+        other = other && lastInnerMostNode(other);
+        if (other && other.nodeType === TEXT_NODE)
+          offset =  other.textContent.length;
+      }
+      node.remove();
+      if (! other) {
+        if (isBlockNode(parent))
+          parent.appendChild(node = BR.cloneNode());
+        else {
+          node = parent;
+          parent = node.parentNode;
+          killNode();
+        }
+      }
+    }
+  };
+
   const actions = commandify({
     bold: true,
     italic: true,
@@ -96,14 +412,14 @@ define((require, exports, module)=>{
     justifyRight: true,
     justifyFull: true,
     removeFormat: true,
-    fontName(event) {
+    fontName: event =>{
       chooseFromMenu(event, {list: FONT_LIST}, (ctx, id)=>{
         execCommand('fontName', RichText.fontIdToFace[id]);
         if (Dom.getRange().collapsed)
           return {font: id};
       });
     },
-    fontColor(event) {
+    fontColor: (event)=>{
       const range = Dom.getRange();
       let node = range.endContainer;
       if (node && node.nodeType === TEXT_NODE)
@@ -126,7 +442,7 @@ define((require, exports, module)=>{
       const typeElm = Tpl.FontColor.$autoRender(options);
 
       ctx.openDialog = true;
-      ColorPicker.choose(fgColor, {customFieldset: typeElm}, function (color) {
+      ColorPicker.choose(fgColor, {customFieldset: typeElm}, color =>{
         ctx.openDialog = false;
         focus.focus();
         Dom.setRange(range);
@@ -138,14 +454,14 @@ define((require, exports, module)=>{
         color && execCommand(cmd, color);
       });
     },
-    fontSize(event) {
-      chooseFromMenu(event, {list: FONT_SIZE_LIST}, function (ctx, id) {
+    fontSize: (event)=>{
+      chooseFromMenu(event, {list: FONT_SIZE_LIST}, (ctx, id)=>{
         execCommand('fontSize', +id);
         if (Dom.getRange().collapsed)
           return {fontSize: id};
       });
     },
-    code(event) {
+    code: (event)=>{
       const range = Dom.getRange();
       const sc = range.startContainer;
       const ec = range.endContainer;
@@ -171,7 +487,7 @@ define((require, exports, module)=>{
         notify(ctx, 'force');
       }
     },
-    link() {
+    link: ()=>{
       const aElm = getTag('A');
       const range = Dom.selectElm(aElm) || Dom.getRange();
       if (! range) return;
@@ -192,7 +508,7 @@ define((require, exports, module)=>{
       });
       dialog.querySelector('[name=link]').focus();
     },
-    mention(event) {
+    mention: (event)=>{
       const range = Dom.getRange();
       if (! range) return;
 
@@ -296,7 +612,7 @@ define((require, exports, module)=>{
       const pre = Dom.getClosest(ctx.lastElm, 'pre');
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
       const rt = RichText.fromHtml(pre, {includeTop: true});
-      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), function (err, result) {
+      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), (err, result)=>{
         Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
@@ -395,53 +711,6 @@ define((require, exports, module)=>{
     },
   });
 
-  function getHtml() {
-    return Dom.myCtx(this).inputElm.cloneNode(true);
-  }
-
-  function setHtml(value) {
-    const {inputElm} = Dom.myCtx(this);
-    Tpl.clear(inputElm);
-    value && inputElm.appendChild(value);
-  }
-
-  function focusInput(event) {
-
-    const elm = event.currentTarget;
-    const parent = elm.parentNode;
-
-    const focusout = event.type === 'focusout' && ! parent.contains(document.activeElement);
-
-    if (focusout) {
-      if (currentDialog(elm))
-        return;
-      const pCtx = Dom.myCtx(parent);
-      if (! pCtx) return;
-      const data = pCtx.data;
-      data.options.focusout && data.options.focusout.call(elm, event);
-    } else {
-      const ctx = Tpl.$ctx(elm);
-      if (! ctx) return;
-      let range = Dom.getRange();
-      if (! range || ! elm.contains(range.endContainer)) {
-        range = document.createRange();
-        range.selectNodeContents(elm);
-        range.collapse(true);
-        normRange(elm, range);
-        Dom.setRange(range);
-      }
-      ctx && ctx.lastElm === undefined &&
-        setMode(ctx, Dom.getRange());
-      execCommand('styleWithCSS', true);
-    }
-    Dom.setClass('focus', ! focusout, parent);
-  }
-
-  function currentDialog(me) {
-    const ctx = Dom.myCtx(me.parentNode);
-    return ctx && ctx.openDialog;
-  }
-
   const standardMode = {
     actions: actions,
     type: 'standard',
@@ -515,6 +784,51 @@ define((require, exports, module)=>{
   const modes = {
     standard: standardMode,
     code: codeMode,
+  };
+
+  function getHtml() {return Dom.myCtx(this).inputElm.cloneNode(true)}
+
+  function setHtml(value) {
+    const {inputElm} = Dom.myCtx(this);
+    Tpl.clear(inputElm);
+    value && inputElm.appendChild(value);
+  }
+
+  const focusInput = (event)=>{
+
+    const elm = event.currentTarget;
+    const parent = elm.parentNode;
+
+    const focusout = event.type === 'focusout' && ! parent.contains(document.activeElement);
+
+    if (focusout) {
+      if (currentDialog(elm))
+        return;
+      const pCtx = Dom.myCtx(parent);
+      if (! pCtx) return;
+      const data = pCtx.data;
+      data.options.focusout && data.options.focusout.call(elm, event);
+    } else {
+      const ctx = Tpl.$ctx(elm);
+      if (! ctx) return;
+      let range = Dom.getRange();
+      if (! range || ! elm.contains(range.endContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(elm);
+        range.collapse(true);
+        normRange(elm, range);
+        Dom.setRange(range);
+      }
+      ctx && ctx.lastElm === undefined &&
+        setMode(ctx, Dom.getRange());
+      execCommand('styleWithCSS', true);
+    }
+    Dom.setClass('focus', ! focusout, parent);
+  };
+
+  const currentDialog = (me)=>{
+    const ctx = Dom.myCtx(me.parentNode);
+    return ctx && ctx.openDialog;
   };
 
   Tpl.$extend({
@@ -593,10 +907,7 @@ define((require, exports, module)=>{
     set languageList(value) {
       languageList = value;
       Tpl.languageMap = {};
-      value && value.forEach(function (lang) {
-        Tpl.languageMap[lang[0]] = lang[1];
-      });
-
+      value && value.forEach(lang =>{Tpl.languageMap[lang[0]] = lang[1]});
     },
 
     modes: modes,
@@ -609,7 +920,7 @@ define((require, exports, module)=>{
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
         fc.remove();
 
-      util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), function (node) {
+      util.forEach(input.querySelectorAll('BLOCKQUOTE[style],SPAN'), node =>{
         switch (node.tagName) {
         case 'BLOCKQUOTE':
           node.removeAttribute('style');
@@ -728,322 +1039,6 @@ define((require, exports, module)=>{
       range == null || setMode(ctx, range);
     },
   });
-
-  function getModeNode(ctx, elm) {
-    for(const editor = ctx.inputElm; elm && elm !== editor; elm = elm.parentNode) {
-      switch (elm.tagName) {
-      case 'PRE':
-        return elm;
-      }
-    }
-  }
-
-  function setMode(ctx, range) {
-    let elm = range.endContainer;
-    if (elm === ctx.lastElm) {
-      if (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset))
-      return;
-    }
-    elm = getModeNode(ctx, elm);
-    switch (elm && elm.tagName) {
-    case 'PRE':
-      ctx.mode = codeMode;
-      codeMode.language = elm.getAttribute('data-lang') || 'text';
-      ensureLangues(ctx);
-      break;
-    default:
-      ctx.mode = standardMode;
-    }
-    notify(ctx);
-  }
-
-  function ensureLangues(ctx) {
-    if (languageList) return;
-    session.rpc('RichTextEditor.fetchLanguages', function (err, result) {
-      Tpl.languageList = result;
-      notify(ctx, 'force');
-    });
-  }
-
-  function notify(ctx, force, override) {
-    const range = Dom.getRange();
-    const elm = range.endContainer.nodeType !== TEXT_NODE ?
-            range.endContainer.childNodes[range.endContainer.offset] || range.endContainer
-            : range.endContainer;
-
-    if (! force && ctx.lastElm === elm &&
-        (! ctx.override || (range.collapsed && ctx.lastOffset === range.endOffset)))
-      return;
-
-    ctx.override = override;
-    ctx.lastElm = elm;
-    ctx.lastOffset = range.endOffset;
-
-    ctx.caretMoved.notify(override);
-  }
-
-  function mentionKey(ctx, code) {
-    let mentions = ctx.data.extend;
-    mentions = mentions && mentions.mentions;
-    if (! mentions) return;
-    const id = String.fromCharCode(code);
-    if (mentions[id])
-      return id;
-  }
-
-  function move(editor, type, amount) {
-    const range = select(editor, type, amount);
-    range.collapse(amount < 0);
-    Dom.setRange();
-    return range;
-  }
-
-  function select(editor, type, amount) {
-    const range = Dom.getRange();
-    const obj = {node: range.startContainer, offset: range.startOffset};
-
-    if (! Dom.contains(editor, obj.node)) return;
-
-    if (amount >= 0) {
-      while (amount-- && forwardOneChar(editor, obj))
-        ;
-      range.setEnd(obj.node, obj.offset);
-    } else {
-      while (amount++ && backOneChar(editor, obj))
-        ;
-      range.setStart(obj.node, obj.offset);
-    }
-
-    return range;
-  }
-
-  function backOneChar(editor, obj) {
-    let other, {node, offset} = obj;
-
-    if (node.nodeType === TEXT_NODE) {
-      --offset;
-      if (offset >= 0) {
-        obj.offset = offset;
-        return true;
-      }
-    } else {
-      node = node.childNodes[offset];
-    }
-    if (! node)
-      return;
-
-    offset = -1;
-
-    while ( node !== editor) {
-      other = node.previousSibling;
-      if (other) {
-        node = lastInnerMostNode(other);
-        obj.node = node;
-        if (node.nodeType === TEXT_NODE) {
-          offset = offset + node.textContent.length;
-        } else {
-          offset = 0;
-        }
-        obj.offset = offset;
-        return true;
-      } else {
-        node = node.parentNode;
-        if (! INLINE_TAGS[node.tagName])
-          offset = 0;
-      }
-    }
-
-    return;
-  }
-
-  function lastInnerMostNode(node) {
-    let other;
-    if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
-      other = node.previousSibling;
-      return other && lastInnerMostNode(other);
-    }
-    if (other = node.lastChild) {
-      return lastInnerMostNode(other) || other;
-    }
-  }
-
-  function firstInnerMostNode(node) {
-    let other;
-    if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
-      other = node.nextSibling;
-      return other && firstInnerMostNode(other);
-    }
-    if (other = node.firstChild) {
-      return firstInnerMostNode(other) || other;
-    }
-  }
-
-  function forwardOneChar(editor, obj) {
-    let other, {node, offset} = obj;
-
-    if (node.nodeType === TEXT_NODE) {
-      ++offset;
-      if (offset <= node.textContent.length) {
-        obj.offset = offset;
-        return true;
-      }
-    } else {
-      node = node.childNodes[offset];
-    }
-    if (! node)
-      return;
-
-    offset = 1;
-
-    while ( node !== editor) {
-      other = node.nextSibling;
-      if (other) {
-        node = firstInnerMostNode(other);
-        obj.node = node;
-        obj.offset = offset;
-        return true;
-      } else {
-        node = node.parentNode;
-        if (! INLINE_TAGS[node.tagName])
-          offset = 0;
-      }
-    }
-
-    return;
-  }
-
-  function isPrevChar(char) {
-    const range = Dom.getRange();
-    if (range.startContainer.nodeType !== TEXT_NODE)
-      return;
-    const offset = range.startOffset;
-    if (offset && range.startContainer.textContent[offset - 1] === char)
-      return range;
-  }
-
-  function normRange(editor, range) {
-    normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
-    normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
-    return range;
-  }
-
-  function normPos(editor, range, node, offset, setter) {
-    if (node.nodeType !== TEXT_NODE) {
-      if (node.tagName === 'BR') {
-        if (offset !== 0) range[setter](node, 0);
-        return;
-      }
-      const children = node.childNodes;
-      if (! children.length) return;
-      let curr = node.childNodes[offset];
-      if (curr && curr.tagName === 'BR') {
-        range[setter](curr, 0);
-        return;
-      }
-      curr = (curr && firstInnerMostNode(curr)) || lastInnerMostNode(node.childNodes[offset - 1]);
-      if (curr.nodeType !== TEXT_NODE && curr.tagName !== 'BR') {
-        const obj = {node: node, offset: offset};
-        forwardOneChar(editor, obj);
-        range[setter](obj.node, obj.offset);
-      } else if (curr !== node) {
-        range[setter](curr, 0);
-      }
-    }
-  }
-
-  function isBlockNode(node) {
-    return node.nodeType === 1 && ! INLINE_TAGS[node.tagName];
-  }
-
-  function traceContainingBlock(editor, node, wrt) {
-    const trace = [];
-    while (node !== editor) {
-      trace.push(node);
-      node = node.parentNode;
-    }
-    if (! wrt) return trace;
-    let wrtIdx = wrt.length - 1;
-    let traceIdx = trace.length - 1;
-    while(wrt[wrtIdx] === trace[traceIdx]) {
-      --wrtIdx; -- traceIdx;
-    }
-    wrt.length = wrtIdx + 1;
-    trace.length = traceIdx + 1;
-    return trace;
-  }
-
-  function findContainingBlock(editor, node) {
-    if (isBlockNode(node)) return node;
-    node = findBeforeBlock(editor, node);
-    if (node.nodeType === TEXT_NODE || INLINE_TAGS[node.tagName])
-      return node.parentNode;
-
-    return node;
-  }
-
-  function findBeforeBlock(editor, node) {
-    let last = node;
-    node = node.parentNode;
-    while (node && node !== editor && INLINE_TAGS[node.tagName]) {
-      last = node;
-      node = node.parentNode;
-    }
-
-    return last;
-  }
-
-  function fixSpaces(data) {
-    data = data.replace(/[ \u00a0]{2}/g, ' \u00a0');
-    if (data.slice(-1) === ' ') data = data.slice(0, -1) + '\xa0';
-    return data;
-  }
-
-  function deleteEmpty(range) {
-    const node = range.startContainer;
-    if (node.nodeType !== TEXT_NODE) return;
-    let offset = range.startOffset;
-    let other, parent = other.parentNode;
-    while ((other = node.previousSibling) && other.nodeType === TEXT_NODE) {
-      node.textContent = other.textContent + node.textContent;
-      offset += other.textContent.length;
-      other.remove();
-    }
-    while ((other = node.nextSibling) && other.nodeType === TEXT_NODE) {
-      node.textContent = node.textContent + other.textContent;
-      other.remove();
-    }
-    node.textContent = fixSpaces(node.textContent);
-    node.textContent.length || killNode();
-    range.setStart(node, offset);
-    range.collapse(true);
-
-    function killNode() {
-      const other = node.nextSibling;
-      offset = 0;
-      if (! other) {
-        other = node.previousSibling;
-        other = other && lastInnerMostNode(other);
-        if (other && other.nodeType === TEXT_NODE)
-          offset =  other.textContent.length;
-      }
-      node.remove();
-      if (! other) {
-        if (isBlockNode(parent))
-          parent.appendChild(node = BR.cloneNode());
-        else {
-          node = parent;
-          parent = node.parentNode;
-          killNode();
-        }
-      }
-    }
-  }
 
   Dom.registerHelpers({
     richTextEditor(content, options) {

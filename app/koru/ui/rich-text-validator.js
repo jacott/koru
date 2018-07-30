@@ -1,7 +1,7 @@
-define((require, exports, module)=>{
-  const Changes  = require('koru/changes');
-  const util     = require('koru/util');
-  const RichText = require('./rich-text');
+define((require)=>{
+  const Changes         = require('koru/changes');
+  const util            = require('koru/util');
+  const RichText        = require('./rich-text');
 
 
   const filter = (val)=>{
