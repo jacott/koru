@@ -1,32 +1,41 @@
+const Fiber = requirejs.nodeRequire('fibers');
+
 define((require)=>{
   const util            = require('koru/util');
 
-  const {Future} = util;
-
-  const future$ = Symbol(), locked$ = Symbol();
+  const head$ = Symbol(), tail$ = Symbol();
 
   class Mutex {
     constructor() {
-      this[locked$] = 0;
-      this[future$] = undefined;
+      this[head$] = undefined;
+      this[tail$] = undefined;
     }
 
     lock() {
-      if (++this[locked$] === 1) return;
+      const current = Fiber.current, node = [current, undefined];
 
-      (this[future$] || (this[future$] = new util.Future)).wait();
+      if (this[head$] === undefined) {
+        this[head$] = this[tail$] = node;
+        return;
+      }
+
+      this[tail$] = this[tail$][1] = node;
+      Fiber.yield();
+      while(this[head$][0] !== current)
+        Fiber.yield();
     }
 
     unlock() {
-      const counter = --this[locked$];
-      if (counter == 0) return;
+      const {current} = Fiber, node = this[head$];
+      if (node === undefined)
+        throw new Error("mutex not locked");
 
-      if (counter < 0) throw new Error("mutex unlocked too many times");
+      const nh = this[head$] = node[1];
 
-      const future = this[future$];
-      if (future !== undefined) {
-        this[future$] = undefined;
-        future.return();
+      if (nh === undefined) {
+        this[tail$] = undefined;
+      } else {
+        nh[0].run();
       }
     }
   }

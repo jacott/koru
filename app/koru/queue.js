@@ -29,8 +29,7 @@ define(()=> type =>{
           ++this.queued;
         }
 
-        var future = this.futures[this.queued] = new Future();
-        future.wait();
+        (this.futures[this.queued] = new Future).wait();
       }
 
       this.isPending = false;

@@ -2,6 +2,7 @@ isServer && define((require, exports, module)=>{
   const koru            = require('koru');
   const TH              = require('koru/test-helper');
   const api             = require('koru/test/api');
+  const Fiber           = requirejs.nodeRequire('fibers');
 
   const {stub, spy, onEnd, util} = TH;
 
@@ -27,9 +28,37 @@ isServer && define((require, exports, module)=>{
       //[
       const mutex = new_Mutex();
 
-      let counter = 0, ex;
+      let counter = 0;
 
-      const runInner = cb =>{
+      try {
+        mutex.lock();
+        koru.runFiber(()=>{
+          mutex.lock();
+          ++counter;
+          mutex.unlock();
+        });
+        assert.same(counter, 0);
+      } finally {
+        mutex.unlock();
+      }
+      assert.same(counter, 1);
+
+      mutex.lock();
+      try {
+        assert.same(counter, 1);
+      } finally {
+        mutex.unlock();
+      }
+      //]
+    });
+
+    test("sequencing", ()=>{
+      let ex;
+      let counter = 0;
+
+      const mutex = new Mutex;
+
+      const runInner = (cb) =>{
         koru.runFiber(()=>{
           if (ex !== undefined) return;
           try {
@@ -37,20 +66,30 @@ isServer && define((require, exports, module)=>{
             cb();
             ++counter;
           } catch (e) {
-            ex = e;
+            if (ex === undefined); {
+              ex = e;
+            }
           } finally {
-            mutex.unlock();
+            try {
+              mutex.unlock();
+            } catch(e) {
+              if (ex === undefined); {
+                ex = e;
+              }
+            }
           }
         });
-
       };
 
       try {
         mutex.lock();
-        runInner(()=>{assert.same(counter, 1)});
         runInner(()=>{
-          runInner(()=>{assert.same(counter, 3)});
-          runInner(()=>{assert.same(counter, 4)});
+          const {current} = Fiber;
+          koru.setTimeout(()=>{current.run()});
+          Fiber.yield();
+          assert.same(counter, 1);
+        });
+        runInner(()=>{
           assert.same(counter, 2);
         });
         assert.same(counter, 0);
@@ -58,24 +97,16 @@ isServer && define((require, exports, module)=>{
       } finally {
         mutex.unlock();
       }
-      if (ex) throw ex;
-      //]
 
-      try {
-        mutex.lock();
-        runInner(()=>{assert.same(counter, 6)});
-        assert.same(counter, 5);
-        ++counter;
-      } finally {
+      mutex.lock();
         mutex.unlock();
-      }
-      if (ex) throw ex;
+        if (ex) throw ex;
 
-      assert.same(counter, 7);
+        assert.same(counter, 3);
 
-      assert.exception(()=>{
-        mutex.unlock();
-      }, {message: 'mutex unlocked too many times'});
+        assert.exception(()=>{
+          mutex.unlock();
+        }, {message: 'mutex not locked'});
 
     });
   });
