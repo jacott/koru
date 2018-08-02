@@ -144,13 +144,6 @@ define((require, exports, module)=>{
       return id;
   };
 
-  const move = (editor, type, amount)=>{
-    const range = select(editor, type, amount);
-    range.collapse(amount < 0);
-    Dom.setRange();
-    return range;
-  };
-
   const select = (editor, type, amount)=>{
     const range = Dom.getRange();
     const obj = {node: range.startContainer, offset: range.startOffset};
@@ -271,15 +264,6 @@ define((require, exports, module)=>{
     return;
   };
 
-  const isPrevChar = (char)=>{
-    const range = Dom.getRange();
-    if (range.startContainer.nodeType !== TEXT_NODE)
-      return;
-    const offset = range.startOffset;
-    if (offset && range.startContainer.textContent[offset - 1] === char)
-      return range;
-  };
-
   const normRange = (editor, range)=>{
     normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
     normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
@@ -314,23 +298,6 @@ define((require, exports, module)=>{
     return node.nodeType === 1 && ! INLINE_TAGS[node.tagName];
   };
 
-  const traceContainingBlock = (editor, node, wrt)=>{
-    const trace = [];
-    while (node !== editor) {
-      trace.push(node);
-      node = node.parentNode;
-    }
-    if (! wrt) return trace;
-    let wrtIdx = wrt.length - 1;
-    let traceIdx = trace.length - 1;
-    while(wrt[wrtIdx] === trace[traceIdx]) {
-      --wrtIdx; -- traceIdx;
-    }
-    wrt.length = wrtIdx + 1;
-    trace.length = traceIdx + 1;
-    return trace;
-  };
-
   const findContainingBlock = (editor, node)=>{
     if (isBlockNode(node)) return node;
     node = findBeforeBlock(editor, node);
@@ -349,53 +316,6 @@ define((require, exports, module)=>{
     }
 
     return last;
-  };
-
-  const fixSpaces = (data)=>{
-    data = data.replace(/[ \u00a0]{2}/g, ' \u00a0');
-    if (data.slice(-1) === ' ') data = data.slice(0, -1) + '\xa0';
-    return data;
-  };
-
-  const deleteEmpty = (range)=>{
-    const node = range.startContainer;
-    if (node.nodeType !== TEXT_NODE) return;
-    let offset = range.startOffset;
-    let other, parent = other.parentNode;
-    while ((other = node.previousSibling) && other.nodeType === TEXT_NODE) {
-      node.textContent = other.textContent + node.textContent;
-      offset += other.textContent.length;
-      other.remove();
-    }
-    while ((other = node.nextSibling) && other.nodeType === TEXT_NODE) {
-      node.textContent = node.textContent + other.textContent;
-      other.remove();
-    }
-    node.textContent = fixSpaces(node.textContent);
-    node.textContent.length || killNode();
-    range.setStart(node, offset);
-    range.collapse(true);
-
-    function killNode() {
-      const other = node.nextSibling;
-      offset = 0;
-      if (! other) {
-        other = node.previousSibling;
-        other = other && lastInnerMostNode(other);
-        if (other && other.nodeType === TEXT_NODE)
-          offset =  other.textContent.length;
-      }
-      node.remove();
-      if (! other) {
-        if (isBlockNode(parent))
-          parent.appendChild(node = BR.cloneNode());
-        else {
-          node = parent;
-          parent = node.parentNode;
-          killNode();
-        }
-      }
-    }
   };
 
   const codeNode = (editor, range)=>{
