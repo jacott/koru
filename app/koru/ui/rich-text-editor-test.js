@@ -1,13 +1,13 @@
 isClient && define((require, exports, module)=>{
-  const koru              = require('koru');
-  const Dom               = require('koru/dom');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
   const RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
-  const util              = require('koru/util');
-  const session           = require('../session/client-rpc');
-  const KeyMap            = require('./key-map');
-  const Modal             = require('./modal');
-  const RichText          = require('./rich-text');
-  const TH                = require('./test-helper');
+  const util            = require('koru/util');
+  const session         = require('../session/client-rpc');
+  const KeyMap          = require('./key-map');
+  const Modal           = require('./modal');
+  const RichText        = require('./rich-text');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, match: m} = TH;
 

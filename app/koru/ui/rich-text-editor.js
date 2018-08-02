@@ -28,7 +28,7 @@ define((require, exports, module)=>{
 
   const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
-  const noop = ()=>{};
+  const noop = koru.nullFunc;
 
   const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
 
@@ -398,6 +398,14 @@ define((require, exports, module)=>{
     }
   };
 
+  const codeNode = (editor, range)=>{
+    for(let node = range.startContainer; node && node !== editor; node = node.parentNode) {
+      if (node.nodeType === 1 && RichText.fontType(node.style.fontFamily) === 'monospace') {
+        return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
+      }
+    }
+  };
+
   const actions = commandify({
     bold: true,
     italic: true,
@@ -576,16 +584,14 @@ define((require, exports, module)=>{
     const origin = event.target;
 
     options = Object.assign({
-      onSelect(item) {
+      onSelect: item =>{
         const id = $.data(item)._id;
 
         // close dialog before notify to restore range
         Dom.remove(Dom.getClosest(item, '.glassPane'));
         notify(ctx, 'force', onSelect(ctx, id));
       },
-      onClose() {
-        ctx.openDialog = null;
-      }
+      onClose: ()=>{ctx.openDialog = null}
     }, options);
 
     options.boundingClientRect = ctx.inputElm.contains(event.target) ?
@@ -597,7 +603,7 @@ define((require, exports, module)=>{
   };
 
   const codeActions = commandify({
-    language(event) {
+    language: event =>{
       chooseFromMenu(event, {
         search: SelectMenu.nameSearch,
         list: languageList,
@@ -607,7 +613,7 @@ define((require, exports, module)=>{
         codeMode.language = id;
       });
     },
-    syntaxHighlight(event) {
+    syntaxHighlight: event =>{
       const ctx = Tpl.$ctx(event.target);
       const pre = Dom.getClosest(ctx.lastElm, 'pre');
       Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
@@ -638,7 +644,7 @@ define((require, exports, module)=>{
     bold: false,
     italic: false,
     underline: false,
-    nextSection(event) {
+    nextSection: ()=>{
       const elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
       const nextElm = elm.nextSibling;
@@ -657,7 +663,7 @@ define((require, exports, module)=>{
         temp.remove();
       }
     },
-    previousSection() {
+    previousSection: ()=>{
       const elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
       const previousElm = elm.previousSibling;
@@ -676,7 +682,7 @@ define((require, exports, module)=>{
         temp.remove();
       }
     },
-    newline() {
+    newline: ()=>{
       execCommand('insertText', '\n');
     },
   });
@@ -717,21 +723,21 @@ define((require, exports, module)=>{
 
     keyMap: keyMap,
 
-    paste(htmlText) {
+    paste: htmlText =>{
       const html = RichText.fromToHtml(Dom.textToHtml(`<div>${htmlText}</div>`));
       Tpl.insert(html, 'inner') || Tpl.insert(RichText.fromHtml(html)[0]);
     },
 
-    pasteText(text) {
+    pasteText: text =>{
       const URL_RE = /(\bhttps?:\/\/\S+)/;
 
       if (Tpl.handleHyperLink && URL_RE.test(text)) {
         const html = document.createElement('DIV');
-        text.split(/(\r?\n)/).forEach(function (line, oi) {
+        text.split(/(\r?\n)/).forEach((line, oi)=>{
           if (oi % 2) {
             html.appendChild(document.createElement('BR'));
           } else {
-            line.split(URL_RE).forEach(function (part, index) {
+            line.split(URL_RE).forEach((part, index)=>{
               if (index % 2) {
                 const elm = Tpl.handleHyperLink(part);
                 if (elm) {
@@ -770,11 +776,11 @@ define((require, exports, module)=>{
 
     keyMap: codeKeyMap,
 
-    keydown(event) {
+    keydown: event =>{
       codeKeyMap.exec(event, 'ignoreFocus');
     },
 
-    paste(htmlText) {
+    paste: htmlText =>{
       const html = RichText.fromToHtml(Dom.textToHtml(`<pre><div>${htmlText}</div></pre>`));
       Tpl.insert(html.firstChild.firstChild, 'inner') ||
         Tpl.insert(RichText.fromHtml(html)[0].join("\n"));
@@ -795,7 +801,6 @@ define((require, exports, module)=>{
   }
 
   const focusInput = (event)=>{
-
     const elm = event.currentTarget;
     const parent = elm.parentNode;
 
@@ -832,7 +837,7 @@ define((require, exports, module)=>{
   };
 
   Tpl.$extend({
-    $created(ctx, elm) {
+    $created: (ctx, elm)=>{
       Object.defineProperty(elm, 'value', {configurable: true, get: getHtml, set: setHtml});
       ctx.inputElm = elm.lastChild;
       ctx.caretMoved = makeSubject({});
@@ -843,17 +848,15 @@ define((require, exports, module)=>{
       ctx.data.content && ctx.inputElm.appendChild(ctx.data.content);
     },
 
-    $destroyed(ctx) {
+    $destroyed: (ctx)=>{
       ctx.inputElm.addEventListener('focusin', focusInput);
       ctx.inputElm.addEventListener('focusout', focusInput);
       Dom.remove(ctx.selectItem);
     },
 
-    title(title, action, mode) {
-      return modes[mode].keyMap.getTitle(title, action);
-    },
+    title: (title, action, mode) => modes[mode].keyMap.getTitle(title, action),
 
-    clear(elm) {
+    clear: elm =>{
       if (! Dom.hasClass(elm, 'richTextEditor'))
         elm = elm.parentNode;
       const ctx = Dom.ctx(elm);
@@ -864,7 +867,7 @@ define((require, exports, module)=>{
       Dom.remove(ctx.selectItem);
     },
 
-    moveLeft(editor, mark) {
+    moveLeft: (editor, mark)=>{
       const range = select(editor, 'char', -1);
       if (! range) return;
       if (! mark) {
@@ -881,7 +884,7 @@ define((require, exports, module)=>{
     lastInnerMostNode,
     chooseFromMenu,
 
-    insert(arg, inner) {
+    insert: (arg, inner)=>{
       const range = Dom.getRange();
 
       if (typeof arg === 'string')
@@ -900,9 +903,7 @@ define((require, exports, module)=>{
       return execCommand("insertHTML", t);
     },
 
-    get languageList() {
-      return languageList;
-    },
+    get languageList() {return languageList},
 
     set languageList(value) {
       languageList = value;
@@ -914,7 +915,7 @@ define((require, exports, module)=>{
   });
 
   Tpl.$events({
-    input(event) {
+    input: event =>{
       const input = event.target;
       const fc = input.firstChild;
       if (fc && fc === input.lastChild && input.firstChild.tagName === 'BR')
@@ -938,8 +939,7 @@ define((require, exports, module)=>{
       });
     },
 
-    paste(event) {
-
+    paste: event =>{
       let foundText, type;
       const cb = event.clipboardData;
       if (! cb) return;
@@ -963,15 +963,13 @@ define((require, exports, module)=>{
       }
     },
 
-    pointerup() {
+    pointerup: ()=>{
       const range = Dom.getRange();
       $.ctx.override = null;
       range && setMode($.ctx, range);
     },
 
-    'click a,button'(event) {
-      event.preventDefault();
-    },
+    'click a,button': event =>{event.preventDefault()},
 
     keydown(event) {
       const mdEditor = this.parentNode;
@@ -1041,27 +1039,23 @@ define((require, exports, module)=>{
   });
 
   Dom.registerHelpers({
-    richTextEditor(content, options) {
-      return Tpl.$autoRender({content: content, options: options});
-    }
+    richTextEditor: (content, options)=> Tpl.$autoRender({content: content, options: options}),
   });
 
   RichTextMention.init(Tpl);
 
   Link.$extend({
-    $created(ctx) {
+    $created: (ctx)=>{
       ctx.data.inputCtx.openDialog = true;
     },
 
-    $destroyed(ctx) {
+    $destroyed: (ctx)=>{
       Dom.setRange(ctx.data.range);
       ctx.data.inputElm.focus();
       ctx.data.inputCtx.openDialog = false;
     },
 
-    cancel(elm) {
-      Dom.remove(elm);
-    },
+    cancel: elm =>{Dom.remove(elm)},
   });
 
   Link.$events({
@@ -1077,14 +1071,6 @@ define((require, exports, module)=>{
       Dom.remove(event.currentTarget);
     },
   });
-
-  function codeNode(editor, range) {
-    for(let node = range.startContainer; node && node !== editor; node = node.parentNode) {
-      if (node.nodeType === 1 && RichText.fontType(node.style.fontFamily) === 'monospace') {
-        return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
-      }
-    }
-  }
 
   Tpl.FontColor.$events({
     'click button'(event) {
