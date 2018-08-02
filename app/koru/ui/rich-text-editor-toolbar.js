@@ -1,6 +1,7 @@
 define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
+  const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const Modal           = require('./modal');
   const RichText        = require('./rich-text');
@@ -12,8 +13,9 @@ define((require, exports, module)=>{
     'koru/html!./rich-text-editor-toolbar'));
   const $ = Dom.current;
 
-  const {execCommand, getTag, chooseFromMenu} = RichTextEditor;
   const {selectElm} = Dom;
+  const {getTag} = DomNav;
+  const {execCommand, chooseFromMenu} = RichTextEditor;
 
   Tpl.$extend({
     $autoRender(data, parentCtx) {

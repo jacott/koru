@@ -1,10 +1,12 @@
 define((require)=>{
   const Dom             = require('koru/dom');
+  const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
 
-  const ELEMENT_NODE = document.ELEMENT_NODE;
-  const TEXT_NODE = document.TEXT_NODE;
+  const {ELEMENT_NODE, TEXT_NODE} = document;
+
+  const {isInlineNode, INLINE_TAGS} = DomNav;
 
   const OL = 1, UL = 2, NEST = 3, CODE = 4, LINK = 5,
         LEFT = 6, RIGHT = 7, CENTER = 8, JUSTIFY = 9,
@@ -65,8 +67,6 @@ define((require)=>{
   const LINK_FROM_HTML = {
     '': LINK_TO_HTML[0]
   };
-
-  const INLINE_TAGS = util.toMap('B U I S A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
 
   const fromHtml = (html, options)=>{
     const builder = new MarkupBuilder(options);
@@ -197,8 +197,6 @@ define((require)=>{
       endAlign && endAlign.call(this, parent);
     }
   };
-
-  const isInlineNode = item => item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
 
   function textAlign(node) {
     const start = this.lines.length;

@@ -57,80 +57,6 @@ isClient && define((require, exports, module)=>{
       });
     });
 
-    test("forward/back char", ()=>{
-      runSubTests({
-        "within text node "() {
-          this.appendChild(RichText.toHtml("hello world"));
-          TH.setRange(sut.firstInnerMostNode(this),5);
-
-          Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this), 6);
-
-          collapse();
-          Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5, sut.firstInnerMostNode(this), 6);
-        },
-
-        "next line"() {
-          this.innerHTML = '<div><div>hello</div><div>world</div></div>';
-          TH.setRange(sut.firstInnerMostNode(this),5);
-
-          Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
-                             sut.firstInnerMostNode(this.firstChild.lastChild), 0);
-
-          collapse();
-          Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
-                             sut.firstInnerMostNode(this.firstChild.lastChild), 0);
-        },
-
-        "block nested"() {
-          this.innerHTML =
-            "<div><div>hello world <b>in <i>here</i></b></div></div><div>line 2</div>";
-          const iElm = this.querySelector('i').firstChild;
-          TH.setRange(iElm, 4);
-
-          Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(iElm, 4, this.childNodes[1].firstChild, 0);
-
-          collapse();
-          Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(iElm, 4, this.childNodes[1].firstChild, 0);
-        },
-
-        "span nested"() {
-          this.innerHTML =
-            "<div><div>hello <b>in <i>here</i> out</b></div></div><div>line 2</div>";
-          TH.setRange(sut.firstInnerMostNode(this), 6);
-
-          Dom.setRange(sut.select(this, 'char', 1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 6,
-                             sut.firstInnerMostNode(this.querySelector('b')), 1);
-
-          collapse();
-          Dom.setRange(sut.select(this, 'char', 7));
-          assert.rangeEquals(sut.firstInnerMostNode(
-            this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
-
-          collapse();
-          Dom.setRange(sut.select(this, 'char', -7));
-          assert.rangeEquals(sut.firstInnerMostNode(
-            this.querySelector('b')), 1, sut.lastInnerMostNode(this.querySelector('b')), 1);
-
-          collapse(true);
-          Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(
-            this.querySelector('b')), 0, sut.firstInnerMostNode(this.querySelector('b')), 1);
-
-          collapse(true);
-          Dom.setRange(sut.select(this, 'char', -1));
-          assert.rangeEquals(sut.firstInnerMostNode(this), 5,
-                             sut.firstInnerMostNode(this.querySelector('b')), 0);
-        },
-      });
-    });
-
     test("focus", ()=>{
       stub(document, 'execCommand');
       document.body.appendChild(sut.$autoRender({
@@ -903,22 +829,4 @@ isClient && define((require, exports, module)=>{
 
     });
   });
-
-  function collapse(start) {
-    const range = Dom.getRange();
-    range.collapse(start);
-    Dom.setRange(range);
-    return range;
-  }
-
-  function runSubTests(subTests) {
-    document.body.appendChild(v.tpl.$autoRender({}));
-
-    assert.dom('.richTextEditor .input[contenteditable=true]', function () {
-      for(let name in subTests) {
-        Dom.removeChildren(this);
-        subTests[name].call(this);
-      }
-    });
-  }
 });

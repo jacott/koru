@@ -1,15 +1,15 @@
 isClient && define((require, exports, module)=>{
-  const koru           = require('koru');
-  const Dom            = require('koru/dom');
-  const util           = require('koru/util');
-  const Modal          = require('./modal');
-  const RichText       = require('./rich-text');
-  const RichTextEditor = require('./rich-text-editor');
-  const TH             = require('./test-helper');
+  const koru            = require('koru');
+  const Dom             = require('koru/dom');
+  const util            = require('koru/util');
+  const Modal           = require('./modal');
+  const RichText        = require('./rich-text');
+  const RichTextEditor  = require('./rich-text-editor');
+  const TH              = require('./test-helper');
 
   const {stub, spy, onEnd} = TH;
 
-  const sut            = require('./rich-text-editor-toolbar');
+  const sut = require('./rich-text-editor-toolbar');
 
   let v= {};
 

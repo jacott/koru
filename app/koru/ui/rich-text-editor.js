@@ -2,6 +2,7 @@ define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const makeSubject     = require('koru/make-subject');
+  const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
   const session         = require('../session/client-rpc');
@@ -19,31 +20,20 @@ define((require, exports, module)=>{
   let languageList;
 
   const {TEXT_NODE} = document;
-
-  const BR = document.createElement('br');
-
-  const {INLINE_TAGS, FONT_SIZE_TO_EM} = RichText;
-
+  const {FONT_SIZE_TO_EM} = RichText;
   const {shift, ctrl, meta, alt} = KeyMap;
+  const {
+    INLINE_TAGS, forwardOneChar, backOneChar,
+    firstInnerMostNode, lastInnerMostNode,
+    getTag, normPos, normRange, selectRange,
+  } = DomNav;
 
-  const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
 
   const noop = koru.nullFunc;
 
+  const BR = document.createElement('br');
+  const EMPTY_PRE = Dom.h({pre: {div: BR.cloneNode()}, 'data-lang': 'text'});
   const execCommand = (cmd, value)=> document.execCommand(cmd, false, value);
-
-  const elmMatch = tag=> elm => elm.tagName === tag;
-
-  const getTag = tagOrFunc =>{
-    const range = Dom.getRange();
-    if (range === null) return null;
-    const start = range.endContainer;
-    return Dom.searchUpFor(
-      start,
-      typeof tagOrFunc === 'string'
-        ? elmMatch(tagOrFunc) : tagOrFunc,
-      'richTextEditor');
-  };
 
   const commandify = (func, cmd)=>{
     switch(typeof func) {
@@ -144,179 +134,6 @@ define((require, exports, module)=>{
       return id;
   };
 
-  const select = (editor, type, amount)=>{
-    const range = Dom.getRange();
-    const obj = {node: range.startContainer, offset: range.startOffset};
-
-    if (! Dom.contains(editor, obj.node)) return;
-
-    if (amount >= 0) {
-      while (amount-- && forwardOneChar(editor, obj))
-        ;
-      range.setEnd(obj.node, obj.offset);
-    } else {
-      while (amount++ && backOneChar(editor, obj))
-        ;
-      range.setStart(obj.node, obj.offset);
-    }
-
-    return range;
-  };
-
-  const backOneChar = (editor, obj)=>{
-    let other, {node, offset} = obj;
-
-    if (node.nodeType === TEXT_NODE) {
-      --offset;
-      if (offset >= 0) {
-        obj.offset = offset;
-        return true;
-      }
-    } else {
-      node = node.childNodes[offset];
-    }
-    if (! node)
-      return;
-
-    offset = -1;
-
-    while ( node !== editor) {
-      other = node.previousSibling;
-      if (other) {
-        node = lastInnerMostNode(other);
-        obj.node = node;
-        if (node.nodeType === TEXT_NODE) {
-          offset = offset + node.textContent.length;
-        } else {
-          offset = 0;
-        }
-        obj.offset = offset;
-        return true;
-      } else {
-        node = node.parentNode;
-        if (! INLINE_TAGS[node.tagName])
-          offset = 0;
-      }
-    }
-
-    return;
-  };
-
-  const lastInnerMostNode = (node)=>{
-    let other;
-    if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
-      other = node.previousSibling;
-      return other && lastInnerMostNode(other);
-    }
-    if (other = node.lastChild) {
-      return lastInnerMostNode(other) || other;
-    }
-  };
-
-  const firstInnerMostNode = (node)=>{
-    let other;
-    if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
-      other = node.nextSibling;
-      return other && firstInnerMostNode(other);
-    }
-    if (other = node.firstChild) {
-      return firstInnerMostNode(other) || other;
-    }
-  };
-
-  const forwardOneChar = (editor, obj)=>{
-    let other, {node, offset} = obj;
-
-    if (node.nodeType === TEXT_NODE) {
-      ++offset;
-      if (offset <= node.textContent.length) {
-        obj.offset = offset;
-        return true;
-      }
-    } else {
-      node = node.childNodes[offset];
-    }
-    if (! node)
-      return;
-
-    offset = 1;
-
-    while ( node !== editor) {
-      other = node.nextSibling;
-      if (other) {
-        node = firstInnerMostNode(other);
-        obj.node = node;
-        obj.offset = offset;
-        return true;
-      } else {
-        node = node.parentNode;
-        if (! INLINE_TAGS[node.tagName])
-          offset = 0;
-      }
-    }
-
-    return;
-  };
-
-  const normRange = (editor, range)=>{
-    normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
-    normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
-    return range;
-  };
-
-  const normPos = (editor, range, node, offset, setter)=>{
-    if (node.nodeType !== TEXT_NODE) {
-      if (node.tagName === 'BR') {
-        if (offset !== 0) range[setter](node, 0);
-        return;
-      }
-      const children = node.childNodes;
-      if (! children.length) return;
-      let curr = node.childNodes[offset];
-      if (curr && curr.tagName === 'BR') {
-        range[setter](curr, 0);
-        return;
-      }
-      curr = (curr && firstInnerMostNode(curr)) || lastInnerMostNode(node.childNodes[offset - 1]);
-      if (curr.nodeType !== TEXT_NODE && curr.tagName !== 'BR') {
-        const obj = {node: node, offset: offset};
-        forwardOneChar(editor, obj);
-        range[setter](obj.node, obj.offset);
-      } else if (curr !== node) {
-        range[setter](curr, 0);
-      }
-    }
-  };
-
-  const isBlockNode = (node)=>{
-    return node.nodeType === 1 && ! INLINE_TAGS[node.tagName];
-  };
-
-  const findContainingBlock = (editor, node)=>{
-    if (isBlockNode(node)) return node;
-    node = findBeforeBlock(editor, node);
-    if (node.nodeType === TEXT_NODE || INLINE_TAGS[node.tagName])
-      return node.parentNode;
-
-    return node;
-  };
-
-  const findBeforeBlock = (editor, node)=>{
-    let last = node;
-    node = node.parentNode;
-    while (node && node !== editor && INLINE_TAGS[node.tagName]) {
-      last = node;
-      node = node.parentNode;
-    }
-
-    return last;
-  };
 
   const codeNode = (editor, range)=>{
     for(let node = range.startContainer; node && node !== editor; node = node.parentNode) {
@@ -522,6 +339,26 @@ define((require, exports, module)=>{
     SelectMenu.popup(event.target, options);
   };
 
+  const nextSection = ()=>{
+    const elm = getModeNode($.ctx, Dom.getRange().endContainer);
+    if (! elm) return;
+    const nextElm = elm.nextSibling;
+    const range = document.createRange();
+    if (nextElm) {
+      normPos($.ctx.inputElm, range, elm.nextSibling, 0, 'setEnd');
+      range.collapse();
+      Dom.setRange(range);
+    } else {
+      const temp = document.createTextNode("\xa0");
+      elm.parentNode.appendChild(temp);
+      range.setEnd(temp, 0);
+      range.collapse();
+      Dom.setRange(range);
+      execCommand('insertHTML', '<div><br></div>');
+      temp.remove();
+    }
+  };
+
   const codeActions = commandify({
     language: event =>{
       chooseFromMenu(event, {
@@ -564,25 +401,7 @@ define((require, exports, module)=>{
     bold: false,
     italic: false,
     underline: false,
-    nextSection: ()=>{
-      const elm = getModeNode($.ctx, Dom.getRange().endContainer);
-      if (! elm) return;
-      const nextElm = elm.nextSibling;
-      const range = document.createRange();
-      if (nextElm) {
-        normPos($.ctx.inputElm, range, elm.nextSibling, 0, 'setEnd');
-        range.collapse();
-        Dom.setRange(range);
-      } else {
-        const temp = document.createTextNode("\xa0");
-        elm.parentNode.appendChild(temp);
-        range.setEnd(temp, 0);
-        range.collapse();
-        Dom.setRange(range);
-        execCommand('insertHTML', '<div><br></div>');
-        temp.remove();
-      }
-    },
+    nextSection,
     previousSection: ()=>{
       const elm = getModeNode($.ctx, Dom.getRange().endContainer);
       if (! elm) return;
@@ -679,6 +498,7 @@ define((require, exports, module)=>{
     keydown(event) {
       if (event.ctrlKey || event.metaKey || event.altKey) {
         keyMap.exec(event, 'ignoreFocus');
+
         return;
       }
 
@@ -697,6 +517,9 @@ define((require, exports, module)=>{
     keyMap: codeKeyMap,
 
     keydown: event =>{
+      if (event.which === 40 && ! (event.ctrlKey || event.metaKey || event.altKey)) {
+        return;
+      }
       codeKeyMap.exec(event, 'ignoreFocus');
     },
 
@@ -788,7 +611,7 @@ define((require, exports, module)=>{
     },
 
     moveLeft: (editor, mark)=>{
-      const range = select(editor, 'char', -1);
+      const range = selectRange(editor, 'char', -1);
       if (! range) return;
       if (! mark) {
         range.collapse(true);
@@ -796,12 +619,7 @@ define((require, exports, module)=>{
       Dom.setRange(range);
     },
 
-    select,
     execCommand,
-    getTag,
-    findContainingBlock,
-    firstInnerMostNode,
-    lastInnerMostNode,
     chooseFromMenu,
 
     insert: (arg, inner)=>{
