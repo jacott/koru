@@ -66,6 +66,14 @@ define((require)=>{
     return e;
   };
 
+  if (document.caretPositionFromPoint === undefined) {
+    HTMLDocument.prototype.caretPositionFromPoint = function (x, y) {
+      const range = this.caretRangeFromPoint(x, y);
+      return range === null
+        ? null : {offsetNode: range.startContainer, offset: range.startOffset};
+    };
+  }
+
   util.merge(Dom, {
     Ctx,
     current: Ctx.current,

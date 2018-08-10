@@ -96,6 +96,7 @@ define((require, exports, module)=>{
       while (true) {
         let elm = document.elementFromPoint(x, y);
         if (elm == null) break;
+        const {style} = elm;
 
         const cs = window.getComputedStyle(elm);
 
@@ -116,15 +117,13 @@ define((require, exports, module)=>{
         } else {
           color = uColor.toRGB(cs.getPropertyValue('background-color'));
 
-          if (borderColor === null && cs.getPropertyValue('border-width') !== '0px') {
-            borderColor =  uColor.toRGB(cs.getPropertyValue('border-color'));
+          if (borderColor === null && style.getPropertyValue('border-width') !== '') {
+            borderColor =  uColor.toRGB(style.getPropertyValue('border-color'));
           }
           if (textColor === null) {
-            const range = (document.caretPositionFromPoint
-                           ? document.caretPositionFromPoint(x, y)
-                           : document.caretRangeFromPoint(x,y));
-            if (range !== null && range.startContainer !== undefined &&
-                range.startContainer.nodeType === document.TEXT_NODE) {
+            const pos = document.caretPositionFromPoint(x, y);
+            if (pos !== null && pos.offsetNode !== undefined &&
+                pos.offsetNode.nodeType === document.TEXT_NODE) {
               textColor = uColor.toRGB(cs.getPropertyValue('color'));
             }
           }
@@ -134,14 +133,12 @@ define((require, exports, module)=>{
             image = elm;
             break;
           }
-
         }
         if ((color != null && color.a >= .1) || elm === body)
           break;
 
         color = null;
 
-        const {style} = elm;
         stack.push([style, style.getPropertyValue('visibility')]);
         style.setProperty('visibility', 'hidden');
       }

@@ -227,8 +227,12 @@ isClient && define((require, exports, module)=>{
       sut.getColorFromImage(Dom('svg'), bbox.left+1, bbox.top+1, (err, color) => {
         try {
           assert.same(err, null);
-
-          assert.near(color, {r: 126, g: 27, b: 220, a: 0.988}, 0.001);
+          assert.near(
+            color,
+            Dom.vendorPrefix === 'moz'
+              ? {r: 122, g: 17, b: 206, a: 0.980}
+            : {r: 126, g: 27, b: 220, a: 0.988},
+            0.001);
           done();
         } catch(ex) {
           done(ex);
