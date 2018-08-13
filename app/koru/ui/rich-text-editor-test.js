@@ -412,8 +412,11 @@ isClient && define((require, exports, module)=>{
           assert.same(this.style.fontFamily, 'monospace');
           TH.setRange(this.firstChild, 1);
         });
-        assert.dom('span+span', 'bar', function () {
-          assert.same(this.style.fontFamily, 'initial');
+        assert.dom('span', 'foo', elm =>{
+          const bar = elm.nextSibling;
+          assert.equals(bar.textContent, ' bar');
+          assert.same(bar.nodeType, document.TEXT_NODE);
+
         });
         TH.keydown(this, 'À', {ctrlKey: true});
         sut.insert('baz');
@@ -421,8 +424,10 @@ isClient && define((require, exports, module)=>{
           assert.same(this.style.fontFamily, 'monospace');
           v.start = this.firstChild;
         });
-        assert.dom('span', 'baz', function () {
-          assert.same(this.style.fontFamily, 'initial');
+        assert.dom('span', 'f', elm =>{
+          const baz = elm.nextSibling;
+          assert.equals(baz.textContent, 'baz');
+          assert.same(baz.nodeType, document.TEXT_NODE);
         });
 
         if (Dom('span>span')) {
@@ -433,9 +438,10 @@ isClient && define((require, exports, module)=>{
           TH.keydown(this, 'À', {ctrlKey: true});
           assert.dom('font[face=initial]', 'fbazo');
         } else {
-          assert.dom('span', 'baz', function () {
-            assert.same(this.style.fontFamily, 'initial');
-            const oo = this.nextSibling;
+          assert.dom('span', 'oo', oo =>{
+            const bar = oo.nextSibling;
+            assert.equals(bar.textContent, ' bar');
+            assert.same(bar.nodeType, document.TEXT_NODE);
             assert.same(oo.textContent, 'oo');
             assert.same(oo.style.fontFamily, 'monospace');
             TH.setRange(v.start, 0, oo.firstChild, 1);
@@ -448,8 +454,10 @@ isClient && define((require, exports, module)=>{
         const rt = RichText.fromHtml(this);
         rt.push(Dom.h({p: ''}));
         assert.dom(RichText.toHtml.apply(RichText, rt), function () {
-          assert.dom('span', 'bar', function () {
-            assert.same(this.style.fontFamily, 'initial');
+          assert.dom('span', 'o', o =>{
+            const bar = o.nextSibling;
+            assert.equals(bar.textContent, ' bar');
+            assert.same(bar.nodeType, document.TEXT_NODE);
           });
         });
       });

@@ -220,7 +220,7 @@ define((require, exports, module)=>{
       const ctx = Dom.myCtx(editor.parentNode);
 
       if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
-        const font = _code ? 'initial': 'monospace';
+        const font = _code ? RichText.fontIdToFace[0]: 'monospace';
         execCommand('fontName', font);
         notify(ctx, 'force', collapsed && {font});
       } else {
