@@ -108,6 +108,19 @@ define((require, exports, module)=>{
       assert.same(util.sansPc(234), 234);
     });
 
+    test("diffString", ()=>{
+      assert.equals(util.diffString("it1", "it21"), [2, 0, 1]);
+      assert.equals(util.diffString("it1", "zit21z"), [0, 3, 6]);
+      assert.equals(util.diffString("it21", "it1"), [2, 1, 0]);
+      assert.equals(util.diffString("cl 123.2", "cl 123"), [6, 2, 0]);
+      assert.equals(util.diffString("h💣el💣 world", "h💣elo wor💣ld"), [5, 6, 7]);
+      assert.equals(util.diffString("h💣el💣 world", "h💣el💤 wor💣ld"), [5, 6, 8]);
+      assert.equals(util.diffString("helo worlld", "hello world"), [3, 6, 6]);
+      assert.equals(util.diffString("hello world", "helo worlld"), [3, 6, 6]);
+      assert.equals(util.diffString("hello world", "helo worlld"), [3, 6, 6]);
+      assert.equals(util.diffString("hello world", "hello world"), undefined);
+    });
+
     test("indexOfRegex", ()=>{
       const list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);

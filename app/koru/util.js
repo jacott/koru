@@ -156,10 +156,29 @@ define((require)=>{
 
   const identity = value => value;
 
+  const diffString = (os, ns)=>{
+    const lo = os.length-1, ln = ns.length-1;
+    const minLast = Math.min(lo, ln);
+    let s = 0, e = 0, oc = 0;
+    while(s <= minLast && (oc=os.charCodeAt(s)) === ns.charCodeAt(s)) {
+      if (oc >= 0xd800 && oc <= 0xdbff && s < minLast) {
+        if (os.charCodeAt(s+1) !== ns.charCodeAt(s+1)) break;
+        ++s;
+      }
+      ++s;
+    }
+    if (lo == ln && s == minLast+1) return;
+    while(s <= minLast - e && os.charCodeAt(lo-e) === ns.charCodeAt(ln-e)) ++e;
+
+    return [s, 1+lo-(e+s), ns.length-s-e];
+  };
+
   util.merge(util, {
     DAY: 1000*60*60*24,
     MAXLEVEL: 50,
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+
+    diffString,
 
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
