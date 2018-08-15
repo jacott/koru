@@ -153,12 +153,7 @@ define((require)=>{
 
     setRange(range) {
       const sel = window.getSelection();
-      try {
-        sel.removeAllRanges();
-      } catch (ex) {
-        document.body.createTextRange().select();
-        document.selection.empty();
-      }
+      sel.rangeCount == 0 || sel.removeAllRanges();
       sel.addRange(range);
     },
 
