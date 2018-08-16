@@ -22,11 +22,14 @@ define((require, exports, module)=>{
       case 'function': {
         const name = o.name || '';
         return `function ${name !== qlabel(name) ? '' : name}(){}`;
-      } case 'object':
+      } case 'object': {
         if (o === null) return 'null';
         if (o[inspect$] !== undefined) return o[inspect$]();
-        if (o.constructor === Date) return "<"+o.toISOString()+">";
-        if (o.constructor === RegExp) return o.toString();
+
+        const {constructor} = o;
+
+        if (constructor === Date) return "<"+o.toISOString()+">";
+        if (constructor === RegExp) return o.toString();
         if ('outerHTML' in o) return o.outerHTML;
         if (o.nodeType === 3) return "$TextNode:"+o.textContent;
         if (o.nodeType === 11) return "$docFrag:"+inspect1(o.firstChild, i-1);
@@ -44,6 +47,10 @@ define((require, exports, module)=>{
             r.push(o.toString());
           }
           for (const p in o) {
+            if (r.length > 10) {
+              r.push('...');
+              break;
+            }
             const v = o[p];
 
             if (typeof v === 'function' && v.name === p && qlabel(p) === p) {
@@ -52,12 +59,15 @@ define((require, exports, module)=>{
               r.push(qlabel(p) + ": " + inspect1(v, i-1));
             }
           }
-          return "{" + r.join(", ") +"}";
+          return (constructor !== undefined &&
+                  constructor !== Object ? '<'+constructor.name+'>{' : '{'
+                 ) +  r.join(", ") +"}";
         }
         for(let key in o) {
           return (`{${key}=${o[key]},...}`);
         }
-      case 'string':
+        return '{}';
+      } case 'string':
         return `'${qstr(o)}'`;
       default:
         return o.toString();
