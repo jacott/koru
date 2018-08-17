@@ -171,7 +171,7 @@ define((require)=>{
 
         if (isInlineNode(node)) {
           if (node.nodeType === TEXT_NODE) {
-            const text = node.textContent.replace(/[ \n\t\r]+/g, ' ');
+            const text = node.nodeValue.replace(/[ \n\t\r]+/g, ' ');
             if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
             this.needNL && this.newLine();
             this.applyInlines();
@@ -276,7 +276,7 @@ define((require)=>{
           builder.newLine();
           needNl = false;
         }
-        const rows = node.textContent.split("\n");
+        const rows = node.nodeValue.split("\n");
         addText(rows[0]);
         for(let i = 1; i < rows.length; ++i) {
           needNl = false;

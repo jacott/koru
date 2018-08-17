@@ -207,6 +207,8 @@ define((require, exports, module)=>{
       return result;
     }
 
+    get nodeValue() {return null}
+
     querySelectorAll(css) {
       css = cssParser.parse(css).rule;
 
@@ -423,6 +425,7 @@ define((require, exports, module)=>{
     }
     get textContent() {return this.data}
     set textContent(value) {this.data = ''+value}
+    get nodeValue() {return this.data}
     get innerHTML() {return escapeHTML(this.data)}
     set innerHTML(value) {this.data = unescapeHTML(value)}
   }
@@ -437,6 +440,7 @@ define((require, exports, module)=>{
       return new CommentNode(this.data);
     }
     get textContent() {return this.data}
+    get nodeValue() {return this.data}
     set textContent(value) {this.data = value}
     get innerHTML() {return `<!--${escapeHTML(this.data)}-->`}
     set innerHTML(value) {this.data = unescapeHTML(value)}

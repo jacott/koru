@@ -58,7 +58,7 @@ define((require, exports, module)=>{
   const fromHtml = html =>{
     switch(html.nodeType) {
     case document.TEXT_NODE:
-      output.push(html.textContent.replace(/\xa0/g, ' '));
+      output.push(html.nodeValue.replace(/\xa0/g, ' '));
       break;
     case document.ELEMENT_NODE:
       switch(html.tagName) {

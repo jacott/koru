@@ -235,8 +235,8 @@ define((require, exports, module)=>{
         endContainer = startContainer;
         if (startOffset === undefined) {
           startOffset = 0;
-          endOffset = startContainer[startContainer.nodeType === document.TEXT_NODE ?
-                                     'childNodes' : 'textContent'].length;
+          endOffset = startContainer.nodeType === document.TEXT_NODE
+            ? startContainer.nodeValue.length : startContainer.childNodes.length;
         }else
           endOffset = startOffset;
       }
