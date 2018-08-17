@@ -207,15 +207,6 @@ define((require)=>{
       }
     },
 
-    selectElm(elm) {
-      if (elm) {
-        var range = document.createRange();
-        range.selectNode(elm);
-        Dom.setRange(range);
-        return range;
-      }
-    },
-
     forEach(elm, querySelector, func) {
       if (! elm) return;
       const elms = elm.querySelectorAll(querySelector);

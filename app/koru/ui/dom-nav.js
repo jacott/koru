@@ -2,19 +2,15 @@ define((require)=>{
   const Dom             = require('koru/dom');
   const util            = require('koru/util');
 
-  const {TEXT_NODE} = document;
+  const {ELEMENT_NODE, TEXT_NODE} = document;
 
   const INLINE_TAGS = util.toMap('B U I S A SPAN CODE FONT EM STRONG KBD TT Q'.split(' '));
-
-  const elmMatch = tag=> elm => elm.tagName === tag;
-  const isInlineNode = item => item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
 
   const lastInnerMostNode = (node)=>{
     let other;
     if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
+      return node;
+
       other = node.previousSibling;
       return other && lastInnerMostNode(other);
     }
@@ -26,9 +22,8 @@ define((require)=>{
   const firstInnerMostNode = (node)=>{
     let other;
     if (node.nodeType === TEXT_NODE) {
-      if (node.textContent.length) {
-        return node;
-      }
+      return node;
+
       other = node.nextSibling;
       return other && firstInnerMostNode(other);
     }
@@ -37,24 +32,24 @@ define((require)=>{
     }
   };
 
-  const forwardOneChar = (editor, obj)=>{
+  const forwardOneChar = (top, obj)=>{
     let other, {node, offset} = obj;
 
     if (node.nodeType === TEXT_NODE) {
       ++offset;
-      if (offset <= node.textContent.length) {
+      if (offset <= node.nodeValue.length) {
         obj.offset = offset;
         return true;
       }
     } else {
       node = node.childNodes[offset];
     }
-    if (! node)
+    if (node == null)
       return;
 
     offset = 1;
 
-    while ( node !== editor) {
+    while (node !== top) {
       other = node.nextSibling;
       if (other) {
         node = firstInnerMostNode(other);
@@ -71,7 +66,7 @@ define((require)=>{
     return;
   };
 
-  const backOneChar = (editor, obj)=>{
+  const backOneChar = (top, obj)=>{
     let other, {node, offset} = obj;
 
     if (node.nodeType === TEXT_NODE) {
@@ -88,13 +83,13 @@ define((require)=>{
 
     offset = -1;
 
-    while ( node !== editor) {
+    while ( node !== top) {
       other = node.previousSibling;
       if (other) {
         node = lastInnerMostNode(other);
         obj.node = node;
         if (node.nodeType === TEXT_NODE) {
-          offset = offset + node.textContent.length;
+          offset = offset + node.nodeValue.length;
         } else {
           offset = 0;
         }
@@ -110,36 +105,45 @@ define((require)=>{
     return;
   };
 
-  const normPos = (editor, range, node, offset, setter)=>{
+  const normPos = (node, offset)=>{
     if (node.nodeType !== TEXT_NODE) {
-      if (node.tagName === 'BR') {
-        if (offset !== 0) range[setter](node, 0);
-        return;
+      const {childNodes} = node;
+      if (childNodes.length == 0) {
+        return [node.parentNode, Dom.childElementIndex(node)];
       }
-      const children = node.childNodes;
-      if (! children.length) return;
-      let curr = node.childNodes[offset];
-      if (curr && curr.tagName === 'BR') {
-        range[setter](curr, 0);
-        return;
+      if (offset != childNodes.length) {
+        const curr = childNodes[offset];
+        if (curr.nodeType === TEXT_NODE) {
+          return [curr, 0];
+        }
+        return normPos(curr, 0) || [curr, 0];
       }
-      curr = (curr && firstInnerMostNode(curr)) || lastInnerMostNode(node.childNodes[offset - 1]);
-      if (curr.nodeType !== TEXT_NODE && curr.tagName !== 'BR') {
-        const obj = {node: node, offset: offset};
-        forwardOneChar(editor, obj);
-        range[setter](obj.node, obj.offset);
-      } else if (curr !== node) {
-        range[setter](curr, 0);
-      }
+    } else if (offset == node.nodeValue.length) {
+      const curr = node.nextSibling;
+      if (curr === null || curr.nodeType !== TEXT_NODE) return;
+      return [curr, 0];
     }
   };
 
-  const isBlockNode = node => node.nodeType === 1 && ! INLINE_TAGS[node.tagName];
+  const normRange = (range)=>{
+    const s = normPos(range.startContainer, range.startOffset);
+    s === undefined || range.setStart(s[0], s[1]);
 
-  const findBeforeBlock = (editor, node)=>{
+    if (! range.collapsed) {
+      const e = normPos(range.endContainer, range.endOffset);
+      e === undefined || range.setStart(e[0], e[1]);
+    }
+    return range;
+  };
+
+  const isInlineNode = item => item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
+
+  const isBlockNode = node => node.nodeType === ELEMENT_NODE && ! INLINE_TAGS[node.tagName];
+
+  const findBeforeBlock = (top, node)=>{
     let last = node;
     node = node.parentNode;
-    while (node && node !== editor && INLINE_TAGS[node.tagName]) {
+    while (node && node !== top && INLINE_TAGS[node.tagName]) {
       last = node;
       node = node.parentNode;
     }
@@ -147,40 +151,80 @@ define((require)=>{
     return last;
   };
 
+  const containingNode = range =>{
+    const offset = range.endOffset, start = range.endContainer;
+    if (start.nodeType === TEXT_NODE)
+      return start.parentNode;
+    else {
+      const {childNodes} = start;
+      return offset < childNodes.length
+        ? childNodes[offset] :  start;
+    }
+  };
+
+  const insertNode = (node, pos, offset=0)=>{
+    const range = Dom.getRange();
+    range.deleteContents();
+    range.insertNode(node);
+    if (pos === undefined)
+      range.setEndAfter(node);
+    else
+      range.setEnd(pos, offset);
+    range.collapse();
+
+    normRange(range);
+    range.collapse();
+    Dom.setRange(range);
+  };
+
+  const clearEmptyText = (node=null)=>{
+    while (node !== null && node.nodeType === TEXT_NODE && node.nodeValue === '') {
+      const nn = node.nextSibling;
+      node.remove();
+      node = nn;
+    }
+  };
+
+
   return {
     INLINE_TAGS,
 
     isInlineNode,
-    elmMatch,
 
     backOneChar,
     forwardOneChar,
     firstInnerMostNode,
     lastInnerMostNode,
 
-    getTag: tagOrFunc =>{
+    containingNode,
+
+    getTag: (tagOrFunc, top=document.body) =>{
       const range = Dom.getRange();
       if (range === null) return null;
-      const start = range.endContainer;
-      return Dom.searchUpFor(
-        start,
-        typeof tagOrFunc === 'string'
-          ? elmMatch(tagOrFunc) : tagOrFunc,
-        'richTextEditor');
+      let start = containingNode(range);
+      const foundFunc = typeof tagOrFunc === 'function' ? tagOrFunc : null,
+            tag = foundFunc === null ? tagOrFunc.toUpperCase() : '';
+
+      if (! top.contains(start)) return null;
+
+      for (
+        ;
+        start != null && start !== top;
+        start = start.parentNode) {
+
+        if (foundFunc === null ? start.tagName === tag : foundFunc(start))
+          return start;
+      }
+      return null;
     },
 
-    normPos,
-    normRange: (editor, range)=>{
-      normPos(editor, range, range.startContainer, range.startOffset, 'setStart');
-      normPos(editor, range, range.endContainer, range.endOffset, 'setEnd');
-      return range;
-    },
+    normRange,
 
     isBlockNode,
 
-    findContainingBlock: (editor, node)=>{
+    findContainingBlock: (top, node)=>{
       if (isBlockNode(node)) return node;
-      node = findBeforeBlock(editor, node);
+      node = findBeforeBlock(top, node);
       if (node.nodeType === TEXT_NODE || INLINE_TAGS[node.tagName])
         return node.parentNode;
 
@@ -189,23 +233,43 @@ define((require)=>{
 
     findBeforeBlock,
 
-    selectRange: (editor, type, amount)=>{
+    selectRange: (top, type, amount)=>{
       const range = Dom.getRange();
       const obj = {node: range.startContainer, offset: range.startOffset};
 
-      if (! Dom.contains(editor, obj.node)) return;
+      if (! Dom.contains(top, obj.node)) return;
 
       if (amount >= 0) {
-        while (amount-- && forwardOneChar(editor, obj))
+        while (amount-- && forwardOneChar(top, obj))
           ;
         range.setEnd(obj.node, obj.offset);
       } else {
-        while (amount++ && backOneChar(editor, obj))
+        while (amount++ && backOneChar(top, obj))
           ;
         range.setStart(obj.node, obj.offset);
       }
 
       return range;
+    },
+
+    newLine: ()=>{
+      const br = document.createElement('BR');
+      insertNode(br);
+      clearEmptyText(br.nextSibling);
+      if (br.nextSibling == null)
+        br.parentNode.appendChild(document.createElement('BR'));
+    },
+
+    clearEmptyText,
+    insertNode,
+
+    selectNode: node =>{
+      if (node != null) {
+        const range = document.createRange();
+        range.selectNode(node);
+        Dom.setRange(range);
+        return range;
+      }
     },
   };
 });

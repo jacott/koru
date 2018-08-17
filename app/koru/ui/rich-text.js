@@ -704,7 +704,6 @@ define((require)=>{
   function toCode(state) {
     if (! state.begun) {
       const pre = document.createElement('PRE');
-      const inner = document.createElement('DIV');
       if (state.oldState.rule.tag === 'LI') {
         const li = document.createElement('LI');
         if (this.align)
@@ -713,7 +712,7 @@ define((require)=>{
         state.result.appendChild(li);
       } else
         state.result.appendChild(pre);
-      pre.appendChild(state.result = inner);
+      state.result = pre;
       state.currLine = this.lidx;
       state.lastLine = state.currLine + this.offset(2);
       this.nextRule(3);

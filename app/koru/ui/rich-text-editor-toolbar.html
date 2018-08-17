@@ -1,10 +1,18 @@
 <template name="RichTextEditorToolbar">
   <div class="rtToolbar" data-mode="{{mode}}">
     <button tabindex="-1" name="more"></button>
+    <span>
+      <button name="undo" tabindex="-1" disabled="disabled" {{title "Undo"}}></button>
+      <button name="redo" tabindex="-1" disabled="disabled" {{title "Redo"}}></button>
+    </span>
+    <div class="code">
+      <button name="language" class="select" tabindex="-1" {{title "Set the language for the data"}}>{{language}}</button>
+      <button name="syntaxHighlight" tabindex="-1" {{title "Highlight language syntax"}}></button>
+    </div>
     <div class="standard">
-      <button name="bold" tabindex="-1" {{state}} {{title "Bold"}}>B</button>
-      <button name="italic" tabindex="-1" {{state}} {{title "Italic"}}>I</button>
-      <button name="underline" tabindex="-1" {{state}} {{title "Underline"}}>U</button>
+      <button name="bold" tabindex="-1" {{state}} {{title "Bold"}}></button>
+      <button name="italic" tabindex="-1" {{state}} {{title "Italic"}}></button>
+      <button name="underline" tabindex="-1" {{state}} {{title "Underline"}}></button>
       {{mentions}}
       <button name="link" tabindex="-1" {{link}} {{title "Add a link"}}></button>
       <button name="code" tabindex="-1" {{code}} {{title "Insert code"}}></button>
@@ -26,10 +34,6 @@
       <button name="strikeThrough" tabindex="-1" {{state}} {{title "Strike through"}}></button>
 
       <button name="removeFormat" tabindex="-1" {{title "Clear formatting"}}></button>
-    </div>
-    <div class="code">
-      <button name="language" class="select" tabindex="-1" {{title "Set the language for the data"}}>{{language}}</button>
-      <button name="syntaxHighlight" tabindex="-1" {{title "Highlight language syntax"}}></button>
     </div>
   </div>
 </template>

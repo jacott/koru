@@ -13,7 +13,8 @@ define((require, exports, module)=>{
     'koru/html!./rich-text-editor-toolbar'));
   const $ = Dom.current;
 
-  const {selectElm} = Dom;
+  const {ELEMENT_NODE} = document;
+
   const {getTag} = DomNav;
   const {execCommand, chooseFromMenu} = RichTextEditor;
 
@@ -24,23 +25,31 @@ define((require, exports, module)=>{
       const toolbar = Tpl.constructor.prototype.$autoRender.call(Tpl, ctx.inputElm, ctx);
       const toolbarCtx = Dom.myCtx(toolbar);
       elm.insertBefore(toolbar, elm.firstChild);
-      ctx.onDestroy(ctx.caretMoved.onChange(redraw));
+      const undoElm = toolbar.querySelector('[name=undo]');
+      const redoElm = toolbar.querySelector('[name=redo]');
+      const setUndoButtons = (undo)=>{
+        Dom.setBoolean('disabled', undo.undos.length == 0, undoElm);
+        Dom.setBoolean('disabled', undo.redos.length == 0, redoElm);
+      };
 
-      function redraw(override) {
+      setUndoButtons(ctx.undo);
+      ctx.onDestroy(ctx.undo.onChange(setUndoButtons));
+      ctx.onDestroy(ctx.caretMoved.onChange((override)=>{
         toolbarCtx.override = override;
         toolbarCtx.updateAllTags();
-      }
+      }));
+
       return elm;
     },
   });
 
-  const getFont = ()=>{
+  const getFont = (inputElm)=>{
     const {override} = $.ctx;
     if (override && override.font !== undefined)
       return RichText.fontType(override.font);
 
-    const code = getTag('SPAN');
-    return RichText.fontType(code && code.style.fontFamily);
+    const code = getTag('SPAN', inputElm);
+    return RichText.fontType(code !== null && code.style.fontFamily);
   };
 
   const matchHeader = elm=>{
@@ -54,50 +63,48 @@ define((require, exports, module)=>{
   }
 
   Tpl.$helpers({
-    mode() {
-      return $.ctx.parentCtx.mode.type;
-    },
+    mode: ()=> $.ctx.parentCtx.mode.type,
 
-    state() {
+    state: ()=>{
       Dom.setClass('on', document.queryCommandState($.element.getAttribute('name')));
     },
 
-    link() {
-      Dom.setClass('on', getTag('A'));
-    },
+    undoState: ()=>{Dom.setBoolean('disabled', $.ctx.parentCtx.undo.undos.length == 0)},
+    redoState: ()=>{Dom.setBoolean('disabled', $.ctx.parentCtx.undo.redos.length == 0)},
 
-    code() {
-      Dom.setClass('on', getFont() === 'monospace');
-    },
+    link() {Dom.setClass('on', getTag('A', this))},
+
+    code() {Dom.setClass('on', getFont(this) === 'monospace')},
 
     font() {
-      let code = getFont();
+      let code = getFont(this);
       if (code === 'initial') code = 'sans-serif';
       $.element.setAttribute('face', code);
       $.element.textContent = util.capitalize(util.humanize(code));
     },
 
     format() {
-      const elm = getTag(matchHeader);
+      const elm = getTag(matchHeader, this);
       return elm === null ? 'Normal text' : HEADER_NAME[elm.tagName];
     },
 
-    title(title) {
+    title: title =>{
       const elm = $.element;
       if (elm.getAttribute('title')) return;
 
       const action = elm.getAttribute('name');
 
-      elm.setAttribute('title', RichTextEditor.title(title, action, elm.parentNode.className));
+      elm.setAttribute('title', RichTextEditor.title(
+        title, action, elm.parentNode.className||'standard'));
     },
 
-    mentions() {
+    mentions: ()=>{
       if ($.element.nodeType === document.COMMENT_NODE) return;
       let mentions = $.ctx.parentCtx.data.extend;
       mentions = mentions && mentions.mentions;
       if (! mentions) return;
       const frag = document.createDocumentFragment();
-      Object.keys(mentions).sort().forEach(function (id) {
+      Object.keys(mentions).sort().forEach(id =>{
         frag.appendChild(Dom.h({
           button: [id], class: mentions[id].buttonClass, $name: 'mention',
           tabindex: -1,
@@ -145,6 +152,7 @@ define((require, exports, module)=>{
   }
 
   Tpl.$events({
+    'pointerdown'() {Dom.stopEvent()},
     'click button'(event) {Dom.stopEvent()},
     'pointerdown button'(mde) {
       Dom.stopEvent();

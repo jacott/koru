@@ -24,6 +24,120 @@ isClient && define((require, exports, module)=>{
       TH.domTearDown();
     });
 
+    test("clearEmptyText", ()=>{
+      inputElm.appendChild(Dom.h(["text", "", "", "stop", "", {br: ''}, ""]));
+      sut.clearEmptyText(inputElm.childNodes[1]);
+      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", '', {br: ''}, '']);
+      sut.clearEmptyText(inputElm.childNodes[2]);
+      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}, '']);
+      sut.clearEmptyText(inputElm.childNodes[3]);
+      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}]);
+    });
+
+    test("newLine", ()=>{
+      inputElm.appendChild(Dom.h(["text", "", ""]));
+      assert.equals(Dom.htmlToJson(inputElm).div, ['text', "", ""]);
+      TH.setRange(inputElm, 1);
+      sut.newLine();
+      assert.equals(Dom.htmlToJson(inputElm).div, ['text', {br: ''}, {br: ''}]);
+    });
+
+    group("normRange", ()=>{
+      let childNodes, range;
+      before(()=>{
+        inputElm.appendChild(Dom.h([
+          "one ",
+          {span: [{b: ["b1 ", "b2"]}, {button: []}, "after button"]},
+          "three",
+          {i: "four"},
+          {pre: {br: ''}},
+          {br: ''},
+          "end",
+        ]));
+        childNodes = inputElm.childNodes;
+        range = document.createRange();
+      });
+
+      afterEach(()=>{
+        range.setEnd(document, 0);
+      });
+
+      test("nested text", ()=>{
+        range.setStart(inputElm, 1);
+        sut.normRange(range);
+        assert.same(range.startContainer.nodeValue, 'b1 ');
+        assert.equals(range.startOffset, 0);
+      });
+
+      test("empty node", ()=>{
+        const span = Dom('span');
+        range.setStart(span, 1);
+        sut.normRange(range);
+        assert.same(range.startContainer, span);
+        assert.equals(range.startOffset, 1);
+      });
+
+      test("empty followed by node", ()=>{
+        const pre = Dom('pre');
+        range.setStart(pre.firstChild, 0);
+        sut.normRange(range);
+        assert.same(range.startContainer, pre);
+        assert.equals(range.startOffset, 0);
+      });
+
+      test("end of text node", ()=>{
+        const b = Dom('b');
+        range.setStart(b.firstChild, 3);
+        sut.normRange(range);
+        assert.same(range.startContainer.nodeValue, 'b2');
+        assert.equals(range.startOffset, 0);
+
+        range.setStart(childNodes[2], "three".length);
+        sut.normRange(range);
+        assert.same(range.startContainer.nodeValue, 'three');
+        assert.equals(range.startOffset, "three".length);
+      });
+    });
+
+    test("getTag", ()=>{
+      inputElm.appendChild(Dom.h([
+        {div: {ol: {li: 'one'}}},
+        {div: {ul: {li: 'two'}}},
+      ]));
+
+      assert.dom(inputElm, ()=>{
+        assert.dom('li', 'two', li =>{
+          TH.setRange(li.firstChild, 1);
+          const ul = sut.getTag('ul', inputElm);
+          assert.same(ul && ul.tagName, 'UL');
+          TH.setRange(ul, 0);
+          const div = sut.getTag(e => e.parentNode === inputElm);
+          assert.same(div, inputElm.lastChild);
+          assert.same(sut.getTag(e => false), null);
+          assert.same(sut.getTag(e => e === document.body, document.body.parentNode), document.body);
+          assert.same(sut.getTag(e => e === document.body, inputElm), null);
+        });
+      });
+    });
+
+    group("insertNode", ()=>{
+      test("replace text", ()=>{
+        inputElm.appendChild(Dom.h(["one ", "two ", "three"]));
+        TH.setRange(inputElm.childNodes[1]);
+        sut.insertNode(Dom.h({b: '2 '}));
+
+        assert.equals(Dom.htmlToJson(inputElm).div, ['one ', '', {b: '2 '}, '', 'three']);
+
+        const range = Dom.getRange();
+        assert.same(range.startContainer, inputElm.childNodes[3]);
+        assert.same(range.startOffset, 0);
+
+        assert.isTrue(range.collapsed);
+      });
+
+    });
+
+
 
     group("selectRange", ()=>{
       test("within text node ", ()=>{

@@ -252,41 +252,41 @@ define((require, exports, module)=>{
 
     test("code",  ()=>{
       assertBothConvert('<ol><li><div>one</div><pre data-lang="text"><div>foo</div></pre></li></ol>',
-                        '<ol><li>one<pre data-lang=\"text\"><div>foo</div></pre></li></ol>');
-      assertConvert('<pre data-lang="text"><div><br></div></pre>');
+                        '<ol><li>one<pre data-lang=\"text\">foo</pre></li></ol>');
+      assertConvert('<pre data-lang="text"><br></pre>');
 
       var p = document.createElement('p');
       p.innerHTML = '<div><div><pre>One</pre><pre>Two</pre></div><div><pre data-lang="text"></pre></div></div>';
       var rt = sut.fromHtml(p);
       assert.equals(rt, ['code:text\nOne\ncode:text\nTwo\ncode:text', [CODE, 0, 1, CODE, 2, 1, CODE, 2, 0]]);
 
-      assertConvert('<pre data-lang="ruby"><div><span class="k">Class</span> <span class="no">Abc</span>\n' +
+      assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span>\n' +
                     '  <span class="k">def</span> <span class="nf">foo</span><span class="mh">(</span><span class="nv">a</span>' +
                     '<span class="mh">,</span> <span class="nv">b</span><span class="mh">)</span>\n' +
                     '     <span class="nv">a</span> <span class="o">+</span> <span class="nv">b</span>\n' +
                     '  <span class="k">end</span>\n' +
                     '<span class="k">end</span>' +
-                    '</div></pre>');
-      assertConvert('<pre data-lang="ruby"><div><span class="k">Class</span> <span class="no">Abc</span></div></pre>');
-      assertConvert('<pre data-lang="text"><div>stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</div></pre>');
+                    '</pre>');
+      assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span></pre>');
+      assertConvert('<pre data-lang="text">stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</pre>');
       assertConvert('<pre data-lang="text">One</pre>'+
                     '<pre data-lang="text"><div><div>Two</div>two</div></pre>'+
                     '<pre data-lang="text"></pre>',
 
-                    '<pre data-lang="text"><div>One</div></pre>'+
-                    '<pre data-lang="text"><div>Two\ntwo</div></pre>'+
-                    '<pre data-lang="text"><div></div></pre>');
+                    '<pre data-lang="text">One</pre>'+
+                    '<pre data-lang="text">Two\ntwo</pre>'+
+                    '<pre data-lang="text"></pre>');
 
 
       assertBothConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
-                        '<pre data-lang="javascript"><div><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</div></pre>');
+                        '<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>');
       assertBothConvert('<div><pre><ol><li>hello</li><li>wo<b>rl</b>d</li></ol></pre></div>',
-                        '<pre data-lang="text"><div>hello\nworld</div></pre>');
+                        '<pre data-lang="text">hello\nworld</pre>');
       assertBothConvert('<div><pre>hello<div><br></div>new<br>world<div>now</div></pre></div>',
-                        '<pre data-lang="text"><div>hello\n\nnew\nworld\nnow</div></pre>');
+                        '<pre data-lang="text">hello\n\nnew\nworld\nnow</pre>');
       assertBothConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>',
                         '<div>Some <span style="font-family: monospace;">code in</span> here</div>'+
-                        '<pre data-lang="javascript"><div>one\ntwo\nthree</div></pre>');
+                        '<pre data-lang="javascript">one\ntwo\nthree</pre>');
     });
 
     test("nested links",  ()=>{

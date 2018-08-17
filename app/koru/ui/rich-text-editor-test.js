@@ -2,6 +2,7 @@ isClient && define((require, exports, module)=>{
   const koru            = require('koru');
   const Dom             = require('koru/dom');
   const RichTextEditorTpl = require('koru/html!./rich-text-editor-test');
+  const DomNav          = require('koru/ui/dom-nav');
   const util            = require('koru/util');
   const session         = require('../session/client-rpc');
   const KeyMap          = require('./key-map');
@@ -17,9 +18,16 @@ isClient && define((require, exports, module)=>{
 
   let v ={};
 
-  TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
-    beforeEach(()=>{
-      v.tpl = Dom.newTemplate(util.deepCopy(RichTextEditorTpl));
+  const focusin = (inputElm)=>{
+    inputElm.focus();
+    TH.trigger(inputElm, 'focusin');
+    TH.trigger(document, 'selectionchange');
+  };
+
+  TH.testCase(module, ({before, beforeEach, afterEach, group, test})=>{
+    let tpl;
+    before(()=>{
+      tpl = Dom.newTemplate(RichTextEditorTpl);
     });
 
     afterEach(()=>{
@@ -45,8 +53,40 @@ isClient && define((require, exports, module)=>{
       });
     });
 
+    test("undo/redo", ()=>{
+      document.body.appendChild(tpl.$autoRender({content: Dom.h('hello')}));
+
+      const rte = Dom('.richTextEditor'), input = rte.firstChild;
+
+      const ctx = Dom.ctx(rte), {undo} = ctx;
+
+      undo.recordNow();
+      undo.undo();
+
+      input.focus();
+      TH.setRange(input, 0);
+      TH.keyup(input, 39);
+
+      ctx.template.insert(Dom.h({b: "11"}));
+      undo.recordNow();
+
+      ctx.template.insert(Dom.h({i: "22"}));
+      undo.recordNow();
+      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, {i: "22"}, 'hello']);
+
+      TH.keydown(input, 'Z', {ctrlKey: true});
+      TH.keydown(input, 'Z', {ctrlKey: true});
+      assert.equals(Dom.htmlToJson(input).div, ['hello']);
+
+      TH.keydown(input, 'Z', {ctrlKey: true, shiftKey: true});
+      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, 'hello']);
+
+      TH.keydown(input, 'Y', {ctrlKey: true});
+      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, {i: "22"}, 'hello']);
+    });
+
     test("get/set value", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({content: null}));
+      document.body.appendChild(tpl.$autoRender({content: null}));
 
       assert.dom('.input', function () {
         assert.same(this.firstChild, null);
@@ -84,7 +124,7 @@ isClient && define((require, exports, module)=>{
     test("bold, italic, underline, strikeThrough", ()=>{
       v.ec = stub(document, 'execCommand');
 
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      document.body.appendChild(tpl.$autoRender({content: ''}));
 
       assert.dom('.input', input =>{
         TH.keydown(input, 'B', {ctrlKey: true});
@@ -109,7 +149,7 @@ isClient && define((require, exports, module)=>{
         TH.keydown(input, key, {altKey: true, ctrlKey: true});
         assert.calledWith(v.ec, 'formatBlock', false, 'H'+key);
       };
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      document.body.appendChild(tpl.$autoRender({content: ''}));
 
       const input = Dom('.input');
 
@@ -118,12 +158,14 @@ isClient && define((require, exports, module)=>{
     });
 
     group("pre", ()=>{
+      let inputElm;
       beforeEach(()=>{
-        document.body.appendChild(v.tpl.$autoRender({content: ''}));
+        document.body.appendChild(tpl.$autoRender({content: ''}));
+        inputElm = Dom('.input');
         v.selectCode = ()=>{
-          const node = Dom('.input pre>div').firstChild;
-          const range = TH.setRange(node, 2);
-          TH.keyup(node, 39);
+          const node = inputElm.querySelector('pre').firstChild;
+          const range = TH.setRange(node, 0);
+          focusin(inputElm);
           return range;
         };
       });
@@ -131,7 +173,7 @@ isClient && define((require, exports, module)=>{
       test("load languages", ()=>{
         const langs = stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
         assert.dom('.input', function () {
-          this.appendChild(Dom.h({pre: {div: "one\ntwo"}}));
+          this.appendChild(Dom.h({pre: ["one\ntwo"]}));
           sut.languageList = null;
           const elm = v.selectCode().startContainer;
           onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
@@ -168,7 +210,7 @@ isClient && define((require, exports, module)=>{
         const highlight = stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
         assert.dom('.input', function () {
           this.focus();
-          this.appendChild(Dom.h({pre: {div: "if a:\n  (b)\n"}, '$data-lang': 'python'}));
+          this.appendChild(Dom.h({pre: ["if a:\n  (b)\n"], '$data-lang': 'python'}));
           const elm = v.selectCode().startContainer;
           this.appendChild(Dom.h({div: "after"}));
           assert.dom('pre+div', 'after');
@@ -190,7 +232,7 @@ isClient && define((require, exports, module)=>{
         assert.called(v.caretMoved);
 
         highlight.reset();
-        assert.dom('.input>pre>div', function () {
+        assert.dom('.input>pre', function () {
           TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
         });
         assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "python", "if a:\n  (b)\n");
@@ -204,13 +246,13 @@ isClient && define((require, exports, module)=>{
 
         highlight.reset();
         stub(koru, 'globalCallback');
-        assert.dom('.input>pre>div', function () {
+        assert.dom('.input>pre', function () {
           TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
         });
 
         highlight.yield('error');
 
-        assert.dom('pre div>span.k', 'if');
+        assert.dom('pre>span.k', 'if');
         assert.calledWith(koru.globalCallback, 'error');
       });
 
@@ -219,7 +261,7 @@ isClient && define((require, exports, module)=>{
           this.focus();
           this.appendChild(Dom.h({ol: [{li: 'hello'}, {li: 'world'}]}));
           assert.dom('ol', function () {
-            Dom.selectElm(this);
+            DomNav.selectNode(this);
           });
           TH.keyup(this, 39);
           TH.keydown(this, 'À', {ctrlKey: true});
@@ -228,13 +270,13 @@ isClient && define((require, exports, module)=>{
           TH.keydown(this, 13);
           TH.keyup(this, 13);
           assert.same(sut.$ctx(this).mode.type, 'code');
-          sut.insert('bar');
+          DomNav.insertNode(Dom.h("bar"));
           assert.dom(RichText.fromToHtml(this.parentNode.value), function () {
-            assert.dom('pre[data-lang="text"]>div', 'hello\nworld foo\nbar');
+            assert.dom('pre[data-lang="text"]', 'hello\nworld foo\nbar');
           });
           this.insertBefore(Dom.h({div: "outside"}), this.firstChild);
           TH.setRange(this.firstChild.firstChild, 3);
-          TH.keyup(this, 39);
+          focusin(inputElm);
           TH.keydown(this, 13);
           assert.same(this.firstChild.firstChild.textContent, 'outside');
         });
@@ -246,30 +288,60 @@ isClient && define((require, exports, module)=>{
           assert.same(sut.$ctx(this).mode.type, 'standard');
           Dom('.richTextEditor').value = Dom.h([{div: "first"}, {pre: "second"}]);
           TH.setRange(this.lastChild, 0);
-          TH.pointerDownUp(this);
+          focusin(this);
           assert.same(sut.$ctx(this).mode.type, 'code');
           TH.setRange(this.firstChild, 0);
-          TH.pointerDownUp(this);
+          TH.trigger(document, 'selectionchange');
           assert.same(sut.$ctx(this).mode.type, 'standard');
         });
       });
 
       test("on empty", ()=>{
-        assert.dom('.input', function () {
-          this.focus();
-          TH.setRange(this);
+        const input = Dom('.input');
+        input.focus();
+        TH.setRange(input);
 
-          TH.keydown(this, KeyMap['`'], {ctrlKey: true});
+        TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
-          assert.dom('pre[data-lang="text"]>div>br');
-          sut.insert(' foo');
-          assert.dom('pre[data-lang="text"]', 'foo');
-        });
+        const pre = input.firstChild;
+        assert.equals(Dom.htmlToJson(pre).pre, {br: ''});
+        sut.insert(' foo');
+        assert.equals(Dom.htmlToJson(pre).pre, [' foo']);
+        TH.keydown(input, 13);
+        TH.keyup(input, 13);
+        assert.equals(Dom.htmlToJson(pre).pre, [' foo', {br: ''}, {br: ''}]);
+        DomNav.insertNode(Dom.h('bar'));
+        assert.equals(Dom.htmlToJson(pre).pre, [' foo', {br: ''}, 'bar', {br: ''}]);
+      });
+
+      test("create empty", ()=>{
+        const input = Dom('.input');
+        input.appendChild(Dom.h(["1", {br: ''}, "2"]));
+
+        input.focus();
+        TH.setRange(input, 1);
+
+        TH.keydown(input, KeyMap['`'], {ctrlKey: true});
+
+        assert.equals(Dom.htmlToJson(input).div, [
+          '1',
+          {"data-lang": 'text', pre: {br: ''}},
+          '2']);
+
+        const range = Dom.getRange();
+        const pre = Dom('pre');
+
+        assert.same(range.startContainer, pre);
+        assert.same(range.startOffset, 0);
+
+        TH.keydown(input, 13);
+        TH.keyup(input, 13);
+        assert.equals(Dom.htmlToJson(pre).pre, [{br: ''}, {br: ''}]);
       });
     });
 
     test("fontSize", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({
+      document.body.appendChild(tpl.$autoRender({
         content: Dom.h([{font: 'bold', $size: "1"},
                         {span: 'big', $style: "font-size: xx-large"}])}));
 
@@ -301,13 +373,14 @@ isClient && define((require, exports, module)=>{
     });
 
     test("fontColor", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({
+      document.body.appendChild(tpl.$autoRender({
         content: Dom.h({font: {
           span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
+      const inputElm = Dom('.input');
+
       assert.dom('.input font span', function () {
-        this.focus();
-        TH.trigger(this, 'focusin');
+        focusin(inputElm);
         const range = Dom.getRange();
         assert.same(range.startContainer.parentNode, this);
 
@@ -391,7 +464,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("inline code on selection", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml("1\n2")}));
+      document.body.appendChild(tpl.$autoRender({content: RichText.toHtml("1\n2")}));
 
       assert.dom('.input', function () {
         document.execCommand('styleWithCSS', false, true);
@@ -476,7 +549,7 @@ isClient && define((require, exports, module)=>{
     test("lists", ()=>{
       v.ec = stub(document, 'execCommand');
 
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      document.body.appendChild(tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
         TH.keydown(this, '7', {ctrlKey: true, shiftKey: true});
@@ -490,7 +563,7 @@ isClient && define((require, exports, module)=>{
     test("textAlign", ()=>{
       v.ec = stub(document, 'execCommand');
 
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      document.body.appendChild(tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
         TH.keydown(this, 'L', {ctrlKey: true, shiftKey: true});
@@ -511,7 +584,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("removeFormat", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({content: Dom.h({b: 'foo'})}));
+      document.body.appendChild(tpl.$autoRender({content: Dom.h({b: 'foo'})}));
 
       assert.dom('.input', function () {
         assert.dom('b', function () {
@@ -528,7 +601,7 @@ isClient && define((require, exports, module)=>{
       v.ec = stub(document, 'execCommand');
       const keyMap = spy(sut.modes.standard.keyMap, 'exec');
 
-      document.body.appendChild(v.tpl.$autoRender({content: ''}));
+      document.body.appendChild(tpl.$autoRender({content: ''}));
 
       assert.dom('.input', function () {
         TH.keydown(this, 'Ý', {ctrlKey: true});
@@ -554,7 +627,7 @@ isClient && define((require, exports, module)=>{
           },
         };
 
-        document.body.appendChild(v.tpl.$autoRender({content: ''}));
+        document.body.appendChild(tpl.$autoRender({content: ''}));
         v.input = Dom('.input');
         const topCtx = Dom.myCtx(v.input.parentNode);
 
@@ -662,23 +735,25 @@ isClient && define((require, exports, module)=>{
 
       test("pre", ()=>{
         v.insertHTML.returns(true);
-        v.input.parentNode.value = Dom.h({pre: {div: 'paste before'}});
-        assert.dom('.input', function () {
-          assert.dom('pre>div', function () {
-            this.focus();
-            TH.setRange(this.firstChild, 0);
-            TH.keyup(this, 39);
+        v.input.parentNode.value = Dom.h({pre: 'paste before'});
+        assert.dom('.input', input =>{
+          assert.dom('pre', pre =>{
+            TH.setRange(pre.firstChild, 6);
+            focusin(input);
             v.paste(v.event);
-            assert.calledWith(v.insertHTML, 'insertHTML', false, 'bold world');
+            assert.equals(Dom.htmlToJson(pre).pre, ['paste ', 'bold world', 'before']);
+            sut.$ctx(input).mode.paste('<b>bold</b>\nplain<br>newline');
+            assert.equals(Dom.htmlToJson(pre).pre, [
+              'paste ', 'bold world', '',
+              'bold\n', 'plain\n', 'newline',
+              'before']);
           });
-          sut.$ctx(this).mode.paste('<b>bold</b>\nplain<br>newline');
-          assert.calledWith(v.insertHTML, 'insertHTML', false, 'bold\nplain\nnewline');
         });
       });
     });
 
     test("empty", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
+      document.body.appendChild(tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
       Dom.flushNextFrame();
 
       assert.dom('.input[contenteditable=true]', function () {
@@ -690,7 +765,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("blockquote", ()=>{
-      document.body.appendChild(v.tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
+      document.body.appendChild(tpl.$autoRender({content: RichText.toHtml('hello\nworld')}));
 
       Dom.flushNextFrame();
 
@@ -706,7 +781,7 @@ isClient && define((require, exports, module)=>{
 
     group("links", ()=>{
       beforeEach(()=>{
-        document.body.appendChild(v.tpl.$autoRender({
+        document.body.appendChild(tpl.$autoRender({
           content: Dom.h([{b: "Hello"}, " ", {a: "world", $href: "/#/two"}])}));
 
         Dom.flushNextFrame();

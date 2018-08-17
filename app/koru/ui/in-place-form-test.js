@@ -1,4 +1,5 @@
 isClient && define((require, exports, module)=>{
+  const DomNav          = require('koru/ui/dom-nav');
   const Dom             = require('../dom');
   const ipfTpl          = require('../html!./in-place-form-test');
   const util            = require('../util');
@@ -107,7 +108,7 @@ isClient && define((require, exports, module)=>{
         const editable = Dom('[name=autoShowEdit].ui-editable.showTpl');
         TH.click(editable);
         TH.click('form [name=cancel]');
-        Dom.selectElm(editable);
+        DomNav.selectNode(editable);
         TH.click(editable);
         refute.dom('form');
       });
