@@ -121,6 +121,12 @@ define((require, exports, module)=>{
       assert.equals(util.diffString("hello world", "hello world"), undefined);
     });
 
+    test("diffStringLength", ()=>{
+      assert.equals(util.diffStringLength("h💣elo wor💣ld", "h💣el💣 world"), 7);
+      assert.equals(util.diffStringLength("h💣el💣 world", "h💣elo wor💣ld"), 7);
+      assert.equals(util.diffStringLength("hello world", "hello world"), 0);
+    });
+
     test("indexOfRegex", ()=>{
       const list = [{foo: 'a'}, {foo: 'b'}];
       assert.same(util.indexOfRegex(list, /a/, 'foo'), 0);

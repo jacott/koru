@@ -179,6 +179,10 @@ define((require)=>{
     EMAIL_RE: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
 
     diffString,
+    diffStringLength: (os, ns)=>{
+      const ans = diffString(os, ns);
+      return ans === undefined ? 0 : Math.max(ans[1], ans[2]);
+    },
 
     mergeExclude(obj, properties, exclude) {
       for(const prop in properties) {
