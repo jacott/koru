@@ -105,10 +105,9 @@ define((require)=>{
       }
 
       tagName = pTag;
-      content = html(content, xmlns);
+      content = content && (! Array.isArray(content) || content.length != 0)
+        ? html(content, xmlns) : null;
     }
-
-
 
     const elm = xmlns !== undefined ?
             document.createElementNS(SVGNS, tagName)
@@ -150,7 +149,7 @@ define((require)=>{
         break;
       case 1: {
         const v = htmlToJson(node.firstChild, ns);
-        result[tagName] = ambig && typeof v === 'string' ? [v] : v;
+        result[tagName] = (ambig && typeof v === 'string') || v === '' ? [v] : v;
       } break;
       default:
         result[tagName] = util.map(childNodes, n => htmlToJson(n, ns));

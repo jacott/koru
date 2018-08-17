@@ -207,7 +207,7 @@ isClient && define((require, exports, module)=>{
       onEnd(_=>{Ctx._currentCtx = null});
       Ctx._currentCtx = new Ctx(v.Each);
 
-      const container = Dom.h({div: ""});
+      const container = Dom.h({div: [""]});
 
       each(
         container.firstChild, {}, {

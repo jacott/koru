@@ -47,7 +47,10 @@ define((require, exports, module)=>{
     });
 
     test("walkNode", ()=>{
-      var node = Dom.h({div: ['one', {span: ['two', '2.5']}, 'three', {B: [{I: 'i'}, {U: 'not me'}, {div: 'not here'}]}, 'nor me']});
+      var node = Dom.h({
+        div: [
+          'one', {span: ['two', '2.5']},
+          'three', {B: [{I: 'i'}, {U: 'not me'}, {div: 'not here'}]}, 'nor me']});
 
       let ans = "";
 
@@ -83,10 +86,12 @@ define((require, exports, module)=>{
       assertConvert({div: 'simple'});
       assertConvert({});
       assertConvert({id: 'Spinner', class: 'spinner dark'});
-      assertConvert({ol: [{li: 'one'}, {style: 'width:10px', name: 'li2', li: ['two'], myattr: 'attr3'}]});
+      assertConvert({ol: [
+        {li: 'one'}, {style: 'width:10px', name: 'li2', li: ['two'], myattr: 'attr3'}]});
       assertConvert(['one', 'two', 'three']);
       assertConvert({input: [], name: 'email'});
       assertConvert({input: ''});
+      assertConvert({div: ['']});
     });
 
     test("more Dom.h", ()=>{
@@ -188,6 +193,9 @@ define((require, exports, module)=>{
       if (isClient) {
         assert(Dom.h({path: [], d: 'M0,0 10,10Z'}, Dom.SVGNS) instanceof window.SVGPathElement);
       }
+
+      const br = Dom.h({br: ''});
+      assert.isNull(br.firstChild);
     });
 
     test("classList", ()=>{
