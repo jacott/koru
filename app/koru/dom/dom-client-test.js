@@ -108,16 +108,6 @@ define((require, exports, module)=>{
       assert(Dom.isInView(x, document.body));
     });
 
-    test("wheelDelta", ()=>{
-      assert.same(Dom.wheelDelta({wheelDelta: 50}), 1);
-      assert.same(Dom.wheelDelta({deltaY: -50}), 1);
-      assert.same(Dom.wheelDelta({deltaX: -50}), 1);
-
-      assert.same(Dom.wheelDelta({wheelDelta: -50}), -1);
-      assert.same(Dom.wheelDelta({deltaY: 50}), -1);
-      assert.same(Dom.wheelDelta({deltaX: 50}), -1);
-    });
-
     test("getClosest", ()=>{
       document.body.appendChild(Dom.h({class: 'foo', div: {span: 'hello'}}));
 

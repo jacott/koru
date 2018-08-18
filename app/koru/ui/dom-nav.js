@@ -109,7 +109,7 @@ define((require)=>{
     if (node.nodeType !== TEXT_NODE) {
       const {childNodes} = node;
       if (childNodes.length == 0) {
-        return [node.parentNode, Dom.childElementIndex(node)];
+        return [node.parentNode, Dom.nodeIndex(node)];
       }
       if (offset != childNodes.length) {
         const curr = childNodes[offset];

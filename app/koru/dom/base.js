@@ -168,7 +168,7 @@ define((require)=>{
   const removeClass = (elm, name)=>{elm == null || elm.classList.remove(name)};
 
   util.merge(Dom, {
-    textToHtml(body, tagName='div') {
+    textToHtml: (body, tagName='div')=>{
       const elm = document.createElement(tagName);
       elm.innerHTML = body;
       return elm.firstChild;
@@ -200,16 +200,15 @@ define((require)=>{
       }
     },
 
-    nodeIndex(node) {
-      const nodes = node.parentNode.childNodes;
-      for (let count = nodes.length; count >= 0; --count) {
-        if (node === nodes[count])
-          return count;
-      }
-      return -1;
+    nodeIndex: (node)=> {
+      let i = 0;
+      if (node.nextSibling === null)
+        return node.parentNode.childNodes.length - 1;
+      while( (node = node.previousSibling) !== null ) i++;
+      return i;
     },
 
-    walkNode(node, visitor) {
+    walkNode: (node, visitor)=>{
       const childNodes = node.childNodes;
       const len = childNodes.length;
 
@@ -219,7 +218,7 @@ define((require)=>{
         case true: return true;
         case false: continue;
         default:
-          if (this.walkNode(elm, visitor))
+          if (Dom.walkNode(elm, visitor))
             return true;
         }
       }
@@ -227,7 +226,7 @@ define((require)=>{
 
     htmlToJson,
 
-    handleException(ex) {
+    handleException: ex =>{
       if (! (koru.globalErrorCatch && koru.globalErrorCatch(ex))) {
         koru.unhandledException(ex);
       }

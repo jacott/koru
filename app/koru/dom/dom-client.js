@@ -86,11 +86,7 @@ define((require)=>{
 
     _matchesFunc: matches,
 
-    wheelDelta(event) {
-      return Math.max(-1, Math.min(1, event.wheelDelta || -(event.deltaY || event.deltaX)));
-    },
-
-    isInView(elm, regionOrNode) {
+    isInView: (elm, regionOrNode)=>{
       const region = regionOrNode.getBoundingClientRect === undefined ?
               regionOrNode : regionOrNode.getBoundingClientRect();
       const bb = elm.getBoundingClientRect();
@@ -100,70 +96,64 @@ define((require)=>{
       return cx > region.left && cx < region.right && cy > region.top && cy < region.bottom;
     },
 
-    isAboveBottom(elm, region) {
+    isAboveBottom: (elm, region)=>{
       if ('getBoundingClientRect' in region)
         region = region.getBoundingClientRect();
 
       return elm.getBoundingClientRect().top < region.bottom;
     },
 
-    setClassBySuffix(name, suffix, elm) {
-      elm = elm || Dom.element;
-      if (!elm) return;
+    setClassBySuffix: (name, suffix, elm=Dom.element)=>{
+      if (elm === null) return;
       const classes = elm.className.replace(new RegExp('\\s*\\S*'+suffix+'\\b', 'g'), '')
             .replace(/(^ | $)/g,'');
 
-      if (name)
-        elm.className = (classes.length ? classes + ' ' : '') + name + suffix;
-      else
-        elm.className = classes;
+      elm.className = name
+        ? (classes.length ? classes + ' ' : '') + name + suffix : classes;
     },
 
-    setClassByPrefix(name, prefix, elm) {
-      elm = elm || Dom.element;
-      if (!elm) return;
+    setClassByPrefix: (name, prefix, elm=Dom.element)=>{
+      if (elm === null) return;
 
       const classes = elm.className.replace(new RegExp('\\s*'+prefix+'\\S*', 'g'), '')
             .replace(/(^ | $)/g,'');
 
-      if (name)
-        elm.className = (classes.length ? classes + ' ' : '') + prefix + name;
-      else
-        elm.className = classes;
+      elm.className = name
+        ? (classes.length ? classes + ' ' : '') + prefix + name : classes;
     },
 
-    setClass(name, isAdd, elm) {
+    setClass: (name, isAdd, elm)=>{
       (isAdd ? Dom.addClass : Dom.removeClass)(elm || Dom.element, name);
     },
 
-    setBoolean(name, isAdd, elm) {
-      elm = elm || Dom.element;
+    setBoolean: (name, isAdd, elm=Dom.element)=>{
+      if (elm === null) return;
       if (isAdd)
         elm.setAttribute(name, name);
       else
         elm.removeAttribute(name);
     },
 
-    focus(elm, selector) {
-      if (! elm) return;
+    focus: (elm, selector)=>{
+      if (elm == null) return;
       if (typeof selector !== 'string') selector = Dom.FOCUS_SELECTOR;
       const focus = elm.querySelector(selector);
       focus !== null && focus.focus();
     },
 
-    setRange(range) {
+    setRange: range =>{
       const sel = window.getSelection();
       sel.rangeCount == 0 || sel.removeAllRanges();
       sel.addRange(range);
     },
 
-    getRange() {
+    getRange: ()=>{
       const sel = window.getSelection();
       if (sel.rangeCount === 0) return null;
       return sel.getRangeAt(0);
     },
 
-    getRangeClientRect(range) {
+    getRangeClientRect: range =>{
       if (range.collapsed) {
         var sc = range.startContainer;
         var so = range.startOffset;
@@ -189,7 +179,7 @@ define((require)=>{
           var node = sc.childNodes[so] || sc;
           if (node.nodeType === document.TEXT_NODE) {
             tr.setStart(node, 0);
-            return this.getRangeClientRect(tr);
+            return Dom.getRangeClientRect(tr);
           } else {
             var dims = node.getBoundingClientRect();
           }
@@ -207,8 +197,8 @@ define((require)=>{
       }
     },
 
-    forEach(elm, querySelector, func) {
-      if (! elm) return;
+    forEach: (elm, querySelector, func)=>{
+      if (elm == null) return;
       const elms = elm.querySelectorAll(querySelector);
       const len = elms.length;
       for(let i = 0; i < len; ++i) func(elms[i]);
@@ -223,14 +213,14 @@ define((require)=>{
       return result;
     },
 
-    getClosest(elm, selector) {
-      if (elm && elm.nodeType !== document.ELEMENT_NODE)
+    getClosest: (elm, selector)=>{
+      if (elm !== null && elm.nodeType !== document.ELEMENT_NODE)
         elm = elm.parentNode;
       return elm && elm.closest(selector);
     },
 
-    getClosestCtx(elm, selector) {
-      return this.ctx(this.getClosest(elm, selector));
+    getClosestCtx: (elm, selector)=>{
+      return Dom.ctx(Dom.getClosest(elm, selector));
     },
 
     searchUpFor(elm, func, stopClass) {
