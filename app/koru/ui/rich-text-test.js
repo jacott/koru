@@ -260,33 +260,34 @@ define((require, exports, module)=>{
       var rt = sut.fromHtml(p);
       assert.equals(rt, ['code:text\nOne\ncode:text\nTwo\ncode:text', [CODE, 0, 1, CODE, 2, 1, CODE, 2, 0]]);
 
-      assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span>\n' +
+      assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span><br>' +
                     '  <span class="k">def</span> <span class="nf">foo</span><span class="mh">(</span><span class="nv">a</span>' +
-                    '<span class="mh">,</span> <span class="nv">b</span><span class="mh">)</span>\n' +
-                    '     <span class="nv">a</span> <span class="o">+</span> <span class="nv">b</span>\n' +
-                    '  <span class="k">end</span>\n' +
+                    '<span class="mh">,</span> <span class="nv">b</span><span class="mh">)</span><br>' +
+                    '     <span class="nv">a</span> <span class="o">+</span> <span class="nv">b</span><br>' +
+                    '  <span class="k">end</span><br>' +
                     '<span class="k">end</span>' +
                     '</pre>');
       assertConvert('<pre data-lang="ruby"><span class="k">Class</span> <span class="no">Abc</span></pre>');
-      assertConvert('<pre data-lang="text">stuff <span class="nd">var</span>\n\nfoo = <span class="s2">_bzr_</span>;\n</pre>');
+      assertConvert('<pre data-lang="text">stuff <span class="nd">var</span><br><br>foo = <span class="s2">_bzr_</span>;<br></pre>');
       assertConvert('<pre data-lang="text">One</pre>'+
                     '<pre data-lang="text"><div><div>Two</div>two</div></pre>'+
                     '<pre data-lang="text"></pre>',
 
                     '<pre data-lang="text">One</pre>'+
-                    '<pre data-lang="text">Two\ntwo</pre>'+
+                    '<pre data-lang="text">Two<br>two</pre>'+
                     '<pre data-lang="text"></pre>');
 
 
-      assertBothConvert('<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
-                        '<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>');
+      assertBothConvert(
+        '<pre data-lang="javascript"><span class="k">var</span> foo;\n\nfoo = <span class="s2">_bzr_</span>;</pre>',
+        '<pre data-lang="javascript"><span class="k">var</span> foo;<br><br>foo = <span class="s2">_bzr_</span>;</pre>');
       assertBothConvert('<div><pre><ol><li>hello</li><li>wo<b>rl</b>d</li></ol></pre></div>',
-                        '<pre data-lang="text">hello\nworld</pre>');
+                        '<pre data-lang="text">hello<br>world</pre>');
       assertBothConvert('<div><pre>hello<div><br></div>new<br>world<div>now</div></pre></div>',
-                        '<pre data-lang="text">hello\n\nnew\nworld\nnow</pre>');
+                        '<pre data-lang="text">hello<br><br>new<br>world<br>now</pre>');
       assertBothConvert('<div>Some <code>code in</code> here</div><pre data-lang="javascript">one\ntwo\nthree</pre>',
                         '<div>Some <span style="font-family: monospace;">code in</span> here</div>'+
-                        '<pre data-lang="javascript">one\ntwo\nthree</pre>');
+                        '<pre data-lang="javascript">one<br>two<br>three</pre>');
     });
 
     test("nested links",  ()=>{

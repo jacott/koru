@@ -756,11 +756,9 @@ define((require)=>{
     }
     let text = line.slice(startPos);
 
-    if (this.lidx !== state.lastLine)
-      text += "\n";
-    if (text )
+    if (text)
       state.result.appendChild(document.createTextNode(text));
-    else if (! state.result.firstChild)
+    if (! state.result.firstChild || this.lidx !== state.lastLine)
       state.result.appendChild(document.createElement('BR'));
   }
 
