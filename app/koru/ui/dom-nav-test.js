@@ -34,6 +34,17 @@ isClient && define((require, exports, module)=>{
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', "stop", {br: ''}]);
     });
 
+    test("clearTrailingBR", ()=>{
+      const div = Dom.h({});
+      div.appendChild(sut.clearTrailingBR(Dom.h(['one', {br: ''}, {br: ''}, '', ''])));
+      assert.equals(Dom.htmlToJson(div).div, ['one', {br: ''}]);
+      sut.clearTrailingBR(div);
+      assert.equals(Dom.htmlToJson(div).div, 'one');
+
+      sut.clearTrailingBR(div);
+      assert.equals(Dom.htmlToJson(div).div, 'one');
+    });
+
     test("newLine", ()=>{
       inputElm.appendChild(Dom.h(["text", "", ""]));
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', "", ""]);
@@ -137,7 +148,100 @@ isClient && define((require, exports, module)=>{
 
     });
 
+    test("startOfLine", ()=>{
+      const line2 = Dom.h({div: ['text', {b: 'bold'}, 'more text']});
+      const br = document.createElement('br'), br2 = document.createElement('br');
+      inputElm.appendChild(Dom.h([{div: "hello world"}, line2, br, 'before ', {i: ['a']}, ' break', br2]));
+      assert.dom(inputElm, input =>{
+        TH.setRange(input.lastChild, 0);
+        let range = sut.startOfLine();
+        assert.same(range.startContainer, br2.parentNode);
+        assert.same(range.startOffset, 7);
 
+        TH.setRange(br2.previousSibling, 3);
+        range = sut.startOfLine();
+        assert.same(range.startContainer, br.nextSibling);
+        assert.same(range.startOffset, 0);
+
+        TH.setRange(line2.lastChild, 6);
+        range = sut.startOfLine();
+        assert.same(range.startContainer, line2.firstChild);
+        assert.same(range.startOffset, 0);
+      });
+    }),
+
+    test("startOfNextLine", ()=>{
+      inputElm.innerHTML = 'abc<br>def';
+      let range;
+
+      TH.setRange(inputElm.firstChild, 1);
+
+      range = sut.startOfNextLine();
+      assert.same(range.startContainer.nodeValue, "def");
+      assert.same(range.startOffset, 0);
+    });
+
+    test("endOfLine", ()=>{
+      const line2 = Dom.h({div: ['text', {b: 'bold'}, 'more text']});
+      const br = document.createElement('br'), br2 = document.createElement('br');
+      inputElm.appendChild(Dom.h([{div: "hello world"}, line2, br, 'before ', {i: ['a']}, ' break', br2]));
+      assert.dom(inputElm, input =>{
+        let range;
+
+        TH.setRange(line2.lastChild, 6);
+        range = sut.endOfLine();
+        assert.same(range.startContainer.nodeValue, "more text");
+        assert.same(range.startOffset, 9);
+
+        TH.setRange(input.firstChild, 0);
+        range = sut.endOfLine();
+        assert.same(range.startContainer.nodeValue, "hello world");
+        assert.same(range.startOffset, 11);
+
+        TH.setRange(br.nextSibling, 3);
+        range = sut.endOfLine();
+        assert.same(range.startContainer, br2.parentNode);
+        assert.same(range.startOffset, Dom.nodeIndex(br2));
+
+        TH.setRange(line2.firstChild, 0);
+        range = sut.endOfLine();
+        assert.same(range.startContainer, line2.lastChild);
+        assert.same(range.startOffset, 9);
+      });
+    });
+
+    test("selectLine", ()=>{
+      const divLine = Dom.h({div: "hello world"});
+      const line2 = Dom.h({div: ['text', {b: 'bold'}, 'more text']});
+      const br = document.createElement('br'), br2 = document.createElement('br');
+      inputElm.appendChild(Dom.h([divLine, line2, br, 'before ', {i: ['a']}, ' break', br2]));
+      assert.dom(inputElm, input =>{
+        let range;
+        TH.setRange(divLine.firstChild, 5);
+        range = sut.selectLine();
+        assert.isFalse(range.collapsed);
+        assert.same(range.startContainer.nodeValue, "hello world");
+        assert.same(range.startOffset, 0);
+        assert.same(range.endContainer, line2.firstChild);
+        assert.same(range.endOffset, 0);
+
+        TH.setRange(line2.lastChild, 6);
+        range = sut.selectLine();
+        assert.same(range.endContainer, br.nextSibling);
+        assert.same(range.endOffset, 0);
+        assert.same(range.startContainer, line2.firstChild);
+        assert.same(range.startOffset, 0);
+        assert.isFalse(range.collapsed);
+
+        TH.setRange(br2.previousSibling, 3);
+        range = sut.selectLine();
+        assert.isFalse(range.collapsed);
+        assert.same(range.startContainer, br.nextSibling);
+        assert.same(range.startOffset, 0);
+        assert.same(range.endContainer, br2.parentNode);
+        assert.same(range.endOffset, Dom.nodeIndex(br2)+1);
+      });
+    });
 
     group("selectRange", ()=>{
       test("within text node ", ()=>{

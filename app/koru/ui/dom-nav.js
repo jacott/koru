@@ -185,6 +185,60 @@ define((require)=>{
     }
   };
 
+  const setEndOfElm = (range, elm)=>{
+    range.setStart(elm, elm.nodeType === TEXT_NODE ? elm.nodeValue.length : elm.childNodes.length);
+    normRange(range);
+    return range;
+  };
+
+  const startOfLine = (range=Dom.getRange())=>{
+    let elm = range.startContainer;
+    while(elm != null && isInlineNode(elm)) {
+      elm = elm.previousSibling || elm.parentNode;
+    }
+    if (elm == null) return null;
+    const ans = document.createRange();
+    if (elm.firstChild == null) {
+      if (elm.nextSibling == null) {
+        elm = elm.parentNode;
+        ans.setStart(elm, elm.childNodes.length);
+      } else {
+        ans.setStart(elm.nextSibling, 0);
+      }
+    } else {
+      ans.setStart(elm.firstChild, 0);
+    }
+    normRange(ans);
+    return ans;
+  };
+
+  const startOfNextLine = (range=Dom.getRange())=>{
+    let elm = range.startContainer;
+    while(elm != null && isInlineNode(elm)) {
+      elm = elm.nextSibling || elm.parentNode;
+    }
+    if (elm == null) return null;
+    const ns = elm.nextSibling;
+    if (ns !== null && ns.tagName === 'BR') elm = ns;
+    const ans = document.createRange();
+    ans.setStart(elm.parentNode, Dom.nodeIndex(elm)+1);
+    normRange(ans);
+    return ans;
+  };
+
+  const endOfLine = (range=Dom.getRange())=>{
+    let elm = range.startContainer;
+    while(elm != null && isInlineNode(elm)) {
+      elm = elm.nextSibling || elm.parentNode;
+    }
+    if (elm == null) return null;
+    const ans = document.createRange();
+    if (elm.lastChild != null) {
+      elm = elm.lastChild;
+    }
+    setEndOfElm(ans, elm);
+    return ans;
+  };
 
   return {
     INLINE_TAGS,
@@ -232,6 +286,32 @@ define((require)=>{
     },
 
     findBeforeBlock,
+
+    startOfLine,
+    startOfNextLine,
+
+    endOfLine,
+
+    setEndOfElm,
+
+    clearTrailingBR(frag) {
+      let last = frag.lastChild;
+      while (last !== null && last.nodeType === TEXT_NODE && last.nodeValue === '') {
+        const t = last;
+        last = last.previousSibling;
+        t.remove();
+      }
+      if (last !== null && last.tagName === 'BR')
+        last.remove();
+
+      return frag;
+    },
+
+    selectLine: (range=Dom.getRange())=>{
+      const sr = startOfLine(range), er = startOfNextLine(range);
+      sr.setEnd(er.startContainer, er.startOffset);
+      return sr;
+    },
 
     selectRange: (top, type, amount)=>{
       const range = Dom.getRange();
