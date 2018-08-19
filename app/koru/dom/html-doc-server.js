@@ -5,6 +5,8 @@ define((require, exports, module)=>{
   const util            = require('koru/util');
   const uColor          = require('koru/util-color');
 
+  const {inspect$} = require('koru/symbols');
+
   const CssSelectorParser = requirejs.nodeRequire('css-selector-parser').CssSelectorParser;
   const htmlparser        = requirejs.nodeRequire('htmlparser2');
 
@@ -12,9 +14,10 @@ define((require, exports, module)=>{
   const {SVGNS} = Dom;
   const {escapeHTML, unescapeHTML} = htmlEncode;
 
-  const style$ = Symbol(), cssText$ = Symbol(), pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
-        needBuild$ = Symbol(), attributes$ = Symbol(),
-        doc$ = Symbol();
+  const style$ = Symbol(),
+        prev$ = Symbol(), next$ = Symbol(), cssText$ = Symbol(),
+        pos$ = Symbol(), styles$ = Symbol(), styleArray$ = Symbol(),
+        needBuild$ = Symbol(), attributes$ = Symbol(), doc$ = Symbol();
 
   const cssParser = new CssSelectorParser();
 
@@ -35,7 +38,18 @@ define((require, exports, module)=>{
     return doc;
   }});
 
-  const copyArray = (from, to)=>{util.forEach(from, elm => to.push(elm.cloneNode(true)))};
+  const cloneChildren = (fromNode, toNode)=>{
+    const from = fromNode.childNodes, to = toNode.childNodes;
+    let prev = null;
+    util.forEach(from, elm => {
+      to.push(elm = elm.cloneNode(true));
+      elm[prev$] = prev;
+      elm.parentNode = toNode;
+      if (prev !== null) prev[next$] = elm;
+      prev = elm;
+    });
+    if (prev !== null) prev[next$] = null;
+  };
 
   const ELEMENT_NODE = 1;
   const TEXT_NODE = 3;
@@ -45,18 +59,66 @@ define((require, exports, module)=>{
 
   const NOCLOSE = util.toMap("BR HR INPUT LINK META".split(' '));
 
+  const detachNode = node =>{
+    if (node.parentNode === null)
+      return;
+    node.parentNode = null;
+    const p = node[prev$], n = node[next$];
+    if (p !== null) {
+      p[next$] = n;
+      node[prev$] = null;
+    }
+
+    if (n !== null) {
+      n[prev$] = p;
+      node[next$] = null;
+    }
+  };
+
+  const attachNode = (parent, index, node)=>{
+    node.parentNode = parent;
+    const {childNodes} = parent, len = childNodes.length;
+    const old = childNodes[index];
+
+    childNodes[index] = node;
+    old == null || detachNode(old);
+
+    const p = node[prev$] = (index != 0 && childNodes[index-1]) || null;
+    if (p !== null && p.parentNode !== null) p[next$] = node;
+
+    const n = node[next$] = (index+1 != len && childNodes[index+1]) || null;
+    if (n !== null && n.parentNode !== null) n[prev$] = node;
+  };
+
   const insertNodes = (from, toNode, pos)=>{
     const to = toNode.childNodes;
     let mlen = to.length - pos;
 
     let tlen = to.length += from.length;
+
     while (--mlen >= 0)
       to[--tlen] = to[pos+mlen];
 
-    for(let i = pos+from.length-1; i >= pos ; --i) {
+
+    let i = pos+from.length-1;
+    if (to.length !== i+1) {
+      if (i-pos == -1)
+        to[i+1][prev$] = null;
+      else {
+        const p = from[i-pos], n = p[next$] = to[i+1];
+        n[prev$] = p;
+      }
+    }
+
+    for(; i >= pos ; --i) {
       const fnode = from[i-pos];
-      fnode.parentNode = toNode;
       to[i] = fnode;
+      fnode.parentNode = toNode;
+    }
+
+    if (i !== -1) {
+      const p = to[i], n = p[next$] = to[i+1];
+      n[prev$] = p;
     }
 
     from.length = 0;
@@ -65,9 +127,12 @@ define((require, exports, module)=>{
   class Element {
     constructor(nodeType) {
       this.nodeType = nodeType;
-      this.parentNode = null;
+      this.parentNode = this[next$] = this[prev$] = null;
       this.childNodes = [];
     }
+
+    get previousSibling() {return this[prev$]}
+    get nextSibling() {return this[next$]}
 
     remove() {
       if (this.parentNode != null)
@@ -77,30 +142,32 @@ define((require, exports, module)=>{
     removeChild(node) {
       const nodes = this.childNodes;
 
-      for(let i = 0; i < nodes.length; ++i) {
+      for(let i = nodes.length - 1; i >= 0; --i) {
         if (nodes[i] === node) {
-          node.parentNode = null;
+          detachNode(node);
           nodes.splice(i, 1);
           return;
         }
       }
+
+      throw new Error("'removeNode' failed; node not related to parent");
     }
 
     replaceChild(newNode, oldNode) {
       const nodes = this.childNodes;
 
-      for(let i = 0; i < nodes.length; ++i) {
+      for(let i = nodes.length-1; i >= 0; -- i) {
         if (nodes[i] === oldNode) {
-          oldNode.parentNode = null;
+          detachNode(oldNode);
           if (newNode.nodeType === DOCUMENT_FRAGMENT_NODE) {
             const cns = newNode.childNodes;
-            nodes[i] = cns.pop();
+            detachNode(newNode = cns.pop());
+            attachNode(this, i, newNode);
             insertNodes(cns, this, i);
           } else {
             if (newNode.parentNode != null)
               newNode.parentNode.removeChild(newNode);
-            nodes[i] = newNode;
-            newNode.parentNode = this;
+            attachNode(this, i, newNode);
           }
           return oldNode;
         }
@@ -123,7 +190,8 @@ define((require, exports, module)=>{
           } else {
 
             node.parentNode = this;
-            nodes.splice(i, 0, node);
+            nodes.splice(i, 0, undefined);
+            attachNode(this, i, node);
           }
           return node;
         }
@@ -138,8 +206,14 @@ define((require, exports, module)=>{
         if (node.parentNode != null)
           node.parentNode.removeChild(node);
 
+        const {childNodes} = this, cl = childNodes.length;
+
         node.parentNode = this;
-        this.childNodes.push(node);
+        node[next$] = null;
+        const prev = node[prev$] = cl === 0 ? null : childNodes[cl-1];
+        if (prev !== null)
+          prev[next$] = node;
+        childNodes.push(node);
       }
       return node;
     }
@@ -273,7 +347,7 @@ define((require, exports, module)=>{
     cloneNode(deep) {
       const copy = new DocumentFragment();
 
-      deep && copyArray(this.childNodes, copy.childNodes);
+      deep && cloneChildren(this, copy);
       return copy;
     }
   }
@@ -296,7 +370,7 @@ define((require, exports, module)=>{
     cloneNode(deep) {
       const copy = new this.constructor(this.tagName);
       copy[attributes$] = util.deepCopy(this[attributes$]);
-      deep && copyArray(this.childNodes, copy.childNodes);
+      deep && cloneChildren(this, copy);
       return copy;
     }
     set id(value) {this.setAttribute('id', value)}

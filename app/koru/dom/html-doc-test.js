@@ -6,7 +6,43 @@ define((require, exports, module)=>{
   const TH              = require('koru/test-helper');
   const util            = require('koru/util');
 
+  const {inspect$} = require('koru/symbols');
+
   const sut = require('./html-doc');
+
+  const assertConsistent = (node, index)=>{
+    const {childNodes, parentNode} = node, len = childNodes.length;
+
+    if (parentNode === null) {
+      assert.same(node.previousSibling, null);
+      assert.same(node.nextSibling, null);
+    }
+
+    if (node.previousSibling !== null) {
+      assert(parentNode);
+      assert.same(node.previousSibling.nextSibling, node);
+      assert.same(node.previousSibling.parentNode, parentNode);
+      index === undefined || assert.same(node.previousSibling, parentNode.childNodes[index-1]);
+    }
+
+    if (node.nextSibling !== null) {
+      assert(parentNode);
+      assert.same(node.nextSibling.previousSibling, node);
+      assert.same(node.nextSibling.parentNode, parentNode);
+      index === undefined ||
+        assert.same(node.nextSibling, parentNode.childNodes[index+1]);
+    }
+
+    let c = node.firstChild, i = 0;
+    for(; i < len; ++i, c = c.nextSibling) {
+      assert.same(childNodes[i], c);
+      assert(c != null, `invalid child in ${node.tagName}: ${util.inspect(node)} at ${i}`);
+      assertConsistent(c, i);
+    }
+
+    assert.same(i, len);
+  };
+
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     afterEach(()=>{
@@ -26,6 +62,8 @@ define((require, exports, module)=>{
                {div: {class: 'foo bar-foo'}}]}
       ]});
 
+      assertConsistent(html);
+
       assert.equals(html.getElementsByClassName('foo').length, 2);
       assert.equals(html.getElementsByClassName('bar').length, 1);
       assert.same(html.getElementsByClassName('bar')[0].className, 'foo bar');
@@ -36,15 +74,23 @@ define((require, exports, module)=>{
         {class: 'foo'},
         {class: 'old-node'},
       ]});
-      const oldParent = Dom.h({div: {class: 'new-node'}});
+      assertConsistent(parent);
+      const oldParent = Dom.h({div: {id: 'node1'}});
       const newNode = oldParent.firstChild;
 
-      oldParent.appendChild(Dom.h({id: 'foo'}));
+
+      assert.same(oldParent.firstChild.id, 'node1');
+      assertConsistent(parent);
+      assertConsistent(oldParent);
+
+      oldParent.appendChild(Dom.h({id: 'node2'}));
+
+      assertConsistent(parent);
 
       assert.same(
         parent.appendChild(newNode),
         newNode);
-      assert.equals(util.map(oldParent.childNodes, n => n.outerHTML), ['<div id=\"foo\"></div>']);
+      assert.equals(util.map(oldParent.childNodes, n => n.outerHTML), ['<div id=\"node2\"></div>']);
 
       assert.same(newNode.parentNode, parent);
       assert.same(parent.lastChild, newNode);
@@ -53,8 +99,10 @@ define((require, exports, module)=>{
     test("remove", ()=>{
       const n = Dom.h({div: [{id: 'a'}, {id: 'b'}]});
 
-      n.lastChild.remove();
+      const lc = n.lastChild;
+      lc.remove();
       assert.same(n.lastChild.id, 'a');
+      assertConsistent(n);
     });
 
     test("replaceChild", ()=>{
@@ -64,18 +112,22 @@ define((require, exports, module)=>{
        * See [Node.replaceChild](https://developer.mozilla.org/en-US/docs/Web/API/Node/replaceChild)
        **/
       const parent = Dom.h({div: [
-        {class: 'foo'},
-        {class: 'old-node'},
+        {id: 'd1'},
+        {id: 'd2'},
+        {id: 'd3'},
       ]});
-      const oldParent = Dom.h({div: {class: 'new-node'}});
-      const newNode = oldParent.firstChild;
+      const oldParent = Dom.h({div: [{id: 'o1'}, {id: 'o2'}, {id: 'o3'}]});
+      const newNode = oldParent.childNodes[1];
 
-      const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
-      assert.className(oldNode, 'old-node');
-      refute(oldNode.parentNode);
+      const oldNode = parent.replaceChild(newNode, parent.childNodes[1]);
+      assert.same(oldNode.id, 'd2');
+      assert.same(oldNode.parentNode, null);
       assert.same(newNode.parentNode, parent);
-      assert.same(parent.lastChild, newNode);
-      assert.same(oldParent.childNodes.length, 0);
+      assert.same(parent.childNodes[1], newNode);
+      assert.same(oldParent.childNodes.length, 2);
+      assertConsistent(parent);
+      assertConsistent(oldParent);
+      assertConsistent(oldNode);
     });
 
     test("fragment to replaceChild", ()=>{
@@ -89,6 +141,8 @@ define((require, exports, module)=>{
       const oldNode = parent.replaceChild(newNode, parent.getElementsByClassName('old-node')[0]);
       assert.className(oldNode, 'old-node');
       refute(oldNode.parentNode);
+      assertConsistent(oldNode);
+      assertConsistent(parent);
       assert.equals(util.map(parent.childNodes, i => i.textContent).join(''),
                     'fxyzbar');
     });
@@ -106,14 +160,17 @@ define((require, exports, module)=>{
     });
 
     test("doc fragment cloneNode", ()=>{
-      const df1 =Dom.h(['a', 'b', 'c']);
+       const df1 =Dom.h(['a', 'b', 'c']);
+      assertConsistent(df1);
 
       const df2 = df1.cloneNode();
       assert.same(df2.childNodes.length, 0);
+      assertConsistent(df2);
 
       const df3 = df1.cloneNode(true);
       assert.equals(util.map(df3.childNodes, i => i.textContent), ['a', 'b', 'c']);
       refute.same(df1.firstChild, df3.firstChild);
+      assertConsistent(df3);
     });
 
     test("textNode is text", ()=>{
@@ -141,6 +198,7 @@ define((require, exports, module)=>{
       foo.setAttribute('alt', 'baz');
       foo.setAttribute('bold', 'bold');
       assert.same(foo.getAttribute('alt'), 'baz');
+      assertConsistent(foo);
 
       elm.appendChild(foo);
       assert.same(elm.lastChild, foo);
@@ -223,7 +281,9 @@ define((require, exports, module)=>{
       top.appendChild(b);
       const i = document.createElement('i');
       top.insertBefore(i, b);
+      assertConsistent(top);
       top.insertBefore(i, b);
+      assertConsistent(top);
 
       const frag = document.createDocumentFragment();
       frag.appendChild(document.createElement('x1'));
@@ -233,10 +293,11 @@ define((require, exports, module)=>{
       frag.appendChild(document.createElement('x5'));
 
       top.insertBefore(frag, b);
+      assert.same(frag.childNodes.length, 0);
+      top.insertBefore(frag, b);
 
+      assertConsistent(top);
       assert.same(top.childNodes[2].parentNode, top);
-
-
       assert.sameHtml(util.map(top.childNodes, n=>n.tagName).join(''), 'IX1X2X3X4X5B');
     });
 
