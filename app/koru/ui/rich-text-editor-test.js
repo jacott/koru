@@ -11,6 +11,7 @@ isClient && define((require, exports, module)=>{
   const TH              = require('./test-helper');
 
   const {stub, spy, onEnd, match: m} = TH;
+  const htj = Dom.htmlToJson;
 
   const sut               = require('./rich-text-editor');
 
@@ -72,17 +73,17 @@ isClient && define((require, exports, module)=>{
 
       ctx.template.insert(Dom.h({i: "22"}));
       undo.recordNow();
-      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, {i: "22"}, 'hello']);
+      assert.equals(htj(input).div, [{b: "11"}, {i: "22"}, 'hello']);
 
       TH.keydown(input, 'Z', {ctrlKey: true});
       TH.keydown(input, 'Z', {ctrlKey: true});
-      assert.equals(Dom.htmlToJson(input).div, ['hello']);
+      assert.equals(htj(input).div, ['hello']);
 
       TH.keydown(input, 'Z', {ctrlKey: true, shiftKey: true});
-      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, 'hello']);
+      assert.equals(htj(input).div, [{b: "11"}, 'hello']);
 
       TH.keydown(input, 'Y', {ctrlKey: true});
-      assert.equals(Dom.htmlToJson(input).div, [{b: "11"}, {i: "22"}, 'hello']);
+      assert.equals(htj(input).div, [{b: "11"}, {i: "22"}, 'hello']);
     });
 
     test("get/set value", ()=>{
@@ -158,10 +159,11 @@ isClient && define((require, exports, module)=>{
     });
 
     group("pre", ()=>{
-      let inputElm;
+      let inputElm, undo;
       beforeEach(()=>{
         document.body.appendChild(tpl.$autoRender({content: ''}));
         inputElm = Dom('.input');
+        undo = Dom.ctx(inputElm).undo;
         v.selectCode = ()=>{
           const node = inputElm.querySelector('pre').firstChild;
           const range = TH.setRange(node, 0);
@@ -204,6 +206,169 @@ isClient && define((require, exports, module)=>{
         });
 
         assert.dom('pre[data-lang="ruby"]');
+      });
+
+      group("exit", ()=>{
+        const preContent = {
+          'data-lang': 'Rust',
+          pre: ['one', {br: ''}, 'two', {b: '2'}, {br: ''}, 'three']};
+
+        test("empty", ()=>{
+          const pre = Dom.h({pre: [{br: ''}, '']});
+          inputElm.appendChild(pre);
+          TH.setRange(pre, 0);
+          focusin(inputElm);
+
+          undo.recordNow();
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [{br: ''}, '']);
+        });
+
+        test("selection begining", ()=>{
+          const pre = Dom.h(preContent);
+
+          inputElm.appendChild(pre);
+          TH.setRange(pre.firstChild, 0, pre.childNodes[2], 2);
+          focusin(inputElm);
+
+          undo.recordNow();
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [
+            'one', {br: ''}, 'tw',
+            {"data-lang": 'Rust', pre: ['o', {b: '2'}, {br: ''}, 'three']},
+          ]);
+
+          assert.rangeEquals(undefined, inputElm.childNodes[0], 0, inputElm.childNodes[2], 2);
+        });
+
+        test("selection middle", ()=>{
+          const pre = Dom.h(preContent);
+
+          inputElm.appendChild(pre);
+          TH.setRange(pre.childNodes[2], 2, pre.lastChild, 3);
+          focusin(inputElm);
+
+          undo.recordNow();
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [
+            {"data-lang": 'Rust', pre: ['one', {br: ''}, 'tw']},
+            'o', {b: '2'}, {br: ''}, 'thr',
+            {"data-lang": 'Rust', pre: ['', 'ee']},
+          ]);
+
+          assert.rangeEquals(undefined, inputElm.childNodes[1], 0, inputElm.childNodes[4], 3);
+        });
+
+        test("first line", ()=>{
+          const pre = Dom.h(preContent);
+
+          inputElm.appendChild(pre);
+          TH.setRange(pre.firstChild, 1);
+          focusin(inputElm);
+
+          undo.recordNow();
+
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [
+            'one', {br: ''}, '',
+            {"data-lang": 'Rust', pre: [
+              'two', {b: '2'}, {br: ''},
+              'three']},
+          ]);
+
+          undo.undo();
+          assert.equals(htj(inputElm).div, preContent);
+        });
+
+        test("empty line", ()=>{
+          const ctx = Dom.ctx(inputElm);
+          const pre = Dom.h(preContent);
+          const emptyLine = Dom.h({br: ''});
+          pre.insertBefore(emptyLine, pre.childNodes[2]);
+          inputElm.appendChild(pre);
+          TH.setRange(pre, 2);
+          focusin(inputElm);
+          assert.same(ctx.mode.type, 'code');
+
+          const begin = htj(inputElm);
+          undo.recordNow();
+
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          const ans = [
+            {"data-lang": 'Rust', pre: ['one', {br: ''}]},
+            {br: ''}, '',
+            {"data-lang": 'Rust', pre: ['two', {b: '2'}, {br: ''}, 'three']},
+          ];
+          assert.equals(htj(inputElm).div, ans);
+
+          assert.rangeEquals(undefined, inputElm, 1, inputElm.childNodes[1], 0);
+
+          undo.undo();
+          assert.equals(htj(inputElm), begin);
+
+          undo.redo();
+          assert.equals(htj(inputElm).div, ans);
+        });
+
+        test("middle line", ()=>{
+          const ctx = Dom.ctx(inputElm);
+          const pre = Dom.h(preContent);
+          inputElm.appendChild(pre);
+          TH.setRange(pre.childNodes[2], 2);
+          focusin(inputElm);
+
+          undo.recordNow();
+
+          const cmStub = stub();
+          onEnd(ctx.caretMoved.onChange(cmStub));
+
+          assert.same(ctx.mode.type, 'code');
+
+          undo.recordNow();
+
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.same(ctx.mode.type, 'standard');
+          assert.calledWith(cmStub, undefined);
+
+          assert.equals(htj(inputElm).div, [
+            {"data-lang": 'Rust', pre: ['one', {br: ''}]},
+            'two', {b: '2'}, {br: ''}, '',
+            {"data-lang": 'Rust', pre: ['three']},
+          ]);
+
+          TH.keydown(pre, 'Z', {ctrlKey: true});
+          assert.equals(htj(inputElm).div, preContent);
+
+          assert.same(ctx.mode.type, 'code');
+          assert.calledTwice(cmStub);
+        });
+
+        test("last line", ()=>{
+          const pre = Dom.h(preContent);
+          inputElm.appendChild(pre);
+
+          TH.setRange(pre.lastChild, 1);
+          focusin(inputElm);
+
+          undo.recordNow();
+
+          TH.keydown(pre, 'À', {ctrlKey: true});
+
+          assert.equals(htj(inputElm).div, [
+            {"data-lang": 'Rust', pre: [
+              'one', {br: ''}, 'two', {b: '2'}, {br: ''}]},
+            'three',
+          ]);
+
+          TH.keydown(pre, 'Z', {ctrlKey: true});
+          assert.equals(htj(inputElm).div, preContent);
+        });
       });
 
       test("syntax highlight", ()=>{
@@ -266,13 +431,19 @@ isClient && define((require, exports, module)=>{
           TH.keyup(this, 39);
           TH.keydown(this, 'À', {ctrlKey: true});
           sut.insert(' foo');
-          assert.dom('pre[data-lang="text"]', 'hello\nworld foo');
+          assert.equals(htj(Dom('pre[data-lang="text"]')).pre, [
+            'hello', {br: ''}, 'world foo'
+          ]);
           TH.keydown(this, 13);
           TH.keyup(this, 13);
           assert.same(sut.$ctx(this).mode.type, 'code');
           DomNav.insertNode(Dom.h("bar"));
           assert.dom(RichText.fromToHtml(this.parentNode.value), function () {
-            assert.dom('pre[data-lang="text"]', 'hello\nworld foo\nbar');
+            assert.dom('pre[data-lang="text"]', pre =>{
+              assert.equals(htj(pre).pre, [
+                'hello', {br: ''}, 'world foo', {br: ''}, 'bar', {br: ''}
+              ]);
+            });
           });
           this.insertBefore(Dom.h({div: "outside"}), this.firstChild);
           TH.setRange(this.firstChild.firstChild, 3);
@@ -282,7 +453,7 @@ isClient && define((require, exports, module)=>{
         });
       });
 
-      test("pointerup on/off", ()=>{
+      test("selectionchange", ()=>{
         assert.dom('.input', function () {
           this.focus();
           assert.same(sut.$ctx(this).mode.type, 'standard');
@@ -291,7 +462,9 @@ isClient && define((require, exports, module)=>{
           focusin(this);
           assert.same(sut.$ctx(this).mode.type, 'code');
           TH.setRange(this.firstChild, 0);
+          const saveCaret = spy(undo, 'saveCaret');
           TH.trigger(document, 'selectionchange');
+          assert.calledWith(saveCaret, m.field('startContainer', this.firstChild));
           assert.same(sut.$ctx(this).mode.type, 'standard');
         });
       });
@@ -304,14 +477,14 @@ isClient && define((require, exports, module)=>{
         TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
         const pre = input.firstChild;
-        assert.equals(Dom.htmlToJson(pre).pre, {br: ''});
+        assert.equals(htj(pre).pre, {br: ''});
         sut.insert(' foo');
-        assert.equals(Dom.htmlToJson(pre).pre, [' foo']);
+        assert.equals(htj(pre).pre, [' foo']);
         TH.keydown(input, 13);
         TH.keyup(input, 13);
-        assert.equals(Dom.htmlToJson(pre).pre, [' foo', {br: ''}, {br: ''}]);
+        assert.equals(htj(pre).pre, [' foo', {br: ''}, {br: ''}]);
         DomNav.insertNode(Dom.h('bar'));
-        assert.equals(Dom.htmlToJson(pre).pre, [' foo', {br: ''}, 'bar', {br: ''}]);
+        assert.equals(htj(pre).pre, [' foo', {br: ''}, 'bar', {br: ''}]);
       });
 
       test("create empty", ()=>{
@@ -323,7 +496,7 @@ isClient && define((require, exports, module)=>{
 
         TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
-        assert.equals(Dom.htmlToJson(input).div, [
+        assert.equals(htj(input).div, [
           '1',
           {"data-lang": 'text', pre: {br: ''}},
           '2']);
@@ -336,7 +509,7 @@ isClient && define((require, exports, module)=>{
 
         TH.keydown(input, 13);
         TH.keyup(input, 13);
-        assert.equals(Dom.htmlToJson(pre).pre, [{br: ''}, {br: ''}]);
+        assert.equals(htj(pre).pre, [{br: ''}, {br: ''}]);
       });
     });
 
@@ -614,6 +787,10 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(keyMap, m.any, 'ignoreFocus');
     });
 
+    test("//drag", ()=>{
+      // should work like paste
+    });
+
     group("paste", ()=>{
       beforeEach(()=>{
         v.ec = stub(document, 'execCommand');
@@ -741,11 +918,11 @@ isClient && define((require, exports, module)=>{
             TH.setRange(pre.firstChild, 6);
             focusin(input);
             v.paste(v.event);
-            assert.equals(Dom.htmlToJson(pre).pre, ['paste ', 'bold world', 'before']);
+            assert.equals(htj(pre).pre, ['paste ', 'bold world', 'before']);
             sut.$ctx(input).mode.paste('<b>bold</b>\nplain<br>newline');
-            assert.equals(Dom.htmlToJson(pre).pre, [
+            assert.equals(htj(pre).pre, [
               'paste ', 'bold world', '',
-              'bold\n', 'plain\n', 'newline',
+              'bold', {br: ''}, 'plain', {br: ''}, 'newline',
               'before']);
           });
         });

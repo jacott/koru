@@ -370,6 +370,18 @@ define((require, exports, module)=>{
     SelectMenu.popup(event.target, options);
   };
 
+  const insertFragContents = (frag, pn, before, notTag)=>{
+    if (frag.length != 0) {
+      const from = frag.firstChild;
+      if (from === null) return;
+      if (from.tagName === notTag) {
+        while(from.firstChild) pn.insertBefore(from.firstChild, before);
+      } else {
+        pn.insertBefore(frag, before);
+      }
+    }
+  };
+
   const codeActions = commandify({
     language: event =>{
       chooseFromMenu(event, {
@@ -409,6 +421,69 @@ define((require, exports, module)=>{
     undo,
     redo,
     newLine,
+    code: (event)=>{
+      const ctx = Tpl.$ctx(event.target);
+      const pre = Dom.getClosest(ctx.lastElm, 'pre');
+      const pn = pre.parentNode;
+      const range = Dom.getRange();
+
+      const isLine = range.collapsed;
+
+      let sc = isLine ? DomNav.rangeStartNode(range) || range.startContainer : null,
+          so = isLine && sc.nodeType === TEXT_NODE ? range.startOffset : 0,
+          ec = null;
+
+      const line = isLine ? DomNav.selectLine(range) : range;
+
+      if (isLine && line.startContainer.nodeType === TEXT_NODE)
+        line.setStart(line.startContainer.parentNode, Dom.nodeIndex(line.startContainer));
+
+      const pre2Range = line.cloneRange();
+      pre2Range.setEnd(pre, pre.childNodes.length);
+
+      const frag = line.extractContents();
+      if (! isLine) {
+        sc = frag.firstChild;
+        ec = frag.lastChild;
+      }
+
+      DomNav.clearEmptyText(pre.firstChild);
+
+      if (pre.firstChild === null) {
+        insertFragContents(frag, pn, pre, 'PRE');
+        pre.remove();
+      } else {
+        const pre2 = pre.cloneNode(), before = pre.nextSibling;
+
+        insertFragContents(frag, pn, before, 'PRE');
+
+        const pre2Frag = DomNav.clearTrailingBR(pre2Range.extractContents());
+        if (pre2Frag.firstChild !== null) {
+          insertFragContents(pre2Frag, pre2, null, 'PRE');
+          pn.insertBefore(pre2, before);
+        }
+
+        if (pre.firstChild === null)
+          pre.remove();
+      }
+
+      if (isLine) {
+        if (pn.contains(sc)) {
+          range.setStart(sc, so);
+          range.collapse(true);
+          normRange(range);
+          Dom.setRange(range);
+        }
+      } else {
+        range.setStart(sc, 0);
+        range.setEnd(ec, ec.nodeType === TEXT_NODE ? ec.nodeValue.length : ec.childNodes.length);
+        normRange(range);
+        Dom.setRange(range);
+      }
+
+      ctx.mode = standardMode;
+      notify(ctx, 'force');
+    },
   });
 
   const codeKeyMap = KeyMap(mapActions({
@@ -420,6 +495,7 @@ define((require, exports, module)=>{
     undo: ctrl+'Z',
     redo: ctrl+shift+'Z',
     newLine: "\x0d",
+    code: ctrl+'À',
   }, codeActions), {mapCtrlToMeta: true});
   codeKeyMap.addKeys({redo: [ctrl+'Y', actions.redo]});
 
@@ -588,8 +664,10 @@ define((require, exports, module)=>{
       const undo = ctx.undo = new DomUndo(ctx.inputElm);
       ctx.selectionchange = ()=>{
         const range = Dom.getRange();
-        range != null && ctx.inputElm.contains(range.startContainer) &&
+        if (range != null && ctx.inputElm.contains(range.startContainer)) {
           setMode(ctx, range);
+          undo.saveCaret(range);
+        }
       };
     },
 

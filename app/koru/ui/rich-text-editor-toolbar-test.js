@@ -58,7 +58,11 @@ isClient && define((require, exports, module)=>{
       test("data-mode", ()=>{
         assert.dom('.rtToolbar[data-mode=standard]');
         v.selectCode();
-        assert.dom('.rtToolbar[data-mode=code]');
+        assert.dom('.rtToolbar[data-mode=code]>.code', elm =>{
+          assert.dom('button[name=language]');
+          assert.dom('button[name=syntaxHighlight]');
+          assert.dom('button[name=code].on');
+        });
       });
 
       test("set language", ()=>{
@@ -98,17 +102,15 @@ isClient && define((require, exports, module)=>{
     });
 
     test("undo/redo", ()=>{
-      const inputElm = Dom('#Foo.richTextEditor>.rtToolbar+.input'),
-            ctx = Dom.ctx(inputElm);
+      const rte = Dom('#Foo.richTextEditor'), ctx = Dom.myCtx(rte);
+      const inputElm = rte.querySelector('.input');
       focusin(inputElm);
 
-      assert.dom('#Foo.richTextEditor', ()=>{
+      assert.dom(rte, ()=>{
         assert.dom('>.rtToolbar:first-child>span', span =>{
           assert.dom('button[name=undo]', '', e =>{v.undo = e});
           assert.dom('button[name=redo]', '', e =>{v.redo = e});
         });
-
-        assert.dom('button[name=bold]', '', e =>{v.bold = e});
       });
 
       const bElm = Dom.h({b: 'bold'});
@@ -116,22 +118,25 @@ isClient && define((require, exports, module)=>{
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
 
+      const cmStub = stub();
+      onEnd(ctx.caretMoved.onChange(cmStub));
+
       inputElm.appendChild(bElm);
       ctx.undo.recordNow();
       TH.setRange(bElm.firstChild, 2);
       focusin(inputElm);
       assert.same(v.undo.getAttribute('disabled'), null);
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
-      assert.className(v.bold, 'on');
+      assert.calledWith(cmStub, undefined); cmStub.reset();
 
       TH.pointerDownUp(v.undo);
-      focusin(inputElm);
+      assert.calledWith(cmStub, undefined); cmStub.reset();
+      TH.trigger(document, 'selectionchange');
       assert.same(v.undo.getAttribute('disabled'), 'disabled');
       assert.same(v.redo.getAttribute('disabled'), null);
-      refute.className(v.bold, 'on');
 
       TH.pointerDownUp(v.redo);
-      focusin(inputElm);
+      TH.trigger(document, 'selectionchange');
       assert.same(v.undo.getAttribute('disabled'), null);
       assert.same(v.redo.getAttribute('disabled'), 'disabled');
 

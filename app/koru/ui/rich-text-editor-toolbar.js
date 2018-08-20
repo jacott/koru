@@ -74,7 +74,10 @@ define((require, exports, module)=>{
 
     link() {Dom.setClass('on', getTag('A', this))},
 
-    code() {Dom.setClass('on', getFont(this) === 'monospace')},
+    code() {
+      const mode = $.ctx.parentCtx.mode;
+      Dom.setClass('on', mode.type === 'code' || getFont(this) === 'monospace');
+    },
 
     font() {
       let code = getFont(this);
@@ -114,7 +117,7 @@ define((require, exports, module)=>{
     },
 
     language() {
-      const mode = $.ctx.parentCtx.mode;
+      const {mode} = $.ctx.parentCtx;
       if (mode.type !== 'code') return;
       const language = mode.language || 'text';
 

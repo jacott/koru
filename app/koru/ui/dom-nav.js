@@ -140,6 +140,18 @@ define((require)=>{
 
   const isBlockNode = node => node.nodeType === ELEMENT_NODE && ! INLINE_TAGS[node.tagName];
 
+  const rangeStartNode = (range)=>{
+    const {startContainer: elm, startOffset} = range;
+    if (elm === null || elm.nodeType !== ELEMENT_NODE)
+      return elm;
+
+    const {childNodes} = elm;
+    return startOffset == childNodes.length
+      ? (startOffset == 0 ? elm : undefined)
+    :  childNodes[startOffset];
+  };
+
+
   const findBeforeBlock = (top, node)=>{
     let last = node;
     node = node.parentNode;
@@ -192,11 +204,17 @@ define((require)=>{
   };
 
   const startOfLine = (range=Dom.getRange())=>{
-    let elm = range.startContainer;
-    while(elm != null && isInlineNode(elm)) {
+    let elm = rangeStartNode(range);
+    if (elm === undefined) elm = range.startContainer.lastChild;
+    if (elm === null) return null;
+
+    if (elm !== null && elm.tagName === 'BR')
+      elm = elm.previousSibling || elm.parentNode;
+
+    while(elm !== null && isInlineNode(elm)) {
       elm = elm.previousSibling || elm.parentNode;
     }
-    if (elm == null) return null;
+    if (elm === null) return null;
     const ans = document.createRange();
     if (elm.firstChild == null) {
       if (elm.nextSibling == null) {
@@ -212,26 +230,38 @@ define((require)=>{
     return ans;
   };
 
-  const startOfNextLine = (range=Dom.getRange())=>{
-    let elm = range.startContainer;
-    while(elm != null && isInlineNode(elm)) {
-      elm = elm.nextSibling || elm.parentNode;
+  const lastElmInLine = (range)=>{
+    let elm = rangeStartNode(range);
+    if (elm === null) return null;
+    if (elm === undefined)
+      elm = range.startContainer;
+    else {
+      while(elm != null && isInlineNode(elm)) {
+        elm = elm.nextSibling || elm.parentNode;
+      }
     }
-    if (elm == null) return null;
+    return elm;
+  };
+
+
+  const startOfNextLine = (range=Dom.getRange())=>{
+    let elm = lastElmInLine(range);
+    if (elm === null) return null;
+
     const ns = elm.nextSibling;
-    if (ns !== null && ns.tagName === 'BR') elm = ns;
+
     const ans = document.createRange();
-    ans.setStart(elm.parentNode, Dom.nodeIndex(elm)+1);
+    if (ns !== null && ns.tagName === 'BR')
+      ans.setStart(ns.parentNode, Dom.nodeIndex(ns));
+    else
+      ans.setStart(elm.parentNode, Dom.nodeIndex(elm)+1);
     normRange(ans);
     return ans;
   };
 
   const endOfLine = (range=Dom.getRange())=>{
-    let elm = range.startContainer;
-    while(elm != null && isInlineNode(elm)) {
-      elm = elm.nextSibling || elm.parentNode;
-    }
-    if (elm == null) return null;
+    let elm = lastElmInLine(range);
+    if (elm === null) return null;
     const ans = document.createRange();
     if (elm.lastChild != null) {
       elm = elm.lastChild;
@@ -273,6 +303,7 @@ define((require)=>{
     },
 
     normRange,
+    rangeStartNode,
 
     isBlockNode,
 

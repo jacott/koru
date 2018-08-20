@@ -46,13 +46,15 @@ define((require, exports, module)=>{
   const ga = Core.assertions;
 
   ga.add('rangeEquals', {
-    assert(startContainer, startOffset, endContainer, endOffset) {
-      if (endContainer === undefined) {
+    assert(
+      range=Dom.getRange(),
+      startContainer, startOffset=0,
+      endContainer=startContainer, endOffset=startOffset
+    ) {
+      if (typeof endContainer === 'number') {
+        endOffset = endContainer;
         endContainer = startContainer;
-        endOffset = startOffset;
       }
-
-      const range = Dom.getRange();
 
       this.actual = {
         startContainer: range.startContainer,
@@ -71,7 +73,7 @@ define((require, exports, module)=>{
     },
 
     assertMessage: "range to be equal{$diff}",
-    refuteMessage: "range tp be equal\n  {i$actual}",
+    refuteMessage: "range to be equal\n  {i$actual}",
   });
 
   const domEvent = (eventName, func)=>{
