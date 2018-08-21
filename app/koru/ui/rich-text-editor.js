@@ -282,7 +282,7 @@ define((require, exports, module)=>{
     },
     mention: (event)=>{
       const range = Dom.getRange();
-      if (! range) return;
+      if (range === null) return;
 
       const button = event.target;
       const dialog = RichTextMention.$autoRender({

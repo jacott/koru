@@ -6,11 +6,16 @@ isClient && define((require, exports, module)=>{
   const RichTextEditorToolbar = require('./rich-text-editor-toolbar');
   const TH              = require('./test-helper');
 
-  const {stub, spy, onEnd} = TH;
+  const {stub, spy, onEnd, match: m} = TH;
 
   const {insert} = RichTextEditor;
 
   let v= {};
+
+  const pressAt = elm =>{
+    TH.keypress(elm, '@', 'shift');
+    insert('@');
+  };
 
   TH.testCase(module, ({beforeEach, afterEach, group, test})=>{
     beforeEach(()=>{
@@ -49,7 +54,7 @@ isClient && define((require, exports, module)=>{
         v.input.appendChild(Dom.h(["one", {div: ["two ", "three"]}]));
 
         v.range = TH.setRange(v.input.lastChild.lastChild, 2);
-        v.fooFunc = function (frag, text) {
+        v.fooFunc = (frag, text)=>{
           if (text === 'g') {
             frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
           }
@@ -57,66 +62,64 @@ isClient && define((require, exports, module)=>{
 
         TH.pointerDownUp('[name=mention]');
 
-        v.fooHtmlFunc = function (elm) {
-          return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
-        };
+        v.fooHtmlFunc = elm => Dom.h({
+          a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
       });
 
       test("accept", ()=>{
         assert(Modal.topModal.handleTab);
 
-        assert.dom('.rtMention:not(.inline)[touch-action=none] input', function () {
-          TH.input(this, 'g');
+        assert.dom('.rtMention:not(.inline)[touch-action=none] input', input =>{
+          TH.input(input, 'g');
 
-          TH.trigger(this, 'keydown', {which: 13});
+          TH.trigger(input, 'keydown', {which: 13});
         });
 
-        assert.dom('.richTextEditor>.input', function () {
-           assert.same(document.activeElement, this);
+        assert.dom('.richTextEditor>.input', input =>{
+          assert.same(document.activeElement, input);
           RichTextEditor.insert("_x_");
-          assert.dom('a[class=foo][href="/#g1"]', 'Geoff Jacobsen', function () {
-            assert.match(this.nextSibling.textContent, /_x_/);
+          assert.dom('a[class=foo][href="/#g1"]', 'Geoff Jacobsen', link =>{
+            assert.match(link.nextSibling.textContent, /_x_/);
           });
           assert.dom('a[href="/#g1"][class="foo"]', 'Geoff Jacobsen');
-          assert.same(this.innerHTML.replace(/<a[^>]*>/,'<a>').replace(/&nbsp;/g, ' '),
+          assert.same(input.innerHTML.replace(/<a[^>]*>/,'<a>').replace(/&nbsp;/g, ' '),
                       'hello one<div>two th<a>Geoff Jacobsen</a> _x_ree</div>');
 
         });
       });
 
       test("cancel", ()=>{
-        assert.dom('.rtMention:not(.inline) input', function () {
-          TH.input(this, 'g');
+        assert.dom('.rtMention:not(.inline) input', input =>{
+          TH.input(input, 'g');
         });
         TH.pointerDownUp('.glassPane');
-        assert.dom('.input', function () {
-          assert.same(document.activeElement, this);
-          var range = Dom.getRange();
-          assert.same(range.startContainer, v.range.startContainer);
-          assert.same(range.startOffset, v.range.startOffset);
+        assert.dom('.input', input =>{
+          assert.same(document.activeElement, input);
+          assert.rangeEquals(undefined, v.range.startContainer, v.range.startOffset);
         });
       });
     });
 
     test("typing @g", ()=>{
-      assert.dom(v.input, function () {
-        pressAt(this);
+      const {input} = v;
+      assert.dom(input, () =>{
+        pressAt(input);
         refute.called(Dom.stopEvent);
       });
       refute.dom('#TestRichTextEditor>.rtMention');
 
-      assert.dom(v.input, function () {
-        TH.trigger(this, 'keydown', {which: 16}); // shift should not matter
-        TH.keypress(this, 'g');
+      assert.dom(input, ()=>{
+        TH.trigger(input, 'keydown', {which: 16}); // shift should not matter
+        TH.keypress(input, 'g');
         assert.called(Dom.stopEvent);
-        assert.same(this.textContent.replace(/\xa0/, ' '), 'hello @g');
+        assert.same(input.textContent.replace(/\xa0/, ' '), 'hello @g');
         assert.dom('.ln', 'g');
       });
 
-      assert.dom('.rtMention', function () {
+      assert.dom('.rtMention', ()=>{
         assert(Modal.topModal.handleTab);
-        assert.dom('input', {value: 'g'}, function () {
-          assert.same(document.activeElement, this);
+        assert.dom('input', {value: 'g'}, elm =>{
+          assert.same(document.activeElement, elm);
         });
       });
     });
@@ -127,7 +130,7 @@ isClient && define((require, exports, module)=>{
         assert.same(this.innerHTML, 'hello @');
         TH.trigger(this, 'keydown', {which: 39});
         TH.trigger(this, 'keydown', {which: 39});
-        var ctx = Dom.ctx(this);
+        const ctx = Dom.ctx(this);
         assert.same(ctx.mentionState, null);
 
         refute.dom('.ln');
@@ -147,7 +150,7 @@ isClient && define((require, exports, module)=>{
     });
 
     test("ctx", ()=>{
-      v.fooFunc = function (frag, text, ctx) {
+      v.fooFunc = (frag, text, ctx)=>{
         if (ctx.foo) {
           frag.appendChild(Dom.h({div: 'yes foo', "$data-id": "yesfoo"}));
         } else {
@@ -177,21 +180,17 @@ isClient && define((require, exports, module)=>{
     });
 
     test("needMore", ()=>{
-      v.fooFunc = function (frag, text) {
-        return true;
-      };
+      v.fooFunc = (frag, text)=> true;
 
       pressAt(v.input);
       TH.keypress(v.input, 'g');
 
-      assert.dom('.rtMention' , function () {
-        assert.dom('div.empty.needMore');
-      });
+      assert.dom('.rtMention div.empty.needMore');
     });
 
     group("at list menu", ()=>{
       beforeEach(()=>{
-        v.fooFunc = function (frag, text) {
+        v.fooFunc = (frag, text)=>{
           if (text === 'g') {
             frag.appendChild(v.div1 = Dom.h({div: 'Geoff Jacobsen', "$data-id": "g1"}));
             frag.appendChild(v.div2 = Dom.h({div: 'Gordon Snow', "$data-id": "g2"}));
@@ -203,9 +202,8 @@ isClient && define((require, exports, module)=>{
           }
         };
 
-        v.fooHtmlFunc = function (elm, ctx) {
-          return Dom.h({a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
-        };
+        v.fooHtmlFunc = (elm, ctx)=> Dom.h({
+          a: elm.textContent, class: "foo", $href: "/#"+elm.getAttribute('data-id')});
 
         pressAt(v.input);
         TH.keypress(v.input, 'g');
@@ -217,35 +215,29 @@ isClient && define((require, exports, module)=>{
         TH.input('input', 'jjgx');
         assert.dom('.rtMention.inline>div.empty');
 
-        assert.dom('input', function () {
-          var updspy = spy(Dom.ctx(this), 'updateAllTags');
-          var mdlspy = spy(Modal, 'reposition');
+        assert.dom('input', input =>{
+          const updspy = spy(Dom.ctx(input), 'updateAllTags');
+          const mdlspy = spy(Modal, 'reposition');
 
-          var input = this;
-          TH.input(this, 'jjg');
+          TH.input(input, 'jjg');
           assert(updspy.calledBefore(mdlspy));
-          assert.calledWith(mdlspy, 'on', TH.match(function (obj) {
-            return obj.popup === input.parentNode && obj.origin === v.input.querySelector('.ln');
-          }));
+          assert.calledWith(mdlspy, 'on', m(
+            obj => obj.popup === input.parentNode && obj.origin === v.input.querySelector('.ln')));
         });
         assert.dom('.rtMention.inline>div:not(.empty)');
       });
 
       test("override", ()=>{
-        v.fooHtmlFunc = function (elm, ctx) {
-          v.fooHtmlFuncCtx = ctx;
-          return;
-        };
+        v.fooHtmlFunc = (elm, ctx)=>{v.fooHtmlFuncCtx = ctx};
 
-        var fooFuncOrig = v.fooFunc;
+        const fooFuncOrig = v.fooFunc;
 
-        v.fooFunc = function (frag, text, ctx) {
+        v.fooFunc = (frag, text, ctx)=>{
           assert.same(ctx.data.value, 'jjg');
 
           ctx.data.value = 'changed';
           return fooFuncOrig(frag, text, ctx);
         };
-
 
         assert.dom('.rtMention', function () {
           assert.dom('input', function () {
@@ -417,15 +409,15 @@ isClient && define((require, exports, module)=>{
         TH.keypress(this, 'h');
       });
 
-      var ln = document.getElementsByClassName('ln')[0];
-      var unbb = ln.getBoundingClientRect();
+      const ln = document.getElementsByClassName('ln')[0];
+      const unbb = ln.getBoundingClientRect();
 
       assert.dom('.glassPane>.rtMention', function () {
         assert.calledWith(Modal.reposition, 'on', {
           popup: this,
           origin: TH.match.field('tagName', 'SPAN'),
         });
-        var minp = this.querySelector('input');
+        const minp = this.querySelector('input');
         assert.dom('.empty', function () {
           assert.calledWith(Modal.reposition, 'below', {popup: this, origin: minp});
         });
@@ -582,7 +574,7 @@ isClient && define((require, exports, module)=>{
     test("a events don't propagate", ()=>{
       assert.dom(v.input, function () {
         this.appendChild(v.href = Dom.h({a: 'link'}));
-        var event = TH.buildEvent('click');
+        const event = TH.buildEvent('click');
         stub(event, 'preventDefault');
         TH.trigger(v.href, event);
         assert.called(event.preventDefault);
@@ -592,7 +584,7 @@ isClient && define((require, exports, module)=>{
     test("button events don't propagate", ()=>{
       assert.dom(v.input, function () {
         this.appendChild(v.button = Dom.h({button: 'bang'}));
-        var event = TH.buildEvent('click');
+        const event = TH.buildEvent('click');
         stub(event, 'preventDefault');
         TH.trigger(v.button, event);
         assert.called(event.preventDefault);
@@ -613,14 +605,9 @@ isClient && define((require, exports, module)=>{
       assert.isFalse(Dom.ctx(v.input).openDialog);
       refute.dom('.ln');
 
-      var ctx = Dom.ctx(v.input);
+      const ctx = Dom.ctx(v.input);
       assert.same(ctx.selectItem, null);
       assert.same(ctx.mentionState, null);
     });
   });
-
-  function pressAt(elm) {
-    TH.keypress(elm, '@', 'shift');
-    insert('@');
-  }
 });
