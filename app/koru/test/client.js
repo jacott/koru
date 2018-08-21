@@ -42,7 +42,11 @@ define((require, exports, module)=>{
   koru.onunload(module, () => {requirejs.onError = null});
 
   test.Core.abort = ex => {
-    test.logHandle('E', koru.util.extractError(ex)+"\n\n**** Tests aborted! *****");
+    const {name, location: {name: fn, line}} = test.Core.test;
+    test.logHandle('E', koru.util.extractError(ex) +
+                   "\n\n**** Tests aborted! *****\n" +
+                   name +
+                   `\n     at - ${fn}.js:${line}`);
     test.testHandle('F', test.Core.testCount + 1);
     test.Core.reload = true;
     throw ex;

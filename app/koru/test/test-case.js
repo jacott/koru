@@ -26,23 +26,8 @@ define((require, exports, module)=>{
       test.success = true;
     } else {
       test.success = false;
-      let line = 1;
-      const name = test.tc.topTestCase().name+'-test';
-      const mod = module.get(name);
-      if (mod != null) {
-        const tcbody = mod.body.toString();
-        const testName = test.name.replace(/^.*?\btest /, '').slice(0, -1);
-        const testbody = `test("${testName}", ${test.func.toString()}`;
 
-        let idx = tcbody.indexOf(testbody);
-
-        if (idx !== -1) {
-          for (let ni = tcbody.indexOf("\n"); ni !== -1 && ni < idx;
-               ni = tcbody.indexOf("\n", ni+1)) {
-            ++line;
-          }
-        }
-      }
+      const {name, line} = test.location;
 
       test.errors = [
         "Failure: No assertions\n    at - "+
@@ -247,7 +232,29 @@ define((require, exports, module)=>{
       return spy;
     }
 
-    get moduleId() {return this.tc.moduleId;}
+    get location() {
+      let line = 1;
+      const name = this.moduleId;
+      const mod = module.get(name);
+      if (mod != null) {
+        const tcbody = mod.body.toString();
+        const testName = this.name.replace(/^.*?\btest /, '').slice(0, -1);
+        const testbody = `test("${testName}", ${this.func.toString()}`;
+
+        let idx = tcbody.indexOf(testbody);
+
+        if (idx !== -1) {
+          for (let ni = tcbody.indexOf("\n"); ni !== -1 && ni < idx;
+               ni = tcbody.indexOf("\n", ni+1)) {
+            ++line;
+          }
+        }
+      }
+
+      return {name, line};
+    }
+
+    get moduleId() {return this.topTC.moduleId;}
   };
 
   let skipped = false;
