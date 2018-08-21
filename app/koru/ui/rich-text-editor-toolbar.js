@@ -109,7 +109,7 @@ define((require, exports, module)=>{
       const frag = document.createDocumentFragment();
       Object.keys(mentions).sort().forEach(id =>{
         frag.appendChild(Dom.h({
-          button: [id], class: mentions[id].buttonClass, $name: 'mention',
+          button: [], class: mentions[id].buttonClass, $name: 'mention',
           tabindex: -1,
           'data-type': id, title: mentions[id].title}));
       });

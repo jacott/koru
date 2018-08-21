@@ -273,7 +273,7 @@ isClient && define((require, exports, module)=>{
 
     test("un/making code", ()=>{
       assert.dom('.richTextEditor>.input', function () {
-        this.focus();
+        focusin(this);
         assert.dom('b', 'Hello', function () {
           TH.setRange(this.firstChild, 1, this.firstChild, 3);
         });

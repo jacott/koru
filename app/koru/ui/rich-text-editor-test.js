@@ -64,14 +64,16 @@ isClient && define((require, exports, module)=>{
       undo.recordNow();
       undo.undo();
 
-      input.focus();
-      TH.setRange(input, 0);
-      TH.keyup(input, 39);
+      const hello = input.firstChild;
+      const ins = (elm)=>{input.insertBefore(elm, hello)};
 
-      ctx.template.insert(Dom.h({b: "11"}));
+      TH.setRange(hello, 0);
+      focusin(input);
+
+      ins(Dom.h({b: "11"}));
       undo.recordNow();
 
-      ctx.template.insert(Dom.h({i: "22"}));
+      ins(Dom.h({i: "22"}));
       undo.recordNow();
       assert.equals(htj(input).div, [{b: "11"}, {i: "22"}, 'hello']);
 
@@ -479,7 +481,11 @@ isClient && define((require, exports, module)=>{
         const pre = input.firstChild;
         assert.equals(htj(pre).pre, {br: ''});
         sut.insert(' foo');
-        assert.equals(htj(pre).pre, [' foo']);
+
+        if (pre.lastChild !== pre.firstChild)
+          assert.equals(htj(pre).pre, [' foo', {br: ''}]);
+        else
+          assert.equals(htj(pre).pre, [' foo']);
         TH.keydown(input, 13);
         TH.keyup(input, 13);
         assert.equals(htj(pre).pre, [' foo', {br: ''}, {br: ''}]);
@@ -551,16 +557,13 @@ isClient && define((require, exports, module)=>{
           span: 'bold', $style: 'background-color:#ffff00'}, $color: '#0000ff'})}));
 
       const inputElm = Dom('.input');
+      focusin(inputElm);
 
-      assert.dom('.input font span', function () {
-        focusin(inputElm);
-        const range = Dom.getRange();
-        assert.same(range.startContainer.parentNode, this);
+      assert.dom('.input font span', span =>{
+        TH.setRange(span.firstChild, 0, span.firstChild, 1);
 
-        TH.setRange(this.firstChild, 0, this.firstChild, 1);
-
-        TH.keydown(this, 'H', {ctrlKey: true, shiftKey: true});
-        TH.trigger(this, 'focusout');
+        TH.keydown(span, 'H', {ctrlKey: true, shiftKey: true});
+        TH.trigger(span, 'focusout');
       });
 
       assert.className(Dom('.richTextEditor'), 'focus');
@@ -568,17 +571,17 @@ isClient && define((require, exports, module)=>{
 
       // set hiliteColor
 
-      assert.dom('#ColorPicker', function () {
+      assert.dom('#ColorPicker', ()=>{
         assert.dom('[name=hex]', {value: '0000ff'});
-        assert.dom('.fontColor[data-mode="foreColor"]', function () {
+        assert.dom('.fontColor[data-mode="foreColor"]', elm =>{
           TH.click('[name=hiliteColor]');
-          assert.same(this.getAttribute('data-mode'), 'hiliteColor');
+          assert.same(elm.getAttribute('data-mode'), 'hiliteColor');
           TH.click('[name=foreColor]');
-          assert.same(this.getAttribute('data-mode'), 'foreColor');
+          assert.same(elm.getAttribute('data-mode'), 'foreColor');
           TH.click('[name=hiliteColor]');
         });
-        assert.dom('[name=hex]', {value: 'ffff00'}, function () {
-          TH.input(this, 'ff0000');
+        assert.dom('[name=hex]', {value: 'ffff00'}, hex =>{
+          TH.input(hex, 'ff0000');
         });
         TH.click('[name=apply]');
       });
@@ -586,52 +589,52 @@ isClient && define((require, exports, module)=>{
       refute.dom('#ColorPicker');
 
 
-      assert.dom('.input', function () {
+      assert.dom('.input', input =>{
         document.activeElement.blur();
-        TH.trigger(this, 'focusout');
+        TH.trigger(input, 'focusout');
         refute.className(Dom('.richTextEditor'), 'focus');
 
-        assert.dom('*', 'b', function () {
-          assert.colorEqual(this.style.backgroundColor, '#ff0000');
+        assert.dom('*', 'b', elm =>{
+          assert.colorEqual(elm.style.backgroundColor, '#ff0000');
         });
-        sut.$ctx(this).mode.actions.fontColor({target: this});
+        sut.$ctx(input).mode.actions.fontColor({target: input});
       });
 
       // set foreColor
 
-      assert.dom('#ColorPicker', function () {
+      assert.dom('#ColorPicker', ()=>{
         TH.input('[name=hex]', 'f0f0f0');
         TH.click('[name=apply]');
       });
 
-      assert.dom('.input', function () {
+      assert.dom('.input', input =>{
         if (Dom('span>span'))
-          assert.dom('span>span>span', 'b', function () {
-            assert.colorEqual(this.style.backgroundColor, '#ff0000');
-            assert.colorEqual(this.parentNode.style.color, '#f0f0f0');
+          assert.dom('span>span>span', 'b', span =>{
+            assert.colorEqual(span.style.backgroundColor, '#ff0000');
+            assert.colorEqual(span.parentNode.style.color, '#f0f0f0');
           });
-        else assert.dom('span', 'b', function () {
-          assert.colorEqual(this.style.color, '#f0f0f0');
-          assert.colorEqual(this.style.backgroundColor, '#ff0000');
+        else assert.dom('span', 'b', span =>{
+          assert.colorEqual(span.style.color, '#f0f0f0');
+          assert.colorEqual(span.style.backgroundColor, '#ff0000');
         });
-        sut.$ctx(this).mode.actions.fontColor({target: this});
+        sut.$ctx(input).mode.actions.fontColor({target: input});
       });
 
       // clear background
 
-      assert.dom('#ColorPicker', function () {
+      assert.dom('#ColorPicker', ()=>{
         TH.click('[name=removeHilite]');
       });
 
       refute.dom('#ColorPicker');
 
-      assert.dom('.input', function () {
+      assert.dom('.input', ()=>{
         if (Dom('span>span'))
-          assert.dom('span>span>span', 'b', function () {
-            assert.same(window.getComputedStyle(this).backgroundColor, 'rgba(0, 0, 0, 0)');
+          assert.dom('span>span>span', 'b', span =>{
+            assert.same(window.getComputedStyle(span).backgroundColor, 'rgba(0, 0, 0, 0)');
           });
-        else assert.dom('*', 'b', function () {
-          assert.colorEqual(window.getComputedStyle(this).backgroundColor, 'rgba(0,0,0,0)');
+        else assert.dom('*', 'b', elm =>{
+          assert.colorEqual(window.getComputedStyle(elm).backgroundColor, 'rgba(0,0,0,0)');
         });
       });
     });
@@ -785,10 +788,6 @@ isClient && define((require, exports, module)=>{
       });
 
       assert.calledWith(keyMap, m.any, 'ignoreFocus');
-    });
-
-    test("//drag", ()=>{
-      // should work like paste
     });
 
     group("paste", ()=>{
