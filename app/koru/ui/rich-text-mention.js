@@ -117,13 +117,16 @@ define((require, exports, module)=>{
 
   Tpl.$extend({
     $created(ctx, elm) {
-      ctx.data.inputCtx.openDialog = true;
+      const {inputCtx} = ctx.data;
+      inputCtx.openDialog = true;
+      inputCtx.undo.pause();
     },
 
     $destroyed(ctx, elm) {
+      const {data} = ctx;
+      const {inputCtx} = data;
+      inputCtx.openDialog = false;
       try {
-        const {data} = ctx;
-        data.inputCtx.openDialog = false;
         if (data.span) {
           revertMention(data.inputElm);
         } else if (data.inputElm) {
@@ -134,6 +137,7 @@ define((require, exports, module)=>{
       } catch(ex) {
         koru.unhandledException(ex);
       }
+      inputCtx.undo.unpause();
     },
 
     selectItem: selectItem,

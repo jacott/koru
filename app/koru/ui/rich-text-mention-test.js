@@ -67,6 +67,8 @@ isClient && define((require, exports, module)=>{
       });
 
       test("accept", ()=>{
+        const inputCtx = Dom.ctx(v.input);
+        assert.isTrue(inputCtx.undo.paused);
         assert(Modal.topModal.handleTab);
 
         assert.dom('.rtMention:not(.inline)[touch-action=none] input', input =>{
@@ -74,6 +76,8 @@ isClient && define((require, exports, module)=>{
 
           TH.trigger(input, 'keydown', {which: 13});
         });
+
+        assert.isFalse(inputCtx.undo.paused);
 
         assert.dom('.richTextEditor>.input', input =>{
           assert.same(document.activeElement, input);
@@ -89,24 +93,26 @@ isClient && define((require, exports, module)=>{
       });
 
       test("cancel", ()=>{
+        const inputCtx = Dom.ctx(v.input);
         assert.dom('.rtMention:not(.inline) input', input =>{
           TH.input(input, 'g');
         });
+        assert.isTrue(inputCtx.undo.paused);
         TH.pointerDownUp('.glassPane');
-        assert.dom('.input', input =>{
-          assert.same(document.activeElement, input);
-          assert.rangeEquals(undefined, v.range.startContainer, v.range.startOffset);
-        });
+        assert.isFalse(inputCtx.undo.paused);
+        assert.same(document.activeElement, v.input);
+        assert.rangeEquals(undefined, v.range.startContainer, v.range.startOffset);
       });
     });
 
     test("typing @g", ()=>{
-      const {input} = v;
+      const {input} = v, inputCtx = Dom.ctx(input);
       assert.dom(input, () =>{
         pressAt(input);
         refute.called(Dom.stopEvent);
       });
       refute.dom('#TestRichTextEditor>.rtMention');
+      assert.isFalse(inputCtx.undo.paused);
 
       assert.dom(input, ()=>{
         TH.trigger(input, 'keydown', {which: 16}); // shift should not matter
@@ -115,6 +121,7 @@ isClient && define((require, exports, module)=>{
         assert.same(input.textContent.replace(/\xa0/, ' '), 'hello @g');
         assert.dom('.ln', 'g');
       });
+      assert.isTrue(inputCtx.undo.paused);
 
       assert.dom('.rtMention', ()=>{
         assert(Modal.topModal.handleTab);
@@ -125,28 +132,27 @@ isClient && define((require, exports, module)=>{
     });
 
     test("@ followed by -> ->", ()=>{
-      assert.dom(v.input, function () {
-        pressAt(this);
-        assert.same(this.innerHTML, 'hello @');
-        TH.trigger(this, 'keydown', {which: 39});
-        TH.trigger(this, 'keydown', {which: 39});
-        const ctx = Dom.ctx(this);
-        assert.same(ctx.mentionState, null);
+      const {input} = v, inputCtx = Dom.ctx(input);
+      pressAt(input);
+      assert.same(input.innerHTML, 'hello @');
+      assert.isFalse(inputCtx.undo.paused);
+      TH.trigger(input, 'keydown', {which: 39});
+      TH.trigger(input, 'keydown', {which: 39});
 
-        refute.dom('.ln');
+      assert.same(inputCtx.mentionState, null);
 
-        assert.same(this.innerHTML, 'hello @');
-      });
+      refute.dom('.ln');
+
+      assert.same(input.innerHTML, 'hello @');
+      assert.isFalse(inputCtx.undo.paused);
     });
 
     test("@ after div", ()=>{
-      assert.dom(v.input, function () {
-        insert("\n");
-        pressAt(this);
-        TH.keypress(this, 'g');
+      insert("\n");
+      pressAt(v.input);
+      TH.keypress(v.input, 'g');
 
-        assert.dom('span.ln');
-      });
+      assert.dom('span.ln');
     });
 
     test("ctx", ()=>{
