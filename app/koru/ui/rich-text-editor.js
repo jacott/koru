@@ -24,7 +24,7 @@ define((require, exports, module)=>{
   const {FONT_SIZE_TO_EM} = RichText;
   const {shift, ctrl, meta, alt} = KeyMap;
   const {
-    insertNode, getTag, selectNode, newLine, normRange, selectRange,
+    insertNode, getTag, selectNode, newline, normRange, selectRange,
   } = DomNav;
 
 
@@ -155,8 +155,6 @@ define((require, exports, module)=>{
       setMode(ctx);
     }
   };
-  const undo = event =>{undoredo(event.target, 'undo')};
-  const redo = event =>{undoredo(event.target, 'redo')};
 
   const actions = commandify({
     bold: true,
@@ -172,8 +170,6 @@ define((require, exports, module)=>{
     justifyRight: true,
     justifyFull: true,
     removeFormat: true,
-    undo,
-    redo,
     fontName: event =>{
       chooseFromMenu(event, {list: FONT_LIST}, (ctx, id)=>{
         execCommand('fontName', RichText.fontIdToFace[id]);
@@ -312,12 +308,27 @@ define((require, exports, module)=>{
 
   const mapActions = (keys, actions)=>{
     for (const name in keys) {
-      keys[name] = [keys[name], actions[name]];
+      const seqs = keys[name];
+      keys[name] = Array.isArray(seqs) ? [...seqs, actions[name]] : [seqs, actions[name]];
     }
     return keys;
   };
 
-  const keyMap = KeyMap(mapActions({
+  const commonActions = {
+    undo: event =>{undoredo(event.target, 'undo')},
+    redo: event =>{undoredo(event.target, 'redo')},
+    shiftNewline: ()=>{_koru_.debug(`x`);},
+  };
+
+  const CTRL_TO_META = {mapCtrlToMeta: true};
+
+  const commonKeys = mapActions({
+    undo: ctrl+'Z',
+    redo: [ctrl+shift+'Z', ctrl+'Y'],
+  }, commonActions);
+
+  const keyMap = KeyMap(commonKeys, CTRL_TO_META);
+  keyMap.addKeys(mapActions({
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
@@ -333,13 +344,9 @@ define((require, exports, module)=>{
     justifyRight: ctrl+shift+"R",
     justifyFull: ctrl+shift+"J",
     removeFormat: ctrl+'Ü',
-    undo: ctrl+'Z',
-    redo: ctrl+shift+'Z',
     fontColor: ctrl+shift+'H',
     fontName: ctrl+shift+'O',
-  }, actions), {mapCtrlToMeta: true});
-  keyMap.addKeys({redo: [ctrl+'Y', actions.redo]});
-
+  }, actions), CTRL_TO_META);
 
   for(let i = 0; i < 7; ++i) {
     const name = 'heading'+i;
@@ -418,9 +425,7 @@ define((require, exports, module)=>{
     bold: false,
     italic: false,
     underline: false,
-    undo,
-    redo,
-    newLine,
+    newline,
     code: (event)=>{
       const ctx = Tpl.$ctx(event.target);
       const pre = Dom.getClosest(ctx.lastElm, 'pre');
@@ -486,18 +491,16 @@ define((require, exports, module)=>{
     },
   });
 
-  const codeKeyMap = KeyMap(mapActions({
+  const codeKeyMap = KeyMap(commonKeys, CTRL_TO_META);
+  codeKeyMap.addKeys(mapActions({
     language: ctrl+'L',
     bold: ctrl+'B',
     italic: ctrl+'I',
     underline: ctrl+'U',
     syntaxHighlight: ctrl+shift+'H',
-    undo: ctrl+'Z',
-    redo: ctrl+shift+'Z',
-    newLine: "\x0d",
+    newline: "\x0d",
     code: ctrl+'À',
-  }, codeActions), {mapCtrlToMeta: true});
-  codeKeyMap.addKeys({redo: [ctrl+'Y', actions.redo]});
+  }, codeActions), CTRL_TO_META);
 
   const optionKeys = {
     type: true,
@@ -560,7 +563,6 @@ define((require, exports, module)=>{
     keydown(event) {
       if (event.ctrlKey || event.metaKey || event.altKey) {
         keyMap.exec(event, 'ignoreFocus');
-
         return;
       }
 
@@ -703,6 +705,11 @@ define((require, exports, module)=>{
     execCommand,
     chooseFromMenu,
 
+    runAction: (ctx, id, event)=>{
+      const cc = commonActions[id] || ctx.mode.actions[id];
+      return cc(event);
+    },
+
     insert: (arg, inner)=>{
       const range = Dom.getRange();
 
@@ -795,6 +802,7 @@ define((require, exports, module)=>{
       if (event.shiftKey) {
         if (event.which === 13) {
           Dom.stopEvent(event);
+          newline();
           return;
         }
       }

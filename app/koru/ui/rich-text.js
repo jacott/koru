@@ -94,7 +94,7 @@ define((require)=>{
       return rel;
     }
 
-    newLine () {
+    newline () {
       this.resetInlines();
       this.needNL = false;
       this.lines.push('');
@@ -163,7 +163,7 @@ define((require)=>{
 
         if(node.tagName === 'BR') {
           if (this.needNL)
-            this.newLine();
+            this.newline();
           else
             this.needNL = true;
           continue;
@@ -173,7 +173,7 @@ define((require)=>{
           if (node.nodeType === TEXT_NODE) {
             const text = node.nodeValue.replace(/[ \n\t\r]+/g, ' ');
             if (! text.replace(/(?:^[ \n\t]+|[ \n\t]+$)/g, '')) continue;
-            this.needNL && this.newLine();
+            this.needNL && this.newline();
             this.applyInlines();
             this.lines[this.lines.length - 1] += text;
           } else {
@@ -246,7 +246,7 @@ define((require)=>{
     const start = lines.length;
     builder.markup.push(CODE, builder.relative(start), 0);
     const pos = builder.markup.length - 1;
-    builder.newLine();
+    builder.newline();
     lines[start] = "code:"+(parent.getAttribute('data-lang')||'text');
 
     const nodes = parent.childNodes;
@@ -273,7 +273,7 @@ define((require)=>{
         lines.length || lines.push('');
         if (needNl) {
           prevLen = 0;
-          builder.newLine();
+          builder.newline();
           needNl = false;
         }
         const rows = node.nodeValue.split("\n");
@@ -281,12 +281,12 @@ define((require)=>{
         for(let i = 1; i < rows.length; ++i) {
           needNl = false;
           prevLen = 0;
-          builder.newLine();
+          builder.newline();
           addText(rows[i]);
         }
       } else if (node.tagName === 'BR') {
         prevLen = 0;
-        builder.newLine();
+        builder.newline();
       } else {
         if (! INLINE_TAGS[node.tagName])
           needNl = true;

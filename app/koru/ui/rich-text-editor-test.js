@@ -174,6 +174,17 @@ isClient && define((require, exports, module)=>{
         };
       });
 
+      test("shift newline", ()=>{
+        inputElm.appendChild(Dom.h({'data-lang': "Text", pre: ["one two"]}));
+        const pre = inputElm.firstChild;
+        TH.setRange(inputElm.firstChild.firstChild, 3);
+        focusin(inputElm);
+
+        TH.keydown(pre.firstChild, 13, {shiftKey: true});
+
+        assert.equals(htj(pre).pre, ['one', {br: ''}, ' two']);
+      });
+
       test("load languages", ()=>{
         const langs = stub(session, 'rpc').withArgs('RichTextEditor.fetchLanguages');
         assert.dom('.input', function () {
@@ -723,16 +734,24 @@ isClient && define((require, exports, module)=>{
     });
 
     test("lists", ()=>{
-      v.ec = stub(document, 'execCommand');
+      document.body.appendChild(tpl.$autoRender({content: Dom.h('hello')}));
 
-      document.body.appendChild(tpl.$autoRender({content: ''}));
+      assert.dom('.input', input =>{
+        TH.setRange(input.firstChild, 0);
+        focusin(input);
 
-      assert.dom('.input', function () {
-        TH.keydown(this, '7', {ctrlKey: true, shiftKey: true});
-        assert.calledOnceWith(v.ec, 'insertOrderedList');
+        const ec = spy(document, 'execCommand');
 
-        TH.keydown(this, '8', {ctrlKey: true, shiftKey: true});
-        assert.calledWith(v.ec, 'insertUnorderedList');
+        TH.keydown(input, '7', {ctrlKey: true, shiftKey: true});
+        assert.calledOnceWith(ec, 'insertOrderedList');
+
+        TH.keydown(input, '8', {ctrlKey: true, shiftKey: true});
+        assert.calledWith(ec, 'insertUnorderedList');
+
+        TH.keydown(input, 13, {shiftKey: true});
+        DomNav.clearTrailingBR(Dom('li'));
+
+        assert.equals(htj(input).div, {ul: {li: ['', {br: ''}, 'hello']}});
       });
     });
 

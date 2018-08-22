@@ -16,7 +16,7 @@ define((require, exports, module)=>{
   const {ELEMENT_NODE} = document;
 
   const {getTag} = DomNav;
-  const {execCommand, chooseFromMenu} = RichTextEditor;
+  const {execCommand, chooseFromMenu, runAction} = RichTextEditor;
 
   Tpl.$extend({
     $autoRender(data, parentCtx) {
@@ -165,7 +165,6 @@ define((require, exports, module)=>{
       const button = this;
 
       const pCtx = $.ctx.parentCtx;
-      const {actions} = pCtx.mode;
 
       if (document.activeElement !== $.ctx.parentCtx.inputElm)
         pCtx.inputElm.focus();
@@ -184,16 +183,16 @@ define((require, exports, module)=>{
           chooseFromMenu(event, {
             classes: 'rtTextAlign',
             list: TEXT_ALIGN_LIST,
-          }, (ctx, id)=>{actions[id](event)});
+          }, (ctx, id)=>{runAction(pCtx, id, event)});
           return;
         case 'formatText':
           chooseFromMenu(event, {
             classes: 'rtFormatText',
             list: FORMAT_TEXT_LIST,
-          }, (ctx, id)=>{actions[id](event)});
+          }, (ctx, id)=>{runAction(pCtx, id, event)});
           return;
         default:
-          actions[name](event);
+          runAction(pCtx, name, event);
         }
 
       });

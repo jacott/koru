@@ -46,11 +46,11 @@ isClient && define((require, exports, module)=>{
       assert.equals(Dom.htmlToJson(div).div, 'one');
     });
 
-    test("newLine", ()=>{
+    test("newline", ()=>{
       inputElm.appendChild(Dom.h(["text", "", ""]));
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', "", ""]);
       TH.setRange(inputElm, 1);
-      sut.newLine();
+      sut.newline();
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', {br: ''}, {br: ''}]);
     });
 

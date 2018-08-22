@@ -363,7 +363,7 @@ define((require)=>{
       return range;
     },
 
-    newLine: ()=>{
+    newline: ()=>{
       const br = document.createElement('BR');
       insertNode(br);
       clearEmptyText(br.nextSibling);
