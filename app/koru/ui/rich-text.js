@@ -400,7 +400,7 @@ define((require)=>{
     'color': [COLOR, fromColor],
     'font-family': [FONT, fromFace],
     'font-size': [SIZE, fromSize],
-    'font-weight': [BOLD, fromSimple, /bold/i],
+    'font-weight': [BOLD, fromWeight],
     'font-style': [ITALIC, fromSimple, /italic/i],
     'text-decoration': [null, fromTextDecoration],
     'text-decoration-line': [null, fromTextDecoration],
@@ -438,6 +438,11 @@ define((require)=>{
       return;
 
     this.addInline(muIndex, code, index, size || value);
+  }
+
+  function fromWeight(muIndex, code, name, value, index) {
+    if (value === 'bold' || +value >= 700)
+      this.addInline(muIndex, code, index);
   }
 
   function fromTextDecoration(muIndex, code, name, value, index) {

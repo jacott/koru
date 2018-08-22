@@ -314,6 +314,18 @@ define((require, exports, module)=>{
       );
     });
 
+    test("font-weight", ()=>{
+      assertConvert('<span style="font-weight:700">x</span>',
+                    '<div><span style=\"font-weight: bold;\">x</span></div>');
+      assertConvert('<span style="font-weight:812">x</span>',
+                    '<div><span style=\"font-weight: bold;\">x</span></div>');
+
+      assertConvert('<span style="font-weight:699">x</span>',
+                    '<div>x</div>');
+      assertConvert('<span style="font-weight:bold">x</span>',
+                    '<div><span style=\"font-weight: bold;\">x</span></div>');
+    });
+
     test("multiple",  ()=>{
       sut.mapFontNames({poster: 'foo font'});
 
