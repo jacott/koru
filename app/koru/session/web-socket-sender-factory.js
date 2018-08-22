@@ -137,13 +137,17 @@ define((require)=>{
       state: sessState,
 
       send(type, msg) {
-        if (this.state.isReady() && this.ws) session.ws.send(type+msg);
-        else waitSends.push(type+msg);
+        if (this.ws !== null && this.state.isReady())
+          session.ws.send(type+msg);
+        else
+          waitSends.push(type+msg);
       },
 
       sendBinary(type, msg) {
-        if (this.state.isReady()) this.ws.send(message.encodeMessage(type, msg, session.globalDict));
-        else waitSends.push([type, util.deepCopy(msg)]);
+        if (this.ws !== null && this.state.isReady())
+          this.ws.send(message.encodeMessage(type, msg, session.globalDict));
+        else
+          waitSends.push([type, util.deepCopy(msg)]);
       },
 
       connect,
