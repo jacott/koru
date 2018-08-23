@@ -399,23 +399,14 @@ define((require, exports, module)=>{
     }
   };
 
-  const codeActions = commandify({
-    language: event =>{
-      chooseFromMenu(event, {
-        search: SelectMenu.nameSearch,
-        list: languageList,
-      }, (ctx, id)=>{
-        const pre = Dom.getClosest(ctx.lastElm, 'pre');
-        pre && pre.setAttribute('data-lang', id);
-        codeMode.language = id;
-      });
-    },
-    syntaxHighlight: event =>{
-      const ctx = Tpl.$ctx(event.target);
-      const pre = Dom.getClosest(ctx.lastElm, 'pre');
-      Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
-      const rt = RichText.fromHtml(pre, {includeTop: true});
-      session.rpc('RichTextEditor.syntaxHighlight', pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), (err, result)=>{
+  const syntaxHighlight = (inputElm)=>{
+    const ctx = Tpl.$ctx(inputElm);
+    const pre = Dom.getClosest(ctx.lastElm, 'pre');
+    Dom.addClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
+    const rt = RichText.fromHtml(pre, {includeTop: true});
+    session.rpc(
+      'RichTextEditor.syntaxHighlight',
+      pre.getAttribute('data-lang'), rt[0].replace(/^.*\n/,''), (err, result)=>{
         Dom.removeClass(ctx.inputElm.parentNode, 'syntaxHighlighting');
         if (err) return koru.globalCallback(err);
         result[2] = rt[1][2];
@@ -430,8 +421,24 @@ define((require, exports, module)=>{
           pre.appendChild(t);
         }
         setMode(ctx);
+      }
+    );
+  };
+
+  const codeActions = commandify({
+    language: event =>{
+      chooseFromMenu(event, {
+        search: SelectMenu.nameSearch,
+        list: languageList,
+      }, (ctx, id)=>{
+        const pre = Dom.getClosest(ctx.lastElm, 'pre');
+        pre && pre.setAttribute('data-lang', id);
+        codeMode.language = id;
+        syntaxHighlight(event.target);
       });
     },
+    syntaxHighlight: event =>{syntaxHighlight(event.target)},
+
     bold: false,
     italic: false,
     underline: false,

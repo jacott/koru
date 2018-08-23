@@ -213,12 +213,16 @@ isClient && define((require, exports, module)=>{
           onEnd(sut.$ctx(this).caretMoved.onChange(v.caretMoved = stub()).stop);
         });
 
+        const highlight = stub(session, 'rpc').withArgs('RichTextEditor.syntaxHighlight');
+
         assert.dom('.glassPane', function () {
           assert.dom('li', 'C');
           TH.click('li', 'Ruby');
         });
 
         assert.dom('pre[data-lang="ruby"]');
+
+        assert.calledWith(highlight, 'RichTextEditor.syntaxHighlight', "ruby", "one\ntwo");
       });
 
       group("exit", ()=>{
