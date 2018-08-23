@@ -140,12 +140,14 @@ define((require, exports, module)=>{
   };
 
 
-  const codeNode = (editor, range)=>{
-    for(let node = range.startContainer; node && node !== editor; node = node.parentNode) {
-      if (node.nodeType === 1 && RichText.fontType(node.style.fontFamily) === 'monospace') {
-        return (range.collapsed || Dom.contains(node, range.endContainer)) && node;
+  const fontNode = (top, node)=>{
+    for(; node !== null && node !== top; node = node.parentNode) {
+      if (node.nodeType === 1 &&
+          RichText.fontType(node.style.getPropertyValue('font-family')) !== '') {
+        return node;
       }
     }
+    return top;
   };
 
   const undoredo = (event, cmd) =>{
@@ -221,19 +223,26 @@ define((require, exports, module)=>{
     },
     code: (event)=>{
       const range = Dom.getRange();
-      const sc = range.startContainer;
-      const ec = range.endContainer;
-      const {collapsed} = range;
-
-      const editor = Dom.getClosest(sc, '.input');
-      if (! editor) return;
-
-      let _code;
+      const editor = Dom.getClosest(range.startContainer, '.input');
+      if (editor === null) return;
 
       const ctx = Dom.myCtx(editor.parentNode);
 
-      if (sc.nodeType === TEXT_NODE && ((_code = codeNode(editor, range)) || ec === sc)) {
-        const font = _code ? RichText.fontIdToFace[0]: 'monospace';
+      let {startContainer: sc, endContainer: ec, collapsed} = range;
+
+      if (sc.nodeType === TEXT_NODE && DomNav.rangeIsInline(range)) {
+        const fn = fontNode(editor, sc);
+        let font = 'monospace';
+        if (((ctx.override && ctx.override.font) ||
+             fn.style.getPropertyValue('font-family')) === 'monospace') {
+          let pn = fn;
+          while (pn !== editor) {
+            pn = fontNode(editor, fn.previousSibling || fn.parentNode);
+            font = pn.style.getPropertyValue('font-family');
+            if (font !== 'monospace') break;
+          }
+          if (font === 'monospace' || font === '') font = RichText.fontIdToFace[0];
+        }
         execCommand('fontName', font);
         notify(ctx, 'force', collapsed && {font});
       } else {
@@ -246,8 +255,10 @@ define((require, exports, module)=>{
           }
           insertNode(pre, pre, 0);
         } else {
-          Tpl.insert(
-            RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild);
+          const pre = RichText.fromToHtml(Dom.h({pre: range.extractContents()})).firstChild;
+          insertNode(pre);
+          range.selectNodeContents(pre);
+          Dom.setRange(range);
         }
         ctx.mode = codeMode;
         ensureLangues(ctx);
@@ -317,7 +328,6 @@ define((require, exports, module)=>{
   const commonActions = {
     undo: event =>{undoredo(event.target, 'undo')},
     redo: event =>{undoredo(event.target, 'redo')},
-    shiftNewline: ()=>{_koru_.debug(`x`);},
   };
 
   const CTRL_TO_META = {mapCtrlToMeta: true};

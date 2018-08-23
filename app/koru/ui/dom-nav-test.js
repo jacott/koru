@@ -54,11 +54,13 @@ isClient && define((require, exports, module)=>{
       assert.equals(Dom.htmlToJson(inputElm).div, ['text', {br: ''}, {br: ''}]);
     });
 
-    group("normRange", ()=>{
-      let childNodes, range;
+    group("range", ()=>{
+      let range;
       before(()=>{
         inputElm.appendChild(Dom.h([
           "one ",
+          {id: 'br0', br: ''},
+          {id: 'br0e', br: ''},
           {span: [{b: ["b1 ", "b2"]}, {button: []}, "after button"]},
           "three",
           {id: 'br1', br: ''},
@@ -67,7 +69,6 @@ isClient && define((require, exports, module)=>{
           {id: 'br3', br: ''},
           "end",
         ]));
-        childNodes = inputElm.childNodes;
         range = document.createRange();
       });
 
@@ -75,48 +76,132 @@ isClient && define((require, exports, module)=>{
         range.setEnd(document, 0);
       });
 
-      test("in br", ()=>{
-        const br1 = Dom('#br1');
-        range.setStart(br1, 0);
-        sut.normRange(range);
-        assert.same(range.startContainer, br1.parentNode);
-        assert.equals(range.startOffset, Dom.nodeIndex(br1));
+      group("rangeisInline", ()=>{
+        test("on single text node", ()=>{
+          const n = inputElm.lastChild;
+
+          range.setStart(n, n.nodeValue.length);
+          assert.isTrue(sut.rangeIsInline(range));
+        });
+
+        test("within an inline element", ()=>{
+          const span = Dom('span');
+          range.setStart(span.querySelector('b').lastChild, 1);
+          range.setEnd(span.lastChild, 4);
+
+          assert.isTrue(sut.rangeIsInline(range));
+        });
+
+        test("full line", ()=>{
+          const span = Dom('span');
+          range.setStart(span, 0);
+          range.setEnd(span.nextSibling, 'three'.length);
+          sut.normRange(range);
+          assert.isFalse(sut.rangeIsInline(range));
+        });
+
+        test("between br nodes", ()=>{
+          const span = Dom('span');
+          range.setStart(span, 0);
+          range.setEnd(span.nextSibling, 3);
+          sut.normRange(range);
+          assert.isTrue(sut.rangeIsInline(range));
+        });
+
+        test("on empty line", ()=>{
+          const br0 = Dom('#br0e');
+          range.setStart(br0, 0);
+          range.collapse(true);
+          assert.isFalse(sut.rangeIsInline(range));
+        });
       });
 
-      test("nested text", ()=>{
-        range.setStart(inputElm, 1);
-        sut.normRange(range);
-        assert.same(range.startContainer.nodeValue, 'b1 ');
-        assert.equals(range.startOffset, 0);
+      group("containingNode", ()=>{
+        test("in br", ()=>{
+          const br1 = Dom('#br1');
+          range.setStart(br1, 0);
+          assert.same(sut.containingNode(range), br1);
+
+          range.setStart(br1.parentNode, Dom.nodeIndex(br1));
+          range.collapse(true);
+          assert.same(sut.containingNode(range), br1);
+        });
+
+        test("in text", ()=>{
+          const b = Dom('span>b');
+          range.setStart(b.lastChild, 1);
+          assert.same(sut.containingNode(range), b);
+        });
+
+        test("selection nodes", ()=>{
+          const span = Dom('span');
+          const b = span.querySelector('span>b');
+          range.setStart(b.lastChild, 1);
+          range.setEnd(span.querySelector('button'), 0);
+          assert.isFalse(range.collapsed);
+          assert.same(sut.containingNode(range), span);
+        });
+
+        test("selection common text", ()=>{
+          const b = Dom('span>b');
+          range.setStart(b.firstChild, 1);
+          range.setEnd(b.lastChild, 1);
+          assert.isFalse(range.collapsed);
+          assert.same(sut.containingNode(range), b);
+        });
       });
 
-      test("empty node", ()=>{
-        const span = Dom('span');
-        range.setStart(span, 1);
-        sut.normRange(range);
-        assert.same(range.startContainer, span);
-        assert.equals(range.startOffset, 1);
-      });
+      group("normRange", ()=>{
+        test("empty Div", ()=>{
+          const div = Dom.h({});
+          inputElm.appendChild(div);
+          onEnd(()=>{div.remove()});
 
-      test("empty followed by node", ()=>{
-        const pre = Dom('pre');
-        range.setStart(pre.firstChild, 0);
-        sut.normRange(range);
-        assert.same(range.startContainer, pre);
-        assert.equals(range.startOffset, 0);
-      });
+          range.setStart(div, 0);
+          sut.normRange(range);
+          assert.rangeEquals(range, div, 0);
+        });
 
-      test("end of text node", ()=>{
-        const b = Dom('b');
-        range.setStart(b.firstChild, 3);
-        sut.normRange(range);
-        assert.same(range.startContainer.nodeValue, 'b2');
-        assert.equals(range.startOffset, 0);
+        test("in br", ()=>{
+          const br1 = Dom('#br1');
+          range.setStart(br1, 0);
+          sut.normRange(range);
+          assert.rangeEquals(range, br1.parentNode, Dom.nodeIndex(br1));
+        });
 
-        range.setStart(childNodes[2], "three".length);
-        sut.normRange(range);
-        assert.same(range.startContainer.nodeValue, 'three');
-        assert.equals(range.startOffset, "three".length);
+        test("nested text", ()=>{
+          range.setStart(inputElm, Dom.nodeIndex(Dom('span')));
+          sut.normRange(range);
+          assert.rangeEquals(range, Dom('span>b').firstChild, 0);
+        });
+
+        test("empty node", ()=>{
+          const span = Dom('span'), button = span.querySelector('button');
+
+          range.setStart(span, 1);
+          sut.normRange(range);
+          assert.rangeEquals(range, button, 0);
+        });
+
+        test("empty followed by node", ()=>{
+          const pre = Dom('pre');
+          range.setStart(pre.firstChild, 0);
+          sut.normRange(range);
+          assert.rangeEquals(range, pre, 0);
+        });
+
+        test("end of text node", ()=>{
+          const b = Dom('b');
+          range.setStart(b.firstChild, 3);
+          sut.normRange(range);
+          assert.rangeEquals(range, b.lastChild, 0);
+
+          const three = Dom('span').nextSibling;
+
+          range.setStart(three, "three".length);
+          sut.normRange(range);
+          assert.rangeEquals(range, three, "three".length);
+        });
       });
     });
 
@@ -319,8 +404,8 @@ isClient && define((require, exports, module)=>{
         test("before empty line", ()=>{
           TH.setRange(br2.previousSibling, 3);
           const range = sut.endOfLine();
-          assert.same(range.endContainer, br2);
-          assert.same(range.endOffset, 0);
+          assert.same(range.endContainer, br2.parentNode);
+          assert.same(range.endOffset, Dom.nodeIndex(br2));
         });
       });
 

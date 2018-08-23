@@ -107,36 +107,40 @@ define((require)=>{
 
   const normPos = (node, offset)=>{
     if (node.nodeType !== TEXT_NODE) {
-      const {childNodes} = node;
-      if (childNodes.length == 0) {
+      if (node.tagName === 'BR') {
         return [node.parentNode, Dom.nodeIndex(node)];
       }
+      const {childNodes} = node;
       if (offset != childNodes.length) {
         const curr = childNodes[offset];
         if (curr.nodeType === TEXT_NODE) {
           return [curr, 0];
         }
-        return normPos(curr, 0) || [curr, 0];
+        return normPos(curr, 0);
       }
     } else if (offset == node.nodeValue.length) {
       const curr = node.nextSibling;
-      if (curr === null || curr.nodeType !== TEXT_NODE) return;
+      if (curr === null || curr.nodeType !== TEXT_NODE) return [node, offset];
       return [curr, 0];
     }
+    return [node, offset];
   };
 
   const normRange = (range)=>{
+    const collapsed = range.collapsed;
     const s = normPos(range.startContainer, range.startOffset);
-    s === undefined || range.setStart(s[0], s[1]);
+    s[0] === range.startContainer || range.setStart(s[0], s[1]);
 
-    if (! range.collapsed) {
+    if (! collapsed) {
       const e = normPos(range.endContainer, range.endOffset);
-      e === undefined || range.setStart(e[0], e[1]);
+      e[0] === range.endContainer || range.setStart(e[0], e[1]);
+    } else if (! range.collapsed) {
+      range.collapse(true);
     }
     return range;
   };
 
-  const isInlineNode = item => item.nodeType === TEXT_NODE || INLINE_TAGS[item.tagName];
+  const isInlineNode = item => item.nodeType === TEXT_NODE || !! INLINE_TAGS[item.tagName];
 
   const isBlockNode = node => node.nodeType === ELEMENT_NODE && ! INLINE_TAGS[node.tagName];
 
@@ -164,13 +168,17 @@ define((require)=>{
   };
 
   const containingNode = range =>{
-    const offset = range.endOffset, start = range.endContainer;
+    if (! range.collapsed) {
+      const node = range.commonAncestorContainer;
+      return node.nodeType === TEXT_NODE ? node.parentNode : node;
+    }
+    const [start, offset] = normPos(range.startContainer, range.startOffset);
     if (start.nodeType === TEXT_NODE)
       return start.parentNode;
     else {
       const {childNodes} = start;
       return offset < childNodes.length
-        ? childNodes[offset] :  start;
+        ? childNodes[offset] : start;
     }
   };
 
@@ -381,6 +389,39 @@ define((require)=>{
         Dom.setRange(range);
         return range;
       }
+    },
+
+    rangeIsInline: range =>{
+      let n = range.commonAncestorContainer;
+      if (isInlineNode(n)) return true;
+
+      let c = range.startContainer;
+      let son = range.startOffset == 0;
+      while(c !== n) {
+        if (! isInlineNode(c)) return false;
+        const p = c.parentNode;
+        if (son && c.previousSibling !== null &&
+            (p !== n || c.previousSibling.tagName !== 'BR')) {
+          son = false;
+        }
+        c = p;
+      }
+      c = range.endContainer;
+      let eon = c.nodeType === TEXT_NODE
+          ? range.endOffset == c.nodeValue.length : c.nextSibling === null;
+
+      while(c !== n) {
+        if (! isInlineNode(c)) return false;
+        const p = c.parentNode;
+        if (p === n) {
+          return ! (son && eon);
+        }
+        if (eon && c.previousSibling !== null)
+          eon = false;
+        c = p;
+      }
+
+      return false;
     },
   };
 });

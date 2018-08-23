@@ -319,7 +319,7 @@ isClient && define((require, exports, module)=>{
           ];
           assert.equals(htj(inputElm).div, ans);
 
-          assert.rangeEquals(undefined, inputElm, 1, inputElm.childNodes[1], 0);
+          assert.rangeEquals(undefined, inputElm, 1, inputElm, 1);
 
           undo.undo();
           assert.equals(htj(inputElm), begin);
@@ -443,8 +443,14 @@ isClient && define((require, exports, module)=>{
           });
           TH.keyup(this, 39);
           TH.keydown(this, 'À', {ctrlKey: true});
+
+          const pre = Dom('pre[data-lang="text"]');
+          const range = Dom.getRange();
+          assert.rangeEquals(range, pre.firstChild, 0, pre.lastChild, 3);
+          range.collapse();
+          Dom.setRange(range);
           sut.insert(' foo');
-          assert.equals(htj(Dom('pre[data-lang="text"]')).pre, [
+          assert.equals(htj(pre).pre, [
             'hello', {br: ''}, 'world foo'
           ]);
           TH.keydown(this, 13);
@@ -489,8 +495,9 @@ isClient && define((require, exports, module)=>{
 
         TH.keydown(input, KeyMap['`'], {ctrlKey: true});
 
+        assert.equals(htj(input).div, {"data-lang": 'text', pre: {br: ''}});
+
         const pre = input.firstChild;
-        assert.equals(htj(pre).pre, {br: ''});
         sut.insert(' foo');
 
         if (pre.lastChild !== pre.firstChild)
@@ -652,75 +659,64 @@ isClient && define((require, exports, module)=>{
 
     test("inline code on selection", ()=>{
       document.body.appendChild(tpl.$autoRender({content: RichText.toHtml("1\n2")}));
+      const inputElm = Dom('.input'), ctx = Dom.ctx(inputElm);
 
-      assert.dom('.input', function () {
-        document.execCommand('styleWithCSS', false, true);
-        this.focus();
-        TH.setRange(this.lastChild.firstChild, 0, this.lastChild.firstChild, 1);
-        TH.keydown(this, 'À', {ctrlKey: true});
-        assert.dom('span', '2', function () {
-          assert.same(this.style.fontFamily, 'monospace');
-        });
-        sut.insert('foo');
-        assert.dom('span', 'foo', function () {
-          assert.same(this.style.fontFamily, 'monospace');
-        });
+      document.execCommand('styleWithCSS', false, true);
+      TH.setRange(inputElm.lastChild.firstChild, 0, inputElm.lastChild.firstChild, 1);
+      focusin(inputElm);
+      TH.keydown(inputElm, 'À', {ctrlKey: true});
 
-        TH.keydown(this, 'À', {ctrlKey: true});
-        sut.insert(' bar');
-        assert.dom('span', 'foo', function () {
-          assert.same(this.style.fontFamily, 'monospace');
-          TH.setRange(this.firstChild, 1);
-        });
-        assert.dom('span', 'foo', elm =>{
-          const bar = elm.nextSibling;
-          assert.equals(bar.textContent, ' bar');
-          assert.same(bar.nodeType, document.TEXT_NODE);
+      assert.equals(htj(inputElm).div, [
+        {div: '1'}, {div: {style: 'font-family: monospace;', span: '2'}}
+      ]);
 
-        });
-        TH.keydown(this, 'À', {ctrlKey: true});
-        sut.insert('baz');
-        assert.dom('span', /^f/, function () {
-          assert.same(this.style.fontFamily, 'monospace');
-          v.start = this.firstChild;
-        });
-        assert.dom('span', 'f', elm =>{
-          const baz = elm.nextSibling;
-          assert.equals(baz.textContent, 'baz');
-          assert.same(baz.nodeType, document.TEXT_NODE);
-        });
+      sut.insert('foo');
 
-        if (Dom('span>span')) {
-          assert.dom('span', 'baz', function () {
-            assert.same(this.style.fontFamily, 'initial');
-            TH.setRange(v.start, 0, this.nextSibling, 1);
-          });
-          TH.keydown(this, 'À', {ctrlKey: true});
-          assert.dom('font[face=initial]', 'fbazo');
-        } else {
-          assert.dom('span', 'oo', oo =>{
-            const bar = oo.nextSibling;
-            assert.equals(bar.textContent, ' bar');
-            assert.same(bar.nodeType, document.TEXT_NODE);
-            assert.same(oo.textContent, 'oo');
-            assert.same(oo.style.fontFamily, 'monospace');
-            TH.setRange(v.start, 0, oo.firstChild, 1);
-          });
-          TH.keydown(this, 'À', {ctrlKey: true});
-          assert.dom('span', 'o', function () {
-            assert.same(this.style.fontFamily, 'monospace');
-          });
-        }
-        const rt = RichText.fromHtml(this);
-        rt.push(Dom.h({p: ''}));
-        assert.dom(RichText.toHtml.apply(RichText, rt), function () {
-          assert.dom('span', 'o', o =>{
-            const bar = o.nextSibling;
-            assert.equals(bar.textContent, ' bar');
-            assert.same(bar.nodeType, document.TEXT_NODE);
-          });
-        });
-      });
+      assert.equals(htj(inputElm).div[1], {
+        div: {style: 'font-family: monospace;', span: 'foo'}});
+
+      TH.keydown(inputElm, 'À', {ctrlKey: true});
+      assert.equals(ctx.override, {font: 'sans-serif'});
+      sut.insert(' bar');
+      TH.trigger(inputElm, 'selectionchange');
+      assert.same(ctx.override, undefined);
+
+
+      assert.equals(htj(inputElm).div[1], {
+        div: [{style: 'font-family: monospace;', span: 'foo'}, ' bar']});
+
+      TH.setRange(inputElm.querySelector('span').firstChild, 1);
+
+      TH.keydown(inputElm, 'À', {ctrlKey: true});
+      sut.insert('baz');
+      TH.trigger(inputElm, 'selectionchange');
+
+      assert.equals(htj(inputElm).div, [
+        {div: '1'}, {div: [
+          {style: 'font-family: monospace;', span: 'f'},
+          'baz',
+          {style: 'font-family: monospace;', span: 'oo'},
+          ' bar'
+        ]}]);
+
+
+      TH.setRange(Dom('span').firstChild, 1, Dom('span~span').firstChild, 1);
+      TH.keydown(inputElm, 'À', {ctrlKey: true});
+
+      assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
+        {style: 'font-family: monospace;', span: 'f'}, 'baz', 'o',
+        {style: 'font-family: monospace;', span: 'o'}, ' bar']}]);
+
+      const range = Dom.getRange();
+      if (Dom.vendorPrefix === 'moz' && range.startContainer.nodeValue === 'f') {
+        range.setStart(Dom('span').nextSibling, 0);
+        Dom.setRange(range);
+      }
+      TH.keydown(inputElm, 'À', {ctrlKey: true});
+
+      assert.equals(htj(inputElm).div, [{div: '1'}, {div: [
+        {style: 'font-family: monospace;', span: ['f', 'baz', 'o', 'o']},
+        ' bar']}]);
     });
 
     test("title", ()=>{
