@@ -11,6 +11,8 @@ define((require, exports, module)=>{
   const iDB$ = Symbol(), ready$ = Symbol(), pendingUpdates$ = Symbol(),
         busyQueue$ = Symbol();
 
+  const {simDocsFor} = Query;
+
   let notMe;
 
   class Index {
@@ -332,11 +334,6 @@ define((require, exports, module)=>{
     }
   });
 
-
-  const newEmptyObj = () => Object.create(null);
-
-  const simDocsFor = model => ModelMap._getSetProp(
-    model.dbId, model.modelName, 'simDocs', newEmptyObj);
 
   return QueryIDB;
 });

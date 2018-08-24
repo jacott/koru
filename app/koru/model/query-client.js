@@ -10,7 +10,7 @@ define((require, exports, module)=>{
 
   const {stopGap$} = require('koru/symbols');
 
-  const {hasOwn, deepEqual} = util;
+  const {hasOwn, deepEqual, createDictionary} = util;
 
   const trimResults = (limit, results)=>{
     if (limit !== null && results.length > limit) results.length = limit;
@@ -42,7 +42,7 @@ define((require, exports, module)=>{
           const model = Model[name];
           if (model === undefined) continue;
           const docs = model.docs;
-          const sd = dbs[name].simDocs = util.createDictionary();
+          const sd = dbs[name].simDocs = createDictionary();
           for(const id in docs) {
             sd[id] = 'new';
           }
@@ -50,7 +50,13 @@ define((require, exports, module)=>{
       });
     };
 
+
+    const simDocsFor = model => Model._getSetProp(
+      model.dbId, model.modelName, 'simDocs', createDictionary);
+
     util.merge(Query, {
+      simDocsFor,
+
       revertSimChanges() {
         return TransQueue.transaction(() => {
           const dbs = Model._databases && Model._databases[dbBroker.dbId];
@@ -62,7 +68,7 @@ define((require, exports, module)=>{
             if (modelDocs === undefined) continue;
             const docs = dbs[modelName].simDocs;
             if (docs === undefined) continue;
-            dbs[modelName].simDocs = util.createDictionary();
+            dbs[modelName].simDocs = createDictionary();
             for(const id in docs) {
               let doc = modelDocs[id];
               const fields = docs[id];
@@ -70,16 +76,19 @@ define((require, exports, module)=>{
                 if (modelDocs[id] !== undefined) {
                   delete modelDocs[id];
 
-                  notify(model, null, doc, true);
+                  notify(model, null, doc, 'simComplete');
                 }
               } else {
                 const newDoc = doc === undefined;
                 if (newDoc)
                   doc = modelDocs[id] = new model({_id: id});
                 const undo = Changes.applyAll(doc.attributes, fields);
-                for(const _ in undo) {
-                  notify(model, doc, newDoc ? null : undo, true);
-                  break;
+                let hasKeys;
+                for(hasKeys in undo) break;
+                if (hasKeys === undefined) {
+                  Query[notifyAC$](doc, undo, 'simComplete');
+                } else {
+                  notify(model, doc, newDoc ? null : undo, 'simComplete');
                 }
               }
             }
@@ -108,14 +117,15 @@ define((require, exports, module)=>{
         return TransQueue.transaction(() => {
           const doc = model.docs[id];
           if (session.state.pendingCount()) {
-            const changes = fromServer(model, id, attrs);
+            const [changes, flag] = fromServer(model, id, attrs);
             if (doc !== undefined && changes !== attrs) { // found existing
               doc[stopGap$] = undefined;
               const undo = Changes.applyAll(doc.attributes, changes);
               for(const noop in undo) {
-                notify(model, doc, undo, true);
-                break;
+                notify(model, doc, undo, flag);
+                return doc._id;
               }
+              Query[notifyAC$](doc, undo, flag);
               return doc._id;
             }
           }
@@ -142,7 +152,7 @@ define((require, exports, module)=>{
           } else {
             // insert doc
             attrs._id = id;
-            notify(model, model.docs[id] = new model(attrs), null, true);
+            notify(model, model.docs[id] = new model(attrs), null, 'serverUpdate');
           }
         });
       },
@@ -265,11 +275,17 @@ define((require, exports, module)=>{
           dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             const {model, docs} = this;
             if (session.state.pendingCount() && this.isFromServer) {
-              if (fromServer(model, this.singleId) === null) {
+              const sims = Model._getProp(model.dbId, model.modelName, 'simDocs');
+              const simDoc = sims && sims[this.singleId];
+              const [changes, flag] = fromServer(model, this.singleId);
+              if (changes === null) {
                 const doc = docs[this.singleId];
                 if (doc !== undefined) {
                   delete docs[this.singleId];
-                  notify(model, null, doc, this.isFromServer);
+                  notify(model, null, doc, flag);
+                } else if (simDoc !== undefined) {
+                  Query[notifyAC$](null, new model(
+                    simDoc === 'new' ? {_id: this.singleId} : simDoc), flag);
                 }
                 return 1;
               }
@@ -281,7 +297,7 @@ define((require, exports, module)=>{
                 recordChange(model, doc.attributes);
               }
               delete docs[doc._id];
-              notify(model, null, doc, this.isFromServer);
+              notify(model, null, doc, this.isFromServer ? 'serverUpdate' : undefined);
             });
           });
           return count;
@@ -299,14 +315,15 @@ define((require, exports, module)=>{
 
           return dbBroker.withDB(this._dbId || dbBroker.dbId, () => {
             if (session.state.pendingCount() && this.isFromServer) {
-              const changes = fromServer(model, this.singleId, origChanges);
+              const [changes, flag] = fromServer(model, this.singleId, origChanges);
               const doc = docs[this.singleId];
               if (doc === undefined) return 0;
               const undo = Changes.applyAll(doc.attributes, changes);
-              for(const noop in undo) {
-                notify(model, doc, undo, this.isFromServer);
-                break;
+              for(const _ in undo) {
+                notify(model, doc, undo, flag);
+                return 1;
               }
+              Query[notifyAC$](doc, undo, flag);
               return 1;
             }
             this.forEach(doc => {
@@ -322,7 +339,7 @@ define((require, exports, module)=>{
 
               const undo = Changes.applyAll(attrs, origChanges);
               for(const key in undo) {
-                notify(model, doc, undo, this.isFromServer);
+                notify(model, doc, undo, this.isFromServer ? 'serverUpdate' : undefined);
                 break;
               }
             });
@@ -385,12 +402,12 @@ define((require, exports, module)=>{
       return false;
     }
 
-    const notify = (model, doc, changes, isFromServer)=>{
-      model._indexUpdate.notify(doc, changes, isFromServer); // first: update indexes
-      isFromServer ||
+    const notify = (model, doc, changes, flag)=>{
+      model._indexUpdate.notify(doc, changes, flag); // first: update indexes
+      flag === undefined &&
         Model._support.callAfterObserver(doc, changes); // next:  changes originated here
-        Query[notifyAC$](doc, changes, isFromServer); // notify anyChange
-        model.notify(doc, changes, isFromServer); // last:  Notify everything else
+        Query[notifyAC$](doc, changes, flag); // notify anyChange
+        model.notify(doc, changes, flag); // last:  Notify everything else
     };
 
     function findMatching(func) {
@@ -433,14 +450,16 @@ define((require, exports, module)=>{
     const fromServer = (model, id, changes)=>{
       const modelName = model.modelName;
       const docs = Model._getProp(model.dbId, modelName, 'simDocs');
-      if (docs === undefined) return changes;
+      if (docs === undefined) return [changes, 'serverUpdate'];
 
       if (changes === undefined) {
         delete docs[id];
-        return null;
+        return [null, 'simComplete'];
       }
       const keys = docs[id];
-      if (keys === undefined) return changes;
+      if (keys === undefined) {
+        return [changes, 'serverUpdate'];
+      }
       const doc = model.docs[id];
       if (keys === 'new') {
         changes = util.deepCopy(changes);
@@ -451,12 +470,13 @@ define((require, exports, module)=>{
           if (! hasOwn(changes, key))
             nc[key] = undefined;
         }
-        if (util.isObjEmpty(nc))
+        if (util.isObjEmpty(nc)) {
           delete docs[id];
-        else
+          return [changes, 'simComplete'];
+        } else {
           docs[id] = nc;
-
-        return changes;
+          return [changes, 'serverUpdate'];
+        }
       }
 
       const nc = {};
@@ -470,7 +490,7 @@ define((require, exports, module)=>{
             const undo = [];
             Changes.applyPartial(keys, key, partial[key], undo);
             if (alreadyChanged) {
-              // This will override any other simulated partial change but otherwise the partial
+              // This will override any other simulated partial change otherwise the partial
               // change may not apply correctly
               nc[key] = keys[key];
             } else {
@@ -487,7 +507,7 @@ define((require, exports, module)=>{
       if (util.isObjEmpty(nc.$partial))
         delete nc.$partial;
 
-      return nc;
+      return [nc, 'serverUpdate'];
     };
 
     const recordChange = (model, attrs, changes)=>{
@@ -513,12 +533,6 @@ define((require, exports, module)=>{
         }
       }
     };
-
-    const newEmptyObj = () => Object.create(null);
-
-    const simDocsFor = model => Model._getSetProp(
-      model.dbId, model.modelName, 'simDocs', newEmptyObj);
-
   };
 
   exports = __init__(session);
