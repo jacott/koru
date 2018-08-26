@@ -649,14 +649,6 @@ define((require, exports, module)=>{
       const data = pCtx.data;
       data.options.focusout && data.options.focusout.call(elm, event);
     } else {
-      let range = Dom.getRange();
-      if (range == null || ! elm.contains(range.endContainer)) {
-        // range = document.createRange();
-        // range.selectNodeContents(elm);
-        // range.collapse(true);
-        // normRange(range);
-        // Dom.setRange(range);
-      }
       pCtx && pCtx.lastElm === undefined &&
         setMode(pCtx);
       execCommand('styleWithCSS', true);
