@@ -141,7 +141,7 @@ isClient && define((require, exports, module)=>{
 
     test("apply event", ()=>{
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
-      widget.onSubmit(v.clickStub = function (arg) {
+      widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
       });
@@ -162,23 +162,30 @@ isClient && define((require, exports, module)=>{
       assert.calledWith(Dom.InPlaceForm.$detachEvents, widget.element);
     });
 
-    test("ctrl+enter event", ()=>{
+    test("ctrl or meta+enter event", ()=>{
       var widget = Dom.InPlaceForm.newWidget({doc: {name: 'abc'}});
-      widget.onSubmit(v.clickStub = function (arg) {
+      widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
       });
 
       v.parent.appendChild(widget.element);
 
-      assert.dom(widget.element, function () {
+      assert.dom(widget.element, ()=>{
         TH.input('input', 'new text');
         TH.trigger('input', 'keydown', {which: 13});
         refute.same(v.arg, 'new text');
         TH.trigger('input', 'keydown', {which: 13, ctrlKey: true});
+        assert.same(v.arg, 'new text');
+
+        TH.input('input', 'meta text');
+        TH.trigger('input', 'keydown', {which: 13, metaKey: true});
+        assert.same(v.arg, 'meta text');
       });
 
-      assert.same(v.arg, 'new text');
+
+
+
 
       spy(Dom.InPlaceForm, '$detachEvents');
 
@@ -192,7 +199,7 @@ isClient && define((require, exports, module)=>{
         doc: {name: 'abc'},
         enterSubmits: true,
       });
-      widget.onSubmit(v.clickStub = function (arg) {
+      widget.onSubmit(function (arg) {
         assert.same(this, widget);
         v.arg = arg;
       });
@@ -211,7 +218,7 @@ isClient && define((require, exports, module)=>{
     test("delete event", ()=>{
       var widget = Dom.InPlaceForm.newWidget({
         doc: {name: 'abc'}, deleteName: 'Delete me', deleteConfirmMsg: 'Are you sure about it?'});
-      widget.onDelete(v.clickStub = function () {
+      widget.onDelete(function () {
         assert.same(this, widget);
         v.arg = true;
       });

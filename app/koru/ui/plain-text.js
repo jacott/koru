@@ -44,7 +44,7 @@ define((require, exports, module)=>{
 
   Tpl.$events({
     'keydown'(event) {
-      if (event.ctrlKey) switch(event.which) {
+      if (Dom.ctrlOrMeta(event)) switch(event.which) {
       case 66: case 85: case 73:
         Dom.stopEvent();
         break;
@@ -103,7 +103,7 @@ define((require, exports, module)=>{
       return function (event) {
         switch (event.which) {
         case 66: case 85: case 73:
-          if (event.ctrlKey) Dom.stopEvent();
+          if (Dom.ctrlOrMeta(event)) Dom.stopEvent();
           break;
         case 27:
           cancel(this);

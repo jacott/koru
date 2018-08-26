@@ -10,7 +10,7 @@ define((require)=>{
     const parent = row.parentNode;
     const selected = parent.getElementsByClassName(selectClass);
 
-    if (event.ctrlKey) {
+    if (Dom.ctrlOrMeta(event)) {
       Dom.toggleClass(row, selectClass);
     } else if (event.shiftKey) {
       let elm = row.nextSibling;

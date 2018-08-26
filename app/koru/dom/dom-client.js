@@ -496,9 +496,9 @@ define((require)=>{
       return value;
     },
 
-    modifierKey(event) {
-      return event.ctrlKey || event.shiftKey || event.metaKey || event.altKey;
-    },
+    modifierKey: event => event.ctrlKey || event.shiftKey || event.metaKey || event.altKey,
+
+    ctrlOrMeta: event => event.ctrlKey || event.metaKey,
 
     onPointerUp(func, elm) {
       const $ = Dom.current;

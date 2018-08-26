@@ -133,7 +133,7 @@ define((require)=>{
     'keydown'(event) {
       switch (event.which) {
       case 13:
-        if (! event.shiftKey && (event.ctrlKey || $.ctx.data.enterSubmits)) {
+        if (! event.shiftKey && (Dom.ctrlOrMeta(event) || $.ctx.data.enterSubmits)) {
           Dom.stopEvent();
           submit.call(this, event);
         }
