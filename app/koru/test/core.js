@@ -96,23 +96,23 @@ define((require, exports, module)=>{
       return true;
     }
 
-    if (match.match.$test(expected) && expected.$test(actual))
-      return true;
-
-    const badKey = key =>{
-      if (hint) {
-        hint[hintField] = `at key = ${util.qstr(key)}${hint[hintField]||''}`;
-        setHint();
-      }
-      return false;
-    };
-
     const setHint = (aobj=actual, eobj=expected, prefix)=>{
       if (! hint) return false;
       const prev = hint[hintField];
 
       hint[hintField] = (prefix || '') + format("\n    {i0}\n != {i1}", aobj, eobj) +
         (prev ? "\n" + prev : '');
+      return false;
+    };
+
+    if (match.match.$test(expected))
+      return expected.$test(actual) || setHint();
+
+    const badKey = key =>{
+      if (hint) {
+        hint[hintField] = `at key = ${util.qstr(key)}${hint[hintField]||''}`;
+        setHint();
+      }
       return false;
     };
 

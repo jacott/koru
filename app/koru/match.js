@@ -23,12 +23,14 @@ define((require, exports, module)=>{
       }
 
       toString() {
-        return `${this.message}`;
+        const {message} = this;
+        return typeof message === 'function'
+          ? message() : ''+message;
       }
 
       $throwTest(value) {
         if (! this.$test(value, '$throwTest')) {
-          throw this.message;
+          throw this.toString();
         }
         return true;
       }
@@ -67,7 +69,7 @@ define((require, exports, module)=>{
       equal(expected, name='match.equal') {
         return match(value => {return util.deepEqual(value, expected)}, name);
       },
-      is(expected, name='match.is') {
+      is(expected, name=()=> `match.is(${util.inspect(expected)})`) {
         return match(value => util.is(value, expected), name);
       },
       regExp(regexp, name='match.regExp') {

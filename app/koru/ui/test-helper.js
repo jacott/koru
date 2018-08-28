@@ -4,7 +4,7 @@ define((require, exports, module)=>{
   const BaseTH          = require('../test-helper');
   const Route           = require('./route');
 
-  const {stub, spy, util, onEnd, Core} = BaseTH;
+  const {stub, spy, util, onEnd, Core, match: m} = BaseTH;
 
   Route._orig_history = Route.history;
   Route.history = {
@@ -63,9 +63,9 @@ define((require, exports, module)=>{
         endOffset: range.endOffset,
       };
       const expected = {
-        startContainer: startContainer,
+        startContainer: m.is(startContainer),
         startOffset: startOffset,
-        endContainer: endContainer,
+        endContainer: m.is(endContainer),
         endOffset: endOffset,
       };
 
@@ -260,7 +260,7 @@ define((require, exports, module)=>{
       case 'string':
       case 'number':
         const id = value;
-        value = TH.match(arg => arg._id === id, {toString() {return `id of '${id}'`}});
+        value = m(arg => arg._id === id, {toString() {return `id of '${id}'`}});
         break;
       }
       assert.elideFromStack.dom(menu, function () {
